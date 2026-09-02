@@ -1,0 +1,182 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+/* 既定 palette を生成レベルで消す。色は semantic token だけを通し、bg-red-500 のような
+   palette ユーティリティは CSS ごと存在しなくなる (tailwindcss.com/docs/colors の
+   "Using a custom palette")。import より後ろ、下の @theme inline より前に置くこと。
+   後ろへ動かすと semantic token まで消え、前へ動かすと既定 palette が生き残る */
+@theme {
+  --color-*: initial;
+  /* 黒白だけ残す。registry の overlay が scrim を bg-black/10 で描いており、消すと
+     モーダルの背景が素通しになる。色相を持たず light / dark でも反転しないため
+     semantic token へ移す対象ではない。撤去済みの字面ガードも黒白は見ていなかった */
+  --color-black: #000;
+  --color-white: #fff;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.129 0.042 264.695);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.129 0.042 264.695);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.129 0.042 264.695);
+  --primary: oklch(0.546 0.245 262.881);
+  --primary-foreground: oklch(0.984 0.003 247.858);
+  --secondary: oklch(0.968 0.007 247.858);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.858);
+  --muted-foreground: oklch(0.554 0.022 257.417);
+  --accent: oklch(0.968 0.007 247.858);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  /* registry の destructive variant は bg-destructive/10 の上に text-destructive を置く。
+     shadcn 既定の L 0.577 では #e7000b / #fde6e7 で 4:1 となり WCAG 1.4.3 (4.5:1) を割る。
+     axe-core の color-contrast が通る最初の値まで暗くした (src/routes/notes/index.test.tsx) */
+  --destructive: oklch(0.53 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  /* 完了・成功表示。Tailwind v4 green-600 (oklch(62.7% 0.194 149.214)) を L 61.5% / C 0.19 に微調整した値。
+     green-500 は白背景 2.22:1 / muted 2.03:1、green-600 も muted 2.93:1 で
+     WCAG 1.4.11 (3:1) を割るため (muted 上で 3.08:1 になるまで暗くした) */
+  --success: oklch(61.5% 0.19 149.214);
+  --border: oklch(0.929 0.013 255.508);
+  --input: oklch(0.929 0.013 255.508);
+  --ring: oklch(0.546 0.245 262.881);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.984 0.003 247.858);
+  --sidebar-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.968 0.007 247.858);
+  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+  --sidebar-ring: oklch(0.546 0.245 262.881);
+}
+
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.623 0.214 259.815);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.015 261.325);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  /* 完了・成功表示。Tailwind v4 green-500 と同値
+     (dark 背景 9.07:1 / muted 6.59:1 で WCAG 1.4.11 を満たす) */
+  --success: oklch(72.3% 0.219 149.579);
+  --border: oklch(0.279 0.041 260.031);
+  --input: oklch(0.279 0.041 260.031);
+  --ring: oklch(0.623 0.214 259.815);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(0.279 0.041 260.031);
+  --sidebar-ring: oklch(0.623 0.214 259.815);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-heading: var(--font-sans);
+
+  --font-sans: "Geist Variable", sans-serif;
+
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ScrollArea.Root へ当てて、Viewport のフォーカス指標を Root の outline で代替する。
+   registry の Viewport は溢れている間だけ tabIndex 0 になり focus-visible:ring-3
+   (ui/scroll-area.tsx) を持つが、その ring は Viewport の border box の外側に描かれる。
+   Root が overflow-hidden を持つか Viewport に mask (scroll-fade 等) が乗るか、
+   どちらか一方でも該当すると消えるので、そのとき当てる。
+   base-ui 公式 CSS が .Body:has(.BodyViewport:focus-visible) { outline } を持つのと同じ補償。
+   Root に outline-none を同居させないこと (--tw-outline-style が none に固定され描画されない。
+   同じ罠の記録が components/segmented-radio-group.tsx にある) */
+@utility scroll-area-focus-outline {
+  @apply has-[>[data-slot=scroll-area-viewport]:focus-visible]:outline-2 has-[>[data-slot=scroll-area-viewport]:focus-visible]:-outline-offset-2 has-[>[data-slot=scroll-area-viewport]:focus-visible]:outline-ring/50;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -1,0 +1,51 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 3
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # pnpm-workspace.yaml の minimumReleaseAge (4320 分 = 3 日) と揃えた明示設定。変更時は両方更新する。
+    # GitHub デフォルト (3 日) と同値だが、ポリシーの対をここに固定する。security updates は cooldown 対象外。
+    # Vite+ 管理下のパッケージは pnpm 側だけ待機を外している (ADR-0005)。bot 側は 3 日を維持し、
+    # グループ内の全メンバーが同じ日に eligible になる状態を保つ
+    cooldown:
+      default-days: 3
+    ignore:
+      # @types/node は Node runtime (package.json の devEngines.runtime) と major を揃える。
+      # runtime を上げるときに一緒に上げる (minor / patch は通常どおり更新する)
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    groups:
+      # Vite+ 本体と、それが同一リリースで exact pin する一族を 1 PR に束ねる。
+      # 別々の PR に割れると、未リリースの組み合わせ (vite-plus X + core Y) が
+      # マージされる (voidzero-dev/vite-plus#2356)。major も含めるため
+      # minor-and-patch より前に置く (Dependabot は先に一致したグループを採る)。
+      # pnpm-workspace.yaml の catalog: へエントリを足したらここにも足す。逆は成り立たず、
+      # patterns は catalog に現れない推移依存 (core の platform binary 等) もグロブで拾う。
+      # vite はワイルドカード無しの完全一致なので vite-plus のパターンでは拾えない
+      vite-plus:
+        patterns:
+          - "vite"
+          - "vite-plus"
+          - "@voidzero-dev/vite-plus-*"
+          - "vitest"
+          - "@vitest/*"
+      # @vitejs/plugin-react は optional peer の oxc-transform-react を呼び出す。
+      # 別々の PR に割れると、上流がテストしていない組み合わせが片方ずつマージされる。
+      # peer 範囲は緩和してあるため (pnpm-workspace.yaml)、不整合を install が止めない
+      react-compiler:
+        patterns:
+          - "@vitejs/plugin-react"
+          - "oxc-transform-react"
+          - "@oxc-transform-react/*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"

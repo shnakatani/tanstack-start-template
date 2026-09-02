@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同じ ref への連続 push で古い実行を打ち切る
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 既定の GITHUB_TOKEN 権限を絞る。この job は checkout しか要らない
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # browser mode は特定の条件で無言でハングする (AGENTS.md)。既定の 6 時間を待たずに切る
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # Vite+ 公式が案内する 1 ステップ。Node.js・パッケージマネージャ・依存キャッシュを
+      # まとめて用意する (setup-node と pnpm のセットアップは要らない)。
+      # 版は exact で指定する。公式が「Do not use the v1 tag. The v1 tag no longer
+      # receives updates.」と明記しており、追随は dependabot の github-actions に任せる
+      - uses: voidzero-dev/setup-vp@v1.18.0
+        with:
+          cache: true
+
+      - run: vp install
+
+      # playwright は install スクリプトを持たないため chromium は vp install では入らない。
+      # 未取得のまま browser project を走らせると実行ファイル不在で落ちる
+      - run: vp exec playwright install chromium --only-shell
+
+      # .mise.toml の [tasks.verify] と同じ順序を並べる。`vp run` のタスクにまとめない:
+      # Vite Task は親の環境変数を素通しせず (env / untrackedEnv への明示が要る)、既定で
+      # 結果をキャッシュする。マージ前の gate がリプレイで済まされるのを避ける
+      - run: vp check
+      - run: vp test run
+      # vp check は oxlint へ --format=default を強制するため PR diff 上のインライン注釈は
+      # 出ない (voidzero-dev/vite-plus#925)。注釈が要るなら vp lint -f github を別ステップに足す
+      - run: vp build
+
+      # ビルド成果物を起動して、セキュリティヘッダが実レスポンスに乗ることを確かめる
+      - run: vp node scripts/checks/runtime/security-headers.ts

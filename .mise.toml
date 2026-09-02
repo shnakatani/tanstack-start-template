@@ -1,0 +1,31 @@
+# node と pnpm の版は package.json (devEngines.runtime / packageManager) が持ち、Vite+ が解決する
+# (ADR-0002)。開発者のグローバル mise 設定が node / pnpm を持つと、その PATH が vp の shim を
+# 覆って版が食い違う。ここで無効化すると mise は PATH へ注入しなくなる
+[settings]
+disable_tools = ["node", "pnpm"]
+
+[env]
+DEV_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 3000') }}"
+DB_FILE_NAME = ".data/dev.sqlite"
+
+[tasks.serve]
+description = "dev server を起動する"
+run = "vp dev --port $DEV_PORT"
+
+[tasks."db:generate"]
+description = "Drizzle スキーマから migration を生成する"
+run = "vp exec drizzle-kit generate"
+
+[tasks."db:migrate"]
+description = "migration をローカル DB へ適用する"
+run = "vp exec drizzle-kit migrate"
+
+[tasks.verify]
+description = "マージ前検証をまとめて実行する"
+run = [
+  "vp check",
+  "vp test run",
+  "vp build",
+  # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
+  "vp node scripts/checks/runtime/security-headers.ts",
+]

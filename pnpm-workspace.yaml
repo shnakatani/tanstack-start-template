@@ -1,0 +1,76 @@
+overrides:
+  # vite-plus 本体と core (vite の alias) は同一リリースの対。実体のバージョンは catalog 側で揃える。
+  # キーの @* は Vite+ 0.3.0 が書く形で、`vp migrate` が範囲なしのキーから移行する。範囲なしのキーは
+  # pnpm が全ての spec に一致させ、importer の catalog: 参照まで置き換えて package.json へ解決済みの
+  # alias を書き戻す (voidzero-dev/vite-plus#2309)。@* は semver 範囲なので catalog: には当たらない
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
+
+allowBuilds:
+  esbuild: true
+  lightningcss: true
+  better-sqlite3: true
+
+# supply-chain 対策: 公開後 3 日 (4320 分) 未満のバージョンを解決しない。解決時 (vp add / update) と
+# install 時の lockfile 再検証の双方に効き、明示設定のため strict 挙動 (非 TTY では未成熟版が即エラー)。
+# セキュリティ修正の前倒しは vp pm audit --fix が minimumReleaseAgeExclude に自動追記する。
+# .github/dependabot.yml の cooldown (3 日) と揃えている。変更時は両方更新する。詳細: ADR-0005
+minimumReleaseAge: 4320
+
+# 待機の除外リストから、lockfile がもう解決しないエントリを vp add / update / remove が自動で消す
+# (pnpm 11.22.0 で追加)。バージョンまで固定した一時的な除外を手で消し忘れる経路を塞ぐ。
+# `@scope/*` のパターンは常に保持されるが、下の一覧の bare name (vite-plus / oxlint /
+# oxlint-tsgolint / oxfmt / vitest) はグロブではないため prune の対象になる。
+# Vite+ がいずれかを直接解決しなくなったら、vp migrate が書いた恒久除外が消えうる
+minimumReleaseAgeExcludePrune: true
+
+# 3 日待機の例外リスト。系統が 2 つある (ADR-0005)。
+#
+# 1. 下記の Vite+ 一族は vp migrate が書き込む恒久除外。Vite+ が exact pin する一族を
+#    待機で隔離すると vp install が壊れるため、上流が意図して名前とグロブで書く。
+#    バージョンを固定しないので待機は将来のバージョンにも復活しない
+# 2. それ以外を足すときは **必ずバージョンまで固定する** (`@scope/pkg@x.y.z`)。バージョンを
+#    省くとそのパッケージの全バージョンが恒久的に待機の対象外になる (pnpm の dist/pnpm.mjs で
+#    parseVersionPolicyRule が省略時に exactVersions を空にし、evaluateVersionPolicy が
+#    空なら無条件 true を返す)。固定しておけば次のリリースで待機が自動的に復活する。
+#    追記時は対象・前倒しの理由・provenance の確認結果をコメントで残し、待機期間を越えたら削除する
+minimumReleaseAgeExclude:
+  [
+    vite-plus,
+    "@voidzero-dev/*",
+    oxlint,
+    "@oxlint/*",
+    oxlint-tsgolint,
+    "@oxlint-tsgolint/*",
+    oxfmt,
+    "@oxfmt/*",
+    vitest,
+    "@vitest/*",
+  ]
+# vite-plus と core は同一リリースで揃えて上げる。片方だけ上げるとリリースされたことのない
+# 組み合わせになる (voidzero-dev/vite-plus#2356)。bot 側は dependabot.yml の vite-plus グループが束ねる
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.0
+  vitest: 4.1.11
+  vite-plus: 0.3.0
+  "@vitest/browser-playwright": 4.1.11
+  "@vitest/coverage-v8": 4.1.11
+# vp migrate が書く。vite を core へ alias するとバージョンが 0.2.x になり、vite の peer 範囲
+# (^6 || ^7 || ^8 等) を宣言する依存のどれも満たさなくなる。alias 方式に内在する番号不一致の
+# 抑止であって、実在の非互換を隠すものではない
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"
+    # @vitejs/plugin-react は optional peer に oxc-transform-react ^0.145.0 を宣言する一方、
+    # 自身の devDependency は ^0.147.0 を使う (6.1.1 と main の package.json、2026-09-02 時点)。
+    # 0.x の caret は minor を固定するため、上流がテストしている版が peer を満たさない。
+    # 出口条件は上流が peer 範囲を自身の検証対象まで広げること。0.x のあいだは minor が
+    # 上がるたびにずれ直しうるので、@vitejs/plugin-react を上げるたびに両者を読み比べる
+    # (dependabot.yml の react-compiler グループが 1 PR に束ねる)。ADR-0009 が経緯を持つ。
+    # キーを親つきの形にして、この緩和が @vitejs/plugin-react の下だけに効くようにする。
+    # 値は検証済みの版に絞る。* にすると将来どの組み合わせでも警告が出ず、読み比べの発火点が消える
+    "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"
