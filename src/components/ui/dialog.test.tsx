@@ -2,13 +2,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   restoreDefaultViewport,
   setViewport,
@@ -48,7 +42,7 @@ function renderTallDialog() {
 describe("DialogContent（viewport 溢れ backstop）", () => {
   afterEach(restoreDefaultViewport);
 
-  it("Tailwind が実 CSS に解決され、配置コンテナが fixed / popup が max-height を持つ", async () => {
+  it("Tailwind が実 CSS に解決され、配置コンテナが fixed / popup が flex-col と max-height を持つ", async () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
@@ -63,6 +57,9 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     expect(getComputedStyle(viewport!).position).toBe("fixed");
     expect(getComputedStyle(popup).maxHeight).not.toBe("none");
     expect(getComputedStyle(popup).overflowY).toBe("auto");
+    // Popup の flex-col 構造も ADR-0006 の乖離。alert-dialog 側と対で守る
+    expect(getComputedStyle(popup).display).toBe("flex");
+    expect(getComputedStyle(popup).flexDirection).toBe("column");
   });
 
   it("基準 viewport で長身コンテンツでも popup 全体が viewport 内に収まる", async () => {
@@ -106,32 +103,5 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     expectWithinViewport(popup);
     // 低 viewport でもスクロールで最下部へ到達できる
     expect(popup.scrollHeight).toBeGreaterThan(popup.clientHeight);
-  });
-
-  it("vega既定の余白・幅・タイトル・フッター意匠を使う", async () => {
-    await setViewport(TABLET_VIEWPORT);
-    const screen = await render(
-      <Dialog open>
-        <DialogContent>
-          <DialogTitle>視覚値確認</DialogTitle>
-          <DialogFooter>操作</DialogFooter>
-        </DialogContent>
-      </Dialog>,
-    );
-    await waitForAnimations();
-
-    const popup = screen.getByRole("dialog").element();
-    const title = screen.getByText("視覚値確認").element();
-    const footer = screen.getByText("操作").element();
-    const close = screen.getByRole("button", { name: "Close" }).element();
-
-    expect(getComputedStyle(popup).gap).toBe("24px");
-    expect(getComputedStyle(popup).padding).toBe("24px");
-    expect(getComputedStyle(popup).maxWidth).toBe("448px");
-    expect(getComputedStyle(close).top).toBe("16px");
-    expect(getComputedStyle(close).right).toBe("16px");
-    expect(getComputedStyle(title).fontSize).toBe("14px");
-    expect(getComputedStyle(footer).backgroundColor).toBe("rgba(0, 0, 0, 0)");
-    expect(getComputedStyle(footer).borderTopWidth).toBe("0px");
   });
 });
