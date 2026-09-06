@@ -13,13 +13,11 @@ function ScrollArea({ className, viewportClassName, children, ...props }: Scroll
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      // スクロールバーは Root へ絶対配置される overlay なので、場所を空けないと Viewport の
-      // 端に重なって最終行や右端の要素のクリックを奪う。空ける量は下の `ScrollBar` の太さと
-      // 対なので、太さと同じファイルに置いて一緒に動かす。バーの位置決めの基準は Root の
-      // padding box なので、幅が外から決まる Root では padding が Viewport だけを縮める。
-      // 消費側が Viewport へ持たせた padding とも競合しない (Viewport 側に置くと、属性つき
-      // selector が `px-*` に詳細度で勝って片側だけを無言で潰す)。
-      // 溢れていない軸のバーは DOM に出ないので、余白も `data-has-overflow-*` で出し分ける
+      // 空ける量は下の `ScrollBar` の太さと対なので同じファイルへ置く。Viewport ではなく Root
+      // に置くのは、バーの位置決めの基準が Root の padding box で、幅が外から決まる Root では
+      // padding が Viewport だけを縮めるため (Viewport 側に置くと属性つき selector が消費側の
+      // `px-*` に詳細度で勝ち、片側だけを無言で潰す)。`data-has-overflow-*` で出し分けるのは、
+      // 無条件に空けるとバーの無い空帯が残るため。乖離の理由は ADR-0006
       className={cn("relative data-has-overflow-x:pb-2.5 data-has-overflow-y:pr-2.5", className)}
       {...props}
     >

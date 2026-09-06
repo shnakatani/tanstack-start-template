@@ -77,9 +77,14 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry が Viewport に持たせた focus ring がどちらでも消え、キーボード操作の指標が失われる。
 
-スクロールバーは `ScrollArea` が縦横とも描き、その分の余白も Root へ既定で空ける。消費側で `<ScrollBar orientation="horizontal" />` を合成しない。合成に委ねると、余白は出るのにバーが無い器を作れる (ADR-0006)。
+スクロールバーは `ScrollArea` が縦横とも描き、その分の余白も持つ (ADR-0006)。
 
-既定の余白を降りるのは、本文の末尾側 padding がバー幅を上回り、外側の見出しやフッターと端をそろえる器だけ。`data-has-overflow-y:pr-0` を消費側で書く (実例: `dialog-scroll-body.tsx`)。
+| 器                                                          | 消費側が書くもの                                            |
+| ----------------------------------------------------------- | ----------------------------------------------------------- |
+| 既定 (末尾側 padding がバー幅以下)                          | 何も書かない。バーも余白も `ScrollArea` 側                  |
+| 本文の末尾側 padding がバー幅を上回り、外側と端をそろえたい | `data-has-overflow-y:pr-0` (実例: `dialog-scroll-body.tsx`) |
+
+`<ScrollBar orientation="horizontal" />` を消費側で合成しない。合成に委ねると、余白は出るのにバーが無い器を作れる (ADR-0006)。
 
 | 対象                         | 値                                        |
 | ---------------------------- | ----------------------------------------- |

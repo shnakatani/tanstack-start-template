@@ -51,9 +51,7 @@ describe("ScrollArea", () => {
 });
 
 /**
- * バーは Root へ絶対配置される overlay なので、Root 側で場所を空けないと Viewport の
- * 端に重なって内容を隠す。空ける量は `ScrollBar` の太さ (`data-horizontal:h-2.5` /
- * `data-vertical:w-2.5`) と対であることを、Viewport の端とバーの端の一致で固定する。
+ * 余白が `ScrollBar` の太さと一致することを、Viewport の端とバーの端の一致で固定する。
  * 一致で見るのは、足りなければバーが内容に被り、余ればバーの無い空帯が残るため。
  *
  * 寸法は `size-24` = 4px * 24 = 96px、`pb-2.5` / `pr-2.5` = 4px * 2.5 = 10px

@@ -35,9 +35,11 @@ import { describe, it, expect, vi } from "vite-plus/test";
 
 - `src/` 全体へ規範を当てるソース検査は、いま 1 つも無い。新設するときは `scripts/checks/source/` と `checks-source` project を対で作り、判定ロジックは `scripts/lib/` に置いて単体テストを別に持つ。判定と適用を同じファイルに書くと、判定の境界条件を試すために `src/` を壊す必要が出る
 - ソース検査を新設する前に lint で表現できないかを先に見る。class 名や import の規約は lint プラグイン (必要なら `jsPlugins`、ADR-0004) が持つほうが、字面走査より対象の実体に近い
-- 落ちたときに判断が要らない検査は作らない。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す (`lint-config.test.ts` の緩和ルールの drift hint、`registry-baseline.test.ts` の 3-way 判別)。期待値の書き換えしか選択肢が無い検査は、上流更新のたびに鳴って判断を鈍らせる (React Compiler の bail out 一覧を固定していた検査を 2026-09-02 に撤去した経緯は ADR-0009)
+- 落ちたときに判断が要らない検査は作らない。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す (実例: `lint-config.test.ts` の緩和ルールの drift hint、`registry-baseline.test.ts` の 3-way 判別)
+- 期待値の書き換えしか選択肢が無い検査は、上流更新のたびに鳴って判断を鈍らせる。撤去した先例は ADR-0009
 - 整合検査は「片方を直して片方を忘れた」を捕まえるもので、アプリのコードが 1 行も変わらなくても落ちうる。現在は ADR 索引・lint 設定の解決結果・registry baseline の 3 つ
-- ビルド成果物が要る検査は vitest の project にしない。project は build との順序を持てないので、`mise run verify` と CI の `vp build` のあとに独立した step として並べる。判定ロジックは `scripts/lib/` へ切り出して単体テストを別に持つ (実例: `security-headers.ts` と `response-headers.ts`)
+- ビルド成果物が要る検査は vitest の project にしない。project は build との順序を持てないので、`mise run verify` と CI の `vp build` のあとに独立した step として並べる
+- その判定ロジックは `scripts/lib/` へ切り出して単体テストを別に持つ。成果物が要るのは実行側だけで、判定は成果物なしで試せる (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物を検査した結果が緑になる
 - project を足したら `vitest.config.ts` の `projects` に追加する。include に一致しないテストは収集されず、書いたのに 1 度も走らない状態が無言で成立する
 
