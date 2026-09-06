@@ -35,9 +35,14 @@ export default defineConfig({
       "vitest",
       "jsx-a11y",
     ],
-    // oxlint はネイティブに tailwind 領域のルールを持たない。JS プラグインとして載せる
-    // (ADR-0004)。プラグイン名は package が meta.name で持つ better-tailwindcss になる
-    jsPlugins: [{ name: "better-tailwindcss", specifier: "eslint-plugin-better-tailwindcss" }],
+    // oxlint がネイティブに持たない領域 (tailwind / TanStack) は JS プラグインで載せる。
+    // name は診断コードの接頭辞になり、rules のキーと抑制 directive もこの名前で書く
+    // (名前の決まり方と、package 名で書いたときの落とし穴は ADR-0004)
+    jsPlugins: [
+      { name: "better-tailwindcss", specifier: "eslint-plugin-better-tailwindcss" },
+      { name: "@tanstack/query", specifier: "@tanstack/eslint-plugin-query" },
+      { name: "@tanstack/router", specifier: "@tanstack/eslint-plugin-router" },
+    ],
     settings: {
       "better-tailwindcss": {
         // theme の正本。解決に失敗すると素の Tailwind theme へ暗黙に落ち、初期化したはずの
@@ -279,6 +284,23 @@ export default defineConfig({
           ],
         },
       ],
+
+      // -- @tanstack/query: @tanstack/eslint-plugin-query の flat/recommended (ADR-0004) --
+      "@tanstack/query/exhaustive-deps": "error",
+      // 上流は warn だが、vp check は警告では exit 0 で通る。落とすために error で入れる。
+      // 型情報が要る経路は働かず、上流と同じ範囲は見ない (ADR-0004)
+      "@tanstack/query/no-rest-destructuring": "error",
+      "@tanstack/query/stable-query-client": "error",
+      "@tanstack/query/no-unstable-deps": "error",
+      "@tanstack/query/infinite-query-property-order": "error",
+      "@tanstack/query/mutation-property-order": "error",
+      // no-void-query-fn は上流 recommended に入るが登録しない。型情報が要り、oxlint の
+      // JS プラグインでは常に無診断になる (ADR-0004)
+
+      // -- @tanstack/router: @tanstack/eslint-plugin-router の flat/recommended (ADR-0004) --
+      // create-route-property-order だけ上流が warn。no-rest-destructuring と同じ理由で error にする
+      "@tanstack/router/create-route-property-order": "error",
+      "@tanstack/router/route-param-names": "error",
     },
     // 緩和はテストの 1 経路に限る (ADR-0004)
     overrides: [

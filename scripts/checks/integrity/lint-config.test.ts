@@ -30,9 +30,14 @@ const EXPECTED_PLUGINS = [
   "jsx-a11y",
 ];
 
-/** jsPlugin の宣言。診断コードの接頭辞になるのは meta.name で、specifier からは導けない */
+/**
+ * jsPlugin の宣言。`name` は診断コードの接頭辞になり、`rules` のキーと抑制 directive も
+ * この名前で書く。`rules` は package 名でも解決されるが、抑制をその名前で書くと無言で効かない
+ */
 const EXPECTED_JS_PLUGINS = [
   { name: "better-tailwindcss", specifier: "eslint-plugin-better-tailwindcss" },
+  { name: "@tanstack/query", specifier: "@tanstack/eslint-plugin-query" },
+  { name: "@tanstack/router", specifier: "@tanstack/eslint-plugin-router" },
 ];
 
 /** 緩和の範囲。広げると本体コードでも no-unsafe-* が無効になる */
@@ -117,7 +122,7 @@ describe("書いた設定が解決後も残っている", () => {
     // 消えること自体が信号になるので、書いた側との差で名指し単位の取りこぼしを検出する。
     // jsPlugin のルールは有効でも出力に現れないため対象から外す (oxc#22117、ADR-0004)
     const written = Object.keys(viteConfig.lint?.rules ?? {}).filter(
-      (rule) => !rule.startsWith("better-tailwindcss/"),
+      (rule) => !EXPECTED_JS_PLUGINS.some((plugin) => rule.startsWith(`${plugin.name}/`)),
     );
     if (written.length === 0) {
       throw new Error("vite.config.ts の lint.rules を読めていない");
@@ -135,9 +140,12 @@ describe("書いた設定が解決後も残っている", () => {
   });
 
   it("jsPlugins をプラグイン名込みで宣言している", () => {
-    // specifier だけの文字列形だと、rules に書く `better-tailwindcss/*` の接頭辞と
-    // 結びつく相手が無くなる
-    expect(printedConfig.jsPlugins).toEqual(EXPECTED_JS_PLUGINS);
+    // 文字列形でも名前は正規化されて通るが、設定を読んだだけでは診断コードに出る名前が
+    // 分からない。name を書けばその名前が設定に現れる。--print-config は jsPlugins を
+    // 宣言順で返さないので名前で並べ替え、消えたときは TypeError でなく差分として出す
+    const byName = (plugins: { name: string; specifier: string }[] | undefined) =>
+      [...(plugins ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+    expect(byName(printedConfig.jsPlugins)).toEqual(byName(EXPECTED_JS_PLUGINS));
   });
 
   it("categories の格上げが効いている", () => {

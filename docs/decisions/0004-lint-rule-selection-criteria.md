@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-08-17
 - Revised: 2026-09-02 (React Compiler の診断が per-category ルールへ分割されたのに伴い、基準へ eslint-plugin-react-hooks を足し `react/unsupported-syntax` を名指しへ加えた)
+- Revised: 2026-09-07 (TanStack 公式の lint プラグインを `jsPlugins` で足し、jsPlugin の名前の決まり方を実測に合わせて書き直した)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -21,20 +22,23 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 
 有効にしていないプラグインも、有効化する時点でこの表の基準に従う。
 
-| プラグイン   | 基準                                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| eslint コア  | `@eslint/js` の `recommended` + typescript-eslint の `eslint-recommended` が error にする 4 ルール                                         |
-| `typescript` | typescript-eslint の `strict` と `strict-type-checked`                                                                                     |
-| `react`      | eslint-plugin-react の `recommended` と `jsx-runtime`。React Compiler 由来のルールだけは eslint-plugin-react-hooks の `recommended-latest` |
-| `import`     | eslint-plugin-import の `recommended`                                                                                                      |
-| `promise`    | eslint-plugin-promise の `recommended`                                                                                                     |
-| `jsdoc`      | eslint-plugin-jsdoc の `recommended-typescript`                                                                                            |
-| `vitest`     | `@vitest/eslint-plugin` の `recommended`                                                                                                   |
-| `jsx-a11y`   | eslint-plugin-jsx-a11y の `recommended`                                                                                                    |
-| `unicorn`    | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
-| `oxc`        | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
+| プラグイン         | 基準                                                                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| eslint コア        | `@eslint/js` の `recommended` + typescript-eslint の `eslint-recommended` が error にする 4 ルール                                         |
+| `typescript`       | typescript-eslint の `strict` と `strict-type-checked`                                                                                     |
+| `react`            | eslint-plugin-react の `recommended` と `jsx-runtime`。React Compiler 由来のルールだけは eslint-plugin-react-hooks の `recommended-latest` |
+| `import`           | eslint-plugin-import の `recommended`                                                                                                      |
+| `promise`          | eslint-plugin-promise の `recommended`                                                                                                     |
+| `jsdoc`            | eslint-plugin-jsdoc の `recommended-typescript`                                                                                            |
+| `vitest`           | `@vitest/eslint-plugin` の `recommended`                                                                                                   |
+| `jsx-a11y`         | eslint-plugin-jsx-a11y の `recommended`                                                                                                    |
+| `unicorn`          | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
+| `oxc`              | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
+| `@tanstack/query`  | `@tanstack/eslint-plugin-query` の `flat/recommended`                                                                                      |
+| `@tanstack/router` | `@tanstack/eslint-plugin-router` の `flat/recommended`                                                                                     |
 
-`better-tailwindcss` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではないためである (「tailwind 領域は jsPlugins で足す」)。
+`@tanstack/*` の 2 つは oxlint ネイティブではなく `jsPlugins` 経由で載せる (「TanStack 領域は jsPlugins で足す」)。
+`better-tailwindcss` も `jsPlugins` 経由だが、基準が recommended ではないためこの表に載らない (「tailwind 領域は jsPlugins で足す」)。
 
 eslint コアへの追加 4 ルール (`no-var` / `prefer-const` / `prefer-rest-params` / `prefer-spread`) は、TypeScript が `var` と `apply` を過去のものにし `const` と rest 引数がより良い型を与える、という typescript-eslint 側の判断を採ったもの。
 `strict-type-checked` がこの variant (`eslint-recommended`) を内包するため typescript の基準としては入っているが、プラグイン別の基準表では eslint コアの欄に落ちる。
@@ -160,10 +164,93 @@ oxlint は tailwind 領域のルールをネイティブに持たないため、
 解決に失敗するとプラグインは素の Tailwind theme へ暗黙に落ち、初期化したはずの既定 palette が既知クラスとして復活する。
 `lint-config.test.ts` の fixture (`bg-red-500`) が、この解決も併せて見張る。抑制の directive が不要になることで検出する。
 
-`jsPlugins` のエントリは `{ name, specifier }` の形で書く。
-診断コードの接頭辞になるのはプラグイン側の `meta.name` で specifier からは導けず、文字列形だと fixture の突き合わせが名前を失う。
+### TanStack 領域は jsPlugins で足す
+
+TanStack Query と Router は、型検査にも oxlint ネイティブのルールにも現れない契約を持つ。
+`queryFn` が読む値が `queryKey` に入っていなければ、値が変わってもキャッシュは更新されない。
+`createFileRoute` のオプションは並び順で型推論が変わる。
+上流はこれを公式の ESLint プラグインで配っており、oxlint への移植はない (2026-09-07 時点)。
+
+基準は上流の `flat/recommended` に置く。
+tailwind 領域と違って recommended をそのまま採れるのは、このプラグインが整形系を持たず、フレームワークの契約だけを見ているためである。
+
+| ルール                                          | 上流  | 設定       | 差の理由                                                             |
+| ----------------------------------------------- | ----- | ---------- | -------------------------------------------------------------------- |
+| `@tanstack/query/exhaustive-deps`               | error | error      |                                                                      |
+| `@tanstack/query/no-rest-destructuring`         | warn  | error      | `vp check` は warn では exit 0 で通る。上流と同じ範囲は見ない (次段) |
+| `@tanstack/query/stable-query-client`           | error | error      |                                                                      |
+| `@tanstack/query/no-unstable-deps`              | error | error      |                                                                      |
+| `@tanstack/query/infinite-query-property-order` | error | error      |                                                                      |
+| `@tanstack/query/mutation-property-order`       | error | error      |                                                                      |
+| `@tanstack/query/no-void-query-fn`              | error | 登録しない | 型情報が要り、oxlint では常に無診断になる (次段)                     |
+| `@tanstack/router/create-route-property-order`  | warn  | error      | `no-rest-destructuring` と同じ                                       |
+| `@tanstack/router/route-param-names`            | error | error      |                                                                      |
+
+**型情報を要するルールは、oxlint では効かないか、部分的にしか効かない。**
+`no-void-query-fn` は `queryFn` の戻り型を `parserServices` から引き、型が取れないと `report` せずに `return` する。
+`rules` へ書いても「設定してあるが常に無診断」だけが残るので登録しない。
+`no-rest-destructuring` は hook 名で判定する経路と型で判定する経路を持ち、後者だけが働かない。
+`useQuery` を直接呼ぶ書き方は検出するが、それを包んだ自作 hook の戻りを rest 分割する書き方は無診断になる (2026-09-07 実測)。登録はするが、上流と同じ範囲は見ない。
+上流が recommended へ型情報を要するルールを足したときも同じ判断になる。無診断か部分的かは、そのルールだけを踏むコードに `vp lint` を通して確かめる。設定にも `--print-config` にも差は出ない。
+
+**この制約は当面続く。** 要望は oxc-project/oxc#19596 に上がっているが、oxc 側は tsgo が型情報を JS から読める形で公開していないこと、公開できたとしても Go と JS の境界を越える往復で性能が壊れることを理由に "pretty hard" とし、2026-06-12 の進捗確認にも "Not at this time" と答えている。
+JS プラグインの次のマイルストーン (#19918) にも型情報は入っていない。
+出口条件は #23211 ではなく #19596 の解決に置く。#23211 は tsgolint 連携の placeholder で、議論の実体は #19596 にある。
+
+`no-void-query-fn` が見る欠陥 (`queryFn` が値を返さない) は、これで誰も検査しない状態になる。
+型検査も報告しない。`queryFn` の戻りが `void` でも型としては通り、`useQuery` の `data` が `void` になるだけだからである。
+
+`@tanstack/query/prefer-query-options` も登録しない。上流が `recommendedStrict` にだけ入れており、基準の `flat/recommended` に無い。
+
+**jsPlugin ごとの fixture は置かない。** `better-tailwindcss` の fixture が見ているのは `settings.entryPoint` の解決で、解決の成否は設定値にも `--print-config` にも出ないため置いている。
+TanStack 側に `settings` は無く、置けるのは「この書き方でこのルールが発火する」という 1 回限りの観測になる。
+上流が検出条件を変えれば無関係な理由で落ち、対応は期待値の書き換えしか残らない (ADR-0009 で検査を撤去したのと同じ理由)。
+ルールが効いているかは、違反を書いたときに `vp lint` が鳴ることで分かる。
+
+導入時の実測 (2026-09-07、oxlint 1.79.0 / eslint-plugin-query 5.102.8 / eslint-plugin-router 1.162.0)。
+
+- 既存コードの違反はゼロ
+- `vp lint` は 2008ms から 2085ms になった (2 回目同士)
 
 JS プラグインは lint 時間を伸ばす。測るときは `time vp lint` を 2 回ずつ実行して 2 回目同士を比べる (1 回目には解決のコストが乗る)。
+
+導入で `typescript` の解決が 7.0.2 から 6.0.3 へ下がる。
+プラグインが `@typescript-eslint/utils` を依存に持ち、その peer が `typescript ">=4.8.4 <6.1.0"` だからである。
+`eslint` 10.9.1 も peer として入る。どちらも devDependencies 側の推移依存で、production の bundle には現れない。
+
+**`overrides` で 7 へ戻さない。**
+TypeScript 7.0 は JS API を出荷しておらず、programmatic な Compiler API を使うツールは 6 系でしか動かない (typescript-eslint#10940 のメンテナ回答)。
+TypeScript 公式も 6.0 との side-by-side 実行を前提に置いており、Vite+ 自身の開発用依存も TypeScript 6 に固定されている (voidzero-dev/vite-plus#2148)。
+7 に固定すると、上流が動かないと明言している組み合わせを強制することになる。
+
+型検査は影響を受けない。実体の tsgolint は `oxlint-tsgolint` の独自バイナリで、`dependencies` にも `peerDependencies` にも `typescript` を持たない。
+`@voidzero-dev/vite-plus-core` の `typescript` は optional peer である。
+2026-09-07 の `mise run verify` は lint と型検査、テスト、build、成果物のヘッダ検査まで通っている。
+
+### jsPlugin の名前は 3 か所で共有される
+
+診断コード・`rules` のキー・抑制 directive は同じ名前を使う。その名前は次で決まる。
+
+| `jsPlugins` の `name` | 名前になるもの                                                |
+| --------------------- | ------------------------------------------------------------- |
+| 書く                  | `name` の値。`eslint-plugin` を含む値は設定エラーで拒否される |
+| 書かない              | `meta.name` を正規化した値                                    |
+
+正規化は `/` の前後で分けて行う。scope はそのまま残し、残りから `eslint-plugin` / `oxlint-plugin` の接頭辞を落とす。
+残りが接頭辞そのものなら scope だけが残る (oxlint の `normalizePluginName`)。
+
+| プラグインが名乗る名前             | 正規化後             |
+| ---------------------------------- | -------------------- |
+| `eslint-plugin-better-tailwindcss` | `better-tailwindcss` |
+| `@tanstack/eslint-plugin-query`    | `@tanstack/query`    |
+
+**`rules` のキーは正規化前の名前でも解決されるが、directive は正規化後の名前でしか効かない。**
+`rules` に `@tanstack/eslint-plugin-query/exhaustive-deps` と書き、同じ名前で directive を書くと、ルールは有効なまま抑制だけが外れる。
+`--report-unused-disable-directives` を付けない限り、診断が消えないことでしか気付けない。
+
+`name` を必ず書くのは、この設定で使う名前を 1 つに定めるためである。
+`rules` のキーが package 名でも通ってしまうこと自体は `name` を書いても変わらないので、`rules` と directive を書いた `name` で揃える。
+2026-09-02 までの版はここを「診断コードの接頭辞になるのは `meta.name`」と書いていた。`better-tailwindcss` は正規化しても `meta.name` と同じ値になるため、差が出ていなかった。
 
 ### 基準から外れる名指し
 
@@ -187,6 +274,7 @@ recommended に無くても、規約や他の決定を機械で守るために�
 | 書き方の方針と衝突する                                        | `jsdoc/require-param` / `jsdoc/require-returns` (説明だけの JSDoc が書けなくなる)     |
 | 上流 recommended に無く `correctness` 経由で入る              | `vitest/require-mock-type-parameters`                                                 |
 | 基準の variant が off にするが `correctness` 経由で有効になる | `jsdoc/require-property-type` (カテゴリ側の有効化が勝つため `rules` で明示的に落とす) |
+| oxlint では実行時に必ず無診断になる                           | `@tanstack/query/no-void-query-fn` (「TanStack 領域は jsPlugins で足す」)             |
 
 基準がより緩いオプションを持つ場合も同様に、指定と理由を残す (`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames`)。
 `assertFunctionNames` は既定を置換するため、既定値を覆う指定にする。
@@ -258,6 +346,10 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - `perf` の `no-await-in-loop` は順序依存のループにも鳴る。機械的に `Promise.all` へ倒さず、抑制と理由の記述で扱う
 - vitest プラグインはテストファイル以外にも効き、行頭がテスト呼び出しに見えるコメントは `no-commented-out-tests` で報告される
 - ルールを足すか迷ったら、まず上流 recommended に入っているかを確認する。入っていないものを足すときは「基準から外れる名指し」の表に理由とともに追記する
+- `@tanstack/*` の recommended 改訂は、oxlint とは別の Dependabot PR で届く。そのプラグイン自身の更新 PR で `flat/recommended` と `rules` を突き合わせる。**突き合わせるのはルールの増減で、severity は上流が `warn` でも `error` のまま保つ。** `warn` は `vp check` の exit code に出ず、jsPlugin のルールは `--print-config` にも現れないため、戻すと CI の gating が無言で外れる
+- `@tanstack/query/no-void-query-fn` の登録は oxc-project/oxc#19596 が閉じたときに見直す。それまでは書いても無診断のままで、`queryFn` が値を返さない欠陥は機械検査の外に残る
+- oxlint が TanStack のルールをネイティブに実装したら、`jsPlugins` から `plugins` へ移す判断が要る。移すとルール名が変わり、`rules` のキーと抑制 directive の両方を書き換えることになる
+- typescript-eslint が TypeScript 7 を peer に入れると `typescript` の解決が動く。TypeScript 7.1 が新しい JS API を出す予定で、そこが起点になる (typescript-eslint#10940)
 
 ## 出典
 
@@ -267,7 +359,13 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - oxlint の recommended preset 追跡 issue: https://github.com/oxc-project/oxc/issues/20758
 - React Compiler 診断の per-category ルール分割 (22 ルールとカテゴリの一覧): https://oxc.rs/blog/2026-08-18-react-compiler-support
 - eslint-plugin-react-hooks のルール一覧と preset: https://react.dev/reference/eslint-plugin-react-hooks
-- oxlint の JS plugins (alpha 扱いと `{ name, specifier }` の指定形): https://oxc.rs/docs/guide/usage/linter/js-plugins.html
+- oxlint の JS plugins (alpha 扱い、`{ name, specifier }` の指定形、型 aware なルールが未対応であること): https://oxc.rs/docs/guide/usage/linter/js-plugins.html
+- JS プラグインへ型情報を渡せない理由と見通し ("pretty hard" / "Not at this time"): https://github.com/oxc-project/oxc/issues/19596
+- JS プラグインの次のマイルストーン (型情報はスコープ外): https://github.com/oxc-project/oxc/issues/19918
+- JS プラグインへの型情報の受け渡し (tsgolint 連携の placeholder): https://github.com/oxc-project/oxc/issues/23211
+- TanStack Query の ESLint プラグインとルール一覧: https://tanstack.com/query/latest/docs/eslint/eslint-plugin-query
+- typescript-eslint が TypeScript 7 を peer に入れられない理由 (7.0 に JS API がないこと): https://github.com/typescript-eslint/typescript-eslint/issues/10940
+- Vite+ が peer 範囲を 7 まで広げつつ自身の開発依存を TypeScript 6 に留める判断: https://github.com/voidzero-dev/vite-plus/issues/2148
 - Tailwind CSS の既定 palette を差し替える手順 (`--color-*: initial`): https://tailwindcss.com/docs/colors
 - eslint-plugin-better-tailwindcss: https://github.com/schoero/eslint-plugin-better-tailwindcss
 - Rendering Lists (index を key にする問題に実行時警告がないこと): https://react.dev/learn/rendering-lists
