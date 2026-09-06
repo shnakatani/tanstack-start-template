@@ -83,7 +83,8 @@ console.log(context.probeUser.uid);
 - CSRF の現在の置き方 (global `requestMiddleware` + `filter`) は本 ADR の形と一致する。変更しない
 - 認可の middleware を足すとき、認証は既に global で通っている。認証への依存を明示したいなら `.middleware([authMiddleware])` で chain する
 - 認可の付け忘れを止める機械強制は持たない。base builder を置くまではレビューで見る
-- lint で直接 import を禁じるなら、一律の禁止は base builder 自身の定義ファイルも落とす。lint の `overrides` でそのファイルだけ除外する (2026-09-06 に実測)
+- lint で直接 import を禁じるなら、適用範囲は `src` 全体 (`.ts` と `.tsx` の両方) にする。server function は route ファイルでも宣言できるので、server function のディレクトリに絞ると宣言を 1 つ外へ移すだけで迂回できる
+- 一律の禁止は base builder 自身の定義ファイルも落とす。`overrides` の `excludeFiles` でそのファイルだけ外す (2026-09-06 に実測)
 - 再評価条件: TanStack Start が server function への middleware 付与を型で強制する API を入れたとき。base builder と lint の必要性を見直す
 
 ## 出典
@@ -93,4 +94,4 @@ console.log(context.probeUser.uid);
 - 上記 2 スキルはどちらも `library_version: 1.170.14` を名乗り、`@tanstack/start-client-core` 1.170.27 に同梱されている (2026-09-06 に確認)
 - context 型の合成: `@tanstack/start-client-core` 1.170.27 の `dist/esm/createMiddleware.d.ts` (`AssignAllServerFnContext` / `GlobalServerFnContext`)
 - middleware の平坦化順と base builder の展開: 同 1.170.27 の `dist/esm/createServerFn.js`
-- `createServerFn` の直接 import を `no-restricted-imports` で禁じられること: oxlint 1.79.0 へ一時 config を `--config` で渡して確認 (2026-09-06)。`vite.config.ts` の `lint.rules` 経由は未検証
+- `createServerFn` の直接 import を `no-restricted-imports` で禁じられること、`overrides` の `files` と `excludeFiles` で適用範囲を絞れること: oxlint 1.79.0 へ一時 config を `--config` で渡して確認 (2026-09-06)。`vite.config.ts` の `lint` 経由は未検証
