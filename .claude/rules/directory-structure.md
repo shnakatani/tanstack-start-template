@@ -56,4 +56,5 @@ paths:
 - ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。ビジネスロジックや複雑な UI は `-components/` か、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
 - Route hooks (`Route.useSearch` / `Route.useNavigate`) はルートファイル内の薄い wrapper component で吸収し、ページ本体は値とハンドラを props で受ける named export にする。Route hooks を混ぜるとページテストがテスト router で動かない
 - loader 本体も named export の関数に切り出す。route 定義に直書きすると loader だけを呼ぶテストが書けない (実例: `src/routes/notes/index.tsx` の `loadNotesPageData`)
+- loader は Query を温めるためだけに呼び、値は component が `useSuspenseQuery` で読む。`useLoaderData` で Query 所有のデータを読むと、mutation の `invalidateQueries` では loader が再実行されず画面だけ古いまま残る
 - wrapper 側の search 読み出しと navigate 発行は `src/test/mount-route.tsx` で実 router 上へ載せて検証する。props 直渡しのテストだけでは wrapper が 1 度も実行されない
