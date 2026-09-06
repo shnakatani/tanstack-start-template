@@ -69,7 +69,7 @@ async function openAt(viewport: Viewport, fieldCount?: number) {
   const popup = screen.getByRole("dialog").element();
   const query = (slot: string) => {
     const found = popup.querySelector(`[data-slot="${slot}"]`);
-    if (!found) throw new Error(`data-slot="${slot}" が見つからない`);
+    expect.assert(found !== null, `data-slot="${slot}" が見つからない`);
     return found;
   };
   return {
@@ -107,11 +107,11 @@ describe("DialogScrollBody（内部スクロール）", () => {
   it("スクロールが要るとき本体の内容が縦バーに重ならず、右端も見出しと揃う", async () => {
     const { popup, body, title } = await openAt(SHORT_VIEWPORT);
     const input = body.querySelector('[data-slot="input"]');
-    if (!input) throw new Error("Input が見つからない");
+    expect.assert(input !== null, "Input が見つからない");
     const scrollbar = popup.querySelector(
       '[data-slot="scroll-area-scrollbar"][data-orientation="vertical"]',
     );
-    if (!scrollbar) throw new Error("縦スクロールバーが見つからない");
+    expect.assert(scrollbar !== null, "縦スクロールバーが見つからない");
 
     expect(input.getBoundingClientRect().right).toBeLessThanOrEqual(
       scrollbar.getBoundingClientRect().left,
@@ -124,7 +124,7 @@ describe("DialogScrollBody（内部スクロール）", () => {
   it("本体の内容が見出しと同じ左端に揃い、本体自身は popup の端まで広がる", async () => {
     const { popup, body, title } = await openAt(TABLET_VIEWPORT);
     const label = body.querySelector('[data-slot="field-label"]');
-    if (!label) throw new Error("FieldLabel が見つからない");
+    expect.assert(label !== null, "FieldLabel が見つからない");
 
     expect(label.getBoundingClientRect().left).toBeCloseTo(title.getBoundingClientRect().left, 0);
     // 区切り線を popup の端まで届かせるため、本体自身は padding の外へ広がる
@@ -135,7 +135,7 @@ describe("DialogScrollBody（内部スクロール）", () => {
   it("入力の focus ring がスクロール境界でクリップされない", async () => {
     const { viewport } = await openAt(SHORT_VIEWPORT);
     const input = viewport.querySelector("input");
-    if (!input) throw new Error("input が見つからない");
+    expect.assert(input !== null, "input が見つからない");
 
     // input.tsx の focus-visible:ring-3 は box-shadow 3px として要素の外側に描画される
     const ringWidth = 3;
@@ -152,7 +152,7 @@ describe("DialogScrollBody（内部スクロール）", () => {
     const { viewport } = await openAt(TABLET_VIEWPORT, 1);
     const input = viewport.querySelector("input");
     const label = viewport.querySelector('[data-slot="field-label"]');
-    if (!input || !label) throw new Error("input / FieldLabel が見つからない");
+    expect.assert(input !== null && label !== null, "input / FieldLabel が見つからない");
 
     const ringWidth = 3;
     const viewportRect = viewport.getBoundingClientRect();
@@ -210,7 +210,7 @@ describe("DialogScrollBody（内部スクロール）", () => {
 
     // 先頭フィールドから Shift+Tab で戻ると Viewport に乗る
     const firstInput = viewport.querySelector("input");
-    if (!(firstInput instanceof HTMLElement)) throw new Error("input が見つからない");
+    expect.assert(firstInput instanceof HTMLElement, "input が見つからない");
     firstInput.focus();
     await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
 

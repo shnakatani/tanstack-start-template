@@ -1,7 +1,7 @@
 import { revalidateLogic } from "@tanstack/react-form";
 import { useState, type ComponentProps } from "react";
 import * as v from "valibot";
-import { afterEach, assert, describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
@@ -520,7 +520,7 @@ describe("FormNumberField", () => {
 
   function numberInput(screen: Awaited<ReturnType<typeof render>>): HTMLInputElement {
     const element = screen.getByRole("textbox", { name: "並び順" }).element();
-    assert(element instanceof HTMLInputElement, "並び順の textbox が input ではない");
+    expect.assert(element instanceof HTMLInputElement, "並び順の textbox が input ではない");
     return element;
   }
 

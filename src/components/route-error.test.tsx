@@ -147,7 +147,7 @@ describe("RouteErrorContent", () => {
 
     const stack = screen.getByText(/at frame0 /).element();
     const scroller = stack.closest('[data-slot="scroll-area-viewport"]');
-    if (scroller === null) throw new Error("ScrollArea の viewport が見つかりません");
+    expect.assert(scroller !== null, "ScrollArea の viewport が見つかりません");
     // パネル内で縦スクロールし、カード自体は伸びない
     expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
     expectWithinViewport(stack.closest('[data-slot="card"]') ?? stack);
@@ -179,7 +179,7 @@ describe("FullScreenRouteError", () => {
     const screen = await render(<FullScreenRouteError error={error} reset={vi.fn()} />);
 
     const card = screen.getByText("エラーが発生しました").element().closest('[data-slot="card"]');
-    if (card === null) throw new Error("Card が見つかりません");
+    expect.assert(card !== null, "Card が見つかりません");
     expect(card.getBoundingClientRect().height).toBeGreaterThan(SHORT_VIEWPORT.height);
     expect(card.getBoundingClientRect().top).toBeGreaterThanOrEqual(0);
   });

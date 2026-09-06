@@ -126,7 +126,7 @@ describe("SegmentedRadioGroup", () => {
 
     await userEvent.tab();
     const focused = document.activeElement;
-    if (!(focused instanceof HTMLElement)) throw new Error("フォーカスが要素に乗らなかった");
+    expect.assert(focused instanceof HTMLElement, "フォーカスが要素に乗らなかった");
     expect(focused.getAttribute("role")).toBe("radio");
 
     // ring は box-shadow なので forced-colors / ハイコントラストでは描画されない。outline が
