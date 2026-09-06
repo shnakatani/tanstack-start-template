@@ -7,26 +7,28 @@ paths:
 
 ## コンポーネント配置
 
-| 配置先                       | 内容                                                                                |
-| ---------------------------- | ----------------------------------------------------------------------------------- |
-| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                     |
-| `src/components/`            | 複数画面で共有する自作コンポーネント                                                |
-| `routes/<path>/-components/` | 単一画面専用コンポーネント。`-` prefix は TanStack Router が routeTree から除外する |
+| 配置先                       | 内容                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------- |
+| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)               |
+| `src/components/`            | ドメインを跨いで共有する自作コンポーネント                                    |
+| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                |
+| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される |
 
 - `-components/` 内部の import は相対パスで書く
+- `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
 - 公式の詳細は TanStack の intent skill (`@tanstack/router-plugin` / `@tanstack/router-core`) を load して確認する
 
 ## features と hooks と lib と server の境界
 
-| 配置先                   | 内容                                                                  |
-| ------------------------ | --------------------------------------------------------------------- |
-| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / server fn) |
-| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義     |
-| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                     |
-| `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)  |
+| 配置先                   | 内容                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / server fn / 共有 UI) |
+| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義               |
+| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                               |
+| `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)            |
 
-- ドメインの UI は `src/routes/<domain>/` が持つ。file-based routing が既にドメイン単位なので `src/features/` へ移さない (ADR-0012)
+- 画面そのもの (ページ本体) は route ファイルの named export に残す。ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く (ADR-0012)
 - `src/features/<domain>/` 内部の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)
 - React の hook を `src/lib/` に置かない
 - client bundle へ入るファイルから `src/server/db/` と native binding を持つ依存を import しない。DB へ触るのは `.server.` を持つファイルとテスト、`src/server/db/` の中に限る (遮断は `vite.config.ts` の `tanstackStart` の `importProtection`)

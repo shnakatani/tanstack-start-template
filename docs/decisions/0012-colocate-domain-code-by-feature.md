@@ -58,7 +58,8 @@ user が `files` を指定すると既定を置換する (同 `plugin.js` の `p
 | `handlers.server.ts` | 実処理 (DB アクセス)             | 不可 (`.server.` が遮断する) |
 
 - ドメインに属さないものは分けたまま置く。server 基盤は `src/server/`、汎用ロジックは `src/lib/`、React 依存の hook は `src/hooks/`
-- ドメインの UI は `src/routes/<domain>/` が持つ。file-based routing が既にドメイン単位なので `src/features/` へ移さない
+- `src/routes/` は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まるとは限らないので、ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く
+- 画面そのもの (ページ本体) は route ファイルの named export のまま残す。その URL 配下だけで使う部品は `routes/<path>/-components/` に置く
 - `src/features/<domain>/` 内部の import は相対パスで書く
 
 ### 検討した選択肢
