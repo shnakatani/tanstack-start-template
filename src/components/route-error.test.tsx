@@ -154,7 +154,9 @@ describe("RouteErrorContent", () => {
     // 長い行は横スクロールでき、スクロールバーが手がかりとして出る
     expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth);
     expect(
-      document.querySelector('[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"]'),
+      scroller
+        .closest('[data-slot="scroll-area"]')
+        ?.querySelector('[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"]'),
     ).not.toBeNull();
     // 素の overflow に戻すとキーボードだけではスクロールできなくなる (base-ui は
     // スクロール可能な viewport に tabindex を付ける)

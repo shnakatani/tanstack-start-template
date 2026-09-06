@@ -44,12 +44,24 @@ export const dialogScrollLayout = "flex min-h-0 flex-col gap-6";
  * `border-y` は固定領域とスクロール領域の境界を示す (base-ui 公式が Header の
  * `border-bottom` と Actions の `border-top` で担っている役割)。`-mx-6` により
  * ダイアログの左右端まで届く。溢れていないダイアログでは線が装飾に見えるため、
- * base-ui が Root に出す `data-has-overflow-y` でスクロールが要るときだけ色を付ける
- * (`border-transparent` を先に置くのでレイアウトシフトは起きない)。この属性を消費側で
- * 使う流儀は `route-error.tsx` が先行している。
- * registry の `ui/scroll-area.tsx` 側には入れない — 素の Root は `relative` だけで border を
- * 持たず、入れると境界線を求めていない消費者 (`route-error.tsx` のスタックトレース領域など)
- * にも不要な線が出る。
+ * base-ui が Root と Viewport の双方に出す `data-has-overflow-y` でスクロールが要るときだけ色を付ける
+ * (`border-transparent` を先に置くのでレイアウトシフトは起きない)。border を registry の
+ * `ui/scroll-area.tsx` 側へは入れない — 入れると境界線を求めていない消費者
+ * (`route-error.tsx` のスタックトレース領域など) にも不要な線が出る。同じ属性で出し分けて
+ * いるスクロールバー幅の退避は、バーの太さと対なので `ui/scroll-area.tsx` が既定で持つ。
+ *
+ * `data-has-overflow-y:pr-0` は `ScrollArea` の既定 (スクロールバー幅の退避) を降りる指定。
+ * 本文の `px-6` が既にバー幅を上回るので、上乗せすると本文だけ見出し・フッターよりバー幅ぶん
+ * 内へ寄って端がそろわなくなる。バーを本文の余白の上に載せる形は base-ui 公式の inside-scroll
+ * デモと同じで、あちらも header / 本文 / footer を同じ `p-4` に置き `w-4` のバーを載せている。
+ * ただし公式のバーは hover / スクロール中しかポインタを受けないのに対し registry のバーは
+ * 常時受けるので、末尾側の余白を持たない器での既定の退避そのものは要る (ADR-0006)。
+ * `px-6` がバー幅を下回ると本文がバーに隠れるため、降りてよいことの妥当性は
+ * `dialog-scroll-body.test.tsx` が本文とバーの重なりで固定する。
+ * 降りられるのは `cn` の tailwind-merge が既定側の `pr-2.5` を落とすからで、詳細度は同じ、
+ * CSS の出力順ではむしろ既定が後に来る。`cn` を素の `clsx` に替えると既定が無言で復活する。
+ * x 軸は既定のまま残す。`py-4` も横バーの太さを上回るが、下端にはそろえる相手が無いため
+ * (区切り線は Root の border で、Root の padding の外に描かれる)。
  *
  * `scroll-area-focus-outline` (`styles.css`) は Viewport のフォーカス指標を Root へ移す共有
  * utility。ここで要るのは、Viewport の border box が Root の padding box と一致するため
@@ -78,7 +90,7 @@ function DialogScrollBody({
     <ScrollArea
       data-slot="dialog-scroll-body"
       className={cn(
-        "scroll-area-focus-outline -mx-6 flex min-h-0 flex-1 flex-col overflow-hidden border-y border-transparent data-has-overflow-y:border-border",
+        "scroll-area-focus-outline -mx-6 flex min-h-0 flex-1 flex-col overflow-hidden border-y border-transparent data-has-overflow-y:border-border data-has-overflow-y:pr-0",
         className,
       )}
       viewportClassName="min-h-0 flex-1 overscroll-contain px-6 py-4"

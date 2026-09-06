@@ -102,6 +102,23 @@ describe("DialogScrollBody（内部スクロール）", () => {
     expect(footer.getBoundingClientRect().bottom).toBe(footerBottom);
   });
 
+  // 本体は ScrollArea の既定 (スクロールバー幅の退避) を data-has-overflow-y:pr-0 で降りて
+  // いる。降りてよい根拠は px-6 がバー幅を上回ることなので、上回らなくなったらここが落ちる
+  it("スクロールが要るとき本体の内容が縦バーに重ならず、右端も見出しと揃う", async () => {
+    const { popup, body, title } = await openAt(SHORT_VIEWPORT);
+    const input = body.querySelector('[data-slot="input"]');
+    if (!input) throw new Error("Input が見つからない");
+    const scrollbar = popup.querySelector(
+      '[data-slot="scroll-area-scrollbar"][data-orientation="vertical"]',
+    );
+    if (!scrollbar) throw new Error("縦スクロールバーが見つからない");
+
+    expect(input.getBoundingClientRect().right).toBeLessThanOrEqual(
+      scrollbar.getBoundingClientRect().left,
+    );
+    expect(input.getBoundingClientRect().right).toBeCloseTo(title.getBoundingClientRect().right, 0);
+  });
+
   // -mx-6 と px-6 は DialogContent の p-6 を打ち消して Viewport の内側へ移すペア。
   // DialogContent の padding を変えるとこの前提が崩れ、focus ring がクリップされる
   it("本体の内容が見出しと同じ左端に揃い、本体自身は popup の端まで広がる", async () => {
