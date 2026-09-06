@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { listNotes } from "@/server/functions/notes";
+import { listNotes } from "./functions";
 
 /**
  * 一覧の鮮度窓。Link の intent preload が連続したときの重複フェッチを抑える。route loader は

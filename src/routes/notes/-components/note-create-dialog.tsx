@@ -13,12 +13,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
+import { createNote } from "@/features/notes/functions";
+import { notesQueryOptions } from "@/features/notes/queries";
+import type { NoteInput } from "@/features/notes/schema";
+import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
 import { useAppForm } from "@/hooks/use-app-form";
 import { toastMutationError } from "@/lib/mutation-error";
-import type { NoteInput } from "@/lib/notes-schema";
-import { NOTE_FIELD_LABELS, noteInputSchema } from "@/lib/notes-schema";
-import { notesQueryOptions } from "@/lib/query-options/notes";
-import { createNote } from "@/server/functions/notes";
 
 /**
  * 追加ボタン (route の PageHeader) と Root (このファイル) を結ぶ detached trigger の handle。

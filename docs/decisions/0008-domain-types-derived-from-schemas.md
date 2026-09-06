@@ -55,7 +55,7 @@ client に送らせないフィールドがある場合は、保存済みスキ�
 
 ### 3. 読み出し口で検証する
 
-ORM の戻り値は、UI へ流す前に `v.safeParse` で突き合わせる (`src/server/functions/notes.server.ts` の `list` が適用例)。
+ORM の戻り値は、UI へ流す前に `v.safeParse` で突き合わせる (`src/features/notes/handlers.server.ts` の `list` が適用例)。
 通してしまうと壊れた行が無検査で UI まで届く。
 
 失敗時に投げるメッセージには**値そのものを載せず、位置 (`v.getDotPath`) と件数だけを載せる**。

@@ -21,7 +21,7 @@ describe("curateMutationErrorMessage", () => {
   });
 
   it("server function の開発者向けメッセージを画面文言に混ぜない", () => {
-    // notes.server.ts の remove が投げる形。id と内部事情がそのまま toast に出ることを防ぐ
+    // handlers.server.ts の remove が投げる形。id と内部事情がそのまま toast に出ることを防ぐ
     const error = new Error("削除対象のノートが見つかりません: id=42");
 
     const message = curateMutationErrorMessage(error);
