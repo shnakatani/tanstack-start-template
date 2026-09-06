@@ -329,13 +329,14 @@ export default defineConfig({
       importProtection: {
         client: {
           // better-sqlite3 は native binding (node-gyp) を持ち、client bundle に含めると
-          // ビルドが壊れる。DB アクセスは src/server/ 配下のみで行う (server 専用)
+          // ビルドが壊れる。DB アクセスは src/server/db/ と *.server.* に閉じる
           specifiers: ["better-sqlite3"],
           // 永続化層 (src/server/db/) と *.server.* を client から遮断する。schema.ts の
           // ように native を引かないファイルは specifiers だけでは素通りし、UI が直接
           // import しても壊れずに層が漏れるため、パス単位で止める。
-          // src/server/functions/ の *.ts (RPC スタブ境界) は client から import する
-          // 正当な経路なので対象にしない
+          // ドメインの実処理は src/features/<domain>/handlers.server.ts に置き、
+          // *.server.* 側が遮断する (ADR-0012)。この配列は既定を merge せず置換するので
+          // (plugin.js の pick)、*.server.* を落とすと接尾辞の遮断ごと消える
           files: ["**/src/server/db/**", "**/*.server.*"],
         },
         // 既定は dev が "mock"、build が "error"。dev のままだと境界違反が再帰 Proxy へ

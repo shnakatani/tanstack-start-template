@@ -29,7 +29,7 @@ const probeMiddleware = createMiddleware({ type: "function" }).server(async ({ n
   next({ context: { probeUser: { uid: "u1" } } }),
 );
 
-// src/server/functions/notes.ts — .middleware() を持たない listNotes の handler で読む
+// .middleware() を持たない server function の handler で読む
 console.log(context.probeUser.uid);
 ```
 

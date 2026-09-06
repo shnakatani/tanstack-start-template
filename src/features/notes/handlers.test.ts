@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
 import { createDb, migrateDb } from "@/server/db";
 
-import { createNoteHandlers } from "./notes.server";
+import { createNoteHandlers } from "./handlers.server";
 
 /** migration 適用済みの空 DB を 1 件だけ抱えるテスト用の接続を作る。 */
 function createTestDb() {

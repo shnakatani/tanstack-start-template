@@ -17,7 +17,7 @@ paths:
 
 ## ドメイン型はスキーマから導出する
 
-- ドメイン型は `src/lib/` のスキーマから `InferOutput<typeof xxxSchema>` で導出し、手書きのフィールド宣言を新設しない。二重管理するとスキーマへのフィールド追加が型に伝わらず、実行時の `v.parse` まで気付けない (ADR-0008)
+- ドメイン型は `src/features/<domain>/schema.ts` のスキーマから `InferOutput<typeof xxxSchema>` で導出し、手書きのフィールド宣言を新設しない。二重管理するとスキーマへのフィールド追加が型に伝わらず、実行時の `v.parse` まで気付けない (ADR-0008)
 - サーバーが付与するフィールド (id / 生成日時等) は、入力スキーマとは別に保存済みスキーマを `entries` の spread で組み立ててそこから導出する。別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる (ADR-0008)
 - 導出には `InferOutput` を使う。`InferInput` は default 付きフィールド (`v.optional(v.boolean(), false)`) を optional にし、読み出し後の形と食い違う (ADR-0008)
 - 例外はスキーマ由来型どうしを組み合わせる合成ヘルパー型。手書きになる場合は理由をコメントで残す (ADR-0008)
@@ -30,7 +30,7 @@ paths:
 lint `typescript/consistent-type-assertions: never` で検出する (ADR-0004)。
 
 - 型が合わないときはキャストせず実装を変える。代替はランタイムガード / `as const` / 型ガード関数 / 親型 API
-- 外部データ (DB の行 / API レスポンス等) は `v.parse(schema, data)` で検証する。スキーマは `src/lib/` のものを SSOT として再利用し、不在なら新規定義してから parse する
+- 外部データ (DB の行 / API レスポンス等) は `v.parse(schema, data)` で検証する。スキーマは既存のもの (ドメインなら `src/features/<domain>/schema.ts`) を SSOT として再利用し、不在なら新規定義してから parse する
 - テスト double もまず型注釈で表現する。抑制へ落とすのは、private constructor を持つ外部型のように構造的構築が閉じている場合だけ
 - 回避不能な場合のみ `oxlint-disable-next-line typescript/consistent-type-assertions` で行単位抑制し、回避できない理由を directive の `--` に書く
 - `src/components/ui/` の registry も同じ検査を受ける。抑制の可否は他と同じで、追加で要るのは ADR-0006 の許容リストへの記録
@@ -56,4 +56,5 @@ lint `typescript/consistent-type-assertions: never` で検出する (ADR-0004)�
 - `useFieldContext<T>()` の `T` は呼び出し側の宣言だけで実フィールドと結びつかず、number フィールドに文字列部品を使っても通る。`field.state.value` は `name` から型付けされるため、これが唯一の突き合わせ経路 (TanStack/form discussion #1240)
 - prop 名は `value` にしない。部品が内部で `Input` へ `value` を渡す構成と紛れる
 - `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。この型テストを落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をせず通過する
-- 撤去条件: `@tanstack/react-form` の公開型 (`.d.ts`) に、フィールドの値型を消費側へ突き合わせる API が入ったら不要。TanStack/form#1606 は 2025-11-03 から停止した draft で、v2 alpha にある同名の `createFieldComponent` は `.d.ts` に出ない内部 factory なので、名前一致では判定しない
+- 撤去条件: `@tanstack/react-form` の公開型 (`.d.ts`) に、フィールドの値型を消費側へ突き合わせる API が入ったら不要
+- 撤去の判定は `.d.ts` に出るかで行い、名前一致でしない。TanStack/form#1606 は 2025-11-03 から停止した draft で、v2 alpha にある同名の `createFieldComponent` は `.d.ts` に出ない内部 factory

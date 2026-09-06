@@ -8,7 +8,7 @@ import {
   noteIdSchema,
   noteInputSchema,
   noteSchema,
-} from "./notes-schema";
+} from "./schema";
 
 describe("noteInputSchema", () => {
   const valid = { title: "テスト", body: "本文" };

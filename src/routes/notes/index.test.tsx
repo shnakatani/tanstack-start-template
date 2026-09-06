@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { render } from "vitest-browser-react";
 
 import { Toaster } from "@/components/ui/toast";
+import type { Note } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
-import type { Note } from "@/lib/notes-schema";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { createTestRouter } from "@/test/create-test-router";
 import { collectLoaderQueryKeys } from "@/test/loader-helpers";
@@ -15,13 +15,13 @@ import { createTestQueryClient, expectText } from "@/test/page-helpers";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする
-vi.mock("@/server/functions/notes", () => ({
+vi.mock("@/features/notes/functions", () => ({
   listNotes: vi.fn(),
   createNote: vi.fn(),
   removeNote: vi.fn(),
 }));
 
-const { listNotes, removeNote } = await import("@/server/functions/notes");
+const { listNotes, removeNote } = await import("@/features/notes/functions");
 
 import { loadNotesPageData, Route } from "./index";
 

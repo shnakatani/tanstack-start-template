@@ -17,16 +17,20 @@ paths:
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
 - 公式の詳細は TanStack の intent skill (`@tanstack/router-plugin` / `@tanstack/router-core`) を load して確認する
 
-## hooks と lib と server の境界
+## features と hooks と lib と server の境界
 
-| 配置先        | 内容                                                              |
-| ------------- | ----------------------------------------------------------------- |
-| `src/hooks/`  | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義 |
-| `src/lib/`    | React に依存しない純粋ロジック・スキーマ・型                      |
-| `src/server/` | server 専用モジュール (DB アクセス、server function の実装)       |
+| 配置先                   | 内容                                                                  |
+| ------------------------ | --------------------------------------------------------------------- |
+| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / server fn) |
+| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義     |
+| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                     |
+| `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)  |
 
+- ドメインの UI は `src/routes/<domain>/` が持つ。file-based routing が既にドメイン単位なので `src/features/` へ移さない (ADR-0012)
+- `src/features/<domain>/` 内部の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)
 - React の hook を `src/lib/` に置かない
-- DB ドライバのような native binding を持つ依存は `src/server/` の外から import しない。client bundle に混ざるとビルドが壊れる (遮断は `vite.config.ts` の `tanstackStart` の `importProtection`)
+- client bundle へ入るファイルから `src/server/db/` と native binding を持つ依存を import しない。DB へ触るのは `.server.` を持つファイルとテスト、`src/server/db/` の中に限る (遮断は `vite.config.ts` の `tanstackStart` の `importProtection`)
+- `src/features/<domain>/` のファイル名と、横断的な server function の置き場所は `server-functions.md`「ファイルの置き場所と名前」が持つ
 - server function の認証・認可をどこへ置くかは `server-functions.md`「関心事の置き場所」が持つ
 
 ## テストとスクリプトの配置
@@ -47,7 +51,7 @@ paths:
 
 ## ルートファイル
 
-- ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。ビジネスロジックや複雑な UI は `-components/` か `src/lib/` へ切り出す
+- ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。ビジネスロジックや複雑な UI は `-components/` か、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
 - Route hooks (`Route.useSearch` / `Route.useNavigate`) はルートファイル内の薄い wrapper component で吸収し、ページ本体は値とハンドラを props で受ける named export にする。Route hooks を混ぜるとページテストがテスト router で動かない
 - loader 本体も named export の関数に切り出す。route 定義に直書きすると loader だけを呼ぶテストが書けない (実例: `src/routes/notes/index.tsx` の `loadNotesPageData`)
 - wrapper 側の search 読み出しと navigate 発行は `src/test/mount-route.tsx` で実 router 上へ載せて検証する。props 直渡しのテストだけでは wrapper が 1 度も実行されない

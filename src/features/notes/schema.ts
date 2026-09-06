@@ -22,7 +22,7 @@ function maxLengthMessage(label: string, maxLength: number): string {
  *
  * メッセージを明示するのは、フォームの FieldError がこの文言をそのまま描画するため。
  * 既定に任せると "Invalid length: Expected >=1 but received 0" のような英語の技術文言が
- * 日本語 UI に出る (notes-schema.test.ts が回帰として固定している)。
+ * 日本語 UI に出る (schema.test.ts が回帰として固定している)。
  */
 export const noteInputSchema = v.object({
   title: v.pipe(

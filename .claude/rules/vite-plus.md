@@ -58,7 +58,10 @@ staged: {
 
 ## 検証コマンド
 
-マージ前検証は `mise run verify` (`vp check` → `vp test run` → `vp build` → `scripts/checks/runtime/security-headers.ts`) を通す。最後の 1 つはビルド成果物を起動して実レスポンスを見るため build のあとに置く。CI は同じ順序を workflow に並べる。`vp run` のタスクへまとめない: Vite Task は親の環境変数を素通しせず、既定で結果をキャッシュするため gate がリプレイされる (ADR-0002)。
+マージ前検証は `mise run verify` (`vp check` → `vp test run` → `vp build` → `scripts/checks/runtime/security-headers.ts`) を通す。
+
+- 最後の 1 つはビルド成果物を起動して実レスポンスを見るため build のあとに置く。CI も同じ順序を workflow に並べる
+- `vp run` のタスクへまとめない。Vite Task は親の環境変数を素通しせず、既定で結果をキャッシュするため gate がリプレイされる (ADR-0002)
 
 `vp <name>` は built-in、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名でも別物になるため、built-in と同名の script を新設しない (ADR-0002)。
 

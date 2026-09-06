@@ -22,11 +22,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { removeNote } from "@/features/notes/functions";
+import { notesQueryOptions } from "@/features/notes/queries";
+import { NOTE_FIELD_LABELS, noteIdSchema } from "@/features/notes/schema";
 import { formatDateTime } from "@/lib/format-date-time";
 import { toastMutationError } from "@/lib/mutation-error";
-import { NOTE_FIELD_LABELS, noteIdSchema } from "@/lib/notes-schema";
-import { notesQueryOptions } from "@/lib/query-options/notes";
-import { removeNote } from "@/server/functions/notes";
 
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
 

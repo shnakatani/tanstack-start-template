@@ -1,10 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 import * as v from "valibot";
 
-import { noteSchema } from "@/lib/notes-schema";
-import type { Note, NoteId, NoteInput } from "@/lib/notes-schema";
 import { createDb } from "@/server/db";
 import { notes } from "@/server/db/schema";
+
+import { noteSchema } from "./schema";
+import type { Note, NoteId, NoteInput } from "./schema";
 
 export type NotesDb = ReturnType<typeof createDb>;
 

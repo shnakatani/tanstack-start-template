@@ -5,20 +5,20 @@ import { render } from "vitest-browser-react";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
+import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
-import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/lib/notes-schema";
 import { dispatchNativeClick } from "@/test/native-click";
 import { createTestQueryClient, expectEmptyTextboxes, expectText } from "@/test/page-helpers";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする
-vi.mock("@/server/functions/notes", () => ({
+vi.mock("@/features/notes/functions", () => ({
   listNotes: vi.fn(),
   createNote: vi.fn(),
   removeNote: vi.fn(),
 }));
 
-const { createNote } = await import("@/server/functions/notes");
+const { createNote } = await import("@/features/notes/functions");
 
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 
