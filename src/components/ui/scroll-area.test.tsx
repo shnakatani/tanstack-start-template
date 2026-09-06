@@ -81,14 +81,14 @@ async function renderOverflowing(axes: { x: boolean | number; y: boolean }) {
   const screen = await render(<Overflowing {...axes} />);
   const root = screen.getByTestId("gutter-root").element();
   const viewport = root.querySelector('[data-slot="scroll-area-viewport"]');
-  if (viewport === null) throw new Error("scroll-area-viewport が見つかりません");
+  expect.assert(viewport !== null, "scroll-area-viewport が見つかりません");
   // 溢れていない軸のバーは DOM に出ない (base-ui は keepMounted=false)
   const findBar = (orientation: "horizontal" | "vertical") =>
     root.querySelector(`[data-slot="scroll-area-scrollbar"][data-orientation="${orientation}"]`);
   async function expectBarMounted(orientation: "horizontal" | "vertical") {
     await expect.poll(() => findBar(orientation)).not.toBeNull();
     const bar = findBar(orientation);
-    if (bar === null) throw new Error(`${orientation} のスクロールバーが見つかりません`);
+    expect.assert(bar !== null, `${orientation} のスクロールバーが見つかりません`);
     return bar;
   }
   return { root, viewport, expectBarMounted };

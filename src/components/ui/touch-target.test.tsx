@@ -111,7 +111,7 @@ describe("touch target の AA 基準一本化 (ADR-0007)", () => {
     );
     const element = screen.getByRole("spinbutton", { name: "件数" }).element();
     const rect = element.getBoundingClientRect();
-    if (!(element instanceof HTMLInputElement)) throw new Error("spinbutton が input ではない");
+    expect.assert(element instanceof HTMLInputElement, "spinbutton が input ではない");
 
     await userEvent.click(element, {
       position: { x: rect.width - SPINNER_INSET_X, y: rect.height * 0.25 },

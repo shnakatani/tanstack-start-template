@@ -18,9 +18,7 @@ import { waitForAnimations } from "@/test/wait-for-animations";
 
 function findInputGroup(element: Element): HTMLElement {
   const inputGroup = element.closest('[data-slot="input-group"]');
-  if (!(inputGroup instanceof HTMLElement)) {
-    throw new Error("input-group 要素が見つからない");
-  }
+  expect.assert(inputGroup instanceof HTMLElement, "input-group 要素が見つからない");
   return inputGroup;
 }
 

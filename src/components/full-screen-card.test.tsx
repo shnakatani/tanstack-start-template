@@ -36,7 +36,7 @@ describe("FullScreenNotice", () => {
     const screen = await renderNotice();
 
     const card = screen.getByText("通知の見出し").element().closest('[data-slot="card"]');
-    if (card === null) throw new Error("カードが見つからない");
+    expect.assert(card !== null, "カードが見つからない");
     const rect = card.getBoundingClientRect();
 
     // FullScreenCard の p-6 = 24px

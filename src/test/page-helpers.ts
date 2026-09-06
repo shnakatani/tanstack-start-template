@@ -1,5 +1,5 @@
 import { QueryClient, type QueryClientConfig } from "@tanstack/react-query";
-import { assert, expect, vi } from "vite-plus/test";
+import { expect, vi } from "vite-plus/test";
 import type { render } from "vitest-browser-react";
 
 /**
@@ -28,7 +28,7 @@ export async function expectEmptyTextboxes(
   await vi.waitFor(() => {
     for (const label of labels) {
       const textbox = screen.getByRole("textbox", { name: label, exact: true }).element();
-      assert(textbox instanceof HTMLInputElement, `${label} の textbox が input ではない`);
+      expect.assert(textbox instanceof HTMLInputElement, `${label} の textbox が input ではない`);
       expect(textbox.value).toBe("");
     }
   });

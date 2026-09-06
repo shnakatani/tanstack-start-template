@@ -71,7 +71,7 @@ describe("ChoiceCard", () => {
     // FieldTitle も data-slot="field-label" を持つため、カードは label 要素で掴む
     const first = screen.getByText("チームA").element().closest("label");
     const second = screen.getByText("チームB").element().closest("label");
-    if (!first || !second) throw new Error("Choice Card が見つからない");
+    expect.assert(first !== null && second !== null, "Choice Card が見つからない");
 
     expect(
       Math.round(second.getBoundingClientRect().top - first.getBoundingClientRect().bottom),
@@ -83,7 +83,7 @@ describe("ChoiceCard", () => {
     const checkbox = screen.getByRole("checkbox", { name: /チームA/ }).element();
     const label = screen.getByText("チームA").element().closest("label");
     const field = screen.getByText("チームA").element().closest('[data-slot="field"]');
-    if (!label || !field) throw new Error("Choice Card が見つからない");
+    expect.assert(label !== null && field !== null, "Choice Card が見つからない");
 
     // Playwright の actionability が disabled 由来で click をタイムアウトさせるため、
     // label テキストへ直接 click イベントを送る
@@ -101,10 +101,10 @@ describe("ChoiceCard", () => {
     const screen = await render(<Harness withoutId />);
     const firstLabel = screen.getByText("チームA").element().closest("label");
     const secondLabel = screen.getByText("チームB").element().closest("label");
-    if (!firstLabel || !secondLabel) throw new Error("Choice Card が見つからない");
+    expect.assert(firstLabel !== null && secondLabel !== null, "Choice Card が見つからない");
     const firstInput = firstLabel.querySelector("input");
     const secondInput = secondLabel.querySelector("input");
-    if (!firstInput || !secondInput) throw new Error("checkbox の input が見つからない");
+    expect.assert(firstInput !== null && secondInput !== null, "checkbox の input が見つからない");
 
     expect(firstLabel.getAttribute("for")).toBe(firstInput.id);
     expect(secondLabel.getAttribute("for")).toBe(secondInput.id);
@@ -129,7 +129,7 @@ describe("ChoiceCard", () => {
   it("マウス環境でも 44px 以上の tap target になる", async () => {
     const screen = await render(<Harness />);
     const label = screen.getByText("チームA").element().closest("label");
-    if (!label) throw new Error("Choice Card が見つからない");
+    expect.assert(label !== null, "Choice Card が見つからない");
 
     expect(label.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
   });

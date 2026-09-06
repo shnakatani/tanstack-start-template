@@ -99,7 +99,7 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     const title = screen.getByText("視覚値確認").element();
     const footer = screen.getByText("操作").element();
 
-    if (media === null) throw new Error("alert-dialog-media が見つかりません");
+    expect.assert(media !== null, "alert-dialog-media が見つかりません");
 
     expect(getComputedStyle(popup).gap).toBe("24px");
     expect(getComputedStyle(popup).display).toBe("flex");

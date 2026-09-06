@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { assert, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 
 import {
   NOTE_BODY_MAX_LENGTH,
@@ -30,7 +30,7 @@ describe("noteInputSchema", () => {
 
   it("trims surrounding whitespace from title", () => {
     const result = v.safeParse(noteInputSchema, { ...valid, title: "  見出し  " });
-    assert(result.success);
+    expect.assert(result.success, "safeParse が失敗した");
     expect(result.output.title).toBe("見出し");
   });
 
@@ -81,7 +81,7 @@ describe("noteInputSchema", () => {
   describe("検証メッセージ", () => {
     function messagesOf(input: Record<string, unknown>): string[] {
       const result = v.safeParse(noteInputSchema, input);
-      assert(!result.success);
+      expect.assert(!result.success, "safeParse が成功してしまった");
       return result.issues.map((issue) => issue.message);
     }
 
@@ -146,7 +146,7 @@ describe("noteSchema", () => {
    */
   it("trim 済みの title をそのまま返す (変換しない)", () => {
     const result = v.safeParse(noteSchema, valid);
-    assert(result.success);
+    expect.assert(result.success, "safeParse が失敗した");
     expect(result.output.title).toBe(valid.title);
   });
 
@@ -163,7 +163,7 @@ describe("noteSchema", () => {
   // 入力側の trim は維持する (フォームの前後空白は正規化して保存する)
   it("noteInputSchema 側の trim は残っている", () => {
     const result = v.safeParse(noteInputSchema, { title: "  見出し  ", body: "" });
-    assert(result.success);
+    expect.assert(result.success, "safeParse が失敗した");
     expect(result.output.title).toBe("見出し");
   });
 });
@@ -171,7 +171,7 @@ describe("noteSchema", () => {
 describe("noteIdSchema", () => {
   it("accepts a positive integer id", () => {
     const result = v.safeParse(noteIdSchema, { id: 1 });
-    assert(result.success);
+    expect.assert(result.success, "safeParse が失敗した");
     expect(result.output.id).toBe(1);
   });
 
