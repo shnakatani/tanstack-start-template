@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 /**
  * production の本文に出す固定文言。原因ではなく次に取れる行動だけを伝える
@@ -59,12 +59,8 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
                   スタックトレース
                 </AccordionTrigger>
                 <AccordionContent>
-                  <ScrollArea
-                    className="rounded bg-muted"
-                    viewportClassName="max-h-48 data-has-overflow-x:pb-2.5 data-has-overflow-y:pr-2.5"
-                  >
+                  <ScrollArea className="rounded bg-muted" viewportClassName="max-h-48">
                     <pre className="p-3 text-xs">{error.stack}</pre>
-                    <ScrollBar orientation="horizontal" />
                   </ScrollArea>
                 </AccordionContent>
               </AccordionItem>
