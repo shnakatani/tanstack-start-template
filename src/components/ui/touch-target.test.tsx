@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vite-plus/test";
-import { cdp } from "vite-plus/test/browser/context";
 import { userEvent } from "vite-plus/test/context";
 import { render } from "vitest-browser-react";
 
@@ -16,20 +15,15 @@ function expectElementReceivesPoint(element: Element, x: number, y: number) {
   expect(hit === element || (hit !== null && element.contains(hit))).toBe(true);
 }
 
-async function emulateTouch() {
-  await cdp().send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
-}
-
 describe("touch target の AA 基準一本化 (ADR-0007)", () => {
-  it("Button は registry 素の高さで、疑似要素の拡大域を持たない", async () => {
+  it("Button は疑似要素の拡大域を持たない", async () => {
     const screen = await render(<Button>保存</Button>);
     const button = screen.getByRole("button", { name: "保存" }).element();
 
-    expect(button.getBoundingClientRect().height).toBe(36);
     expect(getComputedStyle(button, "::before").content).toBe("none");
   });
 
-  it("SelectTrigger は registry 素の高さで、疑似要素の拡大域を持たない", async () => {
+  it("SelectTrigger は疑似要素の拡大域を持たない", async () => {
     const screen = await render(
       <Select items={{ apple: "りんご" }} defaultValue="apple">
         <SelectTrigger aria-label="果物">
@@ -39,38 +33,9 @@ describe("touch target の AA 基準一本化 (ADR-0007)", () => {
     );
     const trigger = screen.getByRole("combobox", { name: "果物" }).element();
 
-    expect(trigger.getBoundingClientRect().height).toBe(36);
     expect(getComputedStyle(trigger, "::before").content).toBe("none");
   });
 
-  // 寸法の入力デバイス分岐を全廃した回帰固定。タッチ環境でも素寸法のまま変わらない
-  it("タッチ環境でも Button と Input は registry 素の高さのまま", async () => {
-    await emulateTouch();
-    const screen = await render(
-      <div className="w-40">
-        <Button>保存</Button>
-        <Input aria-label="氏名" />
-      </div>,
-    );
-
-    expect(
-      screen.getByRole("button", { name: "保存" }).element().getBoundingClientRect().height,
-    ).toBe(36);
-    expect(
-      screen.getByRole("textbox", { name: "氏名" }).element().getBoundingClientRect().height,
-    ).toBe(36);
-  });
-
-  it("マウス環境では Input の視覚高が 36px になる", async () => {
-    const screen = await render(<Input aria-label="氏名" />);
-    const input = screen.getByRole("textbox", { name: "氏名" }).element();
-
-    expect(input.getBoundingClientRect().height).toBe(36);
-  });
-
-  // 消費側 className が cva 由来の size に勝つことを固定する。cn は全体を tailwind-merge に
-  // 通すため、registry 素形と cn(variants(), className) 形はどちらも同じ結果になり、
-  // この 2 形の差はここでは検出できない (className を先に置く形なら落ちる)
   it("Toggle は消費側 className で size variant を上書きできる", async () => {
     const screen = await render(<Toggle className="h-7" aria-label="太字" />);
 

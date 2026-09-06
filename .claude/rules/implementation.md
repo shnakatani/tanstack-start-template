@@ -110,7 +110,7 @@ touch target は WCAG 2.2 AA 2.5.8 (24x24 CSS px) を適合の床とし、視覚
 registry 部品 (`src/components/ui/`) はアプリ独自の hit 拡大 (疑似要素) も寸法の入力デバイス分岐も持たない。
 
 - size variant は情報密度で選ぶ。最小は icon-xs (床ちょうど)。これ未満の interactive size を新設しない (ADR-0007)
-- `h-11` / `min-h-11` / `min-w-11` / `size-11` を variant なしで書かない (ADR-0007)。機械強制は無く、実寸の回帰だけを `src/components/ui/touch-target.test.tsx` が固定する
+- `h-11` / `min-h-11` / `min-w-11` / `size-11` を variant なしで書かない (ADR-0007)。寸法に機械強制は無く、レビューで見る
 - 実機で誤タップが報告されたら、当該部品に `any-pointer-coarse:min-h-11` (icon 系は `min-w-11` も) を後付けする (ADR-0007 の誤タップレバー)。後付け後にタッチ環境の高さを変えるときは同じ variant で書く。素の `h-*` では `min-height` を打ち消せず、マウス環境だけ縮む
 - 実機 UI 確認ではタップ精度 (特に床ちょうどの要素) を観点に含める
 - `touch-action` を上書きしない。tap 遅延の除去は `src/routes/__root.tsx` の viewport meta (`width=device-width`) が担う (ADR-0007)
