@@ -32,9 +32,8 @@ export const dialogScrollLayout = "flex min-h-0 flex-col gap-6";
  * `-mx-6` と `px-6` は `DialogContent` の `p-6` (`ui/dialog.tsx`) を打ち消して Viewport の
  * 内側へ移すためのペア。Viewport は `overflow: scroll` なので、内側に余白がないと入力の
  * focus ring (`input.tsx` の `focus-visible:ring-3` = box-shadow 3px) が境界でクリップされる。
- * **`DialogContent` の padding を変えたらこの値も変える**。破綻は 2 箇所で捕まる:
- * `ui/dialog.test.tsx` が `padding` を 24px に固定する assertion と、
- * `dialog-scroll-body.test.tsx` の本体の内容と見出しの左端一致。
+ * **`DialogContent` の padding を変えたらこの値も変える**。破綻は `dialog-scroll-body.test.tsx`
+ * の「本体の内容が見出しと同じ左端に揃う」ケースが捕まえる。
  *
  * `py-4` は同じクリップを縦で防ぐ。先頭・末尾に来た要素 (input の focus ring、`card.tsx` の
  * `ring-1`) が境界で切れる。横と違い打ち消す対象がないので値は独立で、消費側が個別に持って

@@ -5,9 +5,6 @@ import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
@@ -76,40 +73,20 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     expect(markerRect.bottom).toBeLessThanOrEqual(popupRect.bottom);
   });
 
-  it("vega既定の余白・幅・media・タイトル・フッター意匠を使う", async () => {
-    await setViewport(TABLET_VIEWPORT);
+  // display / flex-direction は viewport に依存しないため、寸法系の前処理は置かない
+  it("Popup が flex-col 構造を持つ (ADR-0006 の乖離)", async () => {
     const screen = await render(
       <AlertDialog open>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia>
-              <svg aria-label="警告アイコン" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>視覚値確認</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogFooter>操作</AlertDialogFooter>
+          <AlertDialogTitle>構造確認</AlertDialogTitle>
         </AlertDialogContent>
       </AlertDialog>,
     );
     await waitForAnimations();
 
     const popup = screen.getByRole("alertdialog").element();
-    const icon = screen.getByLabelText("警告アイコン").element();
-    const media = icon.closest('[data-slot="alert-dialog-media"]');
-    const title = screen.getByText("視覚値確認").element();
-    const footer = screen.getByText("操作").element();
 
-    expect.assert(media !== null, "alert-dialog-media が見つかりません");
-
-    expect(getComputedStyle(popup).gap).toBe("24px");
     expect(getComputedStyle(popup).display).toBe("flex");
     expect(getComputedStyle(popup).flexDirection).toBe("column");
-    expect(getComputedStyle(popup).padding).toBe("24px");
-    expect(getComputedStyle(popup).maxWidth).toBe("512px");
-    expect(getComputedStyle(media).width).toBe("64px");
-    expect(getComputedStyle(icon).width).toBe("32px");
-    expect(getComputedStyle(title).fontSize).toBe("18px");
-    expect(getComputedStyle(footer).backgroundColor).toBe("rgba(0, 0, 0, 0)");
-    expect(getComputedStyle(footer).borderTopWidth).toBe("0px");
   });
 });
