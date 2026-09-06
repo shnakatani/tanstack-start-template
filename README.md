@@ -103,8 +103,10 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 
 ### 認証
 
-`src/routes/_authed.tsx` を足して `beforeLoad` で判定し、保護する route を `src/routes/_authed/` 配下へ移す。
-`_` で始まるセグメントは生成される URL から除かれるため、パスを変えずに階層だけ足せる。
+差し替え点は `src/start.ts` の `functionMiddleware` (データの防御) と `src/routes/_authed.tsx` の `beforeLoad` (画面遷移) の 2 つ。両方を埋める。`beforeLoad` だけでは、server function を route 抜きで直接呼ばれたときに endpoint が無防備なまま残る (ADR-0011)。
+
+- `createStart` へ `functionMiddleware` を足し、`createMiddleware({ type: "function" })` で作った認証 middleware を渡す。これで全 server function が認証を通る。個々の `createServerFn` には書かない
+- `src/routes/_authed.tsx` を足して `beforeLoad` で未ログインを login へ送り、保護する route を `src/routes/_authed/` 配下へ移す。`_` で始まるセグメントは生成される URL から除かれるため、パスを変えずに階層だけ足せる
 
 ### デプロイ
 

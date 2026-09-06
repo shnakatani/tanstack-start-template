@@ -27,6 +27,7 @@ paths:
 
 - React の hook を `src/lib/` に置かない
 - DB ドライバのような native binding を持つ依存は `src/server/` の外から import しない。client bundle に混ざるとビルドが壊れる (遮断は `vite.config.ts` の `tanstackStart` の `importProtection`)
+- server function の認証・認可をどこへ置くかは `server-functions.md`「関心事の置き場所」が持つ
 
 ## テストとスクリプトの配置
 

@@ -17,6 +17,7 @@
 | [0008](0008-domain-types-derived-from-schemas.md)   | ドメイン型は valibot スキーマから導出する                                      | Accepted | 2026-08-17                    | 型は `InferOutput` の型エイリアスで導出し、手書きと二重に持たない。ORM の戻り値は読み出し口で `safeParse` に通す                                                                                        |
 | [0009](0009-react-compiler-adoption.md)             | メモ化は React Compiler に委ね、予防的なメモ化を強制しない                     | Accepted | 2026-08-17（2026-09-02 改訂） | Compiler を `infer` で導入し、適用は `@vitejs/plugin-react` の `compiler` オプション (oxc ネイティブ) で行う。bail out は欠陥として扱わず、`logDiagnostics` でビルドログへ出すだけにする                |
 | [0010](0010-number-input-without-type-number.md)    | 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる            | Accepted | 2026-09-02                    | `type="number"` は NVDA の要素一覧で unlabeled、Dragon で入力不可、ホイールで値が無言に増減する。推奨形の `type="text"` + `inputmode="numeric"` を出す NumberField を使い、パースとロケール整形も委ねる |
+| [0011](0011-server-fn-as-data-boundary.md)          | server function をデータ境界とし、全 fn 共通の middleware は global に載せる   | Accepted | 2026-09-06                    | 認証は `src/start.ts` の `functionMiddleware` へ載せて付け忘れる場所を無くす。`beforeLoad` は画面遷移の UX として残しデータ境界にしない。認可の base builder はロール分けが要るときに足す               |
 
 ## フォーマット規約
 
