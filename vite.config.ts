@@ -225,7 +225,9 @@ export default defineConfig({
       // -- vitest: @vitest/eslint-plugin の recommended (ADR-0004) --
       // assertFunctionNames は既定 (expect / expectTypeOf / assert / assertType) へ足すのでは
       // なく置換する。expect* が既定の 2 つとテスト側のアサーションヘルパーを覆い、残りは
-      // 名指しする。assert* まで広げると本体コードの引数検証関数まで assertion と見なす
+      // 名指しする。assert* まで広げると本体コードの引数検証関数まで assertion と見なす。
+      // `expect*` は `expect.assert` のようなメンバ呼び出しにも一致する (oxlint 1.79.0 で実測、
+      // 2026-09-06)。名指しの `assert` / `assertType` は直接の利用者が無くなっても残す
       "vitest/expect-expect": [
         "error",
         { assertFunctionNames: ["expect*", "assert", "assertType"] },

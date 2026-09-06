@@ -91,7 +91,10 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 ## assertion helper と型ナローイング
 
 - assertion を実行するテストヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` のパターンと、`vite.config.ts` に名指しした関数だけ。命名を外すとヘルパーだけを呼ぶテストが落ちる (ADR-0004)
-- テスト内の型ナローイングは `vite-plus/test` の `assert` を使う。`if` 内の `expect` は `vitest/no-conditional-expect` が報告するため、条件分岐で assertion を囲まない (ADR-0004)
+- 上の対象はテスト本文に現れる呼び出し名だけで、内部クロージャは含まない。値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない (実例: `src/test/page-helpers.ts`)
+- ヘルパーが受け取る引数の前提検査は型ナローイングと分けて `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガードで、`expect*` 命名の縛りも要らない (実例: `src/test/loader-helpers.ts`)
+- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は戻り値が `void` で型を絞らない (vitest-dev/vitest#8695)
+- 条件分岐で assertion を囲まない。`if` 内の `expect` は `vitest/no-conditional-expect` が報告する (ADR-0004)
 
 ## mock の注意点
 
