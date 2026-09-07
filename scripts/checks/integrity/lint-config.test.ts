@@ -49,7 +49,8 @@ const ALLOWED_INVISIBLE = ["src/routeTree.gen.ts"];
 
 interface PrintedConfig {
   plugins: string[];
-  jsPlugins: { name: string; specifier: string }[];
+  /** jsPlugin を 1 つも宣言していない設定では key ごと現れない */
+  jsPlugins?: { name: string; specifier: string }[];
   categories: Record<string, string>;
   options: Record<string, boolean>;
   rules: Record<string, unknown>;
@@ -102,8 +103,9 @@ describe("書いた設定が解決後も残っている", () => {
     // 無効なプラグインのルールは、ルール名が検証されるにもかかわらず解決後設定から消える。
     // 消えること自体が信号になるので、書いた側との差で名指し単位の取りこぼしを検出する。
     // jsPlugin のルールは有効でも出力に現れないため対象から外す (oxc#22117、ADR-0004)
+    const jsPluginNames = (printedConfig.jsPlugins ?? []).map((plugin) => plugin.name);
     const written = Object.keys(viteConfig.lint?.rules ?? {}).filter(
-      (rule) => !printedConfig.jsPlugins.some((plugin) => rule.startsWith(`${plugin.name}/`)),
+      (rule) => !jsPluginNames.some((name) => rule.startsWith(`${name}/`)),
     );
     if (written.length === 0) {
       throw new Error("vite.config.ts の lint.rules を読めていない");

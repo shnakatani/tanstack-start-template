@@ -36,13 +36,12 @@ export default defineConfig({
       "jsx-a11y",
     ],
     // oxlint はネイティブに tailwind 領域のルールを持たない。JS プラグインとして載せる
-    // (ADR-0004)。プラグイン名は package が meta.name で持つ better-tailwindcss になる
+    // (ADR-0004)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
     jsPlugins: [{ name: "better-tailwindcss", specifier: "eslint-plugin-better-tailwindcss" }],
     settings: {
       "better-tailwindcss": {
-        // theme の正本。解決に失敗すると素の Tailwind theme へ暗黙に落ち、初期化したはずの
-        // 既定 palette が既知クラスとして復活する。プラグインは警告を診断へ添えるだけなので、
-        // 解決の成否は解決後設定に出ないため、fixture (bg-red-500) の抑制が不要になることで見る
+        // theme の正本。解決に失敗すると theme が空になり、utility クラスが軒並み未知として
+        // 報告される。診断には entryPoint の設定を疑うよう促す文言が付く (ADR-0004)
         entryPoint: "src/styles.css",
       },
     },

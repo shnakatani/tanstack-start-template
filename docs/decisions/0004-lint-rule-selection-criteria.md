@@ -164,7 +164,8 @@ silent failure ではないので、この解決を見張る検査は置かな�
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書く。
 診断コードの接頭辞・`rules` のキー・抑制 directive は同じ名前を共有し、その名前は `name` を書けばその値、書かなければ `meta.name` から `eslint-plugin` / `oxlint-plugin` の接頭辞を落とした値になる (oxlint の `normalizePluginName`。scope は残るので `@scope/eslint-plugin-foo` は `@scope/foo`)。
-`name` を書くのは、設定を読んだだけでその名前が分かるようにするためである。
+`name` に書けるのは接頭辞を落とした後の形だけで、`eslint-plugin-better-tailwindcss` のような値は `Plugin alias ... is not valid. Strip plugin package prefixes` で拒否される。
+`name` を書くのは、設定を読んだだけでその名前が分かるようにするためである。名前そのものは oxlint が上のとおり強制するので、検査で固定する必要はない。
 `rules` のキーだけは接頭辞を落とす前の名前でも通ってしまう一方、抑制 directive はその名前では効かない。両方を package 名で揃えると、ルールは有効なまま抑制だけが無言で外れる。
 
 JS プラグインは lint 時間を伸ばす。測るときは `time vp lint` を 2 回ずつ実行して 2 回目同士を比べる (1 回目には解決のコストが乗る)。
