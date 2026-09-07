@@ -10,15 +10,15 @@ paths:
 
 プラグインの設定は ADR-0003、ルールの選定は ADR-0004。ここは書き方を持つ。
 
-| キー                | 規範                                                                                                                                                                                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `plugins`           | 既定集合 (typescript / unicorn / oxc) を追加ではなく**置換**する。`OXLINT_DEFAULT_PLUGINS` を spread して追加分を続ける。足したら `scripts/checks/integrity/lint-config.test.ts` の `EXPECTED_PLUGINS` にも足す (ADR-0003)                              |
-| `categories`        | `correctness` と `perf` だけを error で入れる。他のカテゴリは丸ごと有効にしない (ADR-0004)                                                                                                                                                              |
-| `rules`             | プラグインごとの上流 recommended を基準にした名指しと、合わないルールの `"off"`。`"warn"` は exit code に出ないため `"error"` で書く (ADR-0004)                                                                                                         |
-| `overrides`         | テストファイルの型ルール緩和はここに書く (ADR-0004)。`categories` は持てず、`plugins` はトップレベルと違い継承集合へ**追加**する。registry を領域ごと除外する用途では使わない (統制は ADR-0006 の許容リスト)                                            |
-| `jsPlugins`         | ESLint プラグインを oxlint 経由で読み込む (ESLint v9+ 互換)。足す前に oxlint ネイティブで代替できないか確認する (JS 実行で lint 時間が伸びる)。エントリは `{ name, specifier }` で書く。採用実績は tailwind 領域の `better-tailwindcss` 1 つ (ADR-0004) |
-| `options.typeAware` | 型情報を使う lint ルールを有効化                                                                                                                                                                                                                        |
-| `options.typeCheck` | 型検査を lint と同じ実行に含める。走るのは `tsc` ではなく tsgolint (typescript-go) で、診断は `typescript(TS2304)` の形で出る                                                                                                                           |
+| キー                | 規範                                                                                                                                                                                                                                                       |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plugins`           | 既定集合 (typescript / unicorn / oxc) を追加ではなく**置換**する。`OXLINT_DEFAULT_PLUGINS` を spread して追加分を続ける。足したら `scripts/checks/integrity/lint-config.test.ts` の `EXPECTED_PLUGINS` にも足す (ADR-0003)                                 |
+| `categories`        | `correctness` と `perf` だけを error で入れる。他のカテゴリは丸ごと有効にしない (ADR-0004)                                                                                                                                                                 |
+| `rules`             | プラグインごとの上流 recommended を基準にした名指しと、合わないルールの `"off"`。`"warn"` は exit code に出ないため `"error"` で書く (ADR-0004)                                                                                                            |
+| `overrides`         | テストファイルの型ルール緩和はここに書く (ADR-0004)。`categories` は持てず、`plugins` はトップレベルと違い継承集合へ**追加**する。registry を領域ごと除外する用途では使わない (統制は ADR-0006 の許容リスト)                                               |
+| `jsPlugins`         | ESLint プラグインを oxlint 経由で読み込む (ESLint v9+ 互換)。足す前に oxlint ネイティブで代替できないか確認する (JS 実行で lint 時間が伸びる)。エントリは `{ name, specifier }` で書く。抑制 directive をその `name` 以外で書くと無言で効かない (ADR-0004) |
+| `options.typeAware` | 型情報を使う lint ルールを有効化                                                                                                                                                                                                                           |
+| `options.typeCheck` | 型検査を lint と同じ実行に含める。走るのは `tsc` ではなく tsgolint (typescript-go) で、診断は `typescript(TS2304)` の形で出る                                                                                                                              |
 
 - 有効でないプラグインのルールを `rules` に書くと、ルール名の誤りと違って無言で無視される。**設定してあることは、その検査が動いていることを意味しない** (ADR-0003)
 - lint 設定は `vite.config.ts` の `lint` に集約する。サブディレクトリの `.oxlintrc.json` は `vp lint` が読まず、丸ごと no-op になる (ADR-0003)

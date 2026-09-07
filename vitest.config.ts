@@ -6,10 +6,6 @@ const sharedExclude = [
   "**/dist/**",
   "**/.claude/worktrees/**",
   "**/.claude/skills/**",
-  // fixture は lint の検査対象であってテストではない。現在は .test.* 名の fixture を
-  // 置いていないので空振りするが、置いた瞬間に checks-integrity の
-  // scripts/checks/integrity/**/*.test.ts へ一致して収集される
-  "**/scripts/checks/integrity/fixtures/**",
 ];
 
 export default defineConfig({

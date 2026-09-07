@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { relative, resolve } from "node:path";
+import { resolve } from "node:path";
 
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 
@@ -12,7 +12,6 @@ import { REPO_ROOT } from "../../lib/repo-root";
  *
  * 突き合わせの相手は `--print-config` の解決後設定にする。ルールが実際に発火することや、
  * categories の格上げで severity が上がることは oxlint 自身の責務なので踏まない。
- * fixture を置くのは、解決後設定に現れない 1 件だけ。
  */
 
 const VP = resolve(REPO_ROOT, "node_modules", ".bin", "vp");
@@ -28,11 +27,6 @@ const EXPECTED_PLUGINS = [
   "jsdoc",
   "vitest",
   "jsx-a11y",
-];
-
-/** jsPlugin の宣言。診断コードの接頭辞になるのは meta.name で、specifier からは導けない */
-const EXPECTED_JS_PLUGINS = [
-  { name: "better-tailwindcss", specifier: "eslint-plugin-better-tailwindcss" },
 ];
 
 /** 緩和の範囲。広げると本体コードでも no-unsafe-* が無効になる */
@@ -53,21 +47,14 @@ const SOURCE_ROOTS = ["src", "scripts"];
 /** 追跡されているのに lint されなくてよい唯一のソース。生成物 (ADR 対象外) */
 const ALLOWED_INVISIBLE = ["src/routeTree.gen.ts"];
 
-const JS_PLUGIN_FIXTURE = "scripts/checks/integrity/fixtures/lint-config/better-tailwindcss.tsx";
-
 interface PrintedConfig {
   plugins: string[];
-  jsPlugins: { name: string; specifier: string }[];
+  /** jsPlugin を 1 つも宣言していない設定では key ごと現れない */
+  jsPlugins?: { name: string; specifier: string }[];
   categories: Record<string, string>;
   options: Record<string, boolean>;
   rules: Record<string, unknown>;
   overrides: { files: string[]; rules: Record<string, unknown> }[];
-}
-
-interface Diagnostic {
-  message: string;
-  severity: string;
-  filename?: string;
 }
 
 /** spawn 自体の失敗を「検査が通った」と読み違えないよう例外で落とす */
@@ -116,8 +103,9 @@ describe("書いた設定が解決後も残っている", () => {
     // 無効なプラグインのルールは、ルール名が検証されるにもかかわらず解決後設定から消える。
     // 消えること自体が信号になるので、書いた側との差で名指し単位の取りこぼしを検出する。
     // jsPlugin のルールは有効でも出力に現れないため対象から外す (oxc#22117、ADR-0004)
+    const jsPluginNames = (printedConfig.jsPlugins ?? []).map((plugin) => plugin.name);
     const written = Object.keys(viteConfig.lint?.rules ?? {}).filter(
-      (rule) => !rule.startsWith("better-tailwindcss/"),
+      (rule) => !jsPluginNames.some((name) => rule.startsWith(`${name}/`)),
     );
     if (written.length === 0) {
       throw new Error("vite.config.ts の lint.rules を読めていない");
@@ -132,12 +120,6 @@ describe("書いた設定が解決後も残っている", () => {
       missing,
       "書いたルールが解決後設定から消えた。plugins から該当プラグインが落ちていないか (ADR-0003)",
     ).toEqual([]);
-  });
-
-  it("jsPlugins をプラグイン名込みで宣言している", () => {
-    // specifier だけの文字列形だと、rules に書く `better-tailwindcss/*` の接頭辞と
-    // 結びつく相手が無くなる
-    expect(printedConfig.jsPlugins).toEqual(EXPECTED_JS_PLUGINS);
   });
 
   it("categories の格上げが効いている", () => {
@@ -161,27 +143,6 @@ describe("書いた設定が解決後も残っている", () => {
       printedConfig.overrides.flatMap((override) => Object.keys(override.rules)).sort(),
       "緩和するルールが変わった。増やすとテストコードの型検査がその分だけ緩む",
     ).toEqual([...EXPECTED_OVERRIDE_RULES].sort());
-  });
-});
-
-/**
- * jsPlugin のロードと `lint.settings` の解決は、どちらも解決後設定に現れない。
- * fixture の directive が要らなくなることで検出する (fixture 自身のコメントを参照)。
- */
-describe("解決後設定に現れない検査", () => {
-  it("jsPlugin がロードされ settings が解決している", () => {
-    const result = runVp([
-      "lint",
-      "--report-unused-disable-directives",
-      "-f",
-      "json",
-      JS_PLUGIN_FIXTURE,
-    ]);
-    const diagnostics: Diagnostic[] = parseJsonOutput(result).diagnostics;
-    expect(
-      diagnostics.map((diagnostic) => diagnostic.message),
-      `${JS_PLUGIN_FIXTURE} の directive が不要になった。jsPlugin の解決か settings.entryPoint を疑う`,
-    ).toEqual([]);
   });
 });
 
@@ -213,10 +174,5 @@ describe("lint の可視範囲", () => {
       tracked.filter((path) => !linted.has(path)),
       "lint から見えないソースが増えた。ignorePatterns と .gitignore を疑う",
     ).toEqual(ALLOWED_INVISIBLE);
-  });
-
-  it("fixture が lint の対象に入っている", () => {
-    // 対象から外れると directive が評価されず、上の jsPlugin 検査が空振りする
-    expect(linted.has(relative(REPO_ROOT, resolve(REPO_ROOT, JS_PLUGIN_FIXTURE)))).toBe(true);
   });
 });

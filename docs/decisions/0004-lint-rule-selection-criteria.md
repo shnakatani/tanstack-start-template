@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-08-17
 - Revised: 2026-09-02 (React Compiler の診断が per-category ルールへ分割されたのに伴い、基準へ eslint-plugin-react-hooks を足し `react/unsupported-syntax` を名指しへ加えた)
+- Revised: 2026-09-07 (jsPlugin の名前の決まり方と `settings.entryPoint` の解決失敗の挙動を実測に合わせ、fixture による検査を撤去した)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -124,7 +125,7 @@ off にする判断は違反が出たときに個別に行う (registry コー�
 `--print-config` の `rules` は「カテゴリで有効になったもの」と「設定で名指ししたもの」の和なので、名前が出る = 有効と読んでよい。
 
 **逆は成り立たない。** `--print-config` は JS プラグインを遅延ロードする前に短絡し、プラグイン由来のルール名を未知として捨てる (oxc-project/oxc#22117)。
-`jsPlugins` の宣言自体は出力に現れるが `better-tailwindcss/no-unknown-classes` と `no-restricted-classes` は現れず、出力だけ見ると無効に見える。lint 実行時の発火は正常で、`lint-config.test.ts` の fixture が押さえている。
+`jsPlugins` の宣言自体は出力に現れるが `better-tailwindcss/no-unknown-classes` と `no-restricted-classes` は現れず、出力だけ見ると無効に見える。lint 実行時の発火は正常である。
 
 ### unicorn を選定しない理由
 
@@ -157,11 +158,15 @@ oxlint は tailwind 領域のルールをネイティブに持たないため、
 `var(--...)` を含む任意値を除外するのは、`color-mix(in oklch, var(--secondary), var(--foreground) 5%)` のように token を材料にして値を導く書き方が semantic token の正規の使い方だからである。除外しないと registry の `button.tsx` が落ちる。
 
 `settings["better-tailwindcss"].entryPoint` は `src/styles.css` を指す。
-解決に失敗するとプラグインは素の Tailwind theme へ暗黙に落ち、初期化したはずの既定 palette が既知クラスとして復活する。
-`lint-config.test.ts` の fixture (`bg-red-500`) が、この解決も併せて見張る。抑制の directive が不要になることで検出する。
+解決に失敗すると theme が空になり、utility クラスが軒並み未知として報告される。
+2026-09-07 に存在しないパスで実測したところ `vp check` はエラーで落ち、各診断が `Option \`entryPoint\` may be misconfigured` を添えていた。
+silent failure ではないので、この解決を見張る検査は置かない。
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書く。
-診断コードの接頭辞になるのはプラグイン側の `meta.name` で specifier からは導けず、文字列形だと fixture の突き合わせが名前を失う。
+診断コードの接頭辞・`rules` のキー・抑制 directive は同じ名前を共有し、その名前は `name` を書けばその値、書かなければ `meta.name` から `eslint-plugin` / `oxlint-plugin` の接頭辞を落とした値になる (oxlint の `normalizePluginName`。scope は残るので `@scope/eslint-plugin-foo` は `@scope/foo`)。
+`name` に書けるのは接頭辞を落とした後の形だけで、`eslint-plugin-better-tailwindcss` のような値は `Plugin alias ... is not valid. Strip plugin package prefixes` で拒否される。
+`name` を書くのは、設定を読んだだけでその名前が分かるようにするためである。名前そのものは oxlint が上のとおり強制するので、検査で固定する必要はない。
+`rules` のキーだけは接頭辞を落とす前の名前でも通ってしまう一方、抑制 directive はその名前では効かない。両方を package 名で揃えると、ルールは有効なまま抑制だけが無言で外れる。
 
 JS プラグインは lint 時間を伸ばす。測るときは `time vp lint` を 2 回ずつ実行して 2 回目同士を比べる (1 回目には解決のコストが乗る)。
 
