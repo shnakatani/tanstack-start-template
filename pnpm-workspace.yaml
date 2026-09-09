@@ -51,7 +51,7 @@ minimumReleaseAgeExclude:
 # 組み合わせになる (voidzero-dev/vite-plus#2356)。bot 側は dependabot.yml の vite-plus グループが束ねる
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.3.0
-  vitest: 4.1.11
+  vitest: 5.0.0
   vite-plus: 0.3.0
   "@vitest/browser-playwright": 4.1.11
   "@vitest/coverage-v8": 4.1.11
