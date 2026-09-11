@@ -317,7 +317,7 @@ describe("FormSelectField", () => {
     await screen.getByRole("option", { name: "有効" }).click();
 
     expect(onChangeValue).toHaveBeenCalledWith("active");
-    expect(trigger.element().textContent).toContain("有効");
+    await expect.element(trigger).toHaveTextContent("有効");
   });
 
   it("options 外の値は form 値へ流さず、配線不整合を警告する", async () => {
@@ -348,7 +348,7 @@ describe("FormSelectField", () => {
     const trigger = screen.getByRole("combobox", { name: "状態" });
     await trigger.click();
     await screen.getByRole("option", { name: "有効" }).click();
-    expect(screen.getByTestId("current-value").element().textContent).toBe("active");
+    await expect.element(screen.getByTestId("current-value")).toHaveTextContent(/^active$/);
 
     await screen.getByRole("button", { name: "候補を入れ替える" }).click();
 
@@ -358,7 +358,7 @@ describe("FormSelectField", () => {
         { currentValue: "active", options: ARCHIVED_OPTIONS },
       );
     });
-    expect(screen.getByTestId("current-value").element().textContent).toBe("active");
+    await expect.element(screen.getByTestId("current-value")).toHaveTextContent(/^active$/);
   });
 
   it("disabled で正典ペア (Field data-disabled + trigger disabled) が両方付く", async () => {
@@ -440,12 +440,9 @@ describe("FormCheckboxField", () => {
 
     await screen.getByText("編集者として割り当て可能").click();
 
-    expect(
-      screen
-        .getByRole("checkbox", { name: "編集者として割り当て可能" })
-        .element()
-        .getAttribute("aria-checked"),
-    ).toBe("true");
+    await expect
+      .element(screen.getByRole("checkbox", { name: "編集者として割り当て可能" }))
+      .toHaveAttribute("aria-checked", "true");
   });
 
   it("validators つきで誤用すると表示不能な検証エラーを警告する", async () => {

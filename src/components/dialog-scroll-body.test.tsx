@@ -64,9 +64,10 @@ async function openAt(viewport: Viewport, fieldCount?: number) {
   await setViewport(viewport);
   const screen = await renderFormDialog(fieldCount);
   await screen.getByText("開く").first().click();
+
+  const popup = await screen.getByRole("dialog").findElement();
   await waitForAnimations();
 
-  const popup = screen.getByRole("dialog").element();
   const query = (slot: string) => {
     const found = popup.querySelector(`[data-slot="${slot}"]`);
     expect.assert(found !== null, `data-slot="${slot}" が見つからない`);
