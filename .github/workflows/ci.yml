@@ -26,7 +26,7 @@ jobs:
       # まとめて用意する (setup-node と pnpm のセットアップは要らない)。
       # 版は exact で指定する。公式が「Do not use the v1 tag. The v1 tag no longer
       # receives updates.」と明記しており、追随は dependabot の github-actions に任せる
-      - uses: voidzero-dev/setup-vp@v1.18.0
+      - uses: voidzero-dev/setup-vp@v1.19.0
         with:
           cache: true
 
