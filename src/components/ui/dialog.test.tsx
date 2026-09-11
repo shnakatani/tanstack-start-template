@@ -46,9 +46,10 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
+
+    const popup = await screen.getByRole("dialog").findElement();
     await waitForAnimations();
 
-    const popup = screen.getByRole("dialog").element();
     const viewport = popup.parentElement;
     expect(viewport?.getAttribute("data-slot")).toBe("dialog-viewport");
 
@@ -66,22 +67,25 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
+
+    const popup = await screen.getByRole("dialog").findElement();
     await waitForAnimations();
 
-    expectWithinViewport(screen.getByRole("dialog").element());
+    expectWithinViewport(popup);
   });
 
   it("popup 自身がスクロールして最下部コンテンツまで到達できる（backstop 挙動）", async () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
+
+    const popup = await screen.getByRole("dialog").findElement();
     await waitForAnimations();
 
-    const popup = screen.getByRole("dialog").element();
     // 内容が popup の表示領域を超えている = スクロールが必要な状態
     expect(popup.scrollHeight).toBeGreaterThan(popup.clientHeight);
 
-    const marker = screen.getByText(BOTTOM_MARKER).element();
+    const marker = await screen.getByText(BOTTOM_MARKER).findElement();
     const popupRect = popup.getBoundingClientRect();
     expect(marker.getBoundingClientRect().top).toBeGreaterThan(popupRect.bottom);
 
@@ -96,9 +100,10 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     await setViewport(SHORT_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
+
+    const popup = await screen.getByRole("dialog").findElement();
     await waitForAnimations();
 
-    const popup = screen.getByRole("dialog").element();
     expect(window.innerHeight).toBe(SHORT_VIEWPORT.height);
     expectWithinViewport(popup);
     // 低 viewport でもスクロールで最下部へ到達できる

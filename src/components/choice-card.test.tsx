@@ -46,9 +46,9 @@ describe("ChoiceCard", () => {
     const screen = await render(<Harness />);
     const checkbox = screen.getByRole("checkbox", { name: /チームB/ });
 
-    expect(checkbox.element().getAttribute("data-checked")).toBeNull();
+    await expect.element(checkbox).not.toHaveAttribute("data-checked");
     await screen.getByText("チームB").click();
-    expect(checkbox.element().getAttribute("data-checked")).not.toBeNull();
+    await expect.element(checkbox).toHaveAttribute("data-checked");
   });
 
   it("trailing はタイトルと checkbox の間に置かれる", async () => {
@@ -80,7 +80,7 @@ describe("ChoiceCard", () => {
 
   it("disabled の行はクリックしてもトグルせず、押せると主張しない", async () => {
     const screen = await render(<Harness disabled />);
-    const checkbox = screen.getByRole("checkbox", { name: /チームA/ }).element();
+    const checkbox = screen.getByRole("checkbox", { name: /チームA/ });
     const label = screen.getByText("チームA").element().closest("label");
     const field = screen.getByText("チームA").element().closest('[data-slot="field"]');
     expect.assert(label !== null && field !== null, "Choice Card が見つからない");
@@ -89,7 +89,7 @@ describe("ChoiceCard", () => {
     // label テキストへ直接 click イベントを送る
     dispatchNativeClick(screen.getByText("チームA").element());
 
-    expect(checkbox.getAttribute("data-checked")).toBeNull();
+    await expect.element(checkbox).not.toHaveAttribute("data-checked");
     expect(getComputedStyle(label).cursor).toBe("default");
     expect(field.getAttribute("data-disabled")).not.toBeNull();
   });
@@ -112,18 +112,12 @@ describe("ChoiceCard", () => {
 
     // 2 行目のラベルを押しても 1 行目は連動しない
     await screen.getByText("チームB").click();
-    expect(
-      screen
-        .getByRole("checkbox", { name: /チームB/ })
-        .element()
-        .getAttribute("data-checked"),
-    ).not.toBeNull();
-    expect(
-      screen
-        .getByRole("checkbox", { name: /チームA/ })
-        .element()
-        .getAttribute("data-checked"),
-    ).toBeNull();
+    await expect
+      .element(screen.getByRole("checkbox", { name: /チームB/ }))
+      .toHaveAttribute("data-checked");
+    await expect
+      .element(screen.getByRole("checkbox", { name: /チームA/ }))
+      .not.toHaveAttribute("data-checked");
   });
 
   it("マウス環境でも 44px 以上の tap target になる", async () => {

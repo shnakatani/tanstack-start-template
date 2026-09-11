@@ -13,6 +13,11 @@
  * Spinner 等の無限アニメーションは `finished` が解決しないため除外する
  * (待ち続けるとテストがタイムアウトするだけのため。ただし無限アニメーション要素
  * 自体の rect を測るテストでは transform が毎フレーム動くので別途配慮が要る)。
+ *
+ * 待つのは呼んだ時点で登録済みのアニメーションだけで、要素の出現は待たない。
+ * popup を開く操作の直後に置くと、まだ mount されていない間は対象が 0 件になり
+ * 即座に解決してアニメーション途中の値を測る。mount は `findElement()` が待つので、
+ * `findElement()` → この helper → 実測 の順に置く (ADR-0013)。
  */
 export async function waitForAnimations(root: Element = document.body): Promise<void> {
   const pending = root.getAnimations({ subtree: true }).filter(hasFiniteDuration);

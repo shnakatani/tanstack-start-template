@@ -44,9 +44,10 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
   it("長身コンテンツでも popup 全体が viewport 内に収まる", async () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallAlertDialog();
+
+    const popup = await screen.getByRole("alertdialog").findElement();
     await waitForAnimations();
 
-    const popup = screen.getByRole("alertdialog").element();
     // base-ui 公式 anatomy: Popup は Viewport (配置コンテナ) の中に置く
     expect(popup.parentElement?.getAttribute("data-slot")).toBe("alert-dialog-viewport");
 
@@ -56,12 +57,13 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
   it("popup 自身がスクロールして最下部コンテンツまで到達できる", async () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallAlertDialog();
+
+    const popup = await screen.getByRole("alertdialog").findElement();
     await waitForAnimations();
 
-    const popup = screen.getByRole("alertdialog").element();
     expect(popup.scrollHeight).toBeGreaterThan(popup.clientHeight);
 
-    const marker = screen.getByText(BOTTOM_MARKER).element();
+    const marker = await screen.getByText(BOTTOM_MARKER).findElement();
     expect(marker.getBoundingClientRect().top).toBeGreaterThan(
       popup.getBoundingClientRect().bottom,
     );
@@ -82,9 +84,8 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
         </AlertDialogContent>
       </AlertDialog>,
     );
+    const popup = await screen.getByRole("alertdialog").findElement();
     await waitForAnimations();
-
-    const popup = screen.getByRole("alertdialog").element();
 
     expect(getComputedStyle(popup).display).toBe("flex");
     expect(getComputedStyle(popup).flexDirection).toBe("column");

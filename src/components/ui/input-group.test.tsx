@@ -50,10 +50,11 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
     );
 
     await screen.getByRole("combobox", { name: "開く" }).click();
-    await waitForAnimations();
 
     const input = screen.getByRole("combobox", { name: "検索" });
-    const inputGroup = findInputGroup(input.element());
+    const inputGroup = findInputGroup(await input.findElement());
+    await waitForAnimations();
+
     const borderBefore = getComputedStyle(inputGroup).borderColor;
 
     await input.click();
@@ -79,7 +80,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
     await expect.element(input).toHaveFocus();
     await waitForAnimations();
 
-    const inputGroup = findInputGroup(input.element());
+    const inputGroup = findInputGroup(await input.findElement());
     expect(maxShadowSpread(getComputedStyle(inputGroup).boxShadow)).toBe(3);
   });
 
@@ -112,14 +113,16 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
     );
 
     await screen.getByRole("combobox", { name: "エラー入力を開く" }).click();
-    await waitForAnimations();
 
     const input = screen.getByRole("combobox", { name: "エラー検索" });
+    await input.findElement();
+    await waitForAnimations();
+
     await input.click();
     await expect.element(input).toHaveFocus();
     await waitForAnimations();
 
-    const inputGroup = findInputGroup(input.element());
+    const inputGroup = findInputGroup(await input.findElement());
     expect(maxShadowSpread(getComputedStyle(inputGroup).boxShadow)).toBe(3);
   });
 });

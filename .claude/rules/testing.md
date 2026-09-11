@@ -142,6 +142,9 @@ dispatchNativeClick(screen.getByRole("button", { name: "削除" }).element());
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変更したら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
 - 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` に明示してあり、`DEFAULT_VIEWPORT` と一致させて管理する
 - 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる
+- 開く操作のあとは `findElement()` → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
+- 操作の結果として現れる要素の生 DOM は `await locator.findElement()` で取る。`element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
+- 操作後の属性・テキストは `await expect.element(locator).toHaveAttribute(...)` で検証する。`element().getAttribute(...)` を同期で読むと更新前の値を拾う (ADR-0013)
 - Dialog / Popover / Sheet の close 直後に `.query()).toBeNull()` を assert する場合は `vi.waitFor` で包む (base-ui は `animate-out` 完了まで unmount を遅らせる)
 - `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む
 - flex column の中に「溢れるコンテンツ」をテスト用に作るときは `height` ではなく `minHeight` を使う (flex item は既定で縮むため `height` では溢れない)

@@ -65,8 +65,8 @@ describe("SegmentedRadioGroup", () => {
 
     // ToggleGroup と違い radio は解除経路を持たないため、変更通知そのものが起きない
     expect(onValueChange).not.toHaveBeenCalled();
-    expect(selected.element().getAttribute("aria-checked")).toBe("true");
-    expect(selected.element().hasAttribute("data-checked")).toBe(true);
+    await expect.element(selected).toHaveAttribute("aria-checked", "true");
+    await expect.element(selected).toHaveAttribute("data-checked");
   });
 
   it("ラベルの文字数が違ってもセグメントが等幅になる", async () => {
