@@ -1,4 +1,5 @@
 import { NumberField } from "@base-ui/react/number-field";
+import { cn } from "cn";
 import { type ComponentProps, useId } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFieldContext } from "@/hooks/form-context";
-import { cn } from "@/lib/utils";
 
 /**
  * フォームの配線部品。
@@ -57,7 +57,7 @@ interface FormTextFieldProps
 
 /**
  * consumer の className を先、invalid の text-destructive を後に置く。
- * tailwind-merge は後勝ちなので、逆順にすると消費側の色指定が検証エラーの色を打ち消し、
+ * `cn` の衝突解決は後勝ちなので、逆順にすると消費側の色指定が検証エラーの色を打ち消し、
  * エラーであることが色から読み取れなくなる (form-fields.test.tsx が回帰として固定している)。
  */
 function fieldLabelClassName(consumerClassName: string | undefined, invalid: boolean): string {

@@ -1,10 +1,9 @@
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
-
-import { cn } from "@/lib/utils";
+import { cn } from "cn";
 
 interface ScrollAreaProps extends ScrollAreaPrimitive.Root.Props {
   // 呼び出し側から Viewport の layout class を指定できるよう保全する。
-  // base-ui の Viewport.Props["className"] は callback 形も許すが、clsx は関数を silent に
+  // base-ui の Viewport.Props["className"] は callback 形も許すが、cn は関数を silent に
   // 捨てるため文字列に限定する (callback を渡した caller が無音で無効化されるのを防ぐ)
   viewportClassName?: string;
 }
