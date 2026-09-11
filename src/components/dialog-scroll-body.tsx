@@ -1,7 +1,7 @@
+import { cn } from "cn";
 import type { ReactNode } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
 
 /**
  * 内部スクロール方式のダイアログで、`DialogHeader` / `DialogFooter` の間に置く
@@ -57,8 +57,9 @@ export const dialogScrollLayout = "flex min-h-0 flex-col gap-6";
  * 常時受けるので、末尾側の余白を持たない器での既定の退避そのものは要る (ADR-0006)。
  * `px-6` がバー幅を下回ると本文がバーに隠れるため、降りてよいことの妥当性は
  * `dialog-scroll-body.test.tsx` が本文とバーの重なりで固定する。
- * 降りられるのは `cn` の tailwind-merge が既定側の `pr-2.5` を落とすからで、詳細度は同じ、
- * CSS の出力順ではむしろ既定が後に来る。`cn` を素の `clsx` に替えると既定が無言で復活する。
+ * 降りられるのは `cn` の衝突解決が既定側の `pr-2.5` を落とすからで、詳細度は同じ、
+ * CSS の出力順ではむしろ既定が後に来る。衝突解決を持たない結合 (`cn` が併せて export する
+ * `clsx` など) に替えると既定が無言で復活する。
  * x 軸は既定のまま残す。`py-4` も横バーの太さを上回るが、下端にはそろえる相手が無いため
  * (区切り線は Root の border で、Root の padding の外に描かれる)。
  *

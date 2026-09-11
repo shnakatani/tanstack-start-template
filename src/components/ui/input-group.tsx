@@ -1,10 +1,10 @@
 import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 
 // registry 乖離 (ADR-0006): 上流の popup 内リング抑制 (in-data-[slot=combobox-content]:
 // focus-within:ring-0 / border-inherit) は、付与側 has-[…]:ring-3 に :has() の詳細度算入

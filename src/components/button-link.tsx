@@ -1,9 +1,9 @@
 import { createLink } from "@tanstack/react-router";
 import type { VariantProps } from "class-variance-authority";
+import { cn } from "cn";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 type ButtonLinkBaseProps = ComponentPropsWithoutRef<"a"> & VariantProps<typeof buttonVariants>;
 

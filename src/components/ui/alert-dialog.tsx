@@ -1,10 +1,10 @@
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
+import { cn } from "cn";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 // Dialog と共有する Viewport 配置・overflow backstop を保全する。
 import { popupOverflowBackstop, popupViewportLayout } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 
 // registry 乖離: detached trigger の payload 型を透過するための generic 化。
 // base-ui createHandle<Payload> と組で使う。

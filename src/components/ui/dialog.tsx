@@ -1,9 +1,9 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { cn } from "cn";
 import { XIcon } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 /**
  * Popup の配置コンテナ (base-ui 公式 anatomy の Dialog.Viewport)。
