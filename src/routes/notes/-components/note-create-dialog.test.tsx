@@ -1,5 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
@@ -243,5 +244,36 @@ describe("NoteCreateDialog", () => {
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
 
     invalidate.resolve(undefined);
+  });
+
+  it("保存の応答前はキャンセルできず Escape でも閉じない", async () => {
+    // handle を複数の対象で共有しないダイアログは、閉じる前に対象を比べられない。pending 中に
+    // 閉じて開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の
+    // 応答が届いた時点で新しい入力ごと閉じる。pending 中はユーザー起点の close を止める
+    // (ADR-0016 Decision の完了点 (b) の行)
+    const create = Promise.withResolvers<{ id: number }>();
+    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const { screen } = await renderDialog();
+    await openDialog(screen);
+    await titleTextbox(screen).fill("買い物リスト");
+
+    clickSave(screen);
+    await expect.element(screen.getByRole("status", { name: "保存中" })).toBeInTheDocument();
+
+    // キャンセルは押せない。Escape は Base UI が閉じようとするのを onOpenChange で止める
+    await expect
+      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
+      .toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+
+    expectDialogOpen(screen, "dialog");
+    expect(titleTextbox(screen).query()).not.toBeNull();
+
+    create.resolve({ id: 1 });
+
+    // 応答 (imperative-action) での close は止めない
+    await vi.waitFor(() => {
+      expect(titleTextbox(screen).query()).toBeNull();
+    });
   });
 });

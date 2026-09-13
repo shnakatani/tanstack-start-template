@@ -210,6 +210,16 @@ describe("NotesPage", () => {
     await expect
       .element(screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }))
       .toHaveAttribute("aria-busy", "true");
+    // aria-busy だけでは行の状態が読み上げられないので、status のテキストでも伝える
+    // (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行)。
+    // 名前は行の中で引く (確認ダイアログの pendingLabel と同名の status が同居しうる)
+    await expect
+      .element(
+        screen
+          .getByRole("row", { name: new RegExp(CREATED_NOTE.title) })
+          .getByRole("status", { name: "保存中" }),
+      )
+      .toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
     const rows = screen.getByRole("row").all();
     expect(rows[1]?.element().textContent).toContain(CREATED_NOTE.title); // rows[0] はヘッダ行
@@ -382,6 +392,16 @@ describe("NotesPage", () => {
     await expect
       .element(rowDeleteButton(screen, NOTE.title))
       .toHaveAttribute("aria-disabled", "true");
+    // aria-busy だけでは行の状態が読み上げられないので、status のテキストでも伝える
+    // (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行)。
+    // 名前は行の中で引く (確認ダイアログの pendingLabel と同名の status が同居しうる)
+    await expect
+      .element(
+        screen
+          .getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true })
+          .getByRole("status", { name: "削除中", includeHidden: true }),
+      )
+      .toBeInTheDocument();
     // registry の disabled: variant は native disabled にしか当たらない。data-disabled 経由で
     // 同じ見た目 (半透明 + pointer-events なし) になっていることを算出スタイルで固定する
     const targetTrigger = rowDeleteButton(screen, NOTE.title).element();

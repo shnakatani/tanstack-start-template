@@ -173,7 +173,13 @@ function NotesPage() {
                 <TableRow key={key} aria-busy className={busyRowAppearance}>
                   <TableCell>{input.title}</TableCell>
                   <TableCell className="max-w-xs truncate">{input.body}</TableCell>
-                  <TableCell>保存中</TableCell>
+                  {/* 作成日時はまだ無いので、その位置で保存中を伝える。aria-busy は行の属性で
+                      読み上げの本文にならないため、output (暗黙ロール status) を置く。status は
+                      name from author なので可視テキストと同値の aria-label を与える
+                      (`.claude/rules/implementation.md`「accessible name の与え方」) */}
+                  <TableCell>
+                    <output aria-label="保存中">保存中</output>
+                  </TableCell>
                   <TableCell />
                 </TableRow>
               ))}
@@ -194,6 +200,13 @@ function NotesPage() {
                         整形は SSR と hydration で文字列が食い違う (format-date-time.ts) */}
                     <TableCell>{formatDateTime(note.createdAt)}</TableCell>
                     <TableCell>
+                      {/* 削除中は行から可視の手掛かりが半透明しか出ないので、読み上げ用の
+                          テキストを足す。理由と aria-label は楽観行の「保存中」と同じ */}
+                      {isDeleting && (
+                        <output aria-label="削除中" className="sr-only">
+                          削除中
+                        </output>
+                      )}
                       <AlertDialogTrigger
                         handle={noteDeleteDialogHandle}
                         payload={{ id: note.id, name: note.title }}

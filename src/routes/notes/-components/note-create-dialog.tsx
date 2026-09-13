@@ -1,5 +1,6 @@
 import { revalidateLogic } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
+import type { ComponentProps } from "react";
 
 import { ActionForm, ActionFormSubmit } from "@/components/action/form";
 import { DialogScrollBody, dialogScrollLayout } from "@/components/dialog-scroll-body";
@@ -30,6 +31,12 @@ import { toastMutationError } from "@/lib/mutation-error";
 export const noteCreateDialogHandle = createDialogHandle<undefined>();
 
 /**
+ * `Dialog` の `onOpenChange` の型。転送先の props から導出する
+ * (`.claude/rules/typing.md`「ラッパー部品の転送 prop 型」)。
+ */
+type DialogOpenChangeHandler = NonNullable<ComponentProps<typeof Dialog>["onOpenChange"]>;
+
+/**
  * メモの追加ダイアログ。内部スクロール方式 (`dialogScrollLayout` + `DialogScrollBody`) で、
  * ヘッダーとフッターを固定したまま入力領域だけをスクロールさせる。
  *
@@ -55,13 +62,29 @@ export function NoteCreateDialog() {
     onError: toastMutationError,
   });
 
+  // 保存中はユーザー起点の close (Escape / 外側クリック / X / キャンセル) を止める。閉じて
+  // 開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の応答が
+  // 届いた時点で新しい入力ごと閉じる。handle を複数の対象で共有するダイアログと違い、入力
+  // フォームは開いている対象を mutation の対象と比べられないので、閉じないことで塞ぐ
+  // (ADR-0016 Decision の完了点 (b) の行)。止めるのはこのダイアログだけで、一覧の操作は
+  // 止めない (ADR-0016「ブロック範囲」)
+  const handleOpenChange: DialogOpenChangeHandler = (open, details) => {
+    // onSuccess の close は handle 経由なので reason が imperative-action になる。通す
+    if (!open && createMutation.isPending && details.reason !== "imperative-action") {
+      details.cancel();
+    }
+  };
+
   return (
-    <Dialog handle={noteCreateDialogHandle}>
+    <Dialog handle={noteCreateDialogHandle} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>メモを追加</DialogTitle>
         </DialogHeader>
-        <NoteCreateForm onSubmit={createMutation.runAction} />
+        {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで mutation の pending を
+            渡すのは表示ではなく close の可否で、handleOpenChange と同じ源から取らないと
+            「押せるのに閉じない」ずれが出る (`.claude/rules/implementation.md` の pending の項目) */}
+        <NoteCreateForm onSubmit={createMutation.runAction} isSaving={createMutation.isPending} />
       </DialogContent>
     </Dialog>
   );
@@ -73,7 +96,14 @@ export function NoteCreateDialog() {
  * 自身を選ぶ。`autoFocus` はこの出し分けを潰す (初期フォーカス位置は
  * `note-create-dialog.test.tsx` が固定している)。
  */
-function NoteCreateForm({ onSubmit }: { onSubmit: (note: NoteInput) => Promise<void> }) {
+function NoteCreateForm({
+  onSubmit,
+  isSaving,
+}: {
+  onSubmit: (note: NoteInput) => Promise<void>;
+  /** 保存の応答待ちか。キャンセルを無効化して close の阻止 (`handleOpenChange`) と対応させる */
+  isSaving: boolean;
+}) {
   const initialValues: NoteInput = { title: "", body: "" };
 
   const form = useAppForm({
@@ -115,7 +145,9 @@ function NoteCreateForm({ onSubmit }: { onSubmit: (note: NoteInput) => Promise<v
         </FieldGroup>
       </DialogScrollBody>
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>キャンセル</DialogClose>
+        <DialogClose disabled={isSaving} render={<Button type="button" variant="outline" />}>
+          キャンセル
+        </DialogClose>
         <ActionFormSubmit pendingLabel="保存中">保存</ActionFormSubmit>
       </DialogFooter>
     </ActionForm>
