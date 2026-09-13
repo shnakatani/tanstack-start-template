@@ -93,22 +93,24 @@ function NotesPage() {
 
   const deleteMutation = useActionMutation({
     mutationKey: noteMutationKeys.remove,
-    // id の検証は removeNote 側の validator (noteIdSchema) が持つ
-    mutationFn: (id: Note["id"]) => removeNote({ data: { id } }),
+    // variables に name も載せるのは完了の通知で対象を名指しするため (同時削除で 2 件の
+    // 「削除しました」が並ぶと区別できない)。id の検証は removeNote 側の validator
+    // (noteIdSchema) が持つ
+    mutationFn: (target: DeleteTarget<Note["id"]>) => removeNote({ data: { id: target.id } }),
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
     // 再取得を await して pending を再取得完了まで保つ (ADR-0016)。閉じるのは確定時 (完了点 (a))
-    onSuccess: async () => {
+    onSuccess: async (_data, target) => {
       await queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
       // 行の消失は読み上げに出ないので、完了を通知する (ADR-0017)
-      announce("削除しました");
+      announce(`『${target.name}』を削除しました`);
     },
     // server の raw message は開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
   });
 
   // pending な削除の対象 id。mutation ごとに追うので、同時削除でも各行が busy になる (ADR-0016)。
-  // `mutation.state.variables` は `unknown` なので、行と突き合わせる前に id へ絞る
-  // (id でない値は parseDeletingIds が warn を残して除外する)
+  // `mutation.state.variables` は `unknown` なので、行と突き合わせる前に削除対象へ絞って
+  // id を取り出す (形が違う値は parseDeletingIds が warn を残して除外する)
   const pendingDeleteVariables = useMutationState({
     filters: { mutationKey: noteMutationKeys.remove, status: "pending" },
     select: (mutation) => mutation.state.variables,
@@ -133,7 +135,8 @@ function NotesPage() {
     const alreadyDeleting =
       queryClient.isMutating({
         mutationKey: noteMutationKeys.remove,
-        predicate: (mutation) => mutation.state.variables === target.id,
+        // variables は `unknown` なので、比較する前に描画側と同じ経路で id へ絞る
+        predicate: (mutation) => parseDeletingIds([mutation.state.variables]).includes(target.id),
       }) > 0;
     if (alreadyDeleting) {
       return;
@@ -142,7 +145,7 @@ function NotesPage() {
     // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する (ADR-0017)
     announce(`『${target.name}』を削除しています`);
     // reject は runAction が吸収し onError が toast に出す。ここでは待たない
-    void deleteMutation.runAction(target.id);
+    void deleteMutation.runAction(target);
   }
 
   return (

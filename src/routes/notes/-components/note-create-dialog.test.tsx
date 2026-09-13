@@ -285,7 +285,7 @@ describe("NoteCreateDialog", () => {
     clickSave(screen);
 
     await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
-    expect(readAnnouncements()).toBe("");
+    expect(readAnnouncements()).toEqual([]);
   });
 
   it("保存の応答前はキャンセルできず Escape でも閉じない", async () => {

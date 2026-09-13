@@ -487,6 +487,12 @@ describe("NotesPage", () => {
     for (const pending of removes.values()) {
       pending.resolve(undefined);
     }
+
+    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0017)
+    await vi.waitFor(() => {
+      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しました`);
+      expect(readAnnouncements()).toContain(`『${OTHER_NOTE.title}』を削除しました`);
+    });
   });
 
   it("削除の開始と完了を announcer が通知する", async () => {
@@ -504,12 +510,12 @@ describe("NotesPage", () => {
       expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);
     });
     // 完了は removeNote の決着より前に出さない
-    expect(readAnnouncements()).not.toContain("削除しました");
+    expect(readAnnouncements()).not.toContain(`『${NOTE.title}』を削除しました`);
 
     remove.resolve(undefined);
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("削除しました");
+      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しました`);
     });
   });
 
