@@ -1,5 +1,5 @@
 import { CatchBoundary } from "@tanstack/react-router";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { expectNoA11yViolations } from "@/test/a11y";
@@ -9,6 +9,8 @@ import { dispatchNativeClick } from "@/test/native-click";
 import { ActionButton } from "./button";
 
 describe("ActionButton", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it("クリックで action を呼び、決着まで pending 表示と aria-disabled になる", async () => {
     const pending = deferred<undefined>();
     const action = vi.fn(() => pending.promise);
@@ -28,8 +30,8 @@ describe("ActionButton", () => {
     await vi.waitFor(() => {
       expect(screen.getByRole("status", { name: "処理中" }).query()).toBeNull();
     });
-    // focusableWhenDisabled は非 pending でも aria-disabled="false" を付ける
-    await expect.element(button).toHaveAttribute("aria-disabled", "false");
+    // 非 pending で無効化されていないことだけを見る (属性を常に付けるかは Base UI の出力形式)
+    await expect.element(button).not.toHaveAttribute("aria-disabled", "true");
   });
 
   it("pending 中もフォーカスと accessible name がボタンに残る", async () => {
@@ -68,7 +70,7 @@ describe("ActionButton", () => {
     const button = screen.getByRole("button", { name: "保存", exact: true });
 
     await button.click();
-    await expect.element(button).toHaveAttribute("aria-disabled", "false");
+    await expect.element(button).not.toHaveAttribute("aria-disabled", "true");
     await button.click();
 
     await vi.waitFor(() => {
@@ -78,7 +80,7 @@ describe("ActionButton", () => {
 
   it("action の reject は部品が握らず、最寄りの Error Boundary へ届く", async () => {
     // React が boundary へ渡す前に console.error を出す。出力を汚さない
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const screen = await render(
       <CatchBoundary
         getResetKey={() => "test"}
@@ -91,7 +93,6 @@ describe("ActionButton", () => {
     await screen.getByRole("button", { name: "実行", exact: true }).click();
 
     await expect.element(screen.getByText("境界で受けた: 失敗")).toBeInTheDocument();
-    errorSpy.mockRestore();
   });
 
   it("form の中でも既定では submit しない (type=button)", async () => {

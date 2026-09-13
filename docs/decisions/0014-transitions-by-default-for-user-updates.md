@@ -135,11 +135,11 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ### 楽観表示の使い分け
 
-| 表示したい値                       | 方式                                                        | 理由                                                                     |
-| ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
-| query が持つデータとその派生値     | TanStack Query の `mutation.variables` / `useMutationState` | query と同じストアで更新され、Transition との rebase が起きない (制約 1) |
-| query を経由しない部品のローカル値 | `useOptimistic` を Action の中で set する                   | React の想定どおりの経路。React Aria #9894 が同じ設計を採る              |
-| Router の state                    | Router に任せる                                             | 自前の acknowledgement で整合を取っている (制約 1)                       |
+| 表示したい値                       | 方式                                                                                                              | 理由                                                                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| query が持つデータとその派生値     | TanStack Query の `mutation.isPending && mutation.variables === id` (複数コンポーネントからは `useMutationState`) | query と同じストアで更新され、Transition との rebase が起きない (制約 1)。`variables` は決着後も残るため `isPending` でゲートする |
+| query を経由しない部品のローカル値 | `useOptimistic` を Action の中で set する                                                                         | React の想定どおりの経路。React Aria #9894 が同じ設計を採る                                                                       |
+| Router の state                    | Router に任せる                                                                                                   | 自前の acknowledgement で整合を取っている (制約 1)                                                                                |
 
 判定は `useOptimistic` の第 1 引数で行う。`useQuery` / `useSuspenseQuery` の `data` とそこから計算した値を渡さない。
 
@@ -164,7 +164,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ## Consequences
 
-- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない
+- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と、同時操作を塞ぐトリガーの無効化のゲートは除く)
 - ダイアログは再取得の完了まで pending 表示のまま開いている。古い一覧が pending 表示なしで見える経路が消える代わりに、再取得が遅い環境では閉じるまでが長くなる
 - Transition 化で得るのは pending の自動管理、Action の順序保証、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 4 つ。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (制約 1、制約 4)
 - ルート遷移への `<ViewTransition>` 適用は別途判断する

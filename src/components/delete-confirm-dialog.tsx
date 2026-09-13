@@ -27,6 +27,8 @@ interface DeleteConfirmDialogProps {
   /**
    * 確定時の Action。mutation なら `useActionMutation` の `runAction` を渡し、成功時の close は
    * mutation の `onSuccess` が再取得を await した後に `handle.close()` で行う (ADR-0014)。
+   * 成功時の close はこの部品に渡した `handle` と同じものを呼ぶ。別の handle を閉じても型は通り、
+   * 削除は走るが閉じないダイアログになる。
    * 失敗時は閉じないので、開いたままリトライできる。
    */
   onConfirm: (target: DeleteTarget) => Promise<void> | void;

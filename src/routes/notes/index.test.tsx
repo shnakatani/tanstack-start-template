@@ -36,6 +36,13 @@ const NOTE: Note = {
   createdAt: new Date("2026-08-17T00:30:00.000Z"),
 };
 const NOTE_CREATED_AT_TEXT = "2026-08-17 09:30";
+/** 楽観表示と無効化が対象行だけに効くことを見るための 2 件目 */
+const OTHER_NOTE: Note = {
+  id: 2,
+  title: "読書メモ",
+  body: "気になった箇所を書き出す",
+  createdAt: new Date("2026-08-18T00:30:00.000Z"),
+};
 
 async function renderPage() {
   const queryClient = createTestQueryClient();
@@ -52,9 +59,16 @@ async function renderPage() {
 
 type Screen = Awaited<ReturnType<typeof renderPage>>;
 
-/** 行の削除ボタン。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない) */
-function rowDeleteButton(screen: Screen, title: string) {
-  return screen.getByRole("button", { name: `${title}を削除`, exact: true });
+/**
+ * 行の削除ボタン。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない)。
+ * 確認ダイアログ表示中は行が `aria-hidden` 配下に入るため、その間は `includeHidden` で取る。
+ */
+function rowDeleteButton(screen: Screen, title: string, options?: { includeHidden?: boolean }) {
+  return screen.getByRole("button", {
+    name: `${title}を削除`,
+    exact: true,
+    includeHidden: options?.includeHidden,
+  });
 }
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
@@ -241,7 +255,7 @@ describe("NotesPage", () => {
 
   it("削除中は対象の行が busy になる", async () => {
     let resolveRemove!: () => void;
-    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]).mockResolvedValue([OTHER_NOTE]);
     vi.mocked(removeNote).mockImplementation(
       () =>
         new Promise<undefined>((resolve) => {
@@ -258,8 +272,21 @@ describe("NotesPage", () => {
     await expect
       .element(screen.getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
+    // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(OTHER_NOTE.title), includeHidden: true }))
+      .toHaveAttribute("aria-busy", "false");
+    // 確認ダイアログは pending 中も閉じられる。閉じた先で別行の削除を始められないよう塞ぐ
+    await expect
+      .element(rowDeleteButton(screen, OTHER_NOTE.title, { includeHidden: true }))
+      .toHaveAttribute("aria-disabled", "true");
 
     resolveRemove();
-    await expectText(screen, "メモが登録されていません");
+
+    // 再取得 (2 回目の listNotes) が反映されても、消えるのは対象行だけ
+    await vi.waitFor(() => {
+      expect(screen.getByText(NOTE.title).query()).toBeNull();
+    });
+    await expectText(screen, OTHER_NOTE.title);
   });
 });

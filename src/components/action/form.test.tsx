@@ -1,5 +1,5 @@
 import { CatchBoundary } from "@tanstack/react-router";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { expectNoA11yViolations } from "@/test/a11y";
@@ -9,6 +9,8 @@ import { dispatchNativeClick } from "@/test/native-click";
 import { ActionForm, ActionFormSubmit } from "./form";
 
 describe("ActionForm", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it("submit で submitAction を呼び、決着まで submit ボタンが pending になる", async () => {
     const pending = deferred<undefined>();
     const submitAction = vi.fn(() => pending.promise);
@@ -50,7 +52,7 @@ describe("ActionForm", () => {
   });
 
   it("submitAction の reject は部品が握らず、最寄りの Error Boundary へ届く", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const screen = await render(
       <CatchBoundary
         getResetKey={() => "test"}
@@ -65,16 +67,14 @@ describe("ActionForm", () => {
     await screen.getByRole("button", { name: "保存", exact: true }).click();
 
     await expect.element(screen.getByText("境界で受けた: 失敗")).toBeInTheDocument();
-    errorSpy.mockRestore();
   });
 
   it("ActionFormSubmit を ActionForm の外で使うと throw する", async () => {
     // render は act で包まれ、レンダー中の throw は reject として返る
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
     await expect(render(<ActionFormSubmit>保存</ActionFormSubmit>)).rejects.toThrow(
       "[ActionFormSubmit] ActionForm の中で使う",
     );
-    errorSpy.mockRestore();
   });
 
   it("pending 中の描画に a11y 違反が無い", async () => {

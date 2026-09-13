@@ -80,7 +80,7 @@ lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014
 - Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る
 - `onSuccess` の再取得を await せずに close すると、ダイアログが消えた後の古い一覧に pending 表示が付かない
 - Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる
-- `useOptimistic` の第 1 引数に `useQuery` / `useSuspenseQuery` の `data` とその派生値を渡さない。楽観表示は `mutation.isPending && mutation.variables === id` で行う。`isPending` は楽観表示のゲートで pending 表示ではない (ADR-0014「楽観表示の使い分け」)
+- `useOptimistic` に `useQuery` / `useSuspenseQuery` の `data` と派生値を渡さない。query 由来の楽観表示は `mutation.isPending && mutation.variables === id` で行う (`isPending` はゲートで pending 表示ではない。ADR-0014「楽観表示の使い分け」)
 - Action の決着前の二重発火は Action 層が塞ぐ。呼び出し側で閉包のフラグを持たない
 
 ## 手動メモ化の増減

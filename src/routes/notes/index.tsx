@@ -143,10 +143,18 @@ function NotesPage() {
                       <AlertDialogTrigger
                         handle={noteDeleteDialogHandle}
                         payload={{ id: String(note.id), name: note.title }}
-                        render={<Button variant="destructive" size="sm" />}
+                        render={<Button variant="destructive" size="sm" focusableWhenDisabled />}
                         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
                         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
                         aria-label={`${note.title}を削除`}
+                        // 確認ダイアログは pending 中も Cancel / Escape で閉じられる (Base UI が
+                        // 無効化するのは outsidePress だけ)。閉じた後に別行のトリガーが生きていると、
+                        // 先行削除の onSuccess が同じ handle を close() して後続のダイアログを未確定の
+                        // まま閉じる。render 側の focusableWhenDisabled は Cancel 後に Base UI が
+                        // トリガーへフォーカスを返すとき、native disabled でフォーカスが body へ
+                        // 落ちるのを防ぐ (Trigger の props 型は受けず Button primitive が受ける)。
+                        // この isPending は楽観表示と同じゲートで、pending 表示の二重化ではない
+                        disabled={deleteMutation.isPending}
                       >
                         削除
                       </AlertDialogTrigger>
