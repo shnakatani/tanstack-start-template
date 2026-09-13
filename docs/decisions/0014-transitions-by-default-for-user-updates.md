@@ -1,6 +1,6 @@
 # ADR-0014: ユーザー操作による更新は Transition を既定にし、pending は Transition から取る
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-13
 - 関連: ADR-0004 (ハンドラを同期関数にする理由。「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)
 
