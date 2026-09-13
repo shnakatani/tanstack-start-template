@@ -135,7 +135,9 @@ describe("DeleteConfirmDialog", () => {
     const { screen } = await renderWithTrigger({ entityLabel: "ユーザー", onConfirm });
     await openDialog(screen);
 
-    dispatchNativeClick(screen.getByRole("button", { name: "削除", exact: true }).element());
+    // バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
+    screen.getByRole("button", { name: "削除", exact: true }).element().focus();
+    await userEvent.keyboard("{Enter}");
 
     await expect.element(screen.getByRole("status", { name: "削除中" })).toBeInTheDocument();
     await expect

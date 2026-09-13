@@ -67,13 +67,13 @@ function handleRetry() {
 
 lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014。
 
-| 更新の種類                        | 書き方                                                                                                     |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ |
-| mutation 成功後のダイアログ close | `onSuccess` を async にし、`await queryClient.invalidateQueries(...)` の後に `handle.close()` を呼ぶ       |
-| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                        |
-| Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                |
-| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                          |
+| 更新の種類                        | 書き方                                                                                                                                                                                                |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                                            |
+| mutation 成功後のダイアログ close | `onSuccess` に `src/lib/close-after-invalidate.ts` の `closeAfterInvalidate(queryClient, queryKey, handle)` を渡す (`await invalidateQueries(...)` の後に `handle.close()` する順序を固定した helper) |
+| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                                   |
+| Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                           |
+| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                     |
 
 - pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)
 - mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` (`toastMutationError`) は型で必須。`runAction` が `mutateAsync` の reject を吸収するため、`onError` が無いと失敗が無通知になる

@@ -29,6 +29,10 @@ function ActionForm({ submitAction, children, ...props }: ActionFormProps) {
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    // ActionFormSubmit 以外の submit 経路 (素の submit ボタン、Enter) でも決着前の再 submit を塞ぐ
+    if (isPending) {
+      return;
+    }
     startTransition(submitAction);
   }
 

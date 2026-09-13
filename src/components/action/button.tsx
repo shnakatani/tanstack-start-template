@@ -55,6 +55,9 @@ function ActionButtonShell({
       className={cn(actionDisabledAppearance, className)}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabel === undefined ? labelId : undefined}
+      // button の子孫 role は AT が presentational として扱ってよい (ARIA の Children Presentational)。
+      // 要素自身の状態として伝えるため aria-busy も付ける
+      aria-busy={isPending}
       disabled={isPending}
       focusableWhenDisabled
     >

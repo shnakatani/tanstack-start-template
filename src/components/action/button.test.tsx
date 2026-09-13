@@ -21,6 +21,7 @@ describe("ActionButton", () => {
     expect(action).toHaveBeenCalledOnce();
     await expect.element(screen.getByRole("status", { name: "処理中" })).toBeInTheDocument();
     await expect.element(button).toHaveAttribute("aria-disabled", "true");
+    await expect.element(button).toHaveAttribute("aria-busy", "true");
     // native disabled にはしない (フォーカスを保つ)
     expect(button.element().hasAttribute("disabled")).toBe(false);
     // exact: true で掴めている = status の文言が名前に混ざっていない
@@ -43,8 +44,10 @@ describe("ActionButton", () => {
 
     // 実イベント (CDP 経由) で 3 回発火する。2 回目は次のユーザーイベント、3 回目は aria-disabled を確認した後
     await button.click();
+    expect(document.activeElement).toBe(button.element());
     await userEvent.keyboard("{Enter}");
     await expect.element(button).toHaveAttribute("aria-disabled", "true");
+    expect(document.activeElement).toBe(button.element());
     await userEvent.keyboard("{Enter}");
 
     expect(action).toHaveBeenCalledOnce();
