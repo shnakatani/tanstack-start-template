@@ -21,12 +21,12 @@ export type Politeness = keyof typeof LIVE_REGION_IDS;
 /** React Aria の LiveAnnouncer と同じ値 */
 const MESSAGE_LIFETIME_MS = 7000;
 
+/**
+ * 通知を 1 件足す。呼び出せるのは client の経路だけで、SSR ガードは持たない。
+ * server から呼ぶのは配線の誤りなので、`document` の `ReferenceError` で表に出す。
+ */
+
 export function announce(message: string, politeness: Politeness = "polite"): void {
-  // SSR では読み上げる相手が居らず region も無いのが正常なので、黙って返す。
-  // client で region が見つからない異常のほうは、下の warn が拾う
-  if (typeof document === "undefined") {
-    return;
-  }
   const id = LIVE_REGION_IDS[politeness];
   const region = document.getElementById(id);
   if (region === null) {

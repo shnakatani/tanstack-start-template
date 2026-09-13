@@ -31,7 +31,7 @@ interface DeleteConfirmDialogProps<TId> {
   /**
    * 確定時の Action。閉じる時点は ADR-0016 の完了点で選ぶ。(a) なら handler が `handle.close()`
    * してから mutation を起動する (`src/routes/notes/index.tsx` の `confirmDelete`)。(c) なら
-   * `closeAfterInvalidate` を `onSuccess` に渡し、この部品に渡した `handle` と同じものを閉じる。
+   * `onSuccess` で再取得を await した後に、この部品に渡した `handle` と同じものを閉じる。
    * 失敗時の扱いは完了点で変わる ((a) は閉じた後に toast、(c) は開いたままリトライ)。
    */
   onConfirm: (target: DeleteTarget<TId>) => Promise<void> | void;

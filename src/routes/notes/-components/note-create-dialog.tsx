@@ -32,12 +32,6 @@ import { toastMutationError } from "@/lib/mutation-error";
 export const noteCreateDialogHandle = createDialogHandle<undefined>();
 
 /**
- * `Dialog` の `onOpenChange` の型。転送先の props から導出する
- * (`.claude/rules/typing.md`「ラッパー部品の転送 prop 型」)。
- */
-type DialogOpenChangeHandler = NonNullable<ComponentProps<typeof Dialog>["onOpenChange"]>;
-
-/**
  * メモの追加ダイアログ。内部スクロール方式 (`dialogScrollLayout` + `DialogScrollBody`) で、
  * ヘッダーとフッターを固定したまま入力領域だけをスクロールさせる。
  *
@@ -81,7 +75,8 @@ export function NoteCreateDialog() {
   // ADR-0016 移行前の従来挙動 (何も止めない) と同じなので、閉じられなくなる側へは倒さない
   const blocksClose = createMutation.isPending && !isRefetchingNotes;
 
-  const handleOpenChange: DialogOpenChangeHandler = (open, details) => {
+  // 型は転送先の props から導出する (`.claude/rules/typing.md`「ラッパー部品の転送 prop 型」)
+  const handleOpenChange: ComponentProps<typeof Dialog>["onOpenChange"] = (open, details) => {
     // onSuccess の close は handle 経由なので reason が imperative-action になる。通す
     if (!open && blocksClose && details.reason !== "imperative-action") {
       details.cancel();
