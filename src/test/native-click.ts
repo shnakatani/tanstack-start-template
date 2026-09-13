@@ -16,5 +16,7 @@
  * dispatch する場合は label テキスト要素側へ送って転送を 1 回にする。
  */
 export function dispatchNativeClick(element: Element): void {
-  element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  // 実クリックと Enter 由来の click は cancelable=true (ADR-0015)。既定の false で送ると
+  // preventDefault が効かず、Base UI が止めるはずの form 送信が通ってしまう
+  element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 }
