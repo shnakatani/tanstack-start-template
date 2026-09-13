@@ -7,6 +7,7 @@ import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanst
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { ReactNode } from "react";
 
+import { LiveRegions } from "@/components/live-regions";
 import { FullScreenRouteError } from "@/components/route-error";
 import { Toaster } from "@/components/ui/toast";
 import { APP_NAME } from "@/lib/app-name";
@@ -71,6 +72,7 @@ export function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         {/* ページ本体を landmark へ入れる。無いと支援技術に本文へ飛ぶ手段が無く、
             axe-core の region ルールが「All page content should be contained by landmarks」で報告する */}
         <main>{children}</main>
+        <LiveRegions />
         <Scripts />
       </body>
     </html>
