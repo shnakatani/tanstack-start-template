@@ -37,7 +37,8 @@ type ActionButtonShellProps = Omit<
  * - 名前の与え方は children か `aria-label` に限る。`aria-labelledby` は内部で使うため prop から
  *   外してある (受け付けたまま `{...props}` の後で上書きすると、渡した側から見て黙って消える)
  * - 状態は registry の `Spinner` が持つ `role="status"` に `aria-label` を与えて伝える
- *   (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行の svg の例外)
+ *   (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行の svg の例外)。
+ *   button の子孫 role は AT が presentational として扱いうるので、要素自身にも `aria-busy` を付ける
  */
 function ActionButtonShell({
   isPending,
