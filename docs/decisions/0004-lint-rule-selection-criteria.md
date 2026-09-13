@@ -4,6 +4,7 @@
 - Date: 2026-08-17
 - Revised: 2026-09-02 (React Compiler の診断が per-category ルールへ分割されたのに伴い、基準へ eslint-plugin-react-hooks を足し `react/unsupported-syntax` を名指しへ加えた)
 - Revised: 2026-09-07 (jsPlugin の名前の決まり方と `settings.entryPoint` の解決失敗の挙動を実測に合わせ、fixture による検査を撤去した)
+- Revised: 2026-09-13 (「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落を ADR-0014 に合わせて書き換えた。mutation を伴う操作は Action の中で行い pending を Transition から取る。ハンドラを同期関数として宣言する規範はそのまま)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -231,7 +232,8 @@ function handleSignOut() {
 `checksVoidReturn.attributes` を off にすると、本当に rejection を落としている箇所も検出できなくなる。
 
 React 公式もこの構造を採っている。React 19 の `TransitionFunction` は非同期処理を受け取るが、`onClick` に渡すハンドラ自体は同期である。
-`startTransition` で包む形は第 3 の選択肢ではない。Transition を使う動機は更新のノンブロッキング化と `isPending` と optimistic update であり、pending 表示を別の仕組みが担っているなら pending の源が二重になる。
+mutation を伴う操作は、その同期ハンドラの内側で `startTransition` に非同期関数を渡す形 (Action) にし、pending は Transition から取る。この判断は ADR-0014 が持つ。
+2026-09-13 までは `startTransition` を第 3 の選択肢としない (pending の源が mutation の `isPending` と二重になる) としていたが、pending の源を Transition 側へ一本化することで解消した。
 
 ### 検討した選択肢
 

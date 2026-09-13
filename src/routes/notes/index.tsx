@@ -1,13 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import * as v from "valibot";
 
+import { actionDisabledAppearance } from "@/components/action/button";
 import type { DeleteTarget } from "@/components/delete-confirm-dialog";
-import {
-  DeleteConfirmDialog,
-  deleteConfirmMutationProps,
-} from "@/components/delete-confirm-dialog";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { PageHeader } from "@/components/page-header";
 import { TableSkeleton } from "@/components/table-skeleton";
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
@@ -24,7 +21,10 @@ import {
 } from "@/components/ui/table";
 import { removeNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
-import { NOTE_FIELD_LABELS, noteIdSchema } from "@/features/notes/schema";
+import type { Note } from "@/features/notes/schema";
+import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
+import { useActionMutation } from "@/hooks/use-action-mutation";
+import { closeAfterInvalidate } from "@/lib/close-after-invalidate";
 import { formatDateTime } from "@/lib/format-date-time";
 import { toastMutationError } from "@/lib/mutation-error";
 
@@ -73,21 +73,22 @@ function NotesPagePending() {
 }
 
 /** 削除確認ダイアログの detached trigger を Root へ結ぶ handle。Root は 1 つだけ描画する。 */
-const noteDeleteDialogHandle = createAlertDialogHandle<DeleteTarget>();
+const noteDeleteDialogHandle = createAlertDialogHandle<DeleteTarget<Note["id"]>>();
 
 function NotesPage() {
   const notesQuery = useSuspenseQuery(notesQueryOptions);
   const queryClient = useQueryClient();
 
-  const deleteMutation = useMutation({
-    // DeleteTarget は id を string で持つ (汎用部品の契約)。行の payload で String(note.id) にした
-    // ものをここで戻す。Number() は失敗を NaN で返して黙って通るため、noteIdSchema で
-    // parse し直して不正値を fail-closed で止める (throw は onError の toast へ流れる)
-    mutationFn: (id: string) => removeNote({ data: v.parse(noteIdSchema, { id: Number(id) }) }),
-    onSuccess: () => {
-      // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる
-      void queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
-    },
+  const deleteMutation = useActionMutation({
+    // id の検証は removeNote 側の validator (noteIdSchema) が持つ
+    mutationFn: (id: Note["id"]) => removeNote({ data: { id } }),
+    // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
+    // 再取得を待ってから閉じる順序は closeAfterInvalidate が固定する
+    onSuccess: closeAfterInvalidate(
+      queryClient,
+      notesQueryOptions.queryKey,
+      noteDeleteDialogHandle,
+    ),
     // server の raw message は開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
   });
@@ -121,28 +122,52 @@ function NotesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {notesQuery.data.map((note) => (
-                <TableRow key={note.id}>
-                  <TableCell>{note.title}</TableCell>
-                  <TableCell className="max-w-xs truncate">{note.body}</TableCell>
-                  {/* 整形は必ずタイムゾーンを明示した formatDateTime を通す。ローカル TZ 依存の
-                      整形は SSR と hydration で文字列が食い違う (format-date-time.ts) */}
-                  <TableCell>{formatDateTime(note.createdAt)}</TableCell>
-                  <TableCell>
-                    <AlertDialogTrigger
-                      handle={noteDeleteDialogHandle}
-                      payload={{ id: String(note.id), name: note.title }}
-                      render={<Button variant="destructive" size="sm" />}
-                      disabled={deleteMutation.isPending}
-                      // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
-                      // 含めることで WCAG 2.5.3 (Label in Name) も満たす
-                      aria-label={`${note.title}を削除`}
-                    >
-                      削除
-                    </AlertDialogTrigger>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {notesQuery.data.map((note) => {
+                // 楽観表示は query 側 (mutation.variables) で行う。useOptimistic は query の data を
+                // base にできない (ADR-0014「楽観表示の使い分け」)。isPending はこの表示のゲートで、
+                // pending 表示 (確認ボタンの Transition) とは別物
+                const isDeleting = deleteMutation.isPending && deleteMutation.variables === note.id;
+                return (
+                  <TableRow
+                    key={note.id}
+                    aria-busy={isDeleting}
+                    className={isDeleting ? "opacity-50" : undefined}
+                  >
+                    <TableCell>{note.title}</TableCell>
+                    <TableCell className="max-w-xs truncate">{note.body}</TableCell>
+                    {/* 整形は必ずタイムゾーンを明示した formatDateTime を通す。ローカル TZ 依存の
+                        整形は SSR と hydration で文字列が食い違う (format-date-time.ts) */}
+                    <TableCell>{formatDateTime(note.createdAt)}</TableCell>
+                    <TableCell>
+                      <AlertDialogTrigger
+                        handle={noteDeleteDialogHandle}
+                        payload={{ id: note.id, name: note.title }}
+                        render={
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            focusableWhenDisabled
+                            className={actionDisabledAppearance}
+                          />
+                        }
+                        // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
+                        // 含めることで WCAG 2.5.3 (Label in Name) も満たす
+                        aria-label={`${note.title}を削除`}
+                        // 確認ダイアログは pending 中も Cancel / Escape で閉じられる (Base UI が
+                        // 無効化するのは outsidePress だけ)。閉じた後に別行のトリガーが生きていると、
+                        // 先行削除の onSuccess が同じ handle を close() して後続のダイアログを未確定の
+                        // まま閉じる。render 側の focusableWhenDisabled は Cancel 後に Base UI が
+                        // トリガーへフォーカスを返すとき、native disabled でフォーカスが body へ
+                        // 落ちるのを防ぐ (Trigger の props 型は受けず Button primitive が受ける)。
+                        // この isPending は楽観表示と同じゲートで、pending 表示の二重化ではない
+                        disabled={deleteMutation.isPending}
+                      >
+                        削除
+                      </AlertDialogTrigger>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -151,8 +176,9 @@ function NotesPage() {
       <NoteCreateDialog />
 
       <DeleteConfirmDialog
+        handle={noteDeleteDialogHandle}
         entityLabel={ENTITY_LABEL}
-        {...deleteConfirmMutationProps(noteDeleteDialogHandle, deleteMutation)}
+        onConfirm={(target) => deleteMutation.runAction(target.id)}
       />
     </div>
   );

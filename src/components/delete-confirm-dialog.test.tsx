@@ -1,17 +1,12 @@
-import type { MutateOptions, UseMutationResult } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { dispatchNativeClick } from "@/test/native-click";
-import { createTestQueryClient } from "@/test/page-helpers";
 
-import {
-  DeleteConfirmDialog,
-  type DeleteTarget,
-  deleteConfirmMutationProps,
-} from "./delete-confirm-dialog";
+import { DeleteConfirmDialog, type DeleteTarget } from "./delete-confirm-dialog";
 
 const TARGET: DeleteTarget = { id: "w1", name: "田中太郎" };
 
@@ -96,34 +91,6 @@ describe("DeleteConfirmDialog", () => {
     ).not.toBeNull();
   });
 
-  it("disabled=true のとき削除ボタンが無効になる", async () => {
-    const { screen } = await renderWithTrigger({
-      entityLabel: "ユーザー",
-      onConfirm: vi.fn(),
-      disabled: true,
-    });
-
-    await openDialog(screen);
-
-    expect(screen.getByRole("button", { name: "削除" }).element().hasAttribute("disabled")).toBe(
-      true,
-    );
-  });
-
-  it("disabled=false のとき削除ボタンが有効になる", async () => {
-    const { screen } = await renderWithTrigger({
-      entityLabel: "ユーザー",
-      onConfirm: vi.fn(),
-      disabled: false,
-    });
-
-    await openDialog(screen);
-
-    expect(screen.getByRole("button", { name: "削除" }).element().hasAttribute("disabled")).toBe(
-      false,
-    );
-  });
-
   it("description を指定すると payload の name を受け取って既定文言を上書きする", async () => {
     const { screen } = await renderWithTrigger({
       entityLabel: "メモ",
@@ -161,93 +128,41 @@ describe("DeleteConfirmDialog", () => {
       entityLabel: "ユーザー",
     });
   });
-});
 
-describe("deleteConfirmMutationProps", () => {
-  afterEach(() => vi.restoreAllMocks());
+  it("onConfirm の決着まで削除ボタンが pending になり、決着すると戻る", async () => {
+    const pending = Promise.withResolvers<undefined>();
+    const onConfirm = vi.fn(() => pending.promise);
+    const { screen } = await renderWithTrigger({ entityLabel: "ユーザー", onConfirm });
+    await openDialog(screen);
 
-  function createDeleteMutation(
-    isPending = false,
-    onMutate?: (id: string, options?: MutateOptions<void, Error, string>) => void,
-  ): Pick<UseMutationResult<void, Error, string>, "mutate" | "isPending"> {
-    return {
-      mutate: vi.fn((id: string, options?: MutateOptions<void, Error, string>) => {
-        onMutate?.(id, options);
-      }),
-      isPending,
-    };
-  }
+    // バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
+    screen.getByRole("button", { name: "削除", exact: true }).element().focus();
+    await userEvent.keyboard("{Enter}");
 
-  /** 実 handle の close を spy する (helper は handle 全体を要求するため部分オブジェクトでは代用できない) */
-  function createSpiedHandle() {
-    const handle = createAlertDialogHandle<DeleteTarget>();
-    const close = vi.spyOn(handle, "close").mockImplementation(() => {});
-    return { handle, close };
-  }
+    await expect.element(screen.getByRole("status", { name: "削除中" })).toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: "削除", exact: true }))
+      .toHaveAttribute("aria-disabled", "true");
 
-  it("mutate が成功したときだけ close する", () => {
-    const { handle, close } = createSpiedHandle();
-    let capturedId: string | undefined;
-    let capturedOptions: MutateOptions<void, Error, string> | undefined;
-    const mutation = createDeleteMutation(false, (id, options) => {
-      capturedId = id;
-      capturedOptions = options;
+    pending.resolve(undefined);
+    await vi.waitFor(() => {
+      expect(screen.getByRole("status", { name: "削除中" }).query()).toBeNull();
     });
-
-    const props = deleteConfirmMutationProps(handle, mutation);
-    props.onConfirm(TARGET);
-
-    expect(props.handle).toBe(handle);
-    expect(capturedId).toBe("w1");
-    // mutate を呼んだ時点ではまだ閉じない
-    expect(close).not.toHaveBeenCalled();
-    // 成功コールバックが走って初めて閉じる
-    // onSuccess の 4 引数は query-core の実シグネチャ (data, variables, onMutateResult, context)
-    capturedOptions?.onSuccess?.(undefined, TARGET.id, undefined, {
-      client: createTestQueryClient(),
-      meta: undefined,
-    });
-    expect(close).toHaveBeenCalledOnce();
   });
 
-  it("失敗しても close を呼ばないのでダイアログを開いたままリトライできる", () => {
-    const { handle, close } = createSpiedHandle();
-    let calls = 0;
-    const mutation = createDeleteMutation(false, (id, options) => {
-      calls += 1;
-      // 失敗した mutation でも onSettled は呼ばれる。二重発火ガードはここで解ける
-      options?.onSettled?.(undefined, new Error("削除に失敗しました"), id, undefined, {
-        client: createTestQueryClient(),
-        meta: undefined,
-      });
-    });
+  // 撤去した deleteConfirmMutationProps の閉包フラグの後継。dedupe は Action 層が持つが、
+  // ダイアログ経由 (payload の受け渡しを挟む) でも効くことをここで固定する
+  it("決着前の 2 回目の確定では onConfirm を呼ばない", async () => {
+    const onConfirm = vi.fn(() => new Promise<void>(() => {}));
+    const { screen } = await renderWithTrigger({ entityLabel: "ユーザー", onConfirm });
+    await openDialog(screen);
+    const element = screen.getByRole("button", { name: "削除", exact: true }).element();
 
-    const props = deleteConfirmMutationProps(handle, mutation);
-    props.onConfirm(TARGET);
-    props.onConfirm(TARGET);
+    // 実イベント (CDP 経由) で 2 回発火する (バックドロップが pointer を遮るためキーボードで)
+    element.focus();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Enter}");
 
-    // onSuccess を呼ばない = 失敗した場合。2 回目の確定も通る
-    expect(close).not.toHaveBeenCalled();
-    expect(calls).toBe(2);
-  });
-
-  // 確認ダイアログの「削除」は連打できる。isPending は次のレンダーまで false のままなので、
-  // disabled では同じ tick の 2 回目を止められず、同じ id の削除が 2 回走る
-  it("決着前の 2 回目の確定では mutate を呼ばない", () => {
-    const { handle } = createSpiedHandle();
-    const mutation = createDeleteMutation();
-
-    const props = deleteConfirmMutationProps(handle, mutation);
-    props.onConfirm(TARGET);
-    props.onConfirm(TARGET);
-
-    expect(mutation.mutate).toHaveBeenCalledExactlyOnceWith(TARGET.id, expect.anything());
-  });
-
-  it("isPending を disabled として透過する", () => {
-    const { handle } = createSpiedHandle();
-
-    expect(deleteConfirmMutationProps(handle, createDeleteMutation(true)).disabled).toBe(true);
-    expect(deleteConfirmMutationProps(handle, createDeleteMutation(false)).disabled).toBe(false);
+    expect(onConfirm).toHaveBeenCalledExactlyOnceWith(TARGET);
   });
 });

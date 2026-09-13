@@ -14,6 +14,23 @@ export function createTestQueryClient(config?: Omit<QueryClientConfig, "defaultO
   });
 }
 
+/**
+ * ダイアログがまだ開いていることを検証する。
+ *
+ * close は同期的に `data-open` → `data-closed` を切り替えるが、animate-out (duration-100) の間も
+ * Popup は DOM に残る。要素の存在だけを見ると「close 済みだがアニメーション窓の中」を
+ * 「開いたまま」と誤判定するので、`data-open` を見る。
+ * Popup は `aria-hidden` 配下に入ることがあるため `includeHidden` で取る。
+ */
+export function expectDialogOpen(
+  screen: Awaited<ReturnType<typeof render>>,
+  role: "dialog" | "alertdialog",
+) {
+  expect(screen.getByRole(role, { includeHidden: true }).element().hasAttribute("data-open")).toBe(
+    true,
+  );
+}
+
 /** 指定テキストが表示されるまで待って検証する。 */
 export async function expectText(screen: Awaited<ReturnType<typeof render>>, text: string) {
   await vi.waitFor(() => {

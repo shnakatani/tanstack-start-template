@@ -1,6 +1,7 @@
 import { revalidateLogic } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
+import { ActionForm, ActionFormSubmit } from "@/components/action/form";
 import { DialogScrollBody, dialogScrollLayout } from "@/components/dialog-scroll-body";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +18,9 @@ import { createNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { NoteInput } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
+import { useActionMutation } from "@/hooks/use-action-mutation";
 import { useAppForm } from "@/hooks/use-app-form";
+import { closeAfterInvalidate } from "@/lib/close-after-invalidate";
 import { toastMutationError } from "@/lib/mutation-error";
 
 /**
@@ -37,13 +40,15 @@ export const noteCreateDialogHandle = createDialogHandle<undefined>();
 export function NoteCreateDialog() {
   const queryClient = useQueryClient();
 
-  const createMutation = useMutation({
+  const createMutation = useActionMutation({
     mutationFn: (data: NoteInput) => createNote({ data }),
-    onSuccess: () => {
-      // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる
-      void queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
-      noteCreateDialogHandle.close();
-    },
+    // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる。
+    // 再取得を待ってから閉じる順序は closeAfterInvalidate が固定する
+    onSuccess: closeAfterInvalidate(
+      queryClient,
+      notesQueryOptions.queryKey,
+      noteCreateDialogHandle,
+    ),
     // 失敗時は閉じない (入力を保ったままリトライできる)。server の raw message は
     // 開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
@@ -55,12 +60,7 @@ export function NoteCreateDialog() {
         <DialogHeader>
           <DialogTitle>メモを追加</DialogTitle>
         </DialogHeader>
-        <NoteCreateForm
-          isPending={createMutation.isPending}
-          onSubmit={(note) => {
-            createMutation.mutate(note);
-          }}
-        />
+        <NoteCreateForm onSubmit={createMutation.runAction} />
       </DialogContent>
     </Dialog>
   );
@@ -72,13 +72,7 @@ export function NoteCreateDialog() {
  * 自身を選ぶ。`autoFocus` はこの出し分けを潰す (初期フォーカス位置は
  * `note-create-dialog.test.tsx` が固定している)。
  */
-function NoteCreateForm({
-  isPending,
-  onSubmit,
-}: {
-  isPending: boolean;
-  onSubmit: (note: NoteInput) => void;
-}) {
+function NoteCreateForm({ onSubmit }: { onSubmit: (note: NoteInput) => Promise<void> }) {
   const initialValues: NoteInput = { title: "", body: "" };
 
   const form = useAppForm({
@@ -86,21 +80,15 @@ function NoteCreateForm({
     // 初回 submit までは検証エラーを表示せず、submit 後は変更毎に再検証する
     // (revalidateLogic のデフォルト: mode:"submit", modeAfterSubmission:"change")
     validationLogic: revalidateLogic(),
-    onSubmit: ({ value }) => {
-      // 必須検証は title の AppField validator が保存前に強制する。ここでは
-      // noteInputSchema の trim と同じ正規化だけ先に済ませ、送信値と保存値を一致させる
-      onSubmit({ title: value.title.trim(), body: value.body });
-    },
+    // 必須検証は title の AppField validator が保存前に強制する。ここでは
+    // noteInputSchema の trim と同じ正規化だけ先に済ませ、送信値と保存値を一致させる。
+    // Promise を返すので form.handleSubmit() の Promise が mutation の決着まで続く
+    onSubmit: ({ value }) => onSubmit({ title: value.title.trim(), body: value.body }),
   });
 
   return (
-    <form
-      className={dialogScrollLayout}
-      onSubmit={(e) => {
-        e.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
+    // 検証に失敗すると handleSubmit は onSubmit を呼ばずに resolve し、Transition もすぐ終わる
+    <ActionForm className={dialogScrollLayout} submitAction={() => form.handleSubmit()}>
       <DialogScrollBody>
         <FieldGroup>
           {/* validator は server function と同じ noteInputSchema の項目定義を使う。
@@ -127,10 +115,8 @@ function NoteCreateForm({
       </DialogScrollBody>
       <DialogFooter>
         <DialogClose render={<Button type="button" variant="outline" />}>キャンセル</DialogClose>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "保存中..." : "保存"}
-        </Button>
+        <ActionFormSubmit pendingLabel="保存中">保存</ActionFormSubmit>
       </DialogFooter>
-    </form>
+    </ActionForm>
   );
 }
