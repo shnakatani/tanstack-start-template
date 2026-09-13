@@ -224,6 +224,12 @@ describe("NotesPage", () => {
     });
     expect(screen.getByRole("button", { name: "削除", exact: true }).query()).not.toBeNull();
     expect(screen.getByRole("status", { name: "削除中" }).query()).not.toBeNull();
+    // close は同期的に data-open → data-closed を切り替える。animate-out (duration-100) の間も
+    // Popup は DOM に残るため、上の 2 行 (削除ボタン / status の存在) だけでは
+    // 「close 済みだがアニメーション窓の中」を「開いたまま」と誤判定できてしまう
+    expect(
+      screen.getByRole("alertdialog", { includeHidden: true }).element().hasAttribute("data-open"),
+    ).toBe(true);
 
     resolveRefetch();
 
