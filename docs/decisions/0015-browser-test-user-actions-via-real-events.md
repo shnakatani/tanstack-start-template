@@ -1,6 +1,6 @@
 # ADR-0015: ブラウザテストのユーザー操作は実イベントで発火し、合成イベントは実イベントと同じ属性で送る
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-13
 - 関連: ADR-0013 (待機は retry API に委ねる。本 ADR は発火の側)。PR #16 (Action 層の導入) が持つ「二重発火を state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする
 

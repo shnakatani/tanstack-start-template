@@ -20,7 +20,7 @@
 | [0011](0011-server-fn-as-data-boundary.md)                | server function をデータ境界とし、全 fn 共通の middleware は global に載せる                 | Accepted | 2026-09-06                    | 認証は `src/start.ts` の `functionMiddleware` へ載せて付け忘れる場所を無くす。`beforeLoad` は画面遷移の UX として残しデータ境界にしない。認可の base builder はロール分けが要るときに足す                          |
 | [0012](0012-colocate-domain-code-by-feature.md)           | ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する | Accepted | 2026-09-06                    | 遮断機構はディレクトリを特別扱いしない (specifier / ファイル名パターン / marker の 3 経路)。ドメインは 1 ディレクトリに集め、`src/server/` はドメインに属さないものを持つ                                          |
 | [0013](0013-browser-test-waiting-via-retry-api.md)        | ブラウザテストの待機は vitest の retry API に委ね、自前の待機を積まない                      | Accepted | 2026-09-11                    | 操作後の生 DOM は `findElement()`、状態検証は `expect.element`、`render()` 直後は `element()`。`waitForAnimations()` は mount を待たない                                                                           |
-| [0015](0015-browser-test-user-actions-via-real-events.md) | ブラウザテストのユーザー操作は実イベントで発火し、合成イベントは実イベントと同じ属性で送る   | Proposed | 2026-09-13                    | 二重発火の検証は `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書き、合成イベントの同期 2 連射や `await Promise.resolve()` で間隔を作らない。`dispatchNativeClick` は実クリックと同じ cancelable=true |
+| [0015](0015-browser-test-user-actions-via-real-events.md) | ブラウザテストのユーザー操作は実イベントで発火し、合成イベントは実イベントと同じ属性で送る   | Accepted | 2026-09-13                    | 二重発火の検証は `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書き、合成イベントの同期 2 連射や `await Promise.resolve()` で間隔を作らない。`dispatchNativeClick` は実クリックと同じ cancelable=true |
 
 ## フォーマット規約
 
