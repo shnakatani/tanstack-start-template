@@ -50,10 +50,8 @@ export type NoteInput = v.InferOutput<typeof noteInputSchema>;
  *
  * 1 件を指す入力 (noteIdSchema) と保存済みの 1 件 (noteSchema) の両方がこれを使う。
  * 別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる。
- *
- * 裸の id 単体を検証する経路 (`deleting-ids.ts`) もあるので export する。
  */
-export const noteIdValueSchema = v.pipe(v.number(), v.integer(), v.minValue(1));
+const noteIdValueSchema = v.pipe(v.number(), v.integer(), v.minValue(1));
 
 /**
  * 保存済み title の制約。入力側と同じ長さ制約を課すが、**変換は持たない**。

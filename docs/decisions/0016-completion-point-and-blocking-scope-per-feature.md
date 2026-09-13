@@ -61,7 +61,7 @@ TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で i
 
 半透明は `opacity-60` (`src/routes/notes/index.tsx` の `busyRowAppearance`) を使う。`opacity-50` は本文テキストのコントラストを 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る (2026-09-14 に `src/routes/notes/index.test.tsx` の楽観行の a11y 検査が axe で実測した値)。半透明と `aria-busy` は読み上げに出ないため、通知は announcer で出し、行には仮想カーソル用の静的テキスト (「削除中」「保存中」) を置く (ADR-0017)。
 
-`useMutationState` の `variables` は `unknown` で、`mutationKey` は前方一致で当たるため別の mutation の値も混ざる。行へ渡す前にスキーマで `safeParse` し、失敗は `console.warn` に raw input ごと残して除外する。`select` の中で throw しないのは、描画中に走るため一覧ごと Error Boundary へ落ちるからである。実装は `src/features/notes/deleting-ids.ts` と `src/features/notes/creating-rows.ts`。
+`mutationKey` は既定で前方一致に当たるので、`useMutationState` と `isMutating` の `filters` には `exact: true` を付ける (query-core の `matchMutation`)。`variables` の型は `unknown` のままなので、行へ渡す前にスキーマで `safeParse` して型へ絞り、失敗は `console.warn` に raw input ごと残して除外する。`select` の中で throw しないのは、描画中に走るため一覧ごと Error Boundary へ落ちるからである。絞り込みは `src/lib/parse-each.ts` の `parseEach` が持ち、schema は `src/features/notes/deleting-ids.ts` と `src/features/notes/creating-rows.ts` が持つ。
 
 ### 検討した選択肢
 

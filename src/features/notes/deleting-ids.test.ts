@@ -29,9 +29,8 @@ describe("parseDeletingIds", () => {
   });
 
   it("削除対象の形を満たさない値は warn を残して除外する", () => {
-    // id の 0 / -1 / 1.5 は noteIdValueSchema の境界 (autoincrement rowid は 1 始まりの整数)。
-    // name 欠落と素の number は、別の mutation の variables が mutationKey の前方一致で
-    // 混ざる経路
+    // id の 0 / -1 / 1.5 は noteIdSchema の境界 (autoincrement rowid は 1 始まりの整数)。
+    // name 欠落と素の number は、`variables` が `unknown` で届く経路
     const invalid = [
       { id: 0, name: "境界" },
       { id: -1, name: "境界" },

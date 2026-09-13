@@ -18,27 +18,27 @@ describe("parseCreatingRows", () => {
   });
 
   it("NoteInput の形の variables を submittedAt 付きで返す", () => {
-    expect(parseCreatingRows([{ input: { title: "a", body: "b" }, submittedAt: 10 }])).toEqual([
-      { key: 10, input: { title: "a", body: "b" } },
+    expect(parseCreatingRows([{ variables: { title: "a", body: "b" }, submittedAt: 10 }])).toEqual([
+      { variables: { title: "a", body: "b" }, submittedAt: 10 },
     ]);
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it("NoteInput でない variables は warn を残して除外する", () => {
-    // { nope: 1 } は別の mutation の variables が mutationKey の前方一致で混ざる経路。
-    // title が空文字は noteInputSchema の minLength(1) の境界
+    // { nope: 1 } は別の mutation の variables が混ざる経路。title が空文字は
+    // noteInputSchema の minLength(1) の境界
     const invalid = [{ nope: 1 }, { title: "", body: "b" }, undefined];
 
     expect(
       parseCreatingRows([
-        { input: { title: "a", body: "b" }, submittedAt: 10 },
-        ...invalid.map((input, index) => ({ input, submittedAt: 20 + index })),
+        { variables: { title: "a", body: "b" }, submittedAt: 10 },
+        ...invalid.map((variables, index) => ({ variables, submittedAt: 20 + index })),
       ]),
-    ).toEqual([{ key: 10, input: { title: "a", body: "b" } }]);
+    ).toEqual([{ variables: { title: "a", body: "b" }, submittedAt: 10 }]);
 
     expect(warnSpy).toHaveBeenCalledTimes(invalid.length);
     expect(warnSpy).toHaveBeenCalledWith("[parseCreatingRows] variables が NoteInput でない", {
-      rawInput: { nope: 1 },
+      rawInput: { variables: { nope: 1 }, submittedAt: 20 },
     });
   });
 });

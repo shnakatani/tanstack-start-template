@@ -112,7 +112,8 @@ function NotesPage() {
   // `mutation.state.variables` は `unknown` なので、行と突き合わせる前に削除対象へ絞って
   // id を取り出す (形が違う値は parseDeletingIds が warn を残して除外する)
   const pendingDeleteVariables = useMutationState({
-    filters: { mutationKey: noteMutationKeys.remove, status: "pending" },
+    // exact を付けないと mutationKey は前方一致で当たる (query-core の matchMutation)
+    filters: { mutationKey: noteMutationKeys.remove, exact: true, status: "pending" },
     select: (mutation) => mutation.state.variables,
   });
   const deletingIds = parseDeletingIds(pendingDeleteVariables);
@@ -121,9 +122,10 @@ function NotesPage() {
   // 一覧の先頭に出すこの行だけが伝える (ADR-0016)。mutation はダイアログ側にあるため
   // mutationKey 経由で読む。submittedAt は同時に走る追加を React の key で区別するのに使う
   const pendingCreateStates = useMutationState({
-    filters: { mutationKey: noteMutationKeys.create, status: "pending" },
+    // exact を付けないと mutationKey は前方一致で当たる (query-core の matchMutation)
+    filters: { mutationKey: noteMutationKeys.create, exact: true, status: "pending" },
     select: (mutation) => ({
-      input: mutation.state.variables,
+      variables: mutation.state.variables,
       submittedAt: mutation.state.submittedAt,
     }),
   });
@@ -135,6 +137,7 @@ function NotesPage() {
     const alreadyDeleting =
       queryClient.isMutating({
         mutationKey: noteMutationKeys.remove,
+        exact: true,
         // variables は `unknown` なので、比較する前に描画側と同じ経路で id へ絞る
         predicate: (mutation) => parseDeletingIds([mutation.state.variables]).includes(target.id),
       }) > 0;
@@ -177,12 +180,12 @@ function NotesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {creatingRows.map(({ key, input }) => (
+              {creatingRows.map(({ submittedAt, variables }) => (
                 // 保存中の行。一覧は createdAt の降順なので先頭に出し、再取得完了で実データに
                 // 置き換わる (ADR-0016)。id をまだ持たないので削除トリガーは出さない
-                <TableRow key={key} aria-busy className={busyRowAppearance}>
-                  <TableCell>{input.title}</TableCell>
-                  <TableCell className="max-w-xs truncate">{input.body}</TableCell>
+                <TableRow key={submittedAt} aria-busy className={busyRowAppearance}>
+                  <TableCell>{variables.title}</TableCell>
+                  <TableCell className="max-w-xs truncate">{variables.body}</TableCell>
                   {/* 作成日時はまだ無いので、その位置で保存中を伝える。行の aria-busy が true の
                       間は支援技術が内容の変化を無視してよい (WAI-ARIA 1.2 aria-busy) ので、この
                       テキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0017) */}
