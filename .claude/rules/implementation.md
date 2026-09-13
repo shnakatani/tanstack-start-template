@@ -81,7 +81,7 @@ lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014
 - `onSuccess` の再取得を await せずに close すると、ダイアログが消えた後の古い一覧に pending 表示が付かない
 - Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる
 - `useOptimistic` に `useQuery` / `useSuspenseQuery` の `data` と派生値を渡さない。query 由来の楽観表示は `mutation.isPending && mutation.variables === id` で行う (`isPending` はゲートで pending 表示ではない。ADR-0014「楽観表示の使い分け」)
-- Action の決着前の二重発火は Action 層が塞ぐ。呼び出し側で閉包のフラグを持たない
+- 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない。pending は次のユーザーイベントより前に描画される (ADR-0014)
 
 ## 手動メモ化の増減
 

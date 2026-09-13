@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
@@ -155,8 +156,10 @@ describe("DeleteConfirmDialog", () => {
     await openDialog(screen);
     const element = screen.getByRole("button", { name: "削除", exact: true }).element();
 
-    dispatchNativeClick(element);
-    dispatchNativeClick(element);
+    // 実イベント (CDP 経由) で 2 回発火する (バックドロップが pointer を遮るためキーボードで)
+    element.focus();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Enter}");
 
     expect(onConfirm).toHaveBeenCalledExactlyOnceWith(TARGET);
   });

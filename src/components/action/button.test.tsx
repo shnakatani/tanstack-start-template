@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { expectNoA11yViolations } from "@/test/a11y";
-import { dispatchNativeClick } from "@/test/native-click";
 import { CAUGHT_PREFIX, renderInCatchBoundary } from "@/test/render-in-catch-boundary";
 
 import { ActionButton } from "./button";
@@ -46,19 +46,17 @@ describe("ActionButton", () => {
     pending.resolve(undefined);
   });
 
-  it("決着前の再クリックでは action を呼ばない (isPending が立つ前を含む)", async () => {
+  it("決着前の再クリックでは action を呼ばない", async () => {
     const pending = Promise.withResolvers<undefined>();
     const action = vi.fn(() => pending.promise);
     const screen = await render(<ActionButton action={action}>保存</ActionButton>);
     const button = screen.getByRole("button", { name: "保存", exact: true });
 
-    // 同期に 2 回発火させ、再レンダー (isPending=true) より前の 2 回目を ref のフラグで塞ぐことを
-    // 固定する。フラグを外すと action が 2 回呼ばれて落ちる (2026-09-13 に mutant で実測)
-    dispatchNativeClick(button.element());
-    dispatchNativeClick(button.element());
+    // 実イベント (CDP 経由) で 3 回発火する。2 回目は次のユーザーイベント、3 回目は aria-disabled を確認した後
+    await button.click();
+    await userEvent.keyboard("{Enter}");
     await expect.element(button).toHaveAttribute("aria-disabled", "true");
-    // 再レンダー後の 3 回目は ref のフラグと Base UI の aria-disabled の両方が止める
-    dispatchNativeClick(button.element());
+    await userEvent.keyboard("{Enter}");
 
     expect(action).toHaveBeenCalledOnce();
     pending.resolve(undefined);

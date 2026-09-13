@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { expectNoA11yViolations } from "@/test/a11y";
-import { dispatchNativeClick } from "@/test/native-click";
 import { CAUGHT_PREFIX, renderInCatchBoundary } from "@/test/render-in-catch-boundary";
 
 import { ActionForm, ActionFormSubmit } from "./form";
@@ -41,10 +41,11 @@ describe("ActionForm", () => {
         <ActionFormSubmit>保存</ActionFormSubmit>
       </ActionForm>,
     );
-    const element = screen.getByRole("button", { name: "保存", exact: true }).element();
+    const button = screen.getByRole("button", { name: "保存", exact: true });
 
-    dispatchNativeClick(element);
-    dispatchNativeClick(element);
+    // 実イベント (CDP 経由) で 2 回発火する
+    await button.click();
+    await userEvent.keyboard("{Enter}");
 
     expect(submitAction).toHaveBeenCalledOnce();
     pending.resolve(undefined);

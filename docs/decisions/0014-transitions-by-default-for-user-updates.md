@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-13
-- 関連: ADR-0004 (ハンドラを同期関数にする理由。「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)
+- 関連: ADR-0004 (ハンドラを同期関数にする理由。「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)
 
 ## Context
 
@@ -25,7 +25,7 @@ grep -rln "useMutation(" src/ --include='*.tsx'                                 
 
 mutation を持つのは `src/routes/notes/-components/note-create-dialog.tsx` (追加) と `src/routes/notes/index.tsx` (削除) の 2 箇所である。
 どちらも `onSuccess` の中で `invalidateQueries` を `void` した直後にダイアログを `close()` する。
-削除の二重発火は `src/components/delete-confirm-dialog.tsx` の `deleteConfirmMutationProps` が閉包のフラグで塞いでいる。`isPending` は再レンダー後にしか立たず、それより前に届く再クリックを `disabled` では止められないためである。
+削除の二重発火は `src/components/delete-confirm-dialog.tsx` の `deleteConfirmMutationProps` が閉包のフラグで塞いでいる。コード上の理由は「`isPending` は再レンダー後にしか立たず、それより前に届く再クリックを `disabled` では止められない」だが、この前提は実測されていない (2026-09-13 に React の pending 描画は次のユーザーイベントより前に流れると確認した)。
 
 mutation 以外のユーザー操作由来の更新は、`src/components/route-error.tsx` の `handleRetry` (Error Boundary の `reset()` と `router.invalidate()`) と、ダイアログの開閉 (Base UI の handle) がある。
 
@@ -118,9 +118,16 @@ React の `<form action>` + `useFormStatus` を使わないのは、submit の�
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `action` | `() => Promise<void> \| void`。`startTransition` の中で await する                                                                                                                                                             |
 | pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定し、状態は `<output>` (暗黙ロール status) + `aria-label` の sr-only テキストで伝える |
-| 二重発火 | Action の Promise が決着するまでの再クリックを ref のフラグで塞ぐ。`isPending` が立つ前に届く分も含む。この dedupe の実装は Action 層だけが持つ                                                                                |
+| 二重発火 | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (「二重発火は state だけで塞ぐ」)                                                                                                      |
 | 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (制約 3)。mutation は次項の `useActionMutation` を通す                                                                                                                    |
 | 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                                                                                              |
+
+### 二重発火は state だけで塞ぐ
+
+react.dev が示す形は `useTransition` の `disabled={isPending}` と `useFormStatus` の `disabled={pending}` で、どちらも state だけで決着前の再操作を止める。`useActionState` は再操作を queue に積み、拒否しない。
+React はユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、2 回目の実イベントは `aria-disabled` の部品に届き、Base UI が click を止める。
+
+2026-09-13 まで `useActionTransition` は ref のフラグを併せ持っていた。理由は「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」だったが、この事象は実イベントでは起きず、フラグはその検証を通すためだけにあった。検証を実イベントで書き直した経緯と根拠は ADR-0015 が持つ。
 
 ### mutation の書き方
 
@@ -149,6 +156,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | 案                                                            | 評価                                                                                                                                                                | 採否     |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | app 層に `src/components/action/` を置き `action` prop で包む | React Conf 2025 デモと同じ構造。registry を触らず (ADR-0006)、基盤にも依存しない。dedupe と pending の実装が 1 箇所に集まる                                         | **採用** |
+| ref や閉包のフラグで同一タスク内の 2 連射も塞ぐ               | 実イベントでは起きない事象への防御で、その検証を書くためだけにフラグが要る (ADR-0015)。react.dev の形 (`disabled={pending}`) から外れる                             | 却下     |
 | 呼び出し側ごとに `useTransition` を書く                       | 決着前の dedupe と a11y の状態伝達を毎回書き直す。`deleteConfirmMutationProps` の閉包と同じ形が箇所ごとに散る                                                       | 却下     |
 | Base UI #5133 か React Aria #9894 の出荷を待つ                | どちらも 2026-09-13 時点で merge 済み実装が無く、時期も未定                                                                                                         | 却下     |
 | 現状維持 (mutation の `isPending`)                            | Transition の意味論 (割り込み、Action の順序保証) を持たず、pending の切り替えが `<ViewTransition>` の対象にならない。React チームの区分 (Context) から外れ続ける   | 却下     |
@@ -191,6 +199,8 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 - React 19.3 リリース記事: https://react.dev/blog/2026/09/09/react-19-3
 - react/react #35392 (`enableParallelTransitions` の追加) / #37290 (既定で有効化): https://github.com/react/react/pull/35392 / https://github.com/react/react/pull/37290
 - `useTransition` リファレンス: https://react.dev/reference/react/useTransition
+- `<form>` / `useFormStatus` リファレンス: https://react.dev/reference/react-dom/components/form / https://react.dev/reference/react-dom/hooks/useFormStatus
+- reactwg/react-18 #21 Automatic batching for fewer renders in React 18: https://github.com/reactwg/react-18/discussions/21
 - `useSyncExternalStore` リファレンス (Caveats): https://react.dev/reference/react/useSyncExternalStore
 - `useOptimistic` リファレンス: https://react.dev/reference/react/useOptimistic
 - TanStack/query #9742 Is React Query incompatible with React Actions/Transitions/useOptimistic?: https://github.com/TanStack/query/issues/9742
