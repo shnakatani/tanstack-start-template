@@ -173,7 +173,8 @@ lint は custom `<Button>` の中身を見ないため機械強制がない。�
 | ローディング等の状態表示                              | `<output>` (暗黙ロール status) + `aria-label`。タグを差し替えられない要素 (svg 等) は理由コメント付きの抑制で `role="status"` |
 
 - 「隣接テキストが同じ意味」と言えるのは、そのテキストが実際に読み上げられるときに限る
-- `role="status"` は同一画面に複数あり得る。テストは accessible name で特定する
+- live region は初期マークアップに置いて消さない。条件付きで mount しない。通知は `src/lib/live-announcer.ts` の `announce()` に集約する (ADR-0017)。`<output>` + `aria-label` の形は常時 mount の region にだけ当てる
+- pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0017)
 - メニュー内の全項目を包む単一の `DropdownMenuGroup` には名前を与えない。base-ui の `MenuRoot` が popup に `aria-labelledby` を付けるため、メニュー自体がトリガー由来の名前を持つ
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 

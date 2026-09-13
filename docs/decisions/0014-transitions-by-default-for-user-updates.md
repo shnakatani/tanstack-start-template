@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-13
-- Revised: 2026-09-14 (完了点とブロック範囲の選択を ADR-0016 の軸へ移し、再取得完了まで待つこととトリガーの全体無効化を既定から外した)
+- Revised: 2026-09-14 (完了点とブロック範囲の選択を ADR-0016 の軸へ移し、再取得完了まで待つこととトリガーの全体無効化を既定から外した。pending の状態伝達を Spinner の `role="status"` から `aria-busy` + announcer (ADR-0017) へ)
 - 関連: ADR-0004 (ハンドラを同期関数にする理由。「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0016 (完了点とブロック範囲の軸)
 
 ## Context
@@ -115,13 +115,13 @@ query のキャッシュ更新は制約 1 により緊急更新に落ちるの�
 最初に置くのは `button.tsx`、`alert-dialog.tsx`、`form.tsx` の 3 つで、メモ画面の 2 経路が使う最小集合である。`form.tsx` だけは `ui/` に対応部品が無く、素の `<form>` を包む。
 React の `<form action>` + `useFormStatus` を使わないのは、submit の経路を TanStack Form の `handleSubmit` (FormData を経由しない) にするためと、決着前の二重 submit を部品側の dedupe で塞ぐためである。`ActionForm` の context は `useFormStatus` と同じ形で pending を子孫へ渡す。
 
-| 契約     | 内容                                                                                                                                                                                                                                                                                                                         |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `action` | `() => Promise<void> \| void`。`startTransition` に直接渡す (同期 / 非同期どちらも受け、決着まで pending が続く)                                                                                                                                                                                                             |
-| pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定し、状態は registry の `Spinner` (`role="status"`) に `aria-label` を与えて伝え、要素自身にも `aria-busy` を付ける (button の子孫 role は AT が presentational として扱いうるため) |
-| 二重発火 | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (「二重発火は state だけで塞ぐ」)                                                                                                                                                                                                    |
-| 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (制約 3)。mutation は次項の `useActionMutation` を通す                                                                                                                                                                                                                  |
-| 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                                                                                                                                                                                            |
+| 契約     | 内容                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `action` | `() => Promise<void> \| void`。`startTransition` に直接渡す (同期 / 非同期どちらも受け、決着まで pending が続く)                                                                                                                                                                                                                                                                               |
+| pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定する。`Spinner` は視覚専用 (`aria-hidden`)。状態は要素自身の `aria-busy` + `aria-disabled` で持ち、通知は feature 側が announcer で出す (ADR-0017)。button の子孫はユーザーエージェントが accessibility API に露出すべきでない (WAI-ARIA 1.2 §5.2.9) |
+| 二重発火 | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (「二重発火は state だけで塞ぐ」)                                                                                                                                                                                                                                                                      |
+| 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (制約 3)。mutation は次項の `useActionMutation` を通す                                                                                                                                                                                                                                                                                    |
+| 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                                                                                                                                                                                                                                                              |
 
 ### 二重発火は state だけで塞ぐ
 

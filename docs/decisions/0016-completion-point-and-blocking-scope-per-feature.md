@@ -59,7 +59,7 @@ TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で i
 | 削除 | (a) 確定でダイアログを閉じる | 行を `aria-busy` + 半透明にし、行のトリガーだけ無効化。mutation に `mutationKey` を付け、一覧側で `useMutationState` (`status: "pending"`) の `variables` を配列で読んで行ごとに判定し、同時削除を許す。各 mutation は自分の再取得を待つ | 失敗は toast と行の復帰で戻せる。確定時に閉じるので、共有 handle を先行削除の `onSuccess` が閉じる問題も消える |
 | 追加 | (b) サーバー応答で閉じる     | `onSuccess` の先頭で閉じ、再取得の Promise を返す。mutation はダイアログ側にあるので `mutationKey` を付け、一覧側で `useMutationState` の `variables` を読んで新しい行を半透明に出し、再取得完了で実データに置き換える                   | 楽観で閉じると失敗時に入力を戻す先が無い                                                                       |
 
-半透明は `opacity-60` (`src/routes/notes/index.tsx` の `busyRowAppearance`) を使う。`opacity-50` は本文テキストのコントラストを 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る (2026-09-14 に `src/routes/notes/index.test.tsx` の楽観行の a11y 検査が axe で実測した値)。半透明と `aria-busy` は読み上げに出ないため、行内に `<output>` (暗黙ロール status) で「保存中」/「削除中」を置く (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行)。
+半透明は `opacity-60` (`src/routes/notes/index.tsx` の `busyRowAppearance`) を使う。`opacity-50` は本文テキストのコントラストを 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る (2026-09-14 に `src/routes/notes/index.test.tsx` の楽観行の a11y 検査が axe で実測した値)。半透明と `aria-busy` は読み上げに出ないため、通知は announcer で出し、行には仮想カーソル用の静的テキスト (「削除中」「保存中」) を置く (ADR-0017)。
 
 `useMutationState` の `variables` は `unknown` で、`mutationKey` は前方一致で当たるため別の mutation の値も混ざる。行へ渡す前にスキーマで `safeParse` し、失敗は `console.warn` に raw input ごと残して除外する。`select` の中で throw しないのは、描画中に走るため一覧ごと Error Boundary へ落ちるからである。実装は `src/features/notes/deleting-ids.ts` と `src/features/notes/creating-rows.ts`。
 
