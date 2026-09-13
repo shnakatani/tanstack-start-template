@@ -214,9 +214,12 @@ describe("NoteCreateDialog", () => {
     expect(titleTextbox(screen).query()).not.toBeNull();
   });
 
-  it("保存中は保存ボタンが pending になり、再取得が終わるまでダイアログが開いたまま", async () => {
-    vi.mocked(createNote).mockResolvedValue({ id: 1 });
+  it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
+    // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0016)。
+    // 即 resolve だと応答前の窓が観測できない (testing.md「遅延 rejection で中間状態を観測」)
+    const create = Promise.withResolvers<{ id: number }>();
     const invalidate = Promise.withResolvers<undefined>();
+    vi.mocked(createNote).mockImplementation(() => create.promise);
     const { screen, invalidateSpy } = await renderDialog();
     // renderDialog が spy を張った queryClient と同じインスタンスを Provider が持つので、
     // onSuccess の invalidateQueries にこの差し替えが効く
@@ -226,17 +229,19 @@ describe("NoteCreateDialog", () => {
 
     clickSave(screen);
 
-    // createNote は即 resolve するが、invalidateQueries が未決着のあいだは閉じない
+    // 応答前は pending 表示のまま開いている
     await expect.element(screen.getByRole("status", { name: "保存中" })).toBeInTheDocument();
-    await vi.waitFor(() => {
-      expect(vi.mocked(createNote)).toHaveBeenCalledOnce();
-    });
     expectDialogOpen(screen, "dialog");
 
-    invalidate.resolve(undefined);
+    create.resolve({ id: 1 });
 
+    // 応答で閉じる。invalidateQueries は未決着
     await vi.waitFor(() => {
       expect(titleTextbox(screen).query()).toBeNull();
     });
+    // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
+    expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
+
+    invalidate.resolve(undefined);
   });
 });

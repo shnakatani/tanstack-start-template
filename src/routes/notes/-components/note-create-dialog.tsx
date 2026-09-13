@@ -15,12 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
 import { createNote } from "@/features/notes/functions";
+import { noteMutationKeys } from "@/features/notes/mutations";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { NoteInput } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { useAppForm } from "@/hooks/use-app-form";
-import { closeAfterInvalidate } from "@/lib/close-after-invalidate";
 import { toastMutationError } from "@/lib/mutation-error";
 
 /**
@@ -41,14 +41,15 @@ export function NoteCreateDialog() {
   const queryClient = useQueryClient();
 
   const createMutation = useActionMutation({
+    mutationKey: noteMutationKeys.create,
     mutationFn: (data: NoteInput) => createNote({ data }),
-    // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる。
-    // 再取得を待ってから閉じる順序は closeAfterInvalidate が固定する
-    onSuccess: closeAfterInvalidate(
-      queryClient,
-      notesQueryOptions.queryKey,
-      noteCreateDialogHandle,
-    ),
+    // 完了点 (b): 応答で閉じ、再取得の Promise を返して pending を再取得完了まで保つ (ADR-0016)。
+    // 一覧側は useMutationState でこの pending を読み、新しい行を先に出す。
+    // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる
+    onSuccess: () => {
+      noteCreateDialogHandle.close();
+      return queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
+    },
     // 失敗時は閉じない (入力を保ったままリトライできる)。server の raw message は
     // 開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,

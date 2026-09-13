@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { parseCreatingRows } from "@/features/notes/creating-rows";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import { removeNote } from "@/features/notes/functions";
 import { noteMutationKeys } from "@/features/notes/mutations";
@@ -100,6 +101,19 @@ function NotesPage() {
   });
   const deletingIds = parseDeletingIds(pendingDeleteVariables);
 
+  // 完了点 (b) の追加は応答でダイアログが閉じるので、再取得完了までの pending は
+  // 一覧の先頭に出すこの行だけが伝える (ADR-0016)。mutation はダイアログ側にあるため
+  // mutationKey 経由で読む。submittedAt は同時に走る追加を React の key で区別するのに使う
+  const creatingRows = parseCreatingRows(
+    useMutationState({
+      filters: { mutationKey: noteMutationKeys.create, status: "pending" },
+      select: (mutation) => ({
+        input: mutation.state.variables,
+        submittedAt: mutation.state.submittedAt,
+      }),
+    }),
+  );
+
   // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
   // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
   function confirmDelete(target: DeleteTarget<Note["id"]>) {
@@ -128,7 +142,7 @@ function NotesPage() {
       />
 
       <div className="flex flex-1 flex-col p-4">
-        {notesQuery.data.length === 0 ? (
+        {notesQuery.data.length === 0 && creatingRows.length === 0 ? (
           <Empty>
             <EmptyHeader>
               <EmptyTitle>{ENTITY_LABEL}が登録されていません</EmptyTitle>
@@ -145,6 +159,16 @@ function NotesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {creatingRows.map(({ key, input }) => (
+                // 保存中の行。一覧は createdAt の降順なので先頭に出し、再取得完了で実データに
+                // 置き換わる (ADR-0016)。id をまだ持たないので削除トリガーは出さない
+                <TableRow key={key} aria-busy className="opacity-50">
+                  <TableCell>{input.title}</TableCell>
+                  <TableCell className="max-w-xs truncate">{input.body}</TableCell>
+                  <TableCell>保存中</TableCell>
+                  <TableCell />
+                </TableRow>
+              ))}
               {notesQuery.data.map((note) => {
                 // 楽観表示は query 側 (pending な mutation の variables) で行う。useOptimistic は
                 // query の data を base にできない (ADR-0014「楽観表示の使い分け」)。確定で

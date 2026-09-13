@@ -7,6 +7,7 @@ import { render } from "vitest-browser-react";
 
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
+import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { createTestRouter } from "@/test/create-test-router";
@@ -22,7 +23,7 @@ vi.mock("@/features/notes/functions", () => ({
   removeNote: vi.fn(),
 }));
 
-const { listNotes, removeNote } = await import("@/features/notes/functions");
+const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
 
 import { loadNotesPageData, Route } from "./index";
 
@@ -153,6 +154,67 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await expectText(screen, NOTE.body);
     await expectText(screen, NOTE_CREATED_AT_TEXT);
+  });
+
+  it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
+    // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
+    // (ADR-0016「テンプレートのメモ画面への適用」)
+    const create = Promise.withResolvers<{ id: number }>();
+    const refetch = Promise.withResolvers<Note[]>();
+    const created: Note = {
+      id: 3,
+      title: "新しいメモ",
+      body: "本文",
+      createdAt: new Date("2026-08-19T00:30:00.000Z"),
+    };
+    vi.mocked(listNotes)
+      .mockResolvedValueOnce([NOTE])
+      .mockImplementation(() => refetch.promise);
+    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+
+    await screen.getByRole("button", { name: "＋ メモを追加" }).click();
+    await screen
+      .getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true })
+      .fill(created.title);
+    await screen
+      .getByRole("textbox", { name: NOTE_FIELD_LABELS.body, exact: true })
+      .fill(created.body);
+    // 保存ボタンは inert バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
+    screen.getByRole("button", { name: "保存", exact: true }).element().focus();
+    await userEvent.keyboard("{Enter}");
+
+    // 応答前から新しい行が先頭に busy で出る (モーダル表示中は行が aria-hidden なので includeHidden)
+    const optimisticRow = screen.getByRole("row", {
+      name: new RegExp(created.title),
+      includeHidden: true,
+    });
+    await expect.element(optimisticRow).toHaveAttribute("aria-busy", "true");
+
+    create.resolve({ id: created.id });
+
+    // 応答でダイアログが閉じ、再取得中も行は busy のまま
+    await vi.waitFor(() => {
+      expect(
+        screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true }).query(),
+      ).toBeNull();
+    });
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(created.title) }))
+      .toHaveAttribute("aria-busy", "true");
+    // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
+    const rows = screen.getByRole("row").all();
+    expect(rows[1]?.element().textContent).toContain(created.title); // rows[0] はヘッダ行
+
+    refetch.resolve([created, NOTE]);
+
+    // 実データに置き換わる (busy でない行が 1 つだけ)
+    await vi.waitFor(() => {
+      const matched = screen.getByRole("row", { name: new RegExp(created.title) }).all();
+      expect(matched).toHaveLength(1);
+      expect(matched[0]?.element().getAttribute("aria-busy")).not.toBe("true");
+    });
   });
 
   it("削除を確認すると removeNote が number の id で呼ばれ、一覧が再取得される", async () => {
