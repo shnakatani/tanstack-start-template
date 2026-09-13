@@ -52,11 +52,12 @@ describe("ActionButton", () => {
     const screen = await render(<ActionButton action={action}>保存</ActionButton>);
     const button = screen.getByRole("button", { name: "保存", exact: true });
 
-    // 同期に 2 回発火させ、再レンダー (isPending=true) より前の 2 回目を塞ぐことを固定する
+    // 同期に 2 回発火させ、再レンダー (isPending=true) より前の 2 回目を ref のフラグで塞ぐことを
+    // 固定する。フラグを外すと action が 2 回呼ばれて落ちる (2026-09-13 に mutant で実測)
     dispatchNativeClick(button.element());
     dispatchNativeClick(button.element());
     await expect.element(button).toHaveAttribute("aria-disabled", "true");
-    // 再レンダー後の 3 回目は Base UI が aria-disabled で止める
+    // 再レンダー後の 3 回目は ref のフラグと Base UI の aria-disabled の両方が止める
     dispatchNativeClick(button.element());
 
     expect(action).toHaveBeenCalledOnce();
