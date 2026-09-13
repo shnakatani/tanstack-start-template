@@ -2,7 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-09-13
-- 関連: ADR-0004 (ハンドラを同期関数にする理由。「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)
+- Revised: 2026-09-14 (完了点とブロック範囲の選択を ADR-0016 の軸へ移し、再取得完了まで待つこととトリガーの全体無効化を既定から外した)
+- 関連: ADR-0004 (ハンドラを同期関数にする理由。「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0016 (完了点とブロック範囲の軸)
 
 ## Context
 
@@ -99,14 +100,14 @@ query のキャッシュ更新は制約 1 により緊急更新に落ちるの�
 
 **ユーザー操作に起因する更新は Transition の中で行い、pending は Transition から取る。**
 
-| 更新の種類                                   | 扱い                                                                                             | 担う場所                                |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| ナビゲーション、GET                          | 同期 Transition。データは Suspense で読む                                                        | TanStack Router (既存)                  |
-| mutation                                     | 非同期 Transition (Action)。`mutateAsync` を await する                                          | `src/components/action/`                |
-| query の再取得 (`invalidateQueries`)         | Action の中で待つ。描画は緊急更新に落ちる (制約 1)                                               | mutation の `onSuccess`                 |
-| ダイアログの開閉                             | 緊急更新のまま (Base UI の store、制約 1)。mutation 成功後の close は再取得を await した後に呼ぶ | mutation の `onSuccess`                 |
-| Error Boundary の `reset()` と loader 再実行 | 緊急更新のまま。`router.invalidate()` の描画は Router が Transition 化する                       | `src/components/route-error.tsx` (既存) |
-| 制御コンポーネントの入力値                   | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                    | 各部品                                  |
+| 更新の種類                                   | 扱い                                                                                                                                                                           | 担う場所                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
+| ナビゲーション、GET                          | 同期 Transition。データは Suspense で読む                                                                                                                                      | TanStack Router (既存)                  |
+| mutation                                     | 非同期 Transition (Action)。`mutateAsync` を await する。完了点 (a) (ADR-0016) では Action は close だけを含み、mutation は Transition の外で `void runAction(...)` として走る | `src/components/action/`                |
+| query の再取得 (`invalidateQueries`)         | mutation の `onSuccess` が Promise を返して待つ (pending の源)。ダイアログを閉じる時点は ADR-0016 の完了点の軸で選ぶ。描画は緊急更新に落ちる (制約 1)                          | mutation の `onSuccess`                 |
+| ダイアログの開閉                             | 緊急更新のまま (Base UI の store、制約 1)。mutation 成功後に閉じる時点は ADR-0016 の完了点の軸で選ぶ                                                                           | mutation の `onSuccess`                 |
+| Error Boundary の `reset()` と loader 再実行 | 緊急更新のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                     | `src/components/route-error.tsx` (既存) |
+| 制御コンポーネントの入力値                   | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                                                                                                  | 各部品                                  |
 
 ### Action 層 `src/components/action/`
 
@@ -133,13 +134,13 @@ React はユーザー起点のイベントごとに次のイベントより前�
 
 mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、次を持つ。
 
-| 項目                    | 規範                                                                                                                                                                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 入力                    | `useMutation` の options。型で `onError` を必須にする。省略すると reject の吸収が無通知の失敗になるため、型で止める                                                                                                                                                 |
-| 出力                    | `useMutation` の戻り値から `mutate` / `mutateAsync` を型で外し、`runAction(variables): Promise<void>` を足す。`runAction` は `mutateAsync` を await し、reject を吸収する。通知は `onError` (`toastMutationError`) が担う                                           |
-| 呼び出し                | `action` prop から `runAction` を呼ぶ。`mutate` は Promise を返さず reject も `.catch(noop)` で握るため、Transition が完了も失敗も観測できない (`useMutation.js`)                                                                                                   |
-| 再取得と close          | `onSuccess` に `closeAfterInvalidate` (`src/lib/close-after-invalidate.ts`) を渡し、`await queryClient.invalidateQueries(...)` の後に `handle.close()` を呼ぶ。TanStack Query は `onSuccess` の Promise を待つので、再取得完了まで `isPending` と Transition が続く |
-| `await` 後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる (`useTransition` の既知の制限)。画面の更新は query の再取得に任せる                                                                                                                         |
+| 項目                    | 規範                                                                                                                                                                                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入力                    | `useMutation` の options。型で `onError` を必須にする。省略すると reject の吸収が無通知の失敗になるため、型で止める                                                                                                                                         |
+| 出力                    | `useMutation` の戻り値から `mutate` / `mutateAsync` を型で外し、`runAction(variables): Promise<void>` を足す。`runAction` は `mutateAsync` を await し、reject を吸収する。通知は `onError` (`toastMutationError`) が担う                                   |
+| 呼び出し                | `action` prop から `runAction` を呼ぶ。`mutate` は Promise を返さず reject も `.catch(noop)` で握るため、Transition が完了も失敗も観測できない (`useMutation.js`)                                                                                           |
+| 再取得と close          | 閉じる時点は ADR-0016 で選ぶ。再取得完了まで待つ場合だけ `onSuccess` を async にし、`await queryClient.invalidateQueries(...)` の後に `handle.close()` を呼ぶ。TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` と Transition が続く |
+| `await` 後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる (`useTransition` の既知の制限)。画面の更新は query の再取得に任せる                                                                                                                 |
 
 ### 楽観表示の使い分け
 
@@ -173,9 +174,9 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ## Consequences
 
-- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と、同時操作を塞ぐトリガーの無効化のゲートは除く)
-- ダイアログは再取得の完了まで pending 表示のまま開いている。古い一覧が pending 表示なしで見える経路が消える代わりに、再取得が遅い環境では閉じるまでが長くなる
-- Transition 化で得るのは pending の自動管理、Action の順序保証、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 4 つ。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (制約 1、制約 4)
+- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示のゲートは除く)
+- ダイアログを閉じる時点と、その間に止める範囲は ADR-0016 の軸で機能ごとに選ぶ。再取得完了前に閉じるときは、対象の項目が mutation の pending から busy を表現する
+- Transition 化で得るのは pending の自動管理、Action の順序保証 (完了点 (a) で Transition の外に出した mutation は除く。ADR-0016)、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 4 つ。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (制約 1、制約 4)
 - ルート遷移への `<ViewTransition>` 適用は別途判断する
   - TanStack Router は `document.startViewTransition` を直接呼び (router-core `router.js`)、React の `<ViewTransition>` には未対応
   - 2026-09-13 の `gh search prs "ViewTransition" --repo TanStack/router` は browser API 由来の PR のみ
