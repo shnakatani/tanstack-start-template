@@ -1,10 +1,9 @@
-import { CatchBoundary } from "@tanstack/react-router";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { expectNoA11yViolations } from "@/test/a11y";
-import { deferred } from "@/test/deferred";
 import { dispatchNativeClick } from "@/test/native-click";
+import { CAUGHT_PREFIX, renderInCatchBoundary } from "@/test/render-in-catch-boundary";
 
 import { ActionButton } from "./button";
 
@@ -12,7 +11,7 @@ describe("ActionButton", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("クリックで action を呼び、決着まで pending 表示と aria-disabled になる", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const action = vi.fn(() => pending.promise);
     const screen = await render(<ActionButton action={action}>保存</ActionButton>);
     const button = screen.getByRole("button", { name: "保存", exact: true });
@@ -35,7 +34,7 @@ describe("ActionButton", () => {
   });
 
   it("pending 中もフォーカスと accessible name がボタンに残る", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const screen = await render(<ActionButton action={() => pending.promise}>保存</ActionButton>);
     const button = screen.getByRole("button", { name: "保存", exact: true });
 
@@ -48,7 +47,7 @@ describe("ActionButton", () => {
   });
 
   it("決着前の再クリックでは action を呼ばない (isPending が立つ前を含む)", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const action = vi.fn(() => pending.promise);
     const screen = await render(<ActionButton action={action}>保存</ActionButton>);
     const button = screen.getByRole("button", { name: "保存", exact: true });
@@ -79,20 +78,13 @@ describe("ActionButton", () => {
   });
 
   it("action の reject は部品が握らず、最寄りの Error Boundary へ届く", async () => {
-    // React が boundary へ渡す前に console.error を出す。出力を汚さない
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const screen = await render(
-      <CatchBoundary
-        getResetKey={() => "test"}
-        errorComponent={({ error }) => <p>境界で受けた: {error.message}</p>}
-      >
-        <ActionButton action={() => Promise.reject(new Error("失敗"))}>実行</ActionButton>
-      </CatchBoundary>,
+    const screen = await renderInCatchBoundary(
+      <ActionButton action={() => Promise.reject(new Error("失敗"))}>実行</ActionButton>,
     );
 
     await screen.getByRole("button", { name: "実行", exact: true }).click();
 
-    await expect.element(screen.getByText("境界で受けた: 失敗")).toBeInTheDocument();
+    await expect.element(screen.getByText(`${CAUGHT_PREFIX}失敗`)).toBeInTheDocument();
   });
 
   it("form の中でも既定では submit しない (type=button)", async () => {
@@ -109,7 +101,7 @@ describe("ActionButton", () => {
   });
 
   it("pendingLabel で status の名前を差し替えられる", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const screen = await render(
       <ActionButton action={() => pending.promise} pendingLabel="保存中">
         保存
@@ -133,7 +125,7 @@ describe("ActionButton", () => {
   });
 
   it("pending 中の描画に a11y 違反が無い", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const screen = await render(<ActionButton action={() => pending.promise}>保存</ActionButton>);
 
     await screen.getByRole("button", { name: "保存", exact: true }).click();

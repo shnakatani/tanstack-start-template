@@ -8,7 +8,12 @@ import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { dispatchNativeClick } from "@/test/native-click";
-import { createTestQueryClient, expectEmptyTextboxes, expectText } from "@/test/page-helpers";
+import {
+  createTestQueryClient,
+  expectDialogOpen,
+  expectEmptyTextboxes,
+  expectText,
+} from "@/test/page-helpers";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする
@@ -211,16 +216,11 @@ describe("NoteCreateDialog", () => {
 
   it("保存中は保存ボタンが pending になり、再取得が終わるまでダイアログが開いたまま", async () => {
     vi.mocked(createNote).mockResolvedValue({ id: 1 });
-    let resolveInvalidate!: () => void;
+    const invalidate = Promise.withResolvers<undefined>();
     const { screen, invalidateSpy } = await renderDialog();
     // renderDialog が spy を張った queryClient と同じインスタンスを Provider が持つので、
     // onSuccess の invalidateQueries にこの差し替えが効く
-    invalidateSpy.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveInvalidate = resolve;
-        }),
-    );
+    invalidateSpy.mockImplementation(() => invalidate.promise);
     await openDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
@@ -231,15 +231,9 @@ describe("NoteCreateDialog", () => {
     await vi.waitFor(() => {
       expect(vi.mocked(createNote)).toHaveBeenCalledOnce();
     });
-    expect(titleTextbox(screen).query()).not.toBeNull();
-    // close は同期的に data-open → data-closed を切り替える。animate-out (duration-100) の間も
-    // Popup は DOM に残るため、上の行 (入力欄の存在) だけでは
-    // 「close 済みだがアニメーション窓の中」を「開いたまま」と誤判定できてしまう
-    expect(
-      screen.getByRole("dialog", { includeHidden: true }).element().hasAttribute("data-open"),
-    ).toBe(true);
+    expectDialogOpen(screen, "dialog");
 
-    resolveInvalidate();
+    invalidate.resolve(undefined);
 
     await vi.waitFor(() => {
       expect(titleTextbox(screen).query()).toBeNull();

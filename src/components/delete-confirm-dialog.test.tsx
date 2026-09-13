@@ -3,7 +3,6 @@ import { render } from "vitest-browser-react";
 
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { deferred } from "@/test/deferred";
 import { dispatchNativeClick } from "@/test/native-click";
 
 import { DeleteConfirmDialog, type DeleteTarget } from "./delete-confirm-dialog";
@@ -130,7 +129,7 @@ describe("DeleteConfirmDialog", () => {
   });
 
   it("onConfirm の決着まで削除ボタンが pending になり、決着すると戻る", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const onConfirm = vi.fn(() => pending.promise);
     const { screen } = await renderWithTrigger({ entityLabel: "ユーザー", onConfirm });
     await openDialog(screen);

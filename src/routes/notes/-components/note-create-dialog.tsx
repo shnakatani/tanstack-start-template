@@ -20,6 +20,7 @@ import type { NoteInput } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { useAppForm } from "@/hooks/use-app-form";
+import { closeAfterInvalidate } from "@/lib/close-after-invalidate";
 import { toastMutationError } from "@/lib/mutation-error";
 
 /**
@@ -41,12 +42,13 @@ export function NoteCreateDialog() {
 
   const createMutation = useActionMutation({
     mutationFn: (data: NoteInput) => createNote({ data }),
-    onSuccess: async () => {
-      // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる。
-      // 再取得を await してから閉じる。先に閉じると pending 表示ごと消える (ADR-0014)
-      await queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
-      noteCreateDialogHandle.close();
-    },
+    // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる。
+    // 再取得を待ってから閉じる順序は closeAfterInvalidate が固定する
+    onSuccess: closeAfterInvalidate(
+      queryClient,
+      notesQueryOptions.queryKey,
+      noteCreateDialogHandle,
+    ),
     // 失敗時は閉じない (入力を保ったままリトライできる)。server の raw message は
     // 開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
@@ -86,13 +88,9 @@ function NoteCreateForm({ onSubmit }: { onSubmit: (note: NoteInput) => Promise<v
     },
   });
 
-  // 検証に失敗すると handleSubmit は onSubmit を呼ばずに resolve し、Transition もすぐ終わる
-  function submitAction() {
-    return form.handleSubmit();
-  }
-
   return (
-    <ActionForm className={dialogScrollLayout} submitAction={submitAction}>
+    // 検証に失敗すると handleSubmit は onSubmit を呼ばずに resolve し、Transition もすぐ終わる
+    <ActionForm className={dialogScrollLayout} submitAction={() => form.handleSubmit()}>
       <DialogScrollBody>
         <FieldGroup>
           {/* validator は server function と同じ noteInputSchema の項目定義を使う。

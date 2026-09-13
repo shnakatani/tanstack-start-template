@@ -19,12 +19,20 @@ export type ActionMutationOptions<
   onError: NonNullable<UseMutationOptions<TData, TError, TVariables, TOnMutateResult>["onError"]>;
 };
 
+/**
+ * 戻り値の型から `mutate` / `mutateAsync` を外す。呼び出し側は `runAction` だけを通る
+ * (`.claude/rules/implementation.md`「ユーザー操作による更新は Transition の中で行う」)。
+ * 実行時のオブジェクトは `useMutation` の戻り値そのままで、型だけで経路を絞る。
+ */
 export type ActionMutationResult<
   TData = unknown,
   TError = Error,
   TVariables = void,
   TOnMutateResult = unknown,
-> = UseMutationResult<TData, TError, TVariables, TOnMutateResult> & {
+> = Omit<
+  UseMutationResult<TData, TError, TVariables, TOnMutateResult>,
+  "mutate" | "mutateAsync"
+> & {
   /**
    * Action (`startTransition` に渡す非同期関数) から呼ぶ入口。
    * `mutateAsync` を await するので、`onSuccess` が返した Promise (再取得など) の決着まで

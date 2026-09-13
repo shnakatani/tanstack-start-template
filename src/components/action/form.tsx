@@ -1,14 +1,6 @@
-import {
-  createContext,
-  use,
-  useId,
-  type ComponentProps,
-  type ReactNode,
-  type SubmitEvent,
-} from "react";
+import { createContext, use, type ComponentProps, type ReactNode, type SubmitEvent } from "react";
 
-import { ActionButtonContent } from "@/components/action/button";
-import { Button } from "@/components/ui/button";
+import { ActionButtonShell, type ActionButtonShellProps } from "@/components/action/button";
 import { useActionTransition } from "@/hooks/use-action-transition";
 
 // 値は boolean そのもの。オブジェクトにすると毎レンダー新しい参照になり
@@ -23,7 +15,8 @@ type ActionFormProps = Omit<ComponentProps<"form">, "onSubmit" | "children"> & {
 
 /**
  * submit を Transition にする `<form>` (ADR-0014「Action 層」)。`ui/` に対応部品が無い唯一の例外で、
- * 素の `<form>` を包む。pending は子孫の `ActionFormSubmit` が context から読む。
+ * 素の `<form>` を包む。pending は子孫の `ActionFormSubmit` が context から読む
+ * (React の `<form action>` + `useFormStatus` と同じ形。使わない理由は ADR-0014「Action 層」)。
  */
 function ActionForm({ submitAction, children, ...props }: ActionFormProps) {
   const { isPending, run } = useActionTransition();
@@ -40,47 +33,17 @@ function ActionForm({ submitAction, children, ...props }: ActionFormProps) {
   );
 }
 
-type ActionFormSubmitProps = Omit<
-  ComponentProps<typeof Button>,
-  "type" | "disabled" | "focusableWhenDisabled" | "children" | "aria-labelledby"
-> & {
-  children: ReactNode;
-  /** pending 中の status の accessible name */
-  pendingLabel?: string;
-};
+// submit ボタンの onClick は native の submit と共存するので通す (ActionButton と違い握らない)
+type ActionFormSubmitProps = Omit<ActionButtonShellProps, "isPending" | "type">;
 
-/**
- * `ActionForm` の submit ボタン。pending 中は `aria-disabled` でフォーカスを保ち、名前は children に固定する。
- *
- * 名前の与え方は children か `aria-label` に限る。`aria-labelledby` は内部で使うため prop から
- * 外してある (受け付けたまま `{...props}` の後で上書きすると、渡した側から見て黙って消える)。
- */
-function ActionFormSubmit({
-  children,
-  pendingLabel = "処理中",
-  "aria-label": ariaLabel,
-  ...props
-}: ActionFormSubmitProps) {
+/** `ActionForm` の submit ボタン。pending は `ActionForm` の Transition から context 経由で読む。 */
+function ActionFormSubmit(props: ActionFormSubmitProps) {
   const isPending = use(ActionFormContext);
-  const labelId = useId();
   if (isPending === null) {
     throw new Error("[ActionFormSubmit] ActionForm の中で使う");
   }
 
-  return (
-    <Button
-      {...props}
-      type="submit"
-      aria-label={ariaLabel}
-      aria-labelledby={ariaLabel === undefined ? labelId : undefined}
-      disabled={isPending}
-      focusableWhenDisabled
-    >
-      <ActionButtonContent isPending={isPending} pendingLabel={pendingLabel} labelId={labelId}>
-        {children}
-      </ActionButtonContent>
-    </Button>
-  );
+  return <ActionButtonShell {...props} type="submit" isPending={isPending} />;
 }
 
 export { ActionForm, ActionFormSubmit, type ActionFormProps, type ActionFormSubmitProps };

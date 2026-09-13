@@ -3,6 +3,7 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import * as v from "valibot";
 
+import { actionDisabledAppearance } from "@/components/action/button";
 import type { DeleteTarget } from "@/components/delete-confirm-dialog";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { PageHeader } from "@/components/page-header";
@@ -23,6 +24,7 @@ import { removeNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
 import { NOTE_FIELD_LABELS, noteIdSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
+import { closeAfterInvalidate } from "@/lib/close-after-invalidate";
 import { formatDateTime } from "@/lib/format-date-time";
 import { toastMutationError } from "@/lib/mutation-error";
 
@@ -82,13 +84,13 @@ function NotesPage() {
     // ものをここで戻す。Number() は失敗を NaN で返して黙って通るため、noteIdSchema で
     // parse し直して不正値を fail-closed で止める (throw は onError の toast へ流れる)
     mutationFn: (id: string) => removeNote({ data: v.parse(noteIdSchema, { id: Number(id) }) }),
-    onSuccess: async () => {
-      // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
-      // 再取得を await してから閉じる。先に閉じると pending 表示ごと消え、古い一覧が
-      // pending なしで見える (ADR-0014)
-      await queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
-      noteDeleteDialogHandle.close();
-    },
+    // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
+    // 再取得を待ってから閉じる順序は closeAfterInvalidate が固定する
+    onSuccess: closeAfterInvalidate(
+      queryClient,
+      notesQueryOptions.queryKey,
+      noteDeleteDialogHandle,
+    ),
     // server の raw message は開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
   });
@@ -148,10 +150,7 @@ function NotesPage() {
                             variant="destructive"
                             size="sm"
                             focusableWhenDisabled
-                            // focusableWhenDisabled は native disabled を付けないため registry の disabled: variant が
-                            // 当たらない。Base UI が付ける data-disabled で同じ見た目にする (Base UI Button docs の
-                            // Loading states と同じ形)
-                            className="data-disabled:pointer-events-none data-disabled:opacity-50"
+                            className={actionDisabledAppearance}
                           />
                         }
                         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を

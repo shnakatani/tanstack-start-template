@@ -11,7 +11,7 @@ import { expectNoA11yViolations } from "@/test/a11y";
 import { createTestRouter } from "@/test/create-test-router";
 import { collectLoaderQueryKeys } from "@/test/loader-helpers";
 import { dispatchNativeClick } from "@/test/native-click";
-import { createTestQueryClient, expectText } from "@/test/page-helpers";
+import { createTestQueryClient, expectDialogOpen, expectText } from "@/test/page-helpers";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする
@@ -63,12 +63,8 @@ type Screen = Awaited<ReturnType<typeof renderPage>>;
  * 行の削除ボタン。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない)。
  * 確認ダイアログ表示中は行が `aria-hidden` 配下に入るため、その間は `includeHidden` で取る。
  */
-function rowDeleteButton(screen: Screen, title: string, options?: { includeHidden?: boolean }) {
-  return screen.getByRole("button", {
-    name: `${title}を削除`,
-    exact: true,
-    includeHidden: options?.includeHidden,
-  });
+function rowDeleteButton(screen: Screen, title: string, includeHidden = false) {
+  return screen.getByRole("button", { name: `${title}を削除`, exact: true, includeHidden });
 }
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
@@ -207,22 +203,12 @@ describe("NotesPage", () => {
   });
 
   it("removeNote 決着後も、一覧の再取得が終わるまで確認ダイアログが開いたまま", async () => {
-    let resolveRemove!: () => void;
-    let resolveRefetch!: () => void;
+    const remove = Promise.withResolvers<undefined>();
+    const refetch = Promise.withResolvers<Note[]>();
     vi.mocked(listNotes)
       .mockResolvedValueOnce([NOTE])
-      .mockImplementation(
-        () =>
-          new Promise<Note[]>((resolve) => {
-            resolveRefetch = () => resolve([]);
-          }),
-      );
-    vi.mocked(removeNote).mockImplementation(
-      () =>
-        new Promise<undefined>((resolve) => {
-          resolveRemove = () => resolve(undefined);
-        }),
-    );
+      .mockImplementation(() => refetch.promise);
+    vi.mocked(removeNote).mockImplementation(() => remove.promise);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
@@ -230,22 +216,16 @@ describe("NotesPage", () => {
     confirmDelete(screen);
     await expect.element(screen.getByRole("status", { name: "削除中" })).toBeInTheDocument();
 
-    resolveRemove();
+    remove.resolve(undefined);
 
     // 再取得 (2 回目の listNotes) が始まっても、決着するまでダイアログと pending 表示は残る
     await vi.waitFor(() => {
       expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
     });
-    expect(screen.getByRole("button", { name: "削除", exact: true }).query()).not.toBeNull();
     expect(screen.getByRole("status", { name: "削除中" }).query()).not.toBeNull();
-    // close は同期的に data-open → data-closed を切り替える。animate-out (duration-100) の間も
-    // Popup は DOM に残るため、上の 2 行 (削除ボタン / status の存在) だけでは
-    // 「close 済みだがアニメーション窓の中」を「開いたまま」と誤判定できてしまう
-    expect(
-      screen.getByRole("alertdialog", { includeHidden: true }).element().hasAttribute("data-open"),
-    ).toBe(true);
+    expectDialogOpen(screen, "alertdialog");
 
-    resolveRefetch();
+    refetch.resolve([]);
 
     await expectText(screen, "メモが登録されていません");
     await vi.waitFor(() => {
@@ -254,14 +234,9 @@ describe("NotesPage", () => {
   });
 
   it("削除中は対象の行が busy になる", async () => {
-    let resolveRemove!: () => void;
+    const remove = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]).mockResolvedValue([OTHER_NOTE]);
-    vi.mocked(removeNote).mockImplementation(
-      () =>
-        new Promise<undefined>((resolve) => {
-          resolveRemove = () => resolve(undefined);
-        }),
-    );
+    vi.mocked(removeNote).mockImplementation(() => remove.promise);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
@@ -278,20 +253,18 @@ describe("NotesPage", () => {
       .toHaveAttribute("aria-busy", "false");
     // 確認ダイアログは pending 中も閉じられる。閉じた先で別行の削除を始められないよう塞ぐ
     await expect
-      .element(rowDeleteButton(screen, OTHER_NOTE.title, { includeHidden: true }))
+      .element(rowDeleteButton(screen, OTHER_NOTE.title, true))
       .toHaveAttribute("aria-disabled", "true");
     // registry の disabled: variant は native disabled にしか当たらない。data-disabled 経由で
     // 同じ見た目 (半透明 + pointer-events なし) になっていることを算出スタイルで固定する
-    const otherTrigger = rowDeleteButton(screen, OTHER_NOTE.title, {
-      includeHidden: true,
-    }).element();
+    const otherTrigger = rowDeleteButton(screen, OTHER_NOTE.title, true).element();
     await vi.waitFor(() => {
       const style = getComputedStyle(otherTrigger);
       expect(style.opacity).toBe("0.5");
       expect(style.pointerEvents).toBe("none");
     });
 
-    resolveRemove();
+    remove.resolve(undefined);
 
     // 再取得 (2 回目の listNotes) が反映されても、消えるのは対象行だけ
     await vi.waitFor(() => {

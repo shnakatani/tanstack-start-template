@@ -1,10 +1,9 @@
-import { CatchBoundary } from "@tanstack/react-router";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { expectNoA11yViolations } from "@/test/a11y";
-import { deferred } from "@/test/deferred";
 import { dispatchNativeClick } from "@/test/native-click";
+import { CAUGHT_PREFIX, renderInCatchBoundary } from "@/test/render-in-catch-boundary";
 
 import { ActionForm, ActionFormSubmit } from "./form";
 
@@ -12,7 +11,7 @@ describe("ActionForm", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("submit で submitAction を呼び、決着まで submit ボタンが pending になる", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const submitAction = vi.fn(() => pending.promise);
     const screen = await render(
       <ActionForm submitAction={submitAction}>
@@ -35,7 +34,7 @@ describe("ActionForm", () => {
   });
 
   it("決着前の再 submit では submitAction を呼ばない", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const submitAction = vi.fn(() => pending.promise);
     const screen = await render(
       <ActionForm submitAction={submitAction}>
@@ -52,21 +51,15 @@ describe("ActionForm", () => {
   });
 
   it("submitAction の reject は部品が握らず、最寄りの Error Boundary へ届く", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const screen = await render(
-      <CatchBoundary
-        getResetKey={() => "test"}
-        errorComponent={({ error }) => <p>境界で受けた: {error.message}</p>}
-      >
-        <ActionForm submitAction={() => Promise.reject(new Error("失敗"))}>
-          <ActionFormSubmit>保存</ActionFormSubmit>
-        </ActionForm>
-      </CatchBoundary>,
+    const screen = await renderInCatchBoundary(
+      <ActionForm submitAction={() => Promise.reject(new Error("失敗"))}>
+        <ActionFormSubmit>保存</ActionFormSubmit>
+      </ActionForm>,
     );
 
     await screen.getByRole("button", { name: "保存", exact: true }).click();
 
-    await expect.element(screen.getByText("境界で受けた: 失敗")).toBeInTheDocument();
+    await expect.element(screen.getByText(`${CAUGHT_PREFIX}失敗`)).toBeInTheDocument();
   });
 
   it("ActionFormSubmit を ActionForm の外で使うと throw する", async () => {
@@ -78,7 +71,7 @@ describe("ActionForm", () => {
   });
 
   it("pending 中の描画に a11y 違反が無い", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     const screen = await render(
       <ActionForm submitAction={() => pending.promise}>
         <ActionFormSubmit>保存</ActionFormSubmit>

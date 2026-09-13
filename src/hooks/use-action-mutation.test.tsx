@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 import { renderHook } from "vitest-browser-react";
 
-import { deferred } from "@/test/deferred";
 import { createTestQueryClient } from "@/test/page-helpers";
 
 import { useActionMutation } from "./use-action-mutation";
@@ -48,13 +47,14 @@ describe("useActionMutation", () => {
   });
 
   it("onSuccess が返した Promise の決着まで runAction は resolve しない", async () => {
-    const afterSuccess = deferred<undefined>();
+    const afterSuccess = Promise.withResolvers<undefined>();
+    const onSuccess = vi.fn(() => afterSuccess.promise);
     let settled = false;
     const { result } = await renderHook(
       () =>
         useActionMutation({
           mutationFn: () => Promise.resolve(undefined),
-          onSuccess: () => afterSuccess.promise,
+          onSuccess,
           onError: vi.fn<(error: Error) => void>(),
         }),
       { wrapper: Wrapper },
@@ -63,8 +63,11 @@ describe("useActionMutation", () => {
     const running = result.current.runAction().finally(() => {
       settled = true;
     });
-    // mutationFn は即 resolve するが、onSuccess の Promise が未決着のあいだは戻らない
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // mutationFn の決着後に onSuccess が呼ばれた時点で、その Promise が未決着のあいだは戻らない
+    // (壁時計の sleep で待つと、遅い環境で誤って通る)
+    await vi.waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledOnce();
+    });
     expect(settled).toBe(false);
 
     afterSuccess.resolve(undefined);
