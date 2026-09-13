@@ -191,4 +191,69 @@ describe("NotesPage", () => {
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     expect(screen.getByText(rawMessage).query()).toBeNull();
   });
+
+  it("removeNote 決着後も、一覧の再取得が終わるまで確認ダイアログが開いたまま", async () => {
+    let resolveRemove!: () => void;
+    let resolveRefetch!: () => void;
+    vi.mocked(listNotes)
+      .mockResolvedValueOnce([NOTE])
+      .mockImplementation(
+        () =>
+          new Promise<Note[]>((resolve) => {
+            resolveRefetch = () => resolve([]);
+          }),
+      );
+    vi.mocked(removeNote).mockImplementation(
+      () =>
+        new Promise<undefined>((resolve) => {
+          resolveRemove = () => resolve(undefined);
+        }),
+    );
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openDeleteConfirm(screen, NOTE);
+
+    confirmDelete(screen);
+    await expect.element(screen.getByRole("status", { name: "削除中" })).toBeInTheDocument();
+
+    resolveRemove();
+
+    // 再取得 (2 回目の listNotes) が始まっても、決着するまでダイアログと pending 表示は残る
+    await vi.waitFor(() => {
+      expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+    expect(screen.getByRole("button", { name: "削除", exact: true }).query()).not.toBeNull();
+    expect(screen.getByRole("status", { name: "削除中" }).query()).not.toBeNull();
+
+    resolveRefetch();
+
+    await expectText(screen, "メモが登録されていません");
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
+    });
+  });
+
+  it("削除中は対象の行が busy になる", async () => {
+    let resolveRemove!: () => void;
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
+    vi.mocked(removeNote).mockImplementation(
+      () =>
+        new Promise<undefined>((resolve) => {
+          resolveRemove = () => resolve(undefined);
+        }),
+    );
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openDeleteConfirm(screen, NOTE);
+
+    confirmDelete(screen);
+
+    // モーダルが開いている間、行は aria-hidden なので includeHidden で取る
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true }))
+      .toHaveAttribute("aria-busy", "true");
+
+    resolveRemove();
+    await expectText(screen, "メモが登録されていません");
+  });
 });
