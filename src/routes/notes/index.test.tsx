@@ -188,7 +188,7 @@ describe("NotesPage", () => {
     expect(screen.getByText(NOTE.title).query()).not.toBeNull();
   });
 
-  it("削除に失敗すると固定文言を toast に出し、行の busy が解ける", async () => {
+  it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
     const rawMessage = `削除対象のノートが見つかりません: id=${NOTE.id}`;
     const remove = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
