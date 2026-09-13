@@ -164,8 +164,7 @@ describe("NotesPage", () => {
     confirmDelete(screen);
 
     await vi.waitFor(() => {
-      // DeleteTarget は id を string で運ぶ契約なので、server function 呼び出しの手前で
-      // number へ戻せていることを固定する
+      // 行の payload の id がそのまま server function へ渡ることを固定する
       expect(vi.mocked(removeNote)).toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
     });
     // invalidate → refetch が働けば 2 回目の listNotes の結果 (0 件) が反映される

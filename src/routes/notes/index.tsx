@@ -1,7 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import * as v from "valibot";
 
 import { actionDisabledAppearance } from "@/components/action/button";
 import type { DeleteTarget } from "@/components/delete-confirm-dialog";
@@ -22,7 +21,8 @@ import {
 } from "@/components/ui/table";
 import { removeNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
-import { NOTE_FIELD_LABELS, noteIdSchema } from "@/features/notes/schema";
+import type { Note } from "@/features/notes/schema";
+import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { closeAfterInvalidate } from "@/lib/close-after-invalidate";
 import { formatDateTime } from "@/lib/format-date-time";
@@ -73,17 +73,15 @@ function NotesPagePending() {
 }
 
 /** 削除確認ダイアログの detached trigger を Root へ結ぶ handle。Root は 1 つだけ描画する。 */
-const noteDeleteDialogHandle = createAlertDialogHandle<DeleteTarget>();
+const noteDeleteDialogHandle = createAlertDialogHandle<DeleteTarget<Note["id"]>>();
 
 function NotesPage() {
   const notesQuery = useSuspenseQuery(notesQueryOptions);
   const queryClient = useQueryClient();
 
   const deleteMutation = useActionMutation({
-    // DeleteTarget は id を string で持つ (汎用部品の契約)。行の payload で String(note.id) にした
-    // ものをここで戻す。Number() は失敗を NaN で返して黙って通るため、noteIdSchema で
-    // parse し直して不正値を fail-closed で止める (throw は onError の toast へ流れる)
-    mutationFn: (id: string) => removeNote({ data: v.parse(noteIdSchema, { id: Number(id) }) }),
+    // id の検証は removeNote 側の validator (noteIdSchema) が持つ
+    mutationFn: (id: Note["id"]) => removeNote({ data: { id } }),
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
     // 再取得を待ってから閉じる順序は closeAfterInvalidate が固定する
     onSuccess: closeAfterInvalidate(
@@ -128,8 +126,7 @@ function NotesPage() {
                 // 楽観表示は query 側 (mutation.variables) で行う。useOptimistic は query の data を
                 // base にできない (ADR-0014「楽観表示の使い分け」)。isPending はこの表示のゲートで、
                 // pending 表示 (確認ボタンの Transition) とは別物
-                const isDeleting =
-                  deleteMutation.isPending && deleteMutation.variables === String(note.id);
+                const isDeleting = deleteMutation.isPending && deleteMutation.variables === note.id;
                 return (
                   <TableRow
                     key={note.id}
@@ -144,7 +141,7 @@ function NotesPage() {
                     <TableCell>
                       <AlertDialogTrigger
                         handle={noteDeleteDialogHandle}
-                        payload={{ id: String(note.id), name: note.title }}
+                        payload={{ id: note.id, name: note.title }}
                         render={
                           <Button
                             variant="destructive"

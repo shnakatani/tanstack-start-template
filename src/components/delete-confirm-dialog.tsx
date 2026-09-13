@@ -11,16 +11,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export interface DeleteTarget {
-  id: string;
+/**
+ * 削除対象。`id` はこの部品では読まず `onConfirm` へそのまま渡すので、消費側の id 型を
+ * generic で持つ (string へ変換して往復すると、戻す側で parse し直す羽目になる)。
+ */
+export interface DeleteTarget<TId = string> {
+  id: TId;
   name: string;
 }
 
 /** 削除確認ダイアログの detached trigger を Root に結ぶ handle。消費側の prop 型はこれを使う。 */
-export type DeleteDialogHandle = AlertDialogPrimitive.Handle<DeleteTarget>;
+export type DeleteDialogHandle<TId = string> = AlertDialogPrimitive.Handle<DeleteTarget<TId>>;
 
-interface DeleteConfirmDialogProps {
-  handle: DeleteDialogHandle;
+interface DeleteConfirmDialogProps<TId> {
+  handle: DeleteDialogHandle<TId>;
   entityLabel: string;
   /** 既定文言を差し替える場合に指定する (連鎖して消えるものを併記したいとき等)。name は payload の name */
   description?: (name: string) => string;
@@ -31,15 +35,15 @@ interface DeleteConfirmDialogProps {
    * 削除は走るが閉じないダイアログになる。
    * 失敗時は閉じないので、開いたままリトライできる。
    */
-  onConfirm: (target: DeleteTarget) => Promise<void> | void;
+  onConfirm: (target: DeleteTarget<TId>) => Promise<void> | void;
 }
 
-export function DeleteConfirmDialog({
+export function DeleteConfirmDialog<TId = string>({
   handle,
   entityLabel,
   description,
   onConfirm,
-}: DeleteConfirmDialogProps) {
+}: DeleteConfirmDialogProps<TId>) {
   return (
     <AlertDialog handle={handle}>
       {({ payload }) => (
