@@ -208,4 +208,35 @@ describe("NoteCreateDialog", () => {
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする
     expect(titleTextbox(screen).query()).not.toBeNull();
   });
+
+  it("保存中は保存ボタンが pending になり、再取得が終わるまでダイアログが開いたまま", async () => {
+    vi.mocked(createNote).mockResolvedValue({ id: 1 });
+    let resolveInvalidate!: () => void;
+    const { screen, invalidateSpy } = await renderDialog();
+    // renderDialog が spy を張った queryClient と同じインスタンスを Provider が持つので、
+    // onSuccess の invalidateQueries にこの差し替えが効く
+    invalidateSpy.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveInvalidate = resolve;
+        }),
+    );
+    await openDialog(screen);
+    await titleTextbox(screen).fill("買い物リスト");
+
+    clickSave(screen);
+
+    // createNote は即 resolve するが、invalidateQueries が未決着のあいだは閉じない
+    await expect.element(screen.getByRole("status", { name: "保存中" })).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(vi.mocked(createNote)).toHaveBeenCalledOnce();
+    });
+    expect(titleTextbox(screen).query()).not.toBeNull();
+
+    resolveInvalidate();
+
+    await vi.waitFor(() => {
+      expect(titleTextbox(screen).query()).toBeNull();
+    });
+  });
 });
