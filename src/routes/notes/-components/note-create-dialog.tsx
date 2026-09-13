@@ -1,5 +1,5 @@
 import { revalidateLogic } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 
 import { ActionForm, ActionFormSubmit } from "@/components/action/form";
@@ -62,15 +62,25 @@ export function NoteCreateDialog() {
     onError: toastMutationError,
   });
 
-  // 保存中はユーザー起点の close (Escape / 外側クリック / X / キャンセル) を止める。閉じて
-  // 開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の応答が
-  // 届いた時点で新しい入力ごと閉じる。handle を複数の対象で共有するダイアログと違い、入力
-  // フォームは開いている対象を mutation の対象と比べられないので、閉じないことで塞ぐ
-  // (ADR-0016 Decision の完了点 (b) の行)。止めるのはこのダイアログだけで、一覧の操作は
-  // 止めない (ADR-0016「ブロック範囲」)
+  // 再取得中かどうかを hook で読む。`queryClient.isFetching()` を render 中に呼んでも
+  // 再描画されず、応答が届いても止めたままになる
+  const isRefetchingNotes = useIsFetching({ queryKey: notesQueryOptions.queryKey }) > 0;
+
+  // 止めるのは応答前だけ。閉じて開き直すと DialogContent がアンマウントされてフォームが
+  // 作り直され、先行 save の応答が届いた時点で新しい入力ごと閉じる。handle を複数の対象で
+  // 共有するダイアログと違い、入力フォームは開いている対象を mutation の対象と比べられない
+  // ので、閉じないことで塞ぐ (ADR-0016 Decision の完了点 (b) の行)。止めるのはこのダイアログ
+  // だけで、一覧の操作は止めない (ADR-0016「ブロック範囲」)。
+  //
+  // mutation の pending は応答後も再取得の完了まで続くので、それだけを見ると閉じた後の窓でも
+  // true のままになり、開き直したダイアログが閉じられなくなる。再取得中かどうかで応答済みを
+  // 判別する。無関係な background refetch と重なると応答前でも通す方向に倒れるが、それは
+  // ADR-0016 移行前の従来挙動 (何も止めない) と同じなので、閉じられなくなる側へは倒さない
+  const blocksClose = createMutation.isPending && !isRefetchingNotes;
+
   const handleOpenChange: DialogOpenChangeHandler = (open, details) => {
     // onSuccess の close は handle 経由なので reason が imperative-action になる。通す
-    if (!open && createMutation.isPending && details.reason !== "imperative-action") {
+    if (!open && blocksClose && details.reason !== "imperative-action") {
       details.cancel();
     }
   };
@@ -81,10 +91,10 @@ export function NoteCreateDialog() {
         <DialogHeader>
           <DialogTitle>メモを追加</DialogTitle>
         </DialogHeader>
-        {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで mutation の pending を
-            渡すのは表示ではなく close の可否で、handleOpenChange と同じ源から取らないと
-            「押せるのに閉じない」ずれが出る (`.claude/rules/implementation.md` の pending の項目) */}
-        <NoteCreateForm onSubmit={createMutation.runAction} isSaving={createMutation.isPending} />
+        {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで渡すのは表示ではなく
+            close の可否で、handleOpenChange と同じ源から取らないと「押せるのに閉じない」ずれが
+            出る (`.claude/rules/implementation.md` の pending の項目) */}
+        <NoteCreateForm onSubmit={createMutation.runAction} blocksClose={blocksClose} />
       </DialogContent>
     </Dialog>
   );
@@ -98,11 +108,11 @@ export function NoteCreateDialog() {
  */
 function NoteCreateForm({
   onSubmit,
-  isSaving,
+  blocksClose,
 }: {
   onSubmit: (note: NoteInput) => Promise<void>;
-  /** 保存の応答待ちか。キャンセルを無効化して close の阻止 (`handleOpenChange`) と対応させる */
-  isSaving: boolean;
+  /** 保存の応答待ちで close を止めている間か。キャンセルも同じ源で無効化して見た目と挙動を揃える */
+  blocksClose: boolean;
 }) {
   const initialValues: NoteInput = { title: "", body: "" };
 
@@ -145,7 +155,7 @@ function NoteCreateForm({
         </FieldGroup>
       </DialogScrollBody>
       <DialogFooter>
-        <DialogClose disabled={isSaving} render={<Button type="button" variant="outline" />}>
+        <DialogClose disabled={blocksClose} render={<Button type="button" variant="outline" />}>
           キャンセル
         </DialogClose>
         <ActionFormSubmit pendingLabel="保存中">保存</ActionFormSubmit>

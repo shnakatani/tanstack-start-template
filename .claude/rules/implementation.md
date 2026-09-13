@@ -75,7 +75,7 @@ lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014
 | Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                                                                                         |
 | 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                                                                                   |
 
-- pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)。項目の busy と楽観表示は例外で、次の項目のとおり mutation の pending から取る
+- pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)。項目の busy と楽観表示、完了点 (b) の close 阻止の判定は例外で、次の項目のとおり mutation の pending から取る
 - mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` (`toastMutationError`) は型で必須。`runAction` が `mutateAsync` の reject を吸収するため、`onError` が無いと失敗が無通知になる
 - Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る
 - `onSuccess` は再取得の Promise を返す (mutation の pending が再取得完了まで続く)。再取得完了前に close するときは、対象の項目 (行など) にその pending から busy 表現を付ける。付けないと古い一覧が pending 表示なしで見える (ADR-0016)

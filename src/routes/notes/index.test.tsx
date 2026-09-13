@@ -237,6 +237,38 @@ describe("NotesPage", () => {
     });
   });
 
+  it("応答後の再取得中に開き直した追加ダイアログはキャンセルできる", async () => {
+    // close を止める窓は「応答前」だけで、mutation の pending 全体ではない。応答で閉じた後は
+    // 再取得の完了まで pending が続くが、その間に開き直したダイアログは先行 save の応答を
+    // 待っていないので閉じられる (ADR-0016 Decision の完了点 (b) の行)
+    const create = Promise.withResolvers<{ id: number }>();
+    const refetch = Promise.withResolvers<Note[]>();
+    vi.mocked(listNotes)
+      .mockResolvedValueOnce([NOTE])
+      .mockImplementation(() => refetch.promise);
+    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+
+    await submitCreate(screen, CREATED_NOTE);
+    create.resolve({ id: CREATED_NOTE.id });
+
+    // 応答で閉じる。再取得 (2 回目の listNotes) は未決着なので mutation は pending のまま
+    await vi.waitFor(() => {
+      expect(
+        screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true }).query(),
+      ).toBeNull();
+    });
+
+    await screen.getByRole("button", { name: "＋ メモを追加" }).click();
+
+    await expect
+      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
+      .not.toBeDisabled();
+
+    refetch.resolve([CREATED_NOTE, NOTE]);
+  });
+
   it("0 件の一覧に 1 件目を追加すると、応答前に空状態が消えて楽観行が出る", async () => {
     // 空状態の分岐は creatingRows も見る。notesQuery.data の件数だけで判定すると、
     // 1 件目の保存中に「登録されていません」と楽観行が同時に成立しない (前者が勝つ)
