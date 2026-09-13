@@ -45,6 +45,16 @@ const OTHER_NOTE: Note = {
   body: "気になった箇所を書き出す",
   createdAt: new Date("2026-08-18T00:30:00.000Z"),
 };
+/**
+ * 追加のテストで保存する 1 件。楽観行は title / body だけを描き、id と createdAt は
+ * 再取得後の実データとして使う (保存前のクライアントはこの 2 つを持たない)。
+ */
+const CREATED_NOTE: Note = {
+  id: 3,
+  title: "新しいメモ",
+  body: "本文",
+  createdAt: new Date("2026-08-19T00:30:00.000Z"),
+};
 
 async function renderPage() {
   const queryClient = createTestQueryClient();
@@ -72,6 +82,18 @@ function rowDeleteButton(screen: Screen, title: string, includeHidden = false) {
 async function openDeleteConfirm(screen: Screen, note: Note) {
   await rowDeleteButton(screen, note.title).click();
   await expectText(screen, `「${note.title}」を削除しますか？この操作は取り消せません。`);
+}
+
+/** 追加ダイアログを開いて 1 件分を入力し、保存を確定する (応答の決着は呼び出し側が握る)。 */
+async function submitCreate(screen: Screen, note: Note) {
+  await screen.getByRole("button", { name: "＋ メモを追加" }).click();
+  await screen
+    .getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true })
+    .fill(note.title);
+  await screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.body, exact: true }).fill(note.body);
+  // 保存ボタンは inert バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
+  screen.getByRole("button", { name: "保存", exact: true }).element().focus();
+  await userEvent.keyboard("{Enter}");
 }
 
 function confirmDelete(screen: Screen) {
@@ -161,12 +183,6 @@ describe("NotesPage", () => {
     // (ADR-0016「テンプレートのメモ画面への適用」)
     const create = Promise.withResolvers<{ id: number }>();
     const refetch = Promise.withResolvers<Note[]>();
-    const created: Note = {
-      id: 3,
-      title: "新しいメモ",
-      body: "本文",
-      createdAt: new Date("2026-08-19T00:30:00.000Z"),
-    };
     vi.mocked(listNotes)
       .mockResolvedValueOnce([NOTE])
       .mockImplementation(() => refetch.promise);
@@ -174,25 +190,16 @@ describe("NotesPage", () => {
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
 
-    await screen.getByRole("button", { name: "＋ メモを追加" }).click();
-    await screen
-      .getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true })
-      .fill(created.title);
-    await screen
-      .getByRole("textbox", { name: NOTE_FIELD_LABELS.body, exact: true })
-      .fill(created.body);
-    // 保存ボタンは inert バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
-    screen.getByRole("button", { name: "保存", exact: true }).element().focus();
-    await userEvent.keyboard("{Enter}");
+    await submitCreate(screen, CREATED_NOTE);
 
     // 応答前から新しい行が先頭に busy で出る (モーダル表示中は行が aria-hidden なので includeHidden)
     const optimisticRow = screen.getByRole("row", {
-      name: new RegExp(created.title),
+      name: new RegExp(CREATED_NOTE.title),
       includeHidden: true,
     });
     await expect.element(optimisticRow).toHaveAttribute("aria-busy", "true");
 
-    create.resolve({ id: created.id });
+    create.resolve({ id: CREATED_NOTE.id });
 
     // 応答でダイアログが閉じ、再取得中も行は busy のまま
     await vi.waitFor(() => {
@@ -201,17 +208,49 @@ describe("NotesPage", () => {
       ).toBeNull();
     });
     await expect
-      .element(screen.getByRole("row", { name: new RegExp(created.title) }))
+      .element(screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }))
       .toHaveAttribute("aria-busy", "true");
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
     const rows = screen.getByRole("row").all();
-    expect(rows[1]?.element().textContent).toContain(created.title); // rows[0] はヘッダ行
+    expect(rows[1]?.element().textContent).toContain(CREATED_NOTE.title); // rows[0] はヘッダ行
+    // 楽観行が出ている状態そのものを検査する。ダイアログが閉じたあとなので、
+    // axe が見るのは一覧だけ (開いている間は行が aria-hidden 配下に入る)
+    await expectNoA11yViolations(document.body);
 
-    refetch.resolve([created, NOTE]);
+    refetch.resolve([CREATED_NOTE, NOTE]);
 
     // 実データに置き換わる (busy でない行が 1 つだけ)
     await vi.waitFor(() => {
-      const matched = screen.getByRole("row", { name: new RegExp(created.title) }).all();
+      const matched = screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }).all();
+      expect(matched).toHaveLength(1);
+      expect(matched[0]?.element().getAttribute("aria-busy")).not.toBe("true");
+    });
+  });
+
+  it("0 件の一覧に 1 件目を追加すると、応答前に空状態が消えて楽観行が出る", async () => {
+    // 空状態の分岐は creatingRows も見る。notesQuery.data の件数だけで判定すると、
+    // 1 件目の保存中に「登録されていません」と楽観行が同時に成立しない (前者が勝つ)
+    const create = Promise.withResolvers<{ id: number }>();
+    vi.mocked(listNotes).mockResolvedValueOnce([]).mockResolvedValue([CREATED_NOTE]);
+    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const screen = await renderPage();
+    await expectText(screen, "メモが登録されていません");
+
+    await submitCreate(screen, CREATED_NOTE);
+
+    // 応答前 (一覧はまだ 0 件) から楽観行が出て、空状態は消えている
+    await expect
+      .element(
+        screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title), includeHidden: true }),
+      )
+      .toHaveAttribute("aria-busy", "true");
+    expect(screen.getByText("メモが登録されていません").query()).toBeNull();
+
+    create.resolve({ id: CREATED_NOTE.id });
+
+    // 再取得の反映で実データの行に変わる (busy でない行が 1 つだけ)
+    await vi.waitFor(() => {
+      const matched = screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }).all();
       expect(matched).toHaveLength(1);
       expect(matched[0]?.element().getAttribute("aria-busy")).not.toBe("true");
     });

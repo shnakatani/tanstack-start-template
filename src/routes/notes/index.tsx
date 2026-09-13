@@ -74,6 +74,13 @@ function NotesPagePending() {
   );
 }
 
+/**
+ * pending な行 (保存中・削除中) の見え方。半透明で pending を伝える (ADR-0016) が、
+ * `opacity-50` は本文を 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る
+ * (`index.test.tsx` の楽観行の a11y 検査が axe で実測)。比率を満たす範囲で薄くする。
+ */
+const busyRowAppearance = "opacity-60";
+
 /** 削除確認ダイアログの detached trigger を Root へ結ぶ handle。Root は 1 つだけ描画する。 */
 const noteDeleteDialogHandle = createAlertDialogHandle<DeleteTarget<Note["id"]>>();
 
@@ -104,15 +111,14 @@ function NotesPage() {
   // 完了点 (b) の追加は応答でダイアログが閉じるので、再取得完了までの pending は
   // 一覧の先頭に出すこの行だけが伝える (ADR-0016)。mutation はダイアログ側にあるため
   // mutationKey 経由で読む。submittedAt は同時に走る追加を React の key で区別するのに使う
-  const creatingRows = parseCreatingRows(
-    useMutationState({
-      filters: { mutationKey: noteMutationKeys.create, status: "pending" },
-      select: (mutation) => ({
-        input: mutation.state.variables,
-        submittedAt: mutation.state.submittedAt,
-      }),
+  const pendingCreateStates = useMutationState({
+    filters: { mutationKey: noteMutationKeys.create, status: "pending" },
+    select: (mutation) => ({
+      input: mutation.state.variables,
+      submittedAt: mutation.state.submittedAt,
     }),
-  );
+  });
+  const creatingRows = parseCreatingRows(pendingCreateStates);
 
   // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
   // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
@@ -162,7 +168,7 @@ function NotesPage() {
               {creatingRows.map(({ key, input }) => (
                 // 保存中の行。一覧は createdAt の降順なので先頭に出し、再取得完了で実データに
                 // 置き換わる (ADR-0016)。id をまだ持たないので削除トリガーは出さない
-                <TableRow key={key} aria-busy className="opacity-50">
+                <TableRow key={key} aria-busy className={busyRowAppearance}>
                   <TableCell>{input.title}</TableCell>
                   <TableCell className="max-w-xs truncate">{input.body}</TableCell>
                   <TableCell>保存中</TableCell>
@@ -178,7 +184,7 @@ function NotesPage() {
                   <TableRow
                     key={note.id}
                     aria-busy={isDeleting}
-                    className={isDeleting ? "opacity-50" : undefined}
+                    className={isDeleting ? busyRowAppearance : undefined}
                   >
                     <TableCell>{note.title}</TableCell>
                     <TableCell className="max-w-xs truncate">{note.body}</TableCell>
