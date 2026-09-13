@@ -33,8 +33,14 @@ describe("readAnnouncements", () => {
 
   it("region が無いときは throw する (テスト基盤の配線が外れた場合)", () => {
     // 空配列を返すと「通知が無い」と同じ値になり、region ごと壊れた検証が通ってしまう
-    document.getElementById(LIVE_REGION_IDS.polite)?.remove();
+    // ノードは残して id だけ外す。remove() すると React 管理下のノードが消え、次のテストの
+    // cleanup (root.unmount) が removeChild で落ちる (順序依存になる)
+    document.getElementById(LIVE_REGION_IDS.polite)?.removeAttribute("id");
 
     expect(() => readAnnouncements()).toThrow(`live region (${LIVE_REGION_IDS.polite}) が無い`);
+  });
+
+  it("region 不在のテストの後でも次のテストで region が描き直される", () => {
+    expect(document.getElementById(LIVE_REGION_IDS.polite)).not.toBeNull();
   });
 });
