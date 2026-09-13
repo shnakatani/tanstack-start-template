@@ -20,7 +20,7 @@ describe("ActionForm", () => {
     const submitAction = vi.fn(() => pending.promise);
     const screen = await render(
       <ActionForm submitAction={submitAction}>
-        <ActionFormSubmit pendingLabel="保存中">保存</ActionFormSubmit>
+        <ActionFormSubmit>保存</ActionFormSubmit>
       </ActionForm>,
     );
     const button = screen.getByRole("button", { name: "保存", exact: true });
@@ -28,14 +28,12 @@ describe("ActionForm", () => {
     await button.click();
 
     expect(submitAction).toHaveBeenCalledOnce();
-    await expect.element(screen.getByRole("status", { name: "保存中" })).toBeInTheDocument();
+    await expect.element(button).toHaveAttribute("aria-busy", "true");
     await expect.element(button).toHaveAttribute("aria-disabled", "true");
     expect(document.activeElement).toBe(button.element());
 
     pending.resolve(undefined);
-    await vi.waitFor(() => {
-      expect(screen.getByRole("status", { name: "保存中" }).query()).toBeNull();
-    });
+    await expect.element(button).not.toHaveAttribute("aria-busy", "true");
   });
 
   it("決着前の再 submit では submitAction を呼ばない", async () => {
@@ -104,8 +102,9 @@ describe("ActionForm", () => {
       </ActionForm>,
     );
 
-    await screen.getByRole("button", { name: "保存", exact: true }).click();
-    await expect.element(screen.getByRole("status", { name: "処理中" })).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "保存", exact: true });
+    await button.click();
+    await expect.element(button).toHaveAttribute("aria-busy", "true");
 
     await expectNoA11yViolations(document.body);
     pending.resolve(undefined);

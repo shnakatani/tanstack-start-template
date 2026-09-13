@@ -3,10 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { LiveRegions } from "@/components/live-regions";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
+import { LIVE_REGION_IDS } from "@/lib/live-announcer";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { dispatchNativeClick } from "@/test/native-click";
 import {
@@ -45,9 +47,16 @@ async function renderDialog() {
       </DialogTrigger>
       <NoteCreateDialog />
       <Toaster />
+      {/* announce() の書き込み先。本番は RootDocument が持つが、この描画はそこを通らない (ADR-0017) */}
+      <LiveRegions />
     </QueryClientProvider>,
   );
   return { screen, invalidateSpy };
+}
+
+/** polite の region に溜まった通知。`announce` は 7000ms ノードを残すので追記順に連なる。 */
+function politeAnnouncements() {
+  return document.getElementById(LIVE_REGION_IDS.polite)?.textContent ?? "";
 }
 
 type Screen = Awaited<ReturnType<typeof renderDialog>>["screen"];
@@ -67,9 +76,13 @@ async function openDialog(screen: Screen) {
   });
 }
 
+function saveButton(screen: Screen) {
+  return screen.getByRole("button", { name: "保存", exact: true });
+}
+
 function clickSave(screen: Screen) {
   // ダイアログ内のボタンは inert バックドロップが pointer event を横取りするため native click
-  dispatchNativeClick(screen.getByRole("button", { name: "保存", exact: true }).element());
+  dispatchNativeClick(saveButton(screen).element());
 }
 
 describe("NoteCreateDialog", () => {
@@ -231,7 +244,7 @@ describe("NoteCreateDialog", () => {
     clickSave(screen);
 
     // 応答前は pending 表示のまま開いている
-    await expect.element(screen.getByRole("status", { name: "保存中" })).toBeInTheDocument();
+    await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
     expectDialogOpen(screen, "dialog");
 
     create.resolve({ id: 1 });
@@ -246,6 +259,40 @@ describe("NoteCreateDialog", () => {
     invalidate.resolve(undefined);
   });
 
+  it("保存の開始と完了を announcer が通知する", async () => {
+    // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える (ADR-0017)
+    const create = Promise.withResolvers<{ id: number }>();
+    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const { screen } = await renderDialog();
+    await openDialog(screen);
+    await titleTextbox(screen).fill("買い物リスト");
+
+    clickSave(screen);
+
+    await vi.waitFor(() => {
+      expect(politeAnnouncements()).toContain("メモを保存しています");
+    });
+    // 完了は createNote の決着より前に出さない
+    expect(politeAnnouncements()).not.toContain("保存しました");
+
+    create.resolve({ id: 1 });
+
+    await vi.waitFor(() => {
+      expect(politeAnnouncements()).toContain("保存しました");
+    });
+  });
+
+  it("検証に失敗したときは開始の通知を出さない", async () => {
+    // 開始の announce は検証を通った後に置く。空のまま押しても「保存しています」は出ない
+    const { screen } = await renderDialog();
+    await openDialog(screen);
+
+    clickSave(screen);
+
+    await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
+    expect(politeAnnouncements()).toBe("");
+  });
+
   it("保存の応答前はキャンセルできず Escape でも閉じない", async () => {
     // handle を複数の対象で共有しないダイアログは、閉じる前に対象を比べられない。pending 中に
     // 閉じて開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の
@@ -258,7 +305,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("買い物リスト");
 
     clickSave(screen);
-    await expect.element(screen.getByRole("status", { name: "保存中" })).toBeInTheDocument();
+    await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
 
     // キャンセルは押せない。Escape は Base UI が閉じようとするのを onOpenChange で止める
     await expect

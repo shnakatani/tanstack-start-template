@@ -70,11 +70,7 @@ export function DeleteConfirmDialog<TId = string>({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>キャンセル</AlertDialogCancel>
-            <AlertDialogActionButton
-              variant="destructive"
-              pendingLabel="削除中"
-              action={() => confirm(payload)}
-            >
+            <AlertDialogActionButton variant="destructive" action={() => confirm(payload)}>
               削除
             </AlertDialogActionButton>
           </AlertDialogFooter>

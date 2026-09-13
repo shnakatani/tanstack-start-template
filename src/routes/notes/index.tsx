@@ -28,6 +28,7 @@ import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { formatDateTime } from "@/lib/format-date-time";
+import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
@@ -95,8 +96,12 @@ function NotesPage() {
     // id の検証は removeNote 側の validator (noteIdSchema) が持つ
     mutationFn: (id: Note["id"]) => removeNote({ data: { id } }),
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
-    // 再取得の Promise を返し、再取得完了まで pending を保つ (ADR-0016)。閉じるのは確定時 (完了点 (a))
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey }),
+    // 再取得を await して pending を再取得完了まで保つ (ADR-0016)。閉じるのは確定時 (完了点 (a))
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
+      // 行の消失は読み上げに出ないので、完了を通知する (ADR-0017)
+      announce("削除しました");
+    },
     // server の raw message は開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
   });
@@ -134,6 +139,8 @@ function NotesPage() {
       return;
     }
     noteDeleteDialogHandle.close();
+    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する (ADR-0017)
+    announce(`『${target.name}』を削除しています`);
     // reject は runAction が吸収し onError が toast に出す。ここでは待たない
     void deleteMutation.runAction(target.id);
   }
@@ -173,13 +180,10 @@ function NotesPage() {
                 <TableRow key={key} aria-busy className={busyRowAppearance}>
                   <TableCell>{input.title}</TableCell>
                   <TableCell className="max-w-xs truncate">{input.body}</TableCell>
-                  {/* 作成日時はまだ無いので、その位置で保存中を伝える。aria-busy は行の属性で
-                      読み上げの本文にならないため、output (暗黙ロール status) を置く。status は
-                      name from author なので可視テキストと同値の aria-label を与える
-                      (`.claude/rules/implementation.md`「accessible name の与え方」) */}
-                  <TableCell>
-                    <output aria-label="保存中">保存中</output>
-                  </TableCell>
+                  {/* 作成日時はまだ無いので、その位置で保存中を伝える。行の aria-busy が true の
+                      間は支援技術が内容の変化を無視してよい (WAI-ARIA 1.2 aria-busy) ので、この
+                      テキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0017) */}
+                  <TableCell>保存中</TableCell>
                   <TableCell />
                 </TableRow>
               ))}
@@ -201,12 +205,8 @@ function NotesPage() {
                     <TableCell>{formatDateTime(note.createdAt)}</TableCell>
                     <TableCell>
                       {/* 削除中は行から可視の手掛かりが半透明しか出ないので、読み上げ用の
-                          テキストを足す。理由と aria-label は楽観行の「保存中」と同じ */}
-                      {isDeleting && (
-                        <output aria-label="削除中" className="sr-only">
-                          削除中
-                        </output>
-                      )}
+                          テキストを足す。位置づけは楽観行の「保存中」と同じ (ADR-0017) */}
+                      {isDeleting && <span className="sr-only">削除中</span>}
                       <AlertDialogTrigger
                         handle={noteDeleteDialogHandle}
                         payload={{ id: note.id, name: note.title }}

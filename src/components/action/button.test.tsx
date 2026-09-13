@@ -19,19 +19,21 @@ describe("ActionButton", () => {
     await button.click();
 
     expect(action).toHaveBeenCalledOnce();
-    await expect.element(screen.getByRole("status", { name: "処理中" })).toBeInTheDocument();
     await expect.element(button).toHaveAttribute("aria-disabled", "true");
     await expect.element(button).toHaveAttribute("aria-busy", "true");
+    // Spinner は視覚専用で accessibility API に出さない (ADR-0017)。露出させると
+    // §5.2.9 の「button の子孫は露出すべきでない」に頼った状態表示に逆戻りする
+    expect(
+      button.element().querySelector('[data-slot="spinner"]')?.getAttribute("aria-hidden"),
+    ).toBe("true");
     // native disabled にはしない (フォーカスを保つ)
     expect(button.element().hasAttribute("disabled")).toBe(false);
-    // exact: true で掴めている = status の文言が名前に混ざっていない
+    // exact: true で掴めている = Spinner の文言が名前に混ざっていない
     expect(document.activeElement).toBe(button.element());
 
     pending.resolve(undefined);
 
-    await vi.waitFor(() => {
-      expect(screen.getByRole("status", { name: "処理中" }).query()).toBeNull();
-    });
+    await expect.element(button).not.toHaveAttribute("aria-busy", "true");
     // 非 pending で無効化されていないことだけを見る (属性を常に付けるかは Base UI の出力形式)
     await expect.element(button).not.toHaveAttribute("aria-disabled", "true");
   });
@@ -89,20 +91,6 @@ describe("ActionButton", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("pendingLabel で status の名前を差し替えられる", async () => {
-    const pending = Promise.withResolvers<undefined>();
-    const screen = await render(
-      <ActionButton action={() => pending.promise} pendingLabel="保存中">
-        保存
-      </ActionButton>,
-    );
-
-    await screen.getByRole("button", { name: "保存", exact: true }).click();
-
-    await expect.element(screen.getByRole("status", { name: "保存中" })).toBeInTheDocument();
-    pending.resolve(undefined);
-  });
-
   it("aria-label を渡した部品はその名前になる", async () => {
     const screen = await render(
       <ActionButton action={() => Promise.resolve()} aria-label="メモを削除">
@@ -117,8 +105,9 @@ describe("ActionButton", () => {
     const pending = Promise.withResolvers<undefined>();
     const screen = await render(<ActionButton action={() => pending.promise}>保存</ActionButton>);
 
-    await screen.getByRole("button", { name: "保存", exact: true }).click();
-    await expect.element(screen.getByRole("status", { name: "処理中" })).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "保存", exact: true });
+    await button.click();
+    await expect.element(button).toHaveAttribute("aria-busy", "true");
 
     await expectNoA11yViolations(document.body);
     pending.resolve(undefined);

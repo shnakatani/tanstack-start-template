@@ -22,6 +22,7 @@ import type { NoteInput } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { useAppForm } from "@/hooks/use-app-form";
+import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
 /**
@@ -50,12 +51,14 @@ export function NoteCreateDialog() {
   const createMutation = useActionMutation({
     mutationKey: noteMutationKeys.create,
     mutationFn: (data: NoteInput) => createNote({ data }),
-    // 完了点 (b): 応答で閉じ、再取得の Promise を返して pending を再取得完了まで保つ (ADR-0016)。
+    // 完了点 (b): 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0016)。
     // 一覧側は useMutationState でこの pending を読み、新しい行を先に出す。
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる
-    onSuccess: () => {
+    onSuccess: async () => {
       noteCreateDialogHandle.close();
-      return queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
+      await queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
+      // 一覧への行の追加は読み上げに出ないので、完了を通知する (ADR-0017)
+      announce("保存しました");
     },
     // 失敗時は閉じない (入力を保ったままリトライできる)。server の raw message は
     // 開発者向けの文言なので curate を通した固定文言だけを出す
@@ -124,7 +127,12 @@ function NoteCreateForm({
     // 必須検証は title の AppField validator が保存前に強制する。ここでは
     // noteInputSchema の trim と同じ正規化だけ先に済ませ、送信値と保存値を一致させる。
     // Promise を返すので form.handleSubmit() の Promise が mutation の決着まで続く
-    onSubmit: ({ value }) => onSubmit({ title: value.title.trim(), body: value.body }),
+    onSubmit: ({ value }) => {
+      // ここは検証を通った後だけ走る。ボタンの pending は読み上げに出ないので開始を通知する
+      // (ADR-0017)。完了は mutation の onSuccess が出す
+      announce("メモを保存しています");
+      return onSubmit({ title: value.title.trim(), body: value.body });
+    },
   });
 
   return (
@@ -158,7 +166,7 @@ function NoteCreateForm({
         <DialogClose disabled={blocksClose} render={<Button type="button" variant="outline" />}>
           キャンセル
         </DialogClose>
-        <ActionFormSubmit pendingLabel="保存中">保存</ActionFormSubmit>
+        <ActionFormSubmit>保存</ActionFormSubmit>
       </DialogFooter>
     </ActionForm>
   );

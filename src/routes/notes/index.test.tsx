@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { LiveRegions } from "@/components/live-regions";
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
+import { LIVE_REGION_IDS } from "@/lib/live-announcer";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { createTestRouter } from "@/test/create-test-router";
@@ -64,9 +66,16 @@ async function renderPage() {
         <NotesPage />
       </Suspense>
       <Toaster />
+      {/* announce() の書き込み先。本番は RootDocument が持つが、この描画はそこを通らない (ADR-0017) */}
+      <LiveRegions />
     </QueryClientProvider>
   ));
   return render(<RouterProvider router={router} />);
+}
+
+/** polite の region に溜まった通知。`announce` は 7000ms ノードを残すので追記順に連なる。 */
+function politeAnnouncements() {
+  return document.getElementById(LIVE_REGION_IDS.polite)?.textContent ?? "";
 }
 
 type Screen = Awaited<ReturnType<typeof renderPage>>;
@@ -210,14 +219,11 @@ describe("NotesPage", () => {
     await expect
       .element(screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }))
       .toHaveAttribute("aria-busy", "true");
-    // aria-busy だけでは行の状態が読み上げられないので、status のテキストでも伝える
-    // (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行)。
-    // 名前は行の中で引く (確認ダイアログの pendingLabel と同名の status が同居しうる)
+    // 行は静的テキストで状態を持つ (ADR-0017)。live region にはしないので、仮想カーソルで
+    // 行を読んだときにだけ出る。通知は announcer が担う
     await expect
       .element(
-        screen
-          .getByRole("row", { name: new RegExp(CREATED_NOTE.title) })
-          .getByRole("status", { name: "保存中" }),
+        screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }).getByText("保存中"),
       )
       .toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
@@ -424,14 +430,12 @@ describe("NotesPage", () => {
     await expect
       .element(rowDeleteButton(screen, NOTE.title))
       .toHaveAttribute("aria-disabled", "true");
-    // aria-busy だけでは行の状態が読み上げられないので、status のテキストでも伝える
-    // (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行)。
-    // 名前は行の中で引く (確認ダイアログの pendingLabel と同名の status が同居しうる)
+    // 行は静的テキスト (sr-only) で状態を持つ (ADR-0017)
     await expect
       .element(
         screen
           .getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true })
-          .getByRole("status", { name: "削除中", includeHidden: true }),
+          .getByText("削除中"),
       )
       .toBeInTheDocument();
     // registry の disabled: variant は native disabled にしか当たらない。data-disabled 経由で
@@ -447,9 +451,10 @@ describe("NotesPage", () => {
 
     remove.resolve(undefined);
 
-    // 再取得 (2 回目の listNotes) が反映されても、消えるのは対象行だけ
+    // 再取得 (2 回目の listNotes) が反映されても、消えるのは対象行だけ。
+    // 対象名は announcer の通知にも残るので、行そのもので判定する
     await vi.waitFor(() => {
-      expect(screen.getByText(NOTE.title).query()).toBeNull();
+      expect(screen.getByRole("row", { name: new RegExp(NOTE.title) }).query()).toBeNull();
     });
     await expectText(screen, OTHER_NOTE.title);
   });
@@ -487,6 +492,30 @@ describe("NotesPage", () => {
     for (const pending of removes.values()) {
       pending.resolve(undefined);
     }
+  });
+
+  it("削除の開始と完了を announcer が通知する", async () => {
+    // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0017)
+    const remove = Promise.withResolvers<undefined>();
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
+    vi.mocked(removeNote).mockImplementation(() => remove.promise);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openDeleteConfirm(screen, NOTE);
+
+    confirmDelete(screen);
+
+    await vi.waitFor(() => {
+      expect(politeAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);
+    });
+    // 完了は removeNote の決着より前に出さない
+    expect(politeAnnouncements()).not.toContain("削除しました");
+
+    remove.resolve(undefined);
+
+    await vi.waitFor(() => {
+      expect(politeAnnouncements()).toContain("削除しました");
+    });
   });
 
   it("確定直後にもう一度 Enter を送っても removeNote は 1 回しか呼ばれない", async () => {

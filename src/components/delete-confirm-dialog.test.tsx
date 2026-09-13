@@ -136,18 +136,16 @@ describe("DeleteConfirmDialog", () => {
     await openDialog(screen);
 
     // バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
-    screen.getByRole("button", { name: "削除", exact: true }).element().focus();
+    const confirmButton = screen.getByRole("button", { name: "削除", exact: true });
+    confirmButton.element().focus();
     await userEvent.keyboard("{Enter}");
 
-    await expect.element(screen.getByRole("status", { name: "削除中" })).toBeInTheDocument();
-    await expect
-      .element(screen.getByRole("button", { name: "削除", exact: true }))
-      .toHaveAttribute("aria-disabled", "true");
+    // pending は要素自身の aria-busy / aria-disabled で持つ (ADR-0017)
+    await expect.element(confirmButton).toHaveAttribute("aria-busy", "true");
+    await expect.element(confirmButton).toHaveAttribute("aria-disabled", "true");
 
     pending.resolve(undefined);
-    await vi.waitFor(() => {
-      expect(screen.getByRole("status", { name: "削除中" }).query()).toBeNull();
-    });
+    await expect.element(confirmButton).not.toHaveAttribute("aria-busy", "true");
   });
 
   // 撤去した deleteConfirmMutationProps の閉包フラグの後継。dedupe は Action 層が持つが、
