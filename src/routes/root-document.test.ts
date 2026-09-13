@@ -1,4 +1,4 @@
-import { type ElementType, isValidElement, type ReactNode } from "react";
+import { type ElementType, isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it } from "vite-plus/test";
 
 import { LiveRegions } from "@/components/live-regions";
@@ -15,44 +15,44 @@ import { RootDocument } from "./__root";
  * render せず要素ツリーを歩くのは、`HeadContent` が router context を要求して
  * `renderToStaticMarkup` が通らないため。
  */
-function findElementWrapping(node: ReactNode, type: string, marker: string): boolean {
+type ElementWithChildren = ReactElement<{ children?: ReactNode }>;
+
+/** 要素ツリーを深さ優先で歩き、述語に最初に一致した要素を返す。 */
+function findElement(
+  node: ReactNode,
+  predicate: (element: ElementWithChildren) => boolean,
+): ElementWithChildren | undefined {
   // Array.isArray のナローイングは any[] になるため、要素の型を ReactNode[] で受け直す
   if (Array.isArray(node)) {
     const children: ReactNode[] = node;
-    return children.some((child) => findElementWrapping(child, type, marker));
+    for (const child of children) {
+      const found = findElement(child, predicate);
+      if (found) return found;
+    }
+    return undefined;
   }
-  if (!isValidElement<{ children?: ReactNode }>(node)) return false;
-
-  const children = node.props.children;
-  if (node.type === type && JSON.stringify(children ?? null).includes(marker)) return true;
-  return findElementWrapping(children, type, marker);
+  if (!isValidElement<{ children?: ReactNode }>(node)) return undefined;
+  if (predicate(node)) return node;
+  return findElement(node.props.children, predicate);
 }
 
-/**
- * 型で木を歩いて存在だけを見る。`findElementWrapping` は children の marker 文字列で
- * 特定するので、子を持たないコンポーネント (`LiveRegions`) には使えない。
- */
-function containsElementOfType(node: ReactNode, type: ElementType): boolean {
-  if (Array.isArray(node)) {
-    const children: ReactNode[] = node;
-    return children.some((child) => containsElementOfType(child, type));
-  }
-  if (!isValidElement<{ children?: ReactNode }>(node)) return false;
-  if (node.type === type) return true;
-  return containsElementOfType(node.props.children, type);
+/** 指定の型で、children に marker 文字列を含む要素にだけ一致する述語。 */
+function wrapping(type: ElementType, marker: string) {
+  return (element: ElementWithChildren) =>
+    element.type === type && JSON.stringify(element.props.children ?? null).includes(marker);
 }
 
 describe("RootDocument", () => {
   it("本文を <main> で包む", () => {
     const tree = RootDocument({ children: "本文マーカー" });
 
-    expect(findElementWrapping(tree, "main", "本文マーカー")).toBe(true);
+    expect(findElement(tree, wrapping("main", "本文マーカー"))).toBeDefined();
   });
 
   it("<main> が無ければ落ちる", () => {
     const tree = RootDocument({ children: "本文マーカー" });
 
-    expect(findElementWrapping(tree, "article", "本文マーカー")).toBe(false);
+    expect(findElement(tree, wrapping("article", "本文マーカー"))).toBeUndefined();
   });
 
   /**
@@ -63,6 +63,6 @@ describe("RootDocument", () => {
   it("announcer の live region を置く", () => {
     const tree = RootDocument({ children: "本文マーカー" });
 
-    expect(containsElementOfType(tree, LiveRegions)).toBe(true);
+    expect(findElement(tree, (element) => element.type === LiveRegions)).toBeDefined();
   });
 });

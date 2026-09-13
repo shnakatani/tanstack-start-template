@@ -1,7 +1,7 @@
 /**
  * 実行中の CSS アニメーション (既定は document.body の子孫全て) の完了を待つ。
  *
- * ブラウザテストでも Tailwind が実 CSS に解決されるため (src/test/browser-setup.ts)、
+ * ブラウザテストでも Tailwind が実 CSS に解決されるため (src/test/browser-setup.tsx)、
  * base-ui の Dialog / Popover / Sheet に tw-animate-css の `data-open:animate-in` /
  * `data-closed:animate-out` が実際に効く。アニメーション中は transform で位置と
  * サイズが変わるので、次の 2 つの前に必ずこの helper を通す:

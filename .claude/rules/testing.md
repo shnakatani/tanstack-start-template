@@ -95,7 +95,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - ヘルパーが受け取る引数の前提検査は型ナローイングと分けて `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガードで、`expect*` 命名の縛りも要らない (実例: `src/test/loader-helpers.ts`)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は戻り値が `void` で型を絞らない (vitest-dev/vitest#8695)
 - 条件分岐で assertion を囲まない。`if` 内の `expect` は `vitest/no-conditional-expect` が報告する (ADR-0004)
-- announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読む (region 不在は throw)。描画に `<LiveRegions />` を含める (ADR-0017)
+- announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読む (region 不在は throw)。region は `src/test/browser-setup.tsx` が毎テスト描くので、各テストの描画には足さない (ADR-0017)
 
 ## mock の注意点
 
@@ -144,7 +144,7 @@ dispatchNativeClick(screen.getByRole("button", { name: "削除" }).element());
 
 ## ブラウザテストの CSS とレイアウト実測
 
-ブラウザテストでは Tailwind が実 CSS に解決される (`vitest.browser.config.ts` の `@tailwindcss/vite` と、`test.setupFiles` の `src/test/browser-setup.ts` による `src/styles.css` の import)。
+ブラウザテストでは Tailwind が実 CSS に解決される (`vitest.browser.config.ts` の `@tailwindcss/vite` と、`test.setupFiles` の `src/test/browser-setup.tsx` による `src/styles.css` の import)。
 `getBoundingClientRect` / `getComputedStyle` によるレイアウト検証が書けるので、**レイアウト回帰は className の `toContain` ではなく実挙動で守る**。
 
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変更したら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
@@ -156,7 +156,7 @@ dispatchNativeClick(screen.getByRole("button", { name: "削除" }).element());
 - Dialog / Popover / Sheet の close 直後に `.query()).toBeNull()` を assert する場合は `vi.waitFor` で包む (base-ui は `animate-out` 完了まで unmount を遅らせる)
 - `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む
 - flex column の中に「溢れるコンテンツ」をテスト用に作るときは `height` ではなく `minHeight` を使う (flex item は既定で縮むため `height` では溢れない)
-- hover 由来の配色との交絡は `src/test/park-mouse.ts` が `browser-setup.ts` の `beforeEach` で断つ。マウス位置を動かすテストは自分で戻す
+- hover 由来の配色との交絡は `src/test/park-mouse.ts` が `browser-setup.tsx` の `beforeEach` で断つ。マウス位置を動かすテストは自分で戻す
 
 ## synthetic KeyboardEvent は `code` プロパティ必須
 

@@ -10,7 +10,7 @@ export default defineProject({
   // 分けているので、全体を継承すると plugin ごと戻ってしまう。1 行だけ写す (ADR-0002)
   envDir: false,
   // Tailwind をブラウザテストでも実 CSS に解決する。setupFiles の
-  // src/test/browser-setup.ts が src/styles.css を import し、この plugin が
+  // src/test/browser-setup.tsx が src/styles.css を import し、この plugin が
   // ユーティリティクラスを生成する。node 側 (vitest.config.ts) には不要。
   plugins: [viteReact(), tailwindcss()],
   resolve: {
@@ -46,7 +46,7 @@ export default defineProject({
   },
   test: {
     name: "browser",
-    setupFiles: ["src/test/browser-setup.ts"],
+    setupFiles: ["src/test/browser-setup.tsx"],
     include: ["src/**/*.test.tsx"],
     exclude: [
       "**/node_modules/**",

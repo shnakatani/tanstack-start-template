@@ -9,8 +9,10 @@
  */
 import { afterEach, beforeEach } from "vite-plus/test";
 import { cdp } from "vite-plus/test/browser/context";
+import { render } from "vitest-browser-react";
 
 import "@/styles.css";
+import { LiveRegions } from "@/components/live-regions";
 import { parkMouse } from "@/test/park-mouse";
 
 /**
@@ -19,6 +21,16 @@ import { parkMouse } from "@/test/park-mouse";
  */
 beforeEach(async () => {
   await parkMouse();
+});
+
+/**
+ * `announce()` (ADR-0017) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
+ * 持つが、部品やページ単体の描画はそこを通らない。テストごとに置くと置き忘れが
+ * `readAnnouncements` の throw まで出てこないので、setup で 1 回描く。
+ * vitest-browser-react の cleanup が `afterEach` で外すため、テスト間に通知は残らない。
+ */
+beforeEach(async () => {
+  await render(<LiveRegions />);
 });
 
 /**

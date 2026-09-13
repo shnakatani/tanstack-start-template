@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { render } from "vitest-browser-react";
 
-import { LiveRegions } from "@/components/live-regions";
+import { readAnnouncements } from "@/test/live-announcer";
 
 import { announce, LIVE_REGION_IDS } from "./live-announcer";
 
+// region は browser-setup.tsx の beforeEach が描く (`readAnnouncements` の JSDoc)
 describe("announce", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
@@ -17,18 +17,17 @@ describe("announce", () => {
     vi.restoreAllMocks();
   });
 
-  it("polite の region にメッセージのノードを足し、7000ms 後に消す", async () => {
+  it("polite の region にメッセージのノードを足し、7000ms 後に消す", () => {
     vi.useFakeTimers();
-    await render(<LiveRegions />);
     const region = document.getElementById(LIVE_REGION_IDS.polite);
     expect(region?.getAttribute("aria-live")).toBe("polite");
     expect(region?.getAttribute("role")).toBe("log");
     expect(region?.getAttribute("aria-relevant")).toBe("additions");
-    expect(region?.childElementCount).toBe(0);
+    expect(readAnnouncements()).toEqual([]);
 
     announce("『買い物リスト』を削除しています");
 
-    expect(region?.textContent).toBe("『買い物リスト』を削除しています");
+    expect(readAnnouncements()).toEqual(["『買い物リスト』を削除しています"]);
 
     // 削除は 7000ms ちょうど (React Aria の LiveAnnouncer と同値)。6999 でまだ在ることを
     // 見ないと、寿命を短くする変更 (3000 等) がこのテストを通り抜ける
@@ -38,21 +37,24 @@ describe("announce", () => {
     expect(region?.childElementCount).toBe(0);
   });
 
-  it("assertive を指定すると assertive の region に入る", async () => {
-    await render(<LiveRegions />);
+  it("assertive を指定すると assertive の region に入る", () => {
     announce("保存できません", "assertive");
-    expect(document.getElementById(LIVE_REGION_IDS.assertive)?.textContent).toBe("保存できません");
-    expect(document.getElementById(LIVE_REGION_IDS.polite)?.textContent).toBe("");
+
+    expect(readAnnouncements("assertive")).toEqual(["保存できません"]);
+    expect(readAnnouncements()).toEqual([]);
   });
 
-  it("同じ文言を続けて announce しても別ノードとして残る", async () => {
-    await render(<LiveRegions />);
+  it("同じ文言を続けて announce しても別ノードとして残る", () => {
     announce("削除しました");
     announce("削除しました");
-    expect(document.getElementById(LIVE_REGION_IDS.polite)?.childElementCount).toBe(2);
+
+    expect(readAnnouncements()).toEqual(["削除しました", "削除しました"]);
   });
 
   it("region が無いときは warn して何もしない", () => {
+    // client で region が見つからない異常 (配線が外れた状態) を作る
+    document.getElementById(LIVE_REGION_IDS.polite)?.remove();
+
     announce("届かない");
 
     expect(warnSpy).toHaveBeenCalledWith("[announce] live region が無い", {

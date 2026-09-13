@@ -5,13 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { LiveRegions } from "@/components/live-regions";
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { createTestRouter } from "@/test/create-test-router";
+import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
 import { collectLoaderQueryKeys } from "@/test/loader-helpers";
 import { dispatchNativeClick } from "@/test/native-click";
@@ -66,8 +66,6 @@ async function renderPage() {
         <NotesPage />
       </Suspense>
       <Toaster />
-      {/* announce() の書き込み先 (理由は readAnnouncements の JSDoc) */}
-      <LiveRegions />
     </QueryClientProvider>
   ));
   return render(<RouterProvider router={router} />);
@@ -75,12 +73,9 @@ async function renderPage() {
 
 type Screen = Awaited<ReturnType<typeof renderPage>>;
 
-/**
- * 行の削除ボタン。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない)。
- * 確認ダイアログ表示中は行が `aria-hidden` 配下に入るため、その間は `includeHidden` で取る。
- */
-function rowDeleteButton(screen: Screen, title: string, includeHidden = false) {
-  return screen.getByRole("button", { name: `${title}を削除`, exact: true, includeHidden });
+/** 行の削除ボタン。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない)。 */
+function rowDeleteButton(screen: Screen, title: string) {
+  return screen.getByRole("button", { name: `${title}を削除`, exact: true });
 }
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
@@ -185,12 +180,11 @@ describe("NotesPage", () => {
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
     // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
     // (ADR-0016「テンプレートのメモ画面への適用」)
-    const create = Promise.withResolvers<{ id: number }>();
     const refetch = Promise.withResolvers<Note[]>();
     vi.mocked(listNotes)
       .mockResolvedValueOnce([NOTE])
       .mockImplementation(() => refetch.promise);
-    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const create = deferMock(createNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
 
@@ -242,12 +236,11 @@ describe("NotesPage", () => {
     // close を止める窓は「応答前」だけで、mutation の pending 全体ではない。応答で閉じた後は
     // 再取得の完了まで pending が続くが、その間に開き直したダイアログは先行 save の応答を
     // 待っていないので閉じられる (ADR-0016 Decision の完了点 (b) の行)
-    const create = Promise.withResolvers<{ id: number }>();
     const refetch = Promise.withResolvers<Note[]>();
     vi.mocked(listNotes)
       .mockResolvedValueOnce([NOTE])
       .mockImplementation(() => refetch.promise);
-    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const create = deferMock(createNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
 
@@ -273,9 +266,8 @@ describe("NotesPage", () => {
   it("0 件の一覧に 1 件目を追加すると、応答前に空状態が消えて楽観行が出る", async () => {
     // 空状態の分岐は creatingRows も見る。notesQuery.data の件数だけで判定すると、
     // 1 件目の保存中に「登録されていません」と楽観行が同時に成立しない (前者が勝つ)
-    const create = Promise.withResolvers<{ id: number }>();
     vi.mocked(listNotes).mockResolvedValueOnce([]).mockResolvedValue([CREATED_NOTE]);
-    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const create = deferMock(createNote);
     const screen = await renderPage();
     await expectText(screen, "メモが登録されていません");
 
@@ -334,10 +326,9 @@ describe("NotesPage", () => {
 
   it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
     const rawMessage = `削除対象のノートが見つかりません: id=${NOTE.id}`;
-    const remove = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     // 即 reject だと busy の窓が観測できない (testing.md「遅延 rejection で中間状態を観測」)
-    vi.mocked(removeNote).mockImplementation(() => remove.promise);
+    const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
@@ -363,12 +354,11 @@ describe("NotesPage", () => {
   });
 
   it("削除を確定するとダイアログは removeNote の決着を待たずに閉じ、再取得完了まで行が busy のまま", async () => {
-    const remove = Promise.withResolvers<undefined>();
     const refetch = Promise.withResolvers<Note[]>();
     vi.mocked(listNotes)
       .mockResolvedValueOnce([NOTE])
       .mockImplementation(() => refetch.promise);
-    vi.mocked(removeNote).mockImplementation(() => remove.promise);
+    const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
@@ -400,9 +390,8 @@ describe("NotesPage", () => {
   });
 
   it("削除中は対象の行が busy になる", async () => {
-    const remove = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]).mockResolvedValue([OTHER_NOTE]);
-    vi.mocked(removeNote).mockImplementation(() => remove.promise);
+    const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
@@ -441,7 +430,8 @@ describe("NotesPage", () => {
       expect(style.opacity).toBe("0.5");
       expect(style.pointerEvents).toBe("none");
     });
-    // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い
+    // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
+    // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う
     await expectNoA11yViolations(document.body);
 
     remove.resolve(undefined);
@@ -497,9 +487,8 @@ describe("NotesPage", () => {
 
   it("削除の開始と完了を announcer が通知する", async () => {
     // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0017)
-    const remove = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
-    vi.mocked(removeNote).mockImplementation(() => remove.promise);
+    const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
@@ -520,9 +509,8 @@ describe("NotesPage", () => {
   });
 
   it("確定直後にもう一度 Enter を送っても removeNote は 1 回しか呼ばれない", async () => {
-    const remove = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
-    vi.mocked(removeNote).mockImplementation(() => remove.promise);
+    const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);

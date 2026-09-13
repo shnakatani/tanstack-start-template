@@ -3,12 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { LiveRegions } from "@/components/live-regions";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
 import { dispatchNativeClick } from "@/test/native-click";
 import {
@@ -47,8 +47,6 @@ async function renderDialog() {
       </DialogTrigger>
       <NoteCreateDialog />
       <Toaster />
-      {/* announce() の書き込み先 (理由は readAnnouncements の JSDoc) */}
-      <LiveRegions />
     </QueryClientProvider>,
   );
   return { screen, invalidateSpy };
@@ -226,9 +224,8 @@ describe("NoteCreateDialog", () => {
   it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
     // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0016)。
     // 即 resolve だと応答前の窓が観測できない (testing.md「遅延 rejection で中間状態を観測」)
-    const create = Promise.withResolvers<{ id: number }>();
     const invalidate = Promise.withResolvers<undefined>();
-    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const create = deferMock(createNote);
     const { screen, invalidateSpy } = await renderDialog();
     // renderDialog が spy を張った queryClient と同じインスタンスを Provider が持つので、
     // onSuccess の invalidateQueries にこの差し替えが効く
@@ -256,8 +253,7 @@ describe("NoteCreateDialog", () => {
 
   it("保存の開始と完了を announcer が通知する", async () => {
     // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える (ADR-0017)
-    const create = Promise.withResolvers<{ id: number }>();
-    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const create = deferMock(createNote);
     const { screen } = await renderDialog();
     await openDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
@@ -293,8 +289,7 @@ describe("NoteCreateDialog", () => {
     // 閉じて開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の
     // 応答が届いた時点で新しい入力ごと閉じる。pending 中はユーザー起点の close を止める
     // (ADR-0016 Decision の完了点 (b) の行)
-    const create = Promise.withResolvers<{ id: number }>();
-    vi.mocked(createNote).mockImplementation(() => create.promise);
+    const create = deferMock(createNote);
     const { screen } = await renderDialog();
     await openDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
