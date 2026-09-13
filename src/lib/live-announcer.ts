@@ -4,7 +4,10 @@
  * Action (Transition) の中から呼んでも進行中の Transition を blocking に落とさない。
  *
  * 形は React Aria の `LiveAnnouncer` (`role="log"` + `aria-live` + `aria-relevant="additions"`、
- * 7000ms で削除) と同じ。region を初回の announce で作らず初期マークアップに置く点だけ違う。
+ * 7000ms で削除) と同じ。違うのは region の作り方で、React Aria は初回の `announce()` で region を
+ * 生成するため、生成直後の取りこぼしを避けて Safari 向けに 100ms 待ってからメッセージを入れる。
+ * 本実装は region を初期マークアップに置くので (MDN「ARIA live regions」の最上位の推奨)、
+ * その待ちが要らず、`announce()` はその場でノードを足せる。
  */
 export const LIVE_REGION_IDS = {
   polite: "live-region-polite",
@@ -17,6 +20,8 @@ export type Politeness = keyof typeof LIVE_REGION_IDS;
 const MESSAGE_LIFETIME_MS = 7000;
 
 export function announce(message: string, politeness: Politeness = "polite"): void {
+  // SSR では読み上げる相手が居らず region も無いのが正常なので、黙って返す。
+  // client で region が見つからない異常のほうは、下の warn が拾う
   if (typeof document === "undefined") {
     return;
   }
@@ -29,6 +34,8 @@ export function announce(message: string, politeness: Politeness = "polite"): vo
   const node = document.createElement("div");
   node.textContent = message;
   region.append(node);
+  // `globalThis.` を落とさない。vitest の fake timers が差し替えるのは globalThis 側で、
+  // 素の `setTimeout` へ直すと寿命を測るテスト (live-announcer.test.tsx) が進められなくなる
   globalThis.setTimeout(() => {
     node.remove();
   }, MESSAGE_LIFETIME_MS);

@@ -1,5 +1,7 @@
-import { isValidElement, type ReactNode } from "react";
+import { type ElementType, isValidElement, type ReactNode } from "react";
 import { describe, expect, it } from "vite-plus/test";
+
+import { LiveRegions } from "@/components/live-regions";
 
 import { RootDocument } from "./__root";
 
@@ -26,6 +28,20 @@ function findElementWrapping(node: ReactNode, type: string, marker: string): boo
   return findElementWrapping(children, type, marker);
 }
 
+/**
+ * 型で木を歩いて存在だけを見る。`findElementWrapping` は children の marker 文字列で
+ * 特定するので、子を持たないコンポーネント (`LiveRegions`) には使えない。
+ */
+function containsElementOfType(node: ReactNode, type: ElementType): boolean {
+  if (Array.isArray(node)) {
+    const children: ReactNode[] = node;
+    return children.some((child) => containsElementOfType(child, type));
+  }
+  if (!isValidElement<{ children?: ReactNode }>(node)) return false;
+  if (node.type === type) return true;
+  return containsElementOfType(node.props.children, type);
+}
+
 describe("RootDocument", () => {
   it("本文を <main> で包む", () => {
     const tree = RootDocument({ children: "本文マーカー" });
@@ -37,5 +53,16 @@ describe("RootDocument", () => {
     const tree = RootDocument({ children: "本文マーカー" });
 
     expect(findElementWrapping(tree, "article", "本文マーカー")).toBe(false);
+  });
+
+  /**
+   * announcer の region は初期マークアップに含まれていることが要件 (ADR-0017)。
+   * `announce()` の側は region が在る前提で書かれており、配線が外れると
+   * 通知が warn だけ残して届かなくなる。その配線をここで守る。
+   */
+  it("announcer の live region を置く", () => {
+    const tree = RootDocument({ children: "本文マーカー" });
+
+    expect(containsElementOfType(tree, LiveRegions)).toBe(true);
   });
 });
