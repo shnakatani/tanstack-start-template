@@ -390,6 +390,8 @@ describe("NotesPage", () => {
       expect(style.opacity).toBe("0.5");
       expect(style.pointerEvents).toBe("none");
     });
+    // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い
+    await expectNoA11yViolations(document.body);
 
     remove.resolve(undefined);
 

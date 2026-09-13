@@ -78,6 +78,8 @@ function NotesPagePending() {
  * pending な行 (保存中・削除中) の見え方。半透明で pending を伝える (ADR-0016) が、
  * `opacity-50` は本文を 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る
  * (`index.test.tsx` の楽観行の a11y 検査が axe で実測)。比率を満たす範囲で薄くする。
+ * 保存中・削除中の 2 箇所で同じ文字列だが、cva variant にすると registry の `TableRow` に
+ * variant を持たせることになる (ADR-0006 の対象) ので、消費側の定数で持つ。
  */
 const busyRowAppearance = "opacity-60";
 
