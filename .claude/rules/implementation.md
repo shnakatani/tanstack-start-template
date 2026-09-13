@@ -67,22 +67,22 @@ function handleRetry() {
 
 lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014、完了点とブロック範囲の軸は ADR-0016。
 
-| 更新の種類                        | 書き方                                                                                                                                                                                                                             |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                                                                         |
-| mutation 成功後のダイアログ close | 閉じる時点は ADR-0016 の完了点の軸で選ぶ。(a) Action 内で `handle.close()` を呼び `void runAction(...)` / (b) `onSuccess` の先頭で `close()` してから再取得の Promise を返す / (c) `await invalidateQueries(...)` の後に `close()` |
-| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                                                                |
-| Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                                                        |
-| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                                                  |
+| 更新の種類                        | 書き方                                                                                                                                                                                                                                              |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                                                                                          |
+| mutation 成功後のダイアログ close | 閉じる時点は ADR-0016 の完了点の軸で選び、理由を実装近傍に書く (無いと形だけ写される)。(a) Action 内で `close()` + `void runAction()` / (b) `onSuccess` 先頭で `close()` し再取得の Promise を返す / (c) `await invalidateQueries()` 後に `close()` |
+| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                                                                                 |
+| Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                                                                         |
+| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                                                                   |
 
-- pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)
+- pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)。項目の busy と楽観表示は例外で、次の項目のとおり mutation の pending から取る
 - mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` (`toastMutationError`) は型で必須。`runAction` が `mutateAsync` の reject を吸収するため、`onError` が無いと失敗が無通知になる
 - Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る
 - `onSuccess` は再取得の Promise を返す (mutation の pending が再取得完了まで続く)。再取得完了前に close するときは、対象の項目 (行など) にその pending から busy 表現を付ける。付けないと古い一覧が pending 表示なしで見える (ADR-0016)
-- 止めるのは対象の項目だけにする。画面全体を止めるのは並行操作が整合を壊すときだけで、理由を実装近傍に書く (ADR-0016)
+- 止めるのは対象の項目だけにする。画面全体を止めると、無関係な操作まで待たされる。並行操作が整合を壊すときだけ全体を止め、理由を実装近傍に書く (ADR-0016)
 - Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる
 - `useOptimistic` に `useQuery` / `useSuspenseQuery` の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (ADR-0014「楽観表示の使い分け」)
-- mutation の pending の読み方: 同一コンポーネントで 1 件ずつなら `mutation.isPending && mutation.variables === id`、並行か別コンポーネントなら `mutationKey` を付けて `useMutationState` (`status: "pending"`) で読む (ADR-0016)
+- mutation の pending の読み方: 1 件ずつなら `mutation.isPending && mutation.variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState`。`useMutation` 1 つの `variables` は 2 件目で移る (ADR-0016)
 - 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない。pending は次のユーザーイベントより前に描画される (ADR-0014)
 
 ## 手動メモ化の増減

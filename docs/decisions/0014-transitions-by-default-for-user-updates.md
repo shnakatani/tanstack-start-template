@@ -134,21 +134,21 @@ React はユーザー起点のイベントごとに次のイベントより前�
 
 mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、次を持つ。
 
-| 項目                    | 規範                                                                                                                                                                                                                                                        |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 入力                    | `useMutation` の options。型で `onError` を必須にする。省略すると reject の吸収が無通知の失敗になるため、型で止める                                                                                                                                         |
-| 出力                    | `useMutation` の戻り値から `mutate` / `mutateAsync` を型で外し、`runAction(variables): Promise<void>` を足す。`runAction` は `mutateAsync` を await し、reject を吸収する。通知は `onError` (`toastMutationError`) が担う                                   |
-| 呼び出し                | `action` prop から `runAction` を呼ぶ。`mutate` は Promise を返さず reject も `.catch(noop)` で握るため、Transition が完了も失敗も観測できない (`useMutation.js`)                                                                                           |
-| 再取得と close          | 閉じる時点は ADR-0016 で選ぶ。再取得完了まで待つ場合だけ `onSuccess` を async にし、`await queryClient.invalidateQueries(...)` の後に `handle.close()` を呼ぶ。TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` と Transition が続く |
-| `await` 後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる (`useTransition` の既知の制限)。画面の更新は query の再取得に任せる                                                                                                                 |
+| 項目                    | 規範                                                                                                                                                                                                                                                                 |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入力                    | `useMutation` の options。型で `onError` を必須にする。省略すると reject の吸収が無通知の失敗になるため、型で止める                                                                                                                                                  |
+| 出力                    | `useMutation` の戻り値から `mutate` / `mutateAsync` を型で外し、`runAction(variables): Promise<void>` を足す。`runAction` は `mutateAsync` を await し、reject を吸収する。通知は `onError` (`toastMutationError`) が担う                                            |
+| 呼び出し                | `action` prop から `runAction` を呼ぶ。`mutate` は Promise を返さず reject も `.catch(noop)` で握るため、Transition が完了も失敗も観測できない (`useMutation.js`)                                                                                                    |
+| 再取得と close          | `onSuccess` は完了点によらず再取得の Promise を返す (TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く)。閉じる時点は ADR-0016 で選び、(c) ではその後に `handle.close()`、(b) では先頭で `close()`、(a) では Action 側で `close()` する |
+| `await` 後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる (`useTransition` の既知の制限)。画面の更新は query の再取得に任せる                                                                                                                          |
 
 ### 楽観表示の使い分け
 
-| 表示したい値                       | 方式                                                                                                              | 理由                                                                                                                              |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| query が持つデータとその派生値     | TanStack Query の `mutation.isPending && mutation.variables === id` (複数コンポーネントからは `useMutationState`) | query と同じストアで更新され、Transition との rebase が起きない (制約 1)。`variables` は決着後も残るため `isPending` でゲートする |
-| query を経由しない部品のローカル値 | `useOptimistic` を Action の中で set する                                                                         | React の想定どおりの経路。React Aria #9894 が同じ設計を採る                                                                       |
-| Router の state                    | Router に任せる                                                                                                   | 自前の acknowledgement で整合を取っている (制約 1)                                                                                |
+| 表示したい値                       | 方式                                                                                                                                                                                                                       | 理由                                                                                                                              |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| query が持つデータとその派生値     | TanStack Query の `mutation.isPending && mutation.variables === id` (複数コンポーネントからは `useMutationState`)。複数の表示箇所を同時に更新するなら `onMutate` でキャッシュを書き換え、失敗時に rollback する (ADR-0016) | query と同じストアで更新され、Transition との rebase が起きない (制約 1)。`variables` は決着後も残るため `isPending` でゲートする |
+| query を経由しない部品のローカル値 | `useOptimistic` を Action の中で set する                                                                                                                                                                                  | React の想定どおりの経路。React Aria #9894 が同じ設計を採る                                                                       |
+| Router の state                    | Router に任せる                                                                                                                                                                                                            | 自前の acknowledgement で整合を取っている (制約 1)                                                                                |
 
 判定は `useOptimistic` の第 1 引数で行う。`useQuery` / `useSuspenseQuery` の `data` とそこから計算した値を渡さない。
 
@@ -174,7 +174,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ## Consequences
 
-- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示のゲートは除く)
+- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と項目の busy は除く)。メモ画面の一覧のトリガーの全体無効化は ADR-0014 実装時の形で、ADR-0016 の後続作業で撤去する
 - ダイアログを閉じる時点と、その間に止める範囲は ADR-0016 の軸で機能ごとに選ぶ。再取得完了前に閉じるときは、対象の項目が mutation の pending から busy を表現する
 - Transition 化で得るのは pending の自動管理、Action の順序保証 (完了点 (a) で Transition の外に出した mutation は除く。ADR-0016)、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 4 つ。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (制約 1、制約 4)
 - ルート遷移への `<ViewTransition>` 適用は別途判断する
