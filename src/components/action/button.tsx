@@ -6,7 +6,7 @@ import { useActionTransition } from "@/hooks/use-action-transition";
 
 type ActionButtonProps = Omit<
   ComponentProps<typeof Button>,
-  "onClick" | "disabled" | "focusableWhenDisabled" | "children"
+  "onClick" | "disabled" | "focusableWhenDisabled" | "children" | "aria-labelledby"
 > & {
   /** クリックで実行する Action。`startTransition` の中で await する (ADR-0014) */
   action: () => Promise<void> | void;
@@ -23,6 +23,8 @@ type ActionButtonProps = Omit<
  * - accessible name は `aria-labelledby` で children に固定する。status の文言を子に置くと
  *   name from content で「処理中保存」のように名前が変わり、AT の読み上げとテストの
  *   `exact: true` が揺れる。`aria-label` を渡した部品はそちらが名前になる
+ * - 名前の与え方は children か `aria-label` に限る。`aria-labelledby` は内部で使うため prop から
+ *   外してある (受け付けたまま `{...props}` の後で上書きすると、渡した側から見て黙って消える)
  * - Action の reject はここでは握らない。呼び出し側が Action の中で処理し切る
  *   (mutation は `useActionMutation` の `runAction` が吸収する)
  */
