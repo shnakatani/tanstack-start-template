@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import { removeNote } from "@/features/notes/functions";
 import { noteMutationKeys } from "@/features/notes/mutations";
 import { notesQueryOptions } from "@/features/notes/queries";
@@ -91,11 +92,13 @@ function NotesPage() {
   });
 
   // pending な削除の対象 id。mutation ごとに追うので、同時削除でも各行が busy になる (ADR-0016)。
-  // `mutation.state.variables` は `unknown` なので、行側は includes で突き合わせる
-  const deletingIds = useMutationState({
+  // `mutation.state.variables` は `unknown` なので、行と突き合わせる前に id へ絞る
+  // (id でない値は parseDeletingIds が warn を残して除外する)
+  const pendingDeleteVariables = useMutationState({
     filters: { mutationKey: noteMutationKeys.remove, status: "pending" },
     select: (mutation) => mutation.state.variables,
   });
+  const deletingIds = parseDeletingIds(pendingDeleteVariables);
 
   // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
   // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op

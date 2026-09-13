@@ -188,18 +188,34 @@ describe("NotesPage", () => {
     expect(screen.getByText(NOTE.title).query()).not.toBeNull();
   });
 
-  it("削除に失敗すると固定文言を toast に出し、server の raw message は表示しない", async () => {
+  it("削除に失敗すると固定文言を toast に出し、行の busy が解ける", async () => {
     const rawMessage = `削除対象のノートが見つかりません: id=${NOTE.id}`;
+    const remove = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
-    vi.mocked(removeNote).mockRejectedValue(new Error(rawMessage));
+    // 即 reject だと busy の窓が観測できない (testing.md「遅延 rejection で中間状態を観測」)
+    vi.mocked(removeNote).mockImplementation(() => remove.promise);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
     confirmDelete(screen);
 
+    // 完了点 (a) でダイアログは閉じるので、決着までの pending は行の busy だけが伝える
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true }))
+      .toHaveAttribute("aria-busy", "true");
+
+    remove.reject(new Error(rawMessage));
+
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     expect(screen.getByText(rawMessage).query()).toBeNull();
+    // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(NOTE.title) }))
+      .toHaveAttribute("aria-busy", "false");
+    await expect
+      .element(rowDeleteButton(screen, NOTE.title))
+      .not.toHaveAttribute("aria-disabled", "true");
   });
 
   it("削除を確定するとダイアログは removeNote の決着を待たずに閉じ、再取得完了まで行が busy のまま", async () => {
