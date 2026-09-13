@@ -143,7 +143,17 @@ function NotesPage() {
                       <AlertDialogTrigger
                         handle={noteDeleteDialogHandle}
                         payload={{ id: String(note.id), name: note.title }}
-                        render={<Button variant="destructive" size="sm" focusableWhenDisabled />}
+                        render={
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            focusableWhenDisabled
+                            // focusableWhenDisabled は native disabled を付けないため registry の disabled: variant が
+                            // 当たらない。Base UI が付ける data-disabled で同じ見た目にする (Base UI Button docs の
+                            // Loading states と同じ形)
+                            className="data-disabled:pointer-events-none data-disabled:opacity-50"
+                          />
+                        }
                         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
                         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
                         aria-label={`${note.title}を削除`}

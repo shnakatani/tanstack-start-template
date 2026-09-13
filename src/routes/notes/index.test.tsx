@@ -280,6 +280,16 @@ describe("NotesPage", () => {
     await expect
       .element(rowDeleteButton(screen, OTHER_NOTE.title, { includeHidden: true }))
       .toHaveAttribute("aria-disabled", "true");
+    // registry の disabled: variant は native disabled にしか当たらない。data-disabled 経由で
+    // 同じ見た目 (半透明 + pointer-events なし) になっていることを算出スタイルで固定する
+    const otherTrigger = rowDeleteButton(screen, OTHER_NOTE.title, {
+      includeHidden: true,
+    }).element();
+    await vi.waitFor(() => {
+      const style = getComputedStyle(otherTrigger);
+      expect(style.opacity).toBe("0.5");
+      expect(style.pointerEvents).toBe("none");
+    });
 
     resolveRemove();
 
