@@ -131,6 +131,7 @@ dispatchNativeClick(screen.getByRole("button", { name: "削除" }).element());
 
 - **どの条件で落ちたかは Playwright のエラー文言に出る。** 推測で切り替えず、文言を読んでから選ぶ
 - **既存が `dispatchNativeClick` でも、同じ場所で `.click()` が通ることがある。** 倣う前に試す
+- 二重発火の検証で `dispatchNativeClick` を同期に 2 回送らない。実イベントは 1 回ごとに描画が済んでから次が届くので、同期 2 連射は起きない事象を固定する。`.click()` と `userEvent.keyboard("{Enter}")` で書く (ADR-0015)
 - `click({ force: true })` は上の 5 条件をまとめて飛ばす。使う前に `waitForAnimations()` を通す (アニメーション途中だと "Element is outside of the viewport" で落ちる)
 - Checkbox には `.click()` を使う。`dispatchNativeClick` を本体へ送ると hidden input への転送が label の activation behavior と重なり、変更ハンドラが 2 回発火する (`src/test/native-click.ts` の JSDoc)
 
