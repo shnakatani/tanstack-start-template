@@ -2,11 +2,11 @@
 
 - Status: Proposed
 - Date: 2026-09-14
-- 関連: ADR-0014 (PR #16 で追加される。Action 層と Transition。本 ADR はその上で「どこまで待つか」「何を止めるか」を決める)、ADR-0015 (二重発火の検証)
+- 関連: ADR-0014 (Action 層と Transition。本 ADR はその上で「どこまで待つか」「何を止めるか」を決める)、ADR-0015 (二重発火の検証)
 
 ## Context
 
-ADR-0014 (PR #16) は mutation を Action 層の Transition で実行し、pending を Transition から取ると決めた。
+ADR-0014 は mutation を Action 層の Transition で実行し、pending を Transition から取ると決めた。
 しかし「操作をいつ完了と見なすか」と「完了までに何を触れなくするか」は、テンプレートのメモ画面で採った形 (一覧の再取得が終わるまでダイアログを閉じず、一覧の削除トリガーを全て無効化する) をそのまま Decision に書いていた。
 他の機能を足すときに当てる軸が無く、メモ画面の選択が既定として写される。
 
@@ -26,8 +26,8 @@ ADR-0014 (PR #16) は mutation を Action 層の Transition で実行し、pendi
 
 ### ADR-0014 実装時 (2026-09-13) の形の問題
 
-- 再取得が 1 秒を超える環境では、保存は済んでいるのにダイアログが固まって見える。React の Action は再取得を待つことを要求しておらず、待っているのは `useActionMutation` の `runAction` (PR #16) が `mutateAsync` を await し、`onSuccess` が `invalidateQueries` を await する、この 2 つの選択の合成である
-- 削除は対象が 1 件なのに一覧の全トリガーを止める。第一の理由は確認ダイアログの handle を全行で共有しており、閉じた後に別行から開き直すと、先行削除の `onSuccess` が同じ handle を `close()` して後続のダイアログを未確定のまま閉じることにある (PR #16 の `src/routes/notes/index.tsx` のコメント、2026-09-13)。第二に `useMutation` 1 つで pending を追うため、2 件目を始めると `variables` が移り 1 件目の行の表現が消える。前者は確定時に閉じれば消え、後者は追い方を変えれば済む
+- 再取得が 1 秒を超える環境では、保存は済んでいるのにダイアログが固まって見える。React の Action は再取得を待つことを要求しておらず、待っているのは `useActionMutation` の `runAction` が `mutateAsync` を await し、`onSuccess` が `invalidateQueries` を await する、この 2 つの選択の合成である
+- 削除は対象が 1 件なのに一覧の全トリガーを止める。第一の理由は確認ダイアログの handle を全行で共有しており、閉じた後に別行から開き直すと、先行削除の `onSuccess` が同じ handle を `close()` して後続のダイアログを未確定のまま閉じることにある (`src/routes/notes/index.tsx` のコメント、2026-09-13)。第二に `useMutation` 1 つで pending を追うため、2 件目を始めると `variables` が移り 1 件目の行の表現が消える。前者は確定時に閉じれば消え、後者は追い方を変えれば済む
 
 ## Decision
 
@@ -69,7 +69,7 @@ mutation は完了点によらず `onSuccess` で再取得の Promise を返し�
 ## Consequences
 
 - ADR-0014 の Decision 表「query の再取得」「ダイアログの開閉」行、「mutation の書き方」の「再取得と close」行、Consequences の「ダイアログは再取得の完了まで」を本 ADR の軸に従う形へ改訂する
-- `.claude/rules/implementation.md`「ユーザー操作による更新は Transition の中で行う」(PR #16 で追加される節) の close の行と再取得の項目を改訂し、ブロック範囲の項目を足す
+- `.claude/rules/implementation.md`「ユーザー操作による更新は Transition の中で行う」の close の行と再取得の項目を改訂し、ブロック範囲の項目を足す
 - 再取得を待たずに閉じる代わりに、対象の項目に busy 表現を付け忘れると、古い一覧が pending 表示なしで見える。ADR-0014 実装時の形はこの経路を「閉じない」ことで塞いでいたが、本 ADR は項目の表現で塞ぐ
 - 後続作業: メモ画面を「テンプレートのメモ画面への適用」の表に合わせる。削除の mutation に `mutationKey` を付け、pending を `useMutationState` で行ごとに追い、一覧のトリガーの全体無効化を撤去する。追加は `onSuccess` の先頭で閉じる。追加の mutation にも `mutationKey` を付ける。`src/lib/close-after-invalidate.ts` は (c) の形として残し、同ファイルと `src/components/delete-confirm-dialog.tsx` の `onConfirm` の JSDoc (再取得を await した後に close する、と既定のように書いている) を「(c) を選んだときの形」に改訂し、同ファイルの「失敗時は閉じないので、開いたままリトライできる」も (a) では成り立たないので書き換える。ADR-0014「二重発火は state だけで塞ぐ」に (a) の例外 (同じ対象の mutation が pending なら no-op) を足す
 - 再評価条件: concurrent stores (react/react #35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する (ADR-0014 と同じ)
