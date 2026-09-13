@@ -130,6 +130,8 @@ React はユーザー起点のイベントごとに次のイベントより前�
 
 2026-09-13 まで Action 層の hook (当時の `useActionTransition`) は ref のフラグを併せ持っていた。理由は「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」だったが、この事象は実イベントでは起きず、フラグはその検証を通すためだけにあった。検証を実イベントで書き直した経緯と根拠は ADR-0015 が持つ。
 
+完了点 (a) (ADR-0016) では Action が close だけを含み Transition が確定直後に終わるため、close の animate-out の間は `isPending` の dedupe が効かない。同じ対象の mutation が pending なら handler を no-op にする (`queryClient.isMutating` の判定)。実例は `src/routes/notes/index.tsx` の `confirmDelete`。
+
 ### mutation の書き方
 
 mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、次を持つ。
@@ -174,7 +176,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ## Consequences
 
-- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と項目の busy は除く)。メモ画面の一覧のトリガーの全体無効化は ADR-0014 実装時の形で、ADR-0016 の後続作業で撤去する
+- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と項目の busy は除く)。メモ画面の一覧のトリガーの全体無効化は ADR-0014 実装時の形だったが、ADR-0016 の後続作業で撤去した
 - ダイアログを閉じる時点と、その間に止める範囲は ADR-0016 の軸で機能ごとに選ぶ。再取得完了前に閉じるときは、対象の項目が mutation の pending から busy を表現する
 - Transition 化で得るのは pending の自動管理、Action の順序保証 (完了点 (a) で Transition の外に出した mutation は除く。ADR-0016)、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 4 つ。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (制約 1、制約 4)
 - ルート遷移への `<ViewTransition>` 適用は別途判断する
