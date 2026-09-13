@@ -2,11 +2,11 @@
 
 - Status: Proposed
 - Date: 2026-09-13
-- 関連: ADR-0013 (待機は retry API に委ねる。本 ADR は発火の側)、ADR-0014 (二重発火を state だけで塞ぐ判断は、本 ADR の検証方法を前提にする)
+- 関連: ADR-0013 (待機は retry API に委ねる。本 ADR は発火の側)。PR #16 (Action 層の導入) が持つ「二重発火を state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする
 
 ## Context
 
-PR #16 (Action 層の導入) で、決着前の二重発火を塞ぐ実装に `useTransition` の `isPending` に加えて ref のフラグが入った。
+PR #16 (Action 層の導入) の初期実装では、決着前の二重発火を塞ぐ実装に `useTransition` の `isPending` に加えて ref のフラグが入っていた。
 フラグを要求していたのは次の形のテストである。
 
 ```tsx
@@ -18,12 +18,12 @@ expect(action).toHaveBeenCalledOnce();
 `dispatchEvent` を同期に 2 回呼ぶと、1 回目のハンドラが積んだ state 更新は 2 回目より前に描画されない。フラグを外すとこのテストが落ち、フラグが「必要」に見えた。
 しかし実イベントでは 1 回のイベントごとに描画が済む。
 
-| 論点                       | 根拠                                                                                                                                                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流す (react-dom 19.3.0 `scheduleImmediateRootScheduleTask`) |
-| React の保証               | reactwg/react-18 #21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                    |
-| 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。人間にもブラウザにも起こせない事象で、これを固定したテストは実装に無用の防御を要求する                                                                     |
-| 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (PR #16 の `src/components/action/` のテスト)                                                                       |
+| 論点                       | 根拠                                                                                                                                                                                                                                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流す (react-dom 19.3.0 `scheduleImmediateRootScheduleTask`)                                                         |
+| React の保証               | reactwg/react-18 #21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                                                                            |
+| 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する                        |
+| 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (PR #16 の `src/components/action/button.test.tsx` / `form.test.tsx` / `src/components/delete-confirm-dialog.test.tsx` の 2 連射テスト、2026-09-13 の PR #16 branch で実測) |
 
 ### 合成 click の属性
 
@@ -31,7 +31,7 @@ expect(action).toHaveBeenCalledOnce();
 実クリックと Enter 由来の click は cancelable=true かつ isTrusted=true である (2026-09-13、CDP 経由の実イベントで実測)。
 非 cancelable のイベントはリスナーが `preventDefault` で止められない (MDN `Event.cancelable`) ため、Base UI の `useButton` が `aria-disabled` の submit ボタンで呼ぶ `preventDefault` が効かず、form の暗黙 submit がテストでだけ通っていた。
 
-合成 click の属性は、参照できる実装がどれも `bubbles` と `cancelable` を true にしている。
+合成 click の属性は、参照した 3 つの実装がいずれも `bubbles` と `cancelable` を true にしている。
 
 | 参照                                        | 属性                                                                                                                              |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,7 +43,7 @@ expect(action).toHaveBeenCalledOnce();
 
 - `Locator` (`@vitest/browser` 4.1.11) に `dispatchEvent` は無い。`click()` の options は Playwright provider で `PWClickOptions` を継承し、`force` を持つ
 - 弾かれる要素へ Playwright の `locator.dispatchEvent()` を届かせる公式経路はカスタムコマンド (`BrowserCommand`) で、`context.page` / `context.frame()` / `context.iframe` から Playwright の API を呼ぶ
-- vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)。#5770 (Interactivity API の設計) が raw の `dispatchEvent` を回避策として挙げるだけ
+- vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)。#5770 (Interactivity API の設計) のコメントで利用者が raw の `document.dispatchEvent(new KeyboardEvent(...))` を回避策に挙げるだけ
 - 同じ問題に当たった例として、vitest-browser-svelte 利用者が「`userEvent.click` は `aria-disabled` に届かず、`new MouseEvent("click", { bubbles: true })` なら届く」と記録している (scirexs/svseeds-ui)。`cancelable` を落とす点まで同じ形
 
 ### ライブラリ自身のテスト
@@ -57,12 +57,13 @@ expect(action).toHaveBeenCalledOnce();
 
 **ユーザー操作は実イベント (Playwright / CDP 経由) で発火する。合成イベントは Playwright に弾かれる要素に限り使い、実イベントと同じ `bubbles` / `cancelable` で送る。同期に 2 回 dispatch する検証は書かない。**
 
-| 場面                                                                              | 使うもの                                                                                                                                                    |
-| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 既定                                                                              | `locator.click()`                                                                                                                                           |
-| 決着前の 2 回目以降の操作 (`aria-disabled` で Playwright の enabled 判定に落ちる) | `userEvent.keyboard("{Enter}")` (フォーカスは `element.focus()` で移してよい)。キーボードは enabled / hit-target の判定を受けない                           |
-| バックドロップが pointer を遮る要素の 1 回目                                      | `dispatchNativeClick` (`src/test/native-click.ts`)。判定に落ちた条件は Playwright のエラー文言で確かめる (`.claude/rules/testing.md`「クリックの発火方法」) |
-| 決着前の二重発火の検証                                                            | 上の実イベントを 2 回。`await Promise.resolve()` や合成イベントの同期 2 連射で間隔を作らない                                                                |
+| 場面                                                                                    | 使うもの                                                                                                                                                     |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 既定                                                                                    | `locator.click()`                                                                                                                                            |
+| 決着前の 2 回目以降の操作 (`aria-disabled` で Playwright の enabled 判定に落ちる)       | `userEvent.keyboard("{Enter}")` (フォーカスは `element.focus()` で移してよい)。キーボードは enabled / hit-target の判定を受けない                            |
+| Playwright に弾かれる要素 (バックドロップ越し等) で、キーボードでも同じ活性化が起こせる | `element.focus()` + `userEvent.keyboard("{Enter}")`。判定に落ちた条件は Playwright のエラー文言で確かめる (`.claude/rules/testing.md`「クリックの発火方法」) |
+| Playwright に弾かれ、pointer 経由の click そのものが要る                                | `dispatchNativeClick` (`src/test/native-click.ts`)。合成イベントを使うのはこの場面だけ                                                                       |
+| 決着前の二重発火の検証                                                                  | 上の実イベントを 2 回。`await Promise.resolve()` や合成イベントの同期 2 連射で間隔を作らない                                                                 |
 
 合成イベントを新設・変更するときは、同じ操作を実イベントで起こして `bubbles` / `cancelable` / `isTrusted` を実測し、`isTrusted` 以外を合わせる (`isTrusted` はスクリプトから true にできない)。
 `composed` は shadow DOM を使うまで既定のままにする。
@@ -81,9 +82,10 @@ expect(action).toHaveBeenCalledOnce();
 ## Consequences
 
 - `dispatchNativeClick` は cancelable=true を送る。`src/test/native-click.test.tsx` が submit ボタンの `preventDefault` で form 送信が止まることを固定する
-- 二重発火のテストは `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書く。合成イベントが要る 1 回目 (バックドロップ越し) を除き、`dispatchNativeClick` を使わない
+- 二重発火のテストは `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書き、`dispatchNativeClick` を使わない
+- `.claude/rules/testing.md`「クリックの発火方法」の順序を「`.click()` → キーボード → `dispatchNativeClick`」にする。既存テストの `dispatchNativeClick` は触らず、新規と改修から適用する
 - `.claude/rules/testing.md`「クリックの発火方法」に、同期 2 連射を書かない項目を足す
-- 合成イベントを足すときの実測は手順として残す。実イベントで起こせない操作 (Playwright が弾く要素) だけが合成の対象で、そのときも属性は実イベントに合わせる
+- 合成イベントを足すときの実測は手順として残す。キーボードでも起こせない操作だけが合成の対象で、そのときも属性は実イベントに合わせる
 - 再評価条件: 合成イベントの種類が 2 つ以上になったら、カスタムコマンド経由の `locator.dispatchEvent()` へ寄せるかを判断する
 
 ## 出典

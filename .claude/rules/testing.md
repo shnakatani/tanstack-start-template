@@ -112,7 +112,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 
 ## クリックの発火方法
 
-既定は `.click()`。Playwright に弾かれたら `dispatchNativeClick` (`src/test/native-click.ts`) へ切り替える。
+既定は `.click()`。Playwright に弾かれたら、キーボードで同じ活性化が起こせるなら `element.focus()` + `userEvent.keyboard("{Enter}")`、pointer 経由の click が要るときだけ `dispatchNativeClick` (`src/test/native-click.ts`) にする (ADR-0015)。
 
 `.click()` は visible / enabled / stable を待ってから、viewport 内の座標と hit-target を確かめる (`playwright-core` の `_performPointerAction`)。弾かれる典型は次のとおり。
 
