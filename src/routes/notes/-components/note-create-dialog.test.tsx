@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
-import { LIVE_REGION_IDS } from "@/lib/live-announcer";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import { readAnnouncements } from "@/test/live-announcer";
 import { dispatchNativeClick } from "@/test/native-click";
 import {
   createTestQueryClient,
@@ -47,16 +47,11 @@ async function renderDialog() {
       </DialogTrigger>
       <NoteCreateDialog />
       <Toaster />
-      {/* announce() の書き込み先。本番は RootDocument が持つが、この描画はそこを通らない (ADR-0017) */}
+      {/* announce() の書き込み先 (理由は readAnnouncements の JSDoc) */}
       <LiveRegions />
     </QueryClientProvider>,
   );
   return { screen, invalidateSpy };
-}
-
-/** polite の region に溜まった通知。`announce` は 7000ms ノードを残すので追記順に連なる。 */
-function politeAnnouncements() {
-  return document.getElementById(LIVE_REGION_IDS.polite)?.textContent ?? "";
 }
 
 type Screen = Awaited<ReturnType<typeof renderDialog>>["screen"];
@@ -270,15 +265,15 @@ describe("NoteCreateDialog", () => {
     clickSave(screen);
 
     await vi.waitFor(() => {
-      expect(politeAnnouncements()).toContain("メモを保存しています");
+      expect(readAnnouncements()).toContain("メモを保存しています");
     });
     // 完了は createNote の決着より前に出さない
-    expect(politeAnnouncements()).not.toContain("保存しました");
+    expect(readAnnouncements()).not.toContain("保存しました");
 
     create.resolve({ id: 1 });
 
     await vi.waitFor(() => {
-      expect(politeAnnouncements()).toContain("保存しました");
+      expect(readAnnouncements()).toContain("保存しました");
     });
   });
 
@@ -290,7 +285,7 @@ describe("NoteCreateDialog", () => {
     clickSave(screen);
 
     await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
-    expect(politeAnnouncements()).toBe("");
+    expect(readAnnouncements()).toBe("");
   });
 
   it("保存の応答前はキャンセルできず Escape でも閉じない", async () => {

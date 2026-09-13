@@ -9,10 +9,10 @@ import { LiveRegions } from "@/components/live-regions";
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
-import { LIVE_REGION_IDS } from "@/lib/live-announcer";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { createTestRouter } from "@/test/create-test-router";
+import { readAnnouncements } from "@/test/live-announcer";
 import { collectLoaderQueryKeys } from "@/test/loader-helpers";
 import { dispatchNativeClick } from "@/test/native-click";
 import { createTestQueryClient, expectText } from "@/test/page-helpers";
@@ -66,16 +66,11 @@ async function renderPage() {
         <NotesPage />
       </Suspense>
       <Toaster />
-      {/* announce() の書き込み先。本番は RootDocument が持つが、この描画はそこを通らない (ADR-0017) */}
+      {/* announce() の書き込み先 (理由は readAnnouncements の JSDoc) */}
       <LiveRegions />
     </QueryClientProvider>
   ));
   return render(<RouterProvider router={router} />);
-}
-
-/** polite の region に溜まった通知。`announce` は 7000ms ノードを残すので追記順に連なる。 */
-function politeAnnouncements() {
-  return document.getElementById(LIVE_REGION_IDS.polite)?.textContent ?? "";
 }
 
 type Screen = Awaited<ReturnType<typeof renderPage>>;
@@ -506,15 +501,15 @@ describe("NotesPage", () => {
     confirmDelete(screen);
 
     await vi.waitFor(() => {
-      expect(politeAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);
+      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);
     });
     // 完了は removeNote の決着より前に出さない
-    expect(politeAnnouncements()).not.toContain("削除しました");
+    expect(readAnnouncements()).not.toContain("削除しました");
 
     remove.resolve(undefined);
 
     await vi.waitFor(() => {
-      expect(politeAnnouncements()).toContain("削除しました");
+      expect(readAnnouncements()).toContain("削除しました");
     });
   });
 
