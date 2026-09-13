@@ -1,6 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { renderHook } from "vitest-browser-react";
 
 import { createTestQueryClient } from "@/test/page-helpers";
@@ -77,7 +77,6 @@ describe("useActionMutation", () => {
 
   it("onError を省略した options は型で拒否される", () => {
     // 実行はしない。型検査 (vp check) が通ることだけを固定する
-    expectTypeOf(useActionMutation).parameter(0).toHaveProperty("onError");
     // @ts-expect-error onError 必須。省略すると runAction が reject を吸収したときに失敗が無通知になる
     const options: Parameters<typeof useActionMutation>[0] = {
       mutationFn: () => Promise.resolve(),

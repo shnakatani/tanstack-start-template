@@ -1,9 +1,8 @@
 import { cn } from "cn";
-import { useId, type ComponentProps, type ReactNode } from "react";
+import { useId, useTransition, type ComponentProps, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useActionTransition } from "@/hooks/use-action-transition";
 
 /**
  * `focusableWhenDisabled` の Button は native `disabled` を付けないため、registry の
@@ -28,14 +27,17 @@ type ActionButtonShellProps = Omit<
  * `ActionFormSubmit` (`form.tsx`) が使う。
  *
  * - pending 中は `disabled` + `focusableWhenDisabled` で `aria-disabled` にし、フォーカスを保ったまま
- *   Base UI が click を止める
+ *   Base UI が click を止める。決着前の二重発火はこの `isPending` だけで塞ぐ (react.dev の
+ *   useTransition / useFormStatus が示す `disabled={pending}` の形)。React はユーザーイベントごとに
+ *   次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、ref や閉包のフラグは持たない
+ *   (ADR-0014「二重発火は state だけで塞ぐ」、検証方法は ADR-0015)
  * - accessible name は `aria-labelledby` で children に固定する。status の文言を子に置くと
  *   name from content で「処理中保存」のように名前が変わり、AT の読み上げとテストの
  *   `exact: true` が揺れる。`aria-label` を渡した部品はそちらが名前になる
  * - 名前の与え方は children か `aria-label` に限る。`aria-labelledby` は内部で使うため prop から
  *   外してある (受け付けたまま `{...props}` の後で上書きすると、渡した側から見て黙って消える)
- * - Spinner は視覚専用 (`aria-hidden`)。状態は `<output>` (暗黙ロール status) + `aria-label` の
- *   sr-only 要素で伝える (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行)
+ * - 状態は registry の `Spinner` が持つ `role="status"` に `aria-label` を与えて伝える
+ *   (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行の svg の例外)
  */
 function ActionButtonShell({
   isPending,
@@ -56,19 +58,14 @@ function ActionButtonShell({
       disabled={isPending}
       focusableWhenDisabled
     >
-      {isPending && <Spinner aria-hidden />}
+      {isPending && <Spinner aria-label={pendingLabel} />}
       <span id={labelId}>{children}</span>
-      {isPending && (
-        <output aria-label={pendingLabel} className="sr-only">
-          {pendingLabel}
-        </output>
-      )}
     </Button>
   );
 }
 
 type ActionButtonProps = Omit<ActionButtonShellProps, "isPending" | "onClick"> & {
-  /** クリックで実行する Action。`startTransition` の中で await する (ADR-0014) */
+  /** クリックで実行する Action。`startTransition` に渡し、決着まで pending になる (ADR-0014) */
   action: () => Promise<void> | void;
 };
 
@@ -78,10 +75,12 @@ type ActionButtonProps = Omit<ActionButtonShellProps, "isPending" | "onClick"> &
  * (mutation は `useActionMutation` の `runAction` が吸収する)。
  */
 function ActionButton({ action, ...props }: ActionButtonProps) {
-  const { isPending, run } = useActionTransition();
+  const [isPending, startTransition] = useTransition();
 
   function handleClick() {
-    run(action);
+    // TransitionFunction は同期 / 非同期どちらも受け、非同期なら決着まで Transition が続く。
+    // react.dev の例のように async 閉包で包み直す必要はない
+    startTransition(action);
   }
 
   return (

@@ -23,6 +23,8 @@ describe("ActionButton", () => {
     await expect.element(button).toHaveAttribute("aria-disabled", "true");
     // native disabled にはしない (フォーカスを保つ)
     expect(button.element().hasAttribute("disabled")).toBe(false);
+    // exact: true で掴めている = status の文言が名前に混ざっていない
+    expect(document.activeElement).toBe(button.element());
 
     pending.resolve(undefined);
 
@@ -31,19 +33,6 @@ describe("ActionButton", () => {
     });
     // 非 pending で無効化されていないことだけを見る (属性を常に付けるかは Base UI の出力形式)
     await expect.element(button).not.toHaveAttribute("aria-disabled", "true");
-  });
-
-  it("pending 中もフォーカスと accessible name がボタンに残る", async () => {
-    const pending = Promise.withResolvers<undefined>();
-    const screen = await render(<ActionButton action={() => pending.promise}>保存</ActionButton>);
-    const button = screen.getByRole("button", { name: "保存", exact: true });
-
-    await button.click();
-    await expect.element(button).toHaveAttribute("aria-disabled", "true");
-
-    // exact: true で掴めている = status の文言が名前に混ざっていない
-    expect(document.activeElement).toBe(button.element());
-    pending.resolve(undefined);
   });
 
   it("決着前の再クリックでは action を呼ばない", async () => {
@@ -71,9 +60,7 @@ describe("ActionButton", () => {
     await expect.element(button).not.toHaveAttribute("aria-disabled", "true");
     await button.click();
 
-    await vi.waitFor(() => {
-      expect(action).toHaveBeenCalledTimes(2);
-    });
+    expect(action).toHaveBeenCalledTimes(2);
   });
 
   it("action の reject は部品が握らず、最寄りの Error Boundary へ届く", async () => {

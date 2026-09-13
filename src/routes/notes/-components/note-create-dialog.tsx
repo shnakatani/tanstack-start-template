@@ -80,12 +80,10 @@ function NoteCreateForm({ onSubmit }: { onSubmit: (note: NoteInput) => Promise<v
     // 初回 submit までは検証エラーを表示せず、submit 後は変更毎に再検証する
     // (revalidateLogic のデフォルト: mode:"submit", modeAfterSubmission:"change")
     validationLogic: revalidateLogic(),
-    onSubmit: async ({ value }) => {
-      // 必須検証は title の AppField validator が保存前に強制する。ここでは
-      // noteInputSchema の trim と同じ正規化だけ先に済ませ、送信値と保存値を一致させる。
-      // await するので form.handleSubmit() の Promise が mutation の決着まで続く
-      await onSubmit({ title: value.title.trim(), body: value.body });
-    },
+    // 必須検証は title の AppField validator が保存前に強制する。ここでは
+    // noteInputSchema の trim と同じ正規化だけ先に済ませ、送信値と保存値を一致させる。
+    // Promise を返すので form.handleSubmit() の Promise が mutation の決着まで続く
+    onSubmit: ({ value }) => onSubmit({ title: value.title.trim(), body: value.body }),
   });
 
   return (

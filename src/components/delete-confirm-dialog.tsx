@@ -44,6 +44,16 @@ export function DeleteConfirmDialog<TId = string>({
   description,
   onConfirm,
 }: DeleteConfirmDialogProps<TId>) {
+  function confirm(payload: DeleteTarget<TId> | undefined) {
+    if (!payload) {
+      // Trigger 経由なら payload は必ず入る。imperative open 等で欠けた場合に
+      // 無反応で終わらせず、原因を追えるようにする。
+      console.warn("[DeleteConfirmDialog] confirm clicked with no payload", { entityLabel });
+      return;
+    }
+    return onConfirm(payload);
+  }
+
   return (
     <AlertDialog handle={handle}>
       {({ payload }) => (
@@ -64,17 +74,7 @@ export function DeleteConfirmDialog<TId = string>({
             <AlertDialogActionButton
               variant="destructive"
               pendingLabel="削除中"
-              action={async () => {
-                if (!payload) {
-                  // Trigger 経由なら payload は必ず入る。imperative open 等で欠けた場合に
-                  // 無反応で終わらせず、原因を追えるようにする。
-                  console.warn("[DeleteConfirmDialog] confirm clicked with no payload", {
-                    entityLabel,
-                  });
-                  return;
-                }
-                await onConfirm(payload);
-              }}
+              action={() => confirm(payload)}
             >
               削除
             </AlertDialogActionButton>

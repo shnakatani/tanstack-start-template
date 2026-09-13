@@ -3,7 +3,11 @@ import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { expectNoA11yViolations } from "@/test/a11y";
-import { CAUGHT_PREFIX, renderInCatchBoundary } from "@/test/render-in-catch-boundary";
+import {
+  CAUGHT_PREFIX,
+  renderInCatchBoundary,
+  silenceConsoleError,
+} from "@/test/render-in-catch-boundary";
 
 import { ActionForm, ActionFormSubmit } from "./form";
 
@@ -65,7 +69,7 @@ describe("ActionForm", () => {
 
   it("ActionFormSubmit を ActionForm の外で使うと throw する", async () => {
     // render は act で包まれ、レンダー中の throw は reject として返る
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    silenceConsoleError();
     await expect(render(<ActionFormSubmit>保存</ActionFormSubmit>)).rejects.toThrow(
       "[ActionFormSubmit] ActionForm の中で使う",
     );

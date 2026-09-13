@@ -114,20 +114,20 @@ query のキャッシュ更新は制約 1 により緊急更新に落ちるの�
 最初に置くのは `button.tsx`、`alert-dialog.tsx`、`form.tsx` の 3 つで、メモ画面の 2 経路が使う最小集合である。`form.tsx` だけは `ui/` に対応部品が無く、素の `<form>` を包む。
 React の `<form action>` + `useFormStatus` を使わないのは、submit の経路を TanStack Form の `handleSubmit` (FormData を経由しない) にするためと、決着前の二重 submit を部品側の dedupe で塞ぐためである。`ActionForm` の context は `useFormStatus` と同じ形で pending を子孫へ渡す。
 
-| 契約     | 内容                                                                                                                                                                                                                           |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `action` | `() => Promise<void> \| void`。`startTransition` の中で await する                                                                                                                                                             |
-| pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定し、状態は `<output>` (暗黙ロール status) + `aria-label` の sr-only テキストで伝える |
-| 二重発火 | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (「二重発火は state だけで塞ぐ」)                                                                                                      |
-| 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (制約 3)。mutation は次項の `useActionMutation` を通す                                                                                                                    |
-| 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                                                                                              |
+| 契約     | 内容                                                                                                                                                                                                                        |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `action` | `() => Promise<void> \| void`。`startTransition` に直接渡す (同期 / 非同期どちらも受け、決着まで pending が続く)                                                                                                            |
+| pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定し、状態は registry の `Spinner` (`role="status"`) に `aria-label` を与えて伝える |
+| 二重発火 | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (「二重発火は state だけで塞ぐ」)                                                                                                   |
+| 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (制約 3)。mutation は次項の `useActionMutation` を通す                                                                                                                 |
+| 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                                                                                           |
 
 ### 二重発火は state だけで塞ぐ
 
 react.dev が示す形は `useTransition` の `disabled={isPending}` と `useFormStatus` の `disabled={pending}` で、どちらも state だけで決着前の再操作を止める。`useActionState` は再操作を queue に積み、拒否しない。
 React はユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、2 回目の実イベントは `aria-disabled` の部品に届き、Base UI が click を止める。
 
-2026-09-13 まで `useActionTransition` は ref のフラグを併せ持っていた。理由は「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」だったが、この事象は実イベントでは起きず、フラグはその検証を通すためだけにあった。検証を実イベントで書き直した経緯と根拠は ADR-0015 が持つ。
+2026-09-13 まで Action 層の hook (当時の `useActionTransition`) は ref のフラグを併せ持っていた。理由は「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」だったが、この事象は実イベントでは起きず、フラグはその検証を通すためだけにあった。検証を実イベントで書き直した経緯と根拠は ADR-0015 が持つ。
 
 ### mutation の書き方
 

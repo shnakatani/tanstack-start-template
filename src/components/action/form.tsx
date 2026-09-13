@@ -1,14 +1,20 @@
-import { createContext, use, type ComponentProps, type ReactNode, type SubmitEvent } from "react";
+import {
+  createContext,
+  use,
+  useTransition,
+  type ComponentProps,
+  type ReactNode,
+  type SubmitEvent,
+} from "react";
 
 import { ActionButtonShell, type ActionButtonShellProps } from "@/components/action/button";
-import { useActionTransition } from "@/hooks/use-action-transition";
 
 // 値は boolean そのもの。オブジェクトにすると毎レンダー新しい参照になり
 // `react/jsx-no-constructed-context-values` に当たる
 const ActionFormContext = createContext<boolean | null>(null);
 
 type ActionFormProps = Omit<ComponentProps<"form">, "onSubmit" | "children"> & {
-  /** submit で実行する Action。`startTransition` の中で await する (ADR-0014) */
+  /** submit で実行する Action。`startTransition` に渡し、決着まで pending になる (ADR-0014) */
   submitAction: () => Promise<void> | void;
   children: ReactNode;
 };
@@ -19,11 +25,11 @@ type ActionFormProps = Omit<ComponentProps<"form">, "onSubmit" | "children"> & {
  * (React の `<form action>` + `useFormStatus` と同じ形。使わない理由は ADR-0014「Action 層」)。
  */
 function ActionForm({ submitAction, children, ...props }: ActionFormProps) {
-  const { isPending, run } = useActionTransition();
+  const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    run(submitAction);
+    startTransition(submitAction);
   }
 
   return (

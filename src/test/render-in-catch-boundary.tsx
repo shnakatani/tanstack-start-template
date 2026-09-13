@@ -7,13 +7,19 @@ import { render } from "vitest-browser-react";
 export const CAUGHT_PREFIX = "境界で受けた: ";
 
 /**
+ * React が境界へ渡す前に出す `console.error` を黙らせる (出力を汚さないため)。
+ * テスト側の `afterEach(() => vi.restoreAllMocks())` で戻す。
+ */
+export function silenceConsoleError(): void {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+}
+
+/**
  * Error Boundary (`CatchBoundary`) の中に描画する。Action の reject が部品に握られず
  * 境界へ届くことを検証する用途 (ADR-0014「Action 層」の失敗行)。
- * React は境界へ渡す前に `console.error` を出すので、出力を汚さないよう黙らせる
- * (テスト側の `afterEach(() => vi.restoreAllMocks())` で戻す)。
  */
 export function renderInCatchBoundary(node: ReactNode) {
-  vi.spyOn(console, "error").mockImplementation(() => {});
+  silenceConsoleError();
   return render(
     <CatchBoundary
       getResetKey={() => "test"}
