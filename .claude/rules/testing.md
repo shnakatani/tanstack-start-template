@@ -112,7 +112,15 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 
 ## クリックの発火方法
 
-既定は `.click()`。Playwright に弾かれたら `dispatchNativeClick` (`src/test/native-click.ts`) へ切り替える。
+手段は場面で決める。1 が弾かれたら Playwright のエラー文言が示す条件を確かめ、それに対応する行へ移る。通るまで手段を替える順序ではない。テストが通るように手段を下げると、実物では起きない事象を固定する (ADR-0015)。
+
+| 順  | 場面                                                                                                  | 使うもの                                                                                                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 既定                                                                                                  | `.click()`                                                                                                                                                                        |
+| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる (`aria-disabled` の 2 回目、バックドロップ越し) | `element.focus()` + `userEvent.keyboard("{Enter}")`                                                                                                                               |
+| 3   | Playwright に弾かれ、pointer 経由の click が要る                                                      | `dispatchNativeClick` (`src/test/native-click.ts`)                                                                                                                                |
+| -   | 決着前の二重発火の検証                                                                                | 1 → 2 の実イベントを 2 回。`dispatchNativeClick` を同期に 2 回送らない。同一要素への同期 2 連射は実イベントで起きず、固定すると実装に無用の防御を要求する                         |
+| -   | Checkbox                                                                                              | `.click()`。`dispatchNativeClick` を本体へ送ると hidden input への転送が label の activation behavior と重なり、変更ハンドラが 2 回発火する (`src/test/native-click.ts` の JSDoc) |
 
 `.click()` は visible / enabled / stable を待ってから、viewport 内の座標と hit-target を確かめる (`playwright-core` の `_performPointerAction`)。弾かれる典型は次のとおり。
 
@@ -130,9 +138,8 @@ dispatchNativeClick(screen.getByRole("button", { name: "削除" }).element());
 ```
 
 - **どの条件で落ちたかは Playwright のエラー文言に出る。** 推測で切り替えず、文言を読んでから選ぶ
-- **既存が `dispatchNativeClick` でも、同じ場所で `.click()` が通ることがある。** 倣う前に試す
+- **既存が `dispatchNativeClick` でも、同じ場所で `.click()` が通ることがある。** 倣わず、1 の行から選び直す
 - `click({ force: true })` は上の 5 条件をまとめて飛ばす。使う前に `waitForAnimations()` を通す (アニメーション途中だと "Element is outside of the viewport" で落ちる)
-- Checkbox には `.click()` を使う。`dispatchNativeClick` を本体へ送ると hidden input への転送が label の activation behavior と重なり、変更ハンドラが 2 回発火する (`src/test/native-click.ts` の JSDoc)
 
 ## ブラウザテストの CSS とレイアウト実測
 
