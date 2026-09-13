@@ -95,6 +95,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - ヘルパーが受け取る引数の前提検査は型ナローイングと分けて `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガードで、`expect*` 命名の縛りも要らない (実例: `src/test/loader-helpers.ts`)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は戻り値が `void` で型を絞らない (vitest-dev/vitest#8695)
 - 条件分岐で assertion を囲まない。`if` 内の `expect` は `vitest/no-conditional-expect` が報告する (ADR-0004)
+- announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読む (region 不在は throw)。描画に `<LiveRegions />` を含める (ADR-0017)
 
 ## mock の注意点
 

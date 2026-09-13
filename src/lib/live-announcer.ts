@@ -7,7 +7,9 @@
  * 7000ms で削除) と同じ。違うのは region の作り方で、React Aria は初回の `announce()` で region を
  * 生成するため、生成直後の取りこぼしを避けて Safari 向けに 100ms 待ってからメッセージを入れる。
  * 本実装は region を初期マークアップに置くので (MDN「ARIA live regions」の最上位の推奨)、
- * その待ちが要らず、`announce()` はその場でノードを足せる。
+ * その待ちが要らず、`announce()` はその場でノードを足せる。Base UI の
+ * `useInitialLiveRegionTextMutation` (200ms) は待ちではなく、mount 時に word joiner を足して
+ * 200ms 後に戻す text mutation なので、常時 mount の空 region には当たらない。
  */
 export const LIVE_REGION_IDS = {
   polite: "live-region-polite",
