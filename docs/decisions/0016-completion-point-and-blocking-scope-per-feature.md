@@ -27,7 +27,7 @@ ADR-0014 は mutation を Action 層の Transition で実行し、pending を Tr
 ### ADR-0014 実装時 (2026-09-13) の形の問題
 
 - 再取得が 1 秒を超える環境では、保存は済んでいるのにダイアログが固まって見える。React の Action は再取得を待つことを要求しておらず、待っているのは `useActionMutation` の `runAction` が `mutateAsync` を await し、`onSuccess` が `invalidateQueries` を await する、この 2 つの選択の合成である
-- 削除は対象が 1 件なのに一覧の全トリガーを止める。第一の理由は確認ダイアログの handle を全行で共有しており、閉じた後に別行から開き直すと、先行削除の `onSuccess` が同じ handle を `close()` して後続のダイアログを未確定のまま閉じることにある (`src/routes/notes/index.tsx` のコメント、2026-09-13)。第二に `useMutation` 1 つで pending を追うため、2 件目を始めると `variables` が移り 1 件目の行の表現が消える。前者は確定時に閉じれば消え、後者は追い方を変えれば済む
+- 削除は対象が 1 件なのに一覧の全トリガーを止める。第一の理由は確認ダイアログの handle を全行で共有しており、閉じた後に別行から開き直すと、先行削除の `onSuccess` が同じ handle を `close()` して後続のダイアログを未確定のまま閉じることにある (PR #16 で main へ入った時点 91515ee の `src/routes/notes/index.tsx` のコメント)。第二に `useMutation` 1 つで pending を追うため、2 件目を始めると `variables` が移り 1 件目の行の表現が消える。前者は確定時に閉じれば消え、後者は追い方を変えれば済む
 
 ## Decision
 
@@ -42,12 +42,12 @@ ADR-0014 は mutation を Action 層の Transition で実行し、pending を Tr
 完了点の軸が決めるのは「Transition を終える時点」であり、mutation の pending の長さではない。ダイアログを持つ操作では close の時点がそれに当たり、ダイアログの無い操作 (toggle、インライン編集、一括操作) では Action が return する時点がそれに当たる。
 mutation は完了点によらず `onSuccess` で再取得の Promise を返し、再取得完了まで pending を保つ (TanStack「Optimistic Updates」の指針。`onMutate` 方式で並行実行を許すときの例外は後述)。対象の項目の busy と楽観の行は、この pending を `useMutationState` (`mutationKey` + `status: "pending"`) か `mutation.variables` で読んで描く。
 
-TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で invalidate するが、本 ADR は `onSuccess` を選ぶ。失敗時は mutation が error へ移って楽観行が消えるため、`onSettled` だと invalidate のタイミングが成功時と揃わない。完了点 (b) はダイアログを開いたまま失敗を迎えるので、`onSettled` に invalidate を置くと入力中のダイアログと消えかけの楽観行 (幽霊行) が同時に見える瞬間が生まれる。`onSuccess` に置けば失敗時は invalidate 自体が走らず、この重なりが起きない。残るリスクは「サーバーは書けたが応答が届かなかった」場合に、`onSuccess` が発火せず一覧が古いまま残ることである。
+TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で invalidate するが、本 ADR は `onSuccess` を選ぶ (`onMutate` でキャッシュを書き換える方式で並行実行を許すときだけ、後述の `onSettled` + `isMutating` guard を採る)。失敗時は mutation が error へ移って楽観行が消えるため、`onSettled` だと invalidate のタイミングが成功時と揃わない。完了点 (b) はダイアログを開いたまま失敗を迎えるので、`onSettled` に invalidate を置くと入力中のダイアログと消えかけの楽観行 (幽霊行) が同時に見える瞬間が生まれる。`onSuccess` に置けば失敗時は invalidate 自体が走らず、この重なりが起きない。残るリスクは「サーバーは書けたが応答が届かなかった」場合に、`onSuccess` が発火せず一覧が古いまま残ることである。
 
 | 完了点 | Transition の終え方 (ダイアログなら close の時点)                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Transition の pending                                     |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | (a)    | Action は `handle.close()` (ダイアログが無ければ何もしない) だけを含み、mutation は Transition の外で走らせる (`void runAction(...)` で捨てる。ADR-0014 の Action の順序保証と完了の観測はこの mutation には効かない)。Transition が確定直後に終わるため、close の animate-out の間や、ダイアログの無い操作では `isPending` の dedupe が効かない。同じ対象の mutation が pending なら action を no-op にする (`useMutationState` か `queryClient.isMutating` の判定)。失敗は `onError` の toast と項目の復帰で伝える | 確定操作で終わる                                          |
-| (b)    | `onSuccess` の先頭で `handle.close()` を呼び、その後に再取得の Promise を返す (ダイアログが無ければ `mutateAsync` を await して return)。handle を複数の対象で共有するときは、閉じる前に開いている対象がこの mutation の対象と同じことを確かめる (先行操作の `onSuccess` が、別の対象で開き直したダイアログを閉じない)                                                                                                                                                                                               | 再取得完了まで続くが、閉じた後は見えない                  |
+| (b)    | `onSuccess` の先頭で `handle.close()` を呼び、その後に再取得の Promise を返す (ダイアログが無ければ `mutateAsync` を await して return)。handle を複数の対象で共有するときは、閉じる前に開いている対象がこの mutation の対象と同じことを確かめる (先行操作の `onSuccess` が、別の対象で開き直したダイアログを閉じない)。入力フォームのように対象を比べられないダイアログでは、pending 中のユーザー起点の close を止める (実例: `note-create-dialog.tsx`)                                                             | 再取得完了まで続くが、閉じた後は見えない                  |
 | (c)    | `onSuccess` で再取得を await した後に `handle.close()` を呼ぶ (`src/lib/close-after-invalidate.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                  | 再取得完了まで続き、ダイアログの pending 表示として見える |
 
 並行実行を許す操作では `mutationKey` を付ける。`variables` / `useMutationState` で UI 側に描く方式では、各 mutation が自分の再取得の Promise を返して待つ (再取得が重なることはあるが、巻き戻される楽観状態が無い)。`onMutate` でキャッシュを書き換える方式で並行実行を許すときだけ、`onSettled` で `queryClient.isMutating({ mutationKey }) === 1` のときに再取得し、先に終わった mutation の再取得が後の楽観表示を巻き戻すのを防ぐ (TkDodo「Concurrent Optimistic Updates」)。
@@ -58,6 +58,10 @@ TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で i
 | ---- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | 削除 | (a) 確定でダイアログを閉じる | 行を `aria-busy` + 半透明にし、行のトリガーだけ無効化。mutation に `mutationKey` を付け、一覧側で `useMutationState` (`status: "pending"`) の `variables` を配列で読んで行ごとに判定し、同時削除を許す。各 mutation は自分の再取得を待つ | 失敗は toast と行の復帰で戻せる。確定時に閉じるので、共有 handle を先行削除の `onSuccess` が閉じる問題も消える |
 | 追加 | (b) サーバー応答で閉じる     | `onSuccess` の先頭で閉じ、再取得の Promise を返す。mutation はダイアログ側にあるので `mutationKey` を付け、一覧側で `useMutationState` の `variables` を読んで新しい行を半透明に出し、再取得完了で実データに置き換える                   | 楽観で閉じると失敗時に入力を戻す先が無い                                                                       |
+
+半透明は `opacity-60` (`src/routes/notes/index.tsx` の `busyRowAppearance`) を使う。`opacity-50` は本文テキストのコントラストを 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る (2026-09-14 に `src/routes/notes/index.test.tsx` の楽観行の a11y 検査が axe で実測した値)。
+
+`useMutationState` の `variables` は `unknown` で、`mutationKey` は前方一致で当たるため別の mutation の値も混ざる。行へ渡す前にスキーマで `safeParse` し、失敗は `console.warn` に raw input ごと残して除外する。`select` の中で throw しないのは、描画中に走るため一覧ごと Error Boundary へ落ちるからである。実装は `src/features/notes/deleting-ids.ts` と `src/features/notes/creating-rows.ts`。
 
 ### 検討した選択肢
 
@@ -70,8 +74,8 @@ TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で i
 
 ## Consequences
 
-- ADR-0014 の Decision 表「query の再取得」「ダイアログの開閉」行、「mutation の書き方」の「再取得と close」行、Consequences の「ダイアログは再取得の完了まで」を本 ADR の軸に従う形へ改訂する
-- `.claude/rules/implementation.md`「ユーザー操作による更新は Transition の中で行う」の close の行と再取得の項目を改訂し、ブロック範囲の項目を足す
+- ADR-0014 の Decision 表「query の再取得」「ダイアログの開閉」行、「mutation の書き方」の「再取得と close」行、Consequences の「ダイアログは再取得の完了まで」を本 ADR の軸に従う形へ改訂した
+- `.claude/rules/implementation.md`「ユーザー操作による更新は Transition の中で行う」は、close の行と再取得の項目を本 ADR の軸に合わせ、ブロック範囲の項目を持つ
 - 再取得を待たずに閉じる代わりに、対象の項目に busy 表現を付け忘れると、古い一覧が pending 表示なしで見える。ADR-0014 実装時の形はこの経路を「閉じない」ことで塞いでいたが、本 ADR は項目の表現で塞ぐ
 - 再評価条件: concurrent stores (react/react #35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する (ADR-0014 と同じ)
 

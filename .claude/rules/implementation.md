@@ -83,6 +83,7 @@ lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014
 - Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる
 - `useOptimistic` に `useQuery` / `useSuspenseQuery` の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (ADR-0014「楽観表示の使い分け」)
 - mutation の pending の読み方: 1 件ずつなら `mutation.isPending && mutation.variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState`。`useMutation` 1 つの `variables` は 2 件目で移る (ADR-0016)
+- `useMutationState` の `variables` は `unknown` で、`mutationKey` の前方一致で別の mutation も混ざる。スキーマで `safeParse` してから使い、失敗は raw input を `console.warn` に残して除く。`select` で throw すると Error Boundary へ落ちる (ADR-0016)
 - 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない。pending は次のユーザーイベントより前に描画される (ADR-0014)
 
 ## 手動メモ化の増減
