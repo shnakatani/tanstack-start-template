@@ -12,6 +12,7 @@ paths:
 - [ ] イベントハンドラを同期関数として宣言し、prop へ直接渡している (JSX に `void` とインライン `async` を書いていない)
 - [ ] useEffect 内で setState していない
 - [ ] コンポーネントを `function` 宣言で定義している
+- [ ] mutation を伴う操作を `src/components/action/` の `action` 経由にし、pending を Transition から取っている
 
 ## useEffect 内で setState 禁止
 
@@ -44,21 +45,43 @@ lint 検出なし。oxlint に `useEffectEvent` の制約を見るルールが�
 
 lint 検出: `typescript/no-misused-promises` が、`void` を返す prop へ Promise を返す関数を渡すと落とす。
 
+対象は mutation (`useMutation` を通す server function 呼び出し) を伴わない非同期処理。mutation を伴う操作は次節「ユーザー操作による更新は Transition の中で行う」が持つ。
+
 - `async` 関数をハンドラとして prop へ直接渡さない。ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる
 - JSX の prop に `void` やインラインの `async` を書かない。名前付きハンドラを定義して直接渡す
 - 待たない判断は内側で 1 回だけ表明する。呼び先が失敗を自分で処理するなら `void`、呼び出し側で通知や後始末をするなら `.catch()`
-- pending 表示は mutation の `isPending` を使う (実例: `src/routes/notes/index.tsx`)。`useTransition` は mutation を経由しない非同期処理を足すときだけ検討する
-- 手動の `isSubmitting` 相当の state を持つハンドラは mutation の `isPending` へ寄せられる。移行で失敗経路の意味が変わるため、lint 対応とは分けて判断する
-- **操作の失敗を Error Boundary へ届けない**。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる。Transition 内の throw が Error Boundary へ届くのは性質であって、`startTransition` を選ぶ理由にしない
+- **操作の失敗を Error Boundary へ届けない**。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる
 
 ```tsx
-function handleSignOut() {
-  void performSignOut();
+// src/components/route-error.tsx。再実行の結果は loader と error boundary が受けるため待たない
+function handleRetry() {
+  reset();
+  void router.invalidate();
 }
-<DropdownMenuItem onClick={handleSignOut}>
+<Button onClick={handleRetry}>
 ```
 
 判断の経緯は ADR-0004「`no-misused-promises` が要求する実装の形」。
+
+## ユーザー操作による更新は Transition の中で行う
+
+lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014。
+
+| 更新の種類                        | 書き方                                                                                                     |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ |
+| mutation 成功後のダイアログ close | `onSuccess` を async にし、`await queryClient.invalidateQueries(...)` の後に `handle.close()` を呼ぶ       |
+| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                        |
+| Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                |
+| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                          |
+
+- pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)
+- mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` (`toastMutationError`) は型で必須。`runAction` が `mutateAsync` の reject を吸収するため、`onError` が無いと失敗が無通知になる
+- Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る
+- `onSuccess` の再取得を await せずに close すると、ダイアログが消えた後の古い一覧に pending 表示が付かない
+- Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる
+- `useOptimistic` の第 1 引数に `useQuery` / `useSuspenseQuery` の `data` とその派生値を渡さない。query が持つデータの楽観表示は `mutation.variables` で行う (ADR-0014「楽観表示の使い分け」)
+- Action の決着前の二重発火は Action 層が塞ぐ。呼び出し側で閉包のフラグを持たない
 
 ## 手動メモ化の増減
 

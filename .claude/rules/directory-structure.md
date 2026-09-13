@@ -7,12 +7,13 @@ paths:
 
 ## コンポーネント配置
 
-| 配置先                       | 内容                                                                          |
-| ---------------------------- | ----------------------------------------------------------------------------- |
-| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)               |
-| `src/components/`            | ドメインを跨いで共有する自作コンポーネント                                    |
-| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                |
-| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される |
+| 配置先                       | 内容                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------- |
+| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                          |
+| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0014) |
+| `src/components/`            | ドメインを跨いで共有する自作コンポーネント                                               |
+| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                           |
+| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される            |
 
 - `-components/` 内部の import は相対パスで書く
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
