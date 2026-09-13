@@ -113,13 +113,13 @@ query のキャッシュ更新は制約 1 により緊急更新に落ちるの�
 `src/components/ui/` を包み、`action` prop を受ける部品を置く。ファイル名は包む先と同名にする (`button.tsx` → `ActionButton`)。
 最初に置くのは `button.tsx`、`alert-dialog.tsx`、`form.tsx` の 3 つで、メモ画面の 2 経路が使う最小集合である。`form.tsx` だけは `ui/` に対応部品が無く、素の `<form>` を包む。
 
-| 契約     | 内容                                                                                                                                             |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `action` | `() => Promise<void> \| void`。`startTransition` の中で await する                                                                               |
-| pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保ち、`role="status"` の sr-only テキストで状態を伝える |
-| 二重発火 | Action の Promise が決着するまでの再クリックを ref のフラグで塞ぐ。`isPending` が立つ前に届く分も含む。この dedupe の実装は Action 層だけが持つ  |
-| 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (制約 3)。mutation は次項の `useActionMutation` を通す                                      |
-| 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                |
+| 契約     | 内容                                                                                                                                                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `action` | `() => Promise<void> \| void`。`startTransition` の中で await する                                                                                                                                                             |
+| pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定し、状態は `<output>` (暗黙ロール status) + `aria-label` の sr-only テキストで伝える |
+| 二重発火 | Action の Promise が決着するまでの再クリックを ref のフラグで塞ぐ。`isPending` が立つ前に届く分も含む。この dedupe の実装は Action 層だけが持つ                                                                                |
+| 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (制約 3)。mutation は次項の `useActionMutation` を通す                                                                                                                    |
+| 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                                                                                              |
 
 ### mutation の書き方
 
