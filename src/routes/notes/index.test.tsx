@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { Toaster } from "@/components/ui/toast";
@@ -11,7 +12,7 @@ import { expectNoA11yViolations } from "@/test/a11y";
 import { createTestRouter } from "@/test/create-test-router";
 import { collectLoaderQueryKeys } from "@/test/loader-helpers";
 import { dispatchNativeClick } from "@/test/native-click";
-import { createTestQueryClient, expectDialogOpen, expectText } from "@/test/page-helpers";
+import { createTestQueryClient, expectText } from "@/test/page-helpers";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする
@@ -201,7 +202,7 @@ describe("NotesPage", () => {
     expect(screen.getByText(rawMessage).query()).toBeNull();
   });
 
-  it("removeNote 決着後も、一覧の再取得が終わるまで確認ダイアログが開いたまま", async () => {
+  it("削除を確定するとダイアログは removeNote の決着を待たずに閉じ、再取得完了まで行が busy のまま", async () => {
     const remove = Promise.withResolvers<undefined>();
     const refetch = Promise.withResolvers<Note[]>();
     vi.mocked(listNotes)
@@ -213,23 +214,29 @@ describe("NotesPage", () => {
     await openDeleteConfirm(screen, NOTE);
 
     confirmDelete(screen);
-    await expect.element(screen.getByRole("status", { name: "削除中" })).toBeInTheDocument();
+
+    // 確定で閉じる。removeNote は未決着
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
+    });
+    expect(vi.mocked(removeNote)).toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(NOTE.title) }))
+      .toHaveAttribute("aria-busy", "true");
 
     remove.resolve(undefined);
 
-    // 再取得 (2 回目の listNotes) が始まっても、決着するまでダイアログと pending 表示は残る
+    // 応答後も、再取得 (2 回目の listNotes) が決着するまで行は busy のまま
     await vi.waitFor(() => {
       expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
     });
-    expect(screen.getByRole("status", { name: "削除中" }).query()).not.toBeNull();
-    expectDialogOpen(screen, "alertdialog");
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(NOTE.title) }))
+      .toHaveAttribute("aria-busy", "true");
 
     refetch.resolve([]);
 
     await expectText(screen, "メモが登録されていません");
-    await vi.waitFor(() => {
-      expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
-    });
   });
 
   it("削除中は対象の行が busy になる", async () => {
@@ -242,7 +249,8 @@ describe("NotesPage", () => {
 
     confirmDelete(screen);
 
-    // モーダルが開いている間、行は aria-hidden なので includeHidden で取る
+    // 確定直後は close の animate-out の窓が残り、行が aria-hidden 配下のことがあるので
+    // includeHidden で取る
     await expect
       .element(screen.getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
@@ -250,15 +258,18 @@ describe("NotesPage", () => {
     await expect
       .element(screen.getByRole("row", { name: new RegExp(OTHER_NOTE.title), includeHidden: true }))
       .toHaveAttribute("aria-busy", "false");
-    // 確認ダイアログは pending 中も閉じられる。閉じた先で別行の削除を始められないよう塞ぐ
+    // 止めるのは削除中の行だけ (ADR-0016「ブロック範囲」)。他の行のトリガーは有効のまま
     await expect
-      .element(rowDeleteButton(screen, OTHER_NOTE.title, true))
+      .element(rowDeleteButton(screen, OTHER_NOTE.title))
+      .not.toHaveAttribute("aria-disabled", "true");
+    await expect
+      .element(rowDeleteButton(screen, NOTE.title))
       .toHaveAttribute("aria-disabled", "true");
     // registry の disabled: variant は native disabled にしか当たらない。data-disabled 経由で
     // 同じ見た目 (半透明 + pointer-events なし) になっていることを算出スタイルで固定する
-    const otherTrigger = rowDeleteButton(screen, OTHER_NOTE.title, true).element();
+    const targetTrigger = rowDeleteButton(screen, NOTE.title).element();
     await vi.waitFor(() => {
-      const style = getComputedStyle(otherTrigger);
+      const style = getComputedStyle(targetTrigger);
       expect(style.opacity).toBe("0.5");
       expect(style.pointerEvents).toBe("none");
     });
@@ -270,5 +281,58 @@ describe("NotesPage", () => {
       expect(screen.getByText(NOTE.title).query()).toBeNull();
     });
     await expectText(screen, OTHER_NOTE.title);
+  });
+
+  it("削除中でも他の行を削除でき、両方の行が busy になる", async () => {
+    const removes = new Map<number, PromiseWithResolvers<undefined>>();
+    vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
+    vi.mocked(removeNote).mockImplementation(({ data }) => {
+      const pending = Promise.withResolvers<undefined>();
+      removes.set(data.id, pending);
+      return pending.promise;
+    });
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+
+    await openDeleteConfirm(screen, NOTE);
+    confirmDelete(screen);
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
+    });
+
+    await openDeleteConfirm(screen, OTHER_NOTE);
+    confirmDelete(screen);
+
+    await vi.waitFor(() => {
+      expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
+    });
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true }))
+      .toHaveAttribute("aria-busy", "true");
+    await expect
+      .element(screen.getByRole("row", { name: new RegExp(OTHER_NOTE.title), includeHidden: true }))
+      .toHaveAttribute("aria-busy", "true");
+
+    for (const pending of removes.values()) {
+      pending.resolve(undefined);
+    }
+  });
+
+  it("確定直後にもう一度 Enter を送っても removeNote は 1 回しか呼ばれない", async () => {
+    const remove = Promise.withResolvers<undefined>();
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    vi.mocked(removeNote).mockImplementation(() => remove.promise);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openDeleteConfirm(screen, NOTE);
+
+    // 確定はキーボードで (testing.md「クリックの発火方法」の順 2)。
+    // close の animate-out の間にもう一度 Enter を送る
+    screen.getByRole("button", { name: "削除", exact: true }).element().focus();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Enter}");
+
+    expect(vi.mocked(removeNote)).toHaveBeenCalledOnce();
+    remove.resolve(undefined);
   });
 });

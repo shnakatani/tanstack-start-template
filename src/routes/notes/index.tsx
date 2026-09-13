@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { actionDisabledAppearance } from "@/components/action/button";
@@ -20,11 +20,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { removeNote } from "@/features/notes/functions";
+import { noteMutationKeys } from "@/features/notes/mutations";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
-import { closeAfterInvalidate } from "@/lib/close-after-invalidate";
 import { formatDateTime } from "@/lib/format-date-time";
 import { toastMutationError } from "@/lib/mutation-error";
 
@@ -80,18 +80,38 @@ function NotesPage() {
   const queryClient = useQueryClient();
 
   const deleteMutation = useActionMutation({
+    mutationKey: noteMutationKeys.remove,
     // id の検証は removeNote 側の validator (noteIdSchema) が持つ
     mutationFn: (id: Note["id"]) => removeNote({ data: { id } }),
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
-    // 再取得を待ってから閉じる順序は closeAfterInvalidate が固定する
-    onSuccess: closeAfterInvalidate(
-      queryClient,
-      notesQueryOptions.queryKey,
-      noteDeleteDialogHandle,
-    ),
+    // 再取得の Promise を返し、再取得完了まで pending を保つ (ADR-0016)。閉じるのは確定時 (完了点 (a))
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey }),
     // server の raw message は開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
   });
+
+  // pending な削除の対象 id。mutation ごとに追うので、同時削除でも各行が busy になる (ADR-0016)。
+  // `mutation.state.variables` は `unknown` なので、行側は includes で突き合わせる
+  const deletingIds = useMutationState({
+    filters: { mutationKey: noteMutationKeys.remove, status: "pending" },
+    select: (mutation) => mutation.state.variables,
+  });
+
+  // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
+  // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
+  function confirmDelete(target: DeleteTarget<Note["id"]>) {
+    const alreadyDeleting =
+      queryClient.isMutating({
+        mutationKey: noteMutationKeys.remove,
+        predicate: (mutation) => mutation.state.variables === target.id,
+      }) > 0;
+    if (alreadyDeleting) {
+      return;
+    }
+    noteDeleteDialogHandle.close();
+    // reject は runAction が吸収し onError が toast に出す。ここでは待たない
+    void deleteMutation.runAction(target.id);
+  }
 
   return (
     <div className="flex min-h-full flex-col">
@@ -123,10 +143,10 @@ function NotesPage() {
             </TableHeader>
             <TableBody>
               {notesQuery.data.map((note) => {
-                // 楽観表示は query 側 (mutation.variables) で行う。useOptimistic は query の data を
-                // base にできない (ADR-0014「楽観表示の使い分け」)。isPending はこの表示のゲートで、
-                // pending 表示 (確認ボタンの Transition) とは別物
-                const isDeleting = deleteMutation.isPending && deleteMutation.variables === note.id;
+                // 楽観表示は query 側 (pending な mutation の variables) で行う。useOptimistic は
+                // query の data を base にできない (ADR-0014「楽観表示の使い分け」)。確定で
+                // ダイアログを閉じるので、再取得完了までの pending はこの行の表現だけが伝える
+                const isDeleting = deletingIds.includes(note.id);
                 return (
                   <TableRow
                     key={note.id}
@@ -153,14 +173,11 @@ function NotesPage() {
                         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
                         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
                         aria-label={`${note.title}を削除`}
-                        // 確認ダイアログは pending 中も Cancel / Escape で閉じられる (Base UI が
-                        // 無効化するのは outsidePress だけ)。閉じた後に別行のトリガーが生きていると、
-                        // 先行削除の onSuccess が同じ handle を close() して後続のダイアログを未確定の
-                        // まま閉じる。render 側の focusableWhenDisabled は Cancel 後に Base UI が
-                        // トリガーへフォーカスを返すとき、native disabled でフォーカスが body へ
-                        // 落ちるのを防ぐ (Trigger の props 型は受けず Button primitive が受ける)。
-                        // この isPending は楽観表示と同じゲートで、pending 表示の二重化ではない
-                        disabled={deleteMutation.isPending}
+                        // 止めるのは削除中の行だけ (ADR-0016「ブロック範囲」)。render 側の
+                        // focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
+                        // native disabled でフォーカスが body へ落ちるのを防ぐ
+                        // (Trigger の props 型は受けず Button primitive が受ける)
+                        disabled={isDeleting}
                       >
                         削除
                       </AlertDialogTrigger>
@@ -178,7 +195,7 @@ function NotesPage() {
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}
         entityLabel={ENTITY_LABEL}
-        onConfirm={(target) => deleteMutation.runAction(target.id)}
+        onConfirm={confirmDelete}
       />
     </div>
   );
