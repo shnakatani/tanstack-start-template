@@ -1,6 +1,6 @@
 # ADR-0019: 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-14
 - 関連: ADR-0006 (registry コードは触らない)、ADR-0009 (手動メモ化の増減)、ADR-0012 (配置の原則)、ADR-0014 / ADR-0016 (楽観表示は mutation の pending から取る)
 
