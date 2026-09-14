@@ -1,9 +1,25 @@
 import { actionDisabledAppearance } from "@/components/action/button";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import type { NoteCellContext } from "../-lib/note-rows";
+
+// メモ一覧の cell。列定義 (`-lib/note-columns.ts`) が `cell` に参照を渡し、`FlexRender` が
+// cell の context を props にして描く。cell に共通の設定はこのファイルに閉じる
+
+/** 作成日時の cell。保存中の行はまだ日時を持たないので、その位置で保存中を伝える。 */
+export function NoteCreatedAtCell({ row }: NoteCellContext) {
+  if (row.original.kind !== "saved") {
+    // 行の aria-busy が true の間は支援技術が内容の変化を無視してよい (WAI-ARIA 1.2 aria-busy)
+    // ので、このテキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0017)
+    return "保存中";
+  }
+  // 整形は必ずタイムゾーンを明示した formatDateTime を通す。ローカル TZ 依存の整形は
+  // SSR と hydration で文字列が食い違う (format-date-time.ts)
+  return formatDateTime(row.original.note.createdAt);
+}
 
 /**
  * 操作の cell。確定行には削除トリガー (detached trigger。Root はページが 1 つ描く) を出し、

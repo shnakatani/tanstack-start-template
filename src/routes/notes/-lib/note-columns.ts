@@ -3,8 +3,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { type DataTableFeatures } from "@/components/data-table-features";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 
-import { NoteActionsCell } from "../-components/note-actions-cell";
-import { NoteCreatedAtCell } from "../-components/note-created-at-cell";
+import { NoteActionsCell, NoteCreatedAtCell } from "../-components/note-cells";
 import type { NoteRow } from "./note-rows";
 import { noteInputOf } from "./note-rows";
 
