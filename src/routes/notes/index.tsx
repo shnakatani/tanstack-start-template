@@ -4,7 +4,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { DataTable } from "@/components/data-table";
 import type { DeleteTarget } from "@/components/delete-confirm-dialog";
-import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { PageHeader } from "@/components/page-header";
 import { TableSkeleton } from "@/components/table-skeleton";
 import { Button } from "@/components/ui/button";
@@ -13,22 +12,19 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { parseCreatingRows } from "@/features/notes/creating-rows";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
+import { getNoteRowId, toNoteRows } from "@/features/notes/note-rows";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
+import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
-import {
-  getNoteRowId,
-  noteColumns,
-  noteDeleteDialogHandle,
-  type NoteRow,
-} from "./-components/note-columns";
+import { noteColumns } from "./-components/note-columns";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
+import { NoteDeleteDialog, noteDeleteDialogHandle } from "./-components/note-delete-dialog";
 
 const PAGE_TITLE = "メモ一覧";
-const ENTITY_LABEL = "メモ";
 
 /**
  * 一覧 loader 本体 (named function に切り出し、loader テストから直接呼べるようにする)。
@@ -96,7 +92,6 @@ function NotesPage() {
     filters: { ...noteMutationFilters.remove, status: "pending" },
     select: (mutation) => mutation.state.variables,
   });
-  const deletingIds = parseDeletingIds(pendingDeleteVariables);
 
   // 完了点 (b) の追加は応答でダイアログが閉じるので、再取得完了までの pending は
   // 一覧の先頭に出すこの行だけが伝える (ADR-0016)。mutation はダイアログ側にあるため
@@ -108,23 +103,13 @@ function NotesPage() {
       submittedAt: mutation.state.submittedAt,
     }),
   });
-  const creatingRows = parseCreatingRows(pendingCreateStates);
 
-  // 保存中の行を先頭に置く (一覧は createdAt の降順)。再取得完了で実データに置き換わる (行の
-  // 由来は NoteRow の docstring)。React Compiler が入力ごとに安定化するので手動の useMemo は
-  // 書かない (ADR-0009、TanStack Table「React Compiler」)
-  const rows: NoteRow[] = [
-    ...creatingRows.map(({ submittedAt, variables }) => ({
-      kind: "creating" as const,
-      submittedAt,
-      input: variables,
-    })),
-    ...notesQuery.data.map((note) => ({
-      kind: "saved" as const,
-      note,
-      isDeleting: deletingIds.includes(note.id),
-    })),
-  ];
+  // hook より後ろで派生値を作る。hook の間に挟むと React Compiler がこの scope を切れず、
+  // rows が毎 render 新しい参照になって table の行モデルが作り直される (ADR-0009、
+  // TanStack Table「React Compiler」。oxc-transform-react の出力で実測)
+  const deletingIds = parseDeletingIds(pendingDeleteVariables);
+  const creatingRows = parseCreatingRows(pendingCreateStates);
+  const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds });
 
   // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
   // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
@@ -149,16 +134,16 @@ function NotesPage() {
         title={PAGE_TITLE}
         actions={
           <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
-            ＋ {ENTITY_LABEL}を追加
+            ＋ {NOTE_ENTITY_LABEL}を追加
           </DialogTrigger>
         }
       />
 
       <div className="flex flex-1 flex-col p-4">
-        {notesQuery.data.length === 0 && creatingRows.length === 0 ? (
+        {rows.length === 0 ? (
           <Empty>
             <EmptyHeader>
-              <EmptyTitle>{ENTITY_LABEL}が登録されていません</EmptyTitle>
+              <EmptyTitle>{NOTE_ENTITY_LABEL}が登録されていません</EmptyTitle>
               <EmptyDescription>右上の追加ボタンから登録できます</EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -179,11 +164,7 @@ function NotesPage() {
 
       <NoteCreateDialog />
 
-      <DeleteConfirmDialog
-        handle={noteDeleteDialogHandle}
-        entityLabel={ENTITY_LABEL}
-        onConfirm={confirmDelete}
-      />
+      <NoteDeleteDialog onConfirm={confirmDelete} />
     </div>
   );
 }

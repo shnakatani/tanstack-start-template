@@ -60,11 +60,9 @@ describe("DataTable", () => {
   });
 
   it("data が空のときは列数ぶんの colSpan を持つ案内行を 1 つ描く", async () => {
-    const screen = await render(
-      <DataTable tableKey="fruits" columns={columns} data={[]} emptyText="果物がありません" />,
-    );
+    const screen = await render(<DataTable tableKey="fruits" columns={columns} data={[]} />);
 
-    const cell = screen.getByRole("cell", { name: "果物がありません" }).element();
+    const cell = screen.getByRole("cell", { name: "データがありません" }).element();
     expect(cell.getAttribute("colspan")).toBe(String(columns.length));
     expect(screen.getByRole("columnheader").all()).toHaveLength(2);
   });

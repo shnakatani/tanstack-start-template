@@ -14,15 +14,12 @@ import {
 import { type DataTableFeatures, dataTableFeatures } from "./data-table-features";
 
 /** 転送する option の型は `useTable` の options から導出する (`.claude/rules/typing.md`「ラッパー部品の転送 prop 型」) */
-type TableOptionsOf<TData extends RowData> = TableOptions<DataTableFeatures, TData>;
-
-interface DataTableProps<TData extends RowData> {
+interface DataTableProps<TData extends RowData> extends Pick<
+  TableOptions<DataTableFeatures, TData>,
+  "columns" | "data" | "getRowId"
+> {
   /** devtools に登録する識別子。画面ごとに一意にする (`useTable` の `key`) */
   tableKey: string;
-  columns: TableOptionsOf<TData>["columns"];
-  data: TData[];
-  /** 行の識別子。省略すると index になり、行の出入りで React の key がずれる */
-  getRowId?: TableOptionsOf<TData>["getRowId"];
   /** 行ごとに足す属性。busy 表現 (`aria-busy` と半透明) など、行データから決まるもの */
   rowProps?: (
     row: Row<DataTableFeatures, TData>,
@@ -32,10 +29,8 @@ interface DataTableProps<TData extends RowData> {
 }
 
 /**
- * 列定義 (TanStack Table v9) を registry の `Table` 部品に描く (ADR-0019)。
- * shadcn「Data Table」の `DataTable` と同じ構成で、features は `data-table-features.ts` が持つ。
- * 列見出しには `scope="col"` を付ける。暗黙の role は支援技術とテストの locator で
- * columnheader に解決されない (WAI「Tables with one header」)。
+ * 列定義 (TanStack Table v9) を registry の `Table` 部品に描く共有部品 (ADR-0019)。
+ * 列見出しの `scope="col"` は `.claude/rules/implementation.md`「テーブルの列見出し」。
  */
 export function DataTable<TData extends RowData>({
   tableKey,
