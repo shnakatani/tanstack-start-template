@@ -168,6 +168,23 @@ describe("noteSchema", () => {
   });
 });
 
+describe("NOTE_FIELD_LABELS", () => {
+  it("noteSchema の全項目が label metadata を持ち、NOTE_FIELD_LABELS はそれを写す", () => {
+    const fromSchema = Object.fromEntries(
+      Object.entries(noteSchema.entries).map(([key, entry]) => [key, v.getMetadata(entry).label]),
+    );
+
+    expect(fromSchema).toEqual(NOTE_FIELD_LABELS);
+    expect(Object.values(fromSchema).every((label) => typeof label === "string")).toBe(true);
+  });
+
+  it("入力用と保存用の title は同じ label を持つ (pipe が 2 つあるため個別に付けている)", () => {
+    expect(v.getMetadata(noteInputSchema.entries.title).label).toBe(
+      v.getMetadata(noteSchema.entries.title).label,
+    );
+  });
+});
+
 describe("noteIdSchema", () => {
   it("accepts a positive integer id", () => {
     const result = v.safeParse(noteIdSchema, { id: 1 });

@@ -31,7 +31,7 @@ export const noteColumns = helper.columns([
   }),
   helper.display({
     id: "createdAt",
-    header: "作成日時",
+    header: NOTE_FIELD_LABELS.createdAt,
     cell: ({ row }) => {
       if (row.original.kind !== "saved") {
         // 作成日時はまだ無いので、その位置で保存中を伝える。行の aria-busy が true の間は

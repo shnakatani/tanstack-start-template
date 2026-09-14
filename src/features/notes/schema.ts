@@ -4,13 +4,12 @@ import * as v from "valibot";
 export const NOTE_ENTITY_LABEL = "メモ";
 
 /**
- * 項目の呼称の SSOT。フォームの label、検証メッセージ、テストのアクセシブルネーム参照が
- * すべてここを見る。呼称を変えるときの書き換えを 1 箇所に閉じる。
+ * 項目の呼称。各項目の pipe が `v.metadata({ label })` で持ち、検証メッセージも同じ定数を使う
+ * (ADR-0008)。フォームの label と一覧の見出しは `NOTE_FIELD_LABELS` (下) から型付きで受け取る。
+ * `v.metadata()` は pipe の中に書く。外で作ると入力型が `unknown` に推論され、pipe に入らない。
  */
-export const NOTE_FIELD_LABELS = {
-  title: "タイトル",
-  body: "本文",
-} as const;
+const TITLE_LABEL = "タイトル";
+const BODY_LABEL = "本文";
 
 /** 制約値はメッセージにも埋まるため、制約とメッセージが別々の数値を持たないよう定数で束ねる。 */
 export const NOTE_TITLE_MAX_LENGTH = 100;
@@ -31,18 +30,14 @@ export const noteInputSchema = v.object({
   title: v.pipe(
     v.string(),
     v.trim(),
-    v.minLength(1, `${NOTE_FIELD_LABELS.title}を入力してください`),
-    v.maxLength(
-      NOTE_TITLE_MAX_LENGTH,
-      maxLengthMessage(NOTE_FIELD_LABELS.title, NOTE_TITLE_MAX_LENGTH),
-    ),
+    v.minLength(1, `${TITLE_LABEL}を入力してください`),
+    v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
+    v.metadata({ label: TITLE_LABEL }),
   ),
   body: v.pipe(
     v.string(),
-    v.maxLength(
-      NOTE_BODY_MAX_LENGTH,
-      maxLengthMessage(NOTE_FIELD_LABELS.body, NOTE_BODY_MAX_LENGTH),
-    ),
+    v.maxLength(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
+    v.metadata({ label: BODY_LABEL }),
   ),
 });
 export type NoteInput = v.InferOutput<typeof noteInputSchema>;
@@ -66,15 +61,10 @@ const noteIdValueSchema = v.pipe(v.number(), v.integer(), v.minValue(1));
  */
 const storedTitleSchema = v.pipe(
   v.string(),
-  v.minLength(1, `${NOTE_FIELD_LABELS.title}を入力してください`),
-  v.maxLength(
-    NOTE_TITLE_MAX_LENGTH,
-    maxLengthMessage(NOTE_FIELD_LABELS.title, NOTE_TITLE_MAX_LENGTH),
-  ),
-  v.check(
-    (value) => value === value.trim(),
-    `${NOTE_FIELD_LABELS.title}の前後に空白が残っています`,
-  ),
+  v.minLength(1, `${TITLE_LABEL}を入力してください`),
+  v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
+  v.check((value) => value === value.trim(), `${TITLE_LABEL}の前後に空白が残っています`),
+  v.metadata({ label: TITLE_LABEL }),
 );
 
 /** 保存済みの 1 件。DB からの読み出し結果を検証するゲートも兼ねる。 */
@@ -82,10 +72,22 @@ export const noteSchema = v.object({
   ...noteInputSchema.entries,
   // 入力側の title は trim 変換を持つため、変換なしの読み出し用へ差し替える
   title: storedTitleSchema,
-  id: noteIdValueSchema,
-  createdAt: v.date(),
+  id: v.pipe(noteIdValueSchema, v.metadata({ label: "ID" })),
+  createdAt: v.pipe(v.date(), v.metadata({ label: "作成日時" })),
 });
 export type Note = v.InferOutput<typeof noteSchema>;
+
+/**
+ * 項目の呼称。値はスキーマの metadata から型付きで読む (キーの typo と label の欠落は型エラー)。
+ * `satisfies` で `Note` の全項目を要求するので、項目を足すと呼称の追加も強制される。
+ * フォームの label、一覧の見出し、テストのアクセシブルネーム参照がここを見る。
+ */
+export const NOTE_FIELD_LABELS = {
+  title: v.getMetadata(noteSchema.entries.title).label,
+  body: v.getMetadata(noteSchema.entries.body).label,
+  id: v.getMetadata(noteSchema.entries.id).label,
+  createdAt: v.getMetadata(noteSchema.entries.createdAt).label,
+} satisfies Record<keyof Note, string>;
 
 /** 1 件を指す入力 (削除など)。 */
 export const noteIdSchema = v.object({
