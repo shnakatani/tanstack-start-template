@@ -6,10 +6,13 @@ export const NOTE_ENTITY_LABEL = "メモ";
 /**
  * 項目の呼称。各項目の pipe が `v.metadata({ label })` で持ち、検証メッセージも同じ定数を使う
  * (ADR-0008)。フォームの label と一覧の見出しは `NOTE_FIELD_LABELS` (下) から型付きで受け取る。
- * `v.metadata()` は pipe の中に書く。外で作ると入力型が `unknown` に推論され、pipe に入らない。
+ * pipe の外で action を作るときは `TInput` を型引数で与える。型引数も注釈も無いと `unknown` に
+ * 推論され、`v.pipe` の overload に合わない。
  */
 const TITLE_LABEL = "タイトル";
 const BODY_LABEL = "本文";
+/** 入力用と保存用で pipe が分かれる title は、同じ action を両方に渡す */
+const titleLabel = v.metadata<string, { label: typeof TITLE_LABEL }>({ label: TITLE_LABEL });
 
 /** 制約値はメッセージにも埋まるため、制約とメッセージが別々の数値を持たないよう定数で束ねる。 */
 export const NOTE_TITLE_MAX_LENGTH = 100;
@@ -32,7 +35,7 @@ export const noteInputSchema = v.object({
     v.trim(),
     v.minLength(1, `${TITLE_LABEL}を入力してください`),
     v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
-    v.metadata({ label: TITLE_LABEL }),
+    titleLabel,
   ),
   body: v.pipe(
     v.string(),
@@ -49,7 +52,12 @@ export type NoteInput = v.InferOutput<typeof noteInputSchema>;
  * 1 件を指す入力 (noteIdSchema) と保存済みの 1 件 (noteSchema) の両方がこれを使う。
  * 別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる。
  */
-const noteIdValueSchema = v.pipe(v.number(), v.integer(), v.minValue(1));
+const noteIdValueSchema = v.pipe(
+  v.number(),
+  v.integer(),
+  v.minValue(1),
+  v.metadata({ label: "ID" }),
+);
 
 /**
  * 保存済み title の制約。入力側と同じ長さ制約を課すが、**変換は持たない**。
@@ -64,7 +72,7 @@ const storedTitleSchema = v.pipe(
   v.minLength(1, `${TITLE_LABEL}を入力してください`),
   v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
   v.check((value) => value === value.trim(), `${TITLE_LABEL}の前後に空白が残っています`),
-  v.metadata({ label: TITLE_LABEL }),
+  titleLabel,
 );
 
 /** 保存済みの 1 件。DB からの読み出し結果を検証するゲートも兼ねる。 */
@@ -72,7 +80,7 @@ export const noteSchema = v.object({
   ...noteInputSchema.entries,
   // 入力側の title は trim 変換を持つため、変換なしの読み出し用へ差し替える
   title: storedTitleSchema,
-  id: v.pipe(noteIdValueSchema, v.metadata({ label: "ID" })),
+  id: noteIdValueSchema,
   createdAt: v.pipe(v.date(), v.metadata({ label: "作成日時" })),
 });
 export type Note = v.InferOutput<typeof noteSchema>;
