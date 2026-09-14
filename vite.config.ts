@@ -54,7 +54,7 @@ export default defineConfig({
     rules: {
       // -- 基準から外れる名指し (ADR-0004) --
       "typescript/consistent-type-assertions": ["error", { assertionStyle: "never" }],
-      // テスト専用の fixture / locator (*.test-helpers.ts) をアプリのコードから import させない。
+      // テスト専用のコード (*.test-helpers.ts と src/test/) をアプリのコードから import させない。
       // 型しか引かない helper は build を壊さず fixture が bundle に入る (ADR-0004 「基準から
       // 外れる名指し」)。専用ルール import/no-restricted-paths は oxlint 未実装 (oxc #13789)
       "no-restricted-imports": [
@@ -62,9 +62,10 @@ export default defineConfig({
         {
           patterns: [
             {
-              regex: "\\.test-helpers$",
+              // alias (@/test/) と相対 (./test/ ../test/) の両方の specifier を止める
+              regex: "\\.test-helpers$|(^@|\\.)/test/",
               message:
-                "テスト専用 helper。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
+                "テスト専用のコード。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
             },
           ],
         },
@@ -299,14 +300,20 @@ export default defineConfig({
       {
         // モックは意図的に型を外した値を扱い、assertion は要素の存在を前提に書く。
         // typescript-eslint 本体が自身のテストディレクトリで off にしている 5 ルールと同一
-        files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
+        files: [
+          "**/*.test.ts",
+          "**/*.test.tsx",
+          "**/*.test-helpers.ts",
+          "**/*.test-helpers.tsx",
+          "src/test/**",
+        ],
         rules: {
           "typescript/no-non-null-assertion": "off",
           "typescript/no-unsafe-assignment": "off",
           "typescript/no-unsafe-call": "off",
           "typescript/no-unsafe-member-access": "off",
           "typescript/no-unsafe-return": "off",
-          // テストが *.test-helpers.ts を import するのは正当。禁止はアプリのコード側だけに効かせる
+          // テストと src/test/ がテスト専用のコードを import するのは正当。禁止はアプリのコード側だけに効かせる
           "no-restricted-imports": "off",
         },
       },
