@@ -40,6 +40,16 @@ paths:
 
 `scripts/` 配下の分け方と実行 project は `testing.md`「テストの種別と置き場所」が持つ。
 
+テスト専用ヘルパーは 2 段に置く。2 つのテストで同じ locator を書き分けると、ラベル変更で片方だけ落ちる。
+
+| 対象                                         | 置き場所                                                                                           |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                        |
+| 特定の部品の locator                         | 部品と同じディレクトリの `<部品>.test-helpers.ts` (`routes/` 配下は `-components/` の中。ADR-0012) |
+
+- `*.test-helpers.ts` は `vp test` の include に一致せず、coverage からも除外する (`vitest.config.ts`)。`routes/` 配下では `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いを外す
+- `*.test-helpers.ts` をアプリのコードから import しない。`src/test/` の実行時ヘルパー (`vite-plus/test` を読む) を引き込みうる。機械強制は無く、レビューで見る
+
 ## shadcn コンポーネント導入時のチェック
 
 `src/components/ui/` を新規追加・改変したら、最初のコミット前に:

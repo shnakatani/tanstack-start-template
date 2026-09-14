@@ -7,7 +7,6 @@ import { render } from "vitest-browser-react";
 
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
-import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { enableBaseUiAnimations } from "@/test/base-ui-animations";
@@ -16,7 +15,7 @@ import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
 import { collectLoaderQueryKeys } from "@/test/loader-helpers";
 import { dispatchNativeClick } from "@/test/native-click";
-import { createTestQueryClient, expectText } from "@/test/page-helpers";
+import { createTestQueryClient, expectText, type Screen } from "@/test/page-helpers";
 import { parkMouse } from "@/test/park-mouse";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
@@ -29,6 +28,13 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
 
+import {
+  bodyTextbox,
+  NOTE_CREATE_TRIGGER_LABEL,
+  openNoteCreateDialog,
+  saveButton,
+  titleTextbox,
+} from "./-components/note-create-dialog.test-helpers";
 import { loadNotesPageData, Route } from "./index";
 
 const NotesPage = Route.options.component!;
@@ -73,8 +79,6 @@ async function renderPage() {
   return render(<RouterProvider router={router} />);
 }
 
-type Screen = Awaited<ReturnType<typeof renderPage>>;
-
 /** 行の削除ボタン。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない)。 */
 function rowDeleteButton(screen: Screen, title: string) {
   return screen.getByRole("button", { name: `${title}を削除`, exact: true });
@@ -89,9 +93,7 @@ function noteRow(screen: Screen, note: Note, { includeHidden = false } = {}) {
 }
 
 async function expectCreateDialogClosed(screen: Screen) {
-  await expect
-    .element(screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true }))
-    .not.toBeInTheDocument();
+  await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
 }
 
 async function expectDeleteConfirmClosed(screen: Screen) {
@@ -120,13 +122,11 @@ async function openDeleteConfirm(screen: Screen, note: Note) {
 
 /** 追加ダイアログを開いて 1 件分を入力し、保存を確定する (応答の決着は呼び出し側が握る)。 */
 async function submitCreate(screen: Screen, note: Note) {
-  await screen.getByRole("button", { name: "＋ メモを追加" }).click();
-  await screen
-    .getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true })
-    .fill(note.title);
-  await screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.body, exact: true }).fill(note.body);
+  await openNoteCreateDialog(screen);
+  await titleTextbox(screen).fill(note.title);
+  await bodyTextbox(screen).fill(note.body);
   // 保存ボタンは inert バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
-  screen.getByRole("button", { name: "保存", exact: true }).element().focus();
+  saveButton(screen).element().focus();
   await userEvent.keyboard("{Enter}");
   // 追加ボタンに乗った実マウスを、ダイアログが閉じる前に退避する (openDeleteConfirm と同じ理由)
   await parkMouse();
@@ -176,7 +176,7 @@ describe("NotesPage", () => {
     const screen = await renderPage();
 
     await expectText(screen, "メモ一覧");
-    await expectText(screen, "＋ メモを追加");
+    await expectText(screen, NOTE_CREATE_TRIGGER_LABEL);
   });
 
   it("空状態の描画に a11y 違反が無い", async () => {
@@ -266,7 +266,7 @@ describe("NotesPage", () => {
     // 応答で閉じる。再取得 (2 回目の listNotes) は未決着なので mutation は pending のまま
     await expectCreateDialogClosed(screen);
 
-    await screen.getByRole("button", { name: "＋ メモを追加" }).click();
+    await openNoteCreateDialog(screen);
 
     await expect
       .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
