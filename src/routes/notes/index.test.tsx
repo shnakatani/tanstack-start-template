@@ -6,7 +6,6 @@ import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { Toaster } from "@/components/ui/toast";
-import { NOTE, OTHER_NOTE } from "@/features/notes/note.test-helpers";
 import type { Note } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
@@ -37,6 +36,7 @@ import {
   titleTextbox,
 } from "./-components/note-create-dialog.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
+import { NOTE, OTHER_NOTE } from "./-lib/note.test-helpers";
 import { loadNotesPageData, Route } from "./index";
 
 const NotesPage = Route.options.component!;

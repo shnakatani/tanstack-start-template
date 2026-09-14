@@ -1,5 +1,5 @@
-import type { CreatingRow } from "./creating-rows";
-import type { Note, NoteInput } from "./schema";
+import type { CreatingRow } from "@/features/notes/creating-rows";
+import type { Note, NoteInput } from "@/features/notes/schema";
 
 /** 確定済みの行 (query の data)。`isDeleting` は pending な削除 mutation の variables から派生する */
 export type SavedNoteRow = { kind: "saved"; note: Note; isDeleting: boolean };

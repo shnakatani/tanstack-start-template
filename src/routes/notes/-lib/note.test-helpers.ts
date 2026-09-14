@@ -1,4 +1,4 @@
-import type { Note } from "./schema";
+import type { Note } from "@/features/notes/schema";
 
 /**
  * テスト用の確定済みメモ。createdAt は絶対時刻 (UTC) で固定し、期待値が実行環境のローカル TZ で

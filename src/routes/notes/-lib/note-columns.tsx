@@ -1,12 +1,12 @@
 import { createColumnHelper } from "@tanstack/react-table";
 
 import { type DataTableFeatures } from "@/components/data-table-features";
-import type { NoteRow } from "@/features/notes/note-rows";
-import { noteInputOf } from "@/features/notes/note-rows";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { formatDateTime } from "@/lib/format-date-time";
 
 import { NoteDeleteTrigger } from "../-components/note-delete-trigger";
+import type { NoteRow } from "./note-rows";
+import { noteInputOf } from "./note-rows";
 
 const helper = createColumnHelper<DataTableFeatures, NoteRow>();
 

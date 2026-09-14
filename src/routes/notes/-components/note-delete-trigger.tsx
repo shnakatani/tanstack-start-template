@@ -1,9 +1,9 @@
 import { actionDisabledAppearance } from "@/components/action/button";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import type { SavedNoteRow } from "@/features/notes/note-rows";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
+import type { SavedNoteRow } from "../-lib/note-rows";
 
 /** 一覧の操作セルに置く削除トリガー。detached trigger で、Root はページが 1 つ描く。 */
 export function NoteDeleteTrigger({ row }: { row: SavedNoteRow }) {

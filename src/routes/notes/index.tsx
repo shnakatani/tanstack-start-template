@@ -13,7 +13,6 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { parseCreatingRows } from "@/features/notes/creating-rows";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
-import { getNoteRowId, toNoteRows } from "@/features/notes/note-rows";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
@@ -24,6 +23,7 @@ import { toastMutationError } from "@/lib/mutation-error";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
 import { noteColumns } from "./-lib/note-columns";
 import { noteDeleteDialogHandle } from "./-lib/note-delete-dialog-handle";
+import { getNoteRowId, toNoteRows } from "./-lib/note-rows";
 
 const PAGE_TITLE = "メモ一覧";
 
