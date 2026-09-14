@@ -111,14 +111,12 @@ async function expectSettledRow(screen: Screen, note: Note) {
   });
 }
 
-/**
- * click で動いた実マウスは、ダイアログが閉じて下のボタンが露出する前に退避する。乗ったままだと
- * 露出した瞬間に hover の配色 (bg-primary/90) と transition が始まり、a11y 検査の色の実測が
- * 揺れる (testing.md「マウス位置を動かすテストは自分で戻す」)。
- */
 async function openDeleteConfirm(screen: Screen, note: Note) {
   await rowDeleteButton(screen, note.title).click();
   await expectText(screen, `「${note.title}」を削除しますか？この操作は取り消せません。`);
+  // click で動いた実マウスは、ダイアログが閉じて下の要素が露出する前に退避する。乗ったままだと
+  // 露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
+  // (testing.md「マウス位置を動かすテストは自分で戻す」)
   await parkMouse();
 }
 
@@ -416,8 +414,7 @@ describe("NotesPage", () => {
     });
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
     // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
-    // popup を閉じた後の axe は unmount を待ってから (ADR-0018)。閉じかけの popup の focus guard と
-    // 見出しが incomplete に出る
+    // popup を閉じた後の axe は unmount を待ってから (testing.md「ブラウザテストの CSS とレイアウト実測」)
     await expectDeleteConfirmClosed(screen);
     await expectNoA11yViolations(document.body);
 

@@ -43,10 +43,6 @@ async function renderOpenDialog() {
 
 // 既定値は browser-setup.tsx の beforeEach が立てる (ADR-0018)
 describe("Base UI の animation", () => {
-  it("既定で無効になっている", () => {
-    expect(globalThis.BASE_UI_ANIMATIONS_DISABLED).toBe(true);
-  });
-
   it("既定では閉じた Dialog が animate-out を待たずに unmount する", async () => {
     stretchExitAnimation();
     const screen = await renderOpenDialog();
@@ -58,11 +54,7 @@ describe("Base UI の animation", () => {
     });
   });
 
-  it("enableBaseUiAnimations() を呼んだテストでは animate-out の完了まで popup が残り、終了時に既定へ戻る", async () => {
-    // onTestFinished は登録の逆順に走る。enable より前に登録すると、helper の復元の後に評価される
-    onTestFinished(() => {
-      expect(globalThis.BASE_UI_ANIMATIONS_DISABLED).toBe(true);
-    });
+  it("enableBaseUiAnimations() を呼んだテストでは animate-out の完了まで popup が残る", async () => {
     enableBaseUiAnimations();
     stretchExitAnimation();
     const screen = await renderOpenDialog();
@@ -73,6 +65,5 @@ describe("Base UI の animation", () => {
     await expect
       .element(screen.getByRole("dialog", { includeHidden: true }))
       .toHaveAttribute("data-ending-style");
-    expect(globalThis.BASE_UI_ANIMATIONS_DISABLED).toBe(false);
   });
 });

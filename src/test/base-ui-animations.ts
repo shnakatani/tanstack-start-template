@@ -1,5 +1,3 @@
-import { onTestFinished } from "vite-plus/test";
-
 declare global {
   /**
    * Base UI の animation スイッチ。`true` の間、閉じた popup は animate-out の完了を待たずに
@@ -10,22 +8,15 @@ declare global {
   var BASE_UI_ANIMATIONS_DISABLED: boolean;
 }
 
-/**
- * 全ブラウザテストの既定 (ADR-0018)。`src/test/browser-setup.tsx` の `beforeEach` が毎テスト立て直す。
- * 閉じかけの popup が mount されたまま残る窓 (focus guard が focusable、行が aria-hidden 配下) を
- * 消し、検査がその窓に落ちるかどうかで結果が揺れないようにする。
- */
+/** ブラウザテストの既定 (ADR-0018)。`src/test/browser-setup.tsx` の `beforeEach` が毎テスト呼ぶ。 */
 export function disableBaseUiAnimations(): void {
   globalThis.BASE_UI_ANIMATIONS_DISABLED = true;
 }
 
 /**
- * このテストの間だけ Base UI の animation を戻す。close の animate-out の窓そのものを踏むテスト
- * (二重発火の dedupe など) が本文の先頭で呼ぶ。後続へ漏れないことは browser-setup.tsx の
- * `beforeEach` が保証し、`onTestFinished` は自テスト内の後始末 (Base UI 自身の
- * `ComboboxRoot.test.tsx` と同じ形)。
+ * このテストの間だけ Base UI の animation を戻す (ADR-0018)。閉じかけの popup が残る窓を
+ * 検証するテストが本文の先頭で呼ぶ。次のテストの `beforeEach` が既定へ戻す (`parkMouse` と同じ形)。
  */
 export function enableBaseUiAnimations(): void {
   globalThis.BASE_UI_ANIMATIONS_DISABLED = false;
-  onTestFinished(disableBaseUiAnimations);
 }
