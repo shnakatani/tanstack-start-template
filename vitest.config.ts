@@ -59,6 +59,7 @@ export default defineConfig({
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
         "src/**/*.test-helpers.ts",
+        "src/**/*.test-helpers.tsx",
         "src/test/**",
         "src/**/*.d.ts",
       ],

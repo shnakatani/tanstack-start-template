@@ -5,6 +5,7 @@ import { render } from "vitest-browser-react";
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { dispatchNativeClick } from "@/test/native-click";
+import type { Screen } from "@/test/page-helpers";
 
 import { DeleteConfirmDialog, type DeleteTarget } from "./delete-confirm-dialog";
 
@@ -29,11 +30,10 @@ async function renderWithTrigger(props: DialogProps, target: DeleteTarget = TARG
   return { screen, handle };
 }
 
-async function openDialog(screen: Awaited<ReturnType<typeof render>>): Promise<void> {
+async function openDialog(screen: Screen): Promise<void> {
   await screen.getByRole("button", { name: "開く" }).click();
-  await vi.waitFor(() => {
-    expect(screen.getByRole("button", { name: "削除" }).query()).not.toBeNull();
-  });
+  // 操作の結果として現れる要素は findElement() で待つ (ADR-0013)
+  await screen.getByRole("button", { name: "削除" }).findElement();
 }
 
 describe("DeleteConfirmDialog", () => {
