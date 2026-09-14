@@ -169,9 +169,7 @@ describe("NoteCreateDialog", () => {
 
     clickSave(screen);
 
-    await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
-    });
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
   });
@@ -184,9 +182,7 @@ describe("NoteCreateDialog", () => {
     await bodyTextbox(screen).fill("牛乳とパン");
 
     clickSave(screen);
-    await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
-    });
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
     await openDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
@@ -198,9 +194,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("一時入力");
 
     dispatchNativeClick(screen.getByRole("button", { name: "キャンセル", exact: true }).element());
-    await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
-    });
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
     await openDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
@@ -242,9 +236,7 @@ describe("NoteCreateDialog", () => {
     create.resolve({ id: 1 });
 
     // 応答で閉じる。invalidateQueries は未決着
-    await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
-    });
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
 
@@ -309,8 +301,6 @@ describe("NoteCreateDialog", () => {
     create.resolve({ id: 1 });
 
     // 応答 (imperative-action) での close は止めない
-    await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
-    });
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
   });
 });

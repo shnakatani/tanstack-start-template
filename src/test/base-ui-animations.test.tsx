@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
+import { describe, expect, it, onTestFinished } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
@@ -49,9 +49,7 @@ describe("Base UI の animation", () => {
 
     await screen.getByRole("button", { name: "閉じる" }).click();
 
-    await vi.waitFor(() => {
-      expect(screen.getByRole("dialog").query()).toBeNull();
-    });
+    await expect.element(screen.getByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("enableBaseUiAnimations() を呼んだテストでは animate-out の完了まで popup が残る", async () => {

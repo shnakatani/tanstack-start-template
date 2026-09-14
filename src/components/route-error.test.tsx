@@ -120,11 +120,9 @@ describe("RouteErrorContent", () => {
     });
 
     await userEvent.keyboard(" ");
-    await vi.waitFor(() => {
-      expect(trigger.element().getAttribute("aria-expanded")).toBe("false");
-      expect(trigger.element().getAttribute("aria-controls")).toBeNull();
-      expect(screen.getByText(/at loader/).query()).toBeNull();
-    });
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
+    await expect.element(trigger).not.toHaveAttribute("aria-controls");
+    await expect.element(screen.getByText(/at loader/)).not.toBeInTheDocument();
   });
   it("長いスタックトレースはパネル内でスクロールし、カードを画面外へ押し出さない", async () => {
     const error = new Error("取得に失敗しました");

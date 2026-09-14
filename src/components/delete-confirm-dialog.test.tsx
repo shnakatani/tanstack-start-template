@@ -72,9 +72,7 @@ describe("DeleteConfirmDialog", () => {
     await openDialog(screen);
     dispatchNativeClick(screen.getByRole("button", { name: "キャンセル" }).element());
 
-    await vi.waitFor(() => {
-      expect(screen.getByRole("button", { name: "削除" }).query()).toBeNull();
-    });
+    await expect.element(screen.getByRole("button", { name: "削除" })).not.toBeInTheDocument();
   });
 
   it("entityLabel と payload の name が表示に反映される", async () => {

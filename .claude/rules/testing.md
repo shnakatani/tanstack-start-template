@@ -154,8 +154,8 @@ dispatchNativeClick(screen.getByRole("button", { name: "削除" }).element());
 - 操作の結果として現れる要素の生 DOM は `await locator.findElement()` で取る。`element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
 - 操作後の属性・テキストは `await expect.element(locator).toHaveAttribute(...)` で検証する。`element().getAttribute(...)` を同期で読むと更新前の値を拾う (ADR-0013)
 - Base UI の animation は `src/test/browser-setup.tsx` が毎テスト無効にする。閉じかけの popup が残る窓を検証するテストだけ、冒頭で `src/test/base-ui-animations.ts` の `enableBaseUiAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻す (ADR-0018)
-- Dialog / Popover / Sheet の close 直後に `.query()).toBeNull()` を assert する場合は `vi.waitFor` で包む (unmount は close の次の描画で、animation を戻したテストでは `animate-out` 完了後。ADR-0018)
-- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に `vi.waitFor` で popup の要素が `null` になるのを待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
+- Dialog / Popover / Sheet の close 後に消えたことは `await expect.element(locator).not.toBeInTheDocument()` で待つ。`vi.waitFor` + `.query()` で組み立てない (ADR-0013)。animation を戻したテストでは `animate-out` 完了後に消える
+- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素の `.not.toBeInTheDocument()` を待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
 - `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む
 - flex column の中に「溢れるコンテンツ」をテスト用に作るときは `height` ではなく `minHeight` を使う (flex item は既定で縮むため `height` では溢れない)
 - hover 由来の配色との交絡は `src/test/park-mouse.ts` が `browser-setup.tsx` の `beforeEach` で断つ。マウス位置を動かすテストは自分で戻す。戻すのは overlay が閉じる前。露出した要素の hover と transition を axe が測ると色の実測が揺れる (ADR-0018)

@@ -89,17 +89,15 @@ function noteRow(screen: Screen, note: Note, { includeHidden = false } = {}) {
 }
 
 async function expectCreateDialogClosed(screen: Screen) {
-  await vi.waitFor(() => {
-    expect(
-      screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true }).query(),
-    ).toBeNull();
-  });
+  await expect
+    .element(screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true }))
+    .not.toBeInTheDocument();
 }
 
 async function expectDeleteConfirmClosed(screen: Screen) {
-  await vi.waitFor(() => {
-    expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
-  });
+  await expect
+    .element(screen.getByRole("button", { name: "削除", exact: true }))
+    .not.toBeInTheDocument();
 }
 
 /** 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。 */
@@ -422,9 +420,7 @@ describe("NotesPage", () => {
 
     // 再取得 (2 回目の listNotes) が反映されても、消えるのは対象行だけ。
     // 対象名は announcer の通知にも残るので、行そのもので判定する
-    await vi.waitFor(() => {
-      expect(noteRow(screen, NOTE).query()).toBeNull();
-    });
+    await expect.element(noteRow(screen, NOTE)).not.toBeInTheDocument();
     await expectText(screen, OTHER_NOTE.title);
   });
 
