@@ -5,6 +5,7 @@
 - Revised: 2026-09-02 (React Compiler の診断が per-category ルールへ分割されたのに伴い、基準へ eslint-plugin-react-hooks を足し `react/unsupported-syntax` を名指しへ加えた)
 - Revised: 2026-09-07 (jsPlugin の名前の決まり方と `settings.entryPoint` の解決失敗の挙動を実測に合わせ、fixture による検査を撤去した)
 - Revised: 2026-09-13 (「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落を ADR-0014 に合わせて書き換えた。mutation を伴う操作は Action の中で行い pending を Transition から取る。ハンドラを同期関数として宣言する規範はそのまま)
+- Revised: 2026-09-14 (`no-restricted-imports` を名指しへ加え、テストの緩和を 6 つにした。テスト専用 helper のアプリ側からの import を lint で止める)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -175,9 +176,20 @@ JS プラグインは lint 時間を伸ばす。測るときは `time vp lint` �
 
 recommended に無くても、規約や他の決定を機械で守るために足すルールがある。
 
-| ルール                                  | 名指しの理由                           |
-| --------------------------------------- | -------------------------------------- |
-| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る |
+| ルール                                  | 名指しの理由                                                    |
+| --------------------------------------- | --------------------------------------------------------------- |
+| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                          |
+| `no-restricted-imports`                 | `*.test-helpers.ts` をアプリのコードから import させない (下記) |
+
+`*.test-helpers.ts` は特定の部品の fixture と locator を置く場所で、部品の隣に置く (`.claude/rules/directory-structure.md`「テストとスクリプトの配置」)。
+アプリのコードが誤って import しても、helper が型しか引かなければ build は通り、fixture がそのまま client と server の bundle に入る (2026-09-14 に `vp build` で確認)。
+レビューで見るしかなかった境界を lint で止める。
+
+この用途の専用ルールは eslint-plugin-import の `import/no-restricted-paths` (zones) と dependency-cruiser の既定ルール `not-to-test` だが、前者は oxlint に無く (oxc-project/oxc#13789)、後者は 1 ルールのためにツールを増やす。
+oxlint の保守者は同じ用途 (production code から test code を import させない) に `no-restricted-imports` を `overrides` で当てる形を示している (oxc-project/oxc#20881)。
+`patterns` の `regex` で `.test-helpers` 終わりの specifier を止め、テストの緩和経路で off にする。
+
+再評価条件: oxlint が `import/no-restricted-paths` を実装したら (oxc-project/oxc#13789 の close)、zones の形へ移す。
 
 `react/rules-of-hooks` と `react/unsupported-syntax` はここに載らない。どちらも基準 (eslint-plugin-react-hooks) に入っており、oxlint のカテゴリが `correctness` / `perf` の外にあるだけである (「React Compiler のルールは eslint-plugin-react-hooks を基準にする」)。
 
@@ -200,11 +212,13 @@ recommended に無くても、規約や他の決定を機械で守るために�
 ### テストファイルの緩和
 
 対象を絞った緩和はテストの 1 経路だけに置く。
-`**/*.test.{ts,tsx}` と `src/test/**` で off にするのは次の 5 つに限る。
+`**/*.test.{ts,tsx}` と `src/test/**` で off にするのは次の 6 つに限る。
 
-`no-non-null-assertion` / `no-unsafe-assignment` / `no-unsafe-call` / `no-unsafe-member-access` / `no-unsafe-return`
+`no-non-null-assertion` / `no-unsafe-assignment` / `no-unsafe-call` / `no-unsafe-member-access` / `no-unsafe-return` / `no-restricted-imports`
 
-この 5 つは typescript-eslint 本体が自身のテストディレクトリで off にしているものと同一である。
+`no-restricted-imports` は `*.test-helpers.ts` の import を止めるために名指ししたもので、テストがそれを import するのは正当なので off にする (「基準から外れる名指し」)。
+
+残る 5 つは typescript-eslint 本体が自身のテストディレクトリで off にしているものと同一である。
 モックは意図的に型を外した値を扱い、assertion は取り出す要素の存在を前提に書くため、欠陥ではなく書き方そのものに鳴る。上流も同じ判断をしているので、off の理由をこちらで発明する必要がない。
 
 `no-non-null-assertion` を strict 採用の動機に挙げていることとは矛盾しない。

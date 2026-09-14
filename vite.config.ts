@@ -54,6 +54,21 @@ export default defineConfig({
     rules: {
       // -- 基準から外れる名指し (ADR-0004) --
       "typescript/consistent-type-assertions": ["error", { assertionStyle: "never" }],
+      // テスト専用の fixture / locator (*.test-helpers.ts) をアプリのコードから import させない。
+      // 型しか引かない helper は build を壊さず fixture が bundle に入る (ADR-0004 「基準から
+      // 外れる名指し」)。専用ルール import/no-restricted-paths は oxlint 未実装 (oxc #13789)
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "\\.test-helpers$",
+              message:
+                "テスト専用 helper。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
+            },
+          ],
+        },
+      ],
 
       // -- eslint コア: @eslint/js の recommended (ADR-0004) --
       "no-case-declarations": "error",
@@ -291,6 +306,8 @@ export default defineConfig({
           "typescript/no-unsafe-call": "off",
           "typescript/no-unsafe-member-access": "off",
           "typescript/no-unsafe-return": "off",
+          // テストが *.test-helpers.ts を import するのは正当。禁止はアプリのコード側だけに効かせる
+          "no-restricted-imports": "off",
         },
       },
     ],

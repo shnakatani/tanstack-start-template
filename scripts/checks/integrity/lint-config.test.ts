@@ -32,8 +32,9 @@ const EXPECTED_PLUGINS = [
 /** 緩和の範囲。広げると本体コードでも no-unsafe-* が無効になる */
 const EXPECTED_OVERRIDE_FILES = ["**/*.test.ts", "**/*.test.tsx", "src/test/**"];
 
-/** 緩和するルール。増やすとテストコードの型検査がその分だけ緩む */
+/** 緩和するルール。増やすとテストコードの型検査がその分だけ緩む (ADR-0004「テストファイルの緩和」) */
 const EXPECTED_OVERRIDE_RULES = [
+  "no-restricted-imports",
   "typescript/no-non-null-assertion",
   "typescript/no-unsafe-assignment",
   "typescript/no-unsafe-call",

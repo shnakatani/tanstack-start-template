@@ -52,7 +52,7 @@ paths:
 
 - `*.test-helpers.ts` は `vp test` の include に一致せず、coverage からも除外する (`vitest.config.ts`)
 - route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-` で始まるディレクトリの中は元から除外される
-- `*.test-helpers.ts` をアプリのコードから import しない。`src/test/` の実行時ヘルパー (`vite-plus/test` を読む) を引き込みうる。機械強制は無く、レビューで見る
+- `*.test-helpers.ts` をアプリのコードから import しない。型しか引かない helper は build を壊さず、fixture がそのまま bundle に入る。lint の `no-restricted-imports` が止め、テストと `src/test/` だけ off (ADR-0004)
 
 ## shadcn コンポーネント導入時のチェック
 
