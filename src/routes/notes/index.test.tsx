@@ -28,6 +28,7 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
 
+import { noteColumns } from "./-components/note-columns";
 import {
   bodyTextbox,
   NOTE_CREATE_TRIGGER_LABEL,
@@ -159,6 +160,8 @@ describe("NotesPage", () => {
     const screen = await render(<RouterProvider router={router} />);
 
     expect(screen.getByRole("status", { name: "読み込み中" }).query()).not.toBeNull();
+    // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (ADR-0019)
+    expect(screen.getByRole("columnheader").all()).toHaveLength(noteColumns.length);
   });
 
   it("loader が notes を prefetch する", async () => {

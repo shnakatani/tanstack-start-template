@@ -2,49 +2,33 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { actionDisabledAppearance } from "@/components/action/button";
+import { DataTable } from "@/components/data-table";
 import type { DeleteTarget } from "@/components/delete-confirm-dialog";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { PageHeader } from "@/components/page-header";
 import { TableSkeleton } from "@/components/table-skeleton";
-import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { parseCreatingRows } from "@/features/notes/creating-rows";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
-import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
-import { formatDateTime } from "@/lib/format-date-time";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
+import {
+  getNoteRowId,
+  noteColumns,
+  noteDeleteDialogHandle,
+  type NoteRow,
+} from "./-components/note-columns";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
 
 const PAGE_TITLE = "メモ一覧";
 const ENTITY_LABEL = "メモ";
-
-/**
- * 列見出しの SSOT。`TableSkeleton` の列数もここから採るので、列を足しても
- * pending 表示との食い違い (ロード完了時のレイアウトシフト) が起きない。
- */
-const NOTE_TABLE_HEADERS = [
-  NOTE_FIELD_LABELS.title,
-  NOTE_FIELD_LABELS.body,
-  "作成日時",
-  "操作",
-] as const;
 
 /**
  * 一覧 loader 本体 (named function に切り出し、loader テストから直接呼べるようにする)。
@@ -68,7 +52,7 @@ function NotesPagePending() {
     <div>
       <PageHeader title={PAGE_TITLE} />
       <div className="p-4">
-        <TableSkeleton columns={NOTE_TABLE_HEADERS.length} />
+        <TableSkeleton columns={noteColumns.length} />
       </div>
     </div>
   );
@@ -78,13 +62,10 @@ function NotesPagePending() {
  * pending な行 (保存中・削除中) の見え方。半透明で pending を伝える (ADR-0016) が、
  * `opacity-50` は本文を 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る
  * (`index.test.tsx` の楽観行の a11y 検査が axe で実測)。比率を満たす範囲で薄くする。
- * 保存中・削除中の 2 箇所で同じ文字列だが、cva variant にすると registry の `TableRow` に
+ * `rowProps` が保存中・削除中の両方に当てる。cva variant にすると registry の `TableRow` に
  * variant を持たせることになる (ADR-0006 の対象) ので、消費側の定数で持つ。
  */
 const busyRowAppearance = "opacity-60";
-
-/** 削除確認ダイアログの detached trigger を Root へ結ぶ handle。Root は 1 つだけ描画する。 */
-const noteDeleteDialogHandle = createAlertDialogHandle<DeleteTarget<Note["id"]>>();
 
 function NotesPage() {
   const notesQuery = useSuspenseQuery(notesQueryOptions);
@@ -129,6 +110,22 @@ function NotesPage() {
   });
   const creatingRows = parseCreatingRows(pendingCreateStates);
 
+  // 保存中の行を先頭に置く (一覧は createdAt の降順)。再取得完了で実データに置き換わる (行の
+  // 由来は NoteRow の docstring)。React Compiler が入力ごとに安定化するので手動の useMemo は
+  // 書かない (ADR-0009、TanStack Table「React Compiler」)
+  const rows: NoteRow[] = [
+    ...creatingRows.map(({ submittedAt, variables }) => ({
+      kind: "creating" as const,
+      submittedAt,
+      input: variables,
+    })),
+    ...notesQuery.data.map((note) => ({
+      kind: "saved" as const,
+      note,
+      isDeleting: deletingIds.includes(note.id),
+    })),
+  ];
+
   // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
   // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
   function confirmDelete(target: DeleteTarget<Note["id"]>) {
@@ -166,76 +163,17 @@ function NotesPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {NOTE_TABLE_HEADERS.map((header) => (
-                  <TableHead key={header}>{header}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {creatingRows.map(({ submittedAt, variables }) => (
-                // 保存中の行。一覧は createdAt の降順なので先頭に出し、再取得完了で実データに
-                // 置き換わる (ADR-0016)。id をまだ持たないので削除トリガーは出さない
-                <TableRow key={submittedAt} aria-busy className={busyRowAppearance}>
-                  <TableCell>{variables.title}</TableCell>
-                  <TableCell className="max-w-xs truncate">{variables.body}</TableCell>
-                  {/* 作成日時はまだ無いので、その位置で保存中を伝える。行の aria-busy が true の
-                      間は支援技術が内容の変化を無視してよい (WAI-ARIA 1.2 aria-busy) ので、この
-                      テキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0017) */}
-                  <TableCell>保存中</TableCell>
-                  <TableCell />
-                </TableRow>
-              ))}
-              {notesQuery.data.map((note) => {
-                // 楽観表示は query 側 (pending な mutation の variables) で行う。useOptimistic は
-                // query の data を base にできない (ADR-0014「楽観表示の使い分け」)。確定で
-                // ダイアログを閉じるので、再取得完了までの pending はこの行の表現だけが伝える
-                const isDeleting = deletingIds.includes(note.id);
-                return (
-                  <TableRow
-                    key={note.id}
-                    aria-busy={isDeleting}
-                    className={isDeleting ? busyRowAppearance : undefined}
-                  >
-                    <TableCell>{note.title}</TableCell>
-                    <TableCell className="max-w-xs truncate">{note.body}</TableCell>
-                    {/* 整形は必ずタイムゾーンを明示した formatDateTime を通す。ローカル TZ 依存の
-                        整形は SSR と hydration で文字列が食い違う (format-date-time.ts) */}
-                    <TableCell>{formatDateTime(note.createdAt)}</TableCell>
-                    <TableCell>
-                      {/* 削除中は行から可視の手掛かりが半透明しか出ないので、読み上げ用の
-                          テキストを足す。位置づけは楽観行の「保存中」と同じ (ADR-0017) */}
-                      {isDeleting && <span className="sr-only">削除中</span>}
-                      <AlertDialogTrigger
-                        handle={noteDeleteDialogHandle}
-                        payload={{ id: note.id, name: note.title }}
-                        render={
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            focusableWhenDisabled
-                            className={actionDisabledAppearance}
-                          />
-                        }
-                        // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
-                        // 含めることで WCAG 2.5.3 (Label in Name) も満たす
-                        aria-label={`${note.title}を削除`}
-                        // 止めるのは削除中の行だけ (ADR-0016「ブロック範囲」)。render 側の
-                        // focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
-                        // native disabled でフォーカスが body へ落ちるのを防ぐ
-                        // (Trigger の props 型は受けず Button primitive が受ける)
-                        disabled={isDeleting}
-                      >
-                        削除
-                      </AlertDialogTrigger>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <DataTable
+            tableKey="notes"
+            columns={noteColumns}
+            data={rows}
+            getRowId={getNoteRowId}
+            // busy の判定は行データから (ADR-0016)。通知は announcer が担う (ADR-0017)
+            rowProps={({ original }) => {
+              const isBusy = original.kind === "creating" || original.isDeleting;
+              return { "aria-busy": isBusy, className: isBusy ? busyRowAppearance : undefined };
+            }}
+          />
         )}
       </div>
 
