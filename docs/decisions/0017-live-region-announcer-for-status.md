@@ -1,6 +1,6 @@
 # ADR-0017: 状態の通知は常時 mount の live region に集約し、項目の状態は静的テキストと `aria-busy` で持つ
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-14
 - 関連: ADR-0014 (Action 層の pending 行を本 ADR が改訂する)、ADR-0016 (行の busy 表現の読み上げを本 ADR が引き取る)、ADR-0007 (a11y の床は WCAG 2.2 AA)
 

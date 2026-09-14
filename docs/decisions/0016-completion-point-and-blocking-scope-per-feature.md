@@ -1,6 +1,6 @@
 # ADR-0016: ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-14
 - 関連: ADR-0014 (Action 層と Transition。本 ADR はその上で「どこまで待つか」「何を止めるか」を決める)、ADR-0015 (二重発火の検証)
 

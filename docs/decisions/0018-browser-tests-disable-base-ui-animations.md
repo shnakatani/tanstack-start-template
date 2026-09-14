@@ -1,6 +1,6 @@
 # ADR-0018: ブラウザテストは Base UI の animation を無効にして走らせ、animate-out の窓を踏むテストだけ戻す
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-14
 - 関連: ADR-0013 (待機は vitest の retry API に委ねる)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0017 (a11y 検査の対象)
 
