@@ -1,0 +1,40 @@
+import { actionDisabledAppearance } from "@/components/action/button";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import type { SavedNoteRow } from "@/features/notes/note-rows";
+
+import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
+
+/** 一覧の操作セルに置く削除トリガー。detached trigger で、Root はページが 1 つ描く。 */
+export function NoteDeleteTrigger({ row }: { row: SavedNoteRow }) {
+  const { note, isDeleting } = row;
+  return (
+    <>
+      {/* 削除中は行から可視の手掛かりが半透明しか出ないので、読み上げ用のテキストを足す。
+          位置づけは保存中の行の「保存中」と同じ (ADR-0017) */}
+      {isDeleting && <span className="sr-only">削除中</span>}
+      <AlertDialogTrigger
+        handle={noteDeleteDialogHandle}
+        payload={{ id: note.id, name: note.title }}
+        render={
+          <Button
+            variant="destructive"
+            size="sm"
+            focusableWhenDisabled
+            className={actionDisabledAppearance}
+          />
+        }
+        // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
+        // 含めることで WCAG 2.5.3 (Label in Name) も満たす
+        aria-label={`${note.title}を削除`}
+        // 止めるのは削除中の行だけ (ADR-0016「ブロック範囲」)。render 側の
+        // focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
+        // native disabled でフォーカスが body へ落ちるのを防ぐ
+        // (Trigger の props 型は受けず Button primitive が受ける)
+        disabled={isDeleting}
+      >
+        削除
+      </AlertDialogTrigger>
+    </>
+  );
+}

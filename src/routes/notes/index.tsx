@@ -21,9 +21,9 @@ import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
-import { noteColumns } from "./-components/note-columns";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
-import { noteDeleteDialogHandle } from "./-components/note-delete-dialog";
+import { noteColumns } from "./-lib/note-columns";
+import { noteDeleteDialogHandle } from "./-lib/note-delete-dialog-handle";
 
 const PAGE_TITLE = "メモ一覧";
 

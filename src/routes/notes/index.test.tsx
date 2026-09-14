@@ -29,7 +29,6 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
 
-import { noteColumns } from "./-components/note-columns";
 import {
   bodyTextbox,
   NOTE_CREATE_TRIGGER_LABEL,
@@ -37,6 +36,7 @@ import {
   saveButton,
   titleTextbox,
 } from "./-components/note-create-dialog.test-helpers";
+import { noteColumns } from "./-lib/note-columns";
 import { loadNotesPageData, Route } from "./index";
 
 const NotesPage = Route.options.component!;
