@@ -16,6 +16,7 @@ paths:
 | `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される            |
 
 - `-components/` 内部の import は相対パスで書く
+- 一覧テーブルは `src/components/data-table.tsx` の `DataTable` に列定義と data を渡す。列定義は `createColumnHelper` で書き、画面固有なら `routes/<path>/-components/<画面>-columns.tsx`、横断なら `src/features/<domain>/` に置く (ADR-0019)
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
 - 公式の詳細は TanStack の intent skill (`@tanstack/router-plugin` / `@tanstack/router-core`) を load して確認する
