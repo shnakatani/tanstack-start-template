@@ -163,7 +163,7 @@ function NotesPage() {
 
       <NoteCreateDialog />
 
-      {/* Root は 1 handle につき 1 つ。trigger は列定義側にあり、同じ handle で結ぶ */}
+      {/* Root は 1 handle につき 1 つ。trigger は `NoteActionsCell` にあり、同じ handle で結ぶ */}
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}
         entityLabel={NOTE_ENTITY_LABEL}

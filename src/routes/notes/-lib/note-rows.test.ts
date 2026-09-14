@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { getNoteRowId, noteInputOf, toNoteRows } from "./note-rows";
-import { NOTE, OTHER_NOTE } from "./note.test-helpers";
+import { NOTE, OTHER_NOTE } from "./note-rows.test-helpers";
 
 const CREATING = { submittedAt: 1_700_000_000_000, variables: { title: "新しいメモ", body: "" } };
 
