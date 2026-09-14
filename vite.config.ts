@@ -324,7 +324,9 @@ export default defineConfig({
     devtools(),
     tailwindcss(),
     tanstackStart({
-      router: { routeFileIgnorePattern: "\\.test\\.tsx?$" },
+      // テストとテスト専用ヘルパーを route ファイル扱いから外す。外さないと generator が
+      // 「Route を export していない」と毎ビルド警告する (directory-structure.md「テストとスクリプトの配置」)
+      router: { routeFileIgnorePattern: "\\.test(-helpers)?\\.tsx?$" },
       importProtection: {
         client: {
           // better-sqlite3 は native binding (node-gyp) を持ち、client bundle に含めると

@@ -13,6 +13,7 @@ import {
   UNRENDERABLE_FIELD_ERROR_MESSAGE,
 } from "@/components/form-fields";
 import { useAppForm } from "@/hooks/use-app-form";
+import type { Screen } from "@/test/page-helpers";
 
 const nameSchema = v.pipe(v.string(), v.trim(), v.minLength(1, "名前を入力してください"));
 
@@ -515,7 +516,7 @@ describe("FormNumberField", () => {
     return userEvent.keyboard(keys);
   }
 
-  function numberInput(screen: Awaited<ReturnType<typeof render>>): HTMLInputElement {
+  function numberInput(screen: Screen): HTMLInputElement {
     const element = screen.getByRole("textbox", { name: "並び順" }).element();
     expect.assert(element instanceof HTMLInputElement, "並び順の textbox が input ではない");
     return element;

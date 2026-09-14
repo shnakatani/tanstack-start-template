@@ -18,8 +18,6 @@ type ActionButtonShellProps = Omit<
 > & {
   isPending: boolean;
   children: ReactNode;
-  /** pending 中の status の accessible name */
-  pendingLabel?: string;
 };
 
 /**
@@ -31,19 +29,19 @@ type ActionButtonShellProps = Omit<
  *   useTransition / useFormStatus が示す `disabled={pending}` の形)。React はユーザーイベントごとに
  *   次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、ref や閉包のフラグは持たない
  *   (ADR-0014「二重発火は state だけで塞ぐ」、検証方法は ADR-0015)
- * - accessible name は `aria-labelledby` で children に固定する。status の文言を子に置くと
+ * - accessible name は `aria-labelledby` で children に固定する。pending の文言を子に置くと
  *   name from content で「処理中保存」のように名前が変わり、AT の読み上げとテストの
  *   `exact: true` が揺れる。`aria-label` を渡した部品はそちらが名前になる
  * - 名前の与え方は children か `aria-label` に限る。`aria-labelledby` は内部で使うため prop から
  *   外してある (受け付けたまま `{...props}` の後で上書きすると、渡した側から見て黙って消える)
- * - 状態は registry の `Spinner` が持つ `role="status"` に `aria-label` を与えて伝える
- *   (`.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行の svg の例外)。
- *   button の子孫 role は AT が presentational として扱いうるので、要素自身にも `aria-busy` を付ける
+ * - 状態は要素自身の `aria-busy` + `aria-disabled` で持つ。`Spinner` は視覚専用 (`aria-hidden`)。
+ *   WAI-ARIA 1.2 §5.2.9 により button の子孫はユーザーエージェントが accessibility API に
+ *   露出すべきでないので、子の `role="status"` に頼らない。通知は feature 側が `announce()`
+ *   (ADR-0017) で出す
  */
 function ActionButtonShell({
   isPending,
   children,
-  pendingLabel = "処理中",
   "aria-label": ariaLabel,
   className,
   ...props
@@ -56,13 +54,13 @@ function ActionButtonShell({
       className={cn(actionDisabledAppearance, className)}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabel === undefined ? labelId : undefined}
-      // button の子孫 role は AT が presentational として扱ってよい (ARIA の Children Presentational)。
-      // 要素自身の状態として伝えるため aria-busy も付ける
+      // button の子孫はユーザーエージェントが accessibility API に露出すべきでない
+      // (WAI-ARIA 1.2 §5.2.9 Children Presentational)。状態は要素自身に付ける
       aria-busy={isPending}
       disabled={isPending}
       focusableWhenDisabled
     >
-      {isPending && <Spinner aria-label={pendingLabel} />}
+      {isPending && <Spinner aria-hidden />}
       <span id={labelId}>{children}</span>
     </Button>
   );

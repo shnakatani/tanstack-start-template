@@ -58,6 +58,8 @@ export default defineConfig({
         "src/routeTree.gen.ts",
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
+        "src/**/*.test-helpers.ts",
+        "src/**/*.test-helpers.tsx",
         "src/test/**",
         "src/**/*.d.ts",
       ],

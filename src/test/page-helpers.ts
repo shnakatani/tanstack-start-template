@@ -2,6 +2,9 @@ import { QueryClient, type QueryClientConfig } from "@tanstack/react-query";
 import { expect, vi } from "vite-plus/test";
 import type { render } from "vitest-browser-react";
 
+/** `render()` の戻り値。locator を取るヘルパーの引数型に使う。 */
+export type Screen = Awaited<ReturnType<typeof render>>;
+
 /**
  * テスト用の QueryClient。retry を切るのは、失敗ケースの検証が既定のリトライ回数だけ
  * 待たされてタイムアウトするため。`defaultOptions` は上書きさせず、queryCache のような
@@ -17,31 +20,25 @@ export function createTestQueryClient(config?: Omit<QueryClientConfig, "defaultO
 /**
  * ダイアログがまだ開いていることを検証する。
  *
- * close は同期的に `data-open` → `data-closed` を切り替えるが、animate-out (duration-100) の間も
- * Popup は DOM に残る。要素の存在だけを見ると「close 済みだがアニメーション窓の中」を
- * 「開いたまま」と誤判定するので、`data-open` を見る。
+ * close は同期的に `data-open` → `data-closed` を切り替えるが、Popup の unmount は次の描画で、
+ * animation を戻したテスト (ADR-0018) では animate-out の完了まで残る。要素の存在だけを見ると
+ * 「close 済みだがまだ DOM にある」を「開いたまま」と誤判定するので、`data-open` を見る。
  * Popup は `aria-hidden` 配下に入ることがあるため `includeHidden` で取る。
  */
-export function expectDialogOpen(
-  screen: Awaited<ReturnType<typeof render>>,
-  role: "dialog" | "alertdialog",
-) {
+export function expectDialogOpen(screen: Screen, role: "dialog" | "alertdialog") {
   expect(screen.getByRole(role, { includeHidden: true }).element().hasAttribute("data-open")).toBe(
     true,
   );
 }
 
 /** 指定テキストが表示されるまで待って検証する。 */
-export async function expectText(screen: Awaited<ReturnType<typeof render>>, text: string) {
+export async function expectText(screen: Screen, text: string) {
   await vi.waitFor(() => {
     expect(screen.getByText(text).query()).not.toBeNull();
   });
 }
 
-export async function expectEmptyTextboxes(
-  screen: Awaited<ReturnType<typeof render>>,
-  labels: string[],
-) {
+export async function expectEmptyTextboxes(screen: Screen, labels: string[]) {
   await vi.waitFor(() => {
     for (const label of labels) {
       const textbox = screen.getByRole("textbox", { name: label, exact: true }).element();

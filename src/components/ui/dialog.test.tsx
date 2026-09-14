@@ -15,7 +15,7 @@ import { waitForAnimations } from "@/test/wait-for-animations";
 /**
  * 共有 DialogContent の viewport 溢れ backstop 回帰テスト。
  *
- * ブラウザテストには `@tailwindcss/vite` が入り `src/test/browser-setup.ts` が
+ * ブラウザテストには `@tailwindcss/vite` が入り `src/test/browser-setup.tsx` が
  * `src/styles.css` を読むため、Tailwind のユーティリティクラスが実 CSS として解決される。
  * className の付与ではなく getBoundingClientRect / getComputedStyle による
  * 実挙動 (viewport 内収まり・スクロール到達) を検証する。

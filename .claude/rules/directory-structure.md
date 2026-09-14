@@ -22,12 +22,12 @@ paths:
 
 ## features と hooks と lib と server の境界
 
-| 配置先                   | 内容                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / server fn / 共有 UI) |
-| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義               |
-| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                               |
-| `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)            |
+| 配置先                   | 内容                                                                                               |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / mutation options / server fn / 共有 UI) |
+| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義                                  |
+| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                                                  |
+| `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)                               |
 
 - 画面そのもの (ページ本体) は route ファイルの named export に残す。ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く (ADR-0012)
 - `src/features/<domain>/` 内部の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)
@@ -39,6 +39,17 @@ paths:
 ## テストとスクリプトの配置
 
 `scripts/` 配下の分け方と実行 project は `testing.md`「テストの種別と置き場所」が持つ。
+
+テスト専用ヘルパーは 2 段に置く。2 つのテストで同じ locator を書き分けると、ラベル変更で片方だけ落ちる。
+
+| 対象                                         | 置き場所                                                                                                                                                                                     |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                                                                                  |
+| 特定の部品の locator                         | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下の部品は `-components/` に居る (ADR-0012) ので helper もそこに置き、route ファイル自身の helper は route ファイルの隣に置く |
+
+- `*.test-helpers.ts` は `vp test` の include に一致せず、coverage からも除外する (`vitest.config.ts`)
+- route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-components/` の中は `-` prefix で元から除外される
+- `*.test-helpers.ts` をアプリのコードから import しない。`src/test/` の実行時ヘルパー (`vite-plus/test` を読む) を引き込みうる。機械強制は無く、レビューで見る
 
 ## shadcn コンポーネント導入時のチェック
 

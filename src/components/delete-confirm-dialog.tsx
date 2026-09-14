@@ -29,11 +29,10 @@ interface DeleteConfirmDialogProps<TId> {
   /** 既定文言を差し替える場合に指定する (連鎖して消えるものを併記したいとき等)。name は payload の name */
   description?: (name: string) => string;
   /**
-   * 確定時の Action。mutation なら `useActionMutation` の `runAction` を渡し、成功時の close は
-   * mutation の `onSuccess` が再取得を await した後に `handle.close()` で行う (ADR-0014)。
-   * 成功時の close はこの部品に渡した `handle` と同じものを呼ぶ。別の handle を閉じても型は通り、
-   * 削除は走るが閉じないダイアログになる。
-   * 失敗時は閉じないので、開いたままリトライできる。
+   * 確定時の Action。閉じる時点は ADR-0016 の完了点で選ぶ。(a) なら handler が `handle.close()`
+   * してから mutation を起動する (`src/routes/notes/index.tsx` の `confirmDelete`)。(c) なら
+   * `onSuccess` で再取得を await した後に、この部品に渡した `handle` と同じものを閉じる。
+   * 失敗時の扱いは完了点で変わる ((a) は閉じた後に toast、(c) は開いたままリトライ)。
    */
   onConfirm: (target: DeleteTarget<TId>) => Promise<void> | void;
 }
@@ -71,11 +70,7 @@ export function DeleteConfirmDialog<TId = string>({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>キャンセル</AlertDialogCancel>
-            <AlertDialogActionButton
-              variant="destructive"
-              pendingLabel="削除中"
-              action={() => confirm(payload)}
-            >
+            <AlertDialogActionButton variant="destructive" action={() => confirm(payload)}>
               削除
             </AlertDialogActionButton>
           </AlertDialogFooter>

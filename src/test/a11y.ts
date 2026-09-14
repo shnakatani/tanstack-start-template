@@ -19,7 +19,7 @@ export async function expectNoA11yViolations(container: Element): Promise<void> 
     rules: {
       // region は「ページ本体が landmark の中にあるか」を見る文書レベルの規則で、
       // コンポーネントや 1 ページを単体 render するテストは __root.tsx を通らないため
-      // 必ず違反になる。文書側の landmark (<main>) は root-document.test.tsx が押さえる
+      // 必ず違反になる。文書側の landmark (<main>) は root-document.test.ts が押さえる
       region: { enabled: false },
     },
   });

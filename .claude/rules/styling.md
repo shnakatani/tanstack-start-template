@@ -138,6 +138,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が一瞬点滅するちらつきの原因
 - skeleton の見た目はレイアウト模倣 (共有: `src/components/table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付与する (`pendingComponent` 内も同様)
 - 列数など実テーブルと合わせる値は、実テーブル側の定義を SSOT にして両方から参照する。別々に持つとロード完了時にレイアウトシフトが出る
-- ボタン内の送信中表示: `Spinner` (loading-buttons パターン。Skeleton にしない)
+- ボタン内の送信中表示: `Spinner` (loading-buttons パターン。Skeleton にしない)。視覚専用 (`aria-hidden`)。状態は `aria-busy` で持つ (ADR-0017)
+- `Spinner` を使う側は必ず `aria-hidden` を渡す。registry の `Spinner` は `role="status"` を持つが、button の子では露出されるとは限らない (WAI-ARIA 1.2 §5.2.9、ADR-0017)
 - データなし: `Empty` 系。メッセージ + 次のアクションへの導線をセットで示す
 - 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項で良い

@@ -5,6 +5,7 @@ import { render } from "vitest-browser-react";
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { dispatchNativeClick } from "@/test/native-click";
+import type { Screen } from "@/test/page-helpers";
 
 import { DeleteConfirmDialog, type DeleteTarget } from "./delete-confirm-dialog";
 
@@ -29,11 +30,10 @@ async function renderWithTrigger(props: DialogProps, target: DeleteTarget = TARG
   return { screen, handle };
 }
 
-async function openDialog(screen: Awaited<ReturnType<typeof render>>): Promise<void> {
+async function openDialog(screen: Screen): Promise<void> {
   await screen.getByRole("button", { name: "開く" }).click();
-  await vi.waitFor(() => {
-    expect(screen.getByRole("button", { name: "削除" }).query()).not.toBeNull();
-  });
+  // 操作の結果として現れる要素は findElement() で待つ (ADR-0013)
+  await screen.getByRole("button", { name: "削除" }).findElement();
 }
 
 describe("DeleteConfirmDialog", () => {
@@ -72,9 +72,7 @@ describe("DeleteConfirmDialog", () => {
     await openDialog(screen);
     dispatchNativeClick(screen.getByRole("button", { name: "キャンセル" }).element());
 
-    await vi.waitFor(() => {
-      expect(screen.getByRole("button", { name: "削除" }).query()).toBeNull();
-    });
+    await expect.element(screen.getByRole("button", { name: "削除" })).not.toBeInTheDocument();
   });
 
   it("entityLabel と payload の name が表示に反映される", async () => {
@@ -136,18 +134,16 @@ describe("DeleteConfirmDialog", () => {
     await openDialog(screen);
 
     // バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
-    screen.getByRole("button", { name: "削除", exact: true }).element().focus();
+    const confirmButton = screen.getByRole("button", { name: "削除", exact: true });
+    confirmButton.element().focus();
     await userEvent.keyboard("{Enter}");
 
-    await expect.element(screen.getByRole("status", { name: "削除中" })).toBeInTheDocument();
-    await expect
-      .element(screen.getByRole("button", { name: "削除", exact: true }))
-      .toHaveAttribute("aria-disabled", "true");
+    // pending は要素自身の aria-busy / aria-disabled で持つ (ADR-0017)
+    await expect.element(confirmButton).toHaveAttribute("aria-busy", "true");
+    await expect.element(confirmButton).toHaveAttribute("aria-disabled", "true");
 
     pending.resolve(undefined);
-    await vi.waitFor(() => {
-      expect(screen.getByRole("status", { name: "削除中" }).query()).toBeNull();
-    });
+    await expect.element(confirmButton).not.toHaveAttribute("aria-busy", "true");
   });
 
   // 撤去した deleteConfirmMutationProps の閉包フラグの後継。dedupe は Action 層が持つが、

@@ -65,22 +65,27 @@ function handleRetry() {
 
 ## ユーザー操作による更新は Transition の中で行う
 
-lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014。
+lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014、完了点とブロック範囲の軸は ADR-0016。
 
-| 更新の種類                        | 書き方                                                                                                                                                                                                |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                                            |
-| mutation 成功後のダイアログ close | `onSuccess` に `src/lib/close-after-invalidate.ts` の `closeAfterInvalidate(queryClient, queryKey, handle)` を渡す (`await invalidateQueries(...)` の後に `handle.close()` する順序を固定した helper) |
-| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                                   |
-| Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                           |
-| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                     |
+| 更新の種類                        | 書き方                                                                                                                                                                                                                                                   |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                                                                                               |
+| mutation 成功後のダイアログ close | 閉じる時点は ADR-0016 の完了点の軸で選び、理由を実装近傍に書く (無いと形だけ写される)。(a) Action 内で `close()` + `void runAction()` / (b) `onSuccess` 先頭で `close()` し再取得の Promise を返す / (c) `onSuccess` で再取得を await した後に `close()` |
+| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                                                                                      |
+| Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                                                                              |
+| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                                                                        |
 
-- pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)
+- pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)。項目の busy と楽観表示、完了点 (b) の close 阻止の判定は例外で、次の項目のとおり mutation の pending から取る
 - mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` (`toastMutationError`) は型で必須。`runAction` が `mutateAsync` の reject を吸収するため、`onError` が無いと失敗が無通知になる
 - Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る
-- `onSuccess` の再取得を await せずに close すると、ダイアログが消えた後の古い一覧に pending 表示が付かない
+- `onSuccess` は再取得の Promise を返す (mutation の pending が再取得完了まで続く)。再取得完了前に close するときは、対象の項目 (行など) にその pending から busy 表現を付ける。付けないと古い一覧が pending 表示なしで見える (ADR-0016)
+- 止めるのは対象の項目だけにする。画面全体を止めると、無関係な操作まで待たされる。並行操作が整合を壊すときだけ全体を止め、理由を実装近傍に書く (ADR-0016)
 - Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる
-- `useOptimistic` に `useQuery` / `useSuspenseQuery` の `data` と派生値を渡さない。query 由来の楽観表示は `mutation.isPending && mutation.variables === id` で行う (`isPending` はゲートで pending 表示ではない。ADR-0014「楽観表示の使い分け」)
+- `useOptimistic` に `useQuery` / `useSuspenseQuery` の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (ADR-0014「楽観表示の使い分け」)
+- mutation の pending の読み方: 1 件ずつなら `mutation.isPending && mutation.variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState`。`useMutation` 1 つの `variables` は 2 件目で移る (ADR-0016)
+- `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける (既定は前方一致)。`variables` は `unknown` なので `parseEach` (`src/lib/parse-each.ts`) でスキーマへ絞り、外れ値は warn に残して除く (ADR-0016)
+- `useMutationState` の `select` の中で throw しない。描画中に走るので一覧ごと Error Boundary へ落ちる (ADR-0016)
+- 操作の開始の announce は mutation の `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`)。lint 検出なし。Action を書くときのレビュー観点に含める (ADR-0017)
 - 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない。pending は次のユーザーイベントより前に描画される (ADR-0014)
 
 ## 手動メモ化の増減
@@ -160,17 +165,18 @@ lint は custom `<Button>` の中身を見ないため機械強制がない。�
 迷ったら与える側に倒す。
 与えない判断をしたら理由コメントを実装近傍に残す。
 
-| 対象                                                  | 対応                                                                                                                          |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| テキストを持たない操作要素 (ボタン / リンク / トグル) | 要素に `aria-label`                                                                                                           |
-| 状態や属性を伝える唯一の手段になっているアイコン      | `aria-hidden` + 隣接の `sr-only` テキスト                                                                                     |
-| 隣接テキストが同じ意味を持つアイコン                  | `aria-hidden`。名前を足さない                                                                                                 |
-| 可視テキストが既に accessible name の要素             | 何も足さない (次項)                                                                                                           |
-| name from author のロールを持つ要素                   | 可視テキストがあっても `aria-label` (次項)                                                                                    |
-| ローディング等の状態表示                              | `<output>` (暗黙ロール status) + `aria-label`。タグを差し替えられない要素 (svg 等) は理由コメント付きの抑制で `role="status"` |
+| 対象                                                  | 対応                                                                                                                                                                                                                           |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| テキストを持たない操作要素 (ボタン / リンク / トグル) | 要素に `aria-label`                                                                                                                                                                                                            |
+| 状態や属性を伝える唯一の手段になっているアイコン      | `aria-hidden` + 隣接の `sr-only` テキスト                                                                                                                                                                                      |
+| 隣接テキストが同じ意味を持つアイコン                  | `aria-hidden`。名前を足さない                                                                                                                                                                                                  |
+| 可視テキストが既に accessible name の要素             | 何も足さない (次項)                                                                                                                                                                                                            |
+| name from author のロールを持つ要素                   | 可視テキストがあっても `aria-label` (次項)                                                                                                                                                                                     |
+| ローディング等の状態表示                              | 通知は `src/lib/live-announcer.ts` の `announce()` (region は `role="log"` + `aria-live` で常時 mount)。項目に `<output>` / `role="status"` を足さない。例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0017) |
 
 - 「隣接テキストが同じ意味」と言えるのは、そのテキストが実際に読み上げられるときに限る
-- `role="status"` は同一画面に複数あり得る。テストは accessible name で特定する
+- live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか、環境で挙動が揺れる (ADR-0017)
+- pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0017)
 - メニュー内の全項目を包む単一の `DropdownMenuGroup` には名前を与えない。base-ui の `MenuRoot` が popup に `aria-labelledby` を付けるため、メニュー自体がトリガー由来の名前を持つ
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 

@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { actionDisabledAppearance } from "@/components/action/button";
@@ -19,13 +19,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { removeNote } from "@/features/notes/functions";
+import { parseCreatingRows } from "@/features/notes/creating-rows";
+import { parseDeletingIds } from "@/features/notes/deleting-ids";
+import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
-import { closeAfterInvalidate } from "@/lib/close-after-invalidate";
 import { formatDateTime } from "@/lib/format-date-time";
+import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
@@ -72,6 +74,15 @@ function NotesPagePending() {
   );
 }
 
+/**
+ * pending な行 (保存中・削除中) の見え方。半透明で pending を伝える (ADR-0016) が、
+ * `opacity-50` は本文を 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る
+ * (`index.test.tsx` の楽観行の a11y 検査が axe で実測)。比率を満たす範囲で薄くする。
+ * 保存中・削除中の 2 箇所で同じ文字列だが、cva variant にすると registry の `TableRow` に
+ * variant を持たせることになる (ADR-0006 の対象) ので、消費側の定数で持つ。
+ */
+const busyRowAppearance = "opacity-60";
+
 /** 削除確認ダイアログの detached trigger を Root へ結ぶ handle。Root は 1 つだけ描画する。 */
 const noteDeleteDialogHandle = createAlertDialogHandle<DeleteTarget<Note["id"]>>();
 
@@ -80,18 +91,60 @@ function NotesPage() {
   const queryClient = useQueryClient();
 
   const deleteMutation = useActionMutation({
-    // id の検証は removeNote 側の validator (noteIdSchema) が持つ
-    mutationFn: (id: Note["id"]) => removeNote({ data: { id } }),
+    ...removeNoteMutation,
+    // 開始の通知の置き場 (ADR-0017)。この画面は variables 方式 (ADR-0016) なのでキャッシュは触らない。
+    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する
+    onMutate: (target) => {
+      announce(`『${target.name}』を削除しています`);
+    },
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
-    // 再取得を待ってから閉じる順序は closeAfterInvalidate が固定する
-    onSuccess: closeAfterInvalidate(
-      queryClient,
-      notesQueryOptions.queryKey,
-      noteDeleteDialogHandle,
-    ),
+    // 再取得を await して pending を再取得完了まで保つ (ADR-0016)。閉じるのは確定時 (完了点 (a))
+    onSuccess: async (_data, target) => {
+      await queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
+      // 行の消失は読み上げに出ないので、完了を通知する (ADR-0017)
+      announce(`『${target.name}』を削除しました`);
+    },
     // server の raw message は開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
   });
+
+  // pending な削除の対象 id。mutation ごとに追うので、同時削除でも各行が busy になる (ADR-0016)。
+  // `mutation.state.variables` は `unknown` なので、行と突き合わせる前に削除対象へ絞って
+  // id を取り出す (形が違う値は parseDeletingIds が warn を残して除外する)
+  const pendingDeleteVariables = useMutationState({
+    filters: { ...noteMutationFilters.remove, status: "pending" },
+    select: (mutation) => mutation.state.variables,
+  });
+  const deletingIds = parseDeletingIds(pendingDeleteVariables);
+
+  // 完了点 (b) の追加は応答でダイアログが閉じるので、再取得完了までの pending は
+  // 一覧の先頭に出すこの行だけが伝える (ADR-0016)。mutation はダイアログ側にあるため
+  // mutationKey 経由で読む。submittedAt は同時に走る追加を React の key で区別するのに使う
+  const pendingCreateStates = useMutationState({
+    filters: { ...noteMutationFilters.create, status: "pending" },
+    select: (mutation) => ({
+      variables: mutation.state.variables,
+      submittedAt: mutation.state.submittedAt,
+    }),
+  });
+  const creatingRows = parseCreatingRows(pendingCreateStates);
+
+  // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
+  // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
+  function confirmDelete(target: DeleteTarget<Note["id"]>) {
+    const alreadyDeleting =
+      queryClient.isMutating({
+        ...noteMutationFilters.remove,
+        // variables は `unknown` なので、比較する前に描画側と同じ経路で id へ絞る
+        predicate: (mutation) => parseDeletingIds([mutation.state.variables]).includes(target.id),
+      }) > 0;
+    if (alreadyDeleting) {
+      return;
+    }
+    noteDeleteDialogHandle.close();
+    // reject は runAction が吸収し onError が toast に出す。ここでは待たない
+    void deleteMutation.runAction(target);
+  }
 
   return (
     <div className="flex min-h-full flex-col">
@@ -105,7 +158,7 @@ function NotesPage() {
       />
 
       <div className="flex flex-1 flex-col p-4">
-        {notesQuery.data.length === 0 ? (
+        {notesQuery.data.length === 0 && creatingRows.length === 0 ? (
           <Empty>
             <EmptyHeader>
               <EmptyTitle>{ENTITY_LABEL}が登録されていません</EmptyTitle>
@@ -122,16 +175,29 @@ function NotesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {creatingRows.map(({ submittedAt, variables }) => (
+                // 保存中の行。一覧は createdAt の降順なので先頭に出し、再取得完了で実データに
+                // 置き換わる (ADR-0016)。id をまだ持たないので削除トリガーは出さない
+                <TableRow key={submittedAt} aria-busy className={busyRowAppearance}>
+                  <TableCell>{variables.title}</TableCell>
+                  <TableCell className="max-w-xs truncate">{variables.body}</TableCell>
+                  {/* 作成日時はまだ無いので、その位置で保存中を伝える。行の aria-busy が true の
+                      間は支援技術が内容の変化を無視してよい (WAI-ARIA 1.2 aria-busy) ので、この
+                      テキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0017) */}
+                  <TableCell>保存中</TableCell>
+                  <TableCell />
+                </TableRow>
+              ))}
               {notesQuery.data.map((note) => {
-                // 楽観表示は query 側 (mutation.variables) で行う。useOptimistic は query の data を
-                // base にできない (ADR-0014「楽観表示の使い分け」)。isPending はこの表示のゲートで、
-                // pending 表示 (確認ボタンの Transition) とは別物
-                const isDeleting = deleteMutation.isPending && deleteMutation.variables === note.id;
+                // 楽観表示は query 側 (pending な mutation の variables) で行う。useOptimistic は
+                // query の data を base にできない (ADR-0014「楽観表示の使い分け」)。確定で
+                // ダイアログを閉じるので、再取得完了までの pending はこの行の表現だけが伝える
+                const isDeleting = deletingIds.includes(note.id);
                 return (
                   <TableRow
                     key={note.id}
                     aria-busy={isDeleting}
-                    className={isDeleting ? "opacity-50" : undefined}
+                    className={isDeleting ? busyRowAppearance : undefined}
                   >
                     <TableCell>{note.title}</TableCell>
                     <TableCell className="max-w-xs truncate">{note.body}</TableCell>
@@ -139,6 +205,9 @@ function NotesPage() {
                         整形は SSR と hydration で文字列が食い違う (format-date-time.ts) */}
                     <TableCell>{formatDateTime(note.createdAt)}</TableCell>
                     <TableCell>
+                      {/* 削除中は行から可視の手掛かりが半透明しか出ないので、読み上げ用の
+                          テキストを足す。位置づけは楽観行の「保存中」と同じ (ADR-0017) */}
+                      {isDeleting && <span className="sr-only">削除中</span>}
                       <AlertDialogTrigger
                         handle={noteDeleteDialogHandle}
                         payload={{ id: note.id, name: note.title }}
@@ -153,14 +222,11 @@ function NotesPage() {
                         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
                         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
                         aria-label={`${note.title}を削除`}
-                        // 確認ダイアログは pending 中も Cancel / Escape で閉じられる (Base UI が
-                        // 無効化するのは outsidePress だけ)。閉じた後に別行のトリガーが生きていると、
-                        // 先行削除の onSuccess が同じ handle を close() して後続のダイアログを未確定の
-                        // まま閉じる。render 側の focusableWhenDisabled は Cancel 後に Base UI が
-                        // トリガーへフォーカスを返すとき、native disabled でフォーカスが body へ
-                        // 落ちるのを防ぐ (Trigger の props 型は受けず Button primitive が受ける)。
-                        // この isPending は楽観表示と同じゲートで、pending 表示の二重化ではない
-                        disabled={deleteMutation.isPending}
+                        // 止めるのは削除中の行だけ (ADR-0016「ブロック範囲」)。render 側の
+                        // focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
+                        // native disabled でフォーカスが body へ落ちるのを防ぐ
+                        // (Trigger の props 型は受けず Button primitive が受ける)
+                        disabled={isDeleting}
                       >
                         削除
                       </AlertDialogTrigger>
@@ -178,7 +244,7 @@ function NotesPage() {
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}
         entityLabel={ENTITY_LABEL}
-        onConfirm={(target) => deleteMutation.runAction(target.id)}
+        onConfirm={confirmDelete}
       />
     </div>
   );

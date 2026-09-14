@@ -6,7 +6,7 @@
  * Playwright の enabled 判定で actionability check がタイムアウトする一方、
  * 実 DOM の pointer-events は生きておりクリックできる。
  *
- * Checkbox はこの helper の対象ではない。`src/test/browser-setup.ts` が styles.css を読み
+ * Checkbox はこの helper の対象ではない。`src/test/browser-setup.tsx` が styles.css を読み
  * Tailwind が実 CSS に解決されるため 16x16 で描画され、本体・label テキストのどちらでも
  * Playwright の `.click()` が通る (2026-07-31 実測。いずれも onCheckedChange は 1 回)。
  * Checkbox に対する新規テストは `.click()` を使うこと。

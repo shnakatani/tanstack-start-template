@@ -1,5 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
@@ -7,12 +8,15 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import { deferMock } from "@/test/defer-mock";
+import { readAnnouncements } from "@/test/live-announcer";
 import { dispatchNativeClick } from "@/test/native-click";
 import {
   createTestQueryClient,
   expectDialogOpen,
   expectEmptyTextboxes,
   expectText,
+  type Screen,
 } from "@/test/page-helpers";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
@@ -26,8 +30,13 @@ vi.mock("@/features/notes/functions", () => ({
 const { createNote } = await import("@/features/notes/functions");
 
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
-
-const OPEN_BUTTON_LABEL = "＋ メモを追加";
+import {
+  bodyTextbox,
+  NOTE_CREATE_TRIGGER_LABEL,
+  openNoteCreateDialog,
+  saveButton,
+  titleTextbox,
+} from "./note-create-dialog.test-helpers";
 
 /**
  * Root (NoteCreateDialog) と detached trigger を handle で結ぶ本番と同じ配線で描画する。
@@ -40,7 +49,7 @@ async function renderDialog() {
   const screen = await render(
     <QueryClientProvider client={queryClient}>
       <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
-        {OPEN_BUTTON_LABEL}
+        {NOTE_CREATE_TRIGGER_LABEL}
       </DialogTrigger>
       <NoteCreateDialog />
       <Toaster />
@@ -49,26 +58,9 @@ async function renderDialog() {
   return { screen, invalidateSpy };
 }
 
-type Screen = Awaited<ReturnType<typeof renderDialog>>["screen"];
-
-function titleTextbox(screen: Screen) {
-  return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true });
-}
-
-function bodyTextbox(screen: Screen) {
-  return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.body, exact: true });
-}
-
-async function openDialog(screen: Screen) {
-  await screen.getByRole("button", { name: OPEN_BUTTON_LABEL }).click();
-  await vi.waitFor(() => {
-    expect(titleTextbox(screen).query()).not.toBeNull();
-  });
-}
-
 function clickSave(screen: Screen) {
   // ダイアログ内のボタンは inert バックドロップが pointer event を横取りするため native click
-  dispatchNativeClick(screen.getByRole("button", { name: "保存", exact: true }).element());
+  dispatchNativeClick(saveButton(screen).element());
 }
 
 describe("NoteCreateDialog", () => {
@@ -87,7 +79,7 @@ describe("NoteCreateDialog", () => {
   it("トリガーを押すとタイトルと本文の入力が現れる", async () => {
     const { screen } = await renderDialog();
 
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
 
     expect(bodyTextbox(screen).query()).not.toBeNull();
   });
@@ -97,7 +89,7 @@ describe("NoteCreateDialog", () => {
     // 途中に tabbable な要素が挟まると先頭入力から外れるため、位置を固定する
     const { screen } = await renderDialog();
 
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
 
     await vi.waitFor(() => {
       expect(document.activeElement).toBe(titleTextbox(screen).element());
@@ -106,7 +98,7 @@ describe("NoteCreateDialog", () => {
 
   it("空のまま保存すると日本語の必須メッセージが出て createNote を呼ばない", async () => {
     const { screen } = await renderDialog();
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
 
     clickSave(screen);
 
@@ -116,7 +108,7 @@ describe("NoteCreateDialog", () => {
 
   it("上限超過のタイトルで保存すると文字数上限のメッセージが出て createNote を呼ばない", async () => {
     const { screen } = await renderDialog();
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("あ".repeat(NOTE_TITLE_MAX_LENGTH + 1));
 
     clickSave(screen);
@@ -130,7 +122,7 @@ describe("NoteCreateDialog", () => {
 
   it("初回 submit 前はタイトルを空にしてもエラーが出ない (dynamic validation)", async () => {
     const { screen } = await renderDialog();
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
 
     await titleTextbox(screen).fill("あ");
     await titleTextbox(screen).fill("");
@@ -141,7 +133,7 @@ describe("NoteCreateDialog", () => {
   it("入力して保存すると createNote が前後空白を除いた値で呼ばれる", async () => {
     vi.mocked(createNote).mockResolvedValue({ id: 1 });
     const { screen } = await renderDialog();
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("  買い物リスト  ");
     await bodyTextbox(screen).fill("牛乳とパン");
 
@@ -157,14 +149,12 @@ describe("NoteCreateDialog", () => {
   it("保存に成功すると notes クエリを invalidate してダイアログを閉じる", async () => {
     vi.mocked(createNote).mockResolvedValue({ id: 1 });
     const { screen, invalidateSpy } = await renderDialog();
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
     clickSave(screen);
 
-    await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
-    });
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
   });
@@ -172,29 +162,25 @@ describe("NoteCreateDialog", () => {
   it("保存に成功して再度開くとフォームが初期値に戻る", async () => {
     vi.mocked(createNote).mockResolvedValue({ id: 1 });
     const { screen } = await renderDialog();
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
     await bodyTextbox(screen).fill("牛乳とパン");
 
     clickSave(screen);
-    await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
-    });
-    await openDialog(screen);
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+    await openNoteCreateDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
   });
 
   it("キャンセルで閉じて再度開くとフォームが初期値に戻る", async () => {
     const { screen } = await renderDialog();
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("一時入力");
 
     dispatchNativeClick(screen.getByRole("button", { name: "キャンセル", exact: true }).element());
-    await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
-    });
-    await openDialog(screen);
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+    await openNoteCreateDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
   });
@@ -203,7 +189,7 @@ describe("NoteCreateDialog", () => {
     const rawMessage = "ノートを作成しましたが id を取得できませんでした";
     vi.mocked(createNote).mockRejectedValue(new Error(rawMessage));
     const { screen } = await renderDialog();
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
     clickSave(screen);
@@ -214,29 +200,92 @@ describe("NoteCreateDialog", () => {
     expect(titleTextbox(screen).query()).not.toBeNull();
   });
 
-  it("保存中は保存ボタンが pending になり、再取得が終わるまでダイアログが開いたまま", async () => {
-    vi.mocked(createNote).mockResolvedValue({ id: 1 });
+  it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
+    // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0016)。
+    // 即 resolve だと応答前の窓が観測できない (testing.md「遅延 rejection で中間状態を観測」)
     const invalidate = Promise.withResolvers<undefined>();
+    const create = deferMock(createNote);
     const { screen, invalidateSpy } = await renderDialog();
     // renderDialog が spy を張った queryClient と同じインスタンスを Provider が持つので、
     // onSuccess の invalidateQueries にこの差し替えが効く
     invalidateSpy.mockImplementation(() => invalidate.promise);
-    await openDialog(screen);
+    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
     clickSave(screen);
 
-    // createNote は即 resolve するが、invalidateQueries が未決着のあいだは閉じない
-    await expect.element(screen.getByRole("status", { name: "保存中" })).toBeInTheDocument();
-    await vi.waitFor(() => {
-      expect(vi.mocked(createNote)).toHaveBeenCalledOnce();
-    });
+    // 応答前は pending 表示のまま開いている
+    await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
     expectDialogOpen(screen, "dialog");
 
+    create.resolve({ id: 1 });
+
+    // 応答で閉じる。invalidateQueries は未決着
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+    // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
+    expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
+
     invalidate.resolve(undefined);
+  });
+
+  it("保存の開始と完了を announcer が通知する", async () => {
+    // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える (ADR-0017)
+    const create = deferMock(createNote);
+    const { screen } = await renderDialog();
+    await openNoteCreateDialog(screen);
+    await titleTextbox(screen).fill("買い物リスト");
+
+    clickSave(screen);
 
     await vi.waitFor(() => {
-      expect(titleTextbox(screen).query()).toBeNull();
+      expect(readAnnouncements()).toContain("メモを保存しています");
     });
+    // 完了は createNote の決着より前に出さない
+    expect(readAnnouncements()).not.toContain("保存しました");
+
+    create.resolve({ id: 1 });
+
+    await vi.waitFor(() => {
+      expect(readAnnouncements()).toContain("保存しました");
+    });
+  });
+
+  it("検証に失敗したときは開始の通知を出さない", async () => {
+    // 開始の announce は検証を通った後に置く。空のまま押しても「保存しています」は出ない
+    const { screen } = await renderDialog();
+    await openNoteCreateDialog(screen);
+
+    clickSave(screen);
+
+    await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
+    expect(readAnnouncements()).toEqual([]);
+  });
+
+  it("保存の応答前はキャンセルできず Escape でも閉じない", async () => {
+    // handle を複数の対象で共有しないダイアログは、閉じる前に対象を比べられない。pending 中に
+    // 閉じて開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の
+    // 応答が届いた時点で新しい入力ごと閉じる。pending 中はユーザー起点の close を止める
+    // (ADR-0016 Decision の完了点 (b) の行)
+    const create = deferMock(createNote);
+    const { screen } = await renderDialog();
+    await openNoteCreateDialog(screen);
+    await titleTextbox(screen).fill("買い物リスト");
+
+    clickSave(screen);
+    await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
+
+    // キャンセルは押せない。Escape は Base UI が閉じようとするのを onOpenChange で止める
+    await expect
+      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
+      .toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+
+    expectDialogOpen(screen, "dialog");
+    expect(titleTextbox(screen).query()).not.toBeNull();
+
+    create.resolve({ id: 1 });
+
+    // 応答 (imperative-action) での close は止めない
+    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
   });
 });

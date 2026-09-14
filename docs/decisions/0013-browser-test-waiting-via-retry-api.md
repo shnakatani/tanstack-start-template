@@ -2,7 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-09-11
-- 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)
+- Revised: 2026-09-14 (close 後に要素が消えたことの確認を `vi.waitFor` + `.query()` から `expect.element(...).not.toBeInTheDocument()` へ改めた。vitest の assertions ドキュメントが「無いこと」をこの matcher で示し、`vi.waitFor` は assertion で表せない条件の道具と位置づけているため)
+- 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)、ADR-0018 (Base UI の animation を無効にして走らせる。`waitForAnimations()` が要る場面は変わらない)
 
 ## Context
 
@@ -40,12 +41,12 @@ const inputGroup = findInputGroup(input.element());
 
 **要素の取得と状態の検証は vitest の retry API に委ね、待機を自前で組み立てない。**
 
-| 場面                                  | 使うもの                                             |
-| ------------------------------------- | ---------------------------------------------------- |
-| 操作の結果として現れる要素の生 DOM    | `await locator.findElement()`                        |
-| 操作後の属性・テキストの検証          | `await expect.element(locator).toHaveAttribute(...)` |
-| `render()` 直後、操作前の要素の生 DOM | `locator.element()`                                  |
-| close 後に要素が消えたことの確認      | `vi.waitFor` で `.query()` が null になるのを待つ    |
+| 場面                                  | 使うもの                                                |
+| ------------------------------------- | ------------------------------------------------------- |
+| 操作の結果として現れる要素の生 DOM    | `await locator.findElement()`                           |
+| 操作後の属性・テキストの検証          | `await expect.element(locator).toHaveAttribute(...)`    |
+| `render()` 直後、操作前の要素の生 DOM | `locator.element()`                                     |
+| close 後に要素が消えたことの確認      | `await expect.element(locator).not.toBeInTheDocument()` |
 
 `waitForAnimations()` は「アニメーションの完了を待つ」責務だけを持つ。mount を待つ役は `findElement()` が担うので、開く操作のあとは `findElement()` → `waitForAnimations()` → 実測の順に置く。逆順では、未 mount のあいだ `waitForAnimations()` が空振りし、アニメーション途中の値を測る。
 
@@ -63,5 +64,5 @@ const inputGroup = findInputGroup(input.element());
 - 生 DOM を取る箇所は「操作を挟んだか」で API が分かれる。判断を誤ってもテストは大半の実行で通るため、レビューで見る。lint で表現できる形は無い
 - 変化しないことの検証 (disabled な行がトグルしない等) は retry では強くならない。`expect.element` は条件を満たした時点で返るので、更新前に成功しうる。待つ対象がある検証へ言い換えられないかを先に考える
 - `expect.element` の matcher (`toHaveAttribute` / `toHaveTextContent`) を使う。`toHaveTextContent` は文字列で部分一致になるため、完全一致が要る箇所は正規表現を渡す
-- `vi.waitFor` は close 後の unmount 待ちなど、locator の matcher で表せない条件に残す。両方が混在するが、retry する形であることは変わらない
+- `vi.waitFor` は locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列の中身など) に残す。要素が消えたことは `expect.element` の `.not.toBeInTheDocument()` が表せる (`.not.toBeInTheDocument()` のときだけ Locator を `.query()` で引くため、無くても throw しない)。vitest の wait-for レシピは assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける
 - この決定はブラウザテストにだけ効く。unit project は DOM を持たず、`render` も locator も無い
