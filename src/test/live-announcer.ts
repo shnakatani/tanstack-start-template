@@ -1,4 +1,4 @@
-import { LIVE_REGION_IDS, type Politeness } from "@/lib/live-announcer";
+import { findLiveRegion, LIVE_REGION_IDS, type Politeness } from "@/lib/live-announcer";
 
 /**
  * `announce()` (ADR-0017) が live region に書き込んだ通知を読む。ノードは 7000ms 残るので、
@@ -14,11 +14,10 @@ import { LIVE_REGION_IDS, type Politeness } from "@/lib/live-announcer";
  * (`.claude/rules/testing.md`「assertion helper と型ナローイング」)。
  */
 export function readAnnouncements(politeness: Politeness = "polite"): string[] {
-  const id = LIVE_REGION_IDS[politeness];
-  const region = document.getElementById(id);
+  const region = findLiveRegion(politeness);
   if (region === null) {
     throw new Error(
-      `live region (${id}) が無い: browser-setup.tsx が <LiveRegions /> を描いていない`,
+      `live region (${LIVE_REGION_IDS[politeness]}) が無い: browser-setup.tsx が <LiveRegions /> を描いていない`,
     );
   }
   // `announce()` は 1 件につき div を 1 つ足すので、子要素の単位が通知の単位になる

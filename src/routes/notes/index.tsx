@@ -21,8 +21,7 @@ import {
 } from "@/components/ui/table";
 import { parseCreatingRows } from "@/features/notes/creating-rows";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
-import { removeNote } from "@/features/notes/functions";
-import { noteMutationKeys } from "@/features/notes/mutations";
+import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
@@ -92,11 +91,12 @@ function NotesPage() {
   const queryClient = useQueryClient();
 
   const deleteMutation = useActionMutation({
-    mutationKey: noteMutationKeys.remove,
-    // variables に name も載せるのは完了の通知で対象を名指しするため (同時削除で 2 件の
-    // 「削除しました」が並ぶと区別できない)。id の検証は removeNote 側の validator
-    // (noteIdSchema) が持つ
-    mutationFn: (target: DeleteTarget<Note["id"]>) => removeNote({ data: { id: target.id } }),
+    ...removeNoteMutation,
+    // 開始の通知の置き場 (ADR-0017)。この画面は variables 方式 (ADR-0016) なのでキャッシュは触らない。
+    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する
+    onMutate: (target) => {
+      announce(`『${target.name}』を削除しています`);
+    },
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
     // 再取得を await して pending を再取得完了まで保つ (ADR-0016)。閉じるのは確定時 (完了点 (a))
     onSuccess: async (_data, target) => {
@@ -112,8 +112,7 @@ function NotesPage() {
   // `mutation.state.variables` は `unknown` なので、行と突き合わせる前に削除対象へ絞って
   // id を取り出す (形が違う値は parseDeletingIds が warn を残して除外する)
   const pendingDeleteVariables = useMutationState({
-    // exact を付けないと mutationKey は前方一致で当たる (query-core の matchMutation)
-    filters: { mutationKey: noteMutationKeys.remove, exact: true, status: "pending" },
+    filters: { ...noteMutationFilters.remove, status: "pending" },
     select: (mutation) => mutation.state.variables,
   });
   const deletingIds = parseDeletingIds(pendingDeleteVariables);
@@ -122,8 +121,7 @@ function NotesPage() {
   // 一覧の先頭に出すこの行だけが伝える (ADR-0016)。mutation はダイアログ側にあるため
   // mutationKey 経由で読む。submittedAt は同時に走る追加を React の key で区別するのに使う
   const pendingCreateStates = useMutationState({
-    // exact を付けないと mutationKey は前方一致で当たる (query-core の matchMutation)
-    filters: { mutationKey: noteMutationKeys.create, exact: true, status: "pending" },
+    filters: { ...noteMutationFilters.create, status: "pending" },
     select: (mutation) => ({
       variables: mutation.state.variables,
       submittedAt: mutation.state.submittedAt,
@@ -136,8 +134,7 @@ function NotesPage() {
   function confirmDelete(target: DeleteTarget<Note["id"]>) {
     const alreadyDeleting =
       queryClient.isMutating({
-        mutationKey: noteMutationKeys.remove,
-        exact: true,
+        ...noteMutationFilters.remove,
         // variables は `unknown` なので、比較する前に描画側と同じ経路で id へ絞る
         predicate: (mutation) => parseDeletingIds([mutation.state.variables]).includes(target.id),
       }) > 0;
@@ -145,8 +142,6 @@ function NotesPage() {
       return;
     }
     noteDeleteDialogHandle.close();
-    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する (ADR-0017)
-    announce(`『${target.name}』を削除しています`);
     // reject は runAction が吸収し onError が toast に出す。ここでは待たない
     void deleteMutation.runAction(target);
   }

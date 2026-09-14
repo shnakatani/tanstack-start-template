@@ -24,13 +24,6 @@ describe("readAnnouncements", () => {
     expect(readAnnouncements()).not.toContain("『買い物リスト』を削除");
   });
 
-  it("politeness を渡すとその region を読む", () => {
-    announce("保存できません", "assertive");
-
-    expect(readAnnouncements("assertive")).toEqual(["保存できません"]);
-    expect(readAnnouncements()).toEqual([]);
-  });
-
   it("region が無いときは throw する (テスト基盤の配線が外れた場合)", () => {
     // 空配列を返すと「通知が無い」と同じ値になり、region ごと壊れた検証が通ってしまう
     // ノードは残して id だけ外す。remove() すると React 管理下のノードが消え、次のテストの

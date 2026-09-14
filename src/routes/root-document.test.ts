@@ -17,23 +17,18 @@ import { RootDocument } from "./__root";
  */
 type ElementWithChildren = ReactElement<{ children?: ReactNode }>;
 
-/** 要素ツリーを深さ優先で歩き、述語に最初に一致した要素を返す。 */
-function findElement(
+/** 要素ツリーを深さ優先で歩き、述語に一致する要素があるかを返す。 */
+function hasElement(
   node: ReactNode,
   predicate: (element: ElementWithChildren) => boolean,
-): ElementWithChildren | undefined {
+): boolean {
   // Array.isArray のナローイングは any[] になるため、要素の型を ReactNode[] で受け直す
   if (Array.isArray(node)) {
     const children: ReactNode[] = node;
-    for (const child of children) {
-      const found = findElement(child, predicate);
-      if (found) return found;
-    }
-    return undefined;
+    return children.some((child) => hasElement(child, predicate));
   }
-  if (!isValidElement<{ children?: ReactNode }>(node)) return undefined;
-  if (predicate(node)) return node;
-  return findElement(node.props.children, predicate);
+  if (!isValidElement<{ children?: ReactNode }>(node)) return false;
+  return predicate(node) || hasElement(node.props.children, predicate);
 }
 
 /** 指定の型で、children に marker 文字列を含む要素にだけ一致する述語。 */
@@ -46,13 +41,13 @@ describe("RootDocument", () => {
   it("本文を <main> で包む", () => {
     const tree = RootDocument({ children: "本文マーカー" });
 
-    expect(findElement(tree, wrapping("main", "本文マーカー"))).toBeDefined();
+    expect(hasElement(tree, wrapping("main", "本文マーカー"))).toBe(true);
   });
 
   it("<main> が無ければ落ちる", () => {
     const tree = RootDocument({ children: "本文マーカー" });
 
-    expect(findElement(tree, wrapping("article", "本文マーカー"))).toBeUndefined();
+    expect(hasElement(tree, wrapping("article", "本文マーカー"))).toBe(false);
   });
 
   /**
@@ -63,6 +58,6 @@ describe("RootDocument", () => {
   it("announcer の live region を置く", () => {
     const tree = RootDocument({ children: "本文マーカー" });
 
-    expect(findElement(tree, (element) => element.type === LiveRegions)).toBeDefined();
+    expect(hasElement(tree, (element) => element.type === LiveRegions)).toBe(true);
   });
 });

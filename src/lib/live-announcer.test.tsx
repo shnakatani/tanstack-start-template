@@ -52,9 +52,8 @@ describe("announce", () => {
   });
 
   it("region が無いときは warn して何もしない", () => {
-    // client で region が見つからない異常 (配線が外れた状態) を作る
-    // ノードは残して id だけ外す。remove() すると React 管理下のノードが消え、次のテストの
-    // cleanup (root.unmount) が removeChild で落ちる (順序依存になる)
+    // client で region が見つからない異常 (配線が外れた状態) を作る。id だけ外す理由と
+    // 次のテストで region が戻ることの検証は src/test/live-announcer.test.tsx が持つ
     document.getElementById(LIVE_REGION_IDS.polite)?.removeAttribute("id");
 
     announce("届かない");
@@ -63,9 +62,5 @@ describe("announce", () => {
       id: LIVE_REGION_IDS.polite,
       message: "届かない",
     });
-  });
-
-  it("region 不在のテストの後でも次のテストで region が描き直される", () => {
-    expect(document.getElementById(LIVE_REGION_IDS.polite)).not.toBeNull();
   });
 });

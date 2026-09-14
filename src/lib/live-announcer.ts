@@ -22,15 +22,21 @@ export type Politeness = keyof typeof LIVE_REGION_IDS;
 const MESSAGE_LIFETIME_MS = 7000;
 
 /**
+ * politeness に対応する region。無いときの扱い (warn / throw) は呼び出し側が決める
+ * (`announce` は warn、テストの `readAnnouncements` は throw)。
+ */
+export function findLiveRegion(politeness: Politeness): HTMLElement | null {
+  return document.getElementById(LIVE_REGION_IDS[politeness]);
+}
+
+/**
  * 通知を 1 件足す。呼び出せるのは client の経路だけで、SSR ガードは持たない。
  * server から呼ぶのは配線の誤りなので、`document` の `ReferenceError` で表に出す。
  */
-
 export function announce(message: string, politeness: Politeness = "polite"): void {
-  const id = LIVE_REGION_IDS[politeness];
-  const region = document.getElementById(id);
+  const region = findLiveRegion(politeness);
   if (region === null) {
-    console.warn("[announce] live region が無い", { id, message });
+    console.warn("[announce] live region が無い", { id: LIVE_REGION_IDS[politeness], message });
     return;
   }
   const node = document.createElement("div");

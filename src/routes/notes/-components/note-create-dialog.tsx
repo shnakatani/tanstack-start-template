@@ -15,8 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
-import { createNote } from "@/features/notes/functions";
-import { noteMutationKeys } from "@/features/notes/mutations";
+import { createNoteMutation } from "@/features/notes/mutations";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { NoteInput } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
@@ -43,8 +42,12 @@ export function NoteCreateDialog() {
   const queryClient = useQueryClient();
 
   const createMutation = useActionMutation({
-    mutationKey: noteMutationKeys.create,
-    mutationFn: (data: NoteInput) => createNote({ data }),
+    ...createNoteMutation,
+    // 開始の通知の置き場 (ADR-0017)。この画面は variables 方式 (ADR-0016) なのでキャッシュは触らない。
+    // form の検証を通った後だけ走る。ボタンの pending は読み上げに出ないので開始を通知する
+    onMutate: () => {
+      announce("メモを保存しています");
+    },
     // 完了点 (b): 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0016)。
     // 一覧側は useMutationState でこの pending を読み、新しい行を先に出す。
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる
@@ -122,12 +125,7 @@ function NoteCreateForm({
     // 必須検証は title の AppField validator が保存前に強制する。ここでは
     // noteInputSchema の trim と同じ正規化だけ先に済ませ、送信値と保存値を一致させる。
     // Promise を返すので form.handleSubmit() の Promise が mutation の決着まで続く
-    onSubmit: ({ value }) => {
-      // ここは検証を通った後だけ走る。ボタンの pending は読み上げに出ないので開始を通知する
-      // (ADR-0017)。完了は mutation の onSuccess が出す
-      announce("メモを保存しています");
-      return onSubmit({ title: value.title.trim(), body: value.body });
-    },
+    onSubmit: ({ value }) => onSubmit({ title: value.title.trim(), body: value.body }),
   });
 
   return (

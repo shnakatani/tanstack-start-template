@@ -78,6 +78,37 @@ function rowDeleteButton(screen: Screen, title: string) {
   return screen.getByRole("button", { name: `${title}を削除`, exact: true });
 }
 
+/**
+ * メモの行。モーダル表示中 (close の animate-out の窓を含む) は行が aria-hidden 配下に入るので、
+ * その間に取るときは includeHidden を渡す。
+ */
+function noteRow(screen: Screen, note: Note, { includeHidden = false } = {}) {
+  return screen.getByRole("row", { name: new RegExp(note.title), includeHidden });
+}
+
+async function expectCreateDialogClosed(screen: Screen) {
+  await vi.waitFor(() => {
+    expect(
+      screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true }).query(),
+    ).toBeNull();
+  });
+}
+
+async function expectDeleteConfirmClosed(screen: Screen) {
+  await vi.waitFor(() => {
+    expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
+  });
+}
+
+/** 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。 */
+async function expectSettledRow(screen: Screen, note: Note) {
+  await vi.waitFor(() => {
+    const matched = noteRow(screen, note).all();
+    expect(matched).toHaveLength(1);
+    expect(matched[0]?.element().getAttribute("aria-busy")).not.toBe("true");
+  });
+}
+
 async function openDeleteConfirm(screen: Screen, note: Note) {
   await rowDeleteButton(screen, note.title).click();
   await expectText(screen, `「${note.title}」を削除しますか？この操作は取り消せません。`);
@@ -180,10 +211,8 @@ describe("NotesPage", () => {
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
     // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
     // (ADR-0016「テンプレートのメモ画面への適用」)
-    const refetch = Promise.withResolvers<Note[]>();
-    vi.mocked(listNotes)
-      .mockResolvedValueOnce([NOTE])
-      .mockImplementation(() => refetch.promise);
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
+    const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
@@ -191,30 +220,17 @@ describe("NotesPage", () => {
     await submitCreate(screen, CREATED_NOTE);
 
     // 応答前から新しい行が先頭に busy で出る (モーダル表示中は行が aria-hidden なので includeHidden)
-    const optimisticRow = screen.getByRole("row", {
-      name: new RegExp(CREATED_NOTE.title),
-      includeHidden: true,
-    });
+    const optimisticRow = noteRow(screen, CREATED_NOTE, { includeHidden: true });
     await expect.element(optimisticRow).toHaveAttribute("aria-busy", "true");
 
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答でダイアログが閉じ、再取得中も行は busy のまま
-    await vi.waitFor(() => {
-      expect(
-        screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true }).query(),
-      ).toBeNull();
-    });
-    await expect
-      .element(screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }))
-      .toHaveAttribute("aria-busy", "true");
+    await expectCreateDialogClosed(screen);
+    await expect.element(noteRow(screen, CREATED_NOTE)).toHaveAttribute("aria-busy", "true");
     // 行は静的テキストで状態を持つ (ADR-0017)。live region にはしないので、仮想カーソルで
     // 行を読んだときにだけ出る。通知は announcer が担う
-    await expect
-      .element(
-        screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }).getByText("保存中"),
-      )
-      .toBeInTheDocument();
+    await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
     const rows = screen.getByRole("row").all();
     expect(rows[1]?.element().textContent).toContain(CREATED_NOTE.title); // rows[0] はヘッダ行
@@ -225,21 +241,15 @@ describe("NotesPage", () => {
     refetch.resolve([CREATED_NOTE, NOTE]);
 
     // 実データに置き換わる (busy でない行が 1 つだけ)
-    await vi.waitFor(() => {
-      const matched = screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }).all();
-      expect(matched).toHaveLength(1);
-      expect(matched[0]?.element().getAttribute("aria-busy")).not.toBe("true");
-    });
+    await expectSettledRow(screen, CREATED_NOTE);
   });
 
   it("応答後の再取得中に開き直した追加ダイアログはキャンセルできる", async () => {
     // close を止める窓は「応答前」だけで、mutation の pending 全体ではない。応答で閉じた後は
     // 再取得の完了まで pending が続くが、その間に開き直したダイアログは先行 save の応答を
     // 待っていないので閉じられる (ADR-0016 Decision の完了点 (b) の行)
-    const refetch = Promise.withResolvers<Note[]>();
-    vi.mocked(listNotes)
-      .mockResolvedValueOnce([NOTE])
-      .mockImplementation(() => refetch.promise);
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
+    const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
@@ -248,11 +258,7 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答で閉じる。再取得 (2 回目の listNotes) は未決着なので mutation は pending のまま
-    await vi.waitFor(() => {
-      expect(
-        screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true }).query(),
-      ).toBeNull();
-    });
+    await expectCreateDialogClosed(screen);
 
     await screen.getByRole("button", { name: "＋ メモを追加" }).click();
 
@@ -275,20 +281,14 @@ describe("NotesPage", () => {
 
     // 応答前 (一覧はまだ 0 件) から楽観行が出て、空状態は消えている
     await expect
-      .element(
-        screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title), includeHidden: true }),
-      )
+      .element(noteRow(screen, CREATED_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
     expect(screen.getByText("メモが登録されていません").query()).toBeNull();
 
     create.resolve({ id: CREATED_NOTE.id });
 
     // 再取得の反映で実データの行に変わる (busy でない行が 1 つだけ)
-    await vi.waitFor(() => {
-      const matched = screen.getByRole("row", { name: new RegExp(CREATED_NOTE.title) }).all();
-      expect(matched).toHaveLength(1);
-      expect(matched[0]?.element().getAttribute("aria-busy")).not.toBe("true");
-    });
+    await expectSettledRow(screen, CREATED_NOTE);
   });
 
   it("削除を確認すると removeNote が number の id で呼ばれ、一覧が再取得される", async () => {
@@ -317,9 +317,7 @@ describe("NotesPage", () => {
 
     dispatchNativeClick(screen.getByRole("button", { name: "キャンセル", exact: true }).element());
 
-    await vi.waitFor(() => {
-      expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
-    });
+    await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).not.toHaveBeenCalled();
     expect(screen.getByText(NOTE.title).query()).not.toBeNull();
   });
@@ -337,7 +335,7 @@ describe("NotesPage", () => {
 
     // 完了点 (a) でダイアログは閉じるので、決着までの pending は行の busy だけが伝える
     await expect
-      .element(screen.getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true }))
+      .element(noteRow(screen, NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
 
     remove.reject(new Error(rawMessage));
@@ -345,19 +343,15 @@ describe("NotesPage", () => {
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     expect(screen.getByText(rawMessage).query()).toBeNull();
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
-    await expect
-      .element(screen.getByRole("row", { name: new RegExp(NOTE.title) }))
-      .toHaveAttribute("aria-busy", "false");
+    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "false");
     await expect
       .element(rowDeleteButton(screen, NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
   });
 
   it("削除を確定するとダイアログは removeNote の決着を待たずに閉じ、再取得完了まで行が busy のまま", async () => {
-    const refetch = Promise.withResolvers<Note[]>();
-    vi.mocked(listNotes)
-      .mockResolvedValueOnce([NOTE])
-      .mockImplementation(() => refetch.promise);
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
+    const refetch = deferMock(listNotes);
     const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
@@ -366,13 +360,9 @@ describe("NotesPage", () => {
     confirmDelete(screen);
 
     // 確定で閉じる。removeNote は未決着
-    await vi.waitFor(() => {
-      expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
-    });
+    await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
-    await expect
-      .element(screen.getByRole("row", { name: new RegExp(NOTE.title) }))
-      .toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
 
     remove.resolve(undefined);
 
@@ -380,9 +370,7 @@ describe("NotesPage", () => {
     await vi.waitFor(() => {
       expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
     });
-    await expect
-      .element(screen.getByRole("row", { name: new RegExp(NOTE.title) }))
-      .toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
 
     refetch.resolve([]);
 
@@ -401,11 +389,11 @@ describe("NotesPage", () => {
     // 確定直後は close の animate-out の窓が残り、行が aria-hidden 配下のことがあるので
     // includeHidden で取る
     await expect
-      .element(screen.getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true }))
+      .element(noteRow(screen, NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
     await expect
-      .element(screen.getByRole("row", { name: new RegExp(OTHER_NOTE.title), includeHidden: true }))
+      .element(noteRow(screen, OTHER_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "false");
     // 止めるのは削除中の行だけ (ADR-0016「ブロック範囲」)。他の行のトリガーは有効のまま
     await expect
@@ -416,11 +404,7 @@ describe("NotesPage", () => {
       .toHaveAttribute("aria-disabled", "true");
     // 行は静的テキスト (sr-only) で状態を持つ (ADR-0017)
     await expect
-      .element(
-        screen
-          .getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true })
-          .getByText("削除中"),
-      )
+      .element(noteRow(screen, NOTE, { includeHidden: true }).getByText("削除中"))
       .toBeInTheDocument();
     // registry の disabled: variant は native disabled にしか当たらない。data-disabled 経由で
     // 同じ見た目 (半透明 + pointer-events なし) になっていることを算出スタイルで固定する
@@ -439,7 +423,7 @@ describe("NotesPage", () => {
     // 再取得 (2 回目の listNotes) が反映されても、消えるのは対象行だけ。
     // 対象名は announcer の通知にも残るので、行そのもので判定する
     await vi.waitFor(() => {
-      expect(screen.getByRole("row", { name: new RegExp(NOTE.title) }).query()).toBeNull();
+      expect(noteRow(screen, NOTE).query()).toBeNull();
     });
     await expectText(screen, OTHER_NOTE.title);
   });
@@ -457,9 +441,7 @@ describe("NotesPage", () => {
 
     await openDeleteConfirm(screen, NOTE);
     confirmDelete(screen);
-    await vi.waitFor(() => {
-      expect(screen.getByRole("button", { name: "削除", exact: true }).query()).toBeNull();
-    });
+    await expectDeleteConfirmClosed(screen);
 
     await openDeleteConfirm(screen, OTHER_NOTE);
     confirmDelete(screen);
@@ -468,10 +450,10 @@ describe("NotesPage", () => {
       expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
     });
     await expect
-      .element(screen.getByRole("row", { name: new RegExp(NOTE.title), includeHidden: true }))
+      .element(noteRow(screen, NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
     await expect
-      .element(screen.getByRole("row", { name: new RegExp(OTHER_NOTE.title), includeHidden: true }))
+      .element(noteRow(screen, OTHER_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
 
     for (const pending of removes.values()) {
@@ -522,6 +504,8 @@ describe("NotesPage", () => {
     await userEvent.keyboard("{Enter}");
 
     expect(vi.mocked(removeNote)).toHaveBeenCalledOnce();
+    // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
+    expect(readAnnouncements()).toEqual([`『${NOTE.title}』を削除しています`]);
     remove.resolve(undefined);
   });
 });
