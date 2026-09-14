@@ -7,17 +7,18 @@ paths:
 
 ## コンポーネント配置
 
-| 配置先                       | 内容                                                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                                                     |
-| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0014)                            |
-| `src/components/`            | ドメインを跨いで共有する自作コンポーネント                                                                          |
-| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                                                      |
-| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される                                       |
-| `routes/<path>/-lib/`        | その URL 配下だけで使う非コンポーネントのモジュール (handle、列定義、純粋関数)。テストは同じディレクトリ (ADR-0019) |
+| 配置先                       | 内容                                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                                                                   |
+| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0014)                                          |
+| `src/components/`            | ドメインを跨いで共有する自作コンポーネント                                                                                        |
+| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                                                                    |
+| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される                                                     |
+| `routes/<path>/-lib/`        | その URL 配下だけで使う、React に依存しない純粋ロジックと型 (行の組み立て、dialog の handle)。テストは同じディレクトリ (ADR-0019) |
+| `routes/<path>/-hooks/`      | その URL 配下だけで使う React hook (`use-*`)                                                                                      |
 
-- `-components/` と `-lib/` の中の import は相対パスで書く
-- 一覧テーブルは `src/components/data-table.tsx` の `DataTable` に列定義と data を渡す。列定義は `createColumnHelper` で書き、画面固有なら `routes/<path>/-lib/<画面>-columns.tsx`、横断なら `src/features/<domain>/` に置く (ADR-0019)
+- `routes/<path>/-` で始まるディレクトリ (`-components/` `-lib/` `-hooks/`) の中の import は相対パスで書く
+- 一覧テーブルは `src/components/data-table.tsx` の `DataTable` に列定義と data を渡す。列定義は `createColumnHelper` で書き、画面固有なら `-components/<画面>-columns.tsx` (cell が JSX を持つ)、横断なら `src/features/<domain>/` (ADR-0019)
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
 - 公式の詳細は TanStack の intent skill (`@tanstack/router-plugin` / `@tanstack/router-core`) を load して確認する

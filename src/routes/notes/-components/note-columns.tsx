@@ -4,9 +4,9 @@ import { type DataTableFeatures } from "@/components/data-table-features";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { formatDateTime } from "@/lib/format-date-time";
 
-import { NoteDeleteTrigger } from "../-components/note-delete-trigger";
-import type { NoteRow } from "./note-rows";
-import { noteInputOf } from "./note-rows";
+import type { NoteRow } from "../-lib/note-rows";
+import { noteInputOf } from "../-lib/note-rows";
+import { NoteDeleteTrigger } from "./note-delete-trigger";
 
 const helper = createColumnHelper<DataTableFeatures, NoteRow>();
 
