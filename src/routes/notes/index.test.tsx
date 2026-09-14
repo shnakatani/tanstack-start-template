@@ -415,7 +415,10 @@ describe("NotesPage", () => {
       expect(style.pointerEvents).toBe("none");
     });
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
-    // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う
+    // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
+    // 確認ダイアログの animate-out が残っていると、その focus guard と見出しが axe の
+    // incomplete に出る (CI で顕在化) ので、閉じ切ってから一覧だけを測る
+    await expectDeleteConfirmClosed(screen);
     await expectNoA11yViolations(document.body);
 
     remove.resolve(undefined);
