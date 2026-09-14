@@ -293,6 +293,34 @@ export default defineConfig({
           "typescript/no-unsafe-return": "off",
         },
       },
+      {
+        // テスト専用のコード (*.test-helpers.ts と src/test/) をアプリのコードから import させない
+        // (ADR-0004「基準から外れる名指し」)。緩和ではなく範囲を絞った有効化なので、テスト側は
+        // off にせず excludeFiles で対象から外す (files の否定 glob は oxlint 1.79 では効かない)
+        files: ["src/**", "scripts/**"],
+        excludeFiles: [
+          "**/*.test.ts",
+          "**/*.test.tsx",
+          "**/*.test-helpers.ts",
+          "**/*.test-helpers.tsx",
+          "src/test/**",
+        ],
+        rules: {
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                {
+                  // alias (@/test/) と相対 (./test/ ../test/) の両方の specifier を止める
+                  regex: "\\.test-helpers$|(^@|\\.)/test/",
+                  message:
+                    "テスト専用のコード。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
+                },
+              ],
+            },
+          ],
+        },
+      },
     ],
     ignorePatterns: [
       "src/routeTree.gen.ts",

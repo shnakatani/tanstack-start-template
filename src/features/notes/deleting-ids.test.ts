@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { parseDeletingIds } from "./deleting-ids";
+import { NOTE, OTHER_NOTE } from "./schema.test-helpers";
 
 /**
  * `useMutationState` の `select` が返す `variables` は `unknown`。行の突き合わせに使う前に
@@ -21,10 +22,10 @@ describe("parseDeletingIds", () => {
   it("削除対象から id を取り出して並べて返す", () => {
     expect(
       parseDeletingIds([
-        { id: 1, name: "買い物リスト" },
-        { id: 2, name: "読書メモ" },
+        { id: NOTE.id, name: NOTE.title },
+        { id: OTHER_NOTE.id, name: OTHER_NOTE.title },
       ]),
-    ).toEqual([1, 2]);
+    ).toEqual([NOTE.id, OTHER_NOTE.id]);
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
@@ -40,7 +41,7 @@ describe("parseDeletingIds", () => {
       undefined,
     ];
 
-    expect(parseDeletingIds([{ id: 1, name: "買い物リスト" }, ...invalid])).toEqual([1]);
+    expect(parseDeletingIds([{ id: NOTE.id, name: NOTE.title }, ...invalid])).toEqual([NOTE.id]);
 
     expect(warnSpy).toHaveBeenCalledTimes(invalid.length);
     expect(warnSpy).toHaveBeenCalledWith("[parseDeletingIds] variables が削除対象の形でない", {

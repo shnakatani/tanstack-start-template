@@ -5,6 +5,7 @@ import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { tableDevtoolsPlugin } from "@tanstack/react-table-devtools";
 import type { ReactNode } from "react";
 
 import { LiveRegions } from "@/components/live-regions";
@@ -42,6 +43,8 @@ function RootComponent() {
             name: "TanStack Router",
             render: <TanStackRouterDevtoolsPanel />,
           },
+          // useTable に key を渡した table が登録される (ADR-0019)
+          tableDevtoolsPlugin(),
           // axe-core を開発中の画面へ当てる。テスト側の強制 (src/test/a11y.ts) は書いた
           // ケースしか見ないため、画面を触りながら気付ける経路を別に持つ。
           // panel は host から theme と devtoolsOpen を受け取るので plugin 形で渡す

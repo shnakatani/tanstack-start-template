@@ -5,8 +5,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import {
+  confirmDeleteButton,
+  deleteConfirmDescription,
+} from "@/components/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
+import {
+  CREATED_NOTE,
+  NOTE,
+  NOTE_CREATED_AT_TEXT,
+  OTHER_NOTE,
+} from "@/features/notes/schema.test-helpers";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { enableBaseUiAnimations } from "@/test/base-ui-animations";
@@ -28,6 +38,7 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
 
+import { noteRow, rowDeleteButton } from "./-components/note-cells.test-helpers";
 import {
   bodyTextbox,
   NOTE_CREATE_TRIGGER_LABEL,
@@ -35,36 +46,10 @@ import {
   saveButton,
   titleTextbox,
 } from "./-components/note-create-dialog.test-helpers";
+import { noteColumns } from "./-lib/note-columns";
 import { loadNotesPageData, Route } from "./index";
 
 const NotesPage = Route.options.component!;
-
-// createdAt は APP_TIME_ZONE の壁時計で描画する。fixture は絶対時刻 (UTC) で固定し、
-// 期待値が実行環境のローカル TZ で動かないようにする (2026-08-17T00:30Z = JST 09:30)
-const NOTE: Note = {
-  id: 1,
-  title: "買い物リスト",
-  body: "牛乳とパンを買う",
-  createdAt: new Date("2026-08-17T00:30:00.000Z"),
-};
-const NOTE_CREATED_AT_TEXT = "2026-08-17 09:30";
-/** 楽観表示と無効化が対象行だけに効くことを見るための 2 件目 */
-const OTHER_NOTE: Note = {
-  id: 2,
-  title: "読書メモ",
-  body: "気になった箇所を書き出す",
-  createdAt: new Date("2026-08-18T00:30:00.000Z"),
-};
-/**
- * 追加のテストで保存する 1 件。楽観行は title / body だけを描き、id と createdAt は
- * 再取得後の実データとして使う (保存前のクライアントはこの 2 つを持たない)。
- */
-const CREATED_NOTE: Note = {
-  id: 3,
-  title: "新しいメモ",
-  body: "本文",
-  createdAt: new Date("2026-08-19T00:30:00.000Z"),
-};
 
 async function renderPage() {
   const queryClient = createTestQueryClient();
@@ -79,27 +64,12 @@ async function renderPage() {
   return render(<RouterProvider router={router} />);
 }
 
-/** 行の削除ボタン。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない)。 */
-function rowDeleteButton(screen: Screen, title: string) {
-  return screen.getByRole("button", { name: `${title}を削除`, exact: true });
-}
-
-/**
- * メモの行。モーダル表示中は行が aria-hidden 配下に入るので、その間に取るときは includeHidden を
- * 渡す。閉じた後は不要 (Base UI の animation は無効で、close の次の描画で unmount する。ADR-0018)。
- */
-function noteRow(screen: Screen, note: Note, { includeHidden = false } = {}) {
-  return screen.getByRole("row", { name: new RegExp(note.title), includeHidden });
-}
-
 async function expectCreateDialogClosed(screen: Screen) {
   await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
 }
 
 async function expectDeleteConfirmClosed(screen: Screen) {
-  await expect
-    .element(screen.getByRole("button", { name: "削除", exact: true }))
-    .not.toBeInTheDocument();
+  await expect.element(confirmDeleteButton(screen)).not.toBeInTheDocument();
 }
 
 /** 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。 */
@@ -113,7 +83,7 @@ async function expectSettledRow(screen: Screen, note: Note) {
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
   await rowDeleteButton(screen, note.title).click();
-  await expectText(screen, `「${note.title}」を削除しますか？この操作は取り消せません。`);
+  await expectText(screen, deleteConfirmDescription(note.title));
   // click で動いた実マウスは、ダイアログが閉じて下の要素が露出する前に退避する。乗ったままだと
   // 露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
   // (testing.md「マウス位置を動かすテストは自分で戻す」)
@@ -134,7 +104,7 @@ async function submitCreate(screen: Screen, note: Note) {
 
 function confirmDelete(screen: Screen) {
   // 確認ダイアログのボタンは inert バックドロップが pointer event を横取りするため native click
-  dispatchNativeClick(screen.getByRole("button", { name: "削除", exact: true }).element());
+  dispatchNativeClick(confirmDeleteButton(screen).element());
 }
 
 describe("NotesPage", () => {
@@ -159,6 +129,8 @@ describe("NotesPage", () => {
     const screen = await render(<RouterProvider router={router} />);
 
     expect(screen.getByRole("status", { name: "読み込み中" }).query()).not.toBeNull();
+    // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (ADR-0019)
+    expect(screen.getByRole("columnheader").all()).toHaveLength(noteColumns.length);
   });
 
   it("loader が notes を prefetch する", async () => {
@@ -495,7 +467,7 @@ describe("NotesPage", () => {
 
     // 確定はキーボードで (testing.md「クリックの発火方法」の順 2)。
     // close の animate-out の間にもう一度 Enter を送る
-    screen.getByRole("button", { name: "削除", exact: true }).element().focus();
+    confirmDeleteButton(screen).element().focus();
     await userEvent.keyboard("{Enter}");
     await userEvent.keyboard("{Enter}");
 

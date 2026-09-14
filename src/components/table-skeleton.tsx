@@ -22,7 +22,8 @@ export function TableSkeleton({ columns, rows = 3 }: { columns: number; rows?: n
       <TableHeader>
         <TableRow>
           {columnKeys.map((col) => (
-            <TableHead key={col}>
+            // 実テーブルと同じく scope="col" (列見出しとして数えられる)
+            <TableHead key={col} scope="col">
               <Skeleton className="h-4 w-16" />
             </TableHead>
           ))}

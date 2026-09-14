@@ -1,8 +1,8 @@
 import * as v from "valibot";
 
-import type { DeleteTarget } from "@/components/delete-confirm-dialog";
 import { parseEach } from "@/lib/parse-each";
 
+import type { NoteDeleteTarget } from "./mutations";
 import type { Note } from "./schema";
 import { noteIdSchema } from "./schema";
 
@@ -21,7 +21,7 @@ const deleteTargetSchema = v.object({ ...noteIdSchema.entries, name: v.string() 
  */
 export function parseDeletingIds(variables: readonly unknown[]): Array<Note["id"]> {
   // 型注釈で DeleteTarget に結ぶ。interface 側に項目が増えたとき、schema の見落としが型エラーで出る
-  const targets: Array<DeleteTarget<Note["id"]>> = parseEach(
+  const targets: NoteDeleteTarget[] = parseEach(
     deleteTargetSchema,
     variables,
     "[parseDeletingIds] variables が削除対象の形でない",

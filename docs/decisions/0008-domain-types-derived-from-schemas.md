@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-17
+- Revised: 2026-09-14 (項目の呼称もスキーマの metadata から導出する決定を足した。TanStack Table の `header` もこのリポジトリのフォーム部品の `label` も文字列を受け取るだけで schema と結ぶ方針を持たないため、結ぶ層はこちらで持つ)
 - 関連: ADR-0004 (`typescript/consistent-type-assertions` による型アサーション禁止)
 
 ## Context
@@ -61,6 +62,14 @@ ORM の戻り値は、UI へ流す前に `v.safeParse` で突き合わせる (`s
 失敗時に投げるメッセージには**値そのものを載せず、位置 (`v.getDotPath`) と件数だけを載せる**。
 client まで届くエラーに DB の中身を混ぜないためで、位置と件数があればどの行のどの項目かは追える。
 
+### 4. 項目の呼称も metadata から導出する
+
+項目の呼称 (フォームの label、一覧の見出し、検証メッセージの主語) は `v.metadata({ label })` の action として各項目の pipe に載せ、消費側は `v.getMetadata(schema.entries.x).label` で型付きに読む。valibot の `metadata` は `const` generic でリテラル型を保ち、`getMetadata` は `InferMetadata` で pipe 内の metadata を merge した型を返す (`v.getTitle` は `string | undefined` に落ちるため使わない)。呼称を集めた object は `satisfies Record<keyof T, string>` を付けて、項目を足したときに呼称の追加を型で強制する。
+
+素の定数 object (`{ title: "タイトル" } as const`) を別に持つ形は、キーの typo も項目追加時の欠落も型で捕まらない。入力用と保存用で pipe が分かれる項目 (title) は、`TInput` を型引数で与えた 1 つの action を両方に渡す (型引数も注釈も無い action は `TInput` が `unknown` に推論され `v.pipe` に入らない)。
+
+TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリの `src/components/form-fields.tsx` の `label` prop (TanStack Form 自体に呼称を受ける口は無い) はどちらも文字列を受け取る口で、schema と結ぶ仕組みを持たない。TanStack Form の Discussion #2111 (参加者の回答、メンテナ回答なし) も schema の制約を field へ出す経路は無いとしている。Standard Schema の validate 契約に metadata は無く、Standard JSON Schema (spec 1.1.0 の `~standard.jsonSchema`) は valibot 1.4.2 が未実装で、載るのも JSON Schema 語彙 (title / description) に限る。独自の `label` を運ぶ層はアプリ側 (valibot の metadata) に置く。
+
 ### 検討した選択肢
 
 | 案                                       | フィールド追加 | 削除       | 型変更     | 型定義の箇所 | 採否     |
@@ -84,10 +93,14 @@ client まで届くエラーに DB の中身を混ぜないためで、位置と
 - enum の型エイリアス名が型表示から消える。`v.picklist(...)` の出力型になるが同じ union なので、その union を消費する側は影響を受けない。エイリアス自体も定義元に残る
 - 保存はするが公開する型には出さないフィールドを、同じスキーマに持たせられなくなる。必要になったら保存形のスキーマを別に定義してそこから導出する
 - 将来ドメイン型をスキーマと意図的に違えたくなった場合は `satisfies v.GenericSchema<T>` が使える。その時点で本 ADR を再評価する
+- 項目の呼称の SSOT がスキーマになる。`@valibot/to-json-schema` を使うときは `title` / `description` の action も同じ pipe に足せる
 
 ## 出典
 
 - Valibot Quick start (スキーマを型の単一の出処とする記述): https://valibot.dev/guides/quick-start/
+- Valibot `metadata` / `getMetadata`: https://valibot.dev/api/metadata/ / https://valibot.dev/api/getMetadata/
+- TanStack Form Discussion #2111 (参加者の回答: schema の制約を field へ出す経路は無い): https://github.com/TanStack/form/discussions/2111
+- Standard Schema spec 1.1.0 (`StandardJSONSchemaV1`): https://standardschema.dev/
 - Valibot Infer types (`InferOutput` を既定とする指針): https://valibot.dev/guides/infer-types/
 - Valibot discussion #377 (メンテナ fabian-hiller による `satisfies v.GenericSchema<T>` の案内。curried factory は参加者 alvechy が投稿したもので、メンテナは「今は対応する時間が無い」と述べるに留まる): https://github.com/open-circle/valibot/discussions/377
 - zod discussion #1863 (`interface X extends z.infer<…>` で型名を保つ案。提案者自身が不完全と結論): https://github.com/colinhacks/zod/discussions/1863

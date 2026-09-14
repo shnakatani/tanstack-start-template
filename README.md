@@ -5,18 +5,19 @@ TanStack Start と Vite+ で組んだ Web アプリケーションの template r
 
 ## 技術スタック
 
-| カテゴリ       | 技術                                                            |
-| -------------- | --------------------------------------------------------------- |
-| フレームワーク | TanStack Start (React 19 + TanStack Router / Query)             |
-| フォーム       | TanStack Form                                                   |
-| バリデーション | Valibot                                                         |
-| UI             | shadcn/ui (`base-vega` style、Base UI ベース) + Tailwind CSS v4 |
-| アイコン       | lucide-react                                                    |
-| DB             | SQLite (better-sqlite3) + Drizzle ORM                           |
-| サーバー       | Nitro (builder は rolldown)                                     |
-| ツールチェーン | mise + Vite+ (`vp`)                                             |
-| テスト         | Vitest (browser mode は Playwright chromium)                    |
-| 最適化         | React Compiler (`oxc-transform-react`)                          |
+| カテゴリ       | 技術                                                             |
+| -------------- | ---------------------------------------------------------------- |
+| フレームワーク | TanStack Start (React 19 + TanStack Router / Query)              |
+| フォーム       | TanStack Form                                                    |
+| テーブル       | TanStack Table v9 (headless。shadcn Data Table の構成、ADR-0019) |
+| バリデーション | Valibot                                                          |
+| UI             | shadcn/ui (`base-vega` style、Base UI ベース) + Tailwind CSS v4  |
+| アイコン       | lucide-react                                                     |
+| DB             | SQLite (better-sqlite3) + Drizzle ORM                            |
+| サーバー       | Nitro (builder は rolldown)                                      |
+| ツールチェーン | mise + Vite+ (`vp`)                                              |
+| テスト         | Vitest (browser mode は Playwright chromium)                     |
+| 最適化         | React Compiler (`oxc-transform-react`)                           |
 
 版の pin は、Node.js と pnpm が `package.json` (`devEngines.runtime` と `packageManager`)、Vite+ 一族が `pnpm-workspace.yaml` の `catalog:` (ADR-0002)。
 

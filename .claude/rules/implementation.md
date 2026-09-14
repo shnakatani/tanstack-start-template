@@ -172,6 +172,7 @@ lint は custom `<Button>` の中身を見ないため機械強制がない。�
 | 隣接テキストが同じ意味を持つアイコン                  | `aria-hidden`。名前を足さない                                                                                                                                                                                                  |
 | 可視テキストが既に accessible name の要素             | 何も足さない (次項)                                                                                                                                                                                                            |
 | name from author のロールを持つ要素                   | 可視テキストがあっても `aria-label` (次項)                                                                                                                                                                                     |
+| テーブルの列見出し (`th`)                             | `scope="col"` を付ける。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0019)                                                                                                                       |
 | ローディング等の状態表示                              | 通知は `src/lib/live-announcer.ts` の `announce()` (region は `role="log"` + `aria-live` で常時 mount)。項目に `<output>` / `role="status"` を足さない。例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0017) |
 
 - 「隣接テキストが同じ意味」と言えるのは、そのテキストが実際に読み上げられるときに限る

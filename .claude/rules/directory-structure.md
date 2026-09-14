@@ -7,15 +7,18 @@ paths:
 
 ## コンポーネント配置
 
-| 配置先                       | 内容                                                                                     |
-| ---------------------------- | ---------------------------------------------------------------------------------------- |
-| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                          |
-| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0014) |
-| `src/components/`            | ドメインを跨いで共有する自作コンポーネント                                               |
-| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                           |
-| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される            |
+| 配置先                       | 内容                                                                                                                                      |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                                                                           |
+| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0014)                                                  |
+| `src/components/`            | ドメインを跨いで共有する自作コンポーネント                                                                                                |
+| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                                                                            |
+| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される                                                             |
+| `routes/<path>/-lib/`        | その URL 配下だけで使う、コンポーネントでないモジュール (行の組み立て、列定義、dialog の handle、型)。テストは同じディレクトリ (ADR-0019) |
+| `routes/<path>/-hooks/`      | その URL 配下だけで使う React hook (`use-*`)。`src/hooks/` と同じ線引き (ADR-0019)                                                        |
 
-- `-components/` 内部の import は相対パスで書く
+- `routes/<path>/-` で始まるディレクトリ (`-components/` `-lib/` `-hooks/`) の中の import は相対パスで書く
+- 一覧テーブルは `DataTable` (`src/components/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` (横断なら `src/features/<domain>/`) に書き、cell の描画は `-components/` の部品を参照で渡す (ADR-0019)
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
 - 公式の詳細は TanStack の intent skill (`@tanstack/router-plugin` / `@tanstack/router-core`) を load して確認する
@@ -42,14 +45,14 @@ paths:
 
 テスト専用ヘルパーは 2 段に置く。2 つのテストで同じ locator を書き分けると、ラベル変更で片方だけ落ちる。
 
-| 対象                                         | 置き場所                                                                                                                                                                                     |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                                                                                  |
-| 特定の部品の locator                         | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下の部品は `-components/` に居る (ADR-0012) ので helper もそこに置き、route ファイル自身の helper は route ファイルの隣に置く |
+| 対象                                         | 置き場所                                                                                                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                                                               |
+| 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下では対象と同じ `-components/` か `-lib/` に置き、route ファイル自身の helper は route ファイルの隣に置く |
 
 - `*.test-helpers.ts` は `vp test` の include に一致せず、coverage からも除外する (`vitest.config.ts`)
-- route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-components/` の中は `-` prefix で元から除外される
-- `*.test-helpers.ts` をアプリのコードから import しない。`src/test/` の実行時ヘルパー (`vite-plus/test` を読む) を引き込みうる。機械強制は無く、レビューで見る
+- route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-` で始まるディレクトリの中は元から除外される
+- `*.test-helpers.ts` と `src/test/` をアプリのコードから import しない。型しか引かない helper は build を壊さず、fixture が bundle に入る。lint の `no-restricted-imports` が止め、テストと helper と `src/test/` は対象外 (ADR-0004)
 
 ## shadcn コンポーネント導入時のチェック
 
@@ -65,7 +68,7 @@ paths:
 
 ## ルートファイル
 
-- ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。ビジネスロジックや複雑な UI は `-components/` か、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
+- ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。その画面専用の純粋ロジックは `-lib/`、複雑な UI は `-components/`、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
 - Route hooks (`Route.useSearch` / `Route.useNavigate`) はルートファイル内の薄い wrapper component で吸収し、ページ本体は値とハンドラを props で受ける named export にする。Route hooks を混ぜるとページテストがテスト router で動かない
 - loader 本体も named export の関数に切り出す。route 定義に直書きすると loader だけを呼ぶテストが書けない (実例: `src/routes/notes/index.tsx` の `loadNotesPageData`)
 - loader は Query を温めるためだけに呼び、値は component が `useSuspenseQuery` で読む。`useLoaderData` で Query 所有のデータを読むと、mutation の `invalidateQueries` では loader が再実行されず画面だけ古いまま残る
