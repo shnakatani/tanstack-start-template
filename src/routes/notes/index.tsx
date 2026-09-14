@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { DataTable } from "@/components/data-table";
 import type { DeleteTarget } from "@/components/delete-confirm-dialog";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { PageHeader } from "@/components/page-header";
 import { TableSkeleton } from "@/components/table-skeleton";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import { toastMutationError } from "@/lib/mutation-error";
 
 import { noteColumns } from "./-components/note-columns";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
-import { NoteDeleteDialog, noteDeleteDialogHandle } from "./-components/note-delete-dialog";
+import { noteDeleteDialogHandle } from "./-components/note-delete-dialog";
 
 const PAGE_TITLE = "メモ一覧";
 
@@ -162,7 +163,12 @@ function NotesPage() {
 
       <NoteCreateDialog />
 
-      <NoteDeleteDialog onConfirm={confirmDelete} />
+      {/* Root は 1 handle につき 1 つ。trigger は列定義側にあり、同じ handle で結ぶ */}
+      <DeleteConfirmDialog
+        handle={noteDeleteDialogHandle}
+        entityLabel={NOTE_ENTITY_LABEL}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
