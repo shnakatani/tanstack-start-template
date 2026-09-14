@@ -22,12 +22,12 @@ paths:
 
 ## features と hooks と lib と server の境界
 
-| 配置先                   | 内容                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / server fn / 共有 UI) |
-| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義               |
-| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                               |
-| `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)            |
+| 配置先                   | 内容                                                                                               |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / mutation options / server fn / 共有 UI) |
+| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義                                  |
+| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                                                  |
+| `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)                               |
 
 - 画面そのもの (ページ本体) は route ファイルの named export に残す。ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く (ADR-0012)
 - `src/features/<domain>/` 内部の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)

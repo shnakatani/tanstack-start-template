@@ -85,6 +85,7 @@ lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014
 - mutation の pending の読み方: 1 件ずつなら `mutation.isPending && mutation.variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState`。`useMutation` 1 つの `variables` は 2 件目で移る (ADR-0016)
 - `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける (既定は前方一致)。`variables` は `unknown` なので `parseEach` (`src/lib/parse-each.ts`) でスキーマへ絞り、外れ値は warn に残して除く (ADR-0016)
 - `useMutationState` の `select` の中で throw しない。描画中に走るので一覧ごと Error Boundary へ落ちる (ADR-0016)
+- 操作の開始の announce は mutation の `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`)。lint 検出なし。Action を書くときのレビュー観点に含める (ADR-0017)
 - 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない。pending は次のユーザーイベントより前に描画される (ADR-0014)
 
 ## 手動メモ化の増減

@@ -176,16 +176,16 @@ synthetic event を書く前に `grep -n "<eventName>" node_modules/<lib>/dist/*
 
 ## optimistic update テストは遅延 rejection で中間状態を観測
 
-`mockRejectedValue` は microtask で即 reject するため、optimistic state が一瞬で消えて assertion が通らない。中間状態を観測するには rejection timing を制御する:
+`mockRejectedValue` は microtask で即 reject するため、optimistic state が一瞬で消えて assertion が通らない。決着の時点は `src/test/defer-mock.ts` の `deferMock` でテスト本文が握る (`setTimeout` で遅らせる形は待ち時間の分だけ遅く、実行環境で揺れる):
 
 ```typescript
 // NG: 即 reject → optimistic state を観測不能
 vi.mocked(updateFn).mockRejectedValue(new Error("fail"));
 
-// OK: 遅延させて reject → その間 optimistic state を検証可能
-vi.mocked(updateFn).mockImplementation(
-  () => new Promise((_, reject) => setTimeout(() => reject(new Error("fail")), 200)),
-);
+// OK: 未決着の Promise に差し替え、中間状態を検証してから reject する
+const update = deferMock(updateFn);
+// ... optimistic state の assertion ...
+update.reject(new Error("fail"));
 ```
 
 テストの assertion 順序: optimistic state 確認 → reject 後のロールバック確認。
