@@ -3,11 +3,17 @@ import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
-import type { SavedNoteRow } from "../-lib/note-rows";
+import type { NoteCellContext } from "../-lib/note-rows";
 
-/** 一覧の操作セルに置く削除トリガー。detached trigger で、Root はページが 1 つ描く。 */
-export function NoteDeleteTrigger({ row }: { row: SavedNoteRow }) {
-  const { note, isDeleting } = row;
+/**
+ * 操作の cell。確定行には削除トリガー (detached trigger。Root はページが 1 つ描く) を出し、
+ * 保存中の行は id をまだ持たないので何も出さない。
+ */
+export function NoteActionsCell({ row }: NoteCellContext) {
+  if (row.original.kind !== "saved") {
+    return null;
+  }
+  const { note, isDeleting } = row.original;
   return (
     <>
       {/* 削除中は行から可視の手掛かりが半透明しか出ないので、読み上げ用のテキストを足す。

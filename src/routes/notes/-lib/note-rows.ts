@@ -1,3 +1,6 @@
+import type { CellContext } from "@tanstack/react-table";
+
+import type { DataTableFeatures } from "@/components/data-table-features";
 import type { CreatingRow } from "@/features/notes/creating-rows";
 import type { Note, NoteInput } from "@/features/notes/schema";
 
@@ -9,6 +12,9 @@ type CreatingNoteRow = { kind: "creating" } & CreatingRow;
 
 /** 一覧の 1 行。確定行と保存中の行の union で、cell は `kind` で分岐する (ADR-0019「行の型」)。 */
 export type NoteRow = SavedNoteRow | CreatingNoteRow;
+
+/** cell コンポーネントが受ける props (`FlexRender` が渡す cell の context)。 */
+export type NoteCellContext = CellContext<DataTableFeatures, NoteRow>;
 
 /** 入力項目 (title / body) がどちらの行にも載っている場所。テキスト列はここから読む */
 export function noteInputOf(row: NoteRow): NoteInput {
