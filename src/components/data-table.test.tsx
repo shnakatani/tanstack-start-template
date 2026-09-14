@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { DataTable } from "./data-table";
-import { type DataTableFeatures } from "./data-table-features";
+import type { DataTableFeatures } from "./data-table-features";
 
 type Fruit = { id: number; name: string; price: number };
 

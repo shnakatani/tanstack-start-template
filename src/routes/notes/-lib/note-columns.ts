@@ -1,6 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table";
 
-import { type DataTableFeatures } from "@/components/data-table-features";
+import type { DataTableFeatures } from "@/components/data-table-features";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 
 import { NoteActionsCell, NoteCreatedAtCell } from "../-components/note-cells";

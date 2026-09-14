@@ -7,6 +7,12 @@ import { render } from "vitest-browser-react";
 
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
+import {
+  CREATED_NOTE,
+  NOTE,
+  NOTE_CREATED_AT_TEXT,
+  OTHER_NOTE,
+} from "@/features/notes/schema.test-helpers";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { enableBaseUiAnimations } from "@/test/base-ui-animations";
@@ -36,23 +42,9 @@ import {
   titleTextbox,
 } from "./-components/note-create-dialog.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
-import { NOTE, OTHER_NOTE } from "./-lib/note-rows.test-helpers";
 import { loadNotesPageData, Route } from "./index";
 
 const NotesPage = Route.options.component!;
-
-/** NOTE.createdAt (UTC) を APP_TIME_ZONE の壁時計で描いた期待値 (note-rows.test-helpers.ts) */
-const NOTE_CREATED_AT_TEXT = "2026-08-17 09:30";
-/**
- * 追加のテストで保存する 1 件。楽観行は title / body だけを描き、id と createdAt は
- * 再取得後の実データとして使う (保存前のクライアントはこの 2 つを持たない)。
- */
-const CREATED_NOTE: Note = {
-  id: 3,
-  title: "新しいメモ",
-  body: "本文",
-  createdAt: new Date("2026-08-19T00:30:00.000Z"),
-};
 
 async function renderPage() {
   const queryClient = createTestQueryClient();

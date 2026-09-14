@@ -1,13 +1,13 @@
 import { actionDisabledAppearance } from "@/components/action/button";
+import type { DataTableCellContext } from "@/components/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
-import type { NoteCellContext } from "../-lib/note-rows";
+import type { NoteRow } from "../-lib/note-rows";
 
-// メモ一覧の cell。列定義 (`-lib/note-columns.ts`) が `cell` に参照を渡し、`FlexRender` が
-// cell の context を props にして描く。cell に共通の設定はこのファイルに閉じる
+type NoteCellContext = DataTableCellContext<NoteRow>;
 
 /** 作成日時の cell。保存中の行はまだ日時を持たないので、その位置で保存中を伝える。 */
 export function NoteCreatedAtCell({ row }: NoteCellContext) {

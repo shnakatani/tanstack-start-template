@@ -1,4 +1,4 @@
-import type { Note } from "@/features/notes/schema";
+import type { Note } from "./schema";
 
 /**
  * テスト用の確定済みメモ。createdAt は絶対時刻 (UTC) で固定し、期待値が実行環境のローカル TZ で
@@ -11,10 +11,24 @@ export const NOTE: Note = {
   createdAt: new Date("2026-08-17T00:30:00.000Z"),
 };
 
+/** NOTE.createdAt を APP_TIME_ZONE の壁時計で描いた期待値。 */
+export const NOTE_CREATED_AT_TEXT = "2026-08-17 09:30";
+
 /** 楽観表示と無効化が対象行だけに効くことを見るための 2 件目。 */
 export const OTHER_NOTE: Note = {
   id: 2,
   title: "読書メモ",
   body: "気になった箇所を書き出す",
   createdAt: new Date("2026-08-18T00:30:00.000Z"),
+};
+
+/**
+ * 追加のテストで保存する 1 件。楽観行は title / body だけを描き、id と createdAt は
+ * 再取得後の実データとして使う (保存前のクライアントはこの 2 つを持たない)。
+ */
+export const CREATED_NOTE: Note = {
+  id: 3,
+  title: "新しいメモ",
+  body: "本文",
+  createdAt: new Date("2026-08-19T00:30:00.000Z"),
 };

@@ -3,7 +3,6 @@ import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/re
 import { createFileRoute } from "@tanstack/react-router";
 
 import { DataTable } from "@/components/data-table";
-import type { DeleteTarget } from "@/components/delete-confirm-dialog";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { PageHeader } from "@/components/page-header";
 import { TableSkeleton } from "@/components/table-skeleton";
@@ -12,9 +11,9 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { parseCreatingRows } from "@/features/notes/creating-rows";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
+import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { notesQueryOptions } from "@/features/notes/queries";
-import type { Note } from "@/features/notes/schema";
 import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
@@ -23,7 +22,7 @@ import { toastMutationError } from "@/lib/mutation-error";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
 import { noteColumns } from "./-lib/note-columns";
 import { noteDeleteDialogHandle } from "./-lib/note-delete-dialog-handle";
-import { getNoteRowId, toNoteRows } from "./-lib/note-rows";
+import { getNoteRowId, isNoteRowBusy, toNoteRows } from "./-lib/note-rows";
 
 const PAGE_TITLE = "メモ一覧";
 
@@ -59,8 +58,6 @@ function NotesPagePending() {
  * pending な行 (保存中・削除中) の見え方。半透明で pending を伝える (ADR-0016) が、
  * `opacity-50` は本文を 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る
  * (`index.test.tsx` の楽観行の a11y 検査が axe で実測)。比率を満たす範囲で薄くする。
- * `rowProps` が保存中・削除中の両方に当てる。cva variant にすると registry の `TableRow` に
- * variant を持たせることになる (ADR-0006 の対象) ので、消費側の定数で持つ。
  */
 const busyRowAppearance = "opacity-60";
 
@@ -112,7 +109,7 @@ function NotesPage() {
 
   // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
   // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
-  function confirmDelete(target: DeleteTarget<Note["id"]>) {
+  function confirmDelete(target: NoteDeleteTarget) {
     const alreadyDeleting =
       queryClient.isMutating({
         ...noteMutationFilters.remove,
@@ -154,7 +151,7 @@ function NotesPage() {
             getRowId={getNoteRowId}
             // busy の判定は行データから (ADR-0016)。通知は announcer が担う (ADR-0017)
             rowProps={({ original }) => {
-              const isBusy = original.kind === "creating" || original.isDeleting;
+              const isBusy = isNoteRowBusy(original);
               return { "aria-busy": isBusy, className: isBusy ? busyRowAppearance : undefined };
             }}
           />
@@ -163,7 +160,6 @@ function NotesPage() {
 
       <NoteCreateDialog />
 
-      {/* Root は 1 handle につき 1 つ。trigger は `NoteActionsCell` にあり、同じ handle で結ぶ */}
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}
         entityLabel={NOTE_ENTITY_LABEL}

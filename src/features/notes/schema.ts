@@ -16,6 +16,10 @@ const titleLabel = v.metadata<string, { label: typeof TITLE_LABEL }>({ label: TI
 export const NOTE_TITLE_MAX_LENGTH = 100;
 export const NOTE_BODY_MAX_LENGTH = 2000;
 
+function requiredMessage(label: string): string {
+  return `${label}を入力してください`;
+}
+
 function maxLengthMessage(label: string, maxLength: number): string {
   return `${label}は ${maxLength} 文字以内で入力してください`;
 }
@@ -31,7 +35,7 @@ export const noteInputSchema = v.object({
   title: v.pipe(
     v.string(),
     v.trim(),
-    v.minLength(1, `${TITLE_LABEL}を入力してください`),
+    v.minLength(1, requiredMessage(TITLE_LABEL)),
     v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
     titleLabel,
   ),
@@ -67,7 +71,7 @@ const noteIdValueSchema = v.pipe(
  */
 const storedTitleSchema = v.pipe(
   v.string(),
-  v.minLength(1, `${TITLE_LABEL}を入力してください`),
+  v.minLength(1, requiredMessage(TITLE_LABEL)),
   v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
   v.check((value) => value === value.trim(), `${TITLE_LABEL}の前後に空白が残っています`),
   titleLabel,

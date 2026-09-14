@@ -1,4 +1,5 @@
-import { type Row, type RowData, type TableOptions, useTable } from "@tanstack/react-table";
+import type { Row, RowData, TableOptions } from "@tanstack/react-table";
+import { useTable } from "@tanstack/react-table";
 import { useTanStackTableDevtools } from "@tanstack/react-table-devtools";
 import type { ComponentProps } from "react";
 
@@ -11,7 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { type DataTableFeatures, dataTableFeatures } from "./data-table-features";
+import type { DataTableFeatures } from "./data-table-features";
+import { dataTableFeatures } from "./data-table-features";
 
 /** 転送する option の型は `useTable` の options から導出する (`.claude/rules/typing.md`「ラッパー部品の転送 prop 型」) */
 interface DataTableProps<TData extends RowData> extends Pick<
@@ -70,7 +72,7 @@ export function DataTable<TData extends RowData>({
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={columns.length} className="h-24 text-center">
+            <TableCell colSpan={table.getAllLeafColumns().length} className="h-24 text-center">
               {emptyText}
             </TableCell>
           </TableRow>

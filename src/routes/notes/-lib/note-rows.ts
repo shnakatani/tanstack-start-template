@@ -1,11 +1,8 @@
-import type { CellContext } from "@tanstack/react-table";
-
-import type { DataTableFeatures } from "@/components/data-table-features";
 import type { CreatingRow } from "@/features/notes/creating-rows";
 import type { Note, NoteInput } from "@/features/notes/schema";
 
 /** 確定済みの行 (query の data)。`isDeleting` は pending な削除 mutation の variables から派生する */
-export type SavedNoteRow = { kind: "saved"; note: Note; isDeleting: boolean };
+type SavedNoteRow = { kind: "saved"; note: Note; isDeleting: boolean };
 
 /** 保存中の行 (pending な追加 mutation の variables)。id と createdAt をまだ持たない */
 type CreatingNoteRow = { kind: "creating" } & CreatingRow;
@@ -13,8 +10,10 @@ type CreatingNoteRow = { kind: "creating" } & CreatingRow;
 /** 一覧の 1 行。確定行と保存中の行の union で、cell は `kind` で分岐する (ADR-0019「行の型」)。 */
 export type NoteRow = SavedNoteRow | CreatingNoteRow;
 
-/** cell コンポーネントが受ける props (`FlexRender` が渡す cell の context)。 */
-export type NoteCellContext = CellContext<DataTableFeatures, NoteRow>;
+/** busy 表現 (aria-busy + 半透明) を付ける行。保存中の行と、削除中の確定行 (ADR-0016) */
+export function isNoteRowBusy(row: NoteRow): boolean {
+  return row.kind === "creating" || row.isDeleting;
+}
 
 /** 入力項目 (title / body) がどちらの行にも載っている場所。テキスト列はここから読む */
 export function noteInputOf(row: NoteRow): NoteInput {

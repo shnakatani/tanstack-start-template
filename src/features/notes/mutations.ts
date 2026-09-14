@@ -6,6 +6,9 @@ import type { DeleteTarget } from "@/components/delete-confirm-dialog";
 import { createNote, removeNote } from "./functions";
 import type { Note, NoteInput } from "./schema";
 
+/** 削除 mutation の variables。確認ダイアログの payload と同じ形で、完了の通知に name を使う */
+export type NoteDeleteTarget = DeleteTarget<Note["id"]>;
+
 /**
  * mutation の定義。`queries.ts` の `queryOptions` と同じ置き方で、`mutationKey` と `mutationFn` を
  * 1 箇所に結ぶ。`onMutate` / `onSuccess` / `onError` は、通知の文言と閉じる対象 (ダイアログの
@@ -25,7 +28,7 @@ export const removeNoteMutation = mutationOptions({
   // variables に name も載せるのは完了の通知で対象を名指しするため (同時削除で 2 件の
   // 「削除しました」が並ぶと区別できない)。id の検証は removeNote 側の validator
   // (noteIdSchema) が持つ
-  mutationFn: (target: DeleteTarget<Note["id"]>) => removeNote({ data: { id: target.id } }),
+  mutationFn: (target: NoteDeleteTarget) => removeNote({ data: { id: target.id } }),
 });
 
 /**

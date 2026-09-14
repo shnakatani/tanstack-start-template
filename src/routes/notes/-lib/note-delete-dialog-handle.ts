@@ -1,6 +1,5 @@
-import type { DeleteTarget } from "@/components/delete-confirm-dialog";
 import { createAlertDialogHandle } from "@/components/ui/alert-dialog";
-import type { Note } from "@/features/notes/schema";
+import type { NoteDeleteTarget } from "@/features/notes/mutations";
 
 /**
  * 削除確認ダイアログの detached trigger (一覧の各行、`-components/note-cells.tsx`) と、Root
@@ -8,4 +7,4 @@ import type { Note } from "@/features/notes/schema";
  * 同じ handle を持つことだけなので、両方が import できる module 定数として置く。
  * ページの `confirmDelete` も完了点 (a) の `close()` にこれを使う (ADR-0016)。
  */
-export const noteDeleteDialogHandle = createAlertDialogHandle<DeleteTarget<Note["id"]>>();
+export const noteDeleteDialogHandle = createAlertDialogHandle<NoteDeleteTarget>();

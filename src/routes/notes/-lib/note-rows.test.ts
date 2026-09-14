@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { getNoteRowId, noteInputOf, toNoteRows } from "./note-rows";
-import { NOTE, OTHER_NOTE } from "./note-rows.test-helpers";
+import { CREATED_NOTE, NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 
-const CREATING = { submittedAt: 1_700_000_000_000, variables: { title: "新しいメモ", body: "" } };
+import { getNoteRowId, isNoteRowBusy, noteInputOf, toNoteRows } from "./note-rows";
+
+/** 保存中の 1 件。CREATED_NOTE と同じ入力で、id と createdAt をまだ持たない */
+const CREATING = {
+  submittedAt: 1_700_000_000_000,
+  variables: { title: CREATED_NOTE.title, body: CREATED_NOTE.body },
+};
 
 describe("toNoteRows", () => {
   it("入力が全て空なら空配列", () => {
@@ -39,6 +44,14 @@ describe("noteInputOf", () => {
   it("確定行は note を、保存中の行は variables を返す", () => {
     expect(noteInputOf({ kind: "saved", note: NOTE, isDeleting: false })).toBe(NOTE);
     expect(noteInputOf({ kind: "creating", ...CREATING })).toBe(CREATING.variables);
+  });
+});
+
+describe("isNoteRowBusy", () => {
+  it("保存中の行と削除中の確定行だけが busy", () => {
+    expect(isNoteRowBusy({ kind: "creating", ...CREATING })).toBe(true);
+    expect(isNoteRowBusy({ kind: "saved", note: NOTE, isDeleting: true })).toBe(true);
+    expect(isNoteRowBusy({ kind: "saved", note: NOTE, isDeleting: false })).toBe(false);
   });
 });
 
