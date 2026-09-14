@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-11
-- 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)
+- 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)、ADR-0018 (Base UI の animation を無効にして走らせる。`waitForAnimations()` が要る場面は変わらない)
 
 ## Context
 

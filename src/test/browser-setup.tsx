@@ -13,6 +13,7 @@ import { render } from "vitest-browser-react";
 
 import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
+import { disableBaseUiAnimations } from "@/test/base-ui-animations";
 import { parkMouse } from "@/test/park-mouse";
 
 /**
@@ -22,6 +23,9 @@ import { parkMouse } from "@/test/park-mouse";
 beforeEach(async () => {
   await parkMouse();
 });
+
+// Base UI の animation の既定 (ADR-0018)。理由と戻し方は base-ui-animations.ts の JSDoc
+beforeEach(disableBaseUiAnimations);
 
 /**
  * `announce()` (ADR-0017) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が

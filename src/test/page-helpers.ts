@@ -17,9 +17,9 @@ export function createTestQueryClient(config?: Omit<QueryClientConfig, "defaultO
 /**
  * ダイアログがまだ開いていることを検証する。
  *
- * close は同期的に `data-open` → `data-closed` を切り替えるが、animate-out (duration-100) の間も
- * Popup は DOM に残る。要素の存在だけを見ると「close 済みだがアニメーション窓の中」を
- * 「開いたまま」と誤判定するので、`data-open` を見る。
+ * close は同期的に `data-open` → `data-closed` を切り替えるが、Popup の unmount は次の描画で、
+ * animation を戻したテスト (ADR-0018) では animate-out の完了まで残る。要素の存在だけを見ると
+ * 「close 済みだがまだ DOM にある」を「開いたまま」と誤判定するので、`data-open` を見る。
  * Popup は `aria-hidden` 配下に入ることがあるため `includeHidden` で取る。
  */
 export function expectDialogOpen(
