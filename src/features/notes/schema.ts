@@ -3,15 +3,13 @@ import * as v from "valibot";
 /** ドメインの呼称。画面見出し・追加ボタン・削除確認の文言が使う。 */
 export const NOTE_ENTITY_LABEL = "メモ";
 
-/**
- * 項目の呼称。各項目の pipe が `v.metadata({ label })` で持ち、検証メッセージも同じ定数を使う
- * (ADR-0008)。フォームの label と一覧の見出しは `NOTE_FIELD_LABELS` (下) から型付きで受け取る。
- * pipe の外で action を作るときは `TInput` を型引数で与える。型引数も注釈も無いと `unknown` に
- * 推論され、`v.pipe` の overload に合わない。
- */
+/** 項目の呼称。検証メッセージと各項目の `v.metadata({ label })` が同じ定数を使う (ADR-0008 §4)。 */
 const TITLE_LABEL = "タイトル";
 const BODY_LABEL = "本文";
-/** 入力用と保存用で pipe が分かれる title は、同じ action を両方に渡す */
+/**
+ * 入力用と保存用で pipe が分かれる title は、同じ action を両方に渡す。pipe の外で作る action は
+ * `TInput` を型引数で与える。無いと `unknown` に推論され、`v.pipe` の overload に合わない。
+ */
 const titleLabel = v.metadata<string, { label: typeof TITLE_LABEL }>({ label: TITLE_LABEL });
 
 /** 制約値はメッセージにも埋まるため、制約とメッセージが別々の数値を持たないよう定数で束ねる。 */

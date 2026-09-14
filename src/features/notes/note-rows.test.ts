@@ -1,15 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { getNoteRowId, toNoteRows } from "./note-rows";
-import type { Note } from "./schema";
+import { getNoteRowId, noteInputOf, toNoteRows } from "./note-rows";
+import { NOTE, OTHER_NOTE } from "./note.test-helpers";
 
-const NOTE: Note = {
-  id: 1,
-  title: "買い物リスト",
-  body: "牛乳とパンを買う",
-  createdAt: new Date("2026-08-17T00:30:00.000Z"),
-};
-const OTHER: Note = { ...NOTE, id: 2, title: "読書メモ" };
 const CREATING = { submittedAt: 1_700_000_000_000, variables: { title: "新しいメモ", body: "" } };
 
 describe("toNoteRows", () => {
@@ -18,19 +11,34 @@ describe("toNoteRows", () => {
   });
 
   it("保存中の行を先頭に、確定行をその後ろに並べる", () => {
-    const rows = toNoteRows({ notes: [NOTE, OTHER], creatingRows: [CREATING], deletingIds: [] });
+    const rows = toNoteRows({
+      notes: [NOTE, OTHER_NOTE],
+      creatingRows: [CREATING],
+      deletingIds: [],
+    });
 
     expect(rows.map((row) => row.kind)).toEqual(["creating", "saved", "saved"]);
     expect(rows[0]).toEqual({ kind: "creating", ...CREATING });
   });
 
   it("deletingIds に含まれる確定行だけ isDeleting になる", () => {
-    const rows = toNoteRows({ notes: [NOTE, OTHER], creatingRows: [], deletingIds: [OTHER.id] });
+    const rows = toNoteRows({
+      notes: [NOTE, OTHER_NOTE],
+      creatingRows: [],
+      deletingIds: [OTHER_NOTE.id],
+    });
 
     expect(rows).toEqual([
       { kind: "saved", note: NOTE, isDeleting: false },
-      { kind: "saved", note: OTHER, isDeleting: true },
+      { kind: "saved", note: OTHER_NOTE, isDeleting: true },
     ]);
+  });
+});
+
+describe("noteInputOf", () => {
+  it("確定行は note を、保存中の行は variables を返す", () => {
+    expect(noteInputOf({ kind: "saved", note: NOTE, isDeleting: false })).toBe(NOTE);
+    expect(noteInputOf({ kind: "creating", ...CREATING })).toBe(CREATING.variables);
   });
 });
 

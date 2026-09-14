@@ -1,18 +1,19 @@
 import type { CreatingRow } from "./creating-rows";
-import type { Note } from "./schema";
+import type { Note, NoteInput } from "./schema";
 
 /** 確定済みの行 (query の data)。`isDeleting` は pending な削除 mutation の variables から派生する */
 export type SavedNoteRow = { kind: "saved"; note: Note; isDeleting: boolean };
 
 /** 保存中の行 (pending な追加 mutation の variables)。id と createdAt をまだ持たない */
-export type CreatingNoteRow = { kind: "creating" } & CreatingRow;
+type CreatingNoteRow = { kind: "creating" } & CreatingRow;
 
-/**
- * 一覧の 1 行。確定行と保存中の行を 1 本の配列にして table に渡す。楽観表示は query 側
- * (pending な mutation の variables) で行い、`useOptimistic` に query の data を渡さない
- * (ADR-0014「楽観表示の使い分け」、ADR-0016)。
- */
+/** 一覧の 1 行。確定行と保存中の行の union で、cell は `kind` で分岐する (ADR-0019「行の型」)。 */
 export type NoteRow = SavedNoteRow | CreatingNoteRow;
+
+/** 入力項目 (title / body) がどちらの行にも載っている場所。テキスト列はここから読む */
+export function noteInputOf(row: NoteRow): NoteInput {
+  return row.kind === "saved" ? row.note : row.variables;
+}
 
 /** 行の React key と table の row id。確定行と保存中の行は別の行で、再取得で入れ替わる */
 export function getNoteRowId(row: NoteRow): string {

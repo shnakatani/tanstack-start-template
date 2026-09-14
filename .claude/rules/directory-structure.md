@@ -46,7 +46,7 @@ paths:
 | 対象                                         | 置き場所                                                                                                                                                                                     |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                                                                                  |
-| 特定の部品の locator                         | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下の部品は `-components/` に居る (ADR-0012) ので helper もそこに置き、route ファイル自身の helper は route ファイルの隣に置く |
+| 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下の部品は `-components/` に居る (ADR-0012) ので helper もそこに置き、route ファイル自身の helper は route ファイルの隣に置く |
 
 - `*.test-helpers.ts` は `vp test` の include に一致せず、coverage からも除外する (`vitest.config.ts`)
 - route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-components/` の中は `-` prefix で元から除外される

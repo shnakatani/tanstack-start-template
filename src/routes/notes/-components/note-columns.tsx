@@ -5,18 +5,13 @@ import { type DataTableFeatures } from "@/components/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import type { NoteRow, SavedNoteRow } from "@/features/notes/note-rows";
-import type { NoteInput } from "@/features/notes/schema";
+import { noteInputOf } from "@/features/notes/note-rows";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "./note-delete-dialog";
 
 const helper = createColumnHelper<DataTableFeatures, NoteRow>();
-
-/** 入力項目 (title / body) がどちらの行にも載っている場所。テキスト列はここから読む */
-function noteInputOf(row: NoteRow): NoteInput {
-  return row.kind === "saved" ? row.note : row.variables;
-}
 
 /** メモ一覧の列定義 (ADR-0019)。`TableSkeleton` の列数もここから採る。 */
 export const noteColumns = helper.columns([

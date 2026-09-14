@@ -104,9 +104,7 @@ function NotesPage() {
     }),
   });
 
-  // hook より後ろで派生値を作る。hook の間に挟むと React Compiler がこの scope を切れず、
-  // rows が毎 render 新しい参照になって table の行モデルが作り直される (ADR-0009、
-  // TanStack Table「React Compiler」。oxc-transform-react の出力で実測)
+  // 派生値は hook より後ろで作る (ADR-0019「data の組み立て」。oxc-transform-react の出力で実測)
   const deletingIds = parseDeletingIds(pendingDeleteVariables);
   const creatingRows = parseCreatingRows(pendingCreateStates);
   const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds });

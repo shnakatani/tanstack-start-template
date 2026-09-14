@@ -6,6 +6,7 @@ import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { Toaster } from "@/components/ui/toast";
+import { NOTE, OTHER_NOTE } from "@/features/notes/note.test-helpers";
 import type { Note } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
@@ -40,22 +41,8 @@ import { loadNotesPageData, Route } from "./index";
 
 const NotesPage = Route.options.component!;
 
-// createdAt は APP_TIME_ZONE の壁時計で描画する。fixture は絶対時刻 (UTC) で固定し、
-// 期待値が実行環境のローカル TZ で動かないようにする (2026-08-17T00:30Z = JST 09:30)
-const NOTE: Note = {
-  id: 1,
-  title: "買い物リスト",
-  body: "牛乳とパンを買う",
-  createdAt: new Date("2026-08-17T00:30:00.000Z"),
-};
+/** NOTE.createdAt (UTC) を APP_TIME_ZONE の壁時計で描いた期待値 (note.test-helpers.ts) */
 const NOTE_CREATED_AT_TEXT = "2026-08-17 09:30";
-/** 楽観表示と無効化が対象行だけに効くことを見るための 2 件目 */
-const OTHER_NOTE: Note = {
-  id: 2,
-  title: "読書メモ",
-  body: "気になった箇所を書き出す",
-  createdAt: new Date("2026-08-18T00:30:00.000Z"),
-};
 /**
  * 追加のテストで保存する 1 件。楽観行は title / body だけを描き、id と createdAt は
  * 再取得後の実データとして使う (保存前のクライアントはこの 2 つを持たない)。
