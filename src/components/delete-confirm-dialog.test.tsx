@@ -8,6 +8,10 @@ import { dispatchNativeClick } from "@/test/native-click";
 import type { Screen } from "@/test/page-helpers";
 
 import { DeleteConfirmDialog, type DeleteTarget } from "./delete-confirm-dialog";
+import {
+  confirmDeleteButton,
+  deleteConfirmDescription,
+} from "./delete-confirm-dialog.test-helpers";
 
 const TARGET: DeleteTarget = { id: "w1", name: "田中太郎" };
 
@@ -45,9 +49,7 @@ describe("DeleteConfirmDialog", () => {
     await openDialog(screen);
 
     expect(screen.getByText("ユーザーの削除").query()).not.toBeNull();
-    expect(
-      screen.getByText("「田中太郎」を削除しますか？この操作は取り消せません。").query(),
-    ).not.toBeNull();
+    expect(screen.getByText(deleteConfirmDescription("田中太郎")).query()).not.toBeNull();
   });
 
   it("開く前はダイアログが表示されない", async () => {
@@ -84,9 +86,7 @@ describe("DeleteConfirmDialog", () => {
     await openDialog(screen);
 
     expect(screen.getByText("タグの削除").query()).not.toBeNull();
-    expect(
-      screen.getByText("「重要」を削除しますか？この操作は取り消せません。").query(),
-    ).not.toBeNull();
+    expect(screen.getByText(deleteConfirmDescription("重要")).query()).not.toBeNull();
   });
 
   it("description を指定すると payload の name を受け取って既定文言を上書きする", async () => {
@@ -101,9 +101,7 @@ describe("DeleteConfirmDialog", () => {
     expect(
       screen.getByText("「田中太郎」と紐づくタグをまとめて削除しますか？").query(),
     ).not.toBeNull();
-    expect(
-      screen.getByText("「田中太郎」を削除しますか？この操作は取り消せません。").query(),
-    ).toBeNull();
+    expect(screen.getByText(deleteConfirmDescription("田中太郎")).query()).toBeNull();
   });
 
   it("payload なしで開かれた場合は warn して onConfirm を呼ばない", async () => {
@@ -134,7 +132,7 @@ describe("DeleteConfirmDialog", () => {
     await openDialog(screen);
 
     // バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
-    const confirmButton = screen.getByRole("button", { name: "削除", exact: true });
+    const confirmButton = confirmDeleteButton(screen);
     confirmButton.element().focus();
     await userEvent.keyboard("{Enter}");
 
@@ -152,7 +150,7 @@ describe("DeleteConfirmDialog", () => {
     const onConfirm = vi.fn(() => new Promise<void>(() => {}));
     const { screen } = await renderWithTrigger({ entityLabel: "ユーザー", onConfirm });
     await openDialog(screen);
-    const element = screen.getByRole("button", { name: "削除", exact: true }).element();
+    const element = confirmDeleteButton(screen).element();
 
     // 実イベント (CDP 経由) で 2 回発火する (バックドロップが pointer を遮るためキーボードで)
     element.focus();

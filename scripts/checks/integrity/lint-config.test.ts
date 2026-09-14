@@ -30,23 +30,31 @@ const EXPECTED_PLUGINS = [
 ];
 
 /** 緩和の範囲。広げると本体コードでも no-unsafe-* が無効になる */
-const EXPECTED_OVERRIDE_FILES = [
-  "**/*.test.ts",
-  "**/*.test.tsx",
-  "**/*.test-helpers.ts",
-  "**/*.test-helpers.tsx",
-  "src/test/**",
-];
+const EXPECTED_RELAXATION_FILES = ["**/*.test.ts", "**/*.test.tsx", "src/test/**"];
 
 /** 緩和するルール。増やすとテストコードの型検査がその分だけ緩む (ADR-0004「テストファイルの緩和」) */
-const EXPECTED_OVERRIDE_RULES = [
-  "no-restricted-imports",
+const EXPECTED_RELAXATION_RULES = [
   "typescript/no-non-null-assertion",
   "typescript/no-unsafe-assignment",
   "typescript/no-unsafe-call",
   "typescript/no-unsafe-member-access",
   "typescript/no-unsafe-return",
 ];
+
+/**
+ * テスト専用のコードの import 禁止を当てる範囲。緩和ではなく範囲を絞った有効化なので、
+ * テスト側は off ではなく excludeFiles で外す (ADR-0004「基準から外れる名指し」)
+ */
+const EXPECTED_RESTRICTION_SCOPE = {
+  files: ["src/**", "scripts/**"],
+  excludeFiles: [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.test-helpers.ts",
+    "**/*.test-helpers.tsx",
+    "src/test/**",
+  ],
+};
 
 /** lint が見に行くべきソースの所在 */
 const SOURCE_ROOTS = ["src", "scripts"];
@@ -61,7 +69,7 @@ interface PrintedConfig {
   categories: Record<string, string>;
   options: Record<string, boolean>;
   rules: Record<string, unknown>;
-  overrides: { files: string[]; rules: Record<string, unknown> }[];
+  overrides: { files: string[]; excludeFiles?: string[]; rules: Record<string, unknown> }[];
 }
 
 /** spawn 自体の失敗を「検査が通った」と読み違えないよう例外で落とす */
@@ -138,18 +146,34 @@ describe("書いた設定が解決後も残っている", () => {
     expect(printedConfig.options).toEqual({ typeAware: true, typeCheck: true });
   });
 
+  // excludeFiles の有無で「緩和」と「範囲を絞った有効化」を見分ける
+  const relaxations = () => printedConfig.overrides.filter((override) => !override.excludeFiles);
+  const restrictions = () => printedConfig.overrides.filter((override) => override.excludeFiles);
+
   it("緩和するファイルの範囲を広げていない", () => {
     expect(
-      printedConfig.overrides.map((override) => override.files),
+      relaxations().map((override) => override.files),
       "緩和の範囲が変わった。広げると本体コードでも no-unsafe-* が無効になる",
-    ).toEqual([EXPECTED_OVERRIDE_FILES]);
+    ).toEqual([EXPECTED_RELAXATION_FILES]);
   });
 
   it("緩和するルールを増やしていない", () => {
     expect(
-      printedConfig.overrides.flatMap((override) => Object.keys(override.rules)).sort(),
+      relaxations()
+        .flatMap((override) => Object.keys(override.rules))
+        .sort(),
       "緩和するルールが変わった。増やすとテストコードの型検査がその分だけ緩む",
-    ).toEqual([...EXPECTED_OVERRIDE_RULES].sort());
+    ).toEqual([...EXPECTED_RELAXATION_RULES].sort());
+  });
+
+  it("テスト専用のコードの import 禁止をアプリのコードだけに当てている", () => {
+    expect(
+      restrictions().map(({ files, excludeFiles }) => ({ files, excludeFiles })),
+      "禁止の範囲が変わった。excludeFiles を狭めるとテストや helper が自分の helper を import できなくなる",
+    ).toEqual([EXPECTED_RESTRICTION_SCOPE]);
+    expect(restrictions().flatMap((override) => Object.keys(override.rules))).toEqual([
+      "no-restricted-imports",
+    ]);
   });
 });
 

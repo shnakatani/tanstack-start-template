@@ -1,14 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { CREATED_NOTE, NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
+import { CREATING_ROW, NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 
 import { getNoteRowId, isNoteRowBusy, noteInputOf, toNoteRows } from "./note-rows";
-
-/** 保存中の 1 件。CREATED_NOTE と同じ入力で、id と createdAt をまだ持たない */
-const CREATING = {
-  submittedAt: 1_700_000_000_000,
-  variables: { title: CREATED_NOTE.title, body: CREATED_NOTE.body },
-};
 
 describe("toNoteRows", () => {
   it("入力が全て空なら空配列", () => {
@@ -18,12 +12,12 @@ describe("toNoteRows", () => {
   it("保存中の行を先頭に、確定行をその後ろに並べる", () => {
     const rows = toNoteRows({
       notes: [NOTE, OTHER_NOTE],
-      creatingRows: [CREATING],
+      creatingRows: [CREATING_ROW],
       deletingIds: [],
     });
 
     expect(rows.map((row) => row.kind)).toEqual(["creating", "saved", "saved"]);
-    expect(rows[0]).toEqual({ kind: "creating", ...CREATING });
+    expect(rows[0]).toEqual({ kind: "creating", ...CREATING_ROW });
   });
 
   it("deletingIds に含まれる確定行だけ isDeleting になる", () => {
@@ -43,13 +37,13 @@ describe("toNoteRows", () => {
 describe("noteInputOf", () => {
   it("確定行は note を、保存中の行は variables を返す", () => {
     expect(noteInputOf({ kind: "saved", note: NOTE, isDeleting: false })).toBe(NOTE);
-    expect(noteInputOf({ kind: "creating", ...CREATING })).toBe(CREATING.variables);
+    expect(noteInputOf({ kind: "creating", ...CREATING_ROW })).toBe(CREATING_ROW.variables);
   });
 });
 
 describe("isNoteRowBusy", () => {
   it("保存中の行と削除中の確定行だけが busy", () => {
-    expect(isNoteRowBusy({ kind: "creating", ...CREATING })).toBe(true);
+    expect(isNoteRowBusy({ kind: "creating", ...CREATING_ROW })).toBe(true);
     expect(isNoteRowBusy({ kind: "saved", note: NOTE, isDeleting: true })).toBe(true);
     expect(isNoteRowBusy({ kind: "saved", note: NOTE, isDeleting: false })).toBe(false);
   });

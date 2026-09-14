@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import {
+  confirmDeleteButton,
+  deleteConfirmDescription,
+} from "@/components/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
 import {
@@ -34,6 +38,7 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
 
+import { noteRow, rowDeleteButton } from "./-components/note-cells.test-helpers";
 import {
   bodyTextbox,
   NOTE_CREATE_TRIGGER_LABEL,
@@ -59,27 +64,12 @@ async function renderPage() {
   return render(<RouterProvider router={router} />);
 }
 
-/** 行の削除ボタン。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない)。 */
-function rowDeleteButton(screen: Screen, title: string) {
-  return screen.getByRole("button", { name: `${title}を削除`, exact: true });
-}
-
-/**
- * メモの行。モーダル表示中は行が aria-hidden 配下に入るので、その間に取るときは includeHidden を
- * 渡す。閉じた後は不要 (Base UI の animation は無効で、close の次の描画で unmount する。ADR-0018)。
- */
-function noteRow(screen: Screen, note: Note, { includeHidden = false } = {}) {
-  return screen.getByRole("row", { name: new RegExp(note.title), includeHidden });
-}
-
 async function expectCreateDialogClosed(screen: Screen) {
   await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
 }
 
 async function expectDeleteConfirmClosed(screen: Screen) {
-  await expect
-    .element(screen.getByRole("button", { name: "削除", exact: true }))
-    .not.toBeInTheDocument();
+  await expect.element(confirmDeleteButton(screen)).not.toBeInTheDocument();
 }
 
 /** 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。 */
@@ -93,7 +83,7 @@ async function expectSettledRow(screen: Screen, note: Note) {
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
   await rowDeleteButton(screen, note.title).click();
-  await expectText(screen, `「${note.title}」を削除しますか？この操作は取り消せません。`);
+  await expectText(screen, deleteConfirmDescription(note.title));
   // click で動いた実マウスは、ダイアログが閉じて下の要素が露出する前に退避する。乗ったままだと
   // 露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
   // (testing.md「マウス位置を動かすテストは自分で戻す」)
@@ -114,7 +104,7 @@ async function submitCreate(screen: Screen, note: Note) {
 
 function confirmDelete(screen: Screen) {
   // 確認ダイアログのボタンは inert バックドロップが pointer event を横取りするため native click
-  dispatchNativeClick(screen.getByRole("button", { name: "削除", exact: true }).element());
+  dispatchNativeClick(confirmDeleteButton(screen).element());
 }
 
 describe("NotesPage", () => {
@@ -477,7 +467,7 @@ describe("NotesPage", () => {
 
     // 確定はキーボードで (testing.md「クリックの発火方法」の順 2)。
     // close の animate-out の間にもう一度 Enter を送る
-    screen.getByRole("button", { name: "削除", exact: true }).element().focus();
+    confirmDeleteButton(screen).element().focus();
     await userEvent.keyboard("{Enter}");
     await userEvent.keyboard("{Enter}");
 

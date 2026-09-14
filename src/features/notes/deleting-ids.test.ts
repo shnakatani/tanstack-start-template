@@ -25,7 +25,7 @@ describe("parseDeletingIds", () => {
         { id: NOTE.id, name: NOTE.title },
         { id: OTHER_NOTE.id, name: OTHER_NOTE.title },
       ]),
-    ).toEqual([1, 2]);
+    ).toEqual([NOTE.id, OTHER_NOTE.id]);
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
