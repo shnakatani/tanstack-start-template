@@ -7,6 +7,7 @@
 - Revised: 2026-09-13 (「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落を ADR-0014 に合わせて書き換えた。mutation を伴う操作は Action の中で行い pending を Transition から取る。ハンドラを同期関数として宣言する規範はそのまま)
 - Revised: 2026-09-14 (`no-restricted-imports` を名指しへ加えた。テスト専用のコード (`*.test-helpers.ts` と `src/test/`) のアプリ側からの import を lint で止める。緩和の 5 ルールは変えない)
 - Revised: 2026-09-19 (Tailwind と shadcn/ui 領域の JS plugin を `eslint-plugin-better-tailwindcss` から `@shadcn/lint` へ移し、未知 class、raw color、arbitrary color の 3 ルールへ責務を分けた)
+- Revised: 2026-09-19 (`no-restyle` を採用ルールへ加え、`settings.shadcn.componentImports` と `overrides.excludeFiles` で適用範囲を design system の層に合わせた。層の決定は ADR-0020)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -149,17 +150,19 @@ oxc 自身の設定と同じく、`correctness` と `perf` に入る分だけを
 
 oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たないため、`jsPlugins` で `@shadcn/lint` を読み込む。
 `components.json` の UI alias と theme CSS を自動探索できるため、同じ値を `settings.shadcn` へ複製しない。
+`settings.shadcn.componentImports` はこの探索結果の書き直しではなく、`ui` alias の外側にある自作部品 (`parts/` 等) まで design system component として認識させる追加である (ADR-0020)。
 
-| 有効にしたルール             | 見るもの                                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------ |
-| `shadcn/no-unknown-classes`  | theme から生成されない class と未知 variant                                          |
-| `shadcn/no-raw-colors`       | palette class、未定義 semantic color token、SVG の raw color                         |
-| `shadcn/no-arbitrary-values` | `deny: ["color"]` で arbitrary color だけを禁止し、非色の arbitrary value は許可する |
+| 有効にしたルール             | 見るもの                                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------- |
+| `shadcn/no-unknown-classes`  | theme から生成されない class と未知 variant                                             |
+| `shadcn/no-raw-colors`       | palette class、未定義 semantic color token、SVG の raw color                            |
+| `shadcn/no-arbitrary-values` | `deny: ["color"]` で arbitrary color だけを禁止し、非色の arbitrary value は許可する    |
+| `shadcn/no-restyle`          | design system component への `className` 上書き。`allow: ["layout"]` で layout だけ通す |
 
 `no-raw-colors` は `bg-[#333]` のような arbitrary color を検査しないため、`no-arbitrary-values` と対で使う。
 `no-raw-colors` は class だけでなく `fill` / `stroke` など SVG 属性の raw color も見る。移行前の 2 ルールに無かった検査で、統制の範囲はここだけ広がる。
 `no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制し ADR-0006 の許容リストへ記録する。
-`no-restyle`、`no-inline-styles`、`require-static-classes` は既存の色と未知 class の統制を超えるため、別の設計判断として有効化しない。
+`no-restyle` は 2026-09-19 に ADR-0020 の層の決定と対で採用した。`no-inline-styles` と `require-static-classes` は別の設計判断として有効化しない。
 
 `@shadcn/lint` は上流の `recommended` を持たない。色と未知 class の統制に要る 3 ルールだけを名指しし、component の再装飾、inline style、動的 class の統制を同時に持ち込まない。
 
@@ -301,13 +304,16 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - 3 ルールが発火していることを機械で見張るものは無い。`--print-config` が JS plugin 由来のルールを出さないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は下の probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。token だけを混ぜる表現にも行単位の抑制が要り、抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと無言で通る
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。使われない ESLint 一式が必須 peer 経由で入るため、`pnpm-workspace.yaml` の `packageExtensions` で eslint peer を optional にして止める
-- parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。2026-09-19 の移行で lockfile の `typescript@7.0.2` は `6.0.3` へ置き換わり、Vite+ が読む実体も切り替わった。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らないので、7.0.2 は増分解決で積み上がっていた版である。型検査は tsgolint が担う (ADR-0002) ため `vp check` の結果は変わらない
-- 上の 2 つの撤去条件は同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` も不要になる
+- parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。型検査は tsgolint が担う (ADR-0002) ため `vp check` の結果は変わらない
+- 2026-09-19 の移行で lockfile の `typescript@7.0.2` は `6.0.3` へ置き換わり、Vite+ が読む実体も切り替わった。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らないため、7.0.2 は増分解決で積み上がっていた版である
+- eslint peer の optional 化と `typescript` の 6 系固定は撤去条件が同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` も不要になる
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
 - theme に無いクラスを全て落とすため、`src/styles.css` へ token を足す前に utility を書くと lint で止まる。順序は token の定義が先になる
 - `perf` の `no-await-in-loop` は順序依存のループにも鳴る。機械的に `Promise.all` へ倒さず、抑制と理由の記述で扱う
 - vitest プラグインはテストファイル以外にも効き、行頭がテスト呼び出しに見えるコメントは `no-commented-out-tests` で報告される
 - ルールを足すか迷ったら、まず上流 recommended に入っているかを確認する。入っていないものを足すときは「基準から外れる名指し」の表に理由とともに追記する
+- `settings.shadcn.componentImports` を消すと自作部品が規則から見えなくなり、routes からの上書きが素通りする。`--print-config` に JS plugin 由来の設定は出ないため無言で効かなくなる
+- `no-restyle` の適用範囲はディレクトリで決まる (ADR-0020)。画面の組み立てを `parts/` へ置くと規則が効かない。機械では止まらない
 
 ## 出典
 

@@ -18,12 +18,12 @@ expect(action).toHaveBeenCalledOnce();
 `dispatchEvent` を同期に 2 回呼ぶと、1 回目のハンドラが積んだ state 更新は 2 回目より前に描画されない。フラグを外すとこのテストが落ち、フラグが「必要」に見えた。
 しかし実イベントでは 1 回のイベントごとに描画が済む。
 
-| 論点                       | 根拠                                                                                                                                                                                                                                                                                                |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流す (react-dom 19.3.0 `scheduleImmediateRootScheduleTask`)                                                         |
-| React の保証               | reactwg/react-18 #21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                                                                            |
-| 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する                        |
-| 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (PR #16 の `src/components/action/button.test.tsx` / `form.test.tsx` / `src/components/delete-confirm-dialog.test.tsx` の 2 連射テスト、2026-09-13 の PR #16 branch で実測) |
+| 論点                       | 根拠                                                                                                                                                                                                                                                                                                      |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流す (react-dom 19.3.0 `scheduleImmediateRootScheduleTask`)                                                               |
+| React の保証               | reactwg/react-18 #21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                                                                                  |
+| 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する                              |
+| 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (PR #16 の `src/components/action/button.test.tsx` / `form.test.tsx` / `src/components/parts/delete-confirm-dialog.test.tsx` の 2 連射テスト、2026-09-13 の PR #16 branch で実測) |
 
 ### 合成 click の属性
 

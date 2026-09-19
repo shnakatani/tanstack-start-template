@@ -3,7 +3,7 @@ import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 
 import { ActionForm, ActionFormSubmit } from "@/components/action/form";
-import { DialogScrollBody, dialogScrollLayout } from "@/components/dialog-scroll-body";
+import { DialogScrollBody, dialogScrollLayout } from "@/components/parts/dialog-scroll-body";
 import { Button } from "@/components/ui/button";
 import {
   createDialogHandle,

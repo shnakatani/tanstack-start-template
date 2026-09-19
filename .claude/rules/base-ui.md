@@ -36,7 +36,7 @@ const itemsMap = useMemo(() => Object.fromEntries(list.map((x) => [x.id, x.name]
 
 ## Select: 候補が変わったときの自己リセットに依存しない
 
-「選択中の値が候補から消えた」の検出を `onValueChange` の `null` 通知に頼らない。値の解決は消費側で引き取る (実例: `src/components/form-fields.tsx` の `FormSelectField`)。
+「選択中の値が候補から消えた」の検出を `onValueChange` の `null` 通知に頼らない。値の解決は消費側で引き取る (実例: `src/components/parts/form-fields.tsx` の `FormSelectField`)。
 
 通知は次のいずれかで届かない。
 

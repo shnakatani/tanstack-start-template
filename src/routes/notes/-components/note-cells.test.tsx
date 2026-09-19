@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
-import { DataTable } from "@/components/data-table";
-import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { DataTable } from "@/components/parts/data-table";
+import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
 import {
   confirmDeleteButton,
   deleteConfirmDescription,
-} from "@/components/delete-confirm-dialog.test-helpers";
+} from "@/components/parts/delete-confirm-dialog.test-helpers";
 import type { CreatingRow } from "@/features/notes/creating-rows";
 import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";

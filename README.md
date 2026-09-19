@@ -72,7 +72,7 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 
 動作確認用にメモの一覧・作成・削除 (`/notes`) が入っている。本体は `src/features/notes/` と `src/routes/notes/` の 2 ディレクトリ。その外に散っているものも含めた全対象は `grep -rln notes src/ drizzle/` で出る。
 
-削除ではなく差し替えが要るのは 2 ファイル。`src/server/db/index.test.ts` の疎通ケースは自プロジェクトのテーブルへ、`src/components/button-link.test.tsx` の `to="/notes"` は残す側のパスへ替える (`to` は routeTree に実在するパスしか受け付けない)。
+削除ではなく差し替えが要るのは 2 ファイル。`src/server/db/index.test.ts` の疎通ケースは自プロジェクトのテーブルへ、`src/components/parts/button-link.test.tsx` の `to="/notes"` は残す側のパスへ替える (`to` は routeTree に実在するパスしか受け付けない)。
 消したあとは `mise run db:generate` で migration を作り直す。
 
 ### 5. 引き継いだ決定を見直す

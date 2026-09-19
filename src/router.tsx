@@ -2,8 +2,8 @@ import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
-import { NotFoundContent } from "@/components/not-found";
-import { RouteErrorContent } from "@/components/route-error";
+import { NotFoundContent } from "@/components/screens/not-found";
+import { RouteErrorContent } from "@/components/screens/route-error";
 import { toast } from "@/components/ui/toast";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
 

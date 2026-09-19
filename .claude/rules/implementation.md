@@ -53,7 +53,7 @@ lint 検出: `typescript/no-misused-promises` が、`void` を返す prop へ Pr
 - **操作の失敗を Error Boundary へ届けない**。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる
 
 ```tsx
-// src/components/route-error.tsx。再実行の結果は loader と error boundary が受けるため待たない
+// src/components/screens/route-error.tsx。再実行の結果は loader と error boundary が受けるため待たない
 function handleRetry() {
   reset();
   void router.invalidate();
@@ -146,7 +146,7 @@ registry 部品 (`src/components/ui/`) はアプリ独自の hit 拡大 (疑似�
 
 - input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (ADR-0007)
 - checkbox 行を素の `<label>` で包む手組みや、手書きの `role="group"` を新規に書かない
-- 複数選択は `ChoiceCard` / `ChoiceCardList` (`src/components/choice-card.tsx`) を使う。公式の Choice Card 構成 (`FieldLabel` で `Field` を包む) と行間・クリック領域・disabled 時の見え方はこの部品が持つので、手で組み直さない
+- 複数選択は `ChoiceCard` / `ChoiceCardList` (`src/components/parts/choice-card.tsx`) を使う。公式の Choice Card 構成 (`FieldLabel` で `Field` を包む) と行間・クリック領域・disabled 時の見え方はこの部品が持つので、手で組み直さない
 - 単独は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
 
 ### 幅と閉じる手段

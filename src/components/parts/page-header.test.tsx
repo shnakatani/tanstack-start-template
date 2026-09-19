@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { PageHeader } from "./page-header";
+import { CardPageTitle } from "./page-title";
 
 describe("PageHeader", () => {
   // ページの見出しなので h1。h2 だと画面に h1 が 1 つも無い状態になり、
@@ -34,5 +35,28 @@ describe("PageHeader", () => {
     expect(style.minHeight).toBe("60px");
     expect(style.paddingTop).toBe("12px");
     expect(style.paddingBottom).toBe("12px");
+  });
+
+  // 器が違うので部品は分かれるが、どちらもページ見出しなので寸法は揃っていなければならない。
+  // 別々に class を書いていた頃は、片方だけ変えても何も落ちずに 2 つの見出しがずれた
+  it("カードのページ見出しと寸法が揃う", async () => {
+    const screen = await render(
+      <>
+        <PageHeader title="ヘッダーの見出し" />
+        <CardPageTitle>
+          <h2>カードの見出し</h2>
+        </CardPageTitle>
+      </>,
+    );
+
+    const header = getComputedStyle(
+      screen.getByRole("heading", { name: "ヘッダーの見出し" }).element(),
+    );
+    const card = getComputedStyle(
+      screen.getByRole("heading", { name: "カードの見出し" }).element(),
+    );
+
+    expect(card.fontSize).toBe(header.fontSize);
+    expect(card.fontWeight).toBe(header.fontWeight);
   });
 });

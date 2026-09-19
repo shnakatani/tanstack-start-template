@@ -7,6 +7,14 @@ import { defineConfig, lazyPlugins } from "vite-plus";
 
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
+/**
+ * design system を著作する層 (ADR-0020)。`@shadcn/lint` の 2 軸をここから導出する。
+ * 認識 (`componentImports`) はこの層の部品を design system component として登録し、
+ * 適用 (`excludeFiles`) はこの層自身を規則の対象から外す。別々に書くと片方だけ直しても
+ * 何も落ちず、新しい層の部品が規則から見えないまま消費側の上書きが素通りする
+ */
+const DESIGN_SYSTEM_LAYERS = ["ui", "action", "parts"] as const;
+
 export default defineConfig({
   // Vite の .env 読み込みを切る。秘密を暗号化して .env ごとコミットする方式 (dotenvx 等) は、
   // Vite が .env を native に読むと暗号文をそのまま import.meta.env / process.env へ流し込む。
@@ -38,6 +46,11 @@ export default defineConfig({
     // oxlint はネイティブに Tailwind と shadcn/ui 領域のルールを持たない。JS plugin として載せる
     // (ADR-0004)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
     jsPlugins: [{ name: "shadcn", specifier: "@shadcn/lint" }],
+    settings: {
+      shadcn: {
+        componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
+      },
+    },
     // カテゴリ丸ごとの有効化は correctness と perf に限る。他はプラグインごとの上流
     // recommended を基準に rules へ名指しする (ADR-0004)。
     // vp check は --deny-warnings 相当を持たず既定の warn では exit 0 で通るため error で入れる
@@ -268,6 +281,17 @@ export default defineConfig({
           "typescript/no-unsafe-call": "off",
           "typescript/no-unsafe-member-access": "off",
           "typescript/no-unsafe-return": "off",
+        },
+      },
+      {
+        // no-restyle は「消費側が design system component を上書きしていないか」を見る規則で、
+        // design system 自身の内部には意味を持たない (ADR-0020)。緩和ではなく適用範囲の確定なので
+        // excludeFiles で外す。componentImports が無いと自作部品が規則から見えず、
+        // routes からの上書きが素通りする
+        files: ["src/**"],
+        excludeFiles: DESIGN_SYSTEM_LAYERS.map((layer) => `src/components/${layer}/**`),
+        rules: {
+          "shadcn/no-restyle": ["error", { allow: ["layout"] }],
         },
       },
       {

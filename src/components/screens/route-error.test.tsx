@@ -160,6 +160,17 @@ describe("RouteErrorContent", () => {
     // スクロール可能な viewport に tabindex を付ける)
     expect(scroller.getAttribute("tabindex")).toBe("0");
   });
+
+  it("スタックトレースのトリガーは本文と違う色で描く (操作要素の可読性)", async () => {
+    const error = new Error("取得に失敗しました");
+    error.stack = "Error: 取得に失敗しました\n    at frame0 (src/routes/example.tsx:1:3)";
+    const { screen } = await renderError(error, vi.fn());
+
+    const body = screen.getByText("取得に失敗しました", { exact: true }).element();
+    const trigger = screen.getByRole("button", { name: "スタックトレース" }).element();
+
+    expect(getComputedStyle(trigger).color).not.toBe(getComputedStyle(body).color);
+  });
 });
 
 describe("FullScreenRouteError", () => {
