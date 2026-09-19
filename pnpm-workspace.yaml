@@ -59,11 +59,14 @@ catalog:
 # createParser() は optionalDependencies の oxc-parser を先に試し、parser はそれが解決できない
 # ときのフォールバックになる。parser の eslint peer は必須指定のため、そのままでは使われない
 # ESLint 一式が auto-install-peers で入る。peer を optional へ書き換えて止める。
-# typescript の peer (>=4.8.4 <6.1.0) は optional にしても範囲を上書きしても外れない
-# (2026-09-19 に pnpm 11.25.0 で greenfield 解決を実測)。撤去条件は上流が parser を
-# optional peer へ移すこと (shadcn-ui/lint#1)。移れば ESLint も typescript も依存から消える
+# typescript の peer (>=4.8.4 <6.1.0) は外せない。optional 化は反映されるが版の選択は変わらず、
+# packageExtensions は既存の peer 範囲を上書きしない (追加のみ。2026-09-19 に pnpm 11.25.0 で
+# greenfield 解決を実測)。撤去条件は上流が parser を optional peer へ移すこと
+# (shadcn-ui/lint#1)。移れば ESLint も typescript も依存から消える。
+# このキーはグラフ全体の @typescript-eslint/parser に効く。ESLint を実際に使う依存を足すときは、
+# その peer までここで外れていないかを確かめる
 packageExtensions:
-  "@typescript-eslint/parser":
+  "@typescript-eslint/parser@^8":
     peerDependenciesMeta:
       eslint:
         optional: true

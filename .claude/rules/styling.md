@@ -10,7 +10,7 @@ paths:
 
 ## 冒頭チェックリスト
 
-- [ ] 色は semantic token のみ (palette 直書き・任意値への色の直書き禁止)
+- [ ] 色は semantic token のみ (palette 直書き・任意値への色の直書き・SVG 属性への直書き禁止)
 - [ ] 本文に `text-xs` を使わない / ページ見出しとセクション見出しを同サイズにしない
 - [ ] `isLoading ? <Skeleton>` の即時分岐を新設しない (loader prefetch + `pendingComponent`)
 
@@ -18,6 +18,7 @@ paths:
 
 - `primary` / `secondary` / `muted` / `accent` / `destructive` / `success` / `sidebar-*` 等の semantic token を使う
 - palette 色の直書き (`bg-blue-500` / `text-gray-900` 等) と任意値への色の直書き (`bg-[#hex]` / `bg-[rgb(...)]`) は禁止。淡色ハイライトは `bg-primary/10` のような opacity variant で表現する
+- SVG の `fill` / `stroke` に色を直書きしない。`currentColor` か semantic token を参照する
 - 新しい「意味のある色」が必要になったら、`src/styles.css` の `:root` / `.dark` に CSS 変数を定義し `@theme inline` で token 化してから使う。token を定義する前に utility を書くと未知クラスとして落ちる
 - `var(--...)` だけを材料にした `color-mix()` は許可する。`no-arbitrary-values` は材料を区別しないため、行単位で抑制する。registry 内なら ADR-0006 の許容リストにも記録する
 - 破壊操作は常時 destructive 色を使い、強度は主張度で分ける。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover でのみ着色すると touch 環境で色が出ず、破壊操作だと伝わらない

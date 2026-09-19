@@ -26,7 +26,7 @@ overrides:
   vite@*: npm:@voidzero-dev/vite-plus-core@0.3.2
   vitest@*: 4.1.11
 
-packageExtensionsChecksum: sha256-gZl+9o/+7/hJuyd7dF5K2/KrtGQHgGi7tvQ5QpfGXEg=
+packageExtensionsChecksum: sha256-ttdFC/5hpXZP+Ocsv+u7pWl9gzxONh3zAFJp9hbCbPE=
 
 importers:
 

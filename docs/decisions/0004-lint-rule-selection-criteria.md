@@ -169,6 +169,24 @@ plugin 本体の `meta.name`、診断コード、rule key、抑制 directive が
 一方、抑制 directive は未登録の名前を書いてもエラーにならず、ただ効かない (2026-09-19 に Oxlint 1.82.0 で実測)。名前を揃えないと、rule は有効なまま抑制だけが無言で外れる。
 JS plugin は lint 時間を伸ばす。測るときは `time vp lint` を 2 回ずつ実行して 2 回目同士を比べる (1 回目には解決のコストが乗る)。
 
+3 ルールの発火は `--print-config` に出ないため、次を一時ファイルへ置いて `vp lint <path>` を走らせ、3 行とも診断が出たら消す。
+
+```tsx
+export function Probe() {
+  return (
+    <div>
+      <span className="bg-blue-500" /> {/* no-raw-colors */}
+      <span className="bg-[#333]" /> {/* no-arbitrary-values */}
+      <span className="not-a-real-class" /> {/* no-unknown-classes */}
+    </div>
+  );
+}
+```
+
+theme と component の探索に失敗したときは、`vp lint` の出力へ `[@shadcn/lint]` の警告が出る。
+`components.json` の `tailwind.css` が存在しないパスなら代替の stylesheet を使う旨、Tailwind を import する stylesheet が 1 つも無ければ `no-raw-colors` が宣言済み token を確認できない旨、`ui` alias がディレクトリに解決しなければ design-system component を認識しない旨をそれぞれ報告する (2026-09-19 に実測)。
+3 ルールは警告を出したうえで発火し続け、診断から token の提案が減る。silent failure ではないので、この解決を見張る検査は置かない。
+
 ### 基準から外れる名指し
 
 recommended に無くても、規約や他の決定を機械で守るために足すルールがある。
@@ -280,10 +298,10 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - typescript-eslint は依存に入っていないため、`strict` の改訂を知らせる発火条件がない。追随はこの ADR を読み直すときに行う
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは解決後設定の `rules` に列挙されないため、値でしか見えない
 - `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、追随の発火条件は Dependabot PR の処理時とする。確認するのは plugin の読み込みと 3 ルールの発火の両方である
-- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` が JS plugin 由来のルールを出さないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は probe を書いて lint を走らせる手動の手順になる
+- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` が JS plugin 由来のルールを出さないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は下の probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。token だけを混ぜる表現にも行単位の抑制が要り、抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと無言で通る
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。使われない ESLint 一式が必須 peer 経由で入るため、`pnpm-workspace.yaml` の `packageExtensions` で eslint peer を optional にして止める
-- parser の `typescript` peer (`>=4.8.4 <6.1.0`) は optional 化でも範囲の上書きでも外れず、6 系の `typescript` が依存グラフに入る。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らないので、版の引き下げではなく新規の追加である。型検査は tsgolint が担う (ADR-0002) ため `vp check` の結果は変わらない
+- parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。2026-09-19 の移行で lockfile の `typescript@7.0.2` は `6.0.3` へ置き換わり、Vite+ が読む実体も切り替わった。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らないので、7.0.2 は増分解決で積み上がっていた版である。型検査は tsgolint が担う (ADR-0002) ため `vp check` の結果は変わらない
 - 上の 2 つの撤去条件は同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` も不要になる
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
 - theme に無いクラスを全て落とすため、`src/styles.css` へ token を足す前に utility を書くと lint で止まる。順序は token の定義が先になる
