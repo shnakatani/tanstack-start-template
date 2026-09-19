@@ -18,6 +18,17 @@ export function FullScreenCard({ children }: { children: ReactNode }) {
   );
 }
 
+type FullScreenCardTitleTone = "default" | "destructive";
+
+/**
+ * tone ごとの上乗せ class。Record にするのは、union にメンバーを足したときここへの追記漏れを
+ * 型検査で落とすため (三項演算子だと既定の見た目で黙って描かれる)。
+ */
+const FULL_SCREEN_CARD_TITLE_TONE_CLASSES: Record<FullScreenCardTitleTone, string> = {
+  default: "",
+  destructive: "text-destructive",
+};
+
 /**
  * 全画面カードのページ見出し。registry の `CardTitle` は text-base / font-medium で
  * カード内の小見出しの寸法なので、ページ全体の見出しはこの部品を通す
@@ -27,13 +38,11 @@ export function FullScreenCardTitle({
   tone = "default",
   children,
 }: {
-  tone?: "default" | "destructive";
+  tone?: FullScreenCardTitleTone;
   children: ReactNode;
 }) {
   return (
-    <CardTitle
-      className={cn("text-lg font-semibold", tone === "destructive" && "text-destructive")}
-    >
+    <CardTitle className={cn("text-lg font-semibold", FULL_SCREEN_CARD_TITLE_TONE_CLASSES[tone])}>
       {children}
     </CardTitle>
   );

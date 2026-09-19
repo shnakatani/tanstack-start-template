@@ -15,7 +15,7 @@
 | 認識 | `settings.shadcn.componentImports` | どの import を design system component として見るか |
 | 適用 | `overrides` の `excludeFiles`      | どこで規則を off にするか。design system 自身の内部 |
 
-適用軸の前提は「design system 自身の内部だけを外す」ことで、著作側と消費側が同じディレクトリに混在すると、この前提をパスで表せない。`"shadcn/no-restyle": ["error", { allow: ["layout"] }]` を一時的に足して測ったところ (2026-09-19)、`src/components/` (`ui/` を除く) には 18 件の違反があった。`src/components/**` を一括で `excludeFiles` に入れる案では、このうち 8 件が隠れる。隠れる 8 件には `route-error.tsx:58` の `AccordionTrigger` への `text-muted-foreground` (コントラストを下げる実在の欠陥) が含まれ、規則が一括除外なしでは検出できていた欠陥である。
+適用軸の前提は「design system 自身の内部だけを外す」ことで、著作側と消費側が同じディレクトリに混在すると、この前提をパスで表せない。`"shadcn/no-restyle": ["error", { allow: ["layout"] }]` を一時的に足して測ったところ (2026-09-19)、`src/components/` (`ui/` を除く) には 18 件の違反があった。`src/components/**` を一括で `excludeFiles` に入れる案では、このうち `screens/` に残る `route-error.tsx` の 6 件が隠れる。内訳は `CardTitle` への `text-lg` / `font-semibold` / `text-destructive` の 3 件、`AccordionTrigger` への `text-muted-foreground` (コントラストを下げる実在の欠陥) の 1 件、`ScrollArea` への `rounded` / `bg-muted` の 2 件で、規則が一括除外なしでは検出できていた欠陥である。
 
 ## Decision
 
@@ -38,16 +38,17 @@
 | 案                                                                     | 評価                                                                                                                                                                                                   | 採否     |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
 | 現状維持 (フラットな `src/components/`)                                | 部品 (著作) と画面の組み立て (消費) が同じ階層に混在し、`no-restyle` の適用範囲をパスで表せない                                                                                                        | 却下     |
-| `src/components/**` を丸ごと `excludeFiles`                            | 画面側の違反も一括で隠れる (2026-09-19 の実測で 18 件中 8 件。`route-error.tsx:58` の実在のコントラスト欠陥を含む)                                                                                     | 却下     |
+| `src/components/**` を丸ごと `excludeFiles`                            | 画面側の違反も一括で隠れる (2026-09-19 の実測で 18 件中 6 件、`screens/` の `route-error.tsx` に残る。`AccordionTrigger` の実在のコントラスト欠陥を含む)                                               | 却下     |
 | ecosystem の慣例に合わせて関心語で 1 段掘る (`errors/` / `layout/` 等) | BearStudio/start-ui-web、Kiranism/tanstack-start-dashboard、mugnavo/tanstarter の 3 件を `gh api` で確認 (2026-09-19)。いずれも著作/消費の役割分割を持たない。前例が無いことは分けない根拠にはならない | 不採用   |
 | `ui/` `action/` `parts/` `screens/` + 直下の 5 区分                    | 認識 (`componentImports`) と適用 (`excludeFiles`) の両軸をディレクトリ境界で表現できる。直下を既定にすることで判断の省略が安全側に倒れる                                                               | **採用** |
 
 ## Consequences
 
 - 恒久的な例外はゼロになる。`excludeFiles` に書くのは `ui/` `action/` `parts/` の 3 行で、層の宣言であって違反の抑制ではない。違反が増えても行は増えない
-- `no-restyle` 自体の有効化 (`vite.config.ts` への追加) と、隠れていた 8 件の違反の手当てはこの ADR の対象外で、後続 Task が行う
-- **機械で止まらない誤りが 1 つ残る。** 画面の組み立てを `parts/` へ置くと規則が効かなくなる。判断規準 (registry か自作部品の className を書くなら `parts/`、部品を並べるだけなら `screens/`) は `.claude/rules/directory-structure.md` に書き、レビューで見る
+- `no-restyle` 自体の有効化 (`vite.config.ts` への追加) と、`screens/` に残っていた 6 件の違反の手当てはこの ADR の対象外で、後続 Task が行う
+- **機械で止まらない誤りが 1 つ残る。** 画面の組み立てを `parts/` へ置くと規則が効かなくなる。判断規準は `.claude/rules/directory-structure.md` に書き、レビューで見る
 - `.claude/rules/directory-structure.md` のコンポーネント配置の表がこの区分を持つ
+- registry を包んでドメイン固有の外見を定義する部品の置き場所は未定義。現時点で該当は無く、出てきた時点で `parts/` に置くか `src/features/<domain>/` 側の扱いとするかを決める (ADR-0012)
 
 ## 出典
 

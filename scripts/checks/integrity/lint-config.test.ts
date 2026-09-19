@@ -66,6 +66,12 @@ const EXPECTED_RESTYLE_SCOPE = {
   excludeFiles: ["src/components/ui/**", "src/components/action/**", "src/components/parts/**"],
 };
 
+/**
+ * excludeFiles を持つ override の数。restrictions() / restyleScope() はルール名で個別に絞るため、
+ * 第 3 の種別が新設されてもどちらのフィルタにも掛からず無検知になる。総数をここで別に固定する
+ */
+const EXPECTED_EXCLUDE_FILES_OVERRIDE_COUNT = 2;
+
 /** lint が見に行くべきソースの所在 */
 const SOURCE_ROOTS = ["src", "scripts"];
 
@@ -168,6 +174,17 @@ describe("書いた設定が解決後も残っている", () => {
     printedConfig.overrides.filter((override) => "no-restricted-imports" in override.rules);
   const restyleScope = () =>
     printedConfig.overrides.filter((override) => "shadcn/no-restyle" in override.rules);
+
+  it("excludeFiles を持つ override の種別数を把握できている", () => {
+    // restrictions() / restyleScope() が拾わない第 3 の種別が増えたときの検知はこの 1 件だけが持つ。
+    // 落ちたら: 既存 2 種 (no-restricted-imports / shadcn/no-restyle) のどちらかが増えたのか、
+    // 第 3 の種別が増えたのかを printedConfig.overrides で確認する。第 3 の種別なら
+    // EXPECTED_RESTRICTION_SCOPE / EXPECTED_RESTYLE_SCOPE と同じ形で適用範囲を期待値に固定する
+    expect(
+      printedConfig.overrides.filter((override) => override.excludeFiles).length,
+      "excludeFiles を持つ override の数が変わった。新種の override なら適用範囲を期待値に固定する",
+    ).toBe(EXPECTED_EXCLUDE_FILES_OVERRIDE_COUNT);
+  });
 
   it("緩和するファイルの範囲を広げていない", () => {
     expect(

@@ -150,6 +150,7 @@ oxc 自身の設定と同じく、`correctness` と `perf` に入る分だけを
 
 oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たないため、`jsPlugins` で `@shadcn/lint` を読み込む。
 `components.json` の UI alias と theme CSS を自動探索できるため、同じ値を `settings.shadcn` へ複製しない。
+`settings.shadcn.componentImports` はこの探索結果の書き直しではなく、`ui` alias の外側にある自作部品 (`parts/` 等) まで design system component として認識させる追加である (ADR-0020)。
 
 | 有効にしたルール             | 見るもの                                                                                |
 | ---------------------------- | --------------------------------------------------------------------------------------- |
