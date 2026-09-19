@@ -10,7 +10,12 @@
 
 framework の選定は `tanstackStart()` plugin と Storybook の Vite builder の衝突 (storybookjs/storybook#33747) が決める。標準の Vite builder はこの衝突を自分で回避する必要があり、server function を呼ぶ部品の story を組めない。
 
-本 ADR は導入時 (2026-09-19) の spec と、play function の対象を再検討した spec (2026-09-20) の両方の決定を統合する。後者は前者の「play を書く対象の判断軸」と「`action/` を対象外とする判断」を置き換えた。前者は当時の決定の記録として凍結し、以後の判断は後者を正とする。
+本 ADR は 2 つの spec の決定を統合する。
+
+- 2026-09-19 の spec: 導入そのものの決定
+- 2026-09-20 の spec: play function の対象を再検討し、前者の「play を書く対象の判断軸」と「`action/` を対象外とする判断」を置き換えた
+
+spec はどちらも当時の記録として凍結する。以後の判断は後者を正とする。
 
 ## Decision
 
@@ -34,11 +39,15 @@ story の基本は部品が取りうる状態を並べることで、振る舞�
 
 対象の層は `ui/` `action/` `parts/` とし、`screens/` は外す (実画面で見るほうが早い)。当初 `action/` も対象外としていたが、pending 表現に server function の stub が要るという当初の理由は誤りで、決着する Promise を渡すだけで pending の描画と解除が成立した (2026-09-20 実測)。
 
-play で書いた検証は既存のブラウザテストから削る。同じ振る舞いを 2 箇所で固定しない。対象の全 case が移れば test ファイルごと削るが、locator と文言を持つ `*.test-helpers.ts` は削らない (`routes/` のテストが同じものを引く)。
+play で書いた検証は既存のブラウザテストから削る。同じ振る舞いを 2 箇所で固定しない。
+
+対象の全 case が移れば test ファイルごと削る。locator と文言を持つ `*.test-helpers.ts` は残す (`routes/` のテストが同じものを引く)。
 
 移行は story を書く部品に限り、一律移行はしない。ファイルごとに移せるかを実測してから進める。
 
-variant の網羅を story の数で表現しない。代表値を story にし、残りは `argTypes` の control で切り替える。story を variant の直積で増やすと、カタログが読み通せない長さになる。
+variant の網羅を story の数で表現しない。代表値を story にし、残りは `argTypes` の control で切り替える。
+
+story を variant の直積で増やすと、カタログが読み通せない長さになる。
 
 ### 3. 検証専用の story は `tags: ["!dev"]` でサイドバーから外す
 
@@ -52,19 +61,29 @@ Storybook の vitest 実行は 1 つの React root へ story を描き替える�
 
 ### 5. play の操作は合成イベントとし、実イベントの規律はブラウザテストが持つ
 
-play は Storybook の UI 上でも実行されるため CDP を使えず、`storybook/test` の合成イベントで操作する。ADR-0015 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、play へは移さない。ADR-0015 が禁じた同期 2 連射は、`storybook/test` の操作が各手順を await するため起きない。
+play は Storybook の UI 上でも実行されるため CDP を使えず、`storybook/test` の合成イベントで操作する。ADR-0015 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、play へは移さない。
+
+ADR-0015 が禁じた同期 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである。
 
 popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0018 の扱う animate-out の窓に入る。
 
-待機は `storybook/test` の `waitFor` で書く。ADR-0013 の retry API は play から呼べない。Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。
+待機は `storybook/test` の `waitFor` で書く。ADR-0013 の retry API は play から呼べない。
+
+Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。
 
 ### 6. トークンは CSS 変数を実測して描く
 
-`styles.css` を SSOT に保つため、story 側に値を書き写さない。`getComputedStyle` で解決後の値を読んで一覧を組み立て、light と dark の切り替えは `@storybook/addon-themes` の class 切り替えで行う。コントラスト比を併記し、計算は `src/lib/` の純粋関数へ切り出して境界条件のテストを同時に書く。
+`styles.css` を SSOT に保つため、story 側に値を書き写さない。
+
+- 値は `getComputedStyle` で解決後のものを読む
+- light と dark は `@storybook/addon-themes` の class 切り替えで出し分ける
+- コントラスト比を併記する。計算は `src/lib/` の純粋関数へ切り出し、境界条件のテストを同時に書く
 
 トークンの一覧を CSSOM から読む選択の帰結として、`styles.css` の `@theme` に `static` を付ける。`static` は公式のノブで `inline` と併用できる。
 
-`inline` は utility へ値を直接埋め込むため、`rounded-4xl` を書いても `var(--radius-4xl)` を読む rule が生まれない。Tailwind は既定で参照されている変数だけを出力するので、実際に使われているトークンが一覧から消える。`src/components/ui/badge.tsx` の `rounded-4xl` がその例で、`static` なしでは `--radius-4xl` がカタログに出ない。
+`inline` は utility へ値を直接埋め込むため、`rounded-4xl` を書いても `var(--radius-4xl)` を読む rule が生まれない。Tailwind は既定で参照されている変数だけを出力するので、実際に使われているトークンが一覧から消える。
+
+`src/components/ui/badge.tsx` の `rounded-4xl` がその例で、`static` なしでは `--radius-4xl` がカタログに出ない。
 
 代償は、未参照の宣言が本番 CSS へ乗ることである。`@theme static inline` から `static` を外して `vp build` を 2 回回せば、出力される変数と CSS のバイト数の差を測れる。
 
@@ -83,11 +102,21 @@ Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査
 
 ### 8. story はコンポーネントと並べ、registry の baseline から除く
 
-`*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。story は出荷される bundle に入らないため、`no-restricted-imports` の対象からも外す。
+`*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。
+
+story は出荷される bundle に入らないため、`no-restricted-imports` の対象からも外す。
 
 ### 9. 導入は 3 段階に分け、PR を stack にする
 
-1 度に全部品の story を書かない。段階ごとに PR を分け `gh stack` で積む。1 段目は基盤とデザイントークンの story、2 段目は外見を定義する `parts/` と `action/`、3 段目は `ui/` の主要部品とする。段階 2 と 3 は、対象の層に story があり a11y 検査が通ることを完了条件とする。
+1 度に全部品の story を書かない。段階ごとに PR を分け `gh stack` で積む。
+
+| 段階 | 範囲                                 |
+| ---- | ------------------------------------ |
+| 1    | 基盤とデザイントークンの story       |
+| 2    | 外見を定義する `parts/` と `action/` |
+| 3    | `ui/` の主要部品                     |
+
+段階 2 と 3 は、対象の層に story があり a11y 検査が通ることを完了条件とする。
 
 ## 検討した選択肢
 
