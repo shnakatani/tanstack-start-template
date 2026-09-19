@@ -33,8 +33,8 @@ export type PageTitleTone = NonNullable<VariantProps<typeof pageTitle>["tone"]>;
  * Card の中に置くページ見出し。registry の `CardTitle` は text-base / font-medium で
  * カード内の小見出しの寸法なので、ページ全体の見出しはこの部品を通す。
  *
- * 器を `FullScreenCard` に限らないのは、カードで組む全画面表示が複数あり、外枠の高さだけが
- * 違うため。見出しの所有をどれか 1 つの外枠へ寄せると、別の外枠を使う画面が寸法を手で書く。
+ * 器を 1 つの外枠に限らないのは、カードで組む表示が複数あり、占める高さだけが違うため
+ * (`CenteredCard` の `fill`)。見出しの所有をどれか 1 つへ寄せると、別の器を使う画面が寸法を手で書く。
  */
 export function CardPageTitle({ tone, children }: { tone?: PageTitleTone; children: ReactNode }) {
   return <CardTitle className={pageTitle({ tone })}>{children}</CardTitle>;

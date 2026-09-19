@@ -1,6 +1,7 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 
+import { CenteredCard } from "@/components/parts/centered-card";
 import { CodeBlock } from "@/components/parts/code-block";
 import { CardPageTitle } from "@/components/parts/page-title";
 import {
@@ -10,7 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 
 /**
  * production の本文に出す固定文言。原因ではなく次に取れる行動だけを伝える
@@ -34,37 +35,35 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
   }
 
   return (
-    <div className="flex min-h-[50vh] items-center justify-center p-6">
-      <Card className="w-full max-w-sm">
-        {/* 本文がエラーメッセージとスタックトレースで左寄せのため、見出しも中央寄せにしない */}
-        <CardHeader>
-          <CardPageTitle tone="destructive">
-            <h1>エラーが発生しました</h1>
-          </CardPageTitle>
-        </CardHeader>
-        <CardContent>
-          {/* error.message は server function の throw 文言をそのまま運ぶ開発者向けの情報なので、
+    <CenteredCard fill="section">
+      {/* 本文がエラーメッセージとスタックトレースで左寄せのため、見出しも中央寄せにしない */}
+      <CardHeader>
+        <CardPageTitle tone="destructive">
+          <h1>エラーが発生しました</h1>
+        </CardPageTitle>
+      </CardHeader>
+      <CardContent>
+        {/* error.message は server function の throw 文言をそのまま運ぶ開発者向けの情報なので、
               スタックトレースと同じく DEV でだけ出す。production で raw error を追う経路は
               React の error boundary が console へ残すログが担う */}
-          <p className="text-muted-foreground">
-            {import.meta.env.DEV ? error.message : ROUTE_ERROR_FALLBACK_MESSAGE}
-          </p>
-          {import.meta.env.DEV && error.stack && (
-            <Accordion>
-              <AccordionItem value="stack-trace">
-                <AccordionTrigger>スタックトレース</AccordionTrigger>
-                <AccordionContent>
-                  <CodeBlock>{error.stack}</CodeBlock>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          )}
-          <Button onClick={handleRetry} className="self-start">
-            再試行
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+        <p className="text-muted-foreground">
+          {import.meta.env.DEV ? error.message : ROUTE_ERROR_FALLBACK_MESSAGE}
+        </p>
+        {import.meta.env.DEV && error.stack && (
+          <Accordion>
+            <AccordionItem value="stack-trace">
+              <AccordionTrigger>スタックトレース</AccordionTrigger>
+              <AccordionContent>
+                <CodeBlock>{error.stack}</CodeBlock>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
+        <Button onClick={handleRetry} className="self-start">
+          再試行
+        </Button>
+      </CardContent>
+    </CenteredCard>
   );
 }
 
@@ -75,7 +74,7 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
  * 枠を持つのはこのファイルの責務にする。消費側 (`routes/__root.tsx`) が中央寄せの
  * class を持つと、枠と中身が別ファイルに分かれて片方だけの変更で崩れる。
  *
- * 高さは `h-screen` ではなく `min-h-svh` で取る (`full-screen-card.tsx` と同じ理由)。
+ * 高さは `h-screen` ではなく `min-h-svh` で取る (`centered-card.tsx` と同じ理由)。
  * 高さを viewport に固定すると、内容がそれより高いときに `items-center` がカードを
  * 上へはみ出させ、スクロールしても見出しに届かなくなる。
  */
