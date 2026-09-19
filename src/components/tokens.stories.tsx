@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { pageTitle } from "@/components/parts/page-title";
 import { contrastRatio } from "@/lib/contrast";
 import { isColor, toRgb } from "@/lib/css-color";
+import { dropRedundantColorAliases } from "@/lib/theme-tokens";
 
 /**
  * `<html>` の class 属性 (light/dark) の変化を購読する。withThemeByClassName の
@@ -28,8 +29,8 @@ function useHtmlClass(): string {
  * :root に定義された CSS 変数を名前順で集める。styles.css が SSOT なので値は写さない。
  * Tailwind v4 は `@theme` の内容を `@layer theme { :root, :host { ... } }` へ出すため、
  * トップレベルの CSSStyleRule だけでなく `@layer` / `@media` 等のグループ規則
- * (CSSGroupingRule を継承する rule 全般) の中も再帰的に辿る (実測: 再帰無しで 34 件、
- * 再帰あり + styles.css の `@theme static inline` (両方の変更を合わせて) 109 件)
+ * (CSSGroupingRule を継承する rule 全般) の中も再帰的に辿る。辿らないと `@layer` の中の
+ * `:root` を見落とす (件数の実測は ADR-0022)
  */
 function readRootTokens(prefix: string): string[] {
   const names = new Set<string>();
@@ -77,18 +78,13 @@ function ColorTokens() {
   const background = resolved("--background");
   const backgroundRgb = toRgb(background);
   // 色として解決できるトークンだけを Colors へ通す。isColor() は振り分け用の静かな述語
-  // (warn しない) で、denylist (--radius/--font を除く) だと再帰後に spacing / animation /
-  // container 等の非色トークンまで混入するため成立しない (実測: 27 件が紛れ込んだ)
-  const colorTokens = readRootTokens("--")
-    .map((name) => ({ name, value: resolved(name) }))
-    .filter(({ value }) => isColor(value));
-  const colorTokenNames = new Set(colorTokens.map(({ name }) => name));
-  // --color-X は Tailwind の @theme inline が生成する var(--X) の別名で、生トークン --X が
-  // 同じ集合に在れば値もコントラスト比も完全に重複する。--color-black / --color-white は
-  // 例外で、対応する生トークンが無い (#000 / #fff を直接宣言しているだけ) ため残す
-  const tokens = colorTokens.filter(
-    ({ name }) =>
-      !name.startsWith("--color-") || !colorTokenNames.has(`--${name.slice("--color-".length)}`),
+  // (warn しない)。denylist (--radius/--font を除く) では成立しない。@layer を再帰して集める
+  // ようになった結果、Tailwind 既定 theme の spacing / animation / container 等が同じ一覧へ
+  // 入るため、除くべき接頭辞を数え上げ続けることになる (件数は ADR-0022)
+  const tokens = dropRedundantColorAliases(
+    readRootTokens("--")
+      .map((name) => ({ name, value: resolved(name) }))
+      .filter(({ value }) => isColor(value)),
   );
   warnIfEmpty(
     tokens.map(({ name }) => name),
