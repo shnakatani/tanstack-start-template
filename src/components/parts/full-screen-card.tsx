@@ -1,6 +1,6 @@
-import { cn } from "cn";
 import type { ReactNode } from "react";
 
+import { pageTitle, type PageTitleTone } from "@/components/parts/page-title";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
@@ -18,34 +18,19 @@ export function FullScreenCard({ children }: { children: ReactNode }) {
   );
 }
 
-type FullScreenCardTitleTone = "default" | "destructive";
-
-/**
- * tone ごとの上乗せ class。Record にするのは、union にメンバーを足したときここへの追記漏れを
- * 型検査で落とすため (三項演算子だと既定の見た目で黙って描かれる)。
- */
-const FULL_SCREEN_CARD_TITLE_TONE_CLASSES: Record<FullScreenCardTitleTone, string> = {
-  default: "",
-  destructive: "text-destructive",
-};
-
 /**
  * 全画面カードのページ見出し。registry の `CardTitle` は text-base / font-medium で
- * カード内の小見出しの寸法なので、ページ全体の見出しはこの部品を通す
- * (`styling.md` の typography 階層)。tone は意味色の出し分けで、破壊的な文脈にだけ使う。
+ * カード内の小見出しの寸法なので、ページ全体の見出しはこの部品を通す。
+ * 寸法と tone は `pageTitle` が持ち、`PageHeader` の `<h1>` と同じものを消費する。
  */
 export function FullScreenCardTitle({
-  tone = "default",
+  tone,
   children,
 }: {
-  tone?: FullScreenCardTitleTone;
+  tone?: PageTitleTone;
   children: ReactNode;
 }) {
-  return (
-    <CardTitle className={cn("text-lg font-semibold", FULL_SCREEN_CARD_TITLE_TONE_CLASSES[tone])}>
-      {children}
-    </CardTitle>
-  );
+  return <CardTitle className={pageTitle({ tone })}>{children}</CardTitle>;
 }
 
 /**

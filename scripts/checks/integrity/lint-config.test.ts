@@ -29,48 +29,48 @@ const EXPECTED_PLUGINS = [
   "jsx-a11y",
 ];
 
-/** 緩和の範囲。広げると本体コードでも no-unsafe-* が無効になる */
-const EXPECTED_RELAXATION_FILES = ["**/*.test.ts", "**/*.test.tsx", "src/test/**"];
-
-/** 緩和するルール。増やすとテストコードの型検査がその分だけ緩む (ADR-0004「テストファイルの緩和」) */
-const EXPECTED_RELAXATION_RULES = [
-  "typescript/no-non-null-assertion",
-  "typescript/no-unsafe-assignment",
-  "typescript/no-unsafe-call",
-  "typescript/no-unsafe-member-access",
-  "typescript/no-unsafe-return",
+/**
+ * 解決後の `overrides` 全件。範囲 (files / excludeFiles) とルール名と severity を 1 つの期待値で
+ * 固定する。個別のセレクタで種別ごとに絞ると、どのセレクタにも掛からない override が増えたときに
+ * 無検知になる。全件を 1 つで持てば、増えた override は「期待値に無い要素」として名指しで落ちる
+ */
+const EXPECTED_OVERRIDES = [
+  {
+    // 緩和の範囲とルール。範囲を広げると本体コードでも no-unsafe-* が無効になり、ルールを増やすと
+    // テストコードの型検査がその分だけ緩む (ADR-0004「テストファイルの緩和」)
+    files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
+    excludeFiles: undefined,
+    rules: {
+      "typescript/no-non-null-assertion": "allow",
+      "typescript/no-unsafe-assignment": "allow",
+      "typescript/no-unsafe-call": "allow",
+      "typescript/no-unsafe-member-access": "allow",
+      "typescript/no-unsafe-return": "allow",
+    },
+  },
+  {
+    // no-restyle を適用外にする層の境界 (ADR-0020)。design system の著作側 (ui/ action/ parts/)
+    // だけを外し、消費側には規則を効かせる。excludeFiles を広げると、広げた先の層で design system
+    // component への className 上書きが無診断で通る
+    files: ["src/**"],
+    excludeFiles: ["src/components/ui/**", "src/components/action/**", "src/components/parts/**"],
+    rules: { "shadcn/no-restyle": "deny" },
+  },
+  {
+    // テスト専用のコードの import 禁止を当てる範囲。緩和ではなく範囲を絞った有効化なので、
+    // テスト側は off ではなく excludeFiles で外す (ADR-0004「基準から外れる名指し」)。
+    // excludeFiles を狭めるとテストや helper が自分の helper を import できなくなる
+    files: ["src/**", "scripts/**"],
+    excludeFiles: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.test-helpers.ts",
+      "**/*.test-helpers.tsx",
+      "src/test/**",
+    ],
+    rules: { "no-restricted-imports": "deny" },
+  },
 ];
-
-/**
- * テスト専用のコードの import 禁止を当てる範囲。緩和ではなく範囲を絞った有効化なので、
- * テスト側は off ではなく excludeFiles で外す (ADR-0004「基準から外れる名指し」)
- */
-const EXPECTED_RESTRICTION_SCOPE = {
-  files: ["src/**", "scripts/**"],
-  excludeFiles: [
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/*.test-helpers.ts",
-    "**/*.test-helpers.tsx",
-    "src/test/**",
-  ],
-};
-
-/**
- * no-restyle を適用外にする層の境界 (ADR-0020)。design system の著作側 (ui/ action/ parts/)
- * だけを外し、消費側 (screens/ 等) には規則を効かせる。excludeFiles を広げると、広げた先の層で
- * design system component への className 上書きが無診断で通るようになる
- */
-const EXPECTED_RESTYLE_SCOPE = {
-  files: ["src/**"],
-  excludeFiles: ["src/components/ui/**", "src/components/action/**", "src/components/parts/**"],
-};
-
-/**
- * excludeFiles を持つ override の数。restrictions() / restyleScope() はルール名で個別に絞るため、
- * 第 3 の種別が新設されてもどちらのフィルタにも掛からず無検知になる。総数をここで別に固定する
- */
-const EXPECTED_EXCLUDE_FILES_OVERRIDE_COUNT = 2;
 
 /** lint が見に行くべきソースの所在 */
 const SOURCE_ROOTS = ["src", "scripts"];
@@ -162,62 +162,24 @@ describe("書いた設定が解決後も残っている", () => {
     expect(printedConfig.options).toEqual({ typeAware: true, typeCheck: true });
   });
 
-  // excludeFiles の有無で「緩和」と「excludeFiles を持つ override」を見分ける。後者には
-  // 範囲を絞った有効化 (no-restricted-imports) と、規則の適用範囲を層に合わせる指定
-  // (no-restyle、ADR-0020) の 2 種が混在するため、restrictions() / restyleScope() は
-  // ルール名でさらに絞る。ルール名で絞ると、excludeFiles を持つ override が新たに増えたこと
-  // 自体は検知できなくなる (旧実装は excludeFiles の有無だけで見ており、no-restyle の追加で
-  // 落ちて気付けた)。そのため各 override の files / excludeFiles は、ルールごとの期待値
-  // (EXPECTED_RESTRICTION_SCOPE / EXPECTED_RESTYLE_SCOPE) で個別に固定する
-  const relaxations = () => printedConfig.overrides.filter((override) => !override.excludeFiles);
-  const restrictions = () =>
-    printedConfig.overrides.filter((override) => "no-restricted-imports" in override.rules);
-  const restyleScope = () =>
-    printedConfig.overrides.filter((override) => "shadcn/no-restyle" in override.rules);
-
-  it("excludeFiles を持つ override の種別数を把握できている", () => {
-    // restrictions() / restyleScope() が拾わない第 3 の種別が増えたときの検知はこの 1 件だけが持つ。
-    // 落ちたら: 既存 2 種 (no-restricted-imports / shadcn/no-restyle) のどちらかが増えたのか、
-    // 第 3 の種別が増えたのかを printedConfig.overrides で確認する。第 3 の種別なら
-    // EXPECTED_RESTRICTION_SCOPE / EXPECTED_RESTYLE_SCOPE と同じ形で適用範囲を期待値に固定する
+  it("override の範囲とルールを全件固定している", () => {
+    // 落ちたら: printedConfig.overrides を見て、増減した override を EXPECTED_OVERRIDES へ
+    // 反映するか、意図しない変更なら vite.config.ts を直す。severity まで見るのは、ルールを
+    // 残したまま "off" へ差し替える壊し方をキー集合だけでは拾えないため (2026-09-19 に実測)
     expect(
-      printedConfig.overrides.filter((override) => override.excludeFiles).length,
-      "excludeFiles を持つ override の数が変わった。新種の override なら適用範囲を期待値に固定する",
-    ).toBe(EXPECTED_EXCLUDE_FILES_OVERRIDE_COUNT);
-  });
-
-  it("緩和するファイルの範囲を広げていない", () => {
-    expect(
-      relaxations().map((override) => override.files),
-      "緩和の範囲が変わった。広げると本体コードでも no-unsafe-* が無効になる",
-    ).toEqual([EXPECTED_RELAXATION_FILES]);
-  });
-
-  it("緩和するルールを増やしていない", () => {
-    expect(
-      relaxations()
-        .flatMap((override) => Object.keys(override.rules))
-        .sort(),
-      "緩和するルールが変わった。増やすとテストコードの型検査がその分だけ緩む",
-    ).toEqual([...EXPECTED_RELAXATION_RULES].sort());
-  });
-
-  it("テスト専用のコードの import 禁止をアプリのコードだけに当てている", () => {
-    expect(
-      restrictions().map(({ files, excludeFiles }) => ({ files, excludeFiles })),
-      "禁止の範囲が変わった。excludeFiles を狭めるとテストや helper が自分の helper を import できなくなる",
-    ).toEqual([EXPECTED_RESTRICTION_SCOPE]);
-    expect(restrictions().flatMap((override) => Object.keys(override.rules))).toEqual([
-      "no-restricted-imports",
-    ]);
-  });
-
-  it("no-restyle の適用範囲を層の境界に固定している", () => {
-    expect(
-      restyleScope().map(({ files, excludeFiles }) => ({ files, excludeFiles })),
-      "no-restyle の適用範囲が変わった。excludeFiles を広げると、広げた先の層で design system " +
-        "component への className 上書きが無診断で通るようになる (ADR-0020)",
-    ).toEqual([EXPECTED_RESTYLE_SCOPE]);
+      printedConfig.overrides.map(({ files, excludeFiles, rules }) => ({
+        files,
+        excludeFiles,
+        rules: Object.fromEntries(
+          Object.entries(rules).map(([rule, value]) => [
+            rule,
+            Array.isArray(value) ? value[0] : value,
+          ]),
+        ),
+      })),
+      "override の範囲かルールか severity が変わった。範囲を広げるとその層で規則が無診断になり、" +
+        "ルールを消すか off にすると規則が無言で外れる (ADR-0004 / ADR-0020)",
+    ).toEqual(EXPECTED_OVERRIDES);
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { FullScreenCardTitle } from "./full-screen-card";
 import { PageHeader } from "./page-header";
 
 describe("PageHeader", () => {
@@ -34,5 +35,28 @@ describe("PageHeader", () => {
     expect(style.minHeight).toBe("60px");
     expect(style.paddingTop).toBe("12px");
     expect(style.paddingBottom).toBe("12px");
+  });
+
+  // 器が違うので部品は分かれるが、どちらもページ見出しなので寸法は揃っていなければならない。
+  // 別々に class を書いていた頃は、片方だけ変えても何も落ちずに 2 つの見出しがずれた
+  it("全画面カードのページ見出しと寸法が揃う", async () => {
+    const screen = await render(
+      <>
+        <PageHeader title="ヘッダーの見出し" />
+        <FullScreenCardTitle>
+          <h2>カードの見出し</h2>
+        </FullScreenCardTitle>
+      </>,
+    );
+
+    const header = getComputedStyle(
+      screen.getByRole("heading", { name: "ヘッダーの見出し" }).element(),
+    );
+    const card = getComputedStyle(
+      screen.getByRole("heading", { name: "カードの見出し" }).element(),
+    );
+
+    expect(card.fontSize).toBe(header.fontSize);
+    expect(card.fontWeight).toBe(header.fontWeight);
   });
 });
