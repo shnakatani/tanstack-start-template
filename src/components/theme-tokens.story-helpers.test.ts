@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { dropRedundantColorAliases } from "./theme-tokens";
+import { dropRedundantColorAliases } from "./theme-tokens.story-helpers";
 
 describe("dropRedundantColorAliases", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;

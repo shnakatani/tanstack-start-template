@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { isColor, toRgb } from "./css-color";
+import { isColor, toRgb } from "./css-color.story-helpers";
 
 describe("toRgb", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;

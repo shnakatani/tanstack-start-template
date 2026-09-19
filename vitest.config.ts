@@ -61,6 +61,8 @@ export default defineConfig({
         "src/**/*.test.tsx",
         "src/**/*.test-helpers.ts",
         "src/**/*.test-helpers.tsx",
+        "src/**/*.story-helpers.ts",
+        "src/**/*.story-helpers.tsx",
         "src/test/**",
         "src/**/*.d.ts",
       ],

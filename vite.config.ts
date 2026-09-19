@@ -304,15 +304,20 @@ export default defineConfig({
         },
       },
       {
-        // テスト専用のコード (*.test-helpers.ts と src/test/) をアプリのコードから import させない
-        // (ADR-0004「基準から外れる名指し」)。緩和ではなく範囲を絞った有効化なので、テスト側は
-        // off にせず excludeFiles で対象から外す (files の否定 glob は oxlint 1.79 では効かない)
+        // テストと story だけが使うコード (*.test-helpers.ts / *.story-helpers.ts / src/test/) を
+        // アプリのコードから import させない (ADR-0004「基準から外れる名指し」)。緩和ではなく
+        // 範囲を絞った有効化なので、テスト側は off にせず excludeFiles で対象から外す
+        // (files の否定 glob は oxlint 1.79 では効かない)。story 自身も出荷される bundle に
+        // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)
         files: ["src/**", "scripts/**"],
         excludeFiles: [
           "**/*.test.ts",
           "**/*.test.tsx",
           "**/*.test-helpers.ts",
           "**/*.test-helpers.tsx",
+          "**/*.story-helpers.ts",
+          "**/*.story-helpers.tsx",
+          "**/*.stories.tsx",
           "src/test/**",
         ],
         rules: {
@@ -322,9 +327,9 @@ export default defineConfig({
               patterns: [
                 {
                   // alias (@/test/) と相対 (./test/ ../test/) の両方の specifier を止める
-                  regex: "\\.test-helpers$|(^@|\\.)/test/",
+                  regex: "\\.(test|story)-helpers$|(^@|\\.)/test/",
                   message:
-                    "テスト専用のコード。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
+                    "テストと story だけが使うコード。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
                 },
               ],
             },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { contrastRatio } from "./contrast";
+import { contrastRatio } from "./contrast.story-helpers";
 
 describe("contrastRatio", () => {
   // WCAG 2.1 の相対輝度は白 1.0 / 黒 0.0 で、比は (1.0 + 0.05) / (0.0 + 0.05) = 21

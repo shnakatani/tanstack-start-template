@@ -2,9 +2,10 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { useSyncExternalStore } from "react";
 
 import { pageTitle } from "@/components/parts/page-title";
-import { contrastRatio } from "@/lib/contrast";
-import { isColor, toRgb } from "@/lib/css-color";
-import { dropRedundantColorAliases } from "@/lib/theme-tokens";
+
+import { contrastRatio } from "./contrast.story-helpers";
+import { isColor, toRgb } from "./css-color.story-helpers";
+import { dropRedundantColorAliases } from "./theme-tokens.story-helpers";
 
 /**
  * `<html>` の class 属性 (light/dark) の変化を購読する。withThemeByClassName の

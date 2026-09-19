@@ -34,7 +34,7 @@ export function isColor(cssColor: string): boolean {
 
 /**
  * 任意の CSS 色文字列を `rgb(r, g, b)` へ正規化する。styles.css の色は oklch() で書かれており、
- * contrastRatio (src/lib/contrast.ts) は rgb() しか解析できないため必要になる (getComputedStyle
+ * contrastRatio (contrast.story-helpers.ts) は rgb() しか解析できないため必要になる (getComputedStyle
  * でカスタムプロパティを読んでも colorspace は変換されず oklch() のままなことを実測で確認した)。
  * 呼び出し側は isColor() で事前に選り分けた値を渡す前提のため、それでも解析できないのは
  * 前提が崩れている状態であり warn する

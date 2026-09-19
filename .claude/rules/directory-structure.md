@@ -54,10 +54,12 @@ paths:
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                                                               |
 | 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下では対象と同じ `-components/` か `-lib/` に置き、route ファイル自身の helper は route ファイルの隣に置く |
+| story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` へ置かない。プロダクトコードと読まれ、誰かが import すれば出荷される (ADR-0022)                          |
 
 - `*.test-helpers.ts` は `vp test` の include に一致せず、coverage からも除外する (`vitest.config.ts`)
 - route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-` で始まるディレクトリの中は元から除外される
-- `*.test-helpers.ts` と `src/test/` をアプリのコードから import しない。型しか引かない helper は build を壊さず、fixture が bundle に入る。lint の `no-restricted-imports` が止め、テストと helper と `src/test/` は対象外 (ADR-0004)
+- `*.test-helpers.ts` / `*.story-helpers.ts` / `src/test/` をアプリのコードから import しない。型しか引かない helper は build を壊さず、fixture が bundle に入る。lint の `no-restricted-imports` が止め、テストと story と helper は対象外 (ADR-0004)
+- `*.story-helpers.ts` も coverage から除外する (`vitest.config.ts`)。テストの置き方は対象の実行環境で決める。DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project)
 
 ## shadcn コンポーネント導入時のチェック
 
