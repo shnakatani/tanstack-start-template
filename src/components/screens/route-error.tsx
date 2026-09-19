@@ -52,9 +52,7 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
           {import.meta.env.DEV && error.stack && (
             <Accordion>
               <AccordionItem value="stack-trace">
-                <AccordionTrigger className="text-muted-foreground">
-                  スタックトレース
-                </AccordionTrigger>
+                <AccordionTrigger>スタックトレース</AccordionTrigger>
                 <AccordionContent>
                   <CodeBlock>{error.stack}</CodeBlock>
                 </AccordionContent>
