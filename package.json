@@ -39,6 +39,7 @@
     "@shadcn/lint": "^0.1.0",
     "@storybook/addon-a11y": "10.6.0",
     "@storybook/addon-themes": "10.6.0",
+    "@storybook/addon-vitest": "10.6.0",
     "@storybook/tanstack-react": "10.6.0",
     "@tanstack/devtools-a11y": "^0.2.2",
     "@tanstack/devtools-vite": "^0.8.5",

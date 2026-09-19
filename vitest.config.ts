@@ -49,6 +49,7 @@ export default defineConfig({
         },
       },
       "vitest.browser.config.ts",
+      "vitest.storybook.config.ts",
     ],
     coverage: {
       provider: "v8",
