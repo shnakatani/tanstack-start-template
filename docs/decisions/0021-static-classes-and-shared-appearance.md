@@ -36,7 +36,8 @@ import 束縛はこの型を持たないため、定数の中身まで辿れな�
 ### 違反の分布
 
 規則を一時的に足して測った違反は、commit `3e5a004` の tree で `src/routes/` の 2 件だけだった (2026-09-19)。
-`src/components/` の全層と直下、`src/features/` は 0 件である。
+`src/components/screens/` と直下、`src/features/` は 0 件である。
+`ui/` `action/` `parts/` は `excludeFiles` の内側なので測っていない。
 2 件はどちらも `src/components/` の層が export した class 定数を `src/routes/` が import し、design system component へ渡す形である。
 
 `src/components/ui/dialog.tsx` も同種の class 定数を 2 つ export するが、消費側が `src/components/ui/alert-dialog.tsx` で層の内側に閉じているため規則に当たらない。
@@ -96,6 +97,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 
 - 消費側の `className` はすべて linter が読める形になり、`no-raw-colors` と `no-unknown-classes` の検査が届く範囲が確定する
 - 恒久的な例外はゼロで、`overrides` に足すのは規則 1 行だけになる。違反が増えても行は増えない
+- 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`lint-config.test.ts` が規則名と severity を固定する
 - variant 関数を消費側から呼ぶ形を採るたびに `variantFunctions` への追加が要る。忘れると呼び出しが落ちるので、気付けない失敗にはならない
 - `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。ADR-0004 の Consequences)
 - 引数を取らない関数を `mergeFunctions` へ登録すると、規則を通しながら戻り値の中身の検査を落とせる (2026-09-19 実測)。抜け道として使わない

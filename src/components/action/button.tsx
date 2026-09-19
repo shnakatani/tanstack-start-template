@@ -34,7 +34,6 @@ function ActionButtonShell({
   isPending,
   children,
   "aria-label": ariaLabel,
-  className,
   ...props
 }: ActionButtonShellProps) {
   const labelId = useId();
@@ -42,7 +41,6 @@ function ActionButtonShell({
   return (
     <Button
       {...props}
-      className={className}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabel === undefined ? labelId : undefined}
       // button の子孫はユーザーエージェントが accessibility API に露出すべきでない
