@@ -20,8 +20,18 @@ export default defineProject({
     // @tanstack/react-form に依存し、後続 Task で story が付く見込み。事前バンドル漏れは
     // vitest.browser.config.ts が 2026-08-17 に観測した React 二重解決
     // ("Cannot read properties of null (reading 'useContext')") を再現しうるため先取りで
-    // 含める。axe-core は addon-a11y の a11y 検査が story 実行中にブラウザ側で参照する
-    include: ["@tanstack/react-query", "@tanstack/react-form", "axe-core"],
+    // 含める。axe-core は addon-a11y の a11y 検査が story 実行中にブラウザ側で参照する。
+    // class-variance-authority / cn は tokens.stories.tsx が
+    // src/components/parts/page-title.tsx (pageTitle) を経由して依存する。事前バンドル漏れで
+    // 実際に "Vite unexpectedly reloaded a test" が発生し 3 story 全滅を実測した
+    // (2026-09-20、tokens.stories.tsx へ pageTitle の import を足したコミットで発生)
+    include: [
+      "@tanstack/react-query",
+      "@tanstack/react-form",
+      "axe-core",
+      "class-variance-authority",
+      "cn",
+    ],
     // @tanstack/react-start 系は exclude しない: @storybook/tanstack-react の framework
     // preset (viteFinal) が moduleInterceptionPlugin で @tanstack/react-start /
     // react-start/server / react-start-server / start-server-core への import を

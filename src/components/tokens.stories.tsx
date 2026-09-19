@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { useSyncExternalStore } from "react";
 
+import { pageTitle } from "@/components/parts/page-title";
 import { contrastRatio } from "@/lib/contrast";
+import { isColor, toRgb } from "@/lib/css-color";
 
 /**
  * `<html>` の class 属性 (light/dark) の変化を購読する。withThemeByClassName の
@@ -22,25 +24,35 @@ function useHtmlClass(): string {
   );
 }
 
-/** :root に定義された CSS 変数を名前順で集める。styles.css が SSOT なので値は写さない */
+/**
+ * :root に定義された CSS 変数を名前順で集める。styles.css が SSOT なので値は写さない。
+ * Tailwind v4 は `@theme` の内容を `@layer theme { :root, :host { ... } }` へ出すため、
+ * トップレベルの CSSStyleRule だけでなく `@layer` / `@media` 等のグループ規則
+ * (CSSGroupingRule を継承する rule 全般) の中も再帰的に辿る (実測: 再帰無しで 34 件、
+ * 再帰あり + styles.css の `@theme static inline` (両方の変更を合わせて) 109 件)
+ */
 function readRootTokens(prefix: string): string[] {
   const names = new Set<string>();
+  const visit = (rules: CSSRuleList) => {
+    for (const rule of rules) {
+      if (
+        rule instanceof CSSStyleRule &&
+        rule.selectorText.split(",").some((s) => s.trim() === ":root")
+      ) {
+        for (const name of rule.style) {
+          if (name.startsWith(prefix)) names.add(name);
+        }
+      }
+      if (rule instanceof CSSGroupingRule) visit(rule.cssRules);
+    }
+  };
   for (const sheet of document.styleSheets) {
-    let rules: CSSRuleList;
     try {
-      rules = sheet.cssRules;
+      visit(sheet.cssRules);
     } catch {
       // 別オリジンの stylesheet は cssRules を読めない。Storybook の preview では起きないが、
       // 読めないものを黙って飛ばすと一覧が欠けるので残す
       console.warn("[tokens] cssRules を読めない stylesheet", { href: sheet.href });
-      continue;
-    }
-    for (const rule of rules) {
-      if (!(rule instanceof CSSStyleRule)) continue;
-      if (!rule.selectorText.split(",").some((s) => s.trim() === ":root")) continue;
-      for (const name of rule.style) {
-        if (name.startsWith(prefix)) names.add(name);
-      }
     }
   }
   return [...names].sort();
@@ -50,41 +62,29 @@ function resolved(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-/**
- * 任意の CSS 色文字列を `rgb(r, g, b)` へ正規化する。styles.css の色は oklch() で
- * 書かれており、contrastRatio (src/lib/contrast.ts) は rgb() しか解析できないため必要になる
- * (getComputedStyle でカスタムプロパティを読んでも colorspace は変換されず oklch() の
- * ままなことを実測で確認した)。Canvas 2D の fillStyle は無効な色を代入すると値を無視して
- * 直前の値を保つ (仕様どおりの挙動) ため、判定用の sentinel を挟んで検出する
- */
-function toRgb(cssColor: string): string | null {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    console.warn("[tokens] canvas 2d context を取得できない");
-    return null;
+/** 対象トークンが 0 件で終わる回帰を検出する。空の表を silent に描かせない */
+function warnIfEmpty(names: string[], story: string): void {
+  if (names.length === 0) {
+    console.warn("[tokens] トークンが 0 件", { story });
   }
-  const sentinel = "#010203";
-  ctx.fillStyle = sentinel;
-  ctx.fillStyle = cssColor;
-  if (ctx.fillStyle === sentinel) {
-    console.warn("[tokens] 色として解析できない値", { cssColor });
-    return null;
-  }
-  ctx.fillRect(0, 0, 1, 1);
-  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-  return `rgb(${r}, ${g}, ${b})`;
 }
 
 function ColorTokens() {
-  // 変わるたびに key へ渡してテーブルを丸ごと作り直す。resolved()/toRgb() をメモ化
-  // していないため再 render 自体でも値は更新されるが、key での強制再構築も併せて
+  // <html> の class が変わるたびに key へ渡してテーブルを丸ごと作り直す。resolved()/toRgb() を
+  // メモ化していないため再 render 自体でも値は更新されるが、key での強制再構築も併せて
   // 依存関係の見落としに備える (実測: 依存を持たない再 render でも表示は正しく更新された)
   const htmlClass = useHtmlClass();
   const background = resolved("--background");
   const backgroundRgb = toRgb(background);
-  const names = readRootTokens("--").filter(
-    (name) => !name.startsWith("--radius") && !name.startsWith("--font"),
+  // 色として解決できるトークンだけを Colors へ通す。isColor() は振り分け用の静かな述語
+  // (warn しない) で、denylist (--radius/--font を除く) だと再帰後に spacing / animation /
+  // container 等の非色トークンまで混入するため成立しない (実測: 63 件が紛れ込んだ)
+  const tokens = readRootTokens("--")
+    .map((name) => ({ name, value: resolved(name) }))
+    .filter(({ value }) => isColor(value));
+  warnIfEmpty(
+    tokens.map(({ name }) => name),
+    "Tokens/Colors",
   );
 
   return (
@@ -95,9 +95,6 @@ function ColorTokens() {
             token
           </th>
           <th scope="col" className="p-2 text-left">
-            見本
-          </th>
-          <th scope="col" className="p-2 text-left">
             解決後の値
           </th>
           <th scope="col" className="p-2 text-left">
@@ -106,26 +103,27 @@ function ColorTokens() {
         </tr>
       </thead>
       <tbody>
-        {names.map((name) => {
-          const value = resolved(name);
+        {tokens.map(({ name, value }) => {
           const rgb = toRgb(value);
           const ratio =
             rgb === null || backgroundRgb === null ? null : contrastRatio(rgb, backgroundRgb);
           return (
             <tr key={name}>
               <td className="p-2 font-mono text-xs">{name}</td>
-              <td className="p-2">
-                {/* jsx-a11y/control-has-associated-label は td も対象にする (th と同様)。
-                    見本は装飾で「解決後の値」列と同じ値を表すため、その値をそのまま
-                    アクセシブルな名前にする */}
-                <span
-                  aria-hidden
-                  className="block size-6 rounded border border-border"
-                  style={{ background: value }}
-                />
-                <span className="sr-only">{value}</span>
+              <td className="p-2 font-mono text-xs">
+                {/* 見本と値を同じセルに置く。見本を別の td に分けると jsx-a11y/control-has-
+                    associated-label が td (th と同様に対象) をラベル無しの control とみなして
+                    落ちる。見本は装飾として aria-hidden にし、隣の可視テキストをそのセル自身の
+                    アクセシブルな名前として使う */}
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="inline-block size-4 shrink-0 rounded border border-border"
+                    style={{ background: value }}
+                  />
+                  {value}
+                </span>
               </td>
-              <td className="p-2 font-mono text-xs">{value}</td>
               <td className="p-2 font-mono text-xs">{ratio === null ? "—" : ratio.toFixed(2)}</td>
             </tr>
           );
@@ -137,6 +135,7 @@ function ColorTokens() {
 
 function RadiusTokens() {
   const names = readRootTokens("--radius");
+  warnIfEmpty(names, "Tokens/Radius");
   return (
     <div className="flex flex-wrap gap-4">
       {names.map((name) => (
@@ -154,18 +153,24 @@ function RadiusTokens() {
   );
 }
 
-/** styling.md の typography 階層。見出しの寸法は pageTitle が持つので、ここでは階層だけを見せる */
+/**
+ * styling.md の typography 階層。見出しの寸法は pageTitle が持つのでそこから呼ぶ。
+ * セクション見出し (text-base font-semibold) は専有の部品が無いため literal のままで、
+ * styling.md の表と二重管理になる。表を変えたらここも合わせる
+ */
 const TYPOGRAPHY_SAMPLES = [
-  { label: "ページ見出し", className: "text-lg font-semibold" },
+  { label: "ページ見出し", className: pageTitle() },
   { label: "セクション見出し", className: "text-base font-semibold" },
   { label: "本文", className: "text-base" },
   { label: "補足", className: "text-xs" },
 ] as const;
 
 function TypographyTokens() {
+  const names = readRootTokens("--font");
+  warnIfEmpty(names, "Tokens/Typography");
   return (
     <div className="flex flex-col gap-4">
-      {readRootTokens("--font").map((name) => (
+      {names.map((name) => (
         <p key={name} className="font-mono text-xs text-muted-foreground">
           {name}: {resolved(name)}
         </p>
