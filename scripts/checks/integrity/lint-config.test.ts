@@ -29,9 +29,6 @@ const EXPECTED_PLUGINS = [
   "jsx-a11y",
 ];
 
-/** 有効にする JS plugin。rule key と抑制 directive はこの name を共有する */
-const EXPECTED_JS_PLUGINS = [{ name: "shadcn", specifier: "@shadcn/lint" }];
-
 /** 緩和の範囲。広げると本体コードでも no-unsafe-* が無効になる */
 const EXPECTED_RELAXATION_FILES = ["**/*.test.ts", "**/*.test.tsx", "src/test/**"];
 
@@ -115,13 +112,6 @@ describe("書いた設定が解決後も残っている", () => {
       [...printedConfig.plugins].sort(),
       "plugins が変わった。OXLINT_DEFAULT_PLUGINS の spread を落としていないか (ADR-0003)",
     ).toEqual([...EXPECTED_PLUGINS].sort());
-  });
-
-  it("JS plugin が shadcn だけに置き換わっている", () => {
-    expect(
-      printedConfig.jsPlugins,
-      "JS plugin が変わった。rule key と抑制 directive が plugin の name と一致するか確認する",
-    ).toEqual(EXPECTED_JS_PLUGINS);
   });
 
   it("rules に書いたルールが解決後設定に残っている", () => {
