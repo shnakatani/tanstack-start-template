@@ -2,10 +2,10 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { DataTable } from "@/components/data-table";
-import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
-import { PageHeader } from "@/components/page-header";
-import { TableSkeleton } from "@/components/table-skeleton";
+import { DataTable } from "@/components/parts/data-table";
+import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
+import { PageHeader } from "@/components/parts/page-header";
+import { TableSkeleton } from "@/components/parts/table-skeleton";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";

@@ -1,5 +1,5 @@
-import { ButtonLink } from "@/components/button-link";
-import { FullScreenNotice } from "@/components/full-screen-card";
+import { ButtonLink } from "@/components/parts/button-link";
+import { FullScreenNotice } from "@/components/parts/full-screen-card";
 
 /**
  * router の既定 404 表示。`RouteErrorContent` と対にして router.tsx から切り出してある

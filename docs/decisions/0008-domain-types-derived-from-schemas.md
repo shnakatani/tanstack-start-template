@@ -68,7 +68,7 @@ client まで届くエラーに DB の中身を混ぜないためで、位置と
 
 素の定数 object (`{ title: "タイトル" } as const`) を別に持つ形は、キーの typo も項目追加時の欠落も型で捕まらない。入力用と保存用で pipe が分かれる項目 (title) は、`TInput` を型引数で与えた 1 つの action を両方に渡す (型引数も注釈も無い action は `TInput` が `unknown` に推論され `v.pipe` に入らない)。
 
-TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリの `src/components/form-fields.tsx` の `label` prop (TanStack Form 自体に呼称を受ける口は無い) はどちらも文字列を受け取る口で、schema と結ぶ仕組みを持たない。TanStack Form の Discussion #2111 (参加者の回答、メンテナ回答なし) も schema の制約を field へ出す経路は無いとしている。Standard Schema の validate 契約に metadata は無く、Standard JSON Schema (spec 1.1.0 の `~standard.jsonSchema`) は valibot 1.4.2 が未実装で、載るのも JSON Schema 語彙 (title / description) に限る。独自の `label` を運ぶ層はアプリ側 (valibot の metadata) に置く。
+TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリの `src/components/parts/form-fields.tsx` の `label` prop (TanStack Form 自体に呼称を受ける口は無い) はどちらも文字列を受け取る口で、schema と結ぶ仕組みを持たない。TanStack Form の Discussion #2111 (参加者の回答、メンテナ回答なし) も schema の制約を field へ出す経路は無いとしている。Standard Schema の validate 契約に metadata は無く、Standard JSON Schema (spec 1.1.0 の `~standard.jsonSchema`) は valibot 1.4.2 が未実装で、載るのも JSON Schema 語彙 (title / description) に限る。独自の `label` を運ぶ層はアプリ側 (valibot の metadata) に置く。
 
 ### 検討した選択肢
 

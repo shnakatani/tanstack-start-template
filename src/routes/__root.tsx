@@ -9,7 +9,7 @@ import { tableDevtoolsPlugin } from "@tanstack/react-table-devtools";
 import type { ReactNode } from "react";
 
 import { LiveRegions } from "@/components/live-regions";
-import { FullScreenRouteError } from "@/components/route-error";
+import { FullScreenRouteError } from "@/components/screens/route-error";
 import { Toaster } from "@/components/ui/toast";
 import { APP_NAME } from "@/lib/app-name";
 

@@ -11,7 +11,7 @@ import {
   FormSelectField,
   FormTextField,
   UNRENDERABLE_FIELD_ERROR_MESSAGE,
-} from "@/components/form-fields";
+} from "@/components/parts/form-fields";
 import { useAppForm } from "@/hooks/use-app-form";
 import type { Screen } from "@/test/page-helpers";
 

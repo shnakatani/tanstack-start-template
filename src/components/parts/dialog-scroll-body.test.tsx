@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { DialogScrollBody, dialogScrollLayout } from "@/components/dialog-scroll-body";
+import { DialogScrollBody, dialogScrollLayout } from "@/components/parts/dialog-scroll-body";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

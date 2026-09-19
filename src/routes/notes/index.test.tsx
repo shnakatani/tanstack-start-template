@@ -8,7 +8,7 @@ import { render } from "vitest-browser-react";
 import {
   confirmDeleteButton,
   deleteConfirmDescription,
-} from "@/components/delete-confirm-dialog.test-helpers";
+} from "@/components/parts/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
 import {

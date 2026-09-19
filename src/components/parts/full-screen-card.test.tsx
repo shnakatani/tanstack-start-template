@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
-import { FullScreenNotice } from "@/components/full-screen-card";
+import { FullScreenNotice } from "@/components/parts/full-screen-card";
 import { NARROW_VIEWPORT, restoreDefaultViewport, setViewport } from "@/test/viewport";
 
 async function renderNotice() {

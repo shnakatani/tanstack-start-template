@@ -31,7 +31,7 @@ const inputGroup = findInputGroup(input.element());
 
 対になる `findElement()` が v4.1.0 で入っている。同じ `context.d.ts` が「this method will wait and retry until a matching element appears in the DOM, using increasing intervals (0, 20, 50, 100, 100, 500ms)」と書き、あわせて「This is an escape hatch for library authors and 3d-party APIs that do not support locators directly. If you are interacting with the element, use builtin methods instead.」と注意する。`getComputedStyle` / `getBoundingClientRect` による実測は locator のアサーションで表現できないため、生 DOM を取ること自体はこの注意書きが許す用途にあたり、待つ側を選べば済む。
 
-同じ形は `src/components/ui/dialog.test.tsx` / `src/components/ui/alert-dialog.test.tsx` / `src/components/dialog-scroll-body.test.tsx` にもあった。落ちたのが combobox だけだったのは確率の差である。
+同じ形は `src/components/ui/dialog.test.tsx` / `src/components/ui/alert-dialog.test.tsx` / `src/components/parts/dialog-scroll-body.test.tsx` にもあった。落ちたのが combobox だけだったのは確率の差である。
 
 調査中に別種の未待機も見つかった。操作の直後に `element().getAttribute(...)` を同期で読む形で、要素は操作前から存在するため `element()` は成功するが、読む値が更新前になりうる。
 

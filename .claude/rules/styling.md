@@ -47,7 +47,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 | 本文・フォームラベル         | `text-base` / `text-sm`   |
 | 補足・タイムスタンプ・バッジ | `text-xs` 可              |
 
-- ページ見出しの実装は `src/components/page-header.tsx` が持つ。ページ側で見出しの class を書き直さない
+- ページ見出しの実装は `src/components/parts/page-header.tsx` が持つ。ページ側で見出しの class を書き直さない
 - 本文に `text-xs` を使わない (タブレット可読性)
 - ページ見出しとセクション見出しを同サイズにしない (階層が消える)
 - registry `CardTitle` の weight を上書きするときは、上書きの理由を実装近傍に書く。既定の weight を選んだのか意図的に変えたのかが差分から読めなくなる
@@ -118,12 +118,12 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ### 内部スクロールを持つダイアログの組み方
 
-`DialogScrollBody` + `dialogScrollLayout` (`src/components/dialog-scroll-body.tsx`) で組む。`form` / `div` を問わずヘッダーとフッターの間の中間コンテナに適用し、本体だけをスクロールさせる (見出しと X ボタンが流れない)。各 className の根拠は同ファイルの docstring。
+`DialogScrollBody` + `dialogScrollLayout` (`src/components/parts/dialog-scroll-body.tsx`) で組む。`form` / `div` を問わずヘッダーとフッターの間の中間コンテナに適用し、本体だけをスクロールさせる (見出しと X ボタンが流れない)。各 className の根拠は同ファイルの docstring。
 
 恒常的に viewport 高を超えるダイアログは必ずこの方式で組む。`popupOverflowBackstop` 発火時に X 閉じるボタンが流れる挙動は、内部スクロールを組み忘れても内容が読める防御層として許容し、sticky は作らない。sticky を足すと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる。
 
 本文の余白は `DialogScrollBody` が持つ (`px-6` / `py-4`)。消費側で padding を足さない。
-`ring` / `box-shadow` は border box の外側に描かれるため、スクロール領域に余白がないと端の要素で切れる。この余白は `src/components/dialog-scroll-body.test.tsx` が上下左右とも固定している。
+`ring` / `box-shadow` は border box の外側に描かれるため、スクロール領域に余白がないと端の要素で切れる。この余白は `src/components/parts/dialog-scroll-body.test.tsx` が上下左右とも固定している。
 
 `DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める。
 
@@ -139,7 +139,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 - ページのローディング表示は route loader prefetch + `useSuspenseQuery` + route の `pendingComponent` に統一する。表示タイミングは `src/router.tsx` の `defaultPendingMs` / `defaultPendingMinMs` に任せる
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が一瞬点滅するちらつきの原因
-- skeleton の見た目はレイアウト模倣 (共有: `src/components/table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付与する (`pendingComponent` 内も同様)
+- skeleton の見た目はレイアウト模倣 (共有: `src/components/parts/table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付与する (`pendingComponent` 内も同様)
 - 列数など実テーブルと合わせる値は、実テーブル側の定義を SSOT にして両方から参照する。別々に持つとロード完了時にレイアウトシフトが出る
 - ボタン内の送信中表示: `Spinner` (loading-buttons パターン。Skeleton にしない)。視覚専用 (`aria-hidden`)。状態は `aria-busy` で持つ (ADR-0017)
 - `Spinner` を使う側は必ず `aria-hidden` を渡す。registry の `Spinner` は `role="status"` を持つが、button の子では露出されるとは限らない (WAI-ARIA 1.2 §5.2.9、ADR-0017)

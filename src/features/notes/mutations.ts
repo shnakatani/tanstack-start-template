@@ -1,7 +1,7 @@
 import type { MutationFilters } from "@tanstack/react-query";
 import { mutationOptions } from "@tanstack/react-query";
 
-import type { DeleteTarget } from "@/components/delete-confirm-dialog";
+import type { DeleteTarget } from "@/components/parts/delete-confirm-dialog";
 
 import { createNote, removeNote } from "./functions";
 import type { Note, NoteInput } from "./schema";

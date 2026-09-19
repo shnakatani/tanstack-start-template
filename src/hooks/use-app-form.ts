@@ -5,7 +5,7 @@ import {
   FormNumberField,
   FormSelectField,
   FormTextField,
-} from "@/components/form-fields";
+} from "@/components/parts/form-fields";
 import { fieldContext, formContext } from "@/hooks/form-context";
 
 /**

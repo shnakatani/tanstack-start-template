@@ -26,9 +26,9 @@ grep -rln "useMutation(" src/ --include='*.tsx'                                 
 
 mutation を持つのは `src/routes/notes/-components/note-create-dialog.tsx` (追加) と `src/routes/notes/index.tsx` (削除) の 2 箇所である。
 どちらも `onSuccess` の中で `invalidateQueries` を `void` した直後にダイアログを `close()` する。
-削除の二重発火は `src/components/delete-confirm-dialog.tsx` の `deleteConfirmMutationProps` が閉包のフラグで塞いでいる。コード上の理由は「`isPending` は再レンダー後にしか立たず、それより前に届く再クリックを `disabled` では止められない」だが、この前提は実測されていない (2026-09-13 に React の pending 描画は次のユーザーイベントより前に流れると確認した)。
+削除の二重発火は `src/components/parts/delete-confirm-dialog.tsx` の `deleteConfirmMutationProps` が閉包のフラグで塞いでいる。コード上の理由は「`isPending` は再レンダー後にしか立たず、それより前に届く再クリックを `disabled` では止められない」だが、この前提は実測されていない (2026-09-13 に React の pending 描画は次のユーザーイベントより前に流れると確認した)。
 
-mutation 以外のユーザー操作由来の更新は、`src/components/route-error.tsx` の `handleRetry` (Error Boundary の `reset()` と `router.invalidate()`) と、ダイアログの開閉 (Base UI の handle) がある。
+mutation 以外のユーザー操作由来の更新は、`src/components/screens/route-error.tsx` の `handleRetry` (Error Boundary の `reset()` と `router.invalidate()`) と、ダイアログの開閉 (Base UI の handle) がある。
 
 ルート遷移は既に Transition である。
 `@tanstack/router-core` は match の commit を `router.startTransition` へ渡し (`load-client.js`)、`@tanstack/react-router` の `Transitioner` がそれを `React.startTransition` で包む。
@@ -100,14 +100,14 @@ query のキャッシュ更新は制約 1 により緊急更新に落ちるの�
 
 **ユーザー操作に起因する更新は Transition の中で行い、pending は Transition から取る。**
 
-| 更新の種類                                   | 扱い                                                                                                                                                                           | 担う場所                                |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| ナビゲーション、GET                          | 同期 Transition。データは Suspense で読む                                                                                                                                      | TanStack Router (既存)                  |
-| mutation                                     | 非同期 Transition (Action)。`mutateAsync` を await する。完了点 (a) (ADR-0016) では Action は close だけを含み、mutation は Transition の外で `void runAction(...)` として走る | `src/components/action/`                |
-| query の再取得 (`invalidateQueries`)         | mutation の `onSuccess` が Promise を返して待つ (pending の源)。ダイアログを閉じる時点は ADR-0016 の完了点の軸で選ぶ。描画は緊急更新に落ちる (制約 1)                          | mutation の `onSuccess`                 |
-| ダイアログの開閉                             | 緊急更新のまま (Base UI の store、制約 1)。mutation 成功後に閉じる時点は ADR-0016 の完了点の軸で選ぶ                                                                           | mutation の `onSuccess`                 |
-| Error Boundary の `reset()` と loader 再実行 | 緊急更新のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                     | `src/components/route-error.tsx` (既存) |
-| 制御コンポーネントの入力値                   | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                                                                                                  | 各部品                                  |
+| 更新の種類                                   | 扱い                                                                                                                                                                           | 担う場所                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| ナビゲーション、GET                          | 同期 Transition。データは Suspense で読む                                                                                                                                      | TanStack Router (既存)                          |
+| mutation                                     | 非同期 Transition (Action)。`mutateAsync` を await する。完了点 (a) (ADR-0016) では Action は close だけを含み、mutation は Transition の外で `void runAction(...)` として走る | `src/components/action/`                        |
+| query の再取得 (`invalidateQueries`)         | mutation の `onSuccess` が Promise を返して待つ (pending の源)。ダイアログを閉じる時点は ADR-0016 の完了点の軸で選ぶ。描画は緊急更新に落ちる (制約 1)                          | mutation の `onSuccess`                         |
+| ダイアログの開閉                             | 緊急更新のまま (Base UI の store、制約 1)。mutation 成功後に閉じる時点は ADR-0016 の完了点の軸で選ぶ                                                                           | mutation の `onSuccess`                         |
+| Error Boundary の `reset()` と loader 再実行 | 緊急更新のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                     | `src/components/screens/route-error.tsx` (既存) |
+| 制御コンポーネントの入力値                   | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                                                                                                  | 各部品                                          |
 
 ### Action 層 `src/components/action/`
 

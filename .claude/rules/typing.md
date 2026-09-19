@@ -46,14 +46,14 @@ lint `typescript/consistent-type-assertions: never` で検出する (ADR-0004)�
 
 ## ラッパー部品の転送 prop 型は転送先の ComponentProps から導出する
 
-- 転送する prop の型は自前で再宣言せず `Pick<ComponentProps<typeof 転送先>, "...">` を extends して導出する。出処が明示され、転送先の型変更に自動追随する (実例: `src/components/form-fields.tsx`)
+- 転送する prop の型は自前で再宣言せず `Pick<ComponentProps<typeof 転送先>, "...">` を extends して導出する。出処が明示され、転送先の型変更に自動追随する (実例: `src/components/parts/form-fields.tsx`)
 - 部品が内部で握る prop (value / onChange / id / aria-invalid 等) は rest スプレッドで全面公開しない。公開する prop を Pick で列挙する。controlled prop の上書き事故と、部品が保証する規約 (Field 構成等) を迂回する className 直渡しを防ぐ
-- 転送先の全 API を意図的に公開する薄いラッパー (実例: `src/components/button-link.tsx`) は `ComponentProps` / `ComponentPropsWithoutRef` の素通しで良い。Pick を要求する対象は、一部の prop を内部で握る配線部品に限る
+- 転送先の全 API を意図的に公開する薄いラッパー (実例: `src/components/parts/button-link.tsx`) は `ComponentProps` / `ComponentPropsWithoutRef` の素通しで良い。Pick を要求する対象は、一部の prop を内部で握る配線部品に限る
 - 部品固有の prop (label / options / sanitize 等) のみ自前宣言する
 
 ## fieldComponents の部品は値型突き合わせ用の prop を持たせる
 
-- 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。generic interface 1 つ (`src/components/form-fields.tsx` の `FieldValueTypeCheckProps<T>`) に集約して各部品が extends する
+- 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。generic interface 1 つ (`src/components/parts/form-fields.tsx` の `FieldValueTypeCheckProps<T>`) に集約して各部品が extends する
 - `useFieldContext<T>()` の `T` は呼び出し側の宣言だけで実フィールドと結びつかず、number フィールドに文字列部品を使っても通る。`field.state.value` は `name` から型付けされるため、これが唯一の突き合わせ経路 (TanStack/form discussion #1240)
 - prop 名は `value` にしない。部品が内部で `Input` へ `value` を渡す構成と紛れる
 - `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。この型テストを落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をせず通過する

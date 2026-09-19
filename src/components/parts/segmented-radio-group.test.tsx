@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { SegmentedRadioGroup, SegmentedRadioGroupItem } from "@/components/segmented-radio-group";
+import {
+  SegmentedRadioGroup,
+  SegmentedRadioGroupItem,
+} from "@/components/parts/segmented-radio-group";
 import { dispatchNativeClick } from "@/test/native-click";
 import { waitForAnimations } from "@/test/wait-for-animations";
 

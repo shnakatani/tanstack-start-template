@@ -1,5 +1,5 @@
 import { actionDisabledAppearance } from "@/components/action/button";
-import type { DataTableCellContext } from "@/components/data-table-features";
+import type { DataTableCellContext } from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format-date-time";
