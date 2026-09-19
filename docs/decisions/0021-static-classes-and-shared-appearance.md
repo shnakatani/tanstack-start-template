@@ -35,7 +35,8 @@ import 束縛はこの型を持たないため、定数の中身まで辿れな�
 
 ### 違反の分布
 
-規則を一時的に足して測った時点 (2026-09-19、commit `3e5a004`) の違反は `src/routes/` の 2 件だけで、`src/components/` の全層と直下、`src/features/` は 0 件だった。
+規則を一時的に足して測った違反は、commit `3e5a004` の tree で `src/routes/` の 2 件だけだった (2026-09-19)。
+`src/components/` の全層と直下、`src/features/` は 0 件である。
 2 件はどちらも `src/components/` の層が export した class 定数を `src/routes/` が import し、design system component へ渡す形である。
 
 `src/components/ui/dialog.tsx` も同種の class 定数を 2 つ export するが、消費側が `src/components/ui/alert-dialog.tsx` で層の内側に閉じているため規則に当たらない。
@@ -55,6 +56,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 
 宣言は違反を黙らせる例外ではなく、このプロジェクトの variant 関数が何かを linter へ伝える設定である。
 `componentImports` と同じ恒久設定として扱い、撤去条件を持たせない。
+宣言するのは消費側から呼ぶ形を採る variant 関数に限る。層の内側でしか呼ばない関数は規則に当たらない。
 
 宣言しないと、shadcn/ui の Button docs が「As Link」で推奨する `className={variant 関数(...)}` の形が落ちる。
 このリポジトリはテンプレートなので、利用者が公式どおり書いて lint が止まるのは不備になる。
@@ -79,8 +81,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 層の内側での共有は対象外で、class 定数の export 自体は禁じない。
 消費側が import すれば規則が落とすので、境界の強制は lint が担う。
 
-部品として配るとき、その部品をどの層が持つかは層の役割で決める (ADR-0020)。
-汎用の部品が特定の消費者のレイアウトを知る向きにはしない。責務がその消費者の分だけ広がる (ADR-0014)。
+部品として配るとき、その部品をどの層が持つかは層の役割 (ADR-0020) と、汎用の層が負う責務の範囲 (ADR-0014) で決める。
 
 ### 検討した選択肢
 
@@ -95,8 +96,8 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 
 - 消費側の `className` はすべて linter が読める形になり、`no-raw-colors` と `no-unknown-classes` の検査が届く範囲が確定する
 - 恒久的な例外はゼロで、`overrides` に足すのは規則 1 行だけになる。違反が増えても行は増えない
-- `cva` で variant 関数を新設するたびに `variantFunctions` への追加が要る。忘れると消費側の呼び出しが落ちるので、気付けない失敗にはならない
-- `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` の `settings` には `jsx-a11y` しか出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。ADR-0004 の Consequences)
+- variant 関数を消費側から呼ぶ形を採るたびに `variantFunctions` への追加が要る。忘れると呼び出しが落ちるので、気付けない失敗にはならない
+- `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。ADR-0004 の Consequences)
 - 引数を取らない関数を `mergeFunctions` へ登録すると、規則を通しながら戻り値の中身の検査を落とせる (2026-09-19 実測)。抜け道として使わない
 - design system の層から外へ class 文字列を配る形が閉じる。層の内側での共有は残る
 
