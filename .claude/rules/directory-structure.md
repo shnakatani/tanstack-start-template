@@ -11,9 +11,9 @@ paths:
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                                                                           |
 | `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0014)                                                  |
-| `src/components/parts/`      | registry を包んで外見を定義する自作部品。`no-restyle` の適用外 (ADR-0020)                                                                 |
-| `src/components/screens/`    | 部品を並べて画面を組む共有コンポーネント。`no-restyle` を適用する (ADR-0020)                                                              |
-| `src/components/`            | 上のどれでもないもの。`no-restyle` を適用する (ADR-0020)。実例は `live-regions.tsx`                                                       |
+| `src/components/parts/`      | registry を包んで外見を定義する自作部品。層の規則 (`no-restyle` / `require-static-classes`) の適用外 (ADR-0020 / ADR-0021)                |
+| `src/components/screens/`    | 部品を並べて画面を組む共有コンポーネント。層の規則を適用する (ADR-0020 / ADR-0021)                                                        |
+| `src/components/`            | 上のどれでもないもの。層の規則を適用する (ADR-0020 / ADR-0021)。実例は `live-regions.tsx`                                                 |
 | `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                                                                            |
 | `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される                                                             |
 | `routes/<path>/-lib/`        | その URL 配下だけで使う、コンポーネントでないモジュール (行の組み立て、列定義、dialog の handle、型)。テストは同じディレクトリ (ADR-0019) |
@@ -21,7 +21,8 @@ paths:
 
 - `routes/<path>/-` で始まるディレクトリ (`-components/` `-lib/` `-hooks/`) の中の import は相対パスで書く
 - 一覧テーブルは `DataTable` (`src/components/parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` (横断なら `src/features/<domain>/`) に書き、cell の描画は `-components/` の部品を参照で渡す (ADR-0019)
-- 部品と画面の取り違えは機械で止まらない。判断軸は役割: registry や自作部品を包んで外見そのものを定義するなら `parts/`、既存の部品を並べて画面を組むだけなら `screens/`。消費者が 1 つでも、外見の定義を担うなら `parts/`。className を書きたくなったこと自体は `parts/` への移動理由にならない (ADR-0020)
+- 部品と画面の取り違えは機械で止まらない。判断軸は役割: registry や自作部品を包んで外見そのものを定義するなら `parts/`、既存の部品を並べて画面を組むだけなら `screens/`。消費者が 1 つでも、外見の定義を担うなら `parts/` (ADR-0020)
+- className を書きたくなったこと自体は `parts/` への移動理由にならない。静的か動的かを問わない。層の規則から外れるために移すのは逆 (ADR-0020 / ADR-0021)
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
 - 公式の詳細は TanStack の intent skill (`@tanstack/router-plugin` / `@tanstack/router-core`) を load して確認する

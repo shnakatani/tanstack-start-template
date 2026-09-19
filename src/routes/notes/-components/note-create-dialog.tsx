@@ -2,8 +2,8 @@ import { revalidateLogic } from "@tanstack/react-form";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 
-import { ActionForm, ActionFormSubmit } from "@/components/action/form";
-import { DialogScrollBody, dialogScrollLayout } from "@/components/parts/dialog-scroll-body";
+import { ActionFormSubmit } from "@/components/action/form";
+import { DialogScrollBody, DialogScrollForm } from "@/components/parts/dialog-scroll-body";
 import { Button } from "@/components/ui/button";
 import {
   createDialogHandle,
@@ -31,7 +31,7 @@ import { toastMutationError } from "@/lib/mutation-error";
 export const noteCreateDialogHandle = createDialogHandle<undefined>();
 
 /**
- * メモの追加ダイアログ。内部スクロール方式 (`dialogScrollLayout` + `DialogScrollBody`) で、
+ * メモの追加ダイアログ。内部スクロール方式 (`DialogScrollForm` + `DialogScrollBody`) で、
  * ヘッダーとフッターを固定したまま入力領域だけをスクロールさせる。
  *
  * mutation はここが持ち、フォームの状態は開くたびに作り直す。`DialogContent` は Portal 配下で
@@ -130,7 +130,7 @@ function NoteCreateForm({
 
   return (
     // 検証に失敗すると handleSubmit は onSubmit を呼ばずに resolve し、Transition もすぐ終わる
-    <ActionForm className={dialogScrollLayout} submitAction={() => form.handleSubmit()}>
+    <DialogScrollForm submitAction={() => form.handleSubmit()}>
       <DialogScrollBody>
         <FieldGroup>
           {/* validator は server function と同じ noteInputSchema の項目定義を使う。
@@ -161,6 +161,6 @@ function NoteCreateForm({
         </DialogClose>
         <ActionFormSubmit>保存</ActionFormSubmit>
       </DialogFooter>
-    </ActionForm>
+    </DialogScrollForm>
   );
 }

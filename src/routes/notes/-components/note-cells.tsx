@@ -1,4 +1,3 @@
-import { actionDisabledAppearance } from "@/components/action/button";
 import type { DataTableCellContext } from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -38,14 +37,7 @@ export function NoteActionsCell({ row }: NoteCellContext) {
       <AlertDialogTrigger
         handle={noteDeleteDialogHandle}
         payload={{ id: note.id, name: note.title }}
-        render={
-          <Button
-            variant="destructive"
-            size="sm"
-            focusableWhenDisabled
-            className={actionDisabledAppearance}
-          />
-        }
+        render={<Button variant="destructive" size="sm" focusableWhenDisabled />}
         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
         aria-label={`${note.title}を削除`}

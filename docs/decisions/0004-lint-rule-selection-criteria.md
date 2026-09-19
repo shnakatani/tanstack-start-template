@@ -8,6 +8,7 @@
 - Revised: 2026-09-14 (`no-restricted-imports` を名指しへ加えた。テスト専用のコード (`*.test-helpers.ts` と `src/test/`) のアプリ側からの import を lint で止める。緩和の 5 ルールは変えない)
 - Revised: 2026-09-19 (Tailwind と shadcn/ui 領域の JS plugin を `eslint-plugin-better-tailwindcss` から `@shadcn/lint` へ移し、未知 class、raw color、arbitrary color の 3 ルールへ責務を分けた)
 - Revised: 2026-09-19 (`no-restyle` を採用ルールへ加え、`settings.shadcn.componentImports` と `overrides.excludeFiles` で適用範囲を design system の層に合わせた。層の決定は ADR-0020)
+- Revised: 2026-09-19 (`require-static-classes` を採用ルールへ加え、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言した。層の境界は ADR-0020、配り方の規範は ADR-0021)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -39,7 +40,7 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 | `unicorn`    | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
 | `oxc`        | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
 
-`@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく色と theme class の統制に必要なルールを名指しするためである (「Tailwind と shadcn/ui 領域は jsPlugins で足す」)。
+`@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (「Tailwind と shadcn/ui 領域は jsPlugins で足す」)。
 
 eslint コアへの追加 4 ルール (`no-var` / `prefer-const` / `prefer-rest-params` / `prefer-spread`) は、TypeScript が `var` と `apply` を過去のものにし `const` と rest 引数がより良い型を与える、という typescript-eslint 側の判断を採ったもの。
 `strict-type-checked` がこの variant (`eslint-recommended`) を内包するため typescript の基準としては入っているが、プラグイン別の基準表では eslint コアの欄に落ちる。
@@ -152,19 +153,23 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `components.json` の UI alias と theme CSS を自動探索できるため、同じ値を `settings.shadcn` へ複製しない。
 `settings.shadcn.componentImports` はこの探索結果の書き直しではなく、`ui` alias の外側にある自作部品 (`parts/` 等) まで design system component として認識させる追加である (ADR-0020)。
 
-| 有効にしたルール             | 見るもの                                                                                |
-| ---------------------------- | --------------------------------------------------------------------------------------- |
-| `shadcn/no-unknown-classes`  | theme から生成されない class と未知 variant                                             |
-| `shadcn/no-raw-colors`       | palette class、未定義 semantic color token、SVG の raw color                            |
-| `shadcn/no-arbitrary-values` | `deny: ["color"]` で arbitrary color だけを禁止し、非色の arbitrary value は許可する    |
-| `shadcn/no-restyle`          | design system component への `className` 上書き。`allow: ["layout"]` で layout だけ通す |
+| 有効にしたルール                | 見るもの                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `shadcn/no-unknown-classes`     | theme から生成されない class と未知 variant                                                       |
+| `shadcn/no-raw-colors`          | palette class、未定義 semantic color token、SVG の raw color                                      |
+| `shadcn/no-arbitrary-values`    | `deny: ["color"]` で arbitrary color だけを禁止し、非色の arbitrary value は許可する              |
+| `shadcn/no-restyle`             | design system component への `className` 上書き。`allow: ["layout"]` で layout だけ通す           |
+| `shadcn/require-static-classes` | design system component へ渡す className が静的に読めるか。読めないと他ルールが中身を検査できない |
 
 `no-raw-colors` は `bg-[#333]` のような arbitrary color を検査しないため、`no-arbitrary-values` と対で使う。
 `no-raw-colors` は class だけでなく `fill` / `stroke` など SVG 属性の raw color も見る。移行前の 2 ルールに無かった検査で、統制の範囲はここだけ広がる。
 `no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制し ADR-0006 の許容リストへ記録する。
-`no-restyle` は 2026-09-19 に ADR-0020 の層の決定と対で採用した。`no-inline-styles` と `require-static-classes` は別の設計判断として有効化しない。
+`no-restyle` は 2026-09-19 に ADR-0020 の層の決定と対で、`require-static-classes` は同日に ADR-0021 の配り方の決定と対で採用した。
+`require-static-classes` は `no-restyle` と同じ `overrides` に相乗りし、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言する。
+宣言が要る理由と `mergeFunctions` を使わない理由は ADR-0021 が持つ。
+`no-inline-styles` は対になる設計判断がまだ無いため有効化しない。
 
-`@shadcn/lint` は上流の `recommended` を持たない。色と未知 class の統制に要る 3 ルールだけを名指しし、component の再装飾、inline style、動的 class の統制を同時に持ち込まない。
+`@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書き、`@shadcn/lint` には `{ name: "shadcn", specifier: "@shadcn/lint" }` を使う。
 plugin 本体の `meta.name`、診断コード、rule key、抑制 directive が `shadcn` を共有する。
@@ -301,7 +306,8 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - typescript-eslint は依存に入っていないため、`strict` の改訂を知らせる発火条件がない。追随はこの ADR を読み直すときに行う
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは解決後設定の `rules` に列挙されないため、値でしか見えない
 - `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、追随の発火条件は Dependabot PR の処理時とする。確認するのは plugin の読み込みと 3 ルールの発火の両方である
-- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` が JS plugin 由来のルールを出さないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は下の probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる
+- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` の top-level `rules` に JS plugin 由来のルールが出ないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は下の probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる
+- `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (ADR-0021)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。token だけを混ぜる表現にも行単位の抑制が要り、抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと無言で通る
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。使われない ESLint 一式が必須 peer 経由で入るため、`pnpm-workspace.yaml` の `packageExtensions` で eslint peer を optional にして止める
 - parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。型検査は tsgolint が担う (ADR-0002) ため `vp check` の結果は変わらない

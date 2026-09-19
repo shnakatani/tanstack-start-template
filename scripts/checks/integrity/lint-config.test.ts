@@ -49,12 +49,12 @@ const EXPECTED_OVERRIDES = [
     },
   },
   {
-    // no-restyle を適用外にする層の境界 (ADR-0020)。design system の著作側 (ui/ action/ parts/)
-    // だけを外し、消費側には規則を効かせる。excludeFiles を広げると、広げた先の層で design system
-    // component への className 上書きが無診断で通る
+    // 層の境界に載せる規則と、その適用外にする層 (ADR-0020 / ADR-0021)。design system の著作側
+    // (ui/ action/ parts/) だけを外し、消費側には規則を効かせる。excludeFiles を広げると、広げた
+    // 先の層で className の上書きと動的な className が無診断で通る
     files: ["src/**"],
     excludeFiles: ["src/components/ui/**", "src/components/action/**", "src/components/parts/**"],
-    rules: { "shadcn/no-restyle": "deny" },
+    rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
     // テスト専用のコードの import 禁止を当てる範囲。緩和ではなく範囲を絞った有効化なので、
@@ -178,7 +178,7 @@ describe("書いた設定が解決後も残っている", () => {
         ),
       })),
       "override の範囲かルールか severity が変わった。範囲を広げるとその層で規則が無診断になり、" +
-        "ルールを消すか off にすると規則が無言で外れる (ADR-0004 / ADR-0020)",
+        "ルールを消すか off にすると規則が無言で外れる (ADR-0004 / ADR-0020 / ADR-0021)",
     ).toEqual(EXPECTED_OVERRIDES);
   });
 });
