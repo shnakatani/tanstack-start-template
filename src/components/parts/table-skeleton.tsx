@@ -22,12 +22,8 @@ export function TableSkeleton({ columns, rows = 3 }: { columns: number; rows?: n
       <TableHeader>
         <TableRow>
           {columnKeys.map((col) => (
-            // 実テーブルと同じく scope="col" (列見出しとして数えられる、実テーブルとの列数の
-            // 突き合わせに使う: src/routes/notes/index.test.tsx)。列見出しの文言はまだ無いため、
-            // 素の th のままでは axe の empty-table-header に落ちる (2026-09-20 実測)。
-            // columnheader の役割は保ったまま、可視テキストだけ sr-only で足す
+            // 実テーブルと同じく scope="col" (列見出しとして数えられる)
             <TableHead key={col} scope="col">
-              <span className="sr-only">読み込み中</span>
               <Skeleton className="h-4 w-16" />
             </TableHead>
           ))}
