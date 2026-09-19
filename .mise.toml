@@ -12,6 +12,10 @@ DB_FILE_NAME = ".data/dev.sqlite"
 description = "dev server を起動する"
 run = "vp dev --port $DEV_PORT"
 
+[tasks.storybook]
+description = "Storybook を起動する"
+run = "vp exec storybook dev --port 6006 --no-open"
+
 [tasks."db:generate"]
 description = "Drizzle スキーマから migration を生成する"
 run = "vp exec drizzle-kit generate"
