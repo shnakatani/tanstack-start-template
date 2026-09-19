@@ -1,16 +1,7 @@
-import { cn } from "cn";
 import { useId, useTransition, type ComponentProps, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-
-/**
- * `focusableWhenDisabled` の Button は native `disabled` を付けないため、registry の
- * `disabled:` variant (`src/components/ui/button.tsx`) が当たらない。Base UI が付ける
- * `data-disabled` で同じ見た目にする (Base UI Button docs の Loading states と同じ形)。
- * Action 層の部品は常に当て、Action 層の外で `focusableWhenDisabled` を使う箇所もこれを当てる。
- */
-const actionDisabledAppearance = "data-disabled:pointer-events-none data-disabled:opacity-50";
 
 type ActionButtonShellProps = Omit<
   ComponentProps<typeof Button>,
@@ -51,7 +42,7 @@ function ActionButtonShell({
   return (
     <Button
       {...props}
-      className={cn(actionDisabledAppearance, className)}
+      className={className}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabel === undefined ? labelId : undefined}
       // button の子孫はユーザーエージェントが accessibility API に露出すべきでない
@@ -91,10 +82,4 @@ function ActionButton({ action, ...props }: ActionButtonProps) {
   );
 }
 
-export {
-  ActionButton,
-  ActionButtonShell,
-  actionDisabledAppearance,
-  type ActionButtonProps,
-  type ActionButtonShellProps,
-};
+export { ActionButton, ActionButtonShell, type ActionButtonProps, type ActionButtonShellProps };
