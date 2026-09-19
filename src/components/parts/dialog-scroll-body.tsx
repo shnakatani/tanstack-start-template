@@ -6,8 +6,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 /**
  * 内部スクロール方式のダイアログで、`DialogHeader` / `DialogFooter` の間に置く
- * 中間コンテナ (`form` / `div`) を縦の flex container にする。
- * `DialogScrollBody` と組で使う。1280x600 で各クラスを外して実測した結果:
+ * 中間コンテナを縦の flex container にする。`DialogScrollBody` と組で使う。
+ * 送信を伴う中間コンテナは `DialogScrollForm` が持つ。送信を伴わない `div` の中間コンテナが
+ * 要るときは、この定数を層の外へ配らずこのファイルへ部品を足す (`require-static-classes`)。
+ * 1280x600 で各クラスを外して実測した結果:
  *
  * - `flex` / `flex-col`: 外すと本体とフッターが横並びになるか、子の縮みが効かず本体が
  *   ダイアログ外へはみ出してフッターが見えなくなる
