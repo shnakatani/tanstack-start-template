@@ -1,6 +1,7 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 
+import { CodeBlock } from "@/components/parts/code-block";
 import { FullScreenCardTitle } from "@/components/parts/full-screen-card";
 import {
   Accordion,
@@ -10,7 +11,6 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 /**
  * production の本文に出す固定文言。原因ではなく次に取れる行動だけを伝える
@@ -56,9 +56,7 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
                   スタックトレース
                 </AccordionTrigger>
                 <AccordionContent>
-                  <ScrollArea className="rounded bg-muted" viewportClassName="max-h-48">
-                    <pre className="p-3 text-xs">{error.stack}</pre>
-                  </ScrollArea>
+                  <CodeBlock>{error.stack}</CodeBlock>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
