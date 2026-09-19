@@ -36,3 +36,35 @@ export function dropRedundantColorAliases(tokens: readonly ThemeToken[]): ThemeT
     return true;
   });
 }
+
+/** 前景と背景の対。コントラストを検算する単位になる */
+export interface TokenPair {
+  foreground: ThemeToken;
+  background: ThemeToken;
+}
+
+const FOREGROUND_SUFFIX = "-foreground";
+
+/**
+ * `styles.css` の命名から前景・背景の対を導く。`--X-foreground` は `--X` の上に載る
+ * 約束なので、その 2 つが揃っているものだけを対にする。`--foreground` だけは対応する
+ * `--` が無く `--background` の上に載る。
+ *
+ * 対にならないトークン (`--border` / `--ring` / `--chart-*` 等) は落とす。画面上で重ならない
+ * 組み合わせの比を出しても、閾値を割ったかどうかの判断に使えない。
+ */
+export function foregroundPairs(tokens: readonly ThemeToken[]): TokenPair[] {
+  const byName = new Map(tokens.map((token) => [token.name, token]));
+
+  return tokens
+    .filter(({ name }) => name.endsWith(FOREGROUND_SUFFIX))
+    .flatMap((foreground) => {
+      const baseName =
+        foreground.name === `--${FOREGROUND_SUFFIX.slice(1)}`
+          ? "--background"
+          : `--${foreground.name.slice(2, -FOREGROUND_SUFFIX.length)}`;
+      const background = byName.get(baseName);
+      return background === undefined ? [] : [{ foreground, background }];
+    })
+    .sort((a, b) => a.foreground.name.localeCompare(b.foreground.name));
+}

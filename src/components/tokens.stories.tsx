@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { useSyncExternalStore } from "react";
+import { parse, wcagContrast } from "culori";
+import { Fragment, useSyncExternalStore, type ReactNode } from "react";
 
 import { pageTitle } from "@/components/parts/page-title";
 
-import { contrastRatio } from "./contrast.story-helpers";
-import { isColor, toRgb } from "./css-color.story-helpers";
-import { dropRedundantColorAliases } from "./theme-tokens.story-helpers";
+import {
+  dropRedundantColorAliases,
+  foregroundPairs,
+  type ThemeToken,
+} from "./theme-tokens.story-helpers";
 
 /**
  * `<html>` の class 属性 (light/dark) の変化を購読する。withThemeByClassName の
@@ -71,65 +74,104 @@ function warnIfEmpty(names: string[], story: string): void {
   }
 }
 
-function ColorTokens() {
-  // <html> の class が変わるたびに key へ渡してテーブルを丸ごと作り直す。resolved()/toRgb() を
-  // メモ化していないため再 render 自体でも値は更新されるが、key での強制再構築も併せて
-  // 依存関係の見落としに備える (実測: 依存を持たない再 render でも表示は正しく更新された)
-  const htmlClass = useHtmlClass();
-  const background = resolved("--background");
-  const backgroundRgb = toRgb(background);
-  // 色として解決できるトークンだけを Colors へ通す。isColor() は振り分け用の静かな述語
-  // (warn しない)。denylist (--radius/--font を除く) では成立しない。@layer を再帰して集める
-  // ようになった結果、Tailwind 既定 theme の spacing / animation / container 等が同じ一覧へ
-  // 入るため、除くべき接頭辞を数え上げ続けることになる (ADR-0022)
-  const tokens = dropRedundantColorAliases(
+/** CSS の色として解決できる値だけを通す。非色トークン (spacing / animation 等) を選り分ける */
+function isColor(value: string): boolean {
+  return parse(value) !== undefined;
+}
+
+/** 解決後の値を伴う色トークンを名前順で集める */
+function readColorTokens(): ThemeToken[] {
+  return dropRedundantColorAliases(
     readRootTokens("--")
       .map((name) => ({ name, value: resolved(name) }))
       .filter(({ value }) => isColor(value)),
   );
+}
+
+/**
+ * `<html>` の class が変わるたびに children を作り直す。値は `getComputedStyle` から読むため
+ * React の依存に現れず、再 render だけでは React Compiler がメモ化した結果を返して値が
+ * 止まる。key での remount なら読み取りごとやり直される (2026-09-20、light と dark で
+ * --muted-foreground の比が 4.35 と 5.57 に分かれることで確認)
+ */
+function RereadOnThemeChange({ children }: { children: ReactNode }) {
+  const htmlClass = useHtmlClass();
+  return <Fragment key={htmlClass}>{children}</Fragment>;
+}
+
+function ColorSwatches() {
+  const tokens = readColorTokens();
   warnIfEmpty(
     tokens.map(({ name }) => name),
     "Tokens/Colors",
   );
 
   return (
-    <table key={htmlClass} className="w-full text-sm">
+    <ul className="grid grid-cols-2 gap-2 text-sm">
+      {tokens.map(({ name, value }) => (
+        <li key={name} className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="inline-block size-6 shrink-0 rounded border border-border"
+            style={{ background: value }}
+          />
+          <span className="font-mono text-xs">{name}</span>
+          <span className="font-mono text-xs text-muted-foreground">{value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** 本文テキストの下限 (WCAG 1.4.3、implementation.md「色とコントラスト」) */
+const BODY_TEXT_MINIMUM = 4.5;
+
+/**
+ * 前景と背景の対のコントラストを出す。`styles.css` の値を変えた人がここで閾値を確かめる。
+ * dark は light と別に検算する必要があるため (implementation.md)、テーマを切り替えて読む。
+ *
+ * axe は描画された実ペアしか見ないので、story を持たない部品で使う色は検査に出てこない。
+ * この表は描画の有無と無関係に、定義されている対を全件並べる。
+ */
+function ContrastTable() {
+  const pairs = foregroundPairs(readColorTokens());
+  warnIfEmpty(
+    pairs.map(({ foreground }) => foreground.name),
+    "Tokens/Contrast",
+  );
+
+  return (
+    <table className="w-full text-sm">
       <thead>
         <tr>
           <th scope="col" className="p-2 text-left">
-            token
+            前景
           </th>
           <th scope="col" className="p-2 text-left">
-            解決後の値
+            背景
           </th>
           <th scope="col" className="p-2 text-left">
-            背景とのコントラスト
+            比
+          </th>
+          <th scope="col" className="p-2 text-left">
+            4.5:1
           </th>
         </tr>
       </thead>
       <tbody>
-        {tokens.map(({ name, value }) => {
-          const rgb = toRgb(value);
-          const ratio =
-            rgb === null || backgroundRgb === null ? null : contrastRatio(rgb, backgroundRgb);
+        {pairs.map(({ foreground, background }) => {
+          // 解析できない値を渡すと wcagContrast は TypeError を投げる (2026-09-20 実測。
+          // 型は number を返すと宣言しているが実行時は throw する)。ここへ来る値は
+          // useColorTokens() が isColor() で絞っているので必ず解析できる
+          const ratio = wcagContrast(foreground.value, background.value);
+          const passes = ratio >= BODY_TEXT_MINIMUM;
           return (
-            <tr key={name}>
-              <td className="p-2 font-mono text-xs">{name}</td>
-              <td className="p-2 font-mono text-xs">
-                {/* 見本と値を同じセルに置く。見本を別の td に分けると jsx-a11y/control-has-
-                    associated-label が td (th と同様に対象) をラベル無しの control とみなして
-                    落ちる。見本は装飾として aria-hidden にし、隣の可視テキストをそのセル自身の
-                    アクセシブルな名前として使う */}
-                <span className="inline-flex items-center gap-2">
-                  <span
-                    aria-hidden
-                    className="inline-block size-4 shrink-0 rounded border border-border"
-                    style={{ background: value }}
-                  />
-                  {value}
-                </span>
-              </td>
-              <td className="p-2 font-mono text-xs">{ratio === null ? "—" : ratio.toFixed(2)}</td>
+            <tr key={foreground.name}>
+              <td className="p-2 font-mono text-xs">{foreground.name}</td>
+              <td className="p-2 font-mono text-xs">{background.name}</td>
+              <td className="p-2 font-mono text-xs">{ratio.toFixed(2)}</td>
+              {/* 色だけで伝えない (styling.md)。文字で判定を書く */}
+              <td className="p-2 font-mono text-xs">{passes ? "満たす" : "割る"}</td>
             </tr>
           );
         })}
@@ -196,6 +238,19 @@ const meta = {
 
 export default meta;
 
-export const Colors: StoryObj = { render: () => <ColorTokens /> };
+export const Colors: StoryObj = {
+  render: () => (
+    <RereadOnThemeChange>
+      <ColorSwatches />
+    </RereadOnThemeChange>
+  ),
+};
+export const Contrast: StoryObj = {
+  render: () => (
+    <RereadOnThemeChange>
+      <ContrastTable />
+    </RereadOnThemeChange>
+  ),
+};
 export const Radius: StoryObj = { render: () => <RadiusTokens /> };
 export const Typography: StoryObj = { render: () => <TypographyTokens /> };

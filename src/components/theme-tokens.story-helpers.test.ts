@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { dropRedundantColorAliases } from "./theme-tokens.story-helpers";
+import { dropRedundantColorAliases, foregroundPairs } from "./theme-tokens.story-helpers";
 
 describe("dropRedundantColorAliases", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -55,5 +55,54 @@ describe("dropRedundantColorAliases", () => {
     const tokens = [{ name: "--color-", value: "#000" }];
 
     expect(dropRedundantColorAliases(tokens)).toEqual(tokens);
+  });
+});
+
+describe("foregroundPairs", () => {
+  it("--X-foreground と --X を対にする", () => {
+    const tokens = [
+      { name: "--primary", value: "oklch(0.5 0.2 260)" },
+      { name: "--primary-foreground", value: "oklch(0.98 0 0)" },
+    ];
+
+    expect(foregroundPairs(tokens)).toEqual([
+      {
+        foreground: { name: "--primary-foreground", value: "oklch(0.98 0 0)" },
+        background: { name: "--primary", value: "oklch(0.5 0.2 260)" },
+      },
+    ]);
+  });
+
+  it("--foreground は --background と対にする", () => {
+    const tokens = [
+      { name: "--background", value: "oklch(1 0 0)" },
+      { name: "--foreground", value: "oklch(0.13 0.04 264)" },
+    ];
+
+    expect(foregroundPairs(tokens).map(({ background }) => background.name)).toEqual([
+      "--background",
+    ]);
+  });
+
+  it("相手のいない -foreground は落とす", () => {
+    expect(foregroundPairs([{ name: "--orphan-foreground", value: "#000" }])).toEqual([]);
+  });
+
+  it("-foreground を持たないトークンは対にならない", () => {
+    expect(foregroundPairs([{ name: "--border", value: "#000" }])).toEqual([]);
+  });
+
+  it("名前順に並べる", () => {
+    const tokens = [
+      { name: "--card", value: "#fff" },
+      { name: "--card-foreground", value: "#000" },
+      { name: "--accent", value: "#eee" },
+      { name: "--accent-foreground", value: "#111" },
+    ];
+
+    expect(foregroundPairs(tokens).map(({ foreground }) => foreground.name)).toEqual([
+      "--accent-foreground",
+      "--card-foreground",
+    ]);
   });
 });
