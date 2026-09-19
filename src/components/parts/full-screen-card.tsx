@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import type { ReactNode } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,27 @@ export function FullScreenCard({ children }: { children: ReactNode }) {
     <div className="flex min-h-svh items-center justify-center bg-background p-6">
       <Card className="w-full max-w-sm">{children}</Card>
     </div>
+  );
+}
+
+/**
+ * 全画面カードのページ見出し。registry の `CardTitle` は text-base / font-medium で
+ * カード内の小見出しの寸法なので、ページ全体の見出しはこの部品を通す
+ * (`styling.md` の typography 階層)。tone は意味色の出し分けで、破壊的な文脈にだけ使う。
+ */
+export function FullScreenCardTitle({
+  tone = "default",
+  children,
+}: {
+  tone?: "default" | "destructive";
+  children: ReactNode;
+}) {
+  return (
+    <CardTitle
+      className={cn("text-lg font-semibold", tone === "destructive" && "text-destructive")}
+    >
+      {children}
+    </CardTitle>
   );
 }
 
@@ -41,9 +63,9 @@ export function FullScreenNotice({
   return (
     <FullScreenCard>
       <CardHeader className="text-center">
-        <CardTitle className="text-lg font-semibold">
+        <FullScreenCardTitle>
           <h1>{title}</h1>
-        </CardTitle>
+        </FullScreenCardTitle>
       </CardHeader>
       <CardContent className="text-center">
         <p className="text-sm text-muted-foreground">{description}</p>

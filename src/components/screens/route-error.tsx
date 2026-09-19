@@ -1,6 +1,7 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 
+import { FullScreenCardTitle } from "@/components/parts/full-screen-card";
 import {
   Accordion,
   AccordionContent,
@@ -8,7 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 /**
@@ -37,13 +38,9 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
       <Card className="w-full max-w-sm">
         {/* 本文がエラーメッセージとスタックトレースで左寄せのため、見出しも中央寄せにしない */}
         <CardHeader>
-          {/* 見出し階層は利用側の裁量 (full-screen-card.tsx の CardTitle 合成の説明を参照)。
-              registry の CardTitle は text-base / font-medium で、カード内の小見出しの寸法。
-              ここはページ全体の見出しなので FullScreenNotice と同じ text-lg / font-semibold へ
-              揃える (2 つの全画面エラー表示で見出しの大きさが揃わないのを防ぐ) */}
-          <CardTitle className="text-lg font-semibold text-destructive">
+          <FullScreenCardTitle tone="destructive">
             <h1>エラーが発生しました</h1>
-          </CardTitle>
+          </FullScreenCardTitle>
         </CardHeader>
         <CardContent>
           {/* error.message は server function の throw 文言をそのまま運ぶ開発者向けの情報なので、

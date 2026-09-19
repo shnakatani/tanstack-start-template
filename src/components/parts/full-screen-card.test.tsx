@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
-import { FullScreenNotice } from "@/components/parts/full-screen-card";
+import { FullScreenCardTitle, FullScreenNotice } from "@/components/parts/full-screen-card";
 import { NARROW_VIEWPORT, restoreDefaultViewport, setViewport } from "@/test/viewport";
 
 async function renderNotice() {
@@ -43,5 +43,36 @@ describe("FullScreenNotice", () => {
     expect(rect.left).toBe(24);
     expect(window.innerWidth - rect.right).toBe(24);
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
+  });
+});
+
+describe("FullScreenCardTitle", () => {
+  it("tone=destructive は既定と違う色で描く", async () => {
+    const screen = await render(
+      <>
+        <FullScreenCardTitle>
+          <h1>既定の見出し</h1>
+        </FullScreenCardTitle>
+        <FullScreenCardTitle tone="destructive">
+          <h2>破壊的な見出し</h2>
+        </FullScreenCardTitle>
+      </>,
+    );
+
+    const plain = screen.getByRole("heading", { name: "既定の見出し" }).element();
+    const destructive = screen.getByRole("heading", { name: "破壊的な見出し" }).element();
+
+    expect(getComputedStyle(plain).color).not.toBe(getComputedStyle(destructive).color);
+  });
+
+  it("registry のスタイル経路を保つため data-slot=card-title を残す", async () => {
+    const screen = await render(
+      <FullScreenCardTitle>
+        <h1>見出し</h1>
+      </FullScreenCardTitle>,
+    );
+
+    const heading = screen.getByRole("heading", { name: "見出し", level: 1 }).element();
+    expect(heading.closest('[data-slot="card-title"]')).not.toBeNull();
   });
 });
