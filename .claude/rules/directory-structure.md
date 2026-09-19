@@ -21,7 +21,7 @@ paths:
 
 - `routes/<path>/-` で始まるディレクトリ (`-components/` `-lib/` `-hooks/`) の中の import は相対パスで書く
 - 一覧テーブルは `DataTable` (`src/components/parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` (横断なら `src/features/<domain>/`) に書き、cell の描画は `-components/` の部品を参照で渡す (ADR-0019)
-- 部品と画面の取り違えは機械で止まらない。判断軸は役割: 複数画面で再利用する外見の定義なら `parts/`、1 画面限りの組み立てなら `screens/`。className を書きたくなったこと自体は `parts/` への移動理由にならない (ADR-0020)
+- 部品と画面の取り違えは機械で止まらない。判断軸は役割: registry や自作部品を包んで外見そのものを定義するなら `parts/`、既存の部品を並べて画面を組むだけなら `screens/`。消費者が 1 つでも、外見の定義を担うなら `parts/`。className を書きたくなったこと自体は `parts/` への移動理由にならない (ADR-0020)
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
 - 公式の詳細は TanStack の intent skill (`@tanstack/router-plugin` / `@tanstack/router-core`) を load して確認する
