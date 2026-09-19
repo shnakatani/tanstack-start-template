@@ -35,16 +35,9 @@ export default defineConfig({
       "vitest",
       "jsx-a11y",
     ],
-    // oxlint はネイティブに tailwind 領域のルールを持たない。JS プラグインとして載せる
+    // oxlint はネイティブに Tailwind と shadcn/ui 領域のルールを持たない。JS plugin として載せる
     // (ADR-0004)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
-    jsPlugins: [{ name: "better-tailwindcss", specifier: "eslint-plugin-better-tailwindcss" }],
-    settings: {
-      "better-tailwindcss": {
-        // theme の正本。解決に失敗すると theme が空になり、utility クラスが軒並み未知として
-        // 報告される。診断には entryPoint の設定を疑うよう促す文言が付く (ADR-0004)
-        entryPoint: "src/styles.css",
-      },
-    },
+    jsPlugins: [{ name: "shadcn", specifier: "@shadcn/lint" }],
     // カテゴリ丸ごとの有効化は correctness と perf に限る。他はプラグインごとの上流
     // recommended を基準に rules へ名指しする (ADR-0004)。
     // vp check は --deny-warnings 相当を持たず既定の warn では exit 0 で通るため error で入れる
@@ -252,32 +245,16 @@ export default defineConfig({
       // prefer-tag-over-role も併せて有効にする。実装があるルールは rules へ書けば足せるが
       // (例: anchor-ambiguous-text)、基準を recommended に置いているので広げない
 
-      // -- better-tailwindcss: recommended 集合ではなく色の統制に要る 2 つだけを名指しする
-      // (ADR-0004)。整形系と他の correctness は採らない --
-      // src/styles.css が既定 palette を初期化しているため、bg-red-500 は theme に無いクラスと
-      // してここで落ちる。生成レベルの無効化と対で palette を塞ぐ
-      "better-tailwindcss/no-unknown-classes": "error",
-      // theme を迂回して任意値へ色を書く経路を塞ぐ。var(--...) は semantic token の正規の
-      // 参照方法なので通す
-      "better-tailwindcss/no-restricted-classes": [
-        "error",
-        {
-          restrict: [
-            {
-              message: "任意値に hex 色を書かない。色は semantic token を参照する",
-              pattern: "\\[[^\\]]*#[0-9a-fA-F]{3,8}",
-            },
-            {
-              // var(--...) を含む任意値は除外する。registry の
-              // color-mix(in oklch, var(--secondary), var(--foreground) 5%) のように、
-              // token を材料にして値を導く書き方は semantic token の正規の使い方
-              message: "任意値に色を直書きしない。色は semantic token を参照する",
-              pattern:
-                "\\[(?![^\\]]*var\\(--)[^\\]]*(?:rgba?|hsla?|hwb|oklab|oklch|lab|lch|color-mix|color|light-dark)\\(",
-            },
-          ],
-        },
-      ],
+      // -- shadcn: semantic color と theme に存在する class の統制に要る 3 ルールだけを
+      // 名指しする (ADR-0004)。component の再装飾、inline style、動的 class の制約は
+      // 別の設計判断として採らない --
+      "shadcn/no-unknown-classes": "error",
+      // palette class、未定義の semantic color token、SVG の raw color を塞ぐ。arbitrary color は
+      // このルールの対象外なので no-arbitrary-values と対で使う
+      "shadcn/no-raw-colors": "error",
+      // color だけを deny すると、min-h-[50vh] など色以外の arbitrary value は許可したまま、
+      // bg-[#333] や bg-[rgb(...)] の経路を塞げる
+      "shadcn/no-arbitrary-values": ["error", { deny: ["color"] }],
     },
     // 緩和はテストの 1 経路に限る (ADR-0004)
     overrides: [
