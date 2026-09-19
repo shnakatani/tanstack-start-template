@@ -78,10 +78,18 @@ function ColorTokens() {
   const backgroundRgb = toRgb(background);
   // 色として解決できるトークンだけを Colors へ通す。isColor() は振り分け用の静かな述語
   // (warn しない) で、denylist (--radius/--font を除く) だと再帰後に spacing / animation /
-  // container 等の非色トークンまで混入するため成立しない (実測: 63 件が紛れ込んだ)
-  const tokens = readRootTokens("--")
+  // container 等の非色トークンまで混入するため成立しない (実測: 27 件が紛れ込んだ)
+  const colorTokens = readRootTokens("--")
     .map((name) => ({ name, value: resolved(name) }))
     .filter(({ value }) => isColor(value));
+  const colorTokenNames = new Set(colorTokens.map(({ name }) => name));
+  // --color-X は Tailwind の @theme inline が生成する var(--X) の別名で、生トークン --X が
+  // 同じ集合に在れば値もコントラスト比も完全に重複する。--color-black / --color-white は
+  // 例外で、対応する生トークンが無い (#000 / #fff を直接宣言しているだけ) ため残す
+  const tokens = colorTokens.filter(
+    ({ name }) =>
+      !name.startsWith("--color-") || !colorTokenNames.has(`--${name.slice("--color-".length)}`),
+  );
   warnIfEmpty(
     tokens.map(({ name }) => name),
     "Tokens/Colors",

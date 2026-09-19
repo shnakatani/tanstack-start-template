@@ -99,14 +99,10 @@
   --sidebar-ring: oklch(0.623 0.214 259.815);
 }
 
-/* static を付けて未使用のトークンも出力させる。既定は使われている CSS 変数だけを出力するため
-   (tailwindcss.com/docs/theme「Generating all CSS variables」)、他所で未消費の
-   --font-heading / --radius-sm / --radius-lg / --radius-xl / --radius-2xl / --radius-4xl
-   (--radius-md は他所で rounded-md として消費されているため static 無しでも出ている) や
-   Tailwind 既定 theme の spacing / text / tracking 系トークンが :root, :host に出ず
-   一覧から欠ける (実測: tokens.stories.tsx の readRootTokens (@layer 再帰対応後) で
-   static 無し 70 件 → static あり 109 件)。inline との併用は可能
-   (node_modules/tailwindcss/dist/lib.mjs がビットフラグで管理) */
+/* static はこのブロックの宣言を未使用でも出力させる。inline との併用時は既定だと
+   使用中のトークンまで一部落ちる (inline は utility へ値を直接埋め込むため、
+   `rounded-sm` を書いても var(--radius-sm) を読む rule 自体が生まれず「未使用」と
+   判定される)。出典: tailwindcss.com/docs/theme「Generating all CSS variables」 */
 @theme static inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
