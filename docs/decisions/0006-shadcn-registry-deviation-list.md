@@ -178,6 +178,7 @@ sidebar の依存として CLI が `src/hooks/` へ出力するファイルで�
 - registry コードが依存するパッケージの選定は上流に従う。`class-variance-authority` は 12 コンポーネントが、`tw-animate-css` の `animate-in` / `animate-out` は 7 コンポーネントが使う (2026-09-02 時点、いずれも baseline 側にも同じ import がある)。どちらも更新が細っている (`class-variance-authority` は最終公開 2024-11-26 の 0.7.1 のまま。`tw-animate-css` は 1.4.0 が 2026-02-28 で、リポジトリの最終 push も同日。2026-09-02 確認)。乗り換えは上流が動いたときにしか成立しない。`shadcn/tailwind.css` は `animate-in` を供給しないため、`tw-animate-css` の撤去は registry コードを壊す
 - registry が `cn` の提供元を `@/lib/utils` から npm の `cn` パッケージへ移したため、`src/lib/utils.ts` を削除して消費側の import を差し替えた。`components.json` の `aliases.utils` は shadcn のスキーマが必須項目にしているので値は残すが、現行 registry は参照しない (`src/lib/utils.ts` が無くても `shadcn add` は成功する。2026-09-11 実測)
 - baseline を自前で持つのは、上流に生成時点を特定する手段が無いあいだの代替である。shadcn が生成時点の記録や registry item の版数フィールドを持つようになったら、そちらへの移行を検討する (shadcn-ui/ui#10374)
+- registry 由来でない付随ファイル (`*.test.tsx` / `*.stories.tsx` / `*.test-helpers.ts`) は `src/components/ui/` に置いてよい。`shadcn add` の出力に含まれないため baseline を持たず、網羅検査の対象外になる
 
 ## 出典
 
