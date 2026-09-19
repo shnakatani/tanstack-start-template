@@ -7,6 +7,7 @@
 - Revised: 2026-09-13 (「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落を ADR-0014 に合わせて書き換えた。mutation を伴う操作は Action の中で行い pending を Transition から取る。ハンドラを同期関数として宣言する規範はそのまま)
 - Revised: 2026-09-14 (`no-restricted-imports` を名指しへ加えた。テスト専用のコード (`*.test-helpers.ts` と `src/test/`) のアプリ側からの import を lint で止める。緩和の 5 ルールは変えない)
 - Revised: 2026-09-19 (Tailwind と shadcn/ui 領域の JS plugin を `eslint-plugin-better-tailwindcss` から `@shadcn/lint` へ移し、未知 class、raw color、arbitrary color の 3 ルールへ責務を分けた)
+- Revised: 2026-09-19 (`no-restyle` を採用ルールへ加え、`settings.shadcn.componentImports` と `overrides.excludeFiles` で適用範囲を design system の層に合わせた。層の決定は ADR-0020)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -150,16 +151,17 @@ oxc 自身の設定と同じく、`correctness` と `perf` に入る分だけを
 oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たないため、`jsPlugins` で `@shadcn/lint` を読み込む。
 `components.json` の UI alias と theme CSS を自動探索できるため、同じ値を `settings.shadcn` へ複製しない。
 
-| 有効にしたルール             | 見るもの                                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------ |
-| `shadcn/no-unknown-classes`  | theme から生成されない class と未知 variant                                          |
-| `shadcn/no-raw-colors`       | palette class、未定義 semantic color token、SVG の raw color                         |
-| `shadcn/no-arbitrary-values` | `deny: ["color"]` で arbitrary color だけを禁止し、非色の arbitrary value は許可する |
+| 有効にしたルール             | 見るもの                                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------- |
+| `shadcn/no-unknown-classes`  | theme から生成されない class と未知 variant                                             |
+| `shadcn/no-raw-colors`       | palette class、未定義 semantic color token、SVG の raw color                            |
+| `shadcn/no-arbitrary-values` | `deny: ["color"]` で arbitrary color だけを禁止し、非色の arbitrary value は許可する    |
+| `shadcn/no-restyle`          | design system component への `className` 上書き。`allow: ["layout"]` で layout だけ通す |
 
 `no-raw-colors` は `bg-[#333]` のような arbitrary color を検査しないため、`no-arbitrary-values` と対で使う。
 `no-raw-colors` は class だけでなく `fill` / `stroke` など SVG 属性の raw color も見る。移行前の 2 ルールに無かった検査で、統制の範囲はここだけ広がる。
 `no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制し ADR-0006 の許容リストへ記録する。
-`no-restyle`、`no-inline-styles`、`require-static-classes` は既存の色と未知 class の統制を超えるため、別の設計判断として有効化しない。
+`no-restyle` は 2026-09-19 に ADR-0020 の層の決定と対で採用した。`no-inline-styles` と `require-static-classes` は別の設計判断として有効化しない。
 
 `@shadcn/lint` は上流の `recommended` を持たない。色と未知 class の統制に要る 3 ルールだけを名指しし、component の再装飾、inline style、動的 class の統制を同時に持ち込まない。
 
@@ -308,6 +310,8 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - `perf` の `no-await-in-loop` は順序依存のループにも鳴る。機械的に `Promise.all` へ倒さず、抑制と理由の記述で扱う
 - vitest プラグインはテストファイル以外にも効き、行頭がテスト呼び出しに見えるコメントは `no-commented-out-tests` で報告される
 - ルールを足すか迷ったら、まず上流 recommended に入っているかを確認する。入っていないものを足すときは「基準から外れる名指し」の表に理由とともに追記する
+- `settings.shadcn.componentImports` を消すと自作部品が規則から見えなくなり、routes からの上書きが素通りする。`--print-config` に JS plugin 由来の設定は出ないため無言で効かなくなる
+- `no-restyle` の適用範囲はディレクトリで決まる (ADR-0020)。画面の組み立てを `parts/` へ置くと規則が効かない。機械では止まらない
 
 ## 出典
 

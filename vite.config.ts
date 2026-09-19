@@ -38,6 +38,11 @@ export default defineConfig({
     // oxlint はネイティブに Tailwind と shadcn/ui 領域のルールを持たない。JS plugin として載せる
     // (ADR-0004)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
     jsPlugins: [{ name: "shadcn", specifier: "@shadcn/lint" }],
+    settings: {
+      shadcn: {
+        componentImports: ["^@/components(/|$)"],
+      },
+    },
     // カテゴリ丸ごとの有効化は correctness と perf に限る。他はプラグインごとの上流
     // recommended を基準に rules へ名指しする (ADR-0004)。
     // vp check は --deny-warnings 相当を持たず既定の warn では exit 0 で通るため error で入れる
@@ -268,6 +273,21 @@ export default defineConfig({
           "typescript/no-unsafe-call": "off",
           "typescript/no-unsafe-member-access": "off",
           "typescript/no-unsafe-return": "off",
+        },
+      },
+      {
+        // no-restyle は「消費側が design system component を上書きしていないか」を見る規則で、
+        // design system 自身の内部には意味を持たない (ADR-0020)。緩和ではなく適用範囲の確定なので
+        // excludeFiles で外す。componentImports が無いと自作部品が規則から見えず、
+        // routes からの上書きが素通りする
+        files: ["src/**"],
+        excludeFiles: [
+          "src/components/ui/**",
+          "src/components/action/**",
+          "src/components/parts/**",
+        ],
+        rules: {
+          "shadcn/no-restyle": ["error", { allow: ["layout"] }],
         },
       },
       {

@@ -146,9 +146,12 @@ describe("書いた設定が解決後も残っている", () => {
     expect(printedConfig.options).toEqual({ typeAware: true, typeCheck: true });
   });
 
-  // excludeFiles の有無で「緩和」と「範囲を絞った有効化」を見分ける
+  // excludeFiles の有無で「緩和」と「excludeFiles を持つ override」を見分ける。後者には
+  // 範囲を絞った有効化 (no-restricted-imports) と、規則の適用範囲を層に合わせる指定
+  // (no-restyle、ADR-0020) の 2 種が混在するため、restrictions() はルール名でさらに絞る
   const relaxations = () => printedConfig.overrides.filter((override) => !override.excludeFiles);
-  const restrictions = () => printedConfig.overrides.filter((override) => override.excludeFiles);
+  const restrictions = () =>
+    printedConfig.overrides.filter((override) => "no-restricted-imports" in override.rules);
 
   it("緩和するファイルの範囲を広げていない", () => {
     expect(
