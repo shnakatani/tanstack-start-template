@@ -49,6 +49,11 @@ export default defineConfig({
     settings: {
       shadcn: {
         componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
+        // cva で作った variant 関数を宣言する。宣言しないと消費側の buttonVariants({...}) が
+        // require-static-classes で落ちる。shadcn 公式の Button docs は「As Link」でこの形を
+        // 推奨しており、テンプレート利用者がそのまま書けるようにする (ADR-0021)。
+        // mergeFunctions は使わない。オブジェクトを渡す関数に当てるとキー名を class と誤読する
+        variantFunctions: ["buttonVariants"],
       },
     },
     // カテゴリ丸ごとの有効化は correctness と perf に限る。他はプラグインごとの上流
@@ -258,9 +263,10 @@ export default defineConfig({
       // prefer-tag-over-role も併せて有効にする。実装があるルールは rules へ書けば足せるが
       // (例: anchor-ambiguous-text)、基準を recommended に置いているので広げない
 
-      // -- shadcn: semantic color と theme に存在する class の統制に要る 3 ルールだけを
-      // 名指しする (ADR-0004)。component の再装飾、inline style、動的 class の制約は
-      // 別の設計判断として採らない --
+      // -- shadcn: ルールは設計判断と対にして 1 つずつ名指しする (ADR-0004)。ここに置くのは
+      // semantic color と theme に存在する class の統制に要る 3 つで、全層に効く。層の境界を
+      // 持つ no-restyle と require-static-classes は下の overrides 側にある。inline style の
+      // 統制は対になる設計判断が無いので採らない --
       "shadcn/no-unknown-classes": "error",
       // palette class、未定義の semantic color token、SVG の raw color を塞ぐ。arbitrary color は
       // このルールの対象外なので no-arbitrary-values と対で使う
@@ -284,14 +290,17 @@ export default defineConfig({
         },
       },
       {
-        // no-restyle は「消費側が design system component を上書きしていないか」を見る規則で、
-        // design system 自身の内部には意味を持たない (ADR-0020)。緩和ではなく適用範囲の確定なので
-        // excludeFiles で外す。componentImports が無いと自作部品が規則から見えず、
-        // routes からの上書きが素通りする
+        // no-restyle と require-static-classes は「消費側が design system component へ何を渡して
+        // いるか」を見る規則で、design system 自身の内部には意味を持たない (ADR-0020)。緩和では
+        // なく適用範囲の確定なので excludeFiles で外す。componentImports が無いと自作部品が規則
+        // から見えず、routes からの上書きが素通りする。require-static-classes は他の shadcn
+        // ルールの門番で、ここで落ちる className は no-raw-colors / no-unknown-classes も中身を
+        // 読めない (ADR-0021)
         files: ["src/**"],
         excludeFiles: DESIGN_SYSTEM_LAYERS.map((layer) => `src/components/${layer}/**`),
         rules: {
           "shadcn/no-restyle": ["error", { allow: ["layout"] }],
+          "shadcn/require-static-classes": "error",
         },
       },
       {

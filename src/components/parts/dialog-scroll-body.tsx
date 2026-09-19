@@ -28,7 +28,7 @@ export const dialogScrollLayout = "flex min-h-0 flex-col gap-6";
  * `dialogScrollLayout` を当てた `ActionForm` で、`DialogScrollBody` と `DialogFooter` を包む。
  *
  * 依存の向きを parts → action にしてあるのは、汎用の `ActionForm` が特定のダイアログの
- * レイアウトを知らずに済むようにするため (ADR-0021)。
+ * レイアウトを知らずに済むようにするため。逆向きにすると Action 層の責務が広がる (ADR-0014)。
  */
 export function DialogScrollForm({ className, ...props }: ActionFormProps) {
   return <ActionForm className={cn(dialogScrollLayout, className)} {...props} />;
