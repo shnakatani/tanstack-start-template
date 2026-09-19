@@ -6,6 +6,7 @@
 - Revised: 2026-09-07 (jsPlugin の名前の決まり方と `settings.entryPoint` の解決失敗の挙動を実測に合わせ、fixture による検査を撤去した)
 - Revised: 2026-09-13 (「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落を ADR-0014 に合わせて書き換えた。mutation を伴う操作は Action の中で行い pending を Transition から取る。ハンドラを同期関数として宣言する規範はそのまま)
 - Revised: 2026-09-14 (`no-restricted-imports` を名指しへ加えた。テスト専用のコード (`*.test-helpers.ts` と `src/test/`) のアプリ側からの import を lint で止める。緩和の 5 ルールは変えない)
+- Revised: 2026-09-19 (Tailwind と shadcn/ui 領域の JS plugin を `eslint-plugin-better-tailwindcss` から `@shadcn/lint` へ移し、未知 class、raw color、arbitrary color の 3 ルールへ責務を分けた)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -37,7 +38,7 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 | `unicorn`    | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
 | `oxc`        | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
 
-`better-tailwindcss` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではないためである (「tailwind 領域は jsPlugins で足す」)。
+`@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく色と theme class の統制に必要なルールを名指しするためである (「Tailwind と shadcn/ui 領域は jsPlugins で足す」)。
 
 eslint コアへの追加 4 ルール (`no-var` / `prefer-const` / `prefer-rest-params` / `prefer-spread`) は、TypeScript が `var` と `apply` を過去のものにし `const` と rest 引数がより良い型を与える、という typescript-eslint 側の判断を採ったもの。
 `strict-type-checked` がこの variant (`eslint-recommended`) を内包するため typescript の基準としては入っているが、プラグイン別の基準表では eslint コアの欄に落ちる。
@@ -126,8 +127,8 @@ off にする判断は違反が出たときに個別に行う (registry コー�
 突き合わせの手順は `vp lint --print-config` の `rules` を `jsx_a11y/` で絞り、上流 recommended の一覧と `comm` で両方向の差を取る。
 `--print-config` の `rules` は「カテゴリで有効になったもの」と「設定で名指ししたもの」の和なので、名前が出る = 有効と読んでよい。
 
-**逆は成り立たない。** `--print-config` は JS プラグインを遅延ロードする前に短絡し、プラグイン由来のルール名を未知として捨てる (oxc-project/oxc#22117)。
-`jsPlugins` の宣言自体は出力に現れるが `better-tailwindcss/no-unknown-classes` と `no-restricted-classes` は現れず、出力だけ見ると無効に見える。lint 実行時の発火は正常である。
+**逆は成り立たない。** `--print-config` は JS plugin を遅延ロードする前に短絡し、plugin 由来のルール名を未知として捨てる (oxc-project/oxc#22117)。
+`jsPlugins` の宣言自体は出力に現れるが `shadcn/*` rule は現れず、出力だけ見ると無効に見える。lint 実行時の発火は一時 probe で確認する。
 
 ### unicorn を選定しない理由
 
@@ -135,42 +136,38 @@ unicorn は recommended に含めるルールの数が他プラグインと桁�
 参照した他の共有 config も、recommended をそのまま全部採る例は見当たらない。
 oxc 自身の設定と同じく、`correctness` と `perf` に入る分だけを使う。
 
-### tailwind 領域は jsPlugins で足す
+### Tailwind と shadcn/ui 領域は jsPlugins で足す
 
 色を semantic token だけに保つ統制は 2 層で行い、lint はその 2 層目である。
 
-| 層  | 場所                                                | 担うもの                                                    |
-| --- | --------------------------------------------------- | ----------------------------------------------------------- |
-| 1   | `src/styles.css` の `@theme` (`--color-*: initial`) | 既定 palette を生成から外す。CSS が出ないので画面にも出ない |
-| 2   | `better-tailwindcss` の 2 ルール                    | 書いた時点で落とす。1 層目が外したクラスは未知クラスになる  |
+| 層  | 場所                                                | 担うもの                                                         |
+| --- | --------------------------------------------------- | ---------------------------------------------------------------- |
+| 1   | `src/styles.css` の `@theme` (`--color-*: initial`) | 既定 palette を生成から外す。CSS が出ないので画面にも出ない      |
+| 2   | `@shadcn/lint` の 3 ルール                          | 未知 class、palette・raw color、arbitrary color を記述時に落とす |
 
-1 層目だけだと違反は「無言で効かないクラス」になり、2 層目だけだと任意値の色を止められない。
+1 層目だけだと違反は「無言で効かない class」になり、2 層目だけだと既定 palette の CSS 生成を止められない。
 
-oxlint は tailwind 領域のルールをネイティブに持たないため、`jsPlugins` で `eslint-plugin-better-tailwindcss` を読み込む。
+oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たないため、`jsPlugins` で `@shadcn/lint` を読み込む。
+`components.json` の UI alias と theme CSS を自動探索できるため、同じ値を `settings.shadcn` へ複製しない。
 
-| 有効にしたルール                           | 見るもの                                                                 |
-| ------------------------------------------ | ------------------------------------------------------------------------ |
-| `better-tailwindcss/no-unknown-classes`    | theme に無いクラス。1 層目と対で palette の直書きを塞ぐ                  |
-| `better-tailwindcss/no-restricted-classes` | 任意値へ直書きした色 (hex と色関数)。`var(--...)` を含む任意値は除外する |
+| 有効にしたルール             | 見るもの                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------ |
+| `shadcn/no-unknown-classes`  | theme から生成されない class と未知 variant                                          |
+| `shadcn/no-raw-colors`       | palette class、未定義 semantic color token、SVG の raw color                         |
+| `shadcn/no-arbitrary-values` | `deny: ["color"]` で arbitrary color だけを禁止し、非色の arbitrary value は許可する |
 
-**上流の `recommended` を基準にしない。** これは他プラグインとの唯一の例外である。
-整形系 (`enforce-consistent-class-order` など) は `vp fmt` と守備範囲が重なり、残る correctness ルールは色の統制と関係がない。
-このプラグインを足した動機は palette の統制だけなので、そこに要る 2 つを名指しする。
+`no-raw-colors` は `bg-[#333]` のような arbitrary color を検査しないため、`no-arbitrary-values` と対で使う。
+`no-raw-colors` は class だけでなく `fill` / `stroke` など SVG 属性の raw color も見る。移行前の 2 ルールに無かった検査で、統制の範囲はここだけ広がる。
+`no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制し ADR-0006 の許容リストへ記録する。
+`no-restyle`、`no-inline-styles`、`require-static-classes` は既存の色と未知 class の統制を超えるため、別の設計判断として有効化しない。
 
-`var(--...)` を含む任意値を除外するのは、`color-mix(in oklch, var(--secondary), var(--foreground) 5%)` のように token を材料にして値を導く書き方が semantic token の正規の使い方だからである。除外しないと registry の `button.tsx` が落ちる。
+`@shadcn/lint` は上流の `recommended` を持たない。色と未知 class の統制に要る 3 ルールだけを名指しし、component の再装飾、inline style、動的 class の統制を同時に持ち込まない。
 
-`settings["better-tailwindcss"].entryPoint` は `src/styles.css` を指す。
-解決に失敗すると theme が空になり、utility クラスが軒並み未知として報告される。
-2026-09-07 に存在しないパスで実測したところ `vp check` はエラーで落ち、各診断が `Option \`entryPoint\` may be misconfigured` を添えていた。
-silent failure ではないので、この解決を見張る検査は置かない。
-
-`jsPlugins` のエントリは `{ name, specifier }` の形で書く。
-診断コードの接頭辞・`rules` のキー・抑制 directive は同じ名前を共有し、その名前は `name` を書けばその値、書かなければ `meta.name` から `eslint-plugin` / `oxlint-plugin` の接頭辞を落とした値になる (oxlint の `normalizePluginName`。scope は残るので `@scope/eslint-plugin-foo` は `@scope/foo`)。
-`name` に書けるのは接頭辞を落とした後の形だけで、`eslint-plugin-better-tailwindcss` のような値は `Plugin alias ... is not valid. Strip plugin package prefixes` で拒否される。
-`name` を書くのは、設定を読んだだけでその名前が分かるようにするためである。名前そのものは oxlint が上のとおり強制するので、検査で固定する必要はない。
-`rules` のキーだけは接頭辞を落とす前の名前でも通ってしまう一方、抑制 directive はその名前では効かない。両方を package 名で揃えると、ルールは有効なまま抑制だけが無言で外れる。
-
-JS プラグインは lint 時間を伸ばす。測るときは `time vp lint` を 2 回ずつ実行して 2 回目同士を比べる (1 回目には解決のコストが乗る)。
+`jsPlugins` のエントリは `{ name, specifier }` の形で書き、`@shadcn/lint` には `{ name: "shadcn", specifier: "@shadcn/lint" }` を使う。
+plugin 本体の `meta.name`、診断コード、rule key、抑制 directive が `shadcn` を共有する。
+`rules` のキーに別名 (`@shadcn/lint/no-raw-colors`) を書くと設定のパースが `Plugin '@shadcn/lint' not found` で落ちる。
+一方、抑制 directive は未登録の名前を書いてもエラーにならず、ただ効かない (2026-09-19 に Oxlint 1.82.0 で実測)。名前を揃えないと、rule は有効なまま抑制だけが無言で外れる。
+JS plugin は lint 時間を伸ばす。測るときは `time vp lint` を 2 回ずつ実行して 2 回目同士を比べる (1 回目には解決のコストが乗る)。
 
 ### 基準から外れる名指し
 
@@ -268,11 +265,12 @@ mutation を伴う操作は、その同期ハンドラの内側で `startTransit
 
 tailwind 領域のプラグイン選定は別軸なので分けて置く。
 
-| 案                                           | 評価                                                                                                                        | 採否     |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `eslint-plugin-better-tailwindcss` (schoero) | peerDependencies に `oxlint` を宣言しており、`jsPlugins` で読ませる構成が上流の想定内にある                                 | **採用** |
-| `eslint-plugin-tailwindcss` (classic)        | Tailwind v4 には対応するが peerDependencies は `eslint` だけで、oxlint 経由の利用を上流が想定していない (2026-08-17 に確認) | 却下     |
-| 自前の正規表現でソースを走査する             | 字面しか見ないため theme の実体と乖離し、任意値の中身も読めない。撤去した                                                   | 却下     |
+| 案                                 | 評価                                                                                                                                                                 | 採否     |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `@shadcn/lint`                     | Tailwind CSS v4、`components.json`、theme CSS、shadcn component を理解し、色の統制を 3 つの専用 rule へ分けられる                                                    | **採用** |
+| `eslint-plugin-better-tailwindcss` | shadcn 専用 plugin が存在しなかった期間の代替。未知 class と正規表現による arbitrary color 検査はできるが、shadcn component と semantic token を専用モデルで扱わない | 移行     |
+| `eslint-plugin-tailwindcss`        | Tailwind v4 には対応するが peerDependencies は `eslint` だけで、oxlint 経由の利用を上流が想定していない (2026-08-17 に確認)                                          | 却下     |
+| 自前の正規表現でソースを走査する   | 字面しか見ないため theme の実体と乖離し、任意値の中身も読めない。撤去した                                                                                            | 却下     |
 
 ## Consequences
 
@@ -281,7 +279,13 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - 名指ししたルールが oxlint 側で改名・廃止されると `vp lint` が設定のパースで落ちる (`Rule 'react-compiler' not found in plugin 'react'`)。取りこぼしは起きないが、更新の PR は lint が動かない状態から始まる
 - typescript-eslint は依存に入っていないため、`strict` の改訂を知らせる発火条件がない。追随はこの ADR を読み直すときに行う
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは解決後設定の `rules` に列挙されないため、値でしか見えない
-- `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、追随の発火条件は Dependabot PR の処理時とする
+- `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、追随の発火条件は Dependabot PR の処理時とする。確認するのは plugin の読み込みと 3 ルールの発火の両方である
+- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` が JS plugin 由来のルールを出さないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は probe を書いて lint を走らせる手動の手順になる
+- `no-arbitrary-values` は `color-mix()` の材料を区別しない。token だけを混ぜる表現にも行単位の抑制が要り、抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと無言で通る
+- `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。使われない ESLint 一式が必須 peer 経由で入るため、`pnpm-workspace.yaml` の `packageExtensions` で eslint peer を optional にして止める
+- parser の `typescript` peer (`>=4.8.4 <6.1.0`) は optional 化でも範囲の上書きでも外れず、6 系の `typescript` が依存グラフに入る。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らないので、版の引き下げではなく新規の追加である。型検査は tsgolint が担う (ADR-0002) ため `vp check` の結果は変わらない
+- 上の 2 つの撤去条件は同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` も不要になる
+- parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
 - theme に無いクラスを全て落とすため、`src/styles.css` へ token を足す前に utility を書くと lint で止まる。順序は token の定義が先になる
 - `perf` の `no-await-in-loop` は順序依存のループにも鳴る。機械的に `Promise.all` へ倒さず、抑制と理由の記述で扱う
 - vitest プラグインはテストファイル以外にも効き、行頭がテスト呼び出しに見えるコメントは `no-commented-out-tests` で報告される
@@ -296,6 +300,9 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - React Compiler 診断の per-category ルール分割 (22 ルールとカテゴリの一覧): https://oxc.rs/blog/2026-08-18-react-compiler-support
 - eslint-plugin-react-hooks のルール一覧と preset: https://react.dev/reference/eslint-plugin-react-hooks
 - oxlint の JS plugins (alpha 扱いと `{ name, specifier }` の指定形): https://oxc.rs/docs/guide/usage/linter/js-plugins.html
+- `@shadcn/lint` の setup と rule 一覧: https://github.com/shadcn-ui/lint/blob/main/SETUP.md
+- 使われない `@typescript-eslint/parser` が ESLint と typescript を連れてくる件: https://github.com/shadcn-ui/lint/issues/1
+- pnpm の `packageExtensions` (依存の manifest へ `peerDependenciesMeta` を後付けする): https://pnpm.io/settings/dependency-resolution
 - Tailwind CSS の既定 palette を差し替える手順 (`--color-*: initial`): https://tailwindcss.com/docs/colors
 - eslint-plugin-better-tailwindcss: https://github.com/schoero/eslint-plugin-better-tailwindcss
 - Rendering Lists (index を key にする問題に実行時警告がないこと): https://react.dev/learn/rendering-lists

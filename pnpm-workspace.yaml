@@ -50,11 +50,24 @@ minimumReleaseAgeExclude:
 # vite-plus と core は同一リリースで揃えて上げる。片方だけ上げるとリリースされたことのない
 # 組み合わせになる (voidzero-dev/vite-plus#2356)。bot 側は dependabot.yml の vite-plus グループが束ねる
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.0
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
   vitest: 4.1.11
-  vite-plus: 0.3.0
+  vite-plus: 0.3.2
   "@vitest/browser-playwright": 4.1.11
   "@vitest/coverage-v8": 4.1.11
+# @shadcn/lint は @typescript-eslint/parser を dependencies に持つが、oxlint 経由では読まない。
+# createParser() は optionalDependencies の oxc-parser を先に試し、parser はそれが解決できない
+# ときのフォールバックになる。parser の eslint peer は必須指定のため、そのままでは使われない
+# ESLint 一式が auto-install-peers で入る。peer を optional へ書き換えて止める。
+# typescript の peer (>=4.8.4 <6.1.0) は optional にしても範囲を上書きしても外れない
+# (2026-09-19 に pnpm 11.25.0 で greenfield 解決を実測)。撤去条件は上流が parser を
+# optional peer へ移すこと (shadcn-ui/lint#1)。移れば ESLint も typescript も依存から消える
+packageExtensions:
+  "@typescript-eslint/parser":
+    peerDependenciesMeta:
+      eslint:
+        optional: true
+
 # vp migrate が書く。vite を core へ alias するとバージョンが 0.2.x になり、vite の peer 範囲
 # (^6 || ^7 || ^8 等) を宣言する依存のどれも満たさなくなる。alias 方式に内在する番号不一致の
 # 抑止であって、実在の非互換を隠すものではない
