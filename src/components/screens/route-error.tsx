@@ -2,7 +2,7 @@ import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 
 import { CodeBlock } from "@/components/parts/code-block";
-import { FullScreenCardTitle } from "@/components/parts/full-screen-card";
+import { CardPageTitle } from "@/components/parts/page-title";
 import {
   Accordion,
   AccordionContent,
@@ -38,9 +38,9 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
       <Card className="w-full max-w-sm">
         {/* 本文がエラーメッセージとスタックトレースで左寄せのため、見出しも中央寄せにしない */}
         <CardHeader>
-          <FullScreenCardTitle tone="destructive">
+          <CardPageTitle tone="destructive">
             <h1>エラーが発生しました</h1>
-          </FullScreenCardTitle>
+          </CardPageTitle>
         </CardHeader>
         <CardContent>
           {/* error.message は server function の throw 文言をそのまま運ぶ開発者向けの情報なので、

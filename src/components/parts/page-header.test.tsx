@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
-import { FullScreenCardTitle } from "./full-screen-card";
 import { PageHeader } from "./page-header";
+import { CardPageTitle } from "./page-title";
 
 describe("PageHeader", () => {
   // ページの見出しなので h1。h2 だと画面に h1 が 1 つも無い状態になり、
@@ -39,13 +39,13 @@ describe("PageHeader", () => {
 
   // 器が違うので部品は分かれるが、どちらもページ見出しなので寸法は揃っていなければならない。
   // 別々に class を書いていた頃は、片方だけ変えても何も落ちずに 2 つの見出しがずれた
-  it("全画面カードのページ見出しと寸法が揃う", async () => {
+  it("カードのページ見出しと寸法が揃う", async () => {
     const screen = await render(
       <>
         <PageHeader title="ヘッダーの見出し" />
-        <FullScreenCardTitle>
+        <CardPageTitle>
           <h2>カードの見出し</h2>
-        </FullScreenCardTitle>
+        </CardPageTitle>
       </>,
     );
 

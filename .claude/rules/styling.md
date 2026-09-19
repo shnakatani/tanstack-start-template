@@ -50,7 +50,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - ページ見出しの実装は `src/components/parts/page-header.tsx` が持つ。ページ側で見出しの class を書き直さない
 - 本文に `text-xs` を使わない (タブレット可読性)
 - ページ見出しとセクション見出しを同サイズにしない (階層が消える)
-- 全画面カードのページ見出しは `FullScreenCardTitle` (`src/components/parts/full-screen-card.tsx`) を通す。`CardTitle` へ寸法の class を直接書かない
+- カードの中のページ見出しは `CardPageTitle` (`src/components/parts/page-title.tsx`) を通す。`CardTitle` へ寸法の class を直接書かない。外見は `PageHeader` と同じ `pageTitle` が持つ
 
 ## spacing 基準
 

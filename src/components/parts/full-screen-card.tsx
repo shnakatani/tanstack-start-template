@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import { pageTitle, type PageTitleTone } from "@/components/parts/page-title";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardPageTitle } from "@/components/parts/page-title";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 /**
  * 全画面に 1 枚のカードを中央寄せする外枠。
@@ -16,21 +16,6 @@ export function FullScreenCard({ children }: { children: ReactNode }) {
       <Card className="w-full max-w-sm">{children}</Card>
     </div>
   );
-}
-
-/**
- * 全画面カードのページ見出し。registry の `CardTitle` は text-base / font-medium で
- * カード内の小見出しの寸法なので、ページ全体の見出しはこの部品を通す。
- * 寸法と tone は `pageTitle` が持ち、`PageHeader` の `<h1>` と同じものを消費する。
- */
-export function FullScreenCardTitle({
-  tone,
-  children,
-}: {
-  tone?: PageTitleTone;
-  children: ReactNode;
-}) {
-  return <CardTitle className={pageTitle({ tone })}>{children}</CardTitle>;
 }
 
 /**
@@ -57,9 +42,9 @@ export function FullScreenNotice({
   return (
     <FullScreenCard>
       <CardHeader className="text-center">
-        <FullScreenCardTitle>
+        <CardPageTitle>
           <h1>{title}</h1>
-        </FullScreenCardTitle>
+        </CardPageTitle>
       </CardHeader>
       <CardContent className="text-center">
         <p className="text-sm text-muted-foreground">{description}</p>
