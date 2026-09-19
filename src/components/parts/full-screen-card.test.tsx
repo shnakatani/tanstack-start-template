@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { FullScreenCardTitle, FullScreenNotice } from "@/components/parts/full-screen-card";
+import { CardTitle } from "@/components/ui/card";
 import { NARROW_VIEWPORT, restoreDefaultViewport, setViewport } from "@/test/viewport";
 
 async function renderNotice() {
@@ -74,5 +75,30 @@ describe("FullScreenCardTitle", () => {
 
     const heading = screen.getByRole("heading", { name: "見出し", level: 1 }).element();
     expect(heading.closest('[data-slot="card-title"]')).not.toBeNull();
+  });
+
+  // 寸法は Tailwind のスケール値 (18px / 600 等) を直接固定せず、styling.md の typography 階層が
+  // 定める「ページ見出し > セクション見出し (registry 既定の CardTitle)」の大小関係で固定する
+  it("registry 既定の CardTitle より大きく太い", async () => {
+    const screen = await render(
+      <>
+        <CardTitle>
+          <h2>registry の既定</h2>
+        </CardTitle>
+        <FullScreenCardTitle>
+          <h2>ページの見出し</h2>
+        </FullScreenCardTitle>
+      </>,
+    );
+
+    const base = getComputedStyle(
+      screen.getByRole("heading", { name: "registry の既定" }).element(),
+    );
+    const page = getComputedStyle(
+      screen.getByRole("heading", { name: "ページの見出し" }).element(),
+    );
+
+    expect(parseFloat(page.fontSize)).toBeGreaterThan(parseFloat(base.fontSize));
+    expect(Number(page.fontWeight)).toBeGreaterThan(Number(base.fontWeight));
   });
 });
