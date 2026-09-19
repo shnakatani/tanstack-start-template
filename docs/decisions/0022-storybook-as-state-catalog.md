@@ -16,7 +16,12 @@ framework の選定は `tanstackStart()` plugin と Storybook の Vite builder �
 
 ### 1. framework は TanStack 専用のものを使う
 
-`tanstackStart()` plugin と衝突しない TanStack 専用 framework を使う。router を memory-backed で自動ラップし、server function を自動 stub する。TanStack Query は自動構成の対象外で、preview の構成に手動で置く。
+`tanstackStart()` plugin と衝突しない TanStack 専用 framework を使う。router を memory-backed で自動ラップし、server function を自動 stub する。
+
+自動構成が届かない範囲が 2 つある。
+
+- TanStack Query は対象外。preview の構成へ手動で置く
+- server-only 依存は `__mocks__` で遮断する
 
 ### 2. story は状態のカタログとし、対話的な部品には play function を書く
 
@@ -33,25 +38,35 @@ play で書いた検証は既存のブラウザテストから削る。同じ振
 
 移行は story を書く部品に限り、一律移行はしない。ファイルごとに移せるかを実測してから進める。
 
+variant の網羅を story の数で表現しない。代表値を story にし、残りは `argTypes` の control で切り替える。story を variant の直積で増やすと、カタログが読み通せない長さになる。
+
 ### 3. 検証専用の story は `tags: ["!dev"]` でサイドバーから外す
 
 story の終了状態が他の story と同じ見た目になるものは検証専用として扱い、`tags: ["!dev"]` を付ける。サイドバーの一覧から消えるが、vitest の project 実行では対象に残る (実測: `index.json` の `tags` が `dev` を含まなくなる)。
 
 ### 4. story に決着しない Promise を置かない
 
-pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。Storybook の vitest 実行は 1 つの React root へ story を描き替えるため、決着しない Transition が後続 story の Transition と干渉し、後続 story が pending のまま止まる (2026-09-20 実測)。pending を検証する story は決着する Promise を返す action で書く。
+pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く。
+
+Storybook の vitest 実行は 1 つの React root へ story を描き替える。決着しない Transition が残ると後続 story の Transition と干渉し、後続 story が pending のまま止まる (2026-09-20 実測)。
 
 ### 5. play の操作は合成イベントとし、実イベントの規律はブラウザテストが持つ
 
 play は Storybook の UI 上でも実行されるため CDP を使えず、`storybook/test` の合成イベントで操作する。ADR-0015 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、play へは移さない。ADR-0015 が禁じた同期 2 連射は、`storybook/test` の操作が各手順を await するため起きない。
 
-popup を閉じる play は、ADR-0013 の retry API ではなく `storybook/test` の `waitFor` で、閉じた popup の unmount を待ってから終える。a11y 検査は play の後に走るため、待たないと ADR-0018 が扱う animate-out の窓に入る。Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。
+popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0018 の扱う animate-out の窓に入る。
+
+待機は `storybook/test` の `waitFor` で書く。ADR-0013 の retry API は play から呼べない。Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。
 
 ### 6. トークンは CSS 変数を実測して描く
 
 `styles.css` を SSOT に保つため、story 側に値を書き写さない。`getComputedStyle` で解決後の値を読んで一覧を組み立て、light と dark の切り替えは `@storybook/addon-themes` の class 切り替えで行う。コントラスト比を併記し、計算は `src/lib/` の純粋関数へ切り出して境界条件のテストを同時に書く。
 
-トークンの一覧を CSSOM から読む選択の帰結として、`styles.css` の `@theme` に `static` を付ける。Tailwind は既定で「utility から参照されている変数」だけを出力するため、定義したのに未使用のトークンが一覧から消える。`static` は公式のノブで `inline` と併用できる。2026-09-20 の実測では、`@theme static inline` にした結果 `--font-heading` / `--radius-sm` / `--radius-lg` / `--radius-xl` の 4 件が新たに出力されるようになり、生成される CSS は 160552 バイトから 162430 バイトへ増えた。
+トークンの一覧を CSSOM から読む選択の帰結として、`styles.css` の `@theme` に `static` を付ける。`static` は公式のノブで `inline` と併用できる。
+
+`inline` は utility へ値を直接埋め込むため、`rounded-4xl` を書いても `var(--radius-4xl)` を読む rule が生まれない。Tailwind は既定で参照されている変数だけを出力するので、実際に使われているトークンが一覧から消える。`src/components/ui/badge.tsx` の `rounded-4xl` がその例で、`static` なしでは `--radius-4xl` がカタログに出ない。
+
+代償は、未参照の宣言が本番 CSS へ乗ることである。`@theme static inline` から `static` を外して `vp build` を 2 回回せば、出力される変数と CSS のバイト数の差を測れる。
 
 Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査は `@layer` を含むグループ規則を再帰的に辿る必要がある。辿らないと `@layer` の中の `:root` を見落とす。
 
@@ -72,7 +87,7 @@ Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査
 
 ### 9. 導入は 3 段階に分け、PR を stack にする
 
-1 度に全部品の story を書かない。段階ごとに PR を分け `gh stack` で積む。1 段目は基盤と Storybook 自体の story、2 段目は外見を定義する `parts/`、3 段目は `ui/` の主要部品とする。段階 2 と 3 は、対象の層に story があり a11y 検査が通ることを完了条件とする。
+1 度に全部品の story を書かない。段階ごとに PR を分け `gh stack` で積む。1 段目は基盤とデザイントークンの story、2 段目は外見を定義する `parts/` と `action/`、3 段目は `ui/` の主要部品とする。段階 2 と 3 は、対象の層に story があり a11y 検査が通ることを完了条件とする。
 
 ## 検討した選択肢
 
@@ -83,7 +98,8 @@ Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査
 | 「初期状態では中身が見えない部品」を play の対象軸にする | 公式が「複雑で対話的な部品ならさらに踏み込める」と述べる後段を落とし、公式にない軸を独自に作ってしまう         | 却下     |
 | 既存のブラウザテストを丸ごと story へ移す                | portable stories は state 更新を伴う再描画を支援しない。待機・実イベント・animation の規律を移植する動機も無い | 却下     |
 | トークンを公式の `ColorPalette` で書く                   | 色値を MDX へ書き写すため `styles.css` と二重管理になる                                                        | 却下     |
-| 検証専用 story をサイドバーへ出したまま置く              | 同じ見た目の story が並び、カタログとして読めなくなる (実測: 9 story 中 4 つが重複)                            | 却下     |
+| トークンを専用 addon で一覧化する                        | `styles.css` へ注釈コメントを足す必要があり、Storybook 専用の記述が SSOT に混ざる                              | 却下     |
+| 検証専用 story をサイドバーへ出したまま置く              | 同じ見た目の story が並び、カタログとして読めなくなる (2026-09-20 に 1 部品で実測、9 story 中 4 つが重複)      | 却下     |
 | 検証専用 story を別ファイルへ分ける                      | story glob と「部品の隣へ置く」規約の両方を変えることになる                                                    | 却下     |
 | pending の見た目を決着しない action で作る               | 後続 story の Transition を止める (節 4 の実測)                                                                | 却下     |
 | `action/` を当初どおり対象外に保つ                       | pending 表現に server function の stub が要るという理由が実測で誤りと判明した                                  | 却下     |
@@ -99,16 +115,7 @@ Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査
 - 検証が一部 CDP の実イベントから合成イベントへ移り、backdrop の遮りを含む pointer の忠実さは下がる。一方イベント間に描画が挟まる点は既存のブラウザテストと同じ性質になる
 - サイドバーに出る story と出ない story ができ、`tags` の付け忘れでカタログが汚れうる。機械検査は置かず、レビューで見る
 - 移行のたびに「移せない case」が出る可能性が残り、段階 2 と 3 の各ファイルで実測が要る
-
-CSSOM の走査件数は次のとおり (2026-09-20 実測)。
-
-| 集計                                                                                                      | 件数   |
-| --------------------------------------------------------------------------------------------------------- | ------ |
-| `@layer` を再帰しない場合                                                                                 | 34 件  |
-| `@layer` を再帰し `@theme static inline` を適用した場合                                                   | 109 件 |
-| うち denylist (`--radius` / `--font` を除く) 方式で紛れ込む非色トークン                                   | 27 件  |
-| `isColor()` で色トークンだけに絞った件数                                                                  | 68 件  |
-| `--color-X` の別名を落とした Colors の件数 (`--color-black` / `--color-white` は生トークンが無いため残る) | 35 件  |
+- `storybook/test` の `expect` は vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を story へ機械的に写せない箇所が出る
 
 ## 出典
 
