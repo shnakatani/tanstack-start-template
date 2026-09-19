@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { dropRedundantColorAliases, foregroundPairs } from "./theme-tokens.story-helpers";
+import {
+  dropRedundantColorAliases,
+  foregroundPairs,
+  isColorValue,
+} from "./theme-tokens.story-helpers";
 
 describe("dropRedundantColorAliases", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -104,5 +108,28 @@ describe("foregroundPairs", () => {
       "--accent-foreground",
       "--card-foreground",
     ]);
+  });
+});
+
+describe("isColorValue", () => {
+  it("CSS の色として書かれた値を通す", () => {
+    expect(isColorValue("oklch(0.5 0.2 260)")).toBe(true);
+    expect(isColorValue("#000")).toBe(true);
+    expect(isColorValue("rgb(1, 2, 3)")).toBe(true);
+  });
+
+  it("色でない値を落とす", () => {
+    expect(isColorValue("0.625rem")).toBe(false);
+    expect(isColorValue("0.25s")).toBe(false);
+    expect(isColorValue("Geist Variable, sans-serif")).toBe(false);
+  });
+
+  // culori の parse は # の無い hex を受ける (parse("700") -> #700、2026-09-20 実測)。
+  // --font-weight-bold: 700 のような数値トークンが色として通ってしまう
+  it("# の無い hex 相当の数値を落とす", () => {
+    expect(isColorValue("700")).toBe(false);
+    expect(isColorValue("400")).toBe(false);
+    expect(isColorValue("100")).toBe(false);
+    expect(isColorValue("aabbcc")).toBe(false);
   });
 });

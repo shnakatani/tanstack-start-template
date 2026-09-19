@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { parse, wcagContrast } from "culori";
+import { wcagContrast } from "culori";
 import { Fragment, useSyncExternalStore, type ReactNode } from "react";
 
 import { pageTitle } from "@/components/parts/page-title";
@@ -7,6 +7,7 @@ import { pageTitle } from "@/components/parts/page-title";
 import {
   dropRedundantColorAliases,
   foregroundPairs,
+  isColorValue,
   type ThemeToken,
 } from "./theme-tokens.story-helpers";
 
@@ -74,17 +75,12 @@ function warnIfEmpty(names: string[], story: string): void {
   }
 }
 
-/** CSS の色として解決できる値だけを通す。非色トークン (spacing / animation 等) を選り分ける */
-function isColor(value: string): boolean {
-  return parse(value) !== undefined;
-}
-
 /** 解決後の値を伴う色トークンを名前順で集める */
 function readColorTokens(): ThemeToken[] {
   return dropRedundantColorAliases(
     readRootTokens("--")
       .map((name) => ({ name, value: resolved(name) }))
-      .filter(({ value }) => isColor(value)),
+      .filter(({ value }) => isColorValue(value)),
   );
 }
 

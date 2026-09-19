@@ -1,4 +1,18 @@
+import { parse } from "culori";
+
 /** 解決後の値を伴う CSS カスタムプロパティ。名前は `--` で始まる */
+/**
+ * CSS の色として書かれた値かどうか。トークン一覧から色だけを選り分ける述語。
+ *
+ * culori の `parse` は `#` の無い hex を受ける (`parse("700")` が `#700` を返す、
+ * 2026-09-20 実測)。`--font-weight-bold: 700` のような数値トークンがそのまま色として
+ * 通るため、hex 数字だけの値を先に落とす。CSS の色は必ず `#` か関数か色名で書く。
+ */
+export function isColorValue(value: string): boolean {
+  if (/^[0-9a-f]+$/i.test(value)) return false;
+  return parse(value) !== undefined;
+}
+
 export interface ThemeToken {
   name: string;
   value: string;
