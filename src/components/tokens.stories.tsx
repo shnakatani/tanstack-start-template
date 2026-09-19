@@ -30,7 +30,7 @@ function useHtmlClass(): string {
  * Tailwind v4 は `@theme` の内容を `@layer theme { :root, :host { ... } }` へ出すため、
  * トップレベルの CSSStyleRule だけでなく `@layer` / `@media` 等のグループ規則
  * (CSSGroupingRule を継承する rule 全般) の中も再帰的に辿る。辿らないと `@layer` の中の
- * `:root` を見落とす (件数の実測は ADR-0022)
+ * `:root` を見落とす (ADR-0022)
  */
 function readRootTokens(prefix: string): string[] {
   const names = new Set<string>();
@@ -80,7 +80,7 @@ function ColorTokens() {
   // 色として解決できるトークンだけを Colors へ通す。isColor() は振り分け用の静かな述語
   // (warn しない)。denylist (--radius/--font を除く) では成立しない。@layer を再帰して集める
   // ようになった結果、Tailwind 既定 theme の spacing / animation / container 等が同じ一覧へ
-  // 入るため、除くべき接頭辞を数え上げ続けることになる (件数は ADR-0022)
+  // 入るため、除くべき接頭辞を数え上げ続けることになる (ADR-0022)
   const tokens = dropRedundantColorAliases(
     readRootTokens("--")
       .map((name) => ({ name, value: resolved(name) }))
