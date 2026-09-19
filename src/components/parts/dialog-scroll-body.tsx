@@ -1,6 +1,7 @@
 import { cn } from "cn";
 import type { ReactNode } from "react";
 
+import { ActionForm, type ActionFormProps } from "@/components/action/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 /**
@@ -21,6 +22,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
  * 従うので `flex-grow` が働く余白がない)。
  */
 export const dialogScrollLayout = "flex min-h-0 flex-col gap-6";
+
+/**
+ * 内部スクロール方式のダイアログで、送信を伴う中間コンテナになる `form`。
+ * `dialogScrollLayout` を当てた `ActionForm` で、`DialogScrollBody` と `DialogFooter` を包む。
+ *
+ * 依存の向きを parts → action にしてあるのは、汎用の `ActionForm` が特定のダイアログの
+ * レイアウトを知らずに済むようにするため (ADR-0021)。
+ */
+export function DialogScrollForm({ className, ...props }: ActionFormProps) {
+  return <ActionForm className={cn(dialogScrollLayout, className)} {...props} />;
+}
 
 /**
  * 内部スクロール方式のダイアログ本体 (base-ui 公式の inside-scroll パターン)。

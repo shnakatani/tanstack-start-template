@@ -1,8 +1,12 @@
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { DialogScrollBody, dialogScrollLayout } from "@/components/parts/dialog-scroll-body";
+import {
+  DialogScrollBody,
+  DialogScrollForm,
+  dialogScrollLayout,
+} from "@/components/parts/dialog-scroll-body";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -222,5 +226,24 @@ describe("DialogScrollBody（内部スクロール）", () => {
     expect(focused.outlineWidth).toBe("2px");
     // Root の overflow-hidden にクリップされないよう内側へ描く
     expect(focused.outlineOffset).toBe("-2px");
+  });
+});
+
+describe("DialogScrollForm", () => {
+  it("中間コンテナの縦 flex レイアウトが当たる", async () => {
+    const screen = await render(
+      <DialogScrollForm submitAction={vi.fn()}>
+        <button type="button">本体</button>
+      </DialogScrollForm>,
+    );
+
+    const form = screen.getByRole("button", { name: "本体" }).element().closest("form");
+    expect.assert(form !== null, "form が見つかりません");
+
+    const style = getComputedStyle(form);
+    expect(style.display).toBe("flex");
+    expect(style.flexDirection).toBe("column");
+    // min-h-0 は flex item の既定 min-height: auto を打ち消す (同ファイルの docstring)
+    expect(style.minHeight).toBe("0px");
   });
 });

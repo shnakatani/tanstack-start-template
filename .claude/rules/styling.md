@@ -118,7 +118,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ### 内部スクロールを持つダイアログの組み方
 
-`DialogScrollBody` + `dialogScrollLayout` (`src/components/parts/dialog-scroll-body.tsx`) で組む。`form` / `div` を問わずヘッダーとフッターの間の中間コンテナに適用し、本体だけをスクロールさせる (見出しと X ボタンが流れない)。各 className の根拠は同ファイルの docstring。
+`DialogScrollForm` + `DialogScrollBody` (`src/components/parts/dialog-scroll-body.tsx`) で組む。ヘッダーとフッターの間の中間コンテナを `DialogScrollForm` にし、本体だけをスクロールさせる (見出しと X ボタンが流れない)。各 className の根拠は同ファイルの docstring。
 
 恒常的に viewport 高を超えるダイアログは必ずこの方式で組む。`popupOverflowBackstop` 発火時に X 閉じるボタンが流れる挙動は、内部スクロールを組み忘れても内容が読める防御層として許容し、sticky は作らない。sticky を足すと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる。
 
@@ -133,7 +133,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 | フッターの手前で描画が空になる条件分岐がある     | 中間コンテナの外 (分岐によらず常時表示を保つ)             |
 | ヘッダーと本体の間に固定表示の兄弟要素を挟まない | 中間コンテナを省略し、`DialogScrollBody` を直接置いてよい |
 
-実例は `src/routes/notes/-components/note-create-dialog.tsx` (form が中間コンテナ、`DialogFooter` はその内側)。
+実例は `src/routes/notes/-components/note-create-dialog.tsx` (`DialogScrollForm` が中間コンテナ、`DialogFooter` はその内側)。
 
 ## 状態表示
 
