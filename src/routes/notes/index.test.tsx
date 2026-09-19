@@ -374,8 +374,8 @@ describe("NotesPage", () => {
       .toHaveAttribute("aria-disabled", "true");
     // 行は静的テキスト (sr-only) で状態を持つ (ADR-0017)
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
-    // registry の disabled: variant は native disabled にしか当たらない。data-disabled 経由で
-    // 同じ見た目 (半透明 + pointer-events なし) になっていることを算出スタイルで固定する
+    // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の
+    // data-disabled: が担う (ADR-0006)。半透明 + pointer-events なしを算出スタイルで固定する
     const targetTrigger = rowDeleteButton(screen, NOTE.title).element();
     await vi.waitFor(() => {
       const style = getComputedStyle(targetTrigger);
