@@ -56,6 +56,16 @@ const EXPECTED_RESTRICTION_SCOPE = {
   ],
 };
 
+/**
+ * no-restyle を適用外にする層の境界 (ADR-0020)。design system の著作側 (ui/ action/ parts/)
+ * だけを外し、消費側 (screens/ 等) には規則を効かせる。excludeFiles を広げると、広げた先の層で
+ * design system component への className 上書きが無診断で通るようになる
+ */
+const EXPECTED_RESTYLE_SCOPE = {
+  files: ["src/**"],
+  excludeFiles: ["src/components/ui/**", "src/components/action/**", "src/components/parts/**"],
+};
+
 /** lint が見に行くべきソースの所在 */
 const SOURCE_ROOTS = ["src", "scripts"];
 
@@ -148,10 +158,16 @@ describe("書いた設定が解決後も残っている", () => {
 
   // excludeFiles の有無で「緩和」と「excludeFiles を持つ override」を見分ける。後者には
   // 範囲を絞った有効化 (no-restricted-imports) と、規則の適用範囲を層に合わせる指定
-  // (no-restyle、ADR-0020) の 2 種が混在するため、restrictions() はルール名でさらに絞る
+  // (no-restyle、ADR-0020) の 2 種が混在するため、restrictions() / restyleScope() は
+  // ルール名でさらに絞る。ルール名で絞ると、excludeFiles を持つ override が新たに増えたこと
+  // 自体は検知できなくなる (旧実装は excludeFiles の有無だけで見ており、no-restyle の追加で
+  // 落ちて気付けた)。そのため各 override の files / excludeFiles は、ルールごとの期待値
+  // (EXPECTED_RESTRICTION_SCOPE / EXPECTED_RESTYLE_SCOPE) で個別に固定する
   const relaxations = () => printedConfig.overrides.filter((override) => !override.excludeFiles);
   const restrictions = () =>
     printedConfig.overrides.filter((override) => "no-restricted-imports" in override.rules);
+  const restyleScope = () =>
+    printedConfig.overrides.filter((override) => "shadcn/no-restyle" in override.rules);
 
   it("緩和するファイルの範囲を広げていない", () => {
     expect(
@@ -177,6 +193,14 @@ describe("書いた設定が解決後も残っている", () => {
     expect(restrictions().flatMap((override) => Object.keys(override.rules))).toEqual([
       "no-restricted-imports",
     ]);
+  });
+
+  it("no-restyle の適用範囲を層の境界に固定している", () => {
+    expect(
+      restyleScope().map(({ files, excludeFiles }) => ({ files, excludeFiles })),
+      "no-restyle の適用範囲が変わった。excludeFiles を広げると、広げた先の層で design system " +
+        "component への className 上書きが無診断で通るようになる (ADR-0020)",
+    ).toEqual([EXPECTED_RESTYLE_SCOPE]);
   });
 });
 
