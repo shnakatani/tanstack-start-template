@@ -88,6 +88,24 @@ expect(result[0]).toBe(existing[100]);
 
 cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 
+## 状態のアサートは semantic matcher を先に探す
+
+発火: `toHaveAttribute` か `querySelector` を書こうとした時。Storybook 公式が採る Testing Library の query 優先順位と同じ理由で、ユーザーから見た状態を見るアサートを先に置く。
+
+| 見たいもの                                    | 使うもの                           |
+| --------------------------------------------- | ---------------------------------- |
+| 検証エラー (`aria-invalid` / `checkValidity`) | `toBeInvalid()`                    |
+| 選択状態 (`aria-checked` / native checked)    | `toBeChecked()`                    |
+| native `disabled`                             | `toBeDisabled()` / `toBeEnabled()` |
+| `aria-describedby` が指す文言                 | `toHaveAccessibleDescription()`    |
+| accessible name                               | `toHaveAccessibleName()`           |
+
+- `aria-disabled` に相当する matcher は無い。`toBeDisabled` は `aria-disabled` を見ないので、`toHaveAttribute("aria-disabled", "true")` で見る
+- `aria-busy` も相当が無い。`getByRole(..., { busy: true })` で絞るか属性で見る
+- Base UI の styling hook (`data-checked` / `data-invalid` / `data-disabled` 等) は見た目を駆動する属性そのものなので属性で見てよい。ARIA 側と重ねて見るときは、別々に付くことをコメントで残す
+- `querySelector` で要素を掴むのは、accessibility tree に差が出ない対象に限る。掴む理由を実装近傍に書く。書けないならそのアサートは消す
+- 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (実例: `ActionButtonShell` は `aria-labelledby` で名前を固定するため、Spinner の `aria-hidden` を外しても `toHaveAccessibleName` は落ちない)
+
 ## assertion helper と型ナローイング
 
 - assertion を実行するテストヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` のパターンと、`vite.config.ts` に名指しした関数だけ。命名を外すとヘルパーだけを呼ぶテストが落ちる (ADR-0004)
