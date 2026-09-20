@@ -32,6 +32,10 @@ UI と story を触る前に `vp exec storybook skills` を実行する。**`vp 
 
 起動中の Storybook が要るのは `stories preview` と `review create` だけで、`docs list` / `docs show` / `stories changed` / `stories find-by-component` / `test run` は不要 (2026-09-20 実測)。
 
+`stories find-by-component` は逆依存グラフを引く。変更したファイルを渡すと、影響する story が距離つきで返る (実測: `page-title.tsx` → `tokens` の 3 story が distance 1)。grep では出せない。
+
+MCP が優るのは、ツールの説明がエージェントに常時見える点である。CLI は AGENTS.md に書いても読み飛ばせば使われない。ここに書いてあるのはその対策なので、UI と story を触るときは読み飛ばさない。
+
 MCP (`@storybook/addon-mcp`) は採らない。全ツールが起動中の Storybook を要求し、登録 URL が `http://localhost:6006/mcp` 固定である一方、この repo の Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスク)。
 
 ## 仕様書・設計判断
