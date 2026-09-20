@@ -1,52 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import type { VariantProps } from "class-variance-authority";
 
-import { buttonVariants } from "@/components/ui/button";
+import { BUTTON_SIZES, BUTTON_VARIANTS } from "@/components/ui/button.story-helpers";
 
 import { ButtonLink } from "./button-link";
-
-type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
-type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
-
-/**
- * control の選択肢の出処。Storybook の `options` は `readonly any[]` で中身を検査しないので、
- * リテラルを並べるだけだと `cva` に足したときに静かに古くなる。`satisfies Record<..., null>`
- * に通すと、足した側がここで型エラーになる (2026-09-20 実測)。
- */
-const VARIANT_MEMBERS = {
-  default: null,
-  outline: null,
-  secondary: null,
-  ghost: null,
-  dashed: null,
-  destructive: null,
-  "destructive-ghost": null,
-  link: null,
-} satisfies Record<ButtonVariant, null>;
-
-const SIZE_MEMBERS = {
-  default: null,
-  xs: null,
-  sm: null,
-  lg: null,
-  icon: null,
-  "icon-xs": null,
-  "icon-sm": null,
-  "icon-lg": null,
-} satisfies Record<ButtonSize, null>;
 
 const meta = {
   component: ButtonLink,
   args: { to: "/notes", children: "メモ一覧へ" },
   argTypes: {
-    variant: {
-      control: "select",
-      options: Object.keys(VARIANT_MEMBERS),
-    },
-    size: {
-      control: "select",
-      options: Object.keys(SIZE_MEMBERS),
-    },
+    variant: { control: "select", options: BUTTON_VARIANTS },
+    size: { control: "select", options: BUTTON_SIZES },
   },
 } satisfies Meta<typeof ButtonLink>;
 

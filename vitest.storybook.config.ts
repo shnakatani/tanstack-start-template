@@ -4,8 +4,6 @@ import viteReact from "@vitejs/plugin-react";
 import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
-import { DEFAULT_VIEWPORT } from "./src/test/viewport-sizes";
-
 /**
  * テーマごとに 1 つの project を作る。`initialGlobals` で toolbar の global を固定すると、
  * 同じ story が両方のテーマで走る (addon-vitest の公式パターン)。light だけで回すと、
@@ -67,9 +65,9 @@ export function storybookProject(theme: "light" | "dark") {
         enabled: true,
         provider: playwright(),
         headless: true,
-        // browser project と同じ寸法で走らせる。書かないと Playwright の既定に落ち、
-        // 2 つの project が別の baseline を持つ
-        viewport: DEFAULT_VIEWPORT,
+        // viewport はここで指定できない。@storybook/addon-vitest の setViewport が story ごとに
+        // page.viewport() を呼び、parameters.viewport を持たない story は同 addon の既定
+        // (1200x900) へ固定する。browser project (1280x720) とは別の baseline になる
         instances: [{ browser: "chromium" }],
       },
     },

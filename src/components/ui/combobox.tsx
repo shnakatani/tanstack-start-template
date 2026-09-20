@@ -21,6 +21,9 @@ function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Tr
   return (
     <ComboboxPrimitive.Trigger
       data-slot="combobox-trigger"
+      // アイコンだけのボタンで名前を持たない (上流 shadcn-ui/ui#11589)。消費側が render で
+      // 差し替えたときは、そちらの aria-label が {...props} で勝つ (ADR-0006 の乖離)
+      aria-label="候補を開く"
       className={cn("[&_svg:not([class*='size-'])]:size-4", className)}
       {...props}
     >
@@ -34,6 +37,8 @@ function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
   return (
     <ComboboxPrimitive.Clear
       data-slot="combobox-clear"
+      // 同上 (上流 shadcn-ui/ui#11589)
+      aria-label="選択を消す"
       render={<InputGroupButton variant="ghost" size="icon-xs" />}
       className={cn(className)}
       {...props}
@@ -88,6 +93,15 @@ function ComboboxContent({
     ComboboxPrimitive.Positioner.Props,
     "side" | "align" | "sideOffset" | "alignOffset" | "anchor"
   >) {
+  // 名前は型で必須にしない。base-ui は popup の role を
+  // `inputInsidePopup ? "dialog" : "presentation"` で決める
+  // (`combobox/popup/ComboboxPopup.js`)。入力欄が popup の外にある構成では
+  // presentation になり、そこへ aria-label を付けるのは WAI-ARIA 1.2 の MUST NOT
+  // (§5.2.8.6 name prohibited、§4.3 で暗黙の role へ戻る)。判定は実行時の state なので
+  // 型では分岐できず、必須にすると inline の構成が違反を書かされる。
+  // aria-* は Popup.Props が div の props 経由で既に受けるので、ここで並べ直さない。
+  // 名前の過不足は story の axe が見る (dialog は aria-dialog-name、presentation は
+  // aria-prohibited-attr。どちらも popup を開く play が要る)
   return (
     <ComboboxPrimitive.Portal>
       <ComboboxPrimitive.Positioner

@@ -138,30 +138,33 @@ function ToastClose({
 // 前提で組んでいる (success なら「〜しました」、error なら curateMutationErrorMessage の文言)。
 // アイコンだけが種別を伝える状態にすると支援技術に届かないため、どの種別を使うときも
 // title に種別の意味を明示する
+/**
+ * icon を持つ type と、その絵の対応表。base-ui の `type` は `string` で任意の値を許し
+ * (`useToastManager.d.ts`)、上流 registry もこの 5 つを if 連鎖で並べているだけなので、
+ * 種別を足しても消しても型も lint も鳴らない。対応表を唯一の出処にして、消費側が
+ * `satisfies Record<ToastIconType, ...>` で網羅を強制できるようにする (ADR-0006 の乖離)。
+ *
+ * 対応表に無い type は icon なしで通す。狭めると base-ui が許す独自の type を塞ぐ。
+ * ここは silent failure ではない。独自の type で icon が出ないのは仕様どおりの結果で、
+ * 綴り違いと区別する手も無い (base-ui の type は string で、突き合わせる定義が無い)。
+ * warn を出すと、このテンプレートから作った側が独自の type を使うたびに鳴る。
+ */
+const TOAST_ICONS = {
+  success: <CircleCheckIcon aria-hidden="true" />,
+  info: <InfoIcon aria-hidden="true" />,
+  warning: <TriangleAlertIcon aria-hidden="true" />,
+  error: <OctagonXIcon className="text-destructive" aria-hidden="true" />,
+  loading: <Loader2Icon className="animate-spin" aria-hidden="true" />,
+} satisfies Record<string, React.ReactNode>;
+
+type ToastIconType = keyof typeof TOAST_ICONS;
+
+function hasToastIcon(type: string): type is ToastIconType {
+  return Object.hasOwn(TOAST_ICONS, type);
+}
+
 function ToastIcon({ type }: { type: string | undefined }) {
-  let icon: React.ReactNode = null;
-
-  if (type === "success") {
-    icon = <CircleCheckIcon aria-hidden="true" />;
-  }
-
-  if (type === "info") {
-    icon = <InfoIcon aria-hidden="true" />;
-  }
-
-  if (type === "warning") {
-    icon = <TriangleAlertIcon aria-hidden="true" />;
-  }
-
-  if (type === "error") {
-    icon = <OctagonXIcon className="text-destructive" aria-hidden="true" />;
-  }
-
-  if (type === "loading") {
-    icon = <Loader2Icon className="animate-spin" aria-hidden="true" />;
-  }
-
-  if (!icon) {
+  if (type === undefined || !hasToastIcon(type)) {
     return null;
   }
 
@@ -170,7 +173,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
       data-slot="toast-icon"
       className="shrink-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4"
     >
-      {icon}
+      {TOAST_ICONS[type]}
     </span>
   );
 }
@@ -208,6 +211,8 @@ function Toaster({ children, toastManager = toast, ...props }: ToastPrimitive.Pr
 
 const createToastManager = ToastPrimitive.createToastManager;
 const useToastManager = ToastPrimitive.useToastManager;
+
+export type { ToastIconType };
 
 export {
   Toaster,

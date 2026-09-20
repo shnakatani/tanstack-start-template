@@ -40,6 +40,14 @@ const itemsMap = useMemo(() => Object.fromEntries(list.map((x) => [x.id, x.name]
 
 `items` は `Record<string, ReactNode>` または `ReadonlyArray<{ value, label }>` 形式。参照の安定化は消費側 (`useMemo` かモジュール定数) の責務。
 
+## Combobox: popup と ItemGroup は型と render が守る
+
+`ComboboxContent` のアクセシブル名は型では止まらない。base-ui は popup の role を `inputInsidePopup ? "dialog" : "presentation"` で決め (`combobox/popup/ComboboxPopup.js`)、popup 内に `ComboboxInput` を置く構成だけが `role="dialog"` で名前を要る。popup の外に置く構成は `presentation` で、`aria-label` は WAI-ARIA 1.2 §5.2.8.6 の MUST NOT になる。判定は実行時の state なので型で分岐できない。名前の過不足は story の axe が見る (`aria-dialog-name` / `aria-prohibited-attr`)。どちらも popup を開く play が無いと働かない (ADR-0006)。
+
+`ItemGroup` は `render={<ul />}`、その子は `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の `role="list"` の div は子に `role="listitem"` を要求するが、`<li>` は ul/ol/menu の中でしか置けないので HTML が破綻する (ADR-0006)。
+
+`Progress` は `children` を渡さないならアクセシブル名を型で要求する。`ProgressLabel` を置けば base-ui が `aria-labelledby` を張る (ADR-0006)。
+
 ## Select: 候補が変わったときの自己リセットに依存しない
 
 「選択中の値が候補から消えた」の検出を `onValueChange` の `null` 通知に頼らない。値の解決は消費側で引き取る (実例: `src/components/parts/form-fields.tsx` の `FormSelectField`)。

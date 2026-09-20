@@ -37,6 +37,8 @@ story の基本は部品が取りうる状態を並べることで、振る舞�
 | `args` だけで状態が決まる (寸法・variant・tone)  | 書かない      | story の control で切り替えられ、検証と重複する |
 | 操作を受けて状態が変わる (dialog・form・menu 等) | 書く          | 状態遷移そのものが story の対象になる           |
 
+`ui/` の play は「開く」までにする。開いた先の操作 (選択・送信・閉じる) は書かない。registry 部品の振る舞いは上流が持っていて、こちらの story で固定すると上流の更新のたびに落ちる。
+
 対象の層は `ui/` `action/` `parts/` とし、`screens/` は外す (実画面で見るほうが早い)。当初 `action/` も対象外としていたが、pending 表現に server function の stub が要るという当初の理由は誤りで、決着する Promise を渡すだけで pending の描画と解除が成立した (2026-09-20 実測)。
 
 play で書いた検証は既存のブラウザテストから削る。同じ振る舞いを 2 箇所で固定しない。
@@ -90,7 +92,7 @@ popup を閉じる play は、閉じた popup の unmount を待ってから終�
 
 待機は `storybook/test` の `waitFor` で書く。ADR-0013 の retry API は play から呼べない。
 
-Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。
+Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら、`vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う。
 
 ### 6. トークンは CSS 変数を実測して描く
 
@@ -165,7 +167,17 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 | ---- | ------------------------------------ |
 | 1    | 基盤とデザイントークンの story       |
 | 2    | 外見を定義する `parts/` と `action/` |
-| 3    | `ui/` の主要部品                     |
+| 3    | `ui/` の registry 部品すべて         |
+
+段階 3 は `src/components/ui/` の registry 部品をすべてカタログ化する。消費側からの import 件数で絞らない。
+
+当初は「import 0 件の部品には story を書かない」としていたが、この基準は成立しなかった。理由は 3 つで、いずれも 2026-09-20 の実測による。
+
+- **消費者の母数が捨てられる前提のもの。** `README.md` はデモアプリ (`src/features/notes/` と `src/routes/notes/`) の削除を利用者へ案内している。削除すると `empty` のように消費者が 0 件へ落ちる部品が出る。テンプレートの利用者にとって「テンプレート本体が今使っているか」はカタログの価値と無関係である
+- **基準が推移的に閉じない。** `sheet` / `tooltip` は `sidebar` からのみ、`textarea` / `input-group` は `combobox` からのみ参照され、その参照元自体に消費者がいない。`ui/` の外で数えると 0 件になるが、素朴に数えると 1 件以上になる。同じ状態の部品が数え方だけで両側へ分かれる
+- **検査の穴が残る。** story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる
+
+上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いており、この決定はその既定値へ寄せたことになる。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
 
 段階 2 と 3 は、対象の層に story があり a11y 検査が通ることを完了条件とする。
 
