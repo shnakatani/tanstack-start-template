@@ -289,10 +289,10 @@ export default defineConfig({
         // 使い、testing-library の同名 API と意味が違うため、当てると誤検出が出る。
         // story 側は `storybook/test` が testing-library をそのまま re-export しており、
         // Aggressive Reporting が追加設定なしで解決する。
-        // upstream recommended (flat/react の 22 ルール) は `vitest-browser-react` も Storybook も
-        // 前提にしておらず、基準をそのまま写せない唯一のプラグインになる。基準からの逸脱は 3 つで、
-        // 外すのが `prefer-screen-queries` と `no-node-access`、上げるのが `no-debugging-utils`
-        // (upstream は warn) である (ADR-0004)
+        // upstream recommended (flat/react) は `vitest-browser-react` も Storybook も前提に
+        // しておらず、基準をそのまま写せない唯一のプラグインになる。基準から外すのが
+        // `prefer-screen-queries` と `no-node-access`、severity を上げるのが `no-debugging-utils`
+        // である。件数は下の rules と ADR-0004 の表が持つ
         // 拡張子は companion-files.ts が唯一の定義。`.stories.ts` を置いても外れない
         files: storyGlobs("**/"),
         rules: {
@@ -310,7 +310,7 @@ export default defineConfig({
           "testing-library/no-dom-import": ["error", "react"],
           "testing-library/no-global-regexp-flag-in-query": "error",
           "testing-library/no-manual-cleanup": "error",
-          // 基準から外す 2 ルール目。22 ルール中これだけが strict 判定 (`isTestingLibraryImported(true)`)
+          // 基準から外す。flat/react の中でこれだけが strict 判定 (`isTestingLibraryImported(true)`)
           // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
           // 発火しない。`settings` に utils-module を足せば発火するが、その形は
           // `.claude/rules/testing.md`「状態のアサートは semantic matcher を先に探す」が

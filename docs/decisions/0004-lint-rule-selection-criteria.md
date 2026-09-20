@@ -50,17 +50,17 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 
 browser mode 側の待機は `vitest` プラグインが持つ。`require-awaited-expect-poll` が `expect.element` を対象にしており、`correctness` カテゴリ経由で既に有効である。
 
-基準からの逸脱は 3 つで、外すのが 2 ルール、severity を上げるのが 1 ルールである。
+基準からの逸脱は下表のとおりで、外すものと severity を上げるものがある。
 
-| ルール                  | 外す理由                                                                                                                                                                                                                                                                                                                                                               |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `prefer-screen-queries` | play が受け取る `canvas` を render 結果の分割代入と誤読する。`canvas` は Storybook が渡す query 済みオブジェクトで、上流の `write-story` skill が「✅ Correct: Use canvas directly」と指定している形                                                                                                                                                                   |
-| `no-node-access`        | 22 ルール中これだけが strict 判定 (`isTestingLibraryImported(true)`) で Aggressive Reporting を迂回し、`storybook/test` 経由の story では一度も発火しない。`settings` の `testing-library/utils-module` を足せば発火するが、その形は `.claude/rules/testing.md`「状態のアサートは semantic matcher を先に探す」が `querySelector` を条件付きで許しているのと両立しない |
+| ルール                  | 外す理由                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prefer-screen-queries` | play が受け取る `canvas` を render 結果の分割代入と誤読する。`canvas` は Storybook が渡す query 済みオブジェクトで、上流の `write-story` skill が「✅ Correct: Use canvas directly」と指定している形                                                                                                                                                                           |
+| `no-node-access`        | `flat/react` の中でこれだけが strict 判定 (`isTestingLibraryImported(true)`) で Aggressive Reporting を迂回し、`storybook/test` 経由の story では一度も発火しない。`settings` の `testing-library/utils-module` を足せば発火するが、その形は `.claude/rules/testing.md`「状態のアサートは semantic matcher を先に探す」が `querySelector` を条件付きで許しているのと両立しない |
 
 `no-debugging-utils` は upstream が `warn` だが `error` へ上げる。`vp check` は warn で exit 1 にならないため、`warn` のままだと commit された `screen.debug()` が素通りする。
 `no-node-access` を有効のまま残すと、設定上は error でも無検査になる。
 
-このプラグインは ESLint 本体を依存へ持ち込む。`packageExtensions` で peer を optional にしても外さない。`@typescript-eslint/utils` のルート import が `eslint` を実行時に読むため、外せたとしてもプラグインが落ちるからである (2026-09-20 に 3 通り試して実測)。機序 (必須 peer が 3 段あること) は `pnpm-workspace.yaml` のコメントが持つ。oxlint の jsPlugins が読み込む中でだけ動き、出荷物には入らない。撤去条件は typescript-eslint#11939 (`utils` から `eslint` の import を外し `/ts-eslint` を型専用にする) が入ることで、oxc-project/oxc#17734 が oxlint 側の追跡先である。
+このプラグインは ESLint 本体を依存へ持ち込む。`packageExtensions` で peer を optional にしても外さない。`@typescript-eslint/utils` のルート import が `eslint` を実行時に読むため、外せたとしてもプラグインが落ちるからである (2026-09-20 に 3 通り試して実測)。機序 (`eslint` を必須 peer に持つ依存が連鎖すること) は `pnpm-workspace.yaml` のコメントが持つ。oxlint の jsPlugins が読み込む中でだけ動き、出荷物には入らない。撤去条件は typescript-eslint#11939 (`utils` から `eslint` の import を外し `/ts-eslint` を型専用にする) が入ることで、oxc-project/oxc#17734 が oxlint 側の追跡先である。
 
 eslint コアへの追加 4 ルール (`no-var` / `prefer-const` / `prefer-rest-params` / `prefer-spread`) は、TypeScript が `var` と `apply` を過去のものにし `const` と rest 引数がより良い型を与える、という typescript-eslint 側の判断を採ったもの。
 `strict-type-checked` がこの variant (`eslint-recommended`) を内包するため typescript の基準としては入っているが、プラグイン別の基準表では eslint コアの欄に落ちる。
