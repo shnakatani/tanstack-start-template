@@ -31,6 +31,43 @@ describe("collectRootCustomProperties", () => {
     expect(collectRootCustomProperties([sheet(css)], "--", root)).toEqual(["--inside"]);
   });
 
+  // @import が参照する stylesheet は CSSGroupingRule ではないので、別に辿らないと落ちる
+  it("@import が指す stylesheet の宣言も拾う", () => {
+    const imported = sheet(":root { --imported: 1; }");
+    const importing = {
+      href: null,
+      cssRules: [
+        // CSSImportRule の href / styleSheet は getter のみなので defineProperty で作る
+        Object.create(CSSImportRule.prototype, {
+          href: { value: "imported.css" },
+          styleSheet: { value: imported },
+        }),
+      ],
+    };
+
+    expect(collectRootCustomProperties([importing], "--", root)).toEqual(["--imported"]);
+  });
+
+  // 深い位置の失敗で、その stylesheet の残りの rule が落ちてはいけない
+  it("読めない @import があっても同じ stylesheet の他の宣言は残る", () => {
+    const unreadable = Object.create(CSSImportRule.prototype, {
+      href: { value: "cross-origin.css" },
+      styleSheet: {
+        get(): CSSStyleSheet {
+          throw new Error("SecurityError");
+        },
+      },
+    });
+    const importing = {
+      href: null,
+      cssRules: [unreadable, ...sheet(":root { --kept: 1; }").cssRules],
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    expect(collectRootCustomProperties([importing], "--", root)).toEqual(["--kept"]);
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
   it("入れ子のグループ規則も辿る", () => {
     const css = "@layer a { @media screen { :root { --deep: 1; } } }";
 
@@ -70,6 +107,7 @@ describe("collectRootCustomProperties", () => {
     );
     expect(warn).toHaveBeenCalledWith("[css-rules] cssRules を読めない stylesheet", {
       href: "https://example.test/x.css",
+      error: expect.any(Error),
     });
   });
 });

@@ -1,22 +1,16 @@
 import { expect } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
 
+import { DEFAULT_VIEWPORT, type Viewport } from "./viewport-sizes";
+
 /**
  * ブラウザテストのレイアウト検証で使う viewport 定数・操作・アサーション。
  * 変更したテストは afterEach で必ず `restoreDefaultViewport` を通す
  * (戻さないと後続ファイルのブレークポイント依存テストが巻き添えになる)。
  */
 
-export interface Viewport {
-  width: number;
-  height: number;
-}
-
-/** ブラウザテストの既定 viewport (SSOT: vitest.browser.config.ts の browser.viewport と一致させる) */
-export const DEFAULT_VIEWPORT: Viewport = { width: 1280, height: 720 };
-
-/** タブレット想定のレイアウト検証に使う viewport (既定より縦に長い経路を通す) */
-export const TABLET_VIEWPORT: Viewport = { width: 1280, height: 853 };
+export type { Viewport } from "./viewport-sizes";
+export { DEFAULT_VIEWPORT, TABLET_VIEWPORT } from "./viewport-sizes";
 
 /** 極端に低い viewport (ブラウザ UI 領域が大きい環境の下限想定) */
 export const SHORT_VIEWPORT: Viewport = { width: 1280, height: 420 };

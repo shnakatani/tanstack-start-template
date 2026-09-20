@@ -23,6 +23,7 @@ paths:
 - 一覧テーブルは `DataTable` (`src/components/parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` (横断なら `src/features/<domain>/`) に書き、cell の描画は `-components/` の部品を参照で渡す (ADR-0019)
 - 部品と画面の取り違えは機械で止まらない。判断軸は役割: registry や自作部品を包んで外見そのものを定義するなら `parts/`、既存の部品を並べて画面を組むだけなら `screens/`。消費者が 1 つでも、外見の定義を担うなら `parts/` (ADR-0020)
 - story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。サイドバーの見出しはファイルパスから決める。2 つの出処を持つと、部品名を変えたときに片方が古いまま残る (ADR-0022)
+- story を置けるのは `src/components/` 配下だけ。`.storybook/main.ts` の `stories` がそこしか見ないので、`features/` や `routes/**/-components/` へ置いても無言で対象から外れる (ADR-0022)
 - 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分け、その部品名から名前を取る (`button.tsx` の `ActionButtonShell` は `button-shell.stories.tsx`)。理由は ADR-0022
 - 親を要求する部品は単独の meta を持てないので、親の story ファイルで扱う (`ActionFormSubmit` は `ActionForm` の外で描画すると throw する)
 - `argTypes` の `options` に `cva` の variant を写すときは、型で網羅を強制する。型検査も lint も一致を見ないので、写しただけだと古いまま通る (ADR-0022)

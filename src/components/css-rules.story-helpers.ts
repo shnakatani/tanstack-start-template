@@ -7,7 +7,7 @@ export interface RootElement {
 /** この関数が stylesheet に求めるもの。`CSSStyleSheet` はこれを満たす */
 export interface ReadableStyleSheet {
   readonly href: string | null;
-  readonly cssRules: CSSRuleList;
+  readonly cssRules: Iterable<CSSRule>;
 }
 
 /**
@@ -35,25 +35,44 @@ export function collectRootCustomProperties(
   // 「任意の要素にも当たるか」を測る相手。document へ挿さないので他の rule の影響を受けない
   const anyElement = root.ownerDocument.createElement("div");
 
-  const visit = (rules: CSSRuleList) => {
+  /**
+   * 別オリジンの stylesheet は `cssRules` を読めない。読めなかったことを残して先へ進む。
+   * catch の範囲を走査全体にすると、深い位置の失敗でその stylesheet の残りが丸ごと落ちる。
+   */
+  const readRules = (
+    read: () => Iterable<CSSRule>,
+    href: string | null,
+  ): Iterable<CSSRule> | null => {
+    try {
+      return read();
+    } catch (error) {
+      console.warn("[css-rules] cssRules を読めない stylesheet", { href, error });
+      return null;
+    }
+  };
+
+  const visit = (rules: Iterable<CSSRule>) => {
     for (const rule of rules) {
       if (rule instanceof CSSStyleRule && isRootScoped(root, anyElement, rule.selectorText)) {
         for (const name of rule.style) {
           if (name.startsWith(prefix)) names.add(name);
         }
       }
+      // @import が参照する stylesheet は CSSGroupingRule を継承しないので、別に辿る。
+      // 辿らないと、その中の宣言が「トークンが無い」のと区別が付かない形で落ちる
+      if (rule instanceof CSSImportRule) {
+        // styleSheet は読み込み前や失敗時に null になる
+        const inner = readRules(() => rule.styleSheet?.cssRules ?? [], rule.href);
+        if (inner !== null) visit(inner);
+        continue;
+      }
       if (rule instanceof CSSGroupingRule) visit(rule.cssRules);
     }
   };
 
   for (const sheet of sheets) {
-    try {
-      visit(sheet.cssRules);
-    } catch {
-      // 別オリジンの stylesheet は cssRules を読めない。Storybook の preview では起きないが、
-      // 読めないものを黙って飛ばすと一覧が欠けるので残す
-      console.warn("[css-rules] cssRules を読めない stylesheet", { href: sheet.href });
-    }
+    const rules = readRules(() => sheet.cssRules, sheet.href);
+    if (rules !== null) visit(rules);
   }
 
   return [...names].sort();
