@@ -92,7 +92,7 @@ popup を閉じる play は、閉じた popup の unmount を待ってから終�
 
 待機は `storybook/test` の `waitFor` で書く。ADR-0013 の retry API は play から呼べない。
 
-Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。この判断の母数は 2026-09-20 時点で accordion と popup 系 6 件 (dialog / alert-dialog / sheet / select / tooltip / toast) で、`findBy` 系の待機だけで足りた。足りなくなったら、`vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う。
+Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら、`vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う。
 
 ### 6. トークンは CSS 変数を実測して描く
 

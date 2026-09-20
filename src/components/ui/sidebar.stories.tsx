@@ -29,10 +29,16 @@ const NAV = [
  * 画面の骨格を担う部品。`SidebarProvider` が開閉の状態を持ち、`SidebarInset` が本文側になる。
  * `defaultOpen` で初期状態を決める
  */
-function SidebarExample({ children }: { children?: React.ReactNode }) {
+function SidebarExample({
+  children,
+  collapsible,
+}: {
+  children?: React.ReactNode;
+  collapsible?: "offcanvas" | "icon" | "none";
+}) {
   return (
     <>
-      <Sidebar>
+      <Sidebar collapsible={collapsible}>
         <SidebarHeader>メモ帳</SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
@@ -77,8 +83,23 @@ type Story = StoryObj<typeof meta>;
 /** 開いた状態。ラベルまで見える */
 export const Expanded: Story = {};
 
-/** 畳んだ状態。アイコンだけが残り、ラベルは tooltip で出す */
+/**
+ * 畳んだ状態。`collapsible` の既定は `offcanvas` なので、帯ごと画面外へ出て何も残らない
+ */
 export const Collapsed: Story = { args: { defaultOpen: false } };
+
+/**
+ * `collapsible="icon"` で畳んだ状態。アイコン列が残り、ラベルは `SidebarMenuButton` の
+ * `tooltip` が出す。tooltip は畳んだときだけ描かれる
+ */
+export const CollapsedToIcons: Story = {
+  args: { defaultOpen: false },
+  render: (args) => (
+    <SidebarProvider {...args}>
+      <SidebarExample collapsible="icon" />
+    </SidebarProvider>
+  ),
+};
 
 /** 件数バッジを添えた形 */
 export const WithBadge: Story = {

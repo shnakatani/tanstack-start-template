@@ -46,11 +46,11 @@ const itemsMap = useMemo(() => Object.fromEntries(list.map((x) => [x.id, x.name]
 
 渡さないと axe の `aria-dialog-name` で落ちる。正しい名前は消費側しか知らないため registry 側では既定値を持てない。上流 (shadcn-ui/ui / mui/base-ui) に該当 issue は無い (2026-09-20 に `gh search issues` で確認)。
 
-## ItemGroup の子には `role="listitem"` を渡す
+## ItemGroup の子は `render={<li />}` で listitem にする
 
-`ItemGroup` は `role="list"` を持つが、`Item` は `div` を描くだけで listitem にならない。消費側で `role="listitem"` を渡す。
+`ItemGroup` は `role="list"` を持つが、`Item` は既定で `div` を描き listitem にならない。`Item` は `render` prop を受けるので (`useRender.ComponentProps<"div">`)、`render={<li />}` を渡す。
 
-渡さないと axe の `aria-required-children` で落ちる。`Item` は `render` prop を持たないので `li` にはできず、`jsx-a11y/prefer-tag-over-role` の行抑制が要る。
+渡さないと axe の `aria-required-children` で落ちる。`role="listitem"` でも満たせるが、`jsx-a11y/prefer-tag-over-role` の行抑制が要るので採らない。`ItemGroup` 自身は `render` を持たず `ul` にできない (`li` を必須とする content model に違反するため上流が意図して塞いでいる)。
 
 `ItemSeparator` は `ItemGroup` の中に置けない。`role="list"` の子に separator は許されず、`role="presentation"` へ倒しても base-ui が付ける `aria-orientation` が `aria-allowed-attr` で落ちる。区切りが要るなら `ItemGroup` を使わずに並べる。
 

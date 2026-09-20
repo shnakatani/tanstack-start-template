@@ -82,22 +82,35 @@ export const WithMediaAndActions: Story = {
   ),
 };
 
+/** `ItemMedia` の `image`。写真やサムネイルをそのまま収める */
+export const WithImageMedia: Story = {
+  render: () => (
+    <Item variant="outline">
+      <ItemMedia variant="image">
+        <FileTextIcon aria-hidden />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>買い物リスト</ItemTitle>
+        <ItemDescription>3 件の項目</ItemDescription>
+      </ItemContent>
+    </Item>
+  ),
+};
+
 /**
- * 並べる形。`ItemGroup` は `role="list"` を持つが `Item` は listitem にならないので、
- * 消費側で渡す。渡さないと axe の `aria-required-children` で落ちる (`base-ui.md`)。
- * `ItemSeparator` はこの中に置けない (同上)
+ * 並べる形。`ItemGroup` は `role="list"` を持つが `Item` は既定で `div` を描くので、
+ * `render={<li />}` で listitem にする。渡さないと axe の `aria-required-children` で
+ * 落ちる (`base-ui.md`)。`ItemSeparator` はこの中に置けない (同上)
  */
 export const Grouped: Story = {
   render: () => (
     <ItemGroup>
-      {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- Item は div を描き render prop も持たないため li にできない */}
-      <Item role="listitem">
+      <Item render={<li />}>
         <ItemContent>
           <ItemTitle>買い物リスト</ItemTitle>
         </ItemContent>
       </Item>
-      {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- 同上 */}
-      <Item role="listitem">
+      <Item render={<li />}>
         <ItemContent>
           <ItemTitle>読みたい本</ItemTitle>
         </ItemContent>

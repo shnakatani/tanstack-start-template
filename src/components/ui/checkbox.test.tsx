@@ -3,15 +3,14 @@ import { render } from "vitest-browser-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 
-/** Indicator の中で実際に見えているアイコンの lucide クラスを返す */
-function visibleIconName(root: Element): string | null {
-  const icons = root.querySelectorAll('[data-slot="checkbox-indicator"] > svg');
-  for (const icon of icons) {
-    if (getComputedStyle(icon).display !== "none") {
-      return icon.getAttribute("class")?.match(/lucide-([a-z-]+)/)?.[1] ?? null;
-    }
-  }
-  return null;
+/**
+ * Indicator の中で実際に見えているアイコンを全て返す。1 つ目で打ち切ると、
+ * 両方が同時に見える壊れ方 (片側の `hidden` だけが落ちた状態) を見逃す
+ */
+function visibleIconNames(root: Element): (string | null)[] {
+  return [...root.querySelectorAll('[data-slot="checkbox-indicator"] > svg')]
+    .filter((icon) => getComputedStyle(icon).display !== "none")
+    .map((icon) => icon.getAttribute("class")?.match(/lucide-([a-z-]+)/)?.[1] ?? null);
 }
 
 describe("Checkbox", () => {
@@ -21,12 +20,12 @@ describe("Checkbox", () => {
   it("checked ではチェックマークを出す", async () => {
     const screen = await render(<Checkbox defaultChecked aria-label="選択" />);
 
-    expect(visibleIconName(screen.getByRole("checkbox").element())).toBe("check");
+    expect(visibleIconNames(screen.getByRole("checkbox").element())).toEqual(["check"]);
   });
 
   it("indeterminate では checked と別のアイコンを出す", async () => {
     const screen = await render(<Checkbox indeterminate aria-label="一部選択" />);
 
-    expect(visibleIconName(screen.getByRole("checkbox").element())).toBe("minus");
+    expect(visibleIconNames(screen.getByRole("checkbox").element())).toEqual(["minus"]);
   });
 });

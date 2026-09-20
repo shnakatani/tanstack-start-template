@@ -89,6 +89,6 @@ export const Grouped: Story = {
   ),
   play: async () => {
     await open();
-    await expect(screen.getByText("編集")).toBeInTheDocument();
+    await expect(screen.getByRole("group", { name: "編集" })).toBeInTheDocument();
   },
 };

@@ -34,6 +34,22 @@ export const OtherTabSelected: Story = { args: { defaultValue: "archived" } };
 export const Vertical: Story = { args: { orientation: "vertical" } };
 
 /**
+ * `TabsList` の `line`。下線だけで区切る意匠。既定は Default が持つ
+ */
+export const LineList: Story = {
+  render: (args) => (
+    <Tabs {...args}>
+      <TabsList variant="line">
+        <TabsTrigger value="all">すべて</TabsTrigger>
+        <TabsTrigger value="draft">下書き</TabsTrigger>
+      </TabsList>
+      <TabsContent value="all">すべてのメモ</TabsContent>
+      <TabsContent value="draft">下書きのメモ</TabsContent>
+    </Tabs>
+  ),
+};
+
+/**
  * 切り替えたところ。選ぶまでを play が持ち、その先の操作は書かない (ADR-0022)。
  * 終了状態は OtherTabSelected と同じ見た目なのでカタログには出さない
  */
