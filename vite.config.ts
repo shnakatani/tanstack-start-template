@@ -5,7 +5,7 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
-import { companionFilePattern, companionGlobs } from "./scripts/lib/companion-files";
+import { companionFilePattern, companionGlobs, storyGlobs } from "./scripts/lib/companion-files";
 
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
@@ -292,7 +292,8 @@ export default defineConfig({
         // Aggressive Reporting が追加設定なしで解決する。
         // 基準から外すのは 2 ルール。upstream recommended (22 ルール) は `vitest-browser-react`
         // も Storybook も前提にしておらず、基準をそのまま写せない唯一のプラグインになる (ADR-0004)
-        files: ["**/*.stories.tsx"],
+        // 拡張子は companion-files.ts が唯一の定義。`.stories.ts` を置いても外れない
+        files: storyGlobs("**/"),
         rules: {
           // eslint-plugin-testing-library の flat/react (ADR-0004 の基準表)
           "testing-library/await-async-events": ["error", { eventModule: "userEvent" }],

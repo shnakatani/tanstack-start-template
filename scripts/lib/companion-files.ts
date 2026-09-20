@@ -28,6 +28,14 @@ export function companionGlobs(prefix: string): string[] {
 /**
  * ファイル名が付随ファイルかを判定する。判定する集合は `companionGlobs` と同じ。
  */
+/**
+ * story ファイルだけに当たる glob。lint の適用範囲を story へ絞るときに使う。
+ * 拡張子を {@link companionGlobs} と同じ定義から引くので、`.stories.ts` を置いても外れない
+ */
+export function storyGlobs(prefix: string): string[] {
+  return EXTENSIONS.map((extension) => `${prefix}*.stories.${extension}`);
+}
+
 export function isCompanionFile(fileName: string): boolean {
   return COMPANION_KINDS.some((kind) =>
     EXTENSIONS.some((extension) => fileName.endsWith(`.${kind}.${extension}`)),

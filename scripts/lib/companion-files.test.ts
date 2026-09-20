@@ -5,6 +5,7 @@ import {
   companionFilePattern,
   companionGlobs,
   isCompanionFile,
+  storyGlobs,
 } from "./companion-files";
 
 describe("COMPANION_KINDS", () => {
@@ -30,6 +31,18 @@ describe("companionGlobs", () => {
   it("prefix を差し替えられる (coverage は src 配下だけを見る)", () => {
     expect(companionGlobs("src/**/")).toContain("src/**/*.story-helpers.ts");
     expect(companionGlobs("src/**/")).toHaveLength(COMPANION_KINDS.length * 2);
+  });
+});
+
+describe("storyGlobs", () => {
+  it("ts と tsx の 2 本を返す", () => {
+    expect(storyGlobs("**/")).toEqual(["**/*.stories.ts", "**/*.stories.tsx"]);
+  });
+
+  it("companionGlobs と同じ拡張子の定義から引く", () => {
+    const fromCompanion = companionGlobs("**/").filter((glob) => glob.includes(".stories."));
+
+    expect(storyGlobs("**/")).toEqual(fromCompanion);
   });
 });
 

@@ -42,7 +42,7 @@ const EXPECTED_OVERRIDES = [
     // 誤検出が出る。`prefer-screen-queries` を allow から戻すと Storybook の `canvas` が
     // 落ちる。`no-node-access` は allow のままにする。deny へ戻しても strict 判定で
     // 発火せず、有効に見えて無検査の状態になる (ADR-0004「基準にする上流設定」)
-    files: ["**/*.stories.tsx"],
+    files: ["**/*.stories.ts", "**/*.stories.tsx"],
     excludeFiles: undefined,
     rules: {
       "testing-library/await-async-events": "deny",
