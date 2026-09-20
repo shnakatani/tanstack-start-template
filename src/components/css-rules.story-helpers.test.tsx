@@ -51,12 +51,16 @@ describe("collectRootCustomProperties", () => {
   });
 
   // 深い位置の失敗で、その stylesheet の残りの rule が落ちてはいけない
+  // cross-origin では cssRules が SecurityError を投げる (CSSOM)。styleSheet の getter が
+  // 投げるという記述は仕様にも MDN にも無いので、投げるのは cssRules の側で模擬する
   it("読めない @import があっても同じ stylesheet の他の宣言は残る", () => {
     const unreadable = Object.create(CSSImportRule.prototype, {
       href: { value: "cross-origin.css" },
       styleSheet: {
-        get(): CSSStyleSheet {
-          throw new Error("SecurityError");
+        value: {
+          get cssRules(): CSSRuleList {
+            throw new DOMException("cross-origin", "SecurityError");
+          },
         },
       },
     });
