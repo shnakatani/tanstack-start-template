@@ -42,36 +42,12 @@ function Filter({
   );
 }
 
+/**
+ * ロールの確認と選択の通知は `segmented-radio-group.stories.tsx` の play が持つ (ADR-0022)。
+ * ここに残すのは寸法と色を getComputedStyle / getBoundingClientRect で固定する回帰と、
+ * 実イベントでなければ確かめられないものだけ。
+ */
 describe("SegmentedRadioGroup", () => {
-  it("radiogroup と radio のロールを持つ", async () => {
-    const screen = await render(<Filter />);
-
-    expect(screen.getByRole("radiogroup", { name: "表示" }).query()).not.toBeNull();
-    expect(screen.getByRole("radio").all()).toHaveLength(2);
-  });
-
-  it("未選択の項目をクリックすると onValueChange にその値を渡す", async () => {
-    const onValueChange = vi.fn();
-    const screen = await render(<Filter onValueChange={onValueChange} />);
-
-    await screen.getByRole("radio", { name: "未読" }).click();
-
-    expect(onValueChange.mock.calls.map((call) => call[0])).toEqual(["unread"]);
-  });
-
-  it("選択済みの項目を再クリックしても空選択にならない", async () => {
-    const onValueChange = vi.fn();
-    const screen = await render(<Filter onValueChange={onValueChange} />);
-
-    const selected = screen.getByRole("radio", { name: "全", exact: true });
-    await selected.click();
-
-    // ToggleGroup と違い radio は解除経路を持たないため、変更通知そのものが起きない
-    expect(onValueChange).not.toHaveBeenCalled();
-    await expect.element(selected).toHaveAttribute("aria-checked", "true");
-    await expect.element(selected).toHaveAttribute("data-checked");
-  });
-
   it("ラベルの文字数が違ってもセグメントが等幅になる", async () => {
     const screen = await render(<Filter />);
 
