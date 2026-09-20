@@ -186,17 +186,23 @@ describe("書いた設定が解決後も残っている", () => {
     ).toEqual(EXPECTED_OVERRIDES);
   });
 
-  it("付随ファイルの除外を持つ override は import 禁止の 1 つだけ", () => {
-    // 上の検査は excludeFiles から付随ファイルの分を無条件に差し引くため、別の override へ
-    // 付けても差分が出ない。付けるとその override の規則がテストと story で無診断になる
-    // (層の override なら no-restyle と require-static-classes が外れる)
+  it("付随ファイルの除外は import 禁止の override が全種類ぶん持つ", () => {
+    // 上の検査は excludeFiles から付随ファイルの分を無条件に差し引く。差し引きは「付いている
+    // か」を見ないので、別の override へ付ける壊し方も、1 本消す壊し方も差分が出ない。
+    // どちらもここで受け持つ
+    const holders = printedConfig.overrides.filter(({ excludeFiles }) =>
+      excludeFiles?.some((glob) => COMPANION_GLOBS.has(glob)),
+    );
     expect(
-      printedConfig.overrides
-        .filter(({ excludeFiles }) => excludeFiles?.some((glob) => COMPANION_GLOBS.has(glob)))
-        .map(({ files }) => files),
+      holders.map(({ files }) => files),
       "付随ファイルの除外が想定外の override に付いた。その override の規則が" +
         "テストと story で無診断になる (ADR-0004 / ADR-0020 / ADR-0021)",
     ).toEqual([["src/**", "scripts/**"]]);
+    expect(
+      holders[0]?.excludeFiles?.filter((glob) => COMPANION_GLOBS.has(glob)),
+      "付随ファイルの除外が欠けた。その種別のファイルが自分の helper を import できなくなる " +
+        "(ADR-0004「基準から外れる名指し」)",
+    ).toEqual(companionGlobs("**/"));
   });
 });
 
