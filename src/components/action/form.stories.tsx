@@ -102,20 +102,31 @@ export const NotCalledTwice: Story = {
  */
 export const PlainSubmitNotCalledTwice: Story = {
   tags: ["!dev"],
-  args: { children: <Button type="submit">保存</Button> },
+  args: {
+    children: (
+      <>
+        <Button type="submit">保存</Button>
+        {/* 素の submit ボタンは pending を DOM に出さない。`settle()` は Promise を解くだけで
+            `handleSubmit` が読む isPending は再描画まで true のままなので、決着が描画へ
+            届いたことを観測する口が要る。`ActionFormSubmit` を併置して aria-busy を借りる
+            (カタログには出さない story なので、見た目への影響はない) */}
+        <ActionFormSubmit>状態</ActionFormSubmit>
+      </>
+    ),
+  },
   play: async ({ args }) => {
     const button = saveButton();
+    const status = screen.getByRole("button", { name: "状態" });
     await userEvent.click(button);
     await expect(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
     await expect(args.submitAction).toHaveBeenCalledTimes(1);
 
-    // 素の submit ボタンは aria-disabled にならないので、決着したことは「もう一度撃てる」
-    // ことでしか観測できない。form 側の isPending が解けたかを見る
     settling.settle();
+    await waitFor(() => expect(status).not.toHaveAttribute("aria-busy", "true"));
     await userEvent.keyboard("{Enter}");
-    await waitFor(() => expect(args.submitAction).toHaveBeenCalledTimes(2));
+    await expect(args.submitAction).toHaveBeenCalledTimes(2);
     settling.settle();
   },
 };
