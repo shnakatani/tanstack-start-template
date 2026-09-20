@@ -8,8 +8,12 @@ import { expect } from "vite-plus/test";
  * axe-core は描画後の DOM を見るため、算出済みの色・実際の ARIA 属性値・id の重複を検査できる。
  * `color-contrast` は実ブラウザでのみ動くルールで、jsdom では結果が incomplete になる。
  *
- * 対象外: WCAG 1.4.11 (非テキストの 3:1) は axe-core のルールに無い。`--success` のような
- * アイコン色の比率は `src/styles.css` のコメントが根拠を持つ。ここでは代替できない。
+ * 対象外: WCAG 1.4.11 (非テキストの 3:1) は axe-core のルールに無い。要望は
+ * dequelabs/axe-core#3907 が 2023-02-09 から open で、入力欄の境界を対象にした
+ * ルール案 #854 は PARKED のまま閉じている。2026-09-21 の実測では
+ * `--border` / `--input` が背景に対して light dark とも約 1.25、focus 指標の
+ * `ring-ring/50` が light 2.63 で、いずれも 3:1 を割ったまま検出されない。
+ * アイコン色の根拠は ADR-0024 が持つ。
  *
  * ヘルパー名を `expect` で始めるのは、`vitest/expect-expect` が assertion と認めるのが
  * `expect*` のパターンだから (ADR-0004)。
