@@ -40,6 +40,22 @@ const itemsMap = useMemo(() => Object.fromEntries(list.map((x) => [x.id, x.name]
 
 `items` は `Record<string, ReactNode>` または `ReadonlyArray<{ value, label }>` 形式。参照の安定化は消費側 (`useMemo` かモジュール定数) の責務。
 
+## Combobox: popup 内に入力欄を置くなら popup へ名前を与える
+
+`ComboboxContent` の中に `ComboboxInput` を置く構成では、base-ui が popup へ `role="dialog"` を付ける (`combobox/popup/ComboboxPopup.js` の `inputInsidePopup ? 'dialog' : 'presentation'`)。dialog は名前が要るので、`ComboboxContent` に `aria-label` を渡す。
+
+渡さないと axe の `aria-dialog-name` で落ちる。正しい名前は消費側しか知らないため registry 側では既定値を持てない。上流 (shadcn-ui/ui / mui/base-ui) に該当 issue は無い (2026-09-20 に `gh search issues` で確認)。
+
+## ItemGroup の子には `role="listitem"` を渡す
+
+`ItemGroup` は `role="list"` を持つが、`Item` は `div` を描くだけで listitem にならない。消費側で `role="listitem"` を渡す。
+
+渡さないと axe の `aria-required-children` で落ちる。`Item` は `render` prop を持たないので `li` にはできず、`jsx-a11y/prefer-tag-over-role` の行抑制が要る。
+
+`ItemSeparator` は `ItemGroup` の中に置けない。`role="list"` の子に separator は許されず、`role="presentation"` へ倒しても base-ui が付ける `aria-orientation` が `aria-allowed-attr` で落ちる。区切りが要るなら `ItemGroup` を使わずに並べる。
+
+上流 registry も同じ形で、該当 issue は無い (2026-09-20 に `gh search issues` で確認)。
+
 ## Select: 候補が変わったときの自己リセットに依存しない
 
 「選択中の値が候補から消えた」の検出を `onValueChange` の `null` 通知に頼らない。値の解決は消費側で引き取る (実例: `src/components/parts/form-fields.tsx` の `FormSelectField`)。

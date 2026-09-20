@@ -1,31 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import type { VariantProps } from "class-variance-authority";
 import { BoldIcon } from "lucide-react";
 import { expect, userEvent } from "storybook/test";
 
-import { Toggle, toggleVariants } from "@/components/ui/toggle";
-
-type ToggleVariant = NonNullable<VariantProps<typeof toggleVariants>["variant"]>;
-type ToggleSize = NonNullable<VariantProps<typeof toggleVariants>["size"]>;
-
-/** control の選択肢の出処。`cva` に足した側がここで型エラーになる (ADR-0022) */
-const VARIANT_MEMBERS = {
-  default: null,
-  outline: null,
-} satisfies Record<ToggleVariant, null>;
-
-const SIZE_MEMBERS = {
-  default: null,
-  sm: null,
-  lg: null,
-} satisfies Record<ToggleSize, null>;
+import { Toggle } from "@/components/ui/toggle";
+import { TOGGLE_SIZES, TOGGLE_VARIANTS } from "@/components/ui/toggle.story-helpers";
 
 const meta = {
   component: Toggle,
   args: { "aria-label": "太字", children: <BoldIcon /> },
   argTypes: {
-    variant: { control: "inline-radio", options: Object.keys(VARIANT_MEMBERS) },
-    size: { control: "inline-radio", options: Object.keys(SIZE_MEMBERS) },
+    variant: { control: "inline-radio", options: TOGGLE_VARIANTS },
+    size: { control: "inline-radio", options: TOGGLE_SIZES },
   },
 } satisfies Meta<typeof Toggle>;
 
