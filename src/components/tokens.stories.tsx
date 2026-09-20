@@ -2,8 +2,6 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { useSyncExternalStore } from "react";
 import { expect, within } from "storybook/test";
 
-import { pageTitle } from "@/components/parts/page-title";
-
 import { collectRootCustomProperties } from "./css-rules.story-helpers";
 import { createThemeSnapshotStore } from "./theme-snapshot.story-helpers";
 import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story-helpers";
@@ -101,18 +99,6 @@ function RadiusTokens() {
   );
 }
 
-/**
- * styling.md の typography 階層。見出しの寸法は pageTitle が持つのでそこから呼ぶ。
- * セクション見出し (text-base font-semibold) は専有の部品が無いため literal のままで、
- * styling.md の表と二重管理になる。表を変えたらここも合わせる
- */
-const TYPOGRAPHY_SAMPLES = [
-  { label: "ページ見出し", className: pageTitle() },
-  { label: "セクション見出し", className: "text-base font-semibold" },
-  { label: "本文", className: "text-base" },
-  { label: "補足", className: "text-xs" },
-] as const;
-
 function TypographyTokens() {
   const { fonts: tokens } = useTokenLists();
   return (
@@ -121,12 +107,6 @@ function TypographyTokens() {
         <p key={name} className="font-mono text-xs text-muted-foreground">
           {name}: {value}
         </p>
-      ))}
-      {TYPOGRAPHY_SAMPLES.map((sample) => (
-        <div key={sample.label} className="flex items-baseline gap-4">
-          <span className="w-40 font-mono text-xs text-muted-foreground">{sample.label}</span>
-          <span className={sample.className}>あのイーハトーヴォのすきとおった風</span>
-        </div>
       ))}
     </div>
   );
