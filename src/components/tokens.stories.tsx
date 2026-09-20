@@ -86,11 +86,7 @@ function RadiusTokens() {
     <div className="flex flex-wrap gap-4">
       {tokens.map(({ name, value }) => (
         <div key={name} className="flex flex-col items-center gap-2">
-          <div
-            aria-hidden
-            className="size-16 bg-primary"
-            style={{ borderRadius: `var(${name})` }}
-          />
+          <div aria-hidden className="size-16 bg-primary" style={{ borderRadius: value }} />
           <span className="font-mono text-xs">{name}</span>
           <span className="font-mono text-xs text-muted-foreground">{value}</span>
         </div>
