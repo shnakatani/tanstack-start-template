@@ -52,8 +52,9 @@ const EXPECTED_OVERRIDES = [
   {
     // 層の境界に載せる規則と、その適用外にする層 (ADR-0020 / ADR-0021)。design system の著作側
     // (ui/ action/ parts/) だけを外し、消費側には規則を効かせる。広げると、広げた先の層で
-    // className の上書きと動的な className が無診断で通る
-    files: ["src/**"],
+    // className の上書きと動的な className が無診断で通る。.storybook/ も消費側として扱う
+    // (decorator が design system component を包む置き場になる)
+    files: ["src/**", ".storybook/**"],
     excludeFiles: ["src/components/ui/**", "src/components/action/**", "src/components/parts/**"],
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },

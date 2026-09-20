@@ -29,6 +29,8 @@
 | `src/components/screens/` | 部品を並べて画面を組む共有コンポーネント                       | 適用する     |
 | `src/components/` (直下)  | 上のどれでもないもの。実例は `live-regions.tsx`                | 適用する     |
 
+`src/components/` の外では `.storybook/` も適用する側に置く。decorator は design system component を包んで `className` を渡す置き場になるため、`src/components/screens/` と同じ扱いにする。`vite.config.ts` の override は `files` に `src/**` と `.storybook/**` の 2 つを持つ (PR #35)。
+
 直下を既定として残すのは、役割を決めきれないものの置き場所を無くさないためである。既定を「規則を適用する」側に置くので、著作として扱わせたいときだけ `parts/` を選ぶことになり、判断を省略した新規ファイルは規則が効く安全側に倒れる。
 
 `action/` を `parts/` の下へ移さないのは、分ける軸が違うためである。`parts/` は外見を定義する層で、`action/` は振る舞い (Transition と pending) を与える層である。どちらも design system の著作側なので `no-restyle` の扱いは同じだが、外見の変更と振る舞いの変更は別の理由で起きる。
