@@ -57,7 +57,9 @@ export function createThemeSnapshotStore<T>(
   return {
     subscribe: (onChange) => {
       listeners.add(onChange);
-      if (listeners.size === 1) {
+      // 観測の有無は observer で判定する。listeners.size で数えると、同じ関数を 2 回
+      // 購読したときに Set が重複を落として size が 1 のままになり、観測が二重に張られる
+      if (observer === null) {
         observer = new MutationObserver(notify);
         observer.observe(root(), { attributes: true, attributeFilter: ["class"] });
         // CSS の HMR は stylesheet の中身だけを差し替えるので、class の MutationObserver
@@ -68,8 +70,8 @@ export function createThemeSnapshotStore<T>(
       }
       return () => {
         listeners.delete(onChange);
-        if (listeners.size === 0) {
-          observer?.disconnect();
+        if (listeners.size === 0 && observer !== null) {
+          observer.disconnect();
           observer = null;
           hot?.off("vite:afterUpdate", notify);
         }

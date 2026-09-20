@@ -95,10 +95,10 @@ describe("createThemeSnapshotStore", () => {
     };
     const store = createThemeSnapshotStore(read, { read: false }, () => node, hot);
 
-    // React は購読者ごとに onChange のあと getSnapshot を呼ぶ
-    const onChange = () => void store.getSnapshot();
-    store.subscribe(onChange);
-    store.subscribe(onChange);
+    // React は購読者ごとに別の onChange を渡し、そのあと getSnapshot を呼ぶ。
+    // 同じ関数を 2 回渡すと Set が重複を落とし、購読者が 1 件しか作られない
+    store.subscribe(() => void store.getSnapshot());
+    store.subscribe(() => void store.getSnapshot());
     store.getSnapshot();
     expect(read).toHaveBeenCalledTimes(1);
 
@@ -125,6 +125,36 @@ describe("createThemeSnapshotStore", () => {
     expect(listeners.size).toBe(1);
     unsubscribe();
     expect(listeners.size).toBe(0);
+  });
+
+  it("同じ関数を 2 回購読しても観測は 1 つだけ", () => {
+    const node = element("light");
+    // Set だと二重登録が見えないので配列で受ける
+    const registered: Array<() => void> = [];
+    const hot = {
+      on: (_event: "vite:afterUpdate", callback: () => void) => void registered.push(callback),
+      off: (_event: "vite:afterUpdate", callback: () => void) => {
+        const at = registered.indexOf(callback);
+        if (at >= 0) registered.splice(at, 1);
+      },
+    };
+    const store = createThemeSnapshotStore(
+      () => 1,
+      0,
+      () => node,
+      hot,
+    );
+    const onChange = vi.fn();
+
+    const first = store.subscribe(onChange);
+    const second = store.subscribe(onChange);
+
+    expect(registered).toHaveLength(1);
+
+    first();
+    second();
+
+    expect(registered).toHaveLength(0);
   });
 
   it("描画前は fallback を返す", () => {
