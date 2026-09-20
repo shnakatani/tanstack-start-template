@@ -10,10 +10,9 @@ import { expect } from "vite-plus/test";
  *
  * 対象外: WCAG 1.4.11 (非テキストの 3:1) は axe-core のルールに無い。要望は
  * dequelabs/axe-core#3907 が 2023-02-09 から open で、入力欄の境界を対象にした
- * ルール案 #854 は PARKED のまま閉じている。2026-09-21 の実測では
- * `--border` / `--input` が背景に対して light dark とも約 1.25、focus 指標の
- * `ring-ring/50` が light 2.63 で、いずれも 3:1 を割ったまま検出されない。
- * アイコン色の根拠は ADR-0024 が持つ。
+ * ルール案 #854 は PARKED のまま閉じている。`--border` / `--input` の枠線と、
+ * 不透明度を落として描く focus indicator (`ring-ring/50`) の比率はここでは
+ * 検出できない。実測値と判断の根拠は ADR-0024 が持つ。
  *
  * ヘルパー名を `expect` で始めるのは、`vitest/expect-expect` が assertion と認めるのが
  * `expect*` のパターンだから (ADR-0004)。
