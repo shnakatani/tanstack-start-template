@@ -30,13 +30,13 @@ UI と story を触る前に `vp exec storybook skills` を実行する。**`vp 
 
 `stories` skill が「部品の props・API・使い方は documentation tools で答える。ソースや型定義から答えない」と定めている。`vp exec storybook tools docs list` / `docs show` を使う。
 
-起動中の Storybook が要るのは `stories preview` と `review create` だけで、`docs list` / `docs show` / `stories changed` / `stories find-by-component` / `test run` は不要 (2026-09-20 実測)。
+起動中の Storybook が要らないのは `docs list` / `docs show` / `stories changed` / `test run` (2026-09-20 に未起動 + `--no-attach` で実測)。`stories preview` と `review create` は起動が要る。
 
-`stories find-by-component` は逆依存グラフを引く。変更したファイルを渡すと、影響する story が距離つきで返る (実測: `page-title.tsx` → `tokens` の 3 story が distance 1)。grep では出せない。
+**`stories find-by-component` は起動なしでも走り、結果が空で返る。** 逆依存グラフを持つのが dev server 側なので、story が無いのと区別が付かない。起動してから `--port <番号>` で指す。起動していれば変更したファイルから影響する story が距離つきで返り、これは grep では出せない (実測: `page-title.tsx` → `tokens` の 3 story が distance 1)。
 
-MCP が優るのは、ツールの説明がエージェントに常時見える点である。CLI は AGENTS.md に書いても読み飛ばせば使われない。ここに書いてあるのはその対策なので、UI と story を触るときは読み飛ばさない。
+MCP (`@storybook/addon-mcp`) は採らない。全ツールが起動中の Storybook を要求するのに対し、CLI は上のとおり多くが起動なしで動く。MCP の登録はエージェント側の設定に URL を 1 つ持つ形だが、この repo の Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスク) ので、clone した人へ同じ登録を配れない。
 
-MCP (`@storybook/addon-mcp`) は採らない。全ツールが起動中の Storybook を要求し、登録 URL が `http://localhost:6006/mcp` 固定である一方、この repo の Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスク)。
+ただし MCP はツールの説明がエージェントに常時見える。CLI は AGENTS.md に書いても読み飛ばせば使われない。ここに書いてあるのはその対策なので、UI と story を触るときは読み飛ばさない。
 
 ## 仕様書・設計判断
 
