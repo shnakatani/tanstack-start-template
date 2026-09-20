@@ -5,13 +5,16 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
  * axe に判定させる (ADR-0024 の節 5)。値を JS で計算しない。ブラウザは sRGB 外の `oklch()` を
  * clip し alpha を下地と合成するため、計算した比は描画と一致しない (ADR-0022 の節 6-1)。
  *
- * hover を実際に当てる形は採らない。`transition-colors` の途中の合成色を axe が測るため、
- * a11y helper は hover を退避させる設計になっている
- * (`notes/2026-09-14-browser-test-flakiness-exit-animation-and-hover.md`)。
+ * hover を実際に当てる形は採らない。`transition-colors` が効いている間は下地と混ざった途中の
+ * 色が出ており、axe がそこを測ると最終的な配色には存在しない比が報告される。a11y helper が
+ * 測定前にポインタを退避させるのはこのためで、hover を当てたまま測る経路は用意していない。
  * 代わりに hover で現れる utility を、prefix を外した形で静的に描く。
  *
  * light と dark は project が分かれており (`vitest.config.ts`)、同じ story が両方で走る。
  * 片方でしか現れない不透明度も両方で描かれるが、余分に通るだけで害はない。
+ *
+ * 1 つの面に複数の文字色が乗る組み合わせ (`bg-muted/50`) は、文字色ごとに 1 行を置く。
+ * 面だけを描いても、その上に何が乗るかで通るか割るかが変わる。
  *
  * 一覧は手で保つ。対象を数え直すコマンド:
  *
@@ -48,6 +51,21 @@ export const OnBackground: StoryObj = {
       </p>
       <p className="bg-primary/10 text-primary rounded px-3 py-2 text-sm">
         破線ボタンの hover (dark) bg-primary/10
+      </p>
+      <p className="bg-muted/50 text-muted-foreground rounded px-3 py-2 text-sm">
+        淡色行の hover bg-muted/50 + text-muted-foreground
+      </p>
+      <p className="bg-muted/50 text-foreground rounded px-3 py-2 text-sm">
+        淡色行の hover bg-muted/50 + text-foreground
+      </p>
+      <p className="bg-secondary/80 text-secondary-foreground rounded px-3 py-2 text-sm">
+        副操作の hover bg-secondary/80
+      </p>
+      <p className="bg-input/30 text-foreground rounded px-3 py-2 text-sm">
+        入力欄の面 (dark) bg-input/30
+      </p>
+      <p className="bg-input/50 text-foreground rounded px-3 py-2 text-sm">
+        入力欄の hover (dark) bg-input/50
       </p>
     </div>
   ),
