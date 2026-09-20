@@ -37,6 +37,8 @@ story の基本は部品が取りうる状態を並べることで、振る舞�
 | `args` だけで状態が決まる (寸法・variant・tone)  | 書かない      | story の control で切り替えられ、検証と重複する |
 | 操作を受けて状態が変わる (dialog・form・menu 等) | 書く          | 状態遷移そのものが story の対象になる           |
 
+`ui/` の play は「開く」までにする。開いた先の操作 (選択・送信・閉じる) は書かない。registry 部品の振る舞いは上流が持っていて、こちらの story で固定すると上流の更新のたびに落ちる。
+
 対象の層は `ui/` `action/` `parts/` とし、`screens/` は外す (実画面で見るほうが早い)。当初 `action/` も対象外としていたが、pending 表現に server function の stub が要るという当初の理由は誤りで、決着する Promise を渡すだけで pending の描画と解除が成立した (2026-09-20 実測)。
 
 play で書いた検証は既存のブラウザテストから削る。同じ振る舞いを 2 箇所で固定しない。
@@ -90,7 +92,7 @@ popup を閉じる play は、閉じた popup の unmount を待ってから終�
 
 待機は `storybook/test` の `waitFor` で書く。ADR-0013 の retry API は play から呼べない。
 
-Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。
+Storybook の test 実行では ADR-0018 の animation 無効化を適用しない。この判断の母数は 2026-09-20 時点で accordion 1 件で、待機だけで足りた。popup 系を増やして足りなくなったら、`vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う。
 
 ### 6. トークンは CSS 変数を実測して描く
 
@@ -165,7 +167,9 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 | ---- | ------------------------------------ |
 | 1    | 基盤とデザイントークンの story       |
 | 2    | 外見を定義する `parts/` と `action/` |
-| 3    | `ui/` の主要部品                     |
+| 3    | `ui/` の使用中の部品                 |
+
+段階 3 の対象は、消費側から import されている部品に限る。import 0 件の部品には story を書かない。未使用のまま置く先行導入は ADR-0006 が許容しており、使い始めるときに story を足せばよい。上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いているが、それは自分で書いた部品の話で、vendor した registry 全部を指さない。
 
 段階 2 と 3 は、対象の層に story があり a11y 検査が通ることを完了条件とする。
 
