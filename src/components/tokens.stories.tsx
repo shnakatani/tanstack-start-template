@@ -1,15 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { wcagContrast } from "culori";
 import { Fragment, useSyncExternalStore, type ReactNode } from "react";
 
 import { pageTitle } from "@/components/parts/page-title";
 
-import {
-  dropRedundantColorAliases,
-  foregroundPairs,
-  isColorValue,
-  type ThemeToken,
-} from "./theme-tokens.story-helpers";
+import { isColor } from "./css-color.story-helpers";
+import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story-helpers";
 
 /**
  * `<html>` の class 属性 (light/dark) の変化を購読する。withThemeByClassName の
@@ -80,7 +75,7 @@ function readColorTokens(): ThemeToken[] {
   return dropRedundantColorAliases(
     readRootTokens("--")
       .map((name) => ({ name, value: resolved(name) }))
-      .filter(({ value }) => isColorValue(value)),
+      .filter(({ value }) => isColor(value)),
   );
 }
 
@@ -116,63 +111,6 @@ function ColorSwatches() {
         </li>
       ))}
     </ul>
-  );
-}
-
-/** 本文テキストの下限 (WCAG 1.4.3、implementation.md「色とコントラスト」) */
-const BODY_TEXT_MINIMUM = 4.5;
-
-/**
- * 前景と背景の対のコントラストを出す。`styles.css` の値を変えた人がここで閾値を確かめる。
- * dark は light と別に検算する必要があるため (implementation.md)、テーマを切り替えて読む。
- *
- * axe は描画された実ペアしか見ないので、story を持たない部品で使う色は検査に出てこない。
- * この表は描画の有無と無関係に、定義されている対を全件並べる。
- */
-function ContrastTable() {
-  const pairs = foregroundPairs(readColorTokens());
-  warnIfEmpty(
-    pairs.map(({ foreground }) => foreground.name),
-    "Tokens/Contrast",
-  );
-
-  return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr>
-          <th scope="col" className="p-2 text-left">
-            前景
-          </th>
-          <th scope="col" className="p-2 text-left">
-            背景
-          </th>
-          <th scope="col" className="p-2 text-left">
-            比
-          </th>
-          <th scope="col" className="p-2 text-left">
-            4.5:1
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {pairs.map(({ foreground, background }) => {
-          // 解析できない値を渡すと wcagContrast は TypeError を投げる (2026-09-20 実測。
-          // 型は number を返すと宣言しているが実行時は throw する)。ここへ来る値は
-          // useColorTokens() が isColor() で絞っているので必ず解析できる
-          const ratio = wcagContrast(foreground.value, background.value);
-          const passes = ratio >= BODY_TEXT_MINIMUM;
-          return (
-            <tr key={foreground.name}>
-              <td className="p-2 font-mono text-xs">{foreground.name}</td>
-              <td className="p-2 font-mono text-xs">{background.name}</td>
-              <td className="p-2 font-mono text-xs">{ratio.toFixed(2)}</td>
-              {/* 色だけで伝えない (styling.md)。文字で判定を書く */}
-              <td className="p-2 font-mono text-xs">{passes ? "満たす" : "割る"}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
   );
 }
 
@@ -238,13 +176,6 @@ export const Colors: StoryObj = {
   render: () => (
     <RereadOnThemeChange>
       <ColorSwatches />
-    </RereadOnThemeChange>
-  ),
-};
-export const Contrast: StoryObj = {
-  render: () => (
-    <RereadOnThemeChange>
-      <ContrastTable />
     </RereadOnThemeChange>
   ),
 };
