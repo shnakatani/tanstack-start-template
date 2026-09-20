@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { CatchBoundary } from "@tanstack/react-router";
 import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
 
+import { createSettlingAction } from "@/test/settling-action";
+
 import { ActionButton } from "./button";
 
 /**
@@ -9,40 +11,19 @@ import { ActionButton } from "./button";
  * story を描き替えるため、決着しない Transition が残ると後続 story が pending のまま
  * 止まる (ADR-0022)。pending の外見は ActionButtonShell の story が args だけで持つ。
  *
- * 決着の時点は play が `settle()` で握る。実時間へ預けると、決着が 2 発目の操作より先に
- * 届いた回で偽 red になる (testing.md「optimistic update テストは遅延 rejection で中間状態を
- * 観測」)。play は必ず `settle()` を呼んでから終える。
+ * 決着の時点は play が `settling.settle()` で握る。仕組みと理由は
+ * `src/test/settling-action.ts` が持つ。play は必ず決着させてから終える。
  */
-let pendingResolvers: Array<() => void> = [];
-const settlingAction = fn(() => {
-  // void を型引数に置くと no-invalid-void-type が落ちる。Promise<undefined> は
-  // action の戻り値 Promise<void> へそのまま渡せる
-  const { promise, resolve } = Promise.withResolvers<undefined>();
-  pendingResolvers.push(() => {
-    resolve(undefined);
-  });
-  return promise;
-});
-
-/** 未決着の Promise を全て決着させる。play の途中と、story の後始末の両方から呼ぶ */
-function settle(): void {
-  const resolvers = pendingResolvers;
-  pendingResolvers = [];
-  for (const resolve of resolvers) resolve();
-}
+const settling = createSettlingAction();
+const settlingAction = fn(settling.impl);
 
 const saveButton = () => screen.getByRole("button", { name: "保存" });
 
 const meta = {
   component: ActionButton,
   args: { children: "保存", action: settlingAction },
-  beforeEach: () => {
-    settlingAction.mockClear();
-    pendingResolvers = [];
-    // play が途中で落ちても未決着の Promise を残さない。残すと後続 story の Transition と
-    // 干渉し、退行 1 件が無関係な story まで赤にする (ADR-0022)
-    return settle;
-  },
+  // 開始時に持ち越しを捨て、終了時に全決着させる。play が途中で落ちても未決着を残さない
+  beforeEach: settling.beforeEach,
 } satisfies Meta<typeof ActionButton>;
 
 export default meta;
@@ -76,7 +57,7 @@ export const Settles: Story = {
     await expect(button).toBeEnabled();
     await expect(button).toHaveFocus();
 
-    settle();
+    settling.settle();
     await waitFor(() => expect(button).not.toHaveAttribute("aria-busy", "true"));
     await expect(button).not.toHaveAttribute("aria-disabled", "true");
   },
@@ -96,7 +77,7 @@ export const NotCalledTwice: Story = {
 
     await expect(args.action).toHaveBeenCalledTimes(1);
     await expect(button).toHaveFocus();
-    settle();
+    settling.settle();
     await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
   },
 };
@@ -107,12 +88,12 @@ export const CallableAgain: Story = {
   play: async ({ args }) => {
     const button = saveButton();
     await userEvent.click(button);
-    settle();
+    settling.settle();
     await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
     await userEvent.click(button);
 
     await expect(args.action).toHaveBeenCalledTimes(2);
-    settle();
+    settling.settle();
     await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
   },
 };

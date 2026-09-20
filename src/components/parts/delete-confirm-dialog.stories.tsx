@@ -4,6 +4,7 @@ import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
 
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { createSettlingAction } from "@/test/settling-action";
 
 import { DeleteConfirmDialog, type DeleteTarget } from "./delete-confirm-dialog";
 import { deleteConfirmDescription } from "./delete-confirm-dialog.test-helpers";
@@ -15,27 +16,11 @@ const TARGET: DeleteTarget = { id: "w1", name: "田中太郎" };
  * story を描き替えるため、決着しない Action の Transition が残ると後続 story の
  * useTransition が entangle して pending のまま止まる (2026-09-20 実測)。
  *
- * 決着の時点は play が `settle()` で握る。実時間へ預けると、決着が 2 発目の操作より先に
- * 届いた回で偽 red になる (testing.md「optimistic update テストは遅延 rejection で中間状態を
- * 観測」)。play は必ず `settle()` を呼んでから終える。
+ * 決着の時点は play が `settling.settle()` で握る。仕組みと理由は
+ * `src/test/settling-action.ts` が持つ。play は必ず決着させてから終える。
  */
-let pendingResolvers: Array<() => void> = [];
-const settlingConfirm = fn(() => {
-  // void を型引数に置くと no-invalid-void-type が落ちる。Promise<undefined> は
-  // onConfirm の戻り値 Promise<void> へそのまま渡せる
-  const { promise, resolve } = Promise.withResolvers<undefined>();
-  pendingResolvers.push(() => {
-    resolve(undefined);
-  });
-  return promise;
-});
-
-/** 未決着の Promise を全て決着させる。play の途中と、story の後始末の両方から呼ぶ */
-function settle(): void {
-  const resolvers = pendingResolvers;
-  pendingResolvers = [];
-  for (const resolve of resolvers) resolve();
-}
+const settling = createSettlingAction();
+const settlingConfirm = fn(settling.impl);
 
 interface StoryArgs {
   entityLabel: string;
@@ -47,9 +32,10 @@ interface StoryArgs {
 /**
  * Trigger を介さず handle だけで開く。imperative open では payload が入らないので、
  * 確定しても onConfirm を呼ばず warn だけが残る経路になる。
- * mount 時の open は DOM 副作用なので useEffect に置く (implementation.md)
+ * mount 時の open は DOM 副作用なので useEffect に置く (implementation.md)。
+ * `target` は Trigger が payload へ載せる値なので、この経路では使わない
  */
-function WithoutTrigger(props: Omit<StoryArgs, "target">) {
+function WithoutTrigger({ target: _target, ...props }: StoryArgs) {
   const [handle] = useState(() => createAlertDialogHandle<DeleteTarget>());
   useEffect(() => {
     handle.open(null);
@@ -77,13 +63,8 @@ async function open(): Promise<void> {
 const meta = {
   render: (args) => <WithTrigger {...args} />,
   args: { entityLabel: "ユーザー", target: TARGET, onConfirm: fn() },
-  beforeEach: () => {
-    settlingConfirm.mockClear();
-    pendingResolvers = [];
-    // play が途中で落ちても未決着の Promise を残さない。残すと後続 story の Transition と
-    // 干渉し、退行 1 件が無関係な story まで赤にする (ADR-0022)
-    return settle;
-  },
+  // 開始時に持ち越しを捨て、終了時に全決着させる。play が途中で落ちても未決着を残さない
+  beforeEach: settling.beforeEach,
 } satisfies Meta<StoryArgs>;
 
 export default meta;
@@ -166,7 +147,7 @@ export const Pending: Story = {
     await userEvent.keyboard("{Enter}");
     await expect(confirm).toHaveAttribute("aria-busy", "true");
     await expect(confirm).toHaveAttribute("aria-disabled", "true");
-    settle();
+    settling.settle();
     await waitFor(() => expect(confirm).toHaveAttribute("aria-busy", "false"));
   },
 };
@@ -183,7 +164,7 @@ export const NotCalledTwice: Story = {
     await userEvent.keyboard("{Enter}");
     await expect(args.onConfirm).toHaveBeenCalledTimes(1);
     await expect(args.onConfirm).toHaveBeenCalledWith(TARGET);
-    settle();
+    settling.settle();
     await waitFor(() => expect(confirm).toHaveAttribute("aria-busy", "false"));
   },
 };
