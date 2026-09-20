@@ -61,8 +61,24 @@ export function collectRootCustomProperties(
       // @import が参照する stylesheet は CSSGroupingRule を継承しないので、別に辿る。
       // 辿らないと、その中の宣言が「トークンが無い」のと区別が付かない形で落ちる
       if (rule instanceof CSSImportRule) {
-        // styleSheet は読み込み前や失敗時に null になる
-        const inner = readRules(() => rule.styleSheet?.cssRules ?? [], rule.href);
+        // styleSheet の getter は cross-origin の stylesheet で投げるので、読み取りごと
+        // readRules に入れる。外に出すと走査全体が止まる
+        const inner = readRules(() => {
+          const imported = rule.styleSheet;
+          if (imported === null) {
+            // supports() の条件が成立しないときは取得自体が起きず、null が正常な結果に
+            // なる (w3c/csswg-drafts#8608)。それ以外の null は読み込み前か失敗で、黙って
+            // 飛ばすと「その stylesheet にトークンが無い」のと区別が付かなくなる
+            if (rule.supportsText === null || CSS.supports(rule.supportsText)) {
+              console.warn("[css-rules] styleSheet を読めない @import", {
+                href: rule.href,
+                supportsText: rule.supportsText,
+              });
+            }
+            return [];
+          }
+          return imported.cssRules;
+        }, rule.href);
         if (inner !== null) visit(inner);
         continue;
       }
