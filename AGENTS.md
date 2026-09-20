@@ -20,23 +20,11 @@ mise run verify   # vp check → vp test run → vp build → ビルド成果物
 
 ## Storybook の skill と tools
 
-UI と story を触る前に `vp exec storybook skills` を実行する。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい。
+UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい。
 
-| コマンド                         | 内容                                                                                                     |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `vp exec storybook skills`       | 3 つの skill の一覧。`stories` (UI 変更時の必須手順) / `write-story` (書き方と規約) / `setup` (初期設定) |
-| `vp exec storybook skills <id>`  | 個別の skill を表示                                                                                      |
-| `vp exec storybook tools --help` | ツール一覧と各ツールの引数                                                                               |
-
-`stories` skill が「部品の props・API・使い方は documentation tools で答える。ソースや型定義から答えない」と定めている。`vp exec storybook tools docs list` / `docs show` を使う。
-
-起動中の Storybook が要らないのは `docs list` / `docs show` / `stories changed` / `test run` (2026-09-20 に未起動 + `--no-attach` で実測)。`stories preview` と `review create` は起動が要る。
-
-**`stories find-by-component` は起動なしでも走り、結果が空で返る。** 逆依存グラフを持つのが dev server 側なので、story が無いのと区別が付かない。起動してから `--port <番号>` で指す。起動していれば変更したファイルから影響する story が距離つきで返り、これは grep では出せない (実測: `page-title.tsx` → `tokens` の 3 story が distance 1)。
-
-MCP (`@storybook/addon-mcp`) は採らない。全ツールが起動中の Storybook を要求するのに対し、CLI は上のとおり多くが起動なしで動く。MCP の登録はエージェント側の設定に URL を 1 つ持つ形だが、この repo の Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスク) ので、clone した人へ同じ登録を配れない。
-
-ただし MCP はツールの説明がエージェントに常時見える。CLI は AGENTS.md に書いても読み飛ばせば使われない。ここに書いてあるのはその対策なので、UI と story を触るときは読み飛ばさない。
+- 部品の props・API・使い方は `vp exec storybook tools docs list` / `docs show` で答える。ソースや型定義から答えない
+- `vp exec storybook tools stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない
+- MCP (`@storybook/addon-mcp`) は入れない。理由と起動の要否は ADR-0023
 
 ## 仕様書・設計判断
 
