@@ -126,9 +126,7 @@ function TypographyTokens() {
   );
 }
 
-const meta = {
-  title: "Tokens",
-} satisfies Meta;
+const meta = {} satisfies Meta;
 
 export default meta;
 
