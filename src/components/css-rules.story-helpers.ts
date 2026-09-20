@@ -66,15 +66,15 @@ export function collectRootCustomProperties(
         const inner = readRules(() => {
           const imported = rule.styleSheet;
           if (imported === null) {
-            // supports() の条件が成立しないときは取得自体が起きず、null が正常な結果に
-            // なる (w3c/csswg-drafts#8608)。それ以外の null は読み込み前か失敗で、黙って
-            // 飛ばすと「その stylesheet にトークンが無い」のと区別が付かなくなる
-            if (rule.supportsText === null || CSS.supports(rule.supportsText)) {
-              console.warn("[css-rules] styleSheet を読めない @import", {
-                href: rule.href,
-                supportsText: rule.supportsText,
-              });
-            }
+            // 読み込み前か失敗。黙って飛ばすと「その stylesheet にトークンが無い」のと
+            // 区別が付かなくなる。supports() の条件が偽のときに null を返す仕様が議論
+            // されているが (w3c/csswg-drafts#8608)、chromium 153 は条件が偽でも取得して
+            // 非 null を返す (2026-09-20 実測)。条件で warn を止める分岐は置かず、
+            // supportsText を payload に載せて読み手が切り分けられるようにする
+            console.warn("[css-rules] styleSheet を読めない @import", {
+              href: rule.href,
+              supportsText: rule.supportsText,
+            });
             return [];
           }
           return imported.cssRules;

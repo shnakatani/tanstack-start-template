@@ -86,24 +86,6 @@ describe("collectRootCustomProperties", () => {
     expect(warn).toHaveBeenCalledOnce();
   });
 
-  // supports() の条件が成立しないときは取得自体が起きず、null が正常な結果になる
-  // (w3c/csswg-drafts#8608)。ここで warn すると、正常な設定が警告を出し続ける
-  it("supports() が成立しない @import は warn しない", () => {
-    const skipped = Object.create(CSSImportRule.prototype, {
-      href: { value: "grid-only.css" },
-      styleSheet: { value: null },
-      supportsText: { value: "(display: definitely-not-a-value)" },
-    });
-    const importing = {
-      href: null,
-      cssRules: [skipped, ...sheet(":root { --kept: 1; }").cssRules],
-    };
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    expect(collectRootCustomProperties([importing], "--", root)).toEqual(["--kept"]);
-    expect(warn).not.toHaveBeenCalled();
-  });
-
   it("入れ子のグループ規則も辿る", () => {
     const css = "@layer a { @media screen { :root { --deep: 1; } } }";
 
