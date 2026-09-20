@@ -334,7 +334,9 @@ async function chooseStatus(label: string): Promise<void> {
 
 const meta = {
   title: "parts/FormFields",
-  render: (args) => <FieldsForm {...args} />,
+  // useAppForm は mount 時の validationLogic を握る。key を付けないと control で
+  // validationMode を変えても再描画されるだけで効かず、動かない knob が残る
+  render: (args) => <FieldsForm key={args.validationMode} {...args} />,
   args: {
     validationMode: "submit",
     disabled: false,
