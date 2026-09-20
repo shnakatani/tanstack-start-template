@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { CatchBoundary } from "@tanstack/react-router";
-import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test";
 
 import { createSettlingAction } from "@/test/settling-action";
 
 import { ActionButton } from "./button";
+import { CAUGHT_PREFIX, CaughtHere, silenceConsoleError } from "./catch-boundary.story-helpers";
 
 /**
  * 決着しない Promise を story に置かない。Storybook の vitest 実行は 1 つの React root へ
@@ -142,18 +142,14 @@ export const RejectReachesErrorBoundary: Story = {
   tags: ["!dev"],
   args: { children: "実行", action: fn(() => Promise.reject(new Error("失敗"))) },
   render: (args) => (
-    <CatchBoundary
-      getResetKey={() => "story"}
-      errorComponent={({ error }) => <p>境界で受けた: {error.message}</p>}
-    >
+    <CaughtHere>
       <ActionButton {...args} />
-    </CatchBoundary>
+    </CaughtHere>
   ),
   play: async () => {
-    // React は境界へ渡す前に console.error を出す。出力を汚さないため黙らせる
-    spyOn(console, "error").mockImplementation(() => {});
+    silenceConsoleError();
     await userEvent.click(screen.getByRole("button", { name: "実行" }));
 
-    await expect(await screen.findByText("境界で受けた: 失敗")).toBeInTheDocument();
+    await expect(await screen.findByText(`${CAUGHT_PREFIX}失敗`)).toBeInTheDocument();
   },
 };

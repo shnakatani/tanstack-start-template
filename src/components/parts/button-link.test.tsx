@@ -7,6 +7,14 @@ import { createTestRouter } from "@/test/create-test-router";
 import { ButtonLink } from "./button-link";
 
 // 検証対象はリンクの描画と寸法。to は routeTree の実在パスしか受け付けないため /notes を渡す
+/**
+ * 状態のカタログは `button-link.stories.tsx` が持つ (ADR-0022)。ここに残すのは 2 種類ある。
+ *
+ * 24px の床 (ADR-0007) は `getBoundingClientRect` の実測なので play へ移せない (節 5)。
+ * 要素が `a` であること・`data-slot`・`button-group` の子孫セレクタが当たる経路は、
+ * story に play が無い (節 2 の args だけで状態が決まる部品) 以上ここでしか固定できない
+ * (節 7 の役割分担)。
+ */
 describe("ButtonLink", () => {
   it("リンクテキストが表示される", async () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);

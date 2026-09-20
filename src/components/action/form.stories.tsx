@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { CatchBoundary } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
 
 import { Button } from "@/components/ui/button";
 import { createSettlingAction } from "@/test/settling-action";
 
+import { CAUGHT_PREFIX, CaughtHere, silenceConsoleError } from "./catch-boundary.story-helpers";
 import { ActionForm, ActionFormSubmit } from "./form";
 
 /**
@@ -20,28 +19,6 @@ const settling = createSettlingAction();
 const settlingAction = fn(settling.impl);
 
 const saveButton = () => screen.getByRole("button", { name: "保存" });
-
-/**
- * React が境界へ渡す前に出す console.error を、描画より前から黙らせる。
- *
- * `beforeEach` を使うのは描画中に出る出力だけにする。操作で出るものは play の中で
- * `spyOn` する (`button.stories.tsx` の RejectReachesErrorBoundary と同じ形)。story ごとに
- * `restoreAllMocks` が走るので後始末は要らない。
- */
-function silenceConsoleError() {
-  spyOn(console, "error").mockImplementation(() => {});
-}
-
-function CaughtHere({ children }: { children: ReactNode }) {
-  return (
-    <CatchBoundary
-      getResetKey={() => "story"}
-      errorComponent={({ error }) => <p>境界で受けた: {error.message}</p>}
-    >
-      {children}
-    </CatchBoundary>
-  );
-}
 
 const meta = {
   component: ActionForm,
@@ -146,7 +123,7 @@ export const RejectReachesErrorBoundary: Story = {
     spyOn(console, "error").mockImplementation(() => {});
     await userEvent.click(saveButton());
 
-    await expect(await screen.findByText("境界で受けた: 失敗")).toBeInTheDocument();
+    await expect(await screen.findByText(`${CAUGHT_PREFIX}失敗`)).toBeInTheDocument();
   },
 };
 
@@ -161,7 +138,7 @@ export const SubmitOutsideForm: Story = {
   ),
   play: async () => {
     await expect(
-      await screen.findByText("境界で受けた: [ActionFormSubmit] ActionForm の中で使う"),
+      await screen.findByText(`${CAUGHT_PREFIX}[ActionFormSubmit] ActionForm の中で使う`),
     ).toBeInTheDocument();
   },
 };

@@ -84,6 +84,8 @@ story を書かない部品のテストは触らない。story を書いた部�
 
 移せないのはレイアウトと配色の実測 (`getComputedStyle` / `getBoundingClientRect`)、型契約 (`expectTypeOf`)、CDP 経由の実イベントの 3 つである。`src/components/ui/` の既存テスト 26 case のうち 25 case がこれに当たる (2026-09-20 実測)。
 
+この 3 つは play を書く部品の話である。節 2 で play を書かないと決めた部品 (args だけで状態が決まるもの) では、story が描画と axe しか走らせず何も検証しない。構造の契約もブラウザテストに残り、残す根拠は節 7 の役割分担になる。JSDoc にはどちらの根拠で残したかを書く。
+
 popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0018 の扱う animate-out の窓に入る。
 
 待機は `storybook/test` の `waitFor` で書く。ADR-0013 の retry API は play から呼べない。

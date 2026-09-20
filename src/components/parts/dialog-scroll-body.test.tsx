@@ -32,6 +32,11 @@ import { waitForAnimations } from "@/test/wait-for-animations";
  *
  * 溢れコンテンツはフィールドの実数で作る (`height` 指定では flex item が潰れて溢れを
  * 再現できない — dialog.test.tsx の同趣旨のコメント参照)。
+ *
+ * 状態のカタログは `dialog-scroll-body.stories.tsx` が持つ (ADR-0022)。ここに残す 11 case は
+ * すべて寸法と配色の実測 (`getComputedStyle` / `getBoundingClientRect`) か、スクロールと
+ * focus の実イベントで、play へ移せない (節 5)。story の play が見るのは
+ * `data-has-overflow-y` の有無だけである。
  */
 
 const FIELD_COUNT = 8;
