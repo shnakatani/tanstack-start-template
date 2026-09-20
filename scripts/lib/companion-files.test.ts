@@ -44,7 +44,7 @@ describe("isCompanionFile", () => {
     expect(isCompanionFile("env.d.ts")).toBe(false);
   });
 
-  it("種別名そのものを名前に持つファイルは対象外 (stem が要る)", () => {
+  it("拡張子の前に種別名が無いファイルは対象外", () => {
     expect(isCompanionFile("test.ts")).toBe(false);
     expect(isCompanionFile("stories.tsx")).toBe(false);
   });

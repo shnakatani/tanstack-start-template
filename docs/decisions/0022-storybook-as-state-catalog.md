@@ -99,6 +99,8 @@ JS で比を計算する形そのものにも無理がある。ブラウザは s
 
 どの変数が落ちるかは Tailwind の source scan の結果で決まる。**scan は既定でリポジトリ全体を読み、Markdown も対象にする**ため、ADR や rules に書いた名前が「使用中」と判定されて出力に残っていた。`styles.css` の `@import "tailwindcss" source("../src")` で対象をアプリのソースへ絞る。効果は `source()` を外して `vp build` を 2 回回せば測れる。
 
+`@source not` で除外を並べる形は採らない。symlink (`.claude/skills` は `.agents` を指す) と、後から増える置き場を取りこぼす。絞る側を書けば、対象に入れ忘れた場所は utility が生成されないことで気付ける。
+
 **`static` は Storybook だけに掛ける。** `.storybook/preview.css` が `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す。`theme()` は import 単位で効くため、本番の CSS は `static` の分を持たない。
 
 代償は、Tailwind 既定 theme の未定義トークンがカタログに混ざることである。2026-09-20 の実測では Radius に 2 件、Typography に 6 件で、Colors は `--color-*: initial` が効いていて増えない。

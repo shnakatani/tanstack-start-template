@@ -36,4 +36,3 @@ run = [
   # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
   "vp node scripts/checks/runtime/security-headers.ts",
 ]
-

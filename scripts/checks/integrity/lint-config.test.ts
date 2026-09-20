@@ -168,7 +168,8 @@ describe("書いた設定が解決後も残っている", () => {
     // excludeFiles からは companionGlobs の分を差し引いてから比べる。付随ファイルの種別は
     // scripts/lib/companion-files.ts が唯一の定義で、そこに単体テストがある。ここへ写すと
     // 種別を足すたびに同じ変更を 2 度書くだけの手順が増える。差し引いた残り (手書きの層と
-    // src/test/**) は写す。ここを広げる壊し方は他のどの検査も拾わない
+    // src/test/**) は写す。差し引きはどの override にも効くので、付随ファイルの除外が別の
+    // override へ付く壊し方は下の検査が受け持つ
     expect(
       printedConfig.overrides.map(({ files, excludeFiles, rules }) => ({
         files,
@@ -183,6 +184,19 @@ describe("書いた設定が解決後も残っている", () => {
       "override の適用先かルールか severity が変わった。適用先を広げるとその層で規則が無診断になり、" +
         "ルールを消すか off にすると規則が無言で外れる (ADR-0004 / ADR-0020 / ADR-0021)",
     ).toEqual(EXPECTED_OVERRIDES);
+  });
+
+  it("付随ファイルの除外を持つ override は import 禁止の 1 つだけ", () => {
+    // 上の検査は excludeFiles から付随ファイルの分を無条件に差し引くため、別の override へ
+    // 付けても差分が出ない。付けるとその override の規則がテストと story で無診断になる
+    // (層の override なら no-restyle と require-static-classes が外れる)
+    expect(
+      printedConfig.overrides
+        .filter(({ excludeFiles }) => excludeFiles?.some((glob) => COMPANION_GLOBS.has(glob)))
+        .map(({ files }) => files),
+      "付随ファイルの除外が想定外の override に付いた。その override の規則が" +
+        "テストと story で無診断になる (ADR-0004 / ADR-0020 / ADR-0021)",
+    ).toEqual([["src/**", "scripts/**"]]);
   });
 });
 
