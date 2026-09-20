@@ -19,16 +19,23 @@ const TARGET: DeleteTarget = { id: "w1", name: "田中太郎" };
  * 届いた回で偽 red になる (testing.md「optimistic update テストは遅延 rejection で中間状態を
  * 観測」)。play は必ず `settle()` を呼んでから終える。
  */
-let settle = () => {};
+let pendingResolvers: Array<() => void> = [];
 const settlingConfirm = fn(() => {
   // void を型引数に置くと no-invalid-void-type が落ちる。Promise<undefined> は
   // onConfirm の戻り値 Promise<void> へそのまま渡せる
   const { promise, resolve } = Promise.withResolvers<undefined>();
-  settle = () => {
+  pendingResolvers.push(() => {
     resolve(undefined);
-  };
+  });
   return promise;
 });
+
+/** 未決着の Promise を全て決着させる。play の途中と、story の後始末の両方から呼ぶ */
+function settle(): void {
+  const resolvers = pendingResolvers;
+  pendingResolvers = [];
+  for (const resolve of resolvers) resolve();
+}
 
 interface StoryArgs {
   entityLabel: string;
@@ -70,6 +77,13 @@ async function open(): Promise<void> {
 const meta = {
   render: (args) => <WithTrigger {...args} />,
   args: { entityLabel: "ユーザー", target: TARGET, onConfirm: fn() },
+  beforeEach: () => {
+    settlingConfirm.mockClear();
+    pendingResolvers = [];
+    // play が途中で落ちても未決着の Promise を残さない。残すと後続 story の Transition と
+    // 干渉し、退行 1 件が無関係な story まで赤にする (ADR-0022)
+    return settle;
+  },
 } satisfies Meta<StoryArgs>;
 
 export default meta;

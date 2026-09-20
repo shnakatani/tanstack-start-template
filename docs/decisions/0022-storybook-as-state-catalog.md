@@ -67,11 +67,14 @@ ADR-0015 が禁じた同期 2 連射は play では起きない。`storybook/tes
 
 どのブラウザテストが持つかを決めておく。story へ移した結果、実イベントの検証がリポジトリから消えることを防ぐ。
 
-| 対象                                                                                     | 実イベントの規律を持つテスト                                                                                                                                                                         |
-| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ActionForm` / `ActionFormSubmit` の二重発火                                             | `src/components/action/form.test.tsx`                                                                                                                                                                |
-| `ActionButton` の二重発火                                                                | `src/routes/notes/index.test.tsx`。`AlertDialogActionButton` は `ActionButton` に `data-slot` を足すだけの薄いラッパーで、`enableBaseUiAnimations()` を戻した animate-out の窓で Enter を 2 連射する |
-| `DeleteConfirmDialog` の確定とキャンセルへ inert バックドロップ越しに pointer が届くこと | `src/routes/notes/index.test.tsx` の `dispatchNativeClick`                                                                                                                                           |
+| 対象                                                                                     | 実イベントの規律を持つテスト                               |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `ActionButton` の二重発火 (`ActionButtonShell` の `disabled={isPending}`)                | `src/components/action/button.test.tsx`                    |
+| `ActionForm` / `ActionFormSubmit` の二重発火 (`ActionForm` の `if (isPending) return`)   | `src/components/action/form.test.tsx`                      |
+| `DeleteConfirmDialog` の確定とキャンセルへ inert バックドロップ越しに pointer が届くこと | `src/routes/notes/index.test.tsx` の `dispatchNativeClick` |
+| 画面側の二重確定の dedupe (`queryClient.isMutating`)                                     | `src/routes/notes/index.test.tsx` の Enter 2 連射          |
+
+画面のテストは Action 層の guard を代替しない。`confirmDelete` は `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の時点で `isPending` は false になる。`disabled={isPending}` を外しても browser project は 1 件も落ちない (2026-09-20 実測)。経路が薄いラッパーを通ることは、その guard を通ることを意味しない。
 
 popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0018 の扱う animate-out の窓に入る。
 

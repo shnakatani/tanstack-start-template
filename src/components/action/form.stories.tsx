@@ -16,16 +16,23 @@ import { ActionForm, ActionFormSubmit } from "./form";
  * 届いた回で偽 red になる (testing.md「optimistic update テストは遅延 rejection で中間状態を
  * 観測」)。play は必ず `settle()` を呼んでから終える。
  */
-let settle = () => {};
+let pendingResolvers: Array<() => void> = [];
 const settlingAction = fn(() => {
   // void を型引数に置くと no-invalid-void-type が落ちる。Promise<undefined> は
   // submitAction の戻り値 Promise<void> へそのまま渡せる
   const { promise, resolve } = Promise.withResolvers<undefined>();
-  settle = () => {
+  pendingResolvers.push(() => {
     resolve(undefined);
-  };
+  });
   return promise;
 });
+
+/** 未決着の Promise を全て決着させる。play の途中と、story の後始末の両方から呼ぶ */
+function settle(): void {
+  const resolvers = pendingResolvers;
+  pendingResolvers = [];
+  for (const resolve of resolvers) resolve();
+}
 
 const saveButton = () => screen.getByRole("button", { name: "保存" });
 
@@ -62,7 +69,10 @@ const meta = {
   },
   beforeEach: () => {
     settlingAction.mockClear();
-    settle = () => {};
+    pendingResolvers = [];
+    // play が途中で落ちても未決着の Promise を残さない。残すと後続 story の Transition と
+    // 干渉し、退行 1 件が無関係な story まで赤にする (ADR-0022)
+    return settle;
   },
 } satisfies Meta<typeof ActionForm>;
 
@@ -120,8 +130,13 @@ export const PlainSubmitNotCalledTwice: Story = {
     await userEvent.keyboard("{Enter}");
 
     await expect(args.submitAction).toHaveBeenCalledTimes(1);
+
+    // 素の submit ボタンは aria-disabled にならないので、決着したことは「もう一度撃てる」
+    // ことでしか観測できない。form 側の isPending が解けたかを見る
     settle();
-    await waitFor(() => expect(args.submitAction).toHaveBeenCalledTimes(1));
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(args.submitAction).toHaveBeenCalledTimes(2));
+    settle();
   },
 };
 
