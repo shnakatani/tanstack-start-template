@@ -1,0 +1,10 @@
+/* Storybook だけ theme(static) を掛けて、定義した全トークンを :root へ出させる。
+   Tailwind は既定では utility から参照されている変数しか出力しないため、実際に使って
+   いるトークンでもカタログに現れない。theme() は import 単位で効くので、本番の CSS は
+   src/styles.css をそのまま読み、未参照の宣言を持たない (ADR-0022)。
+   出典: tailwindcss.com/docs/preflight「Disabling Preflight」
+
+   代償として Tailwind 既定 theme の未定義トークンが一覧に混ざる
+   (2026-09-20 実測: Radius に --radius-3xl / --radius-xs、Typography に --font-serif と
+   --font-weight-* の 6 件。Colors は --color-*: initial が効いていて増えない) */
+@import "../src/styles.css" theme(static);

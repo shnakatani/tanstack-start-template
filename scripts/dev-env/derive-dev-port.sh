@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # dev server (`vp dev --port`) の port を worktree ごとに導出する。
 #
-#   main checkout    → <base>                （従来どおり 3000 固定）
-#   linked worktree  → 3001-3999 の決定的な値（worktree 名のハッシュから算出）
+#   main checkout    → <base>
+#   linked worktree  → <base>+1 から <base>+999 の決定的な値（worktree 名のハッシュから算出）
 #
 # 複数 worktree で dev server を同時起動すると port 3000 が衝突するため、
 # git-dir と git-common-dir の一致判定で main / linked worktree を判定する。
@@ -12,8 +12,8 @@
 # git 情報が取れない場合は base にフォールバックする — port 分離が
 # 効かないだけでアプリは従来どおり動く（fail-safe）。ただし観測可能にするため
 # stderr に警告を残す。
-# 注意: base は worktree 導出範囲 (3001-3999) の外に置くこと。範囲内の base を
-# 渡すと main と worktree の port が衝突し得る（現行 base は 3000 で範囲外）。
+# 注意: 複数の base を使うときは 1000 以上離すこと。近いと範囲が重なる
+# （現行は dev server 3000 と Storybook 6006）。
 set -u
 
 base="${1:-3000}"
@@ -45,6 +45,8 @@ if [ -z "${name}" ]; then
 fi
 
 hash=$(printf '%s' "${name}" | cksum | cut -d' ' -f1)
-port=$((hash % 999 + 3001))
+# base 相対にする。base ごとに範囲が分かれるので、同じ worktree で dev server と
+# Storybook を同時に起動しても衝突しない
+port=$((hash % 999 + base + 1))
 
 echo "${port}"

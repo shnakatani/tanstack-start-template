@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
+import { useSyncExternalStore } from "react";
 
 import { pageTitle } from "@/components/parts/page-title";
 
 import { isColor } from "./css-color.story-helpers";
 import { collectRootCustomProperties } from "./css-rules.story-helpers";
+import { createThemeSnapshotStore } from "./theme-snapshot.story-helpers";
 import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story-helpers";
 
 /** 名前順のトークン名。`styles.css` が SSOT なので値は写さない (ADR-0022) */
@@ -30,18 +32,29 @@ function warnIfEmpty(names: string[], story: string): void {
   }
 }
 
-/** 解決後の値を伴う色トークンを名前順で集める */
-function readColorTokens(): ThemeToken[] {
+/** 解決後の値を伴うトークンを名前順で集める */
+function readTokens(prefix: string): ThemeToken[] {
   const style = rootStyle();
-  return dropRedundantColorAliases(
-    readTokenNames("--")
-      .map((name) => ({ name, value: resolvedWith(style, name) }))
-      .filter(({ value }) => isColor(value)),
-  );
+  return readTokenNames(prefix).map((name) => ({ name, value: resolvedWith(style, name) }));
+}
+
+/**
+ * テーマごとに 1 回だけ読む。値は CSSOM と getComputedStyle から取るので React の依存に
+ * 現れず、購読しないと切り替えても止まる (ADR-0022)
+ */
+const colorStore = createThemeSnapshotStore<ThemeToken[]>(
+  () => dropRedundantColorAliases(readTokens("--").filter(({ value }) => isColor(value))),
+  [],
+);
+const radiusStore = createThemeSnapshotStore<ThemeToken[]>(() => readTokens("--radius"), []);
+const fontStore = createThemeSnapshotStore<ThemeToken[]>(() => readTokens("--font"), []);
+
+function useThemeTokens(store: ReturnType<typeof createThemeSnapshotStore<ThemeToken[]>>) {
+  return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
 }
 
 function ColorSwatches() {
-  const tokens = readColorTokens();
+  const tokens = useThemeTokens(colorStore);
   warnIfEmpty(
     tokens.map(({ name }) => name),
     "Tokens/Colors",
@@ -65,12 +78,14 @@ function ColorSwatches() {
 }
 
 function RadiusTokens() {
-  const style = rootStyle();
-  const names = readTokenNames("--radius");
-  warnIfEmpty(names, "Tokens/Radius");
+  const tokens = useThemeTokens(radiusStore);
+  warnIfEmpty(
+    tokens.map(({ name }) => name),
+    "Tokens/Radius",
+  );
   return (
     <div className="flex flex-wrap gap-4">
-      {names.map((name) => (
+      {tokens.map(({ name, value }) => (
         <div key={name} className="flex flex-col items-center gap-2">
           <div
             aria-hidden
@@ -78,9 +93,7 @@ function RadiusTokens() {
             style={{ borderRadius: `var(${name})` }}
           />
           <span className="font-mono text-xs">{name}</span>
-          <span className="font-mono text-xs text-muted-foreground">
-            {resolvedWith(style, name)}
-          </span>
+          <span className="font-mono text-xs text-muted-foreground">{value}</span>
         </div>
       ))}
     </div>
@@ -100,14 +113,16 @@ const TYPOGRAPHY_SAMPLES = [
 ] as const;
 
 function TypographyTokens() {
-  const style = rootStyle();
-  const names = readTokenNames("--font");
-  warnIfEmpty(names, "Tokens/Typography");
+  const tokens = useThemeTokens(fontStore);
+  warnIfEmpty(
+    tokens.map(({ name }) => name),
+    "Tokens/Typography",
+  );
   return (
     <div className="flex flex-col gap-4">
-      {names.map((name) => (
+      {tokens.map(({ name, value }) => (
         <p key={name} className="font-mono text-xs text-muted-foreground">
-          {name}: {resolvedWith(style, name)}
+          {name}: {value}
         </p>
       ))}
       {TYPOGRAPHY_SAMPLES.map((sample) => (

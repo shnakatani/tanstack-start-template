@@ -99,11 +99,12 @@
   --sidebar-ring: oklch(0.623 0.214 259.815);
 }
 
-/* static はこのブロックの宣言を未使用でも出力させる。inline との併用時は既定だと
-   使用中のトークンまで一部落ちる (inline は utility へ値を直接埋め込むため、
-   `rounded-sm` を書いても var(--radius-sm) を読む rule 自体が生まれず「未使用」と
-   判定される)。出典: tailwindcss.com/docs/theme「Generating all CSS variables」 */
-@theme static inline {
+/* inline は utility へ値を直接埋め込む。`rounded-4xl` を書いても var(--radius-4xl) を
+   読む rule が生まれないため、Tailwind は既定では「未使用」として変数を出力しない。
+   実際に使っているトークンでも出ないので、Storybook のカタログからは消える。
+   本番の CSS でその分を払わずにカタログへ出すため、static は .storybook/preview.css が
+   この同じファイルを theme(static) 付きで読み直して掛ける (ADR-0022) */
+@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

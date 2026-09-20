@@ -8,12 +8,16 @@
  */
 const SENTINELS = ["#010203", "#040506"] as const;
 
-/** 使い回す。トークンの数だけ canvas を作ると、一覧の描画ごとに要素と context が増える */
-let sharedContext: CanvasRenderingContext2D | null | undefined;
+/**
+ * 使い回す。トークンの数だけ canvas を作ると、一覧の描画ごとに要素と context が増える。
+ * 取得に失敗した結果も覚える。`??=` だと null を覚えず、失敗のたびに canvas を作り直して
+ * warn がトークンの数だけ出る
+ */
+let cached: { context: CanvasRenderingContext2D | null } | null = null;
 
 function context(): CanvasRenderingContext2D | null {
-  sharedContext ??= document.createElement("canvas").getContext("2d");
-  return sharedContext;
+  cached ??= { context: document.createElement("canvas").getContext("2d") };
+  return cached.context;
 }
 
 function changesFillStyle(ctx: CanvasRenderingContext2D, sentinel: string, value: string): boolean {
@@ -27,12 +31,21 @@ function changesFillStyle(ctx: CanvasRenderingContext2D, sentinel: string, value
  * トークン一覧から非色 (spacing / font / animation 等) を選り分ける用途に使う。ここで
  * 鳴らすと非色トークンの数だけ warn が出て、一覧の欠落を示す warn が埋もれる。
  */
+let warned = false;
+
+/** トークンの数だけ同じ warn を出さない。原因は 1 度伝われば足りる */
+function warnOnce(): void {
+  if (warned) return;
+  warned = true;
+  console.warn("[css-color] canvas の 2D context を取得できない。色の一覧は空になる");
+}
+
 export function isColor(cssColor: string): boolean {
   const ctx = context();
   if (ctx === null) {
     // 2D context が取れないと全トークンが非色になり、一覧が丸ごと空になる。原因が
     // canvas 側にあることを残さないと、CSSOM の走査を疑うことになる
-    console.warn("[css-color] canvas の 2D context を取得できない", { cssColor });
+    warnOnce();
     return false;
   }
   const [first, second] = SENTINELS;

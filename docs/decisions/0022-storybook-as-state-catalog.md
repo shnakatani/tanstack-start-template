@@ -94,15 +94,13 @@ JS で比を計算する形そのものにも無理がある。ブラウザは s
 
 扱いを決めるには `--destructive` の値の再検討が要り、それは別の判断になるため分けた。非テキストの 3:1 (WCAG 1.4.11) を axe が持たない点も併せて扱う。
 
-トークンの一覧を CSSOM から読む選択の帰結として、`styles.css` の `@theme` に `static` を付ける。`static` は公式のノブで `inline` と併用できる。
+トークンの一覧を CSSOM から読む選択の帰結として、`static` が要る。`inline` は utility へ値を直接埋め込むため、`rounded-4xl` を書いても `var(--radius-4xl)` を読む rule が生まれない。Tailwind は既定で参照されている変数だけを出力するので、実際に使っているトークンでもカタログから消える。
 
-`inline` は utility へ値を直接埋め込むため、`rounded-4xl` を書いても `var(--radius-4xl)` を読む rule が生まれない。Tailwind は既定で参照されている変数だけを出力するので、実際に使われているトークンが一覧から消える。
+`src/components/ui/badge.tsx` の `rounded-4xl` がその例である。
 
-`src/components/ui/badge.tsx` の `rounded-4xl` がその例で、`static` なしでは `--radius-4xl` がカタログに出ない。
+**`static` は Storybook だけに掛ける。** `.storybook/preview.css` が `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す。`theme()` は import 単位で効くため、本番の CSS は未参照の宣言を持たない。
 
-代償は、未参照の宣言が本番 CSS へ乗ることである。この差はこの template から作られる全プロジェクトが払う。Storybook を開かないプロジェクトも含む。
-
-それでも `static` を採るのは、代替がいずれも公式に文書化されていない経路に乗るためである。差の測り方は `@theme static inline` から `static` を外して `vp build` を 2 回回す。
+代償は、Tailwind 既定 theme の未定義トークンがカタログに混ざることである。2026-09-20 の実測では Radius に 2 件、Typography に 6 件で、Colors は `--color-*: initial` が効いていて増えない。
 
 Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査は `@layer` を含むグループ規則を再帰的に辿る必要がある。辿らないと `@layer` の中の `:root` を見落とす。
 
@@ -147,7 +145,7 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 | トークンを専用 addon で一覧化する                        | `styles.css` へ注釈コメントを足す必要があり、Storybook 専用の記述が SSOT に混ざる                                  | 却下     |
 | コントラスト比を自前で計算する                           | 対応する色空間を実装ごと抱える。`oklch()` を読めない実装になり、変換のためにブラウザの色パーサを借りる連鎖が起きた | 却下     |
 | 全トークンを単一の背景と比べる                           | 画面上で重ならない組み合わせの比が並び、閾値を割ったかどうかの判断に使えない                                       | 却下     |
-| `static` を Storybook 専用の CSS だけに効かせる          | `@import` に `theme()` を付ける形は公式 docs に無い。未文書の経路に乗ることになる (2026-09-20 に docs を確認)      | 却下     |
+| `styles.css` に `static` を付ける                        | 未参照の宣言が本番 CSS へ乗り、この template から作られる全プロジェクトが払う (2026-09-20 実測で 1,175 バイト)     | 却下     |
 | トークン名を `styles.css` のソースから読む               | `static` が無いと未出力の変数は `getComputedStyle` で解決できず、名前だけが並ぶ                                    | 却下     |
 | `__unstable__loadDesignSystem` でビルド時に列挙する      | `@tailwindcss/node` が export するが、名前のとおり安定 API ではないと明示されている                                | 却下     |
 | 検証専用 story をサイドバーへ出したまま置く              | 同じ見た目の story が並び、カタログとして読めなくなる (2026-09-20 に 1 部品で実測、9 story 中 4 つが重複)          | 却下     |

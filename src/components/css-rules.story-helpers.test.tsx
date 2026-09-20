@@ -88,3 +88,24 @@ describe("root 固有でない rule", () => {
     ]);
   });
 });
+
+describe("解釈できない selector", () => {
+  // CSSOM に入りうる selector をすべて matches() が解釈できるとは限らない。
+  // 走査ごと止めずに、その rule だけ飛ばして残りを返す
+  it("matches() が投げる rule は warn して飛ばす", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const throwingRoot = {
+      matches: () => {
+        throw new Error("SyntaxError");
+      },
+      ownerDocument: document,
+    };
+
+    expect(collectRootCustomProperties([sheet(":root { --x: 1; }")], "--", throwingRoot)).toEqual(
+      [],
+    );
+    expect(warn).toHaveBeenCalledWith("[css-rules] 解釈できない selector", {
+      selectorText: ":root",
+    });
+  });
+});

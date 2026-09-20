@@ -19,7 +19,7 @@ paths:
 - `primary` / `secondary` / `muted` / `accent` / `destructive` / `success` / `sidebar-*` 等の semantic token を使う
 - palette 色の直書き (`bg-blue-500` / `text-gray-900` 等) と任意値への色の直書き (`bg-[#hex]` / `bg-[rgb(...)]`) は禁止。淡色ハイライトは `bg-primary/10` のような opacity variant で表現する
 - SVG の `fill` / `stroke` に色を直書きしない。`currentColor` か semantic token を参照する
-- 新しい「意味のある色」が必要になったら、`src/styles.css` の `:root` / `.dark` に CSS 変数を定義し `@theme static inline` で token 化してから使う。token を定義する前に utility を書くと未知クラスとして落ちる。`static` を外すと、使っているトークンでも Storybook のカタログから消える (ADR-0022)
+- 新しい「意味のある色」が必要になったら、`src/styles.css` の `:root` / `.dark` に CSS 変数を定義し `@theme inline` で token 化してから使う。token を定義する前に utility を書くと未知クラスとして落ちる
 - `var(--...)` だけを材料にした `color-mix()` は許可する。`no-arbitrary-values` は材料を区別しないため、行単位で抑制する。registry 内なら ADR-0006 の許容リストにも記録する
 - 破壊操作は常時 destructive 色を使い、強度は主張度で分ける。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover でのみ着色すると touch 環境で色が出ず、破壊操作だと伝わらない
 
@@ -34,9 +34,10 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 `no-unknown-classes` は theme に無い class、`no-raw-colors` は palette・未定義 token・SVG の raw color、`no-arbitrary-values` の `deny: ["color"]` は arbitrary color を担当する。
 
-- 1 層目の `@theme` は import より後ろ、`@theme static inline` より前に置く。後ろへ動かすと semantic token まで消える
+- 1 層目の `@theme` は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
 - `black` と `white` だけは 1 層目で再登録してある。registry の overlay が scrim を `bg-black/10` で描いており、消すとモーダルの背景が素通しになる
 - 2 層目はテストファイルにも効く。字面走査の頃と違って `.test.*` / `.gen.*` の除外は無い
+- `styles.css` に `static` を付けない。Storybook のカタログのために `.storybook/preview.css` が同じファイルを `theme(static)` 付きで読み直す。本番の CSS は未参照の宣言を持たない (ADR-0022)
 
 ## typography 階層
 

@@ -1,3 +1,9 @@
+/** この関数が root に求めるもの。`Element` はこれを満たす */
+export interface RootElement {
+  matches(selectors: string): boolean;
+  readonly ownerDocument: Document;
+}
+
 /** この関数が stylesheet に求めるもの。`CSSStyleSheet` はこれを満たす */
 export interface ReadableStyleSheet {
   readonly href: string | null;
@@ -16,13 +22,14 @@ export interface ReadableStyleSheet {
  * 比べる形にすると、`:is(:root, .x)` のように `,` を内側に持つ selector を取りこぼす。
  *
  * ただし root に当たるだけでは足りない。Tailwind の `*, ::before, ::after, ::backdrop` は
- * root にも当たり、内部用の変数 (`--tw-*` 等) を持ち込む (2026-09-20 実測で 4 件)。任意の
- * 要素にも当たる rule は root 固有ではないので除く。
+ * root にも当たり、内部用の変数を持ち込む。任意の要素にも当たる rule は root 固有では
+ * ないので除く。混入の有無は Storybook で `Tokens/Colors` を開き、`--tw` で始まる名前が
+ * 並んでいないかで見る。
  */
 export function collectRootCustomProperties(
   sheets: Iterable<ReadableStyleSheet>,
   prefix: string,
-  root: Element,
+  root: RootElement,
 ): string[] {
   const names = new Set<string>();
   // 「任意の要素にも当たるか」を測る相手。document へ挿さないので他の rule の影響を受けない
@@ -53,7 +60,7 @@ export function collectRootCustomProperties(
 }
 
 /** `matches()` は不正な selector で例外を投げる。走査を止めずにその rule だけ飛ばす */
-function isRootScoped(root: Element, anyElement: Element, selectorText: string): boolean {
+function isRootScoped(root: RootElement, anyElement: Element, selectorText: string): boolean {
   try {
     return root.matches(selectorText) && !anyElement.matches(selectorText);
   } catch {
