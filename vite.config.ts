@@ -5,6 +5,8 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
+import { companionGlobs } from "./scripts/lib/companion-files";
+
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
 /**
@@ -312,17 +314,7 @@ export default defineConfig({
         // (files の否定 glob は oxlint 1.79 では効かない)。story 自身も出荷される bundle に
         // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)
         files: ["src/**", "scripts/**"],
-        excludeFiles: [
-          "**/*.test.ts",
-          "**/*.test.tsx",
-          "**/*.test-helpers.ts",
-          "**/*.test-helpers.tsx",
-          "**/*.story-helpers.ts",
-          "**/*.story-helpers.tsx",
-          "**/*.stories.ts",
-          "**/*.stories.tsx",
-          "src/test/**",
-        ],
+        excludeFiles: [...companionGlobs("**/"), "src/test/**"],
         rules: {
           "no-restricted-imports": [
             "error",

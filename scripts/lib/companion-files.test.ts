@@ -1,0 +1,61 @@
+import { describe, expect, it } from "vite-plus/test";
+
+import { COMPANION_KINDS, companionGlobs, isCompanionFile } from "./companion-files";
+
+describe("COMPANION_KINDS", () => {
+  it("directory-structure.md が定める 4 種別を持つ", () => {
+    expect([...COMPANION_KINDS]).toEqual(["test", "test-helpers", "story-helpers", "stories"]);
+  });
+});
+
+describe("companionGlobs", () => {
+  it("種別ごとに ts と tsx の 2 本を、宣言順で並べる", () => {
+    expect(companionGlobs("**/")).toEqual([
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.test-helpers.ts",
+      "**/*.test-helpers.tsx",
+      "**/*.story-helpers.ts",
+      "**/*.story-helpers.tsx",
+      "**/*.stories.ts",
+      "**/*.stories.tsx",
+    ]);
+  });
+
+  it("prefix を差し替えられる (coverage は src 配下だけを見る)", () => {
+    expect(companionGlobs("src/**/")).toContain("src/**/*.story-helpers.ts");
+    expect(companionGlobs("src/**/")).toHaveLength(COMPANION_KINDS.length * 2);
+  });
+});
+
+describe("isCompanionFile", () => {
+  it("4 種別 × ts / tsx を付随ファイルと判定する", () => {
+    for (const kind of COMPANION_KINDS) {
+      expect(isCompanionFile(`button.${kind}.ts`), `button.${kind}.ts`).toBe(true);
+      expect(isCompanionFile(`button.${kind}.tsx`), `button.${kind}.tsx`).toBe(true);
+    }
+  });
+
+  it("アプリのコードは判定しない", () => {
+    // basename に `.` を持つアプリのコード。字面が似ているので取り違えると本体が検査から漏れる
+    expect(isCompanionFile("button.tsx")).toBe(false);
+    expect(isCompanionFile("handlers.server.ts")).toBe(false);
+    expect(isCompanionFile("routeTree.gen.ts")).toBe(false);
+    expect(isCompanionFile("env.d.ts")).toBe(false);
+  });
+
+  it("種別名そのものを名前に持つファイルは対象外 (stem が要る)", () => {
+    expect(isCompanionFile("test.ts")).toBe(false);
+    expect(isCompanionFile("stories.tsx")).toBe(false);
+  });
+
+  it("種別名の部分一致では判定しない", () => {
+    expect(isCompanionFile("button.tests.ts")).toBe(false);
+    expect(isCompanionFile("button.story.ts")).toBe(false);
+  });
+
+  it("ts / tsx 以外の拡張子は対象外", () => {
+    expect(isCompanionFile("button.test.js")).toBe(false);
+    expect(isCompanionFile("button.stories.mdx")).toBe(false);
+  });
+});

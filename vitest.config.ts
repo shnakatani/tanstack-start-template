@@ -1,6 +1,8 @@
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
 
+import { companionGlobs } from "./scripts/lib/companion-files";
+
 const sharedExclude = [
   "**/node_modules/**",
   "**/dist/**",
@@ -57,14 +59,8 @@ export default defineConfig({
       include: ["src/**"],
       exclude: [
         "src/routeTree.gen.ts",
-        "src/**/*.test.ts",
-        "src/**/*.test.tsx",
-        "src/**/*.test-helpers.ts",
-        "src/**/*.test-helpers.tsx",
-        "src/**/*.story-helpers.ts",
-        "src/**/*.story-helpers.tsx",
-        "src/**/*.stories.ts",
-        "src/**/*.stories.tsx",
+        // 付随ファイルは出荷されないので分母に入れない (directory-structure.md)
+        ...companionGlobs("src/**/"),
         "src/test/**",
         "src/**/*.d.ts",
       ],
