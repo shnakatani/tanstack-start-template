@@ -20,12 +20,10 @@ import {
 import { Button } from "@/components/ui/button";
 
 /**
- * handle は story ごとに作る。Storybook の vitest 実行は 1 つの React root へ story を
- * 描き替えるため、module 変数に持たせると前の story の開閉状態が残りうる。story ごとに
- * 作れば残らない (2026-09-20 実測)。
+ * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る (ADR-0022)。
  * アプリの確認ダイアログは `DeleteConfirmDialog` (parts) を通すので、ここは registry の意匠の見本
  */
-function AlertDialogExample({ children }: { children: ReactNode }) {
+function AlertDialogExample({ media }: { media?: ReactNode }) {
   const [handle] = useState(() => createAlertDialogHandle<undefined>());
   return (
     <>
@@ -33,24 +31,23 @@ function AlertDialogExample({ children }: { children: ReactNode }) {
         削除する
       </AlertDialogTrigger>
       <AlertDialog handle={handle}>
-        <AlertDialogContent>{children}</AlertDialogContent>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            {media}
+            <AlertDialogTitle>メモの削除</AlertDialogTitle>
+            <AlertDialogDescription>
+              「買い物リスト」を削除します。元に戻せません
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction variant="destructive">削除</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
     </>
   );
 }
-
-const BODY = (
-  <>
-    <AlertDialogHeader>
-      <AlertDialogTitle>メモの削除</AlertDialogTitle>
-      <AlertDialogDescription>「買い物リスト」を削除します。元に戻せません</AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel>キャンセル</AlertDialogCancel>
-      <AlertDialogAction variant="destructive">削除</AlertDialogAction>
-    </AlertDialogFooter>
-  </>
-);
 
 /** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (ADR-0022) */
 async function open(): Promise<void> {
@@ -60,7 +57,7 @@ async function open(): Promise<void> {
 
 const meta = {
   component: AlertDialog,
-  render: () => <AlertDialogExample>{BODY}</AlertDialogExample>,
+  render: () => <AlertDialogExample />,
 } satisfies Meta<typeof AlertDialog>;
 
 export default meta;
@@ -93,21 +90,13 @@ export const Opened: Story = {
 /** アイコンを添えた形。`AlertDialogMedia` は `sm` 以上で見出しの左、`sm` 未満で上に置く */
 export const WithMedia: Story = {
   render: () => (
-    <AlertDialogExample>
-      <AlertDialogHeader>
+    <AlertDialogExample
+      media={
         <AlertDialogMedia>
           <TriangleAlertIcon aria-hidden />
         </AlertDialogMedia>
-        <AlertDialogTitle>メモの削除</AlertDialogTitle>
-        <AlertDialogDescription>
-          「買い物リスト」を削除します。元に戻せません
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>キャンセル</AlertDialogCancel>
-        <AlertDialogAction variant="destructive">削除</AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogExample>
+      }
+    />
   ),
   play: async () => {
     await open();

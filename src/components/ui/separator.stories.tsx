@@ -5,19 +5,16 @@ import { Separator } from "@/components/ui/separator";
 
 type SeparatorOrientation = NonNullable<ComponentProps<typeof Separator>["orientation"]>;
 
-/**
- * control の選択肢の出処。Storybook の `options` は `readonly any[]` で中身を検査しないので、
- * リテラルを並べるだけだと部品側が増えたときに静かに古くなる (`directory-structure.md`「コンポーネント配置」)
- */
-const ORIENTATION_MEMBERS = {
+/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
+const ORIENTATION_OPTIONS = Object.keys({
   horizontal: null,
   vertical: null,
-} satisfies Record<SeparatorOrientation, null>;
+} satisfies Record<SeparatorOrientation, null>);
 
 const meta = {
   component: Separator,
   argTypes: {
-    orientation: { control: "inline-radio", options: Object.keys(ORIENTATION_MEMBERS) },
+    orientation: { control: "inline-radio", options: ORIENTATION_OPTIONS },
   },
 } satisfies Meta<typeof Separator>;
 

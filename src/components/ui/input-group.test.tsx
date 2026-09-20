@@ -36,7 +36,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
             </button>
           }
         />
-        <ComboboxContent>
+        <ComboboxContent aria-label="果物の候補">
           <ComboboxInput aria-label="検索" placeholder="検索" showTrigger={false} />
           <ComboboxList>
             {(item: string) => (
@@ -94,7 +94,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
             </button>
           }
         />
-        <ComboboxContent>
+        <ComboboxContent aria-label="果物の候補">
           <ComboboxInput
             aria-invalid
             aria-label="エラー検索"

@@ -64,3 +64,21 @@ export const Fits: Story = {
     </ScrollArea>
   ),
 };
+
+/**
+ * 高さを `viewportClassName` で与える形。消費側 (`parts/code-block.tsx` /
+ * `parts/dialog-scroll-body.tsx`) はこちらを使う。`viewportClassName` は Viewport へ
+ * layout class を通すためにこのリポジトリが足した prop (ADR-0006 の乖離)
+ */
+export const SizedByViewportClassName: Story = {
+  decorators: [(Story) => <Story />],
+  render: () => (
+    <ScrollArea viewportClassName="max-h-40 w-64">
+      <div className="flex flex-col gap-1 p-2 text-sm">
+        {LINES.map((line) => (
+          <span key={line}>{line}</span>
+        ))}
+      </div>
+    </ScrollArea>
+  ),
+};

@@ -5,21 +5,21 @@ import { Badge, badgeVariants } from "@/components/ui/badge";
 
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
-/** control の選択肢の出処。`cva` に足した側がここで型エラーになる (ADR-0022) */
-const VARIANT_MEMBERS = {
+/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
+const VARIANT_OPTIONS = Object.keys({
   default: null,
   secondary: null,
   destructive: null,
   outline: null,
   ghost: null,
   link: null,
-} satisfies Record<BadgeVariant, null>;
+} satisfies Record<BadgeVariant, null>);
 
 const meta = {
   component: Badge,
   args: { children: "下書き" },
   argTypes: {
-    variant: { control: "select", options: Object.keys(VARIANT_MEMBERS) },
+    variant: { control: "select", options: VARIANT_OPTIONS },
   },
 } satisfies Meta<typeof Badge>;
 

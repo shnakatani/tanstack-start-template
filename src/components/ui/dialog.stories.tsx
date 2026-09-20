@@ -18,9 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /**
- * handle は story ごとに作る。Storybook の vitest 実行は 1 つの React root へ story を
- * 描き替えるため、module 変数に持たせると前の story の開閉状態が残りうる。story ごとに
- * 作れば残らない (2026-09-20 実測)
+ * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る (ADR-0022)
  */
 function DialogExample({ showCloseButton }: { showCloseButton?: boolean }) {
   const [handle] = useState(() => createDialogHandle<undefined>());

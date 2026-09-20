@@ -14,16 +14,16 @@ import {
 
 type CardSize = NonNullable<ComponentProps<typeof Card>["size"]>;
 
-/** control の選択肢の出処。`size` の union に足した側がここで型エラーになる (ADR-0022) */
-const SIZE_MEMBERS = {
+/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
+const SIZE_OPTIONS = Object.keys({
   default: null,
   sm: null,
-} satisfies Record<CardSize, null>;
+} satisfies Record<CardSize, null>);
 
 const meta = {
   component: Card,
   argTypes: {
-    size: { control: "inline-radio", options: Object.keys(SIZE_MEMBERS) },
+    size: { control: "inline-radio", options: SIZE_OPTIONS },
   },
   render: (args) => (
     <Card {...args}>

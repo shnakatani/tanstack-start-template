@@ -5,14 +5,16 @@ import { expect, screen } from "storybook/test";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-function TooltipExample({ text }: { text: string }) {
+const TEXT = "公開すると一覧に並びます";
+
+function TooltipExample() {
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger render={<Button variant="ghost" size="icon" aria-label="補足" />}>
           <InfoIcon />
         </TooltipTrigger>
-        <TooltipContent>{text}</TooltipContent>
+        <TooltipContent>{TEXT}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
@@ -20,7 +22,7 @@ function TooltipExample({ text }: { text: string }) {
 
 const meta = {
   component: Tooltip,
-  render: () => <TooltipExample text="公開すると一覧に並びます" />,
+  render: () => <TooltipExample />,
 } satisfies Meta<typeof Tooltip>;
 
 export default meta;
@@ -32,7 +34,7 @@ export const Closed: Story = {
   play: async () => {
     // base-ui の tooltip popup は role を持たないので `queryByRole("tooltip")` は
     // 開閉によらず null になる。Opened と同じテキストの経路で否定する
-    await expect(screen.queryByText("公開すると一覧に並びます")).not.toBeInTheDocument();
+    await expect(screen.queryByText(TEXT)).not.toBeInTheDocument();
   },
 };
 
@@ -45,6 +47,6 @@ export const Closed: Story = {
 export const Opened: Story = {
   play: async () => {
     screen.getByRole("button", { name: "補足" }).focus();
-    await expect(await screen.findByText("公開すると一覧に並びます")).toBeInTheDocument();
+    await expect(await screen.findByText(TEXT)).toBeInTheDocument();
   },
 };

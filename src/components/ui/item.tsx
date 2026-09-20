@@ -4,32 +4,48 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 import * as React from "react";
 
-import { Separator } from "@/components/ui/separator";
-
-function ItemGroup({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- 子は li ではなく任意の Item 要素で、ul/ol/menu に置換すると HTML の content model (li 必須) に違反する
-      role="list"
-      data-slot="item-group"
-      className={cn(
-        "group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2",
-        className,
-      )}
-      {...props}
-    />
-  );
+function ItemGroup({ className, render, ...props }: useRender.ComponentProps<"div">) {
+  return useRender({
+    defaultTagName: "div",
+    props: mergeProps<"div">(
+      {
+        // 既定の div は list の意味を role で持つ。この形では子も `role="listitem"` が要るが、
+        // `<li>` は ul/ol/menu の中でしか置けないため HTML としては破綻する。
+        // 意味を正しく出すなら `render={<ul />}` と `Item render={<li />}` の対で使う
+        // (`.claude/rules/base-ui.md`「ItemGroup」)
+        // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- 既定のタグを ul にすると、li 以外を子に取る既存の使い方が content model 違反になる
+        role: "list",
+        className: cn(
+          "group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2",
+          className,
+        ),
+      },
+      props,
+    ),
+    render,
+    state: { slot: "item-group" },
+  });
 }
 
-function ItemSeparator({ className, ...props }: React.ComponentProps<typeof Separator>) {
-  return (
-    <Separator
-      data-slot="item-separator"
-      orientation="horizontal"
-      className={cn("my-2", className)}
-      {...props}
-    />
-  );
+/**
+ * 項目の間の区切り。registry は base-ui の `Separator` を使うが、それだと `role="separator"` と
+ * `aria-orientation` が付き、`ItemGroup` (list) の子に置けない。`role="presentation"` へ倒しても
+ * `aria-orientation` が `aria-allowed-attr` で落ちる。対で export される部品どうしが組めないので、
+ * 装飾の線として描き直す (ADR-0006 の乖離)。`render` で `li` へ倒せば list の中でも使える
+ */
+function ItemSeparator({ className, render, ...props }: useRender.ComponentProps<"div">) {
+  return useRender({
+    defaultTagName: "div",
+    props: mergeProps<"div">(
+      {
+        "aria-hidden": true,
+        className: cn("my-2 h-px w-full shrink-0 bg-border", className),
+      },
+      props,
+    ),
+    render,
+    state: { slot: "item-separator" },
+  });
 }
 
 const itemVariants = cva(

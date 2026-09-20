@@ -8,16 +8,16 @@ import { Button } from "@/components/ui/button";
 // alertVariants は registry が export していないので、部品の props から導出する
 type AlertVariant = NonNullable<ComponentProps<typeof Alert>["variant"]>;
 
-/** control の選択肢の出処。`cva` に足した側がここで型エラーになる (ADR-0022) */
-const VARIANT_MEMBERS = {
+/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
+const VARIANT_OPTIONS = Object.keys({
   default: null,
   destructive: null,
-} satisfies Record<AlertVariant, null>;
+} satisfies Record<AlertVariant, null>);
 
 const meta = {
   component: Alert,
   argTypes: {
-    variant: { control: "inline-radio", options: Object.keys(VARIANT_MEMBERS) },
+    variant: { control: "inline-radio", options: VARIANT_OPTIONS },
   },
   render: (args) => (
     <Alert {...args}>

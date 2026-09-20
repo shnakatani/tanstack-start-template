@@ -16,17 +16,17 @@ import { Input } from "@/components/ui/input";
 
 type FieldOrientation = NonNullable<ComponentProps<typeof Field>["orientation"]>;
 
-/** control の選択肢の出処。`fieldVariants` に足した側がここで型エラーになる (ADR-0022) */
-const ORIENTATION_MEMBERS = {
+/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
+const ORIENTATION_OPTIONS = Object.keys({
   vertical: null,
   horizontal: null,
   responsive: null,
-} satisfies Record<FieldOrientation, null>;
+} satisfies Record<FieldOrientation, null>);
 
 const meta = {
   component: Field,
   argTypes: {
-    orientation: { control: "inline-radio", options: Object.keys(ORIENTATION_MEMBERS) },
+    orientation: { control: "inline-radio", options: ORIENTATION_OPTIONS },
   },
   render: (args) => (
     <Field {...args}>
@@ -57,14 +57,13 @@ export const Horizontal: Story = {
 /** コンテナ幅で縦横が切り替わる。`FieldGroup` の中でだけ横に転ぶ */
 export const Responsive: Story = {
   args: { orientation: "responsive" },
-  render: (args) => (
-    <FieldGroup>
-      <Field {...args}>
-        <FieldLabel htmlFor="field-responsive">タイトル</FieldLabel>
-        <Input id="field-responsive" placeholder="タイトルを入力" />
-      </Field>
-    </FieldGroup>
-  ),
+  decorators: [
+    (Story) => (
+      <FieldGroup>
+        <Story />
+      </FieldGroup>
+    ),
+  ],
 };
 
 /** 検証に落ちた状態。`data-invalid` が文字色を destructive へ倒し、`FieldError` が理由を出す */

@@ -19,9 +19,7 @@ const TYPE_LABELS = {
 } satisfies Record<ToastIconType, string>;
 
 /**
- * manager は story ごとに作る。Storybook の vitest 実行は 1 つの React root へ story を描き替える
- * ため、module 変数に持たせると前の story の toast が残りうる。story ごとに作れば残らない
- * (2026-09-20 実測)
+ * manager は story ごとに作る。module 変数に持たせると前の story の toast が残る (ADR-0022)
  */
 function ToastExample({ type }: { type: ToastIconType }) {
   const [manager] = useState(() => createToastManager());
@@ -47,6 +45,10 @@ const meta = {
   argTypes: {
     type: { control: "select", options: Object.keys(TYPE_LABELS) },
   },
+  // 各 story は args の type だけを持つ。`Empty` は自前の play で上書きする
+  play: async ({ args }) => {
+    await raise(TYPE_LABELS[args.type]);
+  },
 } satisfies Meta<{ type: ToastIconType }>;
 
 export default meta;
@@ -63,39 +65,24 @@ export const Empty: Story = {
 /** 成功。操作が通ったことを伝える */
 export const Success: Story = {
   args: { type: "success" },
-  play: async () => {
-    await raise(TYPE_LABELS.success);
-  },
 };
 
 /** エラー。`toastMutationError` が使う型 (src/lib/mutation-error.ts) */
 export const ErrorToast: Story = {
   args: { type: "error" },
-  play: async () => {
-    await raise(TYPE_LABELS.error);
-  },
 };
 
 /** 警告 */
 export const Warning: Story = {
   args: { type: "warning" },
-  play: async () => {
-    await raise(TYPE_LABELS.warning);
-  },
 };
 
 /** 情報 */
 export const Info: Story = {
   args: { type: "info" },
-  play: async () => {
-    await raise(TYPE_LABELS.info);
-  },
 };
 
 /** 進行中。アイコンが回り続ける */
 export const Loading: Story = {
   args: { type: "loading" },
-  play: async () => {
-    await raise(TYPE_LABELS.loading);
-  },
 };

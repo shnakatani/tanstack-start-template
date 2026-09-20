@@ -11,16 +11,16 @@ import {
 
 type ButtonGroupOrientation = NonNullable<VariantProps<typeof buttonGroupVariants>["orientation"]>;
 
-/** control の選択肢の出処。`cva` に足した側がここで型エラーになる (ADR-0022) */
-const ORIENTATION_MEMBERS = {
+/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
+const ORIENTATION_OPTIONS = Object.keys({
   horizontal: null,
   vertical: null,
-} satisfies Record<ButtonGroupOrientation, null>;
+} satisfies Record<ButtonGroupOrientation, null>);
 
 const meta = {
   component: ButtonGroup,
   argTypes: {
-    orientation: { control: "inline-radio", options: Object.keys(ORIENTATION_MEMBERS) },
+    orientation: { control: "inline-radio", options: ORIENTATION_OPTIONS },
   },
   render: (args) => (
     <ButtonGroup {...args}>

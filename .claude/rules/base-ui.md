@@ -40,21 +40,13 @@ const itemsMap = useMemo(() => Object.fromEntries(list.map((x) => [x.id, x.name]
 
 `items` は `Record<string, ReactNode>` または `ReadonlyArray<{ value, label }>` 形式。参照の安定化は消費側 (`useMemo` かモジュール定数) の責務。
 
-## Combobox: popup 内に入力欄を置くなら popup へ名前を与える
+## Combobox: popup と ItemGroup は型と render が守る
 
-`ComboboxContent` の中に `ComboboxInput` を置く構成では、base-ui が popup へ `role="dialog"` を付ける (`combobox/popup/ComboboxPopup.js` の `inputInsidePopup ? 'dialog' : 'presentation'`)。dialog は名前が要るので、`ComboboxContent` に `aria-label` を渡す。
+`ComboboxContent` はアクセシブル名を型で要求する。popup 内に `ComboboxInput` を置く構成では base-ui が popup へ `role="dialog"` を付けるため (`combobox/popup/ComboboxPopup.js`)、名前が無いと axe の `aria-dialog-name` で落ちる。書き忘れは `vp check` が止める (ADR-0006)。
 
-渡さないと axe の `aria-dialog-name` で落ちる。正しい名前は消費側しか知らないため registry 側では既定値を持てない。上流 (shadcn-ui/ui / mui/base-ui) に該当 issue は無い (2026-09-20 に `gh search issues` で確認)。
+`ItemGroup` は `render={<ul />}`、その子は `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の `role="list"` の div は子に `role="listitem"` を要求するが、`<li>` は ul/ol/menu の中でしか置けないので HTML が破綻する (ADR-0006)。
 
-## ItemGroup の子は `render={<li />}` で listitem にする
-
-`ItemGroup` は `role="list"` を持つが、`Item` は既定で `div` を描き listitem にならない。`Item` は `render` prop を受けるので (`useRender.ComponentProps<"div">`)、`render={<li />}` を渡す。
-
-渡さないと axe の `aria-required-children` で落ちる。`role="listitem"` でも満たせるが、`jsx-a11y/prefer-tag-over-role` の行抑制が要るので採らない。`ItemGroup` 自身は `render` を持たず `ul` にできない (`li` を必須とする content model に違反するため上流が意図して塞いでいる)。
-
-`ItemSeparator` は `ItemGroup` の中に置けない。`role="list"` の子に separator は許されず、`role="presentation"` へ倒しても base-ui が付ける `aria-orientation` が `aria-allowed-attr` で落ちる。区切りが要るなら `ItemGroup` を使わずに並べる。
-
-上流 registry も同じ形で、該当 issue は無い (2026-09-20 に `gh search issues` で確認)。
+`Progress` は `children` を渡さないならアクセシブル名を型で要求する。`ProgressLabel` を置けば base-ui が `aria-labelledby` を張る (ADR-0006)。
 
 ## Select: 候補が変わったときの自己リセットに依存しない
 

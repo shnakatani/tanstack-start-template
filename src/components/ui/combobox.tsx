@@ -21,6 +21,9 @@ function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Tr
   return (
     <ComboboxPrimitive.Trigger
       data-slot="combobox-trigger"
+      // アイコンだけのボタンで名前を持たない (上流 shadcn-ui/ui#11589)。消費側が render で
+      // 差し替えたときは、そちらの aria-label が {...props} で勝つ (ADR-0006 の乖離)
+      aria-label="候補を開く"
       className={cn("[&_svg:not([class*='size-'])]:size-4", className)}
       {...props}
     >
@@ -34,6 +37,8 @@ function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
   return (
     <ComboboxPrimitive.Clear
       data-slot="combobox-clear"
+      // 同上 (上流 shadcn-ui/ui#11589)
+      aria-label="選択を消す"
       render={<InputGroupButton variant="ghost" size="icon-xs" />}
       className={cn(className)}
       {...props}
@@ -87,7 +92,12 @@ function ComboboxContent({
   Pick<
     ComboboxPrimitive.Positioner.Props,
     "side" | "align" | "sideOffset" | "alignOffset" | "anchor"
-  >) {
+  > &
+  // popup 内に入力欄を置くと base-ui が popup へ role="dialog" を付ける
+  // (`combobox/popup/ComboboxPopup.js` の `inputInsidePopup ? "dialog" : "presentation"`)。
+  // dialog は名前が要るので、既定値ではなく型で必須にする。正しい名前は消費側しか知らない
+  // (ADR-0006 の乖離)
+  ({ "aria-label": string } | { "aria-labelledby": string })) {
   return (
     <ComboboxPrimitive.Portal>
       <ComboboxPrimitive.Positioner

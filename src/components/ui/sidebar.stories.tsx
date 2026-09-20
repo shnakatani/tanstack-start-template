@@ -67,15 +67,22 @@ function SidebarExample({
   );
 }
 
+interface StoryArgs {
+  defaultOpen?: boolean;
+  collapsible?: "offcanvas" | "icon" | "none";
+  variant?: "sidebar" | "floating" | "inset";
+  side?: "left" | "right";
+  children?: ReactNode;
+}
+
 const meta = {
-  component: SidebarProvider,
   args: { defaultOpen: true },
-  render: (args) => (
-    <SidebarProvider {...args}>
-      <SidebarExample />
+  render: ({ defaultOpen, ...rest }: StoryArgs) => (
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <SidebarExample {...rest} />
     </SidebarProvider>
   ),
-} satisfies Meta<typeof SidebarProvider>;
+} satisfies Meta<StoryArgs>;
 
 export default meta;
 
@@ -84,9 +91,7 @@ type Story = StoryObj<typeof meta>;
 /** 開いた状態。ラベルまで見える */
 export const Expanded: Story = {};
 
-/**
- * 畳んだ状態。`collapsible` の既定は `offcanvas` なので、帯ごと画面外へ出て何も残らない
- */
+/** 畳んだ状態。`collapsible` の既定は `offcanvas` なので、帯ごと画面外へ出て何も残らない */
 export const Collapsed: Story = { args: { defaultOpen: false } };
 
 /**
@@ -94,45 +99,47 @@ export const Collapsed: Story = { args: { defaultOpen: false } };
  * `tooltip` が出す。tooltip は畳んだときだけ描かれる
  */
 export const CollapsedToIcons: Story = {
-  args: { defaultOpen: false },
-  render: (args) => (
-    <SidebarProvider {...args}>
-      <SidebarExample collapsible="icon" />
-    </SidebarProvider>
-  ),
+  args: { defaultOpen: false, collapsible: "icon" },
 };
+
+/** 浮かせた意匠。本文との間に余白が入る */
+export const Floating: Story = { args: { variant: "floating" } };
+
+/** 本文を差し込む意匠。`SidebarInset` が角丸の面になる */
+export const Inset: Story = { args: { variant: "inset" } };
+
+/** 右側に置く */
+export const RightSide: Story = { args: { side: "right" } };
 
 /** 件数バッジを添えた形 */
 export const WithBadge: Story = {
-  render: (args) => (
-    <SidebarProvider {...args}>
-      <SidebarExample>
-        <SidebarMenuItem>
-          <SidebarMenuButton tooltip="メモ">
-            <FileTextIcon aria-hidden />
-            <span>メモ</span>
-          </SidebarMenuButton>
-          <SidebarMenuBadge>12</SidebarMenuBadge>
-        </SidebarMenuItem>
-      </SidebarExample>
-    </SidebarProvider>
-  ),
+  args: {
+    children: (
+      <SidebarMenuItem>
+        <SidebarMenuButton tooltip="メモ">
+          <FileTextIcon aria-hidden />
+          <span>メモ</span>
+        </SidebarMenuButton>
+        <SidebarMenuBadge>12</SidebarMenuBadge>
+      </SidebarMenuItem>
+    ),
+  },
 };
 
 /** 読み込み中。`SidebarMenuSkeleton` が行の形をなぞる */
 export const Loading: Story = {
-  render: (args) => (
-    <SidebarProvider {...args}>
-      <SidebarExample>
+  args: {
+    children: (
+      <>
         <SidebarMenuItem>
           <SidebarMenuSkeleton showIcon />
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuSkeleton showIcon />
         </SidebarMenuItem>
-      </SidebarExample>
-    </SidebarProvider>
-  ),
+      </>
+    ),
+  },
 };
 
 /**

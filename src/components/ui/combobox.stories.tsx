@@ -82,6 +82,57 @@ export const NoItems: Story = {
   render: () => <ComboboxExample items={[]} />,
   play: async () => {
     await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
-    await expect(await screen.findByText("該当なし")).toBeInTheDocument();
+    // base-ui は live region の末尾へ word joiner (U+2060) を 200ms 入れる
+    // (`combobox/utils/useInitialLiveRegionTextMutation.js`)。`findByText` の normalizer は
+    // 空白しか畳まないので、厳密一致だとそのタイマーが明けるまで poll し続ける
+    await expect(await screen.findByText(/該当なし/)).toBeInTheDocument();
+  },
+};
+
+/**
+ * 入力欄の中で完結する形。`ComboboxInput` の既定 trigger を出す。アイコンだけのボタンで、
+ * 名前は registry 側の既定 `aria-label` が持つ (上流 shadcn-ui/ui#11589、ADR-0006 の乖離)
+ */
+export const InlineWithTrigger: Story = {
+  render: () => (
+    <Combobox items={FRUITS}>
+      <ComboboxInput aria-label="果物" placeholder="果物を選択" />
+      <ComboboxContent aria-label="果物の候補">
+        <ComboboxList>
+          {(item: string) => (
+            <ComboboxItem key={item} value={item}>
+              {item}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  ),
+  play: async () => {
+    await expect(screen.getByRole("button", { name: "候補を開く" })).toBeInTheDocument();
+  },
+};
+
+/**
+ * 値を消せる形。`showClear` を出すと trigger は CSS で隠れる
+ * (`combobox.tsx` の `group-has-data-[slot=combobox-clear]/input-group:hidden`)
+ */
+export const InlineWithClear: Story = {
+  render: () => (
+    <Combobox items={FRUITS} defaultValue="りんご">
+      <ComboboxInput aria-label="果物" showClear />
+      <ComboboxContent aria-label="果物の候補">
+        <ComboboxList>
+          {(item: string) => (
+            <ComboboxItem key={item} value={item}>
+              {item}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  ),
+  play: async () => {
+    await expect(screen.getByRole("button", { name: "選択を消す" })).toBeInTheDocument();
   },
 };

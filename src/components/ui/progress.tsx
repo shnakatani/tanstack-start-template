@@ -1,7 +1,19 @@
 import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
 import { cn } from "cn";
+import * as React from "react";
 
-function Progress({ className, children, value, ...props }: ProgressPrimitive.Root.Props) {
+/**
+ * `children` に `ProgressLabel` を置くと base-ui が `aria-labelledby` を張る
+ * (`progress/root/ProgressRoot.js`)。置かない形は名前を持たないので、型で `aria-label` を
+ * 要求する。既定値は持てない (名前は消費側しか知らない) (ADR-0006 の乖離)
+ */
+function Progress({
+  className,
+  children,
+  value,
+  ...props
+}: ProgressPrimitive.Root.Props &
+  ({ children: React.ReactNode } | { "aria-label": string } | { "aria-labelledby": string })) {
   return (
     <ProgressPrimitive.Root
       value={value}
