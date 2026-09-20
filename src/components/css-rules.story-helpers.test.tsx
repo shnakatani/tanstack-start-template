@@ -10,9 +10,11 @@ function sheet(css: string): CSSStyleSheet {
 
 const root = document.documentElement;
 
-describe("collectRootCustomProperties", () => {
-  afterEach(() => vi.restoreAllMocks());
+// spy はファイル内の全 describe で張る。describe の中に置くと、その describe の
+// テストにしか効かず、兄弟の describe が張った spy が後続へ残る
+afterEach(() => vi.restoreAllMocks());
 
+describe("collectRootCustomProperties", () => {
   it(":root の宣言を prefix で絞って名前順に返す", () => {
     const css = ":root { --b: 2; --a: 1; --other: 3; }";
 
