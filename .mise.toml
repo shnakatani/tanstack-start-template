@@ -5,18 +5,19 @@
 disable_tools = ["node", "pnpm"]
 
 [env]
-DEV_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 3000') }}"
-STORYBOOK_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 6006') }}"
 DB_FILE_NAME = ".data/dev.sqlite"
 
+# port は worktree ごとに分ける。固定すると 2 つ目の worktree が bind に失敗する。
+# [env] ではなくタスクの中で呼ぶ: 読み手がこの 2 つのタスクしかいないのに、[env] へ置くと
+# mise が env を解決するたび (シェル hook 下ではディレクトリへ入るたび) に git の
+# サブプロセスが走る。タスク側なら起動するときだけ走り、シェル hook の有無にも依存しない
 [tasks.serve]
 description = "dev server を起動する"
-run = "vp dev --port $DEV_PORT"
+run = 'vp dev --port "$(bash scripts/dev-env/derive-dev-port.sh 3000)"'
 
 [tasks.storybook]
 description = "Storybook を起動する"
-# dev server と同じく worktree ごとに port を分ける。固定すると 2 つ目の worktree が bind に失敗する
-run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open"
+run = 'vp exec storybook dev --port "$(bash scripts/dev-env/derive-dev-port.sh 6006)" --no-open'
 
 [tasks."db:generate"]
 description = "Drizzle スキーマから migration を生成する"
@@ -35,3 +36,4 @@ run = [
   # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
   "vp node scripts/checks/runtime/security-headers.ts",
 ]
+

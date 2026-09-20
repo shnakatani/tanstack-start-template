@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-08-17
 - Revised: 2026-09-02 (runtime と package manager の版の出所を `package.json` へ一本化し、mise は tasks と環境変数だけを持つようにした。型検査を tsgolint に委ね `typescript` を依存から外した。アプリ名を環境変数からモジュール定数へ戻した)
+- Revised: 2026-09-20 (dev server と Storybook の port の導出を `[env]` からタスクの `run` へ移した)
 
 ## Context
 
@@ -29,13 +30,18 @@ CI は mise を要さない。`.mise.toml` の `[tasks.verify]` と同じ順序�
 
 ### 値の置き場所を 3 つに分ける
 
-| 種別                       | 置き場所                         | 例                                             |
-| -------------------------- | -------------------------------- | ---------------------------------------------- |
-| 環境で変わらない値         | モジュール定数                   | `src/lib/app-name.ts`                          |
-| 環境で変わるが秘密でない値 | `.mise.toml` の `[env]`          | `DEV_PORT` / `STORYBOOK_PORT` / `DB_FILE_NAME` |
-| 秘密                       | 暗号化して commit + 実行時に復号 | 現時点で該当なし                               |
+| 種別                       | 置き場所                         | 例                    |
+| -------------------------- | -------------------------------- | --------------------- |
+| 環境で変わらない値         | モジュール定数                   | `src/lib/app-name.ts` |
+| 環境で変わるが秘密でない値 | `.mise.toml` の `[env]`          | `DB_FILE_NAME`        |
+| 秘密                       | 暗号化して commit + 実行時に復号 | 現時点で該当なし      |
 
 アプリ名のように環境ごとに値が変わらないものは環境変数にしない。
+
+毎回の解決にコストがかかる値も `[env]` へ置かない。
+dev server と Storybook の port は worktree ごとに git から導出するため、`[env]` に置くと mise が env を解決するたび (シェル hook の下ではディレクトリへ入るたび) に git のサブプロセスが走る。
+読み手が `serve` と `storybook` のタスクしかいないので、タスクの `run` の中で導出する。
+2026-09-20 の実測で `mise hook-env` は 70ms から 28ms になった。タスク側なら、シェル hook を入れていない手元でも port が決まる。
 初版 (2026-08-17) は `VITE_APP_NAME` を `.mise.toml` の `[env]` に置いていたが、値の定義・型宣言・未設定の検出・CI への受け渡しが芋づるで要り、CI が mise に依存する原因になっていた。
 
 ### `envDir: false` で Vite の `.env` 読み込みを切る
@@ -110,7 +116,7 @@ runtime は Vite+ が同じ宣言から解決して持っているので 2 つ�
 版の解決を Vite+ へ移した後も、タスクランナーと `[env]` の担い手として mise を採る判断は変わらない。
 
 宣言だけでは効かないので、mise のシェル hook を導入手順に含める。
-hook を入れていない手元では `[env]` が読まれず、`DEV_PORT` / `STORYBOOK_PORT` / `DB_FILE_NAME` が未設定のまま走る。
+hook を入れていない手元では `[env]` が読まれず、`DB_FILE_NAME` が未設定のまま走る。
 
 ### Vite+ を選ぶ理由
 
