@@ -18,6 +18,22 @@ mise run verify   # vp check → vp test run → vp build → ビルド成果物
 - ブラウザテスト用の chromium は `vp install` では入らない（`playwright` が install スクリプトを持たない）。`vp exec playwright install chromium --only-shell` で取得する
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
 
+## Storybook の skill と tools
+
+UI と story を触る前に `vp exec storybook skills` を実行する。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい。
+
+| コマンド                         | 内容                                                                                                     |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `vp exec storybook skills`       | 3 つの skill の一覧。`stories` (UI 変更時の必須手順) / `write-story` (書き方と規約) / `setup` (初期設定) |
+| `vp exec storybook skills <id>`  | 個別の skill を表示                                                                                      |
+| `vp exec storybook tools --help` | ツール一覧と各ツールの引数                                                                               |
+
+`stories` skill が「部品の props・API・使い方は documentation tools で答える。ソースや型定義から答えない」と定めている。`vp exec storybook tools docs list` / `docs show` を使う。
+
+起動中の Storybook が要るのは `stories preview` と `review create` だけで、`docs list` / `docs show` / `stories changed` / `stories find-by-component` / `test run` は不要 (2026-09-20 実測)。
+
+MCP (`@storybook/addon-mcp`) は採らない。全ツールが起動中の Storybook を要求し、登録 URL が `http://localhost:6006/mcp` 固定である一方、この repo の Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスク)。
+
 ## 仕様書・設計判断
 
 - `docs/decisions/` - ADR（インフラ・ツールチェーン等の構造変更に着手する前に必ず参照）
