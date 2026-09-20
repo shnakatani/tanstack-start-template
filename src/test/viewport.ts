@@ -10,13 +10,12 @@ import { DEFAULT_VIEWPORT, type Viewport } from "./viewport-sizes";
  */
 
 export type { Viewport } from "./viewport-sizes";
-export { DEFAULT_VIEWPORT, TABLET_VIEWPORT } from "./viewport-sizes";
-
-/** 極端に低い viewport (ブラウザ UI 領域が大きい環境の下限想定) */
-export const SHORT_VIEWPORT: Viewport = { width: 1280, height: 420 };
-
-/** 対応する最小画面幅。ここでレイアウトが崩壊しないことを下限として固定する */
-export const NARROW_VIEWPORT: Viewport = { width: 375, height: 667 };
+export {
+  DEFAULT_VIEWPORT,
+  NARROW_VIEWPORT,
+  SHORT_VIEWPORT,
+  TABLET_VIEWPORT,
+} from "./viewport-sizes";
 
 /**
  * viewport を切り替える。定数と `page.viewport()` の引数展開を 1 箇所に閉じ、
