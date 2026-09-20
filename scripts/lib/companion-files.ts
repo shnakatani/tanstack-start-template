@@ -33,3 +33,11 @@ export function isCompanionFile(fileName: string): boolean {
     EXTENSIONS.some((extension) => fileName.endsWith(`.${kind}.${extension}`)),
   );
 }
+
+/**
+ * 付随ファイルに当たるファイル名の正規表現。TanStack Router の `routeFileIgnorePattern` の
+ * ように、glob ではなくパターン文字列を要求する消費者へ渡す。
+ */
+export function companionFilePattern(): string {
+  return `\\.(${COMPANION_KINDS.join("|")})\\.tsx?$`;
+}

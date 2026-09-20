@@ -5,7 +5,7 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
-import { companionGlobs } from "./scripts/lib/companion-files";
+import { companionFilePattern, companionGlobs } from "./scripts/lib/companion-files";
 
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
@@ -364,7 +364,7 @@ export default defineConfig({
     tanstackStart({
       // テストとテスト専用ヘルパーを route ファイル扱いから外す。外さないと generator が
       // 「Route を export していない」と毎ビルド警告する (directory-structure.md「テストとスクリプトの配置」)
-      router: { routeFileIgnorePattern: "\\.test(-helpers)?\\.tsx?$" },
+      router: { routeFileIgnorePattern: companionFilePattern() },
       importProtection: {
         client: {
           // better-sqlite3 は native binding (node-gyp) を持ち、client bundle に含めると

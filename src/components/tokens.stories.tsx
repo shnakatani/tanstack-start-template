@@ -18,47 +18,52 @@ function readAllTokens(): ThemeToken[] {
   return names.map((name) => ({ name, value: style.getPropertyValue(name).trim() }));
 }
 
+interface TokenLists {
+  colors: ThemeToken[];
+  radius: ThemeToken[];
+  fonts: ThemeToken[];
+}
+
+function byPrefix(tokens: ThemeToken[], prefix: string): ThemeToken[] {
+  return tokens.filter(({ name }) => name.startsWith(prefix));
+}
+
 /**
  * テーマごとに 1 回だけ読む。値は CSSOM と getComputedStyle から取るので React の依存に
  * 現れず、購読しないと切り替えても止まる (ADR-0022)。
  *
- * 種別ごとに store を分けない。`collectRootCustomProperties` の prefix は集めた名前の
- * 絞り込みにしか使われず、どの rule を辿るかを変えないので、分けるとテーマを切り替える
- * たびに同じ CSSOM 走査を種別の数だけ繰り返すことになる
+ * 種別ごとの絞り込みもここで済ませる。render 側で絞ると、CSSOM の走査こそ 1 回でも、
+ * `dropRedundantColorAliases` の warn が再 render のたびに出る。走査と警告はテーマが
+ * 変わったときだけ起こしたい。
+ *
+ * 色かどうかはブラウザ自身のパーサに聞く。`CSS.supports` は property と value の組で
+ * 解析できるかを返すので、`oklch()` も `color-mix()` も relative color syntax も通る
  */
-const tokenStore = createThemeSnapshotStore<ThemeToken[]>(readAllTokens, []);
+const tokenStore = createThemeSnapshotStore<TokenLists>(
+  () => {
+    const all = readAllTokens();
+    if (all.length === 0) {
+      console.warn("[tokens] root のカスタムプロパティが 1 件も取れない");
+    }
+    return {
+      colors: dropRedundantColorAliases(all.filter(({ value }) => CSS.supports("color", value))),
+      radius: byPrefix(all, "--radius"),
+      fonts: byPrefix(all, "--font"),
+    };
+  },
+  { colors: [], radius: [], fonts: [] },
+);
 
-/** 種別ごとの一覧。0 件で終わる回帰を silent にしないよう story 名を添える */
-function useTokenList(select: (tokens: ThemeToken[]) => ThemeToken[], story: string): ThemeToken[] {
-  const all = useSyncExternalStore(
+function useTokenLists(): TokenLists {
+  return useSyncExternalStore(
     tokenStore.subscribe,
     tokenStore.getSnapshot,
     tokenStore.getServerSnapshot,
   );
-  const tokens = select(all);
-  if (tokens.length === 0) {
-    console.warn("[tokens] トークンが 0 件", { story });
-  }
-  return tokens;
 }
-
-/**
- * 色かどうかはブラウザ自身のパーサに聞く。`CSS.supports` は property と value の組で
- * 解析できるかを返すので、`oklch()` も `color-mix()` も relative color syntax も通る
- */
-function selectColors(tokens: ThemeToken[]): ThemeToken[] {
-  return dropRedundantColorAliases(tokens.filter(({ value }) => CSS.supports("color", value)));
-}
-
-function selectByPrefix(prefix: string) {
-  return (tokens: ThemeToken[]) => tokens.filter(({ name }) => name.startsWith(prefix));
-}
-
-const selectRadius = selectByPrefix("--radius");
-const selectFonts = selectByPrefix("--font");
 
 function ColorSwatches() {
-  const tokens = useTokenList(selectColors, "Tokens/Colors");
+  const { colors: tokens } = useTokenLists();
 
   return (
     <ul className="grid grid-cols-2 gap-2 text-sm">
@@ -78,7 +83,7 @@ function ColorSwatches() {
 }
 
 function RadiusTokens() {
-  const tokens = useTokenList(selectRadius, "Tokens/Radius");
+  const { radius: tokens } = useTokenLists();
   return (
     <div className="flex flex-wrap gap-4">
       {tokens.map(({ name, value }) => (
@@ -109,7 +114,7 @@ const TYPOGRAPHY_SAMPLES = [
 ] as const;
 
 function TypographyTokens() {
-  const tokens = useTokenList(selectFonts, "Tokens/Typography");
+  const { fonts: tokens } = useTokenLists();
   return (
     <div className="flex flex-col gap-4">
       {tokens.map(({ name, value }) => (
