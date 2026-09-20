@@ -75,7 +75,8 @@ export const ReclickKeepsSelection: Story = {
 
     // ToggleGroup と違い radio は解除経路を持たないため、変更通知そのものが起きない
     await expect(args.onValueChange).not.toHaveBeenCalled();
-    await expect(selected).toHaveAttribute("aria-checked", "true");
+    await expect(selected).toBeChecked();
+    // 選択中の見た目は data-checked が駆動する。aria と別に付くので別に見る
     await expect(selected).toHaveAttribute("data-checked");
   },
 };

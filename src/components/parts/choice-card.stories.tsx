@@ -74,11 +74,11 @@ export const TogglesOnRowClick: Story = {
   tags: ["!dev"],
   play: async () => {
     const checkbox = screen.getByRole("checkbox", { name: "チームB" });
-    await expect(checkbox).not.toHaveAttribute("data-checked");
+    await expect(checkbox).not.toBeChecked();
 
     await userEvent.click(screen.getByText("チームB"));
 
-    await expect(checkbox).toHaveAttribute("data-checked");
+    await expect(checkbox).toBeChecked();
   },
 };
 
@@ -100,9 +100,7 @@ export const GeneratedId: Story = {
     // 2 行目のラベルを押しても 1 行目は連動しない
     await userEvent.click(screen.getByText("チームB"));
 
-    await expect(screen.getByRole("checkbox", { name: "チームB" })).toHaveAttribute("data-checked");
-    await expect(screen.getByRole("checkbox", { name: /チームA/ })).not.toHaveAttribute(
-      "data-checked",
-    );
+    await expect(screen.getByRole("checkbox", { name: "チームB" })).toBeChecked();
+    await expect(screen.getByRole("checkbox", { name: /チームA/ })).not.toBeChecked();
   },
 };

@@ -52,13 +52,18 @@ export const Settles: Story = {
     await expect(args.action).toHaveBeenCalledTimes(1);
     await expect(button).toHaveAttribute("aria-busy", "true");
     await expect(button).toHaveAttribute("aria-disabled", "true");
-    // Spinner は視覚専用で accessibility API に出さない (ADR-0017)
+    // 名前は pending でも変わらない
+    await expect(button).toHaveAccessibleName("保存");
+    // Spinner は視覚専用で accessibility API に出さない (ADR-0017)。ここだけ要素を直に
+    // 掴むのは、aria-labelledby が名前を固定しているため aria-hidden を外しても
+    // accessibility tree に差が出ないからである (2026-09-20 に mutant で実測)
     await expect(button.querySelector('[data-slot="spinner"]')).toHaveAttribute(
       "aria-hidden",
       "true",
     );
-    // native disabled にはしない (フォーカスを保つ)
-    await expect(button).not.toHaveAttribute("disabled");
+    // native disabled にはしない (フォーカスを保つ)。toBeEnabled は aria-disabled を見ないので、
+    // aria-disabled が立っていても native disabled でなければ通る
+    await expect(button).toBeEnabled();
     await expect(button).toHaveFocus();
 
     settle();

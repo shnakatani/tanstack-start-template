@@ -305,19 +305,6 @@ async function replaceValue(element: HTMLInputElement, keys: string): Promise<vo
   await userEvent.keyboard(keys);
 }
 
-/** aria-describedby が指す要素の文言を返す。指す先が無ければ落とす */
-function describedByText(element: Element): string {
-  const id = element.getAttribute("aria-describedby");
-  if (id === null) {
-    throw new Error("[story] aria-describedby が付いていない");
-  }
-  const error = document.getElementById(id);
-  if (error === null) {
-    throw new Error(`[story] aria-describedby の指す要素が無い: ${id}`);
-  }
-  return error.textContent;
-}
-
 function blurTo(element: HTMLElement): void {
   element.focus();
   screen.getByRole("button", { name: "別の操作" }).focus();
@@ -362,17 +349,17 @@ export const Invalid: Story = {
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
     const name = textbox("名前");
-    await waitFor(() => expect(name).toHaveAttribute("aria-invalid", "true"));
+    await waitFor(() => expect(name).toBeInvalid());
     await expect(name.closest("[data-slot=field]")).toHaveAttribute("data-invalid", "true");
-    await expect(describedByText(name)).toContain("名前を入力してください");
+    await expect(name).toHaveAccessibleDescription(/名前を入力してください/);
 
     const sortOrder = textbox("並び順");
-    await expect(sortOrder).toHaveAttribute("aria-invalid", "true");
-    await expect(describedByText(sortOrder)).toContain("並び順は2以上で入力してください");
+    await expect(sortOrder).toBeInvalid();
+    await expect(sortOrder).toHaveAccessibleDescription(/並び順は2以上で入力してください/);
 
     const status = screen.getByRole("combobox", { name: "状態" });
-    await expect(status).toHaveAttribute("aria-invalid", "true");
-    await expect(describedByText(status)).toContain("状態を選択してください");
+    await expect(status).toBeInvalid();
+    await expect(status).toHaveAccessibleDescription(/状態を選択してください/);
   },
 };
 
@@ -381,11 +368,11 @@ export const Disabled: Story = {
   args: { disabled: true },
   play: async () => {
     const name = textbox("名前");
-    await expect(name).toHaveAttribute("disabled");
+    await expect(name).toBeDisabled();
     await expect(name.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
 
     const status = screen.getByRole("combobox", { name: "状態" });
-    await expect(status).toHaveAttribute("disabled");
+    await expect(status).toBeDisabled();
     await expect(status.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
   },
 };
@@ -397,15 +384,15 @@ export const ValidatesOnBlur: Story = {
   play: async () => {
     const name = textbox("名前");
     blurTo(name);
-    await waitFor(() => expect(name).toHaveAttribute("aria-invalid", "true"));
+    await waitFor(() => expect(name).toBeInvalid());
 
     const sortOrder = textbox("並び順");
     blurTo(sortOrder);
-    await waitFor(() => expect(sortOrder).toHaveAttribute("aria-invalid", "true"));
+    await waitFor(() => expect(sortOrder).toBeInvalid());
 
     const status = screen.getByRole("combobox", { name: "状態" });
     blurTo(status);
-    await waitFor(() => expect(status).toHaveAttribute("aria-invalid", "true"));
+    await waitFor(() => expect(status).toBeInvalid());
   },
 };
 
@@ -469,9 +456,7 @@ export const TogglesCheckbox: Story = {
   play: async () => {
     await userEvent.click(screen.getByText("編集者として割り当て可能"));
 
-    await expect(
-      screen.getByRole("checkbox", { name: "編集者として割り当て可能" }),
-    ).toHaveAttribute("aria-checked", "true");
+    await expect(screen.getByRole("checkbox", { name: "編集者として割り当て可能" })).toBeChecked();
   },
 };
 
@@ -517,8 +502,8 @@ export const StringErrorRendered: Story = {
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
     const name = textbox("名前");
-    await waitFor(() => expect(name).toHaveAttribute("aria-invalid", "true"));
-    await expect(describedByText(name)).toContain("名前を入力してください");
+    await waitFor(() => expect(name).toBeInvalid());
+    await expect(name).toHaveAccessibleDescription(/名前を入力してください/);
   },
 };
 
@@ -531,8 +516,8 @@ export const UnrenderableErrorFallback: Story = {
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
     const name = textbox("名前");
-    await waitFor(() => expect(name).toHaveAttribute("aria-invalid", "true"));
-    await expect(describedByText(name)).toContain(UNRENDERABLE_FIELD_ERROR_MESSAGE);
+    await waitFor(() => expect(name).toBeInvalid());
+    await expect(name).toHaveAccessibleDescription(new RegExp(UNRENDERABLE_FIELD_ERROR_MESSAGE));
     await expect(consoleWarn).toHaveBeenCalledWith(
       "[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました",
       { error: RAW_ERROR },
