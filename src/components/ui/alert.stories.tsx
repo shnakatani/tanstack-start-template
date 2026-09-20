@@ -10,10 +10,10 @@ import { variantOptions } from "./variant-options.story-helpers";
 // alertVariants は registry が export していないので、部品の props から導出する
 type AlertVariant = NonNullable<ComponentProps<typeof Alert>["variant"]>;
 
-const VARIANT_OPTIONS = variantOptions<AlertVariant>({
+const VARIANT_OPTIONS = variantOptions({
   default: null,
   destructive: null,
-});
+} satisfies Record<AlertVariant, null>);
 
 const meta = {
   component: Alert,

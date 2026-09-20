@@ -13,10 +13,10 @@ import { variantOptions } from "./variant-options.story-helpers";
 
 type ButtonGroupOrientation = NonNullable<VariantProps<typeof buttonGroupVariants>["orientation"]>;
 
-const ORIENTATION_OPTIONS = variantOptions<ButtonGroupOrientation>({
+const ORIENTATION_OPTIONS = variantOptions({
   horizontal: null,
   vertical: null,
-});
+} satisfies Record<ButtonGroupOrientation, null>);
 
 const meta = {
   component: ButtonGroup,

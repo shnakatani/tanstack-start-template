@@ -7,10 +7,10 @@ import { variantOptions } from "./variant-options.story-helpers";
 
 type SeparatorOrientation = NonNullable<ComponentProps<typeof Separator>["orientation"]>;
 
-const ORIENTATION_OPTIONS = variantOptions<SeparatorOrientation>({
+const ORIENTATION_OPTIONS = variantOptions({
   horizontal: null,
   vertical: null,
-});
+} satisfies Record<SeparatorOrientation, null>);
 
 const meta = {
   component: Separator,

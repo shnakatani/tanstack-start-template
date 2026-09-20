@@ -20,17 +20,17 @@ type ItemVariant = NonNullable<ComponentProps<typeof Item>["variant"]>;
 type ItemSize = NonNullable<ComponentProps<typeof Item>["size"]>;
 type ItemMediaVariant = NonNullable<ComponentProps<typeof ItemMedia>["variant"]>;
 
-const VARIANT_OPTIONS = variantOptions<ItemVariant>({
+const VARIANT_OPTIONS = variantOptions({
   default: null,
   outline: null,
   muted: null,
-});
+} satisfies Record<ItemVariant, null>);
 
-const SIZE_OPTIONS = variantOptions<ItemSize>({
+const SIZE_OPTIONS = variantOptions({
   default: null,
   sm: null,
   xs: null,
-});
+} satisfies Record<ItemSize, null>);
 
 /**
  * `ItemMedia` の variant は `Item` の `argTypes` に出せないので control では切り替えられない。
@@ -50,6 +50,8 @@ const MEDIA_VARIANT_LABELS = {
  */
 function mediaVariants(): ItemMediaVariant[] {
   const labels: Record<ItemMediaVariant, string> = MEDIA_VARIANT_LABELS;
+  // filter は実行時には全件を通す。`Object.keys` が string[] を返すのを型アサーション無しで
+  // 絞る手が型述語しかないため置いている (`typing.md` がアサーションを禁じている)
   return Object.keys(labels).filter((key): key is ItemMediaVariant => key in labels);
 }
 

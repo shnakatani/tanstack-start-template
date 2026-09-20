@@ -14,13 +14,13 @@ type ToggleSize = NonNullable<VariantProps<typeof toggleVariants>["size"]>;
  *
  * `ToggleGroup` も同じ `cva` を共有するため、写しを増やさずここから引く。
  */
-export const TOGGLE_VARIANTS = variantOptions<ToggleVariant>({
+export const TOGGLE_VARIANTS = variantOptions({
   default: null,
   outline: null,
-});
+} satisfies Record<ToggleVariant, null>);
 
-export const TOGGLE_SIZES = variantOptions<ToggleSize>({
+export const TOGGLE_SIZES = variantOptions({
   default: null,
   sm: null,
   lg: null,
-});
+} satisfies Record<ToggleSize, null>);

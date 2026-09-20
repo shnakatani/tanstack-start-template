@@ -18,11 +18,11 @@ import { variantOptions } from "./variant-options.story-helpers";
 
 type FieldOrientation = NonNullable<ComponentProps<typeof Field>["orientation"]>;
 
-const ORIENTATION_OPTIONS = variantOptions<FieldOrientation>({
+const ORIENTATION_OPTIONS = variantOptions({
   vertical: null,
   horizontal: null,
   responsive: null,
-});
+} satisfies Record<FieldOrientation, null>);
 
 const meta = {
   component: Field,

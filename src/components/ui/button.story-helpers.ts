@@ -14,7 +14,7 @@ type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
  *
  * `Button` を包む部品の story も同じ選択肢を出すため、写しを増やさずここから引く。
  */
-export const BUTTON_VARIANTS = variantOptions<ButtonVariant>({
+export const BUTTON_VARIANTS = variantOptions({
   default: null,
   outline: null,
   secondary: null,
@@ -23,9 +23,9 @@ export const BUTTON_VARIANTS = variantOptions<ButtonVariant>({
   destructive: null,
   "destructive-ghost": null,
   link: null,
-});
+} satisfies Record<ButtonVariant, null>);
 
-export const BUTTON_SIZES = variantOptions<ButtonSize>({
+export const BUTTON_SIZES = variantOptions({
   default: null,
   xs: null,
   sm: null,
@@ -34,4 +34,4 @@ export const BUTTON_SIZES = variantOptions<ButtonSize>({
   "icon-xs": null,
   "icon-sm": null,
   "icon-lg": null,
-});
+} satisfies Record<ButtonSize, null>);

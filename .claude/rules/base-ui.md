@@ -42,7 +42,7 @@ const itemsMap = useMemo(() => Object.fromEntries(list.map((x) => [x.id, x.name]
 
 ## Combobox: popup と ItemGroup は型と render が守る
 
-`ComboboxContent` はアクセシブル名を型で要求する。popup 内に `ComboboxInput` を置く構成では base-ui が popup へ `role="dialog"` を付けるため (`combobox/popup/ComboboxPopup.js`)、名前が無いと axe の `aria-dialog-name` で落ちる。書き忘れは `vp check` が止める (ADR-0006)。
+`ComboboxContent` のアクセシブル名は型では止まらない。base-ui は popup の role を `inputInsidePopup ? "dialog" : "presentation"` で決め (`combobox/popup/ComboboxPopup.js`)、popup 内に `ComboboxInput` を置く構成だけが `role="dialog"` で名前を要る。popup の外に置く構成は `presentation` で、`aria-label` は WAI-ARIA 1.2 §5.2.8.6 の MUST NOT になる。判定は実行時の state なので型で分岐できない。名前の過不足は story の axe が見る (`aria-dialog-name` / `aria-prohibited-attr`)。どちらも popup を開く play が無いと働かない (ADR-0006)。
 
 `ItemGroup` は `render={<ul />}`、その子は `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の `role="list"` の div は子に `role="listitem"` を要求するが、`<li>` は ul/ol/menu の中でしか置けないので HTML が破綻する (ADR-0006)。
 

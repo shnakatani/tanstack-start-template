@@ -18,12 +18,12 @@ import { variantOptions } from "./variant-options.story-helpers";
 
 type SheetSide = NonNullable<ComponentProps<typeof SheetContent>["side"]>;
 
-const SIDE_OPTIONS = variantOptions<SheetSide>({
+const SIDE_OPTIONS = variantOptions({
   top: null,
   right: null,
   bottom: null,
   left: null,
-});
+} satisfies Record<SheetSide, null>);
 
 function SheetExample({ side }: { side?: SheetSide }) {
   return (

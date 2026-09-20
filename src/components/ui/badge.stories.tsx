@@ -7,14 +7,14 @@ import { variantOptions } from "./variant-options.story-helpers";
 
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
-const VARIANT_OPTIONS = variantOptions<BadgeVariant>({
+const VARIANT_OPTIONS = variantOptions({
   default: null,
   secondary: null,
   destructive: null,
   outline: null,
   ghost: null,
   link: null,
-});
+} satisfies Record<BadgeVariant, null>);
 
 const meta = {
   component: Badge,

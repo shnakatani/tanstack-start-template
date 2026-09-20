@@ -114,7 +114,11 @@ export const InlineWithTrigger: Story = {
         // 非 modal の popup を開くと base-ui が外側へ aria-hidden を付けるが、tab 順からは
         // 外さないため axe が aria-hidden-focus を出す。上流のバグで mui/base-ui#5528 が
         // open。直るまでこの story でだけ止める。popup を開くのをやめる手は採らない。
-        // 開かないと下の aria-prohibited-attr の見張りごと消える
+        // 開かないと下の aria-prohibited-attr の見張りごと消える。
+        //
+        // InlineWithClear に同じ抑制が要らないのは、あちらの addon に残る操作子が
+        // combobox-clear だけで tabindex="-1" を持ち、tab 順に入らないためである
+        // (trigger は clear があると CSS で消える)。2026-09-21 に実測した
         rules: [{ id: "aria-hidden-focus", enabled: false }],
       },
     },

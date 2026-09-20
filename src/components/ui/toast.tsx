@@ -145,6 +145,9 @@ function ToastClose({
  * `satisfies Record<ToastIconType, ...>` で網羅を強制できるようにする (ADR-0006 の乖離)。
  *
  * 対応表に無い type は icon なしで通す。狭めると base-ui が許す独自の type を塞ぐ。
+ * ここは silent failure ではない。独自の type で icon が出ないのは仕様どおりの結果で、
+ * 綴り違いと区別する手も無い (base-ui の type は string で、突き合わせる定義が無い)。
+ * warn を出すと、このテンプレートから作った側が独自の type を使うたびに鳴る。
  */
 const TOAST_ICONS = {
   success: <CircleCheckIcon aria-hidden="true" />,
@@ -161,14 +164,7 @@ function hasToastIcon(type: string): type is ToastIconType {
 }
 
 function ToastIcon({ type }: { type: string | undefined }) {
-  if (type === undefined) {
-    return null;
-  }
-
-  if (!hasToastIcon(type)) {
-    // 通す方針は上の doc のとおり。ただし黙って落とすと、綴り違いも上流の rename も
-    // 「icon の無い toast」として同じに見え、どちらも起きたことに気付けない
-    console.warn("[toast] 対応表に無い type なので icon を出さない", { type });
+  if (type === undefined || !hasToastIcon(type)) {
     return null;
   }
 

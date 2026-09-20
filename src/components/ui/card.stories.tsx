@@ -16,10 +16,10 @@ import { variantOptions } from "./variant-options.story-helpers";
 
 type CardSize = NonNullable<ComponentProps<typeof Card>["size"]>;
 
-const SIZE_OPTIONS = variantOptions<CardSize>({
+const SIZE_OPTIONS = variantOptions({
   default: null,
   sm: null,
-});
+} satisfies Record<CardSize, null>);
 
 const meta = {
   component: Card,
