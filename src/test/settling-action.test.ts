@@ -72,6 +72,11 @@ describe("createSettlingAction", () => {
     expect(leaked.settled()).toBe(true);
     expect(warn).toHaveBeenCalledOnce();
 
+    // 持ち越しが無いときは鳴らない。鳴ると毎回の描画でノイズになる
+    warn.mockClear();
+    settling.beforeEach();
+    expect(warn).not.toHaveBeenCalled();
+
     const current = track(settling.impl());
     teardown();
     await Promise.resolve();

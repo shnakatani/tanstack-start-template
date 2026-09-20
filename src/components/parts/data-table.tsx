@@ -74,12 +74,17 @@ export function DataTable<TData extends RowData>({
       <TableBody>
         {rows.length > 0 ? (
           rows.map((row) => {
-            const attributes = rowProps?.(row);
+            // 受け取った値から aria-busy だけを取り出して渡す。spread にすると、返り値の型に
+            // 無い className がリテラルでない経路 (const props = {...}; () => props) で載って
+            // しまい、JSX の後勝ちで静かに落ちる
+            const busy = rowProps?.(row)["aria-busy"];
             return (
               <TableRow
                 key={row.id}
-                {...attributes}
-                className={attributes?.["aria-busy"] ? BUSY_ROW_CLASS : undefined}
+                aria-busy={busy}
+                // aria-busy の型は Booleanish (boolean | "true" | "false") で、文字列 "false" は
+                // JS では truthy になる。真偽で見ると busy でない行が半透明になる
+                className={busy === true || busy === "true" ? BUSY_ROW_CLASS : undefined}
               >
                 {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id} className={cell.column.columnDef.meta?.cellClassName}>

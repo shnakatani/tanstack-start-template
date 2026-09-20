@@ -69,6 +69,23 @@ describe("DataTable", () => {
     expect(Number(getComputedStyle(idle).opacity)).toBe(1);
   });
 
+  // aria-busy の型は Booleanish (boolean | "true" | "false") で、文字列 "false" は
+  // JS では truthy になる。真偽で判定すると busy でない行が半透明になる
+  it("aria-busy が文字列 false の行は半透明にしない", async () => {
+    const screen = await render(
+      <DataTable
+        tableKey="fruits"
+        columns={columns}
+        data={FRUITS}
+        rowProps={() => ({ "aria-busy": "false" })}
+      />,
+    );
+
+    const row = screen.getByRole("row", { name: /みかん/ }).element();
+
+    expect(Number(getComputedStyle(row).opacity)).toBe(1);
+  });
+
   it("rowProps で行ごとの属性を足せる", async () => {
     const screen = await render(
       <DataTable
