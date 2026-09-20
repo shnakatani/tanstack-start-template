@@ -18,6 +18,14 @@ mise run verify   # vp check → vp test run → vp build → ビルド成果物
 - ブラウザテスト用の chromium は `vp install` では入らない（`playwright` が install スクリプトを持たない）。`vp exec playwright install chromium --only-shell` で取得する
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
 
+## Storybook の skill と tools
+
+UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい。
+
+- 部品の props・API・使い方は `vp exec storybook tools docs list` / `docs show` で答える。ソースや型定義から答えない
+- `vp exec storybook tools stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない
+- MCP (`@storybook/addon-mcp`) は入れない。理由と起動の要否は ADR-0023
+
 ## 仕様書・設計判断
 
 - `docs/decisions/` - ADR（インフラ・ツールチェーン等の構造変更に着手する前に必ず参照）

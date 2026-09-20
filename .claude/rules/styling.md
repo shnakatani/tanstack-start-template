@@ -2,6 +2,7 @@
 paths:
   - "src/**/*.tsx"
   - "src/**/*.css"
+  - ".storybook/**"
 ---
 
 # スタイリング規約
@@ -37,6 +38,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - 1 層目の `@theme` は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
 - `black` と `white` だけは 1 層目で再登録してある。registry の overlay が scrim を `bg-black/10` で描いており、消すとモーダルの背景が素通しになる
 - 2 層目はテストファイルにも効く。字面走査の頃と違って `.test.*` / `.gen.*` の除外は無い
+- `styles.css` に `static` を付けない。Storybook のカタログのために `.storybook/preview.css` が同じファイルを `theme(static)` 付きで読み直す。本番の CSS は未参照の宣言を持たない (ADR-0022)
 
 ## typography 階層
 

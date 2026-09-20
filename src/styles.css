@@ -1,4 +1,6 @@
-@import "tailwindcss";
+/* scan の対象をアプリのソースへ絞る。既定はリポジトリ全体で、Markdown の字面まで本番 CSS へ
+   出る。除外を並べる形を採らない理由と効果の測り方は ADR-0022 */
+@import "tailwindcss" source("../src");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
@@ -99,6 +101,9 @@
   --sidebar-ring: oklch(0.623 0.214 259.815);
 }
 
+/* static はここに付けない。付けると本番の CSS が使っていない変数の分まで持つ。
+   カタログに要る分は .storybook/preview.css がこのファイルを theme(static) 付きで
+   読み直して掛ける (ADR-0022) */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

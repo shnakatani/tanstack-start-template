@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vite-plus/test";
 
+import { isCompanionFile } from "../../lib/companion-files";
 import { REPO_ROOT } from "../../lib/repo-root";
 
 /**
@@ -26,8 +27,13 @@ const EXTERNAL_REGISTRY_FILES: Record<string, string> = {
 /** ui 直下に置かれる、コンポーネントでないディレクトリ */
 const UI_NON_COMPONENT_DIRS = new Set(["__screenshots__"]);
 
+/**
+ * registry 由来でない付随ファイル (`scripts/lib/companion-files.ts`) は baseline を持たない。
+ * `shadcn add` の出力に含まれないので、baseline と突き合わせる対象から外す
+ */
 function isComponentFile(name: string): boolean {
-  return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) && !name.endsWith(".d.ts");
+  if (!/\.tsx?$/.test(name) || name.endsWith(".d.ts")) return false;
+  return !isCompanionFile(name);
 }
 
 function uiComponentFiles(): string[] {

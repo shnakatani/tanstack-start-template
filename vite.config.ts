@@ -5,6 +5,8 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
+import { companionFilePattern, companionGlobs } from "./scripts/lib/companion-files";
+
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
 /**
@@ -296,7 +298,7 @@ export default defineConfig({
         // から見えず、routes からの上書きが素通りする。require-static-classes は他の shadcn
         // ルールの門番で、ここで落ちる className は no-raw-colors / no-unknown-classes も中身を
         // 読めない (ADR-0021)
-        files: ["src/**"],
+        files: ["src/**", ".storybook/**"],
         excludeFiles: DESIGN_SYSTEM_LAYERS.map((layer) => `src/components/${layer}/**`),
         rules: {
           "shadcn/no-restyle": ["error", { allow: ["layout"] }],
@@ -304,17 +306,15 @@ export default defineConfig({
         },
       },
       {
-        // テスト専用のコード (*.test-helpers.ts と src/test/) をアプリのコードから import させない
-        // (ADR-0004「基準から外れる名指し」)。緩和ではなく範囲を絞った有効化なので、テスト側は
-        // off にせず excludeFiles で対象から外す (files の否定 glob は oxlint 1.79 では効かない)
+        // テストと story だけが使うコード (*.test-helpers.ts / *.story-helpers.ts /
+        // *.stories.tsx / src/test/) をアプリのコードから import させない
+        // (ADR-0004「基準から外れる名指し」)。story 自身も止める。story を import すると
+        // それが引く helper と fixture が bundle に入る。緩和ではなく
+        // 範囲を絞った有効化なので、テスト側は off にせず excludeFiles で対象から外す
+        // (files の否定 glob は oxlint 1.79 では効かない)。story 自身も出荷される bundle に
+        // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)
         files: ["src/**", "scripts/**"],
-        excludeFiles: [
-          "**/*.test.ts",
-          "**/*.test.tsx",
-          "**/*.test-helpers.ts",
-          "**/*.test-helpers.tsx",
-          "src/test/**",
-        ],
+        excludeFiles: [...companionGlobs("**/"), "src/test/**"],
         rules: {
           "no-restricted-imports": [
             "error",
@@ -322,9 +322,9 @@ export default defineConfig({
               patterns: [
                 {
                   // alias (@/test/) と相対 (./test/ ../test/) の両方の specifier を止める
-                  regex: "\\.test-helpers$|(^@|\\.)/test/",
+                  regex: "\\.(test|story)-helpers$|\\.stories$|(^@|\\.)/test/",
                   message:
-                    "テスト専用のコード。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
+                    "テストと story だけが使うコード。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
                 },
               ],
             },
@@ -364,7 +364,7 @@ export default defineConfig({
     tanstackStart({
       // テストとテスト専用ヘルパーを route ファイル扱いから外す。外さないと generator が
       // 「Route を export していない」と毎ビルド警告する (directory-structure.md「テストとスクリプトの配置」)
-      router: { routeFileIgnorePattern: "\\.test(-helpers)?\\.tsx?$" },
+      router: { routeFileIgnorePattern: companionFilePattern() },
       importProtection: {
         client: {
           // better-sqlite3 は native binding (node-gyp) を持ち、client bundle に含めると

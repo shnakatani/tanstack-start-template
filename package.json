@@ -37,6 +37,10 @@
   },
   "devDependencies": {
     "@shadcn/lint": "^0.1.0",
+    "@storybook/addon-a11y": "10.6.0",
+    "@storybook/addon-themes": "10.6.0",
+    "@storybook/addon-vitest": "10.6.0",
+    "@storybook/tanstack-react": "10.6.0",
     "@tanstack/devtools-a11y": "^0.2.2",
     "@tanstack/devtools-vite": "^0.8.5",
     "@tanstack/router-plugin": "^1.168.35",
@@ -54,6 +58,7 @@
     "oxc-transform-react": "^0.147.0",
     "playwright": "^1.63.0",
     "shadcn": "^4.21.0",
+    "storybook": "10.6.0",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:",

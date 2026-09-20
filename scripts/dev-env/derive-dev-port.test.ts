@@ -63,6 +63,21 @@ describe("derive-dev-port.sh", () => {
     expect(port).toBeLessThanOrEqual(MAX_PORT);
   });
 
+  // base ごとに範囲が分かれないと、同じ worktree で dev server と Storybook が衝突する
+  it("linked worktree の port は base 相対で、base が違えば別の値になる", () => {
+    const repo = initTempRepo("ddp-repo-base-");
+    const worktree = addWorktree(repo, "feat-base");
+
+    const forDev = Number(runScript(worktree, [BASE]).stdout);
+    const forStorybook = Number(runScript(worktree, ["6006"]).stdout);
+
+    expect(forDev).toBeGreaterThanOrEqual(MIN_PORT);
+    expect(forDev).toBeLessThanOrEqual(MAX_PORT);
+    expect(forStorybook).toBeGreaterThanOrEqual(6007);
+    expect(forStorybook).toBeLessThanOrEqual(7005);
+    expect(forStorybook).not.toBe(forDev);
+  });
+
   it("同名 worktree は同じ port を返す (決定的)", () => {
     const repoA = initTempRepo("ddp-repo-a-");
     const worktreeA = addWorktree(repoA, "feat-same");

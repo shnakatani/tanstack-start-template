@@ -53,12 +53,14 @@ vp install                                        # 依存パッケージ
 vp exec playwright install chromium --only-shell  # browser mode 用の chromium
 mise run db:migrate                               # drizzle/ の migration を DB へ適用する
 mise run serve                                    # dev server
+mise run storybook                                # 部品とデザイントークンのカタログ
 ```
 
 - Node.js と pnpm は `vp` が `package.json` から解決して用意する。`mise install` が要るのは tasks と `[env]` のため
 - 素の `pnpm` を叩くなら `corepack enable` を一度実行する。Vite+ の shim は `node` / `npm` / `npx` / `corepack` までで `pnpm` を含まない
 - chromium は `vp install` では入らない (`playwright` が install スクリプトを持たない)。未取得のまま `vp test run` すると browser project が落ちる
-- dev server の port は worktree ごとに変わる。main checkout は 3000、linked worktree は 3001-3999 (`.mise.toml` の `DEV_PORT`)
+- port は worktree ごとに変わる。main checkout は base のまま、linked worktree は base+1 から base+999 (`.mise.toml` の `serve` が base 3000、`storybook` が base 6006)
+- Storybook は部品の状態とデザイントークンを並べる。story は部品と同じディレクトリに置き、a11y を axe で自動検査する (ADR-0022)
 
 ### 3. 名前を置換する
 

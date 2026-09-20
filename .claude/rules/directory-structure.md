@@ -22,6 +22,8 @@ paths:
 - `routes/<path>/-` で始まるディレクトリ (`-components/` `-lib/` `-hooks/`) の中の import は相対パスで書く
 - 一覧テーブルは `DataTable` (`src/components/parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` (横断なら `src/features/<domain>/`) に書き、cell の描画は `-components/` の部品を参照で渡す (ADR-0019)
 - 部品と画面の取り違えは機械で止まらない。判断軸は役割: registry や自作部品を包んで外見そのものを定義するなら `parts/`、既存の部品を並べて画面を組むだけなら `screens/`。消費者が 1 つでも、外見の定義を担うなら `parts/` (ADR-0020)
+- story は部品と同じディレクトリに `<部品>.stories.tsx` で置く。`src/components/ui/` も同じで、baseline の対象外になる (ADR-0006 / ADR-0022)
+- story を置けるのは `src/components/` 配下だけ。`.storybook/main.ts` の `stories` がそこしか見ないので、`features/` や `routes/**/-components/` へ置いても無言で対象から外れる (ADR-0022)
 - className を書きたくなったこと自体は `parts/` への移動理由にならない。静的か動的かを問わない。層の規則から外れるために移すのは逆 (ADR-0020 / ADR-0021)
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
@@ -53,10 +55,13 @@ paths:
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                                                               |
 | 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下では対象と同じ `-components/` か `-lib/` に置き、route ファイル自身の helper は route ファイルの隣に置く |
+| story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` へ置かない。プロダクトコードと読まれ、誰かが import すれば出荷される (ADR-0022)                          |
 
-- `*.test-helpers.ts` は `vp test` の include に一致せず、coverage からも除外する (`vitest.config.ts`)
+- 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` が唯一の定義で、lint の適用外・coverage の除外・registry baseline の突き合わせはそこから導出する。種別を足すときはそこだけを直す
+- `*.test-helpers.ts` / `*.story-helpers.ts` は `vp test` の include (`vitest.config.ts`) に一致せず、テストとして収集されない
 - route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-` で始まるディレクトリの中は元から除外される
-- `*.test-helpers.ts` と `src/test/` をアプリのコードから import しない。型しか引かない helper は build を壊さず、fixture が bundle に入る。lint の `no-restricted-imports` が止め、テストと helper と `src/test/` は対象外 (ADR-0004)
+- `*.test-helpers.ts` / `*.story-helpers.ts` / `src/test/` をアプリのコードから import しない。型しか引かない helper は build を壊さず、fixture が bundle に入る。lint の `no-restricted-imports` が止め、テストと story と helper は対象外 (ADR-0004)
+- helper のテストの置き方は対象の実行環境で決める。DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project)
 
 ## shadcn コンポーネント導入時のチェック
 

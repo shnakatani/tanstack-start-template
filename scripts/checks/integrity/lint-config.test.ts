@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 
 import viteConfig from "../../../vite.config";
+import { companionGlobs } from "../../lib/companion-files";
 import { REPO_ROOT } from "../../lib/repo-root";
 
 /**
@@ -36,8 +37,8 @@ const EXPECTED_PLUGINS = [
  */
 const EXPECTED_OVERRIDES = [
   {
-    // 緩和の範囲とルール。範囲を広げると本体コードでも no-unsafe-* が無効になり、ルールを増やすと
-    // テストコードの型検査がその分だけ緩む (ADR-0004「テストファイルの緩和」)
+    // 緩和の適用先とルール。適用先を広げると本体コードでも no-unsafe-* が無効になり、ルールを
+    // 増やすとテストコードの型検査がその分だけ緩む (ADR-0004「テストファイルの緩和」)
     files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
     excludeFiles: undefined,
     rules: {
@@ -50,30 +51,28 @@ const EXPECTED_OVERRIDES = [
   },
   {
     // 層の境界に載せる規則と、その適用外にする層 (ADR-0020 / ADR-0021)。design system の著作側
-    // (ui/ action/ parts/) だけを外し、消費側には規則を効かせる。excludeFiles を広げると、広げた
-    // 先の層で className の上書きと動的な className が無診断で通る
-    files: ["src/**"],
+    // (ui/ action/ parts/) だけを外し、消費側には規則を効かせる。広げると、広げた先の層で
+    // className の上書きと動的な className が無診断で通る。.storybook/ も消費側として扱う
+    // (decorator が design system component を包む置き場になる)
+    files: ["src/**", ".storybook/**"],
     excludeFiles: ["src/components/ui/**", "src/components/action/**", "src/components/parts/**"],
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
-    // テスト専用のコードの import 禁止を当てる範囲。緩和ではなく範囲を絞った有効化なので、
-    // テスト側は off ではなく excludeFiles で外す (ADR-0004「基準から外れる名指し」)。
-    // excludeFiles を狭めるとテストや helper が自分の helper を import できなくなる
+    // テスト専用のコードの import 禁止。緩和ではなく適用先を絞った有効化なので、テスト側は
+    // off ではなく excludeFiles で外す (ADR-0004「基準から外れる名指し」)。付随ファイルぶんは
+    // 下で差し引くので、ここに残るのは src/test/** だけになる
     files: ["src/**", "scripts/**"],
-    excludeFiles: [
-      "**/*.test.ts",
-      "**/*.test.tsx",
-      "**/*.test-helpers.ts",
-      "**/*.test-helpers.tsx",
-      "src/test/**",
-    ],
+    excludeFiles: ["src/test/**"],
     rules: { "no-restricted-imports": "deny" },
   },
 ];
 
+/** 期待値から差し引く付随ファイルの glob。唯一の定義は scripts/lib/companion-files.ts */
+const COMPANION_GLOBS = new Set(companionGlobs("**/"));
+
 /** lint が見に行くべきソースの所在 */
-const SOURCE_ROOTS = ["src", "scripts"];
+const SOURCE_ROOTS = ["src", "scripts", ".storybook"];
 
 /** 追跡されているのに lint されなくてよい唯一のソース。生成物 (ADR 対象外) */
 const ALLOWED_INVISIBLE = ["src/routeTree.gen.ts"];
@@ -162,14 +161,20 @@ describe("書いた設定が解決後も残っている", () => {
     expect(printedConfig.options).toEqual({ typeAware: true, typeCheck: true });
   });
 
-  it("override の範囲とルールを全件固定している", () => {
+  it("override の適用先とルールを全件固定している", () => {
     // 落ちたら: printedConfig.overrides を見て、増減した override を EXPECTED_OVERRIDES へ
     // 反映するか、意図しない変更なら vite.config.ts を直す。severity まで見るのは、ルールを
-    // 残したまま "off" へ差し替える壊し方をキー集合だけでは拾えないため (2026-09-19 に実測)
+    // 残したまま "off" へ差し替える壊し方をキー集合だけでは拾えないため (2026-09-19 に実測)。
+    //
+    // excludeFiles からは companionGlobs の分を差し引いてから比べる。付随ファイルの種別は
+    // scripts/lib/companion-files.ts が唯一の定義で、そこに単体テストがある。ここへ写すと
+    // 種別を足すたびに同じ変更を 2 度書くだけの手順が増える。差し引いた残り (手書きの層と
+    // src/test/**) は写す。差し引きはどの override にも効くので、付随ファイルの除外が別の
+    // override へ付く壊し方は下の検査が受け持つ
     expect(
       printedConfig.overrides.map(({ files, excludeFiles, rules }) => ({
         files,
-        excludeFiles,
+        excludeFiles: excludeFiles?.filter((glob) => !COMPANION_GLOBS.has(glob)),
         rules: Object.fromEntries(
           Object.entries(rules).map(([rule, value]) => [
             rule,
@@ -177,9 +182,28 @@ describe("書いた設定が解決後も残っている", () => {
           ]),
         ),
       })),
-      "override の範囲かルールか severity が変わった。範囲を広げるとその層で規則が無診断になり、" +
+      "override の適用先かルールか severity が変わった。適用先を広げるとその層で規則が無診断になり、" +
         "ルールを消すか off にすると規則が無言で外れる (ADR-0004 / ADR-0020 / ADR-0021)",
     ).toEqual(EXPECTED_OVERRIDES);
+  });
+
+  it("付随ファイルの除外は import 禁止の override が全種類ぶん持つ", () => {
+    // 上の検査は excludeFiles から付随ファイルの分を無条件に差し引く。差し引きは「付いている
+    // か」を見ないので、別の override へ付ける壊し方も、1 本消す壊し方も差分が出ない。
+    // どちらもここで受け持つ
+    const holders = printedConfig.overrides.filter(({ excludeFiles }) =>
+      excludeFiles?.some((glob) => COMPANION_GLOBS.has(glob)),
+    );
+    expect(
+      holders.map(({ files }) => files),
+      "付随ファイルの除外が想定外の override に付いた。その override の規則が" +
+        "テストと story で無診断になる (ADR-0004 / ADR-0020 / ADR-0021)",
+    ).toEqual([["src/**", "scripts/**"]]);
+    expect(
+      holders[0]?.excludeFiles?.filter((glob) => COMPANION_GLOBS.has(glob)),
+      "付随ファイルの除外が欠けた。その種別のファイルが自分の helper を import できなくなる " +
+        "(ADR-0004「基準から外れる名指し」)",
+    ).toEqual(companionGlobs("**/"));
   });
 });
 

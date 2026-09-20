@@ -3,6 +3,8 @@ import viteReact from "@vitejs/plugin-react";
 import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
+import { DEFAULT_VIEWPORT } from "./src/test/viewport-sizes";
+
 export default defineProject({
   // vite.config.ts と同じく .env を読まない。vitest.config.ts は vite.config.ts を
   // 継承せず上書きする (Vitest 公式「all options in your vite.config will be ignored」)。
@@ -58,10 +60,8 @@ export default defineProject({
       enabled: true,
       provider: playwright(),
       headless: true,
-      // 既定 viewport の SSOT (src/test/viewport.ts の DEFAULT_VIEWPORT と対にする)。
-      // Playwright の browser context 既定と同値だが、暗黙依存にすると
-      // DEFAULT_VIEWPORT との対応が読めなくなるため明示する
-      viewport: { width: 1280, height: 720 },
+      // 既定 viewport は src/test/viewport.ts が持つ。写すとどちらかが古くなるので import する
+      viewport: DEFAULT_VIEWPORT,
       instances: [{ browser: "chromium" }],
     },
   },
