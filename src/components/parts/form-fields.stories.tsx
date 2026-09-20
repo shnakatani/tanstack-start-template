@@ -115,7 +115,13 @@ function FieldsForm({
           )}
         </form.AppField>
         <form.AppField name="sortOrder" validators={{ onDynamic: sortOrderSchema }}>
-          {(field) => <field.FormNumberField label="並び順" fieldValue={field.state.value} />}
+          {(field) => (
+            <field.FormNumberField
+              label="並び順"
+              fieldValue={field.state.value}
+              disabled={disabled}
+            />
+          )}
         </form.AppField>
         <form.AppField
           name="type"
@@ -140,6 +146,7 @@ function FieldsForm({
             <field.FormCheckboxField
               label="編集者として割り当て可能"
               fieldValue={field.state.value}
+              disabled={disabled}
             />
           )}
         </form.AppField>
@@ -363,13 +370,7 @@ export const Invalid: Story = {
   },
 };
 
-/**
- * 無効表示。正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が両方付く。
- *
- * 無効になるのは `FormTextField` と `FormSelectField` だけである。`FormNumberField` と
- * `FormCheckboxField` は `disabled` を prop に持たないため、この story でも有効のまま並ぶ。
- * 半分だけ無効なのは描き漏れではない。
- */
+/** 無効表示。4 部品とも正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が付く */
 export const Disabled: Story = {
   args: { disabled: true },
   play: async () => {
@@ -377,9 +378,19 @@ export const Disabled: Story = {
     await expect(name).toBeDisabled();
     await expect(name.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
 
+    const sortOrder = textbox("並び順");
+    await expect(sortOrder).toBeDisabled();
+    await expect(sortOrder.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
+
     const status = screen.getByRole("combobox", { name: "状態" });
     await expect(status).toBeDisabled();
     await expect(status.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
+
+    // Checkbox は span で描かれ native disabled を持てないので aria で見る
+    // (testing.md「aria-disabled に相当する matcher は無い」)
+    const canEdit = screen.getByRole("checkbox", { name: "編集者として割り当て可能" });
+    await expect(canEdit).toHaveAttribute("aria-disabled", "true");
+    await expect(canEdit.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
   },
 };
 
