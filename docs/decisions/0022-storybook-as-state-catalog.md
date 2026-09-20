@@ -47,6 +47,8 @@ play で書いた検証は既存のブラウザテストから削る。同じ振
 
 variant の網羅を story の数で表現しない。代表値を story にし、残りは `argTypes` の control で切り替える。
 
+`argTypes` の `options` は `readonly any[]` で、`satisfies Meta<typeof X>` を書いても中身を検査しない。`cva` の variant をリテラルで写すと、足したときに story だけ古くなり lint も型検査も鳴らない (2026-09-20 実測)。`satisfies Record<Variant, null>` のオブジェクトを出処にして `Object.keys` で渡すと、足した側が型エラーになる。
+
 story を variant の直積で増やすと、カタログが読み通せない長さになる。
 
 ### 3. 検証専用の story は `tags: ["!dev"]` でサイドバーから外す
@@ -140,6 +142,10 @@ Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査
 ### 8. story はコンポーネントと並べ、registry の baseline から除く
 
 `*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。
+
+story は `no-restyle` / `require-static-classes` の適用外である。`vite.config.ts` の override が `src/components/{ui,action,parts}/**` を `excludeFiles` で外しており、story もそこに置くためである。部品へ `className` を直接渡しても lint は鳴らない (2026-09-20 実測)。外見を足したいときは decorator で外側の要素に当てる (ADR-0020 / ADR-0021)。
+
+CSF の meta は 1 ファイルに 1 つで、`component` もそこに紐づく。1 つのファイルが複数の部品を export するとき、まとめて書くと別の部品の meta 配下に並ぶ。単独で描画できる部品は story ファイルを分ける。
 
 story は出荷される bundle に入らないため、`no-restricted-imports` の対象からも外す。
 
