@@ -12,8 +12,8 @@ DB_FILE_NAME = ".data/dev.sqlite"
 # 置くと mise が env を解決するたび (シェル hook 下ではディレクトリへ入るたび) に git の
 # サブプロセスが走る。run の引数へ $(...) を直接書く形も採らない。script が実行できなかった
 # ときに空文字が渡り、Vite の既定 port で起動して worktree の分離が無言で外れる。タスクの
-# env なら、そのタスクを叩いたときだけ走り、script が失敗すればタスクごと止まる
-# (2026-09-20 実測)
+# env なら、そのタスクを叩いたときだけ走り、シェル hook の有無にも依存しない。script が
+# 失敗すればタスクごと止まる (2026-09-20 実測)
 [tasks.serve]
 description = "dev server を起動する"
 env = { DEV_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 3000') }}" }

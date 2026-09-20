@@ -4,7 +4,8 @@ import { page } from "vite-plus/test/browser";
 import { DEFAULT_VIEWPORT, type Viewport } from "./viewport-sizes";
 
 /**
- * ブラウザテストのレイアウト検証で使う viewport 定数・操作・アサーション。
+ * ブラウザテストのレイアウト検証で使う viewport の操作とアサーション。寸法は
+ * `viewport-sizes.ts` が持ち、テストが 1 つの import で済むようここから再 export する。
  * 変更したテストは afterEach で必ず `restoreDefaultViewport` を通す
  * (戻さないと後続ファイルのブレークポイント依存テストが巻き添えになる)。
  */
