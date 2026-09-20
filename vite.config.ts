@@ -5,7 +5,7 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
-import { companionFilePattern, companionGlobs } from "./scripts/lib/companion-files";
+import { companionFilePattern, companionGlobs, storyGlobs } from "./scripts/lib/companion-files";
 
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
@@ -47,7 +47,12 @@ export default defineConfig({
     ],
     // oxlint はネイティブに Tailwind と shadcn/ui 領域のルールを持たない。JS plugin として載せる
     // (ADR-0004)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
-    jsPlugins: [{ name: "shadcn", specifier: "@shadcn/lint" }],
+    jsPlugins: [
+      { name: "shadcn", specifier: "@shadcn/lint" },
+      // story は `storybook/test` 経由で testing-library の API をそのまま使う。oxlint は
+      // testing-library をネイティブに持たないため ESLint plugin として載せる (ADR-0004)
+      { name: "testing-library", specifier: "eslint-plugin-testing-library" },
+    ],
     settings: {
       shadcn: {
         componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
@@ -277,9 +282,59 @@ export default defineConfig({
       // bg-[#333] や bg-[rgb(...)] の経路を塞げる
       "shadcn/no-arbitrary-values": ["error", { deny: ["color"] }],
     },
-    // 緩和はテストの 1 経路に限る (ADR-0004)
     overrides: [
       {
+        // testing-library のルールは story にだけ当てる。`*.test.tsx` は
+        // `vitest-browser-react` の locator API (`screen.container`、`getByText().query()`) を
+        // 使い、testing-library の同名 API と意味が違うため、当てると誤検出が出る。
+        // story 側は `storybook/test` が testing-library をそのまま re-export しており、
+        // Aggressive Reporting が追加設定なしで解決する。
+        // upstream recommended (flat/react) は `vitest-browser-react` も Storybook も前提に
+        // しておらず、基準をそのまま写せない唯一のプラグインになる。基準から外すのが
+        // `prefer-screen-queries` と `no-node-access`、severity を上げるのが `no-debugging-utils`
+        // である。件数は下の rules と ADR-0004 の表が持つ
+        // 拡張子は companion-files.ts が唯一の定義。`.stories.ts` を置いても外れない
+        files: storyGlobs("**/"),
+        rules: {
+          // eslint-plugin-testing-library の flat/react (ADR-0004 の基準表)
+          "testing-library/await-async-events": ["error", { eventModule: "userEvent" }],
+          "testing-library/await-async-queries": "error",
+          "testing-library/await-async-utils": "error",
+          "testing-library/no-await-sync-events": ["error", { eventModules: ["fire-event"] }],
+          "testing-library/no-await-sync-queries": "error",
+          "testing-library/no-container": "error",
+          // 上流は warn。`vp check` は warn で落ちないため、warn のままだと commit された
+          // screen.debug() が素通りする。この config の方針 (categories の直前のコメント) に
+          // 合わせて error で入れる (ADR-0004)
+          "testing-library/no-debugging-utils": "error",
+          "testing-library/no-dom-import": ["error", "react"],
+          "testing-library/no-global-regexp-flag-in-query": "error",
+          "testing-library/no-manual-cleanup": "error",
+          // 基準から外す。flat/react の中でこれだけが strict 判定 (`isTestingLibraryImported(true)`)
+          // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
+          // 発火しない。`settings` に utils-module を足せば発火するが、その形は
+          // `.claude/rules/testing.md`「状態のアサートは semantic matcher を先に探す」が
+          // querySelector を条件付きで許して
+          // いるのと両立しない (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる)
+          "testing-library/no-node-access": "off",
+          "testing-library/no-promise-in-fire-event": "error",
+          "testing-library/no-render-in-lifecycle": "error",
+          "testing-library/no-unnecessary-act": "error",
+          "testing-library/no-wait-for-multiple-assertions": "error",
+          "testing-library/no-wait-for-side-effects": "error",
+          "testing-library/no-wait-for-snapshot": "error",
+          "testing-library/prefer-find-by": "error",
+          "testing-library/prefer-presence-queries": "error",
+          "testing-library/prefer-query-by-disappearance": "error",
+          "testing-library/render-result-naming-convention": "error",
+          // 基準から外す 1 ルール。play の `canvas` を render 結果の分割代入と誤読する。
+          // `canvas` は Storybook が play へ渡す query 済みオブジェクトで、上流の write-story
+          // skill が「✅ Correct: Use canvas directly」と指定している形
+          "testing-library/prefer-screen-queries": "off",
+        },
+      },
+      {
+        // 緩和はテストの 1 経路に限る (ADR-0004)。
         // モックは意図的に型を外した値を扱い、assertion は要素の存在を前提に書く。
         // typescript-eslint 本体が自身のテストディレクトリで off にしている 5 ルールと同一
         files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],

@@ -5,6 +5,7 @@ import {
   companionFilePattern,
   companionGlobs,
   isCompanionFile,
+  storyGlobs,
 } from "./companion-files";
 
 describe("COMPANION_KINDS", () => {
@@ -30,6 +31,29 @@ describe("companionGlobs", () => {
   it("prefix を差し替えられる (coverage は src 配下だけを見る)", () => {
     expect(companionGlobs("src/**/")).toContain("src/**/*.story-helpers.ts");
     expect(companionGlobs("src/**/")).toHaveLength(COMPANION_KINDS.length * 2);
+  });
+});
+
+// 期待値は手書きにする。companionGlobs から導くと入力どうしの比較になり、種別を増減しても
+// 常に通る (COMPANION_KINDS の doc)。STORY_KINDS が COMPANION_KINDS の部分集合であることは
+// satisfies が型で見るので、ここでは実際に返る glob だけを固定する
+describe("storyGlobs", () => {
+  it("story 本体と story 専用 helper の ts / tsx に当たる", () => {
+    expect(storyGlobs("**/")).toEqual([
+      "**/*.stories.ts",
+      "**/*.stories.tsx",
+      "**/*.story-helpers.ts",
+      "**/*.story-helpers.tsx",
+    ]);
+  });
+
+  it("prefix をそのまま前に置く", () => {
+    expect(storyGlobs("src/**/")).toEqual([
+      "src/**/*.stories.ts",
+      "src/**/*.stories.tsx",
+      "src/**/*.story-helpers.ts",
+      "src/**/*.story-helpers.tsx",
+    ]);
   });
 });
 

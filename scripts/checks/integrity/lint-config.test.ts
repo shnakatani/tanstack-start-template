@@ -37,6 +37,50 @@ const EXPECTED_PLUGINS = [
  */
 const EXPECTED_OVERRIDES = [
   {
+    // testing-library の適用先とルール。story 本体と story 専用の helper の両方に当てる。
+    // helper へ play を切り出すとルールが外れる穴を塞ぐためである。範囲を広げても既存の
+    // helper で誤検出が出ないことは 2026-09-21 に確かめた (`vp lint` に testing-library の
+    // 診断が出ない)。当時の helper が引いていたのは `storybook/test` だけで、`*.test.tsx` の
+    // ような locator API は使っていなかった。`vitest-browser-react` を import する helper が
+    // 出たら同名衝突の誤検出が起きうるので、そのとき測り直す。
+    // 適用先を `*.test.tsx` へ広げると、vitest-browser-react の locator API を
+    // testing-library の同名 API と誤認して誤検出が出る。`prefer-screen-queries` を allow から
+    // 戻すと Storybook の `canvas` が落ちる。`no-node-access` は allow のままにする。
+    // deny へ戻しても strict 判定で発火せず、有効に見えて無検査の状態になる
+    // (ADR-0004「基準にする上流設定」)
+    files: [
+      "**/*.stories.ts",
+      "**/*.stories.tsx",
+      "**/*.story-helpers.ts",
+      "**/*.story-helpers.tsx",
+    ],
+    excludeFiles: undefined,
+    rules: {
+      "testing-library/await-async-events": "deny",
+      "testing-library/await-async-queries": "deny",
+      "testing-library/await-async-utils": "deny",
+      "testing-library/no-await-sync-events": "deny",
+      "testing-library/no-await-sync-queries": "deny",
+      "testing-library/no-container": "deny",
+      "testing-library/no-debugging-utils": "deny",
+      "testing-library/no-dom-import": "deny",
+      "testing-library/no-global-regexp-flag-in-query": "deny",
+      "testing-library/no-manual-cleanup": "deny",
+      "testing-library/no-node-access": "allow",
+      "testing-library/no-promise-in-fire-event": "deny",
+      "testing-library/no-render-in-lifecycle": "deny",
+      "testing-library/no-unnecessary-act": "deny",
+      "testing-library/no-wait-for-multiple-assertions": "deny",
+      "testing-library/no-wait-for-side-effects": "deny",
+      "testing-library/no-wait-for-snapshot": "deny",
+      "testing-library/prefer-find-by": "deny",
+      "testing-library/prefer-presence-queries": "deny",
+      "testing-library/prefer-query-by-disappearance": "deny",
+      "testing-library/prefer-screen-queries": "allow",
+      "testing-library/render-result-naming-convention": "deny",
+    },
+  },
+  {
     // 緩和の適用先とルール。適用先を広げると本体コードでも no-unsafe-* が無効になり、ルールを
     // 増やすとテストコードの型検査がその分だけ緩む (ADR-0004「テストファイルの緩和」)
     files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
