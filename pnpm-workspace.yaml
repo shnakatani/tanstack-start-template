@@ -65,11 +65,13 @@ catalog:
 # (shadcn-ui/lint#1)。移れば ESLint も typescript も依存から消える。
 # このキーはグラフ全体の @typescript-eslint/parser に効く。ESLint を実際に使う依存を足すときは、
 # その peer までここで外れていないかを確かめる。
-# ただし @typescript-eslint/utils を実依存に持つ plugin (eslint-plugin-testing-library) には
-# この手が効かない。utils の実依存 @eslint-community/eslint-utils が eslint を必須 peer に持ち、
-# peerDependenciesMeta を宣言しないため、こちらで optional 化しても install グラフから外れない。
-# 外したら外したで utils のルート import が ts-eslint 経由で eslint を実行時に読むため plugin が
-# 落ちる。追跡先は typescript-eslint#11939 と oxc-project/oxc#17734 (ADR-0004)
+# ただし eslint-plugin-testing-library が引く eslint には、この手を使わない。plugin 自身と
+# @typescript-eslint/utils と @eslint-community/eslint-utils の 3 段が eslint を必須 peer に
+# 持つ (2026-09-21 に node_modules の package.json で実測)。peerDependenciesMeta はどれも
+# 未宣言だが、それは上の parser も同じで optional 化が効く条件のほうなので、外れない理由には
+# ならない。使わないのは、外せたとしても utils のルート import が ts-eslint 経由で eslint を
+# 実行時に読み、plugin が落ちるためである (ADR-0004 に実測あり)。
+# 追跡先は typescript-eslint#11939 と oxc-project/oxc#17734 (ADR-0004)
 packageExtensions:
   "@typescript-eslint/parser@^8":
     peerDependenciesMeta:

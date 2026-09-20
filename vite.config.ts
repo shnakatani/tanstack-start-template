@@ -282,7 +282,6 @@ export default defineConfig({
       // bg-[#333] や bg-[rgb(...)] の経路を塞げる
       "shadcn/no-arbitrary-values": ["error", { deny: ["color"] }],
     },
-    // 緩和はテストの 1 経路に限る (ADR-0004)
     overrides: [
       {
         // testing-library のルールは story にだけ当てる。`*.test.tsx` は
@@ -290,8 +289,10 @@ export default defineConfig({
         // 使い、testing-library の同名 API と意味が違うため、当てると誤検出が出る。
         // story 側は `storybook/test` が testing-library をそのまま re-export しており、
         // Aggressive Reporting が追加設定なしで解決する。
-        // 基準から外すのは 2 ルール。upstream recommended (22 ルール) は `vitest-browser-react`
-        // も Storybook も前提にしておらず、基準をそのまま写せない唯一のプラグインになる (ADR-0004)
+        // upstream recommended (flat/react の 22 ルール) は `vitest-browser-react` も Storybook も
+        // 前提にしておらず、基準をそのまま写せない唯一のプラグインになる。基準からの逸脱は 3 つで、
+        // 外すのが `prefer-screen-queries` と `no-node-access`、上げるのが `no-debugging-utils`
+        // (upstream は warn) である (ADR-0004)
         // 拡張子は companion-files.ts が唯一の定義。`.stories.ts` を置いても外れない
         files: storyGlobs("**/"),
         rules: {
@@ -304,6 +305,8 @@ export default defineConfig({
           "testing-library/no-container": "error",
           // 上流は warn だが、`vp check` は warn で exit 0 のため落ちない。この config の
           // 方針 (categories の直前のコメント) に合わせて error で入れる
+          // upstream は warn。vp check は warn で exit 1 にならないため、
+          // commit された screen.debug() が素通りする。ここだけ error へ上げる (ADR-0004)
           "testing-library/no-debugging-utils": "error",
           "testing-library/no-dom-import": ["error", "react"],
           "testing-library/no-global-regexp-flag-in-query": "error",
@@ -311,7 +314,8 @@ export default defineConfig({
           // 基準から外す 2 ルール目。21 ルール中これだけが strict 判定 (`isTestingLibraryImported(true)`)
           // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
           // 発火しない。`settings` に utils-module を足せば発火するが、その形は
-          // `.claude/rules/testing.md`「アサートの選び方」が querySelector を条件付きで許して
+          // `.claude/rules/testing.md`「状態のアサートは semantic matcher を先に探す」が
+          // querySelector を条件付きで許して
           // いるのと両立しない (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる)
           "testing-library/no-node-access": "off",
           "testing-library/no-promise-in-fire-event": "error",
@@ -331,6 +335,7 @@ export default defineConfig({
         },
       },
       {
+        // 緩和はテストの 1 経路に限る (ADR-0004)。
         // モックは意図的に型を外した値を扱い、assertion は要素の存在を前提に書く。
         // typescript-eslint 本体が自身のテストディレクトリで off にしている 5 ルールと同一
         files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],

@@ -34,15 +34,26 @@ describe("companionGlobs", () => {
   });
 });
 
+// 期待値は手書きにする。companionGlobs から導くと入力どうしの比較になり、種別を増減しても
+// 常に通る (COMPANION_KINDS の doc)。STORY_KINDS が COMPANION_KINDS の部分集合であることは
+// satisfies が型で見るので、ここでは実際に返る glob だけを固定する
 describe("storyGlobs", () => {
-  it("ts と tsx の 2 本を返す", () => {
-    expect(storyGlobs("**/")).toEqual(["**/*.stories.ts", "**/*.stories.tsx"]);
+  it("story 本体と story 専用 helper の ts / tsx に当たる", () => {
+    expect(storyGlobs("**/")).toEqual([
+      "**/*.stories.ts",
+      "**/*.stories.tsx",
+      "**/*.story-helpers.ts",
+      "**/*.story-helpers.tsx",
+    ]);
   });
 
-  it("companionGlobs と同じ拡張子の定義から引く", () => {
-    const fromCompanion = companionGlobs("**/").filter((glob) => glob.includes(".stories."));
-
-    expect(storyGlobs("**/")).toEqual(fromCompanion);
+  it("prefix をそのまま前に置く", () => {
+    expect(storyGlobs("src/**/")).toEqual([
+      "src/**/*.stories.ts",
+      "src/**/*.stories.tsx",
+      "src/**/*.story-helpers.ts",
+      "src/**/*.story-helpers.tsx",
+    ]);
   });
 });
 

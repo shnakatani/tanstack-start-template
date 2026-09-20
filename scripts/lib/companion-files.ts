@@ -16,26 +16,41 @@ export const COMPANION_KINDS = ["test", "test-helpers", "story-helpers", "storie
 const EXTENSIONS = ["ts", "tsx"] as const;
 
 /**
+ * 種別を絞った付随ファイルの glob。`prefix` の約束は {@link companionGlobs} と同じ。
+ * 種別も拡張子も {@link COMPANION_KINDS} と同じ定義から引くので、字面を並べ直さない。
+ */
+function companionGlobsOfKinds(prefix: string, kinds: readonly (typeof COMPANION_KINDS)[number][]) {
+  return kinds.flatMap((kind) => EXTENSIONS.map((extension) => `${prefix}*.${kind}.${extension}`));
+}
+
+/**
  * 付随ファイルに当たる glob。`prefix` は呼ぶ側の基準ディレクトリで決まり、`/` で終える
  * (lint は `**\/`、coverage は `src/**\/`)。終えないと `src*.test.ts` のような glob になる。
  */
 export function companionGlobs(prefix: string): string[] {
-  return COMPANION_KINDS.flatMap((kind) =>
-    EXTENSIONS.map((extension) => `${prefix}*.${kind}.${extension}`),
-  );
+  return companionGlobsOfKinds(prefix, COMPANION_KINDS);
+}
+
+/**
+ * story のコードに当たる種別。`storybook/test` を import してよい側で、testing-library の
+ * ルールを当てる範囲でもある。`satisfies` が {@link COMPANION_KINDS} の外の綴りを型で止める。
+ */
+const STORY_KINDS = [
+  "stories",
+  "story-helpers",
+] as const satisfies readonly (typeof COMPANION_KINDS)[number][];
+
+/**
+ * story のコードに当たる glob。lint の適用範囲を story へ絞るときに使う。
+ * `.stories.ts` を置いても、play を `*.story-helpers.ts` へ切り出しても外れない。
+ */
+export function storyGlobs(prefix: string): string[] {
+  return companionGlobsOfKinds(prefix, STORY_KINDS);
 }
 
 /**
  * ファイル名が付随ファイルかを判定する。判定する集合は `companionGlobs` と同じ。
  */
-/**
- * story ファイルだけに当たる glob。lint の適用範囲を story へ絞るときに使う。
- * 拡張子を {@link companionGlobs} と同じ定義から引くので、`.stories.ts` を置いても外れない
- */
-export function storyGlobs(prefix: string): string[] {
-  return EXTENSIONS.map((extension) => `${prefix}*.stories.${extension}`);
-}
-
 export function isCompanionFile(fileName: string): boolean {
   return COMPANION_KINDS.some((kind) =>
     EXTENSIONS.some((extension) => fileName.endsWith(`.${kind}.${extension}`)),
