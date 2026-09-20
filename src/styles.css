@@ -30,13 +30,7 @@
   --secondary: oklch(0.968 0.007 247.858);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.858);
-  /* shadcn 既定の L 0.554 (slate-500 相当) では --muted の上で 4.35:1 となり
-     WCAG 1.4.3 (4.5:1) を割る (2026-09-20 に Tokens/Contrast の story で検出)。
-     --muted と text-muted-foreground は 11 ファイルで同時に使う。palette の ramp を
-     1 段下げて slate-600 の L にした (--muted 上 6.90:1、白背景 7.56:1)。彩度は他の
-     token と同じく registry 既定より低い値を保つ。dark 側は slate-400 の L で
-     5.57:1 を満たすため触らない */
-  --muted-foreground: oklch(0.446 0.022 257.281);
+  --muted-foreground: oklch(0.554 0.022 257.417);
   --accent: oklch(0.968 0.007 247.858);
   --accent-foreground: oklch(0.208 0.042 265.755);
   /* registry の destructive variant は bg-destructive/10 の上に text-destructive を置く。
