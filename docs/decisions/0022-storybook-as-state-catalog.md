@@ -107,6 +107,8 @@ JS で比を計算する形そのものにも無理がある。ブラウザは s
 
 Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査は `@layer` を含むグループ規則を再帰的に辿る必要がある。辿らないと `@layer` の中の `:root` を見落とす。
 
+telemetry は `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` と同じく明示で潰す側に揃える。
+
 ### 7. a11y は `error` で自動検査し、既存のブラウザテストは残す
 
 `parameters.a11y.test` を `"error"` にする。story を書いた部品は自動で axe の対象になり、検査の範囲が既存より広がる。

@@ -30,7 +30,14 @@ export function createThemeSnapshotStore<T>(
     subscribe: (onChange) => {
       const observer = new MutationObserver(onChange);
       observer.observe(root(), { attributes: true, attributeFilter: ["class"] });
-      return () => observer.disconnect();
+      // CSS の HMR は stylesheet の中身だけを差し替えるので、class の MutationObserver では
+      // 拾えない。値は stylesheet から読んでいるため、読み直さないとカタログが古いまま残る。
+      // 本番では import.meta.hot が無く、この行ごと落ちる (Vite 公式の HMR API)
+      import.meta.hot?.on("vite:afterUpdate", onChange);
+      return () => {
+        observer.disconnect();
+        import.meta.hot?.off("vite:afterUpdate", onChange);
+      };
     },
     getSnapshot: () => {
       const key = root().className;
