@@ -3,6 +3,12 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
+/* ドキュメントを source scan から外す。Tailwind は Markdown も読むため、ADR や rules に
+   書いた class 名・変数名がそのまま本番 CSS へ出ていた (2026-09-20 実測で 2687 バイト)。
+   docs/registry-baseline/ の .tsx も同じで、あれは上流の記録であって描画されない */
+@source not "../docs";
+@source not "../.claude";
+
 /* 既定 palette を生成レベルで消す。色は semantic token だけを通し、bg-red-500 のような
    palette ユーティリティは CSS ごと存在しなくなる (tailwindcss.com/docs/colors の
    "Using a custom palette")。import より後ろ、下の @theme inline より前に置くこと。
@@ -99,7 +105,7 @@
   --sidebar-ring: oklch(0.623 0.214 259.815);
 }
 
-/* inline は utility へ値を直接埋め込む。`rounded-4xl` を書いても var(--radius-4xl) を
+/* inline は utility へ値を直接埋め込む。rounded-* の utility を書いても対応する変数を
    読む rule が生まれないため、Tailwind は既定では「未使用」として変数を出力しない。
    実際に使っているトークンでも出ないので、Storybook のカタログからは消える。
    本番の CSS でその分を払わずにカタログへ出すため、static は .storybook/preview.css が

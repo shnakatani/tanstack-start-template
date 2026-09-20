@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { isColor } from "./css-color.story-helpers";
+import { createColorParser, isColor } from "./css-color.story-helpers";
 
 describe("isColor", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -36,5 +36,41 @@ describe("isColor の sentinel", () => {
     expect(isColor("calc(0.625rem - 4px)")).toBe(false);
     expect(isColor("spin 1s linear infinite")).toBe(false);
     expect(isColor('"Geist Variable", sans-serif')).toBe(false);
+  });
+});
+
+describe("createColorParser の失敗経路", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("2D context が取れないと全件を非色として返す", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const isColorValue = createColorParser(() => null);
+
+    expect(isColorValue("#fff")).toBe(false);
+    expect(isColorValue("oklch(1 0 0)")).toBe(false);
+  });
+
+  it("warn はトークンの数だけ出さず 1 度だけ", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const isColorValue = createColorParser(() => null);
+
+    isColorValue("#fff");
+    isColorValue("#000");
+    isColorValue("oklch(1 0 0)");
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      "[css-color] canvas の 2D context を取得できない。色の一覧は空になる",
+    );
+  });
+
+  it("context の取得は 1 度だけ行う", () => {
+    const createContext = vi.fn(() => null);
+    const isColorValue = createColorParser(createContext);
+
+    isColorValue("#fff");
+    isColorValue("#000");
+
+    expect(createContext).toHaveBeenCalledTimes(1);
   });
 });

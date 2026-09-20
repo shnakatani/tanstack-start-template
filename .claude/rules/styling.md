@@ -2,6 +2,7 @@
 paths:
   - "src/**/*.tsx"
   - "src/**/*.css"
+  - ".storybook/**"
 ---
 
 # スタイリング規約
