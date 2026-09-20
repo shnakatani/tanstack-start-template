@@ -175,15 +175,18 @@ export function FormTextField({
  * `NumberField` の `onValueChange` が空入力を `null` で返すため、`Number("")` が 0 になる
  * 経路を通らない。
  */
-interface FormNumberFieldProps extends FieldValueTypeCheckProps<number | null> {
+interface FormNumberFieldProps
+  extends
+    Pick<ComponentProps<typeof NumberField.Root>, "disabled">,
+    FieldValueTypeCheckProps<number | null> {
   label: string;
 }
 
-export function FormNumberField({ label }: FormNumberFieldProps) {
+export function FormNumberField({ label, disabled }: FormNumberFieldProps) {
   const { field, id, errorId, errors, invalid } = useFormFieldState<number | null>();
 
   return (
-    <Field data-invalid={invalid || undefined}>
+    <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
       <FieldLabel htmlFor={id} className={fieldLabelClassName(undefined, invalid)}>
         {label}
       </FieldLabel>
@@ -194,6 +197,7 @@ export function FormNumberField({ label }: FormNumberFieldProps) {
           空文字と数値でない入力を自前で畳む処理も要らなくなる */}
       <NumberField.Root
         value={field.state.value}
+        disabled={disabled}
         onValueChange={(value) => {
           field.handleChange(value);
         }}
@@ -288,11 +292,12 @@ export function FormSelectField<T extends string>({
   );
 }
 
-interface FormCheckboxFieldProps extends FieldValueTypeCheckProps<boolean> {
+interface FormCheckboxFieldProps
+  extends Pick<ComponentProps<typeof Checkbox>, "disabled">, FieldValueTypeCheckProps<boolean> {
   label: string;
 }
 
-export function FormCheckboxField({ label }: FormCheckboxFieldProps) {
+export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
   const field = useFieldContext<boolean>();
   const id = useId();
   const errors = field.state.meta.errors;
@@ -311,8 +316,13 @@ export function FormCheckboxField({ label }: FormCheckboxFieldProps) {
   }
 
   return (
-    <Field orientation="horizontal">
-      <Checkbox id={id} checked={field.state.value} onCheckedChange={field.handleChange} />
+    <Field orientation="horizontal" data-disabled={disabled || undefined}>
+      <Checkbox
+        id={id}
+        checked={field.state.value}
+        disabled={disabled}
+        onCheckedChange={field.handleChange}
+      />
       <FieldLabel htmlFor={id} className="cursor-pointer font-normal">
         {label}
       </FieldLabel>

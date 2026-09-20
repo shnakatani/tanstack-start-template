@@ -47,11 +47,15 @@ play で書いた検証は既存のブラウザテストから削る。同じ振
 
 variant の網羅を story の数で表現しない。代表値を story にし、残りは `argTypes` の control で切り替える。
 
+`argTypes` の `options` は `readonly any[]` で、`satisfies Meta<typeof X>` を書いても中身を検査しない。`cva` の variant をリテラルで写すと、足したときに story だけ古くなり lint も型検査も鳴らない (2026-09-20 実測)。`satisfies Record<Variant, null>` のオブジェクトを出処にして `Object.keys` で渡すと、足した側が型エラーになる。
+
 story を variant の直積で増やすと、カタログが読み通せない長さになる。
 
 ### 3. 検証専用の story は `tags: ["!dev"]` でサイドバーから外す
 
 story の終了状態が他の story と同じ見た目になるものは検証専用として扱い、`tags: ["!dev"]` を付ける。サイドバーの一覧から消えるが、vitest の project 実行では対象に残る (実測: `index.json` の `tags` が `dev` を含まなくなる)。
+
+同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くものなので、その部品の状態が 1 つも並ばない事態を避ける (`ActionButtonShell` の `Idle` は `ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)。
 
 ### 4. story に決着しない Promise を置かない
 
@@ -64,6 +68,23 @@ Storybook の vitest 実行は 1 つの React root へ story を描き替える�
 play は Storybook の UI 上でも実行されるため CDP を使えず、`storybook/test` の合成イベントで操作する。ADR-0015 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、play へは移さない。
 
 ADR-0015 が禁じた同期 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである。
+
+どのブラウザテストが持つかを決めておく。story へ移した結果、実イベントの検証がリポジトリから消えることを防ぐ。
+
+| 対象                                                                                     | 実イベントの規律を持つテスト                               |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `ActionButton` の二重発火 (`ActionButtonShell` の `disabled={isPending}`)                | `src/components/action/button.test.tsx`                    |
+| `ActionForm` / `ActionFormSubmit` の二重発火 (`ActionForm` の `if (isPending) return`)   | `src/components/action/form.test.tsx`                      |
+| `DeleteConfirmDialog` の確定とキャンセルへ inert バックドロップ越しに pointer が届くこと | `src/routes/notes/index.test.tsx` の `dispatchNativeClick` |
+| 画面側の二重確定の dedupe (`queryClient.isMutating`)                                     | `src/routes/notes/index.test.tsx` の Enter 2 連射          |
+
+画面のテストは Action 層の guard を代替しない。`confirmDelete` は `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の時点で `isPending` は false になる。`disabled={isPending}` を外しても browser project は 1 件も落ちない (2026-09-20 実測)。経路が薄いラッパーを通ることは、その guard を通ることを意味しない。
+
+story を書かない部品のテストは触らない。story を書いた部品でも、移せない case はブラウザテストに残し、残す理由をそのファイルの JSDoc に書く。理由を書かないと、次に読む人が「移し忘れ」と読んで消す。
+
+移せないのはレイアウトと配色の実測 (`getComputedStyle` / `getBoundingClientRect`)、型契約 (`expectTypeOf`)、CDP 経由の実イベントの 3 つである。`src/components/ui/` の既存テスト 26 case のうち 25 case がこれに当たる (2026-09-20 実測)。
+
+この 3 つは play を書く部品の話である。節 2 で play を書かないと決めた部品 (args だけで状態が決まるもの) では、story が描画と axe しか走らせず何も検証しない。構造の契約もブラウザテストに残り、残す根拠は節 7 の役割分担になる。JSDoc にはどちらの根拠で残したかを書く。
 
 popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0018 の扱う animate-out の窓に入る。
 
@@ -113,6 +134,8 @@ telemetry は `core.disableTelemetry` で切る。既定で有効で、実行し
 
 `parameters.a11y.test` を `"error"` にする。story を書いた部品は自動で axe の対象になり、検査の範囲が既存より広がる。
 
+違反が出たら抑制せず直す。部品側の欠陥なら部品を直す。story 単位の `parameters.a11y` は global の `"error"` より強いので、書けば黙る。抑制するときは、理由と本体の扱いを決める issue 番号をその場に書く (実例は `table-skeleton.stories.tsx` の `empty-table-header`)。
+
 | 対象                 | 役割                                                   |
 | -------------------- | ------------------------------------------------------ |
 | story                | どんな状態があるか。目で見るカタログ                   |
@@ -125,6 +148,10 @@ telemetry は `core.disableTelemetry` で切る。既定で有効で、実行し
 `*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。
 
 story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかどうかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める。
+
+story は `no-restyle` / `require-static-classes` の適用外である。`vite.config.ts` の override が `src/components/{ui,action,parts}/**` を `excludeFiles` で外しており、story もそこに置くためである。部品へ `className` を直接渡しても lint は鳴らない (2026-09-20 実測)。渡してよい範囲は消費側と同じで、`no-restyle` の `allow: ["layout"]` に収まる class に限る。外見を上書きする class は部品側の variant にする (ADR-0021)。catalog は実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る。
+
+CSF の meta は 1 ファイルに 1 つで、`component` もそこに紐づく。1 つのファイルが複数の部品を export するとき、まとめて書くと別の部品の meta 配下に並ぶ。単独で描画できる部品は story ファイルを分ける。
 
 トークンの story は CSS 変数の値を見せる場所で、typography の階層のような class の規範は持たない。`styling.md` の表を story へ写すと片方だけが古くなる。markdown と code を突き合わせる機械検査は持っていない。
 

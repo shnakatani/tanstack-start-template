@@ -4,6 +4,14 @@ import { render } from "vitest-browser-react";
 import { PageHeader } from "./page-header";
 import { CardPageTitle } from "./page-title";
 
+/**
+ * 状態のカタログは `page-header.stories.tsx` が持つ (ADR-0022)。ここに残すのは 2 種類ある。
+ *
+ * 60px の最小高と 12px の縦 padding、カードのページ見出しとの寸法一致は実測なので play へ
+ * 移せない (節 5)。title が h1 であること、actions の有無で領域が出入りすることは、story に
+ * play が無い以上ここでしか固定できない。とくに「出ない」ことは見た目のカタログでは
+ * 表せない (節 7 の役割分担)。
+ */
 describe("PageHeader", () => {
   // ページの見出しなので h1。h2 だと画面に h1 が 1 つも無い状態になり、
   // 見出しジャンプで移動する支援技術がページの主題に辿り着けない

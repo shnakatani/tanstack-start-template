@@ -4,6 +4,13 @@ import { render } from "vitest-browser-react";
 import { CardPageTitle } from "@/components/parts/page-title";
 import { CardTitle } from "@/components/ui/card";
 
+/**
+ * 状態のカタログは `page-title.stories.tsx` が持つ (ADR-0022)。ここに残すのは 2 種類ある。
+ *
+ * tone による色の差と registry 既定の `CardTitle` との大小関係は `getComputedStyle` の
+ * 実測なので play へ移せない (節 5)。`data-slot=card-title` の維持は、story に play が
+ * 無い以上ここでしか固定できない (節 7 の役割分担)。
+ */
 describe("CardPageTitle", () => {
   it("tone=destructive は既定と違う色で描く", async () => {
     const screen = await render(

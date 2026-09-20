@@ -20,6 +20,20 @@ export function storybookProject(theme: "light" | "dark") {
       viteReact(),
       tailwindcss(),
       storybookTest({ configDir: ".storybook", initialGlobals: { theme } }),
+      // deps キャッシュを project ごとに分ける。storybookTest() は configDir のハッシュから
+      // cacheDir を導く (addon-vitest の vitest-plugin が oneWayHash(configDir) を projectId に
+      // する) ため、テーマ違いの 2 project が同じ configDir を渡す限り 1 つのキャッシュを
+      // 共有し、実行中に別々の依存を見つけて互いに無効化し合う。config フックの post 順は
+      // storybookTest() の返り値より後に merge されるので、ここで上書きできる。
+      // 相対ではなく固定値で組み立てる。browser mode は config を再ロードするため、
+      // 既存の cacheDir から相対で作ると light/light のように入れ子になる
+      {
+        name: "storybook-theme-cache-dir",
+        config: {
+          order: "post" as const,
+          handler: () => ({ cacheDir: `node_modules/.cache/storybook-vitest/${theme}` }),
+        },
+      },
     ],
     resolve: {
       tsconfigPaths: true,
@@ -31,26 +45,14 @@ export function storybookProject(theme: "light" | "dark") {
       // "Vite unexpectedly reloaded a test" と React 二重解決
       // ("Cannot read properties of null") が出る。
       //
-      // この一覧は「story が import する依存」ではない。storybook-light と storybook-dark は
-      // 同じ configDir を渡すので、@storybook/addon-vitest が configDir のハッシュから
-      // cacheDir を導く結果 (vitest-plugin の oneWayHash(configDir))、2 つの project が
-      // 1 つの deps キャッシュを共有する。事前宣言が足りないと、両者が実行中に別々の依存を
-      // 見つけて互いのキャッシュを無効化し合う。到達しない名前でも減らしてはいけない。
+      // 書くのは静的な走査で見つからない依存だけでよい。story から辿れる依存は
+      // Storybook 10.6 が story と preview annotation を optimizeDeps.entries へ積む
+      // (storybookjs/storybook#33875)。cacheDir を project ごとに分けたので、走査の結果が
+      // 2 つの project で違っても互いのキャッシュを壊さない。
       //
-      // story 53 件の段で実測した (2026-09-20)。
-      //   この一覧なし + 2 project : 98 件失敗 / reloaded 8
-      //   この一覧あり + 2 project : 444 件 pass / reloaded 0
-      //   どちらでも 1 project なら   222 件 pass / reloaded 0
-      //
-      // axe-core だけは理由が別で、addon-a11y の preview が import("axe-core") で読む
+      // axe-core は addon-a11y の preview が import("axe-core") で読む
       // (dist/_browser-chunks/chunk-P5J2FJ2Z.js)。動的 import なので静的な走査に出ない
-      include: [
-        "@tanstack/react-query",
-        "@tanstack/react-form",
-        "axe-core",
-        "class-variance-authority",
-        "cn",
-      ],
+      include: ["axe-core"],
       // @tanstack/react-start 系は exclude しない: @storybook/tanstack-react の framework
       // preset (viteFinal) が moduleInterceptionPlugin で @tanstack/react-start /
       // react-start/server / react-start-server / start-server-core への import を

@@ -12,6 +12,13 @@ async function renderNotice() {
   );
 }
 
+/**
+ * 状態のカタログは `centered-card.stories.tsx` が持つ (ADR-0022)。ここに残すのは 2 種類ある。
+ *
+ * 375px 幅での余白・`max-w-sm` の幅・`fill` による高さの差は寸法の実測なので play へ
+ * 移せない (節 5)。見出しが h1 であることと `data-slot=card-title` の維持は、story に
+ * play が無い以上ここでしか固定できない (節 7 の役割分担)。
+ */
 describe("FullScreenNotice", () => {
   afterEach(restoreDefaultViewport);
 

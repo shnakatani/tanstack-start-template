@@ -11,6 +11,12 @@ paths:
 - テストでは `getByRole("textbox")` で取る。`spinbutton` にはならない
 - locator の `fill()` は既存値を置換せず追記になる。要素を全選択してから打つ
 
+## Checkbox: disabled は `aria-disabled` で見る
+
+- テストで `toBeDisabled()` を使わない。`toHaveAttribute("aria-disabled", "true")` で見る
+- `disabled` が無視されているわけではない。`Checkbox.Root` は span と隠し `input` を描き (公式 docs「Renders a `<span>` element and a hidden `<input>` beside.」)、native の `disabled` はその input が持つ。ただし input は `aria-hidden="true"` / `tabindex="-1"` なので accessibility tree に出ず、`getByRole("checkbox")` は span を返す (Base UI 1.8.0 で実測、2026-09-20)
+- 公式 docs は span + 隠し input の構造までで、どちらが native の `disabled` を持つかは書いていない
+
 ## Select: `items` prop 必須
 
 Base UI の `Select.Value` はデフォルトで生の `value` を表示する (Radix UI とは異なる挙動)。`Select.Root` に `items` prop で値 → ラベルのマッピングを渡さないと、トリガーに ID 等の内部値がそのまま表示される。

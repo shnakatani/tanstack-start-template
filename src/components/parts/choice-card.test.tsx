@@ -7,13 +7,7 @@ import { dispatchNativeClick } from "@/test/native-click";
 
 import { ChoiceCard, ChoiceCardList } from "./choice-card";
 
-function Harness({
-  disabled = false,
-  withoutId = false,
-}: {
-  disabled?: boolean;
-  withoutId?: boolean;
-}) {
+function Harness({ disabled = false }: { disabled?: boolean }) {
   const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
   const rows = [
     { id: "a", label: "チームA" },
@@ -24,7 +18,7 @@ function Harness({
       {rows.map((row) => (
         <ChoiceCard
           key={row.id}
-          id={withoutId ? undefined : row.id}
+          id={row.id}
           label={row.label}
           checked={checked.has(row.id)}
           disabled={disabled}
@@ -41,16 +35,11 @@ function Harness({
   );
 }
 
+/**
+ * 行のトグルと id の紐づきは `choice-card.stories.tsx` の play が持つ (ADR-0022)。
+ * ここに残すのは寸法を固定する回帰と、実イベントでなければ確かめられないものだけ。
+ */
 describe("ChoiceCard", () => {
-  it("行のクリックで checkbox がトグルする（ラベルと id で紐づく）", async () => {
-    const screen = await render(<Harness />);
-    const checkbox = screen.getByRole("checkbox", { name: /チームB/ });
-
-    await expect.element(checkbox).not.toHaveAttribute("data-checked");
-    await screen.getByText("チームB").click();
-    await expect.element(checkbox).toHaveAttribute("data-checked");
-  });
-
   it("trailing はタイトルと checkbox の間に置かれる", async () => {
     const screen = await render(<Harness />);
     const title = screen.getByText("チームA").element();
@@ -92,32 +81,6 @@ describe("ChoiceCard", () => {
     await expect.element(checkbox).not.toHaveAttribute("data-checked");
     expect(getComputedStyle(label).cursor).toBe("default");
     expect(field.getAttribute("data-disabled")).not.toBeNull();
-  });
-
-  // id は htmlFor と checkbox の紐づけにしか使わないため、消費側は省略できる。
-  // base-ui は id を隠しの input へ載せ、role="checkbox" の span には別 ID を振るので、
-  // htmlFor の相手は input 側
-  it("id を渡さなくても htmlFor で紐づき、行どうしで衝突しない", async () => {
-    const screen = await render(<Harness withoutId />);
-    const firstLabel = screen.getByText("チームA").element().closest("label");
-    const secondLabel = screen.getByText("チームB").element().closest("label");
-    expect.assert(firstLabel !== null && secondLabel !== null, "Choice Card が見つからない");
-    const firstInput = firstLabel.querySelector("input");
-    const secondInput = secondLabel.querySelector("input");
-    expect.assert(firstInput !== null && secondInput !== null, "checkbox の input が見つからない");
-
-    expect(firstLabel.getAttribute("for")).toBe(firstInput.id);
-    expect(secondLabel.getAttribute("for")).toBe(secondInput.id);
-    expect(firstInput.id).not.toBe(secondInput.id);
-
-    // 2 行目のラベルを押しても 1 行目は連動しない
-    await screen.getByText("チームB").click();
-    await expect
-      .element(screen.getByRole("checkbox", { name: /チームB/ }))
-      .toHaveAttribute("data-checked");
-    await expect
-      .element(screen.getByRole("checkbox", { name: /チームA/ }))
-      .not.toHaveAttribute("data-checked");
   });
 
   it("マウス環境でも 44px 以上の tap target になる", async () => {
