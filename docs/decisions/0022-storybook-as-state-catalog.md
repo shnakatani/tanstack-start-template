@@ -77,7 +77,8 @@ Storybook の test 実行では ADR-0018 の animation 無効化を適用しな�
 
 - 値は `getComputedStyle` で解決後のものを読む
 - light と dark は `@storybook/addon-themes` の class 切り替えで出し分ける
-- テーマを切り替えたら、読み取りを行う要素を `key` で remount する。値は React の依存に現れないため、再 render だけでは React Compiler がメモ化した結果を返して止まる
+- テーマごとの読み取り結果を外部ストアにし、`useSyncExternalStore` で購読する。値は React の依存に現れないため、再 render だけでは React Compiler がメモ化した結果を返して止まる
+- `key` による remount は採らない。テーマの class は `STORY_RENDERED` 後に当たるため、remount は play function より後に起き、play が作った状態を捨てる (2026-09-20 実測)
 
 ### 6-1. コントラストの検算はこの story で扱わない
 
@@ -96,7 +97,7 @@ JS で比を計算する形そのものにも無理がある。ブラウザは s
 
 トークンの一覧を CSSOM から読む選択の帰結として、`static` が要る。`inline` は utility へ値を直接埋め込むため、`rounded-*` の utility を書いても対応する変数を読む rule が生まれない。Tailwind は既定で参照されている変数だけを出力するので、実際に使っているトークンでもカタログから消える。
 
-どの変数が落ちるかは Tailwind の source scan の結果で決まる。**scan は Markdown も読む**ため、ADR や rules に変数名を書くとその変数は「使用中」と判定されて出力に残っていた。`styles.css` の `@source not` で `docs/` と `.claude/` を除く (2026-09-20 実測で本番 CSS が 2687 バイト減る)。
+どの変数が落ちるかは Tailwind の source scan の結果で決まる。**scan は既定でリポジトリ全体を読み、Markdown も対象にする**ため、ADR や rules に書いた名前が「使用中」と判定されて出力に残っていた。`styles.css` の `@import "tailwindcss" source("../src")` で対象をアプリのソースへ絞る。効果は `source()` を外して `vp build` を 2 回回せば測れる。
 
 **`static` は Storybook だけに掛ける。** `.storybook/preview.css` が `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す。`theme()` は import 単位で効くため、本番の CSS は `static` の分を持たない。
 

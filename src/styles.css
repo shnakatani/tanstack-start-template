@@ -1,13 +1,12 @@
-@import "tailwindcss";
+/* scan の対象をアプリのソースだけに絞る。Tailwind は既定でリポジトリ全体を読み、
+   Markdown も対象にする。ADR や rules に書いた class 名・変数名、docs/registry-baseline/
+   の上流コピー、.claude の skill、CI の yaml の字面まで本番 CSS へ出ていた。
+   除外を並べる形だと symlink (.claude/skills -> .agents) や新しい置き場を取りこぼす。
+   出典: tailwindcss.com/docs/detecting-classes-in-source-files */
+@import "tailwindcss" source("../src");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
-
-/* ドキュメントを source scan から外す。Tailwind は Markdown も読むため、ADR や rules に
-   書いた class 名・変数名がそのまま本番 CSS へ出ていた (2026-09-20 実測で 2687 バイト)。
-   docs/registry-baseline/ の .tsx も同じで、あれは上流の記録であって描画されない */
-@source not "../docs";
-@source not "../.claude";
 
 /* 既定 palette を生成レベルで消す。色は semantic token だけを通し、bg-red-500 のような
    palette ユーティリティは CSS ごと存在しなくなる (tailwindcss.com/docs/colors の

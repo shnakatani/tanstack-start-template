@@ -65,6 +65,7 @@ describe("createColorParser の失敗経路", () => {
   });
 
   it("context の取得は 1 度だけ行う", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const createContext = vi.fn(() => null);
     const isColorValue = createColorParser(createContext);
 
@@ -72,5 +73,13 @@ describe("createColorParser の失敗経路", () => {
     isColorValue("#000");
 
     expect(createContext).toHaveBeenCalledTimes(1);
+  });
+
+  // import した時点で document を触ると、DOM の無い環境で読み込むだけで落ちる
+  it("判定を呼ぶまで context を作らない", () => {
+    const createContext = vi.fn(() => null);
+    createColorParser(createContext);
+
+    expect(createContext).not.toHaveBeenCalled();
   });
 });
