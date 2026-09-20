@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 
 import {
   Accordion,
@@ -48,9 +48,9 @@ export const Expanded: Story = {
 /** 既定値で開いた状態から始める */
 export const DefaultOpen: Story = {
   args: { defaultValue: ["return"] },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvas }) => {
     await expect(
-      await within(canvasElement).findByText("到着から 7 日以内に連絡してください"),
+      await canvas.findByText("到着から 7 日以内に連絡してください"),
     ).toBeInTheDocument();
   },
 };

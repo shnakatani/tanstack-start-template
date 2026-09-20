@@ -12,7 +12,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 未選択 */
+/** 未選択。フォームの中では `FormCheckboxField`、複数選択の一覧は `ChoiceCard` (parts) を通す */
 export const Unchecked: Story = {};
 
 /** 選択済み。カタログなので非制御の初期値で描く */

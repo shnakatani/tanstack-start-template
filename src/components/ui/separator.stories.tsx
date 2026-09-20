@@ -7,7 +7,7 @@ type SeparatorOrientation = NonNullable<ComponentProps<typeof Separator>["orient
 
 /**
  * control の選択肢の出処。Storybook の `options` は `readonly any[]` で中身を検査しないので、
- * リテラルを並べるだけだと部品側が増えたときに静かに古くなる (directory-structure.md)
+ * リテラルを並べるだけだと部品側が増えたときに静かに古くなる (`directory-structure.md`「コンポーネント配置」)
  */
 const ORIENTATION_MEMBERS = {
   horizontal: null,

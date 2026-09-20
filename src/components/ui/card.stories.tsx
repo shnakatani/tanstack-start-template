@@ -48,7 +48,10 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 既定。余白は `--card-spacing` が持つ (styling.md) */
+/**
+ * 既定。余白は `--card-spacing` が持つ (`styling.md`「spacing 基準」)。
+ * 全画面センタリングは `CenteredCard`、カード内のページ見出しは `CardPageTitle` (どちらも parts)
+ */
 export const Default: Story = {};
 
 /** 余白を 1 段詰めた形。`size` が `--card-spacing` を切り替える */

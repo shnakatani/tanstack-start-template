@@ -60,7 +60,7 @@ export const WithText: Story = {
 
 /**
  * `align` の `block-start`。枠を縦に伸ばし、addon を入力欄の上の行として置く。
- * `inline-start` は WithIcon、`inline-end` は WithButton、`block-end` は WithTextarea が持つ
+ * 他の align は WithIcon / WithButton / WithTextarea が持つ
  */
 export const AlignBlockStart: Story = {
   render: () => (

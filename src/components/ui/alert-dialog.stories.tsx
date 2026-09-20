@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { TriangleAlertIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { expect, screen, userEvent } from "storybook/test";
+import { expect, screen, userEvent, within } from "storybook/test";
 
 import {
   AlertDialog,
@@ -20,8 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 
 /**
- * handle は story ごとに作る。module 変数にすると、1 つの React root へ story を描き替える
- * Storybook の vitest 実行で開閉状態が次の story へ持ち越される。
+ * handle は story ごとに作る。Storybook の vitest 実行は 1 つの React root へ story を
+ * 描き替えるため、module 変数に持たせると前の story の開閉状態が残りうる。story ごとに
+ * 作れば残らない (2026-09-20 実測)。
  * アプリの確認ダイアログは `DeleteConfirmDialog` (parts) を通すので、ここは registry の意匠の見本
  */
 function AlertDialogExample({ children }: { children: ReactNode }) {
@@ -74,19 +75,22 @@ export const Closed: Story = {
 };
 
 /**
- * 開いた状態。`Dialog` と違って X を持たず、閉じる手段はフッターの 2 つだけになる。
- * role も `alertdialog` で、外側クリックや Esc では閉じない
+ * 開いた状態。role は `alertdialog` で、`Dialog` と違って閉じる X を持たない。
+ * 外側クリックでは閉じない (base-ui が alert-dialog のとき `disablePointerDismissal` を固定する)
+ * が、Esc は閉じる。フッターで閉じるのは `AlertDialogCancel` だけで、`AlertDialogAction` は
+ * 素の `Button` なので閉じない
  */
 export const Opened: Story = {
   play: async () => {
     await open();
     await expect(screen.getByRole("heading", { name: "メモの削除" })).toBeInTheDocument();
-    await expect(screen.getByRole("button", { name: "削除" })).toBeInTheDocument();
-    await expect(screen.getByRole("button", { name: "キャンセル" })).toBeInTheDocument();
+    // X が無いことは件数で示す。`Dialog` の Close は sr-only の "Close" を持つが
+    // alert-dialog には無く、名前での否定は常に真になる
+    await expect(within(screen.getByRole("alertdialog")).getAllByRole("button")).toHaveLength(2);
   },
 };
 
-/** アイコンを添えた形。`AlertDialogMedia` が見出しの上に置く枠を持つ */
+/** アイコンを添えた形。`AlertDialogMedia` は `sm` 以上で見出しの左、`sm` 未満で上に置く */
 export const WithMedia: Story = {
   render: () => (
     <AlertDialogExample>

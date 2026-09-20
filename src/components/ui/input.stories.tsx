@@ -11,7 +11,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 既定。空欄に placeholder だけが見えている状態 */
+/** 既定。空欄に placeholder だけが見えている状態。フォームの中では `FormTextField` (parts) を通す */
 export const Default: Story = {};
 
 /** 値が入っている状態。カタログなので非制御の初期値で描く */

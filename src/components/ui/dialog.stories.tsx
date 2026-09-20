@@ -18,8 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /**
- * handle は story ごとに作る。module 変数にすると、1 つの React root へ story を描き替える
- * Storybook の vitest 実行で開閉状態が次の story へ持ち越される
+ * handle は story ごとに作る。Storybook の vitest 実行は 1 つの React root へ story を
+ * 描き替えるため、module 変数に持たせると前の story の開閉状態が残りうる。story ごとに
+ * 作れば残らない (2026-09-20 実測)
  */
 function DialogExample({ showCloseButton }: { showCloseButton?: boolean }) {
   const [handle] = useState(() => createDialogHandle<undefined>());
@@ -78,7 +79,11 @@ export const Opened: Story = {
   },
 };
 
-/** 閉じる X を持たない形。閉じる手段をフッターだけに寄せたいとき */
+/**
+ * 閉じる X を出さない形。registry が持つ prop だが、このリポジトリのモーダルは visible close を
+ * 置く決まりなのでアプリでは使わない (`implementation.md`「幅と閉じる手段」)。
+ * X を消しても Esc と外側クリックは効いたまま
+ */
 export const WithoutCloseButton: Story = {
   render: () => <DialogExample showCloseButton={false} />,
   play: async () => {

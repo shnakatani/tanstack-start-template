@@ -30,7 +30,9 @@ type Story = StoryObj<typeof meta>;
 /** 閉じた状態。トリガーだけが見える */
 export const Closed: Story = {
   play: async () => {
-    await expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    // base-ui の tooltip popup は role を持たないので `queryByRole("tooltip")` は
+    // 開閉によらず null になる。Opened と同じテキストの経路で否定する
+    await expect(screen.queryByText("公開すると一覧に並びます")).not.toBeInTheDocument();
   },
 };
 

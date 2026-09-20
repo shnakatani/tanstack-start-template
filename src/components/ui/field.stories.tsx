@@ -11,7 +11,6 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-  FieldTitle,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
@@ -79,15 +78,19 @@ export const Invalid: Story = {
   ),
 };
 
-/** 補足付きの説明を `FieldContent` にまとめた形 */
+/**
+ * 補足付きの説明を `FieldContent` にまとめた形。見出しは `FieldLabel` にして control と結ぶ。
+ * `FieldTitle` は label ではないので、見出しを押しても切り替わらず、control 側が可視テキストと
+ * 同じ文字列を `aria-label` で二重に持つことになる
+ */
 export const WithContent: Story = {
   render: () => (
     <Field orientation="horizontal">
       <FieldContent>
-        <FieldTitle>通知を受け取る</FieldTitle>
+        <FieldLabel htmlFor="field-notify">通知を受け取る</FieldLabel>
         <FieldDescription>更新があったときにメールで知らせます</FieldDescription>
       </FieldContent>
-      <Checkbox id="field-notify" aria-label="通知を受け取る" />
+      <Checkbox id="field-notify" />
     </Field>
   ),
 };

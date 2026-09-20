@@ -19,8 +19,9 @@ const TYPE_LABELS = {
 } satisfies Record<ToastIconType, string>;
 
 /**
- * manager は story ごとに作る。module 変数にすると、1 つの React root へ story を描き替える
- * Storybook の vitest 実行で前の story の toast が残る
+ * manager は story ごとに作る。Storybook の vitest 実行は 1 つの React root へ story を描き替える
+ * ため、module 変数に持たせると前の story の toast が残りうる。story ごとに作れば残らない
+ * (2026-09-20 実測)
  */
 function ToastExample({ type }: { type: ToastIconType }) {
   const [manager] = useState(() => createToastManager());

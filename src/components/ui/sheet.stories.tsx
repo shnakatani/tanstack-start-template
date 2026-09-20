@@ -48,9 +48,10 @@ async function open(): Promise<void> {
   await screen.findByRole("dialog");
 }
 
-// args で SheetContent の side を切り替えるため、meta の型は args 側に合わせる。
-// component を置くと Sheet 自身の props と食い違う (delete-confirm-dialog.stories.tsx と同じ形)
+// side は SheetContent の prop なので component もそちらを指す。Sheet を指すと args の型と
+// 食い違い、agent 向けの `storybook tools docs show` からも Props が消える
 const meta = {
+  component: SheetContent,
   argTypes: {
     // side は SheetContent の prop なので、control から渡す先も render が持つ
     side: { control: "inline-radio", options: Object.keys(SIDE_MEMBERS) },
