@@ -7,60 +7,57 @@ import { collectRootCustomProperties } from "./css-rules.story-helpers";
 import { createThemeSnapshotStore } from "./theme-snapshot.story-helpers";
 import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story-helpers";
 
-/** 名前順のトークン名。`styles.css` が SSOT なので値は写さない (ADR-0022) */
-function readTokenNames(prefix: string): string[] {
-  return collectRootCustomProperties(document.styleSheets, prefix, document.documentElement);
-}
-
 /**
- * 解決後の値を読む。`getComputedStyle` は呼ぶたびに root のスタイル解決を起こすので、
- * 一覧を組み立てる間は 1 つを使い回す
+ * 解決後の値を伴う全トークンを名前順で集める。`styles.css` が SSOT なので値は写さない
+ * (ADR-0022)。`getComputedStyle` は呼ぶたびに root のスタイル解決を起こすので 1 つを使い回す
  */
-function rootStyle(): CSSStyleDeclaration {
-  return getComputedStyle(document.documentElement);
-}
-
-function resolvedWith(style: CSSStyleDeclaration, name: string): string {
-  return style.getPropertyValue(name).trim();
-}
-
-/** 対象トークンが 0 件で終わる回帰を検出する。空の表を silent に描かせない */
-function warnIfEmpty(names: string[], story: string): void {
-  if (names.length === 0) {
-    console.warn("[tokens] トークンが 0 件", { story });
-  }
-}
-
-/** 解決後の値を伴うトークンを名前順で集める */
-function readTokens(prefix: string): ThemeToken[] {
-  const style = rootStyle();
-  return readTokenNames(prefix).map((name) => ({ name, value: resolvedWith(style, name) }));
+function readAllTokens(): ThemeToken[] {
+  const style = getComputedStyle(document.documentElement);
+  const names = collectRootCustomProperties(document.styleSheets, "--", document.documentElement);
+  return names.map((name) => ({ name, value: style.getPropertyValue(name).trim() }));
 }
 
 /**
  * テーマごとに 1 回だけ読む。値は CSSOM と getComputedStyle から取るので React の依存に
- * 現れず、購読しないと切り替えても止まる (ADR-0022)
+ * 現れず、購読しないと切り替えても止まる (ADR-0022)。
+ *
+ * 種別ごとに store を分けない。`collectRootCustomProperties` の prefix は集めた名前の
+ * 絞り込みにしか使われず、どの rule を辿るかを変えないので、分けるとテーマを切り替える
+ * たびに同じ CSSOM 走査を種別の数だけ繰り返すことになる
  */
-const colorStore = createThemeSnapshotStore<ThemeToken[]>(
-  // 色かどうかはブラウザ自身のパーサに聞く。`CSS.supports` は property と value の組で
-  // 解析できるかを返すので、`oklch()` も `color-mix()` も relative color syntax も通る
-  () =>
-    dropRedundantColorAliases(readTokens("--").filter(({ value }) => CSS.supports("color", value))),
-  [],
-);
-const radiusStore = createThemeSnapshotStore<ThemeToken[]>(() => readTokens("--radius"), []);
-const fontStore = createThemeSnapshotStore<ThemeToken[]>(() => readTokens("--font"), []);
+const tokenStore = createThemeSnapshotStore<ThemeToken[]>(readAllTokens, []);
 
-function useThemeTokens(store: ReturnType<typeof createThemeSnapshotStore<ThemeToken[]>>) {
-  return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+/** 種別ごとの一覧。0 件で終わる回帰を silent にしないよう story 名を添える */
+function useTokenList(select: (tokens: ThemeToken[]) => ThemeToken[], story: string): ThemeToken[] {
+  const all = useSyncExternalStore(
+    tokenStore.subscribe,
+    tokenStore.getSnapshot,
+    tokenStore.getServerSnapshot,
+  );
+  const tokens = select(all);
+  if (tokens.length === 0) {
+    console.warn("[tokens] トークンが 0 件", { story });
+  }
+  return tokens;
 }
 
+/**
+ * 色かどうかはブラウザ自身のパーサに聞く。`CSS.supports` は property と value の組で
+ * 解析できるかを返すので、`oklch()` も `color-mix()` も relative color syntax も通る
+ */
+function selectColors(tokens: ThemeToken[]): ThemeToken[] {
+  return dropRedundantColorAliases(tokens.filter(({ value }) => CSS.supports("color", value)));
+}
+
+function selectByPrefix(prefix: string) {
+  return (tokens: ThemeToken[]) => tokens.filter(({ name }) => name.startsWith(prefix));
+}
+
+const selectRadius = selectByPrefix("--radius");
+const selectFonts = selectByPrefix("--font");
+
 function ColorSwatches() {
-  const tokens = useThemeTokens(colorStore);
-  warnIfEmpty(
-    tokens.map(({ name }) => name),
-    "Tokens/Colors",
-  );
+  const tokens = useTokenList(selectColors, "Tokens/Colors");
 
   return (
     <ul className="grid grid-cols-2 gap-2 text-sm">
@@ -80,11 +77,7 @@ function ColorSwatches() {
 }
 
 function RadiusTokens() {
-  const tokens = useThemeTokens(radiusStore);
-  warnIfEmpty(
-    tokens.map(({ name }) => name),
-    "Tokens/Radius",
-  );
+  const tokens = useTokenList(selectRadius, "Tokens/Radius");
   return (
     <div className="flex flex-wrap gap-4">
       {tokens.map(({ name, value }) => (
@@ -115,11 +108,7 @@ const TYPOGRAPHY_SAMPLES = [
 ] as const;
 
 function TypographyTokens() {
-  const tokens = useThemeTokens(fontStore);
-  warnIfEmpty(
-    tokens.map(({ name }) => name),
-    "Tokens/Typography",
-  );
+  const tokens = useTokenList(selectFonts, "Tokens/Typography");
   return (
     <div className="flex flex-col gap-4">
       {tokens.map(({ name, value }) => (
