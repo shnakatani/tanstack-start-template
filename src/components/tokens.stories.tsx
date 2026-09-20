@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { useSyncExternalStore } from "react";
+import { expect, within } from "storybook/test";
 
 import { pageTitle } from "@/components/parts/page-title";
 
@@ -130,6 +131,22 @@ const meta = {} satisfies Meta;
 
 export default meta;
 
-export const Colors: StoryObj = { render: () => <ColorSwatches /> };
-export const Radius: StoryObj = { render: () => <RadiusTokens /> };
-export const Typography: StoryObj = { render: () => <TypographyTokens /> };
+/**
+ * 一覧が空でないことを見る。中身は `styles.css` と CSSOM の走査で決まるので、story を
+ * 描くだけでは 0 件でも通ってしまう。`warnIfEmpty` の warn はテストを落とさない
+ * (2026-09-20 に走査を潰す mutant で実測)。トークン名は `--` で始まる文字列として出る。
+ */
+async function expectTokensRendered({
+  canvasElement,
+}: {
+  canvasElement: HTMLElement;
+}): Promise<void> {
+  await expect(within(canvasElement).getAllByText(/^--/).length).toBeGreaterThan(0);
+}
+
+export const Colors: StoryObj = { render: () => <ColorSwatches />, play: expectTokensRendered };
+export const Radius: StoryObj = { render: () => <RadiusTokens />, play: expectTokensRendered };
+export const Typography: StoryObj = {
+  render: () => <TypographyTokens />,
+  play: expectTokensRendered,
+};

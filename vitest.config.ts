@@ -2,6 +2,7 @@ import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
 
 import { companionGlobs } from "./scripts/lib/companion-files";
+import { storybookProject } from "./vitest.storybook.config";
 
 const sharedExclude = [
   "**/node_modules/**",
@@ -51,7 +52,9 @@ export default defineConfig({
         },
       },
       "vitest.browser.config.ts",
-      "vitest.storybook.config.ts",
+      // テーマごとに 1 project。a11y 検査を light と dark の両方へ当てる
+      storybookProject("light"),
+      storybookProject("dark"),
     ],
     coverage: {
       provider: "v8",
