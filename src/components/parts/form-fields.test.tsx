@@ -69,7 +69,7 @@ describe("FormTextField", () => {
 
     const input = screen.getByRole("textbox", { name: "名前" }).element();
     await vi.waitFor(() => {
-      expect(input.getAttribute("aria-invalid")).toBe("true");
+      expect(input).toBeInvalid();
     });
 
     await vi.waitFor(() => {
@@ -91,7 +91,7 @@ describe("FormTextField", () => {
 
     const input = screen.getByRole("textbox", { name: "名前" }).element();
     await vi.waitFor(() => {
-      expect(input.getAttribute("aria-invalid")).toBe("true");
+      expect(input).toBeInvalid();
     });
     await vi.waitFor(() => {
       expect(getComputedStyle(label).color).not.toBe(colorBefore);

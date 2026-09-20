@@ -18,23 +18,24 @@ const FRUITS: Fruit[] = [
 
 const meta = {
   component: DataTable<Fruit>,
-  args: { tableKey: "fruits", columns, data: FRUITS },
+  args: { columns, data: FRUITS },
 } satisfies Meta<typeof DataTable<Fruit>>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = { args: { tableKey: "fruits-default" } };
 
 /** data が空のときは列数ぶんの colSpan を持つ案内行を 1 つ描く */
 export const Empty: Story = {
-  args: { data: [] },
+  args: { tableKey: "fruits-empty", data: [] },
 };
 
 /** rowProps で行ごとに busy を表す (実例: `src/routes/notes/index.tsx` の `busyRowAppearance`) */
 export const BusyRow: Story = {
   args: {
+    tableKey: "fruits-busy-row",
     rowProps: ({ original }) => ({
       "aria-busy": original.id === 2,
       className: original.id === 2 ? "opacity-60" : undefined,

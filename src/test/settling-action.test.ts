@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { createSettlingAction } from "./settling-action";
 
@@ -10,6 +10,8 @@ function track(promise: Promise<unknown>): { settled: () => boolean } {
   });
   return { settled: () => settled };
 }
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("createSettlingAction", () => {
   it("impl は呼ぶたびに未決着の Promise を返す", async () => {
@@ -58,18 +60,22 @@ describe("createSettlingAction", () => {
     }).not.toThrow();
   });
 
-  it("beforeEach が返す teardown は、その story で作った分だけを決着させる", async () => {
+  it("beforeEach は持ち越しを決着させてから始め、warn を残す", async () => {
     const settling = createSettlingAction();
     const leaked = track(settling.impl());
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    // 次の story の開始。前の story の持ち越しは捨てる
+    // 次の描画の開始。前の分を捨てると、それを待つ Transition が永久に pending になる
     const teardown = settling.beforeEach();
-    const current = track(settling.impl());
+    await Promise.resolve();
 
+    expect(leaked.settled()).toBe(true);
+    expect(warn).toHaveBeenCalledOnce();
+
+    const current = track(settling.impl());
     teardown();
     await Promise.resolve();
 
     expect(current.settled()).toBe(true);
-    expect(leaked.settled()).toBe(false);
   });
 });

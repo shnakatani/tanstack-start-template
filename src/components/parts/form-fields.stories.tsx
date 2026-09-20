@@ -363,7 +363,13 @@ export const Invalid: Story = {
   },
 };
 
-/** 無効表示。正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が両方付く */
+/**
+ * 無効表示。正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が両方付く。
+ *
+ * 無効になるのは `FormTextField` と `FormSelectField` だけである。`FormNumberField` と
+ * `FormCheckboxField` は `disabled` を prop に持たないため、この story でも有効のまま並ぶ。
+ * 半分だけ無効なのは描き漏れではない。
+ */
 export const Disabled: Story = {
   args: { disabled: true },
   play: async () => {

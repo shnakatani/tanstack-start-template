@@ -5,8 +5,9 @@
  * (testing.md「optimistic update テストは遅延 rejection で中間状態を観測」)。
  *
  * Storybook の vitest 実行は 1 つの React root へ story を描き替えるため、決着しない
- * Transition が残ると後続 story と干渉する (ADR-0022)。`beforeEach` が返す teardown で
- * 全決着させるので、play が `settle()` の手前で落ちても持ち越さない。
+ * Transition が残ると後続 story と干渉する (ADR-0022)。`beforeEach` は開始時と終了時の
+ * 両方で全決着させるので、play が `settle()` の手前で落ちても、teardown が走らないまま
+ * 再描画されても持ち越さない。
  *
  * `storybook/test` の `fn` へは渡す側で包む。ここが mock ライブラリに依存しないので、
  * 呼び出し側は story でもブラウザテストでも使える。
@@ -24,7 +25,7 @@ export interface SettlingAction {
   impl: () => Promise<undefined>;
   /** いま未決着のものを全て決着させる */
   settle: () => void;
-  /** `meta.beforeEach` へ渡す。開始時に持ち越しを捨て、終了時に全決着させる */
+  /** `meta.beforeEach` へ渡す。開始時に持ち越しを決着させ、終了時にも全決着させる */
   beforeEach: () => () => void;
 }
 
@@ -50,7 +51,16 @@ export function createSettlingAction(): SettlingAction {
     },
     settle,
     beforeEach: () => {
-      pendingResolvers = [];
+      // 持ち越しは捨てずに決着させる。捨てると、その Promise を待っている Transition が
+      // 永久に pending のまま残る。持ち越しがあること自体が teardown の取りこぼしなので
+      // 残す (UI で control を変えると rerender が beforeEach を再走させ、押下中の分が
+      // 持ち越される)
+      if (pendingResolvers.length > 0) {
+        console.warn("[settling-action] 前の描画の未決着を決着させてから始める", {
+          carriedOver: pendingResolvers.length,
+        });
+      }
+      settle();
       return settle;
     },
   };

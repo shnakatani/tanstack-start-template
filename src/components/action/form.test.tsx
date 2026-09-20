@@ -13,8 +13,8 @@ import { ActionForm, ActionFormSubmit } from "./form";
  * ADR-0022 は「ADR-0015 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、
  * play へは移さない」と決めている。play は Storybook の UI 上でも走るため CDP を使えず、
  * `storybook/test` の合成イベントで操作する。`ActionButton` の同じ規律は
- * `src/routes/notes/index.test.tsx` が `AlertDialogActionButton` 経由で持つが、
- * `ActionForm` と `ActionFormSubmit` にはその代わりが無い。
+ * `src/components/action/button.test.tsx` が持つ。画面側のテストは Action 層の guard を
+ * 代替しない (理由は ADR-0022 節 5)。
  */
 describe("ActionForm", () => {
   it("決着前の再 submit では submitAction を呼ばない", async () => {

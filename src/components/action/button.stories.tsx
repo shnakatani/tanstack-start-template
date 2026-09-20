@@ -30,8 +30,12 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 待機していない状態 */
-export const Default: Story = {};
+/**
+ * 待機していない状態。サイドバーに出る唯一の story なので、押しても決着する action にする。
+ * `settlingAction` のままだと play が無い分だけ誰も `settle()` を呼ばず、押した人の画面で
+ * pending のまま戻らない (ADR-0022 節 4)
+ */
+export const Default: Story = { args: { action: fn() } };
 
 /** 押すと決着まで pending になり、決着すると戻る */
 export const Settles: Story = {
@@ -69,9 +73,10 @@ export const NotCalledTwice: Story = {
   play: async ({ args }) => {
     const button = saveButton();
     await userEvent.click(button);
-    // aria-disabled が立つのを確かめる前にも 1 発送る。pending の描画を待ってからしか
-    // 塞げないなら、実際の連打の速さでは通ってしまう
-    await userEvent.keyboard("{Enter}");
+    // storybook/test の操作は各手順を await するので、ここに来た時点で pending は描画済み
+    // (ADR-0022 節 5)。この story が固定するのは、描画された guard が再操作を塞ぐことだけ。
+    // 描画が間に合わない速さの連打は play では起こせず、実イベントでの検証は
+    // src/components/action/button.test.tsx が持つ
     await expect(button).toHaveAttribute("aria-disabled", "true");
     await userEvent.keyboard("{Enter}");
 
@@ -106,9 +111,6 @@ export const InForm: Story = {
   // pending を見ない story なので即時決着にする。settlingAction のままだと、決着しない
   // Transition を残したまま次の story へ移る
   args: { children: "実行", action: fn() },
-  beforeEach: () => {
-    formSubmit.mockClear();
-  },
   render: (args) => (
     <form
       onSubmit={(event) => {
