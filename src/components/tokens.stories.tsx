@@ -3,7 +3,6 @@ import { useSyncExternalStore } from "react";
 
 import { pageTitle } from "@/components/parts/page-title";
 
-import { isColor } from "./css-color.story-helpers";
 import { collectRootCustomProperties } from "./css-rules.story-helpers";
 import { createThemeSnapshotStore } from "./theme-snapshot.story-helpers";
 import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story-helpers";
@@ -43,7 +42,10 @@ function readTokens(prefix: string): ThemeToken[] {
  * 現れず、購読しないと切り替えても止まる (ADR-0022)
  */
 const colorStore = createThemeSnapshotStore<ThemeToken[]>(
-  () => dropRedundantColorAliases(readTokens("--").filter(({ value }) => isColor(value))),
+  // 色かどうかはブラウザ自身のパーサに聞く。`CSS.supports` は property と value の組で
+  // 解析できるかを返すので、`oklch()` も `color-mix()` も relative color syntax も通る
+  () =>
+    dropRedundantColorAliases(readTokens("--").filter(({ value }) => CSS.supports("color", value))),
   [],
 );
 const radiusStore = createThemeSnapshotStore<ThemeToken[]>(() => readTokens("--radius"), []);
