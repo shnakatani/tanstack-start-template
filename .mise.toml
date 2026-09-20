@@ -6,6 +6,7 @@ disable_tools = ["node", "pnpm"]
 
 [env]
 DEV_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 3000') }}"
+STORYBOOK_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 6006') }}"
 DB_FILE_NAME = ".data/dev.sqlite"
 
 [tasks.serve]
@@ -14,7 +15,8 @@ run = "vp dev --port $DEV_PORT"
 
 [tasks.storybook]
 description = "Storybook を起動する"
-run = "vp exec storybook dev --port 6006 --no-open"
+# dev server と同じく worktree ごとに port を分ける。固定すると 2 つ目の worktree が bind に失敗する
+run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open"
 
 [tasks."db:generate"]
 description = "Drizzle スキーマから migration を生成する"

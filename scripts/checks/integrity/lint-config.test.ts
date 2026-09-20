@@ -68,6 +68,7 @@ const EXPECTED_OVERRIDES = [
       "**/*.test-helpers.tsx",
       "**/*.story-helpers.ts",
       "**/*.story-helpers.tsx",
+      "**/*.stories.ts",
       "**/*.stories.tsx",
       "src/test/**",
     ],
@@ -76,7 +77,7 @@ const EXPECTED_OVERRIDES = [
 ];
 
 /** lint が見に行くべきソースの所在 */
-const SOURCE_ROOTS = ["src", "scripts"];
+const SOURCE_ROOTS = ["src", "scripts", ".storybook"];
 
 /** 追跡されているのに lint されなくてよい唯一のソース。生成物 (ADR 対象外) */
 const ALLOWED_INVISIBLE = ["src/routeTree.gen.ts"];

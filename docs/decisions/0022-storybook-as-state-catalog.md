@@ -100,7 +100,9 @@ JS で比を計算する形そのものにも無理がある。ブラウザは s
 
 `src/components/ui/badge.tsx` の `rounded-4xl` がその例で、`static` なしでは `--radius-4xl` がカタログに出ない。
 
-代償は、未参照の宣言が本番 CSS へ乗ることである。`@theme static inline` から `static` を外して `vp build` を 2 回回せば、出力される変数と CSS のバイト数の差を測れる。
+代償は、未参照の宣言が本番 CSS へ乗ることである。この差はこの template から作られる全プロジェクトが払う。Storybook を開かないプロジェクトも含む。
+
+それでも `static` を採るのは、代替がいずれも公式に文書化されていない経路に乗るためである。差の測り方は `@theme static inline` から `static` を外して `vp build` を 2 回回す。
 
 Tailwind は theme の出力を `@layer theme` に置くため、CSSOM の走査は `@layer` を含むグループ規則を再帰的に辿る必要がある。辿らないと `@layer` の中の `:root` を見落とす。
 
@@ -145,6 +147,9 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 | トークンを専用 addon で一覧化する                        | `styles.css` へ注釈コメントを足す必要があり、Storybook 専用の記述が SSOT に混ざる                                  | 却下     |
 | コントラスト比を自前で計算する                           | 対応する色空間を実装ごと抱える。`oklch()` を読めない実装になり、変換のためにブラウザの色パーサを借りる連鎖が起きた | 却下     |
 | 全トークンを単一の背景と比べる                           | 画面上で重ならない組み合わせの比が並び、閾値を割ったかどうかの判断に使えない                                       | 却下     |
+| `static` を Storybook 専用の CSS だけに効かせる          | `@import` に `theme()` を付ける形は公式 docs に無い。未文書の経路に乗ることになる (2026-09-20 に docs を確認)      | 却下     |
+| トークン名を `styles.css` のソースから読む               | `static` が無いと未出力の変数は `getComputedStyle` で解決できず、名前だけが並ぶ                                    | 却下     |
+| `__unstable__loadDesignSystem` でビルド時に列挙する      | `@tailwindcss/node` が export するが、名前のとおり安定 API ではないと明示されている                                | 却下     |
 | 検証専用 story をサイドバーへ出したまま置く              | 同じ見た目の story が並び、カタログとして読めなくなる (2026-09-20 に 1 部品で実測、9 story 中 4 つが重複)          | 却下     |
 | 検証専用 story を別ファイルへ分ける                      | story glob と「部品の隣へ置く」規約の両方を変えることになる                                                        | 却下     |
 | pending の見た目を決着しない action で作る               | 後続 story の Transition を止める (節 4 の実測)                                                                    | 却下     |

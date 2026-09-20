@@ -1,66 +1,26 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { Fragment, useSyncExternalStore, type ReactNode } from "react";
 
 import { pageTitle } from "@/components/parts/page-title";
 
 import { isColor } from "./css-color.story-helpers";
+import { collectRootCustomProperties } from "./css-rules.story-helpers";
 import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story-helpers";
 
-/**
- * `<html>` の class 属性 (light/dark) の変化を購読する。withThemeByClassName の
- * テーマ切り替えは document.documentElement の class を直接書き換えるだけで React の
- * state/props を経由しないため、購読しないと ColorTokens は初回 mount 時に解決した色の
- * まま止まる (実測: dark で読み込んでも --background が light の値のまま固定された)。
- * 外部ストアへの購読は useEffect 内 setState の代替 4 (implementation.md)
- */
-function useHtmlClass(): string {
-  return useSyncExternalStore(
-    (onChange) => {
-      const observer = new MutationObserver(onChange);
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-      return () => observer.disconnect();
-    },
-    () => document.documentElement.className,
-    () => "",
-  );
+/** 名前順のトークン名。`styles.css` が SSOT なので値は写さない (ADR-0022) */
+function readTokenNames(prefix: string): string[] {
+  return collectRootCustomProperties(document.styleSheets, prefix, document.documentElement);
 }
 
 /**
- * :root に定義された CSS 変数を名前順で集める。styles.css が SSOT なので値は写さない。
- * Tailwind v4 は `@theme` の内容を `@layer theme { :root, :host { ... } }` へ出すため、
- * トップレベルの CSSStyleRule だけでなく `@layer` / `@media` 等のグループ規則
- * (CSSGroupingRule を継承する rule 全般) の中も再帰的に辿る。辿らないと `@layer` の中の
- * `:root` を見落とす (ADR-0022)
+ * 解決後の値を読む。`getComputedStyle` は呼ぶたびに root のスタイル解決を起こすので、
+ * 一覧を組み立てる間は 1 つを使い回す
  */
-function readRootTokens(prefix: string): string[] {
-  const names = new Set<string>();
-  const visit = (rules: CSSRuleList) => {
-    for (const rule of rules) {
-      if (
-        rule instanceof CSSStyleRule &&
-        rule.selectorText.split(",").some((s) => s.trim() === ":root")
-      ) {
-        for (const name of rule.style) {
-          if (name.startsWith(prefix)) names.add(name);
-        }
-      }
-      if (rule instanceof CSSGroupingRule) visit(rule.cssRules);
-    }
-  };
-  for (const sheet of document.styleSheets) {
-    try {
-      visit(sheet.cssRules);
-    } catch {
-      // 別オリジンの stylesheet は cssRules を読めない。Storybook の preview では起きないが、
-      // 読めないものを黙って飛ばすと一覧が欠けるので残す
-      console.warn("[tokens] cssRules を読めない stylesheet", { href: sheet.href });
-    }
-  }
-  return [...names].sort();
+function rootStyle(): CSSStyleDeclaration {
+  return getComputedStyle(document.documentElement);
 }
 
-function resolved(name: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function resolvedWith(style: CSSStyleDeclaration, name: string): string {
+  return style.getPropertyValue(name).trim();
 }
 
 /** 対象トークンが 0 件で終わる回帰を検出する。空の表を silent に描かせない */
@@ -72,22 +32,12 @@ function warnIfEmpty(names: string[], story: string): void {
 
 /** 解決後の値を伴う色トークンを名前順で集める */
 function readColorTokens(): ThemeToken[] {
+  const style = rootStyle();
   return dropRedundantColorAliases(
-    readRootTokens("--")
-      .map((name) => ({ name, value: resolved(name) }))
+    readTokenNames("--")
+      .map((name) => ({ name, value: resolvedWith(style, name) }))
       .filter(({ value }) => isColor(value)),
   );
-}
-
-/**
- * `<html>` の class が変わるたびに children を作り直す。値は `getComputedStyle` から読むため
- * React の依存に現れず、再 render だけでは React Compiler がメモ化した結果を返して値が
- * 止まる。key での remount なら読み取りごとやり直される (2026-09-20、light と dark で
- * --muted-foreground の比が 4.35 と 5.57 に分かれることで確認)
- */
-function RereadOnThemeChange({ children }: { children: ReactNode }) {
-  const htmlClass = useHtmlClass();
-  return <Fragment key={htmlClass}>{children}</Fragment>;
 }
 
 function ColorSwatches() {
@@ -115,7 +65,8 @@ function ColorSwatches() {
 }
 
 function RadiusTokens() {
-  const names = readRootTokens("--radius");
+  const style = rootStyle();
+  const names = readTokenNames("--radius");
   warnIfEmpty(names, "Tokens/Radius");
   return (
     <div className="flex flex-wrap gap-4">
@@ -127,7 +78,9 @@ function RadiusTokens() {
             style={{ borderRadius: `var(${name})` }}
           />
           <span className="font-mono text-xs">{name}</span>
-          <span className="font-mono text-xs text-muted-foreground">{resolved(name)}</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {resolvedWith(style, name)}
+          </span>
         </div>
       ))}
     </div>
@@ -147,13 +100,14 @@ const TYPOGRAPHY_SAMPLES = [
 ] as const;
 
 function TypographyTokens() {
-  const names = readRootTokens("--font");
+  const style = rootStyle();
+  const names = readTokenNames("--font");
   warnIfEmpty(names, "Tokens/Typography");
   return (
     <div className="flex flex-col gap-4">
       {names.map((name) => (
         <p key={name} className="font-mono text-xs text-muted-foreground">
-          {name}: {resolved(name)}
+          {name}: {resolvedWith(style, name)}
         </p>
       ))}
       {TYPOGRAPHY_SAMPLES.map((sample) => (
@@ -172,12 +126,6 @@ const meta = {
 
 export default meta;
 
-export const Colors: StoryObj = {
-  render: () => (
-    <RereadOnThemeChange>
-      <ColorSwatches />
-    </RereadOnThemeChange>
-  ),
-};
+export const Colors: StoryObj = { render: () => <ColorSwatches /> };
 export const Radius: StoryObj = { render: () => <RadiusTokens /> };
 export const Typography: StoryObj = { render: () => <TypographyTokens /> };

@@ -30,7 +30,12 @@ const UI_NON_COMPONENT_DIRS = new Set(["__screenshots__"]);
  * registry 由来でない付随ファイル。コンポーネントと同じディレクトリに置くが baseline を持たない。
  * `shadcn add` の出力に含まれないので、baseline と突き合わせる対象から外す
  */
-const COMPANION_FILE_PATTERNS = [/\.test\.tsx?$/, /\.stories\.tsx?$/, /\.test-helpers\.tsx?$/];
+const COMPANION_FILE_PATTERNS = [
+  /\.test\.tsx?$/,
+  /\.stories\.tsx?$/,
+  /\.test-helpers\.tsx?$/,
+  /\.story-helpers\.tsx?$/,
+];
 
 function isComponentFile(name: string): boolean {
   if (!/\.tsx?$/.test(name) || name.endsWith(".d.ts")) return false;

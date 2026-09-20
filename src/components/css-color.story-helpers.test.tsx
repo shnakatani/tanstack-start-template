@@ -24,3 +24,17 @@ describe("isColor", () => {
     expect(warnSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("isColor の sentinel", () => {
+  // 既知の値を 1 つにすると、その値そのものを判定したときに落ちる
+  it("sentinel と同じ値そのものも色として通す", () => {
+    expect(isColor("#010203")).toBe(true);
+    expect(isColor("rgb(1, 2, 3)")).toBe(true);
+  });
+
+  it("非色トークンの実際の値を落とす", () => {
+    expect(isColor("calc(0.625rem - 4px)")).toBe(false);
+    expect(isColor("spin 1s linear infinite")).toBe(false);
+    expect(isColor('"Geist Variable", sans-serif')).toBe(false);
+  });
+});

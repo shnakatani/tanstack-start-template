@@ -1,33 +1,42 @@
 /**
- * Canvas 2D の fillStyle を使い、CSS の色として解決できるか判定する共通処理。fillStyle は
- * 無効な値を代入すると値を無視して直前の値を保つ (仕様どおりの挙動) ため、判定用の sentinel
- * を挟んで検出する。呼び出し側 (振り分け用の静かな判定か、変換後の値が要る場面か) で warn の
- * 要否が変わるため、ここでは warn を出さない
+ * Canvas 2D の `fillStyle` は、CSS の色として解析できない値を代入すると直前の値を保つ
+ * (Canvas 2D 仕様)。この性質を使い、既知の値を入れてから対象を代入し、変わったかどうかで
+ * 判定する。ブラウザ自身のパーサを借りるので `color-mix()` や relative color syntax も通る。
+ *
+ * 既知の値を 1 つにすると、その値そのものを判定したときに「変わらなかった」と読めてしまう。
+ * 2 つ用意し、1 つ目と一致したときだけ 2 つ目で測り直す。
  */
-function resolveColor(cssColor: string): [number, number, number] | null {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  const sentinel = "#010203";
+const SENTINELS = ["#010203", "#040506"] as const;
+
+/** 使い回す。トークンの数だけ canvas を作ると、一覧の描画ごとに要素と context が増える */
+let sharedContext: CanvasRenderingContext2D | null | undefined;
+
+function context(): CanvasRenderingContext2D | null {
+  sharedContext ??= document.createElement("canvas").getContext("2d");
+  return sharedContext;
+}
+
+function changesFillStyle(ctx: CanvasRenderingContext2D, sentinel: string, value: string): boolean {
   ctx.fillStyle = sentinel;
-  ctx.fillStyle = cssColor;
-  if (ctx.fillStyle === sentinel) return null;
-  ctx.fillRect(0, 0, 1, 1);
-  const data = ctx.getImageData(0, 0, 1, 1).data;
-  const [r, g, b] = [data[0], data[1], data[2]];
-  // 1x1 の ImageData は必ず RGBA の 4 要素を持つ (Canvas 2D 仕様)。noUncheckedIndexedAccess
-  // が number | undefined にするための型ガードで、実際にここへ来ることは想定していない
-  if (r === undefined || g === undefined || b === undefined) {
-    throw new Error("[css-color] ImageData の pixel data が想定外の長さ");
-  }
-  return [r, g, b];
+  ctx.fillStyle = value;
+  return ctx.fillStyle !== sentinel;
 }
 
 /**
- * cssColor が CSS の色として解決できるかどうかを判定する。warn は出さない静かな述語で、
- * 非色トークン (spacing / font / animation 等) を選り分ける用途を想定する。ここで鳴らすと
- * 非色トークンの数だけ warn が出て、toRgb() が本来鳴らすべき warn が埋もれる
+ * `cssColor` が CSS の色として解析できるかを判定する。warn は出さない静かな述語で、
+ * トークン一覧から非色 (spacing / font / animation 等) を選り分ける用途に使う。ここで
+ * 鳴らすと非色トークンの数だけ warn が出て、一覧の欠落を示す warn が埋もれる。
  */
 export function isColor(cssColor: string): boolean {
-  return resolveColor(cssColor) !== null;
+  const ctx = context();
+  if (ctx === null) {
+    // 2D context が取れないと全トークンが非色になり、一覧が丸ごと空になる。原因が
+    // canvas 側にあることを残さないと、CSSOM の走査を疑うことになる
+    console.warn("[css-color] canvas の 2D context を取得できない", { cssColor });
+    return false;
+  }
+  const [first, second] = SENTINELS;
+  if (changesFillStyle(ctx, first, cssColor)) return true;
+  // 1 つ目と同じ値そのものだった可能性が残る。別の値で測り直す
+  return changesFillStyle(ctx, second, cssColor);
 }
