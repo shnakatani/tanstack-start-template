@@ -1,28 +1,10 @@
-/* scan の対象をアプリのソースへ絞る。既定はリポジトリ全体で、Markdown の字面まで本番 CSS へ
-   出る。除外を並べる形を採らない理由と効果の測り方は ADR-0022 */
-@import "tailwindcss" source("../src");
+@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
-/* 既定 palette を生成レベルで消す。色は semantic token だけを通し、bg-red-500 のような
-   palette ユーティリティは CSS ごと存在しなくなる (tailwindcss.com/docs/colors の
-   "Using a custom palette")。import より後ろ、下の @theme inline より前に置くこと。
-   後ろへ動かすと semantic token まで消え、前へ動かすと既定 palette が生き残る */
-@theme {
-  --color-*: initial;
-  /* 黒白だけ残す。registry の overlay が scrim を bg-black/10 で描いており、消すと
-     モーダルの背景が素通しになる。色相を持たず light / dark でも反転しないため
-     semantic token へ移す対象ではない。撤去済みの字面ガードも黒白は見ていなかった */
-  --color-black: #000;
-  --color-white: #fff;
-}
-
 @custom-variant dark (&:is(.dark *));
 
-/* static はここに付けない。付けると本番の CSS が使っていない変数の分まで持つ。
-   カタログに要る分は .storybook/preview.css がこのファイルを theme(static) 付きで
-   読み直して掛ける (ADR-0022) */
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;
@@ -43,8 +25,6 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-destructive-surface: var(--destructive-surface);
-  --color-success: var(--success);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -75,22 +55,18 @@
   --card-foreground: oklch(0.148 0.004 228.8);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.148 0.004 228.8);
-  --primary: oklch(42.4% 0.199 265.638); /* blue-800。生成物は blue-700 で bg-primary/80 が 4.21 */
+  --primary: oklch(0.488 0.243 264.376);
   --primary-foreground: oklch(0.97 0.014 254.604);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
-  --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.15 */
+  --muted-foreground: oklch(0.56 0.021 213.5);
   --accent: oklch(0.963 0.002 197.1);
   --accent-foreground: oklch(0.218 0.008 223.9);
-  --destructive: oklch(44.4% 0.177 26.899); /* red-800。tint の上の文字 */
-  --destructive-surface: oklch(
-    57.7% 0.245 27.325
-  ); /* red-600。tint の面。上流の --destructive と同値 */
-  --success: oklch(44.8% 0.119 151.328); /* green-800 */
+  --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.925 0.005 214.3);
   --input: oklch(0.925 0.005 214.3);
-  --ring: oklch(42.4% 0.199 265.638);
+  --ring: oklch(0.723 0.014 214.4);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
@@ -99,12 +75,12 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.987 0.002 197.1);
   --sidebar-foreground: oklch(0.148 0.004 228.8);
-  --sidebar-primary: oklch(42.4% 0.199 265.638);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
   --sidebar-accent: oklch(0.963 0.002 197.1);
   --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
   --sidebar-border: oklch(0.925 0.005 214.3);
-  --sidebar-ring: oklch(42.4% 0.199 265.638);
+  --sidebar-ring: oklch(0.723 0.014 214.4);
 }
 
 .dark {
@@ -114,20 +90,18 @@
   --card-foreground: oklch(0.987 0.002 197.1);
   --popover: oklch(0.218 0.008 223.9);
   --popover-foreground: oklch(0.987 0.002 197.1);
-  --primary: oklch(80.9% 0.105 251.813); /* blue-300。生成物は blue-800 で text-primary が 2.23 */
-  --primary-foreground: oklch(28.2% 0.091 267.935); /* blue-950。light と役割を反転させる */
+  --primary: oklch(0.424 0.199 265.638);
+  --primary-foreground: oklch(0.97 0.014 254.604);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.275 0.011 216.9);
   --muted-foreground: oklch(0.723 0.014 214.4);
   --accent: oklch(0.275 0.011 216.9);
   --accent-foreground: oklch(0.987 0.002 197.1);
-  --destructive: oklch(80.8% 0.114 19.571); /* red-300 */
-  --destructive-surface: oklch(70.4% 0.191 22.216); /* red-400。上流の --destructive と同値 */
-  --success: oklch(72.3% 0.219 149.579); /* green-500。生成物に無いので足す */
+  --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(80.9% 0.105 251.813);
+  --ring: oklch(0.56 0.021 213.5);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
@@ -135,24 +109,12 @@
   --chart-5: oklch(0.424 0.199 265.638);
   --sidebar: oklch(0.218 0.008 223.9);
   --sidebar-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-primary: oklch(80.9% 0.105 251.813);
-  --sidebar-primary-foreground: oklch(28.2% 0.091 267.935);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
   --sidebar-accent: oklch(0.275 0.011 216.9);
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(80.9% 0.105 251.813);
-}
-
-/* ScrollArea.Root へ当てて、Viewport のフォーカス指標を Root の outline で代替する。
-   registry の Viewport は溢れている間だけ tabIndex 0 になり focus-visible:ring-3
-   (ui/scroll-area.tsx) を持つが、その ring は Viewport の border box の外側に描かれる。
-   Root が overflow-hidden を持つか Viewport に mask (scroll-fade 等) が乗るか、
-   どちらか一方でも該当すると消えるので、そのとき当てる。
-   base-ui 公式 CSS が .Body:has(.BodyViewport:focus-visible) { outline } を持つのと同じ補償。
-   Root に outline-none を同居させないこと (--tw-outline-style が none に固定され描画されない。
-   同じ罠の記録が components/segmented-radio-group.tsx にある) */
-@utility scroll-area-focus-outline {
-  @apply has-[>[data-slot=scroll-area-viewport]:focus-visible]:outline-2 has-[>[data-slot=scroll-area-viewport]:focus-visible]:-outline-offset-2 has-[>[data-slot=scroll-area-viewport]:focus-visible]:outline-ring/50;
+  --sidebar-ring: oklch(0.56 0.021 213.5);
 }
 
 @layer base {
@@ -164,15 +126,5 @@
   }
   html {
     @apply font-sans;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
   }
 }

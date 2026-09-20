@@ -55,6 +55,24 @@ function TextHarness({ labelClassName }: { labelClassName?: string }) {
 }
 
 /**
+ * トークンをブラウザに解決させて算出値の綴りで受け取る。カスタムプロパティを
+ * `getPropertyValue` で読むと `styles.css` に書いた字面がそのまま返るため、`color` の
+ * 算出値と直接は比べられない。トークンの値は Tailwind の palette の段を写す約束で、
+ * palette 側が `oklch(44.4% ...)` と百分率で書くのに対し、算出値は `oklch(0.444 ...)` に
+ * 正規化される (ADR-0024)。
+ */
+function resolveColorToken(token: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = `var(${token})`;
+  document.body.append(probe);
+  try {
+    return getComputedStyle(probe).color;
+  } finally {
+    probe.remove();
+  }
+}
+
+/**
  * 4 部品の配線 (正典ペア、aria-describedby ⇄ FieldError、sanitize、検証エラーの正規化、
  * Select の候補入れ替え、blur 検証) は `form-fields.stories.tsx` の play が持つ (ADR-0022)。
  * ここに残すのは `getComputedStyle` で色を固定する回帰と、上の型テストだけ。
@@ -81,9 +99,7 @@ describe("FormTextField", () => {
     const screen = await render(<TextHarness labelClassName="text-muted-foreground" />);
     const label = screen.getByText("名前", { exact: true }).element();
     const colorBefore = getComputedStyle(label).color;
-    const destructiveColor = getComputedStyle(document.documentElement)
-      .getPropertyValue("--destructive")
-      .trim();
+    const destructiveColor = resolveColorToken("--destructive");
 
     expect(colorBefore).not.toBe(destructiveColor);
 
