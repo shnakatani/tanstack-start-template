@@ -62,7 +62,7 @@ catalog:
 # typescript の peer (>=4.8.4 <6.1.0) は外せない。optional 化は反映されるが版の選択は変わらず、
 # packageExtensions は既存の peer 範囲を上書きしない (追加のみ。2026-09-19 に pnpm 11.25.0 で
 # greenfield 解決を実測)。撤去条件は上流が parser を optional peer へ移すこと
-# (shadcn-ui/lint#1)。移れば ESLint も typescript も依存から消える。
+# (shadcn-ui/lint#1)。移れば typescript の 6 系固定は解けるが、ESLint は下の 3 段の経路で残る。
 # このキーはグラフ全体の @typescript-eslint/parser に効く。ESLint を実際に使う依存を足すときは、
 # その peer までここで外れていないかを確かめる。
 # ただし eslint-plugin-testing-library が引く eslint には、この手を使わない。plugin 自身と

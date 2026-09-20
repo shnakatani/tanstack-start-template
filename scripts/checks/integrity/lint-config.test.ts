@@ -38,8 +38,10 @@ const EXPECTED_PLUGINS = [
 const EXPECTED_OVERRIDES = [
   {
     // testing-library の適用先とルール。story 本体と story 専用の helper の両方に当てる。
-    // helper へ play を切り出すと 20 ルールが外れる穴を塞ぐためで、story-helpers が
-    // import するのは story と同じ `storybook/test` なので誤検出は出ない (2026-09-21 実測)。
+    // helper へ play を切り出すと 20 ルールが外れる穴を塞ぐためである。既存の helper 7 件で
+    // `vp lint` の誤検出は 0 件だった (2026-09-21 実測)。7 件のうち `storybook/test` を
+    // import するのは 1 件で、残りは何も import しない。`vitest-browser-react` を import する
+    // helper が出たら、`*.test.tsx` と同じ誤検出 (locator API の同名衝突) が起きうる。
     // 適用先を `*.test.tsx` へ広げると、vitest-browser-react の locator API を
     // testing-library の同名 API と誤認して誤検出が出る。`prefer-screen-queries` を allow から
     // 戻すと Storybook の `canvas` が落ちる。`no-node-access` は allow のままにする。

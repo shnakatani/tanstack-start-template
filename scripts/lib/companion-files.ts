@@ -2,9 +2,9 @@
  * アプリのコードと同じディレクトリに置くが、アプリのコードではないファイルの種別。
  * `<名前>.<種別>.ts` / `.tsx` の形で置く (directory-structure.md「テストとスクリプトの配置」)。
  *
- * この一覧が唯一の定義で、lint の適用外 (`vite.config.ts`)、coverage の除外
- * (`vitest.config.ts`)、registry baseline の突き合わせ (`registry-baseline.test.ts`) が
- * ここから導出される。種別を足すときにどれか 1 つを書き忘れる事故が起きないようにするのが
+ * この一覧が唯一の定義で、lint の適用外と story への適用範囲 (`vite.config.ts`)、coverage の
+ * 除外 (`vitest.config.ts`)、registry baseline の突き合わせ (`registry-baseline.test.ts`)、
+ * route ファイル判定のパターン (`companionFilePattern`) が ここから導出される。種別を足すときにどれか 1 つを書き忘れる事故が起きないようにするのが
  * 目的なので、導出先で改めて字面を並べ直さない。
  *
  * `lint-config.test.ts` は lint の解決結果と突き合わせる期待値を手書きで持つ。そちらを

@@ -303,15 +303,14 @@ export default defineConfig({
           "testing-library/no-await-sync-events": ["error", { eventModules: ["fire-event"] }],
           "testing-library/no-await-sync-queries": "error",
           "testing-library/no-container": "error",
-          // 上流は warn だが、`vp check` は warn で exit 0 のため落ちない。この config の
-          // 方針 (categories の直前のコメント) に合わせて error で入れる
-          // upstream は warn。vp check は warn で exit 1 にならないため、
-          // commit された screen.debug() が素通りする。ここだけ error へ上げる (ADR-0004)
+          // 上流は warn。`vp check` は warn で落ちないため、warn のままだと commit された
+          // screen.debug() が素通りする。この config の方針 (categories の直前のコメント) に
+          // 合わせて error で入れる (ADR-0004)
           "testing-library/no-debugging-utils": "error",
           "testing-library/no-dom-import": ["error", "react"],
           "testing-library/no-global-regexp-flag-in-query": "error",
           "testing-library/no-manual-cleanup": "error",
-          // 基準から外す 2 ルール目。21 ルール中これだけが strict 判定 (`isTestingLibraryImported(true)`)
+          // 基準から外す 2 ルール目。22 ルール中これだけが strict 判定 (`isTestingLibraryImported(true)`)
           // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
           // 発火しない。`settings` に utils-module を足せば発火するが、その形は
           // `.claude/rules/testing.md`「状態のアサートは semantic matcher を先に探す」が

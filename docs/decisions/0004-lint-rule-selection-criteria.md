@@ -28,25 +28,25 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 
 有効にしていないプラグインも、有効化する時点でこの表の基準に従う。
 
-| プラグイン        | 基準                                                                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| eslint コア       | `@eslint/js` の `recommended` + typescript-eslint の `eslint-recommended` が error にする 4 ルール                                         |
-| `typescript`      | typescript-eslint の `strict` と `strict-type-checked`                                                                                     |
-| `react`           | eslint-plugin-react の `recommended` と `jsx-runtime`。React Compiler 由来のルールだけは eslint-plugin-react-hooks の `recommended-latest` |
-| `import`          | eslint-plugin-import の `recommended`                                                                                                      |
-| `promise`         | eslint-plugin-promise の `recommended`                                                                                                     |
-| `jsdoc`           | eslint-plugin-jsdoc の `recommended-typescript`                                                                                            |
-| `vitest`          | `@vitest/eslint-plugin` の `recommended`                                                                                                   |
-| `jsx-a11y`        | eslint-plugin-jsx-a11y の `recommended`                                                                                                    |
-| `testing-library` | eslint-plugin-testing-library の `flat/react`。適用は story に限る (拡張子は `companion-files.ts` の `storyGlobs` が唯一の定義)            |
-| `unicorn`         | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
-| `oxc`             | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
+| プラグイン        | 基準                                                                                                                                                     |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| eslint コア       | `@eslint/js` の `recommended` + typescript-eslint の `eslint-recommended` が error にする 4 ルール                                                       |
+| `typescript`      | typescript-eslint の `strict` と `strict-type-checked`                                                                                                   |
+| `react`           | eslint-plugin-react の `recommended` と `jsx-runtime`。React Compiler 由来のルールだけは eslint-plugin-react-hooks の `recommended-latest`               |
+| `import`          | eslint-plugin-import の `recommended`                                                                                                                    |
+| `promise`         | eslint-plugin-promise の `recommended`                                                                                                                   |
+| `jsdoc`           | eslint-plugin-jsdoc の `recommended-typescript`                                                                                                          |
+| `vitest`          | `@vitest/eslint-plugin` の `recommended`                                                                                                                 |
+| `jsx-a11y`        | eslint-plugin-jsx-a11y の `recommended`                                                                                                                  |
+| `testing-library` | eslint-plugin-testing-library の `flat/react`。適用は story 本体と story 専用の helper に限る (対象は `companion-files.ts` の `storyGlobs` が唯一の定義) |
+| `unicorn`         | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                                     |
+| `oxc`             | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                                 |
 
 `@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (「Tailwind と shadcn/ui 領域は jsPlugins で足す」)。
 
 `testing-library` は oxlint ネイティブではなく `jsPlugins` で載せるが、基準は上流の `flat/react` を写す。`@shadcn/lint` と違い上流に recommended があるためである。
 
-適用を story に限るのは、緩和ではなく適用範囲の確定である。拡張子を字面で並べ直さず `companion-files.ts` の `storyGlobs` から引くのは、`.storybook/main.ts` が ts / tsx の両方を story として扱うためで、片方だけに絞るとルールが無言で外れる。`*.test.tsx` は `vitest-browser-react` の locator API を使い、`screen.container` や `getByText(...).query()` が testing-library の同名 API と意味が違う。当てると誤検出が出る。支配的なのは `render-result-naming-convention` で、`vitest-browser-react` は render の結果を `screen` と名付けて locator を返すが、testing-library はその名前も戻り値も別物として扱う。件数は `vite.config.ts` の `files` を `*.test.tsx` へ広げて `vp lint` を走らせれば出る。story 側は `storybook/test` が testing-library をそのまま re-export しており、Aggressive Reporting が module の判定を解決する。
+適用を story に限るのは、緩和ではなく適用範囲の確定である。対象は `*.stories.{ts,tsx}` と `*.story-helpers.{ts,tsx}` の両方で、play を helper へ切り出したときにルールが外れないようにする。種別も拡張子も字面で並べ直さず `companion-files.ts` の `storyGlobs` から引く。`.storybook/main.ts` が ts / tsx の両方を story として扱うので、片方だけに絞るとルールが無言で外れる。`*.test.tsx` は `vitest-browser-react` の locator API を使い、`screen.container` や `getByText(...).query()` が testing-library の同名 API と意味が違う。当てると誤検出が出る。支配的なのは `render-result-naming-convention` で、`vitest-browser-react` は render の結果を `screen` と名付けて locator を返すが、testing-library はその名前も戻り値も別物として扱う。件数は `vite.config.ts` の `files` を `*.test.tsx` へ広げて `vp lint` を走らせれば出る。story 側は `storybook/test` が testing-library をそのまま re-export しており、Aggressive Reporting が module の判定を解決する。
 
 browser mode 側の待機は `vitest` プラグインが持つ。`require-awaited-expect-poll` が `expect.element` を対象にしており、`correctness` カテゴリ経由で既に有効である。
 
