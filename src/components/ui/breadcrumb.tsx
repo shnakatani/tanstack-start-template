@@ -53,7 +53,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       data-slot="breadcrumb-page"
-      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- 現在ページを表す非遷移項目で、a href を付けると遷移可能だと誤って伝わる。role="link" + aria-disabled で「link 相当だが無効」と伝える
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- 現在ページを表す非遷移項目で、a href を付けると遷移可能だと誤って伝わる。role="link" + aria-disabled で「link 相当だが無効」と伝える。同じ形への linter の指摘は上流でも報告され NOT_PLANNED で閉じている (shadcn-ui/ui#7639) ので、撤去を待つ対象ではない
       role="link"
       aria-disabled="true"
       aria-current="page"
