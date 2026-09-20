@@ -298,7 +298,7 @@ export default defineConfig({
         // から見えず、routes からの上書きが素通りする。require-static-classes は他の shadcn
         // ルールの門番で、ここで落ちる className は no-raw-colors / no-unknown-classes も中身を
         // 読めない (ADR-0021)
-        files: ["src/**"],
+        files: ["src/**", ".storybook/**"],
         excludeFiles: DESIGN_SYSTEM_LAYERS.map((layer) => `src/components/${layer}/**`),
         rules: {
           "shadcn/no-restyle": ["error", { allow: ["layout"] }],

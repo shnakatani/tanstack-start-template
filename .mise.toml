@@ -8,13 +8,12 @@ disable_tools = ["node", "pnpm"]
 DB_FILE_NAME = ".data/dev.sqlite"
 
 # port は worktree ごとに分ける。固定すると 2 つ目の worktree が bind に失敗する。
-# [env] ではなくタスクの中で呼ぶ: 読み手がこの 2 つのタスクしかいないのに、[env] へ置くと
-# mise が env を解決するたび (シェル hook 下ではディレクトリへ入るたび) に git の
-# サブプロセスが走る。タスク側なら起動するときだけ走り、シェル hook の有無にも依存しない
-# port はタスクの env で導出する。トップレベルの [env] へ置くと mise が env を解決する
-# たびに git のサブプロセスが走り、run の引数へ $(...) を書くと script が実行できなかった
-# ときに空文字が渡って Vite の既定 port で起動する。タスクの env なら、そのタスクを叩いた
-# ときだけ走り、script が失敗すればタスクごと止まる (2026-09-20 実測)
+# 導出はタスクの env に置く。要るのはこの 2 つのタスクだけなのに、トップレベルの [env] へ
+# 置くと mise が env を解決するたび (シェル hook 下ではディレクトリへ入るたび) に git の
+# サブプロセスが走る。run の引数へ $(...) を直接書く形も採らない。script が実行できなかった
+# ときに空文字が渡り、Vite の既定 port で起動して worktree の分離が無言で外れる。タスクの
+# env なら、そのタスクを叩いたときだけ走り、シェル hook の有無にも依存しない。script が
+# 失敗すればタスクごと止まる (2026-09-20 実測)
 [tasks.serve]
 description = "dev server を起動する"
 env = { DEV_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 3000') }}" }

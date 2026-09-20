@@ -10,9 +10,11 @@ function sheet(css: string): CSSStyleSheet {
 
 const root = document.documentElement;
 
-describe("collectRootCustomProperties", () => {
-  afterEach(() => vi.restoreAllMocks());
+// spy はファイル内の全 describe で張る。describe の中に置くと、その describe の
+// テストにしか効かず、兄弟の describe が張った spy が後続へ残る
+afterEach(() => vi.restoreAllMocks());
 
+describe("collectRootCustomProperties", () => {
   it(":root の宣言を prefix で絞って名前順に返す", () => {
     const css = ":root { --b: 2; --a: 1; --other: 3; }";
 
@@ -49,18 +51,38 @@ describe("collectRootCustomProperties", () => {
   });
 
   // 深い位置の失敗で、その stylesheet の残りの rule が落ちてはいけない
+  // cross-origin では cssRules が SecurityError を投げる (CSSOM)。styleSheet の getter が
+  // 投げるという記述は仕様にも MDN にも無いので、投げるのは cssRules の側で模擬する
   it("読めない @import があっても同じ stylesheet の他の宣言は残る", () => {
     const unreadable = Object.create(CSSImportRule.prototype, {
       href: { value: "cross-origin.css" },
       styleSheet: {
-        get(): CSSStyleSheet {
-          throw new Error("SecurityError");
+        value: {
+          get cssRules(): CSSRuleList {
+            throw new DOMException("cross-origin", "SecurityError");
+          },
         },
       },
     });
     const importing = {
       href: null,
       cssRules: [unreadable, ...sheet(":root { --kept: 1; }").cssRules],
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    expect(collectRootCustomProperties([importing], "--", root)).toEqual(["--kept"]);
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it("styleSheet が null の @import は warn して飛ばす", () => {
+    const pending = Object.create(CSSImportRule.prototype, {
+      href: { value: "not-loaded.css" },
+      styleSheet: { value: null },
+      supportsText: { value: null },
+    });
+    const importing = {
+      href: null,
+      cssRules: [pending, ...sheet(":root { --kept: 1; }").cssRules],
     };
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 

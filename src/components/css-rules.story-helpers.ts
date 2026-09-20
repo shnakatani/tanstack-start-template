@@ -61,8 +61,26 @@ export function collectRootCustomProperties(
       // @import が参照する stylesheet は CSSGroupingRule を継承しないので、別に辿る。
       // 辿らないと、その中の宣言が「トークンが無い」のと区別が付かない形で落ちる
       if (rule instanceof CSSImportRule) {
-        // styleSheet は読み込み前や失敗時に null になる
-        const inner = readRules(() => rule.styleSheet?.cssRules ?? [], rule.href);
+        // cross-origin の stylesheet では cssRules が SecurityError を投げる
+        // (CSSOM「If the origin-clean flag is unset, throw a SecurityError exception.」)。
+        // 読み取りごと readRules に入れて、走査全体が止まらないようにする
+        const inner = readRules(() => {
+          const imported = rule.styleSheet;
+          if (imported === null) {
+            // 読み込み前か失敗。chromium 153 では取得に失敗した @import が null になる
+            // (2026-09-20 実測)。黙って飛ばすと「その stylesheet にトークンが無い」のと
+            // 区別が付かなくなる。supports() の条件が偽のときに null を返す仕様も議論
+            // されているが (w3c/csswg-drafts#8608)、chromium 153 は条件が偽でも取得して
+            // 非 null を返す。条件で warn を止める分岐は置かず、supportsText を payload へ
+            // 載せて読み手が切り分けられるようにする
+            console.warn("[css-rules] styleSheet を読めない @import", {
+              href: rule.href,
+              supportsText: rule.supportsText,
+            });
+            return [];
+          }
+          return imported.cssRules;
+        }, rule.href);
         if (inner !== null) visit(inner);
         continue;
       }
