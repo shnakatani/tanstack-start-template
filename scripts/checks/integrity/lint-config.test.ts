@@ -40,7 +40,8 @@ const EXPECTED_OVERRIDES = [
     // testing-library の適用先とルール。適用先を `*.test.tsx` へ広げると、
     // vitest-browser-react の locator API を testing-library の同名 API と誤認して
     // 誤検出が出る。`prefer-screen-queries` を allow から戻すと Storybook の `canvas` が
-    // 落ちる (ADR-0004「基準にする上流設定」)
+    // 落ちる。`no-node-access` は allow のままにする。deny へ戻しても strict 判定で
+    // 発火せず、有効に見えて無検査の状態になる (ADR-0004「基準にする上流設定」)
     files: ["**/*.stories.tsx"],
     excludeFiles: undefined,
     rules: {
@@ -50,11 +51,11 @@ const EXPECTED_OVERRIDES = [
       "testing-library/no-await-sync-events": "deny",
       "testing-library/no-await-sync-queries": "deny",
       "testing-library/no-container": "deny",
-      "testing-library/no-debugging-utils": "warn",
+      "testing-library/no-debugging-utils": "deny",
       "testing-library/no-dom-import": "deny",
       "testing-library/no-global-regexp-flag-in-query": "deny",
       "testing-library/no-manual-cleanup": "deny",
-      "testing-library/no-node-access": "deny",
+      "testing-library/no-node-access": "allow",
       "testing-library/no-promise-in-fire-event": "deny",
       "testing-library/no-render-in-lifecycle": "deny",
       "testing-library/no-unnecessary-act": "deny",

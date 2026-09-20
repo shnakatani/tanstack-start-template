@@ -290,8 +290,8 @@ export default defineConfig({
         // 使い、testing-library の同名 API と意味が違うため、当てると誤検出が出る。
         // story 側は `storybook/test` が testing-library をそのまま re-export しており、
         // Aggressive Reporting が追加設定なしで解決する。
-        // 採用は 1 ルールに絞る。upstream recommended (22 ルール) は `vitest-browser-react` を
-        // 前提にしておらず、基準をそのまま写せない唯一のプラグインになる (ADR-0004)
+        // 基準から外すのは 2 ルール。upstream recommended (22 ルール) は `vitest-browser-react`
+        // も Storybook も前提にしておらず、基準をそのまま写せない唯一のプラグインになる (ADR-0004)
         files: ["**/*.stories.tsx"],
         rules: {
           // eslint-plugin-testing-library の flat/react (ADR-0004 の基準表)
@@ -301,11 +301,18 @@ export default defineConfig({
           "testing-library/no-await-sync-events": ["error", { eventModules: ["fire-event"] }],
           "testing-library/no-await-sync-queries": "error",
           "testing-library/no-container": "error",
-          "testing-library/no-debugging-utils": "warn",
+          // 上流は warn だが、`vp check` は warn で exit 0 のため落ちない。この config の
+          // 方針 (categories の直前のコメント) に合わせて error で入れる
+          "testing-library/no-debugging-utils": "error",
           "testing-library/no-dom-import": ["error", "react"],
           "testing-library/no-global-regexp-flag-in-query": "error",
           "testing-library/no-manual-cleanup": "error",
-          "testing-library/no-node-access": "error",
+          // 基準から外す 2 ルール目。21 ルール中これだけが strict 判定 (`isTestingLibraryImported(true)`)
+          // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
+          // 発火しない。`settings` に utils-module を足せば発火するが、その形は
+          // `.claude/rules/testing.md`「アサートの選び方」が querySelector を条件付きで許して
+          // いるのと両立しない (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる)
+          "testing-library/no-node-access": "off",
           "testing-library/no-promise-in-fire-event": "error",
           "testing-library/no-render-in-lifecycle": "error",
           "testing-library/no-unnecessary-act": "error",

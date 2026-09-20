@@ -9,7 +9,7 @@
 - Revised: 2026-09-19 (Tailwind と shadcn/ui 領域の JS plugin を `eslint-plugin-better-tailwindcss` から `@shadcn/lint` へ移し、未知 class、raw color、arbitrary color の 3 ルールへ責務を分けた)
 - Revised: 2026-09-19 (`no-restyle` を採用ルールへ加え、`settings.shadcn.componentImports` と `overrides.excludeFiles` で適用範囲を design system の層に合わせた。層の決定は ADR-0020)
 - Revised: 2026-09-19 (`require-static-classes` を採用ルールへ加え、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言した。層の境界は ADR-0020、配り方の規範は ADR-0021)
-- Revised: 2026-09-20 (`testing-library` を基準表へ加えた。`jsPlugins` 経由で `flat/react` を写し、適用を story に限る。`prefer-screen-queries` だけ外す)
+- Revised: 2026-09-20 (`testing-library` を基準表へ加えた。`jsPlugins` 経由で `flat/react` を写し、適用を story に限る。`prefer-screen-queries` と `no-node-access` を外す)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -46,11 +46,18 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 
 `testing-library` は oxlint ネイティブではなく `jsPlugins` で載せるが、基準は上流の `flat/react` を写す。`@shadcn/lint` と違い上流に recommended があるためである。
 
-適用を `**/*.stories.tsx` に限るのは、緩和ではなく適用範囲の確定である。`*.test.tsx` は `vitest-browser-react` の locator API を使い、`screen.container` や `getByText(...).query()` が testing-library の同名 API と意味が違う。当てると誤検出が出る (2026-09-20 時点で 119 件)。story 側は `storybook/test` が testing-library をそのまま re-export しており、Aggressive Reporting が追加設定なしで解決する。
+適用を `**/*.stories.tsx` に限るのは、緩和ではなく適用範囲の確定である。`*.test.tsx` は `vitest-browser-react` の locator API を使い、`screen.container` や `getByText(...).query()` が testing-library の同名 API と意味が違う。当てると誤検出が出る (2026-09-20 時点で 119 件)。story 側は `storybook/test` が testing-library をそのまま re-export しており、Aggressive Reporting が module の判定を解決する。
 
 browser mode 側の待機は `vitest` プラグインが持つ。`require-awaited-expect-poll` が `expect.element` を対象にしており、`correctness` カテゴリ経由で既に有効である。
 
-`prefer-screen-queries` だけ基準から外す。play が受け取る `canvas` を render 結果の分割代入と誤読するためで、`canvas` は Storybook が渡す query 済みオブジェクトである。上流の `write-story` skill が「✅ Correct: Use canvas directly」と指定している形なので、こちらを直す選択肢は取らない。
+基準から外すのは 2 ルールである。
+
+| ルール                  | 外す理由                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prefer-screen-queries` | play が受け取る `canvas` を render 結果の分割代入と誤読する。`canvas` は Storybook が渡す query 済みオブジェクトで、上流の `write-story` skill が「✅ Correct: Use canvas directly」と指定している形                                                                                                                                       |
+| `no-node-access`        | 21 ルール中これだけが strict 判定 (`isTestingLibraryImported(true)`) で Aggressive Reporting を迂回し、`storybook/test` 経由の story では一度も発火しない。`settings` の `testing-library/utils-module` を足せば発火するが、その形は `.claude/rules/testing.md`「アサートの選び方」が `querySelector` を条件付きで許しているのと両立しない |
+
+`no-node-access` を有効のまま残すと、設定上は error でも無検査になる。
 
 このプラグインは ESLint 本体を依存へ持ち込む。`@typescript-eslint/utils` のルート import が `eslint` を実行時に読むため、`packageExtensions` で peer を optional にしても外れない (2026-09-20 に 3 通り試して実測)。oxlint の jsPlugins が読み込む中でだけ動き、出荷物には入らない。撤去条件は typescript-eslint#11939 (`utils` から `eslint` の import を外し `/ts-eslint` を型専用にする) が入ることで、oxc-project/oxc#17734 が oxlint 側の追跡先である。
 
