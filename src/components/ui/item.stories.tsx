@@ -64,8 +64,9 @@ export const Small: Story = { args: { size: "sm" } };
 
 /** アイコンと操作を添えた形 */
 export const WithMediaAndActions: Story = {
-  render: () => (
-    <Item variant="outline">
+  args: { variant: "outline" },
+  render: (args) => (
+    <Item {...args}>
       <ItemMedia variant="icon">
         <FileTextIcon aria-hidden />
       </ItemMedia>
@@ -84,8 +85,9 @@ export const WithMediaAndActions: Story = {
 
 /** `ItemMedia` の `image`。写真やサムネイルをそのまま収める */
 export const WithImageMedia: Story = {
-  render: () => (
-    <Item variant="outline">
+  args: { variant: "outline" },
+  render: (args) => (
+    <Item {...args}>
       <ItemMedia variant="image">
         <FileTextIcon aria-hidden />
       </ItemMedia>

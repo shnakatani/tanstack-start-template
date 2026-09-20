@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { FileTextIcon, HomeIcon, SettingsIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { expect, userEvent } from "storybook/test";
 
 import {
@@ -33,7 +34,7 @@ function SidebarExample({
   children,
   collapsible,
 }: {
-  children?: React.ReactNode;
+  children?: ReactNode;
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
   return (

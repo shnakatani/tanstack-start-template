@@ -43,8 +43,8 @@ export const Vertical: Story = { args: { orientation: "vertical" } };
 
 /** 区切りを挟む形 */
 export const WithSeparator: Story = {
-  render: () => (
-    <ButtonGroup>
+  render: (args) => (
+    <ButtonGroup {...args}>
       <Button variant="outline">保存</Button>
       <ButtonGroupSeparator />
       <Button variant="outline">複製</Button>
@@ -54,8 +54,8 @@ export const WithSeparator: Story = {
 
 /** 単位や接頭辞を添える形 */
 export const WithText: Story = {
-  render: () => (
-    <ButtonGroup>
+  render: (args) => (
+    <ButtonGroup {...args}>
       <ButtonGroupText>表示件数</ButtonGroupText>
       <Button variant="outline">20</Button>
       <Button variant="outline">50</Button>

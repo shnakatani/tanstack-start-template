@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/breadcrumb";
 
 /**
- * 現在地までの道筋。`Breadcrumb` は `nav` を描き、現在地は `BreadcrumbPage` が
- * `aria-current="page"` を持つリンクでない要素として出す (`implementation.md`「a11y 最低基準」)
+ * 現在地までの道筋。`Breadcrumb` は `nav` を描き、現在地は `BreadcrumbPage` が出す。
+ * `a href` は持たず、`role="link"` + `aria-disabled="true"` + `aria-current="page"` で
+ * 「link 相当だが遷移しない」と伝える (`implementation.md`「a11y 最低基準」)
  */
 const meta = {
   component: Breadcrumb,

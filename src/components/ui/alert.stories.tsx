@@ -48,8 +48,8 @@ export const Destructive: Story = {
 
 /** 操作を添える形。`AlertAction` が右側を受け持つ */
 export const WithAction: Story = {
-  render: () => (
-    <Alert>
+  render: (args) => (
+    <Alert {...args}>
       <AlertTitle>下書きを復元しました</AlertTitle>
       <AlertDescription>前回の入力内容をそのまま開いています</AlertDescription>
       <AlertAction>

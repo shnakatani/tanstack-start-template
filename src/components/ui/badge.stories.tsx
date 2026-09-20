@@ -42,5 +42,11 @@ export const Outline: Story = { args: { variant: "outline" } };
 /** 背景も枠も持たない。密度の高い一覧で行の区切りを邪魔しない */
 export const Ghost: Story = { args: { variant: "ghost" } };
 
-/** リンクとして描くとき。`render` で `<a>` に差し替えて使う */
-export const Link: Story = { args: { variant: "link" } };
+/**
+ * リンクとして描くとき。既定のタグは `span` なので `render` で `<a>` に差し替える。
+ * hover の指定が `[a]:` 限定なので、差し替えないとリンクとしての見た目が出ない
+ */
+export const Link: Story = {
+  args: { variant: "link" },
+  render: ({ children, ...args }) => <Badge {...args} render={<a href="/notes">{children}</a>} />,
+};
