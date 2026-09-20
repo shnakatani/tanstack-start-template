@@ -28,18 +28,29 @@ export function storybookProject(theme: "light" | "dark") {
     },
     optimizeDeps: {
       // 事前バンドルから漏れた依存を実行中に見つけると Vite が再最適化を挟み、
-      // "Vite unexpectedly reloaded a test" や React 二重解決
-      // ("Cannot read properties of null (reading 'useContext')") が出る。
+      // "Vite unexpectedly reloaded a test" と React 二重解決
+      // ("Cannot read properties of null") が出る。
       //
-      // ここに書くのは、静的な走査で見つからない依存だけにする。story から辿れる依存は
-      // Storybook 10.6 が story と preview annotation を optimizeDeps.entries へ積むので
-      // (storybookjs/storybook#33875)、手で並べる必要がない。逆に、到達しない名前を書くと
-      // Vite は解決できてしまうため警告を出さないまま configHash の入力になり、
-      // 無関係な変更で deps キャッシュ全体が無効になる。
+      // この一覧は「story が import する依存」ではない。storybook-light と storybook-dark は
+      // 同じ configDir を渡すので、@storybook/addon-vitest が configDir のハッシュから
+      // cacheDir を導く結果 (vitest-plugin の oneWayHash(configDir))、2 つの project が
+      // 1 つの deps キャッシュを共有する。事前宣言が足りないと、両者が実行中に別々の依存を
+      // 見つけて互いのキャッシュを無効化し合う。到達しない名前でも減らしてはいけない。
       //
-      // axe-core は addon-a11y の preview が import("axe-core") で読む
-      // (dist/_browser-chunks/chunk-P5J2FJ2Z.js)。動的 import なので走査に出ない
-      include: ["axe-core"],
+      // story 53 件の段で実測した (2026-09-20)。
+      //   この一覧なし + 2 project : 98 件失敗 / reloaded 8
+      //   この一覧あり + 2 project : 444 件 pass / reloaded 0
+      //   どちらでも 1 project なら   222 件 pass / reloaded 0
+      //
+      // axe-core だけは理由が別で、addon-a11y の preview が import("axe-core") で読む
+      // (dist/_browser-chunks/chunk-P5J2FJ2Z.js)。動的 import なので静的な走査に出ない
+      include: [
+        "@tanstack/react-query",
+        "@tanstack/react-form",
+        "axe-core",
+        "class-variance-authority",
+        "cn",
+      ],
       // @tanstack/react-start 系は exclude しない: @storybook/tanstack-react の framework
       // preset (viteFinal) が moduleInterceptionPlugin で @tanstack/react-start /
       // react-start/server / react-start-server / start-server-core への import を
