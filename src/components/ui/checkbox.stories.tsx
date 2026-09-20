@@ -20,7 +20,7 @@ export const Checked: Story = {
   args: { defaultChecked: true },
 };
 
-/** どちらでもない状態。親が子を部分的に含むときに使う */
+/** どちらでもない状態。親が子を部分的に含むときに使う。横棒は ADR-0006 の乖離で足したもの */
 export const Indeterminate: Story = {
   args: { indeterminate: true },
 };
@@ -30,7 +30,7 @@ export const Disabled: Story = {
   args: { defaultChecked: true, disabled: true },
 };
 
-/** 検証に落ちた状態。枠線が destructive に変わる */
+/** 検証に落ちた状態。枠線とリングが destructive に変わる */
 export const Invalid: Story = {
   args: { "aria-invalid": true },
 };
