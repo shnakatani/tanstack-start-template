@@ -4,6 +4,9 @@
    除外を並べる形だと symlink (.claude/skills -> .agents) や新しい置き場を取りこぼす。
    出典: tailwindcss.com/docs/detecting-classes-in-source-files */
 @import "tailwindcss" source("../src");
+/* .storybook/ は source() の外なので明示する。decorator に class を書いた人が、
+   utility が生成されないことに気付けない (2026-09-20 実測で明示すれば拾われる) */
+@source "../.storybook";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
