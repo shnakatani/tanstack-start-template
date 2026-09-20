@@ -9,6 +9,7 @@
 - Revised: 2026-09-19 (Tailwind と shadcn/ui 領域の JS plugin を `eslint-plugin-better-tailwindcss` から `@shadcn/lint` へ移し、未知 class、raw color、arbitrary color の 3 ルールへ責務を分けた)
 - Revised: 2026-09-19 (`no-restyle` を採用ルールへ加え、`settings.shadcn.componentImports` と `overrides.excludeFiles` で適用範囲を design system の層に合わせた。層の決定は ADR-0020)
 - Revised: 2026-09-19 (`require-static-classes` を採用ルールへ加え、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言した。層の境界は ADR-0020、配り方の規範は ADR-0021)
+- Revised: 2026-09-20 (`testing-library` を基準表へ加えた。`jsPlugins` 経由で `flat/react` を写し、適用を story に限る。`prefer-screen-queries` だけ外す)
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context
@@ -27,20 +28,31 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 
 有効にしていないプラグインも、有効化する時点でこの表の基準に従う。
 
-| プラグイン   | 基準                                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| eslint コア  | `@eslint/js` の `recommended` + typescript-eslint の `eslint-recommended` が error にする 4 ルール                                         |
-| `typescript` | typescript-eslint の `strict` と `strict-type-checked`                                                                                     |
-| `react`      | eslint-plugin-react の `recommended` と `jsx-runtime`。React Compiler 由来のルールだけは eslint-plugin-react-hooks の `recommended-latest` |
-| `import`     | eslint-plugin-import の `recommended`                                                                                                      |
-| `promise`    | eslint-plugin-promise の `recommended`                                                                                                     |
-| `jsdoc`      | eslint-plugin-jsdoc の `recommended-typescript`                                                                                            |
-| `vitest`     | `@vitest/eslint-plugin` の `recommended`                                                                                                   |
-| `jsx-a11y`   | eslint-plugin-jsx-a11y の `recommended`                                                                                                    |
-| `unicorn`    | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
-| `oxc`        | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
+| プラグイン        | 基準                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| eslint コア       | `@eslint/js` の `recommended` + typescript-eslint の `eslint-recommended` が error にする 4 ルール                                         |
+| `typescript`      | typescript-eslint の `strict` と `strict-type-checked`                                                                                     |
+| `react`           | eslint-plugin-react の `recommended` と `jsx-runtime`。React Compiler 由来のルールだけは eslint-plugin-react-hooks の `recommended-latest` |
+| `import`          | eslint-plugin-import の `recommended`                                                                                                      |
+| `promise`         | eslint-plugin-promise の `recommended`                                                                                                     |
+| `jsdoc`           | eslint-plugin-jsdoc の `recommended-typescript`                                                                                            |
+| `vitest`          | `@vitest/eslint-plugin` の `recommended`                                                                                                   |
+| `jsx-a11y`        | eslint-plugin-jsx-a11y の `recommended`                                                                                                    |
+| `testing-library` | eslint-plugin-testing-library の `flat/react`。適用は `**/*.stories.tsx` に限る                                                            |
+| `unicorn`         | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
+| `oxc`             | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
 
 `@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (「Tailwind と shadcn/ui 領域は jsPlugins で足す」)。
+
+`testing-library` は oxlint ネイティブではなく `jsPlugins` で載せるが、基準は上流の `flat/react` を写す。`@shadcn/lint` と違い上流に recommended があるためである。
+
+適用を `**/*.stories.tsx` に限るのは、緩和ではなく適用範囲の確定である。`*.test.tsx` は `vitest-browser-react` の locator API を使い、`screen.container` や `getByText(...).query()` が testing-library の同名 API と意味が違う。当てると誤検出が出る (2026-09-20 時点で 119 件)。story 側は `storybook/test` が testing-library をそのまま re-export しており、Aggressive Reporting が追加設定なしで解決する。
+
+browser mode 側の待機は `vitest` プラグインが持つ。`require-awaited-expect-poll` が `expect.element` を対象にしており、`correctness` カテゴリ経由で既に有効である。
+
+`prefer-screen-queries` だけ基準から外す。play が受け取る `canvas` を render 結果の分割代入と誤読するためで、`canvas` は Storybook が渡す query 済みオブジェクトである。上流の `write-story` skill が「✅ Correct: Use canvas directly」と指定している形なので、こちらを直す選択肢は取らない。
+
+このプラグインは ESLint 本体を依存へ持ち込む。`@typescript-eslint/utils` のルート import が `eslint` を実行時に読むため、`packageExtensions` で peer を optional にしても外れない (2026-09-20 に 3 通り試して実測)。oxlint の jsPlugins が読み込む中でだけ動き、出荷物には入らない。撤去条件は typescript-eslint#11939 (`utils` から `eslint` の import を外し `/ts-eslint` を型専用にする) が入ることで、oxc-project/oxc#17734 が oxlint 側の追跡先である。
 
 eslint コアへの追加 4 ルール (`no-var` / `prefer-const` / `prefer-rest-params` / `prefer-spread`) は、TypeScript が `var` と `apply` を過去のものにし `const` と rest 引数がより良い型を与える、という typescript-eslint 側の判断を採ったもの。
 `strict-type-checked` がこの variant (`eslint-recommended`) を内包するため typescript の基準としては入っているが、プラグイン別の基準表では eslint コアの欄に落ちる。
@@ -305,6 +317,7 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - 名指ししたルールが oxlint 側で改名・廃止されると `vp lint` が設定のパースで落ちる (`Rule 'react-compiler' not found in plugin 'react'`)。取りこぼしは起きないが、更新の PR は lint が動かない状態から始まる
 - typescript-eslint は依存に入っていないため、`strict` の改訂を知らせる発火条件がない。追随はこの ADR を読み直すときに行う
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは解決後設定の `rules` に列挙されないため、値でしか見えない
+- `eslint-plugin-testing-library` の追加で dev 依存が 38 パッケージ増え、`eslint@10.10.0` が展開される。外すと `Failed to load JS plugin: eslint-plugin-testing-library / Cannot find module 'eslint'` で plugin ごと落ちる (2026-09-20 実測)
 - `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、追随の発火条件は Dependabot PR の処理時とする。確認するのは plugin の読み込みと 3 ルールの発火の両方である
 - 3 ルールが発火していることを機械で見張るものは無い。`--print-config` の top-level `rules` に JS plugin 由来のルールが出ないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は下の probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる
 - `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (ADR-0021)

@@ -47,7 +47,12 @@ export default defineConfig({
     ],
     // oxlint はネイティブに Tailwind と shadcn/ui 領域のルールを持たない。JS plugin として載せる
     // (ADR-0004)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
-    jsPlugins: [{ name: "shadcn", specifier: "@shadcn/lint" }],
+    jsPlugins: [
+      { name: "shadcn", specifier: "@shadcn/lint" },
+      // story は `storybook/test` 経由で testing-library の API をそのまま使う。oxlint は
+      // testing-library をネイティブに持たないため ESLint plugin として載せる (ADR-0004)
+      { name: "testing-library", specifier: "eslint-plugin-testing-library" },
+    ],
     settings: {
       shadcn: {
         componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
@@ -279,6 +284,44 @@ export default defineConfig({
     },
     // 緩和はテストの 1 経路に限る (ADR-0004)
     overrides: [
+      {
+        // testing-library のルールは story にだけ当てる。`*.test.tsx` は
+        // `vitest-browser-react` の locator API (`screen.container`、`getByText().query()`) を
+        // 使い、testing-library の同名 API と意味が違うため、当てると誤検出が出る。
+        // story 側は `storybook/test` が testing-library をそのまま re-export しており、
+        // Aggressive Reporting が追加設定なしで解決する。
+        // 採用は 1 ルールに絞る。upstream recommended (22 ルール) は `vitest-browser-react` を
+        // 前提にしておらず、基準をそのまま写せない唯一のプラグインになる (ADR-0004)
+        files: ["**/*.stories.tsx"],
+        rules: {
+          // eslint-plugin-testing-library の flat/react (ADR-0004 の基準表)
+          "testing-library/await-async-events": ["error", { eventModule: "userEvent" }],
+          "testing-library/await-async-queries": "error",
+          "testing-library/await-async-utils": "error",
+          "testing-library/no-await-sync-events": ["error", { eventModules: ["fire-event"] }],
+          "testing-library/no-await-sync-queries": "error",
+          "testing-library/no-container": "error",
+          "testing-library/no-debugging-utils": "warn",
+          "testing-library/no-dom-import": ["error", "react"],
+          "testing-library/no-global-regexp-flag-in-query": "error",
+          "testing-library/no-manual-cleanup": "error",
+          "testing-library/no-node-access": "error",
+          "testing-library/no-promise-in-fire-event": "error",
+          "testing-library/no-render-in-lifecycle": "error",
+          "testing-library/no-unnecessary-act": "error",
+          "testing-library/no-wait-for-multiple-assertions": "error",
+          "testing-library/no-wait-for-side-effects": "error",
+          "testing-library/no-wait-for-snapshot": "error",
+          "testing-library/prefer-find-by": "error",
+          "testing-library/prefer-presence-queries": "error",
+          "testing-library/prefer-query-by-disappearance": "error",
+          "testing-library/render-result-naming-convention": "error",
+          // 基準から外す 1 ルール。play の `canvas` を render 結果の分割代入と誤読する。
+          // `canvas` は Storybook が play へ渡す query 済みオブジェクトで、上流の write-story
+          // skill が「✅ Correct: Use canvas directly」と指定している形
+          "testing-library/prefer-screen-queries": "off",
+        },
+      },
       {
         // モックは意図的に型を外した値を扱い、assertion は要素の存在を前提に書く。
         // typescript-eslint 本体が自身のテストディレクトリで off にしている 5 ルールと同一

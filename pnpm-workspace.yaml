@@ -64,7 +64,10 @@ catalog:
 # greenfield 解決を実測)。撤去条件は上流が parser を optional peer へ移すこと
 # (shadcn-ui/lint#1)。移れば ESLint も typescript も依存から消える。
 # このキーはグラフ全体の @typescript-eslint/parser に効く。ESLint を実際に使う依存を足すときは、
-# その peer までここで外れていないかを確かめる
+# その peer までここで外れていないかを確かめる。
+# ただし @typescript-eslint/utils を実依存に持つ plugin (eslint-plugin-testing-library) には
+# この手が効かない。utils のルート import が eslint を実行時に読むため、peer の optional 化では
+# 外れない。追跡先は typescript-eslint#11939 と oxc-project/oxc#17734 (ADR-0004)
 packageExtensions:
   "@typescript-eslint/parser@^8":
     peerDependenciesMeta:

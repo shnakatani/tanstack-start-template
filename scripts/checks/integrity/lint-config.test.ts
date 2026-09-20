@@ -37,6 +37,38 @@ const EXPECTED_PLUGINS = [
  */
 const EXPECTED_OVERRIDES = [
   {
+    // testing-library の適用先とルール。適用先を `*.test.tsx` へ広げると、
+    // vitest-browser-react の locator API を testing-library の同名 API と誤認して
+    // 誤検出が出る。`prefer-screen-queries` を allow から戻すと Storybook の `canvas` が
+    // 落ちる (ADR-0004「基準にする上流設定」)
+    files: ["**/*.stories.tsx"],
+    excludeFiles: undefined,
+    rules: {
+      "testing-library/await-async-events": "deny",
+      "testing-library/await-async-queries": "deny",
+      "testing-library/await-async-utils": "deny",
+      "testing-library/no-await-sync-events": "deny",
+      "testing-library/no-await-sync-queries": "deny",
+      "testing-library/no-container": "deny",
+      "testing-library/no-debugging-utils": "warn",
+      "testing-library/no-dom-import": "deny",
+      "testing-library/no-global-regexp-flag-in-query": "deny",
+      "testing-library/no-manual-cleanup": "deny",
+      "testing-library/no-node-access": "deny",
+      "testing-library/no-promise-in-fire-event": "deny",
+      "testing-library/no-render-in-lifecycle": "deny",
+      "testing-library/no-unnecessary-act": "deny",
+      "testing-library/no-wait-for-multiple-assertions": "deny",
+      "testing-library/no-wait-for-side-effects": "deny",
+      "testing-library/no-wait-for-snapshot": "deny",
+      "testing-library/prefer-find-by": "deny",
+      "testing-library/prefer-presence-queries": "deny",
+      "testing-library/prefer-query-by-disappearance": "deny",
+      "testing-library/prefer-screen-queries": "allow",
+      "testing-library/render-result-naming-convention": "deny",
+    },
+  },
+  {
     // 緩和の適用先とルール。適用先を広げると本体コードでも no-unsafe-* が無効になり、ルールを
     // 増やすとテストコードの型検査がその分だけ緩む (ADR-0004「テストファイルの緩和」)
     files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
