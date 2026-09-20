@@ -14,15 +14,16 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type SheetSide = NonNullable<ComponentProps<typeof SheetContent>["side"]>;
 
-/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
-const SIDE_OPTIONS = Object.keys({
+const SIDE_OPTIONS = variantOptions<SheetSide>({
   top: null,
   right: null,
   bottom: null,
   left: null,
-} satisfies Record<SheetSide, null>);
+});
 
 function SheetExample({ side }: { side?: SheetSide }) {
   return (

@@ -12,13 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type CardSize = NonNullable<ComponentProps<typeof Card>["size"]>;
 
-/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
-const SIZE_OPTIONS = Object.keys({
+const SIZE_OPTIONS = variantOptions<CardSize>({
   default: null,
   sm: null,
-} satisfies Record<CardSize, null>);
+});
 
 const meta = {
   component: Card,

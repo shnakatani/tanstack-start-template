@@ -27,5 +27,5 @@ export const Cell: Story = {
 
 /** アイコンの枠。`sidebar.tsx` の待機表示と同じ形 */
 export const Icon: Story = {
-  args: { className: "size-4 rounded-md" },
+  args: { className: "size-4" },
 };

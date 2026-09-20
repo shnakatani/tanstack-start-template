@@ -33,6 +33,6 @@ export const Invalid: Story = {
 };
 
 /** 日付など type で見た目と入力 UI が変わるもの */
-export const Date: Story = {
+export const DateInput: Story = {
   args: { type: "date", "aria-label": "期日", placeholder: undefined },
 };

@@ -97,7 +97,7 @@ export const InlineWithTrigger: Story = {
   render: () => (
     <Combobox items={FRUITS}>
       <ComboboxInput aria-label="果物" placeholder="果物を選択" />
-      <ComboboxContent aria-label="果物の候補">
+      <ComboboxContent>
         <ComboboxList>
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
@@ -108,8 +108,23 @@ export const InlineWithTrigger: Story = {
       </ComboboxContent>
     </Combobox>
   ),
+  parameters: {
+    a11y: {
+      config: {
+        // 非 modal の popup を開くと base-ui が外側へ aria-hidden を付けるが、tab 順からは
+        // 外さないため axe が aria-hidden-focus を出す。上流のバグで mui/base-ui#5528 が
+        // open。直るまでこの story でだけ止める。popup を開くのをやめる手は採らない。
+        // 開かないと下の aria-prohibited-attr の見張りごと消える
+        rules: [{ id: "aria-hidden-focus", enabled: false }],
+      },
+    },
+  },
+  // popup を開いてから終える。開かないと Portal の中が mount されず、popup へ付いた
+  // 禁止属性を axe の aria-prohibited-attr が見られない
   play: async () => {
     await expect(screen.getByRole("button", { name: "候補を開く" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "候補を開く" }));
+    await expect(await screen.findByRole("option", { name: "りんご" })).toBeInTheDocument();
   },
 };
 
@@ -121,7 +136,7 @@ export const InlineWithClear: Story = {
   render: () => (
     <Combobox items={FRUITS} defaultValue="りんご">
       <ComboboxInput aria-label="果物" showClear />
-      <ComboboxContent aria-label="果物の候補">
+      <ComboboxContent>
         <ComboboxList>
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
@@ -132,7 +147,10 @@ export const InlineWithClear: Story = {
       </ComboboxContent>
     </Combobox>
   ),
+  // 上と同じ理由で popup を開く
   play: async () => {
     await expect(screen.getByRole("button", { name: "選択を消す" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
+    await expect(await screen.findByRole("option", { name: "りんご" })).toBeInTheDocument();
   },
 };

@@ -9,13 +9,14 @@ import {
   ButtonGroupText,
 } from "@/components/ui/button-group";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type ButtonGroupOrientation = NonNullable<VariantProps<typeof buttonGroupVariants>["orientation"]>;
 
-/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
-const ORIENTATION_OPTIONS = Object.keys({
+const ORIENTATION_OPTIONS = variantOptions<ButtonGroupOrientation>({
   horizontal: null,
   vertical: null,
-} satisfies Record<ButtonGroupOrientation, null>);
+});
 
 const meta = {
   component: ButtonGroup,

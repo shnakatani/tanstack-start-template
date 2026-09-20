@@ -3,13 +3,14 @@ import type { ComponentProps } from "react";
 
 import { Separator } from "@/components/ui/separator";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type SeparatorOrientation = NonNullable<ComponentProps<typeof Separator>["orientation"]>;
 
-/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
-const ORIENTATION_OPTIONS = Object.keys({
+const ORIENTATION_OPTIONS = variantOptions<SeparatorOrientation>({
   horizontal: null,
   vertical: null,
-} satisfies Record<SeparatorOrientation, null>);
+});
 
 const meta = {
   component: Separator,

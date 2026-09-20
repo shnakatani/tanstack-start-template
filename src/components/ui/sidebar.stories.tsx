@@ -150,6 +150,9 @@ export const Toggled: Story = {
   play: async ({ canvas, canvasElement }) => {
     // Sidebar は landmark を持たない div で、開閉は data-slot="sidebar" の data-state が持つ
     const sidebar = canvasElement.querySelector('[data-slot="sidebar"]');
+    if (!(sidebar instanceof HTMLElement)) {
+      throw new Error("[story] sidebar 要素が見つからない");
+    }
     await expect(sidebar).toHaveAttribute("data-state", "expanded");
     await userEvent.click(canvas.getByRole("button", { name: "Toggle Sidebar" }));
     await expect(sidebar).toHaveAttribute("data-state", "collapsed");

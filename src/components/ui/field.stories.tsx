@@ -14,14 +14,15 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type FieldOrientation = NonNullable<ComponentProps<typeof Field>["orientation"]>;
 
-/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
-const ORIENTATION_OPTIONS = Object.keys({
+const ORIENTATION_OPTIONS = variantOptions<FieldOrientation>({
   vertical: null,
   horizontal: null,
   responsive: null,
-} satisfies Record<FieldOrientation, null>);
+});
 
 const meta = {
   component: Field,

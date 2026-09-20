@@ -2,6 +2,8 @@ import type { VariantProps } from "class-variance-authority";
 
 import type { toggleVariants } from "@/components/ui/toggle";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type ToggleVariant = NonNullable<VariantProps<typeof toggleVariants>["variant"]>;
 type ToggleSize = NonNullable<VariantProps<typeof toggleVariants>["size"]>;
 
@@ -12,13 +14,13 @@ type ToggleSize = NonNullable<VariantProps<typeof toggleVariants>["size"]>;
  *
  * `ToggleGroup` も同じ `cva` を共有するため、写しを増やさずここから引く。
  */
-export const TOGGLE_VARIANTS = Object.keys({
+export const TOGGLE_VARIANTS = variantOptions<ToggleVariant>({
   default: null,
   outline: null,
-} satisfies Record<ToggleVariant, null>);
+});
 
-export const TOGGLE_SIZES = Object.keys({
+export const TOGGLE_SIZES = variantOptions<ToggleSize>({
   default: null,
   sm: null,
   lg: null,
-} satisfies Record<ToggleSize, null>);
+});

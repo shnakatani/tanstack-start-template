@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
+import { expect } from "storybook/test";
 
 import {
   Progress,
@@ -37,6 +38,13 @@ export const Indeterminate: Story = { args: { value: null } };
 
 /** 見出しと数値を添えた形。children を組むときは Track と Indicator を自分で置く */
 export const WithLabel: Story = {
+  // meta の aria-label を外す。ProgressLabel があると base-ui が aria-labelledby を出し、
+  // そちらが優先されるので aria-label は効かない。残すと、ProgressLabel からの命名が
+  // 壊れても meta の名前で story が緑のまま通る
+  args: { "aria-label": undefined },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("progressbar")).toHaveAccessibleName("アップロード中");
+  },
   render: (args) => (
     <Progress {...args}>
       <div className="flex w-full items-center justify-between text-sm">

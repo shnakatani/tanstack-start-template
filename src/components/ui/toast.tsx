@@ -161,7 +161,14 @@ function hasToastIcon(type: string): type is ToastIconType {
 }
 
 function ToastIcon({ type }: { type: string | undefined }) {
-  if (type === undefined || !hasToastIcon(type)) {
+  if (type === undefined) {
+    return null;
+  }
+
+  if (!hasToastIcon(type)) {
+    // 通す方針は上の doc のとおり。ただし黙って落とすと、綴り違いも上流の rename も
+    // 「icon の無い toast」として同じに見え、どちらも起きたことに気付けない
+    console.warn("[toast] 対応表に無い type なので icon を出さない", { type });
     return null;
   }
 

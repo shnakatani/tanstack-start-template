@@ -14,22 +14,23 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type ItemVariant = NonNullable<ComponentProps<typeof Item>["variant"]>;
 type ItemSize = NonNullable<ComponentProps<typeof Item>["size"]>;
 type ItemMediaVariant = NonNullable<ComponentProps<typeof ItemMedia>["variant"]>;
 
-/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
-const VARIANT_OPTIONS = Object.keys({
+const VARIANT_OPTIONS = variantOptions<ItemVariant>({
   default: null,
   outline: null,
   muted: null,
-} satisfies Record<ItemVariant, null>);
+});
 
-const SIZE_OPTIONS = Object.keys({
+const SIZE_OPTIONS = variantOptions<ItemSize>({
   default: null,
   sm: null,
   xs: null,
-} satisfies Record<ItemSize, null>);
+});
 
 /**
  * `ItemMedia` の variant は `Item` の `argTypes` に出せないので control では切り替えられない。
@@ -42,7 +43,15 @@ const MEDIA_VARIANT_LABELS = {
   image: "画像",
 } satisfies Record<ItemMediaVariant, string>;
 
-const MEDIA_VARIANTS: (keyof typeof MEDIA_VARIANT_LABELS)[] = ["default", "icon", "image"];
+/**
+ * 並べる variant は対応表から引く。リテラルで並べ直すと、variant を足したときに
+ * `MEDIA_VARIANT_LABELS` の `satisfies` は落ちるのにこの配列は古いまま型検査を通り、
+ * 「全件を並べて網羅を守る」という上の前提が静かに崩れる
+ */
+function mediaVariants(): ItemMediaVariant[] {
+  const labels: Record<ItemMediaVariant, string> = MEDIA_VARIANT_LABELS;
+  return Object.keys(labels).filter((key): key is ItemMediaVariant => key in labels);
+}
 
 function ItemBody({ media, actions }: { media?: ReactNode; actions?: ReactNode }) {
   return (
@@ -108,7 +117,7 @@ export const WithActions: Story = {
 export const MediaVariants: Story = {
   render: (args) => (
     <div className="flex w-full flex-col gap-4">
-      {MEDIA_VARIANTS.map((variant) => (
+      {mediaVariants().map((variant) => (
         <Item key={variant} {...args} variant="outline">
           <ItemMedia variant={variant}>
             <FileTextIcon aria-hidden />

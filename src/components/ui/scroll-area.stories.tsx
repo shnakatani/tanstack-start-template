@@ -11,21 +11,28 @@ const LINES = Array.from({ length: 24 }, (_, index) => `${index + 1} 行目の�
  */
 const meta = {
   component: ScrollArea,
-  decorators: [
-    (Story) => (
-      <div className="grid h-40 w-64">
-        <Story />
-      </div>
-    ),
-  ],
 } satisfies Meta<typeof ScrollArea>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+/**
+ * 器を固定寸法にする decorator。meta には置かない。Storybook は story の decorator を
+ * meta の decorator と合成するので、meta へ置くと器を持たない story
+ * (`SizedByViewportClassName`) 側から外せない
+ */
+const boxed: NonNullable<Story["decorators"]> = [
+  (Story) => (
+    <div className="grid h-40 w-64">
+      <Story />
+    </div>
+  ),
+];
+
 /** 縦に溢れた状態。縦バーと右側の余白が出る */
 export const Vertical: Story = {
+  decorators: boxed,
   render: () => (
     <ScrollArea>
       <div className="flex flex-col gap-1 p-2 text-sm">
@@ -39,6 +46,7 @@ export const Vertical: Story = {
 
 /** 両方向に溢れた状態。横バーと下側の余白も出る */
 export const Both: Story = {
+  decorators: boxed,
   render: () => (
     <ScrollArea>
       <div className="flex w-96 flex-col gap-1 p-2 text-sm">
@@ -54,6 +62,7 @@ export const Both: Story = {
 
 /** 溢れていない状態。バーも余白も出ない */
 export const Fits: Story = {
+  decorators: boxed,
   render: () => (
     <ScrollArea>
       <div className="flex flex-col gap-1 p-2 text-sm">
@@ -71,7 +80,6 @@ export const Fits: Story = {
  * layout class を通すためにこのリポジトリが足した prop (ADR-0006 の乖離)
  */
 export const SizedByViewportClassName: Story = {
-  decorators: [(Story) => <Story />],
   render: () => (
     <ScrollArea viewportClassName="max-h-40 w-64">
       <div className="flex flex-col gap-1 p-2 text-sm">

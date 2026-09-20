@@ -2,6 +2,8 @@ import type { VariantProps } from "class-variance-authority";
 
 import type { buttonVariants } from "@/components/ui/button";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
 type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
 
@@ -12,7 +14,7 @@ type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
  *
  * `Button` を包む部品の story も同じ選択肢を出すため、写しを増やさずここから引く。
  */
-export const BUTTON_VARIANTS = Object.keys({
+export const BUTTON_VARIANTS = variantOptions<ButtonVariant>({
   default: null,
   outline: null,
   secondary: null,
@@ -21,9 +23,9 @@ export const BUTTON_VARIANTS = Object.keys({
   destructive: null,
   "destructive-ghost": null,
   link: null,
-} satisfies Record<ButtonVariant, null>);
+});
 
-export const BUTTON_SIZES = Object.keys({
+export const BUTTON_SIZES = variantOptions<ButtonSize>({
   default: null,
   xs: null,
   sm: null,
@@ -32,4 +34,4 @@ export const BUTTON_SIZES = Object.keys({
   "icon-xs": null,
   "icon-sm": null,
   "icon-lg": null,
-} satisfies Record<ButtonSize, null>);
+});

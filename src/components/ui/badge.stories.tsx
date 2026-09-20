@@ -3,17 +3,18 @@ import type { VariantProps } from "class-variance-authority";
 
 import { Badge, badgeVariants } from "@/components/ui/badge";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
-/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
-const VARIANT_OPTIONS = Object.keys({
+const VARIANT_OPTIONS = variantOptions<BadgeVariant>({
   default: null,
   secondary: null,
   destructive: null,
   outline: null,
   ghost: null,
   link: null,
-} satisfies Record<BadgeVariant, null>);
+});
 
 const meta = {
   component: Badge,

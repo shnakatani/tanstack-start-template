@@ -5,14 +5,15 @@ import type { ComponentProps } from "react";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
+import { variantOptions } from "./variant-options.story-helpers";
+
 // alertVariants は registry が export していないので、部品の props から導出する
 type AlertVariant = NonNullable<ComponentProps<typeof Alert>["variant"]>;
 
-/** control の選択肢の出処。`cva` の増減が両方向でここの型エラーになる (`directory-structure.md`「コンポーネント配置」) */
-const VARIANT_OPTIONS = Object.keys({
+const VARIANT_OPTIONS = variantOptions<AlertVariant>({
   default: null,
   destructive: null,
-} satisfies Record<AlertVariant, null>);
+});
 
 const meta = {
   component: Alert,
