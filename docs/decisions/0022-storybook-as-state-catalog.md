@@ -175,4 +175,5 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 - Storybook: Themes addon — https://storybook.js.org/docs/essentials/themes
 - Storybook: Tags — https://storybook.js.org/docs/writing-stories/tags
 - Tailwind CSS: Theme variables (Generating all CSS variables) — https://tailwindcss.com/docs/theme
+- Tailwind CSS: Detecting classes in source files — https://tailwindcss.com/docs/detecting-classes-in-source-files
 - storybookjs/storybook#33747 (Vite builder と tanstack start plugin の衝突)
