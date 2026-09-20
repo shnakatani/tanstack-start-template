@@ -8,15 +8,31 @@ import { ActionButton } from "./button";
  * 決着しない Promise を story に置かない。Storybook の vitest 実行は 1 つの React root へ
  * story を描き替えるため、決着しない Transition が残ると後続 story が pending のまま
  * 止まる (ADR-0022)。pending の外見は ActionButtonShell の story が args だけで持つ。
+ *
+ * 決着の時点は play が `settle()` で握る。実時間へ預けると、決着が 2 発目の操作より先に
+ * 届いた回で偽 red になる (testing.md「optimistic update テストは遅延 rejection で中間状態を
+ * 観測」)。play は必ず `settle()` を呼んでから終える。
  */
-const SETTLING = 50;
-const settles = () => new Promise<void>((resolve) => setTimeout(resolve, SETTLING));
+let settle = () => {};
+const settlingAction = fn(() => {
+  // void を型引数に置くと no-invalid-void-type が落ちる。Promise<undefined> は
+  // action の戻り値 Promise<void> へそのまま渡せる
+  const { promise, resolve } = Promise.withResolvers<undefined>();
+  settle = () => {
+    resolve(undefined);
+  };
+  return promise;
+});
 
 const saveButton = () => screen.getByRole("button", { name: "保存" });
 
 const meta = {
   component: ActionButton,
-  args: { children: "保存", action: fn(settles) },
+  args: { children: "保存", action: settlingAction },
+  beforeEach: () => {
+    settlingAction.mockClear();
+    settle = () => {};
+  },
 } satisfies Meta<typeof ActionButton>;
 
 export default meta;
@@ -45,6 +61,7 @@ export const Settles: Story = {
     await expect(button).not.toHaveAttribute("disabled");
     await expect(button).toHaveFocus();
 
+    settle();
     await waitFor(() => expect(button).not.toHaveAttribute("aria-busy", "true"));
     await expect(button).not.toHaveAttribute("aria-disabled", "true");
   },
@@ -56,10 +73,16 @@ export const NotCalledTwice: Story = {
   play: async ({ args }) => {
     const button = saveButton();
     await userEvent.click(button);
+    // aria-disabled が立つのを確かめる前にも 1 発送る。pending の描画を待ってからしか
+    // 塞げないなら、実際の連打の速さでは通ってしまう
+    await userEvent.keyboard("{Enter}");
     await expect(button).toHaveAttribute("aria-disabled", "true");
     await userEvent.keyboard("{Enter}");
 
     await expect(args.action).toHaveBeenCalledTimes(1);
+    await expect(button).toHaveFocus();
+    settle();
+    await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
   },
 };
 
@@ -69,10 +92,13 @@ export const CallableAgain: Story = {
   play: async ({ args }) => {
     const button = saveButton();
     await userEvent.click(button);
+    settle();
     await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
     await userEvent.click(button);
 
     await expect(args.action).toHaveBeenCalledTimes(2);
+    settle();
+    await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
   },
 };
 
@@ -81,7 +107,9 @@ const formSubmit = fn();
 
 export const InForm: Story = {
   tags: ["!dev"],
-  args: { children: "実行" },
+  // pending を見ない story なので即時決着にする。settlingAction のままだと、決着しない
+  // Transition を残したまま次の story へ移る
+  args: { children: "実行", action: fn() },
   beforeEach: () => {
     formSubmit.mockClear();
   },

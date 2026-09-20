@@ -51,7 +51,6 @@ function Harness({ checkedIds, disabled, withId }: StoryArgs) {
 }
 
 const meta = {
-  title: "parts/ChoiceCard",
   // checkedIds は useState の初期値にしか効かないため、control で変えたら remount して反映する
   render: (args) => <Harness key={args.checkedIds.join(",")} {...args} />,
   args: { checkedIds: [], disabled: false, withId: true },

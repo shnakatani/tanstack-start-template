@@ -2,14 +2,12 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { expect, fn, screen, waitFor } from "storybook/test";
 
 import { ActionFormSubmit } from "@/components/action/form";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -35,8 +33,9 @@ interface StoryArgs {
 
 function ScrollDialog({ fieldCount, submitAction }: StoryArgs) {
   return (
+    // defaultOpen で開いた状態を見せるので trigger は置かない。置いてもダイアログの裏に
+    // 隠れて読者からは見えない
     <Dialog defaultOpen>
-      <DialogTrigger render={<Button>開く</Button>} />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>フォーム</DialogTitle>
@@ -71,7 +70,6 @@ function scrollBody(): HTMLElement {
 }
 
 const meta = {
-  title: "parts/DialogScrollBody",
   render: (args) => <ScrollDialog {...args} />,
   args: { fieldCount: 20, submitAction: fn() },
 } satisfies Meta<StoryArgs>;

@@ -65,6 +65,14 @@ play は Storybook の UI 上でも実行されるため CDP を使えず、`sto
 
 ADR-0015 が禁じた同期 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである。
 
+どのブラウザテストが持つかを決めておく。story へ移した結果、実イベントの検証がリポジトリから消えることを防ぐ。
+
+| 対象                                                                                     | 実イベントの規律を持つテスト                                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ActionForm` / `ActionFormSubmit` の二重発火                                             | `src/components/action/form.test.tsx`                                                                                                                                                                |
+| `ActionButton` の二重発火                                                                | `src/routes/notes/index.test.tsx`。`AlertDialogActionButton` は `ActionButton` に `data-slot` を足すだけの薄いラッパーで、`enableBaseUiAnimations()` を戻した animate-out の窓で Enter を 2 連射する |
+| `DeleteConfirmDialog` の確定とキャンセルへ inert バックドロップ越しに pointer が届くこと | `src/routes/notes/index.test.tsx` の `dispatchNativeClick`                                                                                                                                           |
+
 popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0018 の扱う animate-out の窓に入る。
 
 待機は `storybook/test` の `waitFor` で書く。ADR-0013 の retry API は play から呼べない。

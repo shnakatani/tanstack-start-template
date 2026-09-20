@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
 
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
@@ -14,14 +14,40 @@ const TARGET: DeleteTarget = { id: "w1", name: "田中太郎" };
  * 決着しない Promise を story に置かない。Storybook の vitest 実行は 1 つの React root へ
  * story を描き替えるため、決着しない Action の Transition が残ると後続 story の
  * useTransition が entangle して pending のまま止まる (2026-09-20 実測)。
+ *
+ * 決着の時点は play が `settle()` で握る。実時間へ預けると、決着が 2 発目の操作より先に
+ * 届いた回で偽 red になる (testing.md「optimistic update テストは遅延 rejection で中間状態を
+ * 観測」)。play は必ず `settle()` を呼んでから終える。
  */
-const SETTLING = 50;
+let settle = () => {};
+const settlingConfirm = fn(() => {
+  // void を型引数に置くと no-invalid-void-type が落ちる。Promise<undefined> は
+  // onConfirm の戻り値 Promise<void> へそのまま渡せる
+  const { promise, resolve } = Promise.withResolvers<undefined>();
+  settle = () => {
+    resolve(undefined);
+  };
+  return promise;
+});
 
 interface StoryArgs {
   entityLabel: string;
   description?: (name: string) => string;
   onConfirm: (target: DeleteTarget) => Promise<void> | void;
   target: DeleteTarget;
+}
+
+/**
+ * Trigger を介さず handle だけで開く。imperative open では payload が入らないので、
+ * 確定しても onConfirm を呼ばず warn だけが残る経路になる。
+ * mount 時の open は DOM 副作用なので useEffect に置く (implementation.md)
+ */
+function WithoutTrigger(props: Omit<StoryArgs, "target">) {
+  const [handle] = useState(() => createAlertDialogHandle<DeleteTarget>());
+  useEffect(() => {
+    handle.open(null);
+  }, [handle]);
+  return <DeleteConfirmDialog handle={handle} {...props} />;
 }
 
 function WithTrigger({ target, ...props }: StoryArgs) {
@@ -42,7 +68,6 @@ async function open(): Promise<void> {
 }
 
 const meta = {
-  title: "parts/DeleteConfirmDialog",
   render: (args) => <WithTrigger {...args} />,
   args: { entityLabel: "ユーザー", target: TARGET, onConfirm: fn() },
 } satisfies Meta<StoryArgs>;
@@ -73,7 +98,7 @@ export const OtherEntity: Story = {
   play: async () => {
     await open();
     await expect(screen.getByText("タグの削除")).toBeInTheDocument();
-    await expect(screen.getByText(deleteConfirmDescription("重要")).textContent).toContain("重要");
+    await expect(screen.getByText(deleteConfirmDescription("重要"))).toBeInTheDocument();
   },
 };
 
@@ -119,7 +144,7 @@ export const Cancelled: Story = {
 /** 決着まで pending になり、決着すると戻る */
 export const Pending: Story = {
   tags: ["!dev"],
-  args: { onConfirm: fn(() => new Promise<void>((resolve) => setTimeout(resolve, SETTLING))) },
+  args: { onConfirm: settlingConfirm },
   play: async () => {
     await open();
     const confirm = screen.getByRole("button", { name: "削除" });
@@ -127,6 +152,7 @@ export const Pending: Story = {
     await userEvent.keyboard("{Enter}");
     await expect(confirm).toHaveAttribute("aria-busy", "true");
     await expect(confirm).toHaveAttribute("aria-disabled", "true");
+    settle();
     await waitFor(() => expect(confirm).toHaveAttribute("aria-busy", "false"));
   },
 };
@@ -134,28 +160,26 @@ export const Pending: Story = {
 /** 決着前の 2 回目では呼ばない */
 export const NotCalledTwice: Story = {
   tags: ["!dev"],
-  args: { onConfirm: fn(() => new Promise<void>((resolve) => setTimeout(resolve, SETTLING))) },
+  args: { onConfirm: settlingConfirm },
   play: async ({ args }) => {
     await open();
-    screen.getByRole("button", { name: "削除" }).focus();
+    const confirm = screen.getByRole("button", { name: "削除" });
+    confirm.focus();
     await userEvent.keyboard("{Enter}");
     await userEvent.keyboard("{Enter}");
     await expect(args.onConfirm).toHaveBeenCalledTimes(1);
     await expect(args.onConfirm).toHaveBeenCalledWith(TARGET);
+    settle();
+    await waitFor(() => expect(confirm).toHaveAttribute("aria-busy", "false"));
   },
 };
 
 /** payload なしで開かれたら warn して呼ばない */
 export const WithoutPayload: Story = {
-  render: (args) => {
-    function WithoutTrigger() {
-      const [handle] = useState(() => createAlertDialogHandle<DeleteTarget>());
-      // Trigger を介さない imperative open では payload が入らない
-      useState(() => queueMicrotask(() => handle.open(null)));
-      return <DeleteConfirmDialog handle={handle} {...args} />;
-    }
-    return <WithoutTrigger />;
-  },
+  // 終了状態は Opened とほぼ同じ見た目 (payload なしでは説明文が空になるだけ) なので
+  // カタログには出さない (ADR-0022)
+  tags: ["!dev"],
+  render: (args) => <WithoutTrigger {...args} />,
   play: async ({ args }) => {
     const warn = spyOn(console, "warn").mockImplementation(() => {});
     await userEvent.click(await screen.findByRole("button", { name: "削除" }));

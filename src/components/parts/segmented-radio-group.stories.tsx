@@ -38,7 +38,6 @@ function Filter({ value, onValueChange, disabled, invalid }: StoryArgs) {
 }
 
 const meta = {
-  title: "parts/SegmentedRadioGroup",
   // value は useState の初期値にしか効かないため、control で変えたら remount して反映する
   render: (args) => <Filter key={args.value} {...args} />,
   args: { value: "all", onValueChange: fn(), disabled: false, invalid: false },

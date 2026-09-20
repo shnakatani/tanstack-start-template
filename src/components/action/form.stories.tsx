@@ -11,13 +11,31 @@ import { ActionForm, ActionFormSubmit } from "./form";
  * 決着しない Promise を story に置かない。Storybook の vitest 実行は 1 つの React root へ
  * story を描き替えるため、決着しない Transition が残ると後続 story が pending のまま
  * 止まる (ADR-0022)。pending 中の描画は `ActionButtonShell` の story が args だけで持つ。
+ *
+ * 決着の時点は play が `settle()` で握る。実時間へ預けると、決着が 2 発目の操作より先に
+ * 届いた回で偽 red になる (testing.md「optimistic update テストは遅延 rejection で中間状態を
+ * 観測」)。play は必ず `settle()` を呼んでから終える。
  */
-const SETTLING = 50;
-const settles = () => new Promise<void>((resolve) => setTimeout(resolve, SETTLING));
+let settle = () => {};
+const settlingAction = fn(() => {
+  // void を型引数に置くと no-invalid-void-type が落ちる。Promise<undefined> は
+  // submitAction の戻り値 Promise<void> へそのまま渡せる
+  const { promise, resolve } = Promise.withResolvers<undefined>();
+  settle = () => {
+    resolve(undefined);
+  };
+  return promise;
+});
 
 const saveButton = () => screen.getByRole("button", { name: "保存" });
 
-/** React が境界へ渡す前に出す console.error を、描画より前から黙らせる */
+/**
+ * React が境界へ渡す前に出す console.error を、描画より前から黙らせる。
+ *
+ * `beforeEach` を使うのは描画中に出る出力だけにする。操作で出るものは play の中で
+ * `spyOn` する (`button.stories.tsx` の RejectReachesErrorBoundary と同じ形)。story ごとに
+ * `restoreAllMocks` が走るので後始末は要らない。
+ */
 function silenceConsoleError() {
   const spy = spyOn(console, "error").mockImplementation(() => {});
   return () => {
@@ -39,8 +57,12 @@ function CaughtHere({ children }: { children: ReactNode }) {
 const meta = {
   component: ActionForm,
   args: {
-    submitAction: fn(settles),
+    submitAction: settlingAction,
     children: <ActionFormSubmit>保存</ActionFormSubmit>,
+  },
+  beforeEach: () => {
+    settlingAction.mockClear();
+    settle = () => {};
   },
 } satisfies Meta<typeof ActionForm>;
 
@@ -64,6 +86,7 @@ export const Settles: Story = {
     // native disabled にはしない (フォーカスを保つ)
     await expect(button).toHaveFocus();
 
+    settle();
     await waitFor(() => expect(button).not.toHaveAttribute("aria-busy", "true"));
   },
 };
@@ -78,6 +101,8 @@ export const NotCalledTwice: Story = {
     await userEvent.keyboard("{Enter}");
 
     await expect(args.submitAction).toHaveBeenCalledTimes(1);
+    settle();
+    await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
   },
 };
 
@@ -95,6 +120,8 @@ export const PlainSubmitNotCalledTwice: Story = {
     await userEvent.keyboard("{Enter}");
 
     await expect(args.submitAction).toHaveBeenCalledTimes(1);
+    settle();
+    await waitFor(() => expect(args.submitAction).toHaveBeenCalledTimes(1));
   },
 };
 
@@ -102,13 +129,14 @@ export const PlainSubmitNotCalledTwice: Story = {
 export const RejectReachesErrorBoundary: Story = {
   tags: ["!dev"],
   args: { submitAction: fn(() => Promise.reject(new Error("失敗"))) },
-  beforeEach: silenceConsoleError,
   render: (args) => (
     <CaughtHere>
       <ActionForm {...args} />
     </CaughtHere>
   ),
   play: async () => {
+    // 失敗は click で起きるので、描画より前から黙らせる必要はない
+    spyOn(console, "error").mockImplementation(() => {});
     await userEvent.click(saveButton());
 
     await expect(await screen.findByText("境界で受けた: 失敗")).toBeInTheDocument();
