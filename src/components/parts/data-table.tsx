@@ -22,13 +22,25 @@ interface DataTableProps<TData extends RowData> extends Pick<
 > {
   /** devtools に登録する識別子。画面ごとに一意にする (`useTable` の `key`) */
   tableKey: string;
-  /** 行ごとに足す属性。busy 表現 (`aria-busy` と半透明) など、行データから決まるもの */
+  /**
+   * 行ごとに足す属性。行データから決まるものを返す。
+   *
+   * `className` は受けない。返した class は `rowProps` のコールバックの中にあって
+   * `no-restyle` が追えず、`<TableRow>` へ直接書けば落ちる class が無診断で通る。
+   * 外見は部品が持つ (ADR-0021)。半透明は `aria-busy` から下で当てる。
+   */
   rowProps?: (
     row: Row<DataTableFeatures, TData>,
-  ) => Pick<ComponentProps<typeof TableRow>, "aria-busy" | "className">;
+  ) => Pick<ComponentProps<typeof TableRow>, "aria-busy">;
   /** data が空のときに 1 行で出す案内。画面が `Empty` 部品を別に持つなら描画側で分岐する */
   emptyText?: string;
 }
+
+/**
+ * busy 行の半透明。`opacity-50` は本文テキストのコントラストを 3.82:1 まで落として
+ * WCAG 1.4.3 の 4.5:1 を割る (ADR-0016)
+ */
+const BUSY_ROW_CLASS = "opacity-60";
 
 /**
  * 列定義 (TanStack Table v9) を registry の `Table` 部品に描く共有部品 (ADR-0019)。
@@ -61,15 +73,22 @@ export function DataTable<TData extends RowData>({
       </TableHeader>
       <TableBody>
         {rows.length > 0 ? (
-          rows.map((row) => (
-            <TableRow key={row.id} {...rowProps?.(row)}>
-              {row.getAllCells().map((cell) => (
-                <TableCell key={cell.id} className={cell.column.columnDef.meta?.cellClassName}>
-                  <table.FlexRender cell={cell} />
-                </TableCell>
-              ))}
-            </TableRow>
-          ))
+          rows.map((row) => {
+            const attributes = rowProps?.(row);
+            return (
+              <TableRow
+                key={row.id}
+                {...attributes}
+                className={attributes?.["aria-busy"] ? BUSY_ROW_CLASS : undefined}
+              >
+                {row.getAllCells().map((cell) => (
+                  <TableCell key={cell.id} className={cell.column.columnDef.meta?.cellClassName}>
+                    <table.FlexRender cell={cell} />
+                  </TableCell>
+                ))}
+              </TableRow>
+            );
+          })
         ) : (
           <TableRow>
             <TableCell colSpan={table.getAllLeafColumns().length} className="h-24 text-center">

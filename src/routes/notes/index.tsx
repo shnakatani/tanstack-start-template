@@ -59,8 +59,6 @@ function NotesPagePending() {
  * `opacity-50` は本文を 3.82:1 まで落として WCAG 1.4.3 の 4.5:1 を割る
  * (`index.test.tsx` の楽観行の a11y 検査が axe で実測)。比率を満たす範囲で薄くする。
  */
-const busyRowAppearance = "opacity-60";
-
 function NotesPage() {
   const notesQuery = useSuspenseQuery(notesQueryOptions);
   const queryClient = useQueryClient();
@@ -152,7 +150,7 @@ function NotesPage() {
             // busy の判定は行データから (ADR-0016)。通知は announcer が担う (ADR-0017)
             rowProps={({ original }) => {
               const isBusy = isNoteRowBusy(original);
-              return { "aria-busy": isBusy, className: isBusy ? busyRowAppearance : undefined };
+              return { "aria-busy": isBusy };
             }}
           />
         )}

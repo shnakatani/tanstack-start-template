@@ -32,13 +32,10 @@ export const Empty: Story = {
   args: { tableKey: "fruits-empty", data: [] },
 };
 
-/** rowProps で行ごとに busy を表す (実例: `src/routes/notes/index.tsx` の `busyRowAppearance`) */
+/** rowProps で行ごとに busy を表す。半透明は DataTable が aria-busy から当てる */
 export const BusyRow: Story = {
   args: {
     tableKey: "fruits-busy-row",
-    rowProps: ({ original }) => ({
-      "aria-busy": original.id === 2,
-      className: original.id === 2 ? "opacity-60" : undefined,
-    }),
+    rowProps: ({ original }) => ({ "aria-busy": original.id === 2 }),
   },
 };

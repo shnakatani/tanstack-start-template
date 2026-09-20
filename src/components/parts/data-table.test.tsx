@@ -19,7 +19,7 @@ const FRUITS: Fruit[] = [
 
 /**
  * 状態のカタログは `data-table.stories.tsx` が持つ (ADR-0022)。ここに残すのは構造の契約で、
- * 列見出しの順と `scope=col`、`cellClassName` の転写、`rowProps` の属性、空表示の
+ * 列見出しの順と `scope=col`、`cellClassName` の転写、`rowProps` の属性と `aria-busy` からの半透明、空表示の
  * `colSpan` である。
  *
  * この部品は args だけで状態が決まるので story に play を書かない (節 2)。play の無い
@@ -48,6 +48,25 @@ describe("DataTable", () => {
     await expect
       .element(screen.getByRole("cell", { name: "りんご" }))
       .not.toHaveClass("text-right");
+  });
+
+  // 半透明は DataTable が aria-busy から当てる。消費側が className で渡す形にすると、
+  // rowProps のコールバックを lint が追えず no-restyle の診断が届かない (ADR-0021)
+  it("aria-busy の行だけを半透明にする", async () => {
+    const screen = await render(
+      <DataTable
+        tableKey="fruits"
+        columns={columns}
+        data={FRUITS}
+        rowProps={(row) => ({ "aria-busy": row.original.id === 2 })}
+      />,
+    );
+
+    const busy = screen.getByRole("row", { name: /みかん/ }).element();
+    const idle = screen.getByRole("row", { name: /りんご/ }).element();
+
+    expect(Number(getComputedStyle(busy).opacity)).toBeLessThan(1);
+    expect(Number(getComputedStyle(idle).opacity)).toBe(1);
   });
 
   it("rowProps で行ごとの属性を足せる", async () => {
