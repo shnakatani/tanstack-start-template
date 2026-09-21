@@ -27,7 +27,11 @@ Unknown base color: slate. Available base colors: neutral, zinc, stone, mauve, o
 
 slate の値を持ち続けても壊れてはいなかった。動かしたのは、CLI が生成しない palette を抱え続けるのをやめるためである。
 
-**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、節 2 以降で決める本リポジトリの段ではない。計測は生成した `styles.css` の値を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったもので、変換器は axe-core が報告した `#e7000b` / `#d60000` / `#f7cccc` / 4.765 の 4 点と一致する。
+**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、節 2 以降で決める本リポジトリの段ではない。
+
+計測は生成した `styles.css` を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` (ADR-0028)。
+
+この表は 2026-09-21 の観測として凍結する。8 色 17 テーマぶんの生成物が残っておらず、`mise run contrast` は `src/styles.css` のトークンしか読まないので測り直せない。
 
 | 対                                                           | 範囲                   | 比                                                                                                          |
 | ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -35,7 +39,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 | `text-destructive` on `bg-destructive/20` (light)            | 既定の `--destructive` | 3.31                                                                                                        |
 | `text-primary` on `--background`                             | 有彩色 17 テーマすべて | dark で 15 テーマが 1.95〜2.78。lime と yellow は dark が 10.08・10.30 で通り、代わりに light が 1.54・1.57 |
 | `--sidebar-primary-foreground` on `--sidebar-primary` (dark) | blue                   | 3.45                                                                                                        |
-| `--border` / `--input` on `--background`                     | base color 8 色すべて  | 1.25〜1.48 (WCAG 1.4.11 の 3:1)                                                                             |
+| `--border` / `--input` on `--background`                     | base color 8 色すべて  | 1.24〜1.48 (WCAG 1.4.11 の 3:1)                                                                             |
 
 `text-primary` が割る理由は、`--primary` が dark で「明るい文字を載せる面」と「暗い背景に載る文字」の両方を求められることにある。blue の ramp を全段調べても、両方を満たす段は存在しない。上流の既定である無彩色テーマだけが免れるのは、dark の `--primary` がほぼ白に反転して面と文字の役割が分かれるからである。
 
@@ -77,15 +81,17 @@ preset code をプロジェクトから復元する `shadcn preset resolve` は�
 
 `bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
 
-hue を変えるときは自分で測る。下地は `--background` (白)、文字は `<hue>-50`、比は 8bit へ丸めずに取る。orange は丸めない 4.5873 に対し 8bit では 4.5955 で、2 桁表示だけを見ると判定が変わる唯一の色である。2026-09-21 の `tailwindcss@4.3.3` の palette では 9 色が該当した。
+hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置いて `mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。下の表は 2026-09-21 の `tailwindcss@4.3.3` の palette を同じ形で測ったもので、9 色が該当した。
+
+表示は切り捨てなので、2 桁の値が実際の比を上回ることはない。`4.59` と出た値が 4.6 を満たすことはない。
 
 | hue                     | `<hue>-800` のまま | `<hue>-900` へ下げた後 |
 | ----------------------- | ------------------ | ---------------------- |
-| orange / emerald / teal | 4.59 / 4.49 / 4.51 | 5.36 / 5.36 / 5.28     |
-| amber / yellow / lime   | 4.44 / 4.22 / 4.24 | 5.25 / 4.98 / 4.93     |
-| green / cyan / sky      | 4.32 / 4.40 / 4.43 | 5.11 / 5.13 / 5.22     |
+| orange / emerald / teal | 4.59 / 4.49 / 4.51 | 5.34 / 5.35 / 5.25     |
+| amber / yellow / lime   | 4.43 / 4.21 / 4.25 | 5.23 / 5.00 / 4.91     |
+| green / cyan / sky      | 4.31 / 4.39 / 4.43 | 5.11 / 5.10 / 5.23     |
 
-残る 8 色 (red / blue / indigo / violet / purple / fuchsia / pink / rose) は `<hue>-800` のまま 4.99〜5.54 で足りる。
+残る 8 色 (red / blue / indigo / violet / purple / fuchsia / pink / rose) は `<hue>-800` のまま 4.98〜5.53 で足りる。
 
 ### 3. 値は palette の段に乗せる
 
@@ -111,7 +117,7 @@ hue を変えるときは自分で測る。下地は `--background` (白)、文�
 | `--destructive-surface` | `@theme inline`           | 面として当てる口が `bg-X/10` `/20` `/30` と複数あり、誤った当て方を誘う既存の書き方が無い |
 | `--placeholder`         | `:root` + `@utility` のみ | `select` に `data-placeholder:text-muted-foreground` があり、置き換えの候補に必ず挙がる   |
 
-`@theme inline` へ通した面のトークンを文字として書く余地は残る。2026-09-21 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.76、`--muted` / `--accent` / `--secondary` で 4.28〜4.33 になり、後者は SC 1.4.3 を割る。面のトークンを文字に使うなら下地ごとに測る。
+`@theme inline` へ通した面のトークンを文字として書く余地は残る。2026-09-22 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.76、`--muted` / `--accent` / `--secondary` で 4.28〜4.33 になり、後者は SC 1.4.3 を割る。面のトークンを文字に使うなら下地ごとに測る。
 
 `-foreground` を「面の上の文字」以外の意味で使わない。上流はこの接尾辞を solid な面の上の文字に割り当てており、別の意味を載せると次の生成で衝突する。
 
@@ -143,17 +149,12 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 
 - 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css`
 - 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0006 の検査手順に従う
-- **本 ADR と ADR-0025 とソースのコメントに書いた比率は、どれも人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており (勧告本体には無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない。比率を書いた箇所を触るときは測り直す
+- **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった
+- 測り直す手段は `mise run contrast` が持つ (ADR-0028)。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており (勧告本体には無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できないため、比率を書いた箇所を触るときは測り直す
 - 節 2 の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
-- 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。2026-09-21 時点で light の `--border` / `--input` が 1.25、dark の `--border` (白 10%) が 1.26、dark の `--input` (白 15%) が 1.48。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
-- focus 指標の不足は `--ring` を `--primary` と同値にしても残る。2026-09-21 時点で `ring-ring/50` は light 2.63 / dark 3.41、不透明で使う `border-ring` / `outline-ring` は light 8.84 / dark 10.88 になる
-- chart の 5 トークンは light と dark で同値で、1 本の blue ramp が両モードを兼ねる。明るい端が light の下地に、暗い端が dark の下地に紛れる。2026-09-21 時点で WCAG 1.4.11 の 3:1 を割る対は次の 3 つ
-
-  |                   | `--background` | `--card` |
-  | ----------------- | -------------- | -------- |
-  | light `--chart-1` | 1.81           | 1.81     |
-  | dark `--chart-4`  | 2.89           | 2.55     |
-  | dark `--chart-5`  | 2.23           | 1.96     |
+- 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。この対は light dark とも 3:1 を大きく下回る。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
+- focus 指標の不足は `--ring` を `--primary` と同値にしても残る。`--background` の上で、`ring-ring/50` は light が 3:1 を割り dark は満たす。不透明で使う `border-ring` / `outline-ring` は light dark とも満たす
+- chart の 5 トークンは light と dark で同値で、1 本の blue ramp が両モードを兼ねる。明るい端が light の下地に、暗い端が dark の下地に紛れる。WCAG 1.4.11 の 3:1 を割るのは light の `--chart-1`、dark の `--chart-4`、dark の `--chart-5` である
 
   消費している部品は無く (`grep -rl "chart" src/` が定義元の `src/styles.css` だけを返す)、chart 部品も入れていない。ただしテンプレートとして配る既定値なので、chart を足した利用者がこの ramp をそのまま受け取る。値をどう変えるかはここでは決めない
 

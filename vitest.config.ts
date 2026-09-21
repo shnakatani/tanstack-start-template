@@ -35,8 +35,16 @@ export default defineConfig({
         extends: true,
         test: {
           name: "scripts-tools",
-          include: ["scripts/lib/**/*.test.ts", "scripts/dev-env/**/*.test.ts"],
-          exclude: sharedExclude,
+          // 許可リストにすると、ツールを足すたびにここへ 1 行足すまでテストが無言で
+          // 収集されない。検査だけを除いて残りを拾う形にする。検査は壊れる原因が違うので
+          // 別 project が持つ (`.claude/rules/testing.md` の表)
+          //
+          // 除外した `scripts/checks/` の中は各検査の project が拾う。いま拾っているのは
+          // `checks-integrity` の `integrity/` だけなので、そこへ検査を足すときは project も
+          // 対で作る。除外がディレクトリ名に依っているぶん、検査を `scripts/checks/` の外へ
+          // 置くと、走らないのではなく scripts-tools へ無言で合流する
+          include: ["scripts/**/*.test.ts"],
+          exclude: [...sharedExclude, "scripts/checks/**"],
           // scripts のテストは bash / git の subprocess 起動を伴い、全体 run の
           // 並列負荷では既定 5s を超えることがある
           testTimeout: 20_000,

@@ -24,6 +24,10 @@ description = "Storybook を起動する"
 env = { STORYBOOK_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 6006') }}" }
 run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open"
 
+[tasks.contrast]
+description = "トークンからコントラスト比を測る"
+run = "vp node scripts/contrast/report.ts"
+
 [tasks."db:generate"]
 description = "Drizzle スキーマから migration を生成する"
 run = "vp exec drizzle-kit generate"

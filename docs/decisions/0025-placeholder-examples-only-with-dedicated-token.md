@@ -44,17 +44,19 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 ### 段の選択
 
-「背景と 4.5:1」と「入力値と 3:1」を両方課したときに成立する帯と、palette の段 (ADR-0024 の節 3) の比。2026-09-21 の実測で、測り方は ADR-0024 の Context にある。
+「背景と 4.5:1」と「入力値と 3:1」を両方課したときに成立する帯と、palette の段 (ADR-0024 の節 3) の比。2026-09-21 の実測である。`src/styles.css` がトークンとして宣言している段は `mise run contrast` で測り直せる (ADR-0028)。light の `mist-500` は `--placeholder`、`mist-600` は `--muted-foreground`。dark の `mist-500` は `--placeholder`、`mist-400` は `--muted-foreground` が持つ。light の `mist-400` と dark の `mist-600` はトークンになっていないので、この手段では測れない。
 帯の下端は 4.5:1、上端は入力値との 3:1 が保てる限界で、どちらも背景との比で表している。
+
+上端は `mise run contrast` では出せない。対を渡す形ではなく、入力値 (`--foreground`) と 3:1 になる輝度を解いてから背景との比へ直すためである。light は例示が入力値より明るいので輝度 `Lp = 3 * (L入力値 + 0.05) - 0.05`、dark は暗いので `Lp = (L入力値 + 0.05) / 3 - 0.05` を解き、`Lp` と背景の輝度で比を取る。輝度の式は `scripts/contrast/lib/contrast.ts` にある。
 
 |                                            | 帯 (背景比) | `mist-400` | `mist-500` | `mist-600` |
 | ------------------------------------------ | ----------- | ---------- | ---------- | ---------- |
-| light (背景 `--background`)                | 4.50〜6.57  | 2.44       | **4.61**   | 7.39       |
-| dark (背景 `--background` + `bg-input/30`) | 4.50〜5.83  | 7.43       | **3.93**   | 2.46       |
+| light (背景 `--background`)                | 4.50〜6.57  | 2.44       | **4.61**   | 7.37       |
+| dark (背景 `--background` + `bg-input/30`) | 4.50〜5.82  | 7.43       | **3.93**   | 2.46       |
 
 light は `mist-500` だけが帯に入り、下端から 0.11 しか離れていない。
 
-dark の比は入力欄が置かれる面で変わる。上表の dark 行は入力欄をページ直下 (`--background` + `bg-input/30`) に置いた値で、`Dialog` / `Sheet` / `Popover` の中 (`--popover` + `bg-input/30`) では `mist-500` が 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。`bg-input/30` を載せない素の面ならそれぞれ 4.27 と 3.76 で、入力欄の面が比を押し下げている。light 行に `bg-input/30` が無いのは、`input.tsx` と `textarea.tsx` がこれを `dark:` 限定で付けるためである。入力値との差 (4.45) は面によらないため、下の決定は動かない。
+dark の比は入力欄が置かれる面で変わる。上表の dark 行は入力欄をページ直下 (`--background` + `bg-input/30`) に置いた値で、`Dialog` / `Sheet` / `Popover` の中 (`--popover` + `bg-input/30`) では `mist-500` が 3.35 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。`bg-input/30` を載せない素の面ならそれぞれ 4.27 と 3.76 で、入力欄の面が比を押し下げている。light 行に `bg-input/30` が無いのは、`input.tsx` と `textarea.tsx` がこれを `dark:` 限定で付けるためである。入力値との差 (4.43) は面によらないため、下の決定は動かない。
 
 面ごとに測ることは、規格の定義から導かれる。「面を列挙せよ」と書いた条文は無い (2026-09-21 に勧告本体 / Understanding / Techniques / ACT を検索して不在を確認)。導出元は勧告本体の glossary が `contrast ratio` に付ける note で、Understanding の Key Terms はそれを引き写している。Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 が評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。テーマやダイアログの面は typical presentation の側に入るので、Note 6 が続けて免除する "unusual presentations" (UA による色の変更はその例示) には当たらない。
 W3C 自身の推奨値も面に依存する。WAI Forms Tutorial の `::placeholder { color: #767676 }` は "assuming the background of the element is white" と断りがあり、`#ffffff` 上 4.54 に対し `#f4f4f4` 上では 4.13 で割る。
@@ -86,7 +88,7 @@ light と dark で同じ `mist-500` になる。
 
 - **この色を見る検査は無い。`vp test run` が緑でも `--placeholder` の値について何も言っていない。** 動かすときは light dark の両方で、placeholder を入力欄の背景と、値を入れた同じ欄の文字の 2 つに人が見比べる
 - light の `mist-500` は帯の下端から 0.11 しか離れていない。`--background` か `--foreground` が動くと外れる。ADR-0024 の節 1 で生成をやり直したら帯を測り直す
-- dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.34。placeholder へ書式や指示を書くと、そのまま不適合になる
+- dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.35。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0006 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
 - **消費側からの上書きが決定的でなくなった。** `cn` は生成済み utility の表で衝突を判定するため、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方のクラスを載せたまま出荷され、詳細度が同じ (0,1,1) なのでどちらが勝つかは CSS のソース順で決まる。置換前の `placeholder:text-muted-foreground` は `cn` が確実に落としていた。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない

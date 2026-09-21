@@ -25,13 +25,22 @@ import { describe, it, expect, vi } from "vite-plus/test";
 
 壊れる原因が違うものを同じ project に混ぜない。混ざると、失敗したときに直す対象がアプリなのかスクリプトなのか設定なのか読み取れない。
 
-| 種別                   | 壊れる原因                   | 置き場所                            | 実行                                       |
-| ---------------------- | ---------------------------- | ----------------------------------- | ------------------------------------------ |
-| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                  | `vp test run --project unit`               |
-| アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                 | `vp test run --project browser`            |
-| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/lib/` / `scripts/dev-env/` | `vp test run --project scripts-tools`      |
-| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`         | `vp test run --project checks-integrity`   |
-| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`           | `vp node scripts/checks/runtime/<name>.ts` |
+| 種別                   | 壊れる原因                   | 置き場所                                            | 実行                                       |
+| ---------------------- | ---------------------------- | --------------------------------------------------- | ------------------------------------------ |
+| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                  | `vp test run --project unit`               |
+| アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                                 | `vp test run --project browser`            |
+| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/**/*.test.ts` (`scripts/checks/**` を除く) | `vp test run --project scripts-tools`      |
+| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity`   |
+| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp node scripts/checks/runtime/<name>.ts` |
+
+スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める。
+
+| 対象                                                                | 置き場所                     | 理由                                                                                                         |
+| ------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`response-headers.ts` / `repo-root.ts`)                               |
+| テストだけが使う fixture                                            | そのテストと同じディレクトリ | 本番の import グラフに入らないものを `scripts/lib/` へ置くと、共有物と見分けが付かない (`git-test-utils.ts`) |
+| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`derive-dev-port.sh` と隣の `.ts`)                                                     |
+| 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読み込まれるだけのファイルが見分けられない (`contrast/report.ts` と `contrast/lib/`)   |
 
 - `src/` 全体へ規範を当てるソース検査は、いま 1 つも無い。新設するときは `scripts/checks/source/` と `checks-source` project を対で作り、判定ロジックは `scripts/lib/` に置いて単体テストを別に持つ。判定と適用を同じファイルに書くと、判定の境界条件を試すために `src/` を壊す必要が出る
 - ソース検査を新設する前に lint で表現できないかを先に見る。class 名や import の規約は lint プラグイン (必要なら `jsPlugins`、ADR-0004) が持つほうが、字面走査より対象の実体に近い
@@ -42,6 +51,7 @@ import { describe, it, expect, vi } from "vite-plus/test";
 - その判定ロジックは `scripts/lib/` へ切り出して単体テストを別に持つ。成果物が要るのは実行側だけで、判定は成果物なしで試せる (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物を検査した結果が緑になる
 - project を足したら `vitest.config.ts` の `projects` に追加する。include に一致しないテストは収集されず、書いたのに 1 度も走らない状態が無言で成立する
+- 検査は `scripts/checks/` の下へ置く。`scripts-tools` は `scripts/checks/**` を除いた残り全部を拾うので、外へ置いた検査は走らないのではなく `scripts-tools` へ合流する。壊れる原因が混ざり、落ちたときに直す対象が読めなくなる
 
 ## a11y の検査は tag で分ける
 

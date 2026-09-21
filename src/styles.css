@@ -80,11 +80,12 @@
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
-  --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.15 */
+  --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.13 */
   /* ::placeholder 疑似要素に載る例示テキスト専用 (ADR-0025)。`@theme inline` へ通さず
      下の `@utility example-placeholder` だけで露出させる。通すと text-placeholder や
      data-placeholder:text-placeholder まで生成され、select の実テキストへ当てられる。
-     そこは WCAG 1.4.3 が掛かり dark で 3.93 に落ちる。公式も、utility を生やさない値は
+     そこは WCAG 1.4.3 が掛かり、dark の `--background` へ `--input/30` を重ねた上では割る
+     (`mise run contrast` で測る。ADR-0028)。公式も、utility を生やさない値は
      @theme でなく :root へ置くとしている (tailwindcss.com/docs/theme) */
   --placeholder: oklch(56% 0.021 213.5); /* mist-500 */
   --accent: oklch(0.963 0.002 197.1);
