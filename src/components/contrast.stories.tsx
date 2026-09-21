@@ -6,9 +6,12 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
  * clip し alpha を下地と合成するため、計算した比は描画と一致しない (ADR-0022 の節 6-1)。
  *
  * hover を実際に当てる形は採らない。`transition-colors` が効いている間は下地と混ざった途中の
- * 色が出ており、axe がそこを測ると最終的な配色には存在しない比が報告される。a11y helper が
- * 測定前にポインタを退避させるのはこのためで、hover を当てたまま測る経路は用意していない。
- * 代わりに hover で現れる utility を、prefix を外した形で静的に描く。
+ * 色が出ており、axe がそこを測ると最終的な配色には存在しない比が報告される。代わりに hover で
+ * 現れる utility を、prefix を外した形で静的に描く。
+ *
+ * ブラウザテスト側がマウスを退避させるのは別の理由による (`src/test/park-mouse.ts`)。全体 run で
+ * 前のファイルの click 位置が残り、開状態の検証が hover の配色と交絡するのを防ぐためで、
+ * story の実行経路には関わらない。
  *
  * light と dark は project が分かれており (`vitest.config.ts`)、同じ story が両方で走る。
  * 片方でしか現れない不透明度も両方で描かれるが、余分に通るだけで害はない。
