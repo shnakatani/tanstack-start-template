@@ -27,15 +27,15 @@ Unknown base color: slate. Available base colors: neutral, zinc, stone, mauve, o
 
 slate の値を持ち続けても壊れてはいなかった。動かしたのは、CLI が生成しない palette を抱え続けるのをやめるためである。
 
-**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。計測は生成した `styles.css` の値を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったもので、変換器は axe-core が報告した `#e7000b` / `#d60000` / `#f7cccc` / 4.765 の 4 点と一致する。
+**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、節 2 以降で決める本リポジトリの段ではない。計測は生成した `styles.css` の値を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったもので、変換器は axe-core が報告した `#e7000b` / `#d60000` / `#f7cccc` / 4.765 の 4 点と一致する。
 
-| 対                                                           | 範囲                   | 比                                                   |
-| ------------------------------------------------------------ | ---------------------- | ---------------------------------------------------- |
-| `--muted-foreground` on `--muted` (light)                    | base color 8 色中 7 色 | 3.86〜4.41 (mauve のみ 4.54 で充足)                  |
-| `text-destructive` on `bg-destructive/20` (light)            | 既定の `--destructive` | 3.31                                                 |
-| `text-primary` on `--background`                             | 有彩色 17 テーマすべて | dark 1.95〜2.78 / lime と yellow は light 1.54・1.57 |
-| `--sidebar-primary-foreground` on `--sidebar-primary` (dark) | blue                   | 3.45                                                 |
-| `--border` / `--input` on `--background`                     | base color 8 色すべて  | 1.25〜1.48 (WCAG 1.4.11 の 3:1)                      |
+| 対                                                           | 範囲                   | 比                                                                                                          |
+| ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `--muted-foreground` on `--muted` (light)                    | base color 8 色中 7 色 | 3.86〜4.41 (mauve のみ 4.54 で充足)                                                                         |
+| `text-destructive` on `bg-destructive/20` (light)            | 既定の `--destructive` | 3.31                                                                                                        |
+| `text-primary` on `--background`                             | 有彩色 17 テーマすべて | dark で 15 テーマが 1.95〜2.78。lime と yellow は dark が 10.08・10.30 で通り、代わりに light が 1.54・1.57 |
+| `--sidebar-primary-foreground` on `--sidebar-primary` (dark) | blue                   | 3.45                                                                                                        |
+| `--border` / `--input` on `--background`                     | base color 8 色すべて  | 1.25〜1.48 (WCAG 1.4.11 の 3:1)                                                                             |
 
 `text-primary` が割る理由は、`--primary` が dark で「明るい文字を載せる面」と「暗い背景に載る文字」の両方を求められることにある。blue の ramp を全段調べても、両方を満たす段は存在しない。上流の既定である無彩色テーマだけが免れるのは、dark の `--primary` がほぼ白に反転して面と文字の役割が分かれるからである。
 
