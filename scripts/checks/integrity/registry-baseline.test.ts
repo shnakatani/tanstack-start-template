@@ -46,7 +46,12 @@ function uiComponentFiles(): string[] {
 
 function baselineFiles(): string[] {
   return readdirSync(BASELINE_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && isComponentFile(entry.name))
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        // 拡張子で絞ると .css の baseline が残骸検出から外れ、ローカル実体の rename を見逃す
+        (isComponentFile(entry.name) || Object.hasOwn(EXTERNAL_REGISTRY_FILES, entry.name)),
+    )
     .map((entry) => entry.name);
 }
 

@@ -40,6 +40,11 @@ describe("resolveColorToken", () => {
     );
   });
 
+  // 定義はあるが色でない値も、色と同じく継承色へ落ちる。空判定だけでは通り抜ける
+  it("色でない値を持つトークンも投げる", () => {
+    expect(() => resolveColorToken("--radius")).toThrow(/--radius/);
+  });
+
   it("解決に使った probe を残さない", () => {
     const before = document.body.childElementCount;
 

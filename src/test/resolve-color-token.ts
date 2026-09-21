@@ -9,9 +9,11 @@
  * 解決は probe 要素をツリーへ挿して行う。`color` へ `var(...)` を置いて `getComputedStyle`
  * で読み戻すと、正規化と `color-mix()` の展開をブラウザ自身にやらせられる。
  *
- * 未定義のトークンでは投げる。`var()` の置換に失敗した `color` は `unset` 相当になり、
- * 継承した祖先の色がそのまま返る。例外も警告も出ないので、綴り違いやトークンのリネームを
- * 取りこぼしても、テストは別の色を比べたまま緑で通る。
+ * 色として解決できないトークンでは投げる。`var()` の置換に失敗した `color` は `unset` 相当に
+ * なり、継承した祖先の色がそのまま返る。例外も警告も出ないので、綴り違いやトークンのリネームを
+ * 取りこぼしても、テストは別の色を比べたまま緑で通る。未定義のときだけでなく、`--radius` の
+ * ような色でない値を持つトークンを渡したときも同じ経路へ落ちるので、値の型まで見る
+ * (判定は `src/components/tokens.stories.tsx` のカタログと同じ `CSS.supports`)。
  *
  * @param token `--destructive` のようなカスタムプロパティ名
  * @param scope probe を挿す親。テーマは祖先の class で決まるので、`.dark` の配下を測るときは
@@ -23,8 +25,11 @@ export function resolveColorToken(token: string, scope: Element = document.body)
   scope.append(probe);
   try {
     const styles = getComputedStyle(probe);
-    if (styles.getPropertyValue(token).trim() === "") {
-      throw new Error(`カスタムプロパティ ${token} が ${scope.nodeName} の配下で解決できない`);
+    const declared = styles.getPropertyValue(token).trim();
+    if (!CSS.supports("color", declared)) {
+      throw new Error(
+        `カスタムプロパティ ${token} が ${scope.nodeName} の配下で色に解決できない (${declared || "未定義"})`,
+      );
     }
     return styles.color;
   } finally {
