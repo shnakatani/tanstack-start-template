@@ -70,12 +70,51 @@ describe("parseTokenTable", () => {
   });
 
   it("閉じ括弧が行頭にないブロックは throw する", () => {
-    // 止めないと :root の抽出が .dark の閉じ括弧まで走り、light の表が dark の値になる
+    // 前のテストと同じ `body.includes("{")` のガードに当たるが、到達の経路が違う。
+    // 入れ子は `:root` の本体に最初から `{` がある形で、こちらは `:root` の抽出が
+    // 次のブロックまで走った結果として `{` が入り込む形である。ガードが無いと
+    // light の表が dark の値になる。抽出の仕方を変えれば 2 つは別の要件に戻るので、
+    // 実装がいま 1 条件であることを理由にどちらかを消さない
     const inline = `:root { --background: oklch(1 0 0); }
 .dark { --background: oklch(0 0 0);
 }
 `;
     expect(() => parseTokenTable(inline)).toThrow("入れ子");
+  });
+
+  it("@media が :root を外から包む形は throw する", () => {
+    // 止めないと、条件付きの値が無条件のトークンとして表へ入る
+    const wrapped = `@media (prefers-contrast: more) {
+  :root {
+    --background: oklch(0 0 0);
+  }
+}
+.dark {
+  --background: oklch(0.2 0 0);
+}
+`;
+    expect(() => parseTokenTable(wrapped)).toThrow("行頭");
+  });
+
+  it("@media 内と行頭の両方に :root があれば行頭側を読む", () => {
+    const both = `@media (prefers-contrast: more) {
+  :root {
+    --background: oklch(9 9 9);
+  }
+}
+:root {
+  --background: oklch(1 0 0);
+}
+.dark {
+  --background: oklch(0.2 0 0);
+}
+`;
+    expect(parseTokenTable(both).light["--background"]).toBe("oklch(1 0 0)");
+  });
+
+  it("色でない宣言も表に入る", () => {
+    // docstring の契約。色に絞る判定は値を解決する側が持つ
+    expect(parseTokenTable(FIXTURE).light["--radius"]).toBe("0.625rem");
   });
 
   it("実際の src/styles.css を読める", () => {

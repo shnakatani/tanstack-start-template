@@ -34,10 +34,24 @@ export function parseTokenTable(css: string): Readonly<Record<Theme, TokenTable>
 function parseBlock(css: string, selector: string): TokenTable {
   // コメントを先に落とす。コメントの中に宣言の例を書くことがある
   const source = css.replace(/\/\*[\s\S]*?\*\//g, "");
-  const found = new RegExp(`${escapeForRegExp(selector)}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(source);
+  // セレクタを行頭に固定する。固定しないと `@media` が `:root` を外から包む形で、
+  // 条件付きの値が無条件のトークンとして表へ入る。
+  //
+  // 行頭で足りるのは、入れ子を必ず字下げするフォーマッタを commit 前に通すからである
+  // (AGENTS.md「コミット前に `vp check --fix` 必須」)。字下げなしの入れ子は
+  // `vp check` が Formatting issues として弾く。フォーマッタを外すとこの前提が消える
+  const found = new RegExp(`^${escapeForRegExp(selector)}\\s*\\{([\\s\\S]*?)\\n\\}`, "m").exec(
+    source,
+  );
   const body = found?.[1];
   if (body === undefined) {
-    throw new Error(`セレクタが見つからない: ${selector}`);
+    // セレクタが在るのに当たらない形と、本当に無い形を区別する。区別しないと
+    // 調べ始める場所を誤らせる
+    throw new Error(
+      source.includes(selector)
+        ? `行頭のセレクタとして見つからない (字下げされているか、閉じ括弧が行頭にない): ${selector}`
+        : `セレクタが見つからない: ${selector}`,
+    );
   }
   if (body.includes("{")) {
     // 入れ子のブロック (`@media` など) があると、条件付きの値が無条件のトークンとして
