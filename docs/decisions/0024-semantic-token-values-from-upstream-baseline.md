@@ -123,7 +123,7 @@ hue を変えるときは自分で測る。下地は `--background` (白)、文�
 
 禁じているのは、その計算を story として抱えて検査の顔をさせることである。描画されない値を測るので、実際の画面が割っていても緑になる。
 
-**この検算は違反を見るだけで、判定できなかった項目を見ない。** `@storybook/addon-a11y@10.6.0` は `violations` の件数だけで合否を決める (`dist/_browser-chunks/chunk-P5J2FJ2Z.js` の `hasViolations`)。`color-contrast` は背景を解決できないと `violations` ではなく `incomplete` へ落ちるので、story を包む要素が変わって解決できなくなると、検査は緑のまま何も見なくなる。ブラウザテスト側の `src/test/a11y.ts` は `incomplete` も空であることを要求しており、story 側とは基準が揃っていない。
+**この検算は addon の合否だけでは足りない。** `@storybook/addon-a11y@10.6.0` は `violations` の件数だけで合否を決める (`dist/_browser-chunks/chunk-P5J2FJ2Z.js` の `hasViolations`)。`color-contrast` は背景を解決できないと `violations` ではなく `incomplete` へ落ちるので、story を包む要素が変わって解決できなくなると、addon だけでは検査が緑のまま何も見なくなる。判定できなかった項目を合否へ入れる仕組みと、どの層で入れるかは ADR-0026 が持つ。
 
 hover の状態を作って測る形は、ポインタを当てる形も擬似クラスを強制する形も採らない。ポインタを当てると `transition-colors` の途中の合成色を axe が測る。擬似クラスを強制しても同じで、Storybook の test 実行は animation を止めない方針のため (ADR-0022) 途中の色が残り、さらに addon が描画後に axe を回すので状態を保つ decorator か別の走査が要る。手で組み合わせを並べる方が、持ち物が一覧だけで済む。
 
