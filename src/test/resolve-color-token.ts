@@ -22,6 +22,11 @@ const UNRESOLVED = "rgb(1, 0, 1)";
  * 継承色へ解決されるので測りたい値ではない)。継承先を既知の色にしておけば、置換に失敗した
  * 経路がすべてその色に集まる。
  *
+ * トークンを `@property { syntax: "<color>" }` で登録する形は採らない。逆にこの検出を殺す。
+ * 登録済みプロパティの不正値は parse 時ではなく算出時に無効となり、`initial-value` へ
+ * 戻るためである (CSS Properties and Values API Level 1「invalid at computed-value time」)。
+ * 綴り違いもリネームの取りこぼしも、例外なく既定の色として通る。
+ *
  * @param token `--destructive` のようなカスタムプロパティ名
  * @param scope probe を挿す親。テーマは祖先の class で決まるので、`.dark` の配下を測るときは
  *   その部分木の要素を渡す。既定の `document.body` は `<html>` の class を見る
