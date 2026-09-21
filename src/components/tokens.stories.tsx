@@ -8,7 +8,7 @@ import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story
 
 /**
  * 解決後の値を伴う全トークンを名前順で集める。`styles.css` が SSOT なので値は写さない
- * (ADR-0022)。`getComputedStyle` は呼ぶたびに root のスタイル解決を起こすので 1 つを使い回す
+ * (ADR-0022)。
  */
 function readAllTokens(): ThemeToken[] {
   const style = getComputedStyle(document.documentElement);
