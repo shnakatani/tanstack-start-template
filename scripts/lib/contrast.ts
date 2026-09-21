@@ -8,12 +8,17 @@
  * (ADR-0024 の節 5)。
  */
 
-export type Theme = "light" | "dark";
-
-/** トークン名から宣言された値を引く表 */
-export type TokenTable = Readonly<Record<string, string>>;
-
 const THEME_SELECTOR = { light: ":root", dark: ".dark" } as const;
+
+export type Theme = keyof typeof THEME_SELECTOR;
+
+/**
+ * トークン名から宣言された値を引く表。
+ *
+ * 色でない宣言 (`--radius`) も入る。`:root` の宣言をそのまま読むためで、色に絞る判定は
+ * 値を解決する側が持つ。
+ */
+export type TokenTable = Readonly<Record<string, string>>;
 
 /**
  * `:root` と `.dark` をトークンの表にする。
@@ -34,10 +39,16 @@ function parseBlock(css: string, selector: string): TokenTable {
   if (body === undefined) {
     throw new Error(`セレクタが見つからない: ${selector}`);
   }
+  if (body.includes("{")) {
+    // 入れ子のブロック (`@media` など) があると、条件付きの値が無条件のトークンとして
+    // 混ざる。閉じ括弧が行頭に無い CSS でも、次のブロックまで飲み込んで同じ形になる。
+    // どちらも例外にならず静かに誤った比を返すので、ここで止める
+    throw new Error(`宣言だけのブロックではない (入れ子か、閉じ括弧が行頭にない): ${selector}`);
+  }
   const table: Record<string, string> = {};
   // 宣言は複数行にまたがる (`--destructive-surface`)。改行を潰してから ; で割る
   for (const declaration of body.replace(/\s+/g, " ").split(";")) {
-    const parsed = /\s*(--[a-z0-9-]+)\s*:\s*(.+)/i.exec(declaration);
+    const parsed = /^\s*(--[a-z0-9-]+)\s*:\s*(.+)/i.exec(declaration);
     const [, name, value] = parsed ?? [];
     if (name !== undefined && value !== undefined) {
       table[name] = value.trim();

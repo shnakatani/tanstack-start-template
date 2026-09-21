@@ -9,13 +9,17 @@ import { REPO_ROOT } from "./repo-root";
 // 実ファイルではなく固定の CSS で境界条件を試す。実ファイルの値を期待値にすると、
 // トークンを動かすたびに期待値の書き換えしか選択肢が無い検査になる
 const FIXTURE = `
-/* コメントの中の --background: oklch(0 0 0); は拾わない */
 :root {
   --background: oklch(1 0 0);
+  /* 上流の値に戻すときはこちら
+  --foreground: oklch(0 0 0);
+  --background: oklch(9 9 9);
+  */
   --foreground: oklch(0.148 0.004 228.8);
   --destructive-surface: oklch(
     57.7% 0.245 27.325
   ); /* 複数行にまたがる宣言 */
+  --radius: 0.625rem;
 }
 .dark {
   --background: oklch(0.148 0.004 228.8);
@@ -34,6 +38,9 @@ describe("parseTokenTable", () => {
   });
 
   it("コメントの中の宣言を拾わない", () => {
+    // コメントアウトした宣言が 2 本あると、2 本目が `;` で割った断片の先頭に来る。
+    // 除去を外すと `oklch(9 9 9)` が後勝ちで残る。1 本だけの形では宣言の正規表現の `^`
+    // が先に弾いて、除去の有無が結果に出ない (2026-09-22 実測)
     expect(parseTokenTable(FIXTURE).light["--background"]).toBe("oklch(1 0 0)");
   });
 
@@ -46,6 +53,29 @@ describe("parseTokenTable", () => {
   it("セレクタが無い CSS は throw する", () => {
     // 宣言ブロックの閉じ括弧は改行の後ろに置く。`:root { }` は :root 側で落ちる
     expect(() => parseTokenTable(":root {\n}")).toThrow(".dark");
+  });
+
+  it("入れ子のブロックがあれば throw する", () => {
+    const nested = `:root {
+  --background: oklch(1 0 0);
+  @media (prefers-contrast: more) {
+    --foreground: oklch(0 0 0);
+  }
+}
+.dark {
+  --background: oklch(0 0 0);
+}
+`;
+    expect(() => parseTokenTable(nested)).toThrow("入れ子");
+  });
+
+  it("閉じ括弧が行頭にないブロックは throw する", () => {
+    // 止めないと :root の抽出が .dark の閉じ括弧まで走り、light の表が dark の値になる
+    const inline = `:root { --background: oklch(1 0 0); }
+.dark { --background: oklch(0 0 0);
+}
+`;
+    expect(() => parseTokenTable(inline)).toThrow("入れ子");
   });
 
   it("実際の src/styles.css を読める", () => {
