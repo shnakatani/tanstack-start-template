@@ -42,8 +42,11 @@ describe("resolveColorToken", () => {
 
   // 定義はあるが色でない値も、色と同じく継承色へ落ちる。定義の有無だけでは通り抜ける
   it("色でない値を持つトークンも投げる", () => {
-    // 字面まで見る。添えていないと、宣言の値を落としても検出できない
-    expect(() => resolveColorToken("--radius")).toThrow(/--radius .*\(0\.625rem\)/);
+    withProbeScope((scope) => {
+      scope.style.setProperty(PROBE_TOKEN, "0.625rem");
+      // 字面まで見る。添えていないと、宣言の値を落としても検出できない
+      expect(() => resolveColorToken(PROBE_TOKEN, scope)).toThrow(/\(0\.625rem\)/);
+    });
   });
 
   // 字面を CSS.supports で見る形はここを通してしまう。継承色は測りたい値ではない

@@ -44,10 +44,12 @@ import type { ReactNode } from "react";
  *
  * ここを `["bg-x/10", ...].map()` に畳まない。`@shadcn/lint` から配列の中身ごと見えなくなり
  * (`no-raw-colors` / `no-unknown-classes` が無反応になる)、この story の主題であるクラス名が
- * 検査から外れる。Storybook が案内する `args: { className: "..." }` への共通化も同じ理由で
- * 採らない。2026-09-21 に架空クラスを 8 形態で仕込んで実測し、読まれなくなるのはこの 2 つ
- * だけだった。`className` への直置き・`cn()` の文字列と配列・`const` へ切り出した文字列・
- * 補間の無いテンプレートリテラルはいずれも読まれるので、畳み方はそこから選ぶ。
+ * 検査から外れる。2026-09-21 に架空クラスを 11 形態で仕込んで実測した結果、読まれなかったのは
+ * `.map()` のコールバック引数・補間のあるテンプレートリテラル・`args: { className: "..." }`
+ * の 3 つ。Storybook が案内する `args` への共通化を採らないのもこれが理由である。
+ * 残る 8 形態 (`className` への直置き、`cn()` の文字列・配列・object・論理式・入れ子配列、
+ * `const` へ切り出した文字列、補間の無いテンプレートリテラル) は読まれるので、畳み方は
+ * そこから選ぶ。
  */
 function Row({ className, children }: { className: string; children: ReactNode }) {
   return <p className={cn("rounded px-3 py-2 text-sm", className)}>{children}</p>;

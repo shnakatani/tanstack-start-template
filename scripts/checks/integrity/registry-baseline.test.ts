@@ -59,7 +59,19 @@ function gitPaths(subcommand: string, ...rest: string[]): Set<string> {
     cwd: REPO_ROOT,
     encoding: "utf8",
   });
-  return new Set(out.split("\0").filter(Boolean));
+  return new Set(out.split("\0").filter(Boolean).map(toComparablePath));
+}
+
+/**
+ * git と `readdirSync` の出力を突き合わせられる形へ揃える。
+ *
+ * macOS の git は `core.precomposeunicode` (既定で true) により readdir が返す NFD を NFC へ
+ * 直して出力するが、`readdirSync` は NFD のまま返す。揃えないと濁点や半濁点を分解した名前で
+ * 集合の照合が外れ、gitignore 済みのファイルが孤児として報告される。`-z` が止めるのは引用だけで、
+ * 正規化のずれはそのまま残る。
+ */
+function toComparablePath(path: string): string {
+  return path.normalize("NFC");
 }
 
 /**
@@ -85,10 +97,16 @@ function baselineFiles(): string[] {
     "--",
     BASELINE_DIR,
   );
-  return readdirSync(BASELINE_DIR, { withFileTypes: true, recursive: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(BASELINE_DIR, join(entry.parentPath, entry.name)))
-    .filter((path) => !ignored.has(relative(REPO_ROOT, join(BASELINE_DIR, path))));
+  return (
+    readdirSync(BASELINE_DIR, { withFileTypes: true, recursive: true })
+      // symlink も拾う。isFile() だけだと走査から無言で消え、「どの分類にも落ちないものを
+      // 失敗させる」が成立しなくなる
+      .filter((entry) => entry.isFile() || entry.isSymbolicLink())
+      .map((entry) => relative(BASELINE_DIR, join(entry.parentPath, entry.name)))
+      .filter(
+        (path) => !ignored.has(toComparablePath(relative(REPO_ROOT, join(BASELINE_DIR, path)))),
+      )
+  );
 }
 
 describe("registry baseline の網羅", () => {
