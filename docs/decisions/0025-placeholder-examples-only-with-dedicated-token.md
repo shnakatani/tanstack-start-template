@@ -19,7 +19,10 @@ placeholder には向きの逆な要求が 2 つ掛かる。
 後者に 3:1 を当てる。SC 1.4.1 は色が唯一の手段でないことを求め、明度差を追加の手がかりとして数える基準を 3:1 に置いている。
 **この 3:1 は当てはめであって、placeholder と入力値の関係に SC 1.4.1 を適用すると書いた出典は無い。**
 
-**1.4.3 が placeholder に掛かること自体は争われていない。** Understanding SC 1.4.3 の Intent が "including placeholder text" と名指しで含めている。w3c/wcag#4343 が問うているのはもっと狭く、「可視ラベルと同じ文言を繰り返すだけの placeholder」を免除できるかで、2026-09-21 時点で open である。**書式や指示を伝える placeholder に 4.5:1 が要る点は、同 issue の参加者の間でも異論が出ていない。**
+**1.4.3 が placeholder に掛かること自体は争われていない。** Understanding SC 1.4.3 の Intent が "including placeholder text" と名指しで含めている (勧告本体ではなく Understanding 側の記述)。
+
+w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を免除できるかで、2026-09-21 時点で open である。**同 issue は本 ADR の立場を支持する側の材料を持つ。** detlevhfischer は `<label>First name</label><input placeholder="Mary">` を「ラベルの字面の繰り返しではないが冗長な変種」として挙げ、コントラスト要件は掛からないという見解を述べている。例示だけを置く形はこれに当たる。
+一方、`placeholder="DD.MM.YYYY"` のように書式を伝える形は「明らかに要件を満たす必要がある」とされ、ここに異論は出ていない。philljenkins は別案として「ラベルを 4.5:1 に保ったうえで placeholder は 3:1 + イタリック」を提案しており、決着していない。
 
 **この色を検査は測っていない。しかも「測っていない」より悪い。** `axe-core@4.13.0` の `color-contrast` は空の入力欄にもマッチし (`lib/rules/color-contrast-matches.js` の `// Match all form fields, regardless of if they have text`)、`::placeholder` ではなく要素自身の `color` で判定する (`lib/` に `::placeholder` の言及が 0 件。2026-09-21 実測)。Deque 自身が dequelabs/axe-core#4260 で「placeholder を評価したかのように見える違反が、実際には別の前景色で出る」と書いている。**緑であることは placeholder が測られたことを意味しない。**
 
@@ -49,9 +52,9 @@ placeholder には向きの逆な要求が 2 つ掛かる。
 
 light は `mist-500` だけが帯に入り、下端から 0.11 しか離れていない。
 
-dark の比は入力欄が置かれる面で変わる。上表は `--background` の上で測ったもので、`Dialog` / `Sheet` / `Popover` の中 (`--popover`) に置くと `mist-500` は 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。入力値との差 (4.45) は面によらないため、下の決定は動かない。
+dark の比は入力欄が置かれる面で変わる。上表は入力欄をページ直下 (`--background` + `bg-input/30`) に置いた値で、`Dialog` / `Sheet` / `Popover` の中 (`--popover` + `bg-input/30`) では `mist-500` が 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。`bg-input/30` を載せない素の面ならそれぞれ 4.27 と 3.76 で、入力欄の面が比を押し下げている。入力値との差 (4.45) は面によらないため、下の決定は動かない。
 
-面ごとに測ることは、規格の定義から導かれる。「面を列挙せよ」と書いた条文は無い (2026-09-21 に Understanding / Techniques / ACT を検索して不在を確認)。導出元は 2 つで、Understanding SC 1.4.3 の Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 が評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。免除されるのは UA 由来の表示だけで ("except where caused by authors' code")、テーマや面の切り替えは著者のコードなので含まれる。
+面ごとに測ることは、規格の定義から導かれる。「面を列挙せよ」と書いた条文は無い (2026-09-21 に検索して不在を確認)。導出元は WCAG 2.2 勧告本体の `contrast ratio` に付く 2 つの note で、Understanding 側の再掲ではない。Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 が評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。テーマやダイアログの面は typical presentation の側に入るので、Note 6 が続けて免除する "unusual presentations" (UA による色の変更はその例示) には当たらない。
 W3C 自身の推奨値も面に依存する。WAI Forms Tutorial の `::placeholder { color: #767676 }` は "assuming the background of the element is white" と断りがあり、`#ffffff` 上 4.54 に対し `#f4f4f4` 上では 4.13 で割る。
 
 dark は帯に入る段が無い。`mist-400` は入力値との 3:1 を割る側 (2.35) で外れ、`mist-500` は 4.5:1 を割る側で外れる。
@@ -81,7 +84,7 @@ light と dark で同じ `mist-500` になる。
 
 - **この色を見る検査は無い。`vp test run` が緑でも `--placeholder` の値について何も言っていない。** 動かすときは light dark の両方で、placeholder を入力欄の背景と、値を入れた同じ欄の文字の 2 つに人が見比べる
 - light の `mist-500` は帯の下端から 0.11 しか離れていない。`--background` か `--foreground` が動くと外れる。ADR-0024 の節 1 で生成をやり直したら帯を測り直す
-- dark は SC 1.4.3 の 4.5:1 を満たさない。`--background` の上で 3.93、`--popover` の上で 3.34。placeholder へ書式や指示を書くと、そのまま不適合になる
+- dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.34。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0006 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
 - **消費側からの上書きが決定的でなくなった。** `cn` は生成済み utility の表で衝突を判定するため、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方のクラスを載せたまま出荷され、詳細度が同じ (0,1,1) なのでどちらが勝つかは CSS のソース順で決まる。置換前の `placeholder:text-muted-foreground` は `cn` が確実に落としていた。2026-09-21 時点で `placeholder:` の class を書く消費者は 0 件 (`grep -rn 'placeholder:' src/ --include='*.tsx'` が React の prop しか返さない)
@@ -99,5 +102,6 @@ light と dark で同じ `mist-500` になる。
 - 冗長な placeholder に 1.4.3 が掛かるかの議論 (2026-09-21 時点で open): https://github.com/w3c/wcag/issues/4343
 - WCAG 2.2 1.4.1 Use of Color: https://www.w3.org/TR/WCAG22/#use-of-color
 - WCAG 2.2 1.4.3 Contrast (Minimum): https://www.w3.org/TR/WCAG22/#contrast-minimum
-- Understanding SC 1.4.3 (Intent が placeholder を名指しで含める / 測る背景の定義): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+- Understanding SC 1.4.3 (Intent が placeholder を名指しで含める。丸めるなの note もここ): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+- WCAG 2.2 勧告本体 `contrast ratio` の Note 3 / 4 / 6 (測る背景の定義と color pairs): https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio
 - axe が placeholder を誤った前景色で評価する件 (open): https://github.com/dequelabs/axe-core/issues/4260
