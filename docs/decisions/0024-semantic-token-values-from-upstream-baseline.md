@@ -35,7 +35,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 | `text-destructive` on `bg-destructive/20` (light)            | 既定の `--destructive` | 3.31                                                 |
 | `text-primary` on `--background`                             | 有彩色 17 テーマすべて | dark 1.95〜2.78 / lime と yellow は light 1.54・1.57 |
 | `--sidebar-primary-foreground` on `--sidebar-primary` (dark) | blue                   | 3.45                                                 |
-| `--border` / `--input` on `--background`                     | base color 8 色すべて  | 約 1.25 (WCAG 1.4.11 の 3:1)                         |
+| `--border` / `--input` on `--background`                     | base color 8 色すべて  | 1.25〜1.48 (WCAG 1.4.11 の 3:1)                      |
 
 `text-primary` が割る理由は、`--primary` が dark で「明るい文字を載せる面」と「暗い背景に載る文字」の両方を求められることにある。blue の ramp を全段調べても、両方を満たす段は存在しない。上流の既定である無彩色テーマだけが免れるのは、dark の `--primary` がほぼ白に反転して面と文字の役割が分かれるからである。
 
@@ -75,7 +75,17 @@ preset code をプロジェクトから復元する `shadcn preset resolve` は�
 
 `--sidebar-primary` の対も同じ段に揃える。上流は sidebar 側を primary より 1 段明るく置くが、dark でその対が 3.45 になる。
 
-light の `/80` が 4.6 を下回る hue (2026-09-21 時点で orange / emerald / teal) は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
+`bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
+
+hue を変えるときは自分で測る。2026-09-21 の `tailwindcss@4.3.3` の palette では 9 色が該当した。
+
+| `<hue>-800` のまま      | `/80` の上の文字   | `<hue>-900` へ下げた後 |
+| ----------------------- | ------------------ | ---------------------- |
+| orange / emerald / teal | 4.59 / 4.49 / 4.51 | 5.36 / 5.36 / 5.28     |
+| amber / yellow / lime   | 4.44 / 4.22 / 4.24 | 5.25 / 4.98 / 4.93     |
+| green / cyan / sky      | 4.32 / 4.40 / 4.43 | 5.11 / 5.13 / 5.22     |
+
+残る 8 色 (red / blue / indigo / violet / purple / fuchsia / pink / rose) は `<hue>-800` のまま 4.99〜5.54 で足りる。
 
 ### 3. 値は palette の段に乗せる
 
@@ -135,7 +145,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 - 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0006 の検査手順に従う
 - **本 ADR と ADR-0025 とソースのコメントに書いた比率は、どれも人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており (勧告本体には無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない。比率を書いた箇所を触るときは測り直す
 - 節 2 の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
-- 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` の約 1.25 と focus 指標の `/50` はこの決定で解かない。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
+- 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。2026-09-21 時点で light の `--border` / `--input` が 1.25、dark の `--border` (白 10%) が 1.26、dark の `--input` (白 15%) が 1.48。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
 - focus 指標の不足は `--ring` を `--primary` と同値にしても残る。2026-09-21 時点で `ring-ring/50` は light 2.63 / dark 3.41、不透明で使う `border-ring` / `outline-ring` は light 8.84 / dark 10.88 になる
 - chart の 5 トークンは light と dark で同値で、1 本の blue ramp が両モードを兼ねる。明るい端が light の下地に、暗い端が dark の下地に紛れる。2026-09-21 時点で WCAG 1.4.11 の 3:1 を割る対は次の 3 つ
 

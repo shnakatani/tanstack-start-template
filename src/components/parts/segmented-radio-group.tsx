@@ -57,8 +57,8 @@ const SEGMENTED_RADIO_GROUP =
  *
  * min-w-12 (48px) が 1 文字ラベルと 2 文字ラベルの幅を揃える。w-fit のトラックでは自由空間が
  * 生まれず、flex-1 だけでは文字数ぶんの幅差がそのまま残るため、下限で揃える。
- * 未選択は text-foreground/60 で、トラック上のコントラストは 5.05:1 (AA を満たす)。
- * 選択は bg-background + shadow-sm の浮いたつまみで、文字は text-foreground (19.71:1)。
+ * 未選択は text-foreground/60 で、トラック上のコントラストは light で 5.05:1 / dark で 6.09:1 (AA を満たす)。
+ * 選択は bg-background + shadow-sm の浮いたつまみで、文字は text-foreground (light 19.71:1 / dark 19.00:1)。
  * hover が選択済みの文字色を奪わないのは、選択時と hover 時がどちらも text-foreground で
  * 同色だからである (異なる色を選ぶと data-checked は :where() 包みで特異度がゼロ加算のため
  * hover に負ける。segmented-radio-group.test.tsx がこれを回帰として固定している)。

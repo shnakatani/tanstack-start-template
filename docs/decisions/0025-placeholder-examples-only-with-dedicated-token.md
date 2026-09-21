@@ -31,7 +31,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 **placeholder には例示だけを置き、その色を `--placeholder` として `--muted-foreground` から切る。**
 
 ラベルと書式の指示は placeholder に置かない。ラベルは可視ラベルへ、指示は `FieldDescription` (`src/components/ui/field.tsx`) へ置く。
-要求が例示と指示で変わる分け方は Carbon の 3 分類と w3c/wcag#4343 の議論が共通して採る。指示は 4.5:1 を満たす段が要る。
+要求が例示と指示で変わる分け方は Carbon (#7515) と w3c/wcag#4343 の議論が共通して採る。指示は 4.5:1 を満たす段が要る。
 
 トークンを切る形そのものは ADR-0024 の節 4 が持つ。
 
@@ -87,14 +87,14 @@ light と dark で同じ `mist-500` になる。
 - dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.34。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0006 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
-- **消費側からの上書きが決定的でなくなった。** `cn` は生成済み utility の表で衝突を判定するため、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方のクラスを載せたまま出荷され、詳細度が同じ (0,1,1) なのでどちらが勝つかは CSS のソース順で決まる。置換前の `placeholder:text-muted-foreground` は `cn` が確実に落としていた。2026-09-21 時点で `placeholder:` の class を書く消費者は 0 件 (`grep -rn 'placeholder:' src/ --include='*.tsx'` が React の prop しか返さない)
+- **消費側からの上書きが決定的でなくなった。** `cn` は生成済み utility の表で衝突を判定するため、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方のクラスを載せたまま出荷され、詳細度が同じ (0,1,1) なのでどちらが勝つかは CSS のソース順で決まる。置換前の `placeholder:text-muted-foreground` は `cn` が確実に落としていた。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない
 - placeholder を足すときは例示かどうかを確かめる。既存の利用は `grep -rn 'placeholder=' src/` で列挙できる
 - 再評価の条件は、w3c/wcag#4343 が閉じるか、axe が `::placeholder` を読むようになったとき
 
 ## 出典
 
-- Carbon の 3 分類 (option text / 例示の placeholder / 書式と指示): https://github.com/carbon-design-system/carbon/issues/7515
-- 分類の根拠になったレビュー: https://github.com/carbon-design-system/carbon/pull/4799
+- Carbon の分け方 (例示は低コントラスト可 / 書式と指示は 4.5:1): https://github.com/carbon-design-system/carbon/issues/7515
+- その元になった 3 分類 (option text / 例示 / 書式と指示) を出したレビュー: https://github.com/carbon-design-system/carbon/pull/4799#pullrequestreview-333428266
 - 入力済みと誤認してフィールドを飛ばす: https://www.nngroup.com/articles/form-design-placeholders/
 - 例示にも placeholder を使わないとする立場 (1.4.3 を理由に挙げる): https://design-system.service.gov.uk/components/text-input/
 - placeholder ごと deprecate した例 (比を上げると入力済みに見えるため): https://github.com/adobe/react-spectrum/issues/2935
