@@ -9,8 +9,12 @@ describe("parseContrastArgs", () => {
   it("theme と下地と前景を読む", () => {
     const args = parseContrastArgs(BASE);
     expect(args.theme).toBe("light");
-    expect(args.backdrop).toEqual([{ token: "--background", alpha: 1 }]);
-    expect(args.foreground).toEqual({ token: "--foreground", alpha: 1 });
+    expect(args.backdrop).toEqual([{ token: "--background", alpha: 1, source: "--background" }]);
+    expect(args.foreground).toEqual({
+      token: "--foreground",
+      alpha: 1,
+      source: "--foreground",
+    });
   });
 
   it("--bg は複数回を許し、渡した順に並べる", () => {
@@ -68,21 +72,24 @@ describe("parseContrastArgs", () => {
 });
 
 describe("describeLayer", () => {
-  it("不透明ならトークン名だけを返す", () => {
-    expect(describeLayer(parseLayerSpec("--background"))).toBe("--background");
+  it("受け取った綴りをそのまま返す", () => {
+    for (const spec of [
+      "--background",
+      "--input/30",
+      "--input/30.5",
+      "--input/100",
+      "--input/030",
+    ]) {
+      expect(describeLayer(parseLayerSpec(spec))).toBe(spec);
+    }
   });
 
-  it("小数の不透明度を丸めない", () => {
-    // 丸めると入力と違う行が出る。`--input/30.5` は受理される綴り
-    expect(describeLayer(parseLayerSpec("--input/30.5"))).toBe("--input/30.5");
-  });
-
-  it("逆算で桁が出る不透明度も綴りどおりに戻す", () => {
-    // `57 / 100 * 100` は 56.99999999999999 になる。30.5 はたまたま往復するので、
-    // その 1 件だけでは逆算の桁落ちを検出できない (2026-09-22 実測)
-    expect(describeLayer(parseLayerSpec("--input/57"))).toBe("--input/57");
-    expect(describeLayer(parseLayerSpec("--input/7"))).toBe("--input/7");
-    expect(describeLayer(parseLayerSpec("--input/0.9"))).toBe("--input/0.9");
+  it("逆算では戻せない綴りも往復する", () => {
+    // `alpha * 100` の逆算だと `--input/1e-7` になり、`parseLayerSpec` が再パースを拒む
+    const spec = "--input/0.0000001";
+    const back = describeLayer(parseLayerSpec(spec));
+    expect(back).toBe(spec);
+    expect(() => parseLayerSpec(back)).not.toThrow();
   });
 });
 

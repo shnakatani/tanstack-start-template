@@ -170,24 +170,15 @@ describe("resolveSrgb", () => {
 
 describe("flattenLayers", () => {
   it("不透明な面だけなら最後の面がそのまま出る", () => {
-    const white = resolveSrgb("#ffffff");
-    const black = resolveSrgb("#000000");
-    expect(toHex(flattenLayers([white, black]))).toBe("#000000");
+    expect(toHex(flattenLayers(resolveSrgb("#ffffff").rgb, [resolveSrgb("#000000")]))).toBe(
+      "#000000",
+    );
   });
 
   it("半透明を下地へ合成する", () => {
     // 黒 50% を白の上に置くと中間になる
-    const blended = flattenLayers([resolveSrgb("#ffffff"), resolveSrgb("#00000080")]);
+    const blended = flattenLayers(resolveSrgb("#ffffff").rgb, [resolveSrgb("#00000080")]);
     expect(blended[0]).toBeCloseTo(0.5, 2);
-  });
-
-  it("いちばん下の面が透けていたら throw する", () => {
-    // 下地が無いまま合成すると、何に載るかで変わる比を 1 つに決めてしまう
-    expect(() => flattenLayers([resolveSrgb("#00000080")])).toThrow("不透明");
-  });
-
-  it("面が 0 枚なら throw する", () => {
-    expect(() => flattenLayers([])).toThrow("不透明");
   });
 });
 
@@ -250,15 +241,27 @@ describe("relativeLuminance", () => {
 
 describe("parseLayerSpec", () => {
   it("トークン名だけなら不透明", () => {
-    expect(parseLayerSpec("--background")).toEqual({ token: "--background", alpha: 1 });
+    expect(parseLayerSpec("--background")).toEqual({
+      token: "--background",
+      alpha: 1,
+      source: "--background",
+    });
   });
 
   it("スラッシュの後ろを百分率として読む", () => {
-    expect(parseLayerSpec("--input/30")).toEqual({ token: "--input", alpha: 0.3 });
+    expect(parseLayerSpec("--input/30")).toEqual({
+      token: "--input",
+      alpha: 0.3,
+      source: "--input/30",
+    });
   });
 
   it("0 を受け取る", () => {
-    expect(parseLayerSpec("--input/0")).toEqual({ token: "--input", alpha: 0 });
+    expect(parseLayerSpec("--input/0")).toEqual({
+      token: "--input",
+      alpha: 0,
+      source: "--input/0",
+    });
   });
 
   it("トークン名の形でなければ throw する", () => {
@@ -294,14 +297,30 @@ describe("parseLayerSpec", () => {
 
   it("小数と 0 詰めは通す", () => {
     // 読み方が 1 つに定まる綴り。既存の `--input/30.5` を通す挙動も保つ
-    expect(parseLayerSpec("--input/00")).toEqual({ token: "--input", alpha: 0 });
-    expect(parseLayerSpec("--input/0.0")).toEqual({ token: "--input", alpha: 0 });
-    expect(parseLayerSpec("--input/30.5")).toEqual({ token: "--input", alpha: 0.305 });
+    expect(parseLayerSpec("--input/00")).toEqual({
+      token: "--input",
+      alpha: 0,
+      source: "--input/00",
+    });
+    expect(parseLayerSpec("--input/0.0")).toEqual({
+      token: "--input",
+      alpha: 0,
+      source: "--input/0.0",
+    });
+    expect(parseLayerSpec("--input/30.5")).toEqual({
+      token: "--input",
+      alpha: 0.305,
+      source: "--input/30.5",
+    });
   });
 
   it("100 を受け取る", () => {
     // 上限そのものが通ること。`>= 100` にすると落ちる
-    expect(parseLayerSpec("--input/100")).toEqual({ token: "--input", alpha: 1 });
+    expect(parseLayerSpec("--input/100")).toEqual({
+      token: "--input",
+      alpha: 1,
+      source: "--input/100",
+    });
   });
 });
 
@@ -409,5 +428,12 @@ describe("measurePair", () => {
         foreground: parseLayerSpec("--black"),
       }),
     ).toThrow("--white");
+  });
+
+  it("下地が 1 枚も無ければ throw する", () => {
+    // CLI は `--bg` を必須にしているが、ライブラリとして呼ばれる経路では起こりうる
+    expect(() =>
+      measurePair({ table: TABLE, backdrop: [], foreground: parseLayerSpec("--black") }),
+    ).toThrow("下地が 1 枚も渡されていない");
   });
 });

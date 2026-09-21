@@ -127,23 +127,20 @@ function readAlpha(color: Color): number | null {
 }
 
 /**
- * 面を下から順に重ねて 1 色にする。
+ * いちばん下の面の上へ、上の面を下から順に重ねて 1 色にする。
  *
- * いちばん下が透けていたら throw する。下地が決まらないまま合成すると、何に載るかで
- * 変わる比を 1 つに決めてしまう。
+ * いちばん下を `Rgb`（alpha を持たない型）で受けることで、「下地は不透明」という前提を
+ * 型で表す。実行時の guard にすると、呼ぶ側がトークン名を知っているのに例外は知らない、
+ * という食い違いが残る
  */
-export function flattenLayers(layers: readonly Srgb[]): Rgb {
-  const [bottom, ...rest] = layers;
-  if (bottom === undefined || bottom.alpha !== 1) {
-    throw new Error("いちばん下の面は不透明でなければならない");
-  }
-  return rest.reduce<Rgb>(
+export function flattenLayers(bottom: Rgb, layers: readonly Srgb[]): Rgb {
+  return layers.reduce<Rgb>(
     (under, layer) => [
       layer.rgb[0] * layer.alpha + under[0] * (1 - layer.alpha),
       layer.rgb[1] * layer.alpha + under[1] * (1 - layer.alpha),
       layer.rgb[2] * layer.alpha + under[2] * (1 - layer.alpha),
     ],
-    bottom.rgb,
+    bottom,
   );
 }
 
@@ -181,8 +178,8 @@ export function toHex(rgb: Rgb): string {
     .join("")}`;
 }
 
-/** 面 1 枚。`alpha` は 0..1 */
-export type LayerSpec = { readonly token: string; readonly alpha: number };
+/** 面 1 枚。`alpha` は 0..1。`source` は受け取った綴りで、出力へ戻すときに使う */
+export type LayerSpec = { readonly token: string; readonly alpha: number; readonly source: string };
 
 /**
  * `--input/30` の形を読む。`/30` は Tailwind の `bg-input/30` に合わせた百分率。
@@ -201,7 +198,7 @@ export function parseLayerSpec(spec: string): LayerSpec {
     throw new Error(`不透明度の指定は 1 つだけ書く: ${spec}`);
   }
   if (percent === undefined) {
-    return { token, alpha: 1 };
+    return { token, alpha: 1, source: spec };
   }
   // `-` と指数表記と 16 進はここで落ちる。`00` と `0.0` は読み方が 1 つなので通す
   if (!/^\d+(\.\d+)?$/.test(percent)) {
@@ -213,7 +210,7 @@ export function parseLayerSpec(spec: string): LayerSpec {
   if (value > 100) {
     throw new Error(`不透明度は 0..100 で書く: ${spec}`);
   }
-  return { token, alpha: value / 100 };
+  return { token, alpha: value / 100, source: spec };
 }
 
 /**
@@ -240,21 +237,21 @@ export function measurePair(args: {
   backdrop: readonly LayerSpec[];
   foreground: LayerSpec;
 }): MeasuredPair {
-  const layers = args.backdrop.map((spec) => layerOf(args.table, spec));
-  let backdrop: Rgb;
-  try {
-    backdrop = flattenLayers(layers);
-  } catch (cause) {
-    // `flattenLayers` はいちばん下の面しか見ないので、名指しできるのはその 1 枚
-    throw new Error(
-      `いちばん下の下地は不透明でなければならない: ${args.backdrop[0]?.token ?? "(--bg が無い)"}`,
-      { cause },
-    );
+  const [bottomSpec, ...restSpecs] = args.backdrop;
+  if (bottomSpec === undefined) {
+    throw new Error("下地が 1 枚も渡されていない");
   }
-  const foreground = flattenLayers([
-    { rgb: backdrop, alpha: 1 },
-    layerOf(args.table, args.foreground),
-  ]);
+  const bottom = layerOf(args.table, bottomSpec);
+  if (bottom.alpha !== 1) {
+    // ここでしかトークン名を知らない。`flattenLayers` へ持ち込むと汎用関数が
+    // 呼び出し側の語彙を抱える
+    throw new Error(`いちばん下の下地は不透明でなければならない: ${bottomSpec.token}`);
+  }
+  const backdrop = flattenLayers(
+    bottom.rgb,
+    restSpecs.map((spec) => layerOf(args.table, spec)),
+  );
+  const foreground = flattenLayers(backdrop, [layerOf(args.table, args.foreground)]);
   return { backdrop, foreground, ratio: contrastRatio(foreground, backdrop) };
 }
 

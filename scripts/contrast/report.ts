@@ -58,8 +58,7 @@ function describeError(error: unknown): string {
   // 10 段もあれば原因は読み取れる。超えたら連鎖が壊れているので打ち切る
   while (current instanceof Error && messages.length < 10) {
     messages.push(current.message);
-    const next: unknown = current.cause;
-    current = next;
+    current = current.cause;
   }
   return messages.length > 0 ? messages.join(" ← ") : String(error);
 }
