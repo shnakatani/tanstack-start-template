@@ -173,27 +173,7 @@ post 順の config フックで名前を戻す手も効かない。addon の上�
 
 `*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。
 
-story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかどうかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める。
-
-story は `no-restyle` / `require-static-classes` の適用外である。`vite.config.ts` の override が `src/components/{ui,action,parts}/**` を `excludeFiles` で外しており、story もそこに置くためである。部品へ `className` を直接渡しても lint は鳴らない (2026-09-20 実測)。渡してよい範囲は消費側と同じで、`no-restyle` の `allow: ["layout"]` に収まる class に限る。外見を上書きする class は部品側の variant にする (ADR-0021)。catalog は実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る。
-
-CSF の meta は 1 ファイルに 1 つで、`component` もそこに紐づく。1 つのファイルが複数の部品を export するとき、まとめて書くと別の部品の meta 配下に並ぶ。単独で描画できる部品は story ファイルを分ける。
-
-トークンの story は CSS 変数の値を見せる場所で、typography の階層のような class の規範は持たない。`styling.md` の表を story へ写すと片方だけが古くなる。markdown と code を突き合わせる機械検査は持っていない。
-
-story は出荷される bundle に入らないため、`no-restricted-imports` の対象からも外す。
-
-### 9. 導入は 3 段階に分け、PR を stack にする
-
-1 度に全部品の story を書かない。段階ごとに PR を分け `gh stack` で積む。
-
-| 段階 | 範囲                                 |
-| ---- | ------------------------------------ |
-| 1    | 基盤とデザイントークンの story       |
-| 2    | 外見を定義する `parts/` と `action/` |
-| 3    | `ui/` の registry 部品すべて         |
-
-段階 3 は `src/components/ui/` の registry 部品をすべてカタログ化する。消費側からの import 件数で絞らない。
+`src/components/ui/` の registry 部品はすべてカタログ化する。消費側からの import 件数で絞らない。
 
 当初は「import 0 件の部品には story を書かない」としていたが、この基準は成立しなかった。理由は 3 つで、いずれも 2026-09-20 の実測による。
 
@@ -203,7 +183,15 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 
 上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いており、この決定はその既定値へ寄せたことになる。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
 
-段階 2 と 3 は、対象の層に story があり a11y 検査が通ることを完了条件とする。
+story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかどうかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める。
+
+story は `no-restyle` / `require-static-classes` の適用外である。`vite.config.ts` の override が `src/components/{ui,action,parts}/**` を `excludeFiles` で外しており、story もそこに置くためである。部品へ `className` を直接渡しても lint は鳴らない (2026-09-20 実測)。渡してよい範囲は消費側と同じで、`no-restyle` の `allow: ["layout"]` に収まる class に限る。外見を上書きする class は部品側の variant にする (ADR-0021)。catalog は実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る。
+
+CSF の meta は 1 ファイルに 1 つで、`component` もそこに紐づく。1 つのファイルが複数の部品を export するとき、まとめて書くと別の部品の meta 配下に並ぶ。単独で描画できる部品は story ファイルを分ける。
+
+トークンの story は CSS 変数の値を見せる場所で、typography の階層のような class の規範は持たない。`styling.md` の表を story へ写すと片方だけが古くなる。markdown と code を突き合わせる機械検査は持っていない。
+
+story は出荷される bundle に入らないため、`no-restricted-imports` の対象からも外す。
 
 ## 検討した選択肢
 
@@ -235,7 +223,6 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 - Storybook の静的ビルドは検証しない (storybookjs/storybook#33747 が未解決)
 - 検証が一部 CDP の実イベントから合成イベントへ移り、backdrop の遮りを含む pointer の忠実さは下がる。一方イベント間に描画が挟まる点は既存のブラウザテストと同じ性質になる
 - サイドバーに出る story と出ない story ができ、`tags` の付け忘れでカタログが汚れうる。機械検査は置かず、レビューで見る
-- 移行のたびに「移せない case」が出る可能性が残り、段階 2 と 3 の各ファイルで実測が要る
 - `storybook/test` の `expect` は vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を story へ機械的に写せない箇所が出る
 
 ## 出典
