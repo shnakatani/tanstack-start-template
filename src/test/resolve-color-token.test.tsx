@@ -36,13 +36,14 @@ describe("resolveColorToken", () => {
 
   it("未定義のトークンを継承色で埋めずに投げる", () => {
     expect(() => resolveColorToken("--resolve-color-token-absent")).toThrow(
-      /--resolve-color-token-absent/,
+      /--resolve-color-token-absent .*\(未定義か空値\)/,
     );
   });
 
   // 定義はあるが色でない値も、色と同じく継承色へ落ちる。定義の有無だけでは通り抜ける
   it("色でない値を持つトークンも投げる", () => {
-    expect(() => resolveColorToken("--radius")).toThrow(/--radius/);
+    // 字面まで見る。添えていないと、宣言の値を落としても検出できない
+    expect(() => resolveColorToken("--radius")).toThrow(/--radius .*\(0\.625rem\)/);
   });
 
   // 字面を CSS.supports で見る形はここを通してしまう。継承色は測りたい値ではない

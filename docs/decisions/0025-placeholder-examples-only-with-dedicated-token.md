@@ -54,7 +54,7 @@ light は `mist-500` だけが帯に入り、下端から 0.11 しか離れて�
 
 dark の比は入力欄が置かれる面で変わる。上表は入力欄をページ直下 (`--background` + `bg-input/30`) に置いた値で、`Dialog` / `Sheet` / `Popover` の中 (`--popover` + `bg-input/30`) では `mist-500` が 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。`bg-input/30` を載せない素の面ならそれぞれ 4.27 と 3.76 で、入力欄の面が比を押し下げている。入力値との差 (4.45) は面によらないため、下の決定は動かない。
 
-面ごとに測ることは、規格の定義から導かれる。「面を列挙せよ」と書いた条文は無い (2026-09-21 に検索して不在を確認)。導出元は WCAG 2.2 勧告本体の `contrast ratio` に付く 2 つの note で、Understanding 側の再掲ではない。Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 が評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。テーマやダイアログの面は typical presentation の側に入るので、Note 6 が続けて免除する "unusual presentations" (UA による色の変更はその例示) には当たらない。
+面ごとに測ることは、規格の定義から導かれる。「面を列挙せよ」と書いた条文は無い (2026-09-21 に検索して不在を確認)。導出元は WCAG 2.2 勧告本体の `contrast ratio` に付く note で、Understanding 側の再掲ではない。Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 が評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。テーマやダイアログの面は typical presentation の側に入るので、Note 6 が続けて免除する "unusual presentations" (UA による色の変更はその例示) には当たらない。
 W3C 自身の推奨値も面に依存する。WAI Forms Tutorial の `::placeholder { color: #767676 }` は "assuming the background of the element is white" と断りがあり、`#ffffff` 上 4.54 に対し `#f4f4f4` 上では 4.13 で割る。
 
 dark は帯に入る段が無い。`mist-400` は入力値との 3:1 を割る側 (2.35) で外れ、`mist-500` は 4.5:1 を割る側で外れる。

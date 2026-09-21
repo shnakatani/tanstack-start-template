@@ -50,10 +50,11 @@ export function resolveColorToken(token: string, scope: Element = document.body)
     const styles = getComputedStyle(probe);
     const color = styles.color;
     if (color === UNRESOLVED) {
-      // 「定義が無い」と「値が色でない」を読み手が区別できるように、宣言の字面を添える
-      const declared = styles.getPropertyValue(token).trim();
+      // 「値が色でない」と「そもそも値が無い」を読み手が区別できるように、宣言の字面を添える。
+      // 未定義と空値 (`--x: ;`) は区別できない。chromium 153 はどちらにも "" を返す (2026-09-21 実測)
+      const declared = styles.getPropertyValue(token).trim() || "未定義か空値";
       throw new Error(
-        `カスタムプロパティ ${token} が ${scope.nodeName} の配下で色に解決できない (${declared || "未定義"})`,
+        `カスタムプロパティ ${token} が ${scope.nodeName} の配下で色に解決できない (${declared})`,
       );
     }
     return color;
