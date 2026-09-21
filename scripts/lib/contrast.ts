@@ -180,3 +180,51 @@ export function toHex(rgb: Rgb): string {
     )
     .join("")}`;
 }
+
+/** 面 1 枚。`alpha` は 0..1 */
+export type LayerSpec = { readonly token: string; readonly alpha: number };
+
+/** `--input/30` の形を読む。`/30` は Tailwind の `bg-input/30` に合わせた百分率 */
+export function parseLayerSpec(spec: string): LayerSpec {
+  const [token, percent] = spec.split("/");
+  if (token === undefined || !token.startsWith("--")) {
+    throw new Error(`トークン名は -- で始める: ${spec}`);
+  }
+  if (percent === undefined) {
+    return { token, alpha: 1 };
+  }
+  const value = Number(percent);
+  if (!Number.isFinite(value) || value < 0 || value > 100) {
+    throw new Error(`不透明度は 0..100 で書く: ${spec}`);
+  }
+  return { token, alpha: value / 100 };
+}
+
+export type MeasuredPair = {
+  readonly backdrop: Rgb;
+  readonly foreground: Rgb;
+  readonly ratio: number;
+};
+
+/** 下地を下から順に重ね、その上へ前景を載せて比を出す */
+export function measurePair(args: {
+  table: TokenTable;
+  backdrop: readonly LayerSpec[];
+  foreground: LayerSpec;
+}): MeasuredPair {
+  const backdrop = flattenLayers(args.backdrop.map((spec) => layerOf(args.table, spec)));
+  const foreground = flattenLayers([
+    { rgb: backdrop, alpha: 1 },
+    layerOf(args.table, args.foreground),
+  ]);
+  return { backdrop, foreground, ratio: contrastRatio(foreground, backdrop) };
+}
+
+function layerOf(table: TokenTable, spec: LayerSpec): Srgb {
+  const declared = table[spec.token];
+  if (declared === undefined) {
+    throw new Error(`宣言されていないトークン: ${spec.token}`);
+  }
+  const resolved = resolveSrgb(declared);
+  return { rgb: resolved.rgb, alpha: resolved.alpha * spec.alpha };
+}

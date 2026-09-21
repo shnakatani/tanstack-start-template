@@ -6,6 +6,8 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   contrastRatio,
   flattenLayers,
+  measurePair,
+  parseLayerSpec,
   parseTokenTable,
   relativeLuminance,
   resolveSrgb,
@@ -243,5 +245,69 @@ describe("relativeLuminance", () => {
   it("白は 1、黒は 0", () => {
     expect(relativeLuminance(resolveSrgb("#ffffff").rgb)).toBeCloseTo(1, 10);
     expect(relativeLuminance(resolveSrgb("#000000").rgb)).toBeCloseTo(0, 10);
+  });
+});
+
+describe("parseLayerSpec", () => {
+  it("トークン名だけなら不透明", () => {
+    expect(parseLayerSpec("--background")).toEqual({ token: "--background", alpha: 1 });
+  });
+
+  it("スラッシュの後ろを百分率として読む", () => {
+    expect(parseLayerSpec("--input/30")).toEqual({ token: "--input", alpha: 0.3 });
+  });
+
+  it("0 を受け取る", () => {
+    expect(parseLayerSpec("--input/0")).toEqual({ token: "--input", alpha: 0 });
+  });
+
+  it("トークン名の形でなければ throw する", () => {
+    expect(() => parseLayerSpec("background")).toThrow("--");
+  });
+
+  it("百分率が範囲の外なら throw する", () => {
+    expect(() => parseLayerSpec("--input/120")).toThrow("0..100");
+  });
+
+  it("百分率が数値でなければ throw する", () => {
+    expect(() => parseLayerSpec("--input/half")).toThrow("0..100");
+  });
+});
+
+describe("measurePair", () => {
+  const TABLE = {
+    "--white": "#ffffff",
+    "--black": "#000000",
+  };
+
+  it("下地を下から順に重ねてから前景を載せる", () => {
+    const measured = measurePair({
+      table: TABLE,
+      backdrop: [parseLayerSpec("--white")],
+      foreground: parseLayerSpec("--black"),
+    });
+    expect(measured.ratio).toBeCloseTo(21, 10);
+    expect(toHex(measured.backdrop)).toBe("#ffffff");
+    expect(toHex(measured.foreground)).toBe("#000000");
+  });
+
+  it("半透明の前景を下地へ合成してから比を取る", () => {
+    const measured = measurePair({
+      table: TABLE,
+      backdrop: [parseLayerSpec("--white")],
+      foreground: parseLayerSpec("--black/50"),
+    });
+    expect(measured.ratio).toBeLessThan(21);
+    expect(measured.ratio).toBeGreaterThan(1);
+  });
+
+  it("表に無いトークンは throw する", () => {
+    expect(() =>
+      measurePair({
+        table: TABLE,
+        backdrop: [parseLayerSpec("--white")],
+        foreground: parseLayerSpec("--missing"),
+      }),
+    ).toThrow("--missing");
   });
 });
