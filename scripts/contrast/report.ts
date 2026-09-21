@@ -6,7 +6,8 @@
  *
  * ここは検査ではない。合否は `src/components/contrast.stories.tsx` の axe が持つ。
  *
- * 引数と出力の組み立ては `scripts/contrast/lib/contrast-cli.ts` にある。この層は I/O だけを持つ
+ * 引数と出力の組み立ては `scripts/contrast/lib/contrast-cli.ts` にある。この層が持つのは
+ * 入出力 (argv / `styles.css` / stdout / stderr / 終了コード) と、純粋層どうしの配線だけである
  */
 
 import { readFileSync } from "node:fs";

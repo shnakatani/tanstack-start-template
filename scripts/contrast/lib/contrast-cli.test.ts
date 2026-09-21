@@ -82,8 +82,8 @@ describe("formatReport", () => {
   });
 
   it("打った綴りをそのまま印字する", () => {
-    // `alpha` から逆算すると `--input/030` は `--input/3`、`/0.0000001` は `/1e-7` になる。
-    // どちらも打った人が自分の入力として読み直せない
+    // `alpha` から逆算すると `--input/030` は `--input/30`、`/0.0000001` は
+    // `/9.999999999999998e-8` になる。どちらも打った人が自分の入力として読み直せない
     const report = formatReport(
       parseContrastArgs([
         "--theme",

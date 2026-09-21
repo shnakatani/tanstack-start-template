@@ -55,6 +55,7 @@ Primer が数値を書き写さない形に到達していることと、`.claud
 | 同上の単体テスト                               | `scripts/contrast/lib/contrast.test.ts`     |
 | 引数の解釈と出力行の組み立て                   | `scripts/contrast/lib/contrast-cli.ts`      |
 | 同上の単体テスト                               | `scripts/contrast/lib/contrast-cli.test.ts` |
+| トークンの SSOT のパス                         | `scripts/contrast/lib/styles-css.ts`        |
 | ファイル読みと終了コード                       | `scripts/contrast/report.ts`                |
 | 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]`          |
 
@@ -66,7 +67,10 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 検査ではないので `.claude/rules/testing.md` の検査の表には行を足さない。テストは `scripts/lib/` を持つ既存の `scripts-tools` project にそのまま載る。
 
-色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを内部 API 経由で呼ぶ形は採らない。axe の `flattenColors` は合成後を 8bit へ丸める (`axe.js` の `Math.round`)。本 ADR が決めた「丸めない」と両立しない。`parseString` は alpha の `none` を alpha 1 として黙って通す (`rgb(0 0 0 / none)` が不透明になる。2026-09-22 実測)。本 ADR の変換器はこれを throw で止めている。
+色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを内部 API 経由で呼ぶ形は、次の 2 点で採らない。
+
+- axe の `flattenColors` は合成後を 8bit へ丸める (`axe.js` の `Math.round`)。この ADR が決めた「丸めない」と両立しない
+- axe の `parseString` は alpha の `none` を alpha 1 として黙って通す (`rgb(0 0 0 / none)` が不透明になる。2026-09-22 実測)。この ADR の変換器はこれを throw で止めている
 
 ### 2. 対の一覧を持たない
 

@@ -100,10 +100,13 @@ export function resolveSrgb(value: string): Srgb {
     throw new Error(`none を含む色はコントラストを計算できない: ${value}`);
   }
   // `toGamut` は oklch 空間で clip するため、sRGB へ戻すと成分が -1e-17 のように範囲の外へ
-  // わずかに出る (2026-09-22 に colorjs.io 0.7.1 で実測)。相対輝度の式は成分が [0, 1] に
-  // あることを前提にするので、ここで収める。axe-core は輝度計算の前に clamp せず生値を読む
-  // (`axe.js` の `getRelativeLuminance` が `this.r` を読み、clamp は 8bit 表示用の `_red`
-  // にしか掛からない) が、はみ出しは 1e-15 の桁なので比への影響は無い
+  // わずかに出る。相対輝度の式は成分が [0, 1] にあることを前提にするので、ここで収める。
+  // oklch を 2496 色掃いた最大のはみ出しは 4.3e-14 で、比には現れない (2026-09-22 に
+  // colorjs.io 0.7.1 で実測)
+  //
+  // axe-core も輝度の前に clamp しない (`axe.js:18341` の `getRelativeLuminance` は `this.r`
+  // を読む)。8bit へ丸めた `_red` を読むのは半透明を合成する経路だけで、そこでは表示ではなく
+  // 算術に使われる (`axe.js:24779` の `_flattenColors`)
   return { rgb: [clampChannel(r), clampChannel(g), clampChannel(b)], alpha };
 }
 
@@ -118,9 +121,13 @@ function clampChannel(value: number): number {
  * 誤判定しないようにする
  *
  * 同じ型定義の `PlainColorObject` (`color.d.ts:63`) は `alpha: number | null` と宣言して
- * おり、ここでの拡大はその側の宣言と揃える操作でもある。ただし `Color` クラス (同 :177) が
- * `implements PlainColorObject` のまま `number` へ狭めること自体は TypeScript が許す形なので、
- * 上流の誤りと断定はしない。上流には未報告 (2026-09-22 に color-js/color.js を検索して 0 件)
+ * おり、ここでの拡大はその側の宣言と揃える操作でもある。
+ *
+ * ただし `Color` クラス (`color.d.ts:151` の `implements PlainColorObject`) が `alpha` を
+ * `number` へ狭めること自体は TypeScript が許す形なので、上流の誤りとは断定しない。
+ *
+ * 上流へは未報告。2026-09-22 に `gh search issues --repo color-js/color.js` を
+ * `alpha null` / `alpha types` / `PlainColorObject` の 3 クエリで引いて該当 0 件だった
  */
 function readAlpha(color: Color): number | null {
   return color.alpha;
@@ -131,8 +138,11 @@ function readAlpha(color: Color): number | null {
  *
  * いちばん下は alpha の欄を持たない `Rgb` で受ける。ただしこれは「不透明である」ことまでは
  * 表さない。`resolveSrgb("#00000080").rgb` と書けば型検査は通り、alpha が黙って落ちる
- * (2026-09-22 実測)。不透明の保証を持つのは呼び出し元 `measurePair` の guard のほうで、
- * そこへ置いたのは、トークン名を添えた例外を作れるのが `layerOf` の隣だけだからである
+ * (2026-09-22 実測)。
+ *
+ * 不透明の保証を持つのは呼び出し元 `measurePair` の guard である。そこへ置いたのは、
+ * トークン名と解決後の alpha を同時に持つのが `measurePair` だからで、`layerOf` は `Srgb`
+ * を返す時点でトークン名を落とす
  */
 export function flattenLayers(bottom: Rgb, layers: readonly Srgb[]): Rgb {
   return layers.reduce<Rgb>(
@@ -161,14 +171,25 @@ function toLinear(channel: number): number {
   return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
 }
 
-/** WCAG 2.2 の contrast ratio。丸めない (SC 1.4.3 の note が計算値を丸めるなと書いている) */
+/**
+ * WCAG 2.2 の contrast ratio。丸めない。
+ *
+ * 丸めるなと書いているのは WCAG 2.2 本体ではなく Understanding SC 1.4.3 の地の文である
+ * (「4.499:1 would not meet the 4.5:1 threshold」)。本体には丸めの記述が無いことも
+ * 2026-09-22 に確認した
+ */
 export function contrastRatio(a: Rgb, b: Rgb): number {
   const lumA = relativeLuminance(a);
   const lumB = relativeLuminance(b);
   return (Math.max(lumA, lumB) + 0.05) / (Math.min(lumA, lumB) + 0.05);
 }
 
-/** 画面へ出るときの色。ブラウザと axe はこの丸めた色を読む */
+/**
+ * 画面へ出るときの色。
+ *
+ * axe がこの丸めた色を読むのは半透明を合成する経路だけである。不透明な前景は
+ * `getContrast` (`axe.js:25287`) が合成を飛ばすので、生値のまま輝度へ入る
+ */
 export function toHex(rgb: Rgb): string {
   return `#${rgb
     .map((channel) =>
@@ -219,7 +240,8 @@ export function parseLayerSpec(spec: string): LayerSpec {
  *
  * `backdrop` は下地を畳んだ後の色、`foreground` は下地の上へ載せた後の色である。
  * 半透明の前景は下地と混ざった色になるので、出力へ載せるときは「画面に出る色」として
- * 読ませる。下地が不透明 1 枚のときは `backdrop` は宣言値そのものになる
+ * 読ませる。下地が不透明 1 枚のときの `backdrop` は、その宣言を sRGB へ解決した値そのもの
+ * であって、合成は挟まらない
  */
 export type MeasuredPair = {
   readonly backdrop: Rgb;
