@@ -51,7 +51,7 @@ light は `mist-500` だけが帯に入り、下端から 0.11 しか離れて�
 
 dark の比は入力欄が置かれる面で変わる。上表は `--background` の上で測ったもので、`Dialog` / `Sheet` / `Popover` の中 (`--popover`) に置くと `mist-500` は 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。入力値との差 (4.45) は面によらないため、下の決定は動かない。
 
-面ごとに測るのは規格の要求である。Understanding SC 1.4.3 の Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 は評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。免除されるのは UA 由来の表示だけで ("except where caused by authors' code")、テーマや面の切り替えは著者のコードなので含まれる。
+面ごとに測ることは、規格の定義から導かれる。「面を列挙せよ」と書いた条文は無い (2026-09-21 に Understanding / Techniques / ACT を検索して不在を確認)。導出元は 2 つで、Understanding SC 1.4.3 の Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 が評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。免除されるのは UA 由来の表示だけで ("except where caused by authors' code")、テーマや面の切り替えは著者のコードなので含まれる。
 W3C 自身の推奨値も面に依存する。WAI Forms Tutorial の `::placeholder { color: #767676 }` は "assuming the background of the element is white" と断りがあり、`#ffffff` 上 4.54 に対し `#f4f4f4` 上では 4.13 で割る。
 
 dark は帯に入る段が無い。`mist-400` は入力値との 3:1 を割る側 (2.35) で外れ、`mist-500` は 4.5:1 を割る側で外れる。
