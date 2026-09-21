@@ -27,6 +27,7 @@ paths:
 - 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分け、その部品名から名前を取る (`button.tsx` の `ActionButtonShell` は `button-shell.stories.tsx`)。理由は ADR-0022
 - 親を要求する部品は単独の meta を持てないので、親の story ファイルで扱う (`ActionFormSubmit` は `ActionForm` の外で描画すると throw する)
 - `argTypes` の `options` に `cva` の variant を写すときは、型で網羅を強制する。型検査も lint も一致を見ないので、写しただけだと古いまま通る (ADR-0022)
+- story の decorator に余白を足さない。canvas の余白は `.storybook/preview.css` が持ち、decorator は器の形 (flex / gap) だけを持つ (ADR-0022)
 - story から部品へ渡す `className` は layout に限る。消費側と同じ範囲で、`vite.config.ts` の `no-restyle` が `allow: ["layout"]` を持つ。寸法の API が `className` しかない部品 (`Skeleton`) もこれで収まる。外見を上書きする class は部品の variant にする。story は層の規則の `excludeFiles` に入り lint が鳴らないので、ここはレビューで見る (ADR-0021 / ADR-0022)
 - className を書きたくなったこと自体は `parts/` への移動理由にならない。静的か動的かを問わない。層の規則から外れるために移すのは逆 (ADR-0020 / ADR-0021)
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
@@ -78,6 +79,7 @@ paths:
 4. baseline との diff が許容リスト (ADR-0006) と 1:1 であることを確認してからコミットする。乖離の理由は ADR-0006 が持つ。コード側の理由コメントは、ADR の記述だけでは実装者が誤る場合 (打ち消し不能な落とし穴など) に限る。素のまま使っていることの説明は書かない (ADR に載っていなければ上流のものと判別できる)
    - 例外は `oxlint-disable` directive の `--` 説明。ADR と重複しても、「なぜそのルールを抑制してよいのか」をその行に書く (「なぜ上流の形を保つのか」ではない)。抑制の妥当性はその行を読む人が判断するため
 5. 未使用での先行導入 (vendor preset) は許容する。chore コミットとして記録する
+6. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらないまま利用者へ配られる (ADR-0022 の節 8)
 
 ## ルートファイル
 

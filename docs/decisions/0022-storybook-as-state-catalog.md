@@ -145,9 +145,51 @@ telemetry は `core.disableTelemetry` で切る。既定で有効で、実行し
 
 役割が違うため両方残す。ADR-0013 / ADR-0015 / ADR-0018 が固めた待機・実イベント・animation 無効化の規律は既存のテストが持ち続ける。
 
+### 7-1. テーマごとの project は 2 つ持つが、Storybook 経由の実行では light だけにする
+
+a11y を light と dark の両方へ当てるため、`vitest.storybook.config.ts` の `storybookProject()` を `initialGlobals` のテーマ違いで 2 つ作る。これは `@storybook/addon-vitest` の型が名指しで勧める形で、「define one Vitest project per theme, each with a different value」と書いてある。
+
+**その形のまま Storybook 経由で走らせると起動しない。** addon は `VITEST_STORYBOOK=true` のとき project 名を `storybook:${configDir}` へ強制上書きする (`dist/vitest-plugin/index.js` の `storybook:workspace-name-override`)。同じ `configDir` から 2 つ作れば名前が衝突し、Storybook の test panel も `storybook tools test run` も `Project name ... is not unique` で止まる。上流の storybookjs/storybook#32427 が 2025-09-07 から open で、同じ light / dark 構成の報告が付いている。
+
+`VITEST_STORYBOOK` が真のときだけ light の 1 つに絞る。真偽は addon と同じ読み方をする (`optionalEnvToBoolean` は `"false"` と `"0"` と空文字だけを偽にするので、`=== "true"` で比べると `VITEST_STORYBOOK=1` で addon だけが名前を上書きして衝突が戻る)。判定は `scripts/lib/storybook-env.ts` が持つ。判定の正本は `mise run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。
+
+| 経路                                       | テーマ        |
+| ------------------------------------------ | ------------- |
+| `vp test run` / `mise run verify` / CI     | light と dark |
+| Storybook の test panel / `tools test run` | light のみ    |
+
+次の 2 つは採らない。
+
+| 案                                | 採らない理由                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------- |
+| 2 project を 1 つへ戻す           | addon の型が勧める形を捨てることになり、dark の a11y 検査が正本からも消える           |
+| テーマごとに `configDir` を分ける | 上流のバグのために設定ディレクトリを 2 つ持つ。テンプレートとして読む人の負担が増える |
+
+post 順の config フックで名前を戻す手も効かない。addon の上書きは `order: "pre"` で入り、こちらの post 順では戻せなかった (2026-09-21 実測)。同じ手が `cacheDir` には効くので、効かないことは書いておかないと次に触る人が同じ実験をやり直す。
+
+撤去条件は storybookjs/storybook#32427 が閉じること。閉じたら `VITEST_STORYBOOK` の分岐を外し、`VITEST_STORYBOOK=true vp test run` が通ることで確かめる。
+
+### 7-2. vitest 経由の story には canvas の padding が当たらない
+
+`layout` パラメータを当てるのは `WebView.prepareForStory` で (`storybook/dist/preview/runtime.js` の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
+
+この差は `.storybook/preview.css` が埋める。Storybook の UI では body へ `sb-main-*` が付くので、付いていないときだけ同じ `1rem` を当てる。story の decorator は器の形 (flex / gap) だけを持ち、余白を自分で足さない。
+
+埋めないと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、そのはみ出しが背景を持つ唯一の箱 (body) の外へ出て axe が色を測れなくなる。`html` は背景を持たないので受け止められない。
+
 ### 8. story はコンポーネントと並べ、registry の baseline から除く
 
 `*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。
+
+`src/components/ui/` の registry 部品はすべてカタログ化する。消費側からの import 件数で絞らない。
+
+当初は「import 0 件の部品には story を書かない」としていたが、この基準は成立しなかった。理由は 3 つで、いずれも 2026-09-20 の実測による。
+
+- **消費者の母数が捨てられる前提のもの。** `README.md` はデモアプリ (`src/features/notes/` と `src/routes/notes/`) の削除を利用者へ案内している。削除すると `empty` のように消費者が 0 件へ落ちる部品が出る。テンプレートの利用者にとって「テンプレート本体が今使っているか」はカタログの価値と無関係である
+- **基準が推移的に閉じない。** `sheet` / `tooltip` は `sidebar` からのみ、`textarea` / `input-group` は `combobox` からのみ参照され、その参照元自体に消費者がいない。`ui/` の外で数えると 0 件になるが、素朴に数えると 1 件以上になる。同じ状態の部品が数え方だけで両側へ分かれる
+- **検査の穴が残る。** story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる
+
+上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いており、この決定はその既定値へ寄せたことになる。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
 
 story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかどうかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める。
 
@@ -158,28 +200,6 @@ CSF の meta は 1 ファイルに 1 つで、`component` もそこに紐づく�
 トークンの story は CSS 変数の値を見せる場所で、typography の階層のような class の規範は持たない。`styling.md` の表を story へ写すと片方だけが古くなる。markdown と code を突き合わせる機械検査は持っていない。
 
 story は出荷される bundle に入らないため、`no-restricted-imports` の対象からも外す。
-
-### 9. 導入は 3 段階に分け、PR を stack にする
-
-1 度に全部品の story を書かない。段階ごとに PR を分け `gh stack` で積む。
-
-| 段階 | 範囲                                 |
-| ---- | ------------------------------------ |
-| 1    | 基盤とデザイントークンの story       |
-| 2    | 外見を定義する `parts/` と `action/` |
-| 3    | `ui/` の registry 部品すべて         |
-
-段階 3 は `src/components/ui/` の registry 部品をすべてカタログ化する。消費側からの import 件数で絞らない。
-
-当初は「import 0 件の部品には story を書かない」としていたが、この基準は成立しなかった。理由は 3 つで、いずれも 2026-09-20 の実測による。
-
-- **消費者の母数が捨てられる前提のもの。** `README.md` はデモアプリ (`src/features/notes/` と `src/routes/notes/`) の削除を利用者へ案内している。削除すると `empty` のように消費者が 0 件へ落ちる部品が出る。テンプレートの利用者にとって「テンプレート本体が今使っているか」はカタログの価値と無関係である
-- **基準が推移的に閉じない。** `sheet` / `tooltip` は `sidebar` からのみ、`textarea` / `input-group` は `combobox` からのみ参照され、その参照元自体に消費者がいない。`ui/` の外で数えると 0 件になるが、素朴に数えると 1 件以上になる。同じ状態の部品が数え方だけで両側へ分かれる
-- **検査の穴が残る。** story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる
-
-上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いており、この決定はその既定値へ寄せたことになる。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
-
-段階 2 と 3 は、対象の層に story があり a11y 検査が通ることを完了条件とする。
 
 ## 検討した選択肢
 
@@ -211,7 +231,6 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 - Storybook の静的ビルドは検証しない (storybookjs/storybook#33747 が未解決)
 - 検証が一部 CDP の実イベントから合成イベントへ移り、backdrop の遮りを含む pointer の忠実さは下がる。一方イベント間に描画が挟まる点は既存のブラウザテストと同じ性質になる
 - サイドバーに出る story と出ない story ができ、`tags` の付け忘れでカタログが汚れうる。機械検査は置かず、レビューで見る
-- 移行のたびに「移せない case」が出る可能性が残り、段階 2 と 3 の各ファイルで実測が要る
 - `storybook/test` の `expect` は vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を story へ機械的に写せない箇所が出る
 
 ## 出典

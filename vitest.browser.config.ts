@@ -48,6 +48,17 @@ export default defineProject({
   },
   test: {
     name: "browser",
+    // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
+    // project を足すとそのぶん描画が増えるため。根拠と棄却した選択肢は ADR-0027。
+    //
+    // `strictTags` は既定で有効なので、ここに無い tag を書いたテストはエラーで落ちる。
+    tags: [
+      {
+        name: "a11y",
+        description:
+          "この project で axe を回すテスト。story 側の a11y は addon が別に当てるので含まない",
+      },
+    ],
     setupFiles: ["src/test/browser-setup.tsx"],
     include: ["src/**/*.test.tsx"],
     exclude: [

@@ -43,6 +43,16 @@ import { describe, it, expect, vi } from "vite-plus/test";
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物を検査した結果が緑になる
 - project を足したら `vitest.config.ts` の `projects` に追加する。include に一致しないテストは収集されず、書いたのに 1 度も走らない状態が無言で成立する
 
+## a11y の検査は tag で分ける
+
+判断の根拠と棄却した選択肢は ADR-0027 が持つ。
+
+- `axe` を回して「アクセシブルか」を問うテストは `it(名前, { tags: ["a11y"] }, ...)` を付ける。単独実行は `vp test run --tagsFilter a11y`、除外は `--tagsFilter '!a11y'`
+- tag が効くのは browser project だけ。story 側の a11y は `addon-a11y` が全 story へ一律に当てる仕組みで、Storybook が生成するテストは vitest tag を持たない。`--tagsFilter a11y` は story を 1 件も走らせない
+- 専用の project を足さない。分けたいのは関心と単独実行で、runner の設定は挙動テストと同じ。project を足すとそのぶん描画が増える (vitest 公式 test-tags の "When to reach for tags")
+- tag の定義は `vitest.browser.config.ts` の `test.tags`。`strictTags` が既定で有効なので、定義に無い tag を書くとエラーで落ちる
+- 挙動テストの途中の状態を測る `expectNoA11yViolations` には tag を付けない。その状態は操作の途中にしか無く、専用テストへ降ろすと操作の再現が重複する。`--tagsFilter '!a11y'` でも走る
+
 ## 実行
 
 - `vp test run <path>` で 1 回実行 (`vp test` は watch モード)

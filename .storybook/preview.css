@@ -18,3 +18,20 @@
    この行を持たないため、Storybook 用の utility が出荷 CSS へ混ざらない
    (tailwindcss.com/docs/detecting-classes-in-source-files「Explicitly registering sources」) */
 @source ".";
+
+/* vitest 経由の story には canvas の padding が当たらない。`layout` を当てる `applyLayout` は
+   preview iframe の `WebView` からしか呼ばれず (storybook/dist/preview/runtime.js)、
+   `sb-main-padded` の `padding: 1rem` は preview の head にしかない
+   (storybook/assets/server/base-preview-head.html)。原点へ密着して描くと、行ボックスから
+   はみ出したグリフ (registry の `leading-none` など) が背景を持つ唯一の箱 = body の外へ出て、
+   axe が色を測れなくなる。Storybook の UI では body へ `sb-show-main` が付くので当てない。
+   `sb-main-*` ではなくこちらで見るのは、`layout: "none"` の story が UI 側でも `sb-main-*` を
+   持たないため (同 runtime の `applyLayout` が class を外す)。
+
+   1rem は Storybook の値を写したもので、揃えているのは見え方だけである。上流が値を変えても
+   検査は壊れない (余白があること自体が要件で、量は要件でない)。vitest 経路へ layout を
+   効かせる公式の手段は 2026-09-21 時点で無く、portable stories の docs も差分に触れていない */
+body:not(.sb-show-main) {
+  padding: 1rem;
+  box-sizing: border-box;
+}

@@ -80,6 +80,21 @@ export const Opened: Story = {
 /** 候補が 1 件も無いとき。`ComboboxEmpty` が代わりの文言を出す */
 export const NoItems: Story = {
   render: () => <ComboboxExample items={[]} />,
+  parameters: {
+    a11y: {
+      context: {
+        // 候補がゼロでも base-ui はリストへ role="listbox" を付ける
+        // (`combobox/list/ComboboxList.js` の `role: grid ? "grid" : "listbox"`)。axe は中身が
+        // 後から増える場合を考えて、空のコンテナを違反ではなく incomplete へ降ろす
+        // (`aria-required-children` の `reviewEmpty`)。この story では増えない。
+        // 「候補なし」は ComboboxEmpty と base-ui の live region が伝える。
+        // 上流へは未起票。2026-09-21 に mui/base-ui を "aria-required-children" で検索し、
+        // #5443 (Empty が listbox の直下に居る violation) は別件だった。投げるなら mui/base-ui。
+        // 外せるのは base-ui が空のリストで role を落とすようになったとき
+        exclude: ['[data-slot="combobox-list"]'],
+      },
+    },
+  },
   play: async () => {
     await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
     // base-ui は live region の末尾へ word joiner (U+2060) を 200ms 入れる
@@ -112,8 +127,11 @@ export const InlineWithTrigger: Story = {
     a11y: {
       config: {
         // 非 modal の popup を開くと base-ui が外側へ aria-hidden を付けるが、tab 順からは
-        // 外さないため axe が aria-hidden-focus を出す。上流のバグで mui/base-ui#5528 が
-        // open。直るまでこの story でだけ止める。popup を開くのをやめる手は採らない。
+        // 外さないため axe が aria-hidden-focus を出す。ここで落ちるのは violations 側で、
+        // `a11y-story.ts` の `IGNORED_INCOMPLETE` (incomplete 側) とは守備範囲が違う。
+        // この行を外すとこの story だけが violations で落ちる (2026-09-21 に実測)。
+        // 上流のバグで mui/base-ui#5528 が open。直るまでこの story でだけ止める。
+        // popup を開くのをやめる手は採らない。
         // 開かないと下の aria-prohibited-attr の見張りごと消える。
         //
         // InlineWithClear に同じ抑制が要らないのは、あちらの addon に残る操作子が

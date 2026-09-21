@@ -11,8 +11,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
  */
 export function CodeBlock({ children }: { children: ReactNode }) {
   return (
+    // 背景は器と本文の両方に置く。本文側が無いと、テキストの矩形が器の箱より高くなったときに
+    // axe が背景を解決できない (dequelabs/axe-core#621 で入れた意図した挙動)。器側が無いと
+    // スクロールバーのぶんの余白 (ScrollArea の data-has-overflow-* な padding) が地のまま残る
     <ScrollArea className="rounded bg-muted" viewportClassName="max-h-48">
-      <pre className="p-3 text-xs">{children}</pre>
+      <pre className="bg-muted p-3 text-xs">{children}</pre>
     </ScrollArea>
   );
 }

@@ -13,7 +13,7 @@ const preview: Preview = {
     }),
   ],
   parameters: {
-    // 違反を警告で留めない。expectNoA11yViolations が持つ「違反ゼロ」と基準を揃える (ADR-0022)
+    // 違反を警告で留めない。addon はここで violations を見る (ADR-0022)
     a11y: { test: "error" },
   },
 };
