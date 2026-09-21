@@ -48,6 +48,19 @@ export default defineProject({
   },
   test: {
     name: "browser",
+    // a11y の検査は project ではなく tag で分ける。分けたいのは「関心」と「単独実行」で、
+    // runner の設定 (environment / pool / isolation) は挙動テストと同じだから。vitest 公式の
+    // 決定表も、多数のファイルに散る横断カテゴリは tag、runner 設定が違うときは project と
+    // している (vitest.dev/guide/test-tags の "When to reach for tags")。project を足すと
+    // その project のぶん描画が増える。
+    //
+    // `strictTags` は既定で有効なので、ここに無い tag を書いたテストはエラーで落ちる。
+    tags: [
+      {
+        name: "a11y",
+        description: "axe を回して「アクセシブルか」を問うテスト (vp test run --tagsFilter a11y)",
+      },
+    ],
     setupFiles: ["src/test/browser-setup.tsx"],
     include: ["src/**/*.test.tsx"],
     exclude: [

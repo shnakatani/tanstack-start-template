@@ -151,7 +151,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE_CREATE_TRIGGER_LABEL);
   });
 
-  it("空状態の描画に a11y 違反が無い", async () => {
+  it("空状態の描画に a11y 違反が無い", { tags: ["a11y"] }, async () => {
     // 実ブラウザで走るため color-contrast (WCAG 1.4.3) を含む。静的 lint (jsx-a11y) と
     // 役割・名前のアサーションでは届かない、算出後の色と ARIA の実値を見る
     const screen = await renderPage();
@@ -160,7 +160,7 @@ describe("NotesPage", () => {
     await expectNoA11yViolations(document.body);
   });
 
-  it("一覧の描画に a11y 違反が無い", async () => {
+  it("一覧の描画に a11y 違反が無い", { tags: ["a11y"] }, async () => {
     // 空状態だけだと Table と行の操作ボタンが検査されない。件数のある状態も通す
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const screen = await renderPage();
@@ -213,7 +213,9 @@ describe("NotesPage", () => {
     const rows = screen.getByRole("row").all();
     expect(rows[1]?.element().textContent).toContain(CREATED_NOTE.title); // rows[0] はヘッダ行
     // 楽観行が出ている状態そのものを検査する。ダイアログが閉じたあとなので、
-    // axe が見るのは一覧だけ (開いている間は行が aria-hidden 配下に入る)
+    // axe が見るのは一覧だけ (開いている間は行が aria-hidden 配下に入る)。
+    // この assert の問いは a11y だが、a11y tag を付けた専用テストへは降ろさない。
+    // この状態は操作の途中にしか無く、降ろすと操作の再現ぶんが重複する
     await expectNoA11yViolations(document.body);
 
     refetch.resolve([CREATED_NOTE, NOTE]);
@@ -384,6 +386,7 @@ describe("NotesPage", () => {
     });
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
     // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
+    // 楽観行の検査と同じ理由で、a11y tag を付けた専用テストへは降ろさない。
     // popup を閉じた後の axe は unmount を待ってから (testing.md「ブラウザテストの CSS とレイアウト実測」)
     await expectDeleteConfirmClosed(screen);
     await expectNoA11yViolations(document.body);
