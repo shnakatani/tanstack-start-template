@@ -59,7 +59,6 @@ Primer が数値を書き写さない形に到達していることと、`.claud
 | 引数の解釈と出力行の組み立て                   | `scripts/contrast/lib/contrast-cli.ts`      |
 | 同上の単体テスト                               | `scripts/contrast/lib/contrast-cli.test.ts` |
 | トークンの SSOT のパス                         | `scripts/contrast/lib/styles-css.ts`        |
-| Tailwind の既定 palette                        | `scripts/contrast/lib/tailwind-palette.ts`  |
 | 例外の連鎖を 1 行にする                        | `scripts/contrast/lib/describe-error.ts`    |
 | ファイル読みと終了コード                       | `scripts/contrast/report.ts`                |
 | 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]`          |
@@ -69,8 +68,6 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 ```
 
 `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である。
-
-トークンの出どころは 2 つ足せる。`--css` は別の CSS から読む (上流の生成物を測り直すとき)。`--palette` は Tailwind の既定 palette を `--color-orange-800` の形で足す (ADR-0024 の hue の段を測るとき)。どちらも明示したときだけ効く。既定で palette を混ぜると、`--color-*: initial` で消してある色の比が黙って出る。
 
 検査ではないので `.claude/rules/testing.md` の検査の表には行を足さない。テストは `scripts-tools` project が拾うが、当時の include は `scripts/lib/` と `scripts/dev-env/` の 2 つを並べた許可リストで `scripts/contrast/` に一致しなかった。`scripts/**/*.test.ts` から `scripts/checks/**` を除く拒否リストへ変えて、ツールを足すたびに 1 行足す形をやめた。
 
@@ -192,7 +189,7 @@ getContrast(parse(toHex(measured.backdrop)), parse(toHex(measured.foreground)));
 
 継続して検査はしない (節 2 の「検査は作らない」)。axe か colorjs.io の版が動いたら、この手順で取り直して記述を合わせる
 
-- 残る違いは丸める位置である。axe は `Color` が 8bit を持つため層ごとに丸め、この変換器は重ね終わった後の 1 回だけ丸める。同じ 5,000 対のうち 5 対で SC の判定が割れた
+- 残る違いは丸める位置である。axe は `Color` が 8bit を持つため層ごとに丸め、この変換器は重ね終わった後の 1 回だけ丸める。半透明を重ねた対では SC の判定が割れうる
 - 画面の比と一致するとは限らない。axe はブラウザで `mix-blend-mode`・`text-shadow`・祖先の `opacity`・要素の重なりまで畳むが、この変換器は `--bg` で渡された面だけを重ねる
 - 単体テストが固定するのは axe の `getContrast` との一致で、要素のスタックを畳んだ後の報告値は node では再現できない
 - 数値を落とした箇所は、主張が正しいかを人が確かめる契機を失う。落とすのは主張が残る箇所に限る

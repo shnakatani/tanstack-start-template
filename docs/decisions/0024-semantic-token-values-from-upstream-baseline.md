@@ -31,7 +31,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 計測は生成した `styles.css` を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` (ADR-0028)。
 
-単一の値 (sidebar の行) は `mise run contrast -- --css docs/registry-baseline/styles.css …` で測り直せる。範囲で示した行は 8 色 17 テーマぶんの生成物を測ったもので、その生成物が残っていないため測り直せない。
+この表は 2026-09-21 の観測として凍結する。8 色 17 テーマぶんの生成物が残っておらず、`mise run contrast` は `src/styles.css` のトークンしか読まないので測り直せない。
 
 | 対                                                           | 範囲                   | 比                                                                                                          |
 | ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -81,12 +81,7 @@ preset code をプロジェクトから復元する `shadcn preset resolve` は�
 
 `bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
 
-hue を変えるときはこう測る。`--palette` が Tailwind の既定 palette を表へ足す。2026-09-21 の `tailwindcss@4.3.3` の palette では 9 色が該当した。
-
-```
-mise run contrast -- --theme light --palette \\
-  --bg '--background' --bg '--color-orange-800/80' --fg '--color-orange-50'
-```
+hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置いて `mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。下の表は 2026-09-21 の `tailwindcss@4.3.3` の palette を同じ形で測ったもので、9 色が該当した。
 
 表示は切り捨てなので、2 桁の値が実際の比を上回ることはない。`4.59` と出た値が 4.6 を満たすことはない。
 

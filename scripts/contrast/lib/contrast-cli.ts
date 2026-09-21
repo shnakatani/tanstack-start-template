@@ -31,47 +31,31 @@ type ContrastArgs = {
   readonly theme: Theme;
   readonly backdrop: readonly SourcedLayer[];
   readonly foreground: SourcedLayer;
-  /** `--css` の値。既定 (`src/styles.css`) を当てるのは実行口の仕事なので undefined を返す */
-  readonly cssPath: string | undefined;
-  /** `--palette` が付いていたか。Tailwind の既定 palette を表へ混ぜる */
-  readonly palette: boolean;
 };
 
 /**
  * `--theme` / `--bg` / `--fg` を読む。
  *
- * `--bg` だけが複数回を許す (下から順に重ねる)。`--theme` / `--fg` / `--css` の重複は
- * throw する。黙って後勝ちにすると、`--theme` を 2 回打った人が light を測ったつもりで
- * dark の値を書き写す。この実行口の産物は ADR へ写す数値なので、取り違えが文書へ残る
- *
- * `--css` は別の CSS からトークンを読む (上流の生成物を測り直すとき)。`--palette` は
- * Tailwind の既定 palette を足す (ADR-0024 の hue の段を測るとき)
+ * `--bg` だけが複数回を許す (下から順に重ねる)。`--theme` と `--fg` の重複は throw する。
+ * 黙って後勝ちにすると、`--theme` を 2 回打った人が light を測ったつもりで dark の値を
+ * 書き写す。この実行口の産物は ADR へ写す数値なので、取り違えが文書へ残る
  */
 export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
   let theme: Theme | undefined;
   let foreground: SourcedLayer | undefined;
-  let cssPath: string | undefined;
-  let palette = false;
   const backdrop: SourcedLayer[] = [];
-  // 進む幅はフラグで違う (`--palette` は値を取らない) ので、ヘッダには置けない
-  let index = 0;
-  while (index < argv.length) {
+  // どのフラグも値を 1 つ取るので、2 つずつ進む。増分をヘッダへ置くと書き忘れようがない
+  for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
-    if (flag === "--palette") {
-      palette = true;
-      index += 1;
-      continue;
-    }
     // 値を取る前に知っているフラグかを見る。逆にすると、未知のフラグが末尾へ来たときに
     // 「値がない」と出て、存在しないフラグへ値を足せと誘導する
-    if (flag !== "--theme" && flag !== "--bg" && flag !== "--fg" && flag !== "--css") {
+    if (flag !== "--theme" && flag !== "--bg" && flag !== "--fg") {
       throw new Error(`知らない引数: ${flag ?? "(空)"}`);
     }
     const value = argv[index + 1];
     if (value === undefined) {
       throw new Error(`${flag} に値がない`);
     }
-    index += 2;
     if (flag === "--theme") {
       if (theme !== undefined) {
         throw new Error("--theme は 1 つだけ書く");
@@ -82,11 +66,6 @@ export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
       theme = value;
     } else if (flag === "--bg") {
       backdrop.push({ spec: parseLayerSpec(value), source: value });
-    } else if (flag === "--css") {
-      if (cssPath !== undefined) {
-        throw new Error("--css は 1 つだけ書く");
-      }
-      cssPath = value;
     } else {
       if (foreground !== undefined) {
         throw new Error("--fg は 1 つだけ書く");
@@ -97,7 +76,7 @@ export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
   if (theme === undefined || foreground === undefined || backdrop.length === 0) {
     throw new Error("--theme と --bg と --fg は必須");
   }
-  return { theme, backdrop, foreground, cssPath, palette };
+  return { theme, backdrop, foreground };
 }
 
 /**

@@ -114,6 +114,20 @@ describe("parseTokenTable", () => {
     ).toThrow("行頭");
   });
 
+  it("カスタムプロパティでない宣言は読み飛ばす", () => {
+    // `color-scheme` は MDN が :root への記述を勧めている。表に名前を作れないので
+    // 捨てても dark が light を継承する危険は起きない。止めるとこの 1 行で全部測れなくなる
+    const css = `:root {
+  color-scheme: light dark;
+  --background: oklch(1 0 0);
+}
+.dark {
+  --background: oklch(0 0 0);
+}
+`;
+    expect(parseTokenTable(css).light).toEqual({ "--background": "oklch(1 0 0)" });
+  });
+
   it("宣言として読めない行があれば throw する", () => {
     // 黙って捨てると、`.dark` の取りこぼしがその名前だけ light の値のまま残り
     // (`parseTokenTable` が light へ重ねる)、dark に存在しない色の比が出る
@@ -121,7 +135,7 @@ describe("parseTokenTable", () => {
   --background: oklch(1 0 0);
 }
 .dark {
-  color: red;
+  --a_b: red;
   --background: oklch(0 0 0);
 }
 `;
@@ -215,7 +229,6 @@ describe("contrastRatio", () => {
     //   const { Color, getContrast } = axe.commons.color;
     //   const parse = (s) => { const c = new Color(); c.parseString(s); return c; };
     //   getContrast(parse("oklch(57.7% 0.245 27.325)"), parse("#ffffff"))
-    // ADR-0024 の Context が変換器の裏づけとして挙げている 4.765 はこれである。
     // 上流の red-600 の値で、本リポジトリのトークンを動かしても変わらない
     const AXE_REPORTED = 4.764721882929455;
     const ratio = contrastRatio(

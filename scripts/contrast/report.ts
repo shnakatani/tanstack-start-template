@@ -16,22 +16,16 @@ import { formatReport, parseContrastArgs } from "./lib/contrast-cli.ts";
 import { measurePair, parseTokenTable } from "./lib/contrast.ts";
 import { describeError } from "./lib/describe-error.ts";
 import { STYLES_CSS } from "./lib/styles-css.ts";
-import { tailwindPalette } from "./lib/tailwind-palette.ts";
 
 const USAGE = `使い方:
   mise run contrast -- --theme <light|dark> --bg <トークン> [--bg <トークン>...] --fg <トークン>
-                       [--css <CSS のパス>] [--palette]
 
-  トークンは --background の形。不透明度は --input/30 のように百分率で付ける。
-  --bg は下から順に重ねる。--theme と --fg と --css は 1 つだけ。
-
-  --css     src/styles.css 以外から読む (上流の生成物を測り直すとき)
-  --palette Tailwind の既定 palette を足す (--color-orange-800 の形で引ける)
+  トークンは src/styles.css の :root / .dark が宣言している --background の形。
+  不透明度は --input/30 のように百分率で付ける。
+  --bg は下から順に重ねる。--theme と --fg は 1 つだけ。
 
 例:
   mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--placeholder'
-  mise run contrast -- --theme light --palette --bg '--background' \\
-    --bg '--color-orange-800/80' --fg '--color-orange-50'
 `;
 
 function main(): void {
@@ -41,12 +35,9 @@ function main(): void {
     return;
   }
   const args = parseContrastArgs(argv);
-  const css = readFileSync(args.cssPath ?? STYLES_CSS, "utf8");
-  // palette は下へ敷く。同じ名前が CSS にもあれば CSS が勝つ。測る対象はアプリの CSS で、
-  // palette はそこに無い名前を引くための足しである
-  const declared = parseTokenTable(css)[args.theme];
+  const css = readFileSync(STYLES_CSS, "utf8");
   const measured = measurePair({
-    table: args.palette ? { ...tailwindPalette(), ...declared } : declared,
+    table: parseTokenTable(css)[args.theme],
     backdrop: args.backdrop.map((layer) => layer.spec),
     foreground: args.foreground.spec,
   });

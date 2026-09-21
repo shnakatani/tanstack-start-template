@@ -75,7 +75,16 @@ function parseBlock(css: string, selector: string): TokenTable {
     const parsed = /^\s*(--[a-z0-9-]+)\s*:\s*(.+)/i.exec(declaration);
     const [, name, value] = parsed ?? [];
     if (name === undefined || value === undefined) {
-      // 読めない宛先を黙って捨てない。`.dark` で 1 つ捨てると、その名前は light の値の
+      if (!declaration.trim().startsWith("--")) {
+        // カスタムプロパティでない宣言 (`color-scheme: light dark` 等) は表に名前を作れず、
+        // 捨てても下の危険は起きない。止めると、色と関係ない 1 行でファイル全体が測れなくなる
+        console.warn("[contrast] 宣言を読み飛ばした", {
+          selector,
+          declaration: declaration.trim(),
+        });
+        continue;
+      }
+      // 読めない `--` 名は黙って捨てない。`.dark` で 1 つ捨てると、その名前は light の値の
       // まま残り (`parseTokenTable` が light へ重ねる)、dark に存在しない色の比が出る
       throw new Error(`宣言として読めない: ${selector} の "${declaration.trim()}"`);
     }
