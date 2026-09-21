@@ -205,7 +205,9 @@ export function parseLayerSpec(spec: string): LayerSpec {
   }
   // `-` と指数表記と 16 進はここで落ちる。`00` と `0.0` は読み方が 1 つなので通す
   if (!/^\d+(\.\d+)?$/.test(percent)) {
-    throw new Error(`不透明度は 0..100 で書く: ${spec}`);
+    // 範囲ではなく綴りが原因。`--input/.5` に「0..100 で書く」と返すと、書いた人には
+    // 0.5 が範囲内に見えて原因へ辿り着けない
+    throw new Error(`不透明度は十進数で書く (符号・指数表記・空白は使えない): ${spec}`);
   }
   const value = Number(percent);
   if (value > 100) {
@@ -215,9 +217,11 @@ export function parseLayerSpec(spec: string): LayerSpec {
 }
 
 /**
- * 測った 1 対。`backdrop` と `foreground` はどちらも**合成後**の色で、トークンの生の値
- * ではない。半透明の前景は下地と混ざった後の色になるので、出力へ載せるときは
- * 「画面に出る色」として読ませる
+ * 測った 1 対。
+ *
+ * `backdrop` は下地を畳んだ後の色、`foreground` は下地の上へ載せた後の色である。
+ * 半透明の前景は下地と混ざった色になるので、出力へ載せるときは「画面に出る色」として
+ * 読ませる。下地が不透明 1 枚のときは `backdrop` は宣言値そのものになる
  */
 export type MeasuredPair = {
   readonly backdrop: Rgb;
@@ -236,7 +240,17 @@ export function measurePair(args: {
   backdrop: readonly LayerSpec[];
   foreground: LayerSpec;
 }): MeasuredPair {
-  const backdrop = flattenLayers(args.backdrop.map((spec) => layerOf(args.table, spec)));
+  const layers = args.backdrop.map((spec) => layerOf(args.table, spec));
+  let backdrop: Rgb;
+  try {
+    backdrop = flattenLayers(layers);
+  } catch (cause) {
+    // `flattenLayers` はいちばん下の面しか見ないので、名指しできるのはその 1 枚
+    throw new Error(
+      `いちばん下の下地は不透明でなければならない: ${args.backdrop[0]?.token ?? "(--bg が無い)"}`,
+      { cause },
+    );
+  }
   const foreground = flattenLayers([
     { rgb: backdrop, alpha: 1 },
     layerOf(args.table, args.foreground),

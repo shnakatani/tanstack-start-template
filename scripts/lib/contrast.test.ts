@@ -269,22 +269,22 @@ describe("parseLayerSpec", () => {
     expect(() => parseLayerSpec("--input/120")).toThrow("0..100");
   });
 
-  it("百分率が数値でなければ throw する", () => {
-    expect(() => parseLayerSpec("--input/half")).toThrow("0..100");
+  it("百分率の綴りが十進数でなければ throw する", () => {
+    expect(() => parseLayerSpec("--input/half")).toThrow("十進数");
   });
 
   it("スラッシュの後ろが空なら throw する", () => {
     // `Number("")` は 0 なので、弾かないと書き損じが alpha 0 として通り、
     // 比 1 が「コントラストが無い」として静かに報告される
-    expect(() => parseLayerSpec("--input/")).toThrow("0..100");
+    expect(() => parseLayerSpec("--input/")).toThrow("十進数");
   });
 
   it("空白・指数表記・16 進は throw する", () => {
     // どれも `Number` は読むが、書いた人の意図と一致しない。0x10 は Tailwind の
     // 読み (10%) と実装の読み (16%) が食い違う
-    expect(() => parseLayerSpec("--input/ 0")).toThrow("0..100");
-    expect(() => parseLayerSpec("--input/1e2")).toThrow("0..100");
-    expect(() => parseLayerSpec("--input/0x10")).toThrow("0..100");
+    expect(() => parseLayerSpec("--input/ 0")).toThrow("十進数");
+    expect(() => parseLayerSpec("--input/1e2")).toThrow("十進数");
+    expect(() => parseLayerSpec("--input/0x10")).toThrow("十進数");
   });
 
   it("スラッシュが 2 つ以上あれば throw する", () => {
@@ -362,6 +362,22 @@ describe("measurePair", () => {
     ).toThrow("不透明");
   });
 
+  it("下地が 3 枚以上でも渡した順に重ねる", () => {
+    // 2 枚だと `flattenLayers` の reduce が 1 回しか回らず、順序を反転しても同じ色になる。
+    // 3 枚にして初めて、重ね順そのものを固定できる
+    const table = { "--w": "#ffffff", "--r": "#ff0000", "--b": "#0000ff" };
+    const backdropOf = (order: readonly string[]) =>
+      toHex(
+        measurePair({
+          table,
+          backdrop: order.map(parseLayerSpec),
+          foreground: parseLayerSpec("--w"),
+        }).backdrop,
+      );
+    expect(backdropOf(["--w", "--r/50", "--b/50"])).toBe("#8040bf");
+    expect(backdropOf(["--w", "--b/50", "--r/50"])).toBe("#bf4080");
+  });
+
   it("表に無いトークンは throw する", () => {
     expect(() =>
       measurePair({
@@ -382,5 +398,16 @@ describe("measurePair", () => {
         foreground: parseLayerSpec("--radius"),
       }),
     ).toThrow("--radius");
+  });
+
+  it("いちばん下の下地が半透明ならトークン名を添えて throw する", () => {
+    // どの --bg が原因か分からないと、下地を複数枚渡したときに辿れない
+    expect(() =>
+      measurePair({
+        table: TABLE,
+        backdrop: [parseLayerSpec("--white/50")],
+        foreground: parseLayerSpec("--black"),
+      }),
+    ).toThrow("--white");
   });
 });
