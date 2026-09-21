@@ -39,6 +39,11 @@ export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
     if (flag === undefined || !flag.startsWith("--")) {
       throw new Error(`知らない引数: ${flag ?? "(空)"}`);
     }
+    // 値を取る前に知っているフラグかを見る。逆にすると、未知のフラグが末尾へ来たときに
+    // 「値がない」と出て、存在しないフラグへ値を足せと誘導する
+    if (flag !== "--theme" && flag !== "--bg" && flag !== "--fg") {
+      throw new Error(`知らない引数: ${flag}`);
+    }
     const value = argv[index + 1];
     if (value === undefined) {
       throw new Error(`${flag} に値がない`);
@@ -53,13 +58,11 @@ export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
       theme = value;
     } else if (flag === "--bg") {
       backdrop.push(parseLayerSpec(value));
-    } else if (flag === "--fg") {
+    } else {
       if (foreground !== undefined) {
         throw new Error("--fg は 1 つだけ書く");
       }
       foreground = parseLayerSpec(value);
-    } else {
-      throw new Error(`知らない引数: ${flag}`);
     }
     index += 2;
   }
@@ -69,9 +72,17 @@ export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
   return { theme, backdrop, foreground };
 }
 
-/** 面 1 枚を引数の綴りへ戻す。丸めない (`--input/30.5` は受理される綴り) */
+/**
+ * 面 1 枚を引数の綴りへ戻す。
+ *
+ * 丸めない (`--input/30.5` は受理される綴り) が、`alpha * 100` の逆算は桁を落とす。
+ * `--input/57` が `--input/56.99999999999999` になり、ADR へ写す値が変わって見える。
+ * `toPrecision(12)` を挟むと整数 0..100 と 0.1 刻みのどちらも往復する (2026-09-22 実測)
+ */
 export function describeLayer(spec: LayerSpec): string {
-  return spec.alpha === 1 ? spec.token : `${spec.token}/${spec.alpha * 100}`;
+  return spec.alpha === 1
+    ? spec.token
+    : `${spec.token}/${Number((spec.alpha * 100).toPrecision(12))}`;
 }
 
 /**

@@ -51,13 +51,15 @@ try {
   process.exit(1);
 }
 
-/** `cause` を辿って原因の連鎖を 1 行にする */
+/** `cause` を辿って原因の連鎖を 1 行にする。循環する `cause` で止まらなくならないよう深さを切る */
 function describeError(error: unknown): string {
   const messages: string[] = [];
-  let current: unknown = error;
-  while (current instanceof Error) {
+  let current = error;
+  // 10 段もあれば原因は読み取れる。超えたら連鎖が壊れているので打ち切る
+  while (current instanceof Error && messages.length < 10) {
     messages.push(current.message);
-    current = current.cause;
+    const next: unknown = current.cause;
+    current = next;
   }
   return messages.length > 0 ? messages.join(" ← ") : String(error);
 }

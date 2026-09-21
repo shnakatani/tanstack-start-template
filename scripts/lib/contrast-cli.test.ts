@@ -51,6 +51,11 @@ describe("parseContrastArgs", () => {
     expect(() => parseContrastArgs(["--bogus", "x", ...BASE])).toThrow("知らない引数: --bogus");
   });
 
+  it("知らないフラグが末尾に来ても「知らない引数」で throw する", () => {
+    // 値欠落の判定を先に置くと、存在しないフラグへ値を足せと誘導する
+    expect(() => parseContrastArgs([...BASE, "--bogus"])).toThrow("知らない引数: --bogus");
+  });
+
   it("--theme が light でも dark でもなければ throw する", () => {
     expect(() => parseContrastArgs(["--theme", "purple", ...BASE.slice(2)])).toThrow(
       "light か dark",
@@ -70,6 +75,14 @@ describe("describeLayer", () => {
   it("小数の不透明度を丸めない", () => {
     // 丸めると入力と違う行が出る。`--input/30.5` は受理される綴り
     expect(describeLayer(parseLayerSpec("--input/30.5"))).toBe("--input/30.5");
+  });
+
+  it("逆算で桁が出る不透明度も綴りどおりに戻す", () => {
+    // `57 / 100 * 100` は 56.99999999999999 になる。30.5 はたまたま往復するので、
+    // その 1 件だけでは逆算の桁落ちを検出できない (2026-09-22 実測)
+    expect(describeLayer(parseLayerSpec("--input/57"))).toBe("--input/57");
+    expect(describeLayer(parseLayerSpec("--input/7"))).toBe("--input/7");
+    expect(describeLayer(parseLayerSpec("--input/0.9"))).toBe("--input/0.9");
   });
 });
 
