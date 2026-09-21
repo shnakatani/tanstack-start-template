@@ -49,6 +49,7 @@
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
+  --color-placeholder: var(--placeholder);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
@@ -81,6 +82,10 @@
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
   --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.15 */
+  /* ::placeholder 疑似要素 (例示テキスト) 専用。select の data-placeholder は
+     実テキストで axe が通常テキストとして評価し WCAG 1.4.3 (4.5:1) が掛かるため
+     対象外 (--muted-foreground のまま)。合わせると dark で 3.93 に落ち違反する */
+  --placeholder: oklch(56% 0.021 213.5); /* mist-500 */
   --accent: oklch(0.963 0.002 197.1);
   --accent-foreground: oklch(0.218 0.008 223.9);
   --destructive: oklch(44.4% 0.177 26.899); /* red-800。tint の上の文字 */
@@ -120,6 +125,7 @@
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.275 0.011 216.9);
   --muted-foreground: oklch(0.723 0.014 214.4);
+  --placeholder: oklch(56% 0.021 213.5); /* mist-500 */
   --accent: oklch(0.275 0.011 216.9);
   --accent-foreground: oklch(0.987 0.002 197.1);
   --destructive: oklch(80.8% 0.114 19.571); /* red-300 */
