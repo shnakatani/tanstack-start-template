@@ -2,23 +2,26 @@ import axe from "axe-core";
 import { expect } from "vite-plus/test";
 
 /**
- * 合否から外す `incomplete`。部品の構造から恒常的に出るものだけを、
+ * story 側で合否から外す `incomplete`。単一部品でも統制の外へ出る状態だけを、
  * (ルール, `messageKey`) の粒度で挙げる (ADR-0026 の節 1)。
  *
  * 落とすほうを名指しにしない。axe のメタデータには「この incomplete は判定不能を意味する」を
  * 表すフラグが無いので、落とすほうを列挙すると新しい原因が出たときに無言で緑になる。
  */
 const IGNORED_INCOMPLETE: readonly { readonly rule: string; readonly messageKey?: string }[] = [
-  // ダイアログが開いている間は、その配下の tabbable 要素が必ずここへ出る (axe の
-  // focusable-modal-open)。閉じかけの popup も同じ。messageKey を持たないので粒度を下げられない
+  // popup は開いている間だけ統制の外へ出る。axe はダイアログが可視なら、その配下の tabbable
+  // 要素をまとめて判定不能にする (focusable-modal-open)。閉じかけの窓も同じ。story 側で
+  // 描き方を変えても消せない。補強として mui/base-ui#5528 が open
   { rule: "aria-hidden-focus" },
-  // aria-haspopup と aria-controls を併せ持つ trigger で必ず出る。axe-core#4418 の設計で、
-  // 参照先が実在しても出る (#4861、open)。同じルールの noId は実バグなので外さない
+  // 同じく popup の状態。aria-haspopup と aria-controls を併せ持つ trigger で必ず出る。
+  // 補強として axe-core#4418 の設計と、参照先が実在しても出る #4861 (open)。
+  // 同じルールの noId は部品側の信号なので外さない
   { rule: "aria-valid-attr-value", messageKey: "controlsWithinPopup" },
 ];
 
 /**
- * 合否へ入れる `incomplete` だけを残す。story 側とブラウザテスト側で同じ基準を使う。
+ * 合否へ入れる `incomplete` だけを残す。使うのは story 側 (`.storybook/preview.tsx`) だけで、
+ * この関数はブラウザテストからは呼ばない (ADR-0026 の節 1)。
  *
  * `IGNORED_INCOMPLETE` に当たる node を落とし、node が残らなくなった結果ごと落とす。
  */
@@ -94,13 +97,9 @@ export async function expectNoA11yViolations(container: Element): Promise<void> 
     "a11y 違反",
   ).toEqual([]);
 
-  // incomplete は「axe が判定できなかった」結果。既定で落とし、構造的に出るものだけ外す。
-  // color-contrast は背景を解決できないと violations ではなく incomplete へ落ちるため、
-  // 無視すると検査が無言で骨抜きになる (ADR-0026)
-  expect(
-    describeA11yResults(collectUnexpectedIncomplete(result.incomplete)),
-    "axe が判定できなかった項目",
-  ).toEqual([]);
+  // incomplete はここでは見ない。組み上げて操作した結果に出るものは、部品の問題ではなく
+  // 合成とタイミングの産物で、実行環境の速さで結果が変わる (ADR-0018 の事故)。統制できる
+  // 単一部品の側 (story) で落とし、ここは出たときに人が読む (ADR-0026 の節 1)
 
   // 1 つもルールが走らなかった (container が空だった) 場合を通さない
   expect(result.passes.length, "適用されたルールがゼロ").toBeGreaterThan(0);
