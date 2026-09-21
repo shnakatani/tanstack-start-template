@@ -84,6 +84,7 @@ light と dark で同じ `mist-500` になる。
 - dark は SC 1.4.3 の 4.5:1 を満たさない。`--background` の上で 3.93、`--popover` の上で 3.34。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0006 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
+- **消費側からの上書きが決定的でなくなった。** `cn` は生成済み utility の表で衝突を判定するため、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方のクラスを載せたまま出荷され、詳細度が同じ (0,1,1) なのでどちらが勝つかは CSS のソース順で決まる。置換前の `placeholder:text-muted-foreground` は `cn` が確実に落としていた。2026-09-21 時点で `placeholder:` の class を書く消費者は 0 件 (`grep -rn 'placeholder:' src/ --include='*.tsx'` が React の prop しか返さない)
 - placeholder を足すときは例示かどうかを確かめる。既存の利用は `grep -rn 'placeholder=' src/` で列挙できる
 - 再評価の条件は、w3c/wcag#4343 が閉じるか、axe が `::placeholder` を読むようになったとき
 

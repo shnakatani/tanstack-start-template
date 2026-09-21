@@ -113,6 +113,8 @@ light の `/80` が 4.6 を下回る hue (2026-09-21 時点で orange / emerald 
 
 禁じているのは、その計算を story として抱えて検査の顔をさせることである。描画されない値を測るので、実際の画面が割っていても緑になる。
 
+**この検算は違反を見るだけで、判定できなかった項目を見ない。** `@storybook/addon-a11y@10.6.0` は `violations` の件数だけで合否を決める (`dist/_browser-chunks/chunk-P5J2FJ2Z.js` の `hasViolations`)。`color-contrast` は背景を解決できないと `violations` ではなく `incomplete` へ落ちるので、story を包む要素が変わって解決できなくなると、検査は緑のまま何も見なくなる。ブラウザテスト側の `src/test/a11y.ts` は `incomplete` も空であることを要求しており、story 側とは基準が揃っていない。
+
 hover の状態を作って測る形は、ポインタを当てる形も擬似クラスを強制する形も採らない。ポインタを当てると `transition-colors` の途中の合成色を axe が測る。擬似クラスを強制しても同じで、Storybook の test 実行は animation を止めない方針のため (ADR-0022) 途中の色が残り、さらに addon が描画後に axe を回すので状態を保つ decorator か別の走査が要る。手で組み合わせを並べる方が、持ち物が一覧だけで済む。
 
 ### 検討した選択肢
@@ -131,6 +133,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 
 - 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css`
 - 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0006 の検査手順に従う
+- **本 ADR と ADR-0025 とソースのコメントに書いた比率は、どれも人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった。SC 1.4.3 / 1.4.11 の note は計算値を丸めるなと定めており、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない。比率を書いた箇所を触るときは測り直す
 - 節 2 の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
 - 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` の約 1.25 と focus 指標の `/50` はこの決定で解かない。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
 - focus 指標の不足は `--ring` を `--primary` と同値にしても残る。2026-09-21 時点で `ring-ring/50` は light 2.63 / dark 3.41、不透明で使う `border-ring` / `outline-ring` は light 8.84 / dark 10.88 になる

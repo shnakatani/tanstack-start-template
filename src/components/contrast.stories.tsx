@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
+import { cn } from "cn";
+import type { ReactNode } from "react";
 
 /**
  * 既定の story が描かない tint の組み合わせを実テキストとして描き、`parameters.a11y.test` の
@@ -37,6 +39,17 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
  * 出力のうち `bg-black/10` は dialog / alert-dialog / sheet の scrim で、`fixed inset-0` の面に
  * 文字が載らないため行を持たない。それ以外は下の 2 つの story がすべて描く。
  */
+/**
+ * 1 行 = 面と文字色の 1 対。`className` は呼び出し側がリテラルで渡す。
+ *
+ * ここを `["bg-x/10", ...].map()` に畳まない。`@shadcn/lint` はコールバック引数を解決できず
+ * (`no-raw-colors` / `no-unknown-classes` が無反応になる)、この story の主題であるクラス名が
+ * 検査から外れる。配列リテラル自体は読まれるので、読めなくなるのは `.map()` の引数だけ。
+ */
+function Row({ className, children }: { className: string; children: ReactNode }) {
+  return <p className={cn("rounded px-3 py-2 text-sm", className)}>{children}</p>;
+}
+
 const meta = {} satisfies Meta;
 
 export default meta;
@@ -45,54 +58,44 @@ export default meta;
 export const OnBackground: StoryObj = {
   render: () => (
     <div className="bg-background flex flex-col gap-2 p-4">
-      <p className="bg-destructive-surface/10 text-destructive rounded px-3 py-2 text-sm">
+      <Row className="bg-destructive-surface/10 text-destructive">
         破壊の既定 bg-destructive-surface/10
-      </p>
-      <p className="bg-destructive-surface/20 text-destructive rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-destructive-surface/20 text-destructive">
         破壊の hover bg-destructive-surface/20
-      </p>
-      <p className="bg-destructive-surface/30 text-destructive rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-destructive-surface/30 text-destructive">
         破壊の hover (dark) bg-destructive-surface/30
-      </p>
-      <p className="bg-primary/80 text-primary-foreground rounded px-3 py-2 text-sm">
-        主操作の hover bg-primary/80
-      </p>
-      <p className="bg-primary/5 text-primary rounded px-3 py-2 text-sm">
-        破線ボタンの hover bg-primary/5
-      </p>
-      <p className="bg-primary/5 text-foreground rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-primary/80 text-primary-foreground">主操作の hover bg-primary/80</Row>
+      <Row className="bg-primary/5 text-primary">破線ボタンの hover bg-primary/5</Row>
+      <Row className="bg-primary/5 text-foreground">
         選択済み ChoiceCard bg-primary/5 + text-foreground
-      </p>
-      <p className="bg-primary/5 text-muted-foreground rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-primary/5 text-muted-foreground">
         選択済み ChoiceCard の説明 bg-primary/5 + text-muted-foreground
-      </p>
-      <p className="bg-primary/10 text-primary rounded px-3 py-2 text-sm">
-        破線ボタンの hover (dark) bg-primary/10
-      </p>
-      <p className="bg-primary/10 text-foreground rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-primary/10 text-primary">破線ボタンの hover (dark) bg-primary/10</Row>
+      <Row className="bg-primary/10 text-foreground">
         選択済み ChoiceCard (dark) bg-primary/10 + text-foreground
-      </p>
-      <p className="bg-primary/10 text-muted-foreground rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-primary/10 text-muted-foreground">
         選択済み ChoiceCard の説明 (dark) bg-primary/10 + text-muted-foreground
-      </p>
-      <p className="bg-muted/50 text-muted-foreground rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-muted/50 text-muted-foreground">
         淡色行の hover bg-muted/50 + text-muted-foreground
-      </p>
-      <p className="bg-muted/50 text-foreground rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-muted/50 text-foreground">
         淡色行の hover bg-muted/50 + text-foreground
-      </p>
-      <p className="bg-secondary/80 text-secondary-foreground rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-secondary/80 text-secondary-foreground">
         副操作の hover bg-secondary/80
-      </p>
-      <p className="bg-input/30 text-foreground rounded px-3 py-2 text-sm">
-        入力欄の面 (dark) bg-input/30
-      </p>
-      <p className="bg-input/30 text-muted-foreground rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-input/30 text-foreground">入力欄の面 (dark) bg-input/30</Row>
+      <Row className="bg-input/30 text-muted-foreground">
         select の空状態 (dark) bg-input/30 + text-muted-foreground
-      </p>
-      <p className="bg-input/50 text-foreground rounded px-3 py-2 text-sm">
-        入力欄の hover (dark) bg-input/50
-      </p>
+      </Row>
+      <Row className="bg-input/50 text-foreground">入力欄の hover (dark) bg-input/50</Row>
     </div>
   ),
 };
@@ -101,15 +104,15 @@ export const OnBackground: StoryObj = {
 export const OnCard: StoryObj = {
   render: () => (
     <div className="bg-card flex flex-col gap-2 rounded-lg p-4">
-      <p className="bg-destructive-surface/10 text-destructive rounded px-3 py-2 text-sm">
+      <Row className="bg-destructive-surface/10 text-destructive">
         メニューの破壊項目 bg-destructive-surface/10
-      </p>
-      <p className="bg-destructive-surface/20 text-destructive rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-destructive-surface/20 text-destructive">
         メニューの破壊項目 bg-destructive-surface/20
-      </p>
-      <p className="bg-destructive-surface/30 text-destructive rounded px-3 py-2 text-sm">
+      </Row>
+      <Row className="bg-destructive-surface/30 text-destructive">
         メニューの破壊項目 bg-destructive-surface/30
-      </p>
+      </Row>
     </div>
   ),
 };
