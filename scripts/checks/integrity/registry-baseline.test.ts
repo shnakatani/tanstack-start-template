@@ -46,7 +46,24 @@ function uiComponentFiles(): string[] {
 }
 
 /**
- * baseline ディレクトリが追跡しているファイルを、ディレクトリからの相対パスで返す。
+ * `git` の出力を、リポジトリ相対パスの集合として読む。
+ *
+ * `-z` を付ける。既定の git は非 ASCII や `"` を含む名前を八進エスケープで引用するため
+ * (`core.quotepath`)、`readdirSync` が返す実名と一致しなくなる。一致しないと無視対象を
+ * 差し引けず、gitignore 済みのファイルが孤児として報告される。
+ */
+function gitPaths(subcommand: string, ...rest: string[]): Set<string> {
+  // -z はサブコマンドの直後。末尾へ置くと `--` より後ろに入って pathspec として解釈され、
+  // 出力は引用されたままなのに例外も件数の変化も出ないので、効いていないことに気付けない
+  const out = execFileSync("git", [subcommand, "-z", ...rest], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  });
+  return new Set(out.split("\0").filter(Boolean));
+}
+
+/**
+ * baseline ディレクトリのファイルを、ディレクトリからの相対パスで返す。
  *
  * 絞り込みをここへ書かない。除外をフィルタに持たせると、`EXTERNAL_REGISTRY_FILES` から
  * 1 件消したときに、そのファイルが走査対象からも外れて無言で緑になる。同じ定数が期待値と
@@ -54,19 +71,24 @@ function uiComponentFiles(): string[] {
  * (`scripts/lib/companion-files.ts` の同旨)。分類は呼び出し側が行い、どの分類にも落ちない
  * ものを失敗させる。
  *
- * 一覧は `git ls-files` から取る。`readdirSync` で全件を拾うと `.DS_Store` のような
- * gitignore 済みのファイルまで未分類として落ち、`git status` に出ない原因でテストが赤くなる。
- * サブディレクトリの中身も相対パスとして出るので、直下だけを見て取りこぼすこともない
- * (先例: `lint-config.test.ts` の「追跡しているソースが lint の対象に入っている」)。
+ * 見るのは disk で、そこから gitignore 済みのものだけを引く。`.DS_Store` のような無視対象を
+ * 未分類として落とすと、`git status` に出ない原因でテストが赤くなる。逆に `git ls-files` で
+ * 追跡分だけを見ると、`git add` 前の綴り違いの baseline が走査から消えて無言で緑になる。
+ * 再帰で読むので、サブディレクトリへ入れた孤児も相対パスとして出る。
  */
 function baselineFiles(): string[] {
-  return execFileSync("git", ["ls-files", "--cached", "--", BASELINE_DIR], {
-    cwd: REPO_ROOT,
-    encoding: "utf8",
-  })
-    .split("\n")
-    .filter(Boolean)
-    .map((path) => relative(BASELINE_DIR, join(REPO_ROOT, path)));
+  const ignored = gitPaths(
+    "ls-files",
+    "--others",
+    "--ignored",
+    "--exclude-standard",
+    "--",
+    BASELINE_DIR,
+  );
+  return readdirSync(BASELINE_DIR, { withFileTypes: true, recursive: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(BASELINE_DIR, join(entry.parentPath, entry.name)))
+    .filter((path) => !ignored.has(relative(REPO_ROOT, join(BASELINE_DIR, path))));
 }
 
 describe("registry baseline の網羅", () => {
