@@ -45,6 +45,9 @@ import type { ReactNode } from "react";
  * ここを `["bg-x/10", ...].map()` に畳まない。`@shadcn/lint` はコールバック引数を解決できず
  * (`no-raw-colors` / `no-unknown-classes` が無反応になる)、この story の主題であるクラス名が
  * 検査から外れる。配列リテラル自体は読まれるので、読めなくなるのは `.map()` の引数だけ。
+ *
+ * 同じ理由で、Storybook が案内する `args` による共通化も採らない。`args: { className: "..." }`
+ * へ移すと、そこも解決されずクラス名が検査から外れる。
  */
 function Row({ className, children }: { className: string; children: ReactNode }) {
   return <p className={cn("rounded px-3 py-2 text-sm", className)}>{children}</p>;
