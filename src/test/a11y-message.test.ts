@@ -20,6 +20,12 @@ describe("describeA11yNodes", () => {
     );
   });
 
+  test("shadow root の境界は >> で見せる", () => {
+    const nested = describeA11yNodes([a11yNode({ target: [["#host", "#shadow"]], summary: "x" })]);
+
+    expect(nested).toContain("    #host >> #shadow");
+  });
+
   test("node がゼロなら空文字", () => {
     expect(describeA11yNodes([])).toBe("");
   });

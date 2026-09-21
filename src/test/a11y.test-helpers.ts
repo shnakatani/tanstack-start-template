@@ -17,7 +17,11 @@ export function a11yCheck(messageKey?: string): axe.CheckResult {
 }
 
 export function a11yNode(
-  options: { messageKeys?: readonly string[]; target?: string[]; summary?: string } = {},
+  options: {
+    messageKeys?: readonly string[];
+    target?: axe.UnlabelledFrameSelector;
+    summary?: string;
+  } = {},
 ): axe.NodeResult {
   const keys = options.messageKeys ?? [];
   return {
