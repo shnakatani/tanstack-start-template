@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { FileTextIcon, HomeIcon, SettingsIcon } from "lucide-react";
+import { FileTextIcon, HomeIcon, NotebookIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { expect, userEvent } from "storybook/test";
 
@@ -40,7 +40,20 @@ function SidebarExample({
   return (
     <>
       <Sidebar collapsible={collapsible}>
-        <SidebarHeader>メモ帳</SidebarHeader>
+        {/* header の中身は menu button で組む。公式 docs の例もこの形で、素のテキストを置く例は
+            無い。素のテキストはアイコン幅 (47px) へ畳むと 1 文字ずつ折り返し、header が
+            overflow: visible なので枠の外へ出る。menu button なら base の overflow-hidden が
+            クリップする */}
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="メモ帳">
+                <NotebookIcon aria-hidden />
+                <span>メモ帳</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel>ナビゲーション</SidebarGroupLabel>

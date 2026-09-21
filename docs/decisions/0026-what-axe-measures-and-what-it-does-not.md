@@ -206,6 +206,7 @@ axe を通したことは「WCAG を満たした」を意味しない。2026-09-
 
 - `expectNoA11yViolations` は `incomplete` を見ない。ADR-0018 の animation 無効化は、逆の基準だった頃の回避策である。基準を変えた今、あの回避策が他の理由 (実イベントの規律、ADR-0013 / ADR-0015) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
+- story で統制できるのは markup までで、フォントは実行環境が持つ。テキストの折り返し位置が変われば矩形の重なり先も変わるので、同じ story が手元で緑・CI で赤になりうる。出たときに直す対象は markup 側にある (折り返して枠の外へ出る書き方をやめる)
 - `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (axe-core#4861 / #3486) 見直す
 - レポートが無いことを落とす条件は、addon が走る条件に `test: "todo"` を足したものである (todo は addon が走って warning へ降ろす形なので、合否へ入れない側で揃える)。公式は「走ったか」を知る API を持たない (`storybook.js.org/docs/writing-tests/accessibility-testing` に記載なし)。addon が条件を足すと、こちらが偽陽性を出して知らせる
 - `a11y-incomplete` の annotation は `.storybook/main.ts` の `addons` で `@storybook/addon-a11y` より前に置く。並びが変わると addon の結果を読めなくなり、「レポートが無い」で落ちる
