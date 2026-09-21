@@ -5,15 +5,15 @@ import { fileURLToPath } from "node:url";
  * ための local preset (ADR-0026 の節 1)。
  *
  * 順序が要る。`afterEach` は `[project, component, story]` を `reverse()` して走らせるので
- * (`storybook/dist/preview/runtime.js` の `applyAfterEach`)、annotation の並びで先にいるものほど
+ * (`storybook` の `applyAfterEach`)、annotation の並びで先にいるものほど
  * 後に走る。`.storybook/preview.tsx` は常に最後尾なので、そこからは addon の結果を読めない。
  * `main.ts` の `previewAnnotations` も届かない。annotation の並びは「addons の順 →
- * previewAnnotations の順 → preview」で (`storybook/dist/chunk-DdLFxT9J.d.ts` の `beforeAll` の
- * docstring)、addon より後ろに入る。
+ * previewAnnotations の順 → preview」で (`storybook` の型が `beforeAll` の docstring に書く
+ * 初期化順)、addon より後ろに入る。
  *
  * 並びが変わって addon の結果を読めなくなったら、`checkA11yIncomplete` が「レポートが無い」で
- * 落とす。ただし守れるのは並びだけで、この preset 自体が `main.ts` の `addons` から外れたり
- * 名前が解決できなくなったりすると、Storybook は警告を出して読み飛ばし
- * (`storybook/dist/_node-chunks/chunk-IQHYYTFR.js` の `resolveAddonName`)、検査は無音で消える。
+ * 落とす。**守れるのは並びだけである。** `main.ts` の `addons` からこの行を消せば何も起きず、
+ * 名前が解決できなくなった場合は Storybook が `Could not resolve addon ..., skipping` を出して
+ * 読み飛ばす。どちらも検査は無音で消える。
  */
 export const previewAnnotations = [fileURLToPath(new URL("./preview.ts", import.meta.url))];

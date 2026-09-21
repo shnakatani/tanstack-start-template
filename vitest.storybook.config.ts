@@ -4,6 +4,8 @@ import viteReact from "@vitejs/plugin-react";
 import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
+import { isStorybookRun } from "./scripts/lib/storybook-env";
+
 const THEMES = ["light", "dark"] as const;
 
 /**
@@ -93,23 +95,11 @@ function storybookProject(theme: (typeof THEMES)[number]) {
  * 判定の正本は後者で、test panel は書いている最中の確認に使う。
  */
 export function storybookProjects() {
-  if (!isStorybookRun()) return THEMES.map((theme) => storybookProject(theme));
+  if (!isStorybookRun(process.env.VITEST_STORYBOOK))
+    return THEMES.map((theme) => storybookProject(theme));
 
   // 縮退を黙って通さない。VITEST_STORYBOOK がシェルへ残ったまま `vp test run` を叩くと、
   // dark の a11y 検査が消えたことに誰も気付けない
   console.warn("[storybook] VITEST_STORYBOOK が真なので light だけを回す (ADR-0022 の節 7-1)");
   return [storybookProject("light")];
-}
-
-/**
- * Storybook から起動されたか。addon と同じ読み方をする。
- *
- * addon は `optionalEnvToBoolean` (`storybook/dist/_node-chunks/chunk-5XWVTFUD.js`) で読み、
- * `"false"` と `"0"` と空文字だけを偽として扱う。`=== "true"` で比べると、`VITEST_STORYBOOK=1`
- * のときに addon だけが project 名を上書きし、こちらは 2 つ作って名前が衝突する。
- */
-function isStorybookRun(): boolean {
-  const value = process.env.VITEST_STORYBOOK;
-  if (value === undefined || value === "") return false;
-  return value.toUpperCase() !== "FALSE" && value !== "0";
 }

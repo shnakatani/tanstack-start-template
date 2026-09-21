@@ -151,7 +151,7 @@ a11y を light と dark の両方へ当てるため、`vitest.storybook.config.t
 
 **その形のまま Storybook 経由で走らせると起動しない。** addon は `VITEST_STORYBOOK=true` のとき project 名を `storybook:${configDir}` へ強制上書きする (`dist/vitest-plugin/index.js` の `storybook:workspace-name-override`)。同じ `configDir` から 2 つ作れば名前が衝突し、Storybook の test panel も `storybook tools test run` も `Project name ... is not unique` で止まる。上流の storybookjs/storybook#32427 が 2025-09-07 から open で、同じ light / dark 構成の報告が付いている。
 
-`VITEST_STORYBOOK=true` のときだけ light の 1 つに絞る。判定の正本は `mise run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。
+`VITEST_STORYBOOK` が真のときだけ light の 1 つに絞る。真偽は addon と同じ読み方をする (`optionalEnvToBoolean` は `"false"` と `"0"` と空文字だけを偽にするので、`=== "true"` で比べると `VITEST_STORYBOOK=1` で addon だけが名前を上書きして衝突が戻る)。判定は `scripts/lib/storybook-env.ts` が持つ。判定の正本は `mise run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。
 
 | 経路                                       | テーマ        |
 | ------------------------------------------ | ------------- |

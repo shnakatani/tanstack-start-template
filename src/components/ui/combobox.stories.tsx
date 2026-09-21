@@ -88,7 +88,8 @@ export const NoItems: Story = {
         // 後から増える場合を考えて、空のコンテナを違反ではなく incomplete へ降ろす
         // (`aria-required-children` の `reviewEmpty`)。この story では増えない。
         // 「候補なし」は ComboboxEmpty と base-ui の live region が伝える。
-        // 上流へは未起票 (2026-09-21 に mui/base-ui を検索して該当なし)。投げるなら mui/base-ui。
+        // 上流へは未起票。2026-09-21 に mui/base-ui を "aria-required-children" で検索し、
+        // #5443 (Empty が listbox の直下に居る violation) は別件だった。投げるなら mui/base-ui。
         // 外せるのは base-ui が空のリストで role を落とすようになったとき
         exclude: ['[data-slot="combobox-list"]'],
       },
@@ -129,8 +130,8 @@ export const InlineWithTrigger: Story = {
         // 外さないため axe が aria-hidden-focus を出す。ここで落ちるのは violations 側で、
         // `a11y-story.ts` の `IGNORED_INCOMPLETE` (incomplete 側) とは守備範囲が違う。
         // この行を外すとこの story だけが violations で落ちる (2026-09-21 に実測)。
-        // 上流のバグで mui/base-ui#5528 が
-        // open。直るまでこの story でだけ止める。popup を開くのをやめる手は採らない。
+        // 上流のバグで mui/base-ui#5528 が open。直るまでこの story でだけ止める。
+        // popup を開くのをやめる手は採らない。
         // 開かないと下の aria-prohibited-attr の見張りごと消える。
         //
         // InlineWithClear に同じ抑制が要らないのは、あちらの addon に残る操作子が

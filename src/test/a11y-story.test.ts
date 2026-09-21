@@ -12,7 +12,10 @@ function report(result: unknown) {
 /** `checkA11yIncomplete` へ渡す story context の最小形 */
 function context(
   reports: { type: string; result: unknown }[],
-  overrides: { parameters?: A11yTypes["parameters"]; globals?: A11yTypes["globals"] } = {},
+  overrides: {
+    parameters?: A11yTypes["parameters"];
+    globals?: A11yTypes["globals"] & { ghostStories?: unknown };
+  } = {},
 ) {
   return {
     reporting: { reports },
@@ -49,8 +52,10 @@ describe("collectUnexpectedIncomplete", () => {
 
   test("外さないキーが同じ node に混ざっていれば落とさない", () => {
     const results = collectUnexpectedIncomplete([
+      // 1 つの node には同じルールの複数の check が載る。2 つ目は除外リストに無いキーなら
+      // 何でもよく、idrefs は aria-valid-attr-value と aria-errormessage のどちらも立てる
       rule("aria-valid-attr-value", [
-        node({ messageKeys: ["controlsWithinPopup", "noId"], target: ["#both"] }),
+        node({ messageKeys: ["controlsWithinPopup", "idrefs"], target: ["#both"] }),
       ]),
     ]);
 
@@ -83,17 +88,24 @@ describe("checkA11yIncomplete", () => {
   });
 
   test("story が a11y を切っていれば見ない", () => {
-    const off = { parameters: { a11y: { disable: true } } };
-    const todo = { parameters: { a11y: { test: "off" } } } as const;
+    const disabled = { parameters: { a11y: { disable: true } } };
+    const testOff = { parameters: { a11y: { test: "off" } } } as const;
 
-    expect(checkA11yIncomplete(context([withIncomplete], off))).toBeNull();
-    expect(checkA11yIncomplete(context([withIncomplete], todo))).toBeNull();
+    expect(checkA11yIncomplete(context([withIncomplete], disabled))).toBeNull();
+    expect(checkA11yIncomplete(context([withIncomplete], testOff))).toBeNull();
   });
 
   test('test: "todo" は addon が warning へ降ろす形なので見ない', () => {
     const todo = { parameters: { a11y: { test: "todo" } } } as const;
 
     expect(checkA11yIncomplete(context([withIncomplete], todo))).toBeNull();
+  });
+
+  test("ghostStories が立っていれば見ない", () => {
+    // addon-vitest が globals へ入れる。addon はこのとき走らずレポートも積まれない
+    const ghost = { globals: { ghostStories: { enabled: true } } };
+
+    expect(checkA11yIncomplete(context([withIncomplete], ghost))).toBeNull();
   });
 
   test("addon パネルの manual を有効にしていれば見ない", () => {

@@ -49,7 +49,7 @@ export const Range: Story = {
   // axe は一定以上の面積を持つ擬似要素があると背景の判定を打ち切る (pseudoContent)。
   // 両端は `bg-primary` / `text-primary-foreground` で、`range_middle` の
   // `bg-muted` / `text-foreground` とは別の対である。この対は `Single` と `Multiple` の
-  // 選択セル (`data-selected-single`) が検査し続ける。上流へは未起票 (同上)
+  // 選択セル (`data-selected-single`) が検査し続ける。上流へは未起票 (shadcn-ui/ui)
   parameters: excludeFromA11y('[data-range-start="true"]', '[data-range-end="true"]'),
 };
 
@@ -66,7 +66,8 @@ export const Multiple: Story = {
  * `today` から前 100 年で組まれ、選択肢が毎年 1 つ増える
  */
 export const WithDropdownCaption: Story = {
-  // この形では見出しが nav に覆われず axe が測れるので、meta の除外を打ち消す
+  // この形では見出しに incomplete が出ないので、meta の除外を打ち消す (2026-09-21 に実測。
+  // nav の絶対配置は同じままなので、重なっても解決できる理由までは確かめていない)
   parameters: { a11y: { context: { exclude: [] } } },
   args: {
     captionLayout: "dropdown",

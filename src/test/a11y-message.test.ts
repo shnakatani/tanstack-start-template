@@ -14,13 +14,13 @@ describe("describeA11yNodes", () => {
     expect(describeA11yNodes([a11yNode({ target: ["#title"] })])).toBe("    #title\n      ");
   });
 
-  test("iframe 越しの target は空白でつなぐ", () => {
+  test("frame の境界は >> で見せる", () => {
     expect(describeA11yNodes([a11yNode({ target: ["iframe", "#title"], summary: "x" })])).toContain(
-      "    iframe #title",
+      "    iframe >> #title",
     );
   });
 
-  test("shadow root の境界は >> で見せる", () => {
+  test("shadow root の境界も >> で見せる", () => {
     const nested = describeA11yNodes([a11yNode({ target: [["#host", "#shadow"]], summary: "x" })]);
 
     expect(nested).toContain("    #host >> #shadow");
@@ -50,5 +50,13 @@ describe("describeA11yResults", () => {
     expect(withImpact).toContain("color-contrast (serious):");
     expect(withoutImpact).toContain("color-contrast:");
     expect(withoutImpact).not.toContain("(");
+  });
+
+  test("impact が null でも括弧を出さない", () => {
+    // axe は Result.impact へ必ず代入し、値は null を取る (axe.d.ts の ImpactValue)
+    const [line] = describeA11yResults([a11yRule("color-contrast", [a11yNode()], null)]);
+
+    expect(line).toContain("color-contrast:");
+    expect(line).not.toContain("null");
   });
 });

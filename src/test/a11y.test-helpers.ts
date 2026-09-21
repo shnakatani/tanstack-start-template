@@ -6,7 +6,7 @@ import type axe from "axe-core";
  * `target` は `UnlabelledFrameSelector` で、frame を跨ぐときに要素が増える
  * (`node_modules/axe-core/axe.d.ts` の `NodeResult`)。配列のまま受ける。
  */
-export function a11yCheck(messageKey?: string): axe.CheckResult {
+function a11yCheck(messageKey?: string): axe.CheckResult {
   return {
     id: "color-contrast",
     impact: "serious",

@@ -52,7 +52,8 @@ export function checkA11yIncomplete(context: {
   if (report === undefined) {
     return "addon-a11y のレポートが無い。afterEach の実行順が変わったか、a11y の検査自体が動いていない (ADR-0026 の節 1)";
   }
-  // addon が走査に失敗した形。addon 自身がそのまま throw するので、ここで重ねない
+  // addon が走査に失敗した形。`vp test run` では addon 自身が rethrow するので重ねない
+  // (test panel 経由は panel 表示のみ。同 chunk の `getIsVitestStandaloneRun`)
   if (isErrorResult(report.result)) return null;
   if (!hasIncompleteResults(report.result)) {
     return "addon-a11y のレポートを読めない。addon の結果の形が変わった (ADR-0026 の節 1)";
@@ -64,9 +65,10 @@ export function checkA11yIncomplete(context: {
 }
 
 /**
- * この story で `incomplete` を合否へ入れるか。**addon のゲートと同じ条件を並べる。**
- * 出典は `@storybook/addon-a11y` の `dist/_browser-chunks/chunk-P5J2FJ2Z.js` で、
- * `shouldRunEnvironmentIndependent` の 4 条件と、その直後の `viewMode === "story"` である。
+ * この story で `incomplete` を合否へ入れるか。**addon のゲートに 1 条件足したもの**である。
+ * 出典は `@storybook/addon-a11y` の `shouldRunEnvironmentIndependent` の 4 条件と、その直後の
+ * `viewMode === "story"` (chunk のファイル名は版ごとに変わるので、シンボル名で grep する)。
+ * 足しているのは `test: "todo"` で、addon はこの値でも走る (違反を warning へ降ろすだけ)。
  *
  * ここが addon より緩いと、addon が走らなかった story を「レポートが無い」で落とす。
  * `manual` は addon パネルのトグルで、公式が案内する切り方である
@@ -118,8 +120,12 @@ export function collectUnexpectedIncomplete(incomplete: readonly axe.Result[]): 
  * その node を合否から外すか。
  *
  * `messageKey` で外すものは、その node が挙げた `messageKey` が**すべて**外す対象のときだけ
- * 落とす。axe は node 単位でしか報告しないので、外さないキー (`aria-valid-attr-value` の
- * `noId` など) が 1 つでも混ざっていたら、その node は部品側の信号を含んでいる (ADR-0026 の節 1)。
+ * 落とす。axe は node 単位でしか報告せず、1 つの node には同じルールの複数の check が載る
+ * (`aria-valid-attr-value` のルールは `aria-errormessage` / `aria-level` も `all` に持つ)。
+ * 外さないキーが 1 つでも混ざっていたら、その node は部品側の信号を含んでいる (ADR-0026 の節 1)。
+ *
+ * 同じ check の中では `messageKey` は 1 つしか立たない (`ariaValidAttrValueEvaluate` は
+ * 単一の変数へ代入して `this.data` を 1 回だけ呼ぶ)。混ざるのは別の check どうしである。
  */
 function isIgnoredNode(rule: string, node: axe.NodeResult): boolean {
   const ignored = IGNORED_INCOMPLETE.filter((item) => item.rule === rule);

@@ -25,7 +25,7 @@ story 側へ同じ基準を当てると落ちる。出るルールは 3 つで�
 | `aria-valid-attr-value` | `aria-haspopup` と `aria-controls` を併せ持つ trigger          |
 | `color-contrast`        | 要素の重なりと擬似要素で背景を決められない                     |
 
-件数は部品と story が増えれば動く。数え直すときは `src/test/a11y-story.ts` の `IGNORED_INCOMPLETE` を空にして storybook の project を回し、落ちた story と失敗メッセージのルール ID を読む。節 1 の「当たらなくなった行を消す」判定もこれで行う。
+件数は部品と story が増えれば動く。数え直すときは `src/test/a11y-story.ts` の `IGNORED_INCOMPLETE` を空にし、**story 側の `parameters.a11y.config.rules` も併せて外して** storybook の project を回し、落ちた story と失敗メッセージのルール ID を読む。後者を残すと、ルールごと止めた story は `incomplete` も出ないので数から漏れる。節 1 の除外行の棚卸しもこれで行う。
 
 ## incomplete は「判定できなかった」ではなく混成のバケツである
 
@@ -155,7 +155,7 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 
 節 1 の `IGNORED_INCOMPLETE` とは守備範囲が違う。あちらは `incomplete` だけを合否から外し、こちらの `config.rules` はルールごと止めるので `violations` も消える。**同じルール名が両方に現れても重複ではない。** 片方を消せるかは、消して落ちるかを見て決める (節 1 の数え直しと同じ手順)。
 
-実例は `combobox.stories.tsx` の `aria-hidden-focus` (mui/base-ui#5528 が open) と `table-skeleton.stories.tsx` の `empty-table-header`。前者は `violations` 側で、外すとその story だけが落ちる。
+ルール粒度の実例は `combobox.stories.tsx` の `aria-hidden-focus` (mui/base-ui#5528 が open) と `table-skeleton.stories.tsx` の `empty-table-header`。前者は `violations` 側で、外すとその story だけが落ちる。要素粒度の実例は `calendar.stories.tsx` の見出しの除外。
 
 ### 5. 緑は「測った」を意味しない
 
@@ -205,7 +205,7 @@ axe を通したことは「WCAG を満たした」を意味しない。2026-09-
 - `expectNoA11yViolations` は `incomplete` を見ない。ADR-0018 の animation 無効化は、逆の基準だった頃の回避策である。基準を変えた今、あの回避策が他の理由 (実イベントの規律、ADR-0013 / ADR-0015) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
 - `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (axe-core#4861 / #3486) 見直す
-- レポートが無いことを落とす条件は、addon が走る条件を写している。公式は「走ったか」を知る API を持たない (`storybook.js.org/docs/writing-tests/accessibility-testing` に記載なし)。addon が条件を足すと、こちらが偽陽性を出して知らせる
+- レポートが無いことを落とす条件は、addon が走る条件に `test: "todo"` を足したものである (todo は addon が走って warning へ降ろす形なので、合否へ入れない側で揃える)。公式は「走ったか」を知る API を持たない (`storybook.js.org/docs/writing-tests/accessibility-testing` に記載なし)。addon が条件を足すと、こちらが偽陽性を出して知らせる
 - `a11y-incomplete` の annotation は `.storybook/main.ts` の `addons` で `@storybook/addon-a11y` より前に置く。並びが変わると addon の結果を読めなくなり、「レポートが無い」で落ちる
 - `context.exclude` で外した要素は、その story ではどの規則の対象からも外れる。外した理由と出口は story 側のコメントが持つ
 - 名指しのリストは axe の出荷物と突き合わせられない。版が上がって `color-contrast` の分岐が変わっても音が鳴らないので、更新時に節 2 の 3 分岐を読み直す

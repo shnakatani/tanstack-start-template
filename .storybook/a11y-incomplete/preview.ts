@@ -4,7 +4,7 @@ import { checkA11yIncomplete } from "../../src/test/a11y-story";
 
 /**
  * `incomplete` を合否へ入れる。`addon-a11y` は `violations` の件数だけで合否を決めるので
- * (`dist/_browser-chunks/chunk-P5J2FJ2Z.js` の `hasViolations`)、これが無いと `color-contrast` が
+ * (同 addon の `hasViolations`。chunk のファイル名は版ごとに変わるのでシンボル名で grep する)、これが無いと `color-contrast` が
  * 背景を決められなくなったときに検査が緑のまま何も見なくなる (ADR-0026 の節 1)。
  *
  * 見るのは addon が `reporting` へ積んだ結果そのもので、axe は回し直さない。理由と、何を落として
