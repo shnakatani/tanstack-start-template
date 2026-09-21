@@ -153,7 +153,9 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 | ルール | `parameters.a11y.config.rules`    | その story のどの要素でも同じ理由で出る                  |
 | 要素   | `parameters.a11y.context.exclude` | 特定の要素だけが判定不能で、同じ規則を他の要素では見たい |
 
-実例は `combobox.stories.tsx` の `aria-hidden-focus` (mui/base-ui#5528 が open) と `table-skeleton.stories.tsx` の `empty-table-header`。
+節 1 の `IGNORED_INCOMPLETE` とは守備範囲が違う。あちらは `incomplete` だけを合否から外し、こちらの `config.rules` はルールごと止めるので `violations` も消える。**同じルール名が両方に現れても重複ではない。** 片方を消せるかは、消して落ちるかを見て決める (節 1 の数え直しと同じ手順)。
+
+実例は `combobox.stories.tsx` の `aria-hidden-focus` (mui/base-ui#5528 が open) と `table-skeleton.stories.tsx` の `empty-table-header`。前者は `violations` 側で、外すとその story だけが落ちる。
 
 ### 5. 緑は「測った」を意味しない
 
