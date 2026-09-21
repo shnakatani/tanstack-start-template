@@ -1,9 +1,7 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import { describe, expect, it } from "vite-plus/test";
 
-import { REPO_ROOT } from "../../lib/repo-root";
 import {
   contrastRatio,
   flattenLayers,
@@ -14,6 +12,7 @@ import {
   resolveSrgb,
   toHex,
 } from "./contrast";
+import { STYLES_CSS } from "./styles-css";
 
 // 実ファイルではなく固定の CSS で境界条件を試す。実ファイルの値を期待値にすると、
 // トークンを動かすたびに期待値の書き換えしか選択肢が無い検査になる
@@ -127,7 +126,7 @@ describe("parseTokenTable", () => {
   });
 
   it("実際の src/styles.css を読める", () => {
-    const css = readFileSync(join(REPO_ROOT, "src", "styles.css"), "utf8");
+    const css = readFileSync(STYLES_CSS, "utf8");
     const table = parseTokenTable(css);
     // 値ではなく「引けること」だけを固定する。値はトークンを動かすと変わる
     expect(table.light["--background"]).toBeDefined();

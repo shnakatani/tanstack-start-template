@@ -10,11 +10,10 @@
  */
 
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
-import { REPO_ROOT } from "../lib/repo-root.ts";
 import { formatReport, parseContrastArgs } from "./lib/contrast-cli.ts";
 import { measurePair, parseTokenTable } from "./lib/contrast.ts";
+import { STYLES_CSS } from "./lib/styles-css.ts";
 
 const USAGE = `使い方:
   mise run contrast -- --theme <light|dark> --bg <トークン> [--bg <トークン>...] --fg <トークン>
@@ -33,7 +32,7 @@ function main(): void {
     return;
   }
   const args = parseContrastArgs(argv);
-  const css = readFileSync(join(REPO_ROOT, "src", "styles.css"), "utf8");
+  const css = readFileSync(STYLES_CSS, "utf8");
   const measured = measurePair({
     table: parseTokenTable(css)[args.theme],
     backdrop: args.backdrop.map((layer) => layer.spec),
