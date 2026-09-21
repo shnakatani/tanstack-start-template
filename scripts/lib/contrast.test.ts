@@ -272,6 +272,37 @@ describe("parseLayerSpec", () => {
   it("百分率が数値でなければ throw する", () => {
     expect(() => parseLayerSpec("--input/half")).toThrow("0..100");
   });
+
+  it("スラッシュの後ろが空なら throw する", () => {
+    // `Number("")` は 0 なので、弾かないと書き損じが alpha 0 として通り、
+    // 比 1 が「コントラストが無い」として静かに報告される
+    expect(() => parseLayerSpec("--input/")).toThrow("0..100");
+  });
+
+  it("空白・指数表記・16 進は throw する", () => {
+    // どれも `Number` は読むが、書いた人の意図と一致しない。0x10 は Tailwind の
+    // 読み (10%) と実装の読み (16%) が食い違う
+    expect(() => parseLayerSpec("--input/ 0")).toThrow("0..100");
+    expect(() => parseLayerSpec("--input/1e2")).toThrow("0..100");
+    expect(() => parseLayerSpec("--input/0x10")).toThrow("0..100");
+  });
+
+  it("スラッシュが 2 つ以上あれば throw する", () => {
+    // 3 要素目以降を黙って捨てると、下地の 2 枚指定を 1 引数へ詰めた書き損じが通る
+    expect(() => parseLayerSpec("--input/30/40")).toThrow("1 つだけ");
+  });
+
+  it("小数と 0 詰めは通す", () => {
+    // 読み方が 1 つに定まる綴り。既存の `--input/30.5` を通す挙動も保つ
+    expect(parseLayerSpec("--input/00")).toEqual({ token: "--input", alpha: 0 });
+    expect(parseLayerSpec("--input/0.0")).toEqual({ token: "--input", alpha: 0 });
+    expect(parseLayerSpec("--input/30.5")).toEqual({ token: "--input", alpha: 0.305 });
+  });
+
+  it("100 を受け取る", () => {
+    // 上限そのものが通ること。`>= 100` にすると落ちる
+    expect(parseLayerSpec("--input/100")).toEqual({ token: "--input", alpha: 1 });
+  });
 });
 
 describe("measurePair", () => {
@@ -292,13 +323,43 @@ describe("measurePair", () => {
   });
 
   it("半透明の前景を下地へ合成してから比を取る", () => {
+    // 範囲だけを見る assert は、不透明時は正しく半透明時だけ狂うバグを見逃す
     const measured = measurePair({
       table: TABLE,
       backdrop: [parseLayerSpec("--white")],
       foreground: parseLayerSpec("--black/50"),
     });
-    expect(measured.ratio).toBeLessThan(21);
-    expect(measured.ratio).toBeGreaterThan(1);
+    expect(toHex(measured.foreground)).toBe("#808080");
+    expect(measured.ratio).toBeCloseTo(3.976653024912438, 10);
+  });
+
+  it("下地が白以外でも、その下地の上へ前景を合成する", () => {
+    // 合成先を白の決め打ちにしても、下地が白のケースだけでは落ちない
+    const measured = measurePair({
+      table: TABLE,
+      backdrop: [parseLayerSpec("--black")],
+      foreground: parseLayerSpec("--white/50"),
+    });
+    expect(toHex(measured.backdrop)).toBe("#000000");
+    expect(toHex(measured.foreground)).toBe("#808080");
+  });
+
+  it("下地を渡した順に下から重ねる", () => {
+    // 1 枚だけのケースでは順序を主張できない。逆順に渡すと、透けた面が
+    // いちばん下に来て `flattenLayers` が throw する
+    const measured = measurePair({
+      table: TABLE,
+      backdrop: [parseLayerSpec("--black"), parseLayerSpec("--white/50")],
+      foreground: parseLayerSpec("--black"),
+    });
+    expect(toHex(measured.backdrop)).toBe("#808080");
+    expect(() =>
+      measurePair({
+        table: TABLE,
+        backdrop: [parseLayerSpec("--white/50"), parseLayerSpec("--black")],
+        foreground: parseLayerSpec("--black"),
+      }),
+    ).toThrow("不透明");
   });
 
   it("表に無いトークンは throw する", () => {
@@ -309,5 +370,17 @@ describe("measurePair", () => {
         foreground: parseLayerSpec("--missing"),
       }),
     ).toThrow("--missing");
+  });
+
+  it("色でない宣言はトークン名を添えて throw する", () => {
+    // `TokenTable` には `--radius` のような色でない宣言も入る。colorjs.io の素の
+    // メッセージは値しか持たず、どの --bg が原因か分からない
+    expect(() =>
+      measurePair({
+        table: { ...TABLE, "--radius": "0.625rem" },
+        backdrop: [parseLayerSpec("--white")],
+        foreground: parseLayerSpec("--radius"),
+      }),
+    ).toThrow("--radius");
   });
 });

@@ -184,17 +184,31 @@ export function toHex(rgb: Rgb): string {
 /** 面 1 枚。`alpha` は 0..1 */
 export type LayerSpec = { readonly token: string; readonly alpha: number };
 
-/** `--input/30` の形を読む。`/30` は Tailwind の `bg-input/30` に合わせた百分率 */
+/**
+ * `--input/30` の形を読む。`/30` は Tailwind の `bg-input/30` に合わせた百分率。
+ *
+ * 受理する綴りを正規表現で明示する。`Number` に任せると `""` と `" 0"` が 0 になり、
+ * `1e2` と `0x10` も通る。書き損じが alpha 0 として通ると、比 1 が「コントラストが無い」
+ * として静かに報告される (2026-09-22 実測)。読み方が 1 つに定まる綴りだけを通す
+ */
 export function parseLayerSpec(spec: string): LayerSpec {
-  const [token, percent] = spec.split("/");
+  const parts = spec.split("/");
+  const [token, percent] = parts;
   if (token === undefined || !token.startsWith("--")) {
     throw new Error(`トークン名は -- で始める: ${spec}`);
+  }
+  if (parts.length > 2) {
+    throw new Error(`不透明度の指定は 1 つだけ書く: ${spec}`);
   }
   if (percent === undefined) {
     return { token, alpha: 1 };
   }
+  // `-` と指数表記と 16 進はここで落ちる。`00` と `0.0` は読み方が 1 つなので通す
+  if (!/^\d+(\.\d+)?$/.test(percent)) {
+    throw new Error(`不透明度は 0..100 で書く: ${spec}`);
+  }
   const value = Number(percent);
-  if (!Number.isFinite(value) || value < 0 || value > 100) {
+  if (value > 100) {
     throw new Error(`不透明度は 0..100 で書く: ${spec}`);
   }
   return { token, alpha: value / 100 };
@@ -225,6 +239,13 @@ function layerOf(table: TokenTable, spec: LayerSpec): Srgb {
   if (declared === undefined) {
     throw new Error(`宣言されていないトークン: ${spec.token}`);
   }
-  const resolved = resolveSrgb(declared);
+  let resolved: Srgb;
+  try {
+    resolved = resolveSrgb(declared);
+  } catch (cause) {
+    // 色でない宣言 (`--radius`) が表に入る。colorjs.io の素のメッセージは値しか
+    // 持たないので、どのトークンかをここで足す (`TokenTable` の docstring の契約)
+    throw new Error(`トークン ${spec.token} の値を色として解決できない: ${declared}`, { cause });
+  }
   return { rgb: resolved.rgb, alpha: resolved.alpha * spec.alpha };
 }
