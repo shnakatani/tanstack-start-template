@@ -20,7 +20,7 @@ export type Theme = keyof typeof THEME_SELECTOR;
  * 色でない宣言 (`--radius`) も入る。`:root` の宣言をそのまま読むためで、色に絞る判定は
  * 値を解決する側が持つ。
  */
-export type TokenTable = Readonly<Record<string, string>>;
+type TokenTable = Readonly<Record<string, string>>;
 
 /**
  * `:root` と `.dark` をトークンの表にする。
@@ -77,10 +77,10 @@ function escapeForRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export type Rgb = readonly [number, number, number];
+type Rgb = readonly [number, number, number];
 
 /** sRGB の 0..1 の成分と alpha。整数へ丸めない */
-export type Srgb = { readonly rgb: Rgb; readonly alpha: number };
+type Srgb = { readonly rgb: Rgb; readonly alpha: number };
 
 /**
  * CSS の色を sRGB へ解決する。

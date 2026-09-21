@@ -21,12 +21,12 @@ import {
  * `--input/0.0000001` が `--input/1e-7` という再パースできない綴りになる (2026-09-22 実測)。
  * 測定は綴りを読まないので、測定層の `LayerSpec` ではなくこちらが持つ
  */
-export type SourcedLayer = {
+type SourcedLayer = {
   readonly spec: LayerSpec;
   readonly source: string;
 };
 
-export type ContrastArgs = {
+type ContrastArgs = {
   readonly theme: Theme;
   readonly backdrop: readonly SourcedLayer[];
   readonly foreground: SourcedLayer;

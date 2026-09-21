@@ -42,11 +42,6 @@ describe("parseContrastArgs", () => {
     expect(() => parseContrastArgs([...BASE, "--fg", "--background"])).toThrow("--fg は 1 つだけ");
   });
 
-  it("余分な位置引数は「知らない引数」で throw する", () => {
-    // 位置で数えると偶数位置に落ちたときだけ「値がない」と誤誘導する
-    expect(() => parseContrastArgs([...BASE, "extra"])).toThrow("知らない引数");
-  });
-
   it("末尾のフラグに値が無ければ throw する", () => {
     expect(() => parseContrastArgs([...BASE, "--bg"])).toThrow("--bg に値がない");
   });
@@ -55,9 +50,12 @@ describe("parseContrastArgs", () => {
     expect(() => parseContrastArgs(["--bogus", "x", ...BASE])).toThrow("知らない引数: --bogus");
   });
 
-  it("知らないフラグが末尾に来ても「知らない引数」で throw する", () => {
-    // 値欠落の判定を先に置くと、存在しないフラグへ値を足せと誘導する
-    expect(() => parseContrastArgs([...BASE, "--bogus"])).toThrow("知らない引数: --bogus");
+  it("末尾の未知トークンは「値がない」ではなく「知らない引数」で throw する", () => {
+    // 値欠落の判定を先に置くと、存在しないフラグへ値を足せと誘導する。位置引数と未知フラグ
+    // (`--` で始まるか) で経路は分かれない。どちらも同じ allowlist で落ちる
+    for (const extra of ["extra", "--bogus"]) {
+      expect(() => parseContrastArgs([...BASE, extra])).toThrow("知らない引数");
+    }
   });
 
   it("--theme が light でも dark でもなければ throw する", () => {
