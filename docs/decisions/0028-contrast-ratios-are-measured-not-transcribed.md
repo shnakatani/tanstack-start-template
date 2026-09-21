@@ -66,7 +66,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 検査ではないので `.claude/rules/testing.md` の検査の表には行を足さない。テストは `scripts/lib/` を持つ既存の `scripts-tools` project にそのまま載る。
 
-色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを内部 API 経由で呼ぶ形は採らない。axe の `flattenColors` は合成後を 8bit へ丸める (`axe.js` の `Math.round`)。本 ADR が決めた「丸めない」と両立しない。`parseString` も `none` を throw せず通すため (`rgb(none 0 0)` は成分が null のまま輝度計算で 0 と読まれる。2026-09-22 実測)、値を解決できない入力を止められなくなる。
+色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを内部 API 経由で呼ぶ形は採らない。axe の `flattenColors` は合成後を 8bit へ丸める (`axe.js` の `Math.round`)。本 ADR が決めた「丸めない」と両立しない。`parseString` は alpha の `none` を alpha 1 として黙って通す (`rgb(0 0 0 / none)` が不透明になる。2026-09-22 実測)。本 ADR の変換器はこれを throw で止めている。
 
 ### 2. 対の一覧を持たない
 
