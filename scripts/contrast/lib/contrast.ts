@@ -88,15 +88,21 @@ type Srgb = { readonly rgb: Rgb; readonly alpha: number };
  * `toGamut` の形は axe-core 4.13.0 の `Color.parseString` に合わせている。合わせないと、
  * sRGB の外にある oklch で負の成分が残り、axe と別の比が出る (dequelabs/axe-core#4908)。
  *
- * 丸めない。丸めるのはブラウザが画面へ出すときで、値を選ぶための計算には要らない。
+ * ここでは丸めない。面を重ねる前に丸めると層ごとに誤差が乗る。8bit へ落とすのは重ね終わった
+ * あとの 1 回だけで、`measurePair` の `toDisplayed` が持つ
  */
 export function resolveSrgb(value: string): Srgb {
   const color = new Color(value).toGamut({ space: "srgb", method: "clip" }).to("srgb");
   const { r, g, b } = color;
   const alpha = readAlpha(color);
   if (r === null || g === null || b === null || alpha === null) {
-    // CSS Color 4 の `none`。別の色空間へ変換すると 0 に解決されるが、sRGB のまま渡された
-    // `rgb(none 0 0)` では null が残る。0 として扱うと存在しない比が出る
+    // CSS Color 4 の欠けた成分。oklch や lab から sRGB へ変換する経路では 0 に解決されて
+    // ここへ来ない (`oklch(0.5 none 180)` は灰色になる。2026-09-22 実測)。残るのは sRGB の
+    // まま渡された `rgb(none 0 0)` と、空間変換が触らない alpha の `/ none` である
+    //
+    // 仕様は欠けた成分を 0 として扱えと定める (CSS Color 4 の Missing color components)。
+    // ここで止めるのは、`src/styles.css` にこの綴りが 1 つも無く、現れたときは書き損じか
+    // 上流の変更だからである
     throw new Error(`none を含む色はコントラストを計算できない: ${value}`);
   }
   // `toGamut` は oklch 空間で clip するため、sRGB へ戻すと成分が -1e-17 のように範囲の外へ
@@ -172,11 +178,11 @@ function toLinear(channel: number): number {
 }
 
 /**
- * WCAG 2.2 の contrast ratio。丸めない。
+ * WCAG 2.2 の contrast ratio。出た比は丸めない。
  *
- * 丸めるなと書いているのは WCAG 2.2 本体ではなく Understanding SC 1.4.3 の地の文である
- * (「4.499:1 would not meet the 4.5:1 threshold」)。本体には丸めの記述が無いことも
- * 2026-09-22 に確認した
+ * 丸めるなと書いているのは Understanding SC 1.4.3 の地の文で、対象は比であって色ではない
+ * (「4.499:1 would not meet the 4.5:1 threshold」)。色のほうは本体の定義が 8bit を要求する
+ * ので、`measurePair` が `toDisplayed` を通してから渡す
  */
 export function contrastRatio(a: Rgb, b: Rgb): number {
   const lumA = relativeLuminance(a);
@@ -185,11 +191,24 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
 }
 
 /**
- * 画面へ出るときの色。
+ * 画面に出る 8bit の色へ落とす。
  *
- * axe がこの丸めた色を読むのは半透明を合成する経路だけである。不透明な前景は
- * `getContrast` (`axe.js:25287`) が合成を飛ばすので、生値のまま輝度へ入る
+ * WCAG 2.2 の relative luminance は `RsRGB = R8bit/255` と定義しており、輝度の式へ入れる色は
+ * 8bit で表されたものである。丸めずに測ると定義から外れる。
+ *
+ * 丸めるのは重ね終わった後の 1 回だけにする。ブラウザは面を float で重ねてから 1 回
+ * ラスタライズするので、画面に出るのはその 1 回ぶんの色である。axe は `Color` が内部で
+ * 8bit を持つため層ごとに丸まるが、これは実装の都合で、定義が要求する形ではない
  */
+function toDisplayed(rgb: Rgb): Rgb {
+  return [round8(rgb[0]), round8(rgb[1]), round8(rgb[2])];
+}
+
+function round8(channel: number): number {
+  return Math.round(channel * 255) / 255;
+}
+
+/** 8bit へ落とした色を `#rrggbb` にする。`toDisplayed` を通した値を渡す */
 export function toHex(rgb: Rgb): string {
   return `#${rgb
     .map((channel) =>
@@ -238,7 +257,8 @@ export function parseLayerSpec(spec: string): LayerSpec {
 /**
  * 測った 1 対。
  *
- * `backdrop` は下地を畳んだ後の色、`foreground` は下地の上へ載せた後の色である。
+ * `backdrop` は下地を畳んだ後の色、`foreground` は下地の上へ載せた後の色で、どちらも
+ * 画面に出る 8bit へ落としてある (`toDisplayed`)。
  * 半透明の前景は下地と混ざった色になるので、出力へ載せるときは「画面に出る色」として
  * 読ませる。下地が不透明 1 枚のときの `backdrop` は、その宣言を sRGB へ解決した値そのもの
  * であって、合成は挟まらない
@@ -270,11 +290,12 @@ export function measurePair(args: {
     // 持たない関数がトークン名を抱えることになる
     throw new Error(`いちばん下の下地は不透明でなければならない: ${bottomSpec.token}`);
   }
-  const backdrop = flattenLayers(
+  const blended = flattenLayers(
     bottom.rgb,
     restSpecs.map((spec) => layerOf(args.table, spec)),
   );
-  const foreground = flattenLayers(backdrop, [layerOf(args.table, args.foreground)]);
+  const backdrop = toDisplayed(blended);
+  const foreground = toDisplayed(flattenLayers(blended, [layerOf(args.table, args.foreground)]));
   return { backdrop, foreground, ratio: contrastRatio(foreground, backdrop) };
 }
 

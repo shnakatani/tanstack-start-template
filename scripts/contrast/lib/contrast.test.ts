@@ -319,14 +319,18 @@ describe("measurePair", () => {
   });
 
   it("半透明の前景を下地へ合成してから比を取る", () => {
-    // 範囲だけを見る assert は、不透明時は正しく半透明時だけ狂うバグを見逃す
+    // 範囲だけを見る assert は、不透明時は正しく半透明時だけ狂うバグを見逃す。
+    //
+    // 白の上の黒 50% は合成すると成分がちょうど 0.5 になる。8bit へ落とすと 128/255 で、
+    // 比もその色から出る。丸めずに 0.5 のまま比を取ると 3.976653024912438 になり、
+    // `#808080` が指す色と比が別物になる
     const measured = measurePair({
       table: TABLE,
       backdrop: [parseLayerSpec("--white")],
       foreground: parseLayerSpec("--black/50"),
     });
     expect(toHex(measured.foreground)).toBe("#808080");
-    expect(measured.ratio).toBeCloseTo(3.976653024912438, 10);
+    expect(measured.ratio).toBeCloseTo(3.9494396480491156, 10);
   });
 
   it("下地が白以外でも、その下地の上へ前景を合成する", () => {

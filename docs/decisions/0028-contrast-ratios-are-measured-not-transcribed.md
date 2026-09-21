@@ -67,10 +67,23 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 検査ではないので `.claude/rules/testing.md` の検査の表には行を足さない。テストは `scripts/lib/` を持つ既存の `scripts-tools` project にそのまま載る。
 
-色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを内部 API 経由で呼ぶ形は、次の 2 点で採らない。
+色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを `axe.commons.color` 経由で呼ぶ形は、次の 3 点で採らない。
 
-- axe の `flattenColors` は合成後を 8bit へ丸める (`axe.js` の `Math.round`)。この ADR が決めた「丸めない」と両立しない
-- axe の `parseString` は alpha の `none` を alpha 1 として黙って通す (`rgb(0 0 0 / none)` が不透明になる。2026-09-22 実測)。この ADR の変換器はこれを throw で止めている
+| 採らない理由                                                                                                                                           | 出典                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| `axe.commons` は `axe.run` の外で呼ぶ前提の名前空間ではない。外で安全なものは `axe.utils` 側だとメンテナが定義している                                 | dequelabs/axe-core#2731                    |
+| colorjs は `axe.js` へインライン展開されており、パッケージマネージャで差し替える手段が無い。axe 自身が版を上げたいが Prototype.js との衝突で戻している | dequelabs/axe-core#5313 と PR #4429・#4464 |
+| その版差が `none` の扱いに出る。同梱の 0.4.3 は `rgb(0 0 0 / none)` を alpha 1 で通す (2026-09-22 実測)。CSS Color 4 は欠けた成分を 0 と定める         | dequelabs/axe-core#5309 と #4269           |
+
+3 点目はこのリポジトリに効く。#5309 は Tailwind が無彩色へ吐く `none` で color-contrast が無言で飛ぶ報告で、このリポジトリのトークンも oklch で書かれている。
+
+0.7.1 は同じ入力を解決する。`oklch(0.5 none 180)` は灰色になり、null が残るのは sRGB のまま渡された `rgb(none 0 0)` と alpha の `/ none` だけである (2026-09-22 実測)。つまり axe が飛ばす綴りをこの変換器は測れる。
+
+比を出す前に、重ね終わった色を 8bit へ落とす。WCAG 2.2 の relative luminance は `RsRGB = R8bit/255` と定義しており、輝度の式へ入れるのは 8bit で表された色である。丸めずに測ると定義から外れる。
+
+丸めるのは重ね終わった後の 1 回だけにする。ブラウザは面を float で重ねてから 1 回ラスタライズするので、画面に出るのはその 1 回ぶんの色である。axe は `Color` が内部で 8bit を持つため層ごとに丸まるが、これは実装の都合で、定義が要求する形ではない。
+
+Understanding SC 1.4.3 の「the computed values should not be rounded」は比の丸めを禁じる文で、色には掛からない。出た比は丸めない。
 
 ### 2. 対の一覧を持たない
 
@@ -80,13 +93,13 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 比を計算できない入力を黙って通さない。silent に通すと、画面に存在しない比が文書へ写る。
 
-| 入力                                                                                      | 扱い  |
-| ----------------------------------------------------------------------------------------- | ----- |
-| `:root` / `.dark` の本体に `{` がある (入れ子、閉じ括弧が行頭に無い、値に `{` を含む宣言) | throw |
-| セレクタが行頭に無い (`@media` が外から `:root` を包む形)                                 | throw |
-| `none` を含む色 (`rgb(none 0 0)`)                                                         | throw |
-| 不透明度が十進数でない綴り (`--input/.5` / `--input/1e2`)                                 | throw |
-| いちばん下の下地が不透明でない                                                            | throw |
+| 入力                                                                                                                   | 扱い  |
+| ---------------------------------------------------------------------------------------------------------------------- | ----- |
+| `:root` / `.dark` の本体に `{` がある (入れ子、閉じ括弧が行頭に無い、値に `{` を含む宣言)                              | throw |
+| セレクタが行頭に無い (`@media` が外から `:root` を包む形)                                                              | throw |
+| sRGB のまま `none` が残る色 (`rgb(none 0 0)` と alpha の `/ none`。oklch や lab の `none` は変換で 0 に解決されて通る) | throw |
+| 不透明度が十進数でない綴り (`--input/.5` / `--input/1e2`)                                                              | throw |
+| いちばん下の下地が不透明でない                                                                                         | throw |
 
 ### 4. 動く数値は落とし、論証を兼ねる数値は残す
 
@@ -145,6 +158,7 @@ ADR-0024 の節 5 が禁じているのは、比を計算するコードを stor
 | ブラウザの canvas で測る             | 1x1 canvas へ塗って `getImageData` で読む            | 却下     | 先行例ゼロ。Brave と Firefox が読み取り結果へノイズを混ぜるため chromium 固定に依存する                 |
 | トークン定義に要求比を持たせ段を解く | Material 型                                          | 却下     | 生成の仕組みごと持つことになり、上流生成物を土台とする ADR-0024 の節 1 と衝突する                       |
 | 現状維持                             |                                                      | 却下     | 4 件目の陳腐化が実在した                                                                                |
+| axe の算法へ寄せる                   | `axe.commons.color` を使うか、その算法を再現する     | 部分採用 | 8bit へ落とす点は定義どおりなので採る。層ごとの丸め・ブレンドモード・影・DOM のスタックは採らない       |
 
 `@asamuzakjp/css-color` も候補に挙がった。不透明色では Chrome と完全に一致するが、`color-mix` を含む値では canvas の読み取りと一致しない。合成を自前で持つ点は `colorjs.io` と変わらず、`axe-core` が採用している側を選んだ。
 
@@ -155,14 +169,20 @@ ADR-0024 の節 5 が禁じているのは、比を計算するコードを stor
 - `mise run verify` は変わらない。足したテストは既存の `scripts-tools` project に載る
 - `colorjs.io` の版が上がると値が変わりうる。`toGamut` の `method: "clip"` は axe-core 4.13.0 の `Color.parseString` に合わせたもので、axe 側が変えたら追随を検討する
 - 値に `{` を含む宣言 (`--shadow-preset: { x: 1px };`) を `:root` / `.dark` へ書くと、そのテーマの表ごと throw してどの対も測れなくなる。入れ子のブロックと区別していないためで、silent には通さないが正しい宣言を弾く
-- axe の報告値とは一致しない。axe は要素のスタックを畳み、合成後を整数 sRGB へ丸めてから測るので、同じ対でも下 2 桁がずれる。2026-09-22 に実トークン 12 対で丸めない比と 8bit へ丸めた比を突き合わせた差は 0.0024〜0.0216 だった
+- 同じ色を渡せば axe の `getContrast` と比が一致する。2026-09-22 に実トークン 5,000 対で突き合わせて差はゼロだった
+- 残る違いは丸める位置である。axe は `Color` が 8bit を持つため層ごとに丸め、この変換器は重ね終わった後の 1 回だけ丸める。同じ 5,000 対のうち 5 対で SC の判定が割れた
+- 画面の比と一致するとは限らない。axe はブラウザで `mix-blend-mode`・`text-shadow`・祖先の `opacity`・要素の重なりまで畳むが、この変換器は `--bg` で渡された面だけを重ねる
 - 単体テストが固定するのは axe の `getContrast` との一致で、要素のスタックを畳んだ後の報告値は node では再現できない
 - 数値を落とした箇所は、主張が正しいかを人が確かめる契機を失う。落とすのは主張が残る箇所に限る
 
 ## 出典
 
 - WCAG 2.2 relative luminance の定義 (Note 2 が 0.03928 からの差し替えを説明): https://www.w3.org/TR/WCAG22/#dfn-relative-luminance
-- Understanding SC 1.4.3 (計算値を丸めるなの note): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+- Understanding SC 1.4.3 (計算値を丸めるなと書いている地の文。WCAG 2.2 本体に記述は無い): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+- CSS Color 4 の欠けた成分 (「a missing component behaves as a zero value」): https://www.w3.org/TR/css-color-4/#missing
+- axe.commons と axe.utils の線引き: https://github.com/dequelabs/axe-core/issues/2731
+- axe-core が同梱する colorjs の版を上げられずにいること: https://github.com/dequelabs/axe-core/issues/5313
+- 同梱版で `none` を含む色の color-contrast が無言で飛ぶ報告: https://github.com/dequelabs/axe-core/issues/5309
 - CSS Color 4 の色の解決 (oklch の computed value は oklch のまま): https://www.w3.org/TR/css-color-4/#resolving-color-values
 - axe-core が colorjs.io を同梱すること: `node_modules/axe-core/LICENSE-3RD-PARTY.txt`
 - axe-core がガマット外の oklch をブラウザに合わせた PR: https://github.com/dequelabs/axe-core/pull/4908
