@@ -192,6 +192,7 @@ lint は custom `<Button>` の中身を見ないため機械強制がない。�
 ### 色とコントラスト
 
 - コントラストは本文テキスト 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark mode は light と別に検算する (opacity variant は背景合成で比率が変わる)
+- トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0024)
 - 色だけで情報を伝えない。アイコンやテキストを併用し、併用先が識別に寄与しないなら `sr-only` で補う
 - ナビゲーションは landmark (`nav` 要素、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける
 
