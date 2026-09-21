@@ -20,11 +20,8 @@ import {
 import { resolveColorToken } from "@/test/resolve-color-token";
 import { waitForAnimations } from "@/test/wait-for-animations";
 
+// トークンが未定義なら resolveColorToken が投げる。ここで存在を見張り直さない
 function getSidebarAccentColors() {
-  const rootStyles = getComputedStyle(document.documentElement);
-  expect(rootStyles.getPropertyValue("--sidebar-accent").trim()).not.toBe("");
-  expect(rootStyles.getPropertyValue("--sidebar-accent-foreground").trim()).not.toBe("");
-
   return {
     backgroundColor: resolveColorToken("--sidebar-accent"),
     color: resolveColorToken("--sidebar-accent-foreground"),

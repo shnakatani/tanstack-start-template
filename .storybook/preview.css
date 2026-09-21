@@ -7,7 +7,7 @@
    tailwindcss.com/docs/preflight「Disabling Preflight」
 
    代償として Tailwind 既定 theme の未定義トークンが一覧に混ざる
-   (2026-09-20 実測: Radius に --radius-3xl / --radius-xs、Typography に --font-serif と
+   (2026-09-20 実測: Radius に --radius-xs、Typography に --font-serif と
    --font-weight-* の 6 件。Colors は --color-*: initial が効いていて増えない) */
 @import "../src/styles.css" theme(static);
 

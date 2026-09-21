@@ -9,6 +9,10 @@
  * 解決は probe 要素をツリーへ挿して行う。`color` へ `var(...)` を置いて `getComputedStyle`
  * で読み戻すと、正規化と `color-mix()` の展開をブラウザ自身にやらせられる。
  *
+ * 未定義のトークンでは投げる。`var()` の置換に失敗した `color` は `unset` 相当になり、
+ * 継承した祖先の色がそのまま返る。例外も警告も出ないので、綴り違いやトークンのリネームを
+ * 取りこぼしても、テストは別の色を比べたまま緑で通る。
+ *
  * @param token `--destructive` のようなカスタムプロパティ名
  * @param scope probe を挿す親。テーマは祖先の class で決まるので、`.dark` の配下を測るときは
  *   その部分木の要素を渡す。既定の `document.body` は `<html>` の class を見る
@@ -18,7 +22,11 @@ export function resolveColorToken(token: string, scope: Element = document.body)
   probe.style.color = `var(${token})`;
   scope.append(probe);
   try {
-    return getComputedStyle(probe).color;
+    const styles = getComputedStyle(probe);
+    if (styles.getPropertyValue(token).trim() === "") {
+      throw new Error(`カスタムプロパティ ${token} が ${scope.nodeName} の配下で解決できない`);
+    }
+    return styles.color;
   } finally {
     probe.remove();
   }

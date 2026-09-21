@@ -14,10 +14,16 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
  * story の実行経路には関わらない。
  *
  * light と dark は project が分かれており (`vitest.config.ts`)、同じ story が両方で走る。
- * 片方でしか現れない不透明度も両方で描かれるが、余分に通るだけで害はない。
+ * 片方でしか現れない不透明度も両方で描かれる。2026-09-21 時点ではどちらのテーマでも 4.5:1 を
+ * 満たすが、いちばん狭いのは light 側で描いた `bg-destructive-surface/30` の 4.81 で、
+ * トークンを動かすと画面に存在しない対で落ちうる。そのときは落ちた対がそのテーマで現れるかを
+ * 先に確かめる。
  *
  * 1 つの面に複数の文字色が乗る組み合わせ (`bg-muted/50`) は、文字色ごとに 1 行を置く。
  * 面だけを描いても、その上に何が乗るかで通るか割るかが変わる。
+ *
+ * 対象は下地と合成される面 (`/N`) に限る。不透明な対はトークン同士の比がそのまま出るので、
+ * 合成を確かめるこの story の役目には当たらない。
  *
  * 一覧は手で保つ。対象を数え直すコマンド:
  *
@@ -26,6 +32,9 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
  *   src/components/ui src/components/parts src/components/action --include='*.tsx' \
  *   | grep -v stories | sort | uniq -c
  * ```
+ *
+ * 出力のうち `bg-black/10` は dialog / alert-dialog / sheet の scrim で、`fixed inset-0` の面に
+ * 文字が載らないため行を持たない。それ以外は下の 2 つの story がすべて描く。
  */
 const meta = {
   parameters: { layout: "padded" },

@@ -22,6 +22,8 @@ const UI_DIR = join(REPO_ROOT, "src", "components", "ui");
 const EXTERNAL_REGISTRY_FILES: Record<string, string> = {
   // sidebar の依存として CLI が出力する hook
   "use-mobile.ts": "src/hooks/use-mobile.ts",
+  // init がテーマを書き込む stylesheet。トークンの乖離もこの baseline との差分で判別する (ADR-0024)
+  "styles.css": "src/styles.css",
 };
 
 /** ui 直下に置かれる、コンポーネントでないディレクトリ */
