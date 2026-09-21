@@ -45,6 +45,8 @@ import { describe, it, expect, vi } from "vite-plus/test";
 
 ## a11y の検査は tag で分ける
 
+判断の根拠と棄却した選択肢は ADR-0027 が持つ。
+
 - `axe` を回して「アクセシブルか」を問うテストは `it(名前, { tags: ["a11y"] }, ...)` を付ける。単独実行は `vp test run --tagsFilter a11y`、除外は `--tagsFilter '!a11y'`
 - 専用の project を足さない。分けたいのは関心と単独実行で、runner の設定は挙動テストと同じ。project を足すとそのぶん描画が増える (vitest 公式 test-tags の "When to reach for tags")
 - tag の定義は `vitest.browser.config.ts` の `test.tags`。`strictTags` が既定で有効なので、定義に無い tag を書くとエラーで落ちる

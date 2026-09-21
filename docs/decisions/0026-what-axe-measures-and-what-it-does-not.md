@@ -2,20 +2,20 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0004 (静的 lint の構成) / ADR-0017 (a11y 検査の対象) / ADR-0018 (incomplete に噛まれた事故と回避策) / ADR-0022 (story を検査の単位にする) / ADR-0024 (1.4.11 を axe が持たない) / ADR-0025 (`::placeholder` を axe が誤って評価する)
+- 関連: ADR-0027 (a11y の検査を tag で分ける) / ADR-0004 (静的 lint の構成) / ADR-0017 (a11y 検査の対象) / ADR-0018 (incomplete に噛まれた事故と回避策) / ADR-0022 (story を検査の単位にする) / ADR-0024 (1.4.11 を axe が持たない) / ADR-0025 (`::placeholder` を axe が誤って評価する)
 
 ## Context
 
 同じ axe を 2 つの層が回しており、**合否の基準が食い違っている**。理由はどこにも書かれていない。
 
-| 層                             | きっかけ                  | 合否の基準                                 | 対象                     |
-| ------------------------------ | ------------------------- | ------------------------------------------ | ------------------------ |
-| `addon-a11y` (`test: "error"`) | 全 story × light dark     | `violations` のみ                          | story を書いた部品       |
-| `expectNoA11yViolations`       | ブラウザテスト 3 ファイル | `violations` + `incomplete` + `passes > 0` | テストに書いたケースだけ |
+| 層                             | きっかけ                       | 合否の基準                                 | 対象                     |
+| ------------------------------ | ------------------------------ | ------------------------------------------ | ------------------------ |
+| `addon-a11y` (`test: "error"`) | 全 story × light dark          | `violations` のみ                          | story を書いた部品       |
+| `expectNoA11yViolations`       | `src/routes/` のブラウザテスト | `violations` + `incomplete` + `passes > 0` | テストに書いたケースだけ |
 
 `test: "error"` は既定ではない。`addon-a11y` の既定は `test: "todo"` で、違反が出ても warning に留まり合否へ入らない (同 addon の `parameters`)。`.storybook/preview.tsx` はこれを意図的に上げてあり、story の違反で落ちるのはその上書きの結果である。
 
-後者は 2026-09-21 時点で緑だが、それは 3 ファイルがたまたま `incomplete` を出さないためである。**この基準には既に噛まれている。** ADR-0018 は、確認ダイアログを閉じた直後の検査が Base UI の focus guard を `aria-hidden-focus` の `incomplete` として拾い、CI でだけ落ちた事故の記録である。そのとき基準を見直さず、animation を無効にする回避策を足して緑へ戻した。
+後者は 2026-09-21 時点で緑だが、それはそのテストがたまたま `incomplete` を出さないためである。**この基準には既に噛まれている。** ADR-0018 は、確認ダイアログを閉じた直後の検査が Base UI の focus guard を `aria-hidden-focus` の `incomplete` として拾い、CI でだけ落ちた事故の記録である。そのとき基準を見直さず、animation を無効にする回避策を足して緑へ戻した。
 
 story 側へ同じ基準を当てると落ちる。出るルールは 3 つで、いずれも部品の構造から来る。
 
