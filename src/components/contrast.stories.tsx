@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 
 /**
  * 既定の story が描かない tint の組み合わせを実テキストとして描き、`parameters.a11y.test` の
- * axe に判定させる (ADR-0024 の節 5)。値を JS で計算しない。ブラウザは sRGB 外の `oklch()` を
- * clip し alpha を下地と合成するため、計算した比は描画と一致しない (ADR-0022 の節 6-1)。
+ * axe に判定させる (ADR-0024 の節 5)。この story は比を計算しない。計算を持たせると、描画では
+ * なく計算のほうを検査することになり、story が描いた色と判定がずれても気づけない。比を数で
+ * 知りたいときは `mise run contrast` を使う (ADR-0028)。
  *
  * hover を実際に当てる形は採らない。`transition-colors` が効いている間は下地と混ざった途中の
  * 色が出ており、axe がそこを測ると最終的な配色には存在しない比が報告される。代わりに hover で

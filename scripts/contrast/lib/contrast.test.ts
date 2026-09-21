@@ -103,6 +103,31 @@ describe("parseTokenTable", () => {
     expect(() => parseTokenTable(wrapped)).toThrow("行頭");
   });
 
+  it("規則が無いときと、在るのに行頭でないときを言い分ける", () => {
+    // 判別を「その綴りが在るか」で行うと、`@custom-variant dark (&:is(.dark *))` の中の
+    // `.dark` に当たり、規則を消しても「字下げされている」と出て探す場所を誤らせる
+    const variant = "@custom-variant dark (&:is(.dark *));\n";
+    const root = ":root {\n  --background: oklch(1 0 0);\n}\n";
+    expect(() => parseTokenTable(`${variant}${root}`)).toThrow("セレクタが見つからない");
+    expect(() =>
+      parseTokenTable(`${variant}${root}  .dark {\n  --background: oklch(0 0 0);\n}\n`),
+    ).toThrow("行頭");
+  });
+
+  it("宣言として読めない行があれば throw する", () => {
+    // 黙って捨てると、`.dark` の取りこぼしがその名前だけ light の値のまま残り
+    // (`parseTokenTable` が light へ重ねる)、dark に存在しない色の比が出る
+    const css = `:root {
+  --background: oklch(1 0 0);
+}
+.dark {
+  color: red;
+  --background: oklch(0 0 0);
+}
+`;
+    expect(() => parseTokenTable(css)).toThrow("宣言として読めない");
+  });
+
   it("@media 内と行頭の両方に :root があれば行頭側を読む", () => {
     const both = `@media (prefers-contrast: more) {
   :root {

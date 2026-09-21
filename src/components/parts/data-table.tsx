@@ -38,7 +38,15 @@ interface DataTableProps<TData extends RowData> extends Pick<
 
 /**
  * busy 行の半透明。`opacity-50` は本文テキストのコントラストを WCAG 1.4.3 の 4.5:1 より
- * 下へ落とすため採らない (ADR-0016)。比は `mise run contrast` で測る (ADR-0028)
+ * 下へ落とすため採らない (ADR-0016)。
+ *
+ * 当たる対は `--background` の上の `--foreground`。行の不透明度がそのまま文字へ掛かるので、
+ * 不透明度を綴りへ移して測る。
+ *
+ * ```
+ * mise run contrast -- --theme light --bg '--background' --fg '--foreground/50'
+ * mise run contrast -- --theme light --bg '--background' --fg '--foreground/60'
+ * ```
  */
 const BUSY_ROW_CLASS = "opacity-60";
 

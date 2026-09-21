@@ -48,9 +48,14 @@ function parseBlock(css: string, selector: string): TokenTable {
   const body = found?.[1];
   if (body === undefined) {
     // セレクタが在るのに当たらない形と、本当に無い形を区別する。区別しないと
-    // 調べ始める場所を誤らせる
+    // 調べ始める場所を誤らせる。
+    //
+    // 判別は「その綴りが本文のどこかに在るか」ではなく「その綴りで始まる規則が在るか」で
+    // 行う。前者だと `@custom-variant dark (&:is(.dark *))` (`src/styles.css`) の中の
+    // `.dark` に当たり、規則を消しても「字下げされている」と出て探す場所を誤らせる
+    const asRule = new RegExp(`(^|[\\s},])${escapeForRegExp(selector)}\\s*\\{`).test(source);
     throw new Error(
-      source.includes(selector)
+      asRule
         ? `行頭のセレクタとして見つからない (字下げされているか、閉じ括弧が行頭にない): ${selector}`
         : `セレクタが見つからない: ${selector}`,
     );
@@ -64,11 +69,17 @@ function parseBlock(css: string, selector: string): TokenTable {
   const table: Record<string, string> = {};
   // 宣言は複数行にまたがる (`--destructive-surface`)。改行を潰してから ; で割る
   for (const declaration of body.replace(/\s+/g, " ").split(";")) {
+    if (declaration.trim() === "") {
+      continue;
+    }
     const parsed = /^\s*(--[a-z0-9-]+)\s*:\s*(.+)/i.exec(declaration);
     const [, name, value] = parsed ?? [];
-    if (name !== undefined && value !== undefined) {
-      table[name] = value.trim();
+    if (name === undefined || value === undefined) {
+      // 読めない宛先を黙って捨てない。`.dark` で 1 つ捨てると、その名前は light の値の
+      // まま残り (`parseTokenTable` が light へ重ねる)、dark に存在しない色の比が出る
+      throw new Error(`宣言として読めない: ${selector} の "${declaration.trim()}"`);
     }
+    table[name] = value.trim();
   }
   return table;
 }

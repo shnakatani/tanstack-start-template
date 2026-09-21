@@ -17,9 +17,12 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 文書とソースに書かれた比は次で数え直せる。
 
 ```bash
-grep -rnE '[0-9]+\.[0-9]+\s*(:|対)\s*1' --include='*.md' --include='*.ts' --include='*.tsx' \
-  --include='*.css' docs/ src/ scripts/ .claude/
+grep -rnE '\b[0-9]{1,2}\.[0-9]{2}\b|[0-9]+(\.[0-9]+)?\s*[:対]\s*1\b' \
+  --include='*.md' --include='*.ts' --include='*.tsx' --include='*.css' \
+  docs/ src/ scripts/ .claude/
 ```
+
+比は `4.5:1` とも `4.21` とも書かれるので、`:1` を要求すると後者を取りこぼす。代わりに 2 桁小数も拾うため、`oklch()` の成分 (`oklch(0.97 0.014 254.604)`) が混ざる。出た行は読んで分ける。
 
 出てくる数値は 3 種類に分かれ、扱いが違う。
 
@@ -56,6 +59,8 @@ Primer が数値を書き写さない形に到達していることと、`.claud
 | 引数の解釈と出力行の組み立て                   | `scripts/contrast/lib/contrast-cli.ts`      |
 | 同上の単体テスト                               | `scripts/contrast/lib/contrast-cli.test.ts` |
 | トークンの SSOT のパス                         | `scripts/contrast/lib/styles-css.ts`        |
+| Tailwind の既定 palette                        | `scripts/contrast/lib/tailwind-palette.ts`  |
+| 例外の連鎖を 1 行にする                        | `scripts/contrast/lib/describe-error.ts`    |
 | ファイル読みと終了コード                       | `scripts/contrast/report.ts`                |
 | 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]`          |
 
@@ -65,7 +70,9 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である。
 
-検査ではないので `.claude/rules/testing.md` の検査の表には行を足さない。テストは `scripts/lib/` を持つ既存の `scripts-tools` project にそのまま載る。
+トークンの出どころは 2 つ足せる。`--css` は別の CSS から読む (上流の生成物を測り直すとき)。`--palette` は Tailwind の既定 palette を `--color-orange-800` の形で足す (ADR-0024 の hue の段を測るとき)。どちらも明示したときだけ効く。既定で palette を混ぜると、`--color-*: initial` で消してある色の比が黙って出る。
+
+検査ではないので `.claude/rules/testing.md` の検査の表には行を足さない。テストは `scripts-tools` project が拾うが、当時の include は `scripts/lib/` と `scripts/dev-env/` の 2 つを並べた許可リストで `scripts/contrast/` に一致しなかった。`scripts/**/*.test.ts` から `scripts/checks/**` を除く拒否リストへ変えて、ツールを足すたびに 1 行足す形をやめた。
 
 色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを `axe.commons.color` 経由で呼ぶ形は、次の 3 点で採らない。
 
@@ -111,6 +118,7 @@ Understanding SC 1.4.3 の「the computed values should not be rounded」は比�
 | ------------------------------------------------ | ---------------------------------------------------- |
 | `src/components/parts/data-table.tsx`            | `opacity-50` の比                                    |
 | `src/components/parts/segmented-radio-group.tsx` | 未選択と選択の比 (light / dark)                      |
+| `src/styles.css` の `--placeholder` のコメント   | select の実テキストへ当てたときの dark の比          |
 | ADR-0016                                         | `data-table.tsx` と同じ主張の写し。参照へ置き換えた  |
 | ADR-0024 の Consequences                         | `--border` / `--input` / `ring-ring/50` / chart の比 |
 
@@ -122,6 +130,7 @@ Understanding SC 1.4.3 の「the computed values should not be rounded」は比�
 | ADR-0024 の palette の hue 表               | どの hue を 1 段下げるかの論証そのもの。上流 palette の値なので本リポジトリの変更では動かない |
 | ADR-0025 の帯の表                           | 数値が消えると、帯に入る段がどれかを追試できない                                              |
 | `segmented-radio-group.test.tsx` の回帰の値 | 過去の観測として固定したもの                                                                  |
+| `src/styles.css` の段を選んだ理由のコメント | 種別 B。上流が生成した段 (blue-700 / mist-500 / blue-800) の比で、本リポジトリの値ではない    |
 
 ### 5. 同じ主張を 2 箇所へ書かない
 
@@ -169,7 +178,20 @@ ADR-0024 の節 5 が禁じているのは、比を計算するコードを stor
 - `mise run verify` は変わらない。足したテストは既存の `scripts-tools` project に載る
 - `colorjs.io` の版が上がると値が変わりうる。`toGamut` の `method: "clip"` は axe-core 4.13.0 の `Color.parseString` に合わせたもので、axe 側が変えたら追随を検討する
 - 値に `{` を含む宣言 (`--shadow-preset: { x: 1px };`) を `:root` / `.dark` へ書くと、そのテーマの表ごと throw してどの対も測れなくなる。入れ子のブロックと区別していないためで、silent には通さないが正しい宣言を弾く
-- 同じ色を渡せば axe の `getContrast` と比が一致する。2026-09-22 に実トークン 5,000 対で突き合わせて差はゼロだった
+- 同じ色を渡せば axe の `getContrast` と比が一致する。2026-09-22 に axe-core 4.13.0 と実トークン 5,000 対で突き合わせ、差はゼロだった。再現は `measurePair` の結果を `toHex` で渡して次と比べる
+
+```js
+const { Color, getContrast } = (await import("axe-core")).default.commons.color;
+const parse = (s) => {
+  const c = new Color();
+  c.parseString(s);
+  return c;
+};
+getContrast(parse(toHex(measured.backdrop)), parse(toHex(measured.foreground)));
+```
+
+継続して検査はしない (節 2 の「検査は作らない」)。axe か colorjs.io の版が動いたら、この手順で取り直して記述を合わせる
+
 - 残る違いは丸める位置である。axe は `Color` が 8bit を持つため層ごとに丸め、この変換器は重ね終わった後の 1 回だけ丸める。同じ 5,000 対のうち 5 対で SC の判定が割れた
 - 画面の比と一致するとは限らない。axe はブラウザで `mix-blend-mode`・`text-shadow`・祖先の `opacity`・要素の重なりまで畳むが、この変換器は `--bg` で渡された面だけを重ねる
 - 単体テストが固定するのは axe の `getContrast` との一致で、要素のスタックを畳んだ後の報告値は node では再現できない

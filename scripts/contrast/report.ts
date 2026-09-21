@@ -14,16 +14,24 @@ import { readFileSync } from "node:fs";
 
 import { formatReport, parseContrastArgs } from "./lib/contrast-cli.ts";
 import { measurePair, parseTokenTable } from "./lib/contrast.ts";
+import { describeError } from "./lib/describe-error.ts";
 import { STYLES_CSS } from "./lib/styles-css.ts";
+import { tailwindPalette } from "./lib/tailwind-palette.ts";
 
 const USAGE = `使い方:
   mise run contrast -- --theme <light|dark> --bg <トークン> [--bg <トークン>...] --fg <トークン>
+                       [--css <CSS のパス>] [--palette]
 
   トークンは --background の形。不透明度は --input/30 のように百分率で付ける。
-  --bg は下から順に重ねる。--theme と --fg は 1 つだけ。
+  --bg は下から順に重ねる。--theme と --fg と --css は 1 つだけ。
+
+  --css     src/styles.css 以外から読む (上流の生成物を測り直すとき)
+  --palette Tailwind の既定 palette を足す (--color-orange-800 の形で引ける)
 
 例:
   mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--placeholder'
+  mise run contrast -- --theme light --palette --bg '--background' \\
+    --bg '--color-orange-800/80' --fg '--color-orange-50'
 `;
 
 function main(): void {
@@ -33,9 +41,12 @@ function main(): void {
     return;
   }
   const args = parseContrastArgs(argv);
-  const css = readFileSync(STYLES_CSS, "utf8");
+  const css = readFileSync(args.cssPath ?? STYLES_CSS, "utf8");
+  // palette は下へ敷く。同じ名前が CSS にもあれば CSS が勝つ。測る対象はアプリの CSS で、
+  // palette はそこに無い名前を引くための足しである
+  const declared = parseTokenTable(css)[args.theme];
   const measured = measurePair({
-    table: parseTokenTable(css)[args.theme],
+    table: args.palette ? { ...tailwindPalette(), ...declared } : declared,
     backdrop: args.backdrop.map((layer) => layer.spec),
     foreground: args.foreground.spec,
   });
@@ -45,20 +56,8 @@ function main(): void {
 try {
   main();
 } catch (error) {
-  // 利用者へ出すのは原因の連鎖だけにする。スタックの内部フレームは読ませる情報ではない。
-  // `measurePair` と `layerOf` は `cause` に元の例外を入れるので、辿って全部出す
+  // `process.exit` は使わない。stderr が pipe のとき書き込みは非同期で、exit が待たずに
+  // 落とすと原因の連鎖が切れる。終了コードだけ立てて自然に終わらせる
+  process.exitCode = 1;
   process.stderr.write(`[contrast] ${describeError(error)}\n`);
-  process.exit(1);
-}
-
-/** `cause` を辿って原因の連鎖を 1 行にする。循環する `cause` で止まらなくならないよう深さを切る */
-function describeError(error: unknown): string {
-  const messages: string[] = [];
-  let current = error;
-  // 10 段もあれば原因は読み取れる。超えたら連鎖が壊れているので打ち切る
-  while (current instanceof Error && messages.length < 10) {
-    messages.push(current.message);
-    current = current.cause;
-  }
-  return messages.length > 0 ? messages.join(" ← ") : String(error);
 }
