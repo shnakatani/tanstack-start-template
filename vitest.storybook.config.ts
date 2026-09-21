@@ -10,7 +10,9 @@ import { defineProject } from "vite-plus/test/config";
  * `parameters.a11y.test: "error"` が dark の contrast を検査していないのに検査しているように
  * 見える。`theme` は `@storybook/addon-themes` の global 名である。
  */
-export function storybookProject(theme: "light" | "dark") {
+const THEMES = ["light", "dark"] as const;
+
+export function storybookProject(theme: (typeof THEMES)[number]) {
   return defineProject({
     // vite.config.ts と同じく .env を読まない (ADR-0002)
     envDir: false,
@@ -72,4 +74,25 @@ export function storybookProject(theme: "light" | "dark") {
       },
     },
   });
+}
+
+/**
+ * テーマごとの project を並べる。Storybook 経由の実行だけ light の 1 つに絞る。
+ *
+ * `@storybook/addon-vitest@10.6.0` は `VITEST_STORYBOOK=true` のとき project 名を
+ * `storybook:${configDir}` へ強制上書きする (`dist/vitest-plugin/index.js` の
+ * `storybook:workspace-name-override`)。同じ `configDir` から 2 つ作ると名前が衝突し、
+ * Storybook の test panel も `storybook tools test run` も起動しない
+ * (storybookjs/storybook#32427、2025-09-07 から open)。
+ *
+ * 上書きは `order: "pre"` の config フックで入り、こちらの post 順の上書きでは戻せない
+ * (2026-09-21 実測。同じ手は `cacheDir` には効く)。configDir を分ければ名前も分かれるが、
+ * 上流のバグのために設定ディレクトリを 2 つ持つことになる。
+ *
+ * 絞るのは Storybook 経由の経路だけで、`vp test run` と `mise run verify` は両テーマを回す。
+ * 判定の正本は後者で、test panel は書いている最中の確認に使う。
+ */
+export function storybookProjects() {
+  const themes = process.env.VITEST_STORYBOOK === "true" ? (["light"] as const) : THEMES;
+  return themes.map((theme) => storybookProject(theme));
 }

@@ -145,6 +145,30 @@ telemetry は `core.disableTelemetry` で切る。既定で有効で、実行し
 
 役割が違うため両方残す。ADR-0013 / ADR-0015 / ADR-0018 が固めた待機・実イベント・animation 無効化の規律は既存のテストが持ち続ける。
 
+### 7-1. テーマごとの project は 2 つ持つが、Storybook 経由の実行では light だけにする
+
+a11y を light と dark の両方へ当てるため、`vitest.storybook.config.ts` の `storybookProject()` を `initialGlobals` のテーマ違いで 2 つ作る。これは `@storybook/addon-vitest` の型が名指しで勧める形で、「define one Vitest project per theme, each with a different value」と書いてある。
+
+**その形のまま Storybook 経由で走らせると起動しない。** addon は `VITEST_STORYBOOK=true` のとき project 名を `storybook:${configDir}` へ強制上書きする (`dist/vitest-plugin/index.js` の `storybook:workspace-name-override`)。同じ `configDir` から 2 つ作れば名前が衝突し、Storybook の test panel も `storybook tools test run` も `Project name ... is not unique` で止まる。上流の storybookjs/storybook#32427 が 2025-09-07 から open で、同じ light / dark 構成の報告が付いている。
+
+`VITEST_STORYBOOK=true` のときだけ light の 1 つに絞る。判定の正本は `mise run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。
+
+| 経路                                       | テーマ        |
+| ------------------------------------------ | ------------- |
+| `vp test run` / `mise run verify` / CI     | light と dark |
+| Storybook の test panel / `tools test run` | light のみ    |
+
+次の 2 つは採らない。
+
+| 案                                | 採らない理由                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------- |
+| 2 project を 1 つへ戻す           | addon の型が勧める形を捨てることになり、dark の a11y 検査が正本からも消える           |
+| テーマごとに `configDir` を分ける | 上流のバグのために設定ディレクトリを 2 つ持つ。テンプレートとして読む人の負担が増える |
+
+post 順の config フックで名前を戻す手も効かない。addon の上書きは `order: "pre"` で入り、こちらの post 順では戻せなかった (2026-09-21 実測)。同じ手が `cacheDir` には効くので、効かないことは書いておかないと次に触る人が同じ実験をやり直す。
+
+撤去条件は storybookjs/storybook#32427 が閉じること。閉じたら `VITEST_STORYBOOK` の分岐を外し、`VITEST_STORYBOOK=true vp test run` が通ることで確かめる。
+
 ### 8. story はコンポーネントと並べ、registry の baseline から除く
 
 `*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。
