@@ -80,6 +80,19 @@ export const Opened: Story = {
 /** 候補が 1 件も無いとき。`ComboboxEmpty` が代わりの文言を出す */
 export const NoItems: Story = {
   render: () => <ComboboxExample items={[]} />,
+  parameters: {
+    a11y: {
+      context: {
+        // 候補がゼロでも base-ui はリストへ role="listbox" を付ける
+        // (`combobox/list/ComboboxList.js` の `role: grid ? "grid" : "listbox"`)。axe は中身が
+        // 後から増える場合を考えて、空のコンテナを違反ではなく incomplete へ降ろす
+        // (`aria-required-children` の `reviewEmpty`)。この story では増えない。
+        // 「候補なし」は ComboboxEmpty と base-ui の live region が伝える。
+        // 外せるのは base-ui が空のリストで role を落とすようになったとき
+        exclude: ['[data-slot="combobox-list"]'],
+      },
+    },
+  },
   play: async () => {
     await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
     // base-ui は live region の末尾へ word joiner (U+2060) を 200ms 入れる
