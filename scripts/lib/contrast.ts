@@ -100,8 +100,10 @@ export function resolveSrgb(value: string): Srgb {
     throw new Error(`none を含む色はコントラストを計算できない: ${value}`);
   }
   // `toGamut` は oklch 空間で clip するため、sRGB へ戻すと成分が -1e-17 のように範囲の外へ
-  // わずかに出る (2026-09-22 に colorjs.io 0.7.1 で実測)。axe-core も channel の setter で
-  // clamp してから丸めるので揃える
+  // わずかに出る (2026-09-22 に colorjs.io 0.7.1 で実測)。相対輝度の式は成分が [0, 1] に
+  // あることを前提にするので、ここで収める。axe-core は輝度計算の前に clamp せず生値を読む
+  // (`axe.js` の `getRelativeLuminance` が `this.r` を読み、clamp は 8bit 表示用の `_red`
+  // にしか掛からない) が、はみ出しは 1e-15 の桁なので比への影響は無い
   return { rgb: [clampChannel(r), clampChannel(g), clampChannel(b)], alpha };
 }
 
@@ -115,11 +117,10 @@ function clampChannel(value: number): number {
  * 実態に合わせ直し、`typescript/no-unnecessary-condition` が本物の分岐を「到達しない」と
  * 誤判定しないようにする
  *
- * これは上流の型定義内部の不整合でもある。`color.d.ts:63` の `PlainColorObject` は
- * `alpha: number | null` と宣言し、`Color` クラス (同 :177) は `implements PlainColorObject`
- * と書きながら `alpha: number` へ狭めている。ここでの拡大は上流自身が宣言した契約へ戻す
- * 操作で、実挙動の観測だけを根拠にしたものではない。上流には未報告 (2026-09-22 に
- * color-js/color.js を 7 クエリで検索して 0 件)
+ * 同じ型定義の `PlainColorObject` (`color.d.ts:63`) は `alpha: number | null` と宣言して
+ * おり、ここでの拡大はその側の宣言と揃える操作でもある。ただし `Color` クラス (同 :177) が
+ * `implements PlainColorObject` のまま `number` へ狭めること自体は TypeScript が許す形なので、
+ * 上流の誤りと断定はしない。上流には未報告 (2026-09-22 に color-js/color.js を検索して 0 件)
  */
 function readAlpha(color: Color): number | null {
   return color.alpha;

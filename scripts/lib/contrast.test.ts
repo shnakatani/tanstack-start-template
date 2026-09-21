@@ -222,6 +222,21 @@ describe("contrastRatio", () => {
     );
     expect(Math.abs(ratio - AXE_REPORTED)).toBeLessThan(1e-6);
   });
+
+  it("閾値の帯に入る色でも axe-core の getContrast と一致する", () => {
+    // 成分が (0.03928, 0.04045] に入る色。2021-05 より前の閾値 0.03928 を使うと
+    // 比が 2e-4 ずれてこのテストだけが落ちる。上の 1 件は帯に入らない色なので、
+    // 閾値を戻しても通ってしまう (2026-09-22 実測)
+    //   const { Color, getContrast } = axe.commons.color;
+    //   const parse = (s) => { const c = new Color(); c.parseString(s); return c; };
+    //   getContrast(parse("oklch(0.145625 0 0)"), parse("#ffffff"))
+    const AXE_REPORTED = 19.778400131206332;
+    const ratio = contrastRatio(
+      resolveSrgb("oklch(0.145625 0 0)").rgb,
+      resolveSrgb("oklch(1 0 0)").rgb,
+    );
+    expect(Math.abs(ratio - AXE_REPORTED)).toBeLessThan(1e-6);
+  });
 });
 
 describe("relativeLuminance", () => {
