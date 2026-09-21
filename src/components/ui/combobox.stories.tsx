@@ -126,7 +126,10 @@ export const InlineWithTrigger: Story = {
     a11y: {
       config: {
         // 非 modal の popup を開くと base-ui が外側へ aria-hidden を付けるが、tab 順からは
-        // 外さないため axe が aria-hidden-focus を出す。上流のバグで mui/base-ui#5528 が
+        // 外さないため axe が aria-hidden-focus を出す。ここで落ちるのは violations 側で、
+        // `a11y-story.ts` の `IGNORED_INCOMPLETE` (incomplete 側) とは守備範囲が違う。
+        // この行を外すとこの story だけが violations で落ちる (2026-09-21 に実測)。
+        // 上流のバグで mui/base-ui#5528 が
         // open。直るまでこの story でだけ止める。popup を開くのをやめる手は採らない。
         // 開かないと下の aria-prohibited-attr の見張りごと消える。
         //

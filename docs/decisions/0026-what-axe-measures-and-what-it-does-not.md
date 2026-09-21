@@ -25,7 +25,7 @@ story 側へ同じ基準を当てると落ちる。出るルールは 3 つで�
 | `aria-valid-attr-value` | `aria-haspopup` と `aria-controls` を併せ持つ trigger          |
 | `color-contrast`        | 要素の重なりと擬似要素で背景を決められない                     |
 
-件数は部品と story が増えれば動く。数え直すときは `.storybook/preview.tsx` の `afterEach` で `axe.run(canvasElement)` を回し、`incomplete` のルール ID を集計する。
+件数は部品と story が増えれば動く。数え直すときは `src/test/a11y-story.ts` の `IGNORED_INCOMPLETE` を空にして storybook の project を回し、落ちた story と失敗メッセージのルール ID を読む。節 1 の「当たらなくなった行を消す」判定もこれで行う。
 
 ## incomplete は「判定できなかった」ではなく混成のバケツである
 
