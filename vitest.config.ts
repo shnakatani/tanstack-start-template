@@ -35,12 +35,11 @@ export default defineConfig({
         extends: true,
         test: {
           name: "scripts-tools",
-          include: [
-            "scripts/lib/**/*.test.ts",
-            "scripts/dev-env/**/*.test.ts",
-            "scripts/contrast/**/*.test.ts",
-          ],
-          exclude: sharedExclude,
+          // 許可リストにすると、ツールを足すたびにここへ 1 行足すまでテストが無言で
+          // 収集されない。検査だけを除いて残りを拾う。検査は壊れる原因が違うので
+          // 別 project が持つ (`.claude/rules/testing.md` の表)
+          include: ["scripts/**/*.test.ts"],
+          exclude: [...sharedExclude, "scripts/checks/**"],
           // scripts のテストは bash / git の subprocess 起動を伴い、全体 run の
           // 並列負荷では既定 5s を超えることがある
           testTimeout: 20_000,
