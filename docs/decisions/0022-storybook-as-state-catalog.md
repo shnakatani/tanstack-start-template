@@ -114,9 +114,9 @@ Storybook の test 実行では ADR-0018 の animation 無効化を適用しな�
 
 JS で比を計算する形そのものにも無理がある。ブラウザは sRGB 外の `oklch()` を clip し、alpha を持つ背景は下地と合成する。描画されていない値を計算しても実際の見え方と一致しない。
 
-実際に重なる組み合わせを実テキストとして描けば、`parameters.a11y.test` の axe がそのまま判定する。新しい依存は要らず、gamut も alpha も正確になる。この形で試したところ、`bg-destructive/20` と `text-destructive` が 3.74:1 で不合格になった。破壊ボタンの hover の実在の組み合わせである。
+実際に重なる組み合わせを実テキストとして描けば、`parameters.a11y.test` の axe がそのまま判定する。新しい依存は要らず、gamut も alpha も正確になる。この形で試したところ、当時の `--destructive: oklch(0.53 0.245 27.325)` (上流の既定値でも ADR-0024 移行後の値でもない、2026-09-20 時点でこのリポジトリが持っていた値) における `bg-destructive/20` と `text-destructive` が 3.74:1 で不合格になった。破壊ボタンの hover の実在の組み合わせである。
 
-扱いを決めるには `--destructive` の値の再検討が要り、それは別の判断になるため分けた。非テキストの 3:1 (WCAG 1.4.11) を axe が持たない点も併せて扱う。
+この形を採り、実在の対を描く story を `src/components/contrast.stories.tsx` に置いた。トークンの値をどう決めるか、および axe がルールを持たない非テキストの 3:1 (WCAG 1.4.11) をどう扱うかは ADR-0024 が引き取った。
 
 トークンの一覧を CSSOM から読む選択の帰結として、`static` が要る。`inline` は utility へ値を直接埋め込むため、`rounded-*` の utility を書いても対応する変数を読む rule が生まれない。Tailwind は既定で参照されている変数だけを出力するので、実際に使っているトークンでもカタログから消える。
 

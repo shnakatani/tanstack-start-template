@@ -6,9 +6,10 @@
    「Generating all CSS variables」、theme() が import 単位で効くことは
    tailwindcss.com/docs/preflight「Disabling Preflight」
 
-   代償として Tailwind 既定 theme の未定義トークンが一覧に混ざる
-   (2026-09-20 実測: Radius に --radius-3xl / --radius-xs、Typography に --font-serif と
-   --font-weight-* の 6 件。Colors は --color-*: initial が効いていて増えない) */
+   代償として Tailwind 既定 theme の未定義トークンが一覧に混ざる (2026-09-21 に
+   tailwindcss 4.3.3 で実測: Radius に --radius-xs、Typography に --font-serif と
+   --font-mono と --font-weight-* の全段。Colors は --color-*: initial が効いていて
+   増えない)。数え直しは theme.css の宣言から styles.css の宣言を引く */
 @import "../src/styles.css" theme(static);
 
 /* src/styles.css の source() が見ない場所で utility の class を書くならここに足す。足さないと、

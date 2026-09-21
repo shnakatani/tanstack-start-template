@@ -11,6 +11,7 @@ import {
   FormTextField,
 } from "@/components/parts/form-fields";
 import { useAppForm } from "@/hooks/use-app-form";
+import { resolveColorToken } from "@/test/resolve-color-token";
 
 const nameSchema = v.pipe(v.string(), v.trim(), v.minLength(1, "名前を入力してください"));
 
@@ -81,9 +82,7 @@ describe("FormTextField", () => {
     const screen = await render(<TextHarness labelClassName="text-muted-foreground" />);
     const label = screen.getByText("名前", { exact: true }).element();
     const colorBefore = getComputedStyle(label).color;
-    const destructiveColor = getComputedStyle(document.documentElement)
-      .getPropertyValue("--destructive")
-      .trim();
+    const destructiveColor = resolveColorToken("--destructive");
 
     expect(colorBefore).not.toBe(destructiveColor);
 

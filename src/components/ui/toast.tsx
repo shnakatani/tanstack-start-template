@@ -150,7 +150,7 @@ function ToastClose({
  * warn を出すと、このテンプレートから作った側が独自の type を使うたびに鳴る。
  */
 const TOAST_ICONS = {
-  success: <CircleCheckIcon aria-hidden="true" />,
+  success: <CircleCheckIcon className="text-success" aria-hidden="true" />,
   info: <InfoIcon aria-hidden="true" />,
   warning: <TriangleAlertIcon aria-hidden="true" />,
   error: <OctagonXIcon className="text-destructive" aria-hidden="true" />,

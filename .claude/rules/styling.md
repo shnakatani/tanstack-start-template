@@ -17,14 +17,25 @@ paths:
 
 ## 色は semantic token のみ
 
-- `primary` / `secondary` / `muted` / `accent` / `destructive` / `success` / `sidebar-*` 等の semantic token を使う
+- `primary` / `secondary` / `muted` / `accent` / `destructive` / `destructive-surface` / `success` / `sidebar-*` 等の semantic token を使う
 - palette 色の直書き (`bg-blue-500` / `text-gray-900` 等) と任意値への色の直書き (`bg-[#hex]` / `bg-[rgb(...)]`) は禁止。淡色ハイライトは `bg-primary/10` のような opacity variant で表現する
 - SVG の `fill` / `stroke` に色を直書きしない。`currentColor` か semantic token を参照する
-- 新しい「意味のある色」が必要になったら、`src/styles.css` の `:root` / `.dark` に CSS 変数を定義し `@theme inline` で token 化してから使う。token を定義する前に utility を書くと未知クラスとして落ちる
+- 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。定義前に utility を書くと未知クラスとして落ちる。露出は下表で選び、値は ADR-0024 の段に乗せる
 - `var(--...)` だけを材料にした `color-mix()` は許可する。`no-arbitrary-values` は材料を区別しないため、行単位で抑制する。registry 内なら ADR-0006 の許容リストにも記録する
 - 破壊操作は常時 destructive 色を使い、強度は主張度で分ける。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover でのみ着色すると touch 環境で色が出ず、破壊操作だと伝わらない
 
 Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` の変更だけで完結する。
+
+### 新しい色の露出のさせ方
+
+判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない。それは実測して ADR-0024 へ残す。
+
+| 誤用を誘う既存の形 | 露出                               | 例                         |
+| ------------------ | ---------------------------------- | -------------------------- |
+| 無い               | `@theme inline` で token 化        | `--destructive-surface`    |
+| 在る               | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0025) |
+
+`@theme inline` へ通すと `text-*` / `bg-*` / `border-*` と variant の全組み合わせが生える。`--placeholder` を通すと `data-placeholder:text-placeholder` が生え、`select` の既存の `data-placeholder:text-muted-foreground` を置き換える形で実テキスト (WCAG 1.4.3 が掛かる) へ当てられる。
 
 ### 統制の 2 層 (ADR-0004)
 

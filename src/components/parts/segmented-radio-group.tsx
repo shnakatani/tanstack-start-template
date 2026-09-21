@@ -25,8 +25,9 @@ import { cn } from "cn";
  * - min-w-12 を足している (等幅化。registry には無い)
  * - relative は採っていない (TabsTrigger は持つが、包含ブロックを要する after 下線を使わない)
  * - data-active を data-checked へ読み替えている (Tabs と radio で選択状態の属性が違う)
- * - py-1 / has-data-[icon=*] / [&_svg]* / dark:* は採っていない (アイコンを載せない前提。dark は
- *   切替経路を用意していない。切替を入れるときに揃える)
+ * - py-1 / has-data-[icon=*] / [&_svg]* / dark:* は採っていない (アイコンを載せない前提。dark 用の
+ *   上書きが要る配色になっていない。アプリに切替 UI は無いが、Storybook は両テーマで描くので
+ *   下の比は light dark の両方を載せている)
  * - gap-1.5 は採っていない (アイコンを載せないため子要素が 1 つ)
  * - focus ring の 3px は ring-3 表記にした (TabsTrigger は ring-[3px]。出力は同一で、
  *   リポジトリ多数派 (button / select / input / checkbox / radio-group) が ring-3)
@@ -57,8 +58,8 @@ const SEGMENTED_RADIO_GROUP =
  *
  * min-w-12 (48px) が 1 文字ラベルと 2 文字ラベルの幅を揃える。w-fit のトラックでは自由空間が
  * 生まれず、flex-1 だけでは文字数ぶんの幅差がそのまま残るため、下限で揃える。
- * 未選択は text-foreground/60 で、トラック上のコントラストは約 5.2:1 (AA を満たす。実機実測)。
- * 選択は bg-background + shadow-sm の浮いたつまみで、文字は text-foreground (20.16:1)。
+ * 未選択は text-foreground/60 で、トラック上のコントラストは light で 5.05:1 / dark で 6.09:1 (AA を満たす)。
+ * 選択は bg-background + shadow-sm の浮いたつまみで、文字は text-foreground (light 19.71:1 / dark 19.00:1)。
  * hover が選択済みの文字色を奪わないのは、選択時と hover 時がどちらも text-foreground で
  * 同色だからである (異なる色を選ぶと data-checked は :where() 包みで特異度がゼロ加算のため
  * hover に負ける。segmented-radio-group.test.tsx がこれを回帰として固定している)。

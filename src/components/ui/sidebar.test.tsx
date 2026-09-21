@@ -17,24 +17,15 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from "@/components/ui/sidebar";
+import { resolveColorToken } from "@/test/resolve-color-token";
 import { waitForAnimations } from "@/test/wait-for-animations";
 
+// トークンが未定義なら resolveColorToken が投げる。ここで存在を見張り直さない
 function getSidebarAccentColors() {
-  const rootStyles = getComputedStyle(document.documentElement);
-  expect(rootStyles.getPropertyValue("--sidebar-accent").trim()).not.toBe("");
-  expect(rootStyles.getPropertyValue("--sidebar-accent-foreground").trim()).not.toBe("");
-
-  const reference = document.createElement("div");
-  reference.style.backgroundColor = "var(--sidebar-accent)";
-  reference.style.color = "var(--sidebar-accent-foreground)";
-  document.body.append(reference);
-  const styles = getComputedStyle(reference);
-  const colors = {
-    backgroundColor: styles.backgroundColor,
-    color: styles.color,
+  return {
+    backgroundColor: resolveColorToken("--sidebar-accent"),
+    color: resolveColorToken("--sidebar-accent-foreground"),
   };
-  reference.remove();
-  return colors;
 }
 
 /**
