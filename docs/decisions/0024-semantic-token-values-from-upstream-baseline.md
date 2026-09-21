@@ -27,14 +27,18 @@ Unknown base color: slate. Available base colors: neutral, zinc, stone, mauve, o
 
 slate の値を持ち続けても壊れてはいなかった。動かしたのは、CLI が生成しない palette を抱え続けるのをやめるためである。
 
-**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、節 2 以降で決める本リポジトリの段ではない。計測は生成した `styles.css` の値を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` にあり (ADR-0028)、axe-core の `getContrast` との一致は `scripts/contrast/lib/contrast.test.ts` が固定する。
+**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、節 2 以降で決める本リポジトリの段ではない。
+
+計測は生成した `styles.css` を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` (ADR-0028)。
+
+範囲で示した行は 8 色 17 テーマぶんの生成物を測ったもので、生成物が残っていないため再測できない。単一の値 (sidebar の行) は `docs/registry-baseline/styles.css` から測り直せる。
 
 | 対                                                           | 範囲                   | 比                                                                                                          |
 | ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `--muted-foreground` on `--muted` (light)                    | base color 8 色中 7 色 | 3.86〜4.41 (mauve のみ 4.54 で充足)                                                                         |
 | `text-destructive` on `bg-destructive/20` (light)            | 既定の `--destructive` | 3.31                                                                                                        |
 | `text-primary` on `--background`                             | 有彩色 17 テーマすべて | dark で 15 テーマが 1.95〜2.78。lime と yellow は dark が 10.08・10.30 で通り、代わりに light が 1.54・1.57 |
-| `--sidebar-primary-foreground` on `--sidebar-primary` (dark) | blue                   | 3.45                                                                                                        |
+| `--sidebar-primary-foreground` on `--sidebar-primary` (dark) | blue                   | 3.46                                                                                                        |
 | `--border` / `--input` on `--background`                     | base color 8 色すべて  | 1.25〜1.48 (WCAG 1.4.11 の 3:1)                                                                             |
 
 `text-primary` が割る理由は、`--primary` が dark で「明るい文字を載せる面」と「暗い背景に載る文字」の両方を求められることにある。blue の ramp を全段調べても、両方を満たす段は存在しない。上流の既定である無彩色テーマだけが免れるのは、dark の `--primary` がほぼ白に反転して面と文字の役割が分かれるからである。
@@ -73,17 +77,19 @@ preset code をプロジェクトから復元する `shadcn preset resolve` は�
 | light | `<hue>-800` | `<hue>-50`             |
 | dark  | `<hue>-300` | `<hue>-950`            |
 
-`--sidebar-primary` の対も同じ段に揃える。上流は sidebar 側を primary より 1 段明るく置くが、dark でその対が 3.45 になる。
+`--sidebar-primary` の対も同じ段に揃える。上流は sidebar 側を primary より 1 段明るく置くが、dark でその対が 3.46 になる。
 
 `bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
 
-hue を変えるときは自分で測る。下地は `--background` (白)、文字は `<hue>-50`、比は 8bit へ丸めずに取る。orange は丸めない 4.5873 に対し 8bit では 4.5955 で、2 桁表示だけを見ると判定が変わる唯一の色である。2026-09-21 の `tailwindcss@4.3.3` の palette では 9 色が該当した。
+hue を変えるときは `mise run contrast` で測る。下地は `--background` (白)、上に `<hue>-800/80`、文字は `<hue>-50` を重ねる。2026-09-21 の `tailwindcss@4.3.3` の palette では 9 色が該当した。
 
-| hue                     | `<hue>-800` のまま | `<hue>-900` へ下げた後 |
-| ----------------------- | ------------------ | ---------------------- |
-| orange / emerald / teal | 4.59 / 4.49 / 4.51 | 5.36 / 5.36 / 5.28     |
-| amber / yellow / lime   | 4.44 / 4.22 / 4.24 | 5.25 / 4.98 / 4.93     |
-| green / cyan / sky      | 4.32 / 4.40 / 4.43 | 5.11 / 5.13 / 5.22     |
+閾値と比べる列は小数 3 桁で書く。2 桁だと orange が `4.60` と出て、4.595 という値が 4.6 を上回るように読める。
+
+| hue                     | `<hue>-800` のまま    | `<hue>-900` へ下げた後 |
+| ----------------------- | --------------------- | ---------------------- |
+| orange / emerald / teal | 4.595 / 4.493 / 4.512 | 5.35 / 5.35 / 5.26     |
+| amber / yellow / lime   | 4.437 / 4.216 / 4.251 | 5.24 / 5.01 / 4.92     |
+| green / cyan / sky      | 4.319 / 4.391 / 4.438 | 5.11 / 5.11 / 5.24     |
 
 残る 8 色 (red / blue / indigo / violet / purple / fuchsia / pink / rose) は `<hue>-800` のまま 4.99〜5.54 で足りる。
 
@@ -111,7 +117,7 @@ hue を変えるときは自分で測る。下地は `--background` (白)、文�
 | `--destructive-surface` | `@theme inline`           | 面として当てる口が `bg-X/10` `/20` `/30` と複数あり、誤った当て方を誘う既存の書き方が無い |
 | `--placeholder`         | `:root` + `@utility` のみ | `select` に `data-placeholder:text-muted-foreground` があり、置き換えの候補に必ず挙がる   |
 
-`@theme inline` へ通した面のトークンを文字として書く余地は残る。2026-09-21 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.76、`--muted` / `--accent` / `--secondary` で 4.28〜4.33 になり、後者は SC 1.4.3 を割る。面のトークンを文字に使うなら下地ごとに測る。
+`@theme inline` へ通した面のトークンを文字として書く余地は残る。2026-09-22 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.77、`--muted` / `--accent` / `--secondary` で 4.28〜4.34 になり、後者は SC 1.4.3 を割る。面のトークンを文字に使うなら下地ごとに測る。
 
 `-foreground` を「面の上の文字」以外の意味で使わない。上流はこの接尾辞を solid な面の上の文字に割り当てており、別の意味を載せると次の生成で衝突する。
 
