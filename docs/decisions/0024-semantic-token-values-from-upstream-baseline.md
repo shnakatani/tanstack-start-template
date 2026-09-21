@@ -39,7 +39,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 | `text-destructive` on `bg-destructive/20` (light)            | 既定の `--destructive` | 3.31                                                                                                        |
 | `text-primary` on `--background`                             | 有彩色 17 テーマすべて | dark で 15 テーマが 1.95〜2.78。lime と yellow は dark が 10.08・10.30 で通り、代わりに light が 1.54・1.57 |
 | `--sidebar-primary-foreground` on `--sidebar-primary` (dark) | blue                   | 3.45                                                                                                        |
-| `--border` / `--input` on `--background`                     | base color 8 色すべて  | 1.25〜1.48 (WCAG 1.4.11 の 3:1)                                                                             |
+| `--border` / `--input` on `--background`                     | base color 8 色すべて  | 1.24〜1.48 (WCAG 1.4.11 の 3:1)                                                                             |
 
 `text-primary` が割る理由は、`--primary` が dark で「明るい文字を載せる面」と「暗い背景に載る文字」の両方を求められることにある。blue の ramp を全段調べても、両方を満たす段は存在しない。上流の既定である無彩色テーマだけが免れるのは、dark の `--primary` がほぼ白に反転して面と文字の役割が分かれるからである。
 

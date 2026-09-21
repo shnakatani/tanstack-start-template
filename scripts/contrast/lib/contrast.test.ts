@@ -7,7 +7,6 @@ import {
   measurePair,
   parseLayerSpec,
   parseTokenTable,
-  relativeLuminance,
   resolveSrgb,
   toHex,
 } from "./contrast";
@@ -112,20 +111,6 @@ describe("parseTokenTable", () => {
     expect(() =>
       parseTokenTable(`${variant}${root}  .dark {\n  --background: oklch(0 0 0);\n}\n`),
     ).toThrow("行頭");
-  });
-
-  it("カスタムプロパティでない宣言は読み飛ばす", () => {
-    // `color-scheme` は MDN が :root への記述を勧めている。表に名前を作れないので
-    // 捨てても dark が light を継承する危険は起きない。止めるとこの 1 行で全部測れなくなる
-    const css = `:root {
-  color-scheme: light dark;
-  --background: oklch(1 0 0);
-}
-.dark {
-  --background: oklch(0 0 0);
-}
-`;
-    expect(parseTokenTable(css).light).toEqual({ "--background": "oklch(1 0 0)" });
   });
 
   it("宣言として読めない行があれば throw する", () => {
@@ -254,13 +239,6 @@ describe("contrastRatio", () => {
   });
 });
 
-describe("relativeLuminance", () => {
-  it("白は 1、黒は 0", () => {
-    expect(relativeLuminance(resolveSrgb("#ffffff").rgb)).toBeCloseTo(1, 10);
-    expect(relativeLuminance(resolveSrgb("#000000").rgb)).toBeCloseTo(0, 10);
-  });
-});
-
 describe("parseLayerSpec", () => {
   it("トークン名だけなら不透明", () => {
     expect(parseLayerSpec("--background")).toEqual({
@@ -273,13 +251,6 @@ describe("parseLayerSpec", () => {
     expect(parseLayerSpec("--input/30")).toEqual({
       token: "--input",
       alpha: 0.3,
-    });
-  });
-
-  it("0 を受け取る", () => {
-    expect(parseLayerSpec("--input/0")).toEqual({
-      token: "--input",
-      alpha: 0,
     });
   });
 

@@ -80,7 +80,7 @@
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
-  --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.15 */
+  --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.13 */
   /* ::placeholder 疑似要素に載る例示テキスト専用 (ADR-0025)。`@theme inline` へ通さず
      下の `@utility example-placeholder` だけで露出させる。通すと text-placeholder や
      data-placeholder:text-placeholder まで生成され、select の実テキストへ当てられる。

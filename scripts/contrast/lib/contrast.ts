@@ -41,7 +41,8 @@ function parseBlock(css: string, selector: string): TokenTable {
   //
   // 行頭で足りるのは、入れ子を必ず字下げするフォーマッタを commit 前に通すからである
   // (AGENTS.md「コミット前に `vp check --fix` 必須」)。字下げなしの入れ子は
-  // `vp check` が Formatting issues として弾く。フォーマッタを外すとこの前提が消える
+  // `vp check` が `Format issues found in above 1 files.` として弾く。フォーマッタを
+  // 外すとこの前提が消える
   const found = new RegExp(`^${escapeForRegExp(selector)}\\s*\\{([\\s\\S]*?)\\n\\}`, "m").exec(
     source,
   );
@@ -75,17 +76,12 @@ function parseBlock(css: string, selector: string): TokenTable {
     const parsed = /^\s*(--[a-z0-9-]+)\s*:\s*(.+)/i.exec(declaration);
     const [, name, value] = parsed ?? [];
     if (name === undefined || value === undefined) {
-      if (!declaration.trim().startsWith("--")) {
-        // カスタムプロパティでない宣言 (`color-scheme: light dark` 等) は表に名前を作れず、
-        // 捨てても下の危険は起きない。止めると、色と関係ない 1 行でファイル全体が測れなくなる
-        console.warn("[contrast] 宣言を読み飛ばした", {
-          selector,
-          declaration: declaration.trim(),
-        });
-        continue;
-      }
-      // 読めない `--` 名は黙って捨てない。`.dark` で 1 つ捨てると、その名前は light の値の
-      // まま残り (`parseTokenTable` が light へ重ねる)、dark に存在しない色の比が出る
+      // 読めない宣言を黙って捨てない。`.dark` で 1 つ捨てると、その名前は light の値のまま
+      // 残り (`parseTokenTable` が light へ重ねる)、dark に存在しない色の比が出る。
+      //
+      // カスタムプロパティでない宣言 (`color-scheme` 等) もここで止まる。`:root` / `.dark`
+      // へ入れているのはトークンだけで、履歴上も 0 件である (2026-09-22 実測)。起きていない
+      // 入力のために fail-closed を緩めない
       throw new Error(`宣言として読めない: ${selector} の "${declaration.trim()}"`);
     }
     table[name] = value.trim();
@@ -153,7 +149,8 @@ function clampChannel(value: number): number {
  * `number` へ狭めること自体は TypeScript が許す形なので、上流の誤りとは断定しない。
  *
  * 上流へは未報告。2026-09-22 に `gh search issues --repo color-js/color.js` を
- * `alpha null` / `alpha types` / `PlainColorObject` の 3 クエリで引いて該当 0 件だった
+ * `alpha null` / `alpha types` / `PlainColorObject` の 3 クエリで引き、返った 5 件
+ * (すべて 3 つ目) はいずれも alpha が null を返す件ではなかった
  */
 function readAlpha(color: Color): number | null {
   return color.alpha;
@@ -188,7 +185,7 @@ function flattenLayers(bottom: Rgb, layers: readonly Srgb[]): Rgb {
  * 説明している。axe-core 4.13.0 も 0.04045 を使う (`axe.js` の `getRelativeLuminance`)。
  * 揃えないと、成分が 2 つの値の間に入る色だけ axe と違う比が出る
  */
-export function relativeLuminance(rgb: Rgb): number {
+function relativeLuminance(rgb: Rgb): number {
   const [r, g, b] = rgb;
   return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 }
@@ -280,8 +277,8 @@ export function parseLayerSpec(spec: string): LayerSpec {
  * `backdrop` は下地を畳んだ後の色、`foreground` は下地の上へ載せた後の色で、どちらも
  * 画面に出る 8bit へ落としてある (`toDisplayed`)。
  * 半透明の前景は下地と混ざった色になるので、出力へ載せるときは「画面に出る色」として
- * 読ませる。下地が不透明 1 枚のときの `backdrop` は、その宣言を sRGB へ解決した値そのもの
- * であって、合成は挟まらない
+ * 読ませる。下地が不透明 1 枚のときの `backdrop` には合成が挟まらない。宣言を sRGB へ
+ * 解決し、8bit へ落とした値である
  */
 export type MeasuredPair = {
   readonly backdrop: Rgb;
