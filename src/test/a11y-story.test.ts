@@ -1,7 +1,11 @@
 import type axe from "axe-core";
 import { describe, expect, test } from "vite-plus/test";
 
-import { checkA11yIncomplete, collectUnexpectedIncomplete, describeA11yResults } from "./a11y";
+import {
+  checkA11yIncomplete,
+  collectUnexpectedIncomplete,
+  describeA11yResults,
+} from "./a11y-story";
 
 function check(messageKey?: string): axe.CheckResult {
   return {
