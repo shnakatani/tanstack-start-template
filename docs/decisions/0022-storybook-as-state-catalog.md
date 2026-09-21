@@ -169,6 +169,12 @@ post 順の config フックで名前を戻す手も効かない。addon の上�
 
 撤去条件は storybookjs/storybook#32427 が閉じること。閉じたら `VITEST_STORYBOOK` の分岐を外し、`VITEST_STORYBOOK=true vp test run` が通ることで確かめる。
 
+### 7-2. vitest 経由の story には canvas の padding が当たらない
+
+`layout` パラメータを当てるのは `WebView.prepareForStory` で (`storybook/dist/preview/runtime.js` の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
+
+余白を前提にする story は decorator で自分の器を持つ。グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) は、余白が無いとそのはみ出しが背景を持つ要素の箱の外へ出て、axe が色を測れなくなる。
+
 ### 8. story はコンポーネントと並べ、registry の baseline から除く
 
 `*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。
