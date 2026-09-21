@@ -77,7 +77,7 @@ preset code をプロジェクトから復元する `shadcn preset resolve` は�
 
 `bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
 
-hue を変えるときは自分で測る。2026-09-21 の `tailwindcss@4.3.3` の palette では 9 色が該当した。
+hue を変えるときは自分で測る。下地は `--background` (白)、文字は `<hue>-50`、比は 8bit へ丸めずに取る。orange は丸めない 4.5873 に対し 8bit では 4.5955 で、2 桁表示だけを見ると判定が変わる唯一の色である。2026-09-21 の `tailwindcss@4.3.3` の palette では 9 色が該当した。
 
 | hue                     | `<hue>-800` のまま | `<hue>-900` へ下げた後 |
 | ----------------------- | ------------------ | ---------------------- |

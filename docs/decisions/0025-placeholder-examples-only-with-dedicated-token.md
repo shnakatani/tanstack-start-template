@@ -21,14 +21,17 @@ placeholder には向きの逆な要求が 2 つ掛かる。
 
 **1.4.3 が placeholder に掛かること自体は争われていない。** Understanding SC 1.4.3 の Intent が "including placeholder text" と名指しで含めている (勧告本体ではなく Understanding 側の記述)。
 
-w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を免除できるかで、2026-09-21 時点で open である。**同 issue は本 ADR の立場を支持する側の材料を持つ。** detlevhfischer は `<label>First name</label><input placeholder="Mary">` を「ラベルの字面の繰り返しではないが冗長な変種」として挙げ、コントラスト要件は掛からないという見解を述べている。例示だけを置く形はこれに当たる。
-一方、`placeholder="DD.MM.YYYY"` のように書式を伝える形は「明らかに要件を満たす必要がある」とされ、ここに異論は出ていない。philljenkins は別案として「ラベルを 4.5:1 に保ったうえで placeholder は 3:1 + イタリック」を提案しており、決着していない。
+w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を免除できるかで、2026-09-21 時点で open である。**軸は例示かどうかではなく、ラベルが名指していない情報を足すかどうかである。** detlevhfischer は `<input placeholder="Mary">` を「コントラスト要件は掛からない」側に置く一方、同じ例示でも `placeholder="Mary Smith"` は姓名の構成を伝えるので「もはや適合しないと言える」とする。`placeholder="DD.MM.YYYY"` のように書式を伝える形が要件を満たす必要がある点には、異論が出ていない。
+
+**免除の筋そのものへの反対もある。** mbgower は「冗長かどうかは関係がなく、SC 1.4.3 の incidental の例外は placeholder に及ばない」と述べている。philljenkins の「ラベルを 4.5:1 に保ったうえで placeholder は 3:1 + イタリック」案も含め、決着していない。
 
 **この色を検査は測っていない。しかも「測っていない」より悪い。** `axe-core@4.13.0` の `color-contrast` は空の入力欄にもマッチし (`lib/rules/color-contrast-matches.js` の `// Match all form fields, regardless of if they have text`)、`::placeholder` ではなく要素自身の `color` で判定する (`lib/` に `::placeholder` の言及が 0 件。2026-09-21 実測)。Deque 自身が dequelabs/axe-core#4260 で「placeholder を評価したかのように見える違反が、実際には別の前景色で出る」と書いている。**緑であることは placeholder が測られたことを意味しない。**
 
 ## Decision
 
-**placeholder には例示だけを置き、その色を `--placeholder` として `--muted-foreground` から切る。**
+**placeholder にはラベルが名指していない情報を足さない例示だけを置き、その色を `--placeholder` として `--muted-foreground` から切る。**
+
+例示であっても、`placeholder="Mary Smith"` のように入力の構成や書式を伝えるものは対象外とする。
 
 ラベルと書式の指示は placeholder に置かない。ラベルは可視ラベルへ、指示は `FieldDescription` (`src/components/ui/field.tsx`) へ置く。
 要求が例示と指示で変わる分け方は Carbon (#7515) と w3c/wcag#4343 の議論が共通して採る。指示は 4.5:1 を満たす段が要る。
@@ -52,9 +55,9 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 light は `mist-500` だけが帯に入り、下端から 0.11 しか離れていない。
 
-dark の比は入力欄が置かれる面で変わる。上表は入力欄をページ直下 (`--background` + `bg-input/30`) に置いた値で、`Dialog` / `Sheet` / `Popover` の中 (`--popover` + `bg-input/30`) では `mist-500` が 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。`bg-input/30` を載せない素の面ならそれぞれ 4.27 と 3.76 で、入力欄の面が比を押し下げている。入力値との差 (4.45) は面によらないため、下の決定は動かない。
+dark の比は入力欄が置かれる面で変わる。上表の dark 行は入力欄をページ直下 (`--background` + `bg-input/30`) に置いた値で、`Dialog` / `Sheet` / `Popover` の中 (`--popover` + `bg-input/30`) では `mist-500` が 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。`bg-input/30` を載せない素の面ならそれぞれ 4.27 と 3.76 で、入力欄の面が比を押し下げている。light 行に `bg-input/30` が無いのは、`input.tsx` と `textarea.tsx` がこれを `dark:` 限定で付けるためである。入力値との差 (4.45) は面によらないため、下の決定は動かない。
 
-面ごとに測ることは、規格の定義から導かれる。「面を列挙せよ」と書いた条文は無い (2026-09-21 に検索して不在を確認)。導出元は WCAG 2.2 勧告本体の `contrast ratio` に付く note で、Understanding 側の再掲ではない。Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 が評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。テーマやダイアログの面は typical presentation の側に入るので、Note 6 が続けて免除する "unusual presentations" (UA による色の変更はその例示) には当たらない。
+面ごとに測ることは、規格の定義から導かれる。「面を列挙せよ」と書いた条文は無い (2026-09-21 に勧告本体 / Understanding / Techniques / ACT を検索して不在を確認)。導出元は勧告本体の glossary が `contrast ratio` に付ける note で、Understanding の Key Terms はそれを引き写している。Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 が評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。テーマやダイアログの面は typical presentation の側に入るので、Note 6 が続けて免除する "unusual presentations" (UA による色の変更はその例示) には当たらない。
 W3C 自身の推奨値も面に依存する。WAI Forms Tutorial の `::placeholder { color: #767676 }` は "assuming the background of the element is white" と断りがあり、`#ffffff` 上 4.54 に対し `#f4f4f4` 上では 4.13 で割る。
 
 dark は帯に入る段が無い。`mist-400` は入力値との 3:1 を割る側 (2.35) で外れ、`mist-500` は 4.5:1 を割る側で外れる。

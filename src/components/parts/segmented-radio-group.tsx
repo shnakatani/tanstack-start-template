@@ -25,8 +25,9 @@ import { cn } from "cn";
  * - min-w-12 を足している (等幅化。registry には無い)
  * - relative は採っていない (TabsTrigger は持つが、包含ブロックを要する after 下線を使わない)
  * - data-active を data-checked へ読み替えている (Tabs と radio で選択状態の属性が違う)
- * - py-1 / has-data-[icon=*] / [&_svg]* / dark:* は採っていない (アイコンを載せない前提。dark は
- *   切替経路を用意していない。切替を入れるときに揃える)
+ * - py-1 / has-data-[icon=*] / [&_svg]* / dark:* は採っていない (アイコンを載せない前提。dark 用の
+ *   上書きが要る配色になっていない。アプリに切替 UI は無いが、Storybook は両テーマで描くので
+ *   下の比は light dark の両方を載せている)
  * - gap-1.5 は採っていない (アイコンを載せないため子要素が 1 つ)
  * - focus ring の 3px は ring-3 表記にした (TabsTrigger は ring-[3px]。出力は同一で、
  *   リポジトリ多数派 (button / select / input / checkbox / radio-group) が ring-3)
