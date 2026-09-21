@@ -36,8 +36,8 @@ function main(): void {
   const css = readFileSync(join(REPO_ROOT, "src", "styles.css"), "utf8");
   const measured = measurePair({
     table: parseTokenTable(css)[args.theme],
-    backdrop: args.backdrop,
-    foreground: args.foreground,
+    backdrop: args.backdrop.map((layer) => layer.spec),
+    foreground: args.foreground.spec,
   });
   process.stdout.write(formatReport(args, measured));
 }

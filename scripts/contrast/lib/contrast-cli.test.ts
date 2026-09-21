@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { parseLayerSpec } from "./contrast";
-import { describeLayer, formatReport, parseContrastArgs } from "./contrast-cli";
+import { formatReport, parseContrastArgs } from "./contrast-cli";
 
 describe("parseContrastArgs", () => {
   const BASE = ["--theme", "light", "--bg", "--background", "--fg", "--foreground"];
@@ -9,10 +8,11 @@ describe("parseContrastArgs", () => {
   it("theme と下地と前景を読む", () => {
     const args = parseContrastArgs(BASE);
     expect(args.theme).toBe("light");
-    expect(args.backdrop).toEqual([{ token: "--background", alpha: 1, source: "--background" }]);
+    expect(args.backdrop).toEqual([
+      { spec: { token: "--background", alpha: 1 }, source: "--background" },
+    ]);
     expect(args.foreground).toEqual({
-      token: "--foreground",
-      alpha: 1,
+      spec: { token: "--foreground", alpha: 1 },
       source: "--foreground",
     });
   });
@@ -28,7 +28,7 @@ describe("parseContrastArgs", () => {
       "--fg",
       "--placeholder",
     ]);
-    expect(args.backdrop.map((spec) => spec.token)).toEqual(["--popover", "--input"]);
+    expect(args.backdrop.map((layer) => layer.spec.token)).toEqual(["--popover", "--input"]);
   });
 
   it("--theme を 2 回書いたら throw する", () => {
@@ -71,28 +71,6 @@ describe("parseContrastArgs", () => {
   });
 });
 
-describe("describeLayer", () => {
-  it("受け取った綴りをそのまま返す", () => {
-    for (const spec of [
-      "--background",
-      "--input/30",
-      "--input/30.5",
-      "--input/100",
-      "--input/030",
-    ]) {
-      expect(describeLayer(parseLayerSpec(spec))).toBe(spec);
-    }
-  });
-
-  it("逆算では戻せない綴りも往復する", () => {
-    // `alpha * 100` の逆算だと `--input/1e-7` になり、`parseLayerSpec` が再パースを拒む
-    const spec = "--input/0.0000001";
-    const back = describeLayer(parseLayerSpec(spec));
-    expect(back).toBe(spec);
-    expect(() => parseLayerSpec(back)).not.toThrow();
-  });
-});
-
 describe("formatReport", () => {
   it("背景と前景で矢印の意味が違うことを添える", () => {
     // `--border` のようにトークン自身が alpha を持つと、綴りに手がかりが残らない
@@ -103,5 +81,23 @@ describe("formatReport", () => {
     expect(report).toContain("#ffffff (畳んだ後)");
     expect(report).toContain("#000000 (画面に出る色)");
     expect(report).toContain("SC 1.4.3 (4.5:1)  満たす");
+  });
+
+  it("打った綴りをそのまま印字する", () => {
+    // `alpha` から逆算すると `--input/030` は `--input/3`、`/0.0000001` は `/1e-7` になる。
+    // どちらも打った人が自分の入力として読み直せない
+    const report = formatReport(
+      parseContrastArgs([
+        "--theme",
+        "light",
+        "--bg",
+        "--input/030",
+        "--fg",
+        "--foreground/0.0000001",
+      ]),
+      { backdrop: [1, 1, 1], foreground: [0, 0, 0], ratio: 21 },
+    );
+    expect(report).toContain("背景    --input/030");
+    expect(report).toContain("前景    --foreground/0.0000001");
   });
 });

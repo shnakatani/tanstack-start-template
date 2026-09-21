@@ -244,7 +244,6 @@ describe("parseLayerSpec", () => {
     expect(parseLayerSpec("--background")).toEqual({
       token: "--background",
       alpha: 1,
-      source: "--background",
     });
   });
 
@@ -252,7 +251,6 @@ describe("parseLayerSpec", () => {
     expect(parseLayerSpec("--input/30")).toEqual({
       token: "--input",
       alpha: 0.3,
-      source: "--input/30",
     });
   });
 
@@ -260,7 +258,6 @@ describe("parseLayerSpec", () => {
     expect(parseLayerSpec("--input/0")).toEqual({
       token: "--input",
       alpha: 0,
-      source: "--input/0",
     });
   });
 
@@ -300,17 +297,14 @@ describe("parseLayerSpec", () => {
     expect(parseLayerSpec("--input/00")).toEqual({
       token: "--input",
       alpha: 0,
-      source: "--input/00",
     });
     expect(parseLayerSpec("--input/0.0")).toEqual({
       token: "--input",
       alpha: 0,
-      source: "--input/0.0",
     });
     expect(parseLayerSpec("--input/30.5")).toEqual({
       token: "--input",
       alpha: 0.305,
-      source: "--input/30.5",
     });
   });
 
@@ -319,7 +313,6 @@ describe("parseLayerSpec", () => {
     expect(parseLayerSpec("--input/100")).toEqual({
       token: "--input",
       alpha: 1,
-      source: "--input/100",
     });
   });
 });
@@ -365,7 +358,7 @@ describe("measurePair", () => {
 
   it("下地を渡した順に下から重ねる", () => {
     // 1 枚だけのケースでは順序を主張できない。逆順に渡すと、透けた面が
-    // いちばん下に来て `flattenLayers` が throw する
+    // いちばん下に来て `measurePair` の guard が throw する
     const measured = measurePair({
       table: TABLE,
       backdrop: [parseLayerSpec("--black"), parseLayerSpec("--white/50")],

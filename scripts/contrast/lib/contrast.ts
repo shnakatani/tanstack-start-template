@@ -129,9 +129,10 @@ function readAlpha(color: Color): number | null {
 /**
  * いちばん下の面の上へ、上の面を下から順に重ねて 1 色にする。
  *
- * いちばん下を `Rgb`（alpha を持たない型）で受けることで、「下地は不透明」という前提を
- * 型で表す。実行時の guard にすると、呼ぶ側がトークン名を知っているのに例外は知らない、
- * という食い違いが残る
+ * いちばん下は alpha の欄を持たない `Rgb` で受ける。ただしこれは「不透明である」ことまでは
+ * 表さない。`resolveSrgb("#00000080").rgb` と書けば型検査は通り、alpha が黙って落ちる
+ * (2026-09-22 実測)。不透明の保証を持つのは呼び出し元 `measurePair` の guard のほうで、
+ * そこへ置いたのは、トークン名を添えた例外を作れるのが `layerOf` の隣だけだからである
  */
 export function flattenLayers(bottom: Rgb, layers: readonly Srgb[]): Rgb {
   return layers.reduce<Rgb>(
@@ -178,8 +179,8 @@ export function toHex(rgb: Rgb): string {
     .join("")}`;
 }
 
-/** 面 1 枚。`alpha` は 0..1。`source` は受け取った綴りで、出力へ戻すときに使う */
-export type LayerSpec = { readonly token: string; readonly alpha: number; readonly source: string };
+/** 面 1 枚。`alpha` は 0..1 */
+export type LayerSpec = { readonly token: string; readonly alpha: number };
 
 /**
  * `--input/30` の形を読む。`/30` は Tailwind の `bg-input/30` に合わせた百分率。
@@ -198,7 +199,7 @@ export function parseLayerSpec(spec: string): LayerSpec {
     throw new Error(`不透明度の指定は 1 つだけ書く: ${spec}`);
   }
   if (percent === undefined) {
-    return { token, alpha: 1, source: spec };
+    return { token, alpha: 1 };
   }
   // `-` と指数表記と 16 進はここで落ちる。`00` と `0.0` は読み方が 1 つなので通す
   if (!/^\d+(\.\d+)?$/.test(percent)) {
@@ -210,7 +211,7 @@ export function parseLayerSpec(spec: string): LayerSpec {
   if (value > 100) {
     throw new Error(`不透明度は 0..100 で書く: ${spec}`);
   }
-  return { token, alpha: value / 100, source: spec };
+  return { token, alpha: value / 100 };
 }
 
 /**
@@ -243,8 +244,8 @@ export function measurePair(args: {
   }
   const bottom = layerOf(args.table, bottomSpec);
   if (bottom.alpha !== 1) {
-    // ここでしかトークン名を知らない。`flattenLayers` へ持ち込むと汎用関数が
-    // 呼び出し側の語彙を抱える
+    // ここでしかトークン名を知らない。`flattenLayers` へ持ち込むと、呼び出し側の語彙を
+    // 持たない関数がトークン名を抱えることになる
     throw new Error(`いちばん下の下地は不透明でなければならない: ${bottomSpec.token}`);
   }
   const backdrop = flattenLayers(

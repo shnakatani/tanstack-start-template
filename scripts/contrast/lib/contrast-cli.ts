@@ -14,10 +14,22 @@ import {
  * (`scripts-tools` project)
  */
 
+/**
+ * 引数の綴りと、それを読んだ結果。
+ *
+ * 綴りを捨てずに持つ。`alpha` から逆算すると `alpha * 100` が桁を落とし、
+ * `--input/0.0000001` が `--input/1e-7` という再パースできない綴りになる (2026-09-22 実測)。
+ * 測定は綴りを読まないので、測定層の `LayerSpec` ではなくこちらが持つ
+ */
+export type SourcedLayer = {
+  readonly spec: LayerSpec;
+  readonly source: string;
+};
+
 export type ContrastArgs = {
   readonly theme: Theme;
-  readonly backdrop: readonly LayerSpec[];
-  readonly foreground: LayerSpec;
+  readonly backdrop: readonly SourcedLayer[];
+  readonly foreground: SourcedLayer;
 };
 
 /**
@@ -29,20 +41,20 @@ export type ContrastArgs = {
  */
 export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
   let theme: Theme | undefined;
-  let foreground: LayerSpec | undefined;
-  const backdrop: LayerSpec[] = [];
-  const rest = argv[Symbol.iterator]();
-  for (const flag of rest) {
+  let foreground: SourcedLayer | undefined;
+  const backdrop: SourcedLayer[] = [];
+  // フラグと値で 2 つずつ進む。増分をヘッダへ置くと、本体を足したときに書き忘れようがない
+  for (let index = 0; index < argv.length; index += 2) {
+    const flag = argv[index];
     // 値を取る前に知っているフラグかを見る。逆にすると、未知のフラグが末尾へ来たときに
     // 「値がない」と出て、存在しないフラグへ値を足せと誘導する
     if (flag !== "--theme" && flag !== "--bg" && flag !== "--fg") {
-      throw new Error(`知らない引数: ${flag}`);
+      throw new Error(`知らない引数: ${flag ?? "(空)"}`);
     }
-    const next = rest.next();
-    if (next.done === true) {
+    const value = argv[index + 1];
+    if (value === undefined) {
       throw new Error(`${flag} に値がない`);
     }
-    const value = next.value;
     if (flag === "--theme") {
       if (theme !== undefined) {
         throw new Error("--theme は 1 つだけ書く");
@@ -52,29 +64,18 @@ export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
       }
       theme = value;
     } else if (flag === "--bg") {
-      backdrop.push(parseLayerSpec(value));
+      backdrop.push({ spec: parseLayerSpec(value), source: value });
     } else {
       if (foreground !== undefined) {
         throw new Error("--fg は 1 つだけ書く");
       }
-      foreground = parseLayerSpec(value);
+      foreground = { spec: parseLayerSpec(value), source: value };
     }
   }
   if (theme === undefined || foreground === undefined || backdrop.length === 0) {
     throw new Error("--theme と --bg と --fg は必須");
   }
   return { theme, backdrop, foreground };
-}
-
-/**
- * 面 1 枚を引数の綴りへ戻す。
- *
- * `alpha` からの逆算はしない。`alpha * 100` は桁を落とし、`--input/0.0000001` が
- * `--input/1e-7` という再パースできない綴りになる (2026-09-22 実測)。受け取った綴りを
- * そのまま返せば往復が閉じる
- */
-export function describeLayer(spec: LayerSpec): string {
-  return spec.source;
 }
 
 /**
@@ -87,8 +88,8 @@ export function describeLayer(spec: LayerSpec): string {
 export function formatReport(args: ContrastArgs, measured: MeasuredPair): string {
   return [
     `テーマ  ${args.theme}`,
-    `背景    ${args.backdrop.map(describeLayer).join(" + ")}  →  ${toHex(measured.backdrop)} (畳んだ後)`,
-    `前景    ${describeLayer(args.foreground)}  →  ${toHex(measured.foreground)} (画面に出る色)`,
+    `背景    ${args.backdrop.map((layer) => layer.source).join(" + ")}  →  ${toHex(measured.backdrop)} (畳んだ後)`,
+    `前景    ${args.foreground.source}  →  ${toHex(measured.foreground)} (画面に出る色)`,
     `比      ${measured.ratio.toFixed(2)}`,
     `        SC 1.4.3 (4.5:1)  ${measured.ratio >= 4.5 ? "満たす" : "割る"}`,
     `        SC 1.4.11 (3:1)   ${measured.ratio >= 3 ? "満たす" : "割る"}`,
