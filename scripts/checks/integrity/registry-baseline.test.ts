@@ -1,5 +1,6 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vite-plus/test";
 
@@ -45,17 +46,27 @@ function uiComponentFiles(): string[] {
 }
 
 /**
- * baseline ディレクトリの全ファイル。絞り込みをここへ書かない。
+ * baseline ディレクトリが追跡しているファイルを、ディレクトリからの相対パスで返す。
  *
- * 除外をフィルタに持たせると、`EXTERNAL_REGISTRY_FILES` から 1 件消したときに、その
- * ファイルが走査対象からも外れて無言で緑になる。同じ定数が期待値とフィルタを兼ねると
- * 入力どうしの比較になり検査が常に通る (`scripts/lib/companion-files.ts` の同旨)。
- * 分類は呼び出し側が行い、どの分類にも落ちないものを失敗させる。
+ * 絞り込みをここへ書かない。除外をフィルタに持たせると、`EXTERNAL_REGISTRY_FILES` から
+ * 1 件消したときに、そのファイルが走査対象からも外れて無言で緑になる。同じ定数が期待値と
+ * フィルタを兼ねると入力どうしの比較になり検査が常に通る
+ * (`scripts/lib/companion-files.ts` の同旨)。分類は呼び出し側が行い、どの分類にも落ちない
+ * ものを失敗させる。
+ *
+ * 一覧は `git ls-files` から取る。`readdirSync` で全件を拾うと `.DS_Store` のような
+ * gitignore 済みのファイルまで未分類として落ち、`git status` に出ない原因でテストが赤くなる。
+ * サブディレクトリの中身も相対パスとして出るので、直下だけを見て取りこぼすこともない
+ * (先例: `lint-config.test.ts` の「追跡しているソースが lint の対象に入っている」)。
  */
 function baselineFiles(): string[] {
-  return readdirSync(BASELINE_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => entry.name);
+  return execFileSync("git", ["ls-files", "--cached", "--", BASELINE_DIR], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  })
+    .split("\n")
+    .filter(Boolean)
+    .map((path) => relative(BASELINE_DIR, join(REPO_ROOT, path)));
 }
 
 describe("registry baseline の網羅", () => {
@@ -80,8 +91,9 @@ describe("registry baseline の網羅", () => {
     const dangling = baselineFiles().filter((name) => {
       const externalPath = EXTERNAL_REGISTRY_FILES[name];
       if (externalPath !== undefined) return !existsSync(join(REPO_ROOT, externalPath));
-      // ui のコンポーネントでも登録済みの外部生成物でもないものは、分類できない残骸として落とす
-      return !isComponentFile(name) || !existsSync(join(UI_DIR, name));
+      // ui のコンポーネントでも登録済みの外部生成物でもないものは、分類できない残骸として落とす。
+      // サブディレクトリに入ったものは name に "/" を含むのでここで落ちる
+      return name.includes("/") || !isComponentFile(name) || !existsSync(join(UI_DIR, name));
     });
     expect(dangling).toEqual([]);
   });

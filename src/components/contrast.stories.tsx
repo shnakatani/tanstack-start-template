@@ -42,12 +42,13 @@ import type { ReactNode } from "react";
 /**
  * 1 行 = 面と文字色の 1 対。`className` は呼び出し側がリテラルで渡す。
  *
- * ここを `["bg-x/10", ...].map()` に畳まない。`@shadcn/lint` はコールバック引数を解決できず
+ * ここを `["bg-x/10", ...].map()` に畳まない。`@shadcn/lint` から配列の中身ごと見えなくなり
  * (`no-raw-colors` / `no-unknown-classes` が無反応になる)、この story の主題であるクラス名が
- * 検査から外れる。配列リテラル自体は読まれるので、読めなくなるのは `.map()` の引数だけ。
+ * 検査から外れる。2026-09-21 に架空クラスを仕込んで実測した結果、読まれるのは className へ
+ * 直に置いた文字列リテラルと、`cn()` の引数に置いた配列リテラルの 2 つだけだった。
  *
  * 同じ理由で、Storybook が案内する `args` による共通化も採らない。`args: { className: "..." }`
- * へ移すと、そこも解決されずクラス名が検査から外れる。
+ * へ移すと、そこも読まれずクラス名が検査から外れる。
  */
 function Row({ className, children }: { className: string; children: ReactNode }) {
   return <p className={cn("rounded px-3 py-2 text-sm", className)}>{children}</p>;
@@ -78,7 +79,6 @@ export const OnBackground: StoryObj = {
       <Row className="bg-primary/5 text-muted-foreground">
         選択済み ChoiceCard の説明 bg-primary/5 + text-muted-foreground
       </Row>
-      <Row className="bg-primary/10 text-primary">破線ボタンの hover (dark) bg-primary/10</Row>
       <Row className="bg-primary/10 text-foreground">
         選択済み ChoiceCard (dark) bg-primary/10 + text-foreground
       </Row>
