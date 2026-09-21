@@ -34,7 +34,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 例示であっても、`placeholder="Mary Smith"` のように入力の構成や書式を伝えるものは対象外とする。
 
 ラベルと書式の指示は placeholder に置かない。ラベルは可視ラベルへ、指示は `FieldDescription` (`src/components/ui/field.tsx`) へ置く。
-要求が例示と指示で変わる分け方は Carbon (#7515) と w3c/wcag#4343 の議論が共通して採る。指示は 4.5:1 を満たす段が要る。
+指示は 4.5:1 を満たす段が要る。Carbon (#7515) は例示と指示というカテゴリで分け、w3c/wcag#4343 は「ラベルが名指していない情報を足すか」という軸で分けるが、書式や指示に 4.5:1 を課す点では同じ結論に着く。本 ADR は後者の軸を採る。
 
 トークンを切る形そのものは ADR-0024 の節 4 が持つ。
 
@@ -91,7 +91,7 @@ light と dark で同じ `mist-500` になる。
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0006 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
 - **消費側からの上書きが決定的でなくなった。** `cn` は生成済み utility の表で衝突を判定するため、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方のクラスを載せたまま出荷され、詳細度が同じ (0,1,1) なのでどちらが勝つかは CSS のソース順で決まる。置換前の `placeholder:text-muted-foreground` は `cn` が確実に落としていた。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない
-- placeholder を足すときは例示かどうかを確かめる。既存の利用は `grep -rn 'placeholder=' src/` で列挙できる
+- placeholder を足すときは、ラベルが名指していない情報 (書式・構成・必須の条件) を足していないかを確かめる。例示であることは条件を満たさない。既存の利用は `grep -rn 'placeholder=' src/` で列挙できる
 - 再評価の条件は、w3c/wcag#4343 が閉じるか、axe が `::placeholder` を読むようになったとき
 
 ## 出典
