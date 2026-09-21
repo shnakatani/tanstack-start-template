@@ -81,6 +81,16 @@ describe("formatReport", () => {
     expect(report).toContain("SC 1.4.3 (4.5:1)  満たす");
   });
 
+  it("比の表示は切り捨てで、判定と食い違わない", () => {
+    // 四捨五入すると 4.497 が `4.50` になり、数字だけを写した人には満たすように読める
+    const report = formatReport(
+      parseContrastArgs(["--theme", "light", "--bg", "--background", "--fg", "--foreground"]),
+      { backdrop: [1, 1, 1], foreground: [0, 0, 0], ratio: 4.497 },
+    );
+    expect(report).toContain("比      4.49");
+    expect(report).toContain("SC 1.4.3 (4.5:1)  割る");
+  });
+
   it("打った綴りをそのまま印字する", () => {
     // `alpha` から逆算すると `--input/030` は `--input/30`、`/0.0000001` は
     // `/9.999999999999998e-8` になる。どちらも打った人が自分の入力として読み直せない

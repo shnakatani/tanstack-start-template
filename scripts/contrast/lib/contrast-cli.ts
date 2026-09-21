@@ -80,6 +80,17 @@ export function parseContrastArgs(argv: readonly string[]): ContrastArgs {
 }
 
 /**
+ * 表示用に小数 2 桁へ落とす。四捨五入しない。
+ *
+ * 比 4.497 を `4.50` と出すと、数字だけを文書へ写した人には閾値を満たすように読める。
+ * 判定は生値なので同じ出力の `割る` と食い違い、行が離れれば気づけない。切り捨てなら
+ * 表示が実際の比を上回らない (Understanding SC 1.4.3「4.499:1 は 4.5:1 を満たさない」)
+ */
+function truncateTo2(ratio: number): string {
+  return (Math.floor(ratio * 100) / 100).toFixed(2);
+}
+
+/**
  * 出力の行を組み立てる。
  *
  * 前景の色には「画面に出る色」と添える。`--border` のようにトークン自身が alpha を
@@ -91,7 +102,7 @@ export function formatReport(args: ContrastArgs, measured: MeasuredPair): string
     `テーマ  ${args.theme}`,
     `背景    ${args.backdrop.map((layer) => layer.source).join(" + ")}  →  ${toHex(measured.backdrop)} (畳んだ後)`,
     `前景    ${args.foreground.source}  →  ${toHex(measured.foreground)} (画面に出る色)`,
-    `比      ${measured.ratio.toFixed(2)}`,
+    `比      ${truncateTo2(measured.ratio)}`,
     `        SC 1.4.3 (4.5:1)  ${measured.ratio >= 4.5 ? "満たす" : "割る"}`,
     `        SC 1.4.11 (3:1)   ${measured.ratio >= 3 ? "満たす" : "割る"}`,
     "",

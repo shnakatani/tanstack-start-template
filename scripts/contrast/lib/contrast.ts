@@ -144,7 +144,7 @@ function readAlpha(color: Color): number | null {
  * トークン名と解決後の alpha を同時に持つのが `measurePair` だからで、`layerOf` は `Srgb`
  * を返す時点でトークン名を落とす
  */
-export function flattenLayers(bottom: Rgb, layers: readonly Srgb[]): Rgb {
+function flattenLayers(bottom: Rgb, layers: readonly Srgb[]): Rgb {
   return layers.reduce<Rgb>(
     (under, layer) => [
       layer.rgb[0] * layer.alpha + under[0] * (1 - layer.alpha),

@@ -4,7 +4,6 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   contrastRatio,
-  flattenLayers,
   measurePair,
   parseLayerSpec,
   parseTokenTable,
@@ -164,20 +163,6 @@ describe("resolveSrgb", () => {
     // readAlpha と guard を丸ごと消しても全件緑のまま通る (2026-09-22 実測)。
     // 消えたときに起きるのは throw ではなく、半透明の面が消えた比が出ることである
     expect(() => resolveSrgb("rgb(0 0 0 / none)")).toThrow("none");
-  });
-});
-
-describe("flattenLayers", () => {
-  it("不透明な面だけなら最後の面がそのまま出る", () => {
-    expect(toHex(flattenLayers(resolveSrgb("#ffffff").rgb, [resolveSrgb("#000000")]))).toBe(
-      "#000000",
-    );
-  });
-
-  it("半透明を下地へ合成する", () => {
-    // 黒 50% を白の上に置くと中間になる
-    const blended = flattenLayers(resolveSrgb("#ffffff").rgb, [resolveSrgb("#00000080")]);
-    expect(blended[0]).toBeCloseTo(0.5, 2);
   });
 });
 
