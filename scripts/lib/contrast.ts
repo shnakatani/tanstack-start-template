@@ -214,13 +214,23 @@ export function parseLayerSpec(spec: string): LayerSpec {
   return { token, alpha: value / 100 };
 }
 
+/**
+ * 測った 1 対。`backdrop` と `foreground` はどちらも**合成後**の色で、トークンの生の値
+ * ではない。半透明の前景は下地と混ざった後の色になるので、出力へ載せるときは
+ * 「画面に出る色」として読ませる
+ */
 export type MeasuredPair = {
   readonly backdrop: Rgb;
   readonly foreground: Rgb;
   readonly ratio: number;
 };
 
-/** 下地を下から順に重ね、その上へ前景を載せて比を出す */
+/**
+ * 下地を下から順に重ね、その上へ前景を載せて比を出す。
+ *
+ * 前景も下地へ合成する。半透明の文字色 (`text-foreground/60`) は下地と混ざった色で
+ * 読まれるので、生の値で比を取ると画面に存在しない比が出る
+ */
 export function measurePair(args: {
   table: TokenTable;
   backdrop: readonly LayerSpec[];
@@ -234,6 +244,12 @@ export function measurePair(args: {
   return { backdrop, foreground, ratio: contrastRatio(foreground, backdrop) };
 }
 
+/**
+ * 表からトークンを引いて 1 枚の面にする。
+ *
+ * alpha は宣言側と指定側の積を取る。`--border` のようにトークン自身が alpha を持つ場合、
+ * `--border/50` は「宣言の alpha のさらに半分」になる
+ */
 function layerOf(table: TokenTable, spec: LayerSpec): Srgb {
   const declared = table[spec.token];
   if (declared === undefined) {
