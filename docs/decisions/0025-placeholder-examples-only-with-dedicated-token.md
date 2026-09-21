@@ -21,7 +21,7 @@ placeholder には向きの逆な要求が 2 つ掛かる。
 
 **1.4.3 が placeholder に掛かること自体は争われていない。** Understanding SC 1.4.3 の Intent が "including placeholder text" と名指しで含めている (勧告本体ではなく Understanding 側の記述)。
 
-w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を免除できるかで、2026-09-21 時点で open である。**軸は例示かどうかではなく、ラベルが名指していない情報を足すかどうかである。** detlevhfischer は `<input placeholder="Mary">` を「コントラスト要件は掛からない」側に置く一方、同じ例示でも `placeholder="Mary Smith"` は姓名の構成を伝えるので「もはや適合しないと言える」とする。`placeholder="DD.MM.YYYY"` のように書式を伝える形が要件を満たす必要がある点には、異論が出ていない。
+w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を免除できるかで、2026-09-21 時点で open である。**免除の軸は例示かどうかではなく、ラベルが名指していない情報を足すかどうかである。** detlevhfischer は `<input placeholder="Mary">` を「コントラスト要件は掛からない」側に置く一方、同じ例示でも `placeholder="Mary Smith"` は姓名の構成を伝えるので「もはや適合しないと言える」とする。`placeholder="DD.MM.YYYY"` のように書式を伝える形が要件を満たす必要がある点には、異論が出ていない。
 
 **免除の筋そのものへの反対もある。** mbgower は「冗長かどうかは関係がなく、SC 1.4.3 の incidental の例外は placeholder に及ばない」と述べている。philljenkins の「ラベルを 4.5:1 に保ったうえで placeholder は 3:1 + イタリック」案も含め、決着していない。
 
@@ -29,12 +29,11 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 ## Decision
 
-**placeholder にはラベルが名指していない情報を足さない例示だけを置き、その色を `--placeholder` として `--muted-foreground` から切る。**
+**placeholder には例示だけを置き、その色を `--placeholder` として `--muted-foreground` から切る。**
 
-例示であっても、`placeholder="Mary Smith"` のように入力の構成や書式を伝えるものは対象外とする。
+可視ラベルの代わりに placeholder を使わない。書式・構成・必須条件の説明も置かない。それらは可視ラベルと `FieldDescription` (`src/components/ui/field.tsx`) が持ち、`--foreground` / `--muted-foreground` で 4.5:1 を満たす。
 
-ラベルと書式の指示は placeholder に置かない。ラベルは可視ラベルへ、指示は `FieldDescription` (`src/components/ui/field.tsx`) へ置く。
-指示は 4.5:1 を満たす段が要る。Carbon (#7515) は例示と指示というカテゴリで分け、w3c/wcag#4343 は「ラベルが名指していない情報を足すか」という軸で分けるが、書式や指示に 4.5:1 を課す点では同じ結論に着く。本 ADR は後者の軸を採る。
+**「何を置くか」と「その色が適合するか」は別の問いで、軸も違う。** 置くものは Carbon (#7515) の分類に従い、例示か指示かで分ける。色が免除されるかは w3c/wcag#4343 の軸で、ラベルが名指していない情報を足すかで分かれる。2 つは一致しない。例示でも書式を伝えるもの (`placeholder="Mary Smith"`) は、置いてよいが免除には入らない。その場合この色は不適合になる。どこが不適合かは Consequences が持つ。
 
 トークンを切る形そのものは ADR-0024 の節 4 が持つ。
 
@@ -91,7 +90,8 @@ light と dark で同じ `mist-500` になる。
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0006 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
 - **消費側からの上書きが決定的でなくなった。** `cn` は生成済み utility の表で衝突を判定するため、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方のクラスを載せたまま出荷され、詳細度が同じ (0,1,1) なのでどちらが勝つかは CSS のソース順で決まる。置換前の `placeholder:text-muted-foreground` は `cn` が確実に落としていた。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない
-- placeholder を足すときは、ラベルが名指していない情報 (書式・構成・必須の条件) を足していないかを確かめる。例示であることは条件を満たさない。既存の利用は `grep -rn 'placeholder=' src/` で列挙できる
+- placeholder を足すときは 2 つ確かめる。(1) 例示か (ラベルの代わりでも、書式や条件の説明でもないか)。(2) ラベルが名指していない情報を足していないか。(1) を満たし (2) を満たさないものは置いてよいが、この色では 1.4.3 に適合しない
+- 2026-09-21 時点で (2) を満たさないのは `input-group.stories.tsx` の `placeholder="name@example.com"` (差出人ラベルが形式を名指していない) と `placeholder="0"` (数値のみという構成を伝える) の 2 件。どちらも story のカタログで、dark の比は表の dark 行と同じ 3.93 になる。残る 11 種はラベルの言い換えか値の例示で、情報を足さない
 - 再評価の条件は、w3c/wcag#4343 が閉じるか、axe が `::placeholder` を読むようになったとき
 
 ## 出典
