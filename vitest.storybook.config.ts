@@ -4,15 +4,15 @@ import viteReact from "@vitejs/plugin-react";
 import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
+const THEMES = ["light", "dark"] as const;
+
 /**
  * テーマごとに 1 つの project を作る。`initialGlobals` で toolbar の global を固定すると、
  * 同じ story が両方のテーマで走る (addon-vitest の公式パターン)。light だけで回すと、
  * `parameters.a11y.test: "error"` が dark の contrast を検査していないのに検査しているように
  * 見える。`theme` は `@storybook/addon-themes` の global 名である。
  */
-const THEMES = ["light", "dark"] as const;
-
-export function storybookProject(theme: (typeof THEMES)[number]) {
+function storybookProject(theme: (typeof THEMES)[number]) {
   return defineProject({
     // vite.config.ts と同じく .env を読まない (ADR-0002)
     envDir: false,
@@ -93,6 +93,19 @@ export function storybookProject(theme: (typeof THEMES)[number]) {
  * 判定の正本は後者で、test panel は書いている最中の確認に使う。
  */
 export function storybookProjects() {
-  const themes = process.env.VITEST_STORYBOOK === "true" ? (["light"] as const) : THEMES;
+  const themes = isStorybookRun() ? (["light"] as const) : THEMES;
   return themes.map((theme) => storybookProject(theme));
+}
+
+/**
+ * Storybook から起動されたか。addon と同じ読み方をする。
+ *
+ * addon は `optionalEnvToBoolean` (`storybook/dist/_node-chunks/chunk-5XWVTFUD.js`) で読み、
+ * `"false"` と `"0"` と空文字だけを偽として扱う。`=== "true"` で比べると、`VITEST_STORYBOOK=1`
+ * のときに addon だけが project 名を上書きし、こちらは 2 つ作って名前が衝突する。
+ */
+function isStorybookRun(): boolean {
+  const value = process.env.VITEST_STORYBOOK;
+  if (value === undefined || value === "") return false;
+  return value.toUpperCase() !== "FALSE" && value !== "0";
 }

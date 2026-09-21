@@ -12,6 +12,8 @@ import { fileURLToPath } from "node:url";
  * docstring)、addon より後ろに入る。
  *
  * 並びが変わって addon の結果を読めなくなったら、`checkA11yIncomplete` が「レポートが無い」で
- * 落とす。無音で検査が止まらないようにしてある。
+ * 落とす。ただし守れるのは並びだけで、この preset 自体が `main.ts` の `addons` から外れたり
+ * 名前が解決できなくなったりすると、Storybook は警告を出して読み飛ばし
+ * (`storybook/dist/_node-chunks/chunk-IQHYYTFR.js` の `resolveAddonName`)、検査は無音で消える。
  */
 export const previewAnnotations = [fileURLToPath(new URL("./preview.ts", import.meta.url))];

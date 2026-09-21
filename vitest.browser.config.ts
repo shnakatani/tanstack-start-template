@@ -58,7 +58,8 @@ export default defineProject({
     tags: [
       {
         name: "a11y",
-        description: "axe を回して「アクセシブルか」を問うテスト (vp test run --tagsFilter a11y)",
+        description:
+          "この project で axe を回すテスト。story 側の a11y は addon が別に当てるので含まない",
       },
     ],
     setupFiles: ["src/test/browser-setup.tsx"],

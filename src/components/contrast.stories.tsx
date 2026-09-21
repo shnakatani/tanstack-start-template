@@ -15,8 +15,10 @@ import type { ReactNode } from "react";
  * 前のファイルの click 位置が残り、開状態の検証が hover の配色と交絡するのを防ぐためで、
  * story の実行経路には関わらない。
  *
- * light と dark は project が分かれており (`vitest.config.ts`)、同じ story が両方で走る。
- * 片方でしか現れない不透明度も両方で描かれる。2026-09-21 時点ではどちらのテーマでも 4.5:1 を
+ * light と dark は project が分かれており (`vitest.config.ts`)、`vp test run` と
+ * `mise run verify` では同じ story が両方で走る。片方でしか現れない不透明度も両方で描かれる。
+ * Storybook 経由の実行 (test panel / `storybook tools test run`) は light だけなので、
+ * dark 側を確かめるときは前者で回す (ADR-0022 の節 7-1)。2026-09-21 時点ではどちらのテーマでも 4.5:1 を
  * 満たすが、いちばん狭いのは light 側で描いた `bg-destructive-surface/30` の 4.79 で、
  * トークンを動かすと画面に存在しない対で落ちうる。そのときは落ちた対がそのテーマで現れるかを
  * 先に確かめる。この 4.79 は合成後を整数 sRGB へ丸めた値で、axe も丸め後の色を読む。

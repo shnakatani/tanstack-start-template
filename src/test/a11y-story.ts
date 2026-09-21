@@ -1,6 +1,7 @@
+import type { A11yTypes } from "@storybook/addon-a11y";
 import type axe from "axe-core";
 
-import { describeA11yNodes } from "./a11y-message";
+import { describeA11yResults } from "./a11y-message";
 
 // story の a11y 合否判定。消費者は `.storybook/a11y-incomplete/preview.ts` だけで、
 // ブラウザテストからは呼ばない。
@@ -41,12 +42,11 @@ export function checkA11yIncomplete(context: {
   readonly reporting: {
     readonly reports: readonly { readonly type: string; readonly result: unknown }[];
   };
-  readonly parameters: unknown;
+  readonly parameters: A11yTypes["parameters"];
+  readonly globals: A11yTypes["globals"] & { readonly ghostStories?: unknown };
   readonly viewMode: string;
 }): string | null {
-  // addon は story 表示のときしか走らない。docs 表示でレポートを探すと必ず空になる
-  if (context.viewMode !== "story") return null;
-  if (isA11yTurnedOff(context.parameters)) return null;
+  if (!isIncompleteGateActive(context)) return null;
 
   const report = context.reporting.reports.find((item) => item.type === "a11y");
   if (report === undefined) {
@@ -63,13 +63,31 @@ export function checkA11yIncomplete(context: {
   return `axe が判定できなかった項目\n${describeA11yResults(unexpected).join("\n")}`;
 }
 
-/** story が a11y の検査を切っているか (`disable` / `test: "off"` は addon の公開パラメータ) */
-function isA11yTurnedOff(parameters: unknown): boolean {
-  if (typeof parameters !== "object" || parameters === null || !("a11y" in parameters))
-    return false;
-  const { a11y } = parameters;
-  if (typeof a11y !== "object" || a11y === null) return false;
-  return ("disable" in a11y && a11y.disable === true) || ("test" in a11y && a11y.test === "off");
+/**
+ * この story で `incomplete` を合否へ入れるか。**addon のゲートと同じ条件を並べる。**
+ * 出典は `@storybook/addon-a11y` の `dist/_browser-chunks/chunk-P5J2FJ2Z.js` で、
+ * `shouldRunEnvironmentIndependent` の 4 条件と、その直後の `viewMode === "story"` である。
+ *
+ * ここが addon より緩いと、addon が走らなかった story を「レポートが無い」で落とす。
+ * `manual` は addon パネルのトグルで、公式が案内する切り方である
+ * (storybook.js.org/docs/writing-tests/accessibility-testing#disable-automated-checks)。
+ * addon が条件を足したら、こちらが偽陽性を出して知らせる。
+ */
+function isIncompleteGateActive(context: {
+  readonly parameters: A11yTypes["parameters"];
+  readonly globals: A11yTypes["globals"] & { readonly ghostStories?: unknown };
+  readonly viewMode: string;
+}): boolean {
+  return (
+    context.viewMode === "story" &&
+    !context.globals.ghostStories &&
+    context.parameters.a11y?.disable !== true &&
+    context.parameters.a11y?.test !== "off" &&
+    // "todo" は addon が違反を warning へ降ろす形 (同 chunk の `getMode`)。合否へ入れない側で
+    // 揃える。ここだけ落とすと、既知の問題を寝かせる逃がし弁が半分しか効かない
+    context.parameters.a11y?.test !== "todo" &&
+    context.globals.a11y?.manual !== true
+  );
 }
 
 /** addon が走査に失敗したときの形 (`{ error }`) */
@@ -96,22 +114,30 @@ export function collectUnexpectedIncomplete(incomplete: readonly axe.Result[]): 
     .filter((item) => item.nodes.length > 0);
 }
 
-/** 判定できなかった項目の失敗メッセージ */
-export function describeA11yResults(results: readonly axe.Result[]): string[] {
-  return results.map((item) => `${item.id}: ${item.help}\n${describeA11yNodes(item.nodes)}`);
+/**
+ * その node を合否から外すか。
+ *
+ * `messageKey` で外すものは、その node が挙げた `messageKey` が**すべて**外す対象のときだけ
+ * 落とす。axe は node 単位でしか報告しないので、外さないキー (`aria-valid-attr-value` の
+ * `noId` など) が 1 つでも混ざっていたら、その node は部品側の信号を含んでいる (ADR-0026 の節 1)。
+ */
+function isIgnoredNode(rule: string, node: axe.NodeResult): boolean {
+  const ignored = IGNORED_INCOMPLETE.filter((item) => item.rule === rule);
+  if (ignored.length === 0) return false;
+  if (ignored.some((item) => item.messageKey === undefined)) return true;
+
+  const keys = messageKeys(node);
+  return keys.length > 0 && keys.every((key) => ignored.some((item) => item.messageKey === key));
 }
 
-/** その node が `IGNORED_INCOMPLETE` のどれかに当たるか */
-function isIgnoredNode(rule: string, node: axe.NodeResult): boolean {
-  const keys = new Set(
-    [...node.any, ...node.all, ...node.none].map((check) =>
-      typeof check.data === "object" && check.data !== null && "messageKey" in check.data
-        ? check.data.messageKey
-        : undefined,
-    ),
-  );
-  return IGNORED_INCOMPLETE.some(
-    (ignored) =>
-      ignored.rule === rule && (ignored.messageKey === undefined || keys.has(ignored.messageKey)),
+/** その node の check が挙げた `messageKey` */
+function messageKeys(node: axe.NodeResult): string[] {
+  return [...node.any, ...node.all, ...node.none].flatMap((check) =>
+    typeof check.data === "object" &&
+    check.data !== null &&
+    "messageKey" in check.data &&
+    typeof check.data.messageKey === "string"
+      ? [check.data.messageKey]
+      : [],
   );
 }

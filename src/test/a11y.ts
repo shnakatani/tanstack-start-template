@@ -1,7 +1,7 @@
 import axe from "axe-core";
 import { expect } from "vite-plus/test";
 
-import { describeA11yNodes } from "./a11y-message";
+import { describeA11yResults } from "./a11y-message";
 
 /**
  * ブラウザテスト用の a11y アサーション。
@@ -29,17 +29,15 @@ export async function expectNoA11yViolations(container: Element): Promise<void> 
     },
   });
 
-  expect(
-    result.violations.map(
-      (violation) =>
-        `${violation.id} (${violation.impact ?? "impact 不明"}): ${violation.help}\n${describeA11yNodes(violation.nodes)}`,
-    ),
-    "a11y 違反",
-  ).toEqual([]);
+  expect(describeA11yResults(result.violations), "a11y 違反").toEqual([]);
 
-  // incomplete はここでは見ない。組み上げて操作した結果に出るものは、部品の問題ではなく
+  // incomplete は合否へ入れない。組み上げて操作した結果に出るものは、部品の問題ではなく
   // 合成とタイミングの産物で、実行環境の速さで結果が変わる (ADR-0018 の事故)。統制できる
-  // 単一部品の側 (story) で落とし、ここは出たときに人が読む (ADR-0026 の節 1)
+  // 単一部品の側 (story) で落とす (ADR-0026 の節 1)。ただし黙って捨てると、緑のときに
+  // 何が測れていないのかを誰も読めない
+  if (result.incomplete.length > 0) {
+    console.warn("[a11y] axe が判定できなかった項目", describeA11yResults(result.incomplete));
+  }
 
   // 1 つもルールが走らなかった (container が空だった) 場合を通さない
   expect(result.passes.length, "適用されたルールがゼロ").toBeGreaterThan(0);

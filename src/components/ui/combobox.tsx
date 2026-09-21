@@ -115,7 +115,8 @@ function ComboboxContent({
         <ComboboxPrimitive.Popup
           data-slot="combobox-content"
           data-chips={!!anchor}
-          // *:data-[slot=input-group-control]:h-8 は上流に無い。popup は input-group を h-8 へ
+          // 下の class 文字列のうち *:data-[slot=input-group]:*:data-[slot=input-group-control]:h-8
+          // は上流に無い。popup は input-group を h-8 へ
           // 縮めるが、その中の Input は registry 素の h-9 のままで、入力欄の箱が上下 2px ずつ
           // 枠の外へ出る。axe はテキストの矩形を含みきる背景要素を見つけられず、色を測れて
           // いないまま緑になる (ADR-0026 の節 5)。ADR-0006 の乖離

@@ -1,38 +1,8 @@
-import type axe from "axe-core";
+import type { A11yTypes } from "@storybook/addon-a11y";
 import { describe, expect, test } from "vite-plus/test";
 
-import {
-  checkA11yIncomplete,
-  collectUnexpectedIncomplete,
-  describeA11yResults,
-} from "./a11y-story";
-
-function check(messageKey?: string): axe.CheckResult {
-  return {
-    id: "color-contrast",
-    impact: "serious",
-    message: "",
-    data: messageKey === undefined ? null : { messageKey },
-    relatedNodes: [],
-  };
-}
-
-function node(
-  options: { messageKey?: string; target?: string; summary?: string } = {},
-): axe.NodeResult {
-  return {
-    html: "<p></p>",
-    target: [options.target ?? "p"],
-    any: [check(options.messageKey)],
-    all: [],
-    none: [],
-    failureSummary: options.summary,
-  };
-}
-
-function rule(id: string, nodes: axe.NodeResult[]): axe.Result {
-  return { description: "", help: `${id} の説明`, helpUrl: "", id, tags: [], nodes };
-}
+import { checkA11yIncomplete, collectUnexpectedIncomplete } from "./a11y-story";
+import { a11yNode as node, a11yRule as rule } from "./a11y.test-helpers";
 
 /** `reporting.reports` の 1 件ぶん。`result` は `unknown` なので形は呼び出し側が決める */
 function report(result: unknown) {
@@ -40,8 +10,16 @@ function report(result: unknown) {
 }
 
 /** `checkA11yIncomplete` へ渡す story context の最小形 */
-function context(reports: { type: string; result: unknown }[], parameters: unknown = {}) {
-  return { reporting: { reports }, parameters, viewMode: "story" };
+function context(
+  reports: { type: string; result: unknown }[],
+  overrides: { parameters?: A11yTypes["parameters"]; globals?: A11yTypes["globals"] } = {},
+) {
+  return {
+    reporting: { reports },
+    parameters: overrides.parameters ?? {},
+    globals: overrides.globals ?? {},
+    viewMode: "story",
+  };
 }
 
 describe("collectUnexpectedIncomplete", () => {
@@ -60,8 +38,8 @@ describe("collectUnexpectedIncomplete", () => {
   test("messageKey で外すものは、同じルールの別の messageKey を残す", () => {
     const results = collectUnexpectedIncomplete([
       rule("aria-valid-attr-value", [
-        node({ messageKey: "controlsWithinPopup", target: "#trigger" }),
-        node({ messageKey: "noId", target: "#broken" }),
+        node({ messageKeys: ["controlsWithinPopup"], target: ["#trigger"] }),
+        node({ messageKeys: ["noId"], target: ["#broken"] }),
       ]),
     ]);
 
@@ -69,31 +47,28 @@ describe("collectUnexpectedIncomplete", () => {
     expect(results[0]?.nodes.map((n) => n.target)).toEqual([["#broken"]]);
   });
 
+  test("外さないキーが同じ node に混ざっていれば落とさない", () => {
+    const results = collectUnexpectedIncomplete([
+      rule("aria-valid-attr-value", [
+        node({ messageKeys: ["controlsWithinPopup", "noId"], target: ["#both"] }),
+      ]),
+    ]);
+
+    expect(results.map((r) => r.nodes.map((n) => n.target))).toEqual([[["#both"]]]);
+  });
+
   test("node が 1 つも残らなかった結果は結果ごと落とす", () => {
     const results = collectUnexpectedIncomplete([
-      rule("aria-valid-attr-value", [node({ messageKey: "controlsWithinPopup" })]),
+      rule("aria-valid-attr-value", [node({ messageKeys: ["controlsWithinPopup"] })]),
     ]);
 
     expect(results).toEqual([]);
   });
 });
 
-describe("describeA11yResults", () => {
-  test("ルール名と help と対象と failureSummary を並べる", () => {
-    const [line] = describeA11yResults([
-      rule("color-contrast", [node({ target: "#title", summary: "背景を決められない" })]),
-    ]);
-
-    expect(line).toContain("color-contrast");
-    expect(line).toContain("color-contrast の説明");
-    expect(line).toContain("#title");
-    expect(line).toContain("背景を決められない");
-  });
-});
-
 describe("checkA11yIncomplete", () => {
   const withIncomplete = report({
-    incomplete: [rule("color-contrast", [node({ target: "#title" })])],
+    incomplete: [rule("color-contrast", [node({ target: ["#title"] })])],
   });
 
   test("判定へ入れる incomplete が無ければ null", () => {
@@ -108,8 +83,23 @@ describe("checkA11yIncomplete", () => {
   });
 
   test("story が a11y を切っていれば見ない", () => {
-    expect(checkA11yIncomplete(context([withIncomplete], { a11y: { disable: true } }))).toBeNull();
-    expect(checkA11yIncomplete(context([withIncomplete], { a11y: { test: "off" } }))).toBeNull();
+    const off = { parameters: { a11y: { disable: true } } };
+    const todo = { parameters: { a11y: { test: "off" } } } as const;
+
+    expect(checkA11yIncomplete(context([withIncomplete], off))).toBeNull();
+    expect(checkA11yIncomplete(context([withIncomplete], todo))).toBeNull();
+  });
+
+  test('test: "todo" は addon が warning へ降ろす形なので見ない', () => {
+    const todo = { parameters: { a11y: { test: "todo" } } } as const;
+
+    expect(checkA11yIncomplete(context([withIncomplete], todo))).toBeNull();
+  });
+
+  test("addon パネルの manual を有効にしていれば見ない", () => {
+    const manual = { globals: { a11y: { manual: true } } };
+
+    expect(checkA11yIncomplete(context([withIncomplete], manual))).toBeNull();
   });
 
   test("docs 表示では見ない。addon が走らずレポートが積まれない", () => {
