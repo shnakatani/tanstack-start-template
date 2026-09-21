@@ -20,7 +20,23 @@ describe("describeError", () => {
     const a = new Error("a");
     const b = new Error("b", { cause: a });
     a.cause = b;
-    expect(describeError(a).split(" ← ")).toHaveLength(10);
+    expect(describeError(a).split(" ← ")).toHaveLength(11);
+    expect(describeError(a)).toContain("(以下略)");
+  });
+
+  it("切ったことを出力へ出す", () => {
+    // 落ちるのは最奥 = 根本原因の側。印が無いと 10 段ちょうどと見分けが付かず、
+    // いちばん知りたい行が消えたことに気づけない
+    const chain = (depth: number) => {
+      let error = new Error(`e${depth}`);
+      for (let level = depth - 1; level >= 1; level -= 1) {
+        error = new Error(`e${level}`, { cause: error });
+      }
+      return error;
+    };
+    expect(describeError(chain(10))).not.toContain("(以下略)");
+    expect(describeError(chain(11))).toContain("(以下略)");
+    expect(describeError(chain(11))).not.toContain("e11");
   });
 
   it("cause が Error でなければそこで止める", () => {
