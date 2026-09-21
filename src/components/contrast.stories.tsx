@@ -29,7 +29,7 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
  * 一覧は手で保つ。対象を数え直すコマンド:
  *
  * ```
- * grep -rhoE '(bg|hover:bg|dark:bg|dark:hover:bg|aria-expanded:bg|focus:bg)-[a-z-]+/[0-9]+' \
+ * grep -rhoE '(bg|hover:bg|dark:bg|dark:hover:bg|aria-expanded:bg|focus:bg|has-data-checked:bg|dark:has-data-checked:bg)-[a-z0-9-]+/[0-9]+' \
  *   src/components/ui src/components/parts src/components/action --include='*.tsx' \
  *   | grep -v stories | sort | uniq -c
  * ```
@@ -37,9 +37,7 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
  * 出力のうち `bg-black/10` は dialog / alert-dialog / sheet の scrim で、`fixed inset-0` の面に
  * 文字が載らないため行を持たない。それ以外は下の 2 つの story がすべて描く。
  */
-const meta = {
-  parameters: { layout: "padded" },
-} satisfies Meta;
+const meta = {} satisfies Meta;
 
 export default meta;
 
@@ -62,8 +60,20 @@ export const OnBackground: StoryObj = {
       <p className="bg-primary/5 text-primary rounded px-3 py-2 text-sm">
         破線ボタンの hover bg-primary/5
       </p>
+      <p className="bg-primary/5 text-foreground rounded px-3 py-2 text-sm">
+        選択済み ChoiceCard bg-primary/5 + text-foreground
+      </p>
+      <p className="bg-primary/5 text-muted-foreground rounded px-3 py-2 text-sm">
+        選択済み ChoiceCard の説明 bg-primary/5 + text-muted-foreground
+      </p>
       <p className="bg-primary/10 text-primary rounded px-3 py-2 text-sm">
         破線ボタンの hover (dark) bg-primary/10
+      </p>
+      <p className="bg-primary/10 text-foreground rounded px-3 py-2 text-sm">
+        選択済み ChoiceCard (dark) bg-primary/10 + text-foreground
+      </p>
+      <p className="bg-primary/10 text-muted-foreground rounded px-3 py-2 text-sm">
+        選択済み ChoiceCard の説明 (dark) bg-primary/10 + text-muted-foreground
       </p>
       <p className="bg-muted/50 text-muted-foreground rounded px-3 py-2 text-sm">
         淡色行の hover bg-muted/50 + text-muted-foreground
@@ -76,6 +86,9 @@ export const OnBackground: StoryObj = {
       </p>
       <p className="bg-input/30 text-foreground rounded px-3 py-2 text-sm">
         入力欄の面 (dark) bg-input/30
+      </p>
+      <p className="bg-input/30 text-muted-foreground rounded px-3 py-2 text-sm">
+        select の空状態 (dark) bg-input/30 + text-muted-foreground
       </p>
       <p className="bg-input/50 text-foreground rounded px-3 py-2 text-sm">
         入力欄の hover (dark) bg-input/50

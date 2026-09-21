@@ -28,12 +28,14 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ### 新しい色の露出のさせ方
 
-| 当てる場所       | 露出                               | 例                         |
-| ---------------- | ---------------------------------- | -------------------------- |
-| どの要素でもよい | `@theme inline` で token 化        | `--destructive-surface`    |
-| 1 箇所に限る     | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0025) |
+判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない。それは実測して ADR-0024 へ残す。
 
-`@theme inline` へ通すと `text-*` / `bg-*` / `border-*` と variant の全組み合わせが生える。当ててはいけない場所を持つ色は通さない。`--placeholder` を通すと `data-placeholder:text-placeholder` が生え、`select` の実テキスト (WCAG 1.4.3 が掛かる) へ当てられる。
+| 誤用を誘う既存の形 | 露出                               | 例                         |
+| ------------------ | ---------------------------------- | -------------------------- |
+| 無い               | `@theme inline` で token 化        | `--destructive-surface`    |
+| 在る               | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0025) |
+
+`@theme inline` へ通すと `text-*` / `bg-*` / `border-*` と variant の全組み合わせが生える。`--placeholder` を通すと `data-placeholder:text-placeholder` が生え、`select` の既存の `data-placeholder:text-muted-foreground` を置き換える形で実テキスト (WCAG 1.4.3 が掛かる) へ当てられる。
 
 ### 統制の 2 層 (ADR-0004)
 

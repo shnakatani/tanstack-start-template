@@ -47,6 +47,8 @@ placeholder には向きの逆な要求が 2 つ掛かる。
 
 light は `mist-500` だけが帯に入り、下端から 0.11 しか離れていない。
 
+dark の比は入力欄が置かれる面で変わる。上表は `--background` の上で測ったもので、`Dialog` / `Sheet` / `Popover` の中 (`--popover`) に置くと `mist-500` は 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。入力値との差 (4.45) は面によらないため、下の決定は動かない。
+
 dark は帯に入る段が無い。`mist-400` は入力値との 3:1 を割る側 (2.35) で外れ、`mist-500` は 4.5:1 を割る側で外れる。
 **割る側を選んだ。** 例示に 1.4.3 が掛かるかは未決着で、Carbon は情報を持たない例示を低コントラストのまま許している。一方、入力値との区別が消えると、飛ばされるフィールドができる。
 `--muted-foreground` と兼ねていた `mist-400` も dark では帯の外だったので、この決定は外れる側を入れ替えたものである。
@@ -72,7 +74,7 @@ light と dark で同じ `mist-500` になる。
 
 - **この色を見る検査は無い。`vp test run` が緑でも `--placeholder` の値について何も言っていない。** 動かすときは light dark の両方で、placeholder を入力欄の背景と、値を入れた同じ欄の文字の 2 つに人が見比べる
 - light の `mist-500` は帯の下端から 0.11 しか離れていない。`--background` か `--foreground` が動くと外れる。ADR-0024 の節 1 で生成をやり直したら帯を測り直す
-- dark は SC 1.4.3 の 4.5:1 を満たさない。placeholder へ書式や指示を書くと、そのまま不適合になる
+- dark は SC 1.4.3 の 4.5:1 を満たさない。`--background` の上で 3.93、`--popover` の上で 3.34。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0006 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
 - placeholder を足すときは例示かどうかを確かめる。既存の利用は `grep -rn 'placeholder=' src/` で列挙できる
