@@ -67,7 +67,7 @@ export function checkA11yIncomplete(context: {
 /**
  * この story で `incomplete` を合否へ入れるか。**addon のゲートに 1 条件足したもの**である。
  * 出典は `@storybook/addon-a11y` の `shouldRunEnvironmentIndependent` の 4 条件と、その直後の
- * `viewMode === "story"` (chunk のファイル名は版ごとに変わるので、シンボル名で grep する)。
+ * `viewMode === "story"`。
  * 足しているのは `test: "todo"` で、addon はこの値でも走る (違反を warning へ降ろすだけ)。
  *
  * ここが addon より緩いと、addon が走らなかった story を「レポートが無い」で落とす。
