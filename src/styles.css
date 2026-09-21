@@ -49,7 +49,6 @@
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
-  --color-placeholder: var(--placeholder);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
@@ -82,9 +81,11 @@
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
   --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.15 */
-  /* ::placeholder 疑似要素 (例示テキスト) 専用。select の data-placeholder は
-     実テキストで axe が通常テキストとして評価し WCAG 1.4.3 (4.5:1) が掛かるため
-     対象外 (--muted-foreground のまま)。合わせると dark で 3.93 に落ち違反する */
+  /* ::placeholder 疑似要素に載る例示テキスト専用 (ADR-0025)。`@theme inline` へ通さず
+     下の `@utility example-placeholder` だけで露出させる。通すと text-placeholder や
+     data-placeholder:text-placeholder まで生成され、select の実テキストへ当てられる。
+     そこは WCAG 1.4.3 が掛かり dark で 3.93 に落ちる。公式も、utility を生やさない値は
+     @theme でなく :root へ置くとしている (tailwindcss.com/docs/theme) */
   --placeholder: oklch(56% 0.021 213.5); /* mist-500 */
   --accent: oklch(0.963 0.002 197.1);
   --accent-foreground: oklch(0.218 0.008 223.9);
@@ -127,7 +128,7 @@
   --muted-foreground: oklch(0.723 0.014 214.4);
   --placeholder: oklch(
     56% 0.021 213.5
-  ); /* mist-500。light と同値 (意図的)。対象外スコープの理由は :root の --placeholder 直上のコメント参照 */
+  ); /* mist-500。light と同値 (意図的)。適用範囲は :root 側の注記 */
   --accent: oklch(0.275 0.011 216.9);
   --accent-foreground: oklch(0.987 0.002 197.1);
   --destructive: oklch(80.8% 0.114 19.571); /* red-300 */
@@ -149,6 +150,17 @@
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(80.9% 0.105 251.813);
+}
+
+/* 例示の placeholder に色を当てる唯一の口 (ADR-0025)。`--placeholder` を `@theme inline` へ
+   通していないので、この utility を経由しない限り当てられない。select の data-placeholder は
+   実テキストで WCAG 1.4.3 が掛かるため、ここから到達できないことが制約になる。
+   入れ子の擬似要素を持つ custom utility は公式の形 (tailwindcss.com/docs/adding-custom-styles
+   の Complex utilities) */
+@utility example-placeholder {
+  &::placeholder {
+    color: var(--placeholder);
+  }
 }
 
 /* ScrollArea.Root へ当てて、Viewport のフォーカス指標を Root の outline で代替する。

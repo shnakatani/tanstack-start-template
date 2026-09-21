@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from "@/components/ui/sidebar";
+import { resolveColorToken } from "@/test/resolve-color-token";
 import { waitForAnimations } from "@/test/wait-for-animations";
 
 function getSidebarAccentColors() {
@@ -24,17 +25,10 @@ function getSidebarAccentColors() {
   expect(rootStyles.getPropertyValue("--sidebar-accent").trim()).not.toBe("");
   expect(rootStyles.getPropertyValue("--sidebar-accent-foreground").trim()).not.toBe("");
 
-  const reference = document.createElement("div");
-  reference.style.backgroundColor = "var(--sidebar-accent)";
-  reference.style.color = "var(--sidebar-accent-foreground)";
-  document.body.append(reference);
-  const styles = getComputedStyle(reference);
-  const colors = {
-    backgroundColor: styles.backgroundColor,
-    color: styles.color,
+  return {
+    backgroundColor: resolveColorToken("--sidebar-accent"),
+    color: resolveColorToken("--sidebar-accent-foreground"),
   };
-  reference.remove();
-  return colors;
 }
 
 /**

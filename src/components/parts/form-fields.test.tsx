@@ -11,6 +11,7 @@ import {
   FormTextField,
 } from "@/components/parts/form-fields";
 import { useAppForm } from "@/hooks/use-app-form";
+import { resolveColorToken } from "@/test/resolve-color-token";
 
 const nameSchema = v.pipe(v.string(), v.trim(), v.minLength(1, "名前を入力してください"));
 
@@ -52,24 +53,6 @@ function TextHarness({ labelClassName }: { labelClassName?: string }) {
       <button type="submit">保存</button>
     </form>
   );
-}
-
-/**
- * トークンをブラウザに解決させて算出値の綴りで受け取る。カスタムプロパティを
- * `getPropertyValue` で読むと `styles.css` に書いた字面がそのまま返るため、`color` の
- * 算出値と直接は比べられない。トークンの値は Tailwind の palette の段を写す約束で、
- * palette 側が `oklch(44.4% ...)` と百分率で書くのに対し、算出値は `oklch(0.444 ...)` に
- * 正規化される (ADR-0024)。
- */
-function resolveColorToken(token: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = `var(${token})`;
-  document.body.append(probe);
-  try {
-    return getComputedStyle(probe).color;
-  } finally {
-    probe.remove();
-  }
 }
 
 /**
