@@ -20,7 +20,67 @@ const IGNORED_INCOMPLETE: readonly { readonly rule: string; readonly messageKey?
 ];
 
 /**
- * 合否へ入れる `incomplete` だけを残す。使うのは story 側 (`.storybook/preview.tsx`) だけで、
+ * `addon-a11y` が `reporting` へ積んだ結果から、合否へ入れる `incomplete` を選ぶ (ADR-0026 の節 1)。
+ * 落ちる理由は文言で返し、throw は annotation 側 (`.storybook/a11y-incomplete/preview.ts`) が持つ。
+ *
+ * axe を回し直さない。回し直すと、addon の走査範囲 (`document.body` から Storybook 自身の要素を
+ * 除いたもの) と `parameters.a11y` の解釈を写すことになり、2 つが静かにずれる。addon は走査の
+ * 直前に `axe.reset()` を呼ぶので、回し直す側は前の story の設定を引き継いだまま走る。
+ *
+ * レポートが無い形と読めない形は throw させる。どちらも「検査が動いていない」を意味し、
+ * 素通りさせると CI は無音のまま緑を出す。
+ */
+export function checkA11yIncomplete(context: {
+  readonly reporting: {
+    readonly reports: readonly { readonly type: string; readonly result: unknown }[];
+  };
+  readonly parameters: unknown;
+  readonly viewMode: string;
+}): string | null {
+  // addon は story 表示のときしか走らない。docs 表示でレポートを探すと必ず空になる
+  if (context.viewMode !== "story") return null;
+  if (isA11yTurnedOff(context.parameters)) return null;
+
+  const report = context.reporting.reports.find((item) => item.type === "a11y");
+  if (report === undefined) {
+    return "addon-a11y のレポートが無い。afterEach の実行順が変わったか、a11y の検査自体が動いていない (ADR-0026 の節 1)";
+  }
+  // addon が走査に失敗した形。addon 自身がそのまま throw するので、ここで重ねない
+  if (isErrorResult(report.result)) return null;
+  if (!hasIncompleteResults(report.result)) {
+    return "addon-a11y のレポートを読めない。addon の結果の形が変わった (ADR-0026 の節 1)";
+  }
+
+  const unexpected = collectUnexpectedIncomplete(report.result.incomplete);
+  if (unexpected.length === 0) return null;
+  return `axe が判定できなかった項目\n${describeA11yResults(unexpected).join("\n")}`;
+}
+
+/** story が a11y の検査を切っているか (`disable` / `test: "off"` は addon の公開パラメータ) */
+function isA11yTurnedOff(parameters: unknown): boolean {
+  if (typeof parameters !== "object" || parameters === null || !("a11y" in parameters))
+    return false;
+  const { a11y } = parameters;
+  if (typeof a11y !== "object" || a11y === null) return false;
+  return ("disable" in a11y && a11y.disable === true) || ("test" in a11y && a11y.test === "off");
+}
+
+/** addon が走査に失敗したときの形 (`{ error }`) */
+function isErrorResult(result: unknown): boolean {
+  return typeof result === "object" && result !== null && "error" in result;
+}
+
+function hasIncompleteResults(result: unknown): result is { incomplete: axe.Result[] } {
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    "incomplete" in result &&
+    Array.isArray(result.incomplete)
+  );
+}
+
+/**
+ * 合否へ入れる `incomplete` だけを残す。使うのは story 側だけで、
  * この関数はブラウザテストからは呼ばない (ADR-0026 の節 1)。
  *
  * `IGNORED_INCOMPLETE` に当たる node を落とし、node が残らなくなった結果ごと落とす。
