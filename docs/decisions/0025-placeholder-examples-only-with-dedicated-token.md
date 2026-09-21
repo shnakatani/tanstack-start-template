@@ -17,16 +17,18 @@ placeholder には向きの逆な要求が 2 つ掛かる。
 | 入力値と区別が付く | 入力済みと誤認してフィールドを飛ばす経路 (NN/g) | 薄くする       |
 
 後者に 3:1 を当てる。SC 1.4.1 は色が唯一の手段でないことを求め、明度差を追加の手がかりとして数える基準を 3:1 に置いている。
-**この 3:1 は当てはめであって、placeholder と入力値の関係に SC 1.4.1 を適用すると書いた出典は無い。** 例示の placeholder に 1.4.3 が掛かるかを問う w3c/wcag#4343 も 2026-09-21 時点で open のままである。
+**この 3:1 は当てはめであって、placeholder と入力値の関係に SC 1.4.1 を適用すると書いた出典は無い。**
 
-**この色はどんな値にしても検査が緑のまま通る。** `axe-core@4.13.0` の `color-contrast` は `input` / `select` / `textarea` を対象に取るが、判定に使うのは要素の `color` で、`::placeholder` 擬似要素を読まない (ソース中に `::placeholder` の言及が 0 件。2026-09-21 実測)。
+**1.4.3 が placeholder に掛かること自体は争われていない。** Understanding SC 1.4.3 の Intent が "including placeholder text" と名指しで含めている。w3c/wcag#4343 が問うているのはもっと狭く、「可視ラベルと同じ文言を繰り返すだけの placeholder」を免除できるかで、2026-09-21 時点で open である。**書式や指示を伝える placeholder に 4.5:1 が要る点は、同 issue の参加者の間でも異論が出ていない。**
+
+**この色を検査は測っていない。しかも「測っていない」より悪い。** `axe-core@4.13.0` の `color-contrast` は空の入力欄にもマッチし (`lib/rules/color-contrast-matches.js` の `// Match all form fields, regardless of if they have text`)、`::placeholder` ではなく要素自身の `color` で判定する (`lib/` に `::placeholder` の言及が 0 件。2026-09-21 実測)。Deque 自身が dequelabs/axe-core#4260 で「placeholder を評価したかのように見える違反が、実際には別の前景色で出る」と書いている。**緑であることは placeholder が測られたことを意味しない。**
 
 ## Decision
 
 **placeholder には例示だけを置き、その色を `--placeholder` として `--muted-foreground` から切る。**
 
 ラベルと書式の指示は placeholder に置かない。ラベルは可視ラベルへ、指示は `FieldDescription` (`src/components/ui/field.tsx`) へ置く。
-要求が例示と指示で変わるのは Carbon の分類のとおりで、指示は 4.5:1 を満たす段が要る。
+要求が例示と指示で変わる分け方は Carbon の 3 分類と w3c/wcag#4343 の議論が共通して採る。指示は 4.5:1 を満たす段が要る。
 
 トークンを切る形そのものは ADR-0024 の節 4 が持つ。
 
@@ -49,8 +51,13 @@ light は `mist-500` だけが帯に入り、下端から 0.11 しか離れて�
 
 dark の比は入力欄が置かれる面で変わる。上表は `--background` の上で測ったもので、`Dialog` / `Sheet` / `Popover` の中 (`--popover`) に置くと `mist-500` は 3.34 まで下がる。フォームは多くがダイアログの中に出るので、dark の実際の下限はこちらである。入力値との差 (4.45) は面によらないため、下の決定は動かない。
 
+面ごとに測るのは規格の要求である。Understanding SC 1.4.3 の Note 3 / 4 が背景を「そのテキストが通常の利用で実際に載る背景」と定義し、Note 6 は評価対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。免除されるのは UA 由来の表示だけで ("except where caused by authors' code")、テーマや面の切り替えは著者のコードなので含まれる。
+W3C 自身の推奨値も面に依存する。WAI Forms Tutorial の `::placeholder { color: #767676 }` は "assuming the background of the element is white" と断りがあり、`#ffffff` 上 4.54 に対し `#f4f4f4` 上では 4.13 で割る。
+
 dark は帯に入る段が無い。`mist-400` は入力値との 3:1 を割る側 (2.35) で外れ、`mist-500` は 4.5:1 を割る側で外れる。
-**割る側を選んだ。** 例示に 1.4.3 が掛かるかは未決着で、Carbon は情報を持たない例示を低コントラストのまま許している。一方、入力値との区別が消えると、飛ばされるフィールドができる。
+**割る側を選んだ。** 入力値との区別が消えると、飛ばされるフィールドができるためである。**この選択は SC 1.4.3 への不適合を承知で採ったもので、正当化ではない。**
+
+Carbon が `$text-placeholder` を 2.55 (light の `--background` 相当) のまま置き、carbon#19553 で「placeholder はコントラスト要件の対象ではない」と述べて閉じているのは承知しているが、**これは Understanding 1.4.3 の Intent と正面から食い違うので根拠に使わない。** 参照するのは 3 分類の枠組みだけである。
 `--muted-foreground` と兼ねていた `mist-400` も dark では帯の外だったので、この決定は外れる側を入れ替えたものである。
 
 light と dark で同じ `mist-500` になる。
@@ -85,7 +92,11 @@ light と dark で同じ `mist-500` になる。
 - Carbon の 3 分類 (option text / 例示の placeholder / 書式と指示): https://github.com/carbon-design-system/carbon/issues/7515
 - 分類の根拠になったレビュー: https://github.com/carbon-design-system/carbon/pull/4799
 - 入力済みと誤認してフィールドを飛ばす: https://www.nngroup.com/articles/form-design-placeholders/
-- 例示にも placeholder を使わないとする立場: https://design-system.service.gov.uk/components/text-input/
+- 例示にも placeholder を使わないとする立場 (1.4.3 を理由に挙げる): https://design-system.service.gov.uk/components/text-input/
+- placeholder ごと deprecate した例 (比を上げると入力済みに見えるため): https://github.com/adobe/react-spectrum/issues/2935
+- 面ごとに対を列挙して CI で落とす例: https://github.com/primer/primitives/blob/main/scripts/colorContrast.config.ts
 - 冗長な placeholder に 1.4.3 が掛かるかの議論 (2026-09-21 時点で open): https://github.com/w3c/wcag/issues/4343
 - WCAG 2.2 1.4.1 Use of Color: https://www.w3.org/TR/WCAG22/#use-of-color
 - WCAG 2.2 1.4.3 Contrast (Minimum): https://www.w3.org/TR/WCAG22/#contrast-minimum
+- Understanding SC 1.4.3 (Intent が placeholder を名指しで含める / 測る背景の定義): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+- axe が placeholder を誤った前景色で評価する件 (open): https://github.com/dequelabs/axe-core/issues/4260
