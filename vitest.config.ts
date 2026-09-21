@@ -52,7 +52,7 @@ export default defineConfig({
         },
       },
       "vitest.browser.config.ts",
-      // テーマごとに 1 project。a11y 検査を light と dark の両方へ当てる
+      // テーマごとの project。経路によって数が変わる (storybookProjects の docstring)
       ...storybookProjects(),
     ],
     coverage: {

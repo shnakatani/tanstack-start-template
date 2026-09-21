@@ -15,12 +15,8 @@ const meta = {
     </>
   ),
   decorators: [
-    // p-2 は見た目の都合ではない。Label は registry 素の leading-none を持ち、グリフの矩形が
-    // 行ボックスより上下 1px はみ出す。vitest 経由の story は canvas の padding
-    // (Storybook の既定 layout: "padded") が当たらないまま原点へ描かれるので、余白が無いと
-    // その 1px が背景を持つ body の外へ出て、axe が色を測れなくなる
     (Story) => (
-      <div className="flex flex-col gap-2 p-2">
+      <div className="flex flex-col gap-2">
         <Story />
       </div>
     ),

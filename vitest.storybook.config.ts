@@ -93,8 +93,12 @@ function storybookProject(theme: (typeof THEMES)[number]) {
  * 判定の正本は後者で、test panel は書いている最中の確認に使う。
  */
 export function storybookProjects() {
-  const themes = isStorybookRun() ? (["light"] as const) : THEMES;
-  return themes.map((theme) => storybookProject(theme));
+  if (!isStorybookRun()) return THEMES.map((theme) => storybookProject(theme));
+
+  // 縮退を黙って通さない。VITEST_STORYBOOK がシェルへ残ったまま `vp test run` を叩くと、
+  // dark の a11y 検査が消えたことに誰も気付けない
+  console.warn("[storybook] VITEST_STORYBOOK が真なので light だけを回す (ADR-0022 の節 7-1)");
+  return [storybookProject("light")];
 }
 
 /**
