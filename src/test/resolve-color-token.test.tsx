@@ -40,9 +40,17 @@ describe("resolveColorToken", () => {
     );
   });
 
-  // 定義はあるが色でない値も、色と同じく継承色へ落ちる。空判定だけでは通り抜ける
+  // 定義はあるが色でない値も、色と同じく継承色へ落ちる。定義の有無だけでは通り抜ける
   it("色でない値を持つトークンも投げる", () => {
     expect(() => resolveColorToken("--radius")).toThrow(/--radius/);
+  });
+
+  // 字面を CSS.supports で見る形はここを通してしまう。継承色は測りたい値ではない
+  it("currentColor のトークンも投げる", () => {
+    withProbeScope((scope) => {
+      scope.style.setProperty(PROBE_TOKEN, "currentColor");
+      expect(() => resolveColorToken(PROBE_TOKEN, scope)).toThrow(RegExp(PROBE_TOKEN));
+    });
   });
 
   it("解決に使った probe を残さない", () => {

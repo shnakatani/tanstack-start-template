@@ -44,14 +44,17 @@ function uiComponentFiles(): string[] {
     .map((entry) => entry.name);
 }
 
+/**
+ * baseline ディレクトリの全ファイル。絞り込みをここへ書かない。
+ *
+ * 除外をフィルタに持たせると、`EXTERNAL_REGISTRY_FILES` から 1 件消したときに、その
+ * ファイルが走査対象からも外れて無言で緑になる。同じ定数が期待値とフィルタを兼ねると
+ * 入力どうしの比較になり検査が常に通る (`scripts/lib/companion-files.ts` の同旨)。
+ * 分類は呼び出し側が行い、どの分類にも落ちないものを失敗させる。
+ */
 function baselineFiles(): string[] {
   return readdirSync(BASELINE_DIR, { withFileTypes: true })
-    .filter(
-      (entry) =>
-        entry.isFile() &&
-        // 拡張子で絞ると .css の baseline が残骸検出から外れ、ローカル実体の rename を見逃す
-        (isComponentFile(entry.name) || Object.hasOwn(EXTERNAL_REGISTRY_FILES, entry.name)),
-    )
+    .filter((entry) => entry.isFile())
     .map((entry) => entry.name);
 }
 
@@ -76,9 +79,9 @@ describe("registry baseline の網羅", () => {
   it("baseline は全て対応するローカル実体を持つ (削除済みコンポーネントの残骸を検出)", () => {
     const dangling = baselineFiles().filter((name) => {
       const externalPath = EXTERNAL_REGISTRY_FILES[name];
-      return externalPath === undefined
-        ? !existsSync(join(UI_DIR, name))
-        : !existsSync(join(REPO_ROOT, externalPath));
+      if (externalPath !== undefined) return !existsSync(join(REPO_ROOT, externalPath));
+      // ui のコンポーネントでも登録済みの外部生成物でもないものは、分類できない残骸として落とす
+      return !isComponentFile(name) || !existsSync(join(UI_DIR, name));
     });
     expect(dangling).toEqual([]);
   });
