@@ -114,6 +114,12 @@ function clampChannel(value: number): number {
  * を渡すと実際には null が返る (`rgb(0 0 0 / none)` で 2026-09-22 に実測)。関数境界で型を
  * 実態に合わせ直し、`typescript/no-unnecessary-condition` が本物の分岐を「到達しない」と
  * 誤判定しないようにする
+ *
+ * これは上流の型定義内部の不整合でもある。`color.d.ts:63` の `PlainColorObject` は
+ * `alpha: number | null` と宣言し、`Color` クラス (同 :177) は `implements PlainColorObject`
+ * と書きながら `alpha: number` へ狭めている。ここでの拡大は上流自身が宣言した契約へ戻す
+ * 操作で、実挙動の観測だけを根拠にしたものではない。上流には未報告 (2026-09-22 に
+ * color-js/color.js を 7 クエリで検索して 0 件)
  */
 function readAlpha(color: Color): number | null {
   return color.alpha;
@@ -140,24 +146,27 @@ export function flattenLayers(layers: readonly Srgb[]): Rgb {
   );
 }
 
-/** WCAG 2.2 の relative luminance (https://www.w3.org/TR/WCAG22/#dfn-relative-luminance) */
+/**
+ * WCAG 2.2 の relative luminance (https://www.w3.org/TR/WCAG22/#dfn-relative-luminance)。
+ *
+ * 閾値は 0.04045 である。2021-05 より前の版は 0.03928 で、同 URL の Note 2 が差し替えを
+ * 説明している。axe-core 4.13.0 も 0.04045 を使う (`axe.js` の `getRelativeLuminance`)。
+ * 揃えないと、成分が 2 つの値の間に入る色だけ axe と違う比が出る
+ */
 export function relativeLuminance(rgb: Rgb): number {
-  const [r, g, b] = rgb.map((channel) =>
-    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
-  );
-  if (r === undefined || g === undefined || b === undefined) {
-    throw new Error(`成分が 3 つ揃っていない: ${JSON.stringify(rgb)}`);
-  }
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const [r, g, b] = rgb;
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+function toLinear(channel: number): number {
+  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
 }
 
 /** WCAG 2.2 の contrast ratio。丸めない (SC 1.4.3 の note が計算値を丸めるなと書いている) */
 export function contrastRatio(a: Rgb, b: Rgb): number {
-  const [lighter, darker] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
-  if (lighter === undefined || darker === undefined) {
-    throw new Error("相対輝度を 2 つ計算できなかった");
-  }
-  return (lighter + 0.05) / (darker + 0.05);
+  const lumA = relativeLuminance(a);
+  const lumB = relativeLuminance(b);
+  return (Math.max(lumA, lumB) + 0.05) / (Math.min(lumA, lumB) + 0.05);
 }
 
 /** 画面へ出るときの色。ブラウザと axe はこの丸めた色を読む */

@@ -157,6 +157,13 @@ describe("resolveSrgb", () => {
     // 渡した場合で、0 として扱うと存在しない比が出る
     expect(() => resolveSrgb("rgb(none 0 0)")).toThrow("none");
   });
+
+  it("alpha が none の色は throw する", () => {
+    // r/g/b と違い alpha は colorjs.io の型が `number` と偽る。この 1 件が無いと、
+    // readAlpha と guard を丸ごと消しても全件緑のまま通る (2026-09-22 実測)。
+    // 消えたときに起きるのは throw ではなく、半透明の面が消えた比が出ることである
+    expect(() => resolveSrgb("rgb(0 0 0 / none)")).toThrow("none");
+  });
 });
 
 describe("flattenLayers", () => {
@@ -202,9 +209,11 @@ describe("contrastRatio", () => {
   });
 
   it("axe-core の getContrast と一致する", () => {
-    // 2026-09-22 に axe-core 4.13.0 の
-    // `axe.commons.color.getContrast(parseString("oklch(57.7% 0.245 27.325)"), parseString("#ffffff"))`
-    // が返した値。ADR-0024 の Context が変換器の裏づけとして挙げている 4.765 はこれである。
+    // 2026-09-22 に axe-core 4.13.0 で得た値。再現は次のとおり。
+    //   const { Color, getContrast } = axe.commons.color;
+    //   const parse = (s) => { const c = new Color(); c.parseString(s); return c; };
+    //   getContrast(parse("oklch(57.7% 0.245 27.325)"), parse("#ffffff"))
+    // ADR-0024 の Context が変換器の裏づけとして挙げている 4.765 はこれである。
     // 上流の red-600 の値で、本リポジトリのトークンを動かしても変わらない
     const AXE_REPORTED = 4.764721882929455;
     const ratio = contrastRatio(
