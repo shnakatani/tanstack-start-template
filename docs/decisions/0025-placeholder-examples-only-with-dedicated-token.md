@@ -44,7 +44,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 ### 段の選択
 
-「背景と 4.5:1」と「入力値と 3:1」を両方課したときに成立する帯と、palette の段 (ADR-0024 の節 3) の比。2026-09-21 の実測である。`--placeholder` と `--muted-foreground` の段は `mise run contrast` で測り直せる (ADR-0028)。`mist-400` は `src/styles.css` が宣言していないので、`node_modules/tailwindcss/theme.css` から値を引いて渡す。
+「背景と 4.5:1」と「入力値と 3:1」を両方課したときに成立する帯と、palette の段 (ADR-0024 の節 3) の比。2026-09-21 の実測である。`src/styles.css` がトークンとして宣言している段は `mise run contrast` で測り直せる (ADR-0028)。light の `mist-500` は `--placeholder`、`mist-600` は `--muted-foreground`。dark の `mist-500` は `--placeholder`、`mist-400` は `--muted-foreground` が持つ。light の `mist-400` と dark の `mist-600` はトークンになっていないので、この手段では測れない。
 帯の下端は 4.5:1、上端は入力値との 3:1 が保てる限界で、どちらも背景との比で表している。
 
 |                                            | 帯 (背景比) | `mist-400` | `mist-500` | `mist-600` |

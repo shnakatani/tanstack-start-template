@@ -143,11 +143,12 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 
 - 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css`
 - 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0006 の検査手順に従う
-- **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 測り直す手段は `mise run contrast` が持つ (ADR-0028)。 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており (勧告本体には無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない。比率を書いた箇所を触るときは測り直す
+- **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった
+- 測り直す手段は `mise run contrast` が持つ (ADR-0028)。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており (勧告本体には無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できないため、比率を書いた箇所を触るときは測り直す
 - 節 2 の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
-- 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。light dark とも 3:1 を大きく下回る。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
-- focus 指標の不足は `--ring` を `--primary` と同値にしても残る。`ring-ring/50` は light が 3:1 を割り dark は満たす。不透明で使う `border-ring` / `outline-ring` は light dark とも満たす
-- chart の 5 トークンは light と dark で同値で、1 本の blue ramp が両モードを兼ねる。明るい端が light の下地に、暗い端が dark の下地に紛れる。WCAG 1.4.11 の 3:1 を `--background` と `--card` の両方で割るのは light の `--chart-1`、dark の `--chart-4`、dark の `--chart-5` である
+- 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。この対は light dark とも 3:1 を大きく下回る。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
+- focus 指標の不足は `--ring` を `--primary` と同値にしても残る。`--background` の上で、`ring-ring/50` は light が 3:1 を割り dark は満たす。不透明で使う `border-ring` / `outline-ring` は light dark とも満たす
+- chart の 5 トークンは light と dark で同値で、1 本の blue ramp が両モードを兼ねる。明るい端が light の下地に、暗い端が dark の下地に紛れる。WCAG 1.4.11 の 3:1 を割るのは light の `--chart-1`、dark の `--chart-4`、dark の `--chart-5` である
 
   消費している部品は無く (`grep -rl "chart" src/` が定義元の `src/styles.css` だけを返す)、chart 部品も入れていない。ただしテンプレートとして配る既定値なので、chart を足した利用者がこの ramp をそのまま受け取る。値をどう変えるかはここでは決めない
 
