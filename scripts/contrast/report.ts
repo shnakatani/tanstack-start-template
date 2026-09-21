@@ -6,15 +6,15 @@
  *
  * ここは検査ではない。合否は `src/components/contrast.stories.tsx` の axe が持つ。
  *
- * 引数と出力の組み立ては `scripts/lib/contrast-cli.ts` にある。この層は I/O だけを持つ
+ * 引数と出力の組み立ては `scripts/contrast/lib/contrast-cli.ts` にある。この層は I/O だけを持つ
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { formatReport, parseContrastArgs } from "../lib/contrast-cli.ts";
-import { measurePair, parseTokenTable } from "../lib/contrast.ts";
 import { REPO_ROOT } from "../lib/repo-root.ts";
+import { formatReport, parseContrastArgs } from "./lib/contrast-cli.ts";
+import { measurePair, parseTokenTable } from "./lib/contrast.ts";
 
 const USAGE = `使い方:
   mise run contrast -- --theme <light|dark> --bg <トークン> [--bg <トークン>...] --fg <トークン>

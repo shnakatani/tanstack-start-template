@@ -49,14 +49,14 @@ Primer が数値を書き写さない形に到達していることと、`.claud
 
 ### 1. 純粋関数と実行口を置く
 
-| 物                                             | 置き場所                           |
-| ---------------------------------------------- | ---------------------------------- |
-| トークン表のパース / 色の解決 / 合成 / WCAG 比 | `scripts/lib/contrast.ts`          |
-| 同上の単体テスト                               | `scripts/lib/contrast.test.ts`     |
-| 引数の解釈と出力行の組み立て                   | `scripts/lib/contrast-cli.ts`      |
-| 同上の単体テスト                               | `scripts/lib/contrast-cli.test.ts` |
-| ファイル読みと終了コード                       | `scripts/contrast/report.ts`       |
-| 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]` |
+| 物                                             | 置き場所                                    |
+| ---------------------------------------------- | ------------------------------------------- |
+| トークン表のパース / 色の解決 / 合成 / WCAG 比 | `scripts/contrast/lib/contrast.ts`          |
+| 同上の単体テスト                               | `scripts/contrast/lib/contrast.test.ts`     |
+| 引数の解釈と出力行の組み立て                   | `scripts/contrast/lib/contrast-cli.ts`      |
+| 同上の単体テスト                               | `scripts/contrast/lib/contrast-cli.test.ts` |
+| ファイル読みと終了コード                       | `scripts/contrast/report.ts`                |
+| 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]`          |
 
 ```bash
 mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--placeholder'
@@ -116,7 +116,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 ADR-0024 の節 5 が禁じているのは、比を計算するコードを story として抱えさせ、a11y の検査を名乗らせることである。描画されない値を測るので、実際の画面が割っていても緑になる。
 
-`scripts/lib/contrast.ts` は story ではなく、合否も持たず、`mise run verify` にも入らない。測るのは文書へ書く値を人が選ぶためである。a11y の合否は節 5 のまま axe が持つので、節 5 は覆っていない。
+`scripts/contrast/lib/contrast.ts` は story ではなく、合否も持たず、`mise run verify` にも入らない。測るのは文書へ書く値を人が選ぶためである。a11y の合否は節 5 のまま axe が持つので、節 5 は覆っていない。
 
 ## 計算が寄りかかっている前提
 

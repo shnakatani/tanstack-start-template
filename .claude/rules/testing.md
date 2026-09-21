@@ -25,13 +25,13 @@ import { describe, it, expect, vi } from "vite-plus/test";
 
 壊れる原因が違うものを同じ project に混ぜない。混ざると、失敗したときに直す対象がアプリなのかスクリプトなのか設定なのか読み取れない。
 
-| 種別                   | 壊れる原因                   | 置き場所                            | 実行                                       |
-| ---------------------- | ---------------------------- | ----------------------------------- | ------------------------------------------ |
-| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                  | `vp test run --project unit`               |
-| アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                 | `vp test run --project browser`            |
-| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/lib/` / `scripts/dev-env/` | `vp test run --project scripts-tools`      |
-| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`         | `vp test run --project checks-integrity`   |
-| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`           | `vp node scripts/checks/runtime/<name>.ts` |
+| 種別                   | 壊れる原因                   | 置き場所                                                      | 実行                                       |
+| ---------------------- | ---------------------------- | ------------------------------------------------------------- | ------------------------------------------ |
+| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                            | `vp test run --project unit`               |
+| アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                                           | `vp test run --project browser`            |
+| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/lib/` / `scripts/dev-env/` / `scripts/contrast/lib/` | `vp test run --project scripts-tools`      |
+| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                                   | `vp test run --project checks-integrity`   |
+| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                                     | `vp node scripts/checks/runtime/<name>.ts` |
 
 - `src/` 全体へ規範を当てるソース検査は、いま 1 つも無い。新設するときは `scripts/checks/source/` と `checks-source` project を対で作り、判定ロジックは `scripts/lib/` に置いて単体テストを別に持つ。判定と適用を同じファイルに書くと、判定の境界条件を試すために `src/` を壊す必要が出る
 - ソース検査を新設する前に lint で表現できないかを先に見る。class 名や import の規約は lint プラグイン (必要なら `jsPlugins`、ADR-0004) が持つほうが、字面走査より対象の実体に近い

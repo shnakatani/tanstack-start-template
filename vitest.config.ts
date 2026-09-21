@@ -35,7 +35,11 @@ export default defineConfig({
         extends: true,
         test: {
           name: "scripts-tools",
-          include: ["scripts/lib/**/*.test.ts", "scripts/dev-env/**/*.test.ts"],
+          include: [
+            "scripts/lib/**/*.test.ts",
+            "scripts/dev-env/**/*.test.ts",
+            "scripts/contrast/**/*.test.ts",
+          ],
           exclude: sharedExclude,
           // scripts のテストは bash / git の subprocess 起動を伴い、全体 run の
           // 並列負荷では既定 5s を超えることがある

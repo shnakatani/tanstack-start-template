@@ -27,7 +27,7 @@ Unknown base color: slate. Available base colors: neutral, zinc, stone, mauve, o
 
 slate の値を持ち続けても壊れてはいなかった。動かしたのは、CLI が生成しない palette を抱え続けるのをやめるためである。
 
-**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、節 2 以降で決める本リポジトリの段ではない。計測は生成した `styles.css` の値を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/lib/contrast.ts` にあり (ADR-0028)、axe-core の `getContrast` との一致は `scripts/lib/contrast.test.ts` が固定する。
+**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、節 2 以降で決める本リポジトリの段ではない。計測は生成した `styles.css` の値を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` にあり (ADR-0028)、axe-core の `getContrast` との一致は `scripts/contrast/lib/contrast.test.ts` が固定する。
 
 | 対                                                           | 範囲                   | 比                                                                                                          |
 | ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
