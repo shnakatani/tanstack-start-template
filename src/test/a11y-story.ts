@@ -65,28 +65,28 @@ export function checkA11yIncomplete(context: {
 }
 
 /**
- * この story で `incomplete` を合否へ入れるか。**addon のゲートに 1 条件足したもの**である。
- * 出典は `@storybook/addon-a11y` の `shouldRunEnvironmentIndependent` の 4 条件と、その直後の
- * `viewMode === "story"`。
- * 足しているのは `test: "todo"` で、addon はこの値でも走る (違反を warning へ降ろすだけ)。
+ * この story で `incomplete` を合否へ入れるか。
  *
- * ここが addon より緩いと、addon が走らなかった story を「レポートが無い」で落とす。
- * `manual` は addon パネルのトグルで、公式が案内する切り方である
+ * ここが addon より緩いと、addon が走らなかった story を「レポートが無い」で落とす。`manual` は
+ * addon パネルのトグルで、公式が案内する切り方なので実際に踏む
  * (storybook.js.org/docs/writing-tests/accessibility-testing#disable-automated-checks)。
- * addon が条件を足したら、こちらが偽陽性を出して知らせる。
+ * addon が条件を足したときは、こちらが偽陽性を出して知らせる。
  */
 function isIncompleteGateActive(context: {
   readonly parameters: A11yTypes["parameters"];
   readonly globals: A11yTypes["globals"] & { readonly ghostStories?: unknown };
   readonly viewMode: string;
 }): boolean {
+  // "todo" 以外は addon のゲートと同じ。出典は `@storybook/addon-a11y` の
+  // `shouldRunEnvironmentIndependent` の 4 条件と、その直後の `viewMode === "story"`
   return (
     context.viewMode === "story" &&
     !context.globals.ghostStories &&
     context.parameters.a11y?.disable !== true &&
     context.parameters.a11y?.test !== "off" &&
-    // "todo" は addon が違反を warning へ降ろす形 (同 chunk の `getMode`)。合否へ入れない側で
-    // 揃える。ここだけ落とすと、既知の問題を寝かせる逃がし弁が半分しか効かない
+    // "todo" は addon のゲートに無い。addon はこの値でも走り、違反を warning へ降ろすだけ
+    // (同 addon の `getMode`)。こちらも合否へ入れない側で揃える。ここだけ落とすと、既知の
+    // 問題を寝かせる逃がし弁が半分しか効かない
     context.parameters.a11y?.test !== "todo" &&
     context.globals.a11y?.manual !== true
   );

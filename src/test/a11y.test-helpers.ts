@@ -1,11 +1,7 @@
 import type axe from "axe-core";
 
-/**
- * axe の結果を組み立てるフィクスチャ。`a11y*.test.ts` が共有する。
- *
- * `target` は `UnlabelledFrameSelector` で、frame を跨ぐときに要素が増える
- * (`node_modules/axe-core/axe.d.ts` の `NodeResult`)。配列のまま受ける。
- */
+// axe の結果を組み立てるフィクスチャ。`a11y*.test.ts` が共有する。
+
 function a11yCheck(messageKey?: string): axe.CheckResult {
   return {
     id: "color-contrast",
@@ -16,6 +12,7 @@ function a11yCheck(messageKey?: string): axe.CheckResult {
   };
 }
 
+/** `target` は frame を跨ぐと要素が増えるので (`axe.d.ts` の `NodeResult`)、配列のまま受ける */
 export function a11yNode(
   options: {
     messageKeys?: readonly string[];

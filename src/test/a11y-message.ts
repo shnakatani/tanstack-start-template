@@ -5,10 +5,10 @@ import type axe from "axe-core";
  * 同じ形で出すために共有する。
  *
  * 要素セレクタだけだと、どの色が何対何で落ちたのかが読めないので `failureSummary` まで出す。
- * `impact` は付いているときだけ出す。axe は `Result.impact` へ必ず代入するが、値は
- * `ImpactValue` (`axe.d.ts`) で `null` を含み、`incomplete` では `null` になることがある。
  */
 export function describeA11yResults(results: readonly axe.Result[]): string[] {
+  // impact は真のときだけ出す。axe は `Result.impact` へ必ず代入するが、値は `ImpactValue`
+  // (`axe.d.ts`) で `null` を含むので、`undefined` だけを見ると ` (null)` が出る
   return results.map(
     (item) =>
       `${item.id}${item.impact ? ` (${item.impact})` : ""}: ${item.help}\n` +
