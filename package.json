@@ -54,6 +54,7 @@
     "@vitest/browser-playwright": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "axe-core": "^4.13.0",
+    "colorjs.io": "0.7.1",
     "drizzle-kit": "^0.31.10",
     "eslint-plugin-testing-library": "^7.16.2",
     "oxc-transform-react": "^0.147.0",
