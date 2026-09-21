@@ -18,11 +18,11 @@ import type { ReactNode } from "react";
  * light と dark は project が分かれており (`vitest.config.ts`)、`vp test run` と
  * `mise run verify` では同じ story が両方で走る。片方でしか現れない不透明度も両方で描かれる。
  * Storybook 経由の実行 (test panel / `storybook tools test run`) は light だけなので、
- * dark 側を確かめるときは `vp test run` で回す (ADR-0022 の節 7-1)。2026-09-21 時点ではどちらのテーマでも 4.5:1 を
- * 満たすが、いちばん狭いのは light 側で描いた `bg-destructive-surface/30` の 4.79 で、
- * トークンを動かすと画面に存在しない対で落ちうる。そのときは落ちた対がそのテーマで現れるかを
- * 先に確かめる。この 4.79 は合成後を整数 sRGB へ丸めた値で、axe も丸め後の色を読む。
- * ADR-0024 は丸めない変換器で測るため、同じ対が 4.81 になる。
+ * dark 側を確かめるときは `vp test run` で回す (ADR-0022 の節 7-1)。2026-09-21 時点では
+ * どちらのテーマでも 4.5:1 を満たす。いちばん狭いのは light 側で描いた
+ * `bg-destructive-surface/30` で、トークンを動かすと画面に存在しない対で落ちうる。そのときは
+ * 落ちた対がそのテーマで現れるかを先に確かめる。axe はここで合成後を整数 sRGB へ丸めた色を
+ * 読むので、`mise run contrast` が出す丸めない比とは下 2 桁がずれる (ADR-0028)。
  *
  * 1 つの面に複数の文字色が乗る組み合わせ (`bg-muted/50`) は、文字色ごとに 1 行を置く。
  * 面だけを描いても、その上に何が乗るかで通るか割るかが変わる。
