@@ -9,7 +9,7 @@ declare module "vitest/browser" {
      * `locators.extend` で locator にする (vitest browser の locators docs)。
      * 掴む先が accessibility tree に出る要素なら `getByRole` を先に使う。
      */
-    getBySlot(slot: string): Locator;
+    getBySlot(slot: string, attributes?: Record<string, string>): Locator;
     /**
      * lucide のアイコンを名前で掴む (`<CheckIcon>` → `.lucide-check`)。アイコンは role も
      * accessible name も持たないので、見えているかを `toBeVisible` で見るための locator。
@@ -19,8 +19,12 @@ declare module "vitest/browser" {
 }
 
 locators.extend({
-  getBySlot(slot: string) {
-    return `[data-slot="${slot}"]`;
+  getBySlot(slot: string, attributes: Record<string, string> = {}) {
+    // 同じ slot が向きや状態で複数出るとき (`data-orientation` / `data-state`) に絞る
+    const extra = Object.entries(attributes)
+      .map(([name, value]) => `[${name}="${value}"]`)
+      .join("");
+    return `[data-slot="${slot}"]${extra}`;
   },
   getByIcon(name: string) {
     return `svg.lucide-${name}`;
