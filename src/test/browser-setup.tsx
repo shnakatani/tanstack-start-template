@@ -7,8 +7,7 @@
  * 実 CSS へ解決させることで、getBoundingClientRect / getComputedStyle による
  * レイアウト挙動の検証を可能にする。
  */
-import { afterEach, beforeEach } from "vite-plus/test";
-import { cdp } from "vite-plus/test/browser/context";
+import { beforeEach } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import "@/styles.css";
@@ -37,23 +36,4 @@ beforeEach(disableAnimations);
  */
 beforeEach(async () => {
   await render(<LiveRegions />);
-});
-
-/**
- * エミュレーション設定を毎テスト後に解除する。
- *
- * `Emulation.setTouchEmulationEnabled` は page 単位の設定で、同一 page 上で順次実行される
- * 後続ファイルへリークする (後続で `any-pointer: coarse` が true になり、この軸で分岐する
- * テストがファイル実行順に依存する)。`maxTouchPoints: 0` を併せて渡すと Protocol error。
- *
- * `Emulation.setEmulatedMedia` も同じ page スコープの override でリークするため、
- * `features: []` で戻す。`beforeEach` の `disableAnimations()` が立てる `prefers-reduced-motion: reduce` を
- * `enableAnimations()` で `no-preference` にしたテストの後も、ここで揃う。
- */
-// 直列 await にすると前段の失敗で後段のリセットが飛び、リークが以降ずっと残る
-afterEach(async () => {
-  await Promise.all([
-    cdp().send("Emulation.setTouchEmulationEnabled", { enabled: false }),
-    cdp().send("Emulation.setEmulatedMedia", { features: [] }),
-  ]);
 });
