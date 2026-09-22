@@ -1,5 +1,5 @@
 import { Collapsible } from "@base-ui/react/collapsible";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/context";
 import { render } from "vitest-browser-react";
 
@@ -18,7 +18,6 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { resolveColorToken } from "@/test/resolve-color-token";
-import { waitForAnimations } from "@/test/wait-for-animations";
 
 // トークンが未定義なら resolveColorToken が投げる。ここで存在を見張り直さない
 function getSidebarAccentColors() {
@@ -33,7 +32,19 @@ function getSidebarAccentColors() {
  * selector) を守る。この乖離を使う消費側コンポーネントのテストでも同じ配色は見えるが、
  * 消費側が作り替えられると乖離のガードごと消えるため registry 側にも置く
  * (先例: `input-group.test.tsx`)。
+ *
+ * 配色は `toHaveStyle` を token の解決値で見る。閉状態は背景が透明で前景は継承した
+ * `--foreground` (light では accent の前景と別値。dark は同値。styles.css)。開くのは pointer
+ * ではなくキーボードで、hover の配色と混同しない (マウスは browser-setup の parkMouse が
+ * 退避済み。ADR-0018)。
  */
+const closedStyle = () =>
+  `background-color: rgba(0, 0, 0, 0); color: ${resolveColorToken("--foreground")}`;
+const accentStyle = () => {
+  const accent = getSidebarAccentColors();
+  return `background-color: ${accent.backgroundColor}; color: ${accent.color}`;
+};
+
 describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
   it("popup の trigger にすると、開いている間だけ accent の配色になる", async () => {
     const screen = await render(
@@ -51,30 +62,17 @@ describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
       </SidebarProvider>,
     );
     const trigger = screen.getByRole("button", { name: "切替", exact: true });
-    // `matches` と `getComputedStyle` には対応する matcher が無いので生 DOM が要る (ADR-0029)
-    const triggerElement = trigger.element();
+    await expect.element(trigger).toHaveStyle(closedStyle());
 
-    expect(triggerElement.matches(":hover")).toBe(false);
-    const closedBackgroundColor = getComputedStyle(triggerElement).backgroundColor;
-    const accentColors = getSidebarAccentColors();
-    // light テーマでは閉状態の --foreground と開状態の --sidebar-accent-foreground が別値。
-    // dark テーマでは同値になるため、前景色の検証は light 前提で書く (styles.css)
-    const closedColor = getComputedStyle(triggerElement).color;
-
-    triggerElement.focus();
+    await userEvent.tab();
+    await expect.element(trigger).toHaveFocus();
     await userEvent.keyboard("{Enter}");
     await expect
       .element(screen.getByRole("menuitem", { name: "項目", exact: true }))
       .toBeInTheDocument();
-    await waitForAnimations();
 
-    // hover ではなく開状態で配色が変わっていることを見る
-    expect(triggerElement.matches(":hover")).toBe(false);
     await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
-    expect(getComputedStyle(triggerElement).backgroundColor).toBe(accentColors.backgroundColor);
-    expect(getComputedStyle(triggerElement).color).toBe(accentColors.color);
-    expect(getComputedStyle(triggerElement).backgroundColor).not.toBe(closedBackgroundColor);
-    expect(getComputedStyle(triggerElement).color).not.toBe(closedColor);
+    await expect.element(trigger).toHaveStyle(accentStyle());
   });
 
   it("Tooltip の trigger では tooltip 開状態の data-popup-open で accent にならない", async () => {
@@ -88,18 +86,14 @@ describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
       </SidebarProvider>,
     );
     const trigger = screen.getByRole("button", { name: "切替", exact: true });
-    const triggerElement = trigger.element();
-    const closedBackgroundColor = getComputedStyle(triggerElement).backgroundColor;
-    const closedColor = getComputedStyle(triggerElement).color;
+    await expect.element(trigger).toHaveStyle(closedStyle());
 
-    expect(triggerElement.matches(":hover")).toBe(false);
-    triggerElement.focus();
+    // focus で tooltip が開く
+    await userEvent.tab();
     await expect.element(trigger).toHaveAttribute("data-popup-open");
-    await waitForAnimations();
 
     await expect.element(trigger).not.toHaveAttribute("aria-expanded");
-    expect(getComputedStyle(triggerElement).backgroundColor).toBe(closedBackgroundColor);
-    expect(getComputedStyle(triggerElement).color).toBe(closedColor);
+    await expect.element(trigger).toHaveStyle(closedStyle());
   });
 
   it("Collapsible の trigger では aria-expanded の開状態で accent になる", async () => {
@@ -116,18 +110,15 @@ describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
       </SidebarProvider>,
     );
     const trigger = screen.getByRole("button", { name: "切替", exact: true });
-    const triggerElement = trigger.element();
-    const accentColors = getSidebarAccentColors();
+    await expect.element(trigger).toHaveStyle(closedStyle());
 
-    expect(triggerElement.matches(":hover")).toBe(false);
-    triggerElement.focus();
+    await userEvent.tab();
+    await expect.element(trigger).toHaveFocus();
     await userEvent.keyboard("{Enter}");
     await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
-    await waitForAnimations();
 
     await expect.element(trigger).not.toHaveAttribute("data-popup-open");
-    expect(getComputedStyle(triggerElement).backgroundColor).toBe(accentColors.backgroundColor);
-    expect(getComputedStyle(triggerElement).color).toBe(accentColors.color);
+    await expect.element(trigger).toHaveStyle(accentStyle());
   });
 });
 
@@ -135,6 +126,7 @@ describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
  * ADR-0006 の許容リストにある sidebar.tsx の乖離 (keydown 購読を `useEffectEvent` へ
  * 切り出し、依存を空にする) を守る。切り出しを誤ると stale closure でショートカットが
  * 無言で効かなくなるため、上流の形にも本乖離にも共通の可視挙動で押さえる。
+ * 開閉は desktop の器が持つ `data-state` で見る (getBySlot の属性で状態ごとに掴む)。
  */
 describe("キーボードショートカットでの開閉 (ADR-0006 の乖離)", () => {
   it("Meta+B で開状態が切り替わる", async () => {
@@ -145,17 +137,14 @@ describe("キーボードショートカットでの開閉 (ADR-0006 の乖離)"
         </Sidebar>
       </SidebarProvider>,
     );
-    const container = screen.container.querySelector("[data-state]");
-    expect(container?.getAttribute("data-state")).toBe("expanded");
+    const sidebar = (state: "expanded" | "collapsed") =>
+      screen.getBySlot("sidebar", { "data-state": state });
+    await expect.element(sidebar("expanded")).toBeInTheDocument();
 
     await userEvent.keyboard("{Meta>}b{/Meta}");
-    await vi.waitFor(() => {
-      expect(container?.getAttribute("data-state")).toBe("collapsed");
-    });
+    await expect.element(sidebar("collapsed")).toBeInTheDocument();
 
     await userEvent.keyboard("{Meta>}b{/Meta}");
-    await vi.waitFor(() => {
-      expect(container?.getAttribute("data-state")).toBe("expanded");
-    });
+    await expect.element(sidebar("expanded")).toBeInTheDocument();
   });
 });
