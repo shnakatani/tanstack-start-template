@@ -35,58 +35,25 @@ function Harness({ disabled = false }: { disabled?: boolean }) {
 }
 
 /**
- * 行のトグルと id の紐づきは `choice-card.stories.tsx` の play が持つ (ADR-0022)。
- * ここに残すのは寸法を固定する回帰と、実イベントでなければ確かめられないものだけ。
+ * 行のトグルと id の紐づきは `choice-card.stories.tsx` の play が持ち、trailing の位置・
+ * 行間・disabled の見え方 (cursor / data-disabled) は同 story の状態カタログで見る (ADR-0022)。
+ * ここに残すのは、Playwright の actionability を force で飛ばす実イベントが要る 1 件だけ。
+ *
+ * 寸法は測らない。行間の `gap-2` は Tailwind の定義そのもので、44px の床は ADR-0007 が
+ * 「焼き込みを禁じる」と決めた値である (要件は 24px の 2.5.8 で、それも機械で見ない)。
  */
 describe("ChoiceCard", () => {
-  it("trailing はタイトルと checkbox の間に置かれる", async () => {
-    const screen = await render(<Harness />);
-    const title = screen.getByText("チームA").element();
-    const trailing = screen.getByText("管理者").element();
-    const checkbox = screen.getByRole("checkbox", { name: /チームA/ }).element();
-
-    expect(trailing.getBoundingClientRect().left).toBeGreaterThan(
-      title.getBoundingClientRect().left,
-    );
-    expect(trailing.getBoundingClientRect().right).toBeLessThanOrEqual(
-      checkbox.getBoundingClientRect().left,
-    );
-  });
-
-  // shadcn の正典が示す checkbox グループの例示値から 1 段詰めた行間 (choice-card.tsx 参照)
-  it("行間が 8px になる", async () => {
-    const screen = await render(<Harness />);
-    // FieldTitle も data-slot="field-label" を持つため、カードは label 要素で掴む
-    const first = screen.getByText("チームA").element().closest("label");
-    const second = screen.getByText("チームB").element().closest("label");
-    expect.assert(first !== null && second !== null, "Choice Card が見つからない");
-
-    expect(
-      Math.round(second.getBoundingClientRect().top - first.getBoundingClientRect().bottom),
-    ).toBe(8);
-  });
-
   it("disabled の行はクリックしてもトグルせず、押せると主張しない", async () => {
     const screen = await render(<Harness disabled />);
     const checkbox = screen.getByRole("checkbox", { name: /チームA/ });
-    const label = screen.getByText("チームA").element().closest("label");
-    const field = screen.getByText("チームA").element().closest('[data-slot="field"]');
-    expect.assert(label !== null && field !== null, "Choice Card が見つからない");
 
     // disabled な checkbox と対の label なので actionability の enabled 判定に落ちる。
     // 対象に pointer-events: none が無く click は実際に届くため force で検査だけ飛ばす (ADR-0015)
     await screen.getByText("チームA").click({ force: true });
 
     await expect.element(checkbox).not.toHaveAttribute("data-checked");
-    await expect.element(label).toHaveStyle("cursor: default");
-    expect(field.getAttribute("data-disabled")).not.toBeNull();
-  });
-
-  it("マウス環境でも 44px 以上の tap target になる", async () => {
-    const screen = await render(<Harness />);
-    const label = screen.getByText("チームA").element().closest("label");
-    expect.assert(label !== null, "Choice Card が見つからない");
-
-    expect(label.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    // Base UI の Checkbox は native disabled を隠し input に持ち、露出する span には
+    // aria-disabled が付く。「押せると主張しない」は ARIA で見る (base-ui.md)
+    await expect.element(checkbox).toHaveAttribute("aria-disabled", "true");
   });
 });
