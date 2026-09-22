@@ -131,6 +131,9 @@ function valueFlowTop(node: Node): Node {
   for (let current = node; ;) {
     const parent = parentOf(current);
     if (!parent) return current;
+    // 三項の条件式 (`x.query() ? a : b`) の test 位置も透かす。真偽を同期読みで決めた分岐は
+    // 結果が同期読み由来なので報告する (`findNegatedLiteralMatchers` は値の流れだけを見るので
+    // test 位置を透かさない。揃えない)
     if (WRAPPER_TYPES.has(parent.type) || PASSTHROUGH_TYPES.has(parent.type)) {
       current = parent;
       continue;
@@ -181,6 +184,23 @@ function readReferencesOfBinding(node: Node, sourceCode: SourceCode): Node[] {
     .map((reference) => reference.identifier);
 }
 
+/**
+ * 束縛の右辺が同期読みそのもの (要素の束縛) か。`x.query()!` / `x.element() as HTMLElement` /
+ * `await x.element()` のように包む節点だけを挟んだ形も要素の束縛に含める。演算やプロパティ読みを
+ * 挟んだ形 (`x.element().textContent`) は値の束縛
+ */
+function isElementBinding(syncRead: Node): boolean {
+  let current: Node = syncRead;
+  for (
+    let parent = parentOf(current);
+    parent && WRAPPER_TYPES.has(parent.type);
+    parent = parentOf(current)
+  ) {
+    current = parent;
+  }
+  return current === valueFlowTop(syncRead);
+}
+
 /** 同期読みの値を、使われる位置まで辿り、assert の引数 (主語でも matcher の期待値でも) に届くかを判定する */
 function reachesAssertion(syncRead: Node): boolean {
   const top = valueFlowTop(syncRead);
@@ -208,7 +228,10 @@ function reachesAssertionSubject(reference: Node): boolean {
   }
   const callee = parent.callee;
   if (nameOf(callee) === "expect") return true;
-  return callee.type === "MemberExpression" && nameOf(callee.object) === "expect";
+  if (callee.type === "MemberExpression" && nameOf(callee.object) === "expect") return true;
+  // `assert.equal(actual, expected)` は第 1 引数が主語
+  const root = callee.type === "MemberExpression" ? callee.object : callee;
+  return nameOf(root) === "assert" && parent.arguments[0] === top;
 }
 
 export const preferLocatorMethods = defineRule({
@@ -240,7 +263,7 @@ export const preferLocatorMethods = defineRule({
         // 右辺が同期読みそのもの (`const el = x.element()`) なら要素の束縛で、期待値の位置に来ても
         // 観測の基準値ではないので assert の引数すべてを見る。右辺が連鎖 (`...getAttribute(a)`) なら
         // 値の束縛で、主語に来るときだけ報告する
-        const reaches = valueFlowTop(node) === node ? reachesAssertion : reachesAssertionSubject;
+        const reaches = isElementBinding(node) ? reachesAssertion : reachesAssertionSubject;
         for (const reference of readReferencesOfBinding(node, context.sourceCode)) {
           if (isInsideRetryingCallback(reference)) continue;
           if (reaches(reference)) {
@@ -277,8 +300,9 @@ export const noFindElement = defineRule({
 /**
  * 期待値が綴りで潰れる形か。式なら観測どうしの比較なので対象外にする。
  *
- * `toHaveStyle` は宣言名 (`color:`) を必ず字面で持ち、値に式を埋めても名前の綴り違いで素通りする
- * (`` `colr: ${token}` `` は解釈できない宣言になり `.not` が真になる) ので、形を問わず報告する。
+ * `not.toHaveStyle` は引数の形を問わず報告する。ブラウザが解釈できない宣言は期待集合から落ちて
+ * `.not` が真になり、値に式を埋めても宣言名 (`colr:`) の綴りは検証されない。引数全体が式
+ * (`closedStyle()`) でも同じ (ADR-0031)。
  * 値の matcher では、式を含むテンプレートリテラル (`` `${before}px` ``) は観測を埋め込んだ比較なので外す
  */
 function isLiteralArgument(call: ESTree.CallExpression): boolean {
@@ -287,11 +311,11 @@ function isLiteralArgument(call: ESTree.CallExpression): boolean {
   if (staticPropertyName(call.callee) === "toHaveStyle") return true;
   if (first.type === "TemplateLiteral") return first.expressions.length === 0;
   if (first.type === "UnaryExpression") return first.argument.type === "Literal";
-  return (
-    first.type === "Literal" ||
-    first.type === "ObjectExpression" ||
-    first.type === "ArrayExpression"
-  );
+  // 配列は中身が全部リテラルのときだけ字面。識別子を含めば観測の比較
+  if (first.type === "ArrayExpression") {
+    return first.elements.every((element) => element?.type === "Literal");
+  }
+  return first.type === "Literal" || first.type === "ObjectExpression";
 }
 
 /** 引数に渡した値がそのまま assert の主語になる呼び出し。`expect(x)` と `expect.poll(cb)` */

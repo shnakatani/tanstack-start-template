@@ -114,6 +114,21 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       errors: [{ messageId: "syncRead" }],
     },
     {
+      // 包む節点 (`!` / `as` / `await`) を挟んでも要素の束縛。`!` は TS なので filename で TS として解析させる
+      code: "const el = locator.query()!; expect(document.activeElement).toBe(el);",
+      filename: "case.test.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "const el = await locator.element(); expect(document.activeElement).toBe(el);",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      // 連鎖の束縛が assert の主語 (第 1 引数) に来る形
+      code: 'const t = el.element().textContent; assert.equal(t, "a");',
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
       // vite-plus/test の assert も assert の口
       code: 'assert.equal(el.element().textContent, "a");',
       errors: [{ messageId: "syncRead" }],
@@ -221,6 +236,8 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
     "const shown = getComputedStyle(a); expect(shown.color).not.toBe(hidden.color);",
     // 式を含むテンプレートリテラルは観測どうしの比較。綴りで潰れない
     "expect(getComputedStyle(a).width).not.toBe(`${before}px`);",
+    // 識別子を含む配列は観測の比較
+    "expect(getComputedStyle(a).color).not.toStrictEqual([before]);",
     // ADR-0031 が推奨する肯定形。src/components/ui/dialog.test.tsx の綴り
     "await expect.poll(() => Number.parseFloat(getComputedStyle(x).maxHeight)).toBeGreaterThan(0);",
     // 同じく肯定形。src/components/parts/segmented-radio-group.test.tsx の綴り

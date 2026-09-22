@@ -473,8 +473,11 @@ describe("NotesPage", () => {
 
     expect(vi.mocked(removeNote)).toHaveBeenCalledOnce();
     // 2 発目が payload 無しで確定へ届いた場合は DeleteConfirmDialog が warn を出す。届いた上で
-    // guard に弾かれたことと区別する
-    expect(warnSpy).not.toHaveBeenCalled();
+    // guard に弾かれたことと区別する。発生源を prefix で特定し、無関係な warn で落とさない
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("[DeleteConfirmDialog]"),
+      expect.anything(),
+    );
     // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
     expect(readAnnouncements()).toEqual([`『${NOTE.title}』を削除しています`]);
     remove.resolve(undefined);
