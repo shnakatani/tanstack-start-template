@@ -87,6 +87,14 @@ describe("notes handlers", () => {
       expect((await handlers.list({ q: "a_b" })).map((note) => note.title)).toEqual(["a_b"]);
     });
 
+    // エスケープ文字そのものを含む検索語。漏れると `\` が次の文字のエスケープになり別の行に当たる
+    it("\\ はエスケープの解除ではなく文字として扱う", async () => {
+      await handlers.create({ title: "C:\\dir", body: "" });
+      await handlers.create({ title: "C:dir", body: "" });
+
+      expect((await handlers.list({ q: "C:\\" })).map((note) => note.title)).toEqual(["C:\\dir"]);
+    });
+
     it("ASCII の英字は大文字小文字を区別しない (SQLite の LIKE の既定)", async () => {
       await handlers.create({ title: "React", body: "" });
 

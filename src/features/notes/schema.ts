@@ -117,7 +117,8 @@ export const NOTE_QUERY_MAX_LENGTH = 100;
 export const noteListFilterSchema = v.object({
   q: v.optional(
     v.pipe(
-      v.string(),
+      // URL の `?q=123` は Router の JSON パースで number になる。既定の英語文言を UI に出さない
+      v.string(`${QUERY_LABEL}は文字列で指定してください`),
       v.trim(),
       v.maxLength(NOTE_QUERY_MAX_LENGTH, maxLengthMessage(QUERY_LABEL, NOTE_QUERY_MAX_LENGTH)),
     ),

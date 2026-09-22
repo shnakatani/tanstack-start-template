@@ -11,7 +11,7 @@ import {
 } from "@/components/parts/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
-import { noteListFilterSchema } from "@/features/notes/schema";
+import { NOTE_QUERY_MAX_LENGTH, noteListFilterSchema } from "@/features/notes/schema";
 import {
   CREATED_NOTE,
   NOTE,
@@ -147,9 +147,9 @@ describe("NotesPage", () => {
     expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "abc" } });
   });
 
-  it("route が search を検証し、既定の q を URL から落とし、q を loader の deps にする", () => {
+  // stripSearchParams の効きは route.test.tsx「空にして Enter すると q が URL から消える」が見る
+  it("route が search を server function と同じ schema で検証し、q を loader の deps にする", () => {
     expect(Route.options.validateSearch).toBe(noteListFilterSchema);
-    expect(Route.options.search?.middlewares).toHaveLength(1);
     expect(Route.options.loaderDeps?.({ search: { q: "abc" } })).toEqual({ q: "abc" });
   });
 
@@ -162,6 +162,8 @@ describe("NotesPage", () => {
       .toHaveValue("りんご");
     await expectText(screen, NOTE.title);
     expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "りんご" } });
+    // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
+    expect(readAnnouncements()).toEqual([]);
   });
 
   it("打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残す", async () => {
@@ -185,20 +187,52 @@ describe("NotesPage", () => {
     // 古い木を display: none で隠すので、在るかではなく見えるかで確かめる
     await expect.element(screen.getByText(NOTE.title)).toBeVisible();
     await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "true");
+    await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 0.6");
 
     listed.resolve([]);
     await expectText(screen, "『abc』に一致するメモはありません");
     await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
+    await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
+    // 半透明と aria-busy は読み上げに出ないので、結果の入れ替わりを通知する (ADR-0017)
+    expect(readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
+  });
+
+  it("入力欄の値は URL と同じ正規化 (trim と上限) を通して取得し、確定する", async () => {
+    const onQueryChange = vi.fn();
+    const screen = await renderPage({ onQueryChange });
+    const searchbox = screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL });
+
+    // 前後の空白は key に入れない (入れると URL 経由の key と別のキャッシュになる)
+    await searchbox.fill(" abc ");
+    await expect
+      .poll(() => vi.mocked(listNotes).mock.calls)
+      .toContainEqual([{ data: { q: "abc" } }]);
+
+    // 上限超えは入力欄の maxLength が止める (`fill` も maxLength を尊重する。2026-09-23 に実測)。
+    // key を作る前の正規化 (toNoteListFilter) は IME の変換中など maxLength が効かない経路の
+    // 2 段目で、上限の切り詰めは note-search.test.ts が単体で見る
+    const capped = "a".repeat(NOTE_QUERY_MAX_LENGTH);
+    await searchbox.fill("a".repeat(NOTE_QUERY_MAX_LENGTH + 1));
+    await expect.element(searchbox).toHaveValue(capped);
+    await expect
+      .poll(() => vi.mocked(listNotes).mock.calls)
+      .toContainEqual([{ data: { q: capped } }]);
+    await userEvent.keyboard("{Enter}");
+
+    expect(onQueryChange).toHaveBeenCalledExactlyOnceWith(capped);
+    // 一覧ごと Error Boundary に落ちていない
+    await expectText(screen, `『${capped}』に一致するメモはありません`);
   });
 
   it("Enter で onQueryChange に入力値を渡す", async () => {
     const onQueryChange = vi.fn();
     const screen = await renderPage({ onQueryChange });
 
-    await screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }).fill("りんご");
+    await screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }).fill(" りんご ");
     await userEvent.keyboard("{Enter}");
 
-    expect(onQueryChange).toHaveBeenCalledWith("りんご");
+    // URL と同じ正規化 (trim) を通した値を渡す
+    expect(onQueryChange).toHaveBeenCalledExactlyOnceWith("りんご");
   });
 
   it("ページ見出しと追加ボタンが表示される", async () => {

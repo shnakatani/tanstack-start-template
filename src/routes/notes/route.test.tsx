@@ -57,8 +57,9 @@ async function renderRoute(initialLocation: string) {
     routeTree,
     context: { queryClient },
     history: createMemoryHistory({ initialEntries: [initialLocation] }),
-    // search の検証失敗を route の境界で受けることを、本番 (`src/router.tsx`) と同じ部品で見る。
-    // 無いと root の外まで抜けて組み込みの ErrorComponent が描き、router が warn を出す
+    // search の検証失敗を route の境界で受けることを、本番 (`src/router.tsx`) と同じ部品を渡して見る
+    // (既定値の同一性は測らない)。無いと root の外まで抜けて組み込みの ErrorComponent が描き、
+    // "wasn't caught by any route" の warn が出る (2026-09-23 に実測)
     defaultErrorComponent: RouteErrorContent,
   });
   const screen = await render(
@@ -83,7 +84,8 @@ describe("/notes の search param", () => {
     const { screen } = await renderRoute("/notes?q=abc");
 
     await expect.element(searchbox(screen)).toHaveValue("abc");
-    expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "abc" } });
+    // loader が温めた key を component が読むので 1 回。loaderDeps が無いと空の deps の取得が先に走る
+    expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "abc" } });
   });
 
   it("入力して Enter すると URL の q が確定する", async () => {
@@ -94,6 +96,32 @@ describe("/notes の search param", () => {
 
     await expect.poll(() => router.state.location.search).toEqual({ q: "xyz" });
     expect(router.state.location.href).toBe("/notes?q=xyz");
+    // 明示操作 1 回につき履歴 1 つ (push)。戻るで絞り込み前の一覧に戻れる
+    expect(router.history.length).toBe(2);
+  });
+
+  it("戻るで URL の q が変わると、入力欄の途中入力を捨ててその q に揃う", async () => {
+    const { screen, router } = await renderRoute("/notes?q=abc");
+    await expect.element(searchbox(screen)).toHaveValue("abc");
+
+    await searchbox(screen).fill("xyz");
+    await userEvent.keyboard("{Enter}");
+    await expect.poll(() => router.state.location.href).toBe("/notes?q=xyz");
+    await searchbox(screen).fill("typed");
+
+    router.history.back();
+
+    await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
+    await expect.element(searchbox(screen)).toHaveValue("abc");
+  });
+
+  it("空白だけで Enter すると q は URL に残らない", async () => {
+    const { screen, router } = await renderRoute("/notes?q=abc");
+
+    await searchbox(screen).fill("   ");
+    await userEvent.keyboard("{Enter}");
+
+    await expect.poll(() => router.state.location.href).toBe("/notes");
   });
 
   it("空にして Enter すると q が URL から消える", async () => {

@@ -7,6 +7,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 
 import { NOTE_SEARCH_LABEL } from "../-lib/note-search";
 
@@ -42,6 +43,8 @@ export function NoteSearchField({
           type="search"
           aria-label={NOTE_SEARCH_LABEL}
           placeholder={NOTE_SEARCH_LABEL}
+          // schema と同じ上限。超えた入力は Error Boundary に落ちるので入力欄で止める (ADR-0033)
+          maxLength={NOTE_QUERY_MAX_LENGTH}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
         />

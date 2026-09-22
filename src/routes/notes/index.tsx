@@ -2,7 +2,7 @@ import { useDebouncedValue } from "@tanstack/react-pacer";
 import type { QueryClient } from "@tanstack/react-query";
 import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { DataTable } from "@/components/parts/data-table";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
@@ -28,15 +28,19 @@ import { NoteSearchField } from "./-components/note-search-field";
 import { noteColumns } from "./-lib/note-columns";
 import { noteDeleteDialogHandle } from "./-lib/note-delete-dialog-handle";
 import { getNoteRowId, isNoteRowBusy, toNoteRows } from "./-lib/note-rows";
-import { NOTE_SEARCH_DEBOUNCE_MS } from "./-lib/note-search";
+import {
+  NOTE_SEARCH_DEBOUNCE_MS,
+  noteSearchResultMessage,
+  toNoteListFilter,
+} from "./-lib/note-search";
 
 const PAGE_TITLE = "メモ一覧";
 
 /**
  * 一覧 loader 本体 (named function に切り出し、loader テストから直接呼べるようにする)。
  * context は LoaderFnContext の構造的部分型として受け、テストでは最小オブジェクトを渡す。
+ * `deps` は `loaderDeps` が search から取り出した絞り込み条件 (ADR-0033)。
  */
-/** `deps` は `loaderDeps` が search から取り出した絞り込み条件 (ADR-0033)。 */
 export function loadNotesPageData({
   context,
   deps,
@@ -67,14 +71,15 @@ export const Route = createFileRoute("/notes/")({
  * Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける
  * (`.claude/rules/directory-structure.md`「ルートファイル」)。
  * `key={q}` で URL の q が変わるたびにページの入力欄の state を作り直す
- * (React docs「Resetting state with a key」。effect で setState しない)。
+ * (React docs「Resetting all state when a prop changes」。effect で setState しない)。
  */
 function NotesRoute() {
   const { q } = Route.useSearch();
   const navigate = Route.useNavigate();
   function handleQueryChange(next: string) {
-    // navigate は Router が startTransition で commit する (ADR-0014)。履歴は汚さない
-    void navigate({ search: (prev) => ({ ...prev, q: next }), replace: true });
+    // navigate は Router が startTransition で commit する (ADR-0014)。確定は利用者の明示操作
+    // (submit) 1 回につき履歴 1 つで、戻るボタンが絞り込み前の一覧に戻る (ADR-0033)
+    void navigate({ search: (prev) => ({ ...prev, q: next }) });
   }
   return <NotesPage key={q} q={q} onQueryChange={handleQueryChange} />;
 }
@@ -102,9 +107,28 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const [text, setText] = useState(q);
   const [debouncedText] = useDebouncedValue(text, { wait: NOTE_SEARCH_DEBOUNCE_MS });
   const deferredText = useDeferredValue(debouncedText);
+  // 入力と表示中の条件がずれている間 (debounce の待ちと取得中) は古い一覧を印付きで残す
   const isStale = text !== deferredText;
-  const notesQuery = useSuspenseQuery(notesQueryOptions({ q: deferredText }));
+  // key にする前に URL / server function と同じ正規化を通す (理由は toNoteListFilter の docstring)
+  const filter = toNoteListFilter(deferredText);
+  const notesQuery = useSuspenseQuery(notesQueryOptions(filter));
   const queryClient = useQueryClient();
+
+  // 結果の入れ替わりを通知する (ADR-0017)。行の半透明と aria-busy は読み上げに出ない。
+  // live region への書き込みは DOM 副作用なので effect に置く。契機は条件の確定だけで、件数は
+  // 最新値を読むだけなので useEffectEvent に切り出す。mount 時 (URL からの初期表示と `key={q}` の
+  // 作り直し) は通知しない: 直前の条件と同じなら何も入れ替わっていない
+  const announceSearchResult = useEffectEvent((q: string) => {
+    announce(noteSearchResultMessage(q, notesQuery.data.length));
+  });
+  const announcedQ = useRef(filter.q);
+  useEffect(() => {
+    if (announcedQ.current === filter.q) {
+      return;
+    }
+    announcedQ.current = filter.q;
+    announceSearchResult(filter.q);
+  }, [filter.q]);
 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
@@ -174,7 +198,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
             <NoteSearchField
               value={text}
               onValueChange={setText}
-              onSubmit={() => onQueryChange(text)}
+              onSubmit={() => onQueryChange(toNoteListFilter(text).q)}
             />
             <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
               ＋ {NOTE_ENTITY_LABEL}を追加
@@ -188,7 +212,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
           {rows.length === 0 ? (
             <Empty>
               <EmptyHeader>
-                {deferredText === "" ? (
+                {filter.q === "" ? (
                   <>
                     <EmptyTitle>{NOTE_ENTITY_LABEL}が登録されていません</EmptyTitle>
                     <EmptyDescription>右上の追加ボタンから登録できます</EmptyDescription>
@@ -196,7 +220,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
                 ) : (
                   <>
                     <EmptyTitle>
-                      『{deferredText}』に一致する{NOTE_ENTITY_LABEL}はありません
+                      『{filter.q}』に一致する{NOTE_ENTITY_LABEL}はありません
                     </EmptyTitle>
                     <EmptyDescription>
                       検索語を変えるか、空にして全件を表示できます

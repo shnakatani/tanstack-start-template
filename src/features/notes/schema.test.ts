@@ -204,16 +204,31 @@ describe("noteListFilterSchema", () => {
     expect(v.parse(noteListFilterSchema, { q: "  abc  " })).toEqual({ q: "abc" });
   });
 
-  it("上限ちょうどは通り、1 文字超えると落ちる", () => {
-    expect(
-      v.safeParse(noteListFilterSchema, { q: "a".repeat(NOTE_QUERY_MAX_LENGTH) }).success,
-    ).toBe(true);
-    expect(
-      v.safeParse(noteListFilterSchema, { q: "a".repeat(NOTE_QUERY_MAX_LENGTH + 1) }).success,
-    ).toBe(false);
+  // title は空白だけを reject するが、q は空白だけ = 絞り込みなし (空文字) にする
+  it("空白だけの q は空文字 (絞り込みなし) になる", () => {
+    expect(v.parse(noteListFilterSchema, { q: "   " })).toEqual({ q: "" });
   });
 
-  it("文字列以外の q は落ちる", () => {
-    expect(v.safeParse(noteListFilterSchema, { q: 1 }).success).toBe(false);
+  // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は通り、cap+1 は落ちる
+  it("上限までは通り、1 文字超えると落ちる", () => {
+    const cap = NOTE_QUERY_MAX_LENGTH;
+    expect(v.safeParse(noteListFilterSchema, { q: "a".repeat(cap - 1) }).success).toBe(true);
+    expect(v.safeParse(noteListFilterSchema, { q: "a".repeat(cap) }).success).toBe(true);
+    const over = v.safeParse(noteListFilterSchema, { q: "a".repeat(cap + 1) });
+    expect(over.success).toBe(false);
+    expect(over.issues?.[0]?.message).toBe(`検索語は ${cap} 文字以内で入力してください`);
+  });
+
+  it("trim してから上限を数える", () => {
+    expect(
+      v.safeParse(noteListFilterSchema, { q: ` ${"a".repeat(NOTE_QUERY_MAX_LENGTH)} ` }).success,
+    ).toBe(true);
+  });
+
+  // URL の `?q=123` は Router の JSON パースで number になる (ADR-0033)。既定の英語文言を出さない
+  it("文字列以外の q は日本語の文言で落ちる", () => {
+    const result = v.safeParse(noteListFilterSchema, { q: 1 });
+    expect(result.success).toBe(false);
+    expect(result.issues?.[0]?.message).toBe("検索語は文字列で指定してください");
   });
 });
