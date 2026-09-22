@@ -180,12 +180,14 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)
 - 同期読みを `expect()` へ流してよいのは、locator に対応する matcher が無い実測のときだけ。許す形の列挙は `scripts/lint/browser-test.ts` が持つ。足す前にその主張が matcher で書けないことを確かめる (ADR-0029)
 - 機械強制は `browser-test/prefer-locator-methods`。`vp lint` / `vp check` で走る。grep は束縛を挟む形を取りこぼすので、件数はこのルールで数える (ADR-0029)
-- assert の予算は `vitest.browser.config.ts` が `expect.poll.timeout` と `actionTimeout` の対で持ち、テストの予算 (`testTimeout`) とは別。片方だけにすると残り予算か vitest の既定へ戻る (ADR-0030)
+- assert の予算は `vitest.browser.config.ts` が `expect.poll.timeout` と `actionTimeout` の対で宣言する。片方だけにすると残り予算か vitest の既定へ戻る (ADR-0030)
+- 予算の値は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が持つ。上げるときはここを変える。config へ直接書くと helper 側の閾値が追随しない (ADR-0030)
+- **`testTimeout` は動かさない。** 締めるのは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も縮み、遅い環境で緑のテストが落ちる (ADR-0030)
 - 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く。要素が無ければ 1 回目で通るので、単独では何も検証していない (ADR-0031)
 - 要素が在る状態から消えるのを待つときは `expect.element(locator).not.toBeInTheDocument()` をそのまま書く。消えるのを待つ側には retry の予算が要る。呼び出し側の形でどちらのつもりかが読める (ADR-0031)
-- `.not.toBeInTheDocument()` と `toHaveLength` 系は要素が無くても通る (前者は特例、後者は空配列)。ほかの否定 matcher は要素が引けない間 retry するので肯定 assert は要らない (ADR-0031)
+- `.not.toBeInTheDocument()` と `toHaveLength` は要素が無くても通る。ほかの否定 matcher は要素が引けない間 retry するので肯定 assert は要らない (ADR-0031)
 - locator は複数一致で throw する (vitest の locators docs「strict and throw if multiple elements match」)。`expect.element` は retry のたびに引き直すので「1 件だけ」を assert の前提に使える。使うなら依拠を実装近傍に書く。書かないと前提ごと消される
-- 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る。**`toHaveLength` は 0 件でも成立する**ので、描画を待つ肯定 assert を先に置く (ADR-0031)
+- 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0029)。**`toHaveLength` は一致ゼロでも成立する**ので、描画を待つ肯定 assert を先に置く (ADR-0031)
 - 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件 (mock の呼び出し回数など) は `vi.waitFor` (ADR-0013)
 - `expect.poll` と `vi.waitFor` はコールバックを retry するので、中の同期読みはルールの対象外。`expect.element` は引数の式を 1 度しか評価せず、同期読みを渡すとその値のまま retry する (ADR-0029)
 
@@ -197,8 +199,9 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変更したら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
 - 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` に明示してあり、`DEFAULT_VIEWPORT` と一致させて管理する
 - 単一プロパティを文字列リテラルと比べるだけなら `await expect.element(x).toHaveStyle("prop: value")` を使う。**文字列形式で、複数プロパティは `;` で 1 つにまとめる。** オブジェクト形式は失敗しても差分が出ない。分けて書くと予算を個別に使い、同時に成立しない状態も通る (ADR-0031)
+- **1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。** jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える (ADR-0031)
 - **スタイルを否定で確かめない。** `not.toHaveStyle` も算出値との `not.toBe` も、綴りや単位が 1 つ外れると潰れた状態のまま通る (ADR-0031)
-- 肯定形は主張で選ぶ。「描かれている」なら 1 回の観測から数値を出して `toBeGreaterThan(0)`、当たっている token が分かっているなら `resolveColorToken()` の値と比べる (ADR-0031)
+- 肯定形は主張で選ぶ。「描かれている」なら 1 回の観測から数値を出して `toBeGreaterThan(0)`、当たっている token が分かっているなら `src/test/resolve-color-token.ts` の `resolveColorToken()` の値と比べる (ADR-0031)
 - 機械強制は `browser-test/no-negated-style-literal`。期待値が式なら報告しない (観測どうしの比較は綴りで潰れない) (ADR-0031)
 - `getComputedStyle` を `expect()` へ流してよいのは、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0031)
 - 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる

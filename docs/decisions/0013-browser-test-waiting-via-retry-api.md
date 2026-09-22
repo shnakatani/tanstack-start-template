@@ -4,7 +4,7 @@
 - Date: 2026-09-11
 - Revised: 2026-09-14 (close 後に要素が消えたことの確認を `vi.waitFor` + `.query()` から `expect.element(...).not.toBeInTheDocument()` へ改めた。vitest の assertions ドキュメントが「無いこと」をこの matcher で示し、`vi.waitFor` は assertion で表せない条件の道具と位置づけているため)
 - Revised: 2026-09-22 (「lint で表現できる形は無い」を撤回した。同期読みが assert へ届く形は式の構造で表せる。ADR-0029)
-- 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)、ADR-0018 (Base UI の animation を無効にして走らせる。`waitForAnimations()` が要る場面は変わらない)、ADR-0029 (同期読みを assert へ流さない。本 ADR の規範を lint へ落とした)
+- 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)、ADR-0018 (Base UI の animation を無効にして走らせる。`waitForAnimations()` が要る場面は変わらない)、ADR-0029 (同期読みを assert へ流さない。本 ADR の規範を lint へ落とした)、ADR-0030 (`findElement` の待機の予算)、ADR-0031 (否定 assert が不在でも通ること)
 
 ## Context
 
@@ -65,5 +65,5 @@ const inputGroup = findInputGroup(input.element());
 - 生 DOM を取る箇所は「操作を挟んだか」で API が分かれる。判断を誤ってもテストは大半の実行で通るため、レビューで見る。禁じたい形のうち「同期読みの値を assert へ流すこと」は式の構造で表せるので lint が持つ (ADR-0029)。`findElement()` と `element()` の使い分けそのものは実行時の履歴で決まるため、引き続きレビューで見る
 - 変化しないことの検証 (disabled な行がトグルしない等) は retry では強くならない。`expect.element` は条件を満たした時点で返るので、更新前に成功しうる。待つ対象がある検証へ言い換えられないかを先に考える
 - `expect.element` の matcher (`toHaveAttribute` / `toHaveTextContent`) を使う。`toHaveTextContent` は文字列で部分一致になるため、完全一致が要る箇所は正規表現を渡す
-- `vi.waitFor` は locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列の中身など) に残す。要素が消えたことは `expect.element` の `.not.toBeInTheDocument()` が表せる (`.not.toBeInTheDocument()` のときだけ Locator を `.query()` で引くため、無くても throw しない)。vitest の wait-for レシピは assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける
+- `vi.waitFor` は locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列の中身など) に残す。要素が消えたことは `expect.element` の `.not.toBeInTheDocument()` が表せる (`.not.toBeInTheDocument()` のときだけ Locator を `.query()` で引くため、無くても throw しない。この特例が「最初から無くても通る」の出どころで、扱いは ADR-0031 が持つ)。vitest の wait-for レシピは assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける
 - この決定はブラウザテストにだけ効く。unit project は DOM を持たず、`render` も locator も無い

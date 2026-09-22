@@ -30,16 +30,18 @@ ADR-0029 の移行で `expect.element` の肯定 assert が増え、「最初か
 
 #8308 のコメントは回避策として Playwright provider の `actionTimeout` を挙げる。この設定を入れると `expect.poll.timeout` が `expect.element` にも効く。
 
+**予算の宣言は「最初から出ない」否定 assert の無駄待ちを解かない。** 待って成立しない条件にはどんな予算を渡しても使い切るためで、そちらは呼び出しごとに打ち切る形が要る (ADR-0031 の `expectAbsent`)。本 ADR が決めるのは、待つ意味のある assert の上限だけである。
+
 ## Decision
 
-**assert の予算をテストの予算と分けて宣言する。** `vitest.browser.config.ts` に `expect.poll.timeout` と `browser.providerOptions.actionTimeout` を対で置く。値は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が 1 か所で持つ。
+**assert の予算をテストの予算と分けて宣言する。** `vitest.browser.config.ts` に `expect.poll.timeout` と `browser.providerOptions.actionTimeout` を対で置き、値は 5000ms にする。その値はリポジトリ内の 1 か所が持ち、config と helper の両方がそこから読む。
 
-| 規範                                                                                        | 守らないと何が壊れるか                                                                                                        |
-| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `expect.poll.timeout` と `actionTimeout` を対で置く                                         | `actionTimeout` を消すと残り予算を使い切る側へ戻り、`expect.poll.timeout` を消すと vitest の既定 1000ms になる                |
-| 予算の値は `src/test/assert-budget.ts` が持ち、config と helper の両方がそこから読む        | 数字を 2 か所に置くと、重い画面を持つ利用者が上げる場所が 2 つになる                                                          |
-| `testTimeout` は動かさない                                                                  | 締めるべきは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も一緒に縮み、遅い環境で緑が落ちる  |
-| 操作の結果として現れる生 DOM は `src/test/find-element.ts` の `findElement(locator)` で取る | 素の `locator.findElement()` は `actionTimeout` があると待ち時間が上限なしになる。`Test timed out` で落ち、locator 名が消える |
+| 規範                                                                                            | 守らないと何が壊れるか                                                                                                        |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `expect.poll.timeout` と `actionTimeout` を対で置く                                             | `actionTimeout` を消すと残り予算を使い切る側へ戻り、`expect.poll.timeout` を消すと vitest の既定 1000ms になる                |
+| 予算の値を持つのは 1 か所だけにする (現在は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS`) | 数字を 2 か所に置くと、重い画面を持つ利用者が上げる場所が 2 つになる                                                          |
+| `testTimeout` は動かさない                                                                      | 締めるべきは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も一緒に縮み、遅い環境で緑が落ちる  |
+| 操作の結果として現れる生 DOM は `src/test/find-element.ts` の `findElement(locator)` で取る     | 素の `locator.findElement()` は `actionTimeout` があると待ち時間が上限なしになる。`Test timed out` で落ち、locator 名が消える |
 
 ## Consequences
 
@@ -94,7 +96,11 @@ helper は options を受け取らない。呼び出しごとに `{ timeout: und
 
 helper を置いても、`locator.findElement()` を直に書けば同じ穴に戻る。しかも失敗は「テストが `Test timed out` で落ちる」形なので、原因が locator だと読めない。規範と docstring だけでは気づけない種類の壊れ方なので、`browser-test/no-bare-find-element` が止める。ルールの置き方は ADR-0029「機械強制は oxlint の JS plugin で書く」に従う。
 
-導入時の違反は 0 件である。helper へ移す前は素の呼び出しが 16 箇所あり、`actionTimeout` を足した時点で全部が上限なしになっていた。退行の記録はそれで足りる。
+導入時の違反は 0 件である。helper へ移す前は素の呼び出しが 16 箇所あり、`actionTimeout` を足した時点で全部が上限なしになっていた (2026-09-22)。退行の記録はそれで足りる。
+
+```bash
+git grep -n '\.findElement(' main -- src/
+```
 
 ルールは呼び出し元の場所を見ない。正当な呼び出しは `src/test/find-element.ts` の 1 行だけなので、そこへ `oxlint-disable-next-line` を置く。ファイル単位や `lint.overrides` で外す形は採らない。同じファイルに 2 本目を書いたときも無検査になり、除外の理由が呼び出し行から離れる。
 

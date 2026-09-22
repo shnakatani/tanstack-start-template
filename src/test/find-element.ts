@@ -5,6 +5,8 @@ import { ASSERT_TIMEOUT_MS } from "./assert-budget";
 /**
  * 操作の結果として現れる要素の生 DOM を、mount を待ってから取る (ADR-0013)。
  *
+ * 待ち時間をここで持つ理由と、公式の既定を復元しない判断は ADR-0030「代償は `findElement` に出る」。
+ *
  * `locator.findElement()` を引数なしで呼ばない。公式の既定は「テストと同じ待ち時間」だが
  * (locators API の「By default, the timeout matches the test timeout」)、
  * `vitest.browser.config.ts` が `actionTimeout` を置くと **上限なし** になる。

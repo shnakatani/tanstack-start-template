@@ -17,6 +17,7 @@ import {
   NOTE_CREATED_AT_TEXT,
   OTHER_NOTE,
 } from "@/features/notes/schema.test-helpers";
+import { expectAbsent } from "@/test/absent";
 
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
@@ -61,7 +62,7 @@ describe("NoteCreatedAtCell", () => {
     const screen = await renderCells({ creatingRows: [CREATING_ROW] });
 
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
-    await expect.element(noteRow(screen, NOTE).getByText("保存中")).not.toBeInTheDocument();
+    await expectAbsent(noteRow(screen, NOTE).getByText("保存中"));
   });
 });
 
@@ -73,7 +74,7 @@ describe("NoteActionsCell", () => {
       .element(rowDeleteButton(screen, NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
     await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toBeInTheDocument();
-    await expect.element(noteRow(screen, NOTE).getByText("削除中")).not.toBeInTheDocument();
+    await expectAbsent(noteRow(screen, NOTE).getByText("削除中"));
   });
 
   it("削除中の行だけトリガーを無効にし、読み上げ用の「削除中」を足す", async () => {
@@ -87,14 +88,14 @@ describe("NoteActionsCell", () => {
     await expect
       .element(rowDeleteButton(screen, OTHER_NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
-    await expect.element(noteRow(screen, OTHER_NOTE).getByText("削除中")).not.toBeInTheDocument();
+    await expectAbsent(noteRow(screen, OTHER_NOTE).getByText("削除中"));
   });
 
   it("保存中の行には削除トリガーを出さない (id をまだ持たない)", async () => {
     const screen = await renderCells({ creatingRows: [CREATING_ROW] });
 
     await expect.element(noteRow(screen, CREATED_NOTE)).toBeInTheDocument();
-    await expect.element(rowDeleteButton(screen, CREATED_NOTE.title)).not.toBeInTheDocument();
+    await expectAbsent(rowDeleteButton(screen, CREATED_NOTE.title));
     await expect.element(rowDeleteButton(screen, NOTE.title)).toBeInTheDocument();
   });
 

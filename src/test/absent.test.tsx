@@ -38,9 +38,10 @@ describe("expectAbsent", () => {
       // 同値だと、退行が閾値の失敗ではなく「テストが timeout した」として出る
       const startedAt = performance.now();
       await expect(expectAbsent(screen.getByText("ある"))).rejects.toThrow(/toBeInTheDocument/);
-      // 健全なら 52-55ms で返る (2026-09-22、全 project 同時実行でも同じ)。退行は予算を
-      // まるごと使う。1/5 は健全側に 18 倍、退行側に 5 倍の余裕があり、予算を動かしても
-      // 両側の比が保たれる。固定値にすると予算を下げたとき退行が閾値を下回って緑になる
+      // 健全なら 52-55ms で返る (2026-09-22、全 project 同時実行でも同じ)。この所要は予算に
+      // 比例しない固定値で、退行だけが予算をまるごと使う。閾値を予算の 1/5 に置くと、退行側に
+      // 5 倍の余裕が予算によらず残る。固定値にすると予算を下げたとき退行が閾値を下回って緑になる。
+      // 健全側の余裕は予算に比例するので、予算を 260ms 未満へ下げるとこのテストが先に落ちる
       expect(performance.now() - startedAt).toBeLessThan(ASSERT_TIMEOUT_MS / 5);
     },
     ASSERT_TIMEOUT_MS * 2,

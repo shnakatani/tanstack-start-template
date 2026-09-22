@@ -6,7 +6,7 @@
 
 ## Context
 
-否定 assert には 3 つの素通り経路がある。いずれも「実装が壊れているのに緑で通る」向きに倒れる。
+否定 assert には 3 つの素通り経路がある。いずれも「実装が壊れているのに緑で通る」向きに倒れる。要素が無くても通る肯定 matcher (`toHaveLength`) も、1 つ目と同じ穴を持つ。
 
 ### 要素が最初から無ければ 1 回目で通る
 
@@ -15,6 +15,8 @@
 これは `@vitest/browser` が否定の `toBeInTheDocument` だけを特例にしているためで、他の否定 matcher とは挙動が違う。存在しない要素へ `.not.toHaveTextContent()` を当てると、要素が引けない間 retry して 2927ms 後に `Cannot find element with locator` で落ちた (2026-09-22、`testTimeout` 3000)。否定 matcher を一律に扱うと、この違いを踏む。
 
 予算を下げてもこの問題は残る。待って成立しない条件にどんな予算を渡しても無駄に待つからで、区別は呼び出しごとにしか置けない (予算そのものは ADR-0030)。
+
+同じ穴が `toHaveLength` にもある。こちらは否定ではないが、一致ゼロの locator へ `toHaveLength(0)` を当てると通る (2026-09-22 実測。一致しない `getByText` へ当てたテストが `Tests 1 passed (1)` で緑になる)。`expect.element` は retry のたびに locator を引き直すので、描画を待つ肯定 assert を先に置かないと、まだ描かれていない状態が 0 件として成立する。
 
 ### 解釈できない宣言は `not.toHaveStyle` を通す
 
@@ -40,6 +42,7 @@
 | 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
 | 要素が在る状態から消えるのを待つときは `expect.element(x).not.toBeInTheDocument()` をそのまま書く                             | 消えるのを待つ側には retry の予算が要る。`expectAbsent` に置き換えると、unmount を待たずに落ちる           |
 | `.not.toBeInTheDocument()` 以外の否定 matcher には肯定 assert を添えなくてよい                                                | 要素が引けない間 retry するため、不在のまま通ることがない                                                  |
+| 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
 | スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                          | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
 | `toHaveStyle` は文字列形式で書き、複数プロパティは `;` で 1 つにまとめる                                                      | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
 | `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                | jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える                                            |
@@ -65,7 +68,13 @@
 
 起点を 2 つに分けるのは、`toHaveStyle` が要素を主語に取り `getComputedStyle` を通らないためである。両方が同じ呼び出しを報告しないよう、後者は `toHaveStyle` を除く。
 
-期待値が式なら報告しない。観測どうしの比較は綴りで潰れないためで、この形は 2026-09-22 時点で 10 件ある。導入時の違反は 1 件で、テンプレート初版 (`fb3433a`) から在った `src/components/parts/dialog-scroll-body.test.tsx` の `expect(shown.borderTopColor).not.toBe("rgba(0, 0, 0, 0)")` である。
+期待値が式なら報告しない。観測どうしの比較は綴りで潰れないためである。次のコマンドで数えると 10 件あった (2026-09-22)。
+
+```bash
+grep -rn --include='*.test.tsx' -E '\.not\.(toHaveStyle|toBe)\(' src/ | grep -iE 'getComputedStyle|Color|Width|Height'
+```
+
+導入時の違反は 1 件で、テンプレート初版 (`fb3433a`) から在った `src/components/parts/dialog-scroll-body.test.tsx` の `expect(shown.borderTopColor).not.toBe("rgba(0, 0, 0, 0)")` である。
 
 変数へ束縛してから読む形も 1 段だけ辿る。上の 1 件がその形だったので、追跡が無いと導入時の違反が 0 件に見えて、ルールが効いているように読める。
 
@@ -75,6 +84,10 @@
 | ------ | ----------------------------------------------------------- | -------------------------------------------------------------------------- |
 | 直接   | 実コードへ `.not.toHaveStyle("max-height: none")` を戻す    | `vp lint` が 1 件報告する                                                  |
 | 間接   | `lint.rules` は残したまま `lint.overrides` の適用先から外す | 違反が 0 件になり、`scripts/checks/integrity/lint-config.test.ts` が落ちる |
+
+### 肯定形は失敗するまで予算を使う
+
+否定から肯定の `expect.poll` へ移すと、失敗時の所要が変わる。否定は条件が最初から成立して即座に返っていたが、肯定は成立しない条件を assert の予算 (ADR-0030) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。挙動としては正しく、赤の所要が延びるのは検出力と引き換えである。
 
 ### escape hatch に残る 3 つの形
 
@@ -86,7 +99,7 @@
 | 数値の大小         | `expect(Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                                  |
 | 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない (2026-09-22 に実測) |
 
-ADR-0029 のルールの許可は callee 単位なので、この 3 つより広い。狭めるには matcher を見る分岐が要る。本 ADR のルールは期待値がリテラルの否定だけを狭く止めるので、許可リストの側は動かさない。
+ADR-0029 のルールの許可は callee 単位なので、この 3 つより広い。狭めるには matcher を見る分岐が要る。先行例の `prefer-web-first-assertions` は `supportedMatchers` で matcher を見ているが、あれは autofix の可否を決めるためで範囲の限定ではない。本 ADR のルールは期待値がリテラルの否定だけを狭く止めるので、許可リストの側は動かさない。
 
 ### ルールが追えない形
 
@@ -101,13 +114,13 @@ ADR-0029 のルールの許可は callee 単位なので、この 3 つより広
 
 ## 検討した選択肢
 
-| 案                                                 | 評価                                                                                                           | 採否     |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------- |
-| 期待値がリテラルの否定を lint で止め、肯定形へ移す | 素通りする形が式の構造で表せる。3 つの経路が同じ「期待値の綴りで否定が真になる」に還元できる                   | **採用** |
-| 否定 assert には触れない                           | ADR-0029 の移行が 15 秒の赤を持ち込む。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える | 却下     |
-| `not.toHaveStyle` だけを止める                     | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである       | 却下     |
-| 否定 matcher を全面禁止する                        | 消滅待ちの `.not.toBeInTheDocument()` と、観測どうしの比較 10 件が書けなくなる。どちらも綴りで潰れない         | 却下     |
-| `toHaveStyle` をオブジェクト形式で書く             | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない   | 却下     |
+| 案                                                 | 評価                                                                                                                                                                              | 採否     |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 期待値がリテラルの否定を lint で止め、肯定形へ移す | 経路 2-3 は同じ「期待値の綴りで否定が真になる」に還元でき、式の構造で表せる。経路 1 と `toHaveLength` は期待値を取らないので lint では表せず、`expectAbsent` と肯定 anchor が持つ | **採用** |
+| 否定 assert には触れない                           | ADR-0029 の移行が 15 秒の赤を持ち込む。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                    | 却下     |
+| `not.toHaveStyle` だけを止める                     | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                          | 却下     |
+| 否定 matcher を全面禁止する                        | 消滅待ちの `.not.toBeInTheDocument()` と、観測どうしの比較 10 件が書けなくなる。どちらも綴りで潰れない                                                                            | 却下     |
+| `toHaveStyle` をオブジェクト形式で書く             | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない                                                                      | 却下     |
 
 失敗時の文言を比べた (2026-09-22)。
 
@@ -120,6 +133,7 @@ ADR-0029 のルールの許可は callee 単位なので、この 3 つより広
 ## 出典
 
 - vitest browser の assertion API: <https://vitest.dev/guide/browser/assertion-api>
-- 同梱の `@vitest/browser` 4.1.11 の `matchers.d.ts` (`expect.element` が受ける型と timeout の docstring)
-- 同梱の `node_modules/vite-plus/docs/guide/lint.md`「JS Plugins」
-- oxlint の JS plugin 作成ガイド: <https://oxc.rs/docs/guide/usage/linter/writing-js-plugins.html>
+- 同梱の `@vitest/browser` 4.1.11 の `matchers.d.ts` (`expect.element` が受ける型)
+- jest-dom の `toHaveStyle`: <https://github.com/testing-library/jest-dom#tohavestyle>
+
+ルールの置き方と、その根拠となる oxlint の JS plugin の出典は ADR-0029 が持つ。
