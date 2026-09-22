@@ -4,6 +4,7 @@
 - Date: 2026-09-11
 - Revised: 2026-09-14 (close 後に要素が消えたことの確認を `vi.waitFor` + `.query()` から `expect.element(...).not.toBeInTheDocument()` へ改めた。vitest の assertions ドキュメントが「無いこと」をこの matcher で示し、`vi.waitFor` は assertion で表せない条件の道具と位置づけているため)
 - Revised: 2026-09-22 (「lint で表現できる形は無い」を撤回した。同期読みが assert へ届く形は式の構造で表せる。ADR-0029)
+- Revised: 2026-09-22 (close 後に要素が消えたことの確認を `expect.element(...).not.toBeInTheDocument()` から `expectRemoved(locator)` へ改めた。同じ matcher を呼ぶ不在確認と字面で区別が付かず、取り違えが実際に起きたため。ADR-0031)
 - 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)、ADR-0018 (Base UI の animation を無効にして走らせる。`waitForAnimations()` が要る場面は変わらない)、ADR-0029 (同期読みを assert へ流さない。本 ADR の規範を lint へ落とした)、ADR-0030 (`findElement` の待機の予算)、ADR-0031 (否定 assert が不在でも通ること)
 
 ## Context

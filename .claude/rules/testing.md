@@ -211,8 +211,8 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 直呼びすると `actionTimeout` を置いた config では待ち時間が上限なしになり、`Test timed out` で落ちて locator 名が出力から消える (ADR-0030)
 - `element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
 - Base UI の animation は `src/test/browser-setup.tsx` が毎テスト無効にする。閉じかけの popup が残る窓を検証するテストだけ、冒頭で `src/test/base-ui-animations.ts` の `enableBaseUiAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻す (ADR-0018)
-- Dialog / Popover / Sheet の close 後に消えたことは `await expect.element(locator).not.toBeInTheDocument()` で待つ (ADR-0013)。animation を戻したテストでは `animate-out` 完了後に消える
-- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素の `.not.toBeInTheDocument()` を待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
+- Dialog / Popover / Sheet の close 後に消えたことは `await expectRemoved(locator)` で待つ (ADR-0013 / ADR-0031)。animation を戻したテストでは `animate-out` 完了後に消える
+- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
 - `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む
 - flex column の中に「溢れるコンテンツ」をテスト用に作るときは `height` ではなく `minHeight` を使う (flex item は既定で縮むため `height` では溢れない)
 - hover 由来の配色との交絡は `src/test/park-mouse.ts` が `browser-setup.tsx` の `beforeEach` で断つ。マウス位置を動かすテストは自分で戻す。戻すのは overlay が閉じる前。露出した要素の hover と transition を axe が測ると色の実測が揺れる (ADR-0018)
