@@ -228,22 +228,22 @@ export const preferLocatorMethods = defineRule({
   },
 });
 
-export const noBareFindElement = defineRule({
+export const noFindElement = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "locator.findElement() を直に呼ばず src/test/find-element.ts を通す (ADR-0030)",
+      description: "locator.findElement() を呼ばない。mount は expect.element で待つ (ADR-0030)",
     },
     messages: {
-      bareFindElement:
-        "`locator.findElement()` を直に呼ばない。`src/test/find-element.ts` の `findElement(locator)` を使う。この config は `actionTimeout` を置いており、素の呼び出しは待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える (ADR-0030)",
+      findElement:
+        "`locator.findElement()` を呼ばない。mount を待つなら `expect.element(locator).toBeInTheDocument()` を使う。この config は `actionTimeout` を置いており、`findElement()` は待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える (ADR-0030)",
     },
   },
   create(context) {
     return {
       CallExpression(node: ESTree.CallExpression) {
         if (staticPropertyName(node.callee) !== "findElement") return;
-        context.report({ node, messageId: "bareFindElement" });
+        context.report({ node, messageId: "findElement" });
       },
     };
   },
@@ -454,7 +454,7 @@ export default definePlugin({
   meta: { name: "browser-test" },
   rules: {
     "prefer-locator-methods": preferLocatorMethods,
-    "no-bare-find-element": noBareFindElement,
+    "no-find-element": noFindElement,
     "no-negated-style-literal": noNegatedStyleLiteral,
     "no-bare-absence-assertion": noBareAbsenceAssertion,
   },

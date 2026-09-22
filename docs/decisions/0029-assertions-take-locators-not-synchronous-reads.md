@@ -60,7 +60,7 @@ grep -rnE 'expect\(\s*[A-Za-z_$][^;]*\.(element|query|all|elements)\(\)' --inclu
 ### lint で書けるかを確かめていなかった
 
 ADR-0013 が「lint で表現できる形は無い」と書いたのは、`element()` を許すかどうかが「操作を挟んだか」という実行時の履歴で決まると考えたためである。
-しかし禁止したい形は履歴ではなく式の構造で表せる。**同期読みの値が `expect()` の引数へ届くこと**を報告すればよい。`findElement()` と `element()` の使い分け (ADR-0013) は assert の外側の話なので、この判定とは独立する。
+しかし禁止したい形は履歴ではなく式の構造で表せる。**同期読みの値が `expect()` の引数へ届くこと**を報告すればよい。`element()` をどこで読むか (ADR-0013) は assert の外側の話なので、この判定とは独立する。
 
 同じ趣旨のルールは他のエコシステムに先行例がある。`eslint-plugin-playwright` の [`prefer-web-first-assertions`](https://github.com/playwright-community/eslint-plugin-playwright/blob/main/docs/rules/prefer-web-first-assertions.md) が `expect(await locator.isVisible()).toBe(true)` を報告し、"web first assertions will automatically wait for the conditions to be fulfilled resulting in more resilient tests" を理由に挙げる。対象 API が違うため流用はできない。
 
@@ -75,7 +75,7 @@ ADR-0013 が「lint で表現できる形は無い」と書いたのは、`eleme
 | 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ | 同期読みは retry を持たない。DOM が確定する前に評価されると、実装が正しくてもテストが落ちる。失敗しても locator の名前が出力に残らない |
 | 同期読みを `expect()` へ流してよいのは、locator に対応する matcher が無い実測のときだけ。許す形の列挙はルールが持つ                                   | 列挙をこの文書へも書くと、ルールと文書が別々に育つ                                                                                     |
 
-`element()` と `findElement()` の使い分けは ADR-0013 のままである。本 ADR が狭めるのは、その値を assert へ渡す経路だけである。
+`element()` を読む場所の規範は ADR-0013 のままである。本 ADR が狭めるのは、その値を assert へ渡す経路だけである。
 
 この移行で 2 つの問題が顕在化し、それぞれ別の ADR が決めている。assert の予算 (赤が 15 秒かかる) は ADR-0030、否定 assert の検出力 (不在や綴り違いで通る) は ADR-0031 である。
 
@@ -149,11 +149,11 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 
 ### 本 ADR が扱わないもの
 
-| 対象                                                  | 持ち主                                                                                                         |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| assert の予算 (`expect.poll.timeout` / `findElement`) | ADR-0030                                                                                                       |
-| 否定 assert と `toHaveStyle` の書き方                 | ADR-0031                                                                                                       |
-| クリックの発火方法                                    | ADR-0015。合成イベントを送る helper は 2026-09-22 の改訂で廃止され、その引数が同期読みだった経路も一緒に消えた |
+| 対象                                                    | 持ち主                                                                                                         |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| assert の予算 (`expect.poll.timeout` / `actionTimeout`) | ADR-0030                                                                                                       |
+| 否定 assert と `toHaveStyle` の書き方                   | ADR-0031                                                                                                       |
+| クリックの発火方法                                      | ADR-0015。合成イベントを送る helper は 2026-09-22 の改訂で廃止され、その引数が同期読みだった経路も一緒に消えた |
 
 `getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0013 と `testing.md`「ブラウザテストの CSS とレイアウト実測」) は escape hatch に残す。ただし許すのは読み方ではなく assert である。単一プロパティを文字列リテラルと比べる形は `toHaveStyle` で書けるので、そちらへ移した。残した 3 つの形は ADR-0031 が持つ。
 

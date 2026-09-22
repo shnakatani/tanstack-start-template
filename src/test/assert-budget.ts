@@ -8,8 +8,7 @@
  * `actionTimeout` にも同じ値を渡しており、そちらは操作にしか効かないためである (ADR-0030)。
  *
  * 消費者は `grep -rn ASSERT_TIMEOUT_MS src vitest.browser.config.ts` で出る。config の
- * 2 つの設定のほか、`find-element.ts` と、`find-element.test.tsx` / `absent.test.tsx` が
- * 退行を見る閾値とテスト自身の timeout に使う。**値を動かしたら後者 2 つを回す。**
- * どちらも比で書いてあるので追随するが、追随した先が妥当かは実測で確かめる。
+ * 2 つの設定のほか、`absent.test.tsx` が退行を見る閾値とテスト自身の timeout に使う。
+ * **値を動かしたらそれを回す。** 比で書いてあるので追随するが、追随した先が妥当かは実測で確かめる。
  */
 export const ASSERT_TIMEOUT_MS = 5_000;

@@ -206,9 +206,8 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 機械強制は `browser-test/no-negated-style-literal`。期待値が式なら報告しない (観測どうしの比較は綴りで潰れない) (ADR-0031)
 - `getComputedStyle` を `expect()` へ流してよいのは、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0031)
 - 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる
-- 開く操作のあとは `findElement()` (`src/test/find-element.ts`) → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
-- 操作の結果として現れる要素の生 DOM は `src/test/find-element.ts` の `findElement(locator)` で取る。直呼びは `browser-test/no-bare-find-element` が止める (ADR-0030)
-- 直呼びすると `actionTimeout` を置いた config では待ち時間が上限なしになり、`Test timed out` で落ちて locator 名が出力から消える (ADR-0030)
+- 開く操作のあとは `expect.element(locator).toBeInTheDocument()` → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
+- `locator.findElement()` を呼ばない。`browser-test/no-find-element` が止める。`actionTimeout` を置いた config では待ち時間が上限なしになり、`Test timed out` で落ちて locator 名が出力から消える (ADR-0030)
 - `element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
 - Base UI の animation は `src/test/browser-setup.tsx` が毎テスト無効にする。閉じかけの popup が残る窓を検証するテストだけ、冒頭で `src/test/base-ui-animations.ts` の `enableBaseUiAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻す (ADR-0018)
 - Dialog / Popover / Sheet の close 後に消えたことは `await expectRemoved(locator)` で待つ (ADR-0013 / ADR-0031)。animation を戻したテストでは `animate-out` 完了後に消える

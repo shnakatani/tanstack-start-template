@@ -38,9 +38,7 @@ async function renderOpenDialog() {
     </Dialog>,
   );
   await screen.getByRole("button", { name: "開く" }).click();
-  // mount を待つだけなら builtin の matcher を使う。`findElement` は生 DOM が要るときの
-  // escape hatch で、公式も「If you are interacting with the element yourself, use other
-  // builtin methods instead」と案内している (ADR-0013)
+  // mount は builtin の matcher で待つ。`findElement()` は呼ばない (ADR-0013 / ADR-0030)
   await expect.element(screen.getByRole("dialog")).toBeInTheDocument();
   return screen;
 }

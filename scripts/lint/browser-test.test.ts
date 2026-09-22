@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   noBareAbsenceAssertion,
-  noBareFindElement,
+  noFindElement,
   noNegatedStyleLiteral,
   preferLocatorMethods,
 } from "./browser-test";
@@ -122,27 +122,20 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
   ],
 });
 
-tester.run("no-bare-find-element", noBareFindElement, {
+tester.run("no-find-element", noFindElement, {
   valid: [
-    // helper 経由なら対象外。名前が同じでも member 呼び出しではない
-    'await findElement(screen.getByRole("dialog"));',
+    // mount 待ちは builtin の matcher。retry と予算を vitest が持つ
+    'await expect.element(screen.getByRole("dialog")).toBeInTheDocument();',
   ],
   invalid: [
     {
       code: 'await screen.getByRole("dialog").findElement();',
-      errors: [{ messageId: "bareFindElement" }],
+      errors: [{ messageId: "findElement" }],
     },
     {
-      // options を渡しても素の呼び出しは対象。timeout を書き忘れる形が主な事故
-      code: "await locator.findElement({ strict: false });",
-      errors: [{ messageId: "bareFindElement" }],
-    },
-    {
-      // helper 自身のパスでも報告する。ルールは場所を知らず、除外は呼び出し行の
-      // `oxlint-disable-next-line` が持つ
+      // timeout を明示しても呼ばない。予算を呼び出しごとに持つ形は 2026-09-22 に撤去した (ADR-0030)
       code: "await locator.findElement({ timeout: 5000 });",
-      filename: "src/test/find-element.ts",
-      errors: [{ messageId: "bareFindElement" }],
+      errors: [{ messageId: "findElement" }],
     },
   ],
 });
@@ -293,7 +286,7 @@ describe("プラグインの形", () => {
     expect(plugin.meta?.name).toBe("browser-test");
     expect(Object.keys(plugin.rules)).toEqual([
       "prefer-locator-methods",
-      "no-bare-find-element",
+      "no-find-element",
       "no-negated-style-literal",
       "no-bare-absence-assertion",
     ]);

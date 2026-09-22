@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-22
+- Revised: 2026-09-22 (`findElement()` に予算を渡す helper `src/test/find-element.ts` を撤去した。`src/` に呼び出しが無く、mount 待ちは `expect.element` で足りる。ルールは `browser-test/no-find-element` として呼び出しそのものを止める)
 - 関連: ADR-0029 (assert には locator を渡す。その移行で肯定 assert が増え、予算の既定が問題として現れた)、ADR-0013 (待機を retry API に委ねる)、ADR-0004 (ルールの選定基準。自前ルールを `jsPlugins` で足す判断)
 
 ## Context
@@ -36,12 +37,12 @@ ADR-0029 の移行で `expect.element` の肯定 assert が増え、「最初か
 
 **assert の予算をテストの予算と分けて宣言する。** `vitest.browser.config.ts` に `expect.poll.timeout` と `browser.providerOptions.actionTimeout` を対で置き、値は 5000ms にする。その値はリポジトリ内の 1 か所が持ち、config と helper の両方がそこから読む。
 
-| 規範                                                                                            | 守らないと何が壊れるか                                                                                                        |
-| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `expect.poll.timeout` と `actionTimeout` を対で置く                                             | `actionTimeout` を消すと残り予算を使い切る側へ戻り、`expect.poll.timeout` を消すと vitest の既定 1000ms になる                |
-| 予算の値を持つのは 1 か所だけにする (現在は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS`) | 数字を 2 か所に置くと、重い画面を持つ利用者が上げる場所が 2 つになる                                                          |
-| `testTimeout` は動かさない                                                                      | 締めるべきは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も一緒に縮み、遅い環境で緑が落ちる  |
-| 操作の結果として現れる生 DOM は `src/test/find-element.ts` の `findElement(locator)` で取る     | 素の `locator.findElement()` は `actionTimeout` があると待ち時間が上限なしになる。`Test timed out` で落ち、locator 名が消える |
+| 規範                                                                                              | 守らないと何が壊れるか                                                                                                       |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `expect.poll.timeout` と `actionTimeout` を対で置く                                               | `actionTimeout` を消すと残り予算を使い切る側へ戻り、`expect.poll.timeout` を消すと vitest の既定 1000ms になる               |
+| 予算の値を持つのは 1 か所だけにする (現在は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS`)   | 数字を 2 か所に置くと、重い画面を持つ利用者が上げる場所が 2 つになる                                                         |
+| `testTimeout` は動かさない                                                                        | 締めるべきは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も一緒に縮み、遅い環境で緑が落ちる |
+| `locator.findElement()` を呼ばない。mount は `expect.element(locator).toBeInTheDocument()` で待つ | `actionTimeout` があると `findElement()` の待ち時間が上限なしになる。`Test timed out` で落ち、locator 名が消える             |
 
 ## Consequences
 
@@ -90,23 +91,23 @@ Playwright は同じ分け方を公式に持ち、「Auto-retrying assertions li
 
 `actionTimeout` があると vitest は呼び出し側の options をそのまま返し、`findElement` の待機ループには既定が無くなる。要素が現れないと回り続け、テスト全体が `Test timed out` で落ちて locator の名前が出力から消える (2026-09-22 実測。`actionTimeout` なしでは 7905ms で `Cannot find element with locator: page.getByText('ない')`)。この相互作用は docs のどのページにも書かれておらず、上流の issue にも無い (同日に検索)。
 
-対処は `src/test/find-element.ts` が持つ。`findElement` に `{ timeout }` を明示して渡す。**文書化された既定 (テストの予算、browser では 15000) を復元するのではなく、assert の予算を代わりに置く。** `findElement` がするのは「要素が現れるのを待つ」ことで、肯定 assert と同じ種類の待機だからである。待機の予算が 2 つに割れているほうが読めない。
+対処は呼ばないことである。mount を待つ用途は `expect.element(locator).toBeInTheDocument()` で足り、実測は `expect.poll` のコールバックで `element()` を読めば retry する (ADR-0029)。2026-09-22 時点で `src/` に `findElement()` の呼び出しは無い。
 
-代償のもう 1 つは、mount に `ASSERT_TIMEOUT_MS` 以上かかる要素を待てなくなることである。このリポジトリでは全 project 同時実行の最遅テストが 3595ms なので届いているが、より重い画面を持つ利用者は値を上げる。
+同日の導入時は `src/test/find-element.ts` に `{ timeout: ASSERT_TIMEOUT_MS }` を持たせる形を採り、文書化された既定 (テストの予算) を復元せず assert の予算を代わりに置いた。移行を終えると消費者がゼロになり、使い手のいない helper と自己テストを残す理由が無いので撤去した。
 
-helper は options を受け取らない。呼び出しごとに `{ timeout: undefined }` を渡せると、予算の宣言が呼び出し側で無言に消える。
+代償のもう 1 つは、mount に `ASSERT_TIMEOUT_MS` 以上かかる要素を `expect.element` で待てなくなることである。このリポジトリでは全 project 同時実行の最遅テストが 3595ms なので届いているが、より重い画面を持つ利用者は値を上げる。
 
-### 素の `findElement()` は lint で止める
+### `findElement()` は lint で止める
 
-helper を置いても、`locator.findElement()` を直に書けば同じ穴に戻る。しかも失敗は「テストが `Test timed out` で落ちる」形なので、原因が locator だと読めない。規範と docstring だけでは気づけない種類の壊れ方なので、`browser-test/no-bare-find-element` が止める。ルールの置き方は ADR-0029「機械強制は oxlint の JS plugin で書く」に従う。
+`locator.findElement()` を書けば同じ穴に戻る。しかも失敗は「テストが `Test timed out` で落ちる」形なので、原因が locator だと読めない。規範と docstring だけでは気づけない種類の壊れ方なので、`browser-test/no-find-element` が止める。ルールの置き方は ADR-0029「機械強制は oxlint の JS plugin で書く」に従う。
 
-導入時の違反は 0 件である。helper へ移す前は素の呼び出しが 16 箇所あり、`actionTimeout` を足した時点で全部が上限なしになっていた (2026-09-22)。退行の記録はそれで足りる。
+導入時の違反は 0 件である。2026-09-22 の移行前は呼び出しが 16 箇所あり、`actionTimeout` を足した時点で全部が上限なしになっていた (2026-09-22)。退行の記録はそれで足りる。
 
 ```bash
 git grep -n '\.findElement(' main -- src/
 ```
 
-ルールは呼び出し元の場所を見ない。正当な呼び出しは `src/test/find-element.ts` の 1 行だけなので、そこへ `oxlint-disable-next-line` を置く。ファイル単位や `lint.overrides` で外す形は採らない。同じファイルに 2 本目を書いたときも無検査になり、除外の理由が呼び出し行から離れる。
+ルールは呼び出し元の場所を見ず、除外を置かない。正当な呼び出しは無い。
 
 壊し方を 2 つ当てた (2026-09-22)。素の呼び出しを 1 つ持つファイルへ `vp lint` を当てると 1 件報告され、`lint.rules` で `off` にすると 0 件、ルールのメソッド名の判定を壊しても 0 件になる。
 
@@ -127,7 +128,7 @@ git grep -n '\.findElement(' main -- src/
 | 何もしない (vitest の既定のまま)                            | 赤になった assert 1 件が 14942ms かかる。テンプレートとして配るので、ブラウザテストが増えた先ほど効く    | 却下     |
 | `testTimeout` を短くして赤のコストを抑える                  | 待つべき assert の予算も一緒に縮む。遅い環境で緑のテストが落ちる                                         | 却下     |
 | `findElement` の既定を 15000 で復元する                     | 待機の予算が assert と 2 つに割れる。`findElement` がするのは肯定 assert と同じ種類の待機である          | 却下     |
-| `findElement` の helper に options を通す                   | 呼び出しごとに `{ timeout: undefined }` を渡せてしまい、予算の宣言が呼び出し側で無言に消える             | 却下     |
+| `findElement()` に予算を渡す helper を置く                  | 2026-09-22 に採用したが、移行後に呼び出しが 0 件になり撤去した。mount 待ちは `expect.element` で足りる   | 撤回     |
 
 ## 出典
 

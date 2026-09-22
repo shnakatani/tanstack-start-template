@@ -112,7 +112,7 @@ const EXPECTED_OVERRIDES = [
     excludeFiles: ["src/test/*.test.ts"],
     rules: {
       "browser-test/prefer-locator-methods": "deny",
-      "browser-test/no-bare-find-element": "deny",
+      "browser-test/no-find-element": "deny",
       "browser-test/no-negated-style-literal": "deny",
       "browser-test/no-bare-absence-assertion": "deny",
     },
