@@ -87,4 +87,4 @@ paths:
 - Route hooks (`Route.useSearch` / `Route.useNavigate`) はルートファイル内の薄い wrapper component で吸収し、ページ本体は値とハンドラを props で受ける named export にする。Route hooks を混ぜるとページテストがテスト router で動かない
 - loader 本体も named export の関数に切り出す。route 定義に直書きすると loader だけを呼ぶテストが書けない (実例: `src/routes/notes/index.tsx` の `loadNotesPageData`)
 - loader は Query を温めるためだけに呼び、値は component が `useSuspenseQuery` で読む。`useLoaderData` で Query 所有のデータを読むと、mutation の `invalidateQueries` では loader が再実行されず画面だけ古いまま残る
-- Route hooks を使う wrapper を足したら、生成済み `routeTree.gen.ts` を `createMemoryHistory` の router で描いて検証する (TanStack Router how-to「Test Router with File-Based Routing」)。props 直渡しでは wrapper が実行されない
+- Route hooks を使う wrapper を足したら、実 router + `createMemoryHistory` で描いて検証する。props 直渡しでは wrapper が実行されない。tree は root を差し替えて組む (実例: `src/routes/notes/route.test.tsx`、理由は ADR-0033)
