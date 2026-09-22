@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 
 import viteConfig from "../../../vite.config";
-import { companionGlobs } from "../../lib/companion-files";
+import { companionGlobs, testHelperGlobs } from "../../lib/companion-files";
 import { REPO_ROOT } from "../../lib/repo-root";
 
 /**
@@ -103,10 +103,12 @@ const EXPECTED_OVERRIDES = [
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
-    // ブラウザテストの assert に locator を渡させる自前ルール (ADR-0029)。適用先を browser
-    // project の include に合わせる。`src/**` へ広げると、locator を持たない unit project の
-    // テストまで対象になる。off へ落とすと、同期読みが assert へ戻る経路が無診断になる
-    files: ["src/**/*.test.tsx"],
+    // ブラウザテストの assert に locator を渡させる自前ルール (ADR-0029)。テスト本文だけでなく
+    // locator を配る helper も対象にする。テスト本文に絞ると、helper へ切り出した同期読みが
+    // ルールから外れる。`*.test.ts` を足すと、locator を持たない unit project の drizzle
+    // (`db.select().from(x).all()`) が同名メソッドで誤検出になる。off へ落とすと、
+    // 同期読みが assert へ戻る経路が無診断になる
+    files: ["src/**/*.test.tsx", "src/test/**", ...testHelperGlobs("**/")],
     excludeFiles: undefined,
     rules: { "browser-test/prefer-locator-methods": "deny" },
   },

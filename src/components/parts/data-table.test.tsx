@@ -32,7 +32,7 @@ describe("DataTable", () => {
 
     const headers = screen.getByRole("columnheader");
     await expect
-      .poll(() => headers.all().map((header) => header.element().textContent))
+      .poll(() => headers.elements().map((header) => header.textContent))
       .toEqual(["名前", "価格"]);
     await expect
       .element(screen.getByRole("row", { name: /りんご/ }).getByRole("cell"))

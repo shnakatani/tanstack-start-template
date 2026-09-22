@@ -21,14 +21,23 @@ const ESCAPE_HATCH_MEMBERS = new Set([
   "parentElement",
   "querySelector",
   "querySelectorAll",
-  "checkVisibility",
 ]);
 
 /** 同期読みを引数として受け取ってよい関数。同上 */
 const ESCAPE_HATCH_CALLEES = new Set(["getComputedStyle"]);
 
-/** retry を持つ assert の口。この中の同期読みは報告しない */
-const RETRYING_CALLEES = new Set(["poll", "element", "waitFor"]);
+/**
+ * retry を持つ `expect.*` の口。引数に同期読みを渡しても待ってくれるので assert 扱いしない。
+ * `waitFor` を入れない。`expect.waitFor` は存在せず、入れても死に分岐になる
+ */
+const RETRYING_EXPECT_METHODS = new Set(["poll", "element"]);
+
+/**
+ * コールバックを retry する呼び出し。その中の同期読みは毎回引き直されるので報告しない。
+ * `element` を入れない。`expect.element(x.element())` は stale な要素を retry し続ける形で、
+ * 本ルールが止めたい対象そのものになる
+ */
+const RETRYING_CALLBACK_CALLEES = new Set(["poll", "waitFor"]);
 
 /** 値をそのまま包むだけの節点。除外判定と束縛の追跡はここを透かして見る */
 const WRAPPER_TYPES = new Set(["ParenthesizedExpression", "TSNonNullExpression", "TSAsExpression"]);
@@ -81,7 +90,7 @@ function isAssertionCall(call: ESTree.CallExpression): boolean {
       // `expect.poll(...)` / `expect.element(...)` は retry を持つので assert 扱いしない
       if (nameOf(current.object) === "expect") {
         const method = staticPropertyName(current);
-        return method === undefined || !RETRYING_CALLEES.has(method);
+        return method === undefined || !RETRYING_EXPECT_METHODS.has(method);
       }
       current = current.object;
       continue;
@@ -96,36 +105,42 @@ function isAssertionCall(call: ESTree.CallExpression): boolean {
 
 /** その式が retry を持つ口 (`expect.poll` / `vi.waitFor` 等) のコールバックの中にあるか */
 function isInsideRetryingCallback(node: Node): boolean {
-  for (let current: Node | undefined = node; current; current = parentOf(current)) {
+  for (let current = node; ;) {
     const parent = parentOf(current);
-    if (!parent || parent.type !== "CallExpression") continue;
-    if (!isArgumentOf(parent, current)) continue;
-    const method = calleeName(parent);
-    if (method !== undefined && RETRYING_CALLEES.has(method)) return true;
+    if (!parent) return false;
+    if (parent.type === "CallExpression" && isArgumentOf(parent, current)) {
+      const method = calleeName(parent);
+      if (method !== undefined && RETRYING_CALLBACK_CALLEES.has(method)) return true;
+    }
+    current = parent;
   }
-  return false;
 }
 
 type Verdict = "report" | "allowed" | "unknown";
 
 /** 同期読みの値を、使われる位置まで辿って判定する */
 function classifyUse(syncRead: Node): Verdict {
-  let current = unwrap(syncRead);
-  for (;;) {
+  for (let current = syncRead; ;) {
     const parent = parentOf(current);
     if (!parent) return "unknown";
+
+    // 包むだけの節点は値を変えない。透かして次の親を見る
+    if (WRAPPER_TYPES.has(parent.type)) {
+      current = parent;
+      continue;
+    }
 
     if (parent.type === "MemberExpression" && parent.object === current) {
       const member = staticPropertyName(parent);
       if (member !== undefined && ESCAPE_HATCH_MEMBERS.has(member)) return "allowed";
       // `.getAttribute` / `.textContent` のように matcher で書ける読み。値の行き先を追う
-      current = unwrap(parent);
+      current = parent;
       continue;
     }
 
     if (parent.type === "CallExpression") {
       if (parent.callee === current) {
-        current = unwrap(parent);
+        current = parent;
         continue;
       }
       if (isArgumentOf(parent, current)) {
@@ -153,17 +168,19 @@ export const preferLocatorMethods = defineRule({
   create(context) {
     return {
       CallExpression(node: ESTree.CallExpression) {
+        // 安い順に落とす。この visitor はテストの全呼び出し式で走る
+        if (node.arguments.length > 0) return;
         const method = staticPropertyName(node.callee);
         if (method === undefined || !SYNC_READS.has(method)) return;
-        if (node.arguments.length > 0) return;
-        if (isInsideRetryingCallback(node)) return;
 
+        // classifyUse は連鎖が切れた時点で返る。根まで登る判定より先に回す
         const verdict = classifyUse(node);
+        if (verdict === "allowed") return;
         if (verdict === "report") {
-          context.report({ node, messageId: "syncRead" });
+          if (!isInsideRetryingCallback(node)) context.report({ node, messageId: "syncRead" });
           return;
         }
-        if (verdict === "allowed") return;
+        if (isInsideRetryingCallback(node)) return;
 
         // 変数へ束縛してから assert へ渡す形。宣言が導入した変数の参照を辿る
         const bound = unwrap(node);

@@ -18,10 +18,11 @@ describe("Button の disabled の見た目", () => {
       </>,
     );
 
-    const plain = screen.getByRole("button", { name: "通常" }).element();
-    const off = screen.getByRole("button", { name: "使用不可" }).element();
-
     const offButton = screen.getByRole("button", { name: "使用不可" });
+    // opacity の比較には対応する matcher が無いので生 DOM が要る (ADR-0029)
+    const plain = screen.getByRole("button", { name: "通常" }).element();
+    const off = offButton.element();
+
     await expect.element(offButton).not.toHaveAttribute("disabled");
     await expect.element(offButton).toHaveAttribute("aria-disabled", "true");
     expect(Number(getComputedStyle(off).opacity)).toBeLessThan(
@@ -38,10 +39,11 @@ describe("Button の disabled の見た目", () => {
       </>,
     );
 
+    const offButton = screen.getByRole("button", { name: "使用不可" });
     const plain = screen.getByRole("button", { name: "通常" }).element();
-    const off = screen.getByRole("button", { name: "使用不可" }).element();
+    const off = offButton.element();
 
-    await expect.element(screen.getByRole("button", { name: "使用不可" })).toBeDisabled();
+    await expect.element(offButton).toBeDisabled();
     expect(Number(getComputedStyle(off).opacity)).toBeLessThan(
       Number(getComputedStyle(plain).opacity),
     );

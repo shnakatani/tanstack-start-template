@@ -184,7 +184,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 要素が在る状態から消えるのを待つときは `expect.element(locator).not.toBeInTheDocument()` をそのまま書く。消えるのを待つ側には retry の予算が要る。呼び出し側の形でどちらのつもりかが読める (ADR-0029)
 - `.not.toBeInTheDocument()` 以外の否定 matcher には肯定 assert を添えなくてよい。要素が引けない間 retry するため、不在のまま通ることがない (ADR-0029)
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る。どちらも locator を解決し直して retry する (ADR-0029)
-- retry の中で値を作るなら `expect.poll` を使う。`vi.waitFor` は失敗したときに最後の値ではなく自前のタイムアウトを返す (ADR-0029)
+- assertion を待つなら `expect.element` か `expect.poll`、処理が throw しなくなるのを待つなら `vi.waitFor` (ADR-0013)。どちらも retry の口なので、中の同期読みはルールの対象外になる
 
 ## ブラウザテストの CSS とレイアウト実測
 

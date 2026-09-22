@@ -5,7 +5,12 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
-import { companionFilePattern, companionGlobs, storyGlobs } from "./scripts/lib/companion-files";
+import {
+  companionFilePattern,
+  companionGlobs,
+  storyGlobs,
+  testHelperGlobs,
+} from "./scripts/lib/companion-files";
 
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
@@ -364,9 +369,11 @@ export default defineConfig({
         },
       },
       {
-        // ブラウザテストだけが持つ規範なので、適用範囲を browser project の include に合わせる
-        // (ADR-0029)。unit project は DOM を持たず locator も無い
-        files: ["src/**/*.test.tsx"],
+        // ブラウザテストと、そこへ locator を配る helper が対象 (ADR-0029)。テスト本文だけに
+        // 当てると、helper へ切り出した同期読みがルールから外れる (testing-library の override と
+        // 同じ穴の塞ぎ方)。`*.test.ts` は含めない。unit project は locator を持たず、
+        // drizzle の `db.select().from(x).all()` が同名メソッドで誤検出になる
+        files: ["src/**/*.test.tsx", "src/test/**", ...testHelperGlobs("**/")],
         rules: {
           "browser-test/prefer-locator-methods": "error",
         },

@@ -32,15 +32,13 @@ describe("RouteErrorContent", () => {
   it("エラーメッセージが表示される", async () => {
     const { screen } = await renderError(new Error("取得に失敗しました"), vi.fn());
 
-    await expect.element(screen.getByText("エラーが発生しました")).toBeInTheDocument();
+    const notice = screen.getByText("エラーが発生しました");
+    await expect.element(notice).toBeInTheDocument();
     await expect
       .element(screen.getByText("取得に失敗しました", { exact: true }))
       .toBeInTheDocument();
-    await vi.waitFor(() => {
-      expect(
-        screen.getByText("エラーが発生しました").element().closest('[data-slot="card"]'),
-      ).not.toBeNull();
-    });
+    // 出現は直前の assert が待ち切っている。closest は同期読みなので retry で包まない
+    expect(notice.element().closest('[data-slot="card"]')).not.toBeNull();
   });
 
   // error.message は server function の throw 文言 (id や検証失敗の項目パスを含む) をそのまま

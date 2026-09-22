@@ -59,10 +59,16 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       code: "const rows = locator.all(); expect(rows).toHaveLength(2);",
       errors: [{ messageId: "syncRead" }],
     },
-    // 括弧と非 null アサーションで包んでも透かして見る
+    // 値を包むだけの節点は透かして見る。TypeScript の構文なので parser へ .ts として渡す
     {
-      // 非 null アサーションは TypeScript の構文なので、parser へ .ts として渡す
       code: "expect((locator.query())!).not.toBeNull();",
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      // このリポジトリは `as` を禁じている (typing.md) が、抑制付きで入ったときに
+      // 透かせないと報告が無言で消える。WRAPPER_TYPES の TSAsExpression を守る
+      code: "expect(locator.query() as Element).not.toBeNull();",
       filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },

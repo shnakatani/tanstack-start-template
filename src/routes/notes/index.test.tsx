@@ -74,8 +74,9 @@ async function expectDeleteConfirmClosed(screen: Screen) {
 
 /** 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。 */
 async function expectSettledRow(screen: Screen, note: Note) {
-  await expect.element(noteRow(screen, note)).toHaveLength(1);
-  await expect.element(noteRow(screen, note)).not.toHaveAttribute("aria-busy", "true");
+  const row = noteRow(screen, note);
+  await expect.element(row).toHaveLength(1);
+  await expect.element(row).not.toHaveAttribute("aria-busy", "true");
 }
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
@@ -296,7 +297,7 @@ describe("NotesPage", () => {
 
     await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).not.toHaveBeenCalled();
-    await expect.element(screen.getByText(NOTE.title)).toBeInTheDocument();
+    await expectText(screen, NOTE.title);
   });
 
   it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
@@ -315,7 +316,6 @@ describe("NotesPage", () => {
 
     remove.reject(new Error(rawMessage));
 
-    // 直前の expectText が肯定 anchor。固定文言が出たうえで raw が出ていないことを見る (ADR-0029)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない

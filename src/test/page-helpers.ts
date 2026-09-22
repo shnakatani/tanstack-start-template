@@ -25,17 +25,15 @@ export function createTestQueryClient(config?: Omit<QueryClientConfig, "defaultO
  * 「close 済みだがまだ DOM にある」を「開いたまま」と誤判定するので、`data-open` を見る。
  * Popup は `aria-hidden` 配下に入ることがあるため `includeHidden` で取る。
  */
-export function expectDialogOpen(screen: Screen, role: "dialog" | "alertdialog") {
-  expect(screen.getByRole(role, { includeHidden: true }).element().hasAttribute("data-open")).toBe(
-    true,
-  );
+export async function expectDialogOpen(screen: Screen, role: "dialog" | "alertdialog") {
+  await expect
+    .element(screen.getByRole(role, { includeHidden: true }))
+    .toHaveAttribute("data-open");
 }
 
 /** 指定テキストが表示されるまで待って検証する。 */
 export async function expectText(screen: Screen, text: string) {
-  await vi.waitFor(() => {
-    expect(screen.getByText(text).query()).not.toBeNull();
-  });
+  await expect.element(screen.getByText(text)).toBeInTheDocument();
 }
 
 export async function expectEmptyTextboxes(screen: Screen, labels: string[]) {

@@ -49,6 +49,22 @@ export function storyGlobs(prefix: string): string[] {
 }
 
 /**
+ * テスト専用の helper に当たる種別。locator を持ちうる側で、ブラウザテストの規範 (ADR-0029) を
+ * 当てる範囲でもある。`satisfies` が {@link COMPANION_KINDS} の外の綴りを型で止める。
+ */
+const TEST_HELPER_KINDS = [
+  "test-helpers",
+] as const satisfies readonly (typeof COMPANION_KINDS)[number][];
+
+/**
+ * テスト専用 helper の glob。lint の適用範囲をブラウザテストとその helper へ絞るときに使う。
+ * helper へ locator を切り出してもルールが外れない。
+ */
+export function testHelperGlobs(prefix: string): string[] {
+  return companionGlobsOfKinds(prefix, TEST_HELPER_KINDS);
+}
+
+/**
  * ファイル名が付随ファイルかを判定する。判定する集合は `companionGlobs` と同じ。
  */
 export function isCompanionFile(fileName: string): boolean {

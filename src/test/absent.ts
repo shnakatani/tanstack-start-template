@@ -16,8 +16,6 @@ import type { Locator } from "vite-plus/test/browser/context";
  * `expect.element(locator).not.toBeInTheDocument()` をそのまま書く。呼び出し側の名前で
  * どちらのつもりかが読める。
  */
-export async function expectAbsent(
-  target: HTMLElement | SVGElement | Locator | null,
-): Promise<void> {
+export async function expectAbsent(target: Locator): Promise<void> {
   await expect.element(target, { timeout: 0 }).not.toBeInTheDocument();
 }

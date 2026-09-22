@@ -193,7 +193,6 @@ describe("NoteCreateDialog", () => {
 
     await clickSave(screen);
 
-    // 直前の expectText が肯定 anchor。固定文言が出たうえで raw が出ていないことを見る (ADR-0029)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする
@@ -216,7 +215,7 @@ describe("NoteCreateDialog", () => {
 
     // 応答前は pending 表示のまま開いている
     await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
-    expectDialogOpen(screen, "dialog");
+    await expectDialogOpen(screen, "dialog");
 
     create.resolve({ id: 1 });
 
@@ -280,7 +279,7 @@ describe("NoteCreateDialog", () => {
       .toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
-    expectDialogOpen(screen, "dialog");
+    await expectDialogOpen(screen, "dialog");
     await expect.element(titleTextbox(screen)).toBeInTheDocument();
 
     create.resolve({ id: 1 });

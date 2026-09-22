@@ -145,7 +145,13 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 移行で赤になったテストは、`expect.element` が待つようになったぶん実装の欠陥を新しく捕まえている可能性がある。赤は書き換えの失敗と区別して調べる。
 
-適用先は browser project の include (`src/**/*.test.tsx`) に合わせる。`src/**` へ広げると、locator を持たない unit project のテストまで対象になる。この override は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定で固定するので、適用先か severity を動かすとそこが落ちる。
+適用先はブラウザテスト本文と、そこへ locator を配る helper (`src/test/**` と `*.test-helpers.*`) にする。テスト本文だけに当てると、helper へ切り出した同期読みがルールから外れる。glob は `scripts/lib/companion-files.ts` から引き、字面を並べ直さない。
+
+`*.test.ts` は含めない。unit project は locator を持たず、drizzle の `db.select().from(x).all()` が同じメソッド名で誤検出になる (2026-09-22 実測。`src/**` へ広げると `src/server/db/index.test.ts` の 2 件が出る)。
+
+ルールが「locator かどうか」をメソッド名と引数ゼロだけで判定し、適用先の glob がその補いになっている。receiver の連鎖を辿って locator の生成口に根を持つかを見れば glob を広げても誤検出しないが、束縛を挟む receiver のためにもう 1 つ追跡機構が要る。helper の置き場所は `.claude/rules/directory-structure.md`「テストとスクリプトの配置」が 2 か所に定めているので、glob はその規約を写しており偶然ではない。追跡機構を足すのは、その規約の外に locator を持つファイルが出てからにする。
+
+この override は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定で固定するので、適用先か severity を動かすとそこが落ちる。
 
 ### 「最初から出ない」判定は `expectAbsent` が 1 箇所で持つ
 
