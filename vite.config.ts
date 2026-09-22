@@ -396,7 +396,9 @@ export default defineConfig({
         // それが引く helper と fixture が bundle に入る。緩和ではなく
         // 範囲を絞った有効化なので、テスト側は off にせず excludeFiles で対象から外す
         // (files の否定 glob は oxlint 1.79 では効かない)。story 自身も出荷される bundle に
-        // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)
+        // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)。
+        // `.storybook/**` は対象外。Storybook は story をテストとして走らせるテスト基盤で
+        // (ADR-0022)、`preview.tsx` が `src/test/viewport-sizes.ts` を読む
         files: ["src/**", "scripts/**"],
         excludeFiles: [...companionGlobs("**/"), "src/test/**"],
         rules: {

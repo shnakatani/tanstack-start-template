@@ -22,8 +22,8 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     "await expect.poll(() => rows.all().length).toBe(3);",
     // `expect.poll` の引数はコールバックごと retry される
     'await expect.poll(() => el.element().textContent).toBe("x");',
-    // 関数の引数に渡した同期読みは追わない (ADR-0029「ルールが追えない形」)
-    'expect(getComputedStyle(el.element()).opacity).toBe("0.5");',
+    // 束縛して matcher の期待値に使う形は、観測の基準値との比較 (ADR-0031)
+    "const before = getComputedStyle(a.element()).color; await expect.poll(() => getComputedStyle(a.element()).color).toBe(before);",
     // assert へ届かない同期読み
     "el.element().focus();",
     'const label = el.element().closest("label");',
@@ -66,6 +66,40 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     },
     {
       code: 'expect(el.element().closest("label")).not.toBeNull();',
+      errors: [{ messageId: "syncRead" }],
+    },
+    // 同期読み由来の値は、関数の引数・演算・テンプレート・リテラル・await を通っても retry されない
+    {
+      code: 'expect(getComputedStyle(el.element()).opacity).toBe("0.5");',
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: 'expect(Number(el.element().getAttribute("a"))).toBe(1);',
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: 'expect(`${el.element().textContent}`).toBe("a");',
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "expect(!el.query()).toBe(true);",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "expect([el.element()]).toHaveLength(1);",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "expect({ el: el.element() }).toBeTruthy();",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "expect(await el.element()).toBeTruthy();",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      // 束縛の右辺が連鎖でも、先頭の同期読みから参照を辿る
+      code: 'const expanded = el.element().getAttribute("aria-expanded"); expect(expanded).toBe("true");',
       errors: [{ messageId: "syncRead" }],
     },
     // 変数へ束縛してから渡す形。スコープ解析が外れるとここだけ無言で通る (ADR-0029)
@@ -197,6 +231,11 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
     },
     {
       code: 'expect(getComputedStyle(x).maxHeight).not.toBe("none");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // 値に式を埋めても宣言名は字面。綴り違い (`colr:`) は解釈できない宣言になり `.not` が真になる
+      code: "await expect.element(x).not.toHaveStyle(`color: ${token}`);",
       errors: [{ messageId: "negatedStyleLiteral" }],
     },
     {

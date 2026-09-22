@@ -62,7 +62,7 @@ expect(action).toHaveBeenCalledOnce();
 
 導入時の `dispatchNativeClick` は 2 つの理由を持っていた。inert バックドロップが pointer event を横取りすること、`aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトすることである。どちらも合成イベントを要求しない。
 
-**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを呼んでいた 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) を `locator.click()` へ置き換えて browser project を全件走らせると全件通る。ADR-0018 の animation 無効化が効いているという仮説は外れた。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableBaseUiAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
+**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを呼んでいた 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) を `locator.click()` へ置き換えて browser project を全件走らせると全件通る。ADR-0018 の animation 無効化が効いているという仮説は外れた。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
 
 **enabled 判定に落ちる 2 箇所は、別々の解になる。** 分かれ目は対象に `pointer-events: none` が当たっているかである。`pointer-events: none` の対象を、click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った。
 

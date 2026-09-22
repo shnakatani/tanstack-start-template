@@ -136,15 +136,16 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     const vertical = bar("vertical");
     await expect.element(vertical).toBeInTheDocument();
 
-    // 隙間は整数 px に丸めて 0 と比べる (0.5px 未満のずれは許す)。2 つは 1 回の観測から取る (ADR-0031)
+    // 隙間は差の絶対値を整数 px に丸めて 0 と比べる (0.5px 未満のずれは符号を問わず許す。
+    // `Math.round(-0.3)` は `-0` で、`toEqual` は `Object.is` で比べるので絶対値を取る)。2 つは 1 回の観測から取る (ADR-0031)
     await expect
       .poll(() => {
         const vp = rect(viewport);
         const vbar = rect(vertical);
         return {
-          viewportRightToVerticalBar: Math.round(vp.right - vbar.left),
+          viewportRightToVerticalBar: Math.round(Math.abs(vp.right - vbar.left)),
           // Corner が無い軸ではバーが Viewport の全高を占める (`h-full` を外した後も縮まない)
-          verticalBarHeightToViewport: Math.round(vbar.height - vp.height),
+          verticalBarHeightToViewport: Math.round(Math.abs(vbar.height - vp.height)),
         };
       })
       .toEqual({ viewportRightToVerticalBar: 0, verticalBarHeightToViewport: 0 });
@@ -199,9 +200,9 @@ describe("ScrollArea のスクロールバー分の余白", () => {
         const hbar = rect(horizontal);
         const vp = rect(viewport);
         return {
-          viewportRightToVerticalBar: Math.round(vp.right - vbar.left),
-          viewportBottomToHorizontalBar: Math.round(vp.bottom - hbar.top),
-          verticalBarBottomToViewport: Math.round(vbar.bottom - vp.bottom),
+          viewportRightToVerticalBar: Math.round(Math.abs(vp.right - vbar.left)),
+          viewportBottomToHorizontalBar: Math.round(Math.abs(vp.bottom - hbar.top)),
+          verticalBarBottomToViewport: Math.round(Math.abs(vbar.bottom - vp.bottom)),
         };
       })
       .toEqual({

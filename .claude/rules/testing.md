@@ -191,6 +191,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0029)
 - 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件 (mock の呼び出し回数など) は `vi.waitFor` (ADR-0013)
 - `expect.poll` と `vi.waitFor` はコールバックを retry するので、中の同期読みはルールの対象外。`expect.element` は引数の式を 1 度しか評価せず、同期読みを渡すとその値のまま retry する (ADR-0029)
+- 同期読み由来の値は、関数の引数・演算・テンプレート・`await`・束縛を通っても `expect()` の主語に届けば報告される。束縛した値を matcher の期待値に使う形 (操作前の基準値) は報告しない (ADR-0029 / ADR-0031)
 
 ## ブラウザテストの CSS とレイアウト実測
 
@@ -204,7 +205,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - **1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。** jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える (ADR-0031)
 - **スタイルを否定で確かめない。** `not.toHaveStyle` も算出値との `not.toBe` も、綴りや単位が 1 つ外れると潰れた状態のまま通る (ADR-0031)
 - 肯定形は主張で選ぶ。「描かれている」なら 1 回の観測から数値を出して `toBeGreaterThan(0)`、当たっている token が分かっているなら `src/test/resolve-color-token.ts` の `resolveColorToken()` の値と比べる (ADR-0031)
-- 機械強制は `browser-test/no-negated-style-literal`。期待値が式なら報告しない (観測どうしの比較は綴りで潰れない) (ADR-0031)
+- 機械強制は `browser-test/no-negated-style-literal`。`not.toHaveStyle` は形を問わず (宣言名は常に字面)、値の matcher は期待値がリテラルのときだけ報告する (ADR-0031)
 - `getComputedStyle` を `expect.poll` で読む主張は、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0031)
 - `locator.findElement()` を呼ばない。`browser-test/no-find-element` が止める。`actionTimeout` を置いた config では待ち時間が上限なしになり、`Test timed out` で落ちて locator 名が出力から消える (ADR-0030)
 - `element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
@@ -215,6 +216,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む
 - flex column の中に「溢れるコンテンツ」をテスト用に作るときは `height` ではなく `minHeight` を使う (flex item は既定で縮むため `height` では溢れない)
 - hover 由来の配色との交絡は `src/test/park-mouse.ts` が `browser-setup.tsx` の `beforeEach` で断つ。マウス位置を動かすテストは自分で戻す。戻すのは overlay が閉じる前。露出した要素の hover と transition を axe が測ると色の実測が揺れる (ADR-0018)
+- ブラウザテストのモジュール最上位で描画や算出値 (`getComputedStyle` / `resolveColorToken` / `matchMedia`) を読まない。`beforeEach` より前に走り、前ファイルの emulation が残った状態を読む (ADR-0018)
 
 ## synthetic KeyboardEvent は `code` プロパティ必須
 

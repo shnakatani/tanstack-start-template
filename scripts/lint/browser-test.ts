@@ -29,13 +29,27 @@ const WRAPPER_TYPES = new Set([
   "TSAsExpression",
   "ChainExpression",
   "TSSatisfiesExpression",
+  // 同期読みは Promise を返さないので、`await` は値をそのまま通す
+  "AwaitExpression",
 ]);
 
 /**
  * 同期読みの値が片側に来うる節点。`x.element().getAttribute(a) ?? ""` のように
- * 既定値を挟んでも、assert が見るのは同期読み由来の値である
+ * 既定値を挟んでも、`` `${x.element().textContent}` `` や `!x.query()` のように演算やテンプレートに
+ * 入れても、`[x.element()]` / `{ el: x.element() }` のようにリテラルへ包んでも、assert が見るのは
+ * 同期読み由来の値である
  */
-const PASSTHROUGH_TYPES = new Set(["LogicalExpression", "ConditionalExpression"]);
+const PASSTHROUGH_TYPES = new Set([
+  "LogicalExpression",
+  "ConditionalExpression",
+  "BinaryExpression",
+  "UnaryExpression",
+  "TemplateLiteral",
+  "ArrayExpression",
+  "ObjectExpression",
+  "Property",
+  "SpreadElement",
+]);
 
 type Node = ESTree.Node;
 
@@ -52,16 +66,6 @@ function nameOf(node: Node): string | undefined {
 function staticPropertyName(node: Node): string | undefined {
   if (node.type !== "MemberExpression" || node.computed) return undefined;
   return node.property.type === "PrivateIdentifier" ? undefined : nameOf(node.property);
-}
-
-/** 包むだけの節点を外へ辿り、値が実際に使われる位置まで上がる */
-function unwrap(node: Node): Node {
-  let current = node;
-  for (;;) {
-    const parent = parentOf(current);
-    if (!parent || !WRAPPER_TYPES.has(parent.type)) return current;
-    current = parent;
-  }
 }
 
 /** 呼び出し名。`f(...)` の `f` と `a.f(...)` の `f` を同じに扱う */
@@ -116,13 +120,47 @@ function isInsideRetryingCallback(node: Node): boolean {
 }
 
 /**
+ * 同期読みの値がそのまま流れていく先を、流れが止まる節点まで登る。
+ *
+ * 包む節点・演算・プロパティ読み・メソッド呼び出し・assert 以外の関数の引数は、どれも
+ * 同期読み由来の値を次へ渡す。`getComputedStyle(x.element())` の戻り値も、`Number(...)` の
+ * 戻り値も、元の要素が retry されない点は変わらない。assert の引数に来た時点で止まる
+ */
+function valueFlowTop(node: Node): Node {
+  for (let current = node; ;) {
+    const parent = parentOf(current);
+    if (!parent) return current;
+    if (WRAPPER_TYPES.has(parent.type) || PASSTHROUGH_TYPES.has(parent.type)) {
+      current = parent;
+      continue;
+    }
+    if (parent.type === "MemberExpression" && parent.object === current) {
+      current = parent;
+      continue;
+    }
+    if (parent.type === "CallExpression") {
+      if (parent.callee === current) {
+        current = parent;
+        continue;
+      }
+      if (isArgumentOf(parent, current) && !isAssertionCall(parent)) {
+        current = parent;
+        continue;
+      }
+    }
+    return current;
+  }
+}
+
+/**
  * その同期読みが変数へ束縛されているなら、その変数の read 参照を返す。
  *
  * 複数のルールがこの追跡に依拠している。ADR-0029 の「壊し方 (間接)」が固定しているのも
- * この追跡なので、数える対象の定義を 1 箇所に置く
+ * この追跡なので、数える対象の定義を 1 箇所に置く。束縛の右辺が `x.element().getAttribute(a)`
+ * のような連鎖でも、その先頭の同期読みから辿れる
  */
 function readReferencesOfBinding(node: Node, sourceCode: SourceCode): Node[] {
-  const bound = unwrap(node);
+  const bound = valueFlowTop(node);
   const declarator = parentOf(bound);
   if (!declarator || declarator.type !== "VariableDeclarator" || declarator.init !== bound) {
     return [];
@@ -134,36 +172,38 @@ function readReferencesOfBinding(node: Node, sourceCode: SourceCode): Node[] {
     .map((reference) => reference.identifier);
 }
 
-/** 同期読みの値を、使われる位置まで辿り、assert の引数に届くかを判定する */
+/** 同期読みの値を、使われる位置まで辿り、assert の引数 (主語でも matcher の期待値でも) に届くかを判定する */
 function reachesAssertion(syncRead: Node): boolean {
-  for (let current = syncRead; ;) {
-    const parent = parentOf(current);
-    if (!parent) return false;
+  const top = valueFlowTop(syncRead);
+  const parent = parentOf(top);
+  return (
+    parent !== undefined &&
+    parent.type === "CallExpression" &&
+    isArgumentOf(parent, top) &&
+    isAssertionCall(parent)
+  );
+}
 
-    // 包むだけの節点は値を変えない。透かして次の親を見る
-    if (WRAPPER_TYPES.has(parent.type) || PASSTHROUGH_TYPES.has(parent.type)) {
-      current = parent;
-      continue;
-    }
-
-    if (parent.type === "MemberExpression" && parent.object === current) {
-      // `.getAttribute` / `.getBoundingClientRect()` のように値を読み続ける形。行き先を追う
-      current = parent;
-      continue;
-    }
-
-    if (parent.type === "CallExpression") {
-      if (parent.callee === current) {
-        current = parent;
-        continue;
-      }
-      if (isArgumentOf(parent, current)) {
-        return isAssertionCall(parent);
-      }
-    }
-
+/**
+ * 束縛した値が assert の主語 (`expect(v)` / `expect.element(v)`) に届くかを判定する。
+ *
+ * matcher の期待値 (`toBe(before)`) は含めない。束縛してから期待値に使う形は、操作の前に取った
+ * 観測の基準値と操作の後の観測を比べる書き方で、ADR-0031 が認める「2 回の観測を比べる」に当たる。
+ * 束縛せず直に matcher へ渡す形 (`toBe(x.element())`) は `reachesAssertion` が報告する
+ */
+function reachesAssertionSubject(reference: Node): boolean {
+  const top = valueFlowTop(reference);
+  const parent = parentOf(top);
+  if (parent === undefined || parent.type !== "CallExpression" || !isArgumentOf(parent, top)) {
     return false;
   }
+  const callee = parent.callee;
+  if (nameOf(callee) === "expect") return true;
+  return (
+    callee.type === "MemberExpression" &&
+    nameOf(callee.object) === "expect" &&
+    staticPropertyName(callee) !== "poll"
+  );
 }
 
 export const preferLocatorMethods = defineRule({
@@ -194,7 +234,7 @@ export const preferLocatorMethods = defineRule({
         // 変数へ束縛してから assert へ渡す形。束縛でなければ空配列が返る
         for (const reference of readReferencesOfBinding(node, context.sourceCode)) {
           if (isInsideRetryingCallback(reference)) continue;
-          if (reachesAssertion(reference)) {
+          if (reachesAssertionSubject(reference)) {
             context.report({ node, messageId: "syncRead" });
             return;
           }
@@ -228,12 +268,14 @@ export const noFindElement = defineRule({
 /**
  * 期待値が綴りで潰れる形か。式なら観測どうしの比較なので対象外にする。
  *
- * `toHaveStyle` のオブジェクト形式も宣言の字面を持つので同じ側に置く。式を含む
- * テンプレートリテラル (`` `${before}px` ``) は観測を埋め込んだ比較なので外す
+ * `toHaveStyle` は宣言名 (`color:`) を必ず字面で持ち、値に式を埋めても名前の綴り違いで素通りする
+ * (`` `colr: ${token}` `` は解釈できない宣言になり `.not` が真になる) ので、形を問わず報告する。
+ * 値の matcher では、式を含むテンプレートリテラル (`` `${before}px` ``) は観測を埋め込んだ比較なので外す
  */
 function isLiteralArgument(call: ESTree.CallExpression): boolean {
   const [first] = call.arguments;
   if (first === undefined) return false;
+  if (staticPropertyName(call.callee) === "toHaveStyle") return true;
   if (first.type === "TemplateLiteral") return first.expressions.length === 0;
   return first.type === "Literal" || first.type === "ObjectExpression";
 }

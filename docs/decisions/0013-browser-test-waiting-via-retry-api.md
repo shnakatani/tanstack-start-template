@@ -33,7 +33,7 @@ const inputGroup = findInputGroup(input.element());
 | `waitForAnimations()` | 呼んだ時点の `getAnimations({ subtree: true })` だけを待つ。popup が未 mount なら空配列で即解決する                  |
 | `Locator.element()`   | retry しない。`@vitest/browser` の `context.d.ts` が「If no elements match the selector, an error is thrown.」と書く |
 
-対になる `findElement()` が v4.1.0 で入っている。同じ `context.d.ts` が「this method will wait and retry until a matching element appears in the DOM, using increasing intervals (0, 20, 50, 100, 100, 500ms)」と書き、あわせて「This is an escape hatch for library authors and 3d-party APIs that do not support locators directly. If you are interacting with the element, use builtin methods instead.」と注意する。`getComputedStyle` / `getBoundingClientRect` による実測は locator のアサーションで表現できないため、生 DOM を取ること自体はこの注意書きが許す用途にあたり、待つ側を選べば済む。
+対になる `findElement()` が v4.1.0 で入っている。同じ `context.d.ts` が「this method will wait and retry until a matching element appears in the DOM, using increasing intervals (0, 20, 50, 100, 100, 500ms)」と書き、あわせて「This is an escape hatch for library authors and 3d-party APIs that do not support locators directly. If you are interacting with the element, use builtin methods instead.」と注意する。当時は `getComputedStyle` / `getBoundingClientRect` の実測に生 DOM が要り、待つ側を `findElement()` に選んだ。2026-09-22 に実測が `expect.poll` の中へ移り、`findElement()` は撤去した (Decision)。
 
 同じ形は `src/components/ui/dialog.test.tsx` / `src/components/ui/alert-dialog.test.tsx` / `src/components/parts/dialog-scroll-body.test.tsx` にもあった。落ちたのが combobox だけだったのは確率の差である。
 

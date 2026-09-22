@@ -59,7 +59,7 @@
 
 この差は `src/test/absent.test.tsx` が両方向のミューテーションで固定している (2026-09-22 実測)。`expectRemoved` から予算を奪うと「unmount が操作より後ろでも通る」が落ち、`expectAbsent` に予算を与えると「要素が在れば落ちる」の所要時間の閾値が落ちる。
 
-**既存のテストで緑が割れないことは、差が無いことを意味しない。** `expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、`src/test/browser-setup.tsx` が Base UI の animation を毎テスト無効にしている (ADR-0018) ため、assert の行では unmount が済んでいるからである。予算が効くのは `enableBaseUiAnimations()` を呼んだテストと、flush を伴わない経路で消える場合で、`absent.test.tsx` はその後者を作って測っている。
+**既存のテストで緑が割れないことは、差が無いことを意味しない。** `expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、`src/test/browser-setup.tsx` が Base UI の animation を毎テスト無効にしている (ADR-0018) ため、assert の行では unmount が済んでいるからである。予算が効くのは `enableAnimations()` を呼んだテストと、flush を伴わない経路で消える場合で、`absent.test.tsx` はその後者を作って測っている。
 
 名前を分ける理由は、取り違えが実際に起きたことにもある。本ブランチの `src/routes/notes/-components/note-cells.test.tsx` の 4 件は「最初から無い」を素の形で書いており、レビューが見つけて `1d987d5` で直した。機械では出なかった。
 
@@ -80,7 +80,7 @@
 
 起点を 2 つに分けるのは、`toHaveStyle` が要素を主語に取り `getComputedStyle` を通らないためである。両方が同じ呼び出しを報告しないよう、後者は `toHaveStyle` を除く。
 
-期待値が式なら報告しない。観測どうしの比較は綴りで潰れないためである。次のコマンドで数えると 10 件あった (2026-09-22)。
+値の matcher (`not.toBe` 等) は期待値が式なら報告しない。観測どうしの比較は綴りで潰れないためである。`not.toHaveStyle` は形を問わず報告する。値に式を埋めても宣言名 (`color:`) は字面で、綴り違いは解釈できない宣言になって `.not` が真になる (2026-09-22 の再レビューで判明)。次のコマンドで数えると 10 件あった (2026-09-22)。
 
 ```bash
 grep -rn --include='*.test.tsx' -E '\.not\.(toHaveStyle|toBe)\(' src/ | grep -iE 'getComputedStyle|Color|Width|Height'

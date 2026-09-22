@@ -49,7 +49,7 @@ async function renderOpenDialog() {
 
 // 既定値は browser-setup.tsx の beforeEach が立てる (ADR-0018)
 describe("animation の既定", () => {
-  it("既定では prefers-reduced-motion: reduce が立ち、CSS の transition が 0.01ms になる", async () => {
+  it("既定では prefers-reduced-motion: reduce が立ち、CSS の transition と animation が 0.01ms になる", async () => {
     // inline の通常宣言より styles.css の reduced-motion ブロック (!important) が勝つ
     const screen = await render(
       <div
@@ -59,7 +59,9 @@ describe("animation の既定", () => {
     );
 
     expect(matchMedia("(prefers-reduced-motion: reduce)").matches).toBe(true);
-    await expect.element(screen.getByTestId("motion")).toHaveStyle("transition-duration: 0.01ms");
+    await expect
+      .element(screen.getByTestId("motion"))
+      .toHaveStyle("transition-duration: 0.01ms; animation-duration: 0.01ms");
   });
 
   it("既定では閉じた Dialog が animate-out を待たずに unmount する", async () => {
