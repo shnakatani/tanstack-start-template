@@ -21,8 +21,9 @@ describe("Button の disabled の見た目", () => {
     const plain = screen.getByRole("button", { name: "通常" }).element();
     const off = screen.getByRole("button", { name: "使用不可" }).element();
 
-    expect(off.getAttribute("disabled")).toBeNull();
-    expect(off.getAttribute("aria-disabled")).toBe("true");
+    const offButton = screen.getByRole("button", { name: "使用不可" });
+    await expect.element(offButton).not.toHaveAttribute("disabled");
+    await expect.element(offButton).toHaveAttribute("aria-disabled", "true");
     expect(Number(getComputedStyle(off).opacity)).toBeLessThan(
       Number(getComputedStyle(plain).opacity),
     );
@@ -40,7 +41,7 @@ describe("Button の disabled の見た目", () => {
     const plain = screen.getByRole("button", { name: "通常" }).element();
     const off = screen.getByRole("button", { name: "使用不可" }).element();
 
-    expect(off.getAttribute("disabled")).not.toBeNull();
+    await expect.element(screen.getByRole("button", { name: "使用不可" })).toBeDisabled();
     expect(Number(getComputedStyle(off).opacity)).toBeLessThan(
       Number(getComputedStyle(plain).opacity),
     );

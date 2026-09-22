@@ -26,9 +26,11 @@ describe("FullScreenNotice", () => {
   it("見出しを h1 として描画し、説明と操作を伴う", async () => {
     const screen = await renderNotice();
 
-    expect(screen.getByRole("heading", { name: "通知の見出し", level: 1 }).query()).not.toBeNull();
-    expect(screen.getByText("通知の説明文").query()).not.toBeNull();
-    expect(screen.getByRole("button", { name: "操作" }).query()).not.toBeNull();
+    await expect
+      .element(screen.getByRole("heading", { name: "通知の見出し", level: 1 }))
+      .toBeInTheDocument();
+    await expect.element(screen.getByText("通知の説明文")).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "操作" })).toBeInTheDocument();
   });
 
   it("見出しに data-slot=card-title を保つ (registry のスタイルが当たる経路を残す)", async () => {

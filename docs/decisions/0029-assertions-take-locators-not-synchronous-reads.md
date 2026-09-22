@@ -1,6 +1,6 @@
 # ADR-0029: assert には locator を渡し、同期読みは代替 matcher の無い実測に限る
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-22
 - 関連: ADR-0013 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0004 (ルールの選定基準。自前ルールを `jsPlugins` で足す判断)
 
@@ -51,7 +51,9 @@ grep -rnE 'expect\(\s*[A-Za-z_$][^;]*\.(element|query|all|elements)\(\)' --inclu
 | `expect(x.element().textContent).toContain(t)`     | 2    | `expect.element(x).toHaveTextContent(t)`       |
 | 要素を受け取るヘルパーへ渡す (`visibleIconNames`)  | 2    | 移さない。locator を受け取る matcher が無い    |
 
-`src/components/action/button.test.tsx:31` の `expect(document.activeElement).toBe(button.element())` は `await button.click()` の直後にある。ADR-0013 が「操作後の同期読みは更新前の値を拾う」と書いた形そのものが残っている。
+`src/components/action/button.test.tsx` の `expect(document.activeElement).toBe(button.element())` は `await button.click()` の直後にあった。ADR-0013 が「操作後の同期読みは更新前の値を拾う」と書いた形そのものである。
+
+**この grep は取りこぼす。** ルールを有効にすると、上の 45 件に加えて 9 件が出た。いずれも同期読みを変数へ束縛してから assert へ渡す形で、1 行の正規表現では束縛と使用が別の行にあるため見えない。`src/components/ui/sidebar.test.tsx` の `expect(trigger.getAttribute("aria-expanded")).toBe("true")` は `userEvent.keyboard("{Enter}")` の直後にあり、retry を持たないまま操作後の属性を読んでいた。件数を数える手段としては lint のほうが正確で、grep は着手前の規模感にしか使えない。
 
 移行先のうち、locator 1 つが複数要素へ解決する `toHaveLength` と、要素の外の状態を見る `toHaveFocus` は、規範に書く前に動かして確かめた (2026-09-22)。250ms 後に項目が 1 件から 3 件へ増えるリストで `expect.element(locator).toHaveLength(3)` は 263ms 待って通る。`click()` の直後の `expect.element(locator).toHaveFocus()` も通る。
 
@@ -119,32 +121,35 @@ API は同梱の `node_modules/vite-plus/docs/guide/lint.md` 「Writing Your Own
 
 この形が使えるのは vite-plus 0.3.2 の版に両方の entrypoint があるためで、2026-09-22 に実測して確かめた。`vite-plus/lint/plugins` から `defineRule` を import した TypeScript は型解決に成功する (`TS2307` は出ない)。`RuleTester` に `describe` / `it` を渡したルールのテストは scripts-tools project で `Tests 2 passed (2)` になる。
 
-実装前に、ルールが効かなくなる壊し方を 2 つ決めておく。どちらでも赤にならないなら、そのルールは検査として成立していない。
+ルールが効かなくなる壊し方を 2 つ決め、どちらも赤になることを確かめた (2026-09-22)。直接と束縛の違反を 1 件ずつ持つファイルへ `vp lint` を当てると 2 件が報告される。
 
-| 壊し方 | 操作                                                            | 期待する結果                                                                                                  |
-| ------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 直接   | `vite.config.ts` の `lint.rules` からルール名を外す             | 違反を 1 件だけ残したファイルへ `vp lint` を当てて赤が消える                                                  |
-| 間接   | ルールの変数束縛の追跡 (`context.sourceCode.getScope`) を止める | `expect(locator.query())` は報告されたまま、`const el = locator.element(); expect(el).toBe(...)` が無言で通る |
+| 壊し方         | 操作                                                                | 報告件数                                     |
+| -------------- | ------------------------------------------------------------------- | -------------------------------------------- |
+| (壊していない) | —                                                                   | 2                                            |
+| 直接           | `vite.config.ts` の `lint.rules` でルールを `off` にする            | 0                                            |
+| 間接           | 変数束縛の追跡 (`context.sourceCode.getDeclaredVariables`) を止める | 1 (直接の形だけが残り、束縛の形が無言で通る) |
 
-間接の側を置くのは、束縛を挟む形が実際に多いためである。次のコマンドで数えると 64 行 / 17 ファイルある (2026-09-22)。
+間接の側を置くのは、束縛を挟む形が実際に多いためである。次のコマンドで数えると 64 行 / 17 ファイルあった (2026-09-22)。
 
 ```bash
 grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test.tsx' src/
 ```
 
-追跡が外れても直接の形だけは報告され続けるので、設定は有効に見える。ルールのテストはこの 2 つの形を `RuleTester` の invalid に置く。
+追跡が外れても直接の形だけは報告され続けるので、設定は有効に見える。ルールのテストはこの 2 つの形を `RuleTester` の invalid に置いてある。
 
 ### 移行は 1 つの PR で終える
 
-対象は 13 ファイルである。段階移行のために `lint.overrides` で未移行ファイルを列挙する形は採らない。列挙が対象より大きくなり、一覧を消すための作業が別に要る。
+段階移行のために `lint.overrides` で未移行ファイルを列挙する形は採らない。列挙が対象より大きくなり、一覧を消すための作業が別に要る。
 
 severity を `warn` にして移行を待つ形も採らない。`vp check` は warn で exit 1 にならないため、新規コードへの強制力を失う (ADR-0004 が `testing-library/no-debugging-utils` で同じ判断をしている)。
 
 移行で赤になったテストは、`expect.element` が待つようになったぶん実装の欠陥を新しく捕まえている可能性がある。赤は書き換えの失敗と区別して調べる。
 
+適用先は browser project の include (`src/**/*.test.tsx`) に合わせる。`src/**` へ広げると、locator を持たない unit project のテストまで対象になる。この override は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定で固定するので、適用先か severity を動かすとそこが落ちる。
+
 ### 「最初から出ない」判定は `expectAbsent` が 1 箇所で持つ
 
-`{ timeout: 0 }` を渡す薄いヘルパーを `src/test/` へ置く。呼び出し側の名前で「待たないつもりである」ことが読めるようにする。`expect.element(x).not.toBeInTheDocument()` をそのまま書けば消滅待ちで、`expectAbsent(x)` なら不在確認である。
+`{ timeout: 0 }` を渡す薄いヘルパーを `src/test/absent.ts` へ置く。呼び出し側の名前で「待たないつもりである」ことが読めるようにする。`{ timeout: 0 }` を外す退行は `src/test/absent.test.tsx` の所要時間の閾値が捕まえる (外すと同じ assert が 4 秒以上かけて落ちる)。`expect.element(x).not.toBeInTheDocument()` をそのまま書けば消滅待ちで、`expectAbsent(x)` なら不在確認である。
 
 移行時にこの 2 つを取り違えると、消滅待ちを `expectAbsent` にした側だけが flake を作る。誤りの向きが非対称なので、`.not.toBeInTheDocument()` から `expectAbsent` へ移す箇所は 1 件ずつ、直前の操作が要素を消すものかどうかで判定する。
 

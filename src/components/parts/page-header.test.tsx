@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { expectAbsent } from "@/test/absent";
+
 import { PageHeader } from "./page-header";
 import { CardPageTitle } from "./page-title";
 
@@ -18,7 +20,9 @@ describe("PageHeader", () => {
   it("title をページの h1 として描画する", async () => {
     const screen = await render(<PageHeader title="メモ一覧" />);
 
-    expect(screen.getByRole("heading", { name: "メモ一覧", level: 1 }).query()).not.toBeNull();
+    await expect
+      .element(screen.getByRole("heading", { name: "メモ一覧", level: 1 }))
+      .toBeInTheDocument();
   });
 
   it("actions を渡すとボタンが表示される", async () => {
@@ -26,13 +30,15 @@ describe("PageHeader", () => {
       <PageHeader title="メモ一覧" actions={<button type="button">追加</button>} />,
     );
 
-    expect(screen.getByText("追加").query()).not.toBeNull();
+    await expect.element(screen.getByText("追加")).toBeInTheDocument();
   });
 
   it("actions を渡さないとアクション領域が表示されない", async () => {
     const screen = await render(<PageHeader title="メモ一覧" />);
 
-    expect(screen.getByText("追加").query()).toBeNull();
+    // 肯定 anchor。描画が済んでいることを先に固定してから不在を見る (ADR-0029)
+    await expect.element(screen.getByRole("heading", { name: "メモ一覧" })).toBeInTheDocument();
+    await expectAbsent(screen.getByText("追加"));
   });
 
   it("actions の有無にかかわらず 60px の最小高と 12px の縦 padding になる", async () => {

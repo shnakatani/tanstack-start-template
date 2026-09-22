@@ -50,29 +50,31 @@ describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
         </SidebarMenu>
       </SidebarProvider>,
     );
-    const trigger = screen.getByRole("button", { name: "切替", exact: true }).element();
+    const trigger = screen.getByRole("button", { name: "切替", exact: true });
+    // `matches` と `getComputedStyle` には対応する matcher が無いので生 DOM が要る (ADR-0029)
+    const triggerElement = trigger.element();
 
-    expect(trigger.matches(":hover")).toBe(false);
-    const closedBackgroundColor = getComputedStyle(trigger).backgroundColor;
+    expect(triggerElement.matches(":hover")).toBe(false);
+    const closedBackgroundColor = getComputedStyle(triggerElement).backgroundColor;
     const accentColors = getSidebarAccentColors();
     // light テーマでは閉状態の --foreground と開状態の --sidebar-accent-foreground が別値。
     // dark テーマでは同値になるため、前景色の検証は light 前提で書く (styles.css)
-    const closedColor = getComputedStyle(trigger).color;
+    const closedColor = getComputedStyle(triggerElement).color;
 
-    trigger.focus();
+    triggerElement.focus();
     await userEvent.keyboard("{Enter}");
-    await vi.waitFor(() => {
-      expect(screen.getByRole("menuitem", { name: "項目", exact: true }).query()).not.toBeNull();
-    });
+    await expect
+      .element(screen.getByRole("menuitem", { name: "項目", exact: true }))
+      .toBeInTheDocument();
     await waitForAnimations();
 
     // hover ではなく開状態で配色が変わっていることを見る
-    expect(trigger.matches(":hover")).toBe(false);
-    expect(trigger.getAttribute("aria-expanded")).toBe("true");
-    expect(getComputedStyle(trigger).backgroundColor).toBe(accentColors.backgroundColor);
-    expect(getComputedStyle(trigger).color).toBe(accentColors.color);
-    expect(getComputedStyle(trigger).backgroundColor).not.toBe(closedBackgroundColor);
-    expect(getComputedStyle(trigger).color).not.toBe(closedColor);
+    expect(triggerElement.matches(":hover")).toBe(false);
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(getComputedStyle(triggerElement).backgroundColor).toBe(accentColors.backgroundColor);
+    expect(getComputedStyle(triggerElement).color).toBe(accentColors.color);
+    expect(getComputedStyle(triggerElement).backgroundColor).not.toBe(closedBackgroundColor);
+    expect(getComputedStyle(triggerElement).color).not.toBe(closedColor);
   });
 
   it("Tooltip の trigger では tooltip 開状態の data-popup-open で accent にならない", async () => {
@@ -85,20 +87,19 @@ describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
         </SidebarMenu>
       </SidebarProvider>,
     );
-    const trigger = screen.getByRole("button", { name: "切替", exact: true }).element();
-    const closedBackgroundColor = getComputedStyle(trigger).backgroundColor;
-    const closedColor = getComputedStyle(trigger).color;
+    const trigger = screen.getByRole("button", { name: "切替", exact: true });
+    const triggerElement = trigger.element();
+    const closedBackgroundColor = getComputedStyle(triggerElement).backgroundColor;
+    const closedColor = getComputedStyle(triggerElement).color;
 
-    expect(trigger.matches(":hover")).toBe(false);
-    trigger.focus();
-    await vi.waitFor(() => {
-      expect(trigger.hasAttribute("data-popup-open")).toBe(true);
-    });
+    expect(triggerElement.matches(":hover")).toBe(false);
+    triggerElement.focus();
+    await expect.element(trigger).toHaveAttribute("data-popup-open");
     await waitForAnimations();
 
-    expect(trigger.hasAttribute("aria-expanded")).toBe(false);
-    expect(getComputedStyle(trigger).backgroundColor).toBe(closedBackgroundColor);
-    expect(getComputedStyle(trigger).color).toBe(closedColor);
+    await expect.element(trigger).not.toHaveAttribute("aria-expanded");
+    expect(getComputedStyle(triggerElement).backgroundColor).toBe(closedBackgroundColor);
+    expect(getComputedStyle(triggerElement).color).toBe(closedColor);
   });
 
   it("Collapsible の trigger では aria-expanded の開状態で accent になる", async () => {
@@ -114,20 +115,19 @@ describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
         </SidebarMenu>
       </SidebarProvider>,
     );
-    const trigger = screen.getByRole("button", { name: "切替", exact: true }).element();
+    const trigger = screen.getByRole("button", { name: "切替", exact: true });
+    const triggerElement = trigger.element();
     const accentColors = getSidebarAccentColors();
 
-    expect(trigger.matches(":hover")).toBe(false);
-    trigger.focus();
+    expect(triggerElement.matches(":hover")).toBe(false);
+    triggerElement.focus();
     await userEvent.keyboard("{Enter}");
-    await vi.waitFor(() => {
-      expect(trigger.getAttribute("aria-expanded")).toBe("true");
-    });
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
     await waitForAnimations();
 
-    expect(trigger.hasAttribute("data-popup-open")).toBe(false);
-    expect(getComputedStyle(trigger).backgroundColor).toBe(accentColors.backgroundColor);
-    expect(getComputedStyle(trigger).color).toBe(accentColors.color);
+    await expect.element(trigger).not.toHaveAttribute("data-popup-open");
+    expect(getComputedStyle(triggerElement).backgroundColor).toBe(accentColors.backgroundColor);
+    expect(getComputedStyle(triggerElement).color).toBe(accentColors.color);
   });
 });
 

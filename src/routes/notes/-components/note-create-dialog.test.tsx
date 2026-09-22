@@ -8,6 +8,7 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import { expectAbsent } from "@/test/absent";
 import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
 import {
@@ -79,7 +80,7 @@ describe("NoteCreateDialog", () => {
 
     await openNoteCreateDialog(screen);
 
-    expect(bodyTextbox(screen).query()).not.toBeNull();
+    await expect.element(bodyTextbox(screen)).toBeInTheDocument();
   });
 
   it("開いた直後のフォーカスが先頭の入力にある", async () => {
@@ -89,9 +90,7 @@ describe("NoteCreateDialog", () => {
 
     await openNoteCreateDialog(screen);
 
-    await vi.waitFor(() => {
-      expect(document.activeElement).toBe(titleTextbox(screen).element());
-    });
+    await expect.element(titleTextbox(screen)).toHaveFocus();
   });
 
   it("空のまま保存すると日本語の必須メッセージが出て createNote を呼ばない", async () => {
@@ -125,7 +124,9 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("あ");
     await titleTextbox(screen).fill("");
 
-    expect(screen.getByText(`${NOTE_FIELD_LABELS.title}を入力してください`).query()).toBeNull();
+    // 肯定 anchor。入力が空になった状態を固定してからエラーの不在を見る (ADR-0029)
+    await expect.element(titleTextbox(screen)).toHaveValue("");
+    await expectAbsent(screen.getByText(`${NOTE_FIELD_LABELS.title}を入力してください`));
   });
 
   it("入力して保存すると createNote が前後空白を除いた値で呼ばれる", async () => {
@@ -192,10 +193,11 @@ describe("NoteCreateDialog", () => {
 
     await clickSave(screen);
 
+    // 直前の expectText が肯定 anchor。固定文言が出たうえで raw が出ていないことを見る (ADR-0029)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    expect(screen.getByText(rawMessage).query()).toBeNull();
+    await expectAbsent(screen.getByText(rawMessage));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする
-    expect(titleTextbox(screen).query()).not.toBeNull();
+    await expect.element(titleTextbox(screen)).toBeInTheDocument();
   });
 
   it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
@@ -279,7 +281,7 @@ describe("NoteCreateDialog", () => {
     await userEvent.keyboard("{Escape}");
 
     expectDialogOpen(screen, "dialog");
-    expect(titleTextbox(screen).query()).not.toBeNull();
+    await expect.element(titleTextbox(screen)).toBeInTheDocument();
 
     create.resolve({ id: 1 });
 

@@ -19,6 +19,7 @@ import {
 } from "@/features/notes/schema.test-helpers";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
+import { expectAbsent } from "@/test/absent";
 import { enableBaseUiAnimations } from "@/test/base-ui-animations";
 import { createTestRouter } from "@/test/create-test-router";
 import { deferMock } from "@/test/defer-mock";
@@ -73,11 +74,8 @@ async function expectDeleteConfirmClosed(screen: Screen) {
 
 /** 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。 */
 async function expectSettledRow(screen: Screen, note: Note) {
-  await vi.waitFor(() => {
-    const matched = noteRow(screen, note).all();
-    expect(matched).toHaveLength(1);
-    expect(matched[0]?.element().getAttribute("aria-busy")).not.toBe("true");
-  });
+  await expect.element(noteRow(screen, note)).toHaveLength(1);
+  await expect.element(noteRow(screen, note)).not.toHaveAttribute("aria-busy", "true");
 }
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
@@ -126,9 +124,9 @@ describe("NotesPage", () => {
     const router = createTestRouter("/notes", () => <Pending />);
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole("status", { name: "読み込み中" }).query()).not.toBeNull();
+    await expect.element(screen.getByRole("status", { name: "読み込み中" })).toBeInTheDocument();
     // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (ADR-0019)
-    expect(screen.getByRole("columnheader").all()).toHaveLength(noteColumns.length);
+    await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
   });
 
   it("loader が notes を prefetch する", async () => {
@@ -208,8 +206,8 @@ describe("NotesPage", () => {
     // 行を読んだときにだけ出る。通知は announcer が担う
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
-    const rows = screen.getByRole("row").all();
-    expect(rows[1]?.element().textContent).toContain(CREATED_NOTE.title); // rows[0] はヘッダ行
+    // rows[0] はヘッダ行
+    await expect.element(screen.getByRole("row").nth(1)).toHaveTextContent(CREATED_NOTE.title);
     // 楽観行が出ている状態そのものを検査する。ダイアログが閉じたあとなので、
     // axe が見るのは一覧だけ (開いている間は行が aria-hidden 配下に入る)。
     // この assert の問いは a11y だが、a11y tag を付けた専用テストへは降ろさない。
@@ -261,7 +259,8 @@ describe("NotesPage", () => {
     await expect
       .element(noteRow(screen, CREATED_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
-    expect(screen.getByText("メモが登録されていません").query()).toBeNull();
+    // 出ていた空状態が消えるのを待つ。不在確認ではないので retry の予算が要る (ADR-0029)
+    await expect.element(screen.getByText("メモが登録されていません")).not.toBeInTheDocument();
 
     create.resolve({ id: CREATED_NOTE.id });
 
@@ -297,7 +296,7 @@ describe("NotesPage", () => {
 
     await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).not.toHaveBeenCalled();
-    expect(screen.getByText(NOTE.title).query()).not.toBeNull();
+    await expect.element(screen.getByText(NOTE.title)).toBeInTheDocument();
   });
 
   it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
@@ -316,8 +315,9 @@ describe("NotesPage", () => {
 
     remove.reject(new Error(rawMessage));
 
+    // 直前の expectText が肯定 anchor。固定文言が出たうえで raw が出ていないことを見る (ADR-0029)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    expect(screen.getByText(rawMessage).query()).toBeNull();
+    await expectAbsent(screen.getByText(rawMessage));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "false");
     await expect

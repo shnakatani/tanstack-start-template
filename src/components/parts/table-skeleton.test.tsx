@@ -40,6 +40,6 @@ describe("TableSkeleton", () => {
   it('role="status" でローディング中であることが通知される', async () => {
     const screen = await render(<TableSkeleton columns={2} />);
 
-    expect(screen.getByRole("status").query()).not.toBeNull();
+    await expect.element(screen.getByRole("status")).toBeInTheDocument();
   });
 });

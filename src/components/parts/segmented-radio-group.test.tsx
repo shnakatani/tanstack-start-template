@@ -119,8 +119,10 @@ describe("SegmentedRadioGroup", () => {
   it("disabled でポインタを受け付けず、無効表示が効く", async () => {
     const screen = await render(<Filter disabled />);
 
-    const target = screen.getByRole("radio", { name: "未読" }).element();
-    expect(target.getAttribute("aria-disabled")).toBe("true");
+    const item = screen.getByRole("radio", { name: "未読" });
+    await expect.element(item).toHaveAttribute("aria-disabled", "true");
+    // opacity と pointer-events には対応する matcher が無い (ADR-0029)
+    const target = item.element();
 
     // クリックが届かないことは pointer-events で見る。合成 click を対象へ直接送って
     // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (ADR-0015)

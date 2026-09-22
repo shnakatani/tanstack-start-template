@@ -30,15 +30,14 @@ describe("DataTable", () => {
   it("列定義の順に列見出しを scope=col で描き、行はセル単位で描く", async () => {
     const screen = await render(<DataTable tableKey="fruits" columns={columns} data={FRUITS} />);
 
-    const headers = screen.getByRole("columnheader").all();
-    expect(headers.map((header) => header.element().textContent)).toEqual(["名前", "価格"]);
-    expect(
-      screen
-        .getByRole("row", { name: /りんご/ })
-        .getByRole("cell")
-        .all(),
-    ).toHaveLength(2);
-    expect(screen.getByRole("cell", { name: "80" }).query()).not.toBeNull();
+    const headers = screen.getByRole("columnheader");
+    await expect
+      .poll(() => headers.all().map((header) => header.element().textContent))
+      .toEqual(["名前", "価格"]);
+    await expect
+      .element(screen.getByRole("row", { name: /りんご/ }).getByRole("cell"))
+      .toHaveLength(2);
+    await expect.element(screen.getByRole("cell", { name: "80" })).toBeInTheDocument();
   });
 
   it("列定義の cellClassName をセルに写す", async () => {
@@ -107,8 +106,9 @@ describe("DataTable", () => {
   it("data が空のときは列数ぶんの colSpan を持つ案内行を 1 つ描く", async () => {
     const screen = await render(<DataTable tableKey="fruits" columns={columns} data={[]} />);
 
-    const cell = screen.getByRole("cell", { name: "データがありません" }).element();
-    expect(cell.getAttribute("colspan")).toBe(String(columns.length));
-    expect(screen.getByRole("columnheader").all()).toHaveLength(2);
+    await expect
+      .element(screen.getByRole("cell", { name: "データがありません" }))
+      .toHaveAttribute("colspan", String(columns.length));
+    await expect.element(screen.getByRole("columnheader")).toHaveLength(2);
   });
 });

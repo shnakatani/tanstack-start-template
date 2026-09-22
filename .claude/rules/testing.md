@@ -175,6 +175,17 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - **`force: true` は actionability の検査だけを飛ばし、ブラウザのヒットテストは越えない。** 対象が `pointer-events: none` ならイベントは下の要素へ落ち、対象のハンドラは呼ばれない。「押しても何も起きない」をこの形で書くと、`pointer-events` から導かれるだけの assert になる (ADR-0015)
 - 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (ADR-0015)
 
+## locator の扱い
+
+- 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)
+- 同期読みを `expect()` へ流してよいのは、locator に対応する matcher が無い実測のときだけ。許す形の列挙は `scripts/lint/browser-test.ts` が持つ。足す前にその主張が matcher で書けないことを確かめる (ADR-0029)
+- 機械強制は `browser-test/prefer-locator-methods`。`vp lint` / `vp check` で走る。grep は束縛を挟む形を取りこぼすので、件数はこのルールで数える (ADR-0029)
+- 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く。要素が無ければ 1 回目で通るので、単独では何も検証していない (ADR-0029)
+- 要素が在る状態から消えるのを待つときは `expect.element(locator).not.toBeInTheDocument()` をそのまま書く。消えるのを待つ側には retry の予算が要る。呼び出し側の形でどちらのつもりかが読める (ADR-0029)
+- `.not.toBeInTheDocument()` 以外の否定 matcher には肯定 assert を添えなくてよい。要素が引けない間 retry するため、不在のまま通ることがない (ADR-0029)
+- 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る。どちらも locator を解決し直して retry する (ADR-0029)
+- retry の中で値を作るなら `expect.poll` を使う。`vi.waitFor` は失敗したときに最後の値ではなく自前のタイムアウトを返す (ADR-0029)
+
 ## ブラウザテストの CSS とレイアウト実測
 
 ブラウザテストでは Tailwind が実 CSS に解決される (`vitest.browser.config.ts` の `@tailwindcss/vite` と、`test.setupFiles` の `src/test/browser-setup.tsx` による `src/styles.css` の import)。
@@ -185,9 +196,8 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる
 - 開く操作のあとは `findElement()` → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
 - 操作の結果として現れる要素の生 DOM は `await locator.findElement()` で取る。`element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
-- 操作後の属性・テキストは `await expect.element(locator).toHaveAttribute(...)` で検証する。`element().getAttribute(...)` を同期で読むと更新前の値を拾う (ADR-0013)
 - Base UI の animation は `src/test/browser-setup.tsx` が毎テスト無効にする。閉じかけの popup が残る窓を検証するテストだけ、冒頭で `src/test/base-ui-animations.ts` の `enableBaseUiAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻す (ADR-0018)
-- Dialog / Popover / Sheet の close 後に消えたことは `await expect.element(locator).not.toBeInTheDocument()` で待つ。`vi.waitFor` + `.query()` で組み立てない (ADR-0013)。animation を戻したテストでは `animate-out` 完了後に消える
+- Dialog / Popover / Sheet の close 後に消えたことは `await expect.element(locator).not.toBeInTheDocument()` で待つ (ADR-0013)。animation を戻したテストでは `animate-out` 完了後に消える
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素の `.not.toBeInTheDocument()` を待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
 - `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む
 - flex column の中に「溢れるコンテンツ」をテスト用に作るときは `height` ではなく `minHeight` を使う (flex item は既定で縮むため `height` では溢れない)

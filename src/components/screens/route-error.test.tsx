@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { expectAbsent } from "@/test/absent";
 import { createTestRouter } from "@/test/create-test-router";
 import {
   expectWithinViewport,
@@ -31,9 +32,11 @@ describe("RouteErrorContent", () => {
   it("エラーメッセージが表示される", async () => {
     const { screen } = await renderError(new Error("取得に失敗しました"), vi.fn());
 
+    await expect.element(screen.getByText("エラーが発生しました")).toBeInTheDocument();
+    await expect
+      .element(screen.getByText("取得に失敗しました", { exact: true }))
+      .toBeInTheDocument();
     await vi.waitFor(() => {
-      expect(screen.getByText("エラーが発生しました").query()).not.toBeNull();
-      expect(screen.getByText("取得に失敗しました", { exact: true }).query()).not.toBeNull();
       expect(
         screen.getByText("エラーが発生しました").element().closest('[data-slot="card"]'),
       ).not.toBeNull();
@@ -49,20 +52,17 @@ describe("RouteErrorContent", () => {
 
     const { screen } = await renderError(error, vi.fn());
 
-    await vi.waitFor(() => {
-      expect(screen.getByText(ROUTE_ERROR_FALLBACK_MESSAGE).query()).not.toBeNull();
-    });
-    expect(screen.getByText("削除対象のノートが見つかりません: id=42").query()).toBeNull();
-    expect(screen.getByRole("button", { name: "スタックトレース" }).query()).toBeNull();
+    // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (ADR-0029)
+    await expect.element(screen.getByText(ROUTE_ERROR_FALLBACK_MESSAGE)).toBeInTheDocument();
+    await expectAbsent(screen.getByText("削除対象のノートが見つかりません: id=42"));
+    await expectAbsent(screen.getByRole("button", { name: "スタックトレース" }));
   });
 
   it("再試行で reset と router.invalidate の両方が呼ばれる", async () => {
     const reset = vi.fn();
     const { screen, invalidateSpy } = await renderError(new Error("取得に失敗しました"), reset);
 
-    await vi.waitFor(() => {
-      expect(screen.getByRole("button", { name: "再試行" }).query()).not.toBeNull();
-    });
+    await expect.element(screen.getByRole("button", { name: "再試行" })).toBeInTheDocument();
     await screen.getByRole("button", { name: "再試行" }).click();
 
     expect(reset).toHaveBeenCalledTimes(1);
@@ -90,12 +90,13 @@ describe("RouteErrorContent", () => {
     const { screen } = await renderError(error, vi.fn());
 
     const trigger = screen.getByRole("button", { name: "スタックトレース" });
-    expect(trigger.element().getAttribute("aria-expanded")).toBe("false");
-    expect(trigger.element().getAttribute("aria-controls")).toBeNull();
-    expect(
-      screen.getByRole("heading", { name: "スタックトレース", level: 3 }).query(),
-    ).not.toBeNull();
-    expect(screen.getByText(/at loader/).query()).toBeNull();
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
+    await expect.element(trigger).not.toHaveAttribute("aria-controls");
+    await expect
+      .element(screen.getByRole("heading", { name: "スタックトレース", level: 3 }))
+      .toBeInTheDocument();
+    // 肯定 anchor は直上の見出し。閉じている間は中身が出ない (ADR-0029)
+    await expectAbsent(screen.getByText(/at loader/));
   });
 
   it("スタックトレースを Enter と Space で開閉する", async () => {
@@ -106,18 +107,13 @@ describe("RouteErrorContent", () => {
 
     trigger.element().focus();
     await userEvent.keyboard("{Enter}");
-    await vi.waitFor(() => {
-      expect(trigger.element().getAttribute("aria-expanded")).toBe("true");
-      const panelId = trigger.element().getAttribute("aria-controls");
-      expect(panelId).not.toBeNull();
-      expect(document.getElementById(panelId ?? "")).not.toBeNull();
-      expect(
-        screen
-          .getByText(/at loader/)
-          .element()
-          .checkVisibility(),
-      ).toBe(true);
-    });
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
+    // `aria-controls` に対応する matcher は無い。参照先が実在することまで見ないと、
+    // 宙に浮いた id を指す状態が属性の存在だけで通る (ADR-0029 の escape hatch)
+    await expect
+      .poll(() => document.getElementById(trigger.element().getAttribute("aria-controls") ?? ""))
+      .not.toBeNull();
+    await expect.element(screen.getByText(/at loader/)).toBeVisible();
 
     await userEvent.keyboard(" ");
     await expect.element(trigger).toHaveAttribute("aria-expanded", "false");

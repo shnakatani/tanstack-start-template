@@ -52,6 +52,9 @@ export default defineConfig({
       // story は `storybook/test` 経由で testing-library の API をそのまま使う。oxlint は
       // testing-library をネイティブに持たないため ESLint plugin として載せる (ADR-0004)
       { name: "testing-library", specifier: "eslint-plugin-testing-library" },
+      // ブラウザテストの assert に locator を渡させる自前ルール。上流の
+      // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0029)
+      { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
     ],
     settings: {
       shadcn: {
@@ -358,6 +361,14 @@ export default defineConfig({
         rules: {
           "shadcn/no-restyle": ["error", { allow: ["layout"] }],
           "shadcn/require-static-classes": "error",
+        },
+      },
+      {
+        // ブラウザテストだけが持つ規範なので、適用範囲を browser project の include に合わせる
+        // (ADR-0029)。unit project は DOM を持たず locator も無い
+        files: ["src/**/*.test.tsx"],
+        rules: {
+          "browser-test/prefer-locator-methods": "error",
         },
       },
       {

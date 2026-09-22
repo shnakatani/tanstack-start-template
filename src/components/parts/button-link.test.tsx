@@ -20,14 +20,14 @@ describe("ButtonLink", () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByText("メモ一覧へ").query()).not.toBeNull();
+    await expect.element(screen.getByText("メモ一覧へ")).toBeInTheDocument();
   });
 
   it("リンクが a 要素としてレンダリングされる", async () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole("link").query()).not.toBeNull();
+    await expect.element(screen.getByRole("link")).toBeInTheDocument();
   });
 
   // registry の子孫セレクタ (button-group.tsx の `[data-slot=button]` 等) が
@@ -36,7 +36,7 @@ describe("ButtonLink", () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole("link").element().getAttribute("data-slot")).toBe("button");
+    await expect.element(screen.getByRole("link")).toHaveAttribute("data-slot", "button");
   });
 
   // Empty 状態の CTA が使う組み合わせ。テキストリンクの意匠のまま WCAG 2.2 AA 2.5.8 の
@@ -63,8 +63,6 @@ describe("ButtonLink", () => {
     ));
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole("link").element().getAttribute("class")).toContain(
-      "underline-offset-4",
-    );
+    await expect.element(screen.getByRole("link")).toHaveClass("underline-offset-4");
   });
 });

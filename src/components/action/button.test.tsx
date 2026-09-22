@@ -28,10 +28,10 @@ describe("ActionButton", () => {
     // 実イベント (CDP 経由) で 3 回発火する。2 回目は次のユーザーイベント、
     // 3 回目は aria-disabled を確認した後
     await button.click();
-    expect(document.activeElement).toBe(button.element());
+    await expect.element(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
     await expect.element(button).toHaveAttribute("aria-disabled", "true");
-    expect(document.activeElement).toBe(button.element());
+    await expect.element(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
     expect(action).toHaveBeenCalledOnce();

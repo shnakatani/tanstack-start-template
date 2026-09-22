@@ -82,7 +82,7 @@ describe("touch target の AA 基準一本化 (ADR-0007)", () => {
       position: { x: rect.width - SPINNER_INSET_X, y: rect.height * 0.25 },
     });
 
-    expect(element.value).toBe("1");
+    await expect.poll(() => element.value).toBe("1");
   });
 
   // touch-manipulation は置かない (ADR-0007)。tap 遅延の除去は __root.tsx の viewport meta

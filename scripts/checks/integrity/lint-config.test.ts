@@ -103,6 +103,14 @@ const EXPECTED_OVERRIDES = [
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
+    // ブラウザテストの assert に locator を渡させる自前ルール (ADR-0029)。適用先を browser
+    // project の include に合わせる。`src/**` へ広げると、locator を持たない unit project の
+    // テストまで対象になる。off へ落とすと、同期読みが assert へ戻る経路が無診断になる
+    files: ["src/**/*.test.tsx"],
+    excludeFiles: undefined,
+    rules: { "browser-test/prefer-locator-methods": "deny" },
+  },
+  {
     // テスト専用のコードの import 禁止。緩和ではなく適用先を絞った有効化なので、テスト側は
     // off ではなく excludeFiles で外す (ADR-0004「基準から外れる名指し」)。付随ファイルぶんは
     // 下で差し引くので、ここに残るのは src/test/** だけになる
