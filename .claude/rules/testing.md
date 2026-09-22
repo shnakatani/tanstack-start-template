@@ -196,8 +196,8 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変更したら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
 - 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` に明示してあり、`DEFAULT_VIEWPORT` と一致させて管理する
 - 単一プロパティを文字列リテラルと比べるだけなら `await expect.element(x).toHaveStyle("prop: value")` を使う。**文字列形式で、複数プロパティは `;` で 1 つにまとめる。** オブジェクト形式は失敗しても差分が出ない。分けて書くと予算を個別に使い、同時に成立しない状態も通る (ADR-0029)
-- **否定形の `toHaveStyle` は使わない。** 宣言をブラウザが解釈できないと空になり、`.not` が素通りする。単位の書き忘れや綴り誤りが永久に緑になる。否定は `expect.poll(() => getComputedStyle(x).prop).not.toBe(v)` で書く。retry を保ったまま算出値を直に比べられる (ADR-0029)
-- `getComputedStyle` を `expect()` へ流してよいのは、2 回の観測の比較・数値の大小・擬似要素・否定の 4 つ。前 3 つは `toHaveStyle` が表せず、否定は `toHaveStyle` が素通りする (ADR-0029)
+- **スタイルを否定で確かめない。** `not.toHaveStyle` は解釈できない宣言で、`poll(...).not.toBe("0")` は単位を落とした期待値で、どちらも潰れた状態のまま通る。「描かれている」なら 1 回の観測から数値を出して `toBeGreaterThan(0)` で見る (ADR-0029)
+- `getComputedStyle` を `expect()` へ流してよいのは、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0029)
 - 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる
 - 開く操作のあとは `findElement()` (`src/test/find-element.ts`) → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
 - 操作の結果として現れる要素の生 DOM は `src/test/find-element.ts` の `findElement(locator)` で取る。`locator.findElement()` を直に呼ばない (`browser-test/no-bare-find-element` が止める)。`actionTimeout` を置いた config では待ち時間が上限なしになり、要素が現れないとテストが `Test timed out` で落ちて locator 名が出力から消える (ADR-0029)。`element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)

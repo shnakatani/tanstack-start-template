@@ -5,7 +5,8 @@
  * assertion 側の既定を 5000ms と文書化しているので、その値を写している。
  *
  * 消費者は `grep -rn ASSERT_TIMEOUT_MS src vitest.browser.config.ts` で出る。config の
- * 2 つの設定、mount を待つ helper、その helper の退行を見るテストの閾値が読む。
- * 値を動かすと最後のものも連動するので、変えたら `src/test/absent.test.tsx` を回す。
+ * 2 つの設定のほか、`find-element.ts` と、`find-element.test.tsx` / `absent.test.tsx` が
+ * 退行を見る閾値とテスト自身の timeout に使う。**値を動かしたら後者 2 つを回す。**
+ * どちらも比で書いてあるので追随するが、追随した先が妥当かは実測で確かめる。
  */
 export const ASSERT_TIMEOUT_MS = 5_000;

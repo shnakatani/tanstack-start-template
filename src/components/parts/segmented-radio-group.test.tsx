@@ -112,10 +112,14 @@ describe("SegmentedRadioGroup", () => {
     // outline-width だけ効いて描画はゼロになる。実効の outline-style で固定する
     // `:focus-visible` を見る matcher は無いので、この読みだけ生 DOM に残す (ADR-0029)
     expect(focused.matches(":focus-visible")).toBe(true);
-    // 否定形の `toHaveStyle` は宣言が解釈できないと素通りする。retry は `expect.poll`
-    // で持ち、算出値を直に比べる (ADR-0029)
-    await expect.poll(() => getComputedStyle(focused).outlineStyle).not.toBe("none");
-    await expect.poll(() => getComputedStyle(focused).outlineWidth).not.toBe("0px");
+    // 「描かれていない」を否定で書かない。`not.toBe("0")` のように単位を落とすと、潰れた
+    // 状態でも通る (ADR-0029)。実効の太さを 1 回の観測から数値で出して肯定で見る
+    await expect
+      .poll(() => {
+        const style = getComputedStyle(focused);
+        return style.outlineStyle === "none" ? 0 : Number.parseFloat(style.outlineWidth);
+      })
+      .toBeGreaterThan(0);
   });
 
   it("disabled で無効表示が効き、ポインタが届かない指定を持つ", async () => {

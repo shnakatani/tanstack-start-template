@@ -22,5 +22,6 @@ import { ASSERT_TIMEOUT_MS } from "./assert-budget";
  * 素の呼び出しは `browser-test/no-bare-find-element` が止めるので、迂回はできない。
  */
 export function findElement(locator: Locator): Promise<HTMLElement | SVGElement> {
+  // oxlint-disable-next-line browser-test/no-bare-find-element -- ここが唯一の正当な呼び出し元
   return locator.findElement({ timeout: ASSERT_TIMEOUT_MS });
 }

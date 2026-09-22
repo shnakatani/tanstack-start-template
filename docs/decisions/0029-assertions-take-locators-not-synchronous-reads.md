@@ -141,7 +141,9 @@ grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test
 
 helper を置いても、`locator.findElement()` を直に書けば同じ穴に戻る。しかも失敗は「テストが `Test timed out` で落ちる」形なので、原因が locator だと読めない。規範と docstring だけでは気づけない種類の壊れ方なので、`browser-test/no-bare-find-element` が止める。
 
-導入時の違反は 0 件だが、退行の記録はある。2026-09-22 時点で素の呼び出しが 16 箇所あり、`actionTimeout` を足した時点で全部が上限なしになっていた。
+導入時の違反は 0 件である。helper へ移す前は素の呼び出しが 16 箇所あり、`actionTimeout` を足した時点で全部が上限なしになっていた。退行の記録はそれで足りる。
+
+ルールは呼び出し元の場所を見ない。正当な呼び出しは `src/test/find-element.ts` の 1 行だけなので、そこへ `oxlint-disable-next-line` を置く。ファイル単位や `lint.overrides` で外す形は採らない。同じファイルに 2 本目を書いたときも無検査になり、除外の理由が呼び出し行から離れる。
 
 壊し方を 2 つ当てた (2026-09-22)。素の呼び出しを 1 つ持つファイルへ `vp lint` を当てると 1 件報告され、`lint.rules` で `off` にすると 0 件、ルールのメソッド名の判定を壊しても 0 件になる。
 
@@ -270,7 +272,9 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 | `.not.toHaveStyle("pointer-evnets: none")` (綴り誤り)   | **通る** |
 | `toHaveStyle("pointer-evnets: none")` (肯定形)          | 落ちる   |
 
-否定は `expect.poll(() => getComputedStyle(x).prop).not.toBe(v)` で書く。retry を保ったまま算出値を直に比べる。
+**否定そのものを書かない。** `expect.poll(() => getComputedStyle(x).outlineWidth).not.toBe("0")` も同じ理由で素通りする。算出値は `"0px"` なので、単位を落とした期待値との比較は潰れた状態でも真になる (2026-09-22 実測)。matcher を替えても、期待値の綴りが 1 つでも外れれば否定は通る。
+
+主張が「描かれている」「上限がある」なら、**1 回の観測から数値を出して肯定で見る**。`expect.poll(() => Number.parseFloat(getComputedStyle(x).outlineWidth)).toBeGreaterThan(0)` は、綴りを外しても `NaN` になって落ちる。観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると別々の瞬間で成立してよいことになる。
 
 複数プロパティは `;` で 1 つの文字列へまとめる。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る。ただし**同じプロパティを 2 度書かない。shorthand で longhand を覆わない。** jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える。
 

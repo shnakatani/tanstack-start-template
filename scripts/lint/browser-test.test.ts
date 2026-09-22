@@ -127,8 +127,6 @@ tester.run("no-bare-find-element", noBareFindElement, {
   valid: [
     // helper 経由なら対象外。名前が同じでも member 呼び出しではない
     'await findElement(screen.getByRole("dialog"));',
-    // 呼び出し元の除外は config の `excludeFiles` が持つ。ルールは filename を見ない
-    "findElement({ a: 1 });",
   ],
   invalid: [
     {
@@ -141,7 +139,8 @@ tester.run("no-bare-find-element", noBareFindElement, {
       errors: [{ messageId: "bareFindElement" }],
     },
     {
-      // helper 自身のパスでも報告する。除外は config が持ち、ルールは場所を知らない
+      // helper 自身のパスでも報告する。ルールは場所を知らず、除外は呼び出し行の
+      // `oxlint-disable-next-line` が持つ
       code: "await locator.findElement({ timeout: 5000 });",
       filename: "src/test/find-element.ts",
       errors: [{ messageId: "bareFindElement" }],
