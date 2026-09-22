@@ -4,9 +4,11 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   NOTE_BODY_MAX_LENGTH,
   NOTE_FIELD_LABELS,
+  NOTE_QUERY_MAX_LENGTH,
   NOTE_TITLE_MAX_LENGTH,
   noteIdSchema,
   noteInputSchema,
+  noteListFilterSchema,
   noteSchema,
 } from "./schema";
 
@@ -190,5 +192,28 @@ describe("noteIdSchema", () => {
   it("rejects a missing id", () => {
     const result = v.safeParse(noteIdSchema, {});
     expect(result.success).toBe(false);
+  });
+});
+
+describe("noteListFilterSchema", () => {
+  it("q が無ければ空文字に既定する", () => {
+    expect(v.parse(noteListFilterSchema, {})).toEqual({ q: "" });
+  });
+
+  it("q の前後の空白を落とす", () => {
+    expect(v.parse(noteListFilterSchema, { q: "  abc  " })).toEqual({ q: "abc" });
+  });
+
+  it("上限ちょうどは通り、1 文字超えると落ちる", () => {
+    expect(
+      v.safeParse(noteListFilterSchema, { q: "a".repeat(NOTE_QUERY_MAX_LENGTH) }).success,
+    ).toBe(true);
+    expect(
+      v.safeParse(noteListFilterSchema, { q: "a".repeat(NOTE_QUERY_MAX_LENGTH + 1) }).success,
+    ).toBe(false);
+  });
+
+  it("文字列以外の q は落ちる", () => {
+    expect(v.safeParse(noteListFilterSchema, { q: 1 }).success).toBe(false);
   });
 });

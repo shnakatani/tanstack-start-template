@@ -104,3 +104,24 @@ export const noteIdSchema = v.object({
   id: noteIdValueSchema,
 });
 export type NoteId = v.InferOutput<typeof noteIdSchema>;
+
+/** 絞り込みの検索語の呼称。検証メッセージが使う。 */
+const QUERY_LABEL = "検索語";
+export const NOTE_QUERY_MAX_LENGTH = 100;
+
+/**
+ * 一覧の絞り込み条件。URL の search param (`/notes?q=`) と `listNotes` の validator が同じ定義を使う。
+ * valibot 1.x は Standard Schema なので、Router の `validateSearch` にそのまま渡せる (ADR-0033)。
+ * `q` の既定は空文字 = 絞り込みなし。URL 上では `stripSearchParams` が既定値を落とす。
+ */
+export const noteListFilterSchema = v.object({
+  q: v.optional(
+    v.pipe(
+      v.string(),
+      v.trim(),
+      v.maxLength(NOTE_QUERY_MAX_LENGTH, maxLengthMessage(QUERY_LABEL, NOTE_QUERY_MAX_LENGTH)),
+    ),
+    "",
+  ),
+});
+export type NoteListFilter = v.InferOutput<typeof noteListFilterSchema>;
