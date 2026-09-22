@@ -116,7 +116,7 @@ describe("SegmentedRadioGroup", () => {
     expect(style.outlineWidth).not.toBe("0px");
   });
 
-  it("disabled でポインタを受け付けず、無効表示が効く", async () => {
+  it("disabled で無効表示が効き、ポインタが届かない指定を持つ", async () => {
     const screen = await render(<Filter disabled />);
 
     const item = screen.getByRole("radio", { name: "未読" });
@@ -124,7 +124,7 @@ describe("SegmentedRadioGroup", () => {
     // opacity と pointer-events には対応する matcher が無い (ADR-0029)
     const target = item.element();
 
-    // クリックが届かないことは pointer-events で見る。合成 click を対象へ直接送って
+    // クリックが届かないことは pointer-events の指定で見る。イベントを対象へ届かせて
     // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (ADR-0015)
     const style = getComputedStyle(target);
     expect(style.opacity).toBe("0.5");

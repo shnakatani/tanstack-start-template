@@ -109,7 +109,7 @@ const EXPECTED_OVERRIDES = [
     // (`db.select().from(x).all()`) が同名メソッドで誤検出になる。off へ落とすと、
     // 同期読みが assert へ戻る経路が無診断になる
     files: ["src/**/*.test.tsx", "src/test/**", ...testHelperGlobs("**/")],
-    excludeFiles: undefined,
+    excludeFiles: ["src/test/*.test.ts"],
     rules: { "browser-test/prefer-locator-methods": "deny" },
   },
   {

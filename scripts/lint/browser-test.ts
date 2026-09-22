@@ -27,20 +27,29 @@ const ESCAPE_HATCH_MEMBERS = new Set([
 const ESCAPE_HATCH_CALLEES = new Set(["getComputedStyle"]);
 
 /**
- * retry を持つ `expect.*` の口。引数に同期読みを渡しても待ってくれるので assert 扱いしない。
- * `waitFor` を入れない。`expect.waitFor` は存在せず、入れても死に分岐になる
- */
-const RETRYING_EXPECT_METHODS = new Set(["poll", "element"]);
-
-/**
  * コールバックを retry する呼び出し。その中の同期読みは毎回引き直されるので報告しない。
  * `element` を入れない。`expect.element(x.element())` は stale な要素を retry し続ける形で、
  * 本ルールが止めたい対象そのものになる
  */
 const RETRYING_CALLBACK_CALLEES = new Set(["poll", "waitFor"]);
 
-/** 値をそのまま包むだけの節点。除外判定と束縛の追跡はここを透かして見る */
-const WRAPPER_TYPES = new Set(["ParenthesizedExpression", "TSNonNullExpression", "TSAsExpression"]);
+/**
+ * 値をそのまま外へ渡す節点。判定はここを透かして見る。`?.` は `ChainExpression` が
+ * 連鎖全体を包むので、入れないと optional chain を挟んだ同期読みが素通りする
+ */
+const WRAPPER_TYPES = new Set([
+  "ParenthesizedExpression",
+  "TSNonNullExpression",
+  "TSAsExpression",
+  "ChainExpression",
+  "TSSatisfiesExpression",
+]);
+
+/**
+ * 同期読みの値が片側に来うる節点。`x.element().getAttribute(a) ?? ""` のように
+ * 既定値を挟んでも、assert が見るのは同期読み由来の値である
+ */
+const PASSTHROUGH_TYPES = new Set(["LogicalExpression", "ConditionalExpression"]);
 
 type Node = ESTree.Node;
 
@@ -87,10 +96,12 @@ function isAssertionCall(call: ESTree.CallExpression): boolean {
   for (let current: Node = call.callee; ;) {
     if (nameOf(current) === "expect") return true;
     if (current.type === "MemberExpression") {
-      // `expect.poll(...)` / `expect.element(...)` は retry を持つので assert 扱いしない
       if (nameOf(current.object) === "expect") {
         const method = staticPropertyName(current);
-        return method === undefined || !RETRYING_EXPECT_METHODS.has(method);
+        // `expect.poll(cb)` はコールバックを retry するので、その引数は assert 扱いしない。
+        // `expect.element(x)` が retry するのは locator を渡したときだけで、同期読みを
+        // 渡すと最初に解決した要素を retry し続ける。だから assert 扱いする
+        return method !== "poll";
       }
       current = current.object;
       continue;
@@ -125,7 +136,7 @@ function classifyUse(syncRead: Node): Verdict {
     if (!parent) return "unknown";
 
     // 包むだけの節点は値を変えない。透かして次の親を見る
-    if (WRAPPER_TYPES.has(parent.type)) {
+    if (WRAPPER_TYPES.has(parent.type) || PASSTHROUGH_TYPES.has(parent.type)) {
       current = parent;
       continue;
     }

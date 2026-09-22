@@ -1,16 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { expectAbsent } from "./absent";
 
-function AppearsLater({ delayMs }: { delayMs: number }) {
+/**
+ * 表示の時点をテストが操作で決める。実時間のタイマーで出すと、負荷の高い実行では
+ * `expectAbsent` を呼ぶ前に出てしまい、テスト自身が競走になる
+ */
+function Toggleable() {
   const [shown, setShown] = useState(false);
-  useEffect(() => {
-    const id = setTimeout(() => setShown(true), delayMs);
-    return () => clearTimeout(id);
-  }, [delayMs]);
-  return <div>{shown ? <span>あとから出る</span> : null}</div>;
+  return (
+    <div>
+      <button type="button" onClick={() => setShown(true)}>
+        出す
+      </button>
+      {shown ? <span>あとから出る</span> : null}
+    </div>
+  );
 }
 
 describe("expectAbsent", () => {
@@ -31,12 +38,13 @@ describe("expectAbsent", () => {
   }, 5_000);
 
   it("後から現れる要素でも、呼んだ時点で無ければ通る", async () => {
-    const screen = await render(<AppearsLater delayMs={300} />);
+    const screen = await render(<Toggleable />);
     const target = screen.getByText("あとから出る");
 
     await expectAbsent(target);
 
-    // 待たないことの裏返し。同じ locator が後から解決する
+    // 待たないことの裏返し。出したあとは同じ locator が解決する
+    await screen.getByRole("button", { name: "出す" }).click();
     await expect.element(target).toBeInTheDocument();
   });
 });

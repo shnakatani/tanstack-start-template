@@ -81,7 +81,10 @@ async function openAt(viewport: Viewport, fieldCount?: number) {
   // matcher が受ける型 (`HTMLElement | SVGElement | Locator | null`) に入らない (ADR-0029)
   const query = (slot: string) => {
     const found = popup.querySelector(`[data-slot="${slot}"]`);
-    expect.assert(found instanceof HTMLElement, `data-slot="${slot}" が見つからない`);
+    expect.assert(
+      found instanceof HTMLElement,
+      `data-slot="${slot}" が見つからないか、HTMLElement ではない`,
+    );
     return found;
   };
   return {

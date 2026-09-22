@@ -28,7 +28,7 @@ describe("Button の disabled の見た目", () => {
     expect(Number(getComputedStyle(off).opacity)).toBeLessThan(
       Number(getComputedStyle(plain).opacity),
     );
-    await expect.element(off).toHaveStyle("pointer-events: none");
+    await expect.element(offButton).toHaveStyle("pointer-events: none");
   });
 
   it("native disabled でも通常時と違う見た目になる", async () => {
@@ -47,6 +47,6 @@ describe("Button の disabled の見た目", () => {
     expect(Number(getComputedStyle(off).opacity)).toBeLessThan(
       Number(getComputedStyle(plain).opacity),
     );
-    await expect.element(off).toHaveStyle("pointer-events: none");
+    await expect.element(offButton).toHaveStyle("pointer-events: none");
   });
 });

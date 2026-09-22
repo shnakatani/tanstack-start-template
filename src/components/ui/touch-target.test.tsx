@@ -89,9 +89,9 @@ describe("touch target の AA 基準一本化 (ADR-0007)", () => {
   // (width=device-width) が担うため、registry 素のまま touch-action を上書きしない
   it("Input は touch-action の上書きを持たない", async () => {
     const screen = await render(<Input aria-label="氏名" />);
-    const input = screen.getByRole("textbox", { name: "氏名" }).element();
-
-    await expect.element(input).toHaveStyle("touch-action: auto");
+    await expect
+      .element(screen.getByRole("textbox", { name: "氏名" }))
+      .toHaveStyle("touch-action: auto");
   });
 
   // InputGroup 内では InputGroupInput の flex-1 が幅を肩代わりするため、Combobox 側の

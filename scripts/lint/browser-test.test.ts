@@ -15,6 +15,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     'await expect.element(row).toHaveAttribute("aria-busy", "true");',
     // retry を持つ口の中の同期読みは対象外
     "await expect.poll(() => rows.all().length).toBe(3);",
+    // `expect.poll` の引数はコールバックごと retry される
     'await expect.poll(() => el.element().textContent).toBe("x");',
     // locator に対応する matcher が無い実測
     "expect(el.element().getBoundingClientRect().width).toBeGreaterThan(0);",
@@ -62,6 +63,35 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     // 値を包むだけの節点は透かして見る。TypeScript の構文なので parser へ .ts として渡す
     {
       code: "expect((locator.query())!).not.toBeNull();",
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    // 値を素通しする節点を挟んだ形。塞がないと構文 1 種がまるごと素通りする
+    {
+      code: 'expect(el.query()?.textContent).toBe("x");',
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: 'expect(rows[1]?.element().textContent).toContain("x");',
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: 'expect(el.element().getAttribute("a") ?? "").toBe("b");',
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    // `expect.element` が retry するのは locator を渡したときだけ。同期読みを渡すと
+    // 最初に解決した要素を retry し続ける
+    {
+      code: "expect.element(locator.element()).toBeInTheDocument();",
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      // matcher の引数は 1 度しか評価されない
+      code: 'expect.element(a).toHaveAttribute("x", b.element());',
       filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },

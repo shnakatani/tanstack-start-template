@@ -371,9 +371,13 @@ export default defineConfig({
       {
         // ブラウザテストと、そこへ locator を配る helper が対象 (ADR-0029)。テスト本文だけに
         // 当てると、helper へ切り出した同期読みがルールから外れる (testing-library の override と
-        // 同じ穴の塞ぎ方)。`*.test.ts` は含めない。unit project は locator を持たず、
-        // drizzle の `db.select().from(x).all()` が同名メソッドで誤検出になる
+        // 同じ穴の塞ぎ方)。`src/test/` には browser の helper と unit のテストが同居するので、
+        // 後者を `excludeFiles` で外す。unit は locator を持たず、drizzle の
+        // `db.select().from(x).all()` が同名メソッドで誤検出になる。付随ファイルの glob
+        // (`**/*.test.ts`) では書かない。その綴りは import 禁止の override が持つ印で、
+        // `lint-config.test.ts` の「付随ファイルの除外は…」がそちらの専有を検査している
         files: ["src/**/*.test.tsx", "src/test/**", ...testHelperGlobs("**/")],
+        excludeFiles: ["src/test/*.test.ts"],
         rules: {
           "browser-test/prefer-locator-methods": "error",
         },

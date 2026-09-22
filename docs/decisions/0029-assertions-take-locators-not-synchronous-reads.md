@@ -203,6 +203,18 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 
 `.claude/rules/testing.md` には「locator の扱い」の節を足し、上の Decision の表を規範の形で置く。既存の「状態のアサートは semantic matcher を先に探す」「ブラウザテストの CSS とレイアウト実測」と重なる項目は、新しい節へ吸収して重複を残さない。
 
+### ルールが追えない形
+
+判定は 1 ファイルの構文だけで行う。次の 3 つは報告しない。`testing.md` が「件数はこのルールで数える」と書くので、数えた結果がこの範囲を出ないことを併記しておく。
+
+| 形                                  | 例                                                                  | なぜ追えないか                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 束縛を 2 段以上またぐ               | `const el = x.element(); const t = el.textContent; expect(t)...`    | 参照を 1 段だけ辿る。任意段を追うのは taint 解析になる                                         |
+| helper の戻り値                     | `expect(titleTextbox(screen).query())` を別ファイルの helper が包む | 関数を跨いだ追跡が要る。先行例 (`eslint-plugin-playwright`) も 1 段の dereference に留めている |
+| `expectAbsent` の肯定 anchor の有無 | `await expectAbsent(x)` を単独で置く                                | 「直前に意味のある assert があるか」は構文で決まらない                                         |
+
+最後の 1 つは `src/test/absent.ts` の docstring と `testing.md` が規範として持ち、レビューで見る。呼び出し側の名前 (`expectAbsent`) が「待たない」ことを示すので、anchor の有無は読めば分かる形にしてある。
+
 ### 再評価の条件
 
 - #8308 が閉じて `expect.poll.timeout` が単独で `expect.element` へ効くようになったら、`actionTimeout` の指定が要るかを測り直す
