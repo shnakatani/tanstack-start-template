@@ -5,7 +5,7 @@ import type { Locator } from "vite-plus/test/browser/context";
  * 要素が最初から無いことを検証する。**待たない。**
  *
  * assert の予算は `vitest.browser.config.ts` が `expect.poll.timeout` で宣言している
- * (ADR-0029)。待って成立しない条件にその予算を渡しても無駄に待つだけなので、ここは
+ * (ADR-0030)。待って成立しない条件にその予算を渡しても無駄に待つだけなので、ここは
  * `{ timeout: 0 }` で打ち切る。
  *
  * この matcher は要素が無ければ 1 回目の試行で通る。**単独では何も検証していない**ので、

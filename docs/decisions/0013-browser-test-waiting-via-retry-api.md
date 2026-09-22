@@ -44,7 +44,7 @@ const inputGroup = findInputGroup(input.element());
 
 | 場面                                  | 使うもの                                                      |
 | ------------------------------------- | ------------------------------------------------------------- |
-| 操作の結果として現れる要素の生 DOM    | `findElement(locator)` (`src/test/find-element.ts`。ADR-0029) |
+| 操作の結果として現れる要素の生 DOM    | `findElement(locator)` (`src/test/find-element.ts`。ADR-0030) |
 | 操作後の属性・テキストの検証          | `await expect.element(locator).toHaveAttribute(...)`          |
 | `render()` 直後、操作前の要素の生 DOM | `locator.element()`                                           |
 | close 後に要素が消えたことの確認      | `await expect.element(locator).not.toBeInTheDocument()`       |

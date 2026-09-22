@@ -113,7 +113,7 @@ describe("SegmentedRadioGroup", () => {
     // `:focus-visible` を見る matcher は無いので、この読みだけ生 DOM に残す (ADR-0029)
     expect(focused.matches(":focus-visible")).toBe(true);
     // 「描かれていない」を否定で書かない。`not.toBe("0")` のように単位を落とすと、潰れた
-    // 状態でも通る (ADR-0029)。実効の太さを 1 回の観測から数値で出して肯定で見る
+    // 状態でも通る (ADR-0031)。実効の太さを 1 回の観測から数値で出して肯定で見る
     await expect
       .poll(() => {
         const style = getComputedStyle(focused);

@@ -57,7 +57,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     // popupViewportLayout の fixed / popupOverflowBackstop の max-h-full + overflow-y-auto が
     // クラス名ではなく実際の computed style として効いていること (以降の実測の前提条件)
     await expect.element(viewport!).toHaveStyle("position: fixed");
-    // 「上限が無い」を否定で書かない。値の綴り違いで通る (ADR-0029)。数値で肯定に見る
+    // 「上限が無い」を否定で書かない。値の綴り違いで通る (ADR-0031)。数値で肯定に見る
     // (`none` は NaN になり、どの比較も偽になる)
     await expect
       .poll(() => Number.parseFloat(getComputedStyle(popup).maxHeight))

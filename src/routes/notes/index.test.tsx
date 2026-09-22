@@ -268,7 +268,7 @@ describe("NotesPage", () => {
     await expect
       .element(noteRow(screen, CREATED_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
-    // 出ていた空状態が消えるのを待つ。不在確認ではないので retry の予算が要る (ADR-0029)
+    // 出ていた空状態が消えるのを待つ。不在確認ではないので retry の予算が要る (ADR-0031)
     await expect.element(screen.getByText("メモが登録されていません")).not.toBeInTheDocument();
 
     create.resolve({ id: CREATED_NOTE.id });
@@ -324,7 +324,7 @@ describe("NotesPage", () => {
 
     remove.reject(new Error(rawMessage));
 
-    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0029)
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0031)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない

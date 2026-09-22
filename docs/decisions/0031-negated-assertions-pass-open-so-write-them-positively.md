@@ -1,0 +1,125 @@
+# ADR-0031: 否定 assert は不在や綴り違いでも通るので、肯定で書く
+
+- Status: Accepted
+- Date: 2026-09-22
+- 関連: ADR-0029 (assert には locator を渡す。その移行で否定 assert を一律に扱えないことが出た)、ADR-0013 (待機を retry API に委ねる)、ADR-0004 (ルールの選定基準。自前ルールを `jsPlugins` で足す判断)
+
+## Context
+
+否定 assert には 3 つの素通り経路がある。いずれも「実装が壊れているのに緑で通る」向きに倒れる。
+
+### 要素が最初から無ければ 1 回目で通る
+
+要素が無い状態から始まる `.not.toBeInTheDocument()` は、条件が最初から満たされているため 1 回目の試行で通る。DOM が確定する前でも通るので、その assert だけでは操作が効いたことを何も検証していない。
+
+これは `@vitest/browser` が否定の `toBeInTheDocument` だけを特例にしているためで、他の否定 matcher とは挙動が違う。存在しない要素へ `.not.toHaveTextContent()` を当てると、要素が引けない間 retry して 2927ms 後に `Cannot find element with locator` で落ちた (2026-09-22、`testTimeout` 3000)。否定 matcher を一律に扱うと、この違いを踏む。
+
+予算を下げてもこの問題は残る。待って成立しない条件にどんな予算を渡しても無駄に待つからで、区別は呼び出しごとにしか置けない (予算そのものは ADR-0030)。
+
+### 解釈できない宣言は `not.toHaveStyle` を通す
+
+期待値は probe 要素へ流し込まれ、ブラウザが受け付けた宣言だけが残る。単位の書き忘れや綴り誤りは空集合になり `.not` が真になる (2026-09-22 実測)。
+
+| assert                                                  | 結果     |
+| ------------------------------------------------------- | -------- |
+| `.not.toHaveStyle("pointer-events: none")` (正しい宣言) | 落ちる   |
+| `.not.toHaveStyle("outline-width: 0")` (単位なし)       | **通る** |
+| `.not.toHaveStyle("pointer-evnets: none")` (綴り誤り)   | **通る** |
+| `toHaveStyle("pointer-evnets: none")` (肯定形)          | 落ちる   |
+
+### matcher を替えても、期待値がリテラルなら同じ
+
+`expect.poll(() => getComputedStyle(x).outlineWidth).not.toBe("0")` も素通りする。算出値は `"0px"` なので、単位を落とした期待値との比較は潰れた状態でも真になる。潰れた outline で測ると `.not.toBe("0")` は通り、`.not.toBe("0px")` は落ちる (2026-09-22 実測)。**失敗の原因は matcher ではなく、期待値の綴りが 1 つ外れると否定が真になることである。**
+
+## Decision
+
+**否定 assert は、期待値がリテラルなら書かない。肯定で書く。** 例外は、要素が在る状態から消えるのを待つ `.not.toBeInTheDocument()` と、期待値が別の観測である比較の 2 つに限る。
+
+| 規範                                                                                                                          | 守らないと何が壊れるか                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
+| 要素が在る状態から消えるのを待つときは `expect.element(x).not.toBeInTheDocument()` をそのまま書く                             | 消えるのを待つ側には retry の予算が要る。`expectAbsent` に置き換えると、unmount を待たずに落ちる           |
+| `.not.toBeInTheDocument()` 以外の否定 matcher には肯定 assert を添えなくてよい                                                | 要素が引けない間 retry するため、不在のまま通ることがない                                                  |
+| スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                          | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
+| `toHaveStyle` は文字列形式で書き、複数プロパティは `;` で 1 つにまとめる                                                      | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
+| `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                | jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える                                            |
+
+肯定形の書き方は主張で決まる。「描かれている」「上限がある」なら `expect.poll(() => Number.parseFloat(getComputedStyle(x).outlineWidth)).toBeGreaterThan(0)` のように 1 回の観測から数値を出す。綴りを外しても `NaN` になって落ちる。当たっている token が分かっているなら `expect(shown.borderTopColor).toBe(resolveColorToken("--border"))` のように値そのものと比べる。観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると別々の瞬間で成立してよいことになる。
+
+## Consequences
+
+### 「最初から出ない」判定は `expectAbsent` が 1 箇所で持つ
+
+`{ timeout: 0 }` を渡す薄いヘルパーを `src/test/absent.ts` へ置く。呼び出し側の名前で「待たないつもりである」ことが読めるようにする。`{ timeout: 0 }` を外す退行は `src/test/absent.test.tsx` の所要時間の閾値が捕まえる (外すと同じ assert が 4 秒以上かけて落ちる)。`expect.element(x).not.toBeInTheDocument()` をそのまま書けば消滅待ちで、`expectAbsent(x)` なら不在確認である。
+
+移行時にこの 2 つを取り違えると、消滅待ちを `expectAbsent` にした側だけが flake を作る。誤りの向きが非対称なので、`.not.toBeInTheDocument()` から `expectAbsent` へ移す箇所は 1 件ずつ、直前の操作が要素を消すものかどうかで判定する。
+
+### スタイルの否定は lint で止める
+
+`browser-test/no-negated-style-literal` が、期待値がリテラルの否定 matcher を 2 つの起点から報告する。ルールの置き方は ADR-0029「機械強制は oxlint の JS plugin で書く」に従う。
+
+| 起点                               | 報告する matcher         | 例                                                                  |
+| ---------------------------------- | ------------------------ | ------------------------------------------------------------------- |
+| `expect(...)` などの assert の起点 | `toHaveStyle` だけ       | `expect.element(x).not.toHaveStyle("outline-width: 0")`             |
+| `getComputedStyle(...)`            | `toHaveStyle` 以外の全部 | `expect.poll(() => getComputedStyle(x).outlineWidth).not.toBe("0")` |
+
+起点を 2 つに分けるのは、`toHaveStyle` が要素を主語に取り `getComputedStyle` を通らないためである。両方が同じ呼び出しを報告しないよう、後者は `toHaveStyle` を除く。
+
+期待値が式なら報告しない。観測どうしの比較は綴りで潰れないためで、この形は 2026-09-22 時点で 10 件ある。導入時の違反は 1 件で、テンプレート初版 (`fb3433a`) から在った `src/components/parts/dialog-scroll-body.test.tsx` の `expect(shown.borderTopColor).not.toBe("rgba(0, 0, 0, 0)")` である。
+
+変数へ束縛してから読む形も 1 段だけ辿る。上の 1 件がその形だったので、追跡が無いと導入時の違反が 0 件に見えて、ルールが効いているように読める。
+
+壊し方を 2 つ当てた (2026-09-22)。
+
+| 壊し方 | 操作                                                        | 結果                                                                       |
+| ------ | ----------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 直接   | 実コードへ `.not.toHaveStyle("max-height: none")` を戻す    | `vp lint` が 1 件報告する                                                  |
+| 間接   | `lint.rules` は残したまま `lint.overrides` の適用先から外す | 違反が 0 件になり、`scripts/checks/integrity/lint-config.test.ts` が落ちる |
+
+### escape hatch に残る 3 つの形
+
+`toHaveStyle` で表せないので、`getComputedStyle` を `expect()` へ流してよい (ADR-0029 の escape hatch)。
+
+| 形                 | 例                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| 2 回の観測を比べる | `src/components/ui/sidebar.test.tsx` の「開く前後で背景色が変わったこと」                          |
+| 数値の大小         | `expect(Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                                  |
+| 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない (2026-09-22 に実測) |
+
+ADR-0029 のルールの許可は callee 単位なので、この 3 つより広い。狭めるには matcher を見る分岐が要る。本 ADR のルールは期待値がリテラルの否定だけを狭く止めるので、許可リストの側は動かさない。
+
+### ルールが追えない形
+
+`await expectAbsent(x)` に肯定 anchor が添えられているかは構文で決まらない。`src/test/absent.ts` の docstring と `.claude/rules/testing.md` が規範として持ち、レビューで見る。呼び出し側の名前 (`expectAbsent`) が「待たない」ことを示すので、anchor の有無は読めば分かる形にしてある。
+
+束縛を 2 段以上またぐ形も辿らない。ADR-0029 のルールと同じ理由で、任意段を追うのは taint 解析になる。
+
+### 再評価の条件
+
+- 上流が否定の `toBeInTheDocument` 以外にも特例を足したら、「肯定 assert を添えなくてよい」行を測り直す
+- `@vitest/eslint-plugin` か `jest-dom` 側が同種のルールを持ったら、そちらへ移して自前のルールを消す
+
+## 検討した選択肢
+
+| 案                                                 | 評価                                                                                                           | 採否     |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------- |
+| 期待値がリテラルの否定を lint で止め、肯定形へ移す | 素通りする形が式の構造で表せる。3 つの経路が同じ「期待値の綴りで否定が真になる」に還元できる                   | **採用** |
+| 否定 assert には触れない                           | ADR-0029 の移行が 15 秒の赤を持ち込む。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える | 却下     |
+| `not.toHaveStyle` だけを止める                     | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである       | 却下     |
+| 否定 matcher を全面禁止する                        | 消滅待ちの `.not.toBeInTheDocument()` と、観測どうしの比較 10 件が書けなくなる。どちらも綴りで潰れない         | 却下     |
+| `toHaveStyle` をオブジェクト形式で書く             | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない   | 却下     |
+
+失敗時の文言を比べた (2026-09-22)。
+
+| 書き方                                                   | 失敗時                                                                                        |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `toHaveStyle("pointer-events: auto")`                    | `- Expected` / `+ Received` の差分が出る                                                      |
+| `toHaveStyle({ pointerEvents: "auto" })`                 | `Expected styles could not be parsed by the browser. Did you make a typo?` だけで差分が出ない |
+| `expect(getComputedStyle(x).pointerEvents).toBe("auto")` | `expected 'none' to be 'auto'`                                                                |
+
+## 出典
+
+- vitest browser の assertion API: <https://vitest.dev/guide/browser/assertion-api>
+- 同梱の `@vitest/browser` 4.1.11 の `matchers.d.ts` (`expect.element` が受ける型と timeout の docstring)
+- 同梱の `node_modules/vite-plus/docs/guide/lint.md`「JS Plugins」
+- oxlint の JS plugin 作成ガイド: <https://oxc.rs/docs/guide/usage/linter/writing-js-plugins.html>
