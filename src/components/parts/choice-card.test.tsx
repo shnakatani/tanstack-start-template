@@ -78,7 +78,7 @@ describe("ChoiceCard", () => {
     await screen.getByText("チームA").click({ force: true });
 
     await expect.element(checkbox).not.toHaveAttribute("data-checked");
-    expect(getComputedStyle(label).cursor).toBe("default");
+    await expect.element(label).toHaveStyle("cursor: default");
     expect(field.getAttribute("data-disabled")).not.toBeNull();
   });
 

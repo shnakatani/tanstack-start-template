@@ -149,9 +149,21 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 `*.test.ts` は含めない。unit project は locator を持たず、drizzle の `db.select().from(x).all()` が同じメソッド名で誤検出になる (2026-09-22 実測。`src/**` へ広げると `src/server/db/index.test.ts` の 2 件が出る)。
 
-ルールが「locator かどうか」をメソッド名と引数ゼロだけで判定し、適用先の glob がその補いになっている。receiver の連鎖を辿って locator の生成口に根を持つかを見れば glob を広げても誤検出しないが、束縛を挟む receiver のためにもう 1 つ追跡機構が要る。helper の置き場所は `.claude/rules/directory-structure.md`「テストとスクリプトの配置」が 2 か所に定めているので、glob はその規約を写しており偶然ではない。追跡機構を足すのは、その規約の外に locator を持つファイルが出てからにする。
+ルールが「locator かどうか」をメソッド名と引数ゼロだけで判定し、適用先の glob がその補いになっている。型で判定できれば glob は要らないが、oxlint の JS plugin は型情報を持たない。公式の JS plugin ガイドが「Not supported yet」に「Lint rules that rely on TypeScript type-awareness」を挙げている。
+
+型の代わりに receiver の連鎖を辿る案は採らない。`confirmDeleteButton(screen).element()` のように helper が返す locator は連鎖に生成口を持たず、型なしでは追えない。この形は 2026-09-22 時点で 3 件あり、`.claude/rules/directory-structure.md`「テストとスクリプトの配置」が helper への切り出しを勧めているので増える側である。
+
+先行例も receiver を見ない。`eslint-plugin-playwright` の `prefer-web-first-assertions` は `expect()` から辿って引数をスコープで解決し、メソッド名 (`isVisible` / `innerText` / `getAttribute` 等) だけで判定する。適用範囲の限定は利用者の設定に委ねている。本ルールが glob で範囲を限るのは同じ形で、`element` / `all` のように名前が一般的なぶん範囲の限定が要る、という違いだけである。
 
 この override は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定で固定するので、適用先か severity を動かすとそこが落ちる。
+
+### 肯定 assert は予算を使い切ってよい
+
+移行で `expect.element` の肯定 assert が増えた。これも赤になると `testTimeout` を使い切る (2026-09-22 実測で 14942ms)。否定側と同じ手当てはしない。**待って成立しうる条件だからである。** 待たせないと、遅い環境で緑のテストが落ちる。
+
+`testTimeout` を締めて赤のコストを下げる案も採らない。browser project の既定 15000 は vitest 公式が `testTimeout` の項で「`5_000` in Node.js, `15_000` if `browser.enabled` is `true`」と文書化した値で、このリポジトリの実測もそれを支持する。browser project 単独では最も遅いテストが 605ms だが、**全 project を同時に走らせると 3595ms まで伸びる** (同日実測)。単独実行の数字で締めると、full run と CI で足りなくなる。
+
+残るのは「赤いテストが 1 件あたり最大 15 秒かかる」ことで、これは retry の対価である。移行前の `expect(x.query()).not.toBeNull()` が 0ms で落ちていたのは、待っていなかったからにすぎない。
 
 ### 「最初から出ない」判定は `expectAbsent` が 1 箇所で持つ
 
@@ -175,7 +187,25 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 
 クリックの発火方法は ADR-0015 が持つ。合成イベントを送る helper は 2026-09-22 の改訂で廃止され、その引数が同期読みだった経路も一緒に消えた。
 
-`getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0013 と `testing.md`「ブラウザテストの CSS とレイアウト実測」) は、そのまま残す。ただし許すのは読み方ではなく assert である。単一プロパティの等値は `toHaveStyle` で書けるので、`expect()` へ流してよいのは matcher で表せない主張に限る。`src/components/ui/sidebar.test.tsx` の「開く前後で背景色が変わったこと」のように、2 回の観測を比べる形がこれに当たる。どこまでを許すかはルールの実装時に、1 件ずつ matcher で書けるかを試して決める。
+`getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0013 と `testing.md`「ブラウザテストの CSS とレイアウト実測」) は escape hatch に残す。ただし許すのは読み方ではなく assert である。単一プロパティを文字列リテラルと比べる形は `toHaveStyle` で書けるので、そちらへ移した。
+
+`toHaveStyle` は**文字列形式で書く**。2026-09-22 に失敗時の文言を比べた。
+
+| 書き方                                                   | 失敗時                                                                                        |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `toHaveStyle("pointer-events: auto")`                    | `- Expected` / `+ Received` の差分が出る                                                      |
+| `toHaveStyle({ pointerEvents: "auto" })`                 | `Expected styles could not be parsed by the browser. Did you make a typo?` だけで差分が出ない |
+| `expect(getComputedStyle(x).pointerEvents).toBe("auto")` | `expected 'none' to be 'auto'`                                                                |
+
+escape hatch に残るのは、`toHaveStyle` で表せない 3 つの形である。
+
+| 形                 | 例                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| 2 回の観測を比べる | `src/components/ui/sidebar.test.tsx` の「開く前後で背景色が変わったこと」                   |
+| 数値の大小         | `expect(Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                           |
+| 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない (同日に実測) |
+
+許可は callee 単位なので、この 3 つより広い。ルールは読みだけを見て assert の形を見ないためで、狭めるには matcher を見る分岐が要る。先行例 (`prefer-web-first-assertions`) は `supportedMatchers` で同じことをしているが、あちらは autofix の可否を決めるためで範囲の限定ではない。1 つの callee のためにその分岐を足すかは、リテラル比較が再び増えたときに判断する。
 
 ## 検討した選択肢
 

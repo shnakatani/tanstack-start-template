@@ -121,8 +121,8 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     // 先に両軸のバーと余白を出す。ここを通ることで測定済みの状態から縮められる
     await expect.poll(() => findBar("vertical")).not.toBeNull();
     expect(findBar("horizontal")).not.toBeNull();
-    expect(getComputedStyle(root).paddingRight).toBe("10px");
-    expect(getComputedStyle(root).paddingBottom).toBe("10px");
+    await expect.element(root).toHaveStyle("padding-right: 10px");
+    await expect.element(root).toHaveStyle("padding-bottom: 10px");
 
     await screen.getByRole("button", { name: "縮める" }).click();
 
@@ -144,7 +144,7 @@ describe("ScrollArea のスクロールバー分の余白", () => {
       0,
     );
     // 横は溢れていないので下端は空けない (空帯が残らない)
-    expect(getComputedStyle(root).paddingBottom).toBe("0px");
+    await expect.element(root).toHaveStyle("padding-bottom: 0px");
   });
 
   it("横に溢れたとき Viewport が横バーと重ならず、空帯も残さない", async () => {
@@ -152,7 +152,7 @@ describe("ScrollArea のスクロールバー分の余白", () => {
 
     const bar = await expectBarMounted("horizontal");
     expect(viewport.getBoundingClientRect().bottom).toBeCloseTo(bar.getBoundingClientRect().top, 0);
-    expect(getComputedStyle(root).paddingRight).toBe("0px");
+    await expect.element(root).toHaveStyle("padding-right: 0px");
   });
 
   // registry の `data-vertical:h-full` を残すと縦バーの top / height / bottom が全て非 auto に
@@ -171,7 +171,7 @@ describe("ScrollArea のスクロールバー分の余白", () => {
 
     // 縦バーの mount を待つことで、測定を経た状態から横バーの有無を見る
     await expectBarMounted("vertical");
-    expect(getComputedStyle(root).paddingRight).toBe("10px");
+    await expect.element(root).toHaveStyle("padding-right: 10px");
 
     const horizontal = root.querySelector(
       '[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"]',
@@ -189,7 +189,7 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     expect(vp.right).toBeCloseTo(vbar.left, 0);
     expect(vp.bottom).toBeCloseTo(hbar.top, 0);
     expect(vbar.bottom).toBeCloseTo(vp.bottom, 0);
-    expect(getComputedStyle(root).paddingRight).toBe("10px");
-    expect(getComputedStyle(root).paddingBottom).toBe("10px");
+    await expect.element(root).toHaveStyle("padding-right: 10px");
+    await expect.element(root).toHaveStyle("padding-bottom: 10px");
   });
 });

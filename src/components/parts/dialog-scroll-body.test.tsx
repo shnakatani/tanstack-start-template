@@ -77,9 +77,11 @@ async function openAt(viewport: Viewport, fieldCount?: number) {
   const popup = await screen.getByRole("dialog").findElement();
   await waitForAnimations();
 
+  // `expect.element` へ渡すため HTMLElement まで絞る。`querySelector` の戻り値は `Element` で、
+  // matcher が受ける型 (`HTMLElement | SVGElement | Locator | null`) に入らない (ADR-0029)
   const query = (slot: string) => {
     const found = popup.querySelector(`[data-slot="${slot}"]`);
-    expect.assert(found !== null, `data-slot="${slot}" が見つからない`);
+    expect.assert(found instanceof HTMLElement, `data-slot="${slot}" が見つからない`);
     return found;
   };
   return {
@@ -206,7 +208,7 @@ describe("DialogScrollBody（内部スクロール）", () => {
   it("スクロール端で祖先へスクロールが伝播しない", async () => {
     const { viewport } = await openAt(SHORT_VIEWPORT);
 
-    expect(getComputedStyle(viewport).overscrollBehavior).toBe("contain");
+    await expect.element(viewport).toHaveStyle("overscroll-behavior: contain");
   });
 
   // Viewport は溢れている間だけ tabIndex 0 になる (base-ui)。その focus ring は Root の
@@ -216,7 +218,7 @@ describe("DialogScrollBody（内部スクロール）", () => {
   it("スクロール領域にキーボードフォーカスが当たると本体に枠が描画される", async () => {
     const { body, viewport } = await openAt(SHORT_VIEWPORT);
     expect(viewport.getAttribute("tabindex")).toBe("0");
-    expect(getComputedStyle(body).outlineStyle).toBe("none");
+    await expect.element(body).toHaveStyle("outline-style: none");
 
     // 先頭フィールドから Shift+Tab で戻ると Viewport に乗る
     const firstInput = viewport.querySelector("input");

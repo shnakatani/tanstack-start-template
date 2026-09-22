@@ -91,7 +91,7 @@ describe("touch target の AA 基準一本化 (ADR-0007)", () => {
     const screen = await render(<Input aria-label="氏名" />);
     const input = screen.getByRole("textbox", { name: "氏名" }).element();
 
-    expect(getComputedStyle(input).touchAction).toBe("auto");
+    await expect.element(input).toHaveStyle("touch-action: auto");
   });
 
   // InputGroup 内では InputGroupInput の flex-1 が幅を肩代わりするため、Combobox 側の

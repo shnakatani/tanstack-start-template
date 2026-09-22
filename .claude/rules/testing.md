@@ -193,6 +193,8 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変更したら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
 - 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` に明示してあり、`DEFAULT_VIEWPORT` と一致させて管理する
+- 単一プロパティを文字列リテラルと比べるだけなら `await expect.element(x).toHaveStyle("prop: value")` を使う。**文字列形式で書く。** オブジェクト形式は失敗しても差分が出ず `Expected styles could not be parsed by the browser` しか出ない (ADR-0029)
+- `getComputedStyle` を `expect()` へ流してよいのは、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` は要素自身しか見ず、この 3 つを表せない (ADR-0029)
 - 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる
 - 開く操作のあとは `findElement()` → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
 - 操作の結果として現れる要素の生 DOM は `await locator.findElement()` で取る。`element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
