@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
 import { createNoteMutation } from "@/features/notes/mutations";
-import { notesQueryOptions } from "@/features/notes/queries";
+import { NOTES_QUERY_KEY } from "@/features/notes/queries";
 import type { NoteInput } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
@@ -53,7 +53,7 @@ export function NoteCreateDialog() {
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる
     onSuccess: async () => {
       noteCreateDialogHandle.close();
-      await queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
+      await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
       // 一覧への行の追加は読み上げに出ないので、完了を通知する (ADR-0017)
       announce("保存しました");
     },
@@ -64,7 +64,7 @@ export function NoteCreateDialog() {
 
   // 再取得中かどうかを hook で読む。`queryClient.isFetching()` を render 中に呼んでも
   // 再描画されず、応答が届いても止めたままになる
-  const isRefetchingNotes = useIsFetching({ queryKey: notesQueryOptions.queryKey }) > 0;
+  const isRefetchingNotes = useIsFetching({ queryKey: NOTES_QUERY_KEY }) > 0;
 
   // 止めるのは応答前だけ。閉じて開き直すと DialogContent がアンマウントされてフォームが
   // 作り直され、先行 save の応答が届いた時点で新しい入力ごと閉じる。handle を複数の対象で

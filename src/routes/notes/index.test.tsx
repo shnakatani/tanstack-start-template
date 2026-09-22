@@ -129,15 +129,18 @@ describe("NotesPage", () => {
     await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
   });
 
-  it("loader が notes を prefetch する", async () => {
+  it("loader が deps の q で notes を prefetch する", async () => {
     // loader 本体が query で notes クエリを populate することを検証する。
     // 欠落すると pendingComponent 解消後に useSuspenseQuery が再 suspend する
     const queryClient = createTestQueryClient();
     const querySpy = vi.spyOn(queryClient, "query");
 
-    await loadNotesPageData({ context: { queryClient } });
+    await loadNotesPageData({ context: { queryClient }, deps: { q: "abc" } });
 
-    expect(collectLoaderQueryKeys(querySpy.mock.calls)).toContain(JSON.stringify(["notes"]));
+    expect(collectLoaderQueryKeys(querySpy.mock.calls)).toContain(
+      JSON.stringify(["notes", { q: "abc" }]),
+    );
+    expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "abc" } });
   });
 
   it("ページ見出しと追加ボタンが表示される", async () => {

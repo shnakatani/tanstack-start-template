@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { listNotes } from "./functions";
+import type { NoteListFilter } from "./schema";
 
 /**
  * 一覧の鮮度窓。Link の intent preload が連続したときの重複フェッチを抑える。route loader は
@@ -10,11 +11,16 @@ import { listNotes } from "./functions";
 const NOTES_STALE_TIME_MS = 30_000;
 
 /**
- * queryKey はエンティティ名だけの ["notes"]。invalidateQueries({ queryKey: ["notes"] }) が
- * 前方一致で当たるので、絞り込み条件を足すときは同じ配列の後ろへ継ぎ足す。
+ * 一覧クエリの先頭キー。mutation の `invalidateQueries({ queryKey: NOTES_QUERY_KEY })` が
+ * 前方一致で全ての絞り込み条件に当たる。
  */
-export const notesQueryOptions = queryOptions({
-  queryKey: ["notes"],
-  queryFn: () => listNotes(),
-  staleTime: NOTES_STALE_TIME_MS,
-});
+export const NOTES_QUERY_KEY = ["notes"] as const;
+
+/** 絞り込み条件ごとの一覧クエリ。条件は先頭キーの後ろに継ぎ足す (ADR-0033)。 */
+export function notesQueryOptions(filter: NoteListFilter) {
+  return queryOptions({
+    queryKey: [...NOTES_QUERY_KEY, filter],
+    queryFn: () => listNotes({ data: filter }),
+    staleTime: NOTES_STALE_TIME_MS,
+  });
+}

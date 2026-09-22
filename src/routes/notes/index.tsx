@@ -13,7 +13,8 @@ import { parseCreatingRows } from "@/features/notes/creating-rows";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
-import { notesQueryOptions } from "@/features/notes/queries";
+import { NOTES_QUERY_KEY, notesQueryOptions } from "@/features/notes/queries";
+import type { NoteListFilter } from "@/features/notes/schema";
 import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
@@ -30,15 +31,23 @@ const PAGE_TITLE = "メモ一覧";
  * 一覧 loader 本体 (named function に切り出し、loader テストから直接呼べるようにする)。
  * context は LoaderFnContext の構造的部分型として受け、テストでは最小オブジェクトを渡す。
  */
-export function loadNotesPageData({ context }: { context: { queryClient: QueryClient } }) {
+/** `deps` は `loaderDeps` が search から取り出した絞り込み条件 (ADR-0033)。 */
+export function loadNotesPageData({
+  context,
+  deps,
+}: {
+  context: { queryClient: QueryClient };
+  deps: NoteListFilter;
+}) {
   // staleTime: "static" はこの呼び出しだけに効き、キャッシュがあれば必ずそれを返す
   // (無ければ取得する)。queryOptions 側の staleTime を書き換えると observer の再取得まで
   // 止まるため、上書きは呼び出し側に置く
-  return context.queryClient.query({ ...notesQueryOptions, staleTime: "static" });
+  return context.queryClient.query({ ...notesQueryOptions(deps), staleTime: "static" });
 }
 
 export const Route = createFileRoute("/notes/")({
-  loader: loadNotesPageData,
+  // loaderDeps は次の commit で validateSearch と一緒に足す。それまでは絞り込みなしで温める
+  loader: ({ context }) => loadNotesPageData({ context, deps: { q: "" } }),
   pendingComponent: NotesPagePending,
   component: NotesPage,
 });
@@ -55,7 +64,7 @@ function NotesPagePending() {
 }
 
 function NotesPage() {
-  const notesQuery = useSuspenseQuery(notesQueryOptions);
+  const notesQuery = useSuspenseQuery(notesQueryOptions({ q: "" }));
   const queryClient = useQueryClient();
 
   const deleteMutation = useActionMutation({
@@ -68,7 +77,7 @@ function NotesPage() {
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
     // 再取得を await して pending を再取得完了まで保つ (ADR-0016)。閉じるのは確定時 (完了点 (a))
     onSuccess: async (_data, target) => {
-      await queryClient.invalidateQueries({ queryKey: notesQueryOptions.queryKey });
+      await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
       // 行の消失は読み上げに出ないので、完了を通知する (ADR-0017)
       announce(`『${target.name}』を削除しました`);
     },

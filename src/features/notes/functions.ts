@@ -1,14 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { createNoteHandler, listNotesHandler, removeNoteHandler } from "./handlers.server";
-import { noteIdSchema, noteInputSchema } from "./schema";
+import { noteIdSchema, noteInputSchema, noteListFilterSchema } from "./schema";
 
 // 実処理は handlers.server.ts が持つ。ここは境界 (HTTP メソッドと入力検証) の宣言だけを置き、
 // ロジックは server function を経由せず単体テストできる側に残す。
 
-export const listNotes = createServerFn({ method: "GET" }).handler(async () => {
-  return listNotesHandler();
-});
+export const listNotes = createServerFn({ method: "GET" })
+  .validator(noteListFilterSchema)
+  .handler(async ({ data }) => {
+    return listNotesHandler(data);
+  });
 
 export const createNote = createServerFn({ method: "POST" })
   .validator(noteInputSchema)
