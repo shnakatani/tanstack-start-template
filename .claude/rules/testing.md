@@ -163,15 +163,15 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 
 `.click()` は visible / enabled / stable を待ってから、viewport 内の座標と hit-target を確かめる (`playwright-core` の `_performPointerAction`)。弾かれる典型は次のとおり。
 
-| 条件               | 落ちる例                                                                |
-| ------------------ | ----------------------------------------------------------------------- |
-| enabled            | native `disabled`、`aria-disabled="true"`                               |
-| stable             | 開閉アニメーションの途中。`waitForAnimations()` を先に通す              |
-| visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む        |
-| hit-target         | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none` |
+| 条件               | 落ちる例                                                                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| enabled            | native `disabled`、`aria-disabled="true"`                                                                                                     |
+| stable             | 開閉アニメーションの途中。既定 (ADR-0018) では 0.01ms で終わる。animation を戻したテストでは settled 状態を `expect.element` で待ってから押す |
+| visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                                              |
+| hit-target         | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                                                       |
 
 - **どの条件で落ちたかは Playwright のエラー文言に出る。** 推測で切り替えず、文言を読んでから選ぶ
-- `click({ force: true })` は上の 5 条件をまとめて飛ばす。使う前に `waitForAnimations()` を通す (アニメーション途中だと "Element is outside of the viewport" で落ちる)
+- `click({ force: true })` は上の 5 条件をまとめて飛ばす。animation を戻したテストでは、スライドイン途中だと "Element is outside of the viewport" で落ちる
 - **`force: true` は actionability の検査だけを飛ばし、ブラウザのヒットテストは越えない。** 対象が `pointer-events: none` ならイベントは下の要素へ落ち、対象のハンドラは呼ばれない。「押しても何も起きない」をこの形で書くと、`pointer-events` から導かれるだけの assert になる (ADR-0015)
 - 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (ADR-0015)
 
@@ -206,11 +206,10 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 肯定形は主張で選ぶ。「描かれている」なら 1 回の観測から数値を出して `toBeGreaterThan(0)`、当たっている token が分かっているなら `src/test/resolve-color-token.ts` の `resolveColorToken()` の値と比べる (ADR-0031)
 - 機械強制は `browser-test/no-negated-style-literal`。期待値が式なら報告しない (観測どうしの比較は綴りで潰れない) (ADR-0031)
 - `getComputedStyle` を `expect.poll` で読む主張は、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0031)
-- 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる
-- 開く操作のあとは `expect.element(locator).toBeInTheDocument()` → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
 - `locator.findElement()` を呼ばない。`browser-test/no-find-element` が止める。`actionTimeout` を置いた config では待ち時間が上限なしになり、`Test timed out` で落ちて locator 名が出力から消える (ADR-0030)
 - `element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
-- Base UI の animation は `src/test/browser-setup.tsx` が毎テスト無効にする。閉じかけの popup が残る窓を検証するテストだけ、冒頭で `src/test/base-ui-animations.ts` の `enableBaseUiAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻す (ADR-0018)
+- animation は `src/test/browser-setup.tsx` が毎テスト止める (Base UI のフラグ + `prefers-reduced-motion: reduce`)。窓を検証するテストだけ冒頭で `src/test/animations.ts` の `enableAnimations()` を await する (ADR-0018)
+- transition の後に「変化しないこと」を見る assert は、途中値の前に通る。既定の reduced motion で settled 状態を読むので待つ helper は置かない。animation を戻したテストでは変化する側の値を先に待つ (ADR-0018)
 - Dialog / Popover / Sheet の close 後に消えたことは `await expectRemoved(locator)` で待つ (ADR-0013 / ADR-0031)。animation を戻したテストでは `animate-out` 完了後に消える
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
 - `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む

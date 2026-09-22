@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { expectRemoved } from "./absent";
-import { enableBaseUiAnimations } from "./base-ui-animations";
+import { enableAnimations } from "./animations";
 
 /**
  * animate-out を実行時間より長く引き延ばし、「Base UI が animation の完了を待っているか」を
@@ -44,7 +44,7 @@ async function renderOpenDialog() {
 }
 
 // 既定値は browser-setup.tsx の beforeEach が立てる (ADR-0018)
-describe("Base UI の animation", () => {
+describe("animation の既定", () => {
   it("既定では閉じた Dialog が animate-out を待たずに unmount する", async () => {
     stretchExitAnimation();
     const screen = await renderOpenDialog();
@@ -54,8 +54,8 @@ describe("Base UI の animation", () => {
     await expectRemoved(screen.getByRole("dialog"));
   });
 
-  it("enableBaseUiAnimations() を呼んだテストでは animate-out の完了まで popup が残る", async () => {
-    enableBaseUiAnimations();
+  it("enableAnimations() を await したテストでは animate-out の完了まで popup が残る", async () => {
+    await enableAnimations();
     stretchExitAnimation();
     const screen = await renderOpenDialog();
 

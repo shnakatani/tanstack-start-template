@@ -20,7 +20,7 @@ import {
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
 import { expectAbsent, expectRemoved } from "@/test/absent";
-import { enableBaseUiAnimations } from "@/test/base-ui-animations";
+import { enableAnimations } from "@/test/animations";
 import { createTestRouter } from "@/test/create-test-router";
 import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
@@ -454,7 +454,7 @@ describe("NotesPage", () => {
     // close の animate-out の窓 (閉じかけのダイアログにボタンが残る間) を踏む検証なので、
     // このテストだけ Base UI の animation を戻す (ADR-0018)。無効のままだと 2 発目が
     // unmount 後に届き、guard を外しても通ってしまう
-    enableBaseUiAnimations();
+    await enableAnimations();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const remove = deferMock(removeNote);
     const screen = await renderPage();

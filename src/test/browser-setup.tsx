@@ -13,7 +13,7 @@ import { render } from "vitest-browser-react";
 
 import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
-import { disableBaseUiAnimations } from "@/test/base-ui-animations";
+import { disableAnimations } from "@/test/animations";
 import { parkMouse } from "@/test/park-mouse";
 import "@/test/slot-locator";
 
@@ -25,8 +25,8 @@ beforeEach(async () => {
   await parkMouse();
 });
 
-// Base UI の animation の既定 (ADR-0018)。理由と戻し方は base-ui-animations.ts の JSDoc
-beforeEach(disableBaseUiAnimations);
+// animation の既定 (ADR-0018)。Base UI のフラグと reduced motion のエミュレーション。戻し方は animations.ts の JSDoc
+beforeEach(disableAnimations);
 
 /**
  * `announce()` (ADR-0017) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
@@ -47,8 +47,8 @@ beforeEach(async () => {
  * テストがファイル実行順に依存する)。`maxTouchPoints: 0` を併せて渡すと Protocol error。
  *
  * `Emulation.setEmulatedMedia` も同じ page スコープの override でリークするため、
- * `features: []` で戻す (未リセットだと `prefers-reduced-motion: reduce` を立てたファイル以降が
- * 全て reduced motion 環境で走り、ファイル実行順に依存した flaky を作る)。
+ * `features: []` で戻す。`beforeEach` の `disableAnimations()` が立てる `prefers-reduced-motion: reduce` を
+ * `enableAnimations()` で `no-preference` にしたテストの後も、ここで揃う。
  */
 // 直列 await にすると前段の失敗で後段のリセットが飛び、リークが以降ずっと残る
 afterEach(async () => {

@@ -6,7 +6,8 @@
 - Revised: 2026-09-22 (「lint で表現できる形は無い」を撤回した。同期読みが assert へ届く形は式の構造で表せる。ADR-0029)
 - Revised: 2026-09-22 (close 後に要素が消えたことの確認を `expect.element(...).not.toBeInTheDocument()` から `expectRemoved(locator)` へ改めた。同じ matcher を呼ぶ不在確認と字面で区別が付かず、取り違えが実際に起きたため。ADR-0031)
 - Revised: 2026-09-22 (操作後の生 DOM を `findElement()` で取る行を消した。`src/` に呼び出しが無くなり、mount を待つ用途は `expect.element` で足りる。`actionTimeout` を置いた config では `findElement()` の待ち時間が上限なしになる。ADR-0030)
-- 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)、ADR-0018 (Base UI の animation を無効にして走らせる。`waitForAnimations()` が要る場面は変わらない)、ADR-0029 (同期読みを assert へ流さない。本 ADR の規範を lint へ落とした)、ADR-0030 (assert の予算。`findElement()` を呼ばない理由もここが持つ)、ADR-0031 (否定 assert が不在でも通ること)
+- Revised: 2026-09-22 (`waitForAnimations()` を撤去した。ADR-0018 が CSS の animation / transition も止めるようになり、実測は `expect.poll` の中で読む)
+- 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)、ADR-0018 (animation を無効にして走らせる。`waitForAnimations()` は 2026-09-22 に撤去した)、ADR-0029 (同期読みを assert へ流さない。本 ADR の規範を lint へ落とした)、ADR-0030 (assert の予算。`findElement()` を呼ばない理由もここが持つ)、ADR-0031 (否定 assert が不在でも通ること)
 
 ## Context
 
@@ -52,7 +53,7 @@ const inputGroup = findInputGroup(input.element());
 | `render()` 直後、操作前の要素の生 DOM      | `locator.element()`                                                                                                                        |
 | close 後に要素が消えたことの確認           | `expectRemoved(locator)` (`src/test/absent.ts`。ADR-0031)                                                                                  |
 
-`waitForAnimations()` は「アニメーションの完了を待つ」責務だけを持つ。mount を待つ役は `expect.element` が担うので、開く操作のあとは `expect.element(locator).toBeInTheDocument()` → `waitForAnimations()` → 実測の順に置く。逆順では、未 mount のあいだ `waitForAnimations()` が空振りし、アニメーション途中の値を測る。
+animation は ADR-0018 の既定で止まるので、開く操作のあとは `expect.element(locator).toBeInTheDocument()` で mount を待ち、実測は `expect.poll` の中で読む (ADR-0029)。`waitForAnimations()` (呼んだ時点の `getAnimations()` を待つ helper) は 2026-09-22 に撤去した。
 
 ### 検討した選択肢
 

@@ -8,7 +8,6 @@ import {
   SegmentedRadioGroupItem,
 } from "@/components/parts/segmented-radio-group";
 import { resolveColorToken } from "@/test/resolve-color-token";
-import { waitForAnimations } from "@/test/wait-for-animations";
 
 /** 1 文字と 2 文字のラベルを混ぜる。等幅化の検証に使う */
 function Filter({
@@ -59,9 +58,8 @@ describe("SegmentedRadioGroup", () => {
     const foreground = resolveColorToken("--foreground");
     await expect.element(selected).toHaveStyle(`color: ${foreground}`);
 
+    // transition-all は browser-setup の reduced motion で 0.01ms になり、settled 状態を即座に読める (ADR-0018)
     await userEvent.hover(selected);
-    // transition-all の途中値を読まないよう遷移の完了を待つ
-    await waitForAnimations();
 
     // 選択時の文字色と hover 時の文字色が別トークンだと、data-checked が :where() 包みで
     // 特異度ゼロ加算のため hover に負ける。実際に bg-foreground を当てていた時期に
