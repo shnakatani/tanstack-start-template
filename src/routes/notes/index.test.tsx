@@ -39,6 +39,18 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
 
+/**
+ * debounce の待ちを 1500ms に広げる。実値 (300ms) だと、`mise run verify` の負荷で 1 文字ずつの
+ * 打鍵の間隔が待ちを超え、途中の文字列で取得が走る (2026-09-23 に実測: "a" "ab" の取得が混ざって
+ * 落ちた)。見たいのは「打鍵が止まってから 1 回」であって 300ms という値ではない。待ちは assert の
+ * 予算 (`ASSERT_TIMEOUT_MS`) より短く保つ。取得の開始をその予算で待つため。
+ * vi.mock は hoist されるので、値は factory の中に閉じる (上位の変数を参照できない)
+ */
+vi.mock("./-lib/note-search", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./-lib/note-search")>()),
+  NOTE_SEARCH_DEBOUNCE_MS: 1_500,
+}));
+
 import { noteRow, rowDeleteButton } from "./-components/note-cells.test-helpers";
 import {
   bodyTextbox,
@@ -173,7 +185,8 @@ describe("NotesPage", () => {
     const listed = deferMock(listNotes);
 
     // 1 文字ずつ別の呼び出しで打つ (`fill` は 1 回の input、`type("abc")` は間を置かず 3 文字を
-    // 送るので、どちらも打鍵の間に一覧が描き直されない)。debounce が効けば "a" "ab" では取得しない
+    // 送るので、どちらも打鍵の間に一覧が描き直されない)。debounce が効けば "a" "ab" では取得しない。
+    // 打鍵の間隔は待ち (vi.mock で広げた値) より十分短い前提
     await userEvent.click(screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }));
     await userEvent.keyboard("a");
     await userEvent.keyboard("b");
