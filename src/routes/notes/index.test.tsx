@@ -45,6 +45,7 @@ import {
   openNoteCreateDialog,
   saveButton,
   titleTextbox,
+  expectNoteCreateDialogClosed,
 } from "./-components/note-create-dialog.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
 import { loadNotesPageData, Route } from "./index";
@@ -64,10 +65,6 @@ async function renderPage() {
   return render(<RouterProvider router={router} />);
 }
 
-async function expectCreateDialogClosed(screen: Screen) {
-  await expectRemoved(titleTextbox(screen));
-}
-
 async function expectDeleteConfirmClosed(screen: Screen) {
   await expectRemoved(confirmDeleteButton(screen));
 }
@@ -84,7 +81,7 @@ async function expectDeleteConfirmClosed(screen: Screen) {
 async function expectSettledRow(screen: Screen, note: Note) {
   const row = noteRow(screen, note);
   await expect.element(row).toHaveLength(1);
-  await expect.element(row).not.toHaveAttribute("aria-busy", "true");
+  await expect.element(row).toHaveAttribute("aria-busy", "false");
 }
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
@@ -104,10 +101,6 @@ async function submitCreate(screen: Screen, note: Note) {
   await saveButton(screen).click();
   // 追加ボタンに乗った実マウスを、ダイアログが閉じる前に退避する (openDeleteConfirm と同じ理由)
   await parkMouse();
-}
-
-async function confirmDelete(screen: Screen) {
-  await confirmDeleteButton(screen).click();
 }
 
 describe("NotesPage", () => {
@@ -207,7 +200,7 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答でダイアログが閉じ、再取得中も行は busy のまま
-    await expectCreateDialogClosed(screen);
+    await expectNoteCreateDialogClosed(screen);
     await expect.element(noteRow(screen, CREATED_NOTE)).toHaveAttribute("aria-busy", "true");
     // 行は静的テキストで状態を持つ (ADR-0017)。live region にはしないので、仮想カーソルで
     // 行を読んだときにだけ出る。通知は announcer が担う
@@ -241,7 +234,7 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答で閉じる。再取得 (2 回目の listNotes) は未決着なので mutation は pending のまま
-    await expectCreateDialogClosed(screen);
+    await expectNoteCreateDialogClosed(screen);
 
     await openNoteCreateDialog(screen);
 
@@ -281,7 +274,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    await confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
       // 行の payload の id がそのまま server function へ渡ることを固定する
@@ -314,7 +307,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    await confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     // 完了点 (a) でダイアログは閉じるので、決着までの pending は行の busy だけが伝える
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
@@ -339,7 +332,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    await confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     // 確定で閉じる。removeNote は未決着
     await expectDeleteConfirmClosed(screen);
@@ -366,7 +359,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    await confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
@@ -411,11 +404,11 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
 
     await openDeleteConfirm(screen, NOTE);
-    await confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
     await expectDeleteConfirmClosed(screen);
 
     await openDeleteConfirm(screen, OTHER_NOTE);
-    await confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
       expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
@@ -442,7 +435,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    await confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
       expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);

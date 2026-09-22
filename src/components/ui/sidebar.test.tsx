@@ -19,14 +19,6 @@ import {
 } from "@/components/ui/sidebar";
 import { resolveColorToken } from "@/test/resolve-color-token";
 
-// トークンが未定義なら resolveColorToken が投げる。ここで存在を見張り直さない
-function getSidebarAccentColors() {
-  return {
-    backgroundColor: resolveColorToken("--sidebar-accent"),
-    color: resolveColorToken("--sidebar-accent-foreground"),
-  };
-}
-
 /**
  * ADR-0006 の許容リストにある sidebar.tsx の乖離 (`sidebarMenuButtonVariants` の開状態
  * selector) を守る。この乖離を使う消費側コンポーネントのテストでも同じ配色は見えるが、
@@ -38,12 +30,11 @@ function getSidebarAccentColors() {
  * ではなくキーボードで、hover の配色と混同しない (マウスは browser-setup の parkMouse が
  * 退避済み。ADR-0018)。
  */
+// トークンが未定義なら resolveColorToken が投げる。ここで存在を見張り直さない
 const closedStyle = () =>
   `background-color: rgba(0, 0, 0, 0); color: ${resolveColorToken("--foreground")}`;
-const accentStyle = () => {
-  const accent = getSidebarAccentColors();
-  return `background-color: ${accent.backgroundColor}; color: ${accent.color}`;
-};
+const accentStyle = () =>
+  `background-color: ${resolveColorToken("--sidebar-accent")}; color: ${resolveColorToken("--sidebar-accent-foreground")}`;
 
 describe("SidebarMenuButton の開状態 (ADR-0006 の乖離)", () => {
   it("popup の trigger にすると、開いている間だけ accent の配色になる", async () => {

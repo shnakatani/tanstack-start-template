@@ -3,6 +3,7 @@ import viteReact from "@vitejs/plugin-react";
 import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
+import { BROWSER_TEST_GLOB } from "./scripts/lib/companion-files";
 import { ASSERT_TIMEOUT_MS } from "./src/test/assert-budget";
 import { DEFAULT_VIEWPORT } from "./src/test/viewport-sizes";
 
@@ -65,7 +66,7 @@ export default defineProject({
       },
     ],
     setupFiles: ["src/test/browser-setup.tsx"],
-    include: ["src/**/*.test.tsx"],
+    include: [BROWSER_TEST_GLOB],
     exclude: [
       "**/node_modules/**",
       "**/dist/**",

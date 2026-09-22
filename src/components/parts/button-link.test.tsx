@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { createTestRouter } from "@/test/create-test-router";
+import { expectText } from "@/test/page-helpers";
 
 import { ButtonLink } from "./button-link";
 
@@ -21,7 +22,7 @@ describe("ButtonLink", () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
     const screen = await render(<RouterProvider router={router} />);
 
-    await expect.element(screen.getByText("メモ一覧へ")).toBeInTheDocument();
+    await expectText(screen, "メモ一覧へ");
   });
 
   it("リンクが a 要素としてレンダリングされる", async () => {

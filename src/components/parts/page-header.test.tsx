@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { expectAbsent } from "@/test/absent";
+import { expectText } from "@/test/page-helpers";
 
 import { PageHeader } from "./page-header";
 
@@ -29,7 +30,7 @@ describe("PageHeader", () => {
       <PageHeader title="メモ一覧" actions={<button type="button">追加</button>} />,
     );
 
-    await expect.element(screen.getByText("追加")).toBeInTheDocument();
+    await expectText(screen, "追加");
   });
 
   it("actions を渡さないとアクション領域が表示されない", async () => {

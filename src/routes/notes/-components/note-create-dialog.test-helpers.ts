@@ -1,6 +1,7 @@
 import { expect } from "vite-plus/test";
 
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
+import { expectRemoved } from "@/test/absent";
 import type { Screen } from "@/test/page-helpers";
 
 /**
@@ -28,4 +29,9 @@ export function saveButton(screen: Screen) {
 export async function openNoteCreateDialog(screen: Screen) {
   await screen.getByRole("button", { name: NOTE_CREATE_TRIGGER_LABEL }).click();
   await expect.element(titleTextbox(screen)).toBeInTheDocument();
+}
+
+/** ダイアログが閉じて消えるのを待つ。閉じた印はタイトル入力の unmount (ADR-0013 / ADR-0031)。 */
+export async function expectNoteCreateDialogClosed(screen: Screen) {
+  await expectRemoved(titleTextbox(screen));
 }

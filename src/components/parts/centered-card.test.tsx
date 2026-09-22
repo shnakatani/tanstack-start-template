@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { FullScreenNotice } from "@/components/parts/centered-card";
+import { expectText } from "@/test/page-helpers";
 
 /**
  * 状態のカタログは `centered-card.stories.tsx` が持つ (ADR-0022)。狭幅での余白も `Narrow`
@@ -25,7 +26,7 @@ describe("FullScreenNotice", () => {
     await expect
       .element(screen.getByRole("heading", { name: "通知の見出し", level: 1 }))
       .toBeInTheDocument();
-    await expect.element(screen.getByText("通知の説明文")).toBeInTheDocument();
+    await expectText(screen, "通知の説明文");
     await expect.element(screen.getByRole("button", { name: "操作" })).toBeInTheDocument();
   });
 });

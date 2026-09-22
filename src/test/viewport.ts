@@ -12,7 +12,6 @@ import { DEFAULT_VIEWPORT, type Viewport } from "./viewport-sizes";
  * (戻さないと後続ファイルのブレークポイント依存テストが巻き添えになる)。
  */
 
-export type { Viewport } from "./viewport-sizes";
 export {
   DEFAULT_VIEWPORT,
   NARROW_VIEWPORT,

@@ -8,7 +8,7 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
-import { expectAbsent, expectRemoved } from "@/test/absent";
+import { expectAbsent } from "@/test/absent";
 import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
 import {
@@ -16,7 +16,6 @@ import {
   expectDialogOpen,
   expectEmptyTextboxes,
   expectText,
-  type Screen,
 } from "@/test/page-helpers";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
@@ -36,6 +35,7 @@ import {
   openNoteCreateDialog,
   saveButton,
   titleTextbox,
+  expectNoteCreateDialogClosed,
 } from "./note-create-dialog.test-helpers";
 
 /**
@@ -56,10 +56,6 @@ async function renderDialog() {
     </QueryClientProvider>,
   );
   return { screen, invalidateSpy };
-}
-
-async function clickSave(screen: Screen) {
-  await saveButton(screen).click();
 }
 
 describe("NoteCreateDialog", () => {
@@ -97,7 +93,7 @@ describe("NoteCreateDialog", () => {
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);
 
-    await clickSave(screen);
+    await saveButton(screen).click();
 
     await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
     expect(vi.mocked(createNote)).not.toHaveBeenCalled();
@@ -108,7 +104,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("あ".repeat(NOTE_TITLE_MAX_LENGTH + 1));
 
-    await clickSave(screen);
+    await saveButton(screen).click();
 
     await expectText(
       screen,
@@ -136,7 +132,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("  買い物リスト  ");
     await bodyTextbox(screen).fill("牛乳とパン");
 
-    await clickSave(screen);
+    await saveButton(screen).click();
 
     await vi.waitFor(() => {
       expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
@@ -151,9 +147,9 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    await clickSave(screen);
+    await saveButton(screen).click();
 
-    await expectRemoved(titleTextbox(screen));
+    await expectNoteCreateDialogClosed(screen);
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
   });
@@ -165,8 +161,8 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("買い物リスト");
     await bodyTextbox(screen).fill("牛乳とパン");
 
-    await clickSave(screen);
-    await expectRemoved(titleTextbox(screen));
+    await saveButton(screen).click();
+    await expectNoteCreateDialogClosed(screen);
     await openNoteCreateDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
@@ -178,7 +174,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("一時入力");
 
     await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
-    await expectRemoved(titleTextbox(screen));
+    await expectNoteCreateDialogClosed(screen);
     await openNoteCreateDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
@@ -191,7 +187,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    await clickSave(screen);
+    await saveButton(screen).click();
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0031)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
@@ -212,7 +208,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    await clickSave(screen);
+    await saveButton(screen).click();
 
     // 応答前は pending 表示のまま開いている
     await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
@@ -221,7 +217,7 @@ describe("NoteCreateDialog", () => {
     create.resolve({ id: 1 });
 
     // 応答で閉じる。invalidateQueries は未決着
-    await expectRemoved(titleTextbox(screen));
+    await expectNoteCreateDialogClosed(screen);
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
 
@@ -235,7 +231,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    await clickSave(screen);
+    await saveButton(screen).click();
 
     await vi.waitFor(() => {
       expect(readAnnouncements()).toContain("メモを保存しています");
@@ -255,7 +251,7 @@ describe("NoteCreateDialog", () => {
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);
 
-    await clickSave(screen);
+    await saveButton(screen).click();
 
     await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
     expect(readAnnouncements()).toEqual([]);
@@ -271,7 +267,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    await clickSave(screen);
+    await saveButton(screen).click();
     await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
 
     // キャンセルは押せない。Escape は Base UI が閉じようとするのを onOpenChange で止める
@@ -286,6 +282,6 @@ describe("NoteCreateDialog", () => {
     create.resolve({ id: 1 });
 
     // 応答 (imperative-action) での close は止めない
-    await expectRemoved(titleTextbox(screen));
+    await expectNoteCreateDialogClosed(screen);
   });
 });

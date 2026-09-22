@@ -134,13 +134,11 @@ function readReferencesOfBinding(node: Node, sourceCode: SourceCode): Node[] {
     .map((reference) => reference.identifier);
 }
 
-type Verdict = "report" | "unknown";
-
-/** 同期読みの値を、使われる位置まで辿って判定する */
-function classifyUse(syncRead: Node): Verdict {
+/** 同期読みの値を、使われる位置まで辿り、assert の引数に届くかを判定する */
+function reachesAssertion(syncRead: Node): boolean {
   for (let current = syncRead; ;) {
     const parent = parentOf(current);
-    if (!parent) return "unknown";
+    if (!parent) return false;
 
     // 包むだけの節点は値を変えない。透かして次の親を見る
     if (WRAPPER_TYPES.has(parent.type) || PASSTHROUGH_TYPES.has(parent.type)) {
@@ -160,11 +158,11 @@ function classifyUse(syncRead: Node): Verdict {
         continue;
       }
       if (isArgumentOf(parent, current)) {
-        return isAssertionCall(parent) ? "report" : "unknown";
+        return isAssertionCall(parent);
       }
     }
 
-    return "unknown";
+    return false;
   }
 }
 
@@ -187,10 +185,8 @@ export const preferLocatorMethods = defineRule({
         const method = staticPropertyName(node.callee);
         if (method === undefined || !SYNC_READS.has(method)) return;
 
-        // classifyUse は連鎖が切れた時点で返る。根まで登る判定より先に回す
-        const verdict = classifyUse(node);
         if (isInsideRetryingCallback(node)) return;
-        if (verdict === "report") {
+        if (reachesAssertion(node)) {
           context.report({ node, messageId: "syncRead" });
           return;
         }
@@ -198,7 +194,7 @@ export const preferLocatorMethods = defineRule({
         // 変数へ束縛してから assert へ渡す形。束縛でなければ空配列が返る
         for (const reference of readReferencesOfBinding(node, context.sourceCode)) {
           if (isInsideRetryingCallback(reference)) continue;
-          if (classifyUse(reference) === "report") {
+          if (reachesAssertion(reference)) {
             context.report({ node, messageId: "syncRead" });
             return;
           }

@@ -1,7 +1,7 @@
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { describe, expect, it } from "vite-plus/test";
 
-import {
+import browserTestPlugin, {
   noBareAbsenceAssertion,
   noFindElement,
   noNegatedStyleLiteral,
@@ -290,8 +290,8 @@ tester.run("no-bare-absence-assertion", noBareAbsenceAssertion, {
 describe("プラグインの形", () => {
   // `vite.config.ts` の `jsPlugins` の name と `lint.rules` のキーは、この 2 つの組で決まる。
   // どちらかを変えると設定側の名前が無言で解決されなくなる
-  it("meta の name とルール名が oxlint の rules 設定と一致する", async () => {
-    const plugin = (await import("./browser-test")).default;
+  it("meta の name とルール名が oxlint の rules 設定と一致する", () => {
+    const plugin = browserTestPlugin;
 
     expect(plugin.meta?.name).toBe("browser-test");
     expect(Object.keys(plugin.rules)).toEqual([

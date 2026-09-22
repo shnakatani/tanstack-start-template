@@ -81,13 +81,16 @@ function rect(locator: Locator): DOMRect {
   return locator.element().getBoundingClientRect();
 }
 
+/** 溢れていない軸のバーは DOM に出ない (base-ui は keepMounted=false) */
+function scrollbar(root: Locator, orientation: Orientation) {
+  return root.getBySlot("scroll-area-scrollbar", { "data-orientation": orientation });
+}
+
 async function renderOverflowing(axes: { x: boolean | number; y: boolean }) {
   const screen = await render(<Overflowing {...axes} />);
   const root = screen.getByTestId("gutter-root");
   const viewport = root.getBySlot("scroll-area-viewport");
-  // 溢れていない軸のバーは DOM に出ない (base-ui は keepMounted=false)
-  const bar = (orientation: Orientation) =>
-    root.getBySlot("scroll-area-scrollbar", { "data-orientation": orientation });
+  const bar = (orientation: Orientation) => scrollbar(root, orientation);
   return { root, viewport, bar };
 }
 
@@ -114,8 +117,7 @@ describe("ScrollArea のスクロールバー分の余白", () => {
   it("溢れが解消したとき余白も引っ込む", async () => {
     const screen = await render(<Shrinkable />);
     const root = screen.getByTestId("shrinkable-root");
-    const bar = (orientation: Orientation) =>
-      root.getBySlot("scroll-area-scrollbar", { "data-orientation": orientation });
+    const bar = (orientation: Orientation) => scrollbar(root, orientation);
 
     // 先に両軸のバーと余白を出す。ここを通ることで測定済みの状態から縮められる
     await expect.element(bar("vertical")).toBeInTheDocument();
@@ -134,10 +136,18 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     const vertical = bar("vertical");
     await expect.element(vertical).toBeInTheDocument();
 
-    // 隙間は整数 px に丸めて 0 と比べる (0.5px 未満のずれは許す)
-    await expect.poll(() => Math.round(rect(viewport).right - rect(vertical).left)).toBe(0);
-    // Corner が無い軸ではバーが Viewport の全高を占める (`h-full` を外した後も縮まない)
-    await expect.poll(() => Math.round(rect(vertical).height - rect(viewport).height)).toBe(0);
+    // 隙間は整数 px に丸めて 0 と比べる (0.5px 未満のずれは許す)。2 つは 1 回の観測から取る (ADR-0031)
+    await expect
+      .poll(() => {
+        const vp = rect(viewport);
+        const vbar = rect(vertical);
+        return {
+          viewportRightToVerticalBar: Math.round(vp.right - vbar.left),
+          // Corner が無い軸ではバーが Viewport の全高を占める (`h-full` を外した後も縮まない)
+          verticalBarHeightToViewport: Math.round(vbar.height - vp.height),
+        };
+      })
+      .toEqual({ viewportRightToVerticalBar: 0, verticalBarHeightToViewport: 0 });
     // 横は溢れていないので下端は空けない (空帯が残らない)
     await expect.element(root).toHaveStyle("padding-bottom: 0px");
   });

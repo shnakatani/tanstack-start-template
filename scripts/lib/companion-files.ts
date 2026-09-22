@@ -80,3 +80,10 @@ export function isCompanionFile(fileName: string): boolean {
 export function companionFilePattern(): string {
   return `\\.(${COMPANION_KINDS.join("|")})\\.tsx?$`;
 }
+
+/**
+ * ブラウザテストの glob。`vitest.browser.config.ts` の `include` と、`vite.config.ts` の
+ * browser-test ルールの適用先が同じ集合を指す (ADR-0029)。片方だけ変えると lint の適用先が
+ * 黙って browser project から外れる
+ */
+export const BROWSER_TEST_GLOB = "src/**/*.test.tsx";

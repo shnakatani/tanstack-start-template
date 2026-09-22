@@ -1,5 +1,5 @@
 /** `getBoundingClientRect()` の戻り値のうち判定に使う辺と寸法 */
-export type RectEdges = Pick<DOMRect, "top" | "left" | "bottom" | "right" | "width" | "height">;
+type RectEdges = Pick<DOMRect, "top" | "left" | "bottom" | "right" | "width" | "height">;
 
 /**
  * 矩形が viewport からはみ出している辺と、潰れている寸法を列挙する。空配列なら収まっている。

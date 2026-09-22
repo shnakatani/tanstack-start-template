@@ -6,6 +6,7 @@ import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
 import {
+  BROWSER_TEST_GLOB,
   companionFilePattern,
   companionGlobs,
   storyGlobs,
@@ -376,7 +377,7 @@ export default defineConfig({
         // `db.select().from(x).all()` が同名メソッドで誤検出になる。付随ファイルの glob
         // (`**/*.test.ts`) では書かない。その綴りは import 禁止の override が持つ印で、
         // `lint-config.test.ts` の「付随ファイルの除外は…」がそちらの専有を検査している
-        files: ["src/**/*.test.tsx", "src/test/**", ...testHelperGlobs("**/")],
+        files: [BROWSER_TEST_GLOB, "src/test/**", ...testHelperGlobs("**/")],
         excludeFiles: ["src/test/*.test.ts"],
         rules: {
           "browser-test/prefer-locator-methods": "error",

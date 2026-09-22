@@ -178,7 +178,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 ## locator の扱い
 
 - 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)
-- locator に対応する matcher が無い実測 (rect / computed style / `matches()`) は `expect.poll` のコールバックの中で読む。helper に閉じた読みは呼び出し側が mount を `expect.element` で待ってから呼ぶ (ADR-0013 / ADR-0029)
+- locator に対応する matcher が無い実測 (rect / computed style / `matches()`) は `expect.poll` のコールバックの中で読む。比較の基準値を 1 回だけ読むときは、先に `expect.element` で mount を待つ (ADR-0013 / ADR-0029)
 - 機械強制は `browser-test/prefer-locator-methods`。`vp lint` / `vp check` で走る。grep は束縛を挟む形を取りこぼすので、件数はこのルールで数える (ADR-0029)
 - assert の予算は `vitest.browser.config.ts` が `expect.poll.timeout` と `actionTimeout` の対で宣言する。片方だけにすると残り予算か vitest の既定へ戻る (ADR-0030)
 - 予算の値は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が持つ。上げるときはここを変える。config へ直接書くと helper 側の閾値が追随しない (ADR-0030)

@@ -66,10 +66,15 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
     await input.click();
     await expect.element(input).toHaveFocus();
 
-    // リングは box-shadow の spread で描画される。0 ならリング無し = 下の行への食い込みは構造的に起きない
-    await expect.poll(() => ringSpread(group)).toBe(0);
-    // フォーカスで border 色を変えない (popup 様式の border-input/30 のまま)
-    await expect.poll(() => getComputedStyle(group.element()).borderColor).toBe(borderBefore);
+    // リングは box-shadow の spread で描画される。0 ならリング無し = 下の行への食い込みは構造的に
+    // 起きない。border 色はフォーカスで変えない (popup 様式の border-input/30 のまま)。
+    // 2 つは同じ観測から取る (ADR-0031)
+    await expect
+      .poll(() => {
+        const style = getComputedStyle(group.element());
+        return { ringSpread: maxShadowSpread(style.boxShadow), borderColor: style.borderColor };
+      })
+      .toEqual({ ringSpread: 0, borderColor: borderBefore });
   });
 
   it("popup 外の InputGroup はフォーカスで 3px のリングが付く (抑制の効かせすぎガード)", async () => {

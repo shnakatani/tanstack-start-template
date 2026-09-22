@@ -5,6 +5,7 @@ import { render } from "vitest-browser-react";
 
 import { expectAbsent, expectRemoved } from "@/test/absent";
 import { createTestRouter } from "@/test/create-test-router";
+import { expectText } from "@/test/page-helpers";
 
 import { ROUTE_ERROR_FALLBACK_MESSAGE, RouteErrorContent } from "./route-error";
 
@@ -48,7 +49,7 @@ describe("RouteErrorContent", () => {
     const { screen } = await renderError(error, vi.fn());
 
     // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (ADR-0031)
-    await expect.element(screen.getByText(ROUTE_ERROR_FALLBACK_MESSAGE)).toBeInTheDocument();
+    await expectText(screen, ROUTE_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText("削除対象のノートが見つかりません: id=42"));
     await expectAbsent(screen.getByRole("button", { name: "スタックトレース" }));
   });

@@ -38,8 +38,8 @@
 ## Consequences
 
 - 要素が無いときは `element()` が throw し、`expect.poll` が予算ぶん retry してから落ちる (vitest の expect.poll docs「If an error is thrown inside the `expect.poll` callback, Vitest will retry again until the timeout runs out」)。空配列を期待する形でも、要素の不在で通ることはない
-- helper の自己テスト `src/test/viewport.test.tsx` は locator から矩形を読む配線だけを 3 件で見る (通過 / 辺が失敗文に出る / 要素が無い)。落ちる 2 件は assert の予算 (ADR-0030) ぶん待つ。辺ごとの判定は unit の `src/test/viewport-overflows.test.ts` が持つ
-- 呼び出し側は先に `expect.element` で popup の mount を待つ (ADR-0013)。helper 自身も poll するので、待たなくても落ちはしないが、失敗文が「要素が無い」か「はみ出した」かで読み分けられなくなる
+- helper の自己テスト `src/test/viewport.test.tsx` は locator から矩形を読む配線だけを 3 件で見る (通過 / 辺が失敗文に出る / 要素が無い)。落ちる 2 件は `vi.setConfig({ expect: { poll: { timeout: 0 } } })` で予算 (ADR-0030) を待たない。docs の `vi.setConfig` の例に `expect` は無いが、受け取る `RuntimeConfig` 型 (vitest 4.1.11 `config.d.ts`) が `expect` を持つ。辺ごとの判定は unit の `src/test/viewport-overflows.test.ts` が持つ
+- 呼び出し側は先に mount を待たなくてよい。helper 自身が poll し、要素が無ければ `element()` の throw (`Cannot find element with locator: …`) がそのまま失敗文になる (自己テスト「要素が無ければ locator 名で落ちる」)
 
 ### 再評価の条件
 
