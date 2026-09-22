@@ -101,9 +101,7 @@ async function submitCreate(screen: Screen, note: Note) {
   await openNoteCreateDialog(screen);
   await titleTextbox(screen).fill(note.title);
   await bodyTextbox(screen).fill(note.body);
-  // 保存ボタンは inert バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
-  saveButton(screen).element().focus();
-  await userEvent.keyboard("{Enter}");
+  await saveButton(screen).click();
   // 追加ボタンに乗った実マウスを、ダイアログが閉じる前に退避する (openDeleteConfirm と同じ理由)
   await parkMouse();
 }
@@ -470,10 +468,10 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    // 確定はキーボードで (testing.md「クリックの発火方法」の順 2)。
-    // close の animate-out の間にもう一度 Enter を送る
-    confirmDeleteButton(screen).element().focus();
-    await userEvent.keyboard("{Enter}");
+    // 1 発目は実クリック。2 発目は close の animate-out の間で Playwright が stable 判定で
+    // 弾く (locator.click: "element is not stable") ので、クリックで乗ったフォーカスへ Enter を
+    // 送る (testing.md「クリックの発火方法」の順 1 → 2)
+    await confirmDeleteButton(screen).click();
     await userEvent.keyboard("{Enter}");
 
     expect(vi.mocked(removeNote)).toHaveBeenCalledOnce();

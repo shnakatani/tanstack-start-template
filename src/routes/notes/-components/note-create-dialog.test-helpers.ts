@@ -1,11 +1,12 @@
+import { expect } from "vite-plus/test";
+
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
-import { findElement } from "@/test/find-element";
 import type { Screen } from "@/test/page-helpers";
 
 /**
  * 追加ダイアログのテスト用 locator。部品のテストとページのテストの両方が同じフォームを操作する
  * ので、ラベルの参照をここに 1 つ置く (`.claude/rules/directory-structure.md`「テストとスクリプトの配置」)。
- * 保存ボタンの活性化の仕方 (native click / キーボード) はテストごとに違うので持たない。
+ * 保存の確定は持たない。ページのテストは確定後に実マウスの退避 (`parkMouse`) が要り、部品のテストは要らない。
  */
 
 /** trigger の可視ラベル。`src/routes/notes/index.tsx` の PageHeader が描く文言を固定する。 */
@@ -23,8 +24,8 @@ export function saveButton(screen: Screen) {
   return screen.getByRole("button", { name: "保存", exact: true });
 }
 
-/** trigger を押してダイアログを開く。開いた印はタイトル入力の mount (ADR-0013 の `findElement()`)。 */
+/** trigger を押してダイアログを開く。開いた印はタイトル入力の mount を `expect.element` で待つ (ADR-0013)。 */
 export async function openNoteCreateDialog(screen: Screen) {
   await screen.getByRole("button", { name: NOTE_CREATE_TRIGGER_LABEL }).click();
-  await findElement(titleTextbox(screen));
+  await expect.element(titleTextbox(screen)).toBeInTheDocument();
 }
