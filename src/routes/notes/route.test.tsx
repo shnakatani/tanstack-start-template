@@ -28,6 +28,14 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { listNotes } = await import("@/features/notes/functions");
 
+// debounce の待ちを広げる (理由は index.test.tsx の同じ vi.mock)。戻るの直前に打った途中入力が
+// 実値の待ちで決着すると、その通知が混ざって配列の完全一致が落ちる。作り直されたページの
+// 通知は debounce を待たない (初期値が q そのもの) ので、広げても Enter と戻るの通知は即座に出る
+vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  NOTE_SEARCH_DEBOUNCE_MS: 1_500,
+}));
+
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
  * `<html>` を描くので browser test では使えない (ADR-0033)。root は本番と同じ context 型を持ち、

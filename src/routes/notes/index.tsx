@@ -136,10 +136,11 @@ export function NotesPage({
   const [text, setText] = useState(q);
   const [debouncedText] = useDebouncedValue(text, { wait: NOTE_SEARCH_DEBOUNCE_MS });
   const deferredText = useDeferredValue(debouncedText);
-  // 入力と表示中の条件がずれている間 (debounce の待ちと取得中) は古い一覧を印付きで残す
-  const isStale = text !== deferredText;
   // key にする前に URL / server function と同じ正規化を通す (理由は toNoteListFilter の docstring)
   const filter = toNoteListFilter(deferredText);
+  // 入力と表示中の条件がずれている間 (debounce の待ちと取得中) は古い一覧を印付きで残す。
+  // 正規化後で比べる。生の文字列だと、submit で入力欄を揃えた直後に条件が同じまま印が出る
+  const isStale = toNoteListFilter(text).q !== filter.q;
   const notesQuery = useSuspenseQuery(notesQueryOptions(filter));
   const queryClient = useQueryClient();
 

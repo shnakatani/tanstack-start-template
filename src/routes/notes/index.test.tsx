@@ -133,12 +133,19 @@ describe("NotesPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(listNotes).mockResolvedValue([]);
-    // curateMutationErrorMessage が raw error を warn に残す。失敗系テストの出力を汚さない
+    // warn は握りつぶさず、出たら各テストが明示に assert して消す (出しっぱなしは afterEach で落ちる)
     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
+    // afterEach の expect は lint (no-standalone-expect) が止めるので、ガードとして throw する
+    const unexpected = warnSpy.mock.calls.map((call: unknown[]) => String(call[0]));
     warnSpy.mockRestore();
+    if (unexpected.length > 0) {
+      throw new Error(
+        `assert されていない console.warn が残っている: ${JSON.stringify(unexpected)}`,
+      );
+    }
   });
 
   it("route に loader が定義され、pendingComponent で skeleton が表示される", async () => {
@@ -302,11 +309,23 @@ describe("NotesPage", () => {
     const onQueryChange = vi.fn();
     const screen = await renderPage({ onQueryChange });
 
-    await screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }).fill(" りんご ");
+    const searchbox = screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL });
+    await searchbox.fill(" りんご ");
     await userEvent.keyboard("{Enter}");
 
     // URL と同じ正規化 (trim) を通した値を渡す
     expect(onQueryChange).toHaveBeenCalledExactlyOnceWith("りんご");
+    // 入力欄も正規化後の値に揃う (URL が動かない submit でも trim と切り詰めが見える)
+    await expect.element(searchbox).toHaveValue("りんご");
+  });
+
+  it("上限を超えた検索語を受けたら、warn を出さずに切り詰めて取得する", async () => {
+    // URL の q は schema が止めるので、maxLength が効かない経路 (IME の変換中) の代わりに props で渡す
+    const capped = "a".repeat(NOTE_QUERY_MAX_LENGTH);
+    const screen = await renderPage({ q: `${capped}a` });
+
+    await expectText(screen, `『${capped}』に一致するメモはありません`);
+    expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: capped } });
   });
 
   it("ページ見出しと追加ボタンが表示される", async () => {
@@ -491,6 +510,9 @@ describe("NotesPage", () => {
     await expect
       .element(rowDeleteButton(screen, NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
+    // raw error は curateMutationErrorMessage が warn に残す (observability)
+    expect(warnSpy).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
+    warnSpy.mockClear();
   });
 
   it("削除を確定するとダイアログは removeNote の決着を待たずに閉じ、再取得完了まで行が busy のまま", async () => {
