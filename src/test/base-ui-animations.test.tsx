@@ -12,7 +12,6 @@ import {
 
 import { expectRemoved } from "./absent";
 import { enableBaseUiAnimations } from "./base-ui-animations";
-import { findElement } from "./find-element";
 
 /**
  * animate-out を実行時間より長く引き延ばし、「Base UI が animation の完了を待っているか」を
@@ -39,7 +38,10 @@ async function renderOpenDialog() {
     </Dialog>,
   );
   await screen.getByRole("button", { name: "開く" }).click();
-  await findElement(screen.getByRole("dialog"));
+  // mount を待つだけなら builtin の matcher を使う。`findElement` は生 DOM が要るときの
+  // escape hatch で、公式も「If you are interacting with the element yourself, use other
+  // builtin methods instead」と案内している (ADR-0013)
+  await expect.element(screen.getByRole("dialog")).toBeInTheDocument();
   return screen;
 }
 

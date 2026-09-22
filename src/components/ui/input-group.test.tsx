@@ -116,7 +116,8 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
     await screen.getByRole("combobox", { name: "エラー入力を開く" }).click();
 
     const input = screen.getByRole("combobox", { name: "エラー検索" });
-    await findElement(input);
+    // mount を待つだけなので builtin の matcher で足りる (ADR-0013)
+    await expect.element(input).toBeInTheDocument();
     await waitForAnimations();
 
     await input.click();
