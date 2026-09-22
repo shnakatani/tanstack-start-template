@@ -55,7 +55,7 @@ React docs は debounce と `useDeferredValue` を「You can also use these tech
 - ページテスト (`index.test.tsx`) は `NotesPage` に props を直接渡す。wrapper の往復 (URL → 入力欄、Enter → URL、空で確定 → `q` が消える、上限超え → error component) は `route.test.tsx` が持つ
 - debounce のテストは 1 文字ずつ別の `userEvent.keyboard` で打つ。`fill` は 1 回の input、`type("abc")` は 3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)
 - `replace: true` を外しても URL は同じなので route テストは落ちない。履歴が積まれることはテストの範囲外で、レビューで見る
-- browser test は DEV で走るので、search の検証失敗は組み込み `ErrorComponent` が `error.message` (Standard Schema の issues の JSON) をそのまま出す。route テストは schema の文言が含まれることを見る
+- search の検証失敗は `/notes` の route 境界に落ちる。dev server で `/notes?q=<101 文字>` を SSR すると HTTP 500 で `RouteErrorContent` (見出し「エラーが発生しました」、DEV では Standard Schema の issues の JSON を持つ `error.message`) が描かれ、root の全画面エラーにはならない (2026-09-23 に実測)。route テストは `defaultErrorComponent` を本番と同じ `RouteErrorContent` にし、見出しと schema の文言を見る
 
 ### 再評価の条件
 

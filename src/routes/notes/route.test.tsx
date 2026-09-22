@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { RouteErrorContent } from "@/components/screens/route-error";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import { createTestQueryClient } from "@/test/page-helpers";
 
@@ -56,6 +57,9 @@ async function renderRoute(initialLocation: string) {
     routeTree,
     context: { queryClient },
     history: createMemoryHistory({ initialEntries: [initialLocation] }),
+    // search の検証失敗を route の境界で受けることを、本番 (`src/router.tsx`) と同じ部品で見る。
+    // 無いと root の外まで抜けて組み込みの ErrorComponent が描き、router が warn を出す
+    defaultErrorComponent: RouteErrorContent,
   });
   const screen = await render(
     <QueryClientProvider client={queryClient}>
@@ -104,8 +108,11 @@ describe("/notes の search param", () => {
   it("上限を超える q は route の error component に落ちる", async () => {
     const { screen } = await renderRoute(`/notes?q=${"a".repeat(NOTE_QUERY_MAX_LENGTH + 1)}`);
 
-    // Router は Standard Schema の issues を JSON にして SearchParamError を投げ、組み込みの
-    // ErrorComponent が DEV では error.message をそのまま出す。schema の文言が含まれることを見る
+    // Router は Standard Schema の issues を JSON にして SearchParamError を投げ、RouteErrorContent が
+    // DEV では error.message をそのまま出す。schema の文言が含まれることを見る
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
+      .toBeVisible();
     await expect
       .element(
         screen.getByText(`検索語は ${NOTE_QUERY_MAX_LENGTH} 文字以内で入力してください`, {
