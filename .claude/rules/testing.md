@@ -180,6 +180,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)
 - 同期読みを `expect()` へ流してよいのは、locator に対応する matcher が無い実測のときだけ。許す形の列挙は `scripts/lint/browser-test.ts` が持つ。足す前にその主張が matcher で書けないことを確かめる (ADR-0029)
 - 機械強制は `browser-test/prefer-locator-methods`。`vp lint` / `vp check` で走る。grep は束縛を挟む形を取りこぼすので、件数はこのルールで数える (ADR-0029)
+- assert の予算は `vitest.browser.config.ts` の `expect.poll.timeout` が持ち、テストの予算 (`testTimeout`) とは別。効かせるために `actionTimeout` を対で置いてある。片方だけ消すと `expect.element` がテストの残り予算を使い切る側へ戻る (ADR-0029)
 - 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く。要素が無ければ 1 回目で通るので、単独では何も検証していない (ADR-0029)
 - 要素が在る状態から消えるのを待つときは `expect.element(locator).not.toBeInTheDocument()` をそのまま書く。消えるのを待つ側には retry の予算が要る。呼び出し側の形でどちらのつもりかが読める (ADR-0029)
 - `.not.toBeInTheDocument()` 以外の否定 matcher には肯定 assert を添えなくてよい。要素が引けない間 retry するため、不在のまま通ることがない (ADR-0029)

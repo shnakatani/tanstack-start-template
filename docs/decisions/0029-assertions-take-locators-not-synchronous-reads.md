@@ -87,9 +87,9 @@ ADR-0013 が「lint で表現できる形は無い」と書いたのは、`eleme
 | [#8308](https://github.com/vitest-dev/vitest/issues/8308) | expect.poll.timeout not being respected  | 報告者以外にも再現報告があり、4.0.15 でも再現している                                                                                       |
 | [#9751](https://github.com/vitest-dev/vitest/issues/9751) | Unify and simplify timeout configuration | 内部で `testTimeout - elapsedTime - 100ms` を計算していることを "Hidden dynamic adjustment" と呼び、"Users are unaware this happens" と書く |
 
-#8308 のコメントは回避策として Playwright provider の `actionTimeout` を挙げる。この設定を入れると `expect.poll.timeout` が `expect.element` にも効くようになる。**採れない。** `actionTimeout: 5000` と `expect.poll.timeout: 200` を入れて測ると、否定 assert の赤は 208ms まで縮むが、同じ設定で 300ms 後に現れる要素を待つ assert が 208ms で `Cannot find element with locator` の赤になった (2026-09-22)。
+#8308 のコメントは回避策として Playwright provider の `actionTimeout` を挙げる。この設定を入れると `expect.poll.timeout` が `expect.element` にも効く。**採る。** 詳細は Consequences の「assert の予算を宣言する」。
 
-待つべき assert と待ってはいけない assert を 1 つの既定値では両立できない。`expect.poll.timeout` を正当な待機に足りる値まで上げると、否定 assert はその値を使い切る側へ戻る。区別は呼び出しごとにしか置けない。
+ただし予算を下げても「最初から出ない」否定 assert の問題は残る。待って成立しない条件にどんな予算を渡しても無駄に待つからで、区別は呼び出しごとにしか置けない。
 
 ### 否定 assert には、待ち時間とは別に検出力の問題がある
 
@@ -157,13 +157,28 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 この override は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定で固定するので、適用先か severity を動かすとそこが落ちる。
 
-### 肯定 assert は予算を使い切ってよい
+### assert の予算を宣言する
 
-移行で `expect.element` の肯定 assert が増えた。これも赤になると `testTimeout` を使い切る (2026-09-22 実測で 14942ms)。否定側と同じ手当てはしない。**待って成立しうる条件だからである。** 待たせないと、遅い環境で緑のテストが落ちる。
+移行で `expect.element` の肯定 assert が増えた。既定のままだと、赤になった assert 1 件がテストの残り予算を使い切る (2026-09-22 実測で 14942ms)。テンプレートとして配るので、ブラウザテストが増えた先ほど効く。
 
-`testTimeout` を締めて赤のコストを下げる案も採らない。browser project の既定 15000 は vitest 公式が `testTimeout` の項で「`5_000` in Node.js, `15_000` if `browser.enabled` is `true`」と文書化した値で、このリポジトリの実測もそれを支持する。browser project 単独では最も遅いテストが 605ms だが、**全 project を同時に走らせると 3595ms まで伸びる** (同日実測)。単独実行の数字で締めると、full run と CI で足りなくなる。
+**assert の予算をテストの予算と分けて宣言する。** `vitest.browser.config.ts` の `expect.poll.timeout` を 5000 にする。
 
-残るのは「赤いテストが 1 件あたり最大 15 秒かかる」ことで、これは retry の対価である。移行前の `expect(x.query()).not.toBeNull()` が 0ms で落ちていたのは、待っていなかったからにすぎない。
+値は Playwright の既定を写す。Playwright は同じ分け方を公式に持ち、「Auto-retrying assertions like `expect(locator).toHaveText()` have a separate timeout, 5 seconds by default. Assertion timeout is unrelated to the test timeout.」と書いて assertion 側の既定を 5000ms と文書化している。vitest の `expect.poll.timeout` はその対応物で、既定は 1000ms である。
+
+このリポジトリのテストへ当てて決めた数字ではない。当てた結果は下表で、5000 は足りている側にある (2026-09-22、全 project 同時実行)。
+
+| `expect.poll.timeout` | 結果                                          |
+| --------------------- | --------------------------------------------- |
+| 1000 (vitest の既定)  | 12 件が赤                                     |
+| 2000                  | 6 件が赤                                      |
+| 3000                  | 緑                                            |
+| 5000 (採用)           | 緑。肯定 assert の赤は 14942ms から 5038ms へ |
+
+`testTimeout` は動かさない。browser の既定 15000 は vitest 公式が文書化した値で、テストの予算としては妥当である (単独実行の最遅テストは 605ms だが、全 project 同時実行では 3595ms まで伸びる)。締めるべきは assert の予算であって、テストの予算ではない。
+
+`expect.poll.timeout` を効かせるには `browser.providerOptions.actionTimeout` も要る。vitest は actionTimeout が未設定のときだけ assert の timeout をタスクの残り予算から計算するためで、#8308 が OPEN のまま残っている挙動に乗っている。副作用として Playwright の操作にも上限が付く。Playwright 自身も action timeout に既定を持たない (「No default」) ので既定の挙動を変えることになるが、上限なしで待ち続けるより診断が早い。
+
+`expectAbsent` の `{ timeout: 0 }` はこの設定と独立に効く (同日実測で 53ms)。呼び出しごとの指定が先に読まれるためで、予算を宣言しても「待たない」は残る。
 
 ### 「最初から出ない」判定は `expectAbsent` が 1 箇所で持つ
 
@@ -179,6 +194,7 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 
 ### 再評価の条件
 
+- #8308 が閉じて `expect.poll.timeout` が単独で `expect.element` へ効くようになったら、`actionTimeout` の指定が要るかを測り直す
 - #9751 が timeout の設定を 1 か所へ集約し、`expect.element` の既定を宣言できるようになったら、`expectAbsent` が `{ timeout: 0 }` を持つ必要があるかを測り直す
 - `@vitest/eslint-plugin` が同種のルールを持ったら、そちらへ移して自前のルールを消す
 - 上流が locator に対応する matcher を足したら、ルールの許可リストからその形を外す。1 要素ずつ外して `vp lint` を走らせ、違反が 0 件のままなら不要と判定する
@@ -209,15 +225,15 @@ escape hatch に残るのは、`toHaveStyle` で表せない 3 つの形であ�
 
 ## 検討した選択肢
 
-| 案                                                                             | 評価                                                                                                                             | 採否     |
-| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `expect()` の引数に届く同期読みを lint で報告し、代替 matcher の無い形だけ許す | 禁止したい形が式の構造で表せる。公式が DANGER 表記で同じ向きを案内しており、他エコシステムに先行例がある                         | **採用** |
-| レビューで見る (ADR-0013 の現状)                                               | ADR-0013 の 3 日後の PR #16 (`91515ee`) が同じ形を新しく足している。判断を誤ってもほとんどの実行で通るため、レビューでは落ちない | 却下     |
-| `element()` を全面禁止し `findElement()` に統一する                            | `getBoundingClientRect` などの実測が待つ理由のない箇所まで `await` になる。ADR-0013 が同じ理由で却下している                     | 却下     |
-| `actionTimeout` を設定して `expect.poll.timeout` を効かせる                    | 否定 assert の赤は縮むが、同じ既定値が正当な待機にも掛かる。300ms 後に現れる要素を待つ assert が 208ms で落ちることを実測した    | 却下     |
-| `testTimeout` を短くして赤のコストを抑える                                     | 待つべき assert の予算も一緒に縮む。遅い環境で緑のテストが落ちる                                                                 | 却下     |
-| 否定 assert には触れず、同期読みの移行だけ行う                                 | 移行が 15 秒の赤を持ち込む。移行前の `expect(x.query()).toBeNull()` は同期の 1 回読みで、赤は即座だった                          | 却下     |
-| `lint.overrides` で未移行ファイルを列挙して段階移行する                        | 対象は 13 ファイルで、列挙と、それを消す作業のほうが移行より大きい                                                               | 却下     |
+| 案                                                                             | 評価                                                                                                                                                                                                  | 採否     |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `expect()` の引数に届く同期読みを lint で報告し、代替 matcher の無い形だけ許す | 禁止したい形が式の構造で表せる。公式が DANGER 表記で同じ向きを案内しており、他エコシステムに先行例がある                                                                                              | **採用** |
+| レビューで見る (ADR-0013 の現状)                                               | ADR-0013 の 3 日後の PR #16 (`91515ee`) が同じ形を新しく足している。判断を誤ってもほとんどの実行で通るため、レビューでは落ちない                                                                      | 却下     |
+| `element()` を全面禁止し `findElement()` に統一する                            | `getBoundingClientRect` などの実測が待つ理由のない箇所まで `await` になる。ADR-0013 が同じ理由で却下している                                                                                          | 却下     |
+| `actionTimeout` を設定して `expect.poll.timeout` を効かせる                    | **採用。** assert の予算をテストの予算から分けられる。値は Playwright が文書化した assertion 側の既定 5000ms を写す。「最初から出ない」否定 assert はこれでも無駄に待つので `expectAbsent` と併用する | **採用** |
+| `testTimeout` を短くして赤のコストを抑える                                     | 待つべき assert の予算も一緒に縮む。遅い環境で緑のテストが落ちる                                                                                                                                      | 却下     |
+| 否定 assert には触れず、同期読みの移行だけ行う                                 | 移行が 15 秒の赤を持ち込む。移行前の `expect(x.query()).toBeNull()` は同期の 1 回読みで、赤は即座だった                                                                                               | 却下     |
+| `lint.overrides` で未移行ファイルを列挙して段階移行する                        | 対象は 13 ファイルで、列挙と、それを消す作業のほうが移行より大きい                                                                                                                                    | 却下     |
 
 ## 出典
 
