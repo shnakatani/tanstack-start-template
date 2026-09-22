@@ -24,6 +24,12 @@
 
 もう 1 つ、IntersectionObserver は面積 0 の target に「交差していれば 1」を返す (仕様「Run the Update Intersection Observations Steps」の step 12: "If targetArea is non-zero, let intersectionRatio be intersectionArea divided by targetArea. Otherwise, let intersectionRatio be 1 if isIntersecting is true")。高さ 0 に潰れた popup は `ratio: 1` を自明に満たす。
 
+### 上流の既知問題
+
+落ちる原因は IntersectionObserver の仕様側にある。w3c/IntersectionObserver#477「Sub-pixel layout can cause intersectionRatio to be <1, even though target is entirely visible」(2021-07-22 起票、2026-09-22 時点で OPEN。初出は Chromium bug 1020466) が、sub-pixel layout の要素では全体が見えていても比が 1 に届かないと記録している。上の実測の `actual ratio: 1.000` はこの形で、コミュニティの回避策は閾値 0.99 である。
+
+vitest の `toBeInViewport` は Playwright の port で (vitest-dev/vitest#7650 を閉じた PR #8234 の本文「this is port to vitest」)、判定式の `- 1e-9` も Playwright の `packages/injected/src/injectedScript.ts` (`ratio > (options.expectedNumber ?? 0) - 1e-9`) と同じである。sub-pixel の誤差は 1e-9 より大きいので、この許容では吸収できない。`ratio: 1` が sub-pixel で落ちる報告は、vitest (`gh search issues --repo vitest-dev/vitest toBeInViewport`: 2 件、いずれも別件) にも Playwright (`gh search issues --repo microsoft/playwright "toBeInViewport ratio"` / `"toBeInViewport flaky"`: 該当なし) にも無い (2026-09-22 検索)。
+
 ## Decision
 
 **popup が viewport に収まることは、矩形の 4 辺と寸法を `expect.poll` の中で読んで判定する。`toBeInViewport({ ratio: 1 })` は使わない。**
@@ -43,16 +49,16 @@
 
 ### 再評価の条件
 
-- 上流が `toBeInViewport` の比較を `>=` にするか、intersectionRatio に丸めを持ったら、上の表の手順 (3 箇所を `{ ratio: 1 }` にして 3 回走らせる) で測り直す。3 回とも通れば helper を消して公式 matcher へ戻す
+- w3c/IntersectionObserver#477 が閉じて比が pixel-snapped で計算されるようになるか、Playwright / vitest が sub-pixel を吸収する許容を持ったら、上の表の手順 (3 箇所を `{ ratio: 1 }` にして 3 回走らせる) で測り直す。3 回とも通れば helper を消して公式 matcher へ戻す
 
 ## 検討した選択肢
 
-| 案                                           | 評価                                                                                                 | 採否     |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------- |
-| 矩形の 4 辺と寸法を `expect.poll` の中で読む | 「全体が」をそのまま表せ、失敗文に辺と px が残る。読みは helper 1 箇所に閉じる                       | **採用** |
-| `toBeInViewport({ ratio: 1 })`               | 収まっていても落ちる実行がある (3 回中 2 回)。面積 0 の要素を通す                                    | 却下     |
-| `toBeInViewport({ ratio: 0.999 })`           | 通るが「全体が」の主張を失う。閾値の根拠を popup の高さごとに持つことになる                          | 却下     |
-| `max-height` を `toHaveStyle` で見る         | Tailwind の class を写す同語反復。収まるかは内容の高さと viewport で決まり、宣言値だけでは分からない | 却下     |
+| 案                                                                       | 評価                                                                                                 | 採否     |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | -------- |
+| 矩形の 4 辺と寸法を `expect.poll` の中で読む                             | 「全体が」をそのまま表せ、失敗文に辺と px が残る。読みは helper 1 箇所に閉じる                       | **採用** |
+| `toBeInViewport({ ratio: 1 })`                                           | 収まっていても落ちる実行がある (3 回中 2 回)。面積 0 の要素を通す                                    | 却下     |
+| `toBeInViewport({ ratio: 0.999 })` (w3c#477 のコミュニティ回避策は 0.99) | 通るが「全体が」の主張を失う。閾値の根拠を popup の高さごとに持つことになる                          | 却下     |
+| `max-height` を `toHaveStyle` で見る                                     | Tailwind の class を写す同語反復。収まるかは内容の高さと viewport で決まり、宣言値だけでは分からない | 却下     |
 
 ## 出典
 
@@ -60,3 +66,6 @@
 - vitest の `expect.poll`: <https://vitest.dev/api/expect#expect-poll>
 - 同梱の `@vitest/browser` 4.1.11 `dist/expect-element.js` (`toBeInViewport` の判定式)
 - IntersectionObserver 仕様「Run the Update Intersection Observations Steps」: <https://w3c.github.io/IntersectionObserver/#update-intersection-observations-algo>
+- w3c/IntersectionObserver#477 (OPEN。sub-pixel layout で比が 1 に届かない): <https://github.com/w3c/IntersectionObserver/issues/477>
+- vitest-dev/vitest#7650 と PR #8234 (`toBeInViewport` は Playwright の port): <https://github.com/vitest-dev/vitest/pull/8234>
+- Playwright の判定式: <https://github.com/microsoft/playwright/blob/main/packages/injected/src/injectedScript.ts> (`to.be.in.viewport`)
