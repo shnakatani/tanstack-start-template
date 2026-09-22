@@ -1,10 +1,14 @@
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 
 import { noteSearchResultMessage, toNoteListFilter } from "./note-search";
 
 describe("toNoteListFilter", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("前後の空白を落とす (URL 経由の validateSearch と同じ正規化)", () => {
     expect(toNoteListFilter("  abc  ")).toEqual({ q: "abc" });
   });
@@ -14,11 +18,24 @@ describe("toNoteListFilter", () => {
   });
 
   // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は保ち、cap+1 は cap で切る
-  it("上限を超える分は切り、超えない分は保つ", () => {
+  it("上限を超える分は切って warn を残し、超えない分は保つ", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const cap = NOTE_QUERY_MAX_LENGTH;
     expect(toNoteListFilter("a".repeat(cap - 1))).toEqual({ q: "a".repeat(cap - 1) });
     expect(toNoteListFilter("a".repeat(cap))).toEqual({ q: "a".repeat(cap) });
+    expect(warn).not.toHaveBeenCalled();
     expect(toNoteListFilter("a".repeat(cap + 1))).toEqual({ q: "a".repeat(cap) });
+    expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining("切り詰めた"), {
+      rawInput: "a".repeat(cap + 1),
+    });
+  });
+
+  it("切った位置がサロゲートペアの途中なら、割れた前半を落とす", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    // "😀" は 2 code unit。99 文字 + 絵文字 = 101 unit を 100 で切ると前半 (\uD83D) だけ残る
+    const { q } = toNoteListFilter(`${"a".repeat(NOTE_QUERY_MAX_LENGTH - 1)}😀`);
+    expect(q).toBe("a".repeat(NOTE_QUERY_MAX_LENGTH - 1));
+    expect(encodeURIComponent(q)).toBe(q);
   });
 
   it("trim してから上限を数える (前後の空白は上限に含めない)", () => {

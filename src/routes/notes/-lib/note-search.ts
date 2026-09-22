@@ -14,19 +14,27 @@ export const NOTE_SEARCH_LABEL = `${NOTE_ENTITY_LABEL}を検索`;
  * 打鍵が止まってから一覧の取得を始めるまでの待ち。`useDebouncedValue` の `wait`。
  * 0 にすると打鍵ごとに server function が走る (ADR-0033)。
  */
-export const NOTE_SEARCH_DEBOUNCE_MS = 300;
+export const NOTE_SEARCH_DEBOUNCE_MS: number = 300;
 
 /**
  * 入力欄の文字列を、URL と server function が受けるのと同じ絞り込み条件にする (ADR-0033)。
  *
  * 入力欄は URL を通らずに `useSuspenseQuery` の key になるので、ここで `noteListFilterSchema` と同じ
  * 正規化 (trim) を通す。通さないと `" abc"` と `"abc"` が別のキャッシュになり、取得が 2 回走る。
- * 上限は input の `maxLength` と同じ値で切る。IME の変換中は `maxLength` が効かず、確定前に
- * debounce が明けると上限超えの文字列が届く。schema に通して throw させると一覧ごと
+ * 上限は input の `maxLength` と同じ値で切る。HTML Standard は maxlength による入力の防止を
+ * may (任意) としており、IME の変換中など効かない経路がある。schema に通して throw させると一覧ごと
  * Error Boundary に落ちる (`.claude/rules/implementation.md`「操作の失敗を Error Boundary へ届けない」)。
+ * 切り詰めは利用者に見えないので warn を残す (`parse-each.ts` と同じ判断)。
  */
 export function toNoteListFilter(text: string): NoteListFilter {
-  return v.parse(noteListFilterSchema, { q: text.trim().slice(0, NOTE_QUERY_MAX_LENGTH) });
+  const trimmed = text.trim();
+  if (trimmed.length > NOTE_QUERY_MAX_LENGTH) {
+    console.warn("[toNoteListFilter] 上限を超えた検索語を切り詰めた", { rawInput: text });
+  }
+  // 上限は UTF-16 の code unit で数える (maxLength と同じ)。切った位置がサロゲートペアの途中なら
+  // 前半だけが残り、URL では U+FFFD に化けて LIKE にも当たらないので、その 1 unit を落とす
+  const cut = trimmed.slice(0, NOTE_QUERY_MAX_LENGTH).replace(/[\uD800-\uDBFF]$/u, "");
+  return v.parse(noteListFilterSchema, { q: cut });
 }
 
 /**

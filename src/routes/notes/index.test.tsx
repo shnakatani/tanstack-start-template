@@ -1,3 +1,4 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { Suspense } from "react";
@@ -10,6 +11,7 @@ import {
   deleteConfirmDescription,
 } from "@/components/parts/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
+import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_QUERY_MAX_LENGTH, noteListFilterSchema } from "@/features/notes/schema";
 import {
@@ -40,14 +42,14 @@ vi.mock("@/features/notes/functions", () => ({
 const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
 
 /**
- * debounce の待ちを 1500ms に広げる。実値 (300ms) だと、`mise run verify` の負荷で 1 文字ずつの
- * 打鍵の間隔が待ちを超え、途中の文字列で取得が走る (2026-09-23 に実測: "a" "ab" の取得が混ざって
- * 落ちた)。見たいのは「打鍵が止まってから 1 回」であって 300ms という値ではない。待ちは assert の
+ * debounce の待ちを 1500ms に広げる。実値 (`NOTE_SEARCH_DEBOUNCE_MS`) だと、`mise run verify` の負荷で
+ * 1 文字ずつの打鍵の間隔が待ちを超え、途中の文字列で取得が走る (2026-09-23 に実測: "a" "ab" の取得が
+ * 混ざって落ちた)。見たいのは「打鍵が止まってから 1 回」であって実値ではない。待ちは assert の
  * 予算 (`ASSERT_TIMEOUT_MS`) より短く保つ。取得の開始をその予算で待つため。
  * vi.mock は hoist されるので、値は factory の中に閉じる (上位の変数を参照できない)
  */
-vi.mock("./-lib/note-search", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("./-lib/note-search")>()),
+vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
+  ...(await importOriginal()),
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
@@ -64,16 +66,22 @@ import { noteColumns } from "./-lib/note-columns";
 import { NOTE_SEARCH_LABEL } from "./-lib/note-search";
 import { loadNotesPageData, NotesPage, Route } from "./index";
 
-/** page を props 直渡しで描く。wrapper (Route hooks) は route.test.tsx が実 router で見る */
+/** page を props 直渡しで描く。wrapper (Route hooks と通知) は route.test.tsx が実 router で見る */
 async function renderPage({
   q = "",
   onQueryChange = () => {},
-}: { q?: string; onQueryChange?: (q: string) => void } = {}) {
-  const queryClient = createTestQueryClient();
+  onResultsSettled = () => {},
+  queryClient = createTestQueryClient(),
+}: {
+  q?: string;
+  onQueryChange?: (q: string) => void;
+  onResultsSettled?: (q: string, count: number) => void;
+  queryClient?: QueryClient;
+} = {}) {
   const router = createTestRouter("/notes", () => (
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={null}>
-        <NotesPage q={q} onQueryChange={onQueryChange} />
+        <NotesPage q={q} onQueryChange={onQueryChange} onResultsSettled={onResultsSettled} />
       </Suspense>
       <Toaster />
     </QueryClientProvider>
@@ -165,22 +173,24 @@ describe("NotesPage", () => {
     expect(Route.options.loaderDeps?.({ search: { q: "abc" } })).toEqual({ q: "abc" });
   });
 
-  it("URL の q が入力欄の初期値になり、その条件で一覧を取得する", async () => {
+  it("URL の q が入力欄の初期値になり、その条件で一覧を取得し、取得済みを報告する", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
-    const screen = await renderPage({ q: "りんご" });
+    const onResultsSettled = vi.fn();
+    const screen = await renderPage({ q: "りんご", onResultsSettled });
 
     await expect
       .element(screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }))
       .toHaveValue("りんご");
     await expectText(screen, NOTE.title);
     expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "りんご" } });
-    // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
-    expect(readAnnouncements()).toEqual([]);
+    // 初期表示も報告する。通知するかは wrapper が決める (route.test.tsx)
+    await expect.poll(() => onResultsSettled.mock.calls).toEqual([["りんご", 1]]);
   });
 
   it("打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残す", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
-    const screen = await renderPage();
+    const onResultsSettled = vi.fn();
+    const screen = await renderPage({ onResultsSettled });
     await expectText(screen, NOTE.title);
     const listed = deferMock(listNotes);
 
@@ -206,8 +216,56 @@ describe("NotesPage", () => {
     await expectText(screen, "『abc』に一致するメモはありません");
     await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
-    // 半透明と aria-busy は読み上げに出ないので、結果の入れ替わりを通知する (ADR-0017)
-    expect(readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
+    // 半透明と aria-busy は読み上げに出ないので、取得済みを報告する (通知は wrapper。ADR-0017)。
+    // 取得中は報告しない (古い件数を読み上げない)
+    await expect
+      .poll(() => onResultsSettled.mock.calls)
+      .toEqual([
+        ["", 1],
+        ["abc", 0],
+      ]);
+  });
+
+  it("検索語を空に戻すと、無効化済みのキャッシュは再取得の決着後に報告する", async () => {
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    const onResultsSettled = vi.fn();
+    const queryClient = createTestQueryClient();
+    const screen = await renderPage({ onResultsSettled, queryClient });
+    await expectText(screen, NOTE.title);
+    const searchbox = screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL });
+
+    vi.mocked(listNotes).mockResolvedValue([]);
+    await searchbox.fill("abc");
+    await expect
+      .poll(() => onResultsSettled.mock.calls)
+      .toEqual([
+        ["", 1],
+        ["abc", 0],
+      ]);
+
+    // 全件の一覧 (inactive) が mutation で無効化された状態を作る。空に戻すと古い 1 件を表示したまま
+    // 再取得が走るので、決着 (0 件) までは報告しない
+    await queryClient.invalidateQueries({
+      queryKey: notesQueryOptions({ q: "" }).queryKey,
+      exact: true,
+    });
+    const listed = deferMock(listNotes);
+    await searchbox.fill("");
+    await expect.poll(() => vi.mocked(listNotes).mock.calls.at(-1)).toEqual([{ data: { q: "" } }]);
+    await expectText(screen, NOTE.title);
+    expect(onResultsSettled.mock.calls).toEqual([
+      ["", 1],
+      ["abc", 0],
+    ]);
+
+    listed.resolve([]);
+    await expect
+      .poll(() => onResultsSettled.mock.calls)
+      .toEqual([
+        ["", 1],
+        ["abc", 0],
+        ["", 0],
+      ]);
   });
 
   it("入力欄の値は URL と同じ正規化 (trim と上限) を通して取得し、確定する", async () => {
@@ -220,6 +278,9 @@ describe("NotesPage", () => {
     await expect
       .poll(() => vi.mocked(listNotes).mock.calls)
       .toContainEqual([{ data: { q: "abc" } }]);
+
+    // 空状態の見出しも正規化後の値で描く (『 abc 』にならない)
+    await expectText(screen, "『abc』に一致するメモはありません");
 
     // 上限超えは入力欄の maxLength が止める (`fill` も maxLength を尊重する。2026-09-23 に実測)。
     // key を作る前の正規化 (toNoteListFilter) は IME の変換中など maxLength が効かない経路の

@@ -13,6 +13,7 @@ import { render } from "vitest-browser-react";
 
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
+import { readAnnouncements } from "@/test/live-announcer";
 import { createTestQueryClient } from "@/test/page-helpers";
 
 import { NOTE_SEARCH_LABEL } from "./-lib/note-search";
@@ -86,6 +87,8 @@ describe("/notes の search param", () => {
     await expect.element(searchbox(screen)).toHaveValue("abc");
     // loader が温めた key を component が読むので 1 回。loaderDeps が無いと空の deps の取得が先に走る
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "abc" } });
+    // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
+    expect(readAnnouncements()).toEqual([]);
   });
 
   it("入力して Enter すると URL の q が確定する", async () => {
@@ -98,6 +101,10 @@ describe("/notes の search param", () => {
     expect(router.state.location.href).toBe("/notes?q=xyz");
     // 明示操作 1 回につき履歴 1 つ (push)。戻るで絞り込み前の一覧に戻れる
     expect(router.history.length).toBe(2);
+    // 作り直されたページの結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0033)
+    await vi.waitFor(() => {
+      expect(readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
+    });
   });
 
   it("戻るで URL の q が変わると、入力欄の途中入力を捨ててその q に揃う", async () => {
@@ -113,6 +120,13 @@ describe("/notes の search param", () => {
 
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
     await expect.element(searchbox(screen)).toHaveValue("abc");
+    // 戻るで入れ替わった結果も通知する。同じ条件へ戻っても、直前に通知した条件と違えば出す
+    await vi.waitFor(() => {
+      expect(readAnnouncements()).toEqual([
+        "『xyz』に一致するメモは 0 件です",
+        "『abc』に一致するメモは 0 件です",
+      ]);
+    });
   });
 
   it("空白だけで Enter すると q は URL に残らない", async () => {

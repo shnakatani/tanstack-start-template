@@ -81,7 +81,27 @@ function NotesRoute() {
     // (submit) 1 回につき履歴 1 つで、戻るボタンが絞り込み前の一覧に戻る (ADR-0033)
     void navigate({ search: (prev) => ({ ...prev, q: next }) });
   }
-  return <NotesPage key={q} q={q} onQueryChange={handleQueryChange} />;
+
+  // 結果の入れ替わりの通知 (ADR-0017)。「最後に通知した条件」は `key={q}` で作り直されるページの
+  // 外に持つ。ページに持たせると、debounce が明ける前の Enter や戻るで作り直された瞬間の条件を
+  // 「直前と同じ」と見なして通知が消える。初期表示 (URL の q) は入れ替わりではないので通知しない
+  const announcedQ = useRef(q);
+  function handleResultsSettled(settledQ: string, count: number) {
+    if (announcedQ.current === settledQ) {
+      return;
+    }
+    announcedQ.current = settledQ;
+    announce(noteSearchResultMessage(settledQ, count));
+  }
+
+  return (
+    <NotesPage
+      key={q}
+      q={q}
+      onQueryChange={handleQueryChange}
+      onResultsSettled={handleResultsSettled}
+    />
+  );
 }
 
 function NotesPagePending() {
@@ -96,14 +116,23 @@ function NotesPagePending() {
 }
 
 /**
- * 一覧ページ本体。`q` は URL で確定した検索語、`onQueryChange` は確定の要求 (submit)。
+ * 一覧ページ本体。`q` は URL で確定した検索語、`onQueryChange` は確定の要求 (submit)、
+ * `onResultsSettled` は「この条件の一覧が取得済みで表示中」の報告 (通知するかは呼び出し側が決める)。
  *
  * 入力欄の値 `text` は緊急更新 (ADR-0014)。一覧は `text` を debounce (打鍵が止まるまで取得しない)
  * したうえで `useDeferredValue` に通す。新しい条件の取得で Suspend している間、React は古い
  * deferred 値で描き続けるので skeleton には落ちない (React docs `useDeferredValue` の Suspense
  * 統合。TanStack Query の Suspense ガイドと transition.test.tsx が同じ形を持つ。ADR-0033)。
  */
-export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: string) => void }) {
+export function NotesPage({
+  q,
+  onQueryChange,
+  onResultsSettled,
+}: {
+  q: string;
+  onQueryChange: (q: string) => void;
+  onResultsSettled: (q: string, count: number) => void;
+}) {
   const [text, setText] = useState(q);
   const [debouncedText] = useDebouncedValue(text, { wait: NOTE_SEARCH_DEBOUNCE_MS });
   const deferredText = useDeferredValue(debouncedText);
@@ -114,21 +143,19 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const notesQuery = useSuspenseQuery(notesQueryOptions(filter));
   const queryClient = useQueryClient();
 
-  // 結果の入れ替わりを通知する (ADR-0017)。行の半透明と aria-busy は読み上げに出ない。
-  // live region への書き込みは DOM 副作用なので effect に置く。契機は条件の確定だけで、件数は
-  // 最新値を読むだけなので useEffectEvent に切り出す。mount 時 (URL からの初期表示と `key={q}` の
-  // 作り直し) は通知しない: 直前の条件と同じなら何も入れ替わっていない
-  const announceSearchResult = useEffectEvent((q: string) => {
-    announce(noteSearchResultMessage(q, notesQuery.data.length));
+  // 条件の一覧が取得済みになったら報告する (通知は wrapper が出す。ADR-0017 / ADR-0033)。
+  // 報告は live region への DOM 副作用の契機なので effect に置く。契機は条件と取得の決着で、
+  // 件数は最新値を読むだけなので useEffectEvent に切り出す。取得中 (無効化済みキャッシュの
+  // 再取得など) に報告すると古い件数を読み上げるので、決着まで待つ
+  const settled = !notesQuery.isFetching;
+  const reportResults = useEffectEvent((settledQ: string) => {
+    onResultsSettled(settledQ, notesQuery.data.length);
   });
-  const announcedQ = useRef(filter.q);
   useEffect(() => {
-    if (announcedQ.current === filter.q) {
-      return;
+    if (settled) {
+      reportResults(filter.q);
     }
-    announcedQ.current = filter.q;
-    announceSearchResult(filter.q);
-  }, [filter.q]);
+  }, [filter.q, settled]);
 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
@@ -172,6 +199,14 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const creatingRows = parseCreatingRows(pendingCreateStates);
   const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds });
 
+  function handleSubmit() {
+    const next = toNoteListFilter(text).q;
+    // 確定後の q が今の URL と同じなら navigate は履歴も作り直しも起こさない (Router が同一 location
+    // を load だけにする)。入力欄も正規化後の値に揃えて、切り詰めが見えるようにする
+    setText(next);
+    onQueryChange(next);
+  }
+
   // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
   // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
   function confirmDelete(target: NoteDeleteTarget) {
@@ -195,11 +230,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
         title={PAGE_TITLE}
         actions={
           <>
-            <NoteSearchField
-              value={text}
-              onValueChange={setText}
-              onSubmit={() => onQueryChange(toNoteListFilter(text).q)}
-            />
+            <NoteSearchField value={text} onValueChange={setText} onSubmit={handleSubmit} />
             <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
               ＋ {NOTE_ENTITY_LABEL}を追加
             </DialogTrigger>
