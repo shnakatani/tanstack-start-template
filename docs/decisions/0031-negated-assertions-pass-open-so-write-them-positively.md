@@ -159,5 +159,6 @@ ADR-0029 のルールは `expect.poll` のコールバックの中を見ない�
 - Cypress の retry-ability (`cy.get(..., { timeout: 0 }).should('not.exist')` を「check synchronously that the element does not exist (no retry)」の形として載せる。`expectAbsent` と同じ形): <https://docs.cypress.io/app/core-concepts/retry-ability>
 - Cypress の Assertions「Negative assertions」(否定 assert は意図しない理由で通るので肯定 assert と組にする): <https://docs.cypress.io/app/references/assertions>
 - `@testing-library/dom` の `waitForElementToBeRemoved` (要素が最初から無いと throw する): <https://testing-library.com/docs/dom-testing-library/api-async/>
+- `eslint-plugin-testing-library` の `prefer-presence-queries` (在る / 無いの assert で `getBy*` / `queryBy*` を使い分けさせる) と `prefer-query-by-disappearance` (消滅待ちには `queryBy*`)。不在 assert の書き分けを lint で持つ概念上の先行例。対象が Testing Library の query 名なので `browser-test/no-bare-absence-assertion` の流用元にはならない: <https://github.com/testing-library/eslint-plugin-testing-library/tree/main/docs/rules>
 
 ルールの置き方と、その根拠となる oxlint の JS plugin の出典は ADR-0029 が持つ。
