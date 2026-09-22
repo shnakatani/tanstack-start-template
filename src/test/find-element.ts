@@ -14,12 +14,13 @@ import { ASSERT_TIMEOUT_MS } from "./assert-budget";
  *
  * 公式の既定 (テストの予算) を復元するのではなく、assert の予算を代わりに置く。要素が現れる
  * のを待つ点で肯定 assert と同じ種類の待機だからで、予算が 2 つに割れているほうが読めない。
- * 失敗時は `Cannot find element with locator: <selector>`
- * が出る。この相互作用は上流に報告が無い (2026-09-22 に issue / PR を検索)。
+ * 失敗時は `Cannot find element with locator: <selector>` が出る。この相互作用は上流に
+ * 報告が無い (2026-09-22 に issue / PR を検索)。
+ *
+ * `strict` 等の option は受けない。呼び出し側から timeout を上書きできる口を開けると、
+ * `{ timeout: undefined }` で上限なしへ戻せてしまう。必要になったらこの helper を広げる。
+ * 素の呼び出しは `browser-test/no-bare-find-element` が止めるので、迂回はできない。
  */
-export function findElement(
-  locator: Locator,
-  options?: Parameters<Locator["findElement"]>[0],
-): Promise<HTMLElement | SVGElement> {
-  return locator.findElement({ timeout: ASSERT_TIMEOUT_MS, ...options });
+export function findElement(locator: Locator): Promise<HTMLElement | SVGElement> {
+  return locator.findElement({ timeout: ASSERT_TIMEOUT_MS });
 }

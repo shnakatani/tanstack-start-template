@@ -231,8 +231,6 @@ export const noBareFindElement = defineRule({
     return {
       CallExpression(node: ESTree.CallExpression) {
         if (staticPropertyName(node.callee) !== "findElement") return;
-        // helper 自身は対象外。ここだけが素の呼び出しを持つ
-        if (context.filename.endsWith("/test/find-element.ts")) return;
         context.report({ node, messageId: "bareFindElement" });
       },
     };

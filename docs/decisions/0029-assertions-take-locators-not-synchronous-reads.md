@@ -141,7 +141,7 @@ grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test
 
 helper を置いても、`locator.findElement()` を直に書けば同じ穴に戻る。しかも失敗は「テストが `Test timed out` で落ちる」形なので、原因が locator だと読めない。規範と docstring だけでは気づけない種類の壊れ方なので、`browser-test/no-bare-find-element` が止める。
 
-導入時の違反は 0 件だが、退行の記録はある。この PR 自身が 16 箇所を素の呼び出しで書いており、`actionTimeout` を足した時点で全部が上限なしになっていた。
+導入時の違反は 0 件だが、退行の記録はある。2026-09-22 時点で素の呼び出しが 16 箇所あり、`actionTimeout` を足した時点で全部が上限なしになっていた。
 
 壊し方を 2 つ当てた (2026-09-22)。素の呼び出しを 1 つ持つファイルへ `vp lint` を当てると 1 件報告され、`lint.rules` で `off` にすると 0 件、ルールのメソッド名の判定を壊しても 0 件になる。
 
@@ -260,6 +260,19 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 | `toHaveStyle("pointer-events: auto")`                    | `- Expected` / `+ Received` の差分が出る                                                      |
 | `toHaveStyle({ pointerEvents: "auto" })`                 | `Expected styles could not be parsed by the browser. Did you make a typo?` だけで差分が出ない |
 | `expect(getComputedStyle(x).pointerEvents).toBe("auto")` | `expected 'none' to be 'auto'`                                                                |
+
+否定形は使わない。**解釈できない宣言で素通りする。** 期待値は probe 要素へ流し込まれ、ブラウザが受け付けた宣言だけが残るので、単位の書き忘れや綴り誤りは空集合になり `.not` が真になる (2026-09-22 実測)。
+
+| assert                                                  | 結果     |
+| ------------------------------------------------------- | -------- |
+| `.not.toHaveStyle("pointer-events: none")` (正しい宣言) | 落ちる   |
+| `.not.toHaveStyle("outline-width: 0")` (単位なし)       | **通る** |
+| `.not.toHaveStyle("pointer-evnets: none")` (綴り誤り)   | **通る** |
+| `toHaveStyle("pointer-evnets: none")` (肯定形)          | 落ちる   |
+
+否定は `expect.poll(() => getComputedStyle(x).prop).not.toBe(v)` で書く。retry を保ったまま算出値を直に比べる。
+
+複数プロパティは `;` で 1 つの文字列へまとめる。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る。ただし**同じプロパティを 2 度書かない。shorthand で longhand を覆わない。** jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える。
 
 escape hatch に残るのは、`toHaveStyle` で表せない 3 つの形である。
 

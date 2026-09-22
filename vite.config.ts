@@ -380,6 +380,15 @@ export default defineConfig({
         excludeFiles: ["src/test/*.test.ts"],
         rules: {
           "browser-test/prefer-locator-methods": "error",
+        },
+      },
+      {
+        // 素の `locator.findElement()` を止める (ADR-0029)。`src/test/find-element.ts` は
+        // 唯一の正当な呼び出し元なので除外する。除外先をルール本体ではなく config に置くのは、
+        // `lint-config.test.ts` が適用先を固定できる場所がここだけだからである
+        files: ["src/**/*.test.tsx", "src/test/**", ...testHelperGlobs("**/")],
+        excludeFiles: ["src/test/*.test.ts", "src/test/find-element.ts"],
+        rules: {
           "browser-test/no-bare-find-element": "error",
         },
       },

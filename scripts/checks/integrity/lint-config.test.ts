@@ -113,10 +113,14 @@ const EXPECTED_OVERRIDES = [
     // (`companion-files.ts` の docstring が禁じている)
     files: ["src/**/*.test.tsx", "src/test/**", "**/*.test-helpers.ts", "**/*.test-helpers.tsx"],
     excludeFiles: ["src/test/*.test.ts"],
-    rules: {
-      "browser-test/prefer-locator-methods": "deny",
-      "browser-test/no-bare-find-element": "deny",
-    },
+    rules: { "browser-test/prefer-locator-methods": "deny" },
+  },
+  {
+    // 素の `locator.findElement()` を止める (ADR-0029)。helper 自身だけを除外する。
+    // 除外をルール本体に書くと、この検査から見えない場所で適用先が動く
+    files: ["src/**/*.test.tsx", "src/test/**", "**/*.test-helpers.ts", "**/*.test-helpers.tsx"],
+    excludeFiles: ["src/test/*.test.ts", "src/test/find-element.ts"],
+    rules: { "browser-test/no-bare-find-element": "deny" },
   },
   {
     // テスト専用のコードの import 禁止。緩和ではなく適用先を絞った有効化なので、テスト側は
