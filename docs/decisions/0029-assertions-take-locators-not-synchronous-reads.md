@@ -6,7 +6,7 @@
 
 ## Context
 
-ADR-0013 は「操作後の属性・テキストは `expect.element` で検証する」と決めたが、強制はレビューに置いた。
+ADR-0013 は「待機は retry API に委ねる」節で操作後の検証を `expect.element` に寄せると決めたが、強制はレビューに置いた。
 同 ADR の Consequences は理由を「lint で表現できる形は無い」と書いている。この一文が誤っていた。
 
 ### 同期読みは retry を持たず、失敗したときに何も言わない
@@ -51,7 +51,7 @@ grep -rnE 'expect\(\s*[A-Za-z_$][^;]*\.(element|query|all|elements)\(\)' --inclu
 | `expect(x.element().textContent).toContain(t)`     | 2    | `expect.element(x).toHaveTextContent(t)`       |
 | 要素を受け取るヘルパーへ渡す (`visibleIconNames`)  | 2    | 移さない。locator を受け取る matcher が無い    |
 
-`src/components/action/button.test.tsx` の `expect(document.activeElement).toBe(button.element())` は `await button.click()` の直後にあった。ADR-0013 が「操作後の同期読みは更新前の値を拾う」と書いた形そのものである。
+`src/components/action/button.test.tsx` の `expect(document.activeElement).toBe(button.element())` は `await button.click()` の直後にあった。ADR-0013 が同期読みの危うさとして挙げた形そのものである。
 
 **この grep は取りこぼす。** ルールを有効にすると、上の 45 件に加えて 9 件が出た。いずれも同期読みを変数へ束縛してから assert へ渡す形で、1 行の正規表現では束縛と使用が別の行にあるため見えない。`src/components/ui/sidebar.test.tsx` の `expect(trigger.getAttribute("aria-expanded")).toBe("true")` は `userEvent.keyboard("{Enter}")` の直後にあり、retry を持たないまま操作後の属性を読んでいた。件数を数える手段としては lint のほうが正確で、grep は着手前の規模感にしか使えない。
 
@@ -135,7 +135,7 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 
 ### ルールが追えない形
 
-判定は 1 ファイルの構文だけで行う。次の 2 つは報告しない。`testing.md` が「件数はこのルールで数える」と書くので、数えた結果がこの範囲を出ないことを併記しておく。
+判定は 1 ファイルの構文だけで行う。次の 2 つは報告しない。`.claude/rules/testing.md`「locator の扱い」が件数をこのルールで数えると定めているので、数えた結果がこの範囲を出ないことを併記しておく。
 
 | 形                    | 例                                                                  | なぜ追えないか                                                                                 |
 | --------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |

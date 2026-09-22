@@ -386,6 +386,8 @@ export default defineConfig({
           "browser-test/no-bare-find-element": "error",
           // スタイルの否定 assert が素通りする形を止める (ADR-0031)
           "browser-test/no-negated-style-literal": "error",
+          // 不在の assert を helper の名前で読み分けさせる (ADR-0031)
+          "browser-test/no-bare-absence-assertion": "error",
         },
       },
       {

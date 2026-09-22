@@ -103,11 +103,8 @@ const EXPECTED_OVERRIDES = [
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
-    // ブラウザテストの assert を守る自前ルール 3 本 (ADR-0029 / ADR-0030 / ADR-0031)。本文だけでなく
-    // locator を配る helper も対象にする。テスト本文に絞ると、helper へ切り出した同期読みが
-    // ルールから外れる。`*.test.ts` を足すと、locator を持たない unit project の drizzle
-    // (`db.select().from(x).all()`) が同名メソッドで誤検出になる。off へ落とすと、
-    // 同期読みが assert へ戻る経路が無診断になる
+    // ブラウザテストの assert を守る自前ルール 3 本 (ADR-0029 / ADR-0030 / ADR-0031)。
+    // 適用先と除外の理由は vite.config.ts の同じ override が持つ。
     // 期待値は手書きで持つ。`testHelperGlobs()` を spread すると vite.config.ts と同じ
     // 入力どうしの比較になり、種別が増えても検査が通ってしまう
     // (`companion-files.ts` の docstring が禁じている)
@@ -117,6 +114,7 @@ const EXPECTED_OVERRIDES = [
       "browser-test/prefer-locator-methods": "deny",
       "browser-test/no-bare-find-element": "deny",
       "browser-test/no-negated-style-literal": "deny",
+      "browser-test/no-bare-absence-assertion": "deny",
     },
   },
   {

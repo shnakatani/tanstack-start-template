@@ -184,10 +184,11 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 予算の値は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が持つ。上げるときはここを変える。config へ直接書くと helper 側の閾値が追随しない (ADR-0030)
 - **`testTimeout` は動かさない。** 締めるのは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も縮み、遅い環境で緑のテストが落ちる (ADR-0030)
 - 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く。要素が無ければ 1 回目で通るので、単独では何も検証していない (ADR-0031)
-- 要素が在る状態から消えるのを待つときは `expect.element(locator).not.toBeInTheDocument()` をそのまま書く。消えるのを待つ側には retry の予算が要る。呼び出し側の形でどちらのつもりかが読める (ADR-0031)
-- `.not.toBeInTheDocument()` と `toHaveLength` は要素が無くても通る。ほかの否定 matcher は要素が引けない間 retry するので肯定 assert は要らない (ADR-0031)
+- 要素が在る状態から消えるのを待つときは `src/test/absent.ts` の `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は `browser-test/no-bare-absence-assertion` が止める (ADR-0031)
+- `expectAbsent` と `toHaveLength` は要素が無くても通るので、描画を待つ肯定 assert を先に置く。ほかの否定 matcher は要素が引けない間 retry するので要らない (ADR-0031)
+- 2 つの helper の違いは retry の予算だけで、いまのテストでは挙動に出ない。分ける理由は読み分けと機械強制にある (ADR-0031)
 - locator は複数一致で throw する (vitest の locators docs「strict and throw if multiple elements match」)。`expect.element` は retry のたびに引き直すので「1 件だけ」を assert の前提に使える。使うなら依拠を実装近傍に書く。書かないと前提ごと消される
-- 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0029)。**`toHaveLength` は一致ゼロでも成立する**ので、描画を待つ肯定 assert を先に置く (ADR-0031)
+- 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0029)
 - 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件 (mock の呼び出し回数など) は `vi.waitFor` (ADR-0013)
 - `expect.poll` と `vi.waitFor` はコールバックを retry するので、中の同期読みはルールの対象外。`expect.element` は引数の式を 1 度しか評価せず、同期読みを渡すとその値のまま retry する (ADR-0029)
 

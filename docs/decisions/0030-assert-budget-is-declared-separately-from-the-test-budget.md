@@ -58,6 +58,10 @@ ADR-0029 の移行で `expect.element` の肯定 assert が増え、「最初か
 
 `actionTimeout` を置かない状態では `expect.element` が `expect.poll.timeout` を読まず、1 ページ目の記述と食い違う。それが #8308 である。置くと記述どおりになる。**回避策で挙動を曲げているのではなく、文書化された既定へ戻している。**
 
+**この対はメンテナが提示した形そのものである。** #9157 で `actionTimeout` を 5000 にしても効かないという報告に対し、メンテナは「`actionTimeout` is not applied to assertions. They are controlled by `expect.poll.timeout`」と答え、`expect.poll.timeout: 5_000` と `playwright({ actionTimeout: 5_000 })` を両方足す diff を示している (2026-09-22 に `gh issue view 9157 --repo vitest-dev/vitest` で確認)。対も値も本 ADR の設定と一致する。
+
+同じ回答は第 3 のノブ `browser.expect` にも触れているが、4.1.11 のこれは `toMatchScreenshot` しか持たず `poll` を持たない (`vitest/dist/chunks/reporters.d.*.d.ts` の `BrowserConfigOptions` を 2026-09-22 に確認)。予算の置き場はこの版では 1 つだけである。
+
 どちらの設定も、上流が意図した用途で使っている。
 
 | 設定                                    | 上流の位置づけ                                                                                                                                                                                                                    |

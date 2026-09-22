@@ -134,6 +134,29 @@ function isInsideRetryingCallback(node: Node): boolean {
   }
 }
 
+/**
+ * その同期読みが変数へ束縛されているなら、その変数の read 参照を返す。
+ *
+ * 2 つのルールが同じ追跡に依拠している。ADR-0029 の「壊し方 (間接)」が固定しているのは
+ * この追跡なので、数える対象の定義を 1 箇所に置く
+ */
+function readReferencesOfBinding(
+  node: Node,
+  sourceCode: SourceCode,
+): { declarator: Node; references: Node[] } | undefined {
+  const bound = unwrap(node);
+  const declarator = parentOf(bound);
+  if (!declarator || declarator.type !== "VariableDeclarator" || declarator.init !== bound) {
+    return undefined;
+  }
+  const references = sourceCode
+    .getDeclaredVariables(declarator)
+    .flatMap((variable) => variable.references)
+    .filter((reference) => reference.isRead())
+    .map((reference) => reference.identifier);
+  return { declarator, references };
+}
+
 type Verdict = "report" | "allowed" | "unknown";
 
 /** 同期読みの値を、使われる位置まで辿って判定する */
@@ -193,27 +216,20 @@ export const preferLocatorMethods = defineRule({
 
         // classifyUse は連鎖が切れた時点で返る。根まで登る判定より先に回す
         const verdict = classifyUse(node);
-        if (verdict === "allowed") return;
+        if (verdict === "allowed" || isInsideRetryingCallback(node)) return;
         if (verdict === "report") {
-          if (!isInsideRetryingCallback(node)) context.report({ node, messageId: "syncRead" });
+          context.report({ node, messageId: "syncRead" });
           return;
         }
-        if (isInsideRetryingCallback(node)) return;
 
-        // 変数へ束縛してから assert へ渡す形。宣言が導入した変数の参照を辿る
-        const bound = unwrap(node);
-        const declarator = parentOf(bound);
-        if (!declarator || declarator.type !== "VariableDeclarator" || declarator.init !== bound) {
-          return;
-        }
-        for (const variable of context.sourceCode.getDeclaredVariables(declarator)) {
-          for (const reference of variable.references) {
-            if (!reference.isRead()) continue;
-            if (isInsideRetryingCallback(reference.identifier)) continue;
-            if (classifyUse(reference.identifier) === "report") {
-              context.report({ node, messageId: "syncRead" });
-              return;
-            }
+        // 変数へ束縛してから assert へ渡す形
+        const binding = readReferencesOfBinding(node, context.sourceCode);
+        if (!binding) return;
+        for (const reference of binding.references) {
+          if (isInsideRetryingCallback(reference)) continue;
+          if (classifyUse(reference) === "report") {
+            context.report({ node, messageId: "syncRead" });
+            return;
           }
         }
       },
@@ -320,12 +336,12 @@ function findNegatedLiteralMatchers(
       continue;
     }
 
-    // `cond ? a : b` / `a ?? b` の枝。値はそのまま外へ出る (test の位置は除く)
-    if (parent.type === "ConditionalExpression" && parent.test !== current) {
-      current = parent;
-      continue;
-    }
-    if (parent.type === "LogicalExpression") {
+    // `cond ? a : b` / `a ?? b` の枝。値はそのまま外へ出る。
+    // 三項の条件式は値にならないので、そこだけ透かさない
+    if (
+      PASSTHROUGH_TYPES.has(parent.type) &&
+      !(parent.type === "ConditionalExpression" && parent.test === current)
+    ) {
       current = parent;
       continue;
     }
@@ -361,17 +377,15 @@ function findNegatedLiteralMatchers(
       return [];
     }
 
-    // 変数へ束縛してから assert へ渡す形。宣言が導入した変数の参照を辿る
+    // 変数へ束縛してから assert へ渡す形
     if (followBinding && parent.type === "VariableDeclarator" && parent.init === current) {
+      const binding = readReferencesOfBinding(current, sourceCode);
+      if (!binding) return [];
       // 同じ束縛を 2 つの引数で読む形 (`expect(c.color, c.width)`) は同じ matcher へ届く。
       // 参照ごとに返すと同じ呼び出しを 2 回報告するので、ここで畳む
-      const found = sourceCode
-        .getDeclaredVariables(parent)
-        .flatMap((variable) => variable.references)
-        .filter((reference) => reference.isRead())
-        .flatMap((reference) =>
-          findNegatedLiteralMatchers(reference.identifier, sourceCode, false),
-        );
+      const found = binding.references.flatMap((reference) =>
+        findNegatedLiteralMatchers(reference, sourceCode, false),
+      );
       return [...new Set(found)];
     }
 
@@ -416,11 +430,49 @@ export const noNegatedStyleLiteral = defineRule({
   },
 });
 
+export const noBareAbsenceAssertion = defineRule({
+  meta: {
+    type: "problem",
+    docs: {
+      description: "不在の assert は expectAbsent / expectRemoved を通す (ADR-0031)",
+    },
+    messages: {
+      bareAbsence:
+        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない (ADR-0031)",
+    },
+  },
+  create(context) {
+    return {
+      CallExpression(node: ESTree.CallExpression) {
+        if (staticPropertyName(node.callee) !== "toBeInTheDocument") return;
+        if (node.callee.type !== "MemberExpression") return;
+        // `.not` を挟んだ形だけが対象。肯定形は待つ側なので素で書いてよい
+        const negation = node.callee.object;
+        if (staticPropertyName(negation) !== "not") return;
+        if (negation.type !== "MemberExpression") return;
+        // 主語が locator である証拠を `expect.element(...)` に求める。story の play が使う
+        // `expect(screen.queryBy...)` は Testing Library の query で、locator ではない
+        const subject = negation.object;
+        if (subject.type !== "CallExpression") return;
+        if (
+          subject.callee.type !== "MemberExpression" ||
+          nameOf(subject.callee.object) !== "expect" ||
+          staticPropertyName(subject.callee) !== "element"
+        ) {
+          return;
+        }
+        context.report({ node, messageId: "bareAbsence" });
+      },
+    };
+  },
+});
+
 export default definePlugin({
   meta: { name: "browser-test" },
   rules: {
     "prefer-locator-methods": preferLocatorMethods,
     "no-bare-find-element": noBareFindElement,
     "no-negated-style-literal": noNegatedStyleLiteral,
+    "no-bare-absence-assertion": noBareAbsenceAssertion,
   },
 });

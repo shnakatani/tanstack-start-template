@@ -37,25 +37,29 @@
 
 **否定 assert は、期待値がリテラルなら書かない。肯定で書く。** 例外は、要素が在る状態から消えるのを待つ `.not.toBeInTheDocument()` と、期待値が別の観測である比較の 2 つに限る。
 
-| 規範                                                                                                                          | 守らないと何が壊れるか                                                                                     |
-| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
-| 要素が在る状態から消えるのを待つときは `expect.element(x).not.toBeInTheDocument()` をそのまま書く                             | 消えるのを待つ側には retry の予算が要る。`expectAbsent` に置き換えると、unmount を待たずに落ちる           |
-| `.not.toBeInTheDocument()` 以外の否定 matcher には肯定 assert を添えなくてよい                                                | 要素が引けない間 retry するため、不在のまま通ることがない                                                  |
-| 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
-| スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                          | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
-| `toHaveStyle` は文字列形式で書き、複数プロパティは `;` で 1 つにまとめる                                                      | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
-| `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                | jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える                                            |
+| 規範                                                                                                                                | 守らないと何が壊れるか                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く       | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
+| 要素が在る状態から消えるのを待つときは `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は書かない | 2 つは同じ matcher を呼ぶので、名前が無いとどちらのつもりかが字面で読めない                                |
+| `.not.toBeInTheDocument()` 以外の否定 matcher には肯定 assert を添えなくてよい                                                      | 要素が引けない間 retry するため、不在のまま通ることがない                                                  |
+| 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                      | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
+| スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                                | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
+| `toHaveStyle` は文字列形式で書き、複数プロパティは `;` で 1 つにまとめる                                                            | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
+| `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                      | jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える                                            |
 
 肯定形の書き方は主張で決まる。「描かれている」「上限がある」なら `expect.poll(() => Number.parseFloat(getComputedStyle(x).outlineWidth)).toBeGreaterThan(0)` のように 1 回の観測から数値を出す。綴りを外しても `NaN` になって落ちる。当たっている token が分かっているなら `expect(shown.borderTopColor).toBe(resolveColorToken("--border"))` のように値そのものと比べる。観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると別々の瞬間で成立してよいことになる。
 
 ## Consequences
 
-### 「最初から出ない」判定は `expectAbsent` が 1 箇所で持つ
+### 不在の 2 つの意味は `src/test/absent.ts` の 2 つの名前が持つ
 
-`{ timeout: 0 }` を渡す薄いヘルパーを `src/test/absent.ts` へ置く。呼び出し側の名前で「待たないつもりである」ことが読めるようにする。`{ timeout: 0 }` を外す退行は `src/test/absent.test.tsx` の所要時間の閾値が捕まえる (外すと同じ assert が 4 秒以上かけて落ちる)。`expect.element(x).not.toBeInTheDocument()` をそのまま書けば消滅待ちで、`expectAbsent(x)` なら不在確認である。
+同じ matcher を呼ぶ 2 つのヘルパーを置く。`expectAbsent(x)` は `{ timeout: 0 }` で打ち切る不在確認、`expectRemoved(x)` は assert の予算ぶん待つ消滅待ちである。`{ timeout: 0 }` を外す退行は `src/test/absent.test.tsx` の所要時間の閾値が捕まえる (外すと同じ assert が 4 秒以上かけて落ちる)。素の `expect.element(x).not.toBeInTheDocument()` は `browser-test/no-bare-absence-assertion` が止める。
 
-移行時にこの 2 つを取り違えると、消滅待ちを `expectAbsent` にした側だけが flake を作る。誤りの向きが非対称なので、`.not.toBeInTheDocument()` から `expectAbsent` へ移す箇所は 1 件ずつ、直前の操作が要素を消すものかどうかで判定する。
+**予算の差は、いまのテストでは挙動に出ない。** `expectRemoved` を `{ timeout: 0 }` へ落として 11 箇所すべてを走らせても 43 件すべて緑だった (2026-09-22 実測)。操作の `await` が React の更新を flush し、`src/test/browser-setup.tsx` が Base UI の animation を毎テスト無効にしている (ADR-0018) ため、assert の行では unmount が済んでいる。予算が要るのは `enableBaseUiAnimations()` を呼んだテストと、flush を伴わない操作で消える場合である。
+
+つまりこの 2 つが買っているのは**読み分けと機械強制**であって、現在のテストに対する挙動の違いではない。名前を分ける理由は、取り違えが実際に起きたことにある。本ブランチの `src/routes/notes/-components/note-cells.test.tsx` の 4 件は「最初から無い」を素の形で書いており、レビューが見つけて `1d987d5` で直した。機械では出なかった。
+
+上流の対応物 `@testing-library/dom` の `waitForElementToBeRemoved` は、要素が最初から無いときに throw して取り違えをランタイムで止める。**この保証は移植できない。** 公式 API は操作の前に捕まえた要素を受け取る設計で、操作の後に assert を書く形では正当な消滅待ちでも `already removed` で落ちる (2026-09-22 に両方の向きで実測)。
 
 ### スタイルの否定は lint で止める
 
@@ -119,7 +123,8 @@ ADR-0029 のルールの許可は callee 単位なので、この 3 つより広
 | 期待値がリテラルの否定を lint で止め、肯定形へ移す | 経路 2-3 は同じ「期待値の綴りで否定が真になる」に還元でき、式の構造で表せる。経路 1 と `toHaveLength` は期待値を取らないので lint では表せず、`expectAbsent` と肯定 anchor が持つ | **採用** |
 | 否定 assert には触れない                           | ADR-0029 の移行が 15 秒の赤を持ち込む。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                    | 却下     |
 | `not.toHaveStyle` だけを止める                     | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                          | 却下     |
-| 否定 matcher を全面禁止する                        | 消滅待ちの `.not.toBeInTheDocument()` と、観測どうしの比較 10 件が書けなくなる。どちらも綴りで潰れない                                                                            | 却下     |
+| 否定 matcher を全面禁止する                        | 観測どうしの比較 10 件が書けなくなる。綴りで潰れない形まで巻き込む                                                                                                                | 却下     |
+| `waitForElementToBeRemoved` を使う                 | 操作の前に要素を捕まえる構造でないと保証が効かず、11 箇所すべてを書き換えることになる。ADR-0013 が消滅待ちに決めた形も覆す                                                        | 却下     |
 | `toHaveStyle` をオブジェクト形式で書く             | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない                                                                      | 却下     |
 
 失敗時の文言を比べた (2026-09-22)。
@@ -135,5 +140,7 @@ ADR-0029 のルールの許可は callee 単位なので、この 3 つより広
 - vitest browser の assertion API: <https://vitest.dev/guide/browser/assertion-api>
 - 同梱の `@vitest/browser` 4.1.11 の `matchers.d.ts` (`expect.element` が受ける型)
 - jest-dom の `toHaveStyle`: <https://github.com/testing-library/jest-dom#tohavestyle>
+- Playwright の Assertions (「non-retrying assertions ... can lead to a flaky test」。`expectAbsent` の `{ timeout: 0 }` が該当し、肯定 anchor が緩和にあたる): <https://playwright.dev/docs/test-assertions>
+- `@testing-library/dom` の `waitForElementToBeRemoved` (要素が最初から無いと throw する): <https://testing-library.com/docs/dom-testing-library/api-async/>
 
 ルールの置き方と、その根拠となる oxlint の JS plugin の出典は ADR-0029 が持つ。

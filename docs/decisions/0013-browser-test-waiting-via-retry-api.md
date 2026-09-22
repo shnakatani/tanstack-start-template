@@ -47,7 +47,7 @@ const inputGroup = findInputGroup(input.element());
 | 操作の結果として現れる要素の生 DOM    | `findElement(locator)` (`src/test/find-element.ts`。ADR-0030) |
 | 操作後の属性・テキストの検証          | `await expect.element(locator).toHaveAttribute(...)`          |
 | `render()` 直後、操作前の要素の生 DOM | `locator.element()`                                           |
-| close 後に要素が消えたことの確認      | `await expect.element(locator).not.toBeInTheDocument()`       |
+| close 後に要素が消えたことの確認      | `expectRemoved(locator)` (`src/test/absent.ts`。ADR-0031)     |
 
 `waitForAnimations()` は「アニメーションの完了を待つ」責務だけを持つ。mount を待つ役は `findElement()` が担うので、開く操作のあとは `findElement()` → `waitForAnimations()` → 実測の順に置く。逆順では、未 mount のあいだ `waitForAnimations()` が空振りし、アニメーション途中の値を測る。
 

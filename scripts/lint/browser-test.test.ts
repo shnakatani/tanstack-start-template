@@ -1,7 +1,12 @@
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { describe, expect, it } from "vite-plus/test";
 
-import { noBareFindElement, noNegatedStyleLiteral, preferLocatorMethods } from "./browser-test";
+import {
+  noBareAbsenceAssertion,
+  noBareFindElement,
+  noNegatedStyleLiteral,
+  preferLocatorMethods,
+} from "./browser-test";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -62,7 +67,8 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       code: "const rows = locator.all(); expect(rows).toHaveLength(2);",
       errors: [{ messageId: "syncRead" }],
     },
-    // 値を包むだけの節点は透かして見る。TypeScript の構文なので parser へ .ts として渡す
+    // 値を包むだけの節点は透かして見る。`filename` を .ts にするのは TypeScript の構文を
+    // 含むケースだけ (RuleTester の既定は file.js)
     {
       code: "expect((locator.query())!).not.toBeNull();",
       filename: "a.ts",
@@ -71,17 +77,14 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     // 値を素通しする節点を挟んだ形。塞がないと構文 1 種がまるごと素通りする
     {
       code: 'expect(el.query()?.textContent).toBe("x");',
-      filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },
     {
       code: 'expect(rows[1]?.element().textContent).toContain("x");',
-      filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },
     {
       code: "expect(el.query() ? 1 : 2).toBe(1);",
-      filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },
     {
@@ -92,25 +95,21 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     {
       // `expect.poll` が retry するのはコールバックだけ。matcher の引数は 1 度きり
       code: "await expect.poll(() => 1).toBe(b.element());",
-      filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },
     {
       code: 'expect(el.element().getAttribute("a") ?? "").toBe("b");',
-      filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },
     // `expect.element` が retry するのは locator を渡したときだけ。同期読みを渡すと
     // 最初に解決した要素を retry し続ける
     {
       code: "expect.element(locator.element()).toBeInTheDocument();",
-      filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },
     {
       // matcher の引数は 1 度しか評価されない
       code: 'expect.element(a).toHaveAttribute("x", b.element());',
-      filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },
     {
@@ -252,6 +251,36 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
       code: 'const c = getComputedStyle(x); expect(c.color, c.width).not.toBe("a");',
       errors: [{ messageId: "negatedStyleLiteral" }],
     },
+    {
+      // 1 つの束縛から別々の matcher へ届く形。畳まずに両方を報告する
+      code: 'const c = getComputedStyle(x); expect(c.color).not.toBe("a"); expect(c.width).not.toBe("b");',
+      errors: [{ messageId: "negatedStyleLiteral" }, { messageId: "negatedStyleLiteral" }],
+    },
+  ],
+});
+
+tester.run("no-bare-absence-assertion", noBareAbsenceAssertion, {
+  valid: [
+    // 2 つの helper が唯一の正当な呼び出し元。呼び出し側は名前でどちらかを表明する
+    "await expectAbsent(screen.getByText('x'));",
+    "await expectRemoved(screen.getByText('x'));",
+    // 肯定形と、ほかの否定 matcher は対象外
+    "await expect.element(x).toBeInTheDocument();",
+    'await expect.element(x).not.toHaveAttribute("aria-busy", "true");',
+    // Testing Library の query は locator ではない。story の play が使う形
+    "await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();",
+  ],
+  invalid: [
+    {
+      // 素で書くと「最初から無い」と「消えるのを待つ」が字面で区別できない
+      code: "await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();",
+      errors: [{ messageId: "bareAbsence" }],
+    },
+    {
+      // timeout を直に渡す形も同じ
+      code: "await expect.element(x, { timeout: 0 }).not.toBeInTheDocument();",
+      errors: [{ messageId: "bareAbsence" }],
+    },
   ],
 });
 
@@ -266,6 +295,7 @@ describe("プラグインの形", () => {
       "prefer-locator-methods",
       "no-bare-find-element",
       "no-negated-style-literal",
+      "no-bare-absence-assertion",
     ]);
   });
 });

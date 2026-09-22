@@ -8,7 +8,7 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
-import { expectAbsent } from "@/test/absent";
+import { expectAbsent, expectRemoved } from "@/test/absent";
 import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
 import {
@@ -153,7 +153,7 @@ describe("NoteCreateDialog", () => {
 
     await clickSave(screen);
 
-    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+    await expectRemoved(titleTextbox(screen));
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
   });
@@ -166,7 +166,7 @@ describe("NoteCreateDialog", () => {
     await bodyTextbox(screen).fill("牛乳とパン");
 
     await clickSave(screen);
-    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+    await expectRemoved(titleTextbox(screen));
     await openNoteCreateDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
@@ -178,7 +178,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("一時入力");
 
     await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
-    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+    await expectRemoved(titleTextbox(screen));
     await openNoteCreateDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
@@ -221,7 +221,7 @@ describe("NoteCreateDialog", () => {
     create.resolve({ id: 1 });
 
     // 応答で閉じる。invalidateQueries は未決着
-    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+    await expectRemoved(titleTextbox(screen));
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
 
@@ -286,6 +286,6 @@ describe("NoteCreateDialog", () => {
     create.resolve({ id: 1 });
 
     // 応答 (imperative-action) での close は止めない
-    await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+    await expectRemoved(titleTextbox(screen));
   });
 });

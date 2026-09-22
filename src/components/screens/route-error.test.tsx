@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { expectAbsent } from "@/test/absent";
+import { expectAbsent, expectRemoved } from "@/test/absent";
 import { createTestRouter } from "@/test/create-test-router";
 import {
   expectWithinViewport,
@@ -116,7 +116,7 @@ describe("RouteErrorContent", () => {
     await userEvent.keyboard(" ");
     await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
     await expect.element(trigger).not.toHaveAttribute("aria-controls");
-    await expect.element(screen.getByText(/at loader/)).not.toBeInTheDocument();
+    await expectRemoved(screen.getByText(/at loader/));
   });
   it("長いスタックトレースはパネル内でスクロールし、カードを画面外へ押し出さない", async () => {
     const error = new Error("取得に失敗しました");

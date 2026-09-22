@@ -49,11 +49,9 @@ export default defineProject({
   },
   test: {
     name: "browser",
-    // assert の予算。テストの予算 (`testTimeout`) と分ける。上流は `expect.element` の予算を
-    // ここで決める設計で (vitest-dev/vitest#6983 のメンテナ回答)、Playwright も assertion 側の
-    // timeout を test timeout と独立に持ち既定を 5000ms と文書化している。その値を写す。
-    // `actionTimeout` と対で効く。これを消すと vitest の既定 1000ms になり、
-    // `actionTimeout` を消すと `expect.element` がタスクの残り予算を使い切る側へ戻る (ADR-0030)
+    // assert の予算。テストの予算 (`testTimeout`) と分ける。値とその根拠は
+    // `src/test/assert-budget.ts` が持つ。`actionTimeout` と対で効き、これを消すと
+    // vitest の既定 1000ms、`actionTimeout` を消すと残り予算を使い切る側へ戻る (ADR-0030)
     expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
     // project を足すとそのぶん描画が増えるため。根拠と棄却した選択肢は ADR-0027。

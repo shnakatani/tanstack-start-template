@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+import { expectRemoved } from "./absent";
 import { enableBaseUiAnimations } from "./base-ui-animations";
 import { findElement } from "./find-element";
 
@@ -50,7 +51,7 @@ describe("Base UI の animation", () => {
 
     await screen.getByRole("button", { name: "閉じる" }).click();
 
-    await expect.element(screen.getByRole("dialog")).not.toBeInTheDocument();
+    await expectRemoved(screen.getByRole("dialog"));
   });
 
   it("enableBaseUiAnimations() を呼んだテストでは animate-out の完了まで popup が残る", async () => {

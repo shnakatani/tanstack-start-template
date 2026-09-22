@@ -19,7 +19,7 @@ import {
 } from "@/features/notes/schema.test-helpers";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
-import { expectAbsent } from "@/test/absent";
+import { expectAbsent, expectRemoved } from "@/test/absent";
 import { enableBaseUiAnimations } from "@/test/base-ui-animations";
 import { createTestRouter } from "@/test/create-test-router";
 import { deferMock } from "@/test/defer-mock";
@@ -65,11 +65,11 @@ async function renderPage() {
 }
 
 async function expectCreateDialogClosed(screen: Screen) {
-  await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
+  await expectRemoved(titleTextbox(screen));
 }
 
 async function expectDeleteConfirmClosed(screen: Screen) {
-  await expect.element(confirmDeleteButton(screen)).not.toBeInTheDocument();
+  await expectRemoved(confirmDeleteButton(screen));
 }
 
 /**
@@ -269,7 +269,7 @@ describe("NotesPage", () => {
       .element(noteRow(screen, CREATED_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
     // 出ていた空状態が消えるのを待つ。不在確認ではないので retry の予算が要る (ADR-0031)
-    await expect.element(screen.getByText("メモが登録されていません")).not.toBeInTheDocument();
+    await expectRemoved(screen.getByText("メモが登録されていません"));
 
     create.resolve({ id: CREATED_NOTE.id });
 
@@ -398,7 +398,7 @@ describe("NotesPage", () => {
 
     // 再取得 (2 回目の listNotes) が反映されても、消えるのは対象行だけ。
     // 対象名は announcer の通知にも残るので、行そのもので判定する
-    await expect.element(noteRow(screen, NOTE)).not.toBeInTheDocument();
+    await expectRemoved(noteRow(screen, NOTE));
     await expectText(screen, OTHER_NOTE.title);
   });
 
