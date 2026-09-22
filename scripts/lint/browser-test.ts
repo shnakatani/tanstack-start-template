@@ -13,22 +13,6 @@ import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plu
 const SYNC_READS = new Set(["element", "elements", "query", "all"]);
 
 /**
- * 同期読みの戻り値に続けて読んでよいもの。locator に対応する matcher が無い実測に限る。
- * 足す前に、その主張が matcher で書けないことを確かめる (ADR-0029)
- */
-const ESCAPE_HATCH_MEMBERS = new Set([
-  "getBoundingClientRect",
-  "matches",
-  "closest",
-  "parentElement",
-  "querySelector",
-  "querySelectorAll",
-]);
-
-/** 同期読みを引数として受け取ってよい関数。同上 */
-const ESCAPE_HATCH_CALLEES = new Set(["getComputedStyle"]);
-
-/**
  * コールバックを retry する呼び出し。その中の同期読みは毎回引き直されるので報告しない。
  * `element` を入れない。`expect.element(x.element())` は stale な要素を retry し続ける形で、
  * 本ルールが止めたい対象そのものになる
@@ -150,7 +134,7 @@ function readReferencesOfBinding(node: Node, sourceCode: SourceCode): Node[] {
     .map((reference) => reference.identifier);
 }
 
-type Verdict = "report" | "allowed" | "unknown";
+type Verdict = "report" | "unknown";
 
 /** 同期読みの値を、使われる位置まで辿って判定する */
 function classifyUse(syncRead: Node): Verdict {
@@ -165,9 +149,7 @@ function classifyUse(syncRead: Node): Verdict {
     }
 
     if (parent.type === "MemberExpression" && parent.object === current) {
-      const member = staticPropertyName(parent);
-      if (member !== undefined && ESCAPE_HATCH_MEMBERS.has(member)) return "allowed";
-      // `.getAttribute` / `.textContent` のように matcher で書ける読み。値の行き先を追う
+      // `.getAttribute` / `.getBoundingClientRect()` のように値を読み続ける形。行き先を追う
       current = parent;
       continue;
     }
@@ -178,8 +160,6 @@ function classifyUse(syncRead: Node): Verdict {
         continue;
       }
       if (isArgumentOf(parent, current)) {
-        const name = calleeName(parent);
-        if (name !== undefined && ESCAPE_HATCH_CALLEES.has(name)) return "allowed";
         return isAssertionCall(parent) ? "report" : "unknown";
       }
     }
@@ -196,7 +176,7 @@ export const preferLocatorMethods = defineRule({
     },
     messages: {
       syncRead:
-        "locator の同期読みを expect() へ渡さない。expect.element を通す。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)",
+        "locator の同期読みを expect() へ渡さない。expect.element を通す。matcher の無い実測は expect.poll のコールバックの中で読む。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)",
     },
   },
   create(context) {
@@ -209,7 +189,7 @@ export const preferLocatorMethods = defineRule({
 
         // classifyUse は連鎖が切れた時点で返る。根まで登る判定より先に回す
         const verdict = classifyUse(node);
-        if (verdict === "allowed" || isInsideRetryingCallback(node)) return;
+        if (isInsideRetryingCallback(node)) return;
         if (verdict === "report") {
           context.report({ node, messageId: "syncRead" });
           return;

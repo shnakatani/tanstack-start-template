@@ -22,11 +22,8 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     "await expect.poll(() => rows.all().length).toBe(3);",
     // `expect.poll` の引数はコールバックごと retry される
     'await expect.poll(() => el.element().textContent).toBe("x");',
-    // locator に対応する matcher が無い実測
-    "expect(el.element().getBoundingClientRect().width).toBeGreaterThan(0);",
+    // 関数の引数に渡した同期読みは追わない (ADR-0029「ルールが追えない形」)
     'expect(getComputedStyle(el.element()).opacity).toBe("0.5");',
-    'expect(el.element().matches(":focus-visible")).toBe(true);',
-    'expect(el.element().closest("label")).not.toBeNull();',
     // assert へ届かない同期読み
     "el.element().focus();",
     'const label = el.element().closest("label");',
@@ -56,6 +53,19 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     },
     {
       code: "expect(document.activeElement).toBe(button.element());",
+      errors: [{ messageId: "syncRead" }],
+    },
+    // matcher の無い実測も expect.poll の中で読む。直接流す形を許す列挙は 2026-09-22 に撤去した
+    {
+      code: "expect(el.element().getBoundingClientRect().width).toBeGreaterThan(0);",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: 'expect(el.element().matches(":focus-visible")).toBe(true);',
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: 'expect(el.element().closest("label")).not.toBeNull();',
       errors: [{ messageId: "syncRead" }],
     },
     // 変数へ束縛してから渡す形。スコープ解析が外れるとここだけ無言で通る (ADR-0029)

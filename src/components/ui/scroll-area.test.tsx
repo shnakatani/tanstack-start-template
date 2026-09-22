@@ -51,7 +51,7 @@ describe("ScrollArea", () => {
 /**
  * 余白が `ScrollBar` の太さと一致することを、Viewport の端とバーの端の一致で固定する。
  * 一致で見るのは、足りなければバーが内容に被り、余ればバーの無い空帯が残るため。
- * 端の一致は矩形でしか表せないので `getBoundingClientRect` を読む (ADR-0029 の escape hatch)。
+ * 端の一致は矩形でしか表せないので `getBoundingClientRect` を読む。mount を `expect.element` で待ってから読む (ADR-0013)。
  *
  * 寸法は `size-24` = 4px * 24 = 96px、`pb-2.5` / `pr-2.5` = 4px * 2.5 = 10px
  * (`--spacing` は既定の 0.25rem。`src/styles.css` の `@theme` は色しか触っていない)。

@@ -47,7 +47,7 @@
 | `toHaveStyle` は文字列形式で書き、複数プロパティは `;` で 1 つにまとめる                                                            | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
 | `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                      | jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える                                            |
 
-肯定形の書き方は主張で決まる。「描かれている」「上限がある」なら `expect.poll(() => Number.parseFloat(getComputedStyle(x).outlineWidth)).toBeGreaterThan(0)` のように 1 回の観測から数値を出す。綴りを外しても `NaN` になって落ちる。当たっている token が分かっているなら `expect(shown.borderTopColor).toBe(resolveColorToken("--border"))` のように値そのものと比べる。観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると別々の瞬間で成立してよいことになる。
+肯定形の書き方は主張で決まる。「描かれている」「上限がある」なら `expect.poll(() => Number.parseFloat(getComputedStyle(x).outlineWidth)).toBeGreaterThan(0)` のように 1 回の観測から数値を出す。綴りを外しても `NaN` になって落ちる。当たっている token が分かっているなら `expect.element(x).toHaveStyle(`color: ${resolveColorToken("--foreground")}`)` のように値そのものと比べる (`src/components/parts/segmented-radio-group.test.tsx`)。観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると別々の瞬間で成立してよいことになる。
 
 ## Consequences
 
@@ -105,17 +105,17 @@ ADR-0013 の Decision の表は「close 後に要素が消えたことの確認�
 
 否定から肯定の `expect.poll` へ移すと、失敗時の所要が変わる。否定は条件が最初から成立して即座に返っていたが、肯定は成立しない条件を assert の予算 (ADR-0030) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。挙動としては正しく、赤の所要が延びるのは検出力と引き換えである。
 
-### escape hatch に残る 3 つの形
+### `toHaveStyle` で表せない 3 つの形
 
-`toHaveStyle` で表せないので、`getComputedStyle` を `expect()` へ流してよい (ADR-0029 の escape hatch)。
+`toHaveStyle` で表せないので、`getComputedStyle` を `expect.poll` のコールバックの中で読む (ADR-0029)。
 
 | 形                 | 例                                                                                                 |
 | ------------------ | -------------------------------------------------------------------------------------------------- |
 | 2 回の観測を比べる | `src/components/ui/sidebar.test.tsx` の「開く前後で背景色が変わったこと」                          |
-| 数値の大小         | `expect(Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                                  |
+| 数値の大小         | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                       |
 | 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない (2026-09-22 に実測) |
 
-ADR-0029 のルールの許可は callee 単位なので、この 3 つより広い。狭めるには matcher を見る分岐が要る。先行例の `prefer-web-first-assertions` は `supportedMatchers` で matcher を見ているが、あれは autofix の可否を決めるためで範囲の限定ではない。本 ADR のルールは期待値がリテラルの否定だけを狭く止めるので、許可リストの側は動かさない。
+ADR-0029 のルールは `expect.poll` のコールバックの中を見ないので、この 3 つより広い形も通る。狭めるには matcher を見る分岐が要る。先行例の `prefer-web-first-assertions` は `supportedMatchers` で matcher を見ているが、あれは autofix の可否を決めるためで範囲の限定ではない。本 ADR のルールは期待値がリテラルの否定だけを狭く止める。
 
 ### ルールが追えない形
 

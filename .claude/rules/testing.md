@@ -178,7 +178,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 ## locator の扱い
 
 - 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)
-- 同期読みを `expect()` へ流してよいのは、locator に対応する matcher が無い実測のときだけ。許す形の列挙は `scripts/lint/browser-test.ts` が持つ。足す前にその主張が matcher で書けないことを確かめる (ADR-0029)
+- locator に対応する matcher が無い実測 (rect / computed style / `matches()`) は `expect.poll` のコールバックの中で読む。helper に閉じた読みは呼び出し側が mount を `expect.element` で待ってから呼ぶ (ADR-0013 / ADR-0029)
 - 機械強制は `browser-test/prefer-locator-methods`。`vp lint` / `vp check` で走る。grep は束縛を挟む形を取りこぼすので、件数はこのルールで数える (ADR-0029)
 - assert の予算は `vitest.browser.config.ts` が `expect.poll.timeout` と `actionTimeout` の対で宣言する。片方だけにすると残り予算か vitest の既定へ戻る (ADR-0030)
 - 予算の値は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が持つ。上げるときはここを変える。config へ直接書くと helper 側の閾値が追随しない (ADR-0030)
@@ -204,7 +204,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - **スタイルを否定で確かめない。** `not.toHaveStyle` も算出値との `not.toBe` も、綴りや単位が 1 つ外れると潰れた状態のまま通る (ADR-0031)
 - 肯定形は主張で選ぶ。「描かれている」なら 1 回の観測から数値を出して `toBeGreaterThan(0)`、当たっている token が分かっているなら `src/test/resolve-color-token.ts` の `resolveColorToken()` の値と比べる (ADR-0031)
 - 機械強制は `browser-test/no-negated-style-literal`。期待値が式なら報告しない (観測どうしの比較は綴りで潰れない) (ADR-0031)
-- `getComputedStyle` を `expect()` へ流してよいのは、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0031)
+- `getComputedStyle` を `expect.poll` で読む主張は、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0031)
 - 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる
 - 開く操作のあとは `expect.element(locator).toBeInTheDocument()` → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
 - `locator.findElement()` を呼ばない。`browser-test/no-find-element` が止める。`actionTimeout` を置いた config では待ち時間が上限なしになり、`Test timed out` で落ちて locator 名が出力から消える (ADR-0030)

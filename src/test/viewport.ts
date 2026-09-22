@@ -40,7 +40,8 @@ export async function restoreDefaultViewport(): Promise<void> {
  * 公式の `toBeInViewport({ ratio: 1 })` を使わないのは、完全に収まっている popup
  * (t=16 b=837 / viewport 853) でも IntersectionObserver の比が 1 に届かず落ち、
  * 0.999 なら通ることを実測したため (2026-09-22)。閾値を下げると「完全に」を失う。
- * 生 DOM を読む escape hatch はこの 1 箇所に閉じ、呼び出し側は locator を渡す (ADR-0029)。
+ * 生 DOM を読むのはこの 1 箇所に閉じ、呼び出し側は mount を `expect.element` で待ってから
+ * locator を渡す (ADR-0013 / ADR-0029)。
  */
 export function expectWithinViewport(target: Locator): void {
   const rect = target.element().getBoundingClientRect();

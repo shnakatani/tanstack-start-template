@@ -23,10 +23,10 @@ describe("parkMouse", () => {
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
     });
-    expect(cover.matches(":hover")).toBe(true);
+    await expect.poll(() => cover.matches(":hover")).toBe(true);
 
     await parkMouse();
 
-    expect(cover.matches(":hover")).toBe(false);
+    await expect.poll(() => cover.matches(":hover")).toBe(false);
   });
 });
