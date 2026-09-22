@@ -37,20 +37,6 @@ interface DataTableProps<TData extends RowData> extends Pick<
 }
 
 /**
- * busy 行の半透明。`opacity-50` は light で本文テキストのコントラストを WCAG 1.4.3 の
- * 4.5:1 より下へ落とすため採らない (ADR-0016)。dark は満たすが、テーマで値を変えない。
- *
- * 当たる対は `--background` の上の `--foreground`。行の不透明度がそのまま文字へ掛かるので、
- * 不透明度を綴りへ移して測る。
- *
- * ```
- * mise run contrast -- --theme light --bg '--background' --fg '--foreground/50'
- * mise run contrast -- --theme light --bg '--background' --fg '--foreground/60'
- * ```
- */
-const BUSY_ROW_CLASS = "opacity-60";
-
-/**
  * 列定義 (TanStack Table v9) を registry の `Table` 部品に描く共有部品 (ADR-0019)。
  * 列見出しの `scope="col"` は `.claude/rules/implementation.md`「テーブルの列見出し」。
  */
@@ -90,9 +76,16 @@ export function DataTable<TData extends RowData>({
               <TableRow
                 key={row.id}
                 aria-busy={busy}
-                // aria-busy の型は Booleanish (boolean | "true" | "false") で、文字列 "false" は
-                // JS では truthy になる。真偽で見ると busy でない行が半透明になる
-                className={busy === true || busy === "true" ? BUSY_ROW_CLASS : undefined}
+                // busy 行の半透明は Tailwind の aria-busy variant (`[aria-busy="true"]`) で
+                // 当てる。aria-busy の型は Booleanish で文字列 "false" も来るが、属性セレクタは
+                // "true" にしか一致しないので JS で真偽を判定しない。
+                // 値が 60 なのは、`opacity-50` が light で本文のコントラストを WCAG 1.4.3 の
+                // 4.5:1 より下へ落とすため (ADR-0016)。dark は満たすが、テーマで値を変えない。
+                // 当たる対は `--background` の上の `--foreground` で、行の不透明度がそのまま
+                // 文字へ掛かるので不透明度を綴りへ移して測る:
+                //   mise run contrast -- --theme light --bg '--background' --fg '--foreground/50'
+                //   mise run contrast -- --theme light --bg '--background' --fg '--foreground/60'
+                className="aria-busy:opacity-60"
               >
                 {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id} className={cell.column.columnDef.meta?.cellClassName}>
