@@ -17,15 +17,17 @@ import { parkMouse } from "@/test/park-mouse";
 import "@/test/slot-locator";
 
 /**
- * マウス位置の page スコープのリークを毎テスト前に断つ。
- * 同一 page 上で順次実行される後続テストへ hover 状態が残ると、テストが実行順に依存する。
+ * page スコープに残る状態を毎テスト前に既定へ戻す。1 つの session が複数ファイルを順に走らせ、
+ * 前のテストの状態が次へ残るため。
+ *
+ * - マウス位置: 前テストの click 位置に hover 状態が残ると、配色の検証が実行順に依存する
+ * - animation: Base UI のフラグと reduced motion のエミュレーション (ADR-0018)。戻し方は animations.ts
+ *
+ * 2 つは独立した CDP 呼び出しなので並行に送る。
  */
 beforeEach(async () => {
-  await parkMouse();
+  await Promise.all([parkMouse(), disableAnimations()]);
 });
-
-// animation の既定 (ADR-0018)。Base UI のフラグと reduced motion のエミュレーション。戻し方は animations.ts の JSDoc
-beforeEach(disableAnimations);
 
 /**
  * `announce()` (ADR-0017) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
