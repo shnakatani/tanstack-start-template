@@ -7,7 +7,6 @@ import {
   SegmentedRadioGroup,
   SegmentedRadioGroupItem,
 } from "@/components/parts/segmented-radio-group";
-import { dispatchNativeClick } from "@/test/native-click";
 import { waitForAnimations } from "@/test/wait-for-animations";
 
 /** 1 文字と 2 文字のラベルを混ぜる。等幅化の検証に使う */
@@ -117,19 +116,14 @@ describe("SegmentedRadioGroup", () => {
     expect(style.outlineWidth).not.toBe("0px");
   });
 
-  it("disabled でクリックを受け付けず、無効表示が効く", async () => {
-    const onValueChange = vi.fn();
-    const screen = await render(<Filter onValueChange={onValueChange} disabled />);
+  it("disabled でポインタを受け付けず、無効表示が効く", async () => {
+    const screen = await render(<Filter disabled />);
 
     const target = screen.getByRole("radio", { name: "未読" }).element();
     expect(target.getAttribute("aria-disabled")).toBe("true");
 
-    // aria-disabled="true" の要素は Playwright の actionability でタイムアウトし、加えて
-    // pointer-events も落としている。native click を直接送って
-    // 「見た目だけ無効」ではなく実際に変更が起きないことを固定する
-    dispatchNativeClick(target);
-    expect(onValueChange).not.toHaveBeenCalled();
-
+    // クリックが届かないことは pointer-events で見る。合成 click を対象へ直接送って
+    // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (ADR-0015)
     const style = getComputedStyle(target);
     expect(style.opacity).toBe("0.5");
     expect(style.pointerEvents).toBe("none");

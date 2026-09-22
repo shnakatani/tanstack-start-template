@@ -24,7 +24,6 @@ import { createTestRouter } from "@/test/create-test-router";
 import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
 import { collectLoaderQueryKeys } from "@/test/loader-helpers";
-import { dispatchNativeClick } from "@/test/native-click";
 import { createTestQueryClient, expectText, type Screen } from "@/test/page-helpers";
 import { parkMouse } from "@/test/park-mouse";
 
@@ -102,9 +101,8 @@ async function submitCreate(screen: Screen, note: Note) {
   await parkMouse();
 }
 
-function confirmDelete(screen: Screen) {
-  // 確認ダイアログのボタンは inert バックドロップが pointer event を横取りするため native click
-  dispatchNativeClick(confirmDeleteButton(screen).element());
+async function confirmDelete(screen: Screen) {
+  await confirmDeleteButton(screen).click();
 }
 
 describe("NotesPage", () => {
@@ -278,7 +276,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDelete(screen);
 
     await vi.waitFor(() => {
       // 行の payload の id がそのまま server function へ渡ることを固定する
@@ -295,7 +293,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    dispatchNativeClick(screen.getByRole("button", { name: "キャンセル", exact: true }).element());
+    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
 
     await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).not.toHaveBeenCalled();
@@ -311,7 +309,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDelete(screen);
 
     // 完了点 (a) でダイアログは閉じるので、決着までの pending は行の busy だけが伝える
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
@@ -335,7 +333,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDelete(screen);
 
     // 確定で閉じる。removeNote は未決着
     await expectDeleteConfirmClosed(screen);
@@ -362,7 +360,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDelete(screen);
 
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
@@ -411,11 +409,11 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
 
     await openDeleteConfirm(screen, NOTE);
-    confirmDelete(screen);
+    await confirmDelete(screen);
     await expectDeleteConfirmClosed(screen);
 
     await openDeleteConfirm(screen, OTHER_NOTE);
-    confirmDelete(screen);
+    await confirmDelete(screen);
 
     await vi.waitFor(() => {
       expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
@@ -442,7 +440,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDelete(screen);
 
     await vi.waitFor(() => {
       expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);

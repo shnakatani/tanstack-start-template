@@ -10,7 +10,6 @@ import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schem
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
-import { dispatchNativeClick } from "@/test/native-click";
 import {
   createTestQueryClient,
   expectDialogOpen,
@@ -58,9 +57,8 @@ async function renderDialog() {
   return { screen, invalidateSpy };
 }
 
-function clickSave(screen: Screen) {
-  // ダイアログ内のボタンは inert バックドロップが pointer event を横取りするため native click
-  dispatchNativeClick(saveButton(screen).element());
+async function clickSave(screen: Screen) {
+  await saveButton(screen).click();
 }
 
 describe("NoteCreateDialog", () => {
@@ -100,7 +98,7 @@ describe("NoteCreateDialog", () => {
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);
 
-    clickSave(screen);
+    await clickSave(screen);
 
     await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
     expect(vi.mocked(createNote)).not.toHaveBeenCalled();
@@ -111,7 +109,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("あ".repeat(NOTE_TITLE_MAX_LENGTH + 1));
 
-    clickSave(screen);
+    await clickSave(screen);
 
     await expectText(
       screen,
@@ -137,7 +135,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("  買い物リスト  ");
     await bodyTextbox(screen).fill("牛乳とパン");
 
-    clickSave(screen);
+    await clickSave(screen);
 
     await vi.waitFor(() => {
       expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
@@ -152,7 +150,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    clickSave(screen);
+    await clickSave(screen);
 
     await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
@@ -166,7 +164,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("買い物リスト");
     await bodyTextbox(screen).fill("牛乳とパン");
 
-    clickSave(screen);
+    await clickSave(screen);
     await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
     await openNoteCreateDialog(screen);
 
@@ -178,7 +176,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("一時入力");
 
-    dispatchNativeClick(screen.getByRole("button", { name: "キャンセル", exact: true }).element());
+    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
     await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
     await openNoteCreateDialog(screen);
 
@@ -192,7 +190,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    clickSave(screen);
+    await clickSave(screen);
 
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     expect(screen.getByText(rawMessage).query()).toBeNull();
@@ -212,7 +210,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    clickSave(screen);
+    await clickSave(screen);
 
     // 応答前は pending 表示のまま開いている
     await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
@@ -235,7 +233,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    clickSave(screen);
+    await clickSave(screen);
 
     await vi.waitFor(() => {
       expect(readAnnouncements()).toContain("メモを保存しています");
@@ -255,7 +253,7 @@ describe("NoteCreateDialog", () => {
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);
 
-    clickSave(screen);
+    await clickSave(screen);
 
     await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
     expect(readAnnouncements()).toEqual([]);
@@ -271,7 +269,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
-    clickSave(screen);
+    await clickSave(screen);
     await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
 
     // キャンセルは押せない。Escape は Base UI が閉じようとするのを onOpenChange で止める

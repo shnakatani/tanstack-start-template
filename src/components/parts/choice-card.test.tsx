@@ -3,7 +3,6 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { Badge } from "@/components/ui/badge";
-import { dispatchNativeClick } from "@/test/native-click";
 
 import { ChoiceCard, ChoiceCardList } from "./choice-card";
 
@@ -74,9 +73,9 @@ describe("ChoiceCard", () => {
     const field = screen.getByText("チームA").element().closest('[data-slot="field"]');
     expect.assert(label !== null && field !== null, "Choice Card が見つからない");
 
-    // Playwright の actionability が disabled 由来で click をタイムアウトさせるため、
-    // label テキストへ直接 click イベントを送る
-    dispatchNativeClick(screen.getByText("チームA").element());
+    // disabled な checkbox と対の label なので actionability の enabled 判定に落ちる。
+    // 対象に pointer-events: none が無く click は実際に届くため force で検査だけ飛ばす (ADR-0015)
+    await screen.getByText("チームA").click({ force: true });
 
     await expect.element(checkbox).not.toHaveAttribute("data-checked");
     expect(getComputedStyle(label).cursor).toBe("default");
