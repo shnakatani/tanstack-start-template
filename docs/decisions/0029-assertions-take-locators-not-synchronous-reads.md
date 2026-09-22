@@ -176,7 +176,18 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 `testTimeout` は動かさない。browser の既定 15000 は vitest 公式が文書化した値で、テストの予算としては妥当である (単独実行の最遅テストは 605ms だが、全 project 同時実行では 3595ms まで伸びる)。締めるべきは assert の予算であって、テストの予算ではない。
 
-`expect.poll.timeout` を効かせるには `browser.providerOptions.actionTimeout` も要る。vitest は actionTimeout が未設定のときだけ assert の timeout をタスクの残り予算から計算するためで、#8308 が OPEN のまま残っている挙動に乗っている。副作用として Playwright の操作にも上限が付く。Playwright 自身も action timeout に既定を持たない (「No default」) ので既定の挙動を変えることになるが、上限なしで待ち続けるより診断が早い。
+どちらの設定も、上流が意図した用途で使っている。
+
+| 設定                                    | 上流の位置づけ                                                                                                                                                                                                                    |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `expect.poll.timeout`                   | `actionTimeout` を作った issue #6983 で、メンテナが `expect.element()` について「which can be already configured by `expect.poll.timeout`」と書いている。`expect.element` の予算を決める口はこれ                                  |
+| `browser.providerOptions.actionTimeout` | 同 issue で「CI is quite often slower and locators take more than the default... it would be nice to be able to set larger timeouts at a config level」を動機に要望され、PR #6984 が足した。Playwright の同名オプションに対応する |
+
+2 つを対で置くのは #8308 のためである。`expect.poll.timeout` だけでは `expect.element` に届かず、`actionTimeout` が未設定のときだけ vitest が assert の timeout をタスクの残り予算から計算する。#8308 は OPEN で、閉じる PR は無い (2026-09-22 に `closedByPullRequestsReferences` が空であることを確認)。
+
+`actionTimeout` を置くと Playwright の操作にも上限が付く。これは副作用ではなく利得の側でもある。残り予算からの計算は、action の timeout がテストを跨いで持ち越されるのを止めるために入った (#7871 のメンテナ回答「The actions timeouts are now affected by the test timeout. Previously they would carry over to other tests if the test timed out.」)。その代わりテストの後半ほど予算が縮み、同 issue は `Timeout 581ms exceeded` のような説明のつかない失敗を報告している。固定値を置くとこの縮みが消える。
+
+`testTimeout` の既定値は版で動く。メンテナは #9157 で、docs の数字 (15000) が PR #8705 で意図せず変わった可能性に触れている。このリポジトリの 4.1.11 では 15000 で、肯定 assert の赤 14942ms と整合する (2026-09-22 実測)。版を上げたときは docs の数字を写さず測り直す。
 
 `expectAbsent` の `{ timeout: 0 }` はこの設定と独立に効く (同日実測で 53ms)。呼び出しごとの指定が先に読まれるためで、予算を宣言しても「待たない」は残る。
 
@@ -245,3 +256,7 @@ escape hatch に残るのは、`toHaveStyle` で表せない 3 つの形であ�
 - `eslint-plugin-playwright` の `prefer-web-first-assertions`: <https://github.com/playwright-community/eslint-plugin-playwright/blob/main/docs/rules/prefer-web-first-assertions.md>
 - vitest-dev/vitest#8308 (OPEN): <https://github.com/vitest-dev/vitest/issues/8308>
 - vitest-dev/vitest#9751 (OPEN): <https://github.com/vitest-dev/vitest/issues/9751>
+- vitest-dev/vitest#6983 / PR #6984 (`actionTimeout` の導入と、`expect.poll.timeout` が `expect.element` の口だというメンテナ回答): <https://github.com/vitest-dev/vitest/issues/6983>
+- vitest-dev/vitest#7871 (action の timeout がテストの残り予算で縮む): <https://github.com/vitest-dev/vitest/issues/7871>
+- vitest-dev/vitest#9157 (`testTimeout` の既定が docs と食い違う可能性): <https://github.com/vitest-dev/vitest/issues/9157>
+- Playwright の Test timeouts (assertion timeout を test timeout と分ける): <https://playwright.dev/docs/test-timeouts>

@@ -48,11 +48,11 @@ export default defineProject({
   },
   test: {
     name: "browser",
-    // assert の予算。テストの予算 (`testTimeout`) と分ける。Playwright が同じ分け方を
-    // 公式に持ち (「Assertion timeout is unrelated to the test timeout」)、assertion 側の
-    // 既定を 5000ms と文書化しているので、その値を写す。ここが無いと `expect.element` は
-    // タスクの残り予算 (browser 既定 15000) を使い切り、退行で赤になった assert 1 件が
-    // テストの所要をまるごと食う (ADR-0029)
+    // assert の予算。テストの予算 (`testTimeout`) と分ける。上流は `expect.element` の予算を
+    // ここで決める設計で (vitest-dev/vitest#6983 のメンテナ回答)、Playwright も assertion 側の
+    // timeout を test timeout と独立に持ち既定を 5000ms と文書化している。その値を写す。
+    // ここが無いと `expect.element` はタスクの残り予算を使い切り、退行で赤になった assert
+    // 1 件がテストの所要をまるごと食う。対で置く `actionTimeout` が無いと効かない (ADR-0029)
     expect: { poll: { timeout: 5_000 } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
     // project を足すとそのぶん描画が増えるため。根拠と棄却した選択肢は ADR-0027。
@@ -75,10 +75,10 @@ export default defineProject({
     ],
     browser: {
       enabled: true,
-      // `expect.poll.timeout` を `expect.element` へ効かせるために要る。vitest は
+      // CI の遅さに備えて操作の上限を config で置くための option (vitest-dev/vitest#6983)。
+      // あわせて `expect.poll.timeout` を `expect.element` へ届かせる役も持つ。vitest は
       // actionTimeout が未設定のときだけ assert の timeout をタスクの残り予算から計算する
-      // (vitest-dev/vitest#8308 が OPEN)。副作用として Playwright の操作にも上限が付くが、
-      // 既定の「上限なし」より診断が早い。#8308 が閉じたらこの指定の要否を測り直す
+      // (#8308 が OPEN)。固定値にするとテスト後半ほど予算が縮む問題も消える (#7871)
       provider: playwright({ actionTimeout: 5_000 }),
       headless: true,
       // 既定 viewport は src/test/viewport.ts が持つ。写すとどちらかが古くなるので import する
