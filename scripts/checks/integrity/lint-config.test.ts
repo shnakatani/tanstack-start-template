@@ -103,7 +103,7 @@ const EXPECTED_OVERRIDES = [
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
-    // ブラウザテストの assert に locator を渡させる自前ルール (ADR-0029)。テスト本文だけでなく
+    // ブラウザテストの assert を守る自前ルール 3 本 (ADR-0029 / ADR-0030 / ADR-0031)。本文だけでなく
     // locator を配る helper も対象にする。テスト本文に絞ると、helper へ切り出した同期読みが
     // ルールから外れる。`*.test.ts` を足すと、locator を持たない unit project の drizzle
     // (`db.select().from(x).all()`) が同名メソッドで誤検出になる。off へ落とすと、
@@ -116,6 +116,7 @@ const EXPECTED_OVERRIDES = [
     rules: {
       "browser-test/prefer-locator-methods": "deny",
       "browser-test/no-bare-find-element": "deny",
+      "browser-test/no-negated-style-literal": "deny",
     },
   },
   {

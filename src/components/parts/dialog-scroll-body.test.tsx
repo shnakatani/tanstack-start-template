@@ -19,6 +19,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { findElement } from "@/test/find-element";
+import { resolveColorToken } from "@/test/resolve-color-token";
 import {
   restoreDefaultViewport,
   setViewport,
@@ -194,7 +195,9 @@ describe("DialogScrollBody（内部スクロール）", () => {
     // 幅はどちらの状態でも 1px を保ち、色だけが変わる (レイアウトシフトを起こさない)
     expect(shown.borderTopWidth).toBe("1px");
     expect(shown.borderBottomWidth).toBe("1px");
-    expect(shown.borderTopColor).not.toBe("rgba(0, 0, 0, 0)");
+    // 「透明でない」を否定で書かない。綴り違いで通る (ADR-0031)。当たっている token そのもの
+    // (`data-has-overflow-y:border-border`) と肯定で比べる
+    expect(shown.borderTopColor).toBe(resolveColorToken("--border"));
 
     await overflowing.screen.unmount();
 

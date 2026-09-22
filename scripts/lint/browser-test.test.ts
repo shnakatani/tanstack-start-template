@@ -1,7 +1,7 @@
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { describe, expect, it } from "vite-plus/test";
 
-import { noBareFindElement, preferLocatorMethods } from "./browser-test";
+import { noBareFindElement, noNegatedStyleLiteral, preferLocatorMethods } from "./browser-test";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -148,6 +148,113 @@ tester.run("no-bare-find-element", noBareFindElement, {
   ],
 });
 
+tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
+  valid: [
+    // 観測どうしの比較。期待値が式なので綴りで潰れない
+    "expect(getComputedStyle(a).color).not.toBe(colorBefore);",
+    "expect(getComputedStyle(a).color).not.toBe(getComputedStyle(b).color);",
+    "await expect.poll(() => getComputedStyle(a).color).not.toBe(before);",
+    // 肯定形はリテラルでも fail-closed
+    'await expect.element(x).toHaveStyle("outline-width: 0px");',
+    'expect(getComputedStyle(a).outlineWidth).toBe("0px");',
+    // スタイル以外の否定は対象外
+    'await expect.element(x).not.toHaveAttribute("aria-busy", "true");',
+    // 束縛した算出値が matcher の期待値側に来る形。主語はリテラルではない
+    "const before = getComputedStyle(a).color; expect(getComputedStyle(a).color).not.toBe(before);",
+    // 束縛しても、比較の相手が別の観測なら対象外
+    "const shown = getComputedStyle(a); expect(shown.color).not.toBe(hidden.color);",
+    // 式を含むテンプレートリテラルは観測どうしの比較。綴りで潰れない
+    "expect(getComputedStyle(a).width).not.toBe(`${before}px`);",
+    // ADR-0031 が推奨する肯定形。src/components/ui/dialog.test.tsx の綴り
+    "await expect.poll(() => Number.parseFloat(getComputedStyle(x).maxHeight)).toBeGreaterThan(0);",
+    // 同じく肯定形。src/components/parts/segmented-radio-group.test.tsx の綴り
+    `await expect
+       .poll(() => {
+         const style = getComputedStyle(focused);
+         return style.outlineStyle === "none" ? 0 : Number.parseFloat(style.outlineWidth);
+       })
+       .toBeGreaterThan(0);`,
+    // 算出値を読むだけで assert へ流さない
+    "const style = getComputedStyle(x); if (style.display === none) { run(); }",
+  ],
+  invalid: [
+    {
+      // 解釈できない宣言で素通りする
+      code: 'await expect.element(x).not.toHaveStyle("outline-width: 0");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // 正しい宣言でも、綴りが 1 つ外れた時点で素通りする側に落ちる
+      code: 'await expect.element(x).not.toHaveStyle("pointer-events: none");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // 算出値は "0px" なので単位を落とすと潰れた状態でも通る
+      code: 'await expect.poll(() => getComputedStyle(x).outlineWidth).not.toBe("0");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      code: 'expect(getComputedStyle(x).maxHeight).not.toBe("none");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // 変数へ束縛してから読む形。`dialog-scroll-body.test.tsx` が踏んでいた綴り
+      code: 'const shown = getComputedStyle(x); expect(shown.borderTopColor).not.toBe("rgba(0, 0, 0, 0)");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // プロパティまで読んでから束縛する形
+      code: 'const width = getComputedStyle(x).outlineWidth; expect(width).not.toBe("0");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // コールバックがブロック本体。簡潔本体だけを透かすと見逃す
+      code: 'await expect.poll(() => { return getComputedStyle(x).outlineWidth; }).not.toBe("0");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // function 式のコールバック
+      code: 'await expect.poll(function () { return getComputedStyle(x).outlineWidth; }).not.toBe("0");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // ADR-0031 が推奨する肯定形を否定へ倒した退行。src の 8 箇所がこの綴り
+      code: "await expect.poll(() => Number.parseFloat(getComputedStyle(x).maxHeight)).not.toBe(0);",
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // Number で包む形
+      code: "expect(Number(getComputedStyle(off).opacity)).not.toBe(1);",
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // 束縛・三項・数値化・ブロック本体が重なる形 (segmented-radio-group.test.tsx の骨格)
+      code: `await expect
+         .poll(() => {
+           const style = getComputedStyle(focused);
+           return style.outlineStyle === "none" ? 0 : Number.parseFloat(style.outlineWidth);
+         })
+         .not.toBe(0);`,
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // expect.soft も assert の主語を取る
+      code: 'expect.soft(getComputedStyle(x).color).not.toBe("red");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // オブジェクト形式。否定と組むと同じく素通りする
+      code: 'await expect.element(x).not.toHaveStyle({ maxHeight: "none" });',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // 同じ束縛を 2 つの引数で読む形。報告は matcher 1 つにつき 1 件
+      code: 'const c = getComputedStyle(x); expect(c.color, c.width).not.toBe("a");',
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+  ],
+});
+
 describe("プラグインの形", () => {
   // `vite.config.ts` の `jsPlugins` の name と `lint.rules` のキーは、この 2 つの組で決まる。
   // どちらかを変えると設定側の名前が無言で解決されなくなる
@@ -155,6 +262,10 @@ describe("プラグインの形", () => {
     const plugin = (await import("./browser-test")).default;
 
     expect(plugin.meta?.name).toBe("browser-test");
-    expect(Object.keys(plugin.rules)).toEqual(["prefer-locator-methods", "no-bare-find-element"]);
+    expect(Object.keys(plugin.rules)).toEqual([
+      "prefer-locator-methods",
+      "no-bare-find-element",
+      "no-negated-style-literal",
+    ]);
   });
 });

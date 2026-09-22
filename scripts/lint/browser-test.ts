@@ -1,10 +1,15 @@
-import { definePlugin, defineRule, type ESTree } from "vite-plus/lint/plugins";
+import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plus/lint/plugins";
 
 /**
- * ブラウザテストの assert に locator を渡させる oxlint の JS plugin (ADR-0029)。
+ * ブラウザテストの assert を守る oxlint の JS plugin。3 つのルールを持ち、決定は別々の ADR にある。
  *
- * `vite.config.ts` の `lint.jsPlugins` から読まれ、`vp lint` / `vp check` で走る。
- * 対象の限定は同 config の `lint.overrides` が持つ。
+ * - `prefer-locator-methods` — 同期読みを assert へ流さない (ADR-0029)
+ * - `no-bare-find-element` — 素の `locator.findElement()` を止める (ADR-0030)
+ * - `no-negated-style-literal` — スタイルをリテラルとの否定で確かめない (ADR-0031)
+ *
+ * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
+ * 適用先 glob の決め方は ADR-0029 が 3 つとも持つ。対象の限定は `vite.config.ts` の
+ * `lint.overrides` にあり、`scripts/checks/integrity/lint-config.test.ts` が固定する。
  */
 
 /** retry を持たない同期読み。DOM の確定前に評価されると、実装が正しくてもテストが落ちる */
@@ -220,11 +225,11 @@ export const noBareFindElement = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "locator.findElement() を直に呼ばず src/test/find-element.ts を通す (ADR-0029)",
+      description: "locator.findElement() を直に呼ばず src/test/find-element.ts を通す (ADR-0030)",
     },
     messages: {
       bareFindElement:
-        "`locator.findElement()` を直に呼ばない。`src/test/find-element.ts` の `findElement(locator)` を使う。この config は `actionTimeout` を置いており、素の呼び出しは待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える (ADR-0029)",
+        "`locator.findElement()` を直に呼ばない。`src/test/find-element.ts` の `findElement(locator)` を使う。この config は `actionTimeout` を置いており、素の呼び出しは待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える (ADR-0030)",
     },
   },
   create(context) {
@@ -237,10 +242,185 @@ export const noBareFindElement = defineRule({
   },
 });
 
+/**
+ * 期待値が綴りで潰れる形か。式なら観測どうしの比較なので対象外にする。
+ *
+ * `toHaveStyle` のオブジェクト形式も宣言の字面を持つので同じ側に置く。式を含む
+ * テンプレートリテラル (`` `${before}px` ``) は観測を埋め込んだ比較なので外す
+ */
+function isLiteralArgument(call: ESTree.CallExpression): boolean {
+  const [first] = call.arguments;
+  if (first === undefined) return false;
+  if (first.type === "TemplateLiteral") return first.expressions.length === 0;
+  return first.type === "Literal" || first.type === "ObjectExpression";
+}
+
+/** 引数に渡した値がそのまま assert の主語になる呼び出し。`expect(x)` と `expect.poll(cb)` */
+const ASSERT_SUBJECT_CALLEES = new Set(["expect", "soft", "poll"]);
+
+/**
+ * 算出値を数値へ変える呼び出し。ADR-0031 が肯定形の書き方として勧めているので、
+ * 透かさないと「勧めた形を否定へ倒した退行」だけが無検査になる
+ */
+const VALUE_WRAPPER_CALLEES = new Set(["Number", "parseFloat", "parseInt"]);
+
+/** `expect(...)` / `expect.element(...)` / `expect.poll(...)` のような assert の起点か */
+function isExpectRoot(call: ESTree.CallExpression): boolean {
+  if (nameOf(call.callee) === "expect") return true;
+  return call.callee.type === "MemberExpression" && nameOf(call.callee.object) === "expect";
+}
+
+/**
+ * `return` を囲むインラインのコールバック。`if` や `for` を挟んでいても辿り着く。
+ *
+ * 名前付きの関数宣言では `undefined` を返す。その戻り値が assert へ届くかは呼び出し側を
+ * 辿らないと決まらず、1 ファイルの構文で判定するというこのルールの前提を越える
+ */
+function enclosingCallback(node: Node): Node | undefined {
+  for (let current = node; ;) {
+    const parent = parentOf(current);
+    if (!parent) return undefined;
+    if (parent.type === "FunctionDeclaration") return undefined;
+    if (parent.type === "ArrowFunctionExpression" || parent.type === "FunctionExpression") {
+      return parent;
+    }
+    current = parent;
+  }
+}
+
+/**
+ * 値が使われる位置まで親を辿り、`.not` を挟んだ matcher 呼び出しを返す。
+ * 行き着かない形 (assert 以外へ渡す、否定でない、期待値が式) は空で返す。
+ *
+ * 下向きに部分木を走査しない。oxlint の node は `parent` を持つので、汎用の走査は木を
+ * 登り直して無限再帰する。このファイルの他のルールと同じく親だけを辿る。
+ *
+ * @param followBinding 変数へ束縛してから使う形を追うか。追った先では `false` にする。
+ *   `preferLocatorMethods` と同じ 1 ホップに留め、束縛の連鎖では再帰しない
+ */
+function findNegatedLiteralMatchers(
+  start: Node,
+  sourceCode: SourceCode,
+  followBinding: boolean,
+): ESTree.CallExpression[] {
+  let negated = false;
+  for (let current = start; ;) {
+    const parent = parentOf(current);
+    if (!parent) return [];
+
+    if (WRAPPER_TYPES.has(parent.type)) {
+      current = parent;
+      continue;
+    }
+
+    // `.not` も `.toBe` も同じ形。名前が `not` のときだけ否定を覚える
+    if (parent.type === "MemberExpression" && parent.object === current) {
+      if (staticPropertyName(parent) === "not") negated = true;
+      current = parent;
+      continue;
+    }
+
+    // `cond ? a : b` / `a ?? b` の枝。値はそのまま外へ出る (test の位置は除く)
+    if (parent.type === "ConditionalExpression" && parent.test !== current) {
+      current = parent;
+      continue;
+    }
+    if (parent.type === "LogicalExpression") {
+      current = parent;
+      continue;
+    }
+
+    // `expect.poll(() => getComputedStyle(x).color)` の簡潔本体。`body` が式なのは arrow だけ
+    if (parent.type === "ArrowFunctionExpression" && parent.body === current) {
+      current = parent;
+      continue;
+    }
+
+    // ブロック本体の `return`。文の入れ子を問わず、囲むコールバックまで飛ぶ
+    if (parent.type === "ReturnStatement") {
+      const callback = enclosingCallback(parent);
+      if (!callback) return [];
+      current = callback;
+      continue;
+    }
+
+    if (parent.type === "CallExpression") {
+      // `expect(x).not.toBe(y)` の `toBe(y)`。matcher の呼び出しが終点
+      if (parent.callee === current) {
+        return negated && isLiteralArgument(parent) ? [parent] : [];
+      }
+      const callee = calleeName(parent);
+      if (
+        isArgumentOf(parent, current) &&
+        callee !== undefined &&
+        (ASSERT_SUBJECT_CALLEES.has(callee) || VALUE_WRAPPER_CALLEES.has(callee))
+      ) {
+        current = parent;
+        continue;
+      }
+      return [];
+    }
+
+    // 変数へ束縛してから assert へ渡す形。宣言が導入した変数の参照を辿る
+    if (followBinding && parent.type === "VariableDeclarator" && parent.init === current) {
+      // 同じ束縛を 2 つの引数で読む形 (`expect(c.color, c.width)`) は同じ matcher へ届く。
+      // 参照ごとに返すと同じ呼び出しを 2 回報告するので、ここで畳む
+      const found = sourceCode
+        .getDeclaredVariables(parent)
+        .flatMap((variable) => variable.references)
+        .filter((reference) => reference.isRead())
+        .flatMap((reference) =>
+          findNegatedLiteralMatchers(reference.identifier, sourceCode, false),
+        );
+      return [...new Set(found)];
+    }
+
+    return [];
+  }
+}
+
+export const noNegatedStyleLiteral = defineRule({
+  meta: {
+    type: "problem",
+    docs: {
+      description: "スタイルをリテラルとの否定で確かめない (ADR-0031)",
+    },
+    messages: {
+      negatedStyleLiteral:
+        "スタイルをリテラルとの否定で確かめない。`not.toHaveStyle` は宣言を解釈できないと素通りし、算出値との `not.toBe` は単位や綴りが 1 つ外れると潰れた状態でも通る。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる (ADR-0031)",
+    },
+  },
+  create(context) {
+    function matchersFrom(start: Node): ESTree.CallExpression[] {
+      return findNegatedLiteralMatchers(start, context.sourceCode, true);
+    }
+    function report(call: ESTree.CallExpression) {
+      context.report({ node: call, messageId: "negatedStyleLiteral" });
+    }
+    return {
+      CallExpression(node: ESTree.CallExpression) {
+        // 起点は 2 つ。算出値を読む呼び出しと、要素を主語に置く assert の起点
+        if (calleeName(node) === "getComputedStyle") {
+          for (const matcher of matchersFrom(node)) {
+            // `toHaveStyle` は要素を主語に取るので次の枝が拾う。二重報告にしない
+            if (staticPropertyName(matcher.callee) !== "toHaveStyle") report(matcher);
+          }
+          return;
+        }
+        if (!isExpectRoot(node)) return;
+        for (const matcher of matchersFrom(node)) {
+          if (staticPropertyName(matcher.callee) === "toHaveStyle") report(matcher);
+        }
+      },
+    };
+  },
+});
+
 export default definePlugin({
   meta: { name: "browser-test" },
   rules: {
     "prefer-locator-methods": preferLocatorMethods,
     "no-bare-find-element": noBareFindElement,
+    "no-negated-style-literal": noNegatedStyleLiteral,
   },
 });

@@ -380,10 +380,12 @@ export default defineConfig({
         excludeFiles: ["src/test/*.test.ts"],
         rules: {
           "browser-test/prefer-locator-methods": "error",
-          // 素の `locator.findElement()` を止める (ADR-0029)。正当な呼び出し元は
+          // 素の `locator.findElement()` を止める (ADR-0030)。正当な呼び出し元は
           // `src/test/find-element.ts` の 1 行だけで、そこは行単位で抑制してある。
           // ファイル単位で外すと、同じファイルに 2 本目を書いても無検査になる
           "browser-test/no-bare-find-element": "error",
+          // スタイルの否定 assert が素通りする形を止める (ADR-0031)
+          "browser-test/no-negated-style-literal": "error",
         },
       },
       {
