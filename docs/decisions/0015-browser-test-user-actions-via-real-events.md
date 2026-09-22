@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-09-13
 - Revised: 2026-09-22 (合成イベントの用途が全て消えたため `src/test/native-click.ts` を廃止し、決定を実イベントのみへ狭めた)
+- Revised: 2026-09-22 (キーボードで活性化する行の `element.focus()` を `userEvent.tab()` へ改めた。vitest の interactivity API にフォーカスを当てる口は無く、`keyboard` は「currently focused element」へ届く。直前の実クリックが対象へフォーカスを乗せているならそのまま送る)
 - 関連: ADR-0013 (待機は retry API に委ねる。本 ADR は発火の側)。PR #16 (Action 層の導入) が持つ「二重発火を state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする
 
 ## Context
@@ -95,13 +96,13 @@ expect(action).toHaveBeenCalledOnce();
 
 **ユーザー操作は実イベント (Playwright / CDP 経由) だけで発火する。合成イベント (`element.dispatchEvent`) は使わない。同期に 2 回 dispatch する検証は書かない。**
 
-| 場面                                                  | 使うもの                                                                                                |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 既定                                                  | `locator.click()`                                                                                       |
-| Playwright に弾かれ、キーボードで同じ活性化が起こせる | `element.focus()` + `userEvent.keyboard("{Enter}")`。キーボードは enabled / hit-target の判定を受けない |
-| Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が当たっていないことを先に確かめる             |
-| 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせてライブラリ内部のガードまで見に行かない       |
-| 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                       |
+| 場面                                                  | 使うもの                                                                                                                                                                  |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 既定                                                  | `locator.click()`                                                                                                                                                         |
+| Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し (直前の実クリックで乗っているならそのまま) `userEvent.keyboard("{Enter}")`。キーボードは enabled / hit-target の判定を受けない |
+| Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が当たっていないことを先に確かめる                                                                               |
+| 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせてライブラリ内部のガードまで見に行かない                                                                         |
+| 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                                                                                         |
 
 判定に落ちた条件は Playwright のエラー文言で確かめてから行を選ぶ (`.claude/rules/testing.md`「クリックの発火方法」)。
 

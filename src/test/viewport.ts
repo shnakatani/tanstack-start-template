@@ -38,9 +38,7 @@ export async function restoreDefaultViewport(): Promise<void> {
  * 持ち、ここは locator から矩形を読んで poll する。空配列を期待するので、失敗文にはみ出した
  * 辺と px が残る。要素が無ければ `element()` が throw し、予算ぶん retry してから落ちる。
  *
- * 公式の `toBeInViewport({ ratio: 1 })` を使わないのは、完全に収まっている popup
- * (t=16 b=837 / viewport 853) でも IntersectionObserver の比が 1 に届かず落ち、
- * 0.999 なら通ることを実測したため (2026-09-22)。閾値を下げると「完全に」を失う。
+ * 公式の `toBeInViewport({ ratio: 1 })` を使わない理由と実測は ADR-0032。
  */
 export async function expectWithinViewport(target: Locator): Promise<void> {
   await expect

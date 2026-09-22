@@ -153,13 +153,13 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 
 手段は場面で決める。1 が弾かれたら Playwright のエラー文言が示す条件を確かめ、それに対応する行へ移る。通るまで手段を替える順序ではない。テストが通るように手段を下げると、実物では起きない事象を固定する (ADR-0015)。
 
-| 順  | 場面                                                  | 使うもの                                                                                                           |
-| --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 1   | 既定                                                  | `.click()`                                                                                                         |
-| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる | `element.focus()` + `userEvent.keyboard("{Enter}")`                                                                |
-| 3   | Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が無いことを先に確かめる (ADR-0015)                       |
-| -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。合成イベントを対象へ直接送ってライブラリ内部のガードまで見に行かない (ADR-0015) |
-| -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きず、固定すると実装に無用の防御を要求する       |
+| 順  | 場面                                                  | 使うもの                                                                                                                         |
+| --- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 既定                                                  | `.click()`                                                                                                                       |
+| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し (直前の実クリックで乗っているならそのまま) `userEvent.keyboard("{Enter}")` (ADR-0015) |
+| 3   | Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が無いことを先に確かめる (ADR-0015)                                     |
+| -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。合成イベントを対象へ直接送ってライブラリ内部のガードまで見に行かない (ADR-0015)               |
+| -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きず、固定すると実装に無用の防御を要求する                     |
 
 `.click()` は visible / enabled / stable を待ってから、viewport 内の座標と hit-target を確かめる (`playwright-core` の `_performPointerAction`)。弾かれる典型は次のとおり。
 
@@ -198,6 +198,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 `getBoundingClientRect` / `getComputedStyle` によるレイアウト検証が書けるので、**レイアウト回帰は className の `toContain` ではなく実挙動で守る**。
 
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変更したら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
+- 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。公式の `toBeInViewport({ ratio: 1 })` は収まっていても落ちる実行がある。一部が見えることは公式の `toBeInViewport()` でよい (ADR-0032)
 - 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` に明示してあり、`DEFAULT_VIEWPORT` と一致させて管理する
 - 単一プロパティを文字列リテラルと比べるだけなら `await expect.element(x).toHaveStyle("prop: value")` を使う。**文字列形式で、複数プロパティは `;` で 1 つにまとめる。** オブジェクト形式は失敗しても差分が出ない。分けて書くと予算を個別に使い、同時に成立しない状態も通る (ADR-0031)
 - **1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。** jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える (ADR-0031)
