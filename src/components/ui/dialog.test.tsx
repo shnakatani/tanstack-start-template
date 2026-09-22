@@ -3,6 +3,7 @@ import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { findElement } from "@/test/find-element";
 import {
   restoreDefaultViewport,
   setViewport,
@@ -47,7 +48,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
 
-    const popup = await screen.getByRole("dialog").findElement();
+    const popup = await findElement(screen.getByRole("dialog"));
     await waitForAnimations();
 
     const viewport = popup.parentElement;
@@ -56,7 +57,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     // popupViewportLayout の fixed / popupOverflowBackstop の max-h-full + overflow-y-auto が
     // クラス名ではなく実際の computed style として効いていること (以降の実測の前提条件)
     await expect.element(viewport!).toHaveStyle("position: fixed");
-    expect(getComputedStyle(popup).maxHeight).not.toBe("none");
+    await expect.element(popup).not.toHaveStyle("max-height: none");
     await expect.element(popup).toHaveStyle("overflow-y: auto");
     // Popup の flex-col 構造も ADR-0006 の乖離。alert-dialog 側と対で守る
     await expect.element(popup).toHaveStyle("display: flex");
@@ -68,7 +69,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
 
-    const popup = await screen.getByRole("dialog").findElement();
+    const popup = await findElement(screen.getByRole("dialog"));
     await waitForAnimations();
 
     expectWithinViewport(popup);
@@ -79,13 +80,13 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
 
-    const popup = await screen.getByRole("dialog").findElement();
+    const popup = await findElement(screen.getByRole("dialog"));
     await waitForAnimations();
 
     // 内容が popup の表示領域を超えている = スクロールが必要な状態
     expect(popup.scrollHeight).toBeGreaterThan(popup.clientHeight);
 
-    const marker = await screen.getByText(BOTTOM_MARKER).findElement();
+    const marker = await findElement(screen.getByText(BOTTOM_MARKER));
     const popupRect = popup.getBoundingClientRect();
     expect(marker.getBoundingClientRect().top).toBeGreaterThan(popupRect.bottom);
 
@@ -101,7 +102,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
 
-    const popup = await screen.getByRole("dialog").findElement();
+    const popup = await findElement(screen.getByRole("dialog"));
     await waitForAnimations();
 
     expect(window.innerHeight).toBe(SHORT_VIEWPORT.height);

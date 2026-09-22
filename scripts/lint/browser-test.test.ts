@@ -25,6 +25,8 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     // assert へ届かない同期読み
     "el.element().focus();",
     'const label = el.element().closest("label");',
+    // `vi.waitFor` も retry の口 (ADR-0013)。src/test/page-helpers.ts などが依存している
+    'vi.waitFor(() => { expect(el.element().textContent).toBe("x"); });',
   ],
   invalid: [
     {
@@ -74,6 +76,22 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     },
     {
       code: 'expect(rows[1]?.element().textContent).toContain("x");',
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "expect(el.query() ? 1 : 2).toBe(1);",
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "expect(el.element() satisfies Element).toBe(1);",
+      filename: "a.ts",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      // `expect.poll` が retry するのはコールバックだけ。matcher の引数は 1 度きり
+      code: "await expect.poll(() => 1).toBe(b.element());",
       filename: "a.ts",
       errors: [{ messageId: "syncRead" }],
     },

@@ -127,14 +127,7 @@ describe("RouteErrorContent", () => {
     const { screen } = await renderError(error, vi.fn());
 
     await screen.getByRole("button", { name: "スタックトレース" }).click();
-    await vi.waitFor(() => {
-      expect(
-        screen
-          .getByText(/at frame0 /)
-          .element()
-          .checkVisibility(),
-      ).toBe(true);
-    });
+    await expect.element(screen.getByText(/at frame0 /)).toBeVisible();
     await waitForAnimations();
 
     const stack = screen.getByText(/at frame0 /).element();

@@ -93,15 +93,18 @@ function isArgumentOf(call: ESTree.CallExpression, node: Node): boolean {
  * どちらの引数も retry を持たない。
  */
 function isAssertionCall(call: ESTree.CallExpression): boolean {
-  for (let current: Node = call.callee; ;) {
+  // 1 周目の callee だけが「その呼び出し自身」。2 周目以降は matcher の呼び出し
+  let isDirectCallee = true;
+  for (let current: Node = call.callee; ; isDirectCallee = false) {
     if (nameOf(current) === "expect") return true;
     if (current.type === "MemberExpression") {
       if (nameOf(current.object) === "expect") {
+        // retry されるのは `expect.poll(cb)` に直に渡したコールバックだけ。matcher の引数
+        // (`expect.poll(cb).toBe(x.element())`) は 1 度しか評価されない。
+        // `expect.element(x)` が retry するのは locator を渡したときで、同期読みを渡すと
+        // 最初に解決した要素を retry し続けるため、こちらは引数の位置を問わず assert 扱いする
         const method = staticPropertyName(current);
-        // `expect.poll(cb)` はコールバックを retry するので、その引数は assert 扱いしない。
-        // `expect.element(x)` が retry するのは locator を渡したときだけで、同期読みを
-        // 渡すと最初に解決した要素を retry し続ける。だから assert 扱いする
-        return method !== "poll";
+        return !(method === "poll" && isDirectCallee);
       }
       current = current.object;
       continue;

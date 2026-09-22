@@ -193,6 +193,7 @@ describe("NoteCreateDialog", () => {
 
     await clickSave(screen);
 
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0029)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする

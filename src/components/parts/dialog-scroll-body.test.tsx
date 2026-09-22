@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { findElement } from "@/test/find-element";
 import {
   restoreDefaultViewport,
   setViewport,
@@ -74,17 +75,15 @@ async function openAt(viewport: Viewport, fieldCount?: number) {
   const screen = await renderFormDialog(fieldCount);
   await screen.getByText("開く").first().click();
 
-  const popup = await screen.getByRole("dialog").findElement();
+  const popup = await findElement(screen.getByRole("dialog"));
   await waitForAnimations();
 
   // `expect.element` へ渡すため HTMLElement まで絞る。`querySelector` の戻り値は `Element` で、
   // matcher が受ける型 (`HTMLElement | SVGElement | Locator | null`) に入らない (ADR-0029)
   const query = (slot: string) => {
     const found = popup.querySelector(`[data-slot="${slot}"]`);
-    expect.assert(
-      found instanceof HTMLElement,
-      `data-slot="${slot}" が見つからないか、HTMLElement ではない`,
-    );
+    expect.assert(found !== null, `data-slot="${slot}" が見つからない`);
+    expect.assert(found instanceof HTMLElement, `data-slot="${slot}" が HTMLElement ではない`);
     return found;
   };
   return {
@@ -250,13 +249,12 @@ describe("DialogScrollForm", () => {
     const form = screen.getByRole("button", { name: "本体" }).element().closest("form");
     expect.assert(form !== null, "form が見つかりません");
 
-    const style = getComputedStyle(form);
-    expect(style.display).toBe("flex");
-    expect(style.flexDirection).toBe("column");
+    await expect.element(form).toHaveStyle("display: flex");
+    await expect.element(form).toHaveStyle("flex-direction: column");
     // min-h-0 は flex item の既定 min-height: auto を打ち消す (同ファイルの docstring)
-    expect(style.minHeight).toBe("0px");
+    await expect.element(form).toHaveStyle("min-height: 0px");
     // gap-6 は DialogContent と同値。区切り線の上下が対称になる (同ファイルの docstring)
-    expect(style.rowGap).toBe("24px");
+    await expect.element(form).toHaveStyle("row-gap: 24px");
   });
 
   it("消費側の className を足せる", async () => {
@@ -269,9 +267,8 @@ describe("DialogScrollForm", () => {
     const form = screen.getByRole("button", { name: "本体" }).element().closest("form");
     expect.assert(form !== null, "form が見つかりません");
 
-    const style = getComputedStyle(form);
-    expect(style.maxWidth).toBe("448px");
+    await expect.element(form).toHaveStyle("max-width: 448px");
     // 置換ではなく合成なので、レイアウトの base も残る
-    expect(style.flexDirection).toBe("column");
+    await expect.element(form).toHaveStyle("flex-direction: column");
   });
 });

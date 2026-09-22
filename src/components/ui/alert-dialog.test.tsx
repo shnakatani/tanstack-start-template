@@ -7,6 +7,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { findElement } from "@/test/find-element";
 import {
   restoreDefaultViewport,
   setViewport,
@@ -45,7 +46,7 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallAlertDialog();
 
-    const popup = await screen.getByRole("alertdialog").findElement();
+    const popup = await findElement(screen.getByRole("alertdialog"));
     await waitForAnimations();
 
     // base-ui 公式 anatomy: Popup は Viewport (配置コンテナ) の中に置く
@@ -58,12 +59,12 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallAlertDialog();
 
-    const popup = await screen.getByRole("alertdialog").findElement();
+    const popup = await findElement(screen.getByRole("alertdialog"));
     await waitForAnimations();
 
     expect(popup.scrollHeight).toBeGreaterThan(popup.clientHeight);
 
-    const marker = await screen.getByText(BOTTOM_MARKER).findElement();
+    const marker = await findElement(screen.getByText(BOTTOM_MARKER));
     expect(marker.getBoundingClientRect().top).toBeGreaterThan(
       popup.getBoundingClientRect().bottom,
     );
@@ -84,7 +85,7 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
         </AlertDialogContent>
       </AlertDialog>,
     );
-    const popup = await screen.getByRole("alertdialog").findElement();
+    const popup = await findElement(screen.getByRole("alertdialog"));
     await waitForAnimations();
 
     await expect.element(popup).toHaveStyle("display: flex");

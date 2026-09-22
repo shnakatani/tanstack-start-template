@@ -3,6 +3,7 @@ import viteReact from "@vitejs/plugin-react";
 import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
+import { ASSERT_TIMEOUT_MS } from "./src/test/assert-budget";
 import { DEFAULT_VIEWPORT } from "./src/test/viewport-sizes";
 
 export default defineProject({
@@ -53,7 +54,7 @@ export default defineProject({
     // timeout を test timeout と独立に持ち既定を 5000ms と文書化している。その値を写す。
     // ここが無いと `expect.element` はタスクの残り予算を使い切り、退行で赤になった assert
     // 1 件がテストの所要をまるごと食う。対で置く `actionTimeout` が無いと効かない (ADR-0029)
-    expect: { poll: { timeout: 5_000 } },
+    expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
     // project を足すとそのぶん描画が増えるため。根拠と棄却した選択肢は ADR-0027。
     //
@@ -79,7 +80,7 @@ export default defineProject({
       // あわせて `expect.poll.timeout` を `expect.element` へ届かせる役も持つ。vitest は
       // actionTimeout が未設定のときだけ assert の timeout をタスクの残り予算から計算する
       // (#8308 が OPEN)。固定値にするとテスト後半ほど予算が縮む問題も消える (#7871)
-      provider: playwright({ actionTimeout: 5_000 }),
+      provider: playwright({ actionTimeout: ASSERT_TIMEOUT_MS }),
       headless: true,
       // 既定 viewport は src/test/viewport.ts が持つ。写すとどちらかが古くなるので import する
       viewport: DEFAULT_VIEWPORT,

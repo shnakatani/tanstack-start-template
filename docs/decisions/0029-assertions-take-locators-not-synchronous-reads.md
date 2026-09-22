@@ -176,6 +176,17 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 `testTimeout` は動かさない。browser の既定 15000 は vitest 公式が文書化した値で、テストの予算としては妥当である (単独実行の最遅テストは 605ms だが、全 project 同時実行では 3595ms まで伸びる)。締めるべきは assert の予算であって、テストの予算ではない。
 
+**この設定を置いた状態が、公式ドキュメントどおりの挙動である。** 4 ページを突き合わせた (2026-09-22)。
+
+| ページ                                      | 記述                                                         |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| `expect.element` (browser の assertion API) | timeout は "Defaults to `expect.poll.timeout` config option" |
+| `findElement` (browser の locators API)     | "By default, the timeout matches the test timeout"           |
+| `actionTimeout` (playwright provider)       | Playwright の操作についてのみ。他 2 つへの影響に言及が無い   |
+| `testTimeout`                               | 既定値のみ。browser で 15000                                 |
+
+`actionTimeout` を置かない状態では `expect.element` が `expect.poll.timeout` を読まず、1 ページ目の記述と食い違う。それが #8308 である。置くと記述どおりになる。**回避策で挙動を曲げているのではなく、文書化された既定へ戻している。**
+
 どちらの設定も、上流が意図した用途で使っている。
 
 | 設定                                    | 上流の位置づけ                                                                                                                                                                                                                    |
@@ -184,6 +195,10 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 | `browser.providerOptions.actionTimeout` | 同 issue で「CI is quite often slower and locators take more than the default... it would be nice to be able to set larger timeouts at a config level」を動機に要望され、PR #6984 が足した。Playwright の同名オプションに対応する |
 
 2 つを対で置くのは #8308 のためである。`expect.poll.timeout` だけでは `expect.element` に届かず、`actionTimeout` が未設定のときだけ vitest が assert の timeout をタスクの残り予算から計算する。#8308 は OPEN で、閉じる PR は無い (2026-09-22 に `closedByPullRequestsReferences` が空であることを確認)。
+
+代わりに `findElement` が 2 ページ目の記述から外れる。`actionTimeout` があると vitest は呼び出し側の options をそのまま返し、`findElement` の待機ループには既定が無くなる。要素が現れないと回り続け、テスト全体が `Test timed out` で落ちて locator の名前が出力から消える (2026-09-22 実測。`actionTimeout` なしでは 7905ms で `Cannot find element with locator: page.getByText('ない')`)。この相互作用は docs のどのページにも書かれておらず、上流の issue にも無い (同日に検索)。
+
+対処は `src/test/find-element.ts` が持つ。`findElement` に `{ timeout }` を明示して渡し、文書化された既定を自分で補う。予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が 1 か所で持ち、config と helper の両方が読む。
 
 `actionTimeout` を置くと Playwright の操作にも上限が付く。これは副作用ではなく利得の側でもある。残り予算からの計算は、action の timeout がテストを跨いで持ち越されるのを止めるために入った (#7871 のメンテナ回答「The actions timeouts are now affected by the test timeout. Previously they would carry over to other tests if the test timed out.」)。その代わりテストの後半ほど予算が縮み、同 issue は `Timeout 581ms exceeded` のような説明のつかない失敗を報告している。固定値を置くとこの縮みが消える。
 

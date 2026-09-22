@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { expectAbsent } from "./absent";
+import { ASSERT_TIMEOUT_MS } from "./assert-budget";
 
 /**
  * 表示の時点をテストが操作で決める。実時間のタイマーで出すと、負荷の高い実行では
@@ -27,15 +28,20 @@ describe("expectAbsent", () => {
     await expectAbsent(screen.getByText("ない"));
   });
 
-  it("要素が在れば落ちる。所要はテストの残り予算に依らない", async () => {
-    const screen = await render(<div>ある</div>);
+  it(
+    "要素が在れば落ちる。所要は assert の予算に依らない",
+    async () => {
+      const screen = await render(<div>ある</div>);
 
-    // `expect.element` の既定 timeout はテストの残り予算なので、`{ timeout: 0 }` を
-    // 外すと同じ assert が 4 秒以上かけて落ちる。その退行をこの閾値が捕まえる (ADR-0029)
-    const startedAt = performance.now();
-    await expect(expectAbsent(screen.getByText("ある"))).rejects.toThrow(/toBeInTheDocument/);
-    expect(performance.now() - startedAt).toBeLessThan(1_000);
-  }, 5_000);
+      // `{ timeout: 0 }` を外すと assert の予算 (`expect.poll.timeout`) を丸ごと使う。
+      // その退行をこの閾値が捕まえる (ADR-0029)。テスト側の timeout は予算より大きく取る。
+      // 同値だと、退行が閾値の失敗ではなく「テストが timeout した」として出る
+      const startedAt = performance.now();
+      await expect(expectAbsent(screen.getByText("ある"))).rejects.toThrow(/toBeInTheDocument/);
+      expect(performance.now() - startedAt).toBeLessThan(1_000);
+    },
+    ASSERT_TIMEOUT_MS * 2,
+  );
 
   it("後から現れる要素でも、呼んだ時点で無ければ通る", async () => {
     const screen = await render(<Toggleable />);

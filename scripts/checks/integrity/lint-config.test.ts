@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 
 import viteConfig from "../../../vite.config";
-import { companionGlobs, testHelperGlobs } from "../../lib/companion-files";
+import { companionGlobs } from "../../lib/companion-files";
 import { REPO_ROOT } from "../../lib/repo-root";
 
 /**
@@ -108,7 +108,10 @@ const EXPECTED_OVERRIDES = [
     // ルールから外れる。`*.test.ts` を足すと、locator を持たない unit project の drizzle
     // (`db.select().from(x).all()`) が同名メソッドで誤検出になる。off へ落とすと、
     // 同期読みが assert へ戻る経路が無診断になる
-    files: ["src/**/*.test.tsx", "src/test/**", ...testHelperGlobs("**/")],
+    // 期待値は手書きで持つ。`testHelperGlobs()` を spread すると vite.config.ts と同じ
+    // 入力どうしの比較になり、種別が増えても検査が通ってしまう
+    // (`companion-files.ts` の docstring が禁じている)
+    files: ["src/**/*.test.tsx", "src/test/**", "**/*.test-helpers.ts", "**/*.test-helpers.tsx"],
     excludeFiles: ["src/test/*.test.ts"],
     rules: { "browser-test/prefer-locator-methods": "deny" },
   },

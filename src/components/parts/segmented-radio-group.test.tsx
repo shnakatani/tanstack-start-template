@@ -110,25 +110,22 @@ describe("SegmentedRadioGroup", () => {
     // ring は box-shadow なので forced-colors / ハイコントラストでは描画されない。outline が
     // 併記されていても outline-none が同居していると --tw-outline-style: none に潰され、
     // outline-width だけ効いて描画はゼロになる。実効の outline-style で固定する
-    const style = getComputedStyle(focused);
+    // `:focus-visible` を見る matcher は無いので、この読みだけ生 DOM に残す (ADR-0029)
     expect(focused.matches(":focus-visible")).toBe(true);
-    expect(style.outlineStyle).not.toBe("none");
-    expect(style.outlineWidth).not.toBe("0px");
+    await expect.element(focused).not.toHaveStyle("outline-style: none");
+    await expect.element(focused).not.toHaveStyle("outline-width: 0px");
   });
 
   it("disabled で無効表示が効き、ポインタが届かない指定を持つ", async () => {
     const screen = await render(<Filter disabled />);
 
     const item = screen.getByRole("radio", { name: "未読" });
-    await expect.element(item).toHaveAttribute("aria-disabled", "true");
-    // opacity と pointer-events には対応する matcher が無い (ADR-0029)
-    const target = item.element();
 
+    await expect.element(item).toHaveAttribute("aria-disabled", "true");
     // クリックが届かないことは pointer-events の指定で見る。イベントを対象へ届かせて
     // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (ADR-0015)
-    const style = getComputedStyle(target);
-    expect(style.opacity).toBe("0.5");
-    expect(style.pointerEvents).toBe("none");
+    await expect.element(item).toHaveStyle("opacity: 0.5");
+    await expect.element(item).toHaveStyle("pointer-events: none");
   });
 
   it("className は上書きできる形でマージされる", async () => {

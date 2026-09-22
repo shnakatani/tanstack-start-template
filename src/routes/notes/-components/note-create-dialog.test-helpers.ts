@@ -1,4 +1,5 @@
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
+import { findElement } from "@/test/find-element";
 import type { Screen } from "@/test/page-helpers";
 
 /**
@@ -25,5 +26,5 @@ export function saveButton(screen: Screen) {
 /** trigger を押してダイアログを開く。開いた印はタイトル入力の mount (ADR-0013 の `findElement()`)。 */
 export async function openNoteCreateDialog(screen: Screen) {
   await screen.getByRole("button", { name: NOTE_CREATE_TRIGGER_LABEL }).click();
-  await titleTextbox(screen).findElement();
+  await findElement(titleTextbox(screen));
 }

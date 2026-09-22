@@ -43,12 +43,11 @@ describe("PageHeader", () => {
 
   it("actions の有無にかかわらず 60px の最小高と 12px の縦 padding になる", async () => {
     const screen = await render(<PageHeader title="メモ一覧" />);
-    const header = screen.getByRole("banner").element();
-    const style = getComputedStyle(header);
+    const header = screen.getByRole("banner");
 
-    expect(style.minHeight).toBe("60px");
-    expect(style.paddingTop).toBe("12px");
-    expect(style.paddingBottom).toBe("12px");
+    await expect.element(header).toHaveStyle("min-height: 60px");
+    await expect.element(header).toHaveStyle("padding-top: 12px");
+    await expect.element(header).toHaveStyle("padding-bottom: 12px");
   });
 
   // 器が違うので部品は分かれるが、どちらもページ見出しなので寸法は揃っていなければならない。

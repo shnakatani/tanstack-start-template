@@ -132,9 +132,8 @@ describe("ScrollArea のスクロールバー分の余白", () => {
 
     await expect.poll(() => findBar("vertical")).toBeNull();
     expect(findBar("horizontal")).toBeNull();
-    const style = getComputedStyle(root);
-    expect(style.paddingRight).toBe("0px");
-    expect(style.paddingBottom).toBe("0px");
+    await expect.element(rootLocator).toHaveStyle("padding-right: 0px");
+    await expect.element(rootLocator).toHaveStyle("padding-bottom: 0px");
   });
 
   it("縦に溢れたとき Viewport が縦バーと重ならず、空帯も残さない", async () => {

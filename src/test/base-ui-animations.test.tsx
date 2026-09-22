@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { enableBaseUiAnimations } from "./base-ui-animations";
+import { findElement } from "./find-element";
 
 /**
  * animate-out を実行時間より長く引き延ばし、「Base UI が animation の完了を待っているか」を
@@ -37,7 +38,7 @@ async function renderOpenDialog() {
     </Dialog>,
   );
   await screen.getByRole("button", { name: "開く" }).click();
-  await screen.getByRole("dialog").findElement();
+  await findElement(screen.getByRole("dialog"));
   return screen;
 }
 
