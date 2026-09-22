@@ -59,7 +59,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
 
     const popup = screen.getByRole("dialog");
     await expect.element(popup).toBeInTheDocument();
-    expectWithinViewport(popup);
+    await expectWithinViewport(popup);
   });
 
   it("キーボードで最下部コンテンツまで到達できる（backstop 挙動）", async () => {
@@ -84,7 +84,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     const popup = screen.getByRole("dialog");
     await expect.element(popup).toBeInTheDocument();
     expect(window.innerHeight).toBe(SHORT_VIEWPORT.height);
-    expectWithinViewport(popup);
+    await expectWithinViewport(popup);
 
     await userEvent.keyboard("{End}");
     await expect.element(screen.getByText(BOTTOM_MARKER)).toBeInViewport();

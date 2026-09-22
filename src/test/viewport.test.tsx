@@ -1,62 +1,34 @@
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
+import { render } from "vitest-browser-react";
 
 import { expectWithinViewport } from "@/test/viewport";
 
-const created: Element[] = [];
-
-function appendFixedBox(style: Partial<CSSStyleDeclaration>): Element {
-  const box = document.createElement("div");
-  Object.assign(box.style, { position: "fixed", width: "50px", height: "50px" }, style);
-  document.body.append(box);
-  created.push(box);
-  return box;
-}
-
-afterEach(() => {
-  for (const element of created.splice(0)) element.remove();
-});
-
+/** 辺ごとの判定は `viewport-overflows.test.ts` が持つ。ここは locator から矩形を読む配線だけを見る */
 describe("expectWithinViewport", () => {
-  it("viewport 内に収まる要素は通過する", () => {
-    const box = appendFixedBox({ top: "10px", left: "10px" });
+  it("viewport 内に収まる要素は通過する", async () => {
+    const screen = await render(
+      <div
+        data-testid="box"
+        style={{ position: "fixed", top: 10, left: 10, width: 50, height: 50 }}
+      />,
+    );
 
-    expect(() => expectWithinViewport(page.elementLocator(box))).not.toThrow();
+    await expectWithinViewport(screen.getByTestId("box"));
   });
 
-  it("下にはみ出す要素で失敗する", () => {
-    const box = appendFixedBox({ top: `${window.innerHeight - 10}px`, left: "10px" });
+  it("はみ出した辺が失敗文に出る", async () => {
+    const screen = await render(
+      <div
+        data-testid="box"
+        style={{ position: "fixed", top: window.innerHeight - 10, left: 10, width: 50, height: 50 }}
+      />,
+    );
 
-    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.bottom");
+    await expect(expectWithinViewport(screen.getByTestId("box"))).rejects.toThrow("bottom +40px");
   });
 
-  it("上にはみ出す要素で失敗する", () => {
-    const box = appendFixedBox({ top: "-10px", left: "10px" });
-
-    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.top");
-  });
-
-  it("右にはみ出す要素で失敗する", () => {
-    const box = appendFixedBox({ top: "10px", left: `${window.innerWidth - 10}px` });
-
-    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.right");
-  });
-
-  it("左にはみ出す要素で失敗する", () => {
-    const box = appendFixedBox({ top: "10px", left: "-10px" });
-
-    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.left");
-  });
-
-  it("高さ 0 に潰れた要素は「収まっている」と見なさない", () => {
-    const box = appendFixedBox({ top: "10px", left: "10px", height: "0px" });
-
-    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.height");
-  });
-
-  it("幅 0 に潰れた要素は「収まっている」と見なさない", () => {
-    const box = appendFixedBox({ top: "10px", left: "10px", width: "0px" });
-
-    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.width");
+  it("要素が無ければ落ちる", async () => {
+    await expect(expectWithinViewport(page.getByTestId("missing"))).rejects.toThrow(/missing/);
   });
 });

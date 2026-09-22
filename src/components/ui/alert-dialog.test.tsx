@@ -50,7 +50,7 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     // base-ui 公式 anatomy: Popup は Viewport (配置コンテナ) の中に置く
     const popup = screen.getBySlot("alert-dialog-viewport").getByRole("alertdialog");
     await expect.element(popup).toHaveStyle("display: flex; flex-direction: column");
-    expectWithinViewport(popup);
+    await expectWithinViewport(popup);
   });
 
   it("キーボードで最下部コンテンツまで到達できる", async () => {
