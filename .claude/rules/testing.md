@@ -141,6 +141,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - `vi.stubEnv` 使用時は `afterEach(() => vi.unstubAllEnvs())`
 - **`vi.mock()` の factory 内では chained なモックメソッドを使わない**。返り値は `vi.fn(() => Promise.resolve(x))` の形で書く (factory の外の `vi.mocked(fn).mockResolvedValue(x)` は正常)
 - factory は巻き上げられるため、`vi.fn().mockResolvedValue(x)` は browser mode でだけ mocking エラーになる。非ブラウザテストでは通るので気付きにくい
+- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。実値だと verify の負荷で打鍵の間隔に負けて途中の取得が混ざる。広げる定数は literal 型に固めない (ADR-0033)
 
 ## テスト環境制約に遭遇したら
 
