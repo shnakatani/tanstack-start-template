@@ -72,7 +72,15 @@ async function expectDeleteConfirmClosed(screen: Screen) {
   await expect.element(confirmDeleteButton(screen)).not.toBeInTheDocument();
 }
 
-/** 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。 */
+/**
+ * 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。
+ *
+ * 「1 件」と「busy でない」は同時に成立している必要がある。後段の assert が両方を持つ。
+ * `expect.element` は retry のたびに locator を引き直し、`.element()` は複数一致で throw
+ * するため (vitest の locators docs「strict and throw if multiple elements match」)、
+ * 2 件ある間は通らない。前段の `toHaveLength` は失敗時の文言を読めるようにするために置く
+ * (strict 違反より「1 件のはずが 2 件」のほうが原因に近い)。消すと診断だけが落ちる。
+ */
 async function expectSettledRow(screen: Screen, note: Note) {
   const row = noteRow(screen, note);
   await expect.element(row).toHaveLength(1);

@@ -183,7 +183,8 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - assert の予算は `vitest.browser.config.ts` の `expect.poll.timeout` が持ち、テストの予算 (`testTimeout`) とは別。効かせるために `actionTimeout` を対で置いてある。片方だけ消すと `expect.element` がテストの残り予算を使い切る側へ戻る (ADR-0029)
 - 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く。要素が無ければ 1 回目で通るので、単独では何も検証していない (ADR-0029)
 - 要素が在る状態から消えるのを待つときは `expect.element(locator).not.toBeInTheDocument()` をそのまま書く。消えるのを待つ側には retry の予算が要る。呼び出し側の形でどちらのつもりかが読める (ADR-0029)
-- 否定 matcher のうち `.not.toBeInTheDocument()` と `toHaveLength` 系は、要素が無くても通る。前者は特例で `query()` を返し、後者は `elements()` が空配列を返すため。ほかの否定 matcher (`not.toHaveAttribute` 等) は要素が引けない間 retry するので肯定 assert は要らない (ADR-0029)
+- `.not.toBeInTheDocument()` と `toHaveLength` 系は要素が無くても通る (前者は特例、後者は空配列)。ほかの否定 matcher は要素が引けない間 retry するので肯定 assert は要らない (ADR-0029)
+- locator は複数一致で throw する (vitest の locators docs「strict and throw if multiple elements match」)。`expect.element` は retry のたびに引き直すので「1 件だけ」を assert の前提に使える。使うなら依拠を実装近傍に書く。書かないと前提ごと消される
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る。**`toHaveLength` は 0 件でも成立する**ので、描画を待つ肯定 assert を先に置く (ADR-0029)
 - assertion を待つなら `expect.element` か `expect.poll`、処理が throw しなくなるのを待つなら `vi.waitFor` (ADR-0013)。どちらも retry の口なので、中の同期読みはルールの対象外になる
 
