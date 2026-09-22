@@ -84,7 +84,8 @@ function isArgumentOf(call: ESTree.CallExpression, node: Node): boolean {
  */
 function isAssertionCall(call: ESTree.CallExpression): boolean {
   for (let current: Node = call.callee; ;) {
-    if (nameOf(current) === "expect") return true;
+    // `assert.equal(...)` (vite-plus/test の `assert`。vite.config.ts の expect-expect が公認) も同じ扱い
+    if (nameOf(current) === "expect" || nameOf(current) === "assert") return true;
     if (current.type === "MemberExpression") {
       if (nameOf(current.object) === "expect") {
         // retry されるのは `expect.poll(cb)` に直に渡したコールバックだけ。matcher の引数
@@ -148,6 +149,14 @@ function valueFlowTop(node: Node): Node {
         continue;
       }
     }
+    // `new Set(rows.elements())` も引数の値を構築物へ渡す
+    if (
+      parent.type === "NewExpression" &&
+      parent.arguments.some((argument) => argument === current)
+    ) {
+      current = parent;
+      continue;
+    }
     return current;
   }
 }
@@ -199,11 +208,7 @@ function reachesAssertionSubject(reference: Node): boolean {
   }
   const callee = parent.callee;
   if (nameOf(callee) === "expect") return true;
-  return (
-    callee.type === "MemberExpression" &&
-    nameOf(callee.object) === "expect" &&
-    staticPropertyName(callee) !== "poll"
-  );
+  return callee.type === "MemberExpression" && nameOf(callee.object) === "expect";
 }
 
 export const preferLocatorMethods = defineRule({
@@ -231,10 +236,14 @@ export const preferLocatorMethods = defineRule({
           return;
         }
 
-        // 変数へ束縛してから assert へ渡す形。束縛でなければ空配列が返る
+        // 変数へ束縛してから assert へ渡す形。束縛でなければ空配列が返る。
+        // 右辺が同期読みそのもの (`const el = x.element()`) なら要素の束縛で、期待値の位置に来ても
+        // 観測の基準値ではないので assert の引数すべてを見る。右辺が連鎖 (`...getAttribute(a)`) なら
+        // 値の束縛で、主語に来るときだけ報告する
+        const reaches = valueFlowTop(node) === node ? reachesAssertion : reachesAssertionSubject;
         for (const reference of readReferencesOfBinding(node, context.sourceCode)) {
           if (isInsideRetryingCallback(reference)) continue;
-          if (reachesAssertionSubject(reference)) {
+          if (reaches(reference)) {
             context.report({ node, messageId: "syncRead" });
             return;
           }
@@ -277,7 +286,12 @@ function isLiteralArgument(call: ESTree.CallExpression): boolean {
   if (first === undefined) return false;
   if (staticPropertyName(call.callee) === "toHaveStyle") return true;
   if (first.type === "TemplateLiteral") return first.expressions.length === 0;
-  return first.type === "Literal" || first.type === "ObjectExpression";
+  if (first.type === "UnaryExpression") return first.argument.type === "Literal";
+  return (
+    first.type === "Literal" ||
+    first.type === "ObjectExpression" ||
+    first.type === "ArrayExpression"
+  );
 }
 
 /** 引数に渡した値がそのまま assert の主語になる呼び出し。`expect(x)` と `expect.poll(cb)` */

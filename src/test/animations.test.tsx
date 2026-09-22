@@ -54,7 +54,11 @@ describe("animation の既定", () => {
     const screen = await render(
       <div
         data-testid="motion"
-        style={{ transitionProperty: "opacity", transitionDuration: "150ms" }}
+        style={{
+          transitionProperty: "opacity",
+          transitionDuration: "150ms",
+          animationDuration: "150ms",
+        }}
       />,
     );
 

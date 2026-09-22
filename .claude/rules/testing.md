@@ -191,7 +191,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0029)
 - 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件 (mock の呼び出し回数など) は `vi.waitFor` (ADR-0013)
 - `expect.poll` と `vi.waitFor` はコールバックを retry するので、中の同期読みはルールの対象外。`expect.element` は引数の式を 1 度しか評価せず、同期読みを渡すとその値のまま retry する (ADR-0029)
-- 同期読み由来の値は、関数の引数・演算・テンプレート・`await`・束縛を通っても `expect()` の主語に届けば報告される。束縛した値を matcher の期待値に使う形 (操作前の基準値) は報告しない (ADR-0029 / ADR-0031)
+- 同期読み由来の値は、関数の引数・演算・テンプレート・`await`・1 段の束縛を通っても `expect()` / `assert` に届けば報告される。連鎖を束縛して matcher の期待値に使う形 (操作前の基準値) は報告しない。観測どうしの比較は綴りで潰れない (ADR-0029 / ADR-0031)
 
 ## ブラウザテストの CSS とレイアウト実測
 

@@ -24,6 +24,8 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     'await expect.poll(() => el.element().textContent).toBe("x");',
     // 束縛して matcher の期待値に使う形は、観測の基準値との比較 (ADR-0031)
     "const before = getComputedStyle(a.element()).color; await expect.poll(() => getComputedStyle(a.element()).color).toBe(before);",
+    'const before = a.element().getAttribute("a"); await expect.element(b).toHaveAttribute("a", before);',
+    "const before = a.element().textContent; expect(y).toBe(before);",
     // assert へ届かない同期読み
     "el.element().focus();",
     'const label = el.element().closest("label");',
@@ -100,6 +102,24 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     {
       // 束縛の右辺が連鎖でも、先頭の同期読みから参照を辿る
       code: 'const expanded = el.element().getAttribute("aria-expanded"); expect(expanded).toBe("true");',
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (testing.md「フォーカスは toHaveFocus で見る」)
+      code: "const el = locator.element(); expect(document.activeElement).toBe(el);",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "const els = locator.all(); expect(found).toEqual(els);",
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      // vite-plus/test の assert も assert の口
+      code: 'assert.equal(el.element().textContent, "a");',
+      errors: [{ messageId: "syncRead" }],
+    },
+    {
+      code: "expect(new Set(el.elements()).size).toBe(1);",
       errors: [{ messageId: "syncRead" }],
     },
     // 変数へ束縛してから渡す形。スコープ解析が外れるとここだけ無言で通る (ADR-0029)
@@ -236,6 +256,15 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
     {
       // 値に式を埋めても宣言名は字面。綴り違い (`colr:`) は解釈できない宣言になり `.not` が真になる
       code: "await expect.element(x).not.toHaveStyle(`color: ${token}`);",
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      // 負数と配列リテラルも字面
+      code: "expect(Number(getComputedStyle(x).opacity)).not.toBe(-1);",
+      errors: [{ messageId: "negatedStyleLiteral" }],
+    },
+    {
+      code: 'expect(getComputedStyle(x).color).not.toStrictEqual(["a"]);',
       errors: [{ messageId: "negatedStyleLiteral" }],
     },
     {

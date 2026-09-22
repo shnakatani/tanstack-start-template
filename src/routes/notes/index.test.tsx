@@ -463,9 +463,10 @@ describe("NotesPage", () => {
 
     // 1 発目は実クリック。2 発目は close の animate-out の間で Playwright が stable 判定で
     // 弾く (locator.click: "element is not stable") ので、クリックで乗ったフォーカスへ Enter を
-    // 送る (testing.md「クリックの発火方法」の順 1 → 2)。Enter の前にフォーカスが確定ボタンに
-    // あることを固定する。閉じ始めでフォーカスが trigger へ戻ると、Enter はダイアログを開き直す
-    // だけで guard を通らず、1 回のままで緑になる (肯定 anchor。ADR-0031)
+    // 送る (testing.md「クリックの発火方法」の順 1 → 2)。Base UI の finalFocus は unmount 時
+    // (animate-out の後、FloatingFocusManager の effect cleanup) に走るので、animate-out の間は
+    // フォーカスが確定ボタンに残る。それを固定する。残っていなければ Enter は別の要素に届き、
+    // guard を通らないまま 1 回で緑になる (肯定 anchor。ADR-0031)
     await confirmDeleteButton(screen).click();
     await expect.element(confirmDeleteButton(screen)).toHaveFocus();
     await userEvent.keyboard("{Enter}");

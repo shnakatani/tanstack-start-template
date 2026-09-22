@@ -22,11 +22,11 @@ locators.extend({
   getBySlot(slot: string, attributes: Record<string, string> = {}) {
     // 同じ slot が向きや状態で複数出るとき (`data-orientation` / `data-state`) に絞る
     const extra = Object.entries(attributes)
-      .map(([name, value]) => `[${name}="${CSS.escape(value)}"]`)
+      .map(([name, value]) => `[${name}="${value}"]`)
       .join("");
-    return `[data-slot="${CSS.escape(slot)}"]${extra}`;
+    return `[data-slot="${slot}"]${extra}`;
   },
   getByIcon(name: string) {
-    return `svg.lucide-${CSS.escape(name)}`;
+    return `svg.lucide-${name}`;
   },
 });

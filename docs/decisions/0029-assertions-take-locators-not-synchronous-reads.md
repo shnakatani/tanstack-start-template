@@ -42,15 +42,15 @@ grep -rnE 'expect\(\s*[A-Za-z_$][^;]*\.(element|query|all|elements)\(\)' --inclu
 
 45 件 / 13 ファイル。内訳と移行先は次のとおりで、45 件すべてがどれかの行に当たる。
 
-| 形                                                 | 件数 | 移行先                                         |
-| -------------------------------------------------- | ---- | ---------------------------------------------- |
-| `expect(x.query()).not.toBeNull()`                 | 20   | `expect.element(x).toBeInTheDocument()`        |
-| `expect(x.query()).toBeNull()`                     | 8    | 「最初から出ない」なら後述の `expectAbsent(x)` |
-| `expect(x.element().getAttribute(a)).toBe(v)`      | 6    | `expect.element(x).toHaveAttribute(a, v)`      |
-| `expect(document.activeElement).toBe(x.element())` | 5    | `expect.element(x).toHaveFocus()`              |
-| `expect(x.all()).toHaveLength(n)`                  | 2    | `expect.element(x).toHaveLength(n)`            |
-| `expect(x.element().textContent).toContain(t)`     | 2    | `expect.element(x).toHaveTextContent(t)`       |
-| 要素を受け取るヘルパーへ渡す (`visibleIconNames`)  | 2    | 移さない。locator を受け取る matcher が無い    |
+| 形                                                 | 件数 | 移行先                                                                                             |
+| -------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------- |
+| `expect(x.query()).not.toBeNull()`                 | 20   | `expect.element(x).toBeInTheDocument()`                                                            |
+| `expect(x.query()).toBeNull()`                     | 8    | 「最初から出ない」なら後述の `expectAbsent(x)`                                                     |
+| `expect(x.element().getAttribute(a)).toBe(v)`      | 6    | `expect.element(x).toHaveAttribute(a, v)`                                                          |
+| `expect(document.activeElement).toBe(x.element())` | 5    | `expect.element(x).toHaveFocus()`                                                                  |
+| `expect(x.all()).toHaveLength(n)`                  | 2    | `expect.element(x).toHaveLength(n)`                                                                |
+| `expect(x.element().textContent).toContain(t)`     | 2    | `expect.element(x).toHaveTextContent(t)`                                                           |
+| 要素を受け取るヘルパーへ渡す (`visibleIconNames`)  | 2    | 当時は移さなかった。helper は a9f46a1 で消え、引数を追う 2026-09-22 の改訂後のルールなら報告される |
 
 `src/components/action/button.test.tsx` の `expect(document.activeElement).toBe(button.element())` は `await button.click()` の直後にあった。ADR-0013 が同期読みの危うさとして挙げた形そのものである。
 
@@ -136,13 +136,16 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 
 ### ルールが追えない形
 
-判定は 1 ファイルの構文だけで行う。同期読み由来の値は、関数の引数・演算・テンプレート・`await`・1 段の束縛を通っても `expect()` の引数に届けば報告する。次の 3 つは報告しない。`.claude/rules/testing.md`「locator の扱い」が件数をこのルールで数えると定めているので、数えた結果がこの範囲を出ないことを併記しておく。
+判定は 1 ファイルの構文だけで行う。同期読み由来の値は、関数の引数・演算・テンプレート・`await`・`new`・1 段の束縛を通っても `expect()` / `assert` の引数に届けば報告する。次の 6 つは報告しない。`.claude/rules/testing.md`「locator の扱い」が件数をこのルールで数えると定めているので、数えた結果がこの範囲を出ないことを併記しておく。
 
-| 形                                            | 例                                                                    | なぜ追えないか                                                                                                                                             |
-| --------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 束縛を 2 段以上またぐ                         | `const el = x.element(); const t = el.textContent; expect(t)...`      | 参照を 1 段だけ辿る。任意段を追うのは taint 解析になる                                                                                                     |
-| helper の戻り値                               | `expect(titleTextbox(screen).query())` を別ファイルの helper が包む   | 関数を跨いだ追跡が要る。先行例 (`eslint-plugin-playwright`) も 1 段の dereference に留めている                                                             |
-| 束縛した観測の基準値を matcher の期待値に使う | `const before = getComputedStyle(x.element()).color; … .toBe(before)` | 操作の前後の観測を比べる形 (ADR-0031「2 回の観測を比べる」)。束縛した値は `expect()` の主語に届くときだけ報告する。束縛せず直に matcher へ渡す形は報告する |
+| 形                                                  | 例                                                                                                                  | なぜ追えないか                                                                                                                                             |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 束縛を 2 段以上またぐ                               | `const el = x.element(); const t = el.textContent; expect(t)...`                                                    | 参照を 1 段だけ辿る。任意段を追うのは taint 解析になる                                                                                                     |
+| helper の戻り値                                     | `expect(titleTextbox(screen).query())` を別ファイルの helper が包む                                                 | 関数を跨いだ追跡が要る。先行例 (`eslint-plugin-playwright`) も 1 段の dereference に留めている                                                             |
+| 束縛した観測の基準値を matcher の期待値に使う       | `const before = getComputedStyle(x.element()).color; … .toBe(before)`                                               | 操作の前後の観測を比べる形 (ADR-0031「2 回の観測を比べる」)。束縛した値は `expect()` の主語に届くときだけ報告する。束縛せず直に matcher へ渡す形は報告する |
+| 束縛した同期読みを retry コールバックの中で参照する | `const el = x.element(); await expect.poll(() => el.textContent)`                                                   | 要素は引き直されず stale のまま retry される。基準値の参照 (`before`) と型なしで区別できないので飛ばす。要素は poll の中で引き直す                         |
+| 宣言以外の束縛                                      | `let el; el = x.element(); expect(el)`、`for (const row of rows.all())`、`rows.all().forEach((row) => expect(row))` | 追うのは `const` / `let` の宣言子だけ。代入・for-of・コールバック引数は追わない                                                                            |
+| 値の流れを止める節点                                | `expect(map[x.element().id])`、`expect((f(), x.element()))`、`` html`${x.element().outerHTML}` ``                   | 計算プロパティのキー、sequence、tagged template は透かさない                                                                                               |
 
 ### 再評価の条件
 
