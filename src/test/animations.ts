@@ -6,7 +6,7 @@ declare global {
    * unmount する (`@base-ui/react/internals/useAnimationsFinished`)。型は Base UI 同梱の
    * `global.d.ts` と同じ宣言だが、`index.d.ts` から参照されず program に入らないため再宣言する。
    */
-  // oxlint-disable-next-line no-var -- declare global の中で globalThis のプロパティになるのは var だけ
+  // `declare global` の中の var は oxlint の no-var が報告しない (2026-09-22 実測。directive なしで vp check が通る)
   var BASE_UI_ANIMATIONS_DISABLED: boolean;
 }
 
