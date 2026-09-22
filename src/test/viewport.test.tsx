@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vite-plus/test";
+import { page } from "vite-plus/test/browser";
 
 import { expectWithinViewport } from "@/test/viewport";
 
@@ -20,42 +21,42 @@ describe("expectWithinViewport", () => {
   it("viewport 内に収まる要素は通過する", () => {
     const box = appendFixedBox({ top: "10px", left: "10px" });
 
-    expect(() => expectWithinViewport(box)).not.toThrow();
+    expect(() => expectWithinViewport(page.elementLocator(box))).not.toThrow();
   });
 
   it("下にはみ出す要素で失敗する", () => {
     const box = appendFixedBox({ top: `${window.innerHeight - 10}px`, left: "10px" });
 
-    expect(() => expectWithinViewport(box)).toThrow("rect.bottom");
+    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.bottom");
   });
 
   it("上にはみ出す要素で失敗する", () => {
     const box = appendFixedBox({ top: "-10px", left: "10px" });
 
-    expect(() => expectWithinViewport(box)).toThrow("rect.top");
+    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.top");
   });
 
   it("右にはみ出す要素で失敗する", () => {
     const box = appendFixedBox({ top: "10px", left: `${window.innerWidth - 10}px` });
 
-    expect(() => expectWithinViewport(box)).toThrow("rect.right");
+    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.right");
   });
 
   it("左にはみ出す要素で失敗する", () => {
     const box = appendFixedBox({ top: "10px", left: "-10px" });
 
-    expect(() => expectWithinViewport(box)).toThrow("rect.left");
+    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.left");
   });
 
   it("高さ 0 に潰れた要素は「収まっている」と見なさない", () => {
     const box = appendFixedBox({ top: "10px", left: "10px", height: "0px" });
 
-    expect(() => expectWithinViewport(box)).toThrow("rect.height");
+    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.height");
   });
 
   it("幅 0 に潰れた要素は「収まっている」と見なさない", () => {
     const box = appendFixedBox({ top: "10px", left: "10px", width: "0px" });
 
-    expect(() => expectWithinViewport(box)).toThrow("rect.width");
+    expect(() => expectWithinViewport(page.elementLocator(box))).toThrow("rect.width");
   });
 });
