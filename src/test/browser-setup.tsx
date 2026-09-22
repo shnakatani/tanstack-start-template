@@ -15,6 +15,7 @@ import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
 import { disableBaseUiAnimations } from "@/test/base-ui-animations";
 import { parkMouse } from "@/test/park-mouse";
+import "@/test/slot-locator";
 
 /**
  * マウス位置の page スコープのリークを毎テスト前に断つ。
