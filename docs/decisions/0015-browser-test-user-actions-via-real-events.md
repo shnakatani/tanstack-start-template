@@ -1,7 +1,9 @@
-# ADR-0015: ブラウザテストのユーザー操作は実イベントで発火し、合成イベントは実イベントと同じ属性で送る
+# ADR-0015: ブラウザテストのユーザー操作は実イベントだけで発火する
 
 - Status: Accepted
 - Date: 2026-09-13
+- Revised: 2026-09-22 (合成イベントの用途が全て消えたため `src/test/native-click.ts` を廃止し、決定を実イベントのみへ狭めた)
+- Revised: 2026-09-22 (キーボードで活性化する行の `element.focus()` を `userEvent.tab()` へ改めた。vitest の interactivity API にフォーカスを当てる口は無く、`keyboard` は「currently focused element」へ届く。直前の実クリックが対象へフォーカスを乗せているならそのまま送る)
 - 関連: ADR-0013 (待機は retry API に委ねる。本 ADR は発火の側)。PR #16 (Action 層の導入) が持つ「二重発火を state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする
 
 ## Context
@@ -10,8 +12,9 @@ PR #16 (Action 層の導入) の初期実装では、決着前の二重発火を
 フラグを要求していたのは次の形のテストである。
 
 ```tsx
-dispatchNativeClick(button.element());
-dispatchNativeClick(button.element());
+// 当時は合成 click を送る helper を経由していた
+button.element().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+button.element().dispatchEvent(new MouseEvent("click", { bubbles: true }));
 expect(action).toHaveBeenCalledOnce();
 ```
 
@@ -25,13 +28,13 @@ expect(action).toHaveBeenCalledOnce();
 | 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する                              |
 | 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (PR #16 の `src/components/action/button.test.tsx` / `form.test.tsx` / `src/components/parts/delete-confirm-dialog.test.tsx` の 2 連射テスト、2026-09-13 の PR #16 branch で実測) |
 
-### 合成 click の属性
+### 合成 click は実物から静かにずれる
 
-`src/test/native-click.ts` の `dispatchNativeClick` は `new MouseEvent("click", { bubbles: true })` を送っており、`cancelable` は既定の false だった。
+当時の helper は `new MouseEvent("click", { bubbles: true })` を送っており、`cancelable` は既定の false だった。
 実クリックと Enter 由来の click は cancelable=true かつ isTrusted=true である (2026-09-13、CDP 経由の実イベントで実測)。
 非 cancelable のイベントはリスナーが `preventDefault` で止められない (MDN `Event.cancelable`) ため、Base UI の `useButton` が `aria-disabled` の submit ボタンで呼ぶ `preventDefault` が効かず、form の暗黙 submit がテストでだけ通っていた。
 
-合成 click の属性は、参照した 3 つの実装がいずれも `bubbles` と `cancelable` を true にしている。
+参照できる 3 つの実装はいずれも `bubbles` と `cancelable` を true にしており、当時はそれに合わせた。
 
 | 参照                                        | 属性                                                                                                                              |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -39,12 +42,14 @@ expect(action).toHaveBeenCalledOnce();
 | Playwright `locator.dispatchEvent()`        | 「Events are `composed`, `cancelable` and bubble by default」。docs/input は `HTMLElement.click()` の挙動を起こす手段と位置づける |
 | testing-library `fireEvent.click`           | `event-map.js` の click は `bubbles` / `cancelable` / `composed` が true、`button` は 0                                           |
 
+合わせる先が 3 つあり、`isTrusted` はどうやっても合わない。この保守を続ける限り、同じ種類のずれが入りうる。
+
 ### vitest browser mode の API
 
 - `Locator` (`@vitest/browser` 4.1.11) に `dispatchEvent` は無い。`click()` の options は Playwright provider で `PWClickOptions` を継承し、`force` を持つ
 - 弾かれる要素へ Playwright の `locator.dispatchEvent()` を届かせる公式経路はカスタムコマンド (`BrowserCommand`) で、`context.page` / `context.frame()` / `context.iframe` から Playwright の API を呼ぶ
-- vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)。#5770 (Interactivity API の設計) のコメントで利用者が raw の `document.dispatchEvent(new KeyboardEvent(...))` を回避策に挙げるだけ
-- 同じ問題に当たった例として、vitest-browser-svelte 利用者が「`userEvent.click` は `aria-disabled` に届かず、`new MouseEvent("click", { bubbles: true })` なら届く」と記録している (scirexs/svseeds-ui)。`cancelable` を落とす点まで同じ形
+- vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)
+- 合成 click を回避策に挙げる利用者は他のエコシステムにもいる (vitest-browser-svelte の scirexs/svseeds-ui)。`cancelable` を落とす点まで同じ形で、同じずれを踏んでいる
 
 ### ライブラリ自身のテスト
 
@@ -53,40 +58,81 @@ expect(action).toHaveBeenCalledOnce();
 | Base UI    | `Button.test.tsx` の `focusableWhenDisabled` は user-event の `click` と `[Space]` / `[Enter]` を送り、ハンドラが 0 回であることを見る                                                                      |
 | React Aria | `Button.test.js` の `isPending` は user-event の `click` を 2 回、`tab` + `{Enter}` を 2 回送り、pending を立てた後の submit が来ないことを見る。同期 2 連射は無く、pending の描画を挟んでから 2 回目を送る |
 
+### 合成イベントを要求する場面は残っていない (2026-09-22 の再実測)
+
+導入時の `dispatchNativeClick` は 2 つの理由を持っていた。inert バックドロップが pointer event を横取りすること、`aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトすることである。どちらも合成イベントを要求しない。
+
+**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを呼んでいた 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) を `locator.click()` へ置き換えて browser project を全件走らせると全件通る。ADR-0018 の animation 無効化が効いているという仮説は外れた。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
+
+**enabled 判定に落ちる 2 箇所は、別々の解になる。** 分かれ目は対象に `pointer-events: none` が当たっているかである。`pointer-events: none` の対象を、click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った。
+
+| 経路                             | 対象のハンドラ | 下の器のハンドラ  |
+| -------------------------------- | -------------- | ----------------- |
+| `.click({ force: true })`        | 0 回           | 1 回              |
+| 合成 click を対象へ直接 dispatch | 1 回           | 1 回 (バブリング) |
+
+`force` が飛ばすのは actionability の検査であって、ブラウザ自身のヒットテストは残る。対象が `pointer-events: none` なら、`force` のイベントは対象へ届かず下の要素へ落ちる。
+
+### 2 箇所を mutant で測る
+
+`src/components/parts/choice-card.test.tsx` の対象 (無効な行の label テキスト) には `pointer-events: none` が当たっていない。`Checkbox` への `disabled={disabled}` の転送を落とす mutant で測った。
+
+| 経路                      | 健全                                                   | mutant |
+| ------------------------- | ------------------------------------------------------ | ------ |
+| `.click()`                | `locator.click: Timeout 3000ms exceeded.` で false red | 赤     |
+| `.click({ force: true })` | 41ms で緑                                              | 赤     |
+
+`force: true` が合成イベントと同じ検出力を持つ。この箇所は公式 API で書ける。
+
+`src/components/parts/segmented-radio-group.test.tsx` の対象には `aria-disabled:pointer-events-none` が当たる。合成 click + `not.toHaveBeenCalled()` が固有に捕まえるのは、`aria-disabled` と `pointer-events: none` が正しいまま base-ui 内部のクリックガードだけが退行する場合に限られる。これは上流の担当で、base-ui 自身の `Button.test.tsx` が同じことを見ている (上表)。
+
+この assert を外しても、クラスから `aria-disabled:pointer-events-none` を落とす mutant は `expected 'auto' to be 'none'` で 97ms のうちに捕まる。消費側が `disabled` を渡さなくなる退行は `aria-disabled` の assert が捕まえる。このリポジトリのコードを守る側は、合成イベント抜きで揃っている。
+
+### テンプレートとして配る重さ
+
+`src/test/native-click.ts` は、このリポジトリを複製した利用者全員へ配られる。一方で残る消費者は 2 つとも sample の部品だった。利用者が sample を消すと、消費者ゼロの helper と、合成イベントという扱いの難しい手段だけが残る。上流ライブラリの内部を守るためにその重さを配らない。
+
 ## Decision
 
-**ユーザー操作は実イベント (Playwright / CDP 経由) で発火する。合成イベントは Playwright に弾かれる要素に限り使い、実イベントと同じ `bubbles` / `cancelable` で送る。同期に 2 回 dispatch する検証は書かない。**
+**ユーザー操作は実イベント (Playwright / CDP 経由) だけで発火する。合成イベント (`element.dispatchEvent`) は使わない。同期に 2 回 dispatch する検証は書かない。**
 
-| 場面                                                                                    | 使うもの                                                                                                                                                     |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 既定                                                                                    | `locator.click()`                                                                                                                                            |
-| 決着前の 2 回目以降の操作 (`aria-disabled` で Playwright の enabled 判定に落ちる)       | `userEvent.keyboard("{Enter}")` (フォーカスは `element.focus()` で移してよい)。キーボードは enabled / hit-target の判定を受けない                            |
-| Playwright に弾かれる要素 (バックドロップ越し等) で、キーボードでも同じ活性化が起こせる | `element.focus()` + `userEvent.keyboard("{Enter}")`。判定に落ちた条件は Playwright のエラー文言で確かめる (`.claude/rules/testing.md`「クリックの発火方法」) |
-| Playwright に弾かれ、pointer 経由の click そのものが要る                                | `dispatchNativeClick` (`src/test/native-click.ts`)。合成イベントを使うのはこの場面だけ                                                                       |
-| 決着前の二重発火の検証                                                                  | 上の実イベントを 2 回。`await Promise.resolve()` や合成イベントの同期 2 連射で間隔を作らない                                                                 |
+| 場面                                                  | 使うもの                                                                                                                                                                  |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 既定                                                  | `locator.click()`                                                                                                                                                         |
+| Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し (直前の実クリックで乗っているならそのまま) `userEvent.keyboard("{Enter}")`。キーボードは enabled / hit-target の判定を受けない |
+| Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が当たっていないことを先に確かめる                                                                               |
+| 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせてライブラリ内部のガードまで見に行かない                                                                         |
+| 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                                                                                         |
 
-合成イベントを新設・変更するときは、同じ操作を実イベントで起こして `bubbles` / `cancelable` / `isTrusted` を実測し、`isTrusted` 以外を合わせる (`isTrusted` はスクリプトから true にできない)。
-`composed` は shadow DOM を使うまで既定のままにする。
+判定に落ちた条件は Playwright のエラー文言で確かめてから行を選ぶ (`.claude/rules/testing.md`「クリックの発火方法」)。
+
+`force: true` を選ぶ前に、対象へイベントが届くかを確かめる。`force` は actionability の検査を飛ばすだけで、ブラウザのヒットテストは越えない。届かない対象に使うと、押した結果を見る assert が `pointer-events` から導かれるだけのものに変わる。
 
 ### 検討した選択肢
 
-| 案                                                                | 評価                                                                                                                                                          | 採否     |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 実イベント (`click()` と `userEvent.keyboard`) で 2 連射する      | 実装の仕組み (描画のタイミング) をテストに書かない。Base UI と React Aria 自身のテストと同じ形。mutant で落ちることを確認済み                                 | **採用** |
-| 合成イベントの間に `await Promise.resolve()` を挟む               | ブラウザが実イベント間で行う checkpoint の模倣で、React の描画が microtask で流れる知識をテストに焼き込む。React 側の実装が変わると意味が変わる               | 却下     |
-| 合成イベントの同期 2 連射を残し、実装に ref のフラグを持つ        | 起きない事象への防御をテストが要求する形。react.dev の `disabled={pending}` の形から外れる (ADR-0014)                                                         | 却下     |
-| 2 回目を `click({ force: true })` で送る                          | `data-disabled:pointer-events-none` の部品では下の要素へ届き、何が止めたか分からない。キーボードなら部品自身に届く                                            | 却下     |
-| `dispatchNativeClick` の `cancelable` を既定 (false) のまま残す   | Base UI の `preventDefault` が効かず、実物では止まる form 送信がテストでは通る。参照できる実装 (HTML 仕様、Playwright、testing-library) のどれとも違う        | 却下     |
-| カスタムコマンドで Playwright の `locator.dispatchEvent()` を呼ぶ | 公式経路だが、server 側のコマンド定義と型拡張が要る。合成 click 1 種のためには `MouseEvent` を 1 行で作るほうが小さい。合成イベントの種類が増えたら再評価する | 見送り   |
+| 案                                                                | 評価                                                                                                                                               | 採否     |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 実イベント (`click()` と `userEvent.keyboard`) で 2 連射する      | 実装の仕組み (描画のタイミング) をテストに書かない。Base UI と React Aria 自身のテストと同じ形。mutant で落ちることを確認済み                      | **採用** |
+| 合成イベントの間に `await Promise.resolve()` を挟む               | ブラウザが実イベント間で行う checkpoint の模倣で、React の描画が microtask で流れる知識をテストに焼き込む。React 側の実装が変わると意味が変わる    | 却下     |
+| 合成イベントの同期 2 連射を残し、実装に ref のフラグを持つ        | 起きない事象への防御をテストが要求する形。react.dev の `disabled={pending}` の形から外れる (ADR-0014)                                              | 却下     |
+| 2 回目を `click({ force: true })` で送る                          | `data-disabled:pointer-events-none` の部品では下の要素へ届き、何が止めたか分からない。キーボードなら部品自身に届く                                 | 却下     |
+| 合成 click の helper を残し、用途を 1 つに絞る                    | 残る消費者が sample の部品だけになる。テンプレートの利用者が sample を消すと、消費者ゼロの helper が配られたままになる                             | 却下     |
+| 合成 click で base-ui 内部のガードを見続ける                      | 守る対象が上流ライブラリの内部で、base-ui 自身のテストが同じことを見ている。このリポジトリのコードは `pointer-events` と状態属性の assert で守れる | 却下     |
+| カスタムコマンドで Playwright の `locator.dispatchEvent()` を呼ぶ | 公式経路だが、server 側のコマンド定義と型拡張が要る。合成イベントを使う場面が無くなったので不要                                                    | 却下     |
 
 ## Consequences
 
-- `dispatchNativeClick` は cancelable=true を送る。`src/test/native-click.test.tsx` が submit ボタンの `preventDefault` で form 送信が止まることを固定する
-- 二重発火のテストは `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書き、`dispatchNativeClick` を使わない
-- `.claude/rules/testing.md`「クリックの発火方法」の順序を「`.click()` → キーボード → `dispatchNativeClick`」にする。既存テストの `dispatchNativeClick` は触らず、新規と改修から適用する
-- `.claude/rules/testing.md`「クリックの発火方法」に、同期 2 連射を書かない項目を足す
-- 合成イベントを足すときの実測は手順として残す。キーボードでも起こせない操作だけが合成の対象で、そのときも属性は実イベントに合わせる
-- 再評価条件: 合成イベントの種類が 2 つ以上になったら、カスタムコマンド経由の `locator.dispatchEvent()` へ寄せるかを判断する
+- `src/test/native-click.ts` と `src/test/native-click.test.tsx` を削除する。合成イベントを使う場面が無くなったので、helper だけを残さない
+- ダイアログ内のボタンを呼んでいた 4 箇所を `locator.click()` へ移す (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル)
+- `src/components/parts/choice-card.test.tsx` は `.click({ force: true })` へ移す。対象に `pointer-events: none` が無く、click が実際に届く
+- `src/components/parts/segmented-radio-group.test.tsx` は合成 click と `not.toHaveBeenCalled()` を落とす。クリックが届かないことは `pointer-events` の assert が持つ
+- 二重発火のテストは `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書く
+- `.claude/rules/testing.md`「クリックの発火方法」の順序を「`.click()` → キーボード → `.click({ force: true })`」にし、`force` がヒットテストを越えないことを併記する
+- 合成イベントを足したくなったら、この ADR へ戻って却下の根拠を読む。`force: true` で届くかを先に測り、届くなら合成イベントは要らない
+
+`cancelable` を実イベントに合わせる手順は、合成イベントごと消えたので持たない。2026-09-13 に `cancelable` の既定が false で Base UI の `preventDefault` が効かず、実物では止まる form 送信がテストでだけ通った。合成イベントの属性を実物へ合わせ続ける保守は、この種の食い違いを生む側に回る。
+
+導入時に inert バックドロップを理由として書いたのは、`.click()` が落ちた事象をバックドロップに帰属させ、他の原因と切り分けなかったためである。2026-09-22 の再実測では、どの経路でも再現しなかった。
 
 ## 出典
 

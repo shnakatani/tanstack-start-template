@@ -5,7 +5,13 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
-import { companionFilePattern, companionGlobs, storyGlobs } from "./scripts/lib/companion-files";
+import {
+  BROWSER_TEST_GLOB,
+  companionFilePattern,
+  companionGlobs,
+  storyGlobs,
+  testHelperGlobs,
+} from "./scripts/lib/companion-files";
 
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
@@ -52,6 +58,9 @@ export default defineConfig({
       // story は `storybook/test` 経由で testing-library の API をそのまま使う。oxlint は
       // testing-library をネイティブに持たないため ESLint plugin として載せる (ADR-0004)
       { name: "testing-library", specifier: "eslint-plugin-testing-library" },
+      // ブラウザテストの assert に locator を渡させる自前ルール。上流の
+      // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0029)
+      { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
     ],
     settings: {
       shadcn: {
@@ -361,13 +370,35 @@ export default defineConfig({
         },
       },
       {
+        // ブラウザテストと、そこへ locator を配る helper が対象 (ADR-0029)。テスト本文だけに
+        // 当てると、helper へ切り出した同期読みがルールから外れる (testing-library の override と
+        // 同じ穴の塞ぎ方)。`src/test/` には browser の helper と unit のテストが同居するので、
+        // 後者を `excludeFiles` で外す。unit は locator を持たず、drizzle の
+        // `db.select().from(x).all()` が同名メソッドで誤検出になる。付随ファイルの glob
+        // (`**/*.test.ts`) では書かない。その綴りは import 禁止の override が持つ印で、
+        // `lint-config.test.ts` の「付随ファイルの除外は…」がそちらの専有を検査している
+        files: [BROWSER_TEST_GLOB, "src/test/**", ...testHelperGlobs("**/")],
+        excludeFiles: ["src/test/*.test.ts"],
+        rules: {
+          "browser-test/prefer-locator-methods": "error",
+          // `locator.findElement()` を止める (ADR-0030)。正当な呼び出し元は無く、除外も置かない
+          "browser-test/no-find-element": "error",
+          // スタイルの否定 assert が素通りする形を止める (ADR-0031)
+          "browser-test/no-negated-style-literal": "error",
+          // 不在の assert を helper の名前で読み分けさせる (ADR-0031)
+          "browser-test/no-bare-absence-assertion": "error",
+        },
+      },
+      {
         // テストと story だけが使うコード (*.test-helpers.ts / *.story-helpers.ts /
         // *.stories.tsx / src/test/) をアプリのコードから import させない
         // (ADR-0004「基準から外れる名指し」)。story 自身も止める。story を import すると
         // それが引く helper と fixture が bundle に入る。緩和ではなく
         // 範囲を絞った有効化なので、テスト側は off にせず excludeFiles で対象から外す
         // (files の否定 glob は oxlint 1.79 では効かない)。story 自身も出荷される bundle に
-        // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)
+        // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)。
+        // `.storybook/**` は対象外。Storybook は story をテストとして走らせるテスト基盤で
+        // (ADR-0022)、`preview.tsx` が `src/test/viewport-sizes.ts` を読む
         files: ["src/**", "scripts/**"],
         excludeFiles: [...companionGlobs("**/"), "src/test/**"],
         rules: {

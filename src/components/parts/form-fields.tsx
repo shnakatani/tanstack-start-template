@@ -1,5 +1,4 @@
 import { NumberField } from "@base-ui/react/number-field";
-import { cn } from "cn";
 import { type ComponentProps, useId } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -52,16 +51,6 @@ interface FormTextFieldProps
   sanitize?: (raw: string) => string;
   /** 1 つの値を複数入力へ分割するような密な配置の上書き用 (例: "gap-1") */
   fieldClassName?: string;
-  labelClassName?: string;
-}
-
-/**
- * consumer の className を先、invalid の text-destructive を後に置く。
- * `cn` の衝突解決は後勝ちなので、逆順にすると消費側の色指定が検証エラーの色を打ち消し、
- * エラーであることが色から読み取れなくなる (form-fields.test.tsx が回帰として固定している)。
- */
-function fieldLabelClassName(consumerClassName: string | undefined, invalid: boolean): string {
-  return cn(consumerClassName, invalid && "text-destructive");
 }
 
 /**
@@ -135,19 +124,18 @@ export function FormTextField({
   maxLength,
   sanitize,
   fieldClassName,
-  labelClassName,
 }: FormTextFieldProps) {
   const { field, id, errorId, errors, invalid } = useFormFieldState<string>();
 
   return (
     <Field
       className={fieldClassName}
+      // ラベルの destructive 色は registry の Field が `data-[invalid=true]:text-destructive` で
+      // 持ち、FieldLabel はそれを継承する。JS で色を足さない (ADR-0021)
       data-invalid={invalid || undefined}
       data-disabled={disabled || undefined}
     >
-      <FieldLabel htmlFor={id} className={fieldLabelClassName(labelClassName, invalid)}>
-        {label}
-      </FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Input
         id={id}
         type={type}
@@ -187,9 +175,7 @@ export function FormNumberField({ label, disabled }: FormNumberFieldProps) {
 
   return (
     <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
-      <FieldLabel htmlFor={id} className={fieldLabelClassName(undefined, invalid)}>
-        {label}
-      </FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {/* type="number" は使わない。GOV.UK Design System が利用者テストの結果として外している:
           NVDA の要素一覧で unlabeled になる、Dragon で音声入力できない、ホイールで値が
           無言に増減する。NumberField は推奨形の type="text" + inputmode="numeric" を出し、
@@ -234,9 +220,7 @@ export function FormSelectField<T extends string>({
 
   return (
     <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
-      <FieldLabel htmlFor={id} className={fieldLabelClassName(undefined, invalid)}>
-        {label}
-      </FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Select
         value={field.state.value}
         onValueChange={(value) => {

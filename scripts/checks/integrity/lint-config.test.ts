@@ -103,6 +103,21 @@ const EXPECTED_OVERRIDES = [
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
+    // ブラウザテストの assert を守る自前ルール (ADR-0029 / ADR-0030 / ADR-0031)。
+    // 適用先と除外の理由は vite.config.ts の同じ override が持つ。
+    // 期待値は手書きで持つ。`testHelperGlobs()` を spread すると vite.config.ts と同じ
+    // 入力どうしの比較になり、種別が増えても検査が通ってしまう
+    // (`companion-files.ts` の docstring が禁じている)
+    files: ["src/**/*.test.tsx", "src/test/**", "**/*.test-helpers.ts", "**/*.test-helpers.tsx"],
+    excludeFiles: ["src/test/*.test.ts"],
+    rules: {
+      "browser-test/prefer-locator-methods": "deny",
+      "browser-test/no-find-element": "deny",
+      "browser-test/no-negated-style-literal": "deny",
+      "browser-test/no-bare-absence-assertion": "deny",
+    },
+  },
+  {
     // テスト専用のコードの import 禁止。緩和ではなく適用先を絞った有効化なので、テスト側は
     // off ではなく excludeFiles で外す (ADR-0004「基準から外れる名指し」)。付随ファイルぶんは
     // 下で差し引くので、ここに残るのは src/test/** だけになる

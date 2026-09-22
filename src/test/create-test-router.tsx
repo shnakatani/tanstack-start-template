@@ -8,7 +8,8 @@ import {
 import type { ReactNode } from "react";
 
 /**
- * 単一 route を描くだけの最小 router。`Link` / `useRouter` を使う部品を単体で描画するための
+ * 単一 route を描くだけの最小 router (TanStack Router の how-to「How to Set Up Testing with Code-Based Routing」の `createTestRouter` と
+ * 同じ形: 最小の route + memory history)。`Link` / `useRouter` を使う部品を単体で描画するための
  * 足場で、アプリの router 設定 (`src/router.tsx` の defaultPreload / defaultErrorComponent 等) は
  * **意図的に持たない**。既定値を写すと router.tsx との二重管理になり、片方だけ変えたときに
  * テストだけが古い既定で緑になる。既定値そのものを検証したいテストは router.tsx を直接使う。

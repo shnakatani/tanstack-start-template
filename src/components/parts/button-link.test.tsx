@@ -3,31 +3,33 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { createTestRouter } from "@/test/create-test-router";
+import { expectText } from "@/test/page-helpers";
 
 import { ButtonLink } from "./button-link";
 
-// 検証対象はリンクの描画と寸法。to は routeTree の実在パスしか受け付けないため /notes を渡す
+// to は routeTree の実在パスしか受け付けないため /notes を渡す
 /**
- * 状態のカタログは `button-link.stories.tsx` が持つ (ADR-0022)。ここに残すのは 2 種類ある。
+ * 状態のカタログは `button-link.stories.tsx` が持つ (ADR-0022)。ここに残すのは、要素が `a` で
+ * あること・`data-slot`・`button-group` の子孫セレクタが当たる経路で、story に play が無い
+ * (節 2 の args だけで状態が決まる部品) 以上ここでしか固定できない (節 7 の役割分担)。
  *
- * 24px の床 (ADR-0007) は `getBoundingClientRect` の実測なので play へ移せない (節 5)。
- * 要素が `a` であること・`data-slot`・`button-group` の子孫セレクタが当たる経路は、
- * story に play が無い (節 2 の args だけで状態が決まる部品) 以上ここでしか固定できない
- * (節 7 の役割分担)。
+ * 寸法は測らない。24px の床は registry の size 目盛りが持つデザインシステムの規範で、
+ * 消費側が縮められないことは層の規則 (ADR-0020 / ADR-0021) が止める。機械で見ないのは
+ * ADR-0007 の決定 (「寸法は機械で見ない」)。
  */
 describe("ButtonLink", () => {
   it("リンクテキストが表示される", async () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByText("メモ一覧へ").query()).not.toBeNull();
+    await expectText(screen, "メモ一覧へ");
   });
 
   it("リンクが a 要素としてレンダリングされる", async () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole("link").query()).not.toBeNull();
+    await expect.element(screen.getByRole("link")).toBeInTheDocument();
   });
 
   // registry の子孫セレクタ (button-group.tsx の `[data-slot=button]` 等) が
@@ -36,22 +38,7 @@ describe("ButtonLink", () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole("link").element().getAttribute("data-slot")).toBe("button");
-  });
-
-  // Empty 状態の CTA が使う組み合わせ。テキストリンクの意匠のまま WCAG 2.2 AA 2.5.8 の
-  // 24px 床を満たすことが採用理由なので、床を回帰として固定する (ADR-0007)
-  it("variant=link size=sm は 24px の床を満たす", async () => {
-    const router = createTestRouter("/", () => (
-      <ButtonLink variant="link" size="sm" to="/notes">
-        新規登録する
-      </ButtonLink>
-    ));
-    const screen = await render(<RouterProvider router={router} />);
-
-    expect(
-      screen.getByRole("link").element().getBoundingClientRect().height,
-    ).toBeGreaterThanOrEqual(24);
+    await expect.element(screen.getByRole("link")).toHaveAttribute("data-slot", "button");
   });
 
   // registry の link variant は下線つきのテキストリンクとして描く (Empty 状態の CTA の意匠)
@@ -63,8 +50,6 @@ describe("ButtonLink", () => {
     ));
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole("link").element().getAttribute("class")).toContain(
-      "underline-offset-4",
-    );
+    await expect.element(screen.getByRole("link")).toHaveClass("underline-offset-4");
   });
 });

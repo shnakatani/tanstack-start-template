@@ -138,7 +138,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 恒常的に viewport 高を超えるダイアログは必ずこの方式で組む。`popupOverflowBackstop` 発火時に X 閉じるボタンが流れる挙動は、内部スクロールを組み忘れても内容が読める防御層として許容し、sticky は作らない。sticky を足すと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる。
 
 本文の余白は `DialogScrollBody` が持つ (`px-6` / `py-4`)。消費側で padding を足さない。
-`ring` / `box-shadow` は border box の外側に描かれるため、スクロール領域に余白がないと端の要素で切れる。この余白は `src/components/parts/dialog-scroll-body.test.tsx` が上下左右とも固定している。
+`ring` / `box-shadow` は border box の外側に描かれるため、スクロール領域に余白がないと端の要素で切れる。余白の見え方は `dialog-scroll-body.stories.tsx` の `Overflowing` で見る (寸法は測らない。ADR-0007)。
 
 `DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める。
 

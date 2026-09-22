@@ -3,6 +3,8 @@ import viteReact from "@vitejs/plugin-react";
 import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
+import { BROWSER_TEST_GLOB } from "./scripts/lib/companion-files";
+import { ASSERT_TIMEOUT_MS } from "./src/test/assert-budget";
 import { DEFAULT_VIEWPORT } from "./src/test/viewport-sizes";
 
 export default defineProject({
@@ -48,6 +50,10 @@ export default defineProject({
   },
   test: {
     name: "browser",
+    // assert の予算。テストの予算 (`testTimeout`) と分ける。値とその根拠は
+    // `src/test/assert-budget.ts` が持つ。`actionTimeout` と対で効き、これを消すと
+    // vitest の既定 1000ms、`actionTimeout` を消すと残り予算を使い切る側へ戻る (ADR-0030)
+    expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
     // project を足すとそのぶん描画が増えるため。根拠と棄却した選択肢は ADR-0027。
     //
@@ -60,7 +66,7 @@ export default defineProject({
       },
     ],
     setupFiles: ["src/test/browser-setup.tsx"],
-    include: ["src/**/*.test.tsx"],
+    include: [BROWSER_TEST_GLOB],
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
@@ -69,7 +75,11 @@ export default defineProject({
     ],
     browser: {
       enabled: true,
-      provider: playwright(),
+      // CI の遅さに備えて操作の上限を config で置くための option (vitest-dev/vitest#6983)。
+      // あわせて `expect.poll.timeout` を `expect.element` へ届かせる役も持つ。vitest は
+      // actionTimeout が未設定のときだけ assert の timeout をタスクの残り予算から計算する
+      // (#8308 が OPEN)。固定値にするとテスト後半ほど予算が縮む問題も消える (#7871)
+      provider: playwright({ actionTimeout: ASSERT_TIMEOUT_MS }),
       headless: true,
       // 既定 viewport は src/test/viewport.ts が持つ。写すとどちらかが古くなるので import する
       viewport: DEFAULT_VIEWPORT,

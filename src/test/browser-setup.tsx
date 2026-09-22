@@ -7,25 +7,27 @@
  * 実 CSS へ解決させることで、getBoundingClientRect / getComputedStyle による
  * レイアウト挙動の検証を可能にする。
  */
-import { afterEach, beforeEach } from "vite-plus/test";
-import { cdp } from "vite-plus/test/browser/context";
+import { beforeEach } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
-import { disableBaseUiAnimations } from "@/test/base-ui-animations";
+import { disableAnimations } from "@/test/animations";
 import { parkMouse } from "@/test/park-mouse";
+import "@/test/slot-locator";
 
 /**
- * マウス位置の page スコープのリークを毎テスト前に断つ。
- * 同一 page 上で順次実行される後続テストへ hover 状態が残ると、テストが実行順に依存する。
+ * page スコープに残る状態を毎テスト前に既定へ戻す。1 つの session が複数ファイルを順に走らせ、
+ * 前のテストの状態が次へ残るため。
+ *
+ * - マウス位置: 前テストの click 位置に hover 状態が残ると、配色の検証が実行順に依存する
+ * - animation: Base UI のフラグと reduced motion のエミュレーション (ADR-0018)。戻し方は animations.ts
+ *
+ * 2 つは独立した CDP 呼び出しなので並行に送る。
  */
 beforeEach(async () => {
-  await parkMouse();
+  await Promise.all([parkMouse(), disableAnimations()]);
 });
-
-// Base UI の animation の既定 (ADR-0018)。理由と戻し方は base-ui-animations.ts の JSDoc
-beforeEach(disableBaseUiAnimations);
 
 /**
  * `announce()` (ADR-0017) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
@@ -36,23 +38,4 @@ beforeEach(disableBaseUiAnimations);
  */
 beforeEach(async () => {
   await render(<LiveRegions />);
-});
-
-/**
- * エミュレーション設定を毎テスト後に解除する。
- *
- * `Emulation.setTouchEmulationEnabled` は page 単位の設定で、同一 page 上で順次実行される
- * 後続ファイルへリークする (後続で `any-pointer: coarse` が true になり、この軸で分岐する
- * テストがファイル実行順に依存する)。`maxTouchPoints: 0` を併せて渡すと Protocol error。
- *
- * `Emulation.setEmulatedMedia` も同じ page スコープの override でリークするため、
- * `features: []` で戻す (未リセットだと `prefers-reduced-motion: reduce` を立てたファイル以降が
- * 全て reduced motion 環境で走り、ファイル実行順に依存した flaky を作る)。
- */
-// 直列 await にすると前段の失敗で後段のリセットが飛び、リークが以降ずっと残る
-afterEach(async () => {
-  await Promise.all([
-    cdp().send("Emulation.setTouchEmulationEnabled", { enabled: false }),
-    cdp().send("Emulation.setEmulatedMedia", { features: [] }),
-  ]);
 });

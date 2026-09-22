@@ -1,25 +1,23 @@
 import { afterEach, describe, expect, it } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
+  expectWithinViewport,
   restoreDefaultViewport,
   setViewport,
   SHORT_VIEWPORT,
   TABLET_VIEWPORT,
-  expectWithinViewport,
 } from "@/test/viewport";
-import { waitForAnimations } from "@/test/wait-for-animations";
 
 /**
- * 共有 DialogContent の viewport 溢れ backstop 回帰テスト。
+ * 共有 DialogContent の viewport 溢れ backstop。registry 乖離 (Viewport + `popupOverflowBackstop`
+ * + Popup の flex-col。ADR-0006 の許容リスト) のガードで、`registry-baseline.test.ts` は
+ * baseline の存在しか見ず乖離が消えても落ちないことを実測した (2026-09-22)。
  *
- * ブラウザテストには `@tailwindcss/vite` が入り `src/test/browser-setup.tsx` が
- * `src/styles.css` を読むため、Tailwind のユーティリティクラスが実 CSS として解決される。
- * className の付与ではなく getBoundingClientRect / getComputedStyle による
- * 実挙動 (viewport 内収まり・スクロール到達) を検証する。
- *
+ * 到達性は実キーボードで見る (Popup は開いたとき focus を受け、End で末尾へスクロールする)。
  * 溢れコンテンツは `height` ではなく `minHeight` で作る: DialogContent は flex column で、
  * flex item は既定で縮むため `height: 3000px` の子は popup 高に潰れて溢れを再現できない。
  */
@@ -42,25 +40,16 @@ function renderTallDialog() {
 describe("DialogContent（viewport 溢れ backstop）", () => {
   afterEach(restoreDefaultViewport);
 
-  it("Tailwind が実 CSS に解決され、配置コンテナが fixed / popup が flex-col と max-height を持つ", async () => {
+  it("配置コンテナが fixed で、Popup はその中で flex-col に組まれる", async () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
 
-    const popup = await screen.getByRole("dialog").findElement();
-    await waitForAnimations();
-
-    const viewport = popup.parentElement;
-    expect(viewport?.getAttribute("data-slot")).toBe("dialog-viewport");
-
-    // popupViewportLayout の fixed / popupOverflowBackstop の max-h-full + overflow-y-auto が
-    // クラス名ではなく実際の computed style として効いていること (以降の実測の前提条件)
-    expect(getComputedStyle(viewport!).position).toBe("fixed");
-    expect(getComputedStyle(popup).maxHeight).not.toBe("none");
-    expect(getComputedStyle(popup).overflowY).toBe("auto");
-    // Popup の flex-col 構造も ADR-0006 の乖離。alert-dialog 側と対で守る
-    expect(getComputedStyle(popup).display).toBe("flex");
-    expect(getComputedStyle(popup).flexDirection).toBe("column");
+    const viewport = screen.getBySlot("dialog-viewport");
+    await expect.element(viewport).toHaveStyle("position: fixed");
+    await expect
+      .element(viewport.getByRole("dialog"))
+      .toHaveStyle("overflow-y: auto; display: flex; flex-direction: column");
   });
 
   it("基準 viewport で長身コンテンツでも popup 全体が viewport 内に収まる", async () => {
@@ -68,45 +57,32 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
 
-    const popup = await screen.getByRole("dialog").findElement();
-    await waitForAnimations();
-
-    expectWithinViewport(popup);
+    await expectWithinViewport(screen.getByRole("dialog"));
   });
 
-  it("popup 自身がスクロールして最下部コンテンツまで到達できる（backstop 挙動）", async () => {
+  it("キーボードで最下部コンテンツまで到達できる（backstop 挙動）", async () => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
+    const marker = screen.getByText(BOTTOM_MARKER);
 
-    const popup = await screen.getByRole("dialog").findElement();
-    await waitForAnimations();
+    await expect.element(screen.getByText("先頭コンテンツ")).toBeInViewport();
+    await expect.element(marker).not.toBeInViewport();
 
-    // 内容が popup の表示領域を超えている = スクロールが必要な状態
-    expect(popup.scrollHeight).toBeGreaterThan(popup.clientHeight);
+    await userEvent.keyboard("{End}");
 
-    const marker = await screen.getByText(BOTTOM_MARKER).findElement();
-    const popupRect = popup.getBoundingClientRect();
-    expect(marker.getBoundingClientRect().top).toBeGreaterThan(popupRect.bottom);
-
-    popup.scrollTop = popup.scrollHeight;
-    const scrolledPopupRect = popup.getBoundingClientRect();
-    const markerRect = marker.getBoundingClientRect();
-    expect(markerRect.top).toBeGreaterThanOrEqual(scrolledPopupRect.top);
-    expect(markerRect.bottom).toBeLessThanOrEqual(scrolledPopupRect.bottom);
+    await expect.element(marker).toBeInViewport();
   });
 
-  it("極端に低い viewport でも popup 全体が viewport 内に収まる", async () => {
+  it("極端に低い viewport でも popup 全体が viewport 内に収まり、最下部へ到達できる", async () => {
     await setViewport(SHORT_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
 
-    const popup = await screen.getByRole("dialog").findElement();
-    await waitForAnimations();
-
     expect(window.innerHeight).toBe(SHORT_VIEWPORT.height);
-    expectWithinViewport(popup);
-    // 低 viewport でもスクロールで最下部へ到達できる
-    expect(popup.scrollHeight).toBeGreaterThan(popup.clientHeight);
+    await expectWithinViewport(screen.getByRole("dialog"));
+
+    await userEvent.keyboard("{End}");
+    await expect.element(screen.getByText(BOTTOM_MARKER)).toBeInViewport();
   });
 });

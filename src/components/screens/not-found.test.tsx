@@ -16,8 +16,8 @@ it("見つからなかったことと復帰導線を示す", async () => {
     />,
   );
 
-  expect(
-    screen.getByRole("heading", { name: "ページが見つかりません", level: 1 }).query(),
-  ).not.toBeNull();
-  expect(screen.getByRole("link", { name: "ホームへ戻る" }).query()).not.toBeNull();
+  await expect
+    .element(screen.getByRole("heading", { name: "ページが見つかりません", level: 1 }))
+    .toBeInTheDocument();
+  await expect.element(screen.getByRole("link", { name: "ホームへ戻る" })).toBeInTheDocument();
 });

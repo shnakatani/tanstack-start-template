@@ -29,7 +29,7 @@ describe("ActionForm", () => {
 
     // 実イベント (CDP 経由) で 2 回発火する
     await button.click();
-    expect(document.activeElement).toBe(button.element());
+    await expect.element(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
     expect(submitAction).toHaveBeenCalledOnce();
@@ -48,7 +48,7 @@ describe("ActionForm", () => {
 
     // 素の submit ボタンは aria-disabled にならないので、form 側の isPending が塞ぐ
     await button.click();
-    expect(document.activeElement).toBe(button.element());
+    await expect.element(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
     expect(submitAction).toHaveBeenCalledOnce();

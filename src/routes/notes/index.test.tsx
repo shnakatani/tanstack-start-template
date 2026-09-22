@@ -19,12 +19,12 @@ import {
 } from "@/features/notes/schema.test-helpers";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y";
-import { enableBaseUiAnimations } from "@/test/base-ui-animations";
+import { expectAbsent, expectRemoved } from "@/test/absent";
+import { enableAnimations } from "@/test/animations";
 import { createTestRouter } from "@/test/create-test-router";
 import { deferMock } from "@/test/defer-mock";
 import { readAnnouncements } from "@/test/live-announcer";
 import { collectLoaderQueryKeys } from "@/test/loader-helpers";
-import { dispatchNativeClick } from "@/test/native-click";
 import { createTestQueryClient, expectText, type Screen } from "@/test/page-helpers";
 import { parkMouse } from "@/test/park-mouse";
 
@@ -45,6 +45,7 @@ import {
   openNoteCreateDialog,
   saveButton,
   titleTextbox,
+  expectNoteCreateDialogClosed,
 } from "./-components/note-create-dialog.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
 import { loadNotesPageData, Route } from "./index";
@@ -64,21 +65,23 @@ async function renderPage() {
   return render(<RouterProvider router={router} />);
 }
 
-async function expectCreateDialogClosed(screen: Screen) {
-  await expect.element(titleTextbox(screen)).not.toBeInTheDocument();
-}
-
 async function expectDeleteConfirmClosed(screen: Screen) {
-  await expect.element(confirmDeleteButton(screen)).not.toBeInTheDocument();
+  await expectRemoved(confirmDeleteButton(screen));
 }
 
-/** 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。 */
+/**
+ * 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。
+ *
+ * 「1 件」と「busy でない」は同時に成立している必要がある。後段の assert が両方を持つ。
+ * `expect.element` は retry のたびに locator を引き直し、`.element()` は複数一致で throw
+ * するため (vitest の locators docs「strict and throw if multiple elements match」)、
+ * 2 件ある間は通らない。前段の `toHaveLength` は失敗時の文言を読めるようにするために置く
+ * (strict 違反より「1 件のはずが 2 件」のほうが原因に近い)。消すと診断だけが落ちる。
+ */
 async function expectSettledRow(screen: Screen, note: Note) {
-  await vi.waitFor(() => {
-    const matched = noteRow(screen, note).all();
-    expect(matched).toHaveLength(1);
-    expect(matched[0]?.element().getAttribute("aria-busy")).not.toBe("true");
-  });
+  const row = noteRow(screen, note);
+  await expect.element(row).toHaveLength(1);
+  await expect.element(row).toHaveAttribute("aria-busy", "false");
 }
 
 async function openDeleteConfirm(screen: Screen, note: Note) {
@@ -95,16 +98,9 @@ async function submitCreate(screen: Screen, note: Note) {
   await openNoteCreateDialog(screen);
   await titleTextbox(screen).fill(note.title);
   await bodyTextbox(screen).fill(note.body);
-  // 保存ボタンは inert バックドロップ越しなのでキーボードで活性化する (testing.md「クリックの発火方法」の順 2)
-  saveButton(screen).element().focus();
-  await userEvent.keyboard("{Enter}");
+  await saveButton(screen).click();
   // 追加ボタンに乗った実マウスを、ダイアログが閉じる前に退避する (openDeleteConfirm と同じ理由)
   await parkMouse();
-}
-
-function confirmDelete(screen: Screen) {
-  // 確認ダイアログのボタンは inert バックドロップが pointer event を横取りするため native click
-  dispatchNativeClick(confirmDeleteButton(screen).element());
 }
 
 describe("NotesPage", () => {
@@ -128,9 +124,9 @@ describe("NotesPage", () => {
     const router = createTestRouter("/notes", () => <Pending />);
     const screen = await render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole("status", { name: "読み込み中" }).query()).not.toBeNull();
+    await expect.element(screen.getByRole("status", { name: "読み込み中" })).toBeInTheDocument();
     // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (ADR-0019)
-    expect(screen.getByRole("columnheader").all()).toHaveLength(noteColumns.length);
+    await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
   });
 
   it("loader が notes を prefetch する", async () => {
@@ -204,14 +200,14 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答でダイアログが閉じ、再取得中も行は busy のまま
-    await expectCreateDialogClosed(screen);
+    await expectNoteCreateDialogClosed(screen);
     await expect.element(noteRow(screen, CREATED_NOTE)).toHaveAttribute("aria-busy", "true");
     // 行は静的テキストで状態を持つ (ADR-0017)。live region にはしないので、仮想カーソルで
     // 行を読んだときにだけ出る。通知は announcer が担う
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
-    const rows = screen.getByRole("row").all();
-    expect(rows[1]?.element().textContent).toContain(CREATED_NOTE.title); // rows[0] はヘッダ行
+    // rows[0] はヘッダ行
+    await expect.element(screen.getByRole("row").nth(1)).toHaveTextContent(CREATED_NOTE.title);
     // 楽観行が出ている状態そのものを検査する。ダイアログが閉じたあとなので、
     // axe が見るのは一覧だけ (開いている間は行が aria-hidden 配下に入る)。
     // この assert の問いは a11y だが、a11y tag を付けた専用テストへは降ろさない。
@@ -238,7 +234,7 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答で閉じる。再取得 (2 回目の listNotes) は未決着なので mutation は pending のまま
-    await expectCreateDialogClosed(screen);
+    await expectNoteCreateDialogClosed(screen);
 
     await openNoteCreateDialog(screen);
 
@@ -263,7 +259,7 @@ describe("NotesPage", () => {
     await expect
       .element(noteRow(screen, CREATED_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
-    expect(screen.getByText("メモが登録されていません").query()).toBeNull();
+    await expectRemoved(screen.getByText("メモが登録されていません"));
 
     create.resolve({ id: CREATED_NOTE.id });
 
@@ -278,7 +274,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
       // 行の payload の id がそのまま server function へ渡ることを固定する
@@ -295,11 +291,11 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    dispatchNativeClick(screen.getByRole("button", { name: "キャンセル", exact: true }).element());
+    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
 
     await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).not.toHaveBeenCalled();
-    expect(screen.getByText(NOTE.title).query()).not.toBeNull();
+    await expectText(screen, NOTE.title);
   });
 
   it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
@@ -311,15 +307,16 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     // 完了点 (a) でダイアログは閉じるので、決着までの pending は行の busy だけが伝える
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
 
     remove.reject(new Error(rawMessage));
 
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0031)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    expect(screen.getByText(rawMessage).query()).toBeNull();
+    await expectAbsent(screen.getByText(rawMessage));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "false");
     await expect
@@ -335,7 +332,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     // 確定で閉じる。removeNote は未決着
     await expectDeleteConfirmClosed(screen);
@@ -362,7 +359,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
@@ -378,12 +375,8 @@ describe("NotesPage", () => {
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
     // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の
     // data-disabled: が担う (ADR-0006)。半透明 + pointer-events なしを算出スタイルで固定する
-    const targetTrigger = rowDeleteButton(screen, NOTE.title).element();
-    await vi.waitFor(() => {
-      const style = getComputedStyle(targetTrigger);
-      expect(style.opacity).toBe("0.5");
-      expect(style.pointerEvents).toBe("none");
-    });
+    const targetTrigger = rowDeleteButton(screen, NOTE.title);
+    await expect.element(targetTrigger).toHaveStyle("opacity: 0.5; pointer-events: none");
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
     // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
     // 楽観行の検査と同じ理由で、a11y tag を付けた専用テストへは降ろさない。
@@ -395,7 +388,7 @@ describe("NotesPage", () => {
 
     // 再取得 (2 回目の listNotes) が反映されても、消えるのは対象行だけ。
     // 対象名は announcer の通知にも残るので、行そのもので判定する
-    await expect.element(noteRow(screen, NOTE)).not.toBeInTheDocument();
+    await expectRemoved(noteRow(screen, NOTE));
     await expectText(screen, OTHER_NOTE.title);
   });
 
@@ -411,11 +404,11 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
 
     await openDeleteConfirm(screen, NOTE);
-    confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
     await expectDeleteConfirmClosed(screen);
 
     await openDeleteConfirm(screen, OTHER_NOTE);
-    confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
       expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
@@ -442,7 +435,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    confirmDelete(screen);
+    await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
       expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);
@@ -461,20 +454,30 @@ describe("NotesPage", () => {
     // close の animate-out の窓 (閉じかけのダイアログにボタンが残る間) を踏む検証なので、
     // このテストだけ Base UI の animation を戻す (ADR-0018)。無効のままだと 2 発目が
     // unmount 後に届き、guard を外しても通ってしまう
-    enableBaseUiAnimations();
+    await enableAnimations();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    // 確定はキーボードで (testing.md「クリックの発火方法」の順 2)。
-    // close の animate-out の間にもう一度 Enter を送る
-    confirmDeleteButton(screen).element().focus();
-    await userEvent.keyboard("{Enter}");
+    // 1 発目は実クリック。2 発目は close の animate-out の間で Playwright が stable 判定で
+    // 弾く (locator.click: "element is not stable") ので、クリックで乗ったフォーカスへ Enter を
+    // 送る (testing.md「クリックの発火方法」の順 1 → 2)。Base UI の finalFocus は unmount 時
+    // (animate-out の後、FloatingFocusManager の effect cleanup) に走るので、animate-out の間は
+    // フォーカスが確定ボタンに残る。それを固定する。残っていなければ Enter は別の要素に届き、
+    // guard を通らないまま 1 回で緑になる (肯定 anchor。ADR-0031)
+    await confirmDeleteButton(screen).click();
+    await expect.element(confirmDeleteButton(screen)).toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
     expect(vi.mocked(removeNote)).toHaveBeenCalledOnce();
+    // 2 発目が payload 無しで確定へ届いた場合は DeleteConfirmDialog が warn を出す。届いた上で
+    // guard に弾かれたことと区別する。発生源を prefix で特定し、無関係な warn で落とさない
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("[DeleteConfirmDialog]"),
+      expect.anything(),
+    );
     // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
     expect(readAnnouncements()).toEqual([`『${NOTE.title}』を削除しています`]);
     remove.resolve(undefined);

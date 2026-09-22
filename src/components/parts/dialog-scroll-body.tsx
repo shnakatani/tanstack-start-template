@@ -46,8 +46,8 @@ export function DialogScrollForm({ className, ...props }: ActionFormProps) {
  * `-mx-6` と `px-6` は `DialogContent` の `p-6` (`ui/dialog.tsx`) を打ち消して Viewport の
  * 内側へ移すためのペア。Viewport は `overflow: scroll` なので、内側に余白がないと入力の
  * focus ring (`input.tsx` の `focus-visible:ring-3` = box-shadow 3px) が境界でクリップされる。
- * **`DialogContent` の padding を変えたらこの値も変える**。破綻は `dialog-scroll-body.test.tsx`
- * の「本体の内容が見出しと同じ左端に揃う」ケースが捕まえる。
+ * **`DialogContent` の padding を変えたらこの値も変える**。ずれは `dialog-scroll-body.stories.tsx`
+ * の `Overflowing` で、本文と見出しの左端の揃いとして見える。
  *
  * `py-4` は同じクリップを縦で防ぐ。先頭・末尾に来た要素 (input の focus ring、`card.tsx` の
  * `ring-1`) が境界で切れる。横と違い打ち消す対象がないので値は独立で、消費側が個別に持って
@@ -69,8 +69,8 @@ export function DialogScrollForm({ className, ...props }: ActionFormProps) {
  * デモと同じで、あちらも header / 本文 / footer を同じ `p-4` に置き `w-4` のバーを載せている。
  * ただし公式のバーは hover / スクロール中しかポインタを受けないのに対し registry のバーは
  * 常時受けるので、末尾側の余白を持たない器での既定の退避そのものは要る (ADR-0006)。
- * `px-6` がバー幅を下回ると本文がバーに隠れるため、降りてよいことの妥当性は
- * `dialog-scroll-body.test.tsx` が本文とバーの重なりで固定する。
+ * `px-6` がバー幅を下回ると本文がバーに隠れるため、降りてよいことは `Overflowing` story で
+ * 本文とバーが重ならないことで見る。
  * 降りられるのは `cn` の衝突解決が既定側の `pr-2.5` を落とすからで、詳細度は同じ、
  * CSS の出力順ではむしろ既定が後に来る。衝突解決を持たない結合 (`cn` が併せて export する
  * `clsx` など) に替えると既定が無言で復活する。

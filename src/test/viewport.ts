@@ -1,6 +1,8 @@
 import { expect } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
+import type { Locator } from "vite-plus/test/browser/context";
 
+import { viewportOverflows } from "./viewport-overflows";
 import { DEFAULT_VIEWPORT, type Viewport } from "./viewport-sizes";
 
 /**
@@ -10,7 +12,6 @@ import { DEFAULT_VIEWPORT, type Viewport } from "./viewport-sizes";
  * (戻さないと後続ファイルのブレークポイント依存テストが巻き添えになる)。
  */
 
-export type { Viewport } from "./viewport-sizes";
 export {
   DEFAULT_VIEWPORT,
   NARROW_VIEWPORT,
@@ -32,16 +33,19 @@ export async function restoreDefaultViewport(): Promise<void> {
 }
 
 /**
- * 要素の矩形が viewport 内に収まっていることを検証する。
- * 高さ・幅が 0 に潰れた要素は「はみ出していない」を自明に満たしてしまうため、
- * 実体があること (height > 0 かつ width > 0) も併せて要求する。
+ * 要素の矩形が viewport 内に収まっていることを検証する。判定は `viewportOverflows` (純粋) が
+ * 持ち、ここは locator から矩形を読んで poll する。空配列を期待するので、失敗文にはみ出した
+ * 辺と px が残る。要素が無ければ `element()` が throw し、予算ぶん retry してから落ちる。
+ *
+ * 公式の `toBeInViewport({ ratio: 1 })` を使わない理由と実測は ADR-0032。
  */
-export function expectWithinViewport(element: Element): void {
-  const rect = element.getBoundingClientRect();
-  expect(rect.height, "rect.height").toBeGreaterThan(0);
-  expect(rect.width, "rect.width").toBeGreaterThan(0);
-  expect(rect.top, "rect.top").toBeGreaterThanOrEqual(0);
-  expect(rect.left, "rect.left").toBeGreaterThanOrEqual(0);
-  expect(rect.bottom, "rect.bottom").toBeLessThanOrEqual(window.innerHeight);
-  expect(rect.right, "rect.right").toBeLessThanOrEqual(window.innerWidth);
+export async function expectWithinViewport(target: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      viewportOverflows(target.element().getBoundingClientRect(), {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }),
+    )
+    .toEqual([]);
 }

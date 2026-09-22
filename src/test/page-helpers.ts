@@ -1,5 +1,5 @@
 import { QueryClient, type QueryClientConfig } from "@tanstack/react-query";
-import { expect, vi } from "vite-plus/test";
+import { expect } from "vite-plus/test";
 import type { render } from "vitest-browser-react";
 
 /** `render()` の戻り値。locator を取るヘルパーの引数型に使う。 */
@@ -25,25 +25,24 @@ export function createTestQueryClient(config?: Omit<QueryClientConfig, "defaultO
  * 「close 済みだがまだ DOM にある」を「開いたまま」と誤判定するので、`data-open` を見る。
  * Popup は `aria-hidden` 配下に入ることがあるため `includeHidden` で取る。
  */
-export function expectDialogOpen(screen: Screen, role: "dialog" | "alertdialog") {
-  expect(screen.getByRole(role, { includeHidden: true }).element().hasAttribute("data-open")).toBe(
-    true,
-  );
+export async function expectDialogOpen(screen: Screen, role: "dialog" | "alertdialog") {
+  await expect
+    .element(screen.getByRole(role, { includeHidden: true }))
+    .toHaveAttribute("data-open");
 }
 
 /** 指定テキストが表示されるまで待って検証する。 */
 export async function expectText(screen: Screen, text: string) {
-  await vi.waitFor(() => {
-    expect(screen.getByText(text).query()).not.toBeNull();
-  });
+  await expect.element(screen.getByText(text)).toBeInTheDocument();
 }
 
+/** 指定ラベルの textbox がすべて空であることを検証する。値は locator の matcher で見る (ADR-0029) */
 export async function expectEmptyTextboxes(screen: Screen, labels: string[]) {
-  await vi.waitFor(() => {
-    for (const label of labels) {
-      const textbox = screen.getByRole("textbox", { name: label, exact: true }).element();
-      expect.assert(textbox instanceof HTMLInputElement, `${label} の textbox が input ではない`);
-      expect(textbox.value).toBe("");
-    }
-  });
+  await Promise.all(
+    labels.map(async (label) => {
+      await expect
+        .element(screen.getByRole("textbox", { name: label, exact: true }))
+        .toHaveValue("");
+    }),
+  );
 }

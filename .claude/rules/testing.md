@@ -129,7 +129,7 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 ## assertion helper と型ナローイング
 
 - assertion を実行するテストヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` のパターンと、`vite.config.ts` に名指しした関数だけ。命名を外すとヘルパーだけを呼ぶテストが落ちる (ADR-0004)
-- 上の対象はテスト本文に現れる呼び出し名だけで、内部クロージャは含まない。値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない (実例: `src/test/page-helpers.ts`)
+- 上の対象はテスト本文に現れる呼び出し名だけで、内部クロージャは含まない。値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
 - ヘルパーが受け取る引数の前提検査は型ナローイングと分けて `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガードで、`expect*` 命名の縛りも要らない (実例: `src/test/loader-helpers.ts`)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は戻り値が `void` で型を絞らない (vitest-dev/vitest#8695)
 - 条件分岐で assertion を囲まない。`if` 内の `expect` は `vitest/no-conditional-expect` が報告する (ADR-0004)
@@ -153,32 +153,45 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 
 手段は場面で決める。1 が弾かれたら Playwright のエラー文言が示す条件を確かめ、それに対応する行へ移る。通るまで手段を替える順序ではない。テストが通るように手段を下げると、実物では起きない事象を固定する (ADR-0015)。
 
-| 順  | 場面                                                                                                  | 使うもの                                                                                                                                                                          |
-| --- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | 既定                                                                                                  | `.click()`                                                                                                                                                                        |
-| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる (`aria-disabled` の 2 回目、バックドロップ越し) | `element.focus()` + `userEvent.keyboard("{Enter}")`                                                                                                                               |
-| 3   | Playwright に弾かれ、pointer 経由の click が要る                                                      | `dispatchNativeClick` (`src/test/native-click.ts`)                                                                                                                                |
-| -   | 決着前の二重発火の検証                                                                                | 1 → 2 の実イベントを 2 回。`dispatchNativeClick` を同期に 2 回送らない。同一要素への同期 2 連射は実イベントで起きず、固定すると実装に無用の防御を要求する                         |
-| -   | Checkbox                                                                                              | `.click()`。`dispatchNativeClick` を本体へ送ると hidden input への転送が label の activation behavior と重なり、変更ハンドラが 2 回発火する (`src/test/native-click.ts` の JSDoc) |
+| 順  | 場面                                                  | 使うもの                                                                                                                         |
+| --- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 既定                                                  | `.click()`                                                                                                                       |
+| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し (直前の実クリックで乗っているならそのまま) `userEvent.keyboard("{Enter}")` (ADR-0015) |
+| 3   | Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が無いことを先に確かめる (ADR-0015)                                     |
+| -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。合成イベントを対象へ直接送ってライブラリ内部のガードまで見に行かない (ADR-0015)               |
+| -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きず、固定すると実装に無用の防御を要求する                     |
 
 `.click()` は visible / enabled / stable を待ってから、viewport 内の座標と hit-target を確かめる (`playwright-core` の `_performPointerAction`)。弾かれる典型は次のとおり。
 
-| 条件               | 落ちる例                                                                |
-| ------------------ | ----------------------------------------------------------------------- |
-| enabled            | native `disabled`、`aria-disabled="true"`                               |
-| stable             | 開閉アニメーションの途中。`waitForAnimations()` を先に通す              |
-| visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む        |
-| hit-target         | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none` |
-
-```typescript
-import { dispatchNativeClick } from "@/test/native-click";
-
-dispatchNativeClick(screen.getByRole("button", { name: "削除" }).element());
-```
+| 条件               | 落ちる例                                                                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| enabled            | native `disabled`、`aria-disabled="true"`                                                                                                     |
+| stable             | 開閉アニメーションの途中。既定 (ADR-0018) では 0.01ms で終わる。animation を戻したテストでは settled 状態を `expect.element` で待ってから押す |
+| visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                                              |
+| hit-target         | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                                                       |
 
 - **どの条件で落ちたかは Playwright のエラー文言に出る。** 推測で切り替えず、文言を読んでから選ぶ
-- **既存が `dispatchNativeClick` でも、同じ場所で `.click()` が通ることがある。** 倣わず、1 の行から選び直す
-- `click({ force: true })` は上の 5 条件をまとめて飛ばす。使う前に `waitForAnimations()` を通す (アニメーション途中だと "Element is outside of the viewport" で落ちる)
+- `click({ force: true })` は上の 5 条件をまとめて飛ばす。animation を戻したテストでは、スライドイン途中だと "Element is outside of the viewport" で落ちる
+- **`force: true` は actionability の検査だけを飛ばし、ブラウザのヒットテストは越えない。** 対象が `pointer-events: none` ならイベントは下の要素へ落ち、対象のハンドラは呼ばれない。「押しても何も起きない」をこの形で書くと、`pointer-events` から導かれるだけの assert になる (ADR-0015)
+- 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (ADR-0015)
+
+## locator の扱い
+
+- 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)
+- locator に対応する matcher が無い実測 (rect / computed style / `matches()`) は `expect.poll` のコールバックの中で読む。比較の基準値を 1 回だけ読むときは、先に `expect.element` で mount を待つ (ADR-0013 / ADR-0029)
+- 機械強制は `browser-test/prefer-locator-methods`。`vp lint` / `vp check` で走る。grep は束縛を挟む形を取りこぼすので、件数はこのルールで数える (ADR-0029)
+- assert の予算は `vitest.browser.config.ts` が `expect.poll.timeout` と `actionTimeout` の対で宣言する。片方だけにすると残り予算か vitest の既定へ戻る (ADR-0030)
+- 予算の値は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が持つ。上げるときはここを変える。config へ直接書くと helper 側の閾値が追随しない (ADR-0030)
+- **`testTimeout` は動かさない。** 締めるのは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も縮み、遅い環境で緑のテストが落ちる (ADR-0030)
+- 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く。要素が無ければ 1 回目で通るので、単独では何も検証していない (ADR-0031)
+- 要素が在る状態から消えるのを待つときは `src/test/absent.ts` の `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は `browser-test/no-bare-absence-assertion` が止める (ADR-0031)
+- `toHaveLength` も一致ゼロで通るので、`expectAbsent` と同じく描画を待つ肯定 assert を先に置く。ほかの否定 matcher は要素が引けない間 retry するので要らない (ADR-0031)
+- 2 つの helper は落ちる向きが違う。`expectAbsent` は「いま在る」で落ち、`expectRemoved` はその向きに落ちない。予算を揃えると前者の反証条件が消える (ADR-0031)
+- locator は複数一致で throw する (vitest の locators docs「strict and throw if multiple elements match」)。`expect.element` は retry のたびに引き直すので「1 件だけ」を assert の前提に使える。使うなら依拠を実装近傍に書く。書かないと前提ごと消される
+- 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0029)
+- 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件 (mock の呼び出し回数など) は `vi.waitFor` (ADR-0013)
+- `expect.poll` と `vi.waitFor` はコールバックを retry するので、中の同期読みはルールの対象外。`expect.element` は引数の式を 1 度しか評価せず、同期読みを渡すとその値のまま retry する (ADR-0029)
+- 同期読み由来の値は、関数の引数・演算・テンプレート・`await`・1 段の束縛を通っても `expect()` / `assert` に届けば報告される。連鎖を束縛して matcher の期待値に使う形 (操作前の基準値) は報告しない。観測どうしの比較は綴りで潰れない (ADR-0029 / ADR-0031)
 
 ## ブラウザテストの CSS とレイアウト実測
 
@@ -186,17 +199,24 @@ dispatchNativeClick(screen.getByRole("button", { name: "削除" }).element());
 `getBoundingClientRect` / `getComputedStyle` によるレイアウト検証が書けるので、**レイアウト回帰は className の `toContain` ではなく実挙動で守る**。
 
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変更したら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
+- 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。公式の `toBeInViewport({ ratio: 1 })` は収まっていても落ちる実行がある。一部が見えることは公式の `toBeInViewport()` でよい (ADR-0032)
 - 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` に明示してあり、`DEFAULT_VIEWPORT` と一致させて管理する
-- 実測と `click({ force: true })` の前に `src/test/wait-for-animations.ts` の `waitForAnimations()` を通す。tw-animate-css (`data-open:animate-in` 等) の実行中は transform で rect がずれる
-- 開く操作のあとは `findElement()` → `waitForAnimations()` → 実測 の順に置く。`waitForAnimations()` は呼んだ時点のアニメーションしか待たず、未 mount では空振りする (ADR-0013)
-- 操作の結果として現れる要素の生 DOM は `await locator.findElement()` で取る。`element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
-- 操作後の属性・テキストは `await expect.element(locator).toHaveAttribute(...)` で検証する。`element().getAttribute(...)` を同期で読むと更新前の値を拾う (ADR-0013)
-- Base UI の animation は `src/test/browser-setup.tsx` が毎テスト無効にする。閉じかけの popup が残る窓を検証するテストだけ、冒頭で `src/test/base-ui-animations.ts` の `enableBaseUiAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻す (ADR-0018)
-- Dialog / Popover / Sheet の close 後に消えたことは `await expect.element(locator).not.toBeInTheDocument()` で待つ。`vi.waitFor` + `.query()` で組み立てない (ADR-0013)。animation を戻したテストでは `animate-out` 完了後に消える
-- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素の `.not.toBeInTheDocument()` を待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
+- 単一プロパティを文字列リテラルと比べるだけなら `await expect.element(x).toHaveStyle("prop: value")` を使う。**文字列形式で、複数プロパティは `;` で 1 つにまとめる。** オブジェクト形式は失敗しても差分が出ない。分けて書くと予算を個別に使い、同時に成立しない状態も通る (ADR-0031)
+- **1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。** jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える (ADR-0031)
+- **スタイルを否定で確かめない。** `not.toHaveStyle` も算出値との `not.toBe` も、綴りや単位が 1 つ外れると潰れた状態のまま通る (ADR-0031)
+- 肯定形は主張で選ぶ。「描かれている」なら 1 回の観測から数値を出して `toBeGreaterThan(0)`、当たっている token が分かっているなら `src/test/resolve-color-token.ts` の `resolveColorToken()` の値と比べる (ADR-0031)
+- 機械強制は `browser-test/no-negated-style-literal`。`not.toHaveStyle` は形を問わず (宣言名は常に字面)、値の matcher は期待値がリテラルのときだけ報告する (ADR-0031)
+- `getComputedStyle` を `expect.poll` で読む主張は、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0031)
+- `locator.findElement()` を呼ばない。`browser-test/no-find-element` が止める。`actionTimeout` を置いた config では待ち時間が上限なしになり、`Test timed out` で落ちて locator 名が出力から消える (ADR-0030)
+- `element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
+- animation は `src/test/browser-setup.tsx` が毎テスト止める (Base UI のフラグ + `prefers-reduced-motion: reduce`)。窓を検証するテストだけ冒頭で `src/test/animations.ts` の `enableAnimations()` を await する (ADR-0018)
+- transition の後に「変化しないこと」を見る assert は、途中値の前に通る。既定の reduced motion で settled 状態を読むので待つ helper は置かない。animation を戻したテストでは変化する側の値を先に待つ (ADR-0018)
+- Dialog / Popover / Sheet の close 後に消えたことは `await expectRemoved(locator)` で待つ (ADR-0013 / ADR-0031)。animation を戻したテストでは `animate-out` 完了後に消える
+- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
 - `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む
 - flex column の中に「溢れるコンテンツ」をテスト用に作るときは `height` ではなく `minHeight` を使う (flex item は既定で縮むため `height` では溢れない)
 - hover 由来の配色との交絡は `src/test/park-mouse.ts` が `browser-setup.tsx` の `beforeEach` で断つ。マウス位置を動かすテストは自分で戻す。戻すのは overlay が閉じる前。露出した要素の hover と transition を axe が測ると色の実測が揺れる (ADR-0018)
+- ブラウザテストのモジュール最上位で描画や算出値 (`getComputedStyle` / `resolveColorToken` / `matchMedia`) を読まない。`beforeEach` より前に走り、前ファイルの emulation が残った状態を読む (ADR-0018)
 
 ## synthetic KeyboardEvent は `code` プロパティ必須
 

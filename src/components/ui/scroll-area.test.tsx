@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { describe, expect, it } from "vite-plus/test";
+import type { Locator } from "vite-plus/test/browser/context";
 import { render } from "vitest-browser-react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { expectAbsent, expectRemoved } from "@/test/absent";
 
 /**
  * registry は `{children}` を `ScrollArea.Viewport` へ直接置き、base-ui の
@@ -12,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
  *
  * viewport の高さが内容に追随する `max-h-*` では viewport 自身の resize が再計算を誘発する
  * ため差が出ない。高さが固定される使い方 (`h-*` や flex で伸びた領域) で顕在化する。
+ * ADR-0006 の許容リストがこのファイルをガードに指名している。
  */
 function Harness() {
   const [many, setMany] = useState(true);
@@ -34,25 +37,21 @@ function Harness() {
 describe("ScrollArea", () => {
   it("高さ固定の領域で内容が縮んだとき overflow 判定が更新される", async () => {
     const screen = await render(<Harness />);
-    // 溢れが解消するとスクロールバーごと unmount されるため、都度引き直す
-    const wrap = screen.getByTestId("scroll-area-harness").element();
-    const hasOverflow = () =>
-      wrap
-        .querySelector('[data-slot="scroll-area-viewport"]')
-        ?.hasAttribute("data-has-overflow-y") ?? null;
+    const viewport = screen.getByTestId("scroll-area-harness").getBySlot("scroll-area-viewport");
 
-    expect(hasOverflow()).toBe(true);
+    await expect.element(viewport).toHaveAttribute("data-has-overflow-y");
 
     await screen.getByRole("button", { name: "減らす" }).click();
 
     // ユーザーがスクロールしなくても再計算される (Content の ResizeObserver 経由)
-    await expect.poll(hasOverflow, { timeout: 2000 }).toBe(false);
+    await expect.element(viewport).not.toHaveAttribute("data-has-overflow-y");
   });
 });
 
 /**
  * 余白が `ScrollBar` の太さと一致することを、Viewport の端とバーの端の一致で固定する。
  * 一致で見るのは、足りなければバーが内容に被り、余ればバーの無い空帯が残るため。
+ * 端の一致は矩形でしか表せないので `getBoundingClientRect` を読む。mount を `expect.element` で待ってから読む (ADR-0013)。
  *
  * 寸法は `size-24` = 4px * 24 = 96px、`pb-2.5` / `pr-2.5` = 4px * 2.5 = 10px
  * (`--spacing` は既定の 0.25rem。`src/styles.css` の `@theme` は色しか触っていない)。
@@ -75,21 +74,24 @@ function Overflowing({ x, y }: { x: boolean | number; y: boolean }) {
   );
 }
 
+type Orientation = "horizontal" | "vertical";
+
+/** poll のコールバックの中から呼び、observation ごとに locator を引き直す (ADR-0029) */
+function rect(locator: Locator): DOMRect {
+  return locator.element().getBoundingClientRect();
+}
+
+/** 溢れていない軸のバーは DOM に出ない (base-ui は keepMounted=false) */
+function scrollbar(root: Locator, orientation: Orientation) {
+  return root.getBySlot("scroll-area-scrollbar", { "data-orientation": orientation });
+}
+
 async function renderOverflowing(axes: { x: boolean | number; y: boolean }) {
   const screen = await render(<Overflowing {...axes} />);
-  const root = screen.getByTestId("gutter-root").element();
-  const viewport = root.querySelector('[data-slot="scroll-area-viewport"]');
-  expect.assert(viewport !== null, "scroll-area-viewport が見つかりません");
-  // 溢れていない軸のバーは DOM に出ない (base-ui は keepMounted=false)
-  const findBar = (orientation: "horizontal" | "vertical") =>
-    root.querySelector(`[data-slot="scroll-area-scrollbar"][data-orientation="${orientation}"]`);
-  async function expectBarMounted(orientation: "horizontal" | "vertical") {
-    await expect.poll(() => findBar(orientation)).not.toBeNull();
-    const bar = findBar(orientation);
-    expect.assert(bar !== null, `${orientation} のスクロールバーが見つかりません`);
-    return bar;
-  }
-  return { root, viewport, expectBarMounted };
+  const root = screen.getByTestId("gutter-root");
+  const viewport = root.getBySlot("scroll-area-viewport");
+  const bar = (orientation: Orientation) => scrollbar(root, orientation);
+  return { root, viewport, bar };
 }
 
 /**
@@ -114,45 +116,50 @@ function Shrinkable() {
 describe("ScrollArea のスクロールバー分の余白", () => {
   it("溢れが解消したとき余白も引っ込む", async () => {
     const screen = await render(<Shrinkable />);
-    const root = screen.getByTestId("shrinkable-root").element();
-    const findBar = (orientation: "horizontal" | "vertical") =>
-      root.querySelector(`[data-slot="scroll-area-scrollbar"][data-orientation="${orientation}"]`);
+    const root = screen.getByTestId("shrinkable-root");
+    const bar = (orientation: Orientation) => scrollbar(root, orientation);
 
     // 先に両軸のバーと余白を出す。ここを通ることで測定済みの状態から縮められる
-    await expect.poll(() => findBar("vertical")).not.toBeNull();
-    expect(findBar("horizontal")).not.toBeNull();
-    expect(getComputedStyle(root).paddingRight).toBe("10px");
-    expect(getComputedStyle(root).paddingBottom).toBe("10px");
+    await expect.element(bar("vertical")).toBeInTheDocument();
+    await expect.element(bar("horizontal")).toBeInTheDocument();
+    await expect.element(root).toHaveStyle("padding-right: 10px; padding-bottom: 10px");
 
     await screen.getByRole("button", { name: "縮める" }).click();
 
-    await expect.poll(() => findBar("vertical")).toBeNull();
-    expect(findBar("horizontal")).toBeNull();
-    const style = getComputedStyle(root);
-    expect(style.paddingRight).toBe("0px");
-    expect(style.paddingBottom).toBe("0px");
+    await expectRemoved(bar("vertical"));
+    await expectRemoved(bar("horizontal"));
+    await expect.element(root).toHaveStyle("padding-right: 0px; padding-bottom: 0px");
   });
 
   it("縦に溢れたとき Viewport が縦バーと重ならず、空帯も残さない", async () => {
-    const { root, viewport, expectBarMounted } = await renderOverflowing({ x: false, y: true });
+    const { root, viewport, bar } = await renderOverflowing({ x: false, y: true });
+    const vertical = bar("vertical");
+    await expect.element(vertical).toBeInTheDocument();
 
-    const bar = await expectBarMounted("vertical");
-    expect(viewport.getBoundingClientRect().right).toBeCloseTo(bar.getBoundingClientRect().left, 0);
-    // Corner が無い軸ではバーが Viewport の全高を占める (`h-full` を外した後も縮まない)
-    expect(bar.getBoundingClientRect().height).toBeCloseTo(
-      viewport.getBoundingClientRect().height,
-      0,
-    );
+    // 隙間は差の絶対値を整数 px に丸めて 0 と比べる (0.5px 未満のずれは符号を問わず許す。
+    // `Math.round(-0.3)` は `-0` で、`toEqual` は `Object.is` で比べるので絶対値を取る)。2 つは 1 回の観測から取る (ADR-0031)
+    await expect
+      .poll(() => {
+        const vp = rect(viewport);
+        const vbar = rect(vertical);
+        return {
+          viewportRightToVerticalBar: Math.round(Math.abs(vp.right - vbar.left)),
+          // Corner が無い軸ではバーが Viewport の全高を占める (`h-full` を外した後も縮まない)
+          verticalBarHeightToViewport: Math.round(Math.abs(vbar.height - vp.height)),
+        };
+      })
+      .toEqual({ viewportRightToVerticalBar: 0, verticalBarHeightToViewport: 0 });
     // 横は溢れていないので下端は空けない (空帯が残らない)
-    expect(getComputedStyle(root).paddingBottom).toBe("0px");
+    await expect.element(root).toHaveStyle("padding-bottom: 0px");
   });
 
   it("横に溢れたとき Viewport が横バーと重ならず、空帯も残さない", async () => {
-    const { root, viewport, expectBarMounted } = await renderOverflowing({ x: true, y: false });
+    const { root, viewport, bar } = await renderOverflowing({ x: true, y: false });
+    const horizontal = bar("horizontal");
+    await expect.element(horizontal).toBeInTheDocument();
 
-    const bar = await expectBarMounted("horizontal");
-    expect(viewport.getBoundingClientRect().bottom).toBeCloseTo(bar.getBoundingClientRect().top, 0);
-    expect(getComputedStyle(root).paddingRight).toBe("0px");
+    await expect.poll(() => Math.round(rect(viewport).bottom - rect(horizontal).top)).toBe(0);
+    await expect.element(root).toHaveStyle("padding-right: 0px");
   });
 
   // registry の `data-vertical:h-full` を残すと縦バーの top / height / bottom が全て非 auto に
@@ -162,34 +169,47 @@ describe("ScrollArea のスクロールバー分の余白", () => {
   // 縦の余白が横の溢れ判定を動かす経路は本 registry 乖離が新設したもの。base-ui の判定は
   // `clientWidth >= scrollWidth` (`ScrollAreaViewport` の `getHiddenState`) なので、縦に溢れて
   // `pr-2.5` が付いた Viewport では 96 - 10 = 86px が閾値になる。cap-1 / cap / cap+1 で踏む
-  it.each([
-    [85, false],
-    [86, false],
-    [87, true],
-  ])("縦に溢れた器で内容幅が %ipx のとき横バーの有無が %s になる", async (width, expected) => {
-    const { root, expectBarMounted } = await renderOverflowing({ x: width, y: true });
+  it.each([85, 86])("縦に溢れた器で内容幅が %ipx なら横バーは出ない", async (width) => {
+    const { root, bar } = await renderOverflowing({ x: width, y: true });
 
-    // 縦バーの mount を待つことで、測定を経た状態から横バーの有無を見る
-    await expectBarMounted("vertical");
-    expect(getComputedStyle(root).paddingRight).toBe("10px");
+    // 縦バーの mount を待つことで、測定を経た状態から横バーの有無を見る (肯定 anchor)
+    await expect.element(bar("vertical")).toBeInTheDocument();
+    await expect.element(root).toHaveStyle("padding-right: 10px");
+    await expectAbsent(bar("horizontal"));
+  });
 
-    const horizontal = root.querySelector(
-      '[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"]',
-    );
-    expect(horizontal !== null).toBe(expected);
+  it("縦に溢れた器で内容幅が 87px なら横バーが出る", async () => {
+    const { root, bar } = await renderOverflowing({ x: 87, y: true });
+
+    await expect.element(bar("vertical")).toBeInTheDocument();
+    await expect.element(root).toHaveStyle("padding-right: 10px");
+    await expect.element(bar("horizontal")).toBeInTheDocument();
   });
 
   it("両軸が溢れたとき縦バーが Corner のぶん短くなり、Viewport の端を越えない", async () => {
-    const { root, viewport, expectBarMounted } = await renderOverflowing({ x: true, y: true });
+    const { root, viewport, bar } = await renderOverflowing({ x: true, y: true });
+    const vertical = bar("vertical");
+    const horizontal = bar("horizontal");
+    await expect.element(vertical).toBeInTheDocument();
+    await expect.element(horizontal).toBeInTheDocument();
 
-    const vbar = (await expectBarMounted("vertical")).getBoundingClientRect();
-    const hbar = (await expectBarMounted("horizontal")).getBoundingClientRect();
-    const vp = viewport.getBoundingClientRect();
-
-    expect(vp.right).toBeCloseTo(vbar.left, 0);
-    expect(vp.bottom).toBeCloseTo(hbar.top, 0);
-    expect(vbar.bottom).toBeCloseTo(vp.bottom, 0);
-    expect(getComputedStyle(root).paddingRight).toBe("10px");
-    expect(getComputedStyle(root).paddingBottom).toBe("10px");
+    // 3 つの隙間は 1 回の観測から取る。分けると別々の瞬間で成立してよいことになる (ADR-0031)
+    await expect
+      .poll(() => {
+        const vbar = rect(vertical);
+        const hbar = rect(horizontal);
+        const vp = rect(viewport);
+        return {
+          viewportRightToVerticalBar: Math.round(Math.abs(vp.right - vbar.left)),
+          viewportBottomToHorizontalBar: Math.round(Math.abs(vp.bottom - hbar.top)),
+          verticalBarBottomToViewport: Math.round(Math.abs(vbar.bottom - vp.bottom)),
+        };
+      })
+      .toEqual({
+        viewportRightToVerticalBar: 0,
+        viewportBottomToHorizontalBar: 0,
+        verticalBarBottomToViewport: 0,
+      });
+    await expect.element(root).toHaveStyle("padding-right: 10px; padding-bottom: 10px");
   });
 });

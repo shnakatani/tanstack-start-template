@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import type { Locator } from "vite-plus/test/browser/context";
 import { render } from "vitest-browser-react";
 
 import {
@@ -11,15 +12,19 @@ import {
 } from "@/components/ui/combobox";
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import { maxShadowSpread } from "@/test/box-shadow";
-import { waitForAnimations } from "@/test/wait-for-animations";
 
-// input-group.tsx の registry 乖離 (popup 内リング抑制 patch、ADR-0006) のガード。
-// shadcn add --overwrite で patch が消えると本テストが fail する。
+/**
+ * input-group.tsx の registry 乖離 (popup 内リング抑制 patch、ADR-0006) のガード。
+ * shadcn add --overwrite で patch が消えると本テストが fail する。
+ *
+ * リングは常設の shadow-xs に重なる box-shadow の層の spread で描かれ、これを表す matcher は
+ * 無い。抑制は `:has()` の詳細度と `not-in-` の組み合わせで効くため描画して `expect.poll` の
+ * 中で測る (ADR-0029)。transition-[box-shadow] の途中値は retry が吸収する。
+ */
 
-function findInputGroup(element: Element): HTMLElement {
-  const inputGroup = element.closest('[data-slot="input-group"]');
-  expect.assert(inputGroup instanceof HTMLElement, "input-group 要素が見つからない");
-  return inputGroup;
+/** リングの spread。3px (ring-3) と 0 の間に中間値は無い */
+function ringSpread(group: Locator): number {
+  return maxShadowSpread(getComputedStyle(group.element()).boxShadow);
 }
 
 describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
@@ -51,21 +56,25 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
 
     await screen.getByRole("combobox", { name: "開く" }).click();
 
-    const input = screen.getByRole("combobox", { name: "検索" });
-    const inputGroup = findInputGroup(await input.findElement());
-    await waitForAnimations();
-
-    const borderBefore = getComputedStyle(inputGroup).borderColor;
+    // 入力が popup の中にあるので popup は role="dialog" になる (base-ui.md)
+    const popup = screen.getByRole("dialog", { name: "果物の候補" });
+    const input = popup.getByRole("combobox", { name: "検索" });
+    const group = popup.getBySlot("input-group");
+    await expect.element(group).toBeInTheDocument();
+    const borderBefore = getComputedStyle(group.element()).borderColor;
 
     await input.click();
     await expect.element(input).toHaveFocus();
-    await waitForAnimations();
 
-    const focused = getComputedStyle(inputGroup);
-    // リングは box-shadow の spread で描画される。0 ならリング無し = 下の行への食い込みは構造的に起きない
-    expect(maxShadowSpread(focused.boxShadow)).toBe(0);
-    // フォーカスで border 色を変えない (popup 様式の border-input/30 のまま)
-    expect(focused.borderColor).toBe(borderBefore);
+    // リングは box-shadow の spread で描画される。0 ならリング無し = 下の行への食い込みは構造的に
+    // 起きない。border 色はフォーカスで変えない (popup 様式の border-input/30 のまま)。
+    // 2 つは同じ観測から取る (ADR-0031)
+    await expect
+      .poll(() => {
+        const style = getComputedStyle(group.element());
+        return { ringSpread: maxShadowSpread(style.boxShadow), borderColor: style.borderColor };
+      })
+      .toEqual({ ringSpread: 0, borderColor: borderBefore });
   });
 
   it("popup 外の InputGroup はフォーカスで 3px のリングが付く (抑制の効かせすぎガード)", async () => {
@@ -78,10 +87,8 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
     const input = screen.getByRole("textbox", { name: "単独入力" });
     await input.click();
     await expect.element(input).toHaveFocus();
-    await waitForAnimations();
 
-    const inputGroup = findInputGroup(await input.findElement());
-    expect(maxShadowSpread(getComputedStyle(inputGroup).boxShadow)).toBe(3);
+    await expect.poll(() => ringSpread(screen.getBySlot("input-group"))).toBe(3);
   });
 
   it("combobox popup 内の aria-invalid 入力は 3px のリングが付く", async () => {
@@ -114,15 +121,11 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
 
     await screen.getByRole("combobox", { name: "エラー入力を開く" }).click();
 
-    const input = screen.getByRole("combobox", { name: "エラー検索" });
-    await input.findElement();
-    await waitForAnimations();
-
+    const popup = screen.getByRole("dialog", { name: "果物の候補" });
+    const input = popup.getByRole("combobox", { name: "エラー検索" });
     await input.click();
     await expect.element(input).toHaveFocus();
-    await waitForAnimations();
 
-    const inputGroup = findInputGroup(await input.findElement());
-    expect(maxShadowSpread(getComputedStyle(inputGroup).boxShadow)).toBe(3);
+    await expect.poll(() => ringSpread(popup.getBySlot("input-group"))).toBe(3);
   });
 });
