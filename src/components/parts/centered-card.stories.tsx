@@ -36,3 +36,11 @@ export const Default: Story = {};
 export const Section: Story = {
   args: { fill: "section" },
 };
+
+/**
+ * 375px 幅。外枠の p-6 があるのでカードが画面端に接せず、横スクロールも出ない。
+ * 寸法は測らず、この story で見る (ADR-0007)。addon-vitest も同じ viewport で描画する
+ */
+export const Narrow: Story = {
+  globals: { viewport: { value: "narrow", isRotated: false } },
+};
