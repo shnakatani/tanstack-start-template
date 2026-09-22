@@ -76,6 +76,7 @@ function Overflowing({ x, y }: { x: boolean | number; y: boolean }) {
 
 type Orientation = "horizontal" | "vertical";
 
+/** poll のコールバックの中から呼び、observation ごとに locator を引き直す (ADR-0029) */
 function rect(locator: Locator): DOMRect {
   return locator.element().getBoundingClientRect();
 }
@@ -133,9 +134,10 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     const vertical = bar("vertical");
     await expect.element(vertical).toBeInTheDocument();
 
-    expect(rect(viewport).right).toBeCloseTo(rect(vertical).left, 0);
+    // 隙間は整数 px に丸めて 0 と比べる (0.5px 未満のずれは許す)
+    await expect.poll(() => Math.round(rect(viewport).right - rect(vertical).left)).toBe(0);
     // Corner が無い軸ではバーが Viewport の全高を占める (`h-full` を外した後も縮まない)
-    expect(rect(vertical).height).toBeCloseTo(rect(viewport).height, 0);
+    await expect.poll(() => Math.round(rect(vertical).height - rect(viewport).height)).toBe(0);
     // 横は溢れていないので下端は空けない (空帯が残らない)
     await expect.element(root).toHaveStyle("padding-bottom: 0px");
   });
@@ -145,7 +147,7 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     const horizontal = bar("horizontal");
     await expect.element(horizontal).toBeInTheDocument();
 
-    expect(rect(viewport).bottom).toBeCloseTo(rect(horizontal).top, 0);
+    await expect.poll(() => Math.round(rect(viewport).bottom - rect(horizontal).top)).toBe(0);
     await expect.element(root).toHaveStyle("padding-right: 0px");
   });
 
@@ -180,12 +182,23 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     await expect.element(vertical).toBeInTheDocument();
     await expect.element(horizontal).toBeInTheDocument();
 
-    const vbar = rect(vertical);
-    const hbar = rect(horizontal);
-    const vp = rect(viewport);
-    expect(vp.right).toBeCloseTo(vbar.left, 0);
-    expect(vp.bottom).toBeCloseTo(hbar.top, 0);
-    expect(vbar.bottom).toBeCloseTo(vp.bottom, 0);
+    // 3 つの隙間は 1 回の観測から取る。分けると別々の瞬間で成立してよいことになる (ADR-0031)
+    await expect
+      .poll(() => {
+        const vbar = rect(vertical);
+        const hbar = rect(horizontal);
+        const vp = rect(viewport);
+        return {
+          viewportRightToVerticalBar: Math.round(vp.right - vbar.left),
+          viewportBottomToHorizontalBar: Math.round(vp.bottom - hbar.top),
+          verticalBarBottomToViewport: Math.round(vbar.bottom - vp.bottom),
+        };
+      })
+      .toEqual({
+        viewportRightToVerticalBar: 0,
+        viewportBottomToHorizontalBar: 0,
+        verticalBarBottomToViewport: 0,
+      });
     await expect.element(root).toHaveStyle("padding-right: 10px; padding-bottom: 10px");
   });
 });
