@@ -380,6 +380,7 @@ export default defineConfig({
         excludeFiles: ["src/test/*.test.ts"],
         rules: {
           "browser-test/prefer-locator-methods": "error",
+          "browser-test/no-bare-find-element": "error",
         },
       },
       {

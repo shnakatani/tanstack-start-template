@@ -137,6 +137,14 @@ grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test
 
 追跡が外れても直接の形だけは報告され続けるので、設定は有効に見える。ルールのテストはこの 2 つの形を `RuleTester` の invalid に置いてある。
 
+### 素の `findElement()` は lint で止める
+
+helper を置いても、`locator.findElement()` を直に書けば同じ穴に戻る。しかも失敗は「テストが `Test timed out` で落ちる」形なので、原因が locator だと読めない。規範と docstring だけでは気づけない種類の壊れ方なので、`browser-test/no-bare-find-element` が止める。
+
+導入時の違反は 0 件だが、退行の記録はある。この PR 自身が 16 箇所を素の呼び出しで書いており、`actionTimeout` を足した時点で全部が上限なしになっていた。
+
+壊し方を 2 つ当てた (2026-09-22)。素の呼び出しを 1 つ持つファイルへ `vp lint` を当てると 1 件報告され、`lint.rules` で `off` にすると 0 件、ルールのメソッド名の判定を壊しても 0 件になる。
+
 ### 移行は 1 つの PR で終える
 
 段階移行のために `lint.overrides` で未移行ファイルを列挙する形は採らない。列挙が対象より大きくなり、一覧を消すための作業が別に要る。
@@ -198,7 +206,9 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 代わりに `findElement` が 2 ページ目の記述から外れる。`actionTimeout` があると vitest は呼び出し側の options をそのまま返し、`findElement` の待機ループには既定が無くなる。要素が現れないと回り続け、テスト全体が `Test timed out` で落ちて locator の名前が出力から消える (2026-09-22 実測。`actionTimeout` なしでは 7905ms で `Cannot find element with locator: page.getByText('ない')`)。この相互作用は docs のどのページにも書かれておらず、上流の issue にも無い (同日に検索)。
 
-対処は `src/test/find-element.ts` が持つ。`findElement` に `{ timeout }` を明示して渡し、文書化された既定を自分で補う。予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が 1 か所で持ち、config と helper の両方が読む。
+対処は `src/test/find-element.ts` が持つ。`findElement` に `{ timeout }` を明示して渡す。**文書化された既定 (テストの予算、browser では 15000) を復元するのではなく、assert の予算 (5000) を代わりに置く。** `findElement` がするのは「要素が現れるのを待つ」ことで、肯定 assert と同じ種類の待機だからである。待機の予算が 2 つに割れているほうが読めない。
+
+代償は、mount に 5 秒以上かかる要素を待てなくなることである。このリポジトリでは全 project 同時実行の最遅テストが 3595ms なので届いているが、より重い画面を持つ利用者は `ASSERT_TIMEOUT_MS` を上げる。予算は `src/test/assert-budget.ts` が 1 か所で持ち、config と helper の両方が読むので、上げる場所は 1 つで済む。
 
 `actionTimeout` を置くと Playwright の操作にも上限が付く。これは副作用ではなく利得の側でもある。残り予算からの計算は、action の timeout がテストを跨いで持ち越されるのを止めるために入った (#7871 のメンテナ回答「The actions timeouts are now affected by the test timeout. Previously they would carry over to other tests if the test timed out.」)。その代わりテストの後半ほど予算が縮み、同 issue は `Timeout 581ms exceeded` のような説明のつかない失敗を報告している。固定値を置くとこの縮みが消える。
 

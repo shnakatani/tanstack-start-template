@@ -249,12 +249,11 @@ describe("DialogScrollForm", () => {
     const form = screen.getByRole("button", { name: "本体" }).element().closest("form");
     expect.assert(form !== null, "form が見つかりません");
 
-    await expect.element(form).toHaveStyle("display: flex");
-    await expect.element(form).toHaveStyle("flex-direction: column");
     // min-h-0 は flex item の既定 min-height: auto を打ち消す (同ファイルの docstring)
-    await expect.element(form).toHaveStyle("min-height: 0px");
     // gap-6 は DialogContent と同値。区切り線の上下が対称になる (同ファイルの docstring)
-    await expect.element(form).toHaveStyle("row-gap: 24px");
+    await expect
+      .element(form)
+      .toHaveStyle("display: flex; flex-direction: column; min-height: 0px; row-gap: 24px");
   });
 
   it("消費側の className を足せる", async () => {
@@ -267,8 +266,7 @@ describe("DialogScrollForm", () => {
     const form = screen.getByRole("button", { name: "本体" }).element().closest("form");
     expect.assert(form !== null, "form が見つかりません");
 
-    await expect.element(form).toHaveStyle("max-width: 448px");
     // 置換ではなく合成なので、レイアウトの base も残る
-    await expect.element(form).toHaveStyle("flex-direction: column");
+    await expect.element(form).toHaveStyle("max-width: 448px; flex-direction: column");
   });
 });

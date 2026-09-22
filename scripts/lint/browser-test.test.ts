@@ -1,7 +1,7 @@
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { describe, expect, it } from "vite-plus/test";
 
-import { preferLocatorMethods } from "./browser-test";
+import { noBareFindElement, preferLocatorMethods } from "./browser-test";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -25,7 +25,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     // assert へ届かない同期読み
     "el.element().focus();",
     'const label = el.element().closest("label");',
-    // `vi.waitFor` も retry の口 (ADR-0013)。src/test/page-helpers.ts などが依存している
+    // `vi.waitFor` も retry の口 (ADR-0013)。assert へ直に届く形をここで固定する
     'vi.waitFor(() => { expect(el.element().textContent).toBe("x"); });',
   ],
   invalid: [
@@ -123,6 +123,24 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
   ],
 });
 
+tester.run("no-bare-find-element", noBareFindElement, {
+  valid: [
+    // helper 経由なら対象外。名前が同じでも member 呼び出しではない
+    'await findElement(screen.getByRole("dialog"));',
+  ],
+  invalid: [
+    {
+      code: 'await screen.getByRole("dialog").findElement();',
+      errors: [{ messageId: "bareFindElement" }],
+    },
+    {
+      // options を渡しても素の呼び出しは対象。timeout を書き忘れる形が主な事故
+      code: "await locator.findElement({ strict: false });",
+      errors: [{ messageId: "bareFindElement" }],
+    },
+  ],
+});
+
 describe("プラグインの形", () => {
   // `vite.config.ts` の `jsPlugins` の name と `lint.rules` のキーは、この 2 つの組で決まる。
   // どちらかを変えると設定側の名前が無言で解決されなくなる
@@ -130,6 +148,6 @@ describe("プラグインの形", () => {
     const plugin = (await import("./browser-test")).default;
 
     expect(plugin.meta?.name).toBe("browser-test");
-    expect(Object.keys(plugin.rules)).toEqual(["prefer-locator-methods"]);
+    expect(Object.keys(plugin.rules)).toEqual(["prefer-locator-methods", "no-bare-find-element"]);
   });
 });

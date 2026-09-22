@@ -88,7 +88,6 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     const popup = await findElement(screen.getByRole("alertdialog"));
     await waitForAnimations();
 
-    await expect.element(popup).toHaveStyle("display: flex");
-    await expect.element(popup).toHaveStyle("flex-direction: column");
+    await expect.element(popup).toHaveStyle("display: flex; flex-direction: column");
   });
 });

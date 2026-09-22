@@ -93,9 +93,7 @@ function isArgumentOf(call: ESTree.CallExpression, node: Node): boolean {
  * どちらの引数も retry を持たない。
  */
 function isAssertionCall(call: ESTree.CallExpression): boolean {
-  // 1 周目の callee だけが「その呼び出し自身」。2 周目以降は matcher の呼び出し
-  let isDirectCallee = true;
-  for (let current: Node = call.callee; ; isDirectCallee = false) {
+  for (let current: Node = call.callee; ;) {
     if (nameOf(current) === "expect") return true;
     if (current.type === "MemberExpression") {
       if (nameOf(current.object) === "expect") {
@@ -104,7 +102,8 @@ function isAssertionCall(call: ESTree.CallExpression): boolean {
         // `expect.element(x)` が retry するのは locator を渡したときで、同期読みを渡すと
         // 最初に解決した要素を retry し続けるため、こちらは引数の位置を問わず assert 扱いする
         const method = staticPropertyName(current);
-        return !(method === "poll" && isDirectCallee);
+        // `current === call.callee` なら呼び出し自身の引数。違えば matcher の引数
+        return !(method === "poll" && current === call.callee);
       }
       current = current.object;
       continue;
@@ -217,7 +216,33 @@ export const preferLocatorMethods = defineRule({
   },
 });
 
+export const noBareFindElement = defineRule({
+  meta: {
+    type: "problem",
+    docs: {
+      description: "locator.findElement() を直に呼ばず src/test/find-element.ts を通す (ADR-0029)",
+    },
+    messages: {
+      bareFindElement:
+        "`locator.findElement()` を直に呼ばない。`src/test/find-element.ts` の `findElement(locator)` を使う。この config は `actionTimeout` を置いており、素の呼び出しは待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える (ADR-0029)",
+    },
+  },
+  create(context) {
+    return {
+      CallExpression(node: ESTree.CallExpression) {
+        if (staticPropertyName(node.callee) !== "findElement") return;
+        // helper 自身は対象外。ここだけが素の呼び出しを持つ
+        if (context.filename.endsWith("/test/find-element.ts")) return;
+        context.report({ node, messageId: "bareFindElement" });
+      },
+    };
+  },
+});
+
 export default definePlugin({
   meta: { name: "browser-test" },
-  rules: { "prefer-locator-methods": preferLocatorMethods },
+  rules: {
+    "prefer-locator-methods": preferLocatorMethods,
+    "no-bare-find-element": noBareFindElement,
+  },
 });

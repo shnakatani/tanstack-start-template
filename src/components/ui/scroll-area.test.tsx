@@ -125,15 +125,13 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     // 先に両軸のバーと余白を出す。ここを通ることで測定済みの状態から縮められる
     await expect.poll(() => findBar("vertical")).not.toBeNull();
     expect(findBar("horizontal")).not.toBeNull();
-    await expect.element(rootLocator).toHaveStyle("padding-right: 10px");
-    await expect.element(rootLocator).toHaveStyle("padding-bottom: 10px");
+    await expect.element(rootLocator).toHaveStyle("padding-right: 10px; padding-bottom: 10px");
 
     await screen.getByRole("button", { name: "縮める" }).click();
 
     await expect.poll(() => findBar("vertical")).toBeNull();
     expect(findBar("horizontal")).toBeNull();
-    await expect.element(rootLocator).toHaveStyle("padding-right: 0px");
-    await expect.element(rootLocator).toHaveStyle("padding-bottom: 0px");
+    await expect.element(rootLocator).toHaveStyle("padding-right: 0px; padding-bottom: 0px");
   });
 
   it("縦に溢れたとき Viewport が縦バーと重ならず、空帯も残さない", async () => {
@@ -201,7 +199,6 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     expect(vp.right).toBeCloseTo(vbar.left, 0);
     expect(vp.bottom).toBeCloseTo(hbar.top, 0);
     expect(vbar.bottom).toBeCloseTo(vp.bottom, 0);
-    await expect.element(rootLocator).toHaveStyle("padding-right: 10px");
-    await expect.element(rootLocator).toHaveStyle("padding-bottom: 10px");
+    await expect.element(rootLocator).toHaveStyle("padding-right: 10px; padding-bottom: 10px");
   });
 });

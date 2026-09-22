@@ -112,8 +112,10 @@ describe("SegmentedRadioGroup", () => {
     // outline-width だけ効いて描画はゼロになる。実効の outline-style で固定する
     // `:focus-visible` を見る matcher は無いので、この読みだけ生 DOM に残す (ADR-0029)
     expect(focused.matches(":focus-visible")).toBe(true);
-    await expect.element(focused).not.toHaveStyle("outline-style: none");
-    await expect.element(focused).not.toHaveStyle("outline-width: 0px");
+    // 否定形の `toHaveStyle` は宣言が解釈できないと素通りするので使わない (ADR-0029)
+    const style = getComputedStyle(focused);
+    expect(style.outlineStyle).not.toBe("none");
+    expect(style.outlineWidth).not.toBe("0px");
   });
 
   it("disabled で無効表示が効き、ポインタが届かない指定を持つ", async () => {
@@ -124,8 +126,7 @@ describe("SegmentedRadioGroup", () => {
     await expect.element(item).toHaveAttribute("aria-disabled", "true");
     // クリックが届かないことは pointer-events の指定で見る。イベントを対象へ届かせて
     // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (ADR-0015)
-    await expect.element(item).toHaveStyle("opacity: 0.5");
-    await expect.element(item).toHaveStyle("pointer-events: none");
+    await expect.element(item).toHaveStyle("opacity: 0.5; pointer-events: none");
   });
 
   it("className は上書きできる形でマージされる", async () => {

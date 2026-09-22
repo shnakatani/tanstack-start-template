@@ -57,11 +57,12 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     // popupViewportLayout の fixed / popupOverflowBackstop の max-h-full + overflow-y-auto が
     // クラス名ではなく実際の computed style として効いていること (以降の実測の前提条件)
     await expect.element(viewport!).toHaveStyle("position: fixed");
-    await expect.element(popup).not.toHaveStyle("max-height: none");
-    await expect.element(popup).toHaveStyle("overflow-y: auto");
+    // 否定形の `toHaveStyle` は宣言が解釈できないと素通りするので使わない (ADR-0029)
+    expect(getComputedStyle(popup).maxHeight).not.toBe("none");
     // Popup の flex-col 構造も ADR-0006 の乖離。alert-dialog 側と対で守る
-    await expect.element(popup).toHaveStyle("display: flex");
-    await expect.element(popup).toHaveStyle("flex-direction: column");
+    await expect
+      .element(popup)
+      .toHaveStyle("overflow-y: auto; display: flex; flex-direction: column");
   });
 
   it("基準 viewport で長身コンテンツでも popup 全体が viewport 内に収まる", async () => {

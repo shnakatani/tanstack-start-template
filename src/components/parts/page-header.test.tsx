@@ -45,9 +45,9 @@ describe("PageHeader", () => {
     const screen = await render(<PageHeader title="メモ一覧" />);
     const header = screen.getByRole("banner");
 
-    await expect.element(header).toHaveStyle("min-height: 60px");
-    await expect.element(header).toHaveStyle("padding-top: 12px");
-    await expect.element(header).toHaveStyle("padding-bottom: 12px");
+    await expect
+      .element(header)
+      .toHaveStyle("min-height: 60px; padding-top: 12px; padding-bottom: 12px");
   });
 
   // 器が違うので部品は分かれるが、どちらもページ見出しなので寸法は揃っていなければならない。

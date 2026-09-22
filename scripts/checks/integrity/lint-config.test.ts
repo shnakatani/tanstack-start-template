@@ -113,7 +113,10 @@ const EXPECTED_OVERRIDES = [
     // (`companion-files.ts` の docstring が禁じている)
     files: ["src/**/*.test.tsx", "src/test/**", "**/*.test-helpers.ts", "**/*.test-helpers.tsx"],
     excludeFiles: ["src/test/*.test.ts"],
-    rules: { "browser-test/prefer-locator-methods": "deny" },
+    rules: {
+      "browser-test/prefer-locator-methods": "deny",
+      "browser-test/no-bare-find-element": "deny",
+    },
   },
   {
     // テスト専用のコードの import 禁止。緩和ではなく適用先を絞った有効化なので、テスト側は

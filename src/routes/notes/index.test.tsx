@@ -386,8 +386,7 @@ describe("NotesPage", () => {
     // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の
     // data-disabled: が担う (ADR-0006)。半透明 + pointer-events なしを算出スタイルで固定する
     const targetTrigger = rowDeleteButton(screen, NOTE.title);
-    await expect.element(targetTrigger).toHaveStyle("opacity: 0.5");
-    await expect.element(targetTrigger).toHaveStyle("pointer-events: none");
+    await expect.element(targetTrigger).toHaveStyle("opacity: 0.5; pointer-events: none");
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
     // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
     // 楽観行の検査と同じ理由で、a11y tag を付けた専用テストへは降ろさない。

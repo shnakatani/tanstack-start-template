@@ -12,9 +12,14 @@ import { ASSERT_TIMEOUT_MS } from "./assert-budget";
  * `findElement` の待機ループにはその場合の既定が無いため、要素が現れないと回り続けて
  * `Test timed out` になり locator の名前が出力から消える (2026-09-22 実測)。
  *
- * assert と同じ予算を明示して渡す。失敗時は `Cannot find element with locator: <selector>`
+ * 公式の既定 (テストの予算) を復元するのではなく、assert の予算を代わりに置く。要素が現れる
+ * のを待つ点で肯定 assert と同じ種類の待機だからで、予算が 2 つに割れているほうが読めない。
+ * 失敗時は `Cannot find element with locator: <selector>`
  * が出る。この相互作用は上流に報告が無い (2026-09-22 に issue / PR を検索)。
  */
-export function findElement(locator: Locator): Promise<HTMLElement | SVGElement> {
-  return locator.findElement({ timeout: ASSERT_TIMEOUT_MS });
+export function findElement(
+  locator: Locator,
+  options?: Parameters<Locator["findElement"]>[0],
+): Promise<HTMLElement | SVGElement> {
+  return locator.findElement({ timeout: ASSERT_TIMEOUT_MS, ...options });
 }

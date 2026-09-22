@@ -38,7 +38,8 @@ describe("expectAbsent", () => {
       // 同値だと、退行が閾値の失敗ではなく「テストが timeout した」として出る
       const startedAt = performance.now();
       await expect(expectAbsent(screen.getByText("ある"))).rejects.toThrow(/toBeInTheDocument/);
-      expect(performance.now() - startedAt).toBeLessThan(1_000);
+      // 閾値も予算から導く。固定値にすると、予算を下げたとき退行が閾値を下回って緑になる
+      expect(performance.now() - startedAt).toBeLessThan(ASSERT_TIMEOUT_MS / 5);
     },
     ASSERT_TIMEOUT_MS * 2,
   );
