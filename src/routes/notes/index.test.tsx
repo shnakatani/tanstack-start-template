@@ -11,6 +11,7 @@ import {
 } from "@/components/parts/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
 import type { Note } from "@/features/notes/schema";
+import { noteListFilterSchema } from "@/features/notes/schema";
 import {
   CREATED_NOTE,
   NOTE,
@@ -48,16 +49,19 @@ import {
   expectNoteCreateDialogClosed,
 } from "./-components/note-create-dialog.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
-import { loadNotesPageData, Route } from "./index";
+import { NOTE_SEARCH_LABEL } from "./-lib/note-search";
+import { loadNotesPageData, NotesPage, Route } from "./index";
 
-const NotesPage = Route.options.component!;
-
-async function renderPage() {
+/** page を props 直渡しで描く。wrapper (Route hooks) は route.test.tsx が実 router で見る */
+async function renderPage({
+  q = "",
+  onQueryChange = () => {},
+}: { q?: string; onQueryChange?: (q: string) => void } = {}) {
   const queryClient = createTestQueryClient();
   const router = createTestRouter("/notes", () => (
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={null}>
-        <NotesPage />
+        <NotesPage q={q} onQueryChange={onQueryChange} />
       </Suspense>
       <Toaster />
     </QueryClientProvider>
@@ -141,6 +145,60 @@ describe("NotesPage", () => {
       JSON.stringify(["notes", { q: "abc" }]),
     );
     expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "abc" } });
+  });
+
+  it("route が search を検証し、既定の q を URL から落とし、q を loader の deps にする", () => {
+    expect(Route.options.validateSearch).toBe(noteListFilterSchema);
+    expect(Route.options.search?.middlewares).toHaveLength(1);
+    expect(Route.options.loaderDeps?.({ search: { q: "abc" } })).toEqual({ q: "abc" });
+  });
+
+  it("URL の q が入力欄の初期値になり、その条件で一覧を取得する", async () => {
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    const screen = await renderPage({ q: "りんご" });
+
+    await expect
+      .element(screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }))
+      .toHaveValue("りんご");
+    await expectText(screen, NOTE.title);
+    expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "りんご" } });
+  });
+
+  it("打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残す", async () => {
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    const listed = deferMock(listNotes);
+
+    // 1 文字ずつ別の呼び出しで打つ (`fill` は 1 回の input、`type("abc")` は間を置かず 3 文字を
+    // 送るので、どちらも打鍵の間に一覧が描き直されない)。debounce が効けば "a" "ab" では取得しない
+    await userEvent.click(screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }));
+    await userEvent.keyboard("a");
+    await userEvent.keyboard("b");
+    await userEvent.keyboard("c");
+
+    // 取得が始まる (= wait を過ぎた) まで待つ
+    await expect
+      .poll(() => vi.mocked(listNotes).mock.calls)
+      .toEqual([[{ data: { q: "" } }], [{ data: { q: "abc" } }]]);
+    // 取得中は古い一覧が見えたまま aria-busy になる。`useDeferredValue` を外すと Suspense が
+    // 古い木を display: none で隠すので、在るかではなく見えるかで確かめる
+    await expect.element(screen.getByText(NOTE.title)).toBeVisible();
+    await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "true");
+
+    listed.resolve([]);
+    await expectText(screen, "『abc』に一致するメモはありません");
+    await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
+  });
+
+  it("Enter で onQueryChange に入力値を渡す", async () => {
+    const onQueryChange = vi.fn();
+    const screen = await renderPage({ onQueryChange });
+
+    await screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }).fill("りんご");
+    await userEvent.keyboard("{Enter}");
+
+    expect(onQueryChange).toHaveBeenCalledWith("りんご");
   });
 
   it("ページ見出しと追加ボタンが表示される", async () => {

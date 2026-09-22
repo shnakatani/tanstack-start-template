@@ -1,10 +1,13 @@
+import { useDebouncedValue } from "@tanstack/react-pacer";
 import type { QueryClient } from "@tanstack/react-query";
 import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
+import { useDeferredValue, useState } from "react";
 
 import { DataTable } from "@/components/parts/data-table";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
 import { PageHeader } from "@/components/parts/page-header";
+import { StaleContent } from "@/components/parts/stale-content";
 import { TableSkeleton } from "@/components/parts/table-skeleton";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -15,15 +18,17 @@ import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY, notesQueryOptions } from "@/features/notes/queries";
 import type { NoteListFilter } from "@/features/notes/schema";
-import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
+import { NOTE_ENTITY_LABEL, noteListFilterSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
 import { NoteCreateDialog, noteCreateDialogHandle } from "./-components/note-create-dialog";
+import { NoteSearchField } from "./-components/note-search-field";
 import { noteColumns } from "./-lib/note-columns";
 import { noteDeleteDialogHandle } from "./-lib/note-delete-dialog-handle";
 import { getNoteRowId, isNoteRowBusy, toNoteRows } from "./-lib/note-rows";
+import { NOTE_SEARCH_DEBOUNCE_MS } from "./-lib/note-search";
 
 const PAGE_TITLE = "メモ一覧";
 
@@ -46,11 +51,33 @@ export function loadNotesPageData({
 }
 
 export const Route = createFileRoute("/notes/")({
-  // loaderDeps は次の commit で validateSearch と一緒に足す。それまでは絞り込みなしで温める
-  loader: ({ context }) => loadNotesPageData({ context, deps: { q: "" } }),
+  // URL の search を schema で検証する。valibot 1.x は Standard Schema なので adapter 不要
+  validateSearch: noteListFilterSchema,
+  // 既定値 (q="") は URL に書かない。/notes と /notes?q= を同じ場所にする
+  search: { middlewares: [stripSearchParams({ q: "" })] },
+  // loader が読む search は deps として宣言する。deps が変わると loader が走り直し、条件ごとに
+  // 別のキャッシュになる (Router docs「Using loaderDeps to access search params」)
+  loaderDeps: ({ search }) => ({ q: search.q }),
+  loader: loadNotesPageData,
   pendingComponent: NotesPagePending,
-  component: NotesPage,
+  component: NotesRoute,
 });
+
+/**
+ * Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける
+ * (`.claude/rules/directory-structure.md`「ルートファイル」)。
+ * `key={q}` で URL の q が変わるたびにページの入力欄の state を作り直す
+ * (React docs「Resetting state with a key」。effect で setState しない)。
+ */
+function NotesRoute() {
+  const { q } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  function handleQueryChange(next: string) {
+    // navigate は Router が startTransition で commit する (ADR-0014)。履歴は汚さない
+    void navigate({ search: (prev) => ({ ...prev, q: next }), replace: true });
+  }
+  return <NotesPage key={q} q={q} onQueryChange={handleQueryChange} />;
+}
 
 function NotesPagePending() {
   return (
@@ -63,8 +90,20 @@ function NotesPagePending() {
   );
 }
 
-function NotesPage() {
-  const notesQuery = useSuspenseQuery(notesQueryOptions({ q: "" }));
+/**
+ * 一覧ページ本体。`q` は URL で確定した検索語、`onQueryChange` は確定の要求 (submit)。
+ *
+ * 入力欄の値 `text` は緊急更新 (ADR-0014)。一覧は `text` を debounce (打鍵が止まるまで取得しない)
+ * したうえで `useDeferredValue` に通す。新しい条件の取得で Suspend している間、React は古い
+ * deferred 値で描き続けるので skeleton には落ちない (React docs `useDeferredValue` の Suspense
+ * 統合。TanStack Query の Suspense ガイドと transition.test.tsx が同じ形を持つ。ADR-0033)。
+ */
+export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: string) => void }) {
+  const [text, setText] = useState(q);
+  const [debouncedText] = useDebouncedValue(text, { wait: NOTE_SEARCH_DEBOUNCE_MS });
+  const deferredText = useDeferredValue(debouncedText);
+  const isStale = text !== deferredText;
+  const notesQuery = useSuspenseQuery(notesQueryOptions({ q: deferredText }));
   const queryClient = useQueryClient();
 
   const deleteMutation = useActionMutation({
@@ -131,33 +170,55 @@ function NotesPage() {
       <PageHeader
         title={PAGE_TITLE}
         actions={
-          <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
-            ＋ {NOTE_ENTITY_LABEL}を追加
-          </DialogTrigger>
+          <>
+            <NoteSearchField
+              value={text}
+              onValueChange={setText}
+              onSubmit={() => onQueryChange(text)}
+            />
+            <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
+              ＋ {NOTE_ENTITY_LABEL}を追加
+            </DialogTrigger>
+          </>
         }
       />
 
       <div className="flex flex-1 flex-col p-4">
-        {rows.length === 0 ? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyTitle>{NOTE_ENTITY_LABEL}が登録されていません</EmptyTitle>
-              <EmptyDescription>右上の追加ボタンから登録できます</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <DataTable
-            tableKey="notes"
-            columns={noteColumns}
-            data={rows}
-            getRowId={getNoteRowId}
-            // busy の判定は行データから (ADR-0016)。通知は announcer が担う (ADR-0017)
-            rowProps={({ original }) => {
-              const isBusy = isNoteRowBusy(original);
-              return { "aria-busy": isBusy };
-            }}
-          />
-        )}
+        <StaleContent stale={isStale}>
+          {rows.length === 0 ? (
+            <Empty>
+              <EmptyHeader>
+                {deferredText === "" ? (
+                  <>
+                    <EmptyTitle>{NOTE_ENTITY_LABEL}が登録されていません</EmptyTitle>
+                    <EmptyDescription>右上の追加ボタンから登録できます</EmptyDescription>
+                  </>
+                ) : (
+                  <>
+                    <EmptyTitle>
+                      『{deferredText}』に一致する{NOTE_ENTITY_LABEL}はありません
+                    </EmptyTitle>
+                    <EmptyDescription>
+                      検索語を変えるか、空にして全件を表示できます
+                    </EmptyDescription>
+                  </>
+                )}
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <DataTable
+              tableKey="notes"
+              columns={noteColumns}
+              data={rows}
+              getRowId={getNoteRowId}
+              // busy の判定は行データから (ADR-0016)。通知は announcer が担う (ADR-0017)
+              rowProps={({ original }) => {
+                const isBusy = isNoteRowBusy(original);
+                return { "aria-busy": isBusy };
+              }}
+            />
+          )}
+        </StaleContent>
       </div>
 
       <NoteCreateDialog />
