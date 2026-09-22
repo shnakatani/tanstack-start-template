@@ -427,7 +427,7 @@ export const noBareAbsenceAssertion = defineRule({
     },
     messages: {
       bareAbsence:
-        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない (ADR-0031)",
+        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない。`expectAbsent` は要素が無ければ 1 回目で通るので、同じ操作の効果を表す肯定 assert を先に置く。無いと何も検証していない (ADR-0031)",
     },
   },
   create(context) {

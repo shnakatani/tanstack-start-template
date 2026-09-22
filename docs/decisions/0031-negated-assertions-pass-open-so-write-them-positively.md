@@ -119,7 +119,9 @@ ADR-0029 のルールの許可は callee 単位なので、この 3 つより広
 
 ### ルールが追えない形
 
-`await expectAbsent(x)` に肯定 anchor が添えられているかは構文で決まらない。`src/test/absent.ts` の docstring と `.claude/rules/testing.md` が規範として持ち、レビューで見る。呼び出し側の名前 (`expectAbsent`) が「待たない」ことを示すので、anchor の有無は読めば分かる形にしてある。
+`await expectAbsent(x)` の肯定 anchor が「同じ操作の効果を表す」かは構文で決まらない。直前の文が肯定 assert かどうかだけなら構文で見られるが、そのルールは作らない。違反が 0 件で、`.claude/rules/coding-discipline.md`「機械検査を作る前に」の「0 件なら作らない。守る対象が無い」に当たるためである。anchor の欠落が実際に起きた記録も無い (`1d987d5` の取り違えは名前の選択の誤りで、anchor の欠落ではない)。
+
+代わりに、**要件を利用者が必ず読む場所へ置く。** `browser-test/no-bare-absence-assertion` の診断メッセージが anchor 要件を持つ。素の形を書いた利用者は `expectAbsent` と `expectRemoved` のどちらかを選ぶ地点に立たされ、そこで同時に anchor 要件を受け取る。`src/test/absent.ts` の docstring と `.claude/rules/testing.md` も規範として持ち、名前の真偽と anchor の妥当性はレビューで見る。
 
 束縛を 2 段以上またぐ形も辿らない。ADR-0029 のルールと同じ理由で、任意段を追うのは taint 解析になる。
 
