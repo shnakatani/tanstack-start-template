@@ -57,7 +57,7 @@
 
 **予算の差は、落ちる向きの差である。** `expectAbsent` は「いま在る」で落ちる。予算を渡すとその向きに落ちなくなり、この assert が持つ唯一の反証条件が消える。`expectRemoved` はもともとその向きに落ちない。効率の差ではないので、2 つを 1 本へ畳むと `expectAbsent` の検出力がそのまま消える。
 
-この差は `src/test/absent.test.tsx` が両方向のミューテーションで固定している (2026-09-22 実測)。`expectRemoved` から予算を奪うと「unmount が操作より後ろでも通る」が落ち、`expectAbsent` に予算を与えると「同じ状況で落ちる」と所要時間の閾値が落ちる。
+この差は `src/test/absent.test.tsx` が両方向のミューテーションで固定している (2026-09-22 実測)。`expectRemoved` から予算を奪うと「unmount が操作より後ろでも通る」が落ち、`expectAbsent` に予算を与えると「要素が在れば落ちる」の所要時間の閾値が落ちる。
 
 **既存のテストで緑が割れないことは、差が無いことを意味しない。** `expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、`src/test/browser-setup.tsx` が Base UI の animation を毎テスト無効にしている (ADR-0018) ため、assert の行では unmount が済んでいるからである。予算が効くのは `enableBaseUiAnimations()` を呼んだテストと、flush を伴わない経路で消える場合で、`absent.test.tsx` はその後者を作って測っている。
 

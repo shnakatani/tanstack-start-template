@@ -22,8 +22,9 @@ function Toggleable() {
 }
 
 /**
- * 消滅を操作より後ろへずらす。`expectRemoved` は予算ぶん待って通り、`expectAbsent` は
- * 同じ状況で落ちる。遅延が延びても向きは変わらないので、負荷で結果が反転しない
+ * 消滅を操作より後ろへずらす。`expectRemoved` は予算ぶん待って通る。遅延が負荷で延びても
+ * 「後で消える」向きは変わらない。逆向き (`expectAbsent` が落ちること) はここでは見ない。
+ * タイマーが assert より先に消してしまう競走になる (2026-09-22 の全 project 同時実行で反転)
  */
 const REMOVAL_DELAY_MS = 150;
 function DeferredRemoval() {
@@ -44,17 +45,6 @@ describe("expectRemoved", () => {
     await screen.getByRole("button", { name: "消す" }).click();
 
     await expectRemoved(screen.getByText("あとで消える"));
-  });
-
-  // 2 つの helper の違いは名前だけではない。予算を渡すと「いま在る」で落ちなくなり、
-  // `expectAbsent` が持つ唯一の反証条件が消える (ADR-0031)。その差をここで固定する
-  it("同じ状況で expectAbsent は落ちる", async () => {
-    const screen = await render(<DeferredRemoval />);
-    await screen.getByRole("button", { name: "消す" }).click();
-
-    await expect(expectAbsent(screen.getByText("あとで消える"))).rejects.toThrow(
-      /toBeInTheDocument/,
-    );
   });
 });
 
