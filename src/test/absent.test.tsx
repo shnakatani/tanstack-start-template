@@ -2,7 +2,7 @@ import { useState } from "react";
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
-import { expectAbsent } from "./absent";
+import { expectAbsent, expectRemoved } from "./absent";
 import { ASSERT_TIMEOUT_MS } from "./assert-budget";
 
 /**
@@ -20,6 +20,43 @@ function Toggleable() {
     </div>
   );
 }
+
+/**
+ * 消滅を操作より後ろへずらす。`expectRemoved` は予算ぶん待って通り、`expectAbsent` は
+ * 同じ状況で落ちる。遅延が延びても向きは変わらないので、負荷で結果が反転しない
+ */
+const REMOVAL_DELAY_MS = 150;
+function DeferredRemoval() {
+  const [shown, setShown] = useState(true);
+  return (
+    <div>
+      <button type="button" onClick={() => setTimeout(() => setShown(false), REMOVAL_DELAY_MS)}>
+        消す
+      </button>
+      {shown ? <span>あとで消える</span> : null}
+    </div>
+  );
+}
+
+describe("expectRemoved", () => {
+  it("unmount が操作より後ろでも、予算ぶん待って通る", async () => {
+    const screen = await render(<DeferredRemoval />);
+    await screen.getByRole("button", { name: "消す" }).click();
+
+    await expectRemoved(screen.getByText("あとで消える"));
+  });
+
+  // 2 つの helper の違いは名前だけではない。予算を渡すと「いま在る」で落ちなくなり、
+  // `expectAbsent` が持つ唯一の反証条件が消える (ADR-0031)。その差をここで固定する
+  it("同じ状況で expectAbsent は落ちる", async () => {
+    const screen = await render(<DeferredRemoval />);
+    await screen.getByRole("button", { name: "消す" }).click();
+
+    await expect(expectAbsent(screen.getByText("あとで消える"))).rejects.toThrow(
+      /toBeInTheDocument/,
+    );
+  });
+});
 
 describe("expectAbsent", () => {
   it("要素が無ければ通る", async () => {

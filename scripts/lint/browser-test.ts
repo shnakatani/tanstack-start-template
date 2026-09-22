@@ -1,14 +1,11 @@
 import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plus/lint/plugins";
 
 /**
- * ブラウザテストの assert を守る oxlint の JS plugin。3 つのルールを持ち、決定は別々の ADR にある。
- *
- * - `prefer-locator-methods` — 同期読みを assert へ流さない (ADR-0029)
- * - `no-bare-find-element` — 素の `locator.findElement()` を止める (ADR-0030)
- * - `no-negated-style-literal` — スタイルをリテラルとの否定で確かめない (ADR-0031)
+ * ブラウザテストの assert を守る oxlint の JS plugin。ルールごとに決定が別の ADR にあり、
+ * どれがどの ADR かは各ルールの `meta.docs.description` が持つ。一覧は下の `definePlugin`。
  *
  * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
- * 適用先 glob の決め方は ADR-0029 が 3 つとも持つ。対象の限定は `vite.config.ts` の
+ * 適用先 glob の決め方は ADR-0029 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
  * `lint.overrides` にあり、`scripts/checks/integrity/lint-config.test.ts` が固定する。
  */
 
@@ -137,24 +134,20 @@ function isInsideRetryingCallback(node: Node): boolean {
 /**
  * その同期読みが変数へ束縛されているなら、その変数の read 参照を返す。
  *
- * 2 つのルールが同じ追跡に依拠している。ADR-0029 の「壊し方 (間接)」が固定しているのは
+ * 複数のルールがこの追跡に依拠している。ADR-0029 の「壊し方 (間接)」が固定しているのも
  * この追跡なので、数える対象の定義を 1 箇所に置く
  */
-function readReferencesOfBinding(
-  node: Node,
-  sourceCode: SourceCode,
-): { declarator: Node; references: Node[] } | undefined {
+function readReferencesOfBinding(node: Node, sourceCode: SourceCode): Node[] {
   const bound = unwrap(node);
   const declarator = parentOf(bound);
   if (!declarator || declarator.type !== "VariableDeclarator" || declarator.init !== bound) {
-    return undefined;
+    return [];
   }
-  const references = sourceCode
+  return sourceCode
     .getDeclaredVariables(declarator)
     .flatMap((variable) => variable.references)
     .filter((reference) => reference.isRead())
     .map((reference) => reference.identifier);
-  return { declarator, references };
 }
 
 type Verdict = "report" | "allowed" | "unknown";
@@ -222,10 +215,8 @@ export const preferLocatorMethods = defineRule({
           return;
         }
 
-        // 変数へ束縛してから assert へ渡す形
-        const binding = readReferencesOfBinding(node, context.sourceCode);
-        if (!binding) return;
-        for (const reference of binding.references) {
+        // 変数へ束縛してから assert へ渡す形。束縛でなければ空配列が返る
+        for (const reference of readReferencesOfBinding(node, context.sourceCode)) {
           if (isInsideRetryingCallback(reference)) continue;
           if (classifyUse(reference) === "report") {
             context.report({ node, messageId: "syncRead" });
@@ -379,11 +370,9 @@ function findNegatedLiteralMatchers(
 
     // 変数へ束縛してから assert へ渡す形
     if (followBinding && parent.type === "VariableDeclarator" && parent.init === current) {
-      const binding = readReferencesOfBinding(current, sourceCode);
-      if (!binding) return [];
       // 同じ束縛を 2 つの引数で読む形 (`expect(c.color, c.width)`) は同じ matcher へ届く。
       // 参照ごとに返すと同じ呼び出しを 2 回報告するので、ここで畳む
-      const found = binding.references.flatMap((reference) =>
+      const found = readReferencesOfBinding(current, sourceCode).flatMap((reference) =>
         findNegatedLiteralMatchers(reference, sourceCode, false),
       );
       return [...new Set(found)];
@@ -454,13 +443,7 @@ export const noBareAbsenceAssertion = defineRule({
         // `expect(screen.queryBy...)` は Testing Library の query で、locator ではない
         const subject = negation.object;
         if (subject.type !== "CallExpression") return;
-        if (
-          subject.callee.type !== "MemberExpression" ||
-          nameOf(subject.callee.object) !== "expect" ||
-          staticPropertyName(subject.callee) !== "element"
-        ) {
-          return;
-        }
+        if (!isExpectRoot(subject) || calleeName(subject) !== "element") return;
         context.report({ node, messageId: "bareAbsence" });
       },
     };

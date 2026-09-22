@@ -55,11 +55,19 @@
 
 同じ matcher を呼ぶ 2 つのヘルパーを置く。`expectAbsent(x)` は `{ timeout: 0 }` で打ち切る不在確認、`expectRemoved(x)` は assert の予算ぶん待つ消滅待ちである。`{ timeout: 0 }` を外す退行は `src/test/absent.test.tsx` の所要時間の閾値が捕まえる (外すと同じ assert が 4 秒以上かけて落ちる)。素の `expect.element(x).not.toBeInTheDocument()` は `browser-test/no-bare-absence-assertion` が止める。
 
-**予算の差は、いまのテストでは挙動に出ない。** `expectRemoved` を `{ timeout: 0 }` へ落として 11 箇所すべてを走らせても 43 件すべて緑だった (2026-09-22 実測)。操作の `await` が React の更新を flush し、`src/test/browser-setup.tsx` が Base UI の animation を毎テスト無効にしている (ADR-0018) ため、assert の行では unmount が済んでいる。予算が要るのは `enableBaseUiAnimations()` を呼んだテストと、flush を伴わない操作で消える場合である。
+**予算の差は、落ちる向きの差である。** `expectAbsent` は「いま在る」で落ちる。予算を渡すとその向きに落ちなくなり、この assert が持つ唯一の反証条件が消える。`expectRemoved` はもともとその向きに落ちない。効率の差ではないので、2 つを 1 本へ畳むと `expectAbsent` の検出力がそのまま消える。
 
-つまりこの 2 つが買っているのは**読み分けと機械強制**であって、現在のテストに対する挙動の違いではない。名前を分ける理由は、取り違えが実際に起きたことにある。本ブランチの `src/routes/notes/-components/note-cells.test.tsx` の 4 件は「最初から無い」を素の形で書いており、レビューが見つけて `1d987d5` で直した。機械では出なかった。
+この差は `src/test/absent.test.tsx` が両方向のミューテーションで固定している (2026-09-22 実測)。`expectRemoved` から予算を奪うと「unmount が操作より後ろでも通る」が落ち、`expectAbsent` に予算を与えると「同じ状況で落ちる」と所要時間の閾値が落ちる。
+
+**既存のテストで緑が割れないことは、差が無いことを意味しない。** `expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、`src/test/browser-setup.tsx` が Base UI の animation を毎テスト無効にしている (ADR-0018) ため、assert の行では unmount が済んでいるからである。予算が効くのは `enableBaseUiAnimations()` を呼んだテストと、flush を伴わない経路で消える場合で、`absent.test.tsx` はその後者を作って測っている。
+
+名前を分ける理由は、取り違えが実際に起きたことにもある。本ブランチの `src/routes/notes/-components/note-cells.test.tsx` の 4 件は「最初から無い」を素の形で書いており、レビューが見つけて `1d987d5` で直した。機械では出なかった。
 
 上流の対応物 `@testing-library/dom` の `waitForElementToBeRemoved` は、要素が最初から無いときに throw して取り違えをランタイムで止める。**この保証は移植できない。** 公式 API は操作の前に捕まえた要素を受け取る設計で、操作の後に assert を書く形では正当な消滅待ちでも `already removed` で落ちる (2026-09-22 に両方の向きで実測)。
+
+素の呼び出しは `browser-test/no-bare-absence-assertion` が止める。壊し方を 2 つ当てた (2026-09-22)。直接は実コードへ素の形を戻すと 1 件報告され、間接は `lint.rules` を残したまま `src/test/absent.ts` の行単位抑制を外すと helper 自身が報告される。
+
+**このルールが見るのは「名前を付けたか」であって「名前が正しいか」ではない。** `expectAbsent` と `expectRemoved` のどちらを選んでも報告しないので、上記 `1d987d5` の取り違えそのものは捕まえられない。買えるのは、素で書けば必ずどちらかを選ぶ地点に立たされることだけである。名前の真偽はレビューが見る。
 
 ### スタイルの否定は lint で止める
 
@@ -91,7 +99,7 @@ grep -rn --include='*.test.tsx' -E '\.not\.(toHaveStyle|toBe)\(' src/ | grep -iE
 
 ### ADR-0013 を改訂する
 
-ADR-0013 の Decision の表は「close 後に要素が消えたことの確認」に `expect.element(locator).not.toBeInTheDocument()` を充てていた。**これを `expectRemoved(locator)` へ改める。** 当時は不在確認と消滅待ちを分けていなかったので素の形で足りたが、`expectAbsent` を置いた後は同じ matcher を呼ぶ 2 つの意味が字面で区別できない。ADR-0013 が決めた「待機を vitest の retry API に委ねる」ことは変えていない。`expectRemoved` はその式に名前を付けただけである。
+ADR-0013 の Decision の表は「close 後に要素が消えたことの確認」に `expect.element(locator).not.toBeInTheDocument()` を充てていた。**これを `expectRemoved(locator)` へ改める。** ADR-0013 が決めた「待機を vitest の retry API に委ねる」ことは変えていない。`expectRemoved` はその式に名前を付けただけである。
 
 ### 肯定形は失敗するまで予算を使う
 
@@ -122,14 +130,14 @@ ADR-0029 のルールの許可は callee 単位なので、この 3 つより広
 
 ## 検討した選択肢
 
-| 案                                                 | 評価                                                                                                                                                                              | 採否     |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 期待値がリテラルの否定を lint で止め、肯定形へ移す | 経路 2-3 は同じ「期待値の綴りで否定が真になる」に還元でき、式の構造で表せる。経路 1 と `toHaveLength` は期待値を取らないので lint では表せず、`expectAbsent` と肯定 anchor が持つ | **採用** |
-| 否定 assert には触れない                           | ADR-0029 の移行が 15 秒の赤を持ち込む。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                    | 却下     |
-| `not.toHaveStyle` だけを止める                     | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                          | 却下     |
-| 否定 matcher を全面禁止する                        | 観測どうしの比較 10 件が書けなくなる。綴りで潰れない形まで巻き込む                                                                                                                | 却下     |
-| `waitForElementToBeRemoved` を使う                 | 操作の前に要素を捕まえる構造でないと保証が効かず、11 箇所すべてを書き換えることになる。ADR-0013 が消滅待ちに決めた形も覆す                                                        | 却下     |
-| `toHaveStyle` をオブジェクト形式で書く             | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない                                                                      | 却下     |
+| 案                                                 | 評価                                                                                                                                                                                                                       | 採否     |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 期待値がリテラルの否定を lint で止め、肯定形へ移す | 経路 2-3 は同じ「期待値の綴りで否定が真になる」に還元でき、式の構造で表せる。経路 1 と `toHaveLength` は期待値を取らないので lint では表せず、`expectAbsent` と肯定 anchor が持つ                                          | **採用** |
+| 否定 assert には触れない                           | ADR-0029 の移行が 15 秒の赤を持ち込む。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                                                             | 却下     |
+| `not.toHaveStyle` だけを止める                     | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                                                                   | 却下     |
+| 否定 matcher を全面禁止する                        | 観測どうしの比較 10 件が書けなくなる。綴りで潰れない形まで巻き込む                                                                                                                                                         | 却下     |
+| `waitForElementToBeRemoved` を使う                 | 捕まえた要素の identity と「論理的に在る」が一致しない。React の再調停でノードが差し替わると、捕まえた側だけが detach して素通りする。`src/routes/notes/index.test.tsx` の楽観行が実データ行へ置き換わる経路がこれに当たる | 却下     |
+| `toHaveStyle` をオブジェクト形式で書く             | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない                                                                                                               | 却下     |
 
 失敗時の文言を比べた (2026-09-22)。
 

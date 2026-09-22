@@ -268,7 +268,6 @@ describe("NotesPage", () => {
     await expect
       .element(noteRow(screen, CREATED_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "true");
-    // 出ていた空状態が消えるのを待つ。不在確認ではないので retry の予算が要る (ADR-0031)
     await expectRemoved(screen.getByText("メモが登録されていません"));
 
     create.resolve({ id: CREATED_NOTE.id });
