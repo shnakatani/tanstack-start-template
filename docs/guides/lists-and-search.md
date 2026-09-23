@@ -2,11 +2,11 @@
 
 一覧テーブル、URL の search param による絞り込み、打鍵に追従する検索欄を組むときの手順と、その形にしている理由を持つ。実例は `/notes` (`src/routes/notes/`) にある。
 
-| 決定                                                                                                        | ADR      |
-| ----------------------------------------------------------------------------------------------------------- | -------- |
-| 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す                            | ADR-0023 |
-| 一覧の絞り込み条件は URL の search param が持ち、`loaderDeps` で loader に渡す                              | ADR-0024 |
-| 検索の入力欄は URL の `q` に対する編集として持ち、debounce → `useDeferredValue` → `useSuspenseQuery` で描く | ADR-0025 |
+| 決定                                                                                                  | ADR      |
+| ----------------------------------------------------------------------------------------------------- | -------- |
+| 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す                      | ADR-0023 |
+| 一覧の絞り込み条件は URL の search param が持ち、loaderDeps で loader に渡す                          | ADR-0024 |
+| 検索の入力欄は URL の q に対する編集として持ち、debounce → useDeferredValue → useSuspenseQuery で描く | ADR-0025 |
 
 ## how-to
 
@@ -28,25 +28,25 @@
 
 ### 絞り込み条件を URL に置く
 
-ADR-0024 の決定 (search param `q`、`loaderDeps`、submit で replace) に沿って、次のように組む。実例は `src/routes/notes/index.tsx` と `src/features/notes/`。
+ADR-0024 に沿って、次のように組む。実例は `src/routes/notes/index.tsx` と `src/features/notes/`。
 
-| 対象      | 組み方                                                                                                                                                                                                                                 | 守らないと                                                                                                                                                                                                     |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| schema    | 絞り込み条件の schema は 1 つ (`src/features/notes/schema.ts` の `noteListFilterSchema`) にし、server function の `.validator` と route の `validateSearch` が同じものを使う。valibot 1.x は Standard Schema なので adapter は要らない | URL では通るのにサーバで落ちる (またはその逆の) 組み合わせが生まれる                                                                                                                                           |
-| 既定値    | `search.middlewares` の `stripSearchParams(v.getDefaults(noteListFilterSchema))` で URL から落とす。既定は schema から導く                                                                                                             | `/notes` と `/notes?q=` が別の場所になり、履歴と link の比較が揺れる。既定を写すと schema と別々に動く                                                                                                         |
-| loader    | loader が読む search は `loaderDeps: ({ search }) => ({ q: search.q })` で宣言し、`loader` は options に直接書いて `notesQueryOptions(deps)` を温める。検証は router 経由 (ADR-0046)                                                   | deps に無い search は loader に届かず、preload が別条件のデータを表示側に残す。loader を関数に切り出すと、引数の型を手で書くことになる (`typeof Route` は循環し、`LoaderFnContext` は `AnyRoute` 経由で `any`) |
-| query key | `notesQueryOptions(filter)` の key は `[...NOTES_QUERY_KEY, filter]` にする。mutation の invalidate は `NOTES_QUERY_KEY` の前方一致のまま                                                                                              | 条件ごとに key を分けないと、条件の違う一覧が同じキャッシュを上書きする。invalidate を条件付きの key にすると、他の条件の一覧が古いまま残る                                                                    |
+| 対象      | 組み方                                                                                                                                                                                                                                 | 守らないと                                                                                                                                                                                                                                                   |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| schema    | 絞り込み条件の schema は 1 つ (`src/features/notes/schema.ts` の `noteListFilterSchema`) にし、server function の `.validator` と route の `validateSearch` が同じものを使う。valibot 1.x は Standard Schema なので adapter は要らない | URL では通るのにサーバで落ちる (またはその逆の) 組み合わせが生まれる                                                                                                                                                                                         |
+| 既定値    | `search.middlewares` の `stripSearchParams(v.getDefaults(noteListFilterSchema))` で URL から落とす。既定は schema から導く                                                                                                             | `/notes` と `/notes?q=` が別の場所になり、履歴と link の比較が揺れる。既定を写すと schema と別々に動く                                                                                                                                                       |
+| loader    | loader が読む search は `loaderDeps: ({ search }) => ({ q: search.q })` で宣言し、`loader` は options に直接書いて `notesQueryOptions(deps)` を温める。検証は router 経由 (ADR-0046)                                                   | deps に無い search は loader に届かず、preload が別条件のデータを表示側に残す (Router の data-loading ガイドの page 2 の例)。loader を関数に切り出すと、引数の型を手で書くことになる (`typeof Route` は循環し、`LoaderFnContext` は `AnyRoute` 経由で `any`) |
+| query key | `notesQueryOptions(filter)` の key は `[...NOTES_QUERY_KEY, filter]` にする。mutation の invalidate は `NOTES_QUERY_KEY` の前方一致のまま                                                                                              | 条件ごとに key を分けないと、条件の違う一覧が同じキャッシュを上書きする。invalidate を条件付きの key にすると、他の条件の一覧が古いまま残る                                                                                                                  |
 
 ### 検索の入力欄を組む
 
-ADR-0025 の決定 (編集を世代で紐付け、編集ごと debounce し、`useDeferredValue` を通す) に沿って、次のように組む。実例は `src/routes/notes/-components/notes-page.tsx` と `note-search-field.tsx`。
+ADR-0025 に沿って、次のように組む。実例は `src/routes/notes/-components/notes-page.tsx` と `note-search-field.tsx`。
 
-| 対象       | 組み方                                                                                                                                                                                                       | 守らないと                                                                                                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| 正規化     | 入力欄の編集 (draft と debounce 済み) は、URL / server function と同じ `noteListFilterSchema` で正規化する (trim と上限)。正規化は入力の直後に 1 回で、下流はその値から導く                                  | 下流の複数箇所で呼ぶと、呼び忘れた経路が生の値で走る。`" abc"` と `"abc"` が別のキャッシュになる                |
-| ずれの表示 | 入力と表示中の条件がずれている間 (正規化後の入力値と deferred な条件が違う。debounce の待ちと取得中) は、一覧を `StaleContent` (`src/components/parts/stale-content.tsx`) で包み、`aria-busy` と半透明で残す | 古い一覧が新しい条件の結果に見える。生の文字列で比べると、submit で入力欄を揃えた直後に、条件が同じまま印が出る |
-| submit     | submit では入力欄も正規化後の値に揃える (値が変わるときだけ setState)                                                                                                                                        | URL が同じ (同じ条件で Enter) だと作り直しも遷移も起きず、trim と切り詰めが見えない                             |
-| 楽観行     | 追加中の行は、条件によらず一覧の先頭に出す (`toNoteRows` の合成順のまま)                                                                                                                                     | 追加中だけ条件で隠すと「追加したのに出ない」に見える。保存後の再取得で条件に合わなければ消える                  |
+| 対象       | 組み方                                                                                                                                                                                                       | 守らないと                                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 正規化     | 入力欄の編集 (draft と debounce 済み) は、URL / server function と同じ `noteListFilterSchema` で正規化する (trim と上限)。正規化は入力の直後に 1 回で、下流はその値から導く                                  | 下流の複数箇所で呼ぶと、呼び忘れた経路が生の値で走る。`" abc"` と `"abc"` が別のキャッシュになる                                                                     |
+| ずれの表示 | 入力と表示中の条件がずれている間 (正規化後の入力値と deferred な条件が違う。debounce の待ちと取得中) は、一覧を `StaleContent` (`src/components/parts/stale-content.tsx`) で包み、`aria-busy` と半透明で残す | 古い一覧が新しい条件の結果に見える (React docs の `useDeferredValue` の `isStale` の形)。生の文字列で比べると、submit で入力欄を揃えた直後に、条件が同じまま印が出る |
+| submit     | submit では入力欄も正規化後の値に揃える (値が変わるときだけ setState)                                                                                                                                        | URL が同じ (同じ条件で Enter) だと作り直しも遷移も起きず、trim と切り詰めが見えない                                                                                  |
+| 楽観行     | 追加中の行は、条件によらず一覧の先頭に出す (`toNoteRows` の合成順のまま)                                                                                                                                     | 追加中だけ条件で隠すと「追加したのに出ない」に見える。保存後の再取得で条件に合わなければ消える                                                                       |
 
 待ちの実値は `src/routes/notes/-lib/note-search.ts` の `NOTE_SEARCH_DEBOUNCE_MS` が持つ。
 

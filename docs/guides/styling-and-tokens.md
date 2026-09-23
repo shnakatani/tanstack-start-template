@@ -2,14 +2,14 @@
 
 色・トークン・余白を扱うときの手順と、コントラスト比の測り方を持つ。
 
-| 決定                                                                                 | ADR      |
-| ------------------------------------------------------------------------------------ | -------- |
-| 消費側の className を静的に読める形に保ち、外見は部品で配る                          | ADR-0030 |
-| 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める                | ADR-0031 |
-| semantic token の値は上流の生成物を土台にし、乖離は WCAG と palette の段で決める     | ADR-0032 |
-| placeholder は例示だけを持ち、専用の色トークンを使う                                 | ADR-0033 |
-| コントラスト比は測り方を実在させ、動く数値を文書へ書き写さない                       | ADR-0036 |
-| Tailwind の scan は `src` だけにし、`theme(static)` は Storybook の CSS だけに掛ける | ADR-0051 |
+| 決定                                                                                                    | ADR      |
+| ------------------------------------------------------------------------------------------------------- | -------- |
+| 消費側の className は静的に読める形に保ち、共有する外見は部品で配る                                     | ADR-0030 |
+| 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める                                   | ADR-0031 |
+| セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める             | ADR-0032 |
+| placeholder には例示だけを置き、色を専用トークンへ切る                                                  | ADR-0033 |
+| コントラスト比は測り方を実在させ、動く数値を文書へ書き写さない                                          | ADR-0036 |
+| Tailwind の scan は `src` に絞り、`theme(static)` は Storybook の CSS にだけ掛けて本番の CSS に載せない | ADR-0051 |
 
 ## how-to
 
@@ -25,7 +25,7 @@
 
 ### `color-mix()` を書く
 
-`no-arbitrary-values` は、`color-mix()` の材料が semantic token だけでも color category と判定する (ADR-0031)。`var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書き、registry の中なら ADR-0026 の許容リストにも記録する。
+`no-arbitrary-values` は、`color-mix()` の材料が semantic token だけでも color category と判定する (ADR-0031)。`var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書き、registry の中なら台帳 `docs/registry-deviations.md` の「行単位の lint 抑制」にも記録する。
 
 抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと、診断なしで通る。抑制した行を触るときは、足す class が token だけかを目で確かめる。
 

@@ -2,11 +2,11 @@
 
 依存を足す・上げる・前倒しするとき、ツールや設定を足すときの手順と落とし穴を持つ。
 
-| 決定                                                   | ADR      |
-| ------------------------------------------------------ | -------- |
-| 開発ツールチェーンを mise と Vite+ に寄せる            | ADR-0007 |
-| 依存の更新は公開後 3 日待ち、pin には出口条件を付ける  | ADR-0008 |
-| workflow は zizmor で監査し、action は SHA で pin する | ADR-0009 |
+| 決定                                                                     | ADR      |
+| ------------------------------------------------------------------------ | -------- |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                        | ADR-0007 |
+| 依存更新は待機 3 日で統一し、pin には出口条件を書く                      | ADR-0008 |
+| GitHub Actions の定義は zizmor で検査し、action は commit SHA で固定する | ADR-0009 |
 
 ## how-to
 
@@ -84,6 +84,6 @@ tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (l
 
 `vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsgolint と TypeScript Go のツールチェーンである (Vite+ の `docs/guide/check.md`)。
 `typescript` パッケージは Vite+ 一族の推移依存として入るので、直接の依存から外しても install からは消えない。2026-09-02 に `devDependencies` から外した状態で `vp check` を走らせると、型エラー (`TS2322`) を報告した。
-直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。
+直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
 型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsgolint が黙って動かない場合は捕まえられない。

@@ -1,7 +1,11 @@
 # 配置と境界
 
 新しいファイルをどのディレクトリに置くか、route ファイルをどう組むかの手順と落とし穴を持つ。
-ドメインのコードを `src/features/<domain>/` に集めて環境を接尾辞で宣言する決定と、route の property を route ファイルから export しない決定は ADR-0014、コンポーネントを役割で分けて design system の境界をディレクトリで示す決定は ADR-0015 が持つ。
+
+| 決定                                                                                         | ADR      |
+| -------------------------------------------------------------------------------------------- | -------- |
+| ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する | ADR-0014 |
+| `src/components/` を役割で分け、design system の著作と消費の境界をディレクトリで表す         | ADR-0015 |
 
 ## how-to
 
@@ -23,7 +27,7 @@
 
 ### route ファイルを組む
 
-ADR-0014 の「route の property を export しない」に沿って、次の順で組む。
+ADR-0014 に沿って、次の順で組む。
 
 1. ページ本体を `-components/` に書き、Route hooks を使わずに props で値を受ける。Route hooks を混ぜると、ページのテストが router 無しで描けなくなる
 2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは ADR-0046 の形で書く
@@ -35,11 +39,12 @@ ADR-0014 の「route の property を export しない」に沿って、次の�
 
 置き場所は消費者で決める。
 
-| 条件                                                 | 置き場所                                        |
-| ---------------------------------------------------- | ----------------------------------------------- |
-| その route だけが使う                                | route 側 (`-components/` / `-lib/` / `-hooks/`) |
-| 複数の画面から使う                                   | `src/features/<domain>/`                        |
-| ドメインの形 (schema、mutation) と同じ場所に居るべき | `src/features/<domain>/`                        |
+| 条件                                                 | 置き場所                                                                                                                 |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| その route だけが使う                                | route 側 (`-components/` / `-lib/` / `-hooks/`)                                                                          |
+| 複数の画面から使う                                   | `src/features/<domain>/`                                                                                                 |
+| ドメインの形 (schema、mutation) と同じ場所に居るべき | `src/features/<domain>/`                                                                                                 |
+| どのドメインにも属さない                             | React に依存しない汎用ロジックと型は `src/lib/`、React の hook は `src/hooks/`、server の基盤は `src/server/` (ADR-0014) |
 
 画面の描画の形 (一覧の行モデル) は route 側、mutation の variables を絞る parser は `src/features/<domain>/` になる。
 `src/features/<domain>/` の中の import も相対パスで書き、ディレクトリごと移せる形を保つ。

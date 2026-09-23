@@ -2,10 +2,10 @@
 
 shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す・取り直す・変えるときの手順と、その形にしている理由を持つ。
 
-| 決定                                                                             | ADR      |
-| -------------------------------------------------------------------------------- | -------- |
-| registry との乖離は生成時 baseline との 3-way で判別し、台帳の行に限る           | ADR-0026 |
-| semantic token の値は上流の生成物を土台にし、乖離は WCAG と palette の段で決める | ADR-0032 |
+| 決定                                                                                                               | ADR      |
+| ------------------------------------------------------------------------------------------------------------------ | -------- |
+| registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0026 |
+| セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める                        | ADR-0032 |
 
 乖離の一覧は台帳 `docs/registry-deviations.md` が持つ。baseline は `docs/registry-baseline/` にある。
 
@@ -82,15 +82,16 @@ registry の見た目を変えたいときは、打ち消しの class を積む�
 
 - `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて、診断なしで効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする
 - `scroll-area-focus-outline` (`src/styles.css`) は、Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。当てないと registry の focus ring が消える
+- ScrollArea のバーと、そのぶんの余白は `ScrollArea` の Root が既定で持つ (台帳 `docs/registry-deviations.md` の scroll-area.tsx の行)。本文の末尾側の padding がバー幅を上回り、外側と端をそろえたいときだけ、消費側で `data-has-overflow-y:pr-0` を書く
 - 背景を持つスクロール領域は、器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (実例は `src/components/parts/code-block.tsx`)
 
 ## explanation
 
 ### 生成コードを直接変えてよい理由
 
-shadcn は、カスタマイズの手段を variant → `className` → ソースの編集 → wrapper の順で挙げ、「The top layer of your component code is open for modification」とする (https://ui.shadcn.com/docs の Open Code)。生成コードを直接変えること自体は公式の想定である。
+shadcn の docs は「The top layer of your component code is open for modification」とし (https://ui.shadcn.com/docs の Open Code)、生成コードを直接変えること自体を公式の想定にしている。
 統制するのは「してはいけない改変」ではなく、再生成と上流の追随を安全に回すために「何を変えたか」を残すことである。そのための記録が baseline と台帳で、変える前にまず公式の推奨に合わせ、実機で見てから判断する (ADR-0026「追加と削除の基準」)。
 
 ### 公式のノブを書き留める理由
 
-shadcn の skill の「Customizing Components」は variant → className → 新しい variant → wrapper の順しか挙げず、CSS 変数のノブに触れない。skill だけを読むと打ち消しの class を積む方向へ進むので、確かめたノブを書き留めておく。
+shadcn の skill (`.claude/skills/shadcn/customization.md`「Customizing Components」) は、手段を built-in の variant → `className` → 新しい variant → wrapper の順で挙げ、CSS 変数のノブに触れない。skill だけを読むと打ち消しの class を積む方向へ進むので、確かめたノブを書き留めておく。

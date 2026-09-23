@@ -47,7 +47,7 @@
 ## Consequences
 
 - 依存に `@tanstack/react-table` と `@tanstack/react-table-devtools` が入る (ADR-0008 の待機 3 日は経過)。`@tanstack/table-core` と `@tanstack/react-store` が同梱で入る
-- route-local の `-lib/` / `-hooks/` と、features と route のどちらに置くかの基準は ADR-0014 が持つ
+- route-local の `-lib/` / `-hooks/` と、features と route のどちらに置くかの基準は `docs/guides/placement.md`「route の中の置き場」「features か route か」にある
 - 再評価条件: 2 つ目の一覧画面が出たとき (`createTableHook` の factory)、sorting / pagination を足すとき (`autoResetPageIndex`)、楽観的更新を扱う画面が増えたとき (TanStack DB)
 
 ## 出典

@@ -58,6 +58,8 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 未実装による bail out は `react/todo` が担う (カテゴリ分けと選定の基準は ADR-0011)。
 
 `react/todo` を `"error"` にすると bail out を修正すべき違反として扱うことになり、決定 5 と矛盾する。原因は Compiler の未実装でありコードの誤りではない。
+`vp lint -D react/todo` が報告するのは registry コードだけで、ADR-0026 により書き換えない (2026-09-02 確認)。件数は上流の追随で動くため、必要なときにこのコマンドで数える。
+
 `vp lint -D react/todo` は `logDiagnostics` の退路としてその場で叩く (2026-09-02 に、ビルドログと同じ bail out を同じ数だけ報告すると確かめた)。使い方は `docs/guides/updates-and-data.md`「React Compiler の診断を読む」にある。
 `"warn"` にもできない。`vp check` は warn を exit 0 で通すため、gate に載らないルールは設定してあるだけの状態になる。
 

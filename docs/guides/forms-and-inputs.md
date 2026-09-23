@@ -2,13 +2,13 @@
 
 入力スキーマ、フォームの部品、Select と数値の入力欄、高さのあるダイアログ、placeholder を書くときの手順と落とし穴を持つ。
 
-| 決定                                                              | ADR      |
-| ----------------------------------------------------------------- | -------- |
-| ドメイン型は valibot スキーマから導出する                         | ADR-0017 |
-| `type="number"` ではなく Base UI の `NumberField` を使う          | ADR-0027 |
-| `fieldComponents` の部品は `fieldValue` prop で値型を突き合わせる | ADR-0028 |
-| Select の値の解決は Base UI の自己リセットに頼らない              | ADR-0029 |
-| placeholder は例示だけを持ち、専用の色トークンを使う              | ADR-0033 |
+| 決定                                                                | ADR      |
+| ------------------------------------------------------------------- | -------- |
+| ドメイン型は valibot スキーマから導出する                           | ADR-0017 |
+| 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる | ADR-0027 |
+| fieldComponents の部品は値型を突き合わせる `fieldValue` prop を持つ | ADR-0028 |
+| Select の値の解決は消費側が持ち、Base UI の自己リセットに依存しない | ADR-0029 |
+| placeholder には例示だけを置き、色を専用トークンへ切る              | ADR-0033 |
 
 ## how-to
 
@@ -30,7 +30,7 @@
 
 ### `fieldComponents` の部品を書く
 
-`fieldValue` prop の決定 (ADR-0028) に沿って、部品ごとに次を守る。実例は `src/components/parts/form-fields.tsx`。
+ADR-0028 に沿って、部品ごとに次を守る。実例は `src/components/parts/form-fields.tsx`。
 
 - 部品は `FieldValueTypeCheckProps<T>` を extends する
 - prop の名前は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる

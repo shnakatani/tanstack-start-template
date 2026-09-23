@@ -5,10 +5,10 @@
 | 決定                                                                                                | ADR      |
 | --------------------------------------------------------------------------------------------------- | -------- |
 | ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す | ADR-0019 |
-| イベントハンドラは同期関数にし、非同期処理は内側へ閉じる                                            | ADR-0020 |
+| イベントハンドラは同期関数とし、非同期処理は内側へ閉じる                                            | ADR-0020 |
 | mutation は Action 層の `action` prop から `useActionMutation` で呼び、二重発火は state だけで塞ぐ  | ADR-0021 |
-| 完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める                                  | ADR-0022 |
-| server function をデータの境界とし、認証は global middleware に載せる                               | ADR-0016 |
+| ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める                    | ADR-0022 |
+| server function をデータ境界とし、全 fn 共通の middleware は global に載せる                        | ADR-0016 |
 | メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                          | ADR-0018 |
 
 ## explanation
@@ -25,13 +25,13 @@
 ### query のキャッシュとダイアログの close は Transition に乗らない
 
 TanStack Query の `useQuery` / `useMutation`、TanStack Router のストア、Base UI のダイアログの handle は、どれも `useSyncExternalStore` で購読されている。React はこの購読の更新を、Transition の中で起きても緊急更新として描く。
-そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは pending の管理と Action の順序保証である。
+そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは、pending の管理、Action の順序保証、pending の切り替えを `<ViewTransition>` で装飾できることである (ADR-0019)。
 出典と実測は ADR-0019「制約: TanStack Query と Router のストアは Transition に参加しない」が持つ。`useOptimistic` に query の値を渡せない理由もここにある (「楽観表示を出す」)。
 
 ### React Compiler が見ない箇所
 
 Compiler はコンポーネントか hook として認識した関数しか最適化しない。テーブルの列定義のように、コンポーネントでも hook でもない定義は最適化されないまま動く。
-これは仕様どおりの挙動で、欠陥として扱わない (ADR-0018)。性能の問題として実際に現れた箇所だけを手でメモ化し、新しいコードで予防的に `useMemo` / `useCallback` を書かない。
+これは仕様どおりの挙動で、欠陥として扱わない (ADR-0018)。
 
 ## how-to
 
@@ -52,13 +52,13 @@ mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton`
 
 `src/components/action/` に部品を足すときは、次を満たす。
 
-| 契約         | 内容                                                                                                                                                                                                                                                                                                                                                                                    |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `action`     | `() => Promise<void> \| void`。`startTransition` に直接渡す。同期と非同期のどちらも受け、決着まで pending が続く                                                                                                                                                                                                                                                                        |
-| pending      | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定する。`Spinner` は視覚専用 (`aria-hidden`)。状態は要素自身の `aria-busy` と `aria-disabled` で持ち、通知は feature 側が announcer で出す (ADR-0034)。button の子孫はユーザーエージェントが accessibility API に出さない (WAI-ARIA 1.2 §5.2.9) |
-| 二重発火     | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (ADR-0021「二重発火は state だけで塞ぐ」)                                                                                                                                                                                                                                                       |
-| 失敗         | 部品は握らない。呼び出し側が Action の中で処理し切る。mutation は `useActionMutation` を通す                                                                                                                                                                                                                                                                                            |
-| 基盤への依存 | 契約は Base UI に依存しない。Base UI か React Aria が `action` prop を出荷したら、内部の実装だけを差し替える                                                                                                                                                                                                                                                                            |
+| 契約         | 内容                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `action`     | `() => Promise<void> \| void`。`startTransition` に直接渡す。同期と非同期のどちらも受け、決着まで pending が続く                                                                                                                                                                                                                                                                                            |
+| pending      | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定する。`Spinner` は視覚専用 (`aria-hidden`)。状態は要素自身の `aria-busy` と `aria-disabled` で持ち、通知は feature 側が announcer で出す (ADR-0034)。button の子孫はユーザーエージェントが accessibility API に露出すべきでない (SHOULD NOT。WAI-ARIA 1.2 §5.2.9) |
+| 二重発火     | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (ADR-0021「二重発火は state だけで塞ぐ」)                                                                                                                                                                                                                                                                           |
+| 失敗         | 部品は握らない。呼び出し側が Action の中で処理し切る。mutation は `useActionMutation` を通す                                                                                                                                                                                                                                                                                                                |
+| 基盤への依存 | 契約は Base UI に依存しない。Base UI (issue 5133) か React Aria (PR 9894) が `action` prop を出荷したら、内部の実装だけを差し替える                                                                                                                                                                                                                                                                         |
 
 #### mutation の書き方
 
@@ -68,7 +68,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 入力                      | `useMutation` の options。`onError` は型で必須。省略すると、reject の吸収が通知の無い失敗になる                                                                                                     |
 | 出力                      | `mutate` / `mutateAsync` は型で外してあり、`runAction(variables): Promise<void>` を使う。`runAction` は `mutateAsync` を await して reject を吸収し、通知は `onError` (`toastMutationError`) が出す |
-| 呼び出し                  | `action` から `runAction` を呼ぶ。`mutate` は Promise を返さず、reject も握るので、Transition が完了も失敗も観測できない                                                                            |
+| 呼び出し                  | `action` から `runAction` を呼ぶ。`mutate` は Promise を返さず、reject も `.catch(noop)` で握るので (`@tanstack/react-query` の `useMutation.js`)、Transition が完了も失敗も観測できない            |
 | 再取得と close            | `onSuccess` は完了点によらず再取得の Promise を返す。TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く。閉じる時点は「完了点ごとに Transition を終える」               |
 | `await` の後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる (`useTransition` の既知の制限)。画面の更新は query の再取得に任せる                                                         |
 
@@ -137,7 +137,9 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 - 呼び出し側はパターンと `ESCAPE` を手で組まず、`src/server/db/like-pattern.ts` の `likeContains` を使う。エスケープと `ESCAPE` 句を対で渡すことを忘れた検索は、`%` が効き `\` が消えて黙って壊れる
 - 検証は実 SQLite (`:memory:`) で行う。実例は `src/features/notes/handlers.test.ts` で、`%` / `_` / `\` を含む検索語、ASCII の大文字小文字、日本語を見る。エスケープの純粋関数だけを単体で見ると、`ESCAPE` 句との対応が抜けても通る
 
-### 手動メモ化を外すか判定する
+### 手動メモ化を書く・外す
+
+- 新しいコードで予防的に `useMemo` / `useCallback` を書かない。性能の問題として実際に現れた箇所だけを手でメモ化する (ADR-0018)
 
 既存の `useMemo` / `useCallback` は、撤去の前後でコンパイル出力が悪化しないことを測れた箇所だけ外す (ADR-0018 の決定 4)。
 Compiler がメモ化のスコープを作るのは、値の identity を同じコンパイル単位の中で観測できるときに限られる。カスタム hook の返り値へ入るだけの導出は消費側が見えず、スコープが粗くなる。一括で外すと依存のガードを失い、劣化が下流へ連鎖する。ガードの数が同じでもスコープが融合して依存の集合が広がることがあり、どちらも外形からは読み取れない。

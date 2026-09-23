@@ -85,7 +85,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 - 消費側の `className` はすべて linter が読める形になり、`no-raw-colors` と `no-unknown-classes` の検査が届く範囲が確定する
 - 恒久的な例外はゼロで、`overrides` に足すのは規則 1 行だけになる。違反が増えても行は増えない
 - 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`lint-config.test.ts` が規則名と severity を固定する
-- `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。ADR-0031 の Consequences)
+- `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。`docs/guides/lint.md`「JS plugin の落とし穴」)
 - design system の層から外へ class 文字列を配る形が閉じる。層の内側での共有は残る
 
 ## 出典

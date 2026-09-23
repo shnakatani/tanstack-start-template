@@ -2,15 +2,15 @@
 
 ブラウザテストの待ち方・操作の仕方・assert の書き方と、検査スクリプトの作り方を持つ。
 
-| 決定                                                                                              | ADR      |
-| ------------------------------------------------------------------------------------------------- | -------- |
-| ブラウザテストの待機は vitest の retry API に委ね、自前の待機を積まない                           | ADR-0040 |
-| ブラウザテストのユーザー操作は実イベントだけで発火する                                            | ADR-0041 |
-| ブラウザテストは animation を止めて走らせ、animate-out を検証するテストだけ戻す                   | ADR-0042 |
-| assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む                         | ADR-0043 |
-| assert の予算はテストの予算と別に宣言する                                                         | ADR-0044 |
-| 否定 assert は不在や綴り違いでも通るので、肯定で書く                                              | ADR-0045 |
-| route の wrapper は、root を差し替えた tree と memory history で route ファイルのテストが検証する | ADR-0046 |
+| 決定                                                                                                                                        | ADR      |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| ブラウザテストの待機は vitest の retry API に委ね、自前の待機を積まない                                                                     | ADR-0040 |
+| ブラウザテストのユーザー操作は実イベントだけで発火する                                                                                      | ADR-0041 |
+| ブラウザテストは animation を無効にして走らせ、animate-out の窓を踏むテストだけ戻す                                                         | ADR-0042 |
+| assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む                                                                   | ADR-0043 |
+| assert の予算をテストの予算と分けて宣言する                                                                                                 | ADR-0044 |
+| 否定 assert は不在や綴り違いでも通るので、肯定で書く                                                                                        | ADR-0045 |
+| Route hooks を使う wrapper は、root を差し替えた route tree に実 Route を付け、memory history の router で route ファイルのテストが検証する | ADR-0046 |
 
 ## explanation
 
@@ -42,6 +42,7 @@
 
 整合検査・成果物の検査・ソース検査は、アプリのコードが 1 行も変わらなくても落ちうる。「片方を直して片方を忘れた」を捕まえるための検査だからである。置き方は次の 2 つで決まる。
 
+- `src/` 全体へ当てるソース検査を作るなら、`scripts/checks/source/` と `checks-source` project を対で作る。先に lint (必要なら `jsPlugins`) で表せないかを見る
 - 判定を `scripts/lib/` の純粋関数へ分け、単体テストを別に持つ。判定と適用を同じファイルに書くと、判定の境界条件を試すために `src/` を壊す必要が出る。実例は、実行側の `scripts/checks/runtime/security-headers.ts` と判定の `scripts/lib/response-headers.ts`
 - 落ちたときに判断が要る検査だけを作る。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す。実例は `scripts/checks/integrity/lint-config.test.ts` の緩和の適用先とルールの検査 (広げたのが意図なら期待値へ足し、誤りなら設定を直す) と、`scripts/checks/integrity/registry-baseline.test.ts` の 3-way の判別である。期待値の書き換えしか選択肢が無い検査は、上流の更新のたびに鳴って判断を鈍らせる (ADR-0018 が bail out の一覧を固定しない理由と同じ)
 
@@ -49,14 +50,14 @@
 
 ### 待つ口を選ぶ
 
-| 場面                                                                                | 使うもの                                                                                                    |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (ADR-0044)                  |
-| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む |
-| 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                        |
-| `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                         |
-| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/absent.ts`)                                                             |
-| locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `vi.waitFor`                                                                                                |
+| 場面                                                                                | 使うもの                                                                                                                                                                                               |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (ADR-0044)                                                                                                             |
+| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい (ADR-0043) |
+| 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                                   |
+| `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                                    |
+| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/absent.ts`)                                                                                                                                                        |
+| locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `vi.waitFor`。vitest の wait-for のレシピも、assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける                                                  |
 
 - `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (ADR-0042)
 - `toHaveTextContent` は文字列を渡すと部分一致になる。完全一致が要るなら正規表現を渡す
@@ -112,7 +113,7 @@ animation は `src/test/browser-setup.tsx` が毎テスト止める (ADR-0042)�
 - 既定では閉じた popup が次の描画で unmount するので、`data-ending-style` は観測できない
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。既定では窓が無いが、animation を戻したテストでも同じ形で書く
 - 閉じた後の行の取得に `includeHidden` を渡さない。既定では確定直後の行が `aria-hidden` の配下に残らない。モーダルが開いている間の取得には引き続き要る
-- transition の後に「変化しないこと」を見るテストは、retry では途中値の前に通ってしまう。animation を戻したら、変化する側の値を先に待ってから見る
+- transition の後に「変化しないこと」を見るテスト (実例は `src/components/parts/segmented-radio-group.test.tsx` の hover) は、retry では途中値の前に通ってしまう。animation を戻したら、変化する側の値を先に待ってから見る
 - モジュールの最上位で描画や算出値を読まない。`beforeEach` より前に走るので、前のファイルが残した emulation を読む
 
 ### 否定を肯定で書く
@@ -134,15 +135,15 @@ animation は `src/test/browser-setup.tsx` が毎テスト止める (ADR-0042)�
 - 「描かれている」「上限がある」なら、`expect.poll(() => Number.parseFloat(getComputedStyle(x).outlineWidth)).toBeGreaterThan(0)` のように 1 回の観測から数値を出す。綴りを外しても `NaN` になって落ちる
 - 当たっている token が分かっているなら、`expect.element(x).toHaveStyle(`color: ${resolveColorToken("--foreground")}`)` のように値そのものと比べる (`src/components/parts/segmented-radio-group.test.tsx`)
 - 観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると、別々の瞬間に成立してよいことになる
-- 肯定形は、失敗するときに assert の予算 (ADR-0044) いっぱいまで retry してから落ちる。赤の所要が延びるのは検出力と引き換えである
+- 肯定形は、失敗するときに assert の予算 (ADR-0044) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。赤の所要が延びるのは検出力と引き換えである
 
 `toHaveStyle` で表せない次の 3 つの形は、`getComputedStyle` を `expect.poll` のコールバックの中で読む。
 
-| 形                 | 例                                                                             |
-| ------------------ | ------------------------------------------------------------------------------ |
-| 2 回の観測を比べる | `src/components/ui/sidebar.test.tsx` の「開く前後で背景色が変わったこと」      |
-| 数値の大小         | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`   |
-| 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない |
+| 形                 | 例                                                                                                                                            |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2 回の観測を比べる | `src/components/ui/input-group.test.tsx` で、フォーカスの前に `borderBefore` を読み、フォーカスの後の border 色を poll の中で読んで比べる箇所 |
+| 数値の大小         | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                                                                  |
+| 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない                                                                |
 
 ### 予算を呼び出しごとに外す
 
@@ -173,10 +174,12 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 ### 状態と通知を検証する
 
 - pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0034)
-- announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
+- announcer の region は `src/test/browser-setup.tsx` が毎テスト描く。文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
 - 同じ通知の経路を 2 つのテストで見ない。`/notes` では、ページのテスト (`-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`index.test.tsx`) が Enter と戻るを見る
 
 ### viewport に収まることを測る
+
+viewport の定数は `src/test/viewport.ts` が持つ。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`vitest.browser.config.ts` の `browser.viewport` が `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。
 
 popup の全体が viewport に収まることは、`src/test/viewport.ts` の `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。実測と理由は `src/test/viewport.ts` の docstring が持つ。
 

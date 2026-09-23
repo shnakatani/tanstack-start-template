@@ -4,11 +4,11 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 
 | 決定                                                                            | ADR      |
 | ------------------------------------------------------------------------------- | -------- |
-| Storybook は TanStack 専用の framework を使い、telemetry を切る                 | ADR-0047 |
-| story は状態のカタログとし、play は対話的な部品にだけ書く                       | ADR-0048 |
+| Storybook は TanStack 専用の framework で導入し、telemetry を切る               | ADR-0047 |
+| story は状態のカタログとし、play は操作で状態が変わる部品にだけ書く             | ADR-0048 |
 | play は合成イベントで書き、実イベントの規律と移せない検証はブラウザテストに残す | ADR-0049 |
-| story は部品の隣に置き、registry の部品はすべてカタログ化する                   | ADR-0050 |
-| story の a11y は `error` で回し、テーマごとに project を分ける                  | ADR-0052 |
+| story は部品の隣に置き、registry 部品は全件カタログにする                       | ADR-0050 |
+| story の a11y は `error` で検査し、テーマごとに project を持つ                  | ADR-0052 |
 
 ## how-to
 
@@ -26,6 +26,10 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 - 検証専用の story (終了状態が他の story と同じ見た目になるもの) には `tags: ["!dev"]` を付ける (ADR-0048)。ただし同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くので、その部品の状態が 1 つも並ばない事態を避ける。実例は `ActionButtonShell` の `Idle` (`ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)
 - story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。story は `no-restyle` / `require-static-classes` の適用外なので lint は鳴らない。外見を上書きする class は部品側の variant にする (ADR-0030)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。vitest から走らせた story には Storybook の `layout: "padded"` が効かず、その差は `.storybook/preview.css` が埋める (ADR-0052)
+
+### 上流の `write-story` skill との違い
+
+`vp exec storybook skills` が出す `write-story` skill は上流の規約で、このリポジトリの決定と食い違う箇所がある。play を書く範囲は skill の「Simulate key user flows」ではなく ADR-0048 に従い、操作で状態が変わる部品にだけ書く。ADR に書かれていない項目は skill の既定に従う。
 
 ### 自動構成の外を手で置く
 

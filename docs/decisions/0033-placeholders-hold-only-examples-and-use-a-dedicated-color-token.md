@@ -91,8 +91,8 @@ light と dark で同じ `mist-500` になる。
 - dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.35。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0026 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。当て方は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある
-- **消費側からの上書きが決定的でない。** `cn` が `@utility` で作った class を知らないためで、詳細は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある。2026-09-21 時点で上書きしている消費側は無い
-- placeholder を足すときに確かめる 2 つの問いは `docs/guides/forms-and-inputs.md`「placeholder を足す」にある
+- **消費側からの上書きが決定的でない。** `cn` が `@utility` で作った class を知らないためで、詳細は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある。registry の `placeholder:text-muted-foreground` なら `cn` が確実に落とす。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない
+- placeholder を足すときは 2 つを確かめる。(1) 例示か (ラベルの代わりでも、書式や条件の説明でもないか)。(2) ラベルが名指していない情報を足していないか。確かめ方は `docs/guides/forms-and-inputs.md`「placeholder を足す」にある
 - 2026-09-21 時点で (2) を満たさないのは `input-group.stories.tsx` の `placeholder="name@example.com"` (差出人ラベルが形式を名指していない) と `placeholder="0"` (数値のみという構成を伝える) の 2 件。どちらも story のカタログで、dark の比は表の dark 行と同じ 3.93 になる。残る 11 種はラベルの言い換えか値の例示で、情報を足さない
 - 再評価の条件は、w3c/wcag#4343 が閉じるか、axe が `::placeholder` を読むようになったとき
 

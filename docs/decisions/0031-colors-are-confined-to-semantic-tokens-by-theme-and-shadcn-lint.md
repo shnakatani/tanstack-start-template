@@ -42,7 +42,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書き、`@shadcn/lint` には `{ name: "shadcn", specifier: "@shadcn/lint" }` を使う。
-抑制 directive の名前、lint 時間の測り方、3 ルールの発火を確かめる probe、探索に失敗したときの警告は `docs/guides/lint.md`「`@shadcn/lint` の発火を確かめる」と「JS plugin の落とし穴」にある。
+抑制 directive の名前、lint 時間の測り方、3 ルールの発火を確かめる probe、探索に失敗したときの警告は `docs/guides/lint.md`「`@shadcn/lint` の発火を確かめる」と「JS plugin の落とし穴」にある。3 ルールは探索に失敗しても警告を出したうえで発火し続け、診断から token の提案が減るだけである。silent failure ではないので、この解決を見張る検査は置かない。
 
 ### 検討した選択肢
 

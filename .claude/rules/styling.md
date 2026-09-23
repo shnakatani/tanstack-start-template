@@ -82,7 +82,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える (`docs/guides/registry.md`「公式のノブを先に探す」)
 - 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`docs/guides/registry.md`「公式のノブを先に探す」)
-- 本文の末尾側 padding がバー幅を上回り外側と端をそろえたいときだけ `data-has-overflow-y:pr-0` を書く。既定はバーも余白も `ScrollArea` 側 (`docs/registry-deviations.md` の scroll-area.tsx の行)
+- 本文の末尾側 padding がバー幅を上回り外側と端をそろえたいときだけ `data-has-overflow-y:pr-0` を書く。既定はバーも余白も `ScrollArea` 側 (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (`docs/registry-deviations.md` の scroll-area.tsx の行)
 
 ### 親の gap で表現できない箇所
