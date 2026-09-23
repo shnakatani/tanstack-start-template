@@ -29,11 +29,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 
 **「選択中の値が候補から消えた」の検出を `onValueChange` の `null` 通知に頼らない。値の解決は消費側で引き取る。** 実例は `src/components/parts/form-fields.tsx` の `FormSelectField`。
 
-| 規範                                                                                            | 守らないと何が壊れるか                                                                                 |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `onValueChange` で `null` を受けても form の値を消さない。`console.warn` に現在値と突合元を残す | 候補の入れ替えで form の値が黙って消える                                                               |
-| `options` に無い値を受けたら、表示を保ったまま `console.warn` に値と突合元を残す                | Base UI との配線の不整合が誰にも見えない                                                               |
-| 候補から消えた値の扱い (保持・再選択の促し) は消費側で決める                                    | 通知が来ない条件 (未登録・`null`・マウント時の値へ戻る) で、解決できない値がトリガーに内部値のまま残る |
+`null` と `options` に無い値を受けたときの扱いと、消えた値の決め方は `docs/guides/forms-and-inputs.md`「Select の値を解決する」にある。
 
 ### 検討した選択肢
 
@@ -44,8 +40,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 
 ## Consequences
 
-- `FormSelectField` を包まずに `Select` を使う箇所は、同じ引き取りを自分で書く
-- Base UI を更新したら `SelectPositioner` の `onMapChange` と CHANGELOG の Select の項を見直し、上の表を実物に合わせて書き換える
+- `FormSelectField` を包まずに `Select` を使う箇所と、Base UI を更新したときに見直すものは `docs/guides/forms-and-inputs.md`「Select の値を解決する」にある
 
 ## 出典
 

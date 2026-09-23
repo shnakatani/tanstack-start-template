@@ -12,9 +12,9 @@ paths:
 - 導出には `InferOutput` を使う。`InferInput` は default 付きフィールド (`v.optional(v.boolean(), false)`) を optional にし、読み出し後の形と食い違う (ADR-0015)
 - 項目の呼称は `v.metadata({ label })` でスキーマの各項目に載せ、消費側は `v.getMetadata(entries.x).label` から `satisfies Record<keyof T, string>` 付きの object に写して読む。素の定数 object を別に持たない。持つと項目追加で呼称が漏れても型で落ちない (ADR-0015)
 - 例外はスキーマ由来型どうしを組み合わせる合成ヘルパー型。手書きになる場合は理由をコメントで残す (ADR-0015)
-- 導出型とその導出元が一致することの型テストを書かない。常に真になり変更を検出しない (ADR-0015)
-- 導出元の選択を守るテストは導出型を直接参照する (`expectTypeOf<Note["createdAt"]>()`)。スキーマ由来型どうしの比較は導出元の書き換えを検出しない (ADR-0015)
-- `v.object` から `v.omit` で入力スキーマを派生させたら、未知キーが silent に strip される挙動をテストで固定する。`v.strictObject` 由来なら reject されるので、派生元を確かめてから書く (ADR-0015)
+- 導出型とその導出元が一致することの型テストを書かない。常に真になり変更を検出しない (`docs/guides/forms-and-inputs.md`「スキーマの型テストを書く」)
+- 導出元の選択を守るテストは導出型を直接参照する (`expectTypeOf<Note["createdAt"]>()`)。スキーマ由来型どうしの比較は導出元の書き換えを検出しない (`docs/guides/forms-and-inputs.md`「スキーマの型テストを書く」)
+- `v.object` から `v.omit` で入力スキーマを派生させたら、未知キーが silent に strip される挙動をテストで固定する。`v.strictObject` 由来なら reject されるので、派生元を確かめてから書く (`docs/guides/forms-and-inputs.md`「スキーマを書く」)
 
 ## 型アサーション (`as`) 全面禁止
 
@@ -45,6 +45,6 @@ lint (`typescript/consistent-type-assertions`) が止める。`as const` は可�
 
 - 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。型は `FieldValueTypeCheckProps<T>` (`form-fields.tsx`) を extends する (ADR-0026)
 - `useFieldContext<T>()` の `T` は実フィールドと結び付かず、値型の違う部品を差しても通る。`fieldValue` が唯一の突き合わせ経路 (ADR-0026)
-- prop 名は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる
-- `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をしない
+- prop 名は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」)
+- `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をしない (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」)
 - 撤去の条件は ADR-0026。判定は公開型 (`.d.ts`) に出るかで行い、名前の一致では行わない

@@ -38,7 +38,7 @@ GOV.UK Design System は利用者テストの結果として number パターン
 
 推奨形と一致する。パースとロケール整形は `NumberField` が担い、`onValueChange` が `number | null` をそのまま返すため、自前の畳み込みは要らなくなる。
 
-`Field` / `FieldLabel` / `FieldError` の構成と見た目は変えない。`NumberField.Input` へ `render={<Input />}` を渡し、registry の `Input` の意匠をそのまま使う。
+`Field` / `FieldLabel` / `FieldError` の構成と見た目は変えない。組み方は `docs/guides/forms-and-inputs.md`「数値の入力欄を組む」にある。
 
 ### 検討した選択肢
 

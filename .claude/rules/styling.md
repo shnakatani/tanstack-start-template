@@ -92,11 +92,11 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ### 内部スクロールを持つダイアログの組み方
 
-- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる。見出しとフッターが常に見える (Base UI Dialog の Inside scroll の形)
-- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる (`dialog-scroll-body.tsx`)
-- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。スクロール領域の内側に余白が無いと、端の要素の ring が境界で切れる (`dialog-scroll-body.tsx`)
+- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる。見出しとフッターが常に見える (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。スクロール領域の内側に余白が無いと、端の要素の ring が境界で切れる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 
-`DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める (実例: `note-create-dialog.tsx`)。
+`DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)。
 
 | ケース                                           | 配置                                                      |
 | ------------------------------------------------ | --------------------------------------------------------- |
@@ -116,8 +116,8 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ## 操作できる要素の組み方
 
-- input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (テストでは Playwright の hit-target 検査で click が落ちる。ADR-0039。registry の Input 単体は `src/components/ui/input-pointer.test.tsx` が見る)
-- checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う
+- input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
+- checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する
 - `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)

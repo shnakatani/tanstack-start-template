@@ -49,9 +49,7 @@ export const noteSchema = v.object({
 値そのものの制約 (`noteIdValueSchema`) も、それを使う入力スキーマと保存済みスキーマの両方で共有する。
 別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる。
 
-client に送らせないフィールドがある場合は、保存済みスキーマから `v.omit` で入力スキーマを派生させる。
-派生元が `v.object` なら未知キーは reject されず silent に strip されるので、意図はテストで固定する。
-これは `v.omit` の性質ではなく `v.object` の性質である。`v.strictObject` から派生させると同じ入力が reject される (2026-09-02 実測)。
+client に送らせないフィールドがある場合は、保存済みスキーマから `v.omit` で入力スキーマを派生させる。派生元による strip と reject の違いは `docs/guides/forms-and-inputs.md`「スキーマを書く」にある。
 
 ### 3. 読み出し口で検証する
 
@@ -65,7 +63,7 @@ client まで届くエラーに DB の中身を混ぜないためで、位置と
 
 項目の呼称 (フォームの label、一覧の見出し、検証メッセージの主語) は `v.metadata({ label })` の action として各項目の pipe に載せ、消費側は `v.getMetadata(schema.entries.x).label` で型付きに読む。valibot の `metadata` は `const` generic でリテラル型を保ち、`getMetadata` は `InferMetadata` で pipe 内の metadata を merge した型を返す (`v.getTitle` は `string | undefined` に落ちるため使わない)。呼称を集めた object は `satisfies Record<keyof T, string>` を付けて、項目を足したときに呼称の追加を型で強制する。
 
-素の定数 object (`{ title: "タイトル" } as const`) を別に持つ形は、キーの typo も項目追加時の欠落も型で捕まらない。入力用と保存用で pipe が分かれる項目 (title) は、`TInput` を型引数で与えた 1 つの action を両方に渡す (型引数も注釈も無い action は `TInput` が `unknown` に推論され `v.pipe` に入らない)。
+素の定数 object (`{ title: "タイトル" } as const`) を別に持つ形は、キーの typo も項目追加時の欠落も型で捕まらない。入力用と保存用で pipe が分かれる項目の書き方は `docs/guides/forms-and-inputs.md`「スキーマを書く」にある。
 
 TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリの `src/components/parts/form-fields.tsx` の `label` prop (TanStack Form 自体に呼称を受ける口は無い) はどちらも文字列を受け取る口で、schema と結ぶ仕組みを持たない。TanStack Form の Discussion #2111 (参加者の回答、メンテナ回答なし) も schema の制約を field へ出す経路は無いとしている。Standard Schema の validate 契約に metadata は無く、Standard JSON Schema (spec 1.1.0 の `~standard.jsonSchema`) は valibot 1.4.2 が未実装で、載るのも JSON Schema 語彙 (title / description) に限る。独自の `label` を運ぶ層はアプリ側 (valibot の metadata) に置く。
 
@@ -87,12 +85,11 @@ TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリ
 ## Consequences
 
 - 型の出処がスキーマ 1 箇所になり、乖離が原理的に起こらなくなる。乖離を検出する仕組みを保守する必要も消える
-- 導出型とその導出元が一致することの型テストは書かない。常に真になり何も検出しないためである
-- 導出元に `InferOutput` を選んだ判断を守るテストは、導出型を直接参照する形で書く。スキーマ由来の型どうしを比べる形は導出元の書き換えを検出せず、default を外す正当な変更で偽のアラームになる
+- 型テストの書き方 (書かないものと、導出元の選択を守る書き方) は `docs/guides/forms-and-inputs.md`「スキーマの型テストを書く」にある
 - enum の型エイリアス名が型表示から消える。`v.picklist(...)` の出力型になるが同じ union なので、その union を消費する側は影響を受けない。エイリアス自体も定義元に残る
 - 保存はするが公開する型には出さないフィールドを、同じスキーマに持たせられなくなる。必要になったら保存形のスキーマを別に定義してそこから導出する
 - 将来ドメイン型をスキーマと意図的に違えたくなった場合は `satisfies v.GenericSchema<T>` が使える。その時点で本 ADR を再評価する
-- 項目の呼称の SSOT がスキーマになる。`@valibot/to-json-schema` を使うときは `title` / `description` の action も同じ pipe に足せる
+- 項目の呼称の SSOT がスキーマになる
 
 ## 出典
 

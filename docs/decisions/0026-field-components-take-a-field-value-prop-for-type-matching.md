@@ -18,11 +18,11 @@ number のフィールドに文字列の部品を差しても型検査は通る�
 
 **部品の中では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。** 型は generic interface 1 つ (`src/components/parts/form-fields.tsx` の `FieldValueTypeCheckProps<T>`) にまとめ、各部品が extends する。
 
-| 規範                                                                     | 守らないと何が壊れるか                                                                                                   |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `fieldComponents` の部品は `FieldValueTypeCheckProps<T>` を extends する | 値型の違うフィールドへ差しても型検査が通り、実行時に値の型が崩れる                                                       |
-| prop 名は `value` にしない                                               | 部品が内部で `Input` へ渡す `value` と紛れる                                                                             |
-| `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する | prop が外れても誰も気付かない。この型テストを落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をしない |
+| 規範                                                                     | 守らないと何が壊れるか                                             |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `fieldComponents` の部品は `FieldValueTypeCheckProps<T>` を extends する | 値型の違うフィールドへ差しても型検査が通り、実行時に値の型が崩れる |
+
+prop の名前と、prop を型テストで固定する書き方は `docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」にある。
 
 ### 検討した選択肢
 
