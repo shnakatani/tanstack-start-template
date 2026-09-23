@@ -1,8 +1,8 @@
-# ADR-0014: ユーザー操作による更新は Transition を既定にし、pending は Transition から取る
+# ADR-0014: ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0048 (ハンドラを同期関数にする理由。`startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0016 (完了点とブロック範囲の軸)
+- 関連: ADR-0058 (Action 層と `useActionMutation`)、ADR-0048 (ハンドラを同期関数にする理由。`startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0016 (完了点とブロック範囲の軸)
 
 ## Context
 
@@ -12,26 +12,6 @@
 - **緊急更新**: Transition でない state 更新。React は即座に描画へ反映する
 - **Action**: `startTransition` に渡す非同期関数。`await` した Promise の決着まで Transition が続く (`useTransition` リファレンス)
 - **mutation**: `useMutation` を通して server function を呼ぶ操作 (POST 相当)。GET 相当のデータ取得は含まない
-
-### 決定時点のコード (2026-09-13)
-
-pending 表示は TanStack Query の mutation が持つ `isPending` から取っていた。
-`startTransition` / `useTransition` / `useDeferredValue` / `useOptimistic` を使う箇所は `src/` に無かった。
-
-```bash
-grep -rn "useTransition\|startTransition\|useDeferredValue\|useOptimistic" src/   # 2026-09-13: 0 件
-grep -rln "useMutation(" src/ --include='*.tsx'                                   # 2026-09-13: 2 ファイル
-```
-
-mutation を持つのは `src/routes/notes/-components/note-create-dialog.tsx` (追加) と `src/routes/notes/index.tsx` (削除) の 2 箇所だった。
-どちらも `onSuccess` の中で `invalidateQueries` を `void` した直後にダイアログを `close()` していた。
-削除の二重発火は `src/components/parts/delete-confirm-dialog.tsx` の `deleteConfirmMutationProps` が閉包のフラグで塞いでいた。コード上の理由は「`isPending` は再レンダー後にしか立たず、それより前に届く再クリックを `disabled` では止められない」だったが、この前提は実測されていなかった (2026-09-13 に React の pending 描画は次のユーザーイベントより前に流れると確認した)。
-
-mutation 以外のユーザー操作由来の更新は、`src/components/screens/route-error.tsx` の `handleRetry` (Error Boundary の `reset()` と `router.invalidate()`) と、ダイアログの開閉 (Base UI の handle) があった。
-
-ルート遷移は既に Transition である。
-`@tanstack/router-core` は match の commit を `router.startTransition` へ渡し (`load-client.js`)、`@tanstack/react-router` の `Transitioner` がそれを `React.startTransition` で包む。
-2026-09-13 に router-core 1.171.27 と react-router 1.170.32 の dist で確認した。
 
 ### React 側の方針
 
@@ -47,7 +27,7 @@ React チームは React 18 の設計時点から、大半の更新を Transitio
 | React 19.3 リリース (2026-09-09、react/react #37290) | 複数の Transition を独立して描画する。それまでは 1 つの描画に entangle していた (`useTransition` リファレンスの Caveats は 2026-09-13 閲覧時点でも batch すると書いたまま)                     |
 | `useTransition` リファレンス (2026-09-13 閲覧)       | "If you're building a React framework or a router, we recommend marking page navigations as Transitions."                                                                                      |
 
-### 制約 1: TanStack Query と Router のストアは Transition に参加しない
+### 制約: TanStack Query と Router のストアは Transition に参加しない
 
 `@tanstack/react-query` の `useBaseQuery.js` / `useMutation.js` は `React.useSyncExternalStore` を使う。
 `@tanstack/react-store` 0.9.3 の `useStore.js` は `use-sync-external-store/shim/with-selector` を使い、shim は React 18 以降で `React.useSyncExternalStore` へ委譲する (2026-09-13、node_modules を grep)。
@@ -73,26 +53,10 @@ Base UI のダイアログも同じ種類のストアである。
 Root はその store を `use-sync-external-store/shim` で購読する (`node_modules/@base-ui/utils/store/useStore.js`)。
 そのため close は緊急更新として即座にアンマウントを起こす。
 
-### 制約 2: registry の Button に action prop は無い
-
-`src/components/ui/button.tsx` は shadcn registry の出力で、改変は ADR-0006 の許容リストに限る。
-包んでいる `@base-ui/react` 1.8.0 の Button の props は `NativeButtonProps` と `focusableWhenDisabled` だけで、`action` / pending 相当の prop は無い (`node_modules/@base-ui/react/button/Button.d.ts`)。
-
-| ライブラリ | 状況 (2026-09-13)                                                                                                                                                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Base UI    | mui/base-ui #5133 (2026-06-27) が `action` / `on*ChangeAction` を提案。ラベル「waiting for 👍」、メンテナ返信なし                                                        |
-| React Aria | adobe/react-spectrum #9894 (2026-04-08) が `action` / `changeAction` / `isPending` / `actionError` の RFC。2026-07-17 に実装を別 PR へ分割すると表明、merge 済み実装なし |
-| shadcn/ui  | issue なし。Button のドキュメントは disabled + Spinner の例だけ                                                                                                          |
-
-### 制約 3: Action の reject は Error Boundary へ届く
-
-`useTransition` リファレンスは、`startTransition` に渡した関数が throw または reject すると最寄りの Error Boundary が fallback を出すと書く。
-`.claude/rules/implementation.md`「イベントハンドラは同期に保つ」は、操作の失敗を Error Boundary へ届けず toast か画面内表示で通知すると定める。両立させるには、Action の中で失敗を処理し切る必要がある。
-
-### 制約 4: `<ViewTransition>` は Transition 内の React state 更新でしか発火しない
+### 制約: `<ViewTransition>` は Transition 内の React state 更新でしか発火しない
 
 React 19.3 で stable になった `<ViewTransition>` は、`startTransition` 内の更新・Suspense の reveal・`useDeferredValue` 由来の更新でだけアニメーションする。緊急更新は対象外である (19.3 リリース記事)。
-query のキャッシュ更新は制約 1 により緊急更新に落ちるので、mutation を Action 化しても一覧の行の増減は `<ViewTransition>` の対象にならない。
+query のキャッシュ更新は「TanStack Query と Router のストアは Transition に参加しない」により緊急更新に落ちるので、mutation を Action 化しても一覧の行の増減は `<ViewTransition>` の対象にならない。
 対象になるのは Transition の中で set した React state (pending の切り替え、`useOptimistic` のローカル値) だけである。
 
 ## Decision
@@ -104,44 +68,9 @@ query のキャッシュ更新は制約 1 により緊急更新に落ちるの�
 | ナビゲーション、GET                          | 同期 Transition。データは Suspense で読む                                                                                                                                      | TanStack Router (既存)                          |
 | mutation                                     | 非同期 Transition (Action)。`mutateAsync` を await する。完了点 (a) (ADR-0016) では Action は close だけを含み、mutation は Transition の外で `void runAction(...)` として走る | `src/components/action/`                        |
 | query の再取得 (`invalidateQueries`)         | mutation の `onSuccess` が Promise を返して待つ (pending の源)。ダイアログを閉じる時点は ADR-0016 の完了点の軸で選ぶ。描画は緊急更新に落ちる (制約 1)                          | mutation の `onSuccess`                         |
-| ダイアログの開閉                             | 緊急更新のまま (Base UI の store、制約 1)。mutation 成功後に閉じる時点は ADR-0016 の完了点の軸で選ぶ                                                                           | mutation の `onSuccess`                         |
+| ダイアログの開閉                             | 緊急更新のまま (Base UI の store。「TanStack Query と Router のストアは Transition に参加しない」)。mutation 成功後に閉じる時点は ADR-0016 の完了点の軸で選ぶ                  | mutation の `onSuccess`                         |
 | Error Boundary の `reset()` と loader 再実行 | 緊急更新のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                     | `src/components/screens/route-error.tsx` (既存) |
 | 制御コンポーネントの入力値                   | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                                                                                                  | 各部品                                          |
-
-### Action 層 `src/components/action/`
-
-`src/components/ui/` を包み、`action` prop を受ける部品を置く。ファイル名は包む先と同名にする (`button.tsx` → `ActionButton`)。
-最初に置くのは `button.tsx`、`alert-dialog.tsx`、`form.tsx` の 3 つで、メモ画面の 2 経路が使う最小集合である。`form.tsx` だけは `ui/` に対応部品が無く、素の `<form>` を包む。
-React の `<form action>` + `useFormStatus` を使わないのは、submit の経路を TanStack Form の `handleSubmit` (FormData を経由しない) にするためと、決着前の二重 submit を部品側の dedupe で塞ぐためである。`ActionForm` の context は `useFormStatus` と同じ形で pending を子孫へ渡す。
-
-| 契約     | 内容                                                                                                                                                                                                                                                                                                                                                                                           |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `action` | `() => Promise<void> \| void`。`startTransition` に直接渡す (同期 / 非同期どちらも受け、決着まで pending が続く)                                                                                                                                                                                                                                                                               |
-| pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定する。`Spinner` は視覚専用 (`aria-hidden`)。状態は要素自身の `aria-busy` + `aria-disabled` で持ち、通知は feature 側が announcer で出す (ADR-0017)。button の子孫はユーザーエージェントが accessibility API に露出すべきでない (WAI-ARIA 1.2 §5.2.9) |
-| 二重発火 | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (「二重発火は state だけで塞ぐ」)                                                                                                                                                                                                                                                                      |
-| 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (制約 3)。mutation は次項の `useActionMutation` を通す                                                                                                                                                                                                                                                                                    |
-| 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                                                                                                                                                                                                                                                              |
-
-### 二重発火は state だけで塞ぐ
-
-react.dev が示す形は `useTransition` の `disabled={isPending}` と `useFormStatus` の `disabled={pending}` で、どちらも state だけで決着前の再操作を止める。`useActionState` は再操作を queue に積み、拒否しない。
-React はユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、2 回目の実イベントは `aria-disabled` の部品に届き、Base UI が click を止める。
-
-「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」ことを理由に ref のフラグを併せ持つ形は採らない。この事象は実イベントでは起きず、フラグはその検証を通すためだけのものになる。検証を実イベントで書く根拠は ADR-0015 が持つ。
-
-完了点 (a) (ADR-0016) では Action が close だけを含み Transition が確定直後に終わるため、close の animate-out の間は `isPending` の dedupe が効かない。同じ対象の mutation が pending なら handler を no-op にする (`queryClient.isMutating` の判定)。実例は `src/routes/notes/index.tsx` の `confirmDelete`。
-
-### mutation の書き方
-
-mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、次を持つ。
-
-| 項目                    | 規範                                                                                                                                                                                                                                                                                |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 入力                    | `useMutation` の options。型で `onError` を必須にする。省略すると reject の吸収が無通知の失敗になるため、型で止める                                                                                                                                                                 |
-| 出力                    | `useMutation` の戻り値から `mutate` / `mutateAsync` を型で外し、`runAction(variables): Promise<void>` を足す。`runAction` は `mutateAsync` を await し、reject を吸収する。通知は `onError` (`toastMutationError`) が担う                                                           |
-| 呼び出し                | `action` prop から `runAction` を呼ぶ。`mutate` は Promise を返さず reject も `.catch(noop)` で握るため、Transition が完了も失敗も観測できない (`useMutation.js`)                                                                                                                   |
-| 再取得と close          | `onSuccess` は完了点によらず再取得の Promise を返す (TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く)。閉じる時点は ADR-0016 で選び、(c) では再取得を await した後に `handle.close()`、(b) では先頭で `close()`、(a) では Action 側で `close()` する |
-| `await` 後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる (`useTransition` の既知の制限)。画面の更新は query の再取得に任せる                                                                                                                                         |
 
 ### 楽観表示の使い分け
 
@@ -155,23 +84,18 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ### 検討した選択肢
 
-| 案                                                            | 評価                                                                                                                                                                | 採否     |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| app 層に `src/components/action/` を置き `action` prop で包む | React Conf 2025 デモと同じ構造。registry を触らず (ADR-0006)、基盤にも依存しない。dedupe と pending の実装が 1 箇所に集まる                                         | **採用** |
-| ref や閉包のフラグで同一タスク内の 2 連射も塞ぐ               | 実イベントでは起きない事象への防御で、その検証を書くためだけにフラグが要る (ADR-0015)。react.dev の形 (`disabled={pending}`) から外れる                             | 却下     |
-| 呼び出し側ごとに `useTransition` を書く                       | 決着前の dedupe と a11y の状態伝達を毎回書き直す。`deleteConfirmMutationProps` の閉包と同じ形が箇所ごとに散る                                                       | 却下     |
-| Base UI #5133 か React Aria #9894 の出荷を待つ                | どちらも 2026-09-13 時点で merge 済み実装が無く、時期も未定                                                                                                         | 却下     |
-| 現状維持 (mutation の `isPending`)                            | Transition の意味論 (割り込み、Action の順序保証) を持たず、pending の切り替えが `<ViewTransition>` の対象にならない。React チームの区分 (Context) から外れ続ける   | 却下     |
-| `useOptimistic` を一覧の行にも使う                            | TanStack/query #9742 の揺れが起きる。concurrent stores (react/react #35449) が出荷するまで成立しない                                                                | 却下     |
-| 基盤を React Aria へ替えて action prop を待つ                 | shadcn CLI は `--base aria` を持つが、shadcn-ui/ui #11724 (2026-09-01) の実測で API parity が無く porting になる。Action 層は基盤非依存なので、この判断と切り離せる | 別 ADR   |
+| 案                                                                             | 評価                                                                                                                                                              | 採否     |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 現状維持 (mutation の `isPending`)                                             | Transition の意味論 (割り込み、Action の順序保証) を持たず、pending の切り替えが `<ViewTransition>` の対象にならない。React チームの区分 (Context) から外れ続ける | 却下     |
+| `useOptimistic` を一覧の行にも使う                                             | TanStack/query #9742 の揺れが起きる。concurrent stores (react/react #35449) が出荷するまで成立しない                                                              | 却下     |
+| ユーザー操作による更新を Transition の中で行い、pending を Transition から取る | React チームの前提 (「React 側の方針」) に沿い、pending の切り替えが `<ViewTransition>` の対象になる                                                              | **採用** |
 
 ### 他の文書との関係
 
-| 文書                                   | この ADR に従う箇所                                                                                                        |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `.claude/rules/implementation.md`      | 「イベントハンドラは同期に保つ」は mutation を伴わない非同期処理に限る。「ユーザー操作による更新は Transition の中で行う」 |
-| `.claude/rules/directory-structure.md` | コンポーネント配置の表の `src/components/action/` の行                                                                     |
-| ADR-0048                               | `startTransition` に関する段落                                                                                             |
+| 文書                              | この ADR に従う箇所                                                                                                        |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `.claude/rules/implementation.md` | 「イベントハンドラは同期に保つ」は mutation を伴わない非同期処理に限る。「ユーザー操作による更新は Transition の中で行う」 |
+| ADR-0048                          | `startTransition` に関する段落                                                                                             |
 
 ## Consequences
 
@@ -181,13 +105,8 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 - ルート遷移への `<ViewTransition>` 適用は別途判断する
   - TanStack Router は `document.startViewTransition` を直接呼び (router-core `router.js`)、React の `<ViewTransition>` には未対応
   - 2026-09-13 の `gh search prs "ViewTransition" --repo TanStack/router` は browser API 由来の PR のみ
-- `useActionMutation` を通さない Action の reject は Error Boundary へ届く (制約 3)。lint で検出できないため、Action を書くときのレビュー観点に含める
-- 後続作業
-  - 値を持つ部品の `changeAction` 版 (`checkbox` / `select` / `toggle` / `toggle-group` / `radio-group` / `combobox`)。`useOptimistic` で表示を先に進める設計が要り、Button 系とは別に扱う
-  - React Aria への基盤変更の ADR。発火条件は「React Aria #9894 の実装が出荷した」か「a11y 要件で Base UI に不足が出た」のどちらか
 - 再評価条件
   - concurrent stores (react/react #35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する
-  - Base UI #5133 か React Aria #9894 が出荷したら、Action 層の内部実装をライブラリの `action` prop へ寄せる
 
 ## 出典
 
@@ -200,13 +119,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 - React 19.3 リリース記事: https://react.dev/blog/2026/09/09/react-19-3
 - react/react #35392 (`enableParallelTransitions` の追加) / #37290 (既定で有効化): https://github.com/react/react/pull/35392 / https://github.com/react/react/pull/37290
 - `useTransition` リファレンス: https://react.dev/reference/react/useTransition
-- `<form>` / `useFormStatus` リファレンス: https://react.dev/reference/react-dom/components/form / https://react.dev/reference/react-dom/hooks/useFormStatus
-- reactwg/react-18 #21 Automatic batching for fewer renders in React 18: https://github.com/reactwg/react-18/discussions/21
 - `useSyncExternalStore` リファレンス (Caveats): https://react.dev/reference/react/useSyncExternalStore
 - `useOptimistic` リファレンス: https://react.dev/reference/react/useOptimistic
 - TanStack/query #9742 Is React Query incompatible with React Actions/Transitions/useOptimistic?: https://github.com/TanStack/query/issues/9742
 - react/react #35449 [RFC] useStore/createStore APIs: https://github.com/react/react/pull/35449
-- TanStack Query「Invalidations from Mutations」: https://tanstack.com/query/latest/docs/framework/react/guides/invalidations-from-mutations
-- mui/base-ui #5133 First class support for async react primitives: https://github.com/mui/base-ui/issues/5133
-- adobe/react-spectrum #9894 RFC: Adopting Async React in React Aria Components: https://github.com/adobe/react-spectrum/pull/9894
-- shadcn-ui/ui #11724 Bundle size audit across base / aria / radix: https://github.com/shadcn-ui/ui/issues/11724

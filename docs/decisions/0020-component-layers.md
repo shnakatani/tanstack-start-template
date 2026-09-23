@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-19
-- 関連: ADR-0045 (`@shadcn/lint` のルールの選定)、ADR-0006 (registry コードの改変は許容リストで統制)、ADR-0012 (features / routes の配置の原則)、ADR-0014 (Action 層)、ADR-0019 (DataTable 部品の配置)
+- 関連: ADR-0045 (`@shadcn/lint` のルールの選定)、ADR-0006 (registry コードの改変は許容リストで統制)、ADR-0012 (features / routes の配置の原則)、ADR-0058 (Action 層)、ADR-0019 (DataTable 部品の配置)
 
 ## Context
 
@@ -24,7 +24,7 @@
 | 配置先                    | 内容                                                           | `no-restyle` |
 | ------------------------- | -------------------------------------------------------------- | ------------ |
 | `src/components/ui/`      | shadcn 生成コンポーネント                                      | 適用外       |
-| `src/components/action/`  | `ui/` を包み `action` prop で Transition 化した部品 (ADR-0014) | 適用外       |
+| `src/components/action/`  | `ui/` を包み `action` prop で Transition 化した部品 (ADR-0058) | 適用外       |
 | `src/components/parts/`   | registry を包んで外見を定義する自作部品                        | 適用外       |
 | `src/components/screens/` | 部品を並べて画面を組む共有コンポーネント                       | 適用する     |
 | `src/components/` (直下)  | 上のどれでもないもの。実例は `live-regions.tsx`                | 適用する     |

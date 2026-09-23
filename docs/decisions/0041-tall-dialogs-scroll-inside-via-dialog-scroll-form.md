@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0006 (Dialog の Viewport と `popupOverflowBackstop` の乖離)、ADR-0014 (`ActionForm`)
+- 関連: ADR-0006 (Dialog の Viewport と `popupOverflowBackstop` の乖離)、ADR-0058 (`ActionForm`)
 
 ## Context
 

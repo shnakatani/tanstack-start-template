@@ -10,7 +10,7 @@ paths:
 | 配置先                       | 内容                                                                                                                                      |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                                                                           |
-| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0014)                                                  |
+| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0058)                                                  |
 | `src/components/parts/`      | registry を包んで外見を定義する自作部品。層の規則 (`no-restyle` / `require-static-classes`) の適用外 (ADR-0020 / ADR-0021)                |
 | `src/components/screens/`    | 部品を並べて画面を組む共有コンポーネント。層の規則を適用する (ADR-0020 / ADR-0021)                                                        |
 | `src/components/`            | 上のどれでもないもの。層の規則を適用する (ADR-0020 / ADR-0021)。実例は `live-regions.tsx`                                                 |
