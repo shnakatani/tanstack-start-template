@@ -11,11 +11,11 @@ paths:
 
 palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-raw-colors`、`shadcn/no-arbitrary-values`) が止める。直し方:
 
-- semantic token を使う。淡色ハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token
+- semantic token を使う。淡色ハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0030 の段に乗せる
-- `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら ADR-0024 の許容リストにも記録する
+- `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら ADR-0024 の許容リストにも記録する (`docs/guides/styling-and-tokens.md`「`color-mix()` を書く」)
 - 破壊操作は常時 destructive 色にする。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover だけの着色は touch 環境で出ない
-- `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
+- `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (ADR-0034)
 - コントラストは本文 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark は light と別に検算する。opacity variant は背景合成で比が変わる
 - トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0030)
@@ -25,7 +25,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ### 新しい色の露出のさせ方
 
-判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない (ADR-0031)。
+判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない (ADR-0030)。
 
 | 誤用を誘う既存の形 | 露出                               | 例                         |
 | ------------------ | ---------------------------------- | -------------------------- |
@@ -48,9 +48,10 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 間隔の表現手法は shadcn skill (`.claude/skills/shadcn/rules/styling.md`) に従う。本節は値と、skill を狭める追加規定を持つ。
 
-- 兄弟の間隔を子の margin (`mb-*` / `mt-*` 等) で作らない。親の `gap-*` に置く。skill は `mt-4` を可例に挙げるが、兄弟の間隔に限りここで禁止する
+- 兄弟の間隔を子の margin (`mb-*` / `mt-*` 等) で作らない。親の `gap-*` に置く。skill は `mt-4` を可例に挙げるが、兄弟の間隔に限りここで禁止する (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く理由」)
 - 機械強制は無いのでレビューで見る。例外は「親の gap で表現できない箇所」に挙げたものだけ
 - registry 内部の間隔 (Dialog や Card の padding、`Field` 系の間隔) は registry の既定を基準にし、下の表に写さない
+- 表の値はこのアプリで決めた値で、変えるときは画面で実測して表を書き換える (`docs/guides/styling-and-tokens.md`「spacing の表の値」)
 
 | 対象                         | 値                                        |
 | ---------------------------- | ----------------------------------------- |
@@ -119,7 +120,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
-- `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する
+- `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)
 - `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)
 
 ## a11y 最低基準

@@ -47,7 +47,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 「背景と 4.5:1」と「入力値と 3:1」を両方課したときに成立する帯と、palette の段 (ADR-0030「値は palette の段に乗せる」) の比。2026-09-21 の実測である。`src/styles.css` がトークンとして宣言している段は `mise run contrast` で測り直せる (ADR-0034)。light の `mist-500` は `--placeholder`、`mist-600` は `--muted-foreground`。dark の `mist-500` は `--placeholder`、`mist-400` は `--muted-foreground` が持つ。light の `mist-400` と dark の `mist-600` はトークンになっていないので、この手段では測れない。
 帯の下端は 4.5:1、上端は入力値との 3:1 が保てる限界で、どちらも背景との比で表している。
 
-上端は `mise run contrast` では出せない。対を渡す形ではなく、入力値 (`--foreground`) と 3:1 になる輝度を解いてから背景との比へ直すためである。light は例示が入力値より明るいので輝度 `Lp = 3 * (L入力値 + 0.05) - 0.05`、dark は暗いので `Lp = (L入力値 + 0.05) / 3 - 0.05` を解き、`Lp` と背景の輝度で比を取る。輝度の式は `scripts/contrast/lib/contrast.ts` にある。
+上端は `mise run contrast` では出せない。解き方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
 
 |                                            | 帯 (背景比) | `mist-400` | `mist-500` | `mist-600` |
 | ------------------------------------------ | ----------- | ---------- | ---------- | ---------- |
@@ -86,12 +86,12 @@ light と dark で同じ `mist-500` になる。
 
 ## Consequences
 
-- **この色を見る検査は無い。`vp test run` が緑でも `--placeholder` の値について何も言っていない。** 動かすときは light dark の両方で、placeholder を入力欄の背景と、値を入れた同じ欄の文字の 2 つに人が見比べる
-- light の `mist-500` は帯の下端から 0.11 しか離れていない。`--background` か `--foreground` が動くと外れる。ADR-0030「土台は空ファイルへの生成物とし、自作分を載せ直す」で生成をやり直したら帯を測り直す
+- **この色を見る検査は無い。`vp test run` が緑でも `--placeholder` の値について何も言っていない。** 動かすときの見比べ方は `docs/guides/styling-and-tokens.md`「比を測る」にある
+- light の `mist-500` は帯の下端から 0.11 しか離れていない。`--background` か `--foreground` が動くと外れる
 - dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.35。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0024 の許容リストが行を持つ
-- `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
-- **消費側からの上書きが決定的でない。** `cn` は生成済み utility の表で衝突を判定するため、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方のクラスを載せたまま出荷され、詳細度が同じ (0,1,1) なのでどちらが勝つかは CSS のソース順で決まる。registry の `placeholder:text-muted-foreground` なら `cn` が確実に落とす。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない
+- `--placeholder` は `@theme inline` へ通していない。当て方は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある
+- **消費側からの上書きが決定的でない。** `cn` が `@utility` で作った class を知らないためで、詳細は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある。2026-09-21 時点で上書きしている消費側は無い
 - placeholder を足すときに確かめる 2 つの問いは `docs/guides/forms-and-inputs.md`「placeholder を足す」にある
 - 2026-09-21 時点で (2) を満たさないのは `input-group.stories.tsx` の `placeholder="name@example.com"` (差出人ラベルが形式を名指していない) と `placeholder="0"` (数値のみという構成を伝える) の 2 件。どちらも story のカタログで、dark の比は表の dark 行と同じ 3.93 になる。残る 11 種はラベルの言い換えか値の例示で、情報を足さない
 - 再評価の条件は、w3c/wcag#4343 が閉じるか、axe が `::placeholder` を読むようになったとき

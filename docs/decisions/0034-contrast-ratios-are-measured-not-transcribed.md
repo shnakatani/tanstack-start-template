@@ -57,11 +57,7 @@ Primer が数値を書き写さない形に到達していることと、ADR-000
 | ファイル読みと終了コード                       | `scripts/contrast/report.ts`                |
 | 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]`          |
 
-```bash
-mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--placeholder'
-```
-
-`--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である。
+使い方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
 
 テストは `scripts-tools` project が拾う。include は `scripts/**/*.test.ts` から `scripts/checks/**` を除く拒否リストにする。ディレクトリを並べる許可リストにすると、ツールを足すたびに 1 行足す必要があり、足し忘れたツールのテストは無言で走らない。
 
@@ -160,20 +156,7 @@ ADR-0030「リポジトリが持つ検算は実描画と axe で行い、比を�
 - `mise run verify` は変わらない。足したテストは既存の `scripts-tools` project に載る
 - `colorjs.io` の版が上がると値が変わりうる。`toGamut` の `method: "clip"` は axe-core 4.13.0 の `Color.parseString` に合わせたもので、axe 側が変えたら追随を検討する
 - 値に `{` を含む宣言 (`--shadow-preset: { x: 1px };`) を `:root` / `.dark` へ書くと、そのテーマの表ごと throw してどの対も測れなくなる。入れ子のブロックと区別していないためで、silent には通さないが正しい宣言を弾く
-- 同じ色を渡せば axe の `getContrast` と比が一致する。2026-09-22 に axe-core 4.13.0 と実トークン 5,000 対で突き合わせ、差はゼロだった。再現は `measurePair` の結果を `toHex` で渡して次と比べる
-
-```js
-const { Color, getContrast } = (await import("axe-core")).default.commons.color;
-const parse = (s) => {
-  const c = new Color();
-  c.parseString(s);
-  return c;
-};
-getContrast(parse(toHex(measured.backdrop)), parse(toHex(measured.foreground)));
-```
-
-継続して検査はしない (「検査は作らない」)。axe か colorjs.io の版が動いたら、この手順で取り直して記述を合わせる
-
+- 同じ色を渡せば axe の `getContrast` と比が一致する。2026-09-22 に axe-core 4.13.0 と実トークン 5,000 対で突き合わせ、差はゼロだった。継続して検査はしない (「検査は作らない」)。axe か colorjs.io の版が動いたら取り直す。手順は `docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」にある
 - 残る違いは丸める位置である。axe は `Color` が 8bit を持つため層ごとに丸め、この変換器は重ね終わった後の 1 回だけ丸める。半透明を重ねた対では SC の判定が割れうる
 - 画面の比と一致するとは限らない。axe はブラウザで `mix-blend-mode`・`text-shadow`・祖先の `opacity`・要素の重なりまで畳むが、この変換器は `--bg` で渡された面だけを重ねる
 - 単体テストが固定するのは axe の `getContrast` との一致で、要素のスタックを畳んだ後の報告値は node では再現できない

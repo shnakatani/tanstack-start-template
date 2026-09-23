@@ -53,18 +53,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 `src/styles.css` を `@import "tailwindcss";` だけに戻してから生成し、生成物へ自作分を載せる。既存ファイルへ上書きする形は採らない。上流が生成しないキーが残り続け、消したつもりの値が消えない。
 
-生成は `shadcn init --preset b1Z7Mag76 --base base --force --no-reinstall` で行う。preset code は `shadcn preset decode` で `vega / mist / blue / chart blue / lucide / geist / radius default / menuAccent subtle / menuColor default` に展開される。`init` が併せて作る `src/lib/utils.ts` は削除する (ADR-0024)。
-
-preset code をプロジェクトから復元する `shadcn preset resolve` は、黙って別のコードを返すことがある。復元元と、選択肢に無い値だったときの振る舞いは次のとおり。
-
-| 項目         | 復元元                                    | 選択肢に無い値のとき |
-| ------------ | ----------------------------------------- | -------------------- |
-| `baseColor`  | `components.json` の `tailwind.baseColor` | `neutral` へ落ちる   |
-| `chartColor` | `--chart-1`〜`--chart-5` の値             | `neutral` へ落ちる   |
-
-落ちた項目には `*` が付き、脚注 `* Uses preset defaults for values not available as options on shadcn/create.` が出る (`shadcn info --json` では `preset.fallbacks`)。戻ったコードを decode すると `baseColor` と `chartColor` が `neutral` になっており、生成に使えば灰色と chart がそちらへ塗り替わる。エラーは出ない。
-
-2026-09-21 に `shadcn@4.21.0` で得た戻り値は、base color が slate だった頃が `bIm515k`、`--chart-*` を palette の外へ動かした場合が `bKX4z2W`、この節の手順を通した後が `b1Z7Mag76` である。復元が効くのは値が選択肢に収まっている間だけなので、生成に使うコードは文書側が持つ。
+生成のコマンド、preset code、`shadcn preset resolve` が黙って別のコードを返す落とし穴は `docs/guides/styling-and-tokens.md`「トークンを作り直す」にある。生成に使うコードは文書が持つ。
 
 生成物そのものを `docs/registry-baseline/styles.css` として持つ。乖離の記録先は ADR-0024 の許容リストで、本 ADR は値の決め方だけを持つ。
 
@@ -81,9 +70,7 @@ preset code をプロジェクトから復元する `shadcn preset resolve` は�
 
 `bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
 
-hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置いて `mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。下の表は 2026-09-21 の `tailwindcss@4.3.3` の palette を同じ形で測ったもので、9 色が該当した。
-
-表示は切り捨てなので、2 桁の値が実際の比を上回ることはない。`4.59` と出た値が 4.6 を満たすことはない。
+下の表は 2026-09-21 の `tailwindcss@4.3.3` の palette を `mise run contrast` で測ったもので、9 色が該当した。hue を変えるときの測り方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
 
 | hue                     | `<hue>-800` のまま | `<hue>-900` へ下げた後 |
 | ----------------------- | ------------------ | ---------------------- |
@@ -117,9 +104,7 @@ hue を変えるときは、候補の段を `src/styles.css` の `--primary` と
 | `--destructive-surface` | `@theme inline`           | 面として当てる口が `bg-X/10` `/20` `/30` と複数あり、誤った当て方を誘う既存の書き方が無い |
 | `--placeholder`         | `:root` + `@utility` のみ | `select` に `data-placeholder:text-muted-foreground` があり、置き換えの候補に必ず挙がる   |
 
-`@theme inline` へ通した面のトークンを文字として書く余地は残る。2026-09-22 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.76、`--muted` / `--accent` / `--secondary` で 4.28〜4.33 になり、後者は SC 1.4.3 を割る。面のトークンを文字に使うなら下地ごとに測る。
-
-`-foreground` を「面の上の文字」以外の意味で使わない。上流はこの接尾辞を solid な面の上の文字に割り当てており、別の意味を載せると次の生成で衝突する。
+面のトークンを文字に使うときと、`-foreground` の意味は `docs/guides/styling-and-tokens.md`「色を当てる」にある。
 
 ### 5. リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない
 
@@ -140,7 +125,7 @@ JS で比を計算する形そのものにも無理がある。ブラウザは s
 
 実際に重なる組み合わせを実テキストとして描けば、`parameters.a11y.test` の axe がそのまま判定する。新しい依存は要らず、gamut も alpha も正確になる。2026-09-20 に `--destructive: oklch(0.53 0.245 27.325)` でこの形を試すと、`bg-destructive/20` と `text-destructive` が 3.74:1 で不合格になった。破壊ボタンの hover の実在の組み合わせである。
 
-実在の対を描く story は `src/components/contrast.stories.tsx` に置く。
+実在の対を描く story の置き場は `docs/guides/styling-and-tokens.md`「実在の対を story で描く」にある。
 
 **この検算は addon の合否だけでは足りない。** `@storybook/addon-a11y@10.6.0` は `violations` の件数だけで合否を決める (同 addon の `hasViolations`)。`color-contrast` は背景を解決できないと `violations` ではなく `incomplete` へ落ちるので、story を包む要素が変わって解決できなくなると、addon だけでは検査が緑のまま何も見なくなる。判定できなかった項目を合否へ入れる仕組みと、どの層で入れるかは ADR-0035 が持つ。
 
@@ -163,7 +148,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 - 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css`
 - 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0024 に従う
 - **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった
-- 測り直す手段は `mise run contrast` が持つ (ADR-0034)。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており (勧告本体には無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できないため、比率を書いた箇所を触るときは測り直す
+- 測り直す手段は `mise run contrast` が持つ (ADR-0034)。比を書いた箇所を触るときは測り直す (手順は `docs/guides/styling-and-tokens.md`「比を測る」)
 - 「有彩色のアクセントは light と dark で役割を反転させる」の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
 - 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。この対は light dark とも 3:1 を大きく下回る。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
 - focus 指標の不足は `--ring` を `--primary` と同値にしても残る。`--background` の上で、`ring-ring/50` は light が 3:1 を割り dark は満たす。不透明で使う `border-ring` / `outline-ring` は light dark とも満たす
@@ -171,7 +156,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 
   消費している部品は無く (`grep -rl "chart" src/` が定義元の `src/styles.css` だけを返す)、chart 部品も入れていない。ただしテンプレートとして配る既定値なので、chart を足した利用者がこの ramp をそのまま受け取る。値をどう変えるかはここでは決めない
 
-- base color を変えるときは `shadcn migrate base-color --from <旧> --to <新>` を使う。値が一致するトークンだけを置換し、一致しないものを名前で報告するため、報告された一覧が意図的乖離と一致することを確認できる
+- base color を変えるときの手順は `docs/guides/styling-and-tokens.md`「トークンを作り直す」にある
 
 ## 出典
 

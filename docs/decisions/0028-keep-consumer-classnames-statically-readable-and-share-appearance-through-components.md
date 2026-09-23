@@ -69,18 +69,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 
 ### 3. design system の層から外へ class 文字列を配らない
 
-外見を層の外と共有するときは、次のいずれかの形にする。
-
-| 配り方                                                    | 使う場面                       |
-| --------------------------------------------------------- | ------------------------------ |
-| 部品として配る                                            | 外見と構造がひとまとまりのとき |
-| prop として受ける                                         | 消費側が値を選ぶとき           |
-| `cva` の variant として配り `variantFunctions` へ宣言する | 同じ部品の見た目を分けるとき   |
-
-層の内側での共有は対象外で、class 定数の export 自体は禁じない。
-消費側が import すれば規則が落とすので、境界の強制は lint が担う。
-
-部品として配るとき、その部品をどの層が持つかは層の役割 (ADR-0013) と、汎用の層が負う責務の範囲 (ADR-0019) で決める。
+外見を層の外と共有するときの配り方 (部品 / prop / variant) は `docs/guides/styling-and-tokens.md`「外見を層の外へ配る」にある。
 
 ### 検討した選択肢
 
@@ -96,7 +85,6 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 - 消費側の `className` はすべて linter が読める形になり、`no-raw-colors` と `no-unknown-classes` の検査が届く範囲が確定する
 - 恒久的な例外はゼロで、`overrides` に足すのは規則 1 行だけになる。違反が増えても行は増えない
 - 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`lint-config.test.ts` が規則名と severity を固定する
-- variant 関数を消費側から呼ぶ形を採るたびに `variantFunctions` への追加が要る。忘れると呼び出しが落ちるので、気付けない失敗にはならない
 - `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。ADR-0029 の Consequences)
 - design system の層から外へ class 文字列を配る形が閉じる。層の内側での共有は残る
 

@@ -16,7 +16,7 @@ Tailwind は既定で、utility から参照されている変数だけを出力
 
 **`src/styles.css` の `@import "tailwindcss" source("../src")` で scan の対象をアプリのソースへ絞る。全トークンを出力させる `theme(static)` は `.storybook/preview.css` にだけ掛け、本番の CSS には載せない。**
 
-- scan の効果は `source()` を外して `vp build` を 2 回回せば測れる
+- scan の効果の測り方は `docs/guides/styling-and-tokens.md`「scan の効果を測る」にある
 - `@source not` で除外を並べる形は採らない。symlink (`.claude/skills` は `.agents` を指す) と、後から増える置き場を取りこぼす。絞る側を書けば、対象に入れ忘れた場所は utility が生成されないことで気付ける
 - `.storybook/preview.css` は `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す。`theme()` は import 単位で効くため、本番の CSS は `static` の分を持たない
 - 代償は、Tailwind 既定 theme の未定義トークンがカタログに混ざることである。2026-09-20 の実測では Radius に 2 件、Typography に 6 件で、Colors は `--color-*: initial` が効いていて増えない

@@ -221,7 +221,7 @@ sidebar の依存として CLI が `src/hooks/` へ出力するファイルで�
 - baseline は lint と型検査の対象外なので、上流コードに含まれる規約違反はこのリポジトリの緑に影響しない。一方、上流を追随するときは違反が `src/` 側へ入るため、追随の可否は lint を通るかで決まる
 - 初期 baseline は各コンポーネントを実際に生成した時点の出力ではない。取得時点で残っている乖離が許容リストと 1:1 であることを確認したうえで採用しているため、以後の判別はこの baseline を起点にできる
 - registry コードが依存するパッケージの選定は上流に従う。`class-variance-authority` は 12 コンポーネントが、`tw-animate-css` の `animate-in` / `animate-out` は 7 コンポーネントが使う (2026-09-02 時点、いずれも baseline 側にも同じ import がある)。どちらも更新が細っている (`class-variance-authority` は最終公開 2024-11-26 の 0.7.1 のまま。`tw-animate-css` は 1.4.0 が 2026-02-28 で、リポジトリの最終 push も同日。2026-09-02 確認)。乗り換えは上流が動いたときにしか成立しない。`shadcn/tailwind.css` は `animate-in` を供給しないため、`tw-animate-css` の撤去は registry コードを壊す
-- registry は `cn` を `@/lib/utils` ではなく npm の `cn` パッケージから取るので、`src/lib/utils.ts` は置かず、消費側も `cn` パッケージから import する。`components.json` の `aliases.utils` は shadcn のスキーマが必須項目にしているので値は残すが、現行 registry は参照しない (`src/lib/utils.ts` が無くても `shadcn add` は成功する。2026-09-11 実測)
+- registry は `cn` を `@/lib/utils` ではなく npm の `cn` パッケージから取るので、`src/lib/utils.ts` は置かない。`components.json` の `aliases.utils` は shadcn のスキーマが必須項目にしているので値は残すが、現行 registry は参照しない (`src/lib/utils.ts` が無くても `shadcn add` は成功する。2026-09-11 実測)
 - baseline を自前で持つのは、上流に生成時点を特定する手段が無いあいだの代替である。shadcn が生成時点の記録や registry item の版数フィールドを持つようになったら、そちらへの移行を検討する (shadcn-ui/ui#10374)
 - 乖離の行が増減するたびにこの ADR を更新する。行の増減は決定内容の変更ではないため、README 一覧の Date 欄は動かさない
 - `src/styles.css` の許容リストへの行の足し忘れは `registry-baseline.test.ts` では鳴らない。突き合わせは上の検査手順で行う
