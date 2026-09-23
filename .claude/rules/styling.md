@@ -116,11 +116,11 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ## 操作できる要素の組み方
 
-- input に疑似要素の hit 拡大やラッパーを掛けない。包んだ要素が pointer を奪い、本体がクリックを受け取れなくなる (ADR-0045。registry の Input 単体は `src/components/ui/input-pointer.test.tsx` が見る)
+- input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (テストでは Playwright の hit-target 検査で click が落ちる。ADR-0045。registry の Input 単体は `src/components/ui/input-pointer.test.tsx` が見る)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する
-- `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。閉じる button が無いと、閉じ方が Escape に限られる (WAI-ARIA APG Dialog (Modal) Pattern)
+- `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)
 
 ## a11y 最低基準
 

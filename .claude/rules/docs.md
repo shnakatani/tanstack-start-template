@@ -33,9 +33,9 @@ paths:
 ## ドキュメントの間
 
 - 他ドキュメントの文言を引用しない。文書の番号や見出しで指す。引用元が書き換わると引用が宙に浮く
-- ADR は `ADR-NNNN` で指す。番号は使い回さないので、ファイル名が変わっても参照が保たれる (ADR-0000)
-- rules の見出し語で指すのは rules の中と AGENTS.md に限る。ADR とコードは rules を指さない (ADR-0001)
-- ADR への markdown リンクは `docs/decisions/README.md` の一覧と `Superseded-by` の補助リンクだけに張る。リンクは改名で切れる (ADR-0000)
+- ADR は `ADR-NNNN` で指す。スラッグが変わっても番号は変わらないので、参照が保たれる
+- rules の見出し語で指すのは rules の中と AGENTS.md に限る。ADR とコードは rules を指さない (例外は「置き場所」の節。ADR-0001)
+- ADR への markdown リンクは `docs/decisions/README.md` の一覧と `Superseded-by` の補助リンクだけに張る。リンクはファイル名を持つので、改名で切れる
 - 項目の序数 (「例外 4」) では指さない。序数は編集でずれ、ずれても静かに壊れる
 - rules の見出し語を変えるときは `grep -rn "<旧見出し語>" .claude/rules/ AGENTS.md` で参照側も直す
 - 決定を別の文書へ移すとき、移した先が覆した内容を自分の言葉で持つ。旧側の書き換えだけでは根拠が git 履歴にしか残らない
