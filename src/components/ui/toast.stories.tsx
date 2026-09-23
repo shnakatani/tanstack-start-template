@@ -8,7 +8,7 @@ import { createToastManager, Toaster } from "@/components/ui/toast";
 
 /**
  * 見出しの文言。`toast.tsx` の対応表を出処にしているので、icon を持つ種別が増減すると
- * ここが型エラーになる (ADR-0053)
+ * ここが型エラーになる (ADR-0039)
  */
 const TYPE_LABELS = {
   success: "保存しました",
@@ -33,7 +33,7 @@ function ToastExample({ type }: { type: ToastIconType }) {
   );
 }
 
-/** 出すところまで。閉じる操作は既存のブラウザテストが持つ (ADR-0053) */
+/** 出すところまで。閉じる操作は既存のブラウザテストが持つ (ADR-0039) */
 async function raise(title: string): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "通知を出す" }));
   await screen.findByText(title);

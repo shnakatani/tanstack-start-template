@@ -25,13 +25,13 @@ export function saveButton(screen: Screen) {
   return screen.getByRole("button", { name: "保存", exact: true });
 }
 
-/** trigger を押してダイアログを開く。開いた印はタイトル入力の mount を `expect.element` で待つ (ADR-0044)。 */
+/** trigger を押してダイアログを開く。開いた印はタイトル入力の mount を `expect.element` で待つ (ADR-0033)。 */
 export async function openNoteCreateDialog(screen: Screen) {
   await screen.getByRole("button", { name: NOTE_CREATE_TRIGGER_LABEL }).click();
   await expect.element(titleTextbox(screen)).toBeInTheDocument();
 }
 
-/** ダイアログが閉じて消えるのを待つ。閉じた印はタイトル入力の unmount (ADR-0044 / ADR-0049)。 */
+/** ダイアログが閉じて消えるのを待つ。閉じた印はタイトル入力の unmount (ADR-0033 / ADR-0037)。 */
 export async function expectNoteCreateDialogClosed(screen: Screen) {
   await expectRemoved(titleTextbox(screen));
 }

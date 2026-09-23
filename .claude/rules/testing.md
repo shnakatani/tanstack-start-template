@@ -37,9 +37,9 @@ paths:
 
 - 検査は `scripts/checks/` の下へ置く。外へ置くと `scripts-tools` へ合流し、落ちたときに直す対象が読めなくなる
 - project を足したら `vitest.config.ts` の `projects` に追加する。include に一致しないテストは無言で 1 度も走らない
-- `src/` 全体へ当てるソース検査は、先に lint (必要なら `jsPlugins`) で表せないかを見る。字面走査より対象の実体に近い (ADR-0033)
+- `src/` 全体へ当てるソース検査は、先に lint (必要なら `jsPlugins`) で表せないかを見る。字面走査より対象の実体に近い (ADR-0027)
 - ソース検査を作るなら `scripts/checks/source/` と `checks-source` project を対で作り、判定は `scripts/lib/` に置いて単体テストを別に持つ
-- 落ちたときに判断が要らない検査は作らない。期待値の書き換えしか選択肢が無い検査は上流更新のたびに鳴り、判断を鈍らせる (ADR-0017)
+- 落ちたときに判断が要らない検査は作らない。期待値の書き換えしか選択肢が無い検査は上流更新のたびに鳴り、判断を鈍らせる (ADR-0016)
 - ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる
@@ -80,7 +80,7 @@ paths:
 - 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest-dev/vitest#8695)
-- announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読む。region は `browser-setup.tsx` が毎テスト描く (ADR-0037)
+- announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読む。region は `browser-setup.tsx` が毎テスト描く (ADR-0030)
 
 ## mock の注意点
 
@@ -103,32 +103,32 @@ paths:
 
 ## クリックの発火方法
 
-手段は場面で決める。1 が弾かれたら Playwright のエラー文言が示す条件を読み、対応する行へ移る。通るまで手段を替えると実物で起きない事象を固定する (ADR-0045)。
+手段は場面で決める。1 が弾かれたら Playwright のエラー文言が示す条件を読み、対応する行へ移る。通るまで手段を替えると実物で起きない事象を固定する (ADR-0034)。
 
 | 順  | 場面                                                  | 使うもの                                                                                     |
 | --- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | 1   | 既定                                                  | `.click()`                                                                                   |
-| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し `userEvent.keyboard("{Enter}")` (ADR-0045)        |
-| 3   | Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が無いことを先に確かめる (ADR-0045) |
-| -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。ライブラリ内部のガードまで見に行かない (ADR-0045)         |
-| -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きない (ADR-0045)          |
+| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し `userEvent.keyboard("{Enter}")` (ADR-0034)        |
+| 3   | Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が無いことを先に確かめる (ADR-0034) |
+| -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。ライブラリ内部のガードまで見に行かない (ADR-0034)         |
+| -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きない (ADR-0034)          |
 
-- `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (ADR-0045)
-- 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (ADR-0045)
+- `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (ADR-0034)
+- 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (ADR-0034)
 - `sr-only` のテキストは 1px + clip で viewport 判定に落ちる。`getByRole(..., { name })` で本体を掴む
 
 ## locator の扱い
 
 同期読みを `expect()` へ渡す形、`findElement()`、素の不在 assert、リテラルとの否定スタイル比較は lint (`browser-test/*`) が止める。
 
-- matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` の中で読む。基準値を 1 回だけ読むときは先に `expect.element` で mount を待つ (ADR-0047)
-- 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件は `vi.waitFor` (ADR-0044)
-- 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0047)
+- matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` の中で読む。基準値を 1 回だけ読むときは先に `expect.element` で mount を待つ (ADR-0036)
+- 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件は `vi.waitFor` (ADR-0033)
+- 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0036)
 - assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない
 - `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる
-- 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (ADR-0049)
-- 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/absent.ts`)。`expectAbsent` と取り違えない (ADR-0049)
-- `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (ADR-0049)
+- 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (ADR-0037)
+- 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/absent.ts`)。`expectAbsent` と取り違えない (ADR-0037)
+- `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (ADR-0037)
 - locator は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される
 
 ## ブラウザテストの CSS とレイアウト実測
@@ -138,17 +138,17 @@ paths:
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変えたら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
 - 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。sub-pixel の誤差で、収まっていても落ちる実行がある (w3c/IntersectionObserver#477)
 - 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる
-- スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (ADR-0049)
-- 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (ADR-0049)
-- スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (ADR-0049)
-- `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素の 3 つだけ (ADR-0049)
-- 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (ADR-0044)
-- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を await する (ADR-0046)
-- animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (ADR-0046)
-- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (ADR-0046)
+- スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (ADR-0037)
+- 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (ADR-0037)
+- スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (ADR-0037)
+- `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素の 3 つだけ (ADR-0037)
+- 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (ADR-0033)
+- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を await する (ADR-0035)
+- animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (ADR-0035)
+- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (ADR-0035)
 - 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない
 - マウス位置を動かすテストは、overlay が閉じる前に `parkMouse()` で戻す。露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる (`src/routes/notes/-components/notes-page.test.tsx`)
-- モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、前ファイルの emulation を読む (ADR-0046)
+- モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、前ファイルの emulation を読む (ADR-0035)
 
 ## ブラウザ操作ツールの使い分け
 

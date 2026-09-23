@@ -16,7 +16,7 @@ const config: StorybookConfig = {
   // コンポーネントの件数などを送る (storybook.js.org/docs/configure/telemetry)。
   // このリポジトリは暗黙の挙動を明示で潰す方針なので切る。設定を読む前に出る boot
   // イベントだけはこの設定の対象外である
-  // telemetry を切る (ADR-0052)
+  // telemetry を切る (ADR-0038)
   core: { disableTelemetry: true },
 };
 

@@ -16,7 +16,7 @@ async function emulateReducedMotion(value: "reduce" | "no-preference"): Promise<
 }
 
 /**
- * ブラウザテストの既定 (ADR-0046)。`src/test/browser-setup.tsx` の `beforeEach` が毎テスト呼ぶ。
+ * ブラウザテストの既定 (ADR-0035)。`src/test/browser-setup.tsx` の `beforeEach` が毎テスト呼ぶ。
  * Base UI のスイッチ (上の宣言) と `prefers-reduced-motion: reduce` のエミュレーションを同時に
  * 立てる。後者は `src/styles.css` の reduced-motion ブロックが CSS の animation / transition を
  * 0.01ms にする。エミュレーションは page スコープで次のテストへ残るが、次の `beforeEach` が
@@ -28,7 +28,7 @@ export async function disableAnimations(): Promise<void> {
 }
 
 /**
- * このテストの間だけ animation を戻す (ADR-0046)。閉じかけの popup が残る窓を検証するテストが
+ * このテストの間だけ animation を戻す (ADR-0035)。閉じかけの popup が残る窓を検証するテストが
  * 本文の先頭で await する。次のテストの `beforeEach` が既定へ戻す。
  */
 export async function enableAnimations(): Promise<void> {

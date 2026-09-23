@@ -47,7 +47,7 @@ export const Connected: Story = { args: { variant: "outline", spacing: 0 } };
 export const Vertical: Story = { args: { orientation: "vertical", variant: "outline" } };
 
 /**
- * 選び直したところ。終了状態は args で表せる見た目なのでカタログには出さない (ADR-0053)
+ * 選び直したところ。終了状態は args で表せる見た目なのでカタログには出さない (ADR-0039)
  */
 export const Toggled: Story = {
   tags: ["!dev"],

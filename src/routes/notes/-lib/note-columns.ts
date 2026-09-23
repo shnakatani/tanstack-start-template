@@ -10,7 +10,7 @@ import { noteInputOf } from "./note-rows";
 const helper = createColumnHelper<DataTableFeatures, NoteRow>();
 
 /**
- * メモ一覧の列定義 (ADR-0022)。`TableSkeleton` の列数もここから採る。
+ * メモ一覧の列定義 (ADR-0021)。`TableSkeleton` の列数もここから採る。
  * 描画を持つ列は `cell` にコンポーネントの参照を渡す (`FlexRender` が cell の context を
  * props にして描く。TanStack Table「Flex Render」)。JSX はこのファイルに書かない
  */

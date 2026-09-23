@@ -1,5 +1,5 @@
 /**
- * スクリーンリーダーへの通知 (ADR-0037)。`RootDocument` が初期マークアップに置く空の live region へ、
+ * スクリーンリーダーへの通知 (ADR-0030)。`RootDocument` が初期マークアップに置く空の live region へ、
  * 素の DOM でメッセージのノードを追加し、一定時間後に消す。React の state を触らないので、
  * Action (Transition) の中から呼んでも進行中の Transition を blocking に落とさない。
  *

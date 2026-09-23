@@ -14,15 +14,15 @@ import { ActionButtonShell, type ActionButtonShellProps } from "@/components/act
 const ActionFormContext = createContext<boolean | null>(null);
 
 type ActionFormProps = Omit<ComponentProps<"form">, "onSubmit" | "children"> & {
-  /** submit で実行する Action。`startTransition` に渡し、決着まで pending になる (ADR-0020) */
+  /** submit で実行する Action。`startTransition` に渡し、決着まで pending になる (ADR-0019) */
   submitAction: () => Promise<void> | void;
   children: ReactNode;
 };
 
 /**
- * submit を Transition にする `<form>` (ADR-0020「Action 層」)。`ui/` に対応部品が無い唯一の例外で、
+ * submit を Transition にする `<form>` (ADR-0019「Action 層」)。`ui/` に対応部品が無い唯一の例外で、
  * 素の `<form>` を包む。pending は子孫の `ActionFormSubmit` が context から読む
- * (React の `<form action>` + `useFormStatus` と同じ形。使わない理由は ADR-0020「Action 層」)。
+ * (React の `<form action>` + `useFormStatus` と同じ形。使わない理由は ADR-0019「Action 層」)。
  */
 function ActionForm({ submitAction, children, ...props }: ActionFormProps) {
   const [isPending, startTransition] = useTransition();

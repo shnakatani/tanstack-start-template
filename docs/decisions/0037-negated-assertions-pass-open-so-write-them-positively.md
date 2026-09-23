@@ -1,8 +1,8 @@
-# ADR-0049: 否定 assert は不在や綴り違いでも通るので、肯定で書く
+# ADR-0037: 否定 assert は不在や綴り違いでも通るので、肯定で書く
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0047 (assert には locator を渡す。その移行で否定 assert を一律に扱えないことが出た)、ADR-0044 (待機を retry API に委ねる)、ADR-0009 (ルールの選定基準)、ADR-0033 (`jsPlugins` で足す判断)
+- 関連: ADR-0036 (assert には locator を渡す。その移行で否定 assert を一律に扱えないことが出た)、ADR-0033 (待機を retry API に委ねる)、ADR-0009 (ルールの選定基準)、ADR-0027 (`jsPlugins` で足す判断)
 
 ## Context
 
@@ -59,7 +59,7 @@
 
 この差は `src/test/absent.test.tsx` が両方向のミューテーションで固定している (2026-09-22 実測)。`expectRemoved` から予算を奪うと「unmount が操作より後ろでも通る」が落ち、`expectAbsent` に予算を与えると「要素が在れば落ちる」の所要時間の閾値が落ちる。
 
-**既存のテストで緑が割れないことは、差が無いことを意味しない。** `expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、`src/test/browser-setup.tsx` が Base UI の animation を毎テスト無効にしている (ADR-0046) ため、assert の行では unmount が済んでいるからである。予算が効くのは `enableAnimations()` を呼んだテストと、flush を伴わない経路で消える場合で、`absent.test.tsx` はその後者を作って測っている。
+**既存のテストで緑が割れないことは、差が無いことを意味しない。** `expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、`src/test/browser-setup.tsx` が Base UI の animation を毎テスト無効にしている (ADR-0035) ため、assert の行では unmount が済んでいるからである。予算が効くのは `enableAnimations()` を呼んだテストと、flush を伴わない経路で消える場合で、`absent.test.tsx` はその後者を作って測っている。
 
 名前を分ける理由は、取り違えが実際に起きたことにもある。本ブランチの `src/routes/notes/-components/note-cells.test.tsx` の 4 件は「最初から無い」を素の形で書いており、レビューが見つけて `1d987d5` で直した。機械では出なかった。
 
@@ -71,7 +71,7 @@
 
 ### スタイルの否定は lint で止める
 
-`browser-test/no-negated-style-literal` が、期待値がリテラルの否定 matcher を 2 つの起点から報告する。ルールの置き方は ADR-0047「機械強制は oxlint の JS plugin で書く」に従う。
+`browser-test/no-negated-style-literal` が、期待値がリテラルの否定 matcher を 2 つの起点から報告する。ルールの置き方は ADR-0036「機械強制は oxlint の JS plugin で書く」に従う。
 
 | 起点                               | 報告する matcher         | 例                                                                  |
 | ---------------------------------- | ------------------------ | ------------------------------------------------------------------- |
@@ -97,9 +97,9 @@ grep -rn --include='*.test.tsx' -E '\.not\.(toHaveStyle|toBe)\(' src/ | grep -iE
 | 直接   | 実コードへ `.not.toHaveStyle("max-height: none")` を戻す    | `vp lint` が 1 件報告する                                                  |
 | 間接   | `lint.rules` は残したまま `lint.overrides` の適用先から外す | 違反が 0 件になり、`scripts/checks/integrity/lint-config.test.ts` が落ちる |
 
-### ADR-0044 との関係
+### ADR-0033 との関係
 
-ADR-0044 の Decision の表は「close 後に要素が消えたことの確認」に **`expectRemoved(locator)` を充てる。** `expect.element(locator).not.toBeInTheDocument()` を素で書かない。ADR-0044 が決めた「待機を vitest の retry API に委ねる」ことはそのままで、`expectRemoved` はその式に名前を付けたものである。
+ADR-0033 の Decision の表は「close 後に要素が消えたことの確認」に **`expectRemoved(locator)` を充てる。** `expect.element(locator).not.toBeInTheDocument()` を素で書かない。ADR-0033 が決めた「待機を vitest の retry API に委ねる」ことはそのままで、`expectRemoved` はその式に名前を付けたものである。
 
 ### 肯定形は失敗するまで予算を使う
 
@@ -107,7 +107,7 @@ ADR-0044 の Decision の表は「close 後に要素が消えたことの確認�
 
 ### `toHaveStyle` で表せない 3 つの形
 
-`toHaveStyle` で表せないので、`getComputedStyle` を `expect.poll` のコールバックの中で読む (ADR-0047)。
+`toHaveStyle` で表せないので、`getComputedStyle` を `expect.poll` のコールバックの中で読む (ADR-0036)。
 
 | 形                 | 例                                                                                                 |
 | ------------------ | -------------------------------------------------------------------------------------------------- |
@@ -115,7 +115,7 @@ ADR-0044 の Decision の表は「close 後に要素が消えたことの確認�
 | 数値の大小         | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                       |
 | 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない (2026-09-22 に実測) |
 
-ADR-0047 のルールは `expect.poll` のコールバックの中を見ないので、この 3 つより広い形も通る。狭めるには matcher を見る分岐が要る。先行例の `prefer-web-first-assertions` は `supportedMatchers` で matcher を見ているが、あれは autofix の可否を決めるためで範囲の限定ではない。本 ADR のルールは期待値がリテラルの否定だけを狭く止める。
+ADR-0036 のルールは `expect.poll` のコールバックの中を見ないので、この 3 つより広い形も通る。狭めるには matcher を見る分岐が要る。先行例の `prefer-web-first-assertions` は `supportedMatchers` で matcher を見ているが、あれは autofix の可否を決めるためで範囲の限定ではない。本 ADR のルールは期待値がリテラルの否定だけを狭く止める。
 
 ### ルールが追えない形
 
@@ -123,7 +123,7 @@ ADR-0047 のルールは `expect.poll` のコールバックの中を見ない�
 
 代わりに、**要件を利用者が必ず読む場所へ置く。** `browser-test/no-bare-absence-assertion` の診断メッセージが anchor 要件を持つ。素の形を書いた利用者は `expectAbsent` と `expectRemoved` のどちらかを選ぶ地点に立たされ、そこで同時に anchor 要件を受け取る。`src/test/absent.ts` の docstring も規範として持ち、名前の真偽と anchor の妥当性はレビューで見る。
 
-束縛を 2 段以上またぐ形も辿らない。ADR-0047 のルールと同じ理由で、任意段を追うのは taint 解析になる。
+束縛を 2 段以上またぐ形も辿らない。ADR-0036 のルールと同じ理由で、任意段を追うのは taint 解析になる。
 
 ### 再評価の条件
 
@@ -135,7 +135,7 @@ ADR-0047 のルールは `expect.poll` のコールバックの中を見ない�
 | 案                                                                                 | 評価                                                                                                                                                                                                                                                                                                                                                                                                                             | 採否     |
 | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | 期待値がリテラルの否定を lint で止め、肯定形へ移す                                 | 経路 2-3 は同じ「期待値の綴りで否定が真になる」に還元でき、式の構造で表せる。経路 1 と `toHaveLength` は期待値を取らないので lint では表せず、`expectAbsent` と肯定 anchor が持つ                                                                                                                                                                                                                                                | **採用** |
-| 否定 assert には触れない                                                           | ADR-0047 の移行が 15 秒の赤を持ち込む。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                                                                                                                                                                                                                                                                   | 却下     |
+| 否定 assert には触れない                                                           | ADR-0036 の移行が 15 秒の赤を持ち込む。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                                                                                                                                                                                                                                                                   | 却下     |
 | `not.toHaveStyle` だけを止める                                                     | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                                                                                                                                                                                                                                                                         | 却下     |
 | 否定 matcher を全面禁止する                                                        | 観測どうしの比較 10 件が書けなくなる。綴りで潰れない形まで巻き込む                                                                                                                                                                                                                                                                                                                                                               | 却下     |
 | `waitForElementToBeRemoved` を使う                                                 | 捕まえた要素の identity と「論理的に在る」が一致しない。React の再調停でノードが差し替わると、捕まえた側だけが detach して素通りする。`src/routes/notes/-components/notes-page.test.tsx` の楽観行が実データ行へ置き換わる経路がこれに当たる                                                                                                                                                                                      | 却下     |
@@ -161,4 +161,4 @@ ADR-0047 のルールは `expect.poll` のコールバックの中を見ない�
 - `@testing-library/dom` の `waitForElementToBeRemoved` (要素が最初から無いと throw する): <https://testing-library.com/docs/dom-testing-library/api-async/>
 - `eslint-plugin-testing-library` の `prefer-presence-queries` (在る / 無いの assert で `getBy*` / `queryBy*` を使い分けさせる) と `prefer-query-by-disappearance` (消滅待ちには `queryBy*`)。不在 assert の書き分けを lint で持つ概念上の先行例。対象が Testing Library の query 名なので `browser-test/no-bare-absence-assertion` の流用元にはならない: <https://github.com/testing-library/eslint-plugin-testing-library/tree/main/docs/rules>
 
-ルールの置き方と、その根拠となる oxlint の JS plugin の出典は ADR-0047 が持つ。
+ルールの置き方と、その根拠となる oxlint の JS plugin の出典は ADR-0036 が持つ。

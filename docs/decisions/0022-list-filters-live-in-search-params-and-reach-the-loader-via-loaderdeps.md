@@ -1,8 +1,8 @@
-# ADR-0023: 一覧の絞り込み条件は URL の search param が持ち、loaderDeps で loader に渡す
+# ADR-0022: 一覧の絞り込み条件は URL の search param が持ち、loaderDeps で loader に渡す
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0016 (ドメイン型は valibot スキーマから導出する)、ADR-0018 (ナビゲーションは Router の Transition に任せる)、ADR-0024 (入力欄と一覧の描画)
+- 関連: ADR-0015 (ドメイン型は valibot スキーマから導出する)、ADR-0017 (ナビゲーションは Router の Transition に任せる)、ADR-0023 (入力欄と一覧の描画)
 
 ## Context
 
@@ -31,7 +31,7 @@
 
 ## Consequences
 
-- `src/routes/notes/index.tsx` は `Route` と、export しない wrapper だけを持つ (ADR-0013)。入力欄と一覧の描画は ADR-0024 が持つ。テストは `src/routes/notes/index.test.tsx`、サーバ側の LIKE は `src/server/db/like-pattern.ts`
+- `src/routes/notes/index.tsx` は `Route` と、export しない wrapper だけを持つ (ADR-0012)。入力欄と一覧の描画は ADR-0023 が持つ。テストは `src/routes/notes/index.test.tsx`、サーバ側の LIKE は `src/server/db/like-pattern.ts`
 - valibot 1.4.2 に文字列を切り詰める action は無い (`toMaxValue` は辞書順の置換、長さ系は検証のみ。2026-09-23 に同梱の型定義で確認)。切り詰めは `truncateCodeUnits` が持ち、UTF-16 の code unit で数える (`maxLength` と同じ)。切った位置がサロゲートペアの途中なら前半を落とす。落とさないと URL では U+FFFD に化け、`LIKE` にも当たらない (2026-09-23 に better-sqlite3 で実測)
 - 切り詰めは warn しない。IME の変換中に上限を超えるのは通常の入力で、warn にすると日本語入力のたびに鳴る誤検知になる
 - 手で書いた `/notes?q=<101 文字>` を開くと、URL バーも切り詰め後の 100 文字に書き換わる (Router が `validateSearch` の出力で location を組み直す。2026-09-23 に dev server で実測)

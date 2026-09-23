@@ -1,7 +1,7 @@
 import { findLiveRegion, LIVE_REGION_IDS, type Politeness } from "@/lib/live-announcer";
 
 /**
- * `announce()` (ADR-0037) が live region に書き込んだ通知を読む。ノードは 7000ms 残るので、
+ * `announce()` (ADR-0030) が live region に書き込んだ通知を読む。ノードは 7000ms 残るので、
  * 戻り値はその時点までの通知を追記順に並べた配列になる。1 件 1 要素にするのは、連結した
  * 1 本の文字列だと `toContain` が件をまたいだ部分一致で通るため。
  *

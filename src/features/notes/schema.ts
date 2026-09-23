@@ -5,7 +5,7 @@ import { truncateCodeUnits } from "@/lib/truncate-code-units";
 /** ドメインの呼称。画面見出し・追加ボタン・削除確認の文言が使う。 */
 export const NOTE_ENTITY_LABEL = "メモ";
 
-/** 項目の呼称。検証メッセージと各項目の `v.metadata({ label })` が同じ定数を使う (ADR-0016 §4)。 */
+/** 項目の呼称。検証メッセージと各項目の `v.metadata({ label })` が同じ定数を使う (ADR-0015 §4)。 */
 const TITLE_LABEL = "タイトル";
 const BODY_LABEL = "本文";
 /**
@@ -111,7 +111,7 @@ export const NOTE_QUERY_MAX_LENGTH = 100;
 
 /**
  * 一覧の絞り込み条件。URL の search param (`/notes?q=`) と `listNotes` の validator が同じ定義を使う。
- * valibot 1.x は Standard Schema なので、Router の `validateSearch` にそのまま渡せる (ADR-0023)。
+ * valibot 1.x は Standard Schema なので、Router の `validateSearch` にそのまま渡せる (ADR-0022)。
  * `q` の既定は空文字 = 絞り込みなし。URL 上では `stripSearchParams` が既定値を落とす。
  *
  * 上限は reject せず切り詰める。search param は malformed でも体験を止めない (Router の search-params

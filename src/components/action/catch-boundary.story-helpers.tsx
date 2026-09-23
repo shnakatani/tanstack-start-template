@@ -10,7 +10,7 @@ export const CAUGHT_PREFIX = "境界で受けた: ";
 
 /**
  * Error Boundary の中に描く。Action の reject が部品に握られず境界へ届くことを見る用途
- * (ADR-0020「Action 層」の失敗行)。
+ * (ADR-0019「Action 層」の失敗行)。
  */
 export function CaughtHere({ children }: { children: ReactNode }) {
   return (

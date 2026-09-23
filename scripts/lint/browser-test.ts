@@ -5,7 +5,7 @@ import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plu
  * どれがどの ADR かは各ルールの `meta.docs.description` が持つ。一覧は下の `definePlugin`。
  *
  * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
- * 適用先 glob の決め方は ADR-0047 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
+ * 適用先 glob の決め方は ADR-0036 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
  * `lint.overrides` にあり、`scripts/checks/integrity/lint-config.test.ts` が固定する。
  */
 
@@ -167,7 +167,7 @@ function valueFlowTop(node: Node): Node {
 /**
  * その同期読みが変数へ束縛されているなら、その変数の read 参照を返す。
  *
- * 複数のルールがこの追跡に依拠している。ADR-0047 の「壊し方 (間接)」が固定しているのも
+ * 複数のルールがこの追跡に依拠している。ADR-0036 の「壊し方 (間接)」が固定しているのも
  * この追跡なので、数える対象の定義を 1 箇所に置く。束縛の右辺が `x.element().getAttribute(a)`
  * のような連鎖でも、その先頭の同期読みから辿れる
  */
@@ -217,7 +217,7 @@ function reachesAssertion(syncRead: Node): boolean {
  * 束縛した値が assert の主語 (`expect(v)` / `expect.element(v)`) に届くかを判定する。
  *
  * matcher の期待値 (`toBe(before)`) は含めない。束縛してから期待値に使う形は、操作の前に取った
- * 観測の基準値と操作の後の観測を比べる書き方で、ADR-0049 が認める「2 回の観測を比べる」に当たる。
+ * 観測の基準値と操作の後の観測を比べる書き方で、ADR-0037 が認める「2 回の観測を比べる」に当たる。
  * 束縛せず直に matcher へ渡す形 (`toBe(x.element())`) は `reachesAssertion` が報告する
  */
 function reachesAssertionSubject(reference: Node): boolean {
@@ -238,11 +238,11 @@ export const preferLocatorMethods = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "locator の同期読みを assert へ流さず、expect.element を通す (ADR-0047)",
+      description: "locator の同期読みを assert へ流さず、expect.element を通す (ADR-0036)",
     },
     messages: {
       syncRead:
-        "locator の同期読みを expect() へ渡さない。expect.element を通す。matcher の無い実測は expect.poll のコールバックの中で読む。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0047)",
+        "locator の同期読みを expect() へ渡さない。expect.element を通す。matcher の無い実測は expect.poll のコールバックの中で読む。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0036)",
     },
   },
   create(context) {
@@ -302,7 +302,7 @@ export const noFindElement = defineRule({
  *
  * `not.toHaveStyle` は引数の形を問わず報告する。ブラウザが解釈できない宣言は期待集合から落ちて
  * `.not` が真になり、値に式を埋めても宣言名 (`colr:`) の綴りは検証されない。引数全体が式
- * (`closedStyle()`) でも同じ (ADR-0049)。
+ * (`closedStyle()`) でも同じ (ADR-0037)。
  * 値の matcher では、式を含むテンプレートリテラル (`` `${before}px` ``) は観測を埋め込んだ比較なので外す
  */
 function isLiteralArgument(call: ESTree.CallExpression): boolean {
@@ -322,7 +322,7 @@ function isLiteralArgument(call: ESTree.CallExpression): boolean {
 const ASSERT_SUBJECT_CALLEES = new Set(["expect", "soft", "poll"]);
 
 /**
- * 算出値を数値へ変える呼び出し。ADR-0049 が肯定形の書き方として勧めているので、
+ * 算出値を数値へ変える呼び出し。ADR-0037 が肯定形の書き方として勧めているので、
  * 透かさないと「勧めた形を否定へ倒した退行」だけが無検査になる
  */
 const VALUE_WRAPPER_CALLEES = new Set(["Number", "parseFloat", "parseInt"]);
@@ -442,11 +442,11 @@ export const noNegatedStyleLiteral = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "スタイルをリテラルとの否定で確かめない (ADR-0049)",
+      description: "スタイルをリテラルとの否定で確かめない (ADR-0037)",
     },
     messages: {
       negatedStyleLiteral:
-        "スタイルをリテラルとの否定で確かめない。`not.toHaveStyle` は宣言を解釈できないと素通りし、算出値との `not.toBe` は単位や綴りが 1 つ外れると潰れた状態でも通る。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる (ADR-0049)",
+        "スタイルをリテラルとの否定で確かめない。`not.toHaveStyle` は宣言を解釈できないと素通りし、算出値との `not.toBe` は単位や綴りが 1 つ外れると潰れた状態でも通る。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる (ADR-0037)",
     },
   },
   create(context) {
@@ -479,11 +479,11 @@ export const noBareAbsenceAssertion = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "不在の assert は expectAbsent / expectRemoved を通す (ADR-0049)",
+      description: "不在の assert は expectAbsent / expectRemoved を通す (ADR-0037)",
     },
     messages: {
       bareAbsence:
-        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない。`expectAbsent` は要素が無ければ 1 回目で通るので、同じ操作の効果を表す肯定 assert を先に置く。無いと何も検証していない (ADR-0049)",
+        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない。`expectAbsent` は要素が無ければ 1 回目で通るので、同じ操作の効果を表す肯定 assert を先に置く。無いと何も検証していない (ADR-0037)",
     },
   },
   create(context) {

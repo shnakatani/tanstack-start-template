@@ -9,7 +9,7 @@ import { CAUGHT_PREFIX, CaughtHere, silenceConsoleError } from "./catch-boundary
 /**
  * 決着しない Promise を story に置かない。Storybook の vitest 実行は 1 つの React root へ
  * story を描き替えるため、決着しない Transition が残ると後続 story が pending のまま
- * 止まる (ADR-0053)。pending の外見は ActionButtonShell の story が args だけで持つ。
+ * 止まる (ADR-0039)。pending の外見は ActionButtonShell の story が args だけで持つ。
  *
  * 決着の時点は play が `settling.settle()` で握る。仕組みと理由は
  * `src/test/settling-action.ts` が持つ。play は必ず決着させてから終える。
@@ -33,7 +33,7 @@ type Story = StoryObj<typeof meta>;
 /**
  * 待機していない状態。サイドバーに出る唯一の story なので、押しても決着する action にする。
  * `settlingAction` のままだと play が無い分だけ誰も `settle()` を呼ばず、押した人の画面で
- * pending のまま戻らない (ADR-0053)
+ * pending のまま戻らない (ADR-0039)
  */
 export const Default: Story = { args: { action: fn() } };
 
@@ -49,7 +49,7 @@ export const Settles: Story = {
     await expect(button).toHaveAttribute("aria-disabled", "true");
     // 名前は pending でも変わらない
     await expect(button).toHaveAccessibleName("保存");
-    // Spinner は視覚専用で accessibility API に出さない (ADR-0037)。ここだけ要素を直に
+    // Spinner は視覚専用で accessibility API に出さない (ADR-0030)。ここだけ要素を直に
     // 掴むのは、aria-labelledby が名前を固定しているため aria-hidden を外しても
     // accessibility tree に差が出ないからである (2026-09-20 に mutant で実測)
     await expect(button.querySelector('[data-slot="spinner"]')).toHaveAttribute(
@@ -74,7 +74,7 @@ export const NotCalledTwice: Story = {
     const button = saveButton();
     await userEvent.click(button);
     // storybook/test の操作は各手順を await するので、ここに来た時点で pending は描画済み
-    // (ADR-0053)。この story が固定するのは、描画された guard が再操作を塞ぐことだけ。
+    // (ADR-0039)。この story が固定するのは、描画された guard が再操作を塞ぐことだけ。
     // 描画が間に合わない速さの連打は play では起こせず、実イベントでの検証は
     // src/components/action/button.test.tsx が持つ
     await expect(button).toHaveAttribute("aria-disabled", "true");
