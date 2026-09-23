@@ -179,7 +179,7 @@ lint は custom `<Button>` の中身を見ないため機械強制がない。�
 - 「隣接テキストが同じ意味」と言えるのは、そのテキストが実際に読み上げられるときに限る
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか、環境で挙動が揺れる (ADR-0017)
 - pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0017)
-- 取得結果 (検索の件数など) の通知は、ページが決着を報告し、URL の変化をまたぐ route component が直前の条件と比べて `announce()` する。ページの effect に持たせると `key` の作り直しで通知が消える (ADR-0034)
+- 取得結果 (検索の件数など) の通知は、ページの effect が取得の決着 (`isFetching` が false) で `announce()` し、直前に通知した条件と同じなら出さない。取得中に出すと古い件数を読み上げる (ADR-0034)
 - メニュー内の全項目を包む単一の `DropdownMenuGroup` には名前を与えない。base-ui の `MenuRoot` が popup に `aria-labelledby` を付けるため、メニュー自体がトリガー由来の名前を持つ
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 
