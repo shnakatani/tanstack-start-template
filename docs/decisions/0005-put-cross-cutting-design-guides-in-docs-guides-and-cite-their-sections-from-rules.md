@@ -6,7 +6,7 @@
 
 ## Context
 
-ADR には、決定のほかに、部品をまたいで守る作法の考え方 (なぜその形か) と、その作法で組む手順や落とし穴への対処が混ざっていた。
+ADR を書き足していくと、決定のほかに、部品をまたいで守る作法の考え方 (なぜその形か) と、その作法で組む手順や落とし穴への対処が混ざる。
 後者は選択肢から 1 つを選んだ記録ではないので、ADR の決定を読む妨げになる。
 
 | 出典                       | ADR と、その外に置く文書の分け方                                                                                                                                                                                                                                                                      |
@@ -45,7 +45,7 @@ memory docs は import について "Imported files are expanded and loaded into
 | skill に置く                                              | `paths` を付けると、一致するファイルを読むまで見つからない (issue 49835)。rules と同じ契機でしか読まれず、rules に規範を置くのと比べて得るものが無い | 却下     |
 | Storybook の docs (MDX) に置く                            | UI 部品に付く文書で、lint・テスト・依存の主題を置けない。agent 向けの機能は "Storybook's AI capabilities are currently in preview."                  | 却下     |
 
-先行例として fallow-rs/fallow の `docs/development/knowledge-architecture.md` がある。"Auto-loaded routers and rules must contain only high-value constraints and routing. Stable explanations belong here so they are read on demand and shared by every host." とし、説明を `docs/` に、Claude 向けの制約を `.claude/rules/` に分けている。
+先行例として fallow-rs/fallow の `docs/development/knowledge-architecture.md` がある。"Auto-loaded routers and rules must contain only high-value constraints and routing. Stable explanations belong here so they are read on demand and shared by every host." とし、説明を `docs/` に、Claude 向けの制約を `.claude/rules/` に分けている。ただし fallow は rules に道案内 (routing) も置く。道案内の形は、この ADR では読まれない (上の測定) として却下している。
 
 ## Consequences
 
