@@ -32,7 +32,7 @@ export async function expectNoA11yViolations(container: Element): Promise<void> 
   expect(describeA11yResults(result.violations), "a11y 違反").toEqual([]);
 
   // incomplete は合否へ入れない。組み上げて操作した結果に出るものは、部品の問題ではなく
-  // 合成とタイミングの産物で、実行環境の速さで結果が変わる (ADR-0043 の事故)。統制できる
+  // 合成とタイミングの産物で、実行環境の速さで結果が変わる (docs/guides/testing.md「animation を無効にして走らせる理由」の事故)。統制できる
   // 単一部品の側 (story) で落とす (ADR-0038)。ただし黙って捨てると、緑のときに
   // 何が測れていないのかを誰も読めない
   if (result.incomplete.length > 0) {

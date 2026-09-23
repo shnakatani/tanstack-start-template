@@ -44,7 +44,7 @@ function Harness({ disabled = false }: { disabled?: boolean }) {
  */
 describe("ChoiceCard", () => {
   // 同じ force click が有効な行では届いてトグルすることを先に固定する (肯定の対照)。これが無いと
-  // 下の disabled のテストは click が届かなくても緑になる (ADR-0046)
+  // 下の disabled のテストは click が届かなくても緑になる (docs/guides/testing.md「否定を肯定で書く」)
   it("有効な行は label の force click でトグルする", async () => {
     const screen = await render(<Harness />);
 
@@ -60,7 +60,7 @@ describe("ChoiceCard", () => {
     const checkbox = screen.getByRole("checkbox", { name: /チームA/ });
 
     // disabled な checkbox と対の label なので actionability の enabled 判定に落ちる。
-    // 対象に pointer-events: none が無く click は実際に届くため force で検査だけ飛ばす (ADR-0042)
+    // 対象に pointer-events: none が無く click は実際に届くため force で検査だけ飛ばす (docs/guides/testing.md「クリックを発火する」)
     await screen.getByText("チームA").click({ force: true });
 
     await expect.element(checkbox).not.toHaveAttribute("data-checked");

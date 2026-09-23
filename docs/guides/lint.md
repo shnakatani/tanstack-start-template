@@ -7,7 +7,6 @@ Oxlint の設定を書き換えるとき、ルールを足すとき、自前の�
 | ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする            | ADR-0012 |
 | design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る | ADR-0031 |
 | 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める                     | ADR-0032 |
-| assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む                 | ADR-0044 |
 | ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める                 | ADR-0054 |
 
 ## how-to
@@ -183,7 +182,7 @@ export function Probe() {
 
 ### 自前のルールを書く
 
-`scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む (ADR-0044)。実例は `scripts/lint/browser-test.ts` とそのテスト `scripts/lint/browser-test.test.ts`。
+`scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む (ADR-0054)。実例は `scripts/lint/browser-test.ts` とそのテスト `scripts/lint/browser-test.test.ts`。
 
 - API は同梱の `node_modules/vite-plus/docs/guide/lint.md`「Writing Your Own Rules」に従う。型は `vite-plus/lint/plugins` の `definePlugin` / `defineRule` / `SourceCode`、テストは `vite-plus/lint/plugins-dev` の `RuleTester` から取る
 - `@oxlint/plugins` と `oxlint` を直接の依存に足さない。同 docs が理由を 2 つ挙げる。別に pin した写しが linter 本体からずれること、pnpm の strict な layout では plugin のファイルから解決できないことである。vite-plus 0.3.2 の版には両方の entrypoint があり、2026-09-22 に型解決とルールのテストが通ることを確かめた

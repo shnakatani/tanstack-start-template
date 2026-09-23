@@ -30,7 +30,7 @@
 ADR-0015 に沿って、次の順で組む。
 
 1. ページ本体を `-components/` に書き、Route hooks を使わずに props で値を受ける。Route hooks を混ぜると、ページのテストが router 無しで描けなくなる
-2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは ADR-0047 の形で書く
+2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは `docs/guides/testing.md`「route の wrapper をテストする」 の形で書く
 3. loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる
 4. pending 表示は、ページ本体と別のファイルに置く。`pendingComponent` は分割されない property で、それが import する module は eager に読まれる
 5. loader と `validateSearch` とページ本体が共有する定数は `-lib/` に置き、ページ本体の module に置かない (理由は 4 と同じ)

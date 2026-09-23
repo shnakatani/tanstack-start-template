@@ -55,8 +55,8 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 
 - play の操作は `storybook/test` の合成イベントで書く。play は Storybook の UI 上でも走るので CDP を使えない。実イベントでの発火の規律 (`docs/guides/testing.md`) はブラウザテスト側が持ち、play へは移さない (「story とブラウザテストの分担」)
 - 同期の 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである
-- 待機は `storybook/test` の `waitFor` で書く。ブラウザテストの retry API (ADR-0041) は play から呼べない
-- popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (ADR-0043)
+- 待機は `storybook/test` の `waitFor` で書く。ブラウザテストの retry API (`docs/guides/testing.md`「待つ口を選ぶ」) は play から呼べない
+- popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (`docs/guides/testing.md`「animation を無効にして走らせる理由」)
 - Storybook の test 実行では、ブラウザテストの animation の無効化を適用していない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら `vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う
 - `storybook/test` の `expect` は、vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を play へ機械的に写せない箇所がある
 

@@ -19,7 +19,7 @@ import { maxShadowSpread } from "@/test/box-shadow";
  *
  * リングは常設の shadow-xs に重なる box-shadow の層の spread で描かれ、これを表す matcher は
  * 無い。抑制は `:has()` の詳細度と `not-in-` の組み合わせで効くため描画して `expect.poll` の
- * 中で測る (ADR-0044)。transition-[box-shadow] の途中値は retry が吸収する。
+ * 中で測る (docs/guides/testing.md「同期読みを書き換える」)。transition-[box-shadow] の途中値は retry が吸収する。
  */
 
 /** リングの spread。3px (ring-3) と 0 の間に中間値は無い */
@@ -68,7 +68,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0027)", () => {
 
     // リングは box-shadow の spread で描画される。0 ならリング無し = 下の行への食い込みは構造的に
     // 起きない。border 色はフォーカスで変えない (popup 様式の border-input/30 のまま)。
-    // 2 つは同じ観測から取る (ADR-0046)
+    // 2 つは同じ観測から取る (docs/guides/testing.md「否定を肯定で書く」)
     await expect
       .poll(() => {
         const style = getComputedStyle(group.element());

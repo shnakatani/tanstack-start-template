@@ -58,7 +58,7 @@ describe("SegmentedRadioGroup", () => {
     const foreground = resolveColorToken("--foreground");
     await expect.element(selected).toHaveStyle(`color: ${foreground}`);
 
-    // transition-all は browser-setup の reduced motion で 0.01ms になり、settled 状態を即座に読める (ADR-0043)
+    // transition-all は browser-setup の reduced motion で 0.01ms になり、settled 状態を即座に読める (docs/guides/testing.md「animation を無効にして走らせる理由」)
     await userEvent.hover(selected);
 
     // 選択時の文字色と hover 時の文字色が別トークンだと、data-checked が :where() 包みで
@@ -88,7 +88,7 @@ describe("SegmentedRadioGroup", () => {
 
     await expect.element(item).toHaveAttribute("aria-disabled", "true");
     // クリックが届かないことは pointer-events の指定で見る。イベントを対象へ届かせて
-    // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (ADR-0042)
+    // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (docs/guides/testing.md「クリックを発火する」)
     await expect.element(item).toHaveStyle("opacity: 0.5; pointer-events: none");
   });
 });

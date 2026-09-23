@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0022 (Action 層と `useActionMutation`)、ADR-0027 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0015 (配置の原則)、ADR-0042 (二重発火の検証は実イベントで書く)、ADR-0023 (完了点とブロック範囲の軸)
+- 関連: ADR-0022 (Action 層と `useActionMutation`)、ADR-0027 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0015 (配置の原則)、ADR-0023 (完了点とブロック範囲の軸)
 
 ## Context
 

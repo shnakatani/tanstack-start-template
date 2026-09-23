@@ -19,7 +19,7 @@ type ActionButtonShellProps = Omit<
  *   Base UI が click を止める。決着前の二重発火はこの `isPending` だけで塞ぐ (react.dev の
  *   useTransition / useFormStatus が示す `disabled={pending}` の形)。React はユーザーイベントごとに
  *   次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、ref や閉包のフラグは持たない
- *   (ADR-0022「二重発火は state だけで塞ぐ」、検証方法は ADR-0042)
+ *   (ADR-0022「二重発火は state だけで塞ぐ」、検証方法は docs/guides/testing.md「クリックを発火する」)
  * - accessible name は `aria-labelledby` で children に固定する。pending の文言を子に置くと
  *   name from content で「処理中保存」のように名前が変わり、AT の読み上げとテストの
  *   `exact: true` が揺れる。`aria-label` を渡した部品はそちらが名前になる

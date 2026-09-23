@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0018 (ドメイン型は valibot スキーマから導出する)、ADR-0020 (ナビゲーションは Router の Transition に任せる)、ADR-0047 (wrapper のテスト)
+- 関連: ADR-0018 (ドメイン型は valibot スキーマから導出する)、ADR-0020 (ナビゲーションは Router の Transition に任せる)
 
 ## Context
 
@@ -29,7 +29,7 @@ schema を 1 つにする、既定値を URL から落とす、`loaderDeps` で 
 
 ## Consequences
 
-- `src/routes/notes/index.tsx` は `Route` と、export しない wrapper だけを持つ (ADR-0015)。入力欄と一覧の描画は `docs/guides/lists-and-search.md`「検索の入力欄を組む」にある。テストは ADR-0047、サーバ側の LIKE は `src/server/db/like-pattern.ts`
+- `src/routes/notes/index.tsx` は `Route` と、export しない wrapper だけを持つ (ADR-0015)。入力欄と一覧の描画は `docs/guides/lists-and-search.md`「検索の入力欄を組む」にある。テストは `docs/guides/testing.md`「route の wrapper をテストする」、サーバ側の LIKE は `src/server/db/like-pattern.ts`
 - valibot 1.4.2 に文字列を切り詰める action は無い (`toMaxValue` は辞書順の置換、長さ系は検証のみ。2026-09-23 に同梱の型定義で確認)。切り詰めは `truncateCodeUnits` が持ち、UTF-16 の code unit で数える (`maxLength` と同じ)。切った位置がサロゲートペアの途中なら前半を落とす。落とさないと URL では U+FFFD に化け、`LIKE` にも当たらない (2026-09-23 に better-sqlite3 で実測)
 - 切り詰めは warn しない。IME の変換中に上限を超えるのは通常の入力で、warn にすると日本語入力のたびに鳴る誤検知になる
 - `?q=123` のような文字列以外は `/notes` の route 境界に落ち、`RouteErrorContent` (見出し「エラーが発生しました」、DEV では Standard Schema の issues の JSON を持つ `error.message`) が描かれる。root の全画面エラーにはならない (2026-09-23 に SSR で実測)。coerce やパーサの差し替えはしない: 他の route の search にも波及し、数値を検索したい利用者が URL を手で書く経路のためだけに既定を外す理由が無い

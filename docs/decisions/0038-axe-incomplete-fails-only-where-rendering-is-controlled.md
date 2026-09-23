@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-24
-- 関連: ADR-0043 (incomplete に噛まれた事故と回避策) / ADR-0035 (a11y 検査の対象)
+- 関連: ADR-0035 (a11y 検査の対象)
 
 ## Context
 
@@ -17,7 +17,7 @@ story を書いた部品は、`parameters.a11y.test` の設定しだいで axe �
 
 `test: "error"` は既定ではない。`addon-a11y` の既定は `test: "todo"` で、違反が出ても warning に留まり合否へ入らない (同 addon の `parameters`)。`.storybook/preview.tsx` はこれを意図的に上げてあり、story の違反で落ちるのはその上書きの結果である。
 
-後者は 2026-09-21 時点で緑だが、それはそのテストがたまたま `incomplete` を出さないためである。**この基準には既に噛まれている。** ADR-0043 は、確認ダイアログを閉じた直後の検査が Base UI の focus guard を `aria-hidden-focus` の `incomplete` として拾い、CI でだけ落ちた事故の記録である。そのとき基準を見直さず、animation を無効にする回避策を足して緑へ戻した。
+後者は 2026-09-21 時点で緑だが、それはそのテストがたまたま `incomplete` を出さないためである。**この基準には既に噛まれている。** `docs/guides/testing.md`「animation を無効にして走らせる理由」が記録する事故で、確認ダイアログを閉じた直後の検査が Base UI の focus guard を `aria-hidden-focus` の `incomplete` として拾い、CI でだけ落ちた。そのとき基準を見直さず、animation を無効にする回避策を足して緑へ戻した。
 
 story 側へ同じ基準を当てると落ちる。出るルールは 3 つで、いずれも部品の構造から来る。
 
@@ -93,7 +93,7 @@ a11y を light と dark の両方へ当てるため、`vitest.storybook.config.t
 | story (`src/components/**`)      | できる。props も decorator も自分で書く    | 統制しているのに判定できない     | 落とす   |
 | ブラウザテスト (`src/routes/**`) | できない。合成とタイミングと実行環境が絡む | 組み合わせの結果。避けようがない | 都度読む |
 
-ブラウザテストで落とさないのは、**そこで出るものが部品の問題ではなく、実行環境の速さで結果が変わるからである。** ADR-0043 はその記録で、確定でダイアログを閉じた直後の検査が閉じかけの popup を拾い、CI でだけ落ちた。同 ADR は「検査がこの窓の内側に落ちるか外側に落ちるかは実行環境の速さで決まり、遅い CI ほど内側に落ちる」と書いている。直しようのないものをエラーにしたので、animation を無効にする回避策が要った。**基準が逆だったから回避策が生まれた。**
+ブラウザテストで落とさないのは、**そこで出るものが部品の問題ではなく、実行環境の速さで結果が変わるからである。** 確定でダイアログを閉じた直後の検査が閉じかけの popup を拾い、CI でだけ落ちた事故がそれで、検査がこの窓の内側に落ちるか外側に落ちるかは実行環境の速さで決まり、遅い CI ほど内側に落ちる (`docs/guides/testing.md`「animation を無効にして走らせる理由」)。直しようのないものをエラーにしたので、animation を無効にする回避策が要った。**基準が逆だったから回避策が生まれた。**
 
 story で落とすのは逆の理由による。描くものを自分で決めているのに axe が判定できないなら、それは部品側の信号である。調べる価値がある。
 
@@ -158,7 +158,7 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 | `preview.tsx` で axe を回し直す                 | 却下 | addon の走査範囲と既定を写すことになる。実装したところ上の 2 つの穴が開いた                                                                  |
 | run 全体で「レポートを 1 件でも見たか」だけ見る | 却下 | addon-vitest は test panel のトグルを `globals.a11y.manual` へ run 全体で渡す。全 story が走らない形になるので、run 単位でも同じ偽陽性が出る |
 | **ルールを名指して `incomplete` を入れる**      | 採用 | 緑が嘘になるルールだけを塞ぐ。落ちるのは実際に測れていない箇所に限られる                                                                     |
-| 全ルールの `incomplete` を入れる                | 却下 | 混成のバケツを区別せず、ADR-0043 の事故を全 story へ広げる                                                                                   |
+| 全ルールの `incomplete` を入れる                | 却下 | 混成のバケツを区別せず、animate-out の窓で落ちた事故を全 story へ広げる                                                                      |
 | `incomplete` を一切見ない                       | 却下 | `color-contrast` の緑が何も意味しない状態を放置する                                                                                          |
 | pa11y のように一律で格下げする                  | 却下 | 本リポジトリは合否の層を 1 つしか持たず、warning の行き先が無い                                                                              |
 | `messageKey` で原因を選り分ける                 | 却下 | API.md に出ない内部キー。到達不能なキーも混じり、キーが付かない incomplete もある                                                            |
@@ -171,7 +171,7 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 
 - story を書いた部品は axe の検査対象になり、検査範囲が既存のブラウザテストより広がる。`vp test run` に storybook project が加わり、CI の実行時間が伸びる
 - vitest から走らせた story には canvas の padding が当たらない。差を `.storybook/preview.css` が埋める理由は `docs/guides/storybook.md`「vitest 経由の story に padding を当てる理由」にある
-- `expectNoA11yViolations` は `incomplete` を見ない。ADR-0043 の animation 無効化は、`incomplete` を落とす基準に対する回避策として置かれている。`incomplete` を見ない基準の下で、その回避策が他の理由 (実イベントの規律、ADR-0041 / ADR-0042) でも要るかは別に確かめる
+- `expectNoA11yViolations` は `incomplete` を見ない。ブラウザテストの animation 無効化 (`docs/guides/testing.md`「animation を無効にして走らせる理由」) は、`incomplete` を落とす基準に対する回避策として置かれた。`incomplete` を見ない基準の下で、その回避策が他の理由 (待機と実イベントの規律) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
 - story で統制できるのは markup までで、フォントは実行環境が持つ。CI でだけ赤になったときの扱いは `docs/guides/accessibility.md`「story が CI でだけ赤になったら」にある
 - `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (axe-core#4861 / #3486) 見直す

@@ -27,7 +27,7 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { listNotes } = await import("@/features/notes/functions");
 
-// この画面に固有のテストの書き方 (route 全般の書き方は ADR-0047、debounce の打ち方と fake timers を
+// この画面に固有のテストの書き方 (route 全般の書き方は docs/guides/testing.md「route の wrapper をテストする」、debounce の打ち方と fake timers を
 // 使わない理由は `docs/guides/testing.md`「debounce のある入力をテストする」):
 // - 検索欄の landmark は `<search>` 要素で、部品のテストは要素名で見る。同梱の locator engine が
 //   `search` role を `<search>` に写さない (2026-09-23 に実測)。`<form role="search">` にして
@@ -48,7 +48,7 @@ import { Route } from "./index";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
- * `<html>` を描くので browser test では使えない (ADR-0047)。root は本番と同じ context 型を持ち、
+ * `<html>` を描くので browser test では使えない (docs/guides/testing.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
  * `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
  */
 const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({

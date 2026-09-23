@@ -398,7 +398,7 @@ describe("NotesPage", () => {
 
     remove.reject(new Error(rawMessage));
 
-    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0046)
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
@@ -466,7 +466,7 @@ describe("NotesPage", () => {
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
     // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
     // 楽観行の検査と同じ理由で、a11y tag を付けた専用テストへは降ろさない。
-    // popup を閉じた後の axe は unmount を待ってから (ADR-0043)
+    // popup を閉じた後の axe は unmount を待ってから (docs/guides/testing.md「animation を戻すテストを書く」)
     await expectDeleteConfirmClosed(screen);
     await expectNoA11yViolations(document.body);
 
@@ -538,7 +538,7 @@ describe("NotesPage", () => {
 
   it("確定直後にもう一度 Enter を送っても removeNote は 1 回しか呼ばれない", async () => {
     // close の animate-out の窓 (閉じかけのダイアログにボタンが残る間) を踏む検証なので、
-    // このテストだけ Base UI の animation を戻す (ADR-0043)。無効のままだと 2 発目が
+    // このテストだけ Base UI の animation を戻す (docs/guides/testing.md「animation を戻すテストを書く」)。無効のままだと 2 発目が
     // unmount 後に届き、guard を外しても通ってしまう
     await enableAnimations();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
@@ -549,10 +549,10 @@ describe("NotesPage", () => {
 
     // 1 発目は実クリック。2 発目は close の animate-out の間で Playwright が stable 判定で
     // 弾く (locator.click: "element is not stable") ので、クリックで乗ったフォーカスへ Enter を
-    // 送る (ADR-0042。クリックが弾かれたらキーボードで押す)。Base UI の finalFocus は unmount 時
+    // 送る (docs/guides/testing.md「クリックを発火する」。クリックが弾かれたらキーボードで押す)。Base UI の finalFocus は unmount 時
     // (animate-out の後、FloatingFocusManager の effect cleanup) に走るので、animate-out の間は
     // フォーカスが確定ボタンに残る。それを固定する。残っていなければ Enter は別の要素に届き、
-    // guard を通らないまま 1 回で緑になる (肯定 anchor。ADR-0046)
+    // guard を通らないまま 1 回で緑になる (肯定 anchor。docs/guides/testing.md「否定を肯定で書く」)
     await confirmDeleteButton(screen).click();
     await expect.element(confirmDeleteButton(screen)).toHaveFocus();
     await userEvent.keyboard("{Enter}");

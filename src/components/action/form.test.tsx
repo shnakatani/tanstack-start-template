@@ -10,7 +10,7 @@ import { ActionForm, ActionFormSubmit } from "./form";
  * 振る舞いのカタログは `form.stories.tsx` の play が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは
  * 決着前の二重発火を CDP 経由の実イベントで塞ぐ 2 case だけである。
  *
- * 実イベントでの発火の規律 (ADR-0042) はブラウザテスト側が持ち、play へは移さない
+ * 実イベントでの発火の規律 (docs/guides/testing.md「クリックを発火する」) はブラウザテスト側が持ち、play へは移さない
  * (docs/guides/storybook.md「story とブラウザテストの分担」)。play は Storybook の UI 上でも走るため CDP を使えず、
  * `storybook/test` の合成イベントで操作する。`ActionButton` の同じ規律は
  * `src/components/action/button.test.tsx` が持つ。画面側のテストは Action 層の guard を

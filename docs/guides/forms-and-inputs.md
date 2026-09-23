@@ -71,7 +71,7 @@
 
 ### 入力欄の周りに要素を置く
 
-- input の上に疑似要素や別の要素を重ねて、hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる。テストでは Playwright の hit-target 検査で click が落ちる (ADR-0042)。registry の `Input` 単体は `src/components/ui/input-pointer.test.tsx` が見る
+- input の上に疑似要素や別の要素を重ねて、hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる。テストでは Playwright の hit-target 検査で click が落ちる (`docs/guides/testing.md`「クリックを発火する」)。registry の `Input` 単体は `src/components/ui/input-pointer.test.tsx` が見る
 - checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`src/components/parts/choice-card.tsx`) を使う。単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置き、グループの外枠は `FieldSet` と `FieldLegend` にする
 
 ### placeholder を足す

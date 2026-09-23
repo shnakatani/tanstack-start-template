@@ -113,19 +113,19 @@ paths:
 | -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。ライブラリ内部のガードまで見に行かない         |
 | -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きない          |
 
-- `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (ADR-0042)
-- 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (ADR-0042)
+- `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (`docs/guides/testing.md`「クリックを発火する」)
+- 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (`docs/guides/testing.md`「クリックを発火する」)
 - `sr-only` のテキストは 1px + clip で viewport 判定に落ちる。`getByRole(..., { name })` で本体を掴む (`docs/guides/testing.md`「クリックを発火する」)
 
 ## locator の扱い
 
 同期読みを `expect()` へ渡す形、`findElement()`、素の不在 assert、リテラルとの否定スタイル比較は lint (`browser-test/*`) が止める。
 
-- matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` の中で読む。基準値を 1 回だけ読むときは先に `expect.element` で mount を待つ (ADR-0044)
-- 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件は `vi.waitFor` (ADR-0041)
+- matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` の中で読む。基準値を 1 回だけ読むときは先に `expect.element` で mount を待つ (`docs/guides/testing.md`「同期読みを書き換える」)
+- 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件は `vi.waitFor` (`docs/guides/testing.md`「待つ口を選ぶ」)
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (`docs/guides/testing.md`「同期読みを書き換える」)
-- assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない (ADR-0045)
-- `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる (ADR-0045)
+- assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない (`docs/guides/testing.md`「assert の予算を宣言する」)
+- `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる (`docs/guides/testing.md`「assert の予算を宣言する」)
 - 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (`docs/guides/testing.md`「否定を肯定で書く」)
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing.md`「否定を肯定で書く」)
@@ -142,8 +142,8 @@ paths:
 - 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (`docs/guides/testing.md`「否定を肯定で書く」)
 - スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (`docs/guides/testing.md`「否定を肯定で書く」)
 - `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素の 3 つだけ (`docs/guides/testing.md`「否定を肯定で書く」)
-- 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (ADR-0041)
-- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を await する (ADR-0043)
+- 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (`docs/guides/testing.md`「待つ口を選ぶ」)
+- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を await する (`docs/guides/testing.md`「animation を戻すテストを書く」)
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing.md`「animation を戻すテストを書く」)
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (`docs/guides/testing.md`「animation を戻すテストを書く」)
 - 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない

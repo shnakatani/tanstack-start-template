@@ -48,7 +48,7 @@ describe("RouteErrorContent", () => {
 
     const { screen } = await renderError(error, vi.fn());
 
-    // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (ADR-0046)
+    // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (docs/guides/testing.md「否定を肯定で書く」)
     await expectText(screen, ROUTE_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText("削除対象のノートが見つかりません: id=42"));
     await expectAbsent(screen.getByRole("button", { name: "スタックトレース" }));
@@ -75,7 +75,7 @@ describe("RouteErrorContent", () => {
     await expect
       .element(screen.getByRole("heading", { name: "スタックトレース", level: 3 }))
       .toBeInTheDocument();
-    // 肯定 anchor は直上の見出し。閉じている間は中身が出ない (ADR-0046)
+    // 肯定 anchor は直上の見出し。閉じている間は中身が出ない (docs/guides/testing.md「否定を肯定で書く」)
     await expectAbsent(screen.getByText(/at loader/));
   });
 
