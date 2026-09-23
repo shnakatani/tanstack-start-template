@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-24
-- 関連: ADR-0001 (文書の層と参照の向き) / ADR-0005 (設計ガイドの置き場所)
+- 関連: ADR-0001 (文書の層と参照の向き) / ADR-0003 (読み込まれる契機で置き場所を決める)
 
 ## Context
 
@@ -11,6 +11,8 @@ rules は frontmatter の `paths:` で条件ロードされる。
 
 決定の根拠と改訂履歴を規範の行へ足していくと、規範 1 個に出典と派生規範と履歴が同居した長い項目に育つ。
 実装時に必要なのは規範だけだが、取り出すには全文を読むしかない。
+
+rules の書き方を ADR に置くのは、rules が Claude の文脈に毎回載るためである。書き方を誤ると文脈が膨らみ、規範が見落とされる。memory docs は CLAUDE.md について "Longer files consume more context and reduce adherence." と書く。一度膨らんだ rules の整理は費用が大きい。このリポジトリの rules は `origin/main` (40ca20c) の 12 ファイル 1,152 行から、整理の後に 725 行へ削った (`git show <rev>:<file> | wc -l` を `.claude/rules/` の全ファイルで足した値、2026-09-24)。
 
 lint・型検査・build は、違反を決定的に止め、エラーメッセージで違反の箇所を示す。
 同じ規範を rules にも書くと、止まる前に読む文と止まった後に読むメッセージの 2 か所が同じことを言う。
@@ -21,7 +23,7 @@ lint・型検査・build は、違反を決定的に止め、エラーメッセ�
 
 - 規範 (何をするか、何を禁じるか)。禁止を書くときは正解を対で書く
 - 理由 1 文 (守らないと何が壊れるか)
-- 出典キー 1 つ (ADR 番号、ガイドの節、仕様の条項番号、上流 issue 番号のいずれか)。ガイドの節は `docs/guides/<file>.md「<見出し>」` の形で指す (ADR-0005)
+- 出典キー 1 つ (ADR 番号、ガイドの節、仕様の条項番号、上流 issue 番号のいずれか)。ガイドの節は `docs/guides/<file>.md「<見出し>」` の形で指す (ADR-0001)
 - 選択肢に順序があるならその順序 (先に試すもの、最終手段)
 - 打ち消し不能または検出不能な落とし穴 (破っても静かに壊れるもの)
 
@@ -68,6 +70,6 @@ lint・型検査・build が止めるものは書かない。書くのは、lint
 ## 出典
 
 - Claude Code Best practices (CLAUDE.md の判定基準 "Would removing this cause Claude to make mistakes?" と、長すぎると規則が埋もれる失敗パターン): https://code.claude.com/docs/en/best-practices
-- Claude Code: How Claude remembers your project ("Specific, concise, well-structured instructions work best."、"**Structure**: use markdown headers and bullets to group related instructions"、CLAUDE.md の "target under 200 lines per CLAUDE.md file"): https://code.claude.com/docs/en/memory
+- Claude Code: How Claude remembers your project ("Longer files consume more context and reduce adherence."、"Specific, concise, well-structured instructions work best."、"**Structure**: use markdown headers and bullets to group related instructions"、CLAUDE.md の "target under 200 lines per CLAUDE.md file"): https://code.claude.com/docs/en/memory
 - Lost in the Middle: How Language Models Use Long Contexts (context 中間での利用率低下): https://aclanthology.org/2024.tacl-1.9/
 - Context Rot: How Increasing Input Tokens Impacts LLM Performance (入力長に伴う劣化): https://research.trychroma.com/context-rot
