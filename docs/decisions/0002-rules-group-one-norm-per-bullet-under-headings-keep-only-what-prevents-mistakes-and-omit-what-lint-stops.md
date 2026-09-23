@@ -12,7 +12,7 @@ rules は frontmatter の `paths:` で条件ロードされる。
 決定の根拠と改訂履歴を規範の行へ足していくと、規範 1 個に出典と派生規範と履歴が同居した長い項目に育つ。
 実装時に必要なのは規範だけだが、取り出すには全文を読むしかない。
 
-rules の書き方を ADR に置くのは、rules が Claude の文脈に毎回載るためである。書き方を誤ると文脈が膨らみ、規範が見落とされる。memory docs は CLAUDE.md について "Longer files consume more context and reduce adherence." と書く。一度膨らんだ rules の整理は費用が大きい。このリポジトリの rules は `origin/main` (40ca20c) の 12 ファイル 1,152 行から、整理の後に 725 行へ削った (`git show <rev>:<file> | wc -l` を `.claude/rules/` の全ファイルで足した値、2026-09-24)。
+rules の書き方を ADR に置くのは、rules が作業のたびに Claude の文脈に載り (`paths` に一致するファイルを読んだときに読み込まれる。ADR-0003。`src/**` のような広い glob ならほぼ毎回)、長いほど規範が見落とされるためである。memory docs は "Longer files consume more context and reduce adherence." と書く。これは CLAUDE.md についての記述だが、文脈に載る点は rules も同じである。膨らんだ rules の整理は、全項目について要否と出典を読み直す作業になる。
 
 lint・型検査・build は、違反を決定的に止め、エラーメッセージで違反の箇所を示す。
 同じ規範を rules にも書くと、止まる前に読む文と止まった後に読むメッセージの 2 か所が同じことを言う。

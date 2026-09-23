@@ -2,24 +2,24 @@
 
 - Status: Accepted
 - Date: 2026-09-24
-- 関連: ADR-0026 (a11y 検査の対象)
+- 関連: ADR-0026 (通知と項目の状態の持ち方。ブラウザテストの axe が操作の途中で検査する状態)
 
 ## Context
 
 この ADR は a11y の自動検査の合否を決める。何を合否に入れるかを戻すと、a11y の違反が CI を通り抜ける。
 
-story を書いた部品は、`parameters.a11y.test` の設定しだいで axe の対象になる。同じ axe を 2 つの層が回しており、**合否の基準が食い違っている**。理由はどこにも書かれていない。
+story を書いた部品は、`parameters.a11y.test` の設定しだいで axe の対象になる。同じ axe を 2 つの層が回すので、それぞれの合否に何を入れるかを決める。
 
-| 層                             | きっかけ                       | 合否の基準                                 | 対象                     |
-| ------------------------------ | ------------------------------ | ------------------------------------------ | ------------------------ |
-| `addon-a11y` (`test: "error"`) | 全 story × light dark          | `violations` のみ                          | story を書いた部品       |
-| `expectNoA11yViolations`       | `src/routes/` のブラウザテスト | `violations` + `incomplete` + `passes > 0` | テストに書いたケースだけ |
+| 層                       | きっかけ                       | 対象                     |
+| ------------------------ | ------------------------------ | ------------------------ |
+| `addon-a11y`             | 全 story × light dark          | story を書いた部品       |
+| `expectNoA11yViolations` | `src/routes/` のブラウザテスト | テストに書いたケースだけ |
 
-`test: "error"` は既定ではない。`addon-a11y` の既定は `test: "todo"` で、違反が出ても warning に留まり合否へ入らない (同 addon の `parameters`)。`.storybook/preview.tsx` はこれを意図的に上げてあり、story の違反で落ちるのはその上書きの結果である。
+`addon-a11y` の既定は `test: "todo"` で、違反が出ても warning に留まり合否へ入らない (同 addon の `parameters`)。
 
-後者は 2026-09-21 時点で緑だが、それはそのテストがたまたま `incomplete` を出さないためである。**この基準には既に噛まれている。** `docs/guides/testing.md`「animation を無効にして走らせる理由」が記録する事故で、確認ダイアログを閉じた直後の検査が Base UI の focus guard を `aria-hidden-focus` の `incomplete` として拾い、CI でだけ落ちた。そのとき基準を見直さず、animation を無効にする回避策を足して緑へ戻した。
+ブラウザテストの側で `incomplete` を合否に入れると、確認ダイアログを閉じた直後の検査が Base UI の focus guard を `aria-hidden-focus` の `incomplete` として拾い、CI でだけ落ちる (`docs/guides/testing.md`「animation を無効にして走らせる理由」)。
 
-story 側へ同じ基準を当てると落ちる。出るルールは 3 つで、いずれも部品の構造から来る。
+story 側で `incomplete` を合否に入れると次の 3 つのルールが出る。いずれも部品の構造から来る。
 
 | ルール                  | 原因                                                           |
 | ----------------------- | -------------------------------------------------------------- |
@@ -67,6 +67,8 @@ axe-core 自身が `incomplete` を人の判断へ回す設計だと書いてい
 
 ## Decision
 
+**story の a11y は `error` で light と dark の両方に掛け、axe の `incomplete` は描画を統制できる story でだけ落とし、ブラウザテストでは落とさない。`color-contrast` の `incomplete` は外さない。**
+
 ### story の a11y は `error` で検査する
 
 `parameters.a11y.test` を `"error"` にする。story を書いた部品は自動で axe の対象になり、検査の範囲がブラウザテストより広がる。
@@ -93,7 +95,7 @@ a11y を light と dark の両方へ当てるため、`vitest.storybook.config.t
 | story (`src/components/**`)      | できる。props も decorator も自分で書く    | 統制しているのに判定できない     | 落とす   |
 | ブラウザテスト (`src/routes/**`) | できない。合成とタイミングと実行環境が絡む | 組み合わせの結果。避けようがない | 都度読む |
 
-ブラウザテストで落とさないのは、**そこで出るものが部品の問題ではなく、実行環境の速さで結果が変わるからである。** 確定でダイアログを閉じた直後の検査が閉じかけの popup を拾い、CI でだけ落ちた事故がそれで、検査がこの窓の内側に落ちるか外側に落ちるかは実行環境の速さで決まり、遅い CI ほど内側に落ちる (`docs/guides/testing.md`「animation を無効にして走らせる理由」)。直しようのないものをエラーにしたので、animation を無効にする回避策が要った。**基準が逆だったから回避策が生まれた。**
+ブラウザテストで落とさないのは、**そこで出るものが部品の問題ではなく、実行環境の速さで結果が変わるからである。** 確定でダイアログを閉じた直後の検査は閉じかけの popup を拾い、この窓の内側に落ちるか外側に落ちるかは実行環境の速さで決まる。遅い CI ほど内側に落ちる (`docs/guides/testing.md`「animation を無効にして走らせる理由」)。ここで `incomplete` を落とすと、直しようのないものがエラーになり、animation を無効にする回避策が要る。
 
 story で落とすのは逆の理由による。描くものを自分で決めているのに axe が判定できないなら、それは部品側の信号である。調べる価値がある。
 
@@ -117,7 +119,7 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 外れたものが一度も出なくなったら、その行を消す (手順は `docs/guides/accessibility.md`「`incomplete` を数え直す」)。
 
 検査は `addon-a11y` が `reporting` へ積んだ結果を読み直す形で入れる。**axe を回し直さない。**
-回し直す形は 2026-09-21 に実装して 2 つの穴が開いた。どちらも実測で確認した。
+axe を回し直す形には 2 つの穴がある (2026-09-21 に実装して実測)。
 
 | 穴                         | 何が起きるか                                                                                                              |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -171,7 +173,7 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 
 - story を書いた部品は axe の検査対象になり、検査範囲が既存のブラウザテストより広がる。`vp test run` に storybook project が加わり、CI の実行時間が伸びる
 - vitest から走らせた story には canvas の padding が当たらない。差を `.storybook/preview.css` が埋める理由は `docs/guides/storybook.md`「vitest 経由の story に padding を当てる理由」にある
-- `expectNoA11yViolations` は `incomplete` を見ない。ブラウザテストの animation 無効化 (`docs/guides/testing.md`「animation を無効にして走らせる理由」) は、`incomplete` を落とす基準に対する回避策として置かれた。`incomplete` を見ない基準の下で、その回避策が他の理由 (待機と実イベントの規律) でも要るかは別に確かめる
+- `expectNoA11yViolations` は `incomplete` を見ない。ブラウザテストの animation 無効化 (`docs/guides/testing.md`「animation を無効にして走らせる理由」) は、`incomplete` を落とす基準の下で要る回避策である。`incomplete` を見ない基準の下で、その回避策が他の理由 (待機と実イベントの規律) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
 - story で統制できるのは markup までで、フォントは実行環境が持つ。CI でだけ赤になったときの扱いは `docs/guides/accessibility.md`「story が CI でだけ赤になったら」にある
 - `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (axe-core#4861 / #3486) 見直す

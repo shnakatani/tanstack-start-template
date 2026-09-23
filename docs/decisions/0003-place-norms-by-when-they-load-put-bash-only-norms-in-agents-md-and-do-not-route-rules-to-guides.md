@@ -1,4 +1,4 @@
-# ADR-0003: 規範の置き場所は読み込まれる契機で決め、Bash で打つだけの操作の規範は AGENTS.md に置く
+# ADR-0003: 規範の置き場所は読み込まれる契機で決め、Bash で打つだけの操作の規範は AGENTS.md に置き、rules は設計ガイドを import せず読むようにも書かない
 
 - Status: Accepted
 - Date: 2026-09-24
