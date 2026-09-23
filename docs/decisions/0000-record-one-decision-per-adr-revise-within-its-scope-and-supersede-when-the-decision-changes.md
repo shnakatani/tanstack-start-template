@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-24
-- 関連: ADR-0005 (設計ガイドの置き場所) / ADR-0004 (コメントが指す先)
+- 関連: ADR-0053 (何を ADR にするか)
 
 ## Context
 
@@ -28,20 +28,6 @@
 - タイトルは、解いた問題と選んだ解を表す短い文にし、決定を言い切る。一覧のタイトルだけで何を選んだかが分かる (MADR のテンプレートの `# {short title, representative of solved problem and found solution}`)
 - ファイル名は `NNNN-<タイトルの英訳を小文字と dash にしたもの>.md` にする。題目の形 (`toolchain`、`criteria`) にしない。ファイル名だけで決定が読める (MADR の `NNNN-title-with-dashes.md`。adr-tools もタイトルからファイル名を作る)
 - `Date` は決定を下した日にする。枠内の改訂の日は `Revised` が持つ。MADR の `date` は最終更新日を持つので、そこは MADR と違う
-
-### 何を ADR にするか
-
-ADR にするのは、構造・主要な品質特性・戻しにくさのいずれかに効く選択である (Microsoft の "Only include choices that affect the system's structure, key quality attributes, or are difficult to reverse."、arc42 §9 の "Important, expensive, large scale or risky architecture decisions")。
-当たらないものは、効く範囲で置き場所を決める。
-
-| 中身                                                                 | 置き場所                               |
-| -------------------------------------------------------------------- | -------------------------------------- |
-| 構造・主要な品質特性・戻しにくさに効く選択と、比較した案、却下の理由 | ADR                                    |
-| 部品をまたいで守る作法の説明と、その作法で組む手順・落とし穴への対処 | `docs/guides/` の設計ガイド (ADR-0005) |
-| 1 つの関数や部品に閉じた注意                                         | そのファイルの docstring (ADR-0004)    |
-
-- ADR の中に手順や規範の表が育ったら、ガイドへ出す。ADR には決定と、それを支える比較と観測を残す
-- ADR はガイドを補足として指してよい。ただし決定はガイドを読まなくても成り立つように書く (Microsoft の "the decision must be clear and stand alone without that material")
 
 ### Status
 
@@ -88,8 +74,7 @@ ADR にするのは、構造・主要な品質特性・戻しにくさのいず�
 - MADR (タイトルの形 `# {short title, representative of solved problem and found solution}`、ファイル名の形 "The filenames are following the pattern `NNNN-title-with-dashes.md`"): https://adr.github.io/madr/
 - joelparkerhenderson/architecture-decision-record (mutable の運用が実際に回った例。"In practice, mutability has worked better for our teams."): https://github.com/joelparkerhenderson/architecture-decision-record
 - Martin Fowler「Architecture Decision Record」(immutable の例。"Once an ADR is accepted, it should never be reopened or changed - instead it should be superseded."): https://martinfowler.com/bliki/ArchitectureDecisionRecord.html
-- Microsoft Azure Well-Architected Framework「Maintain an architecture decision record (ADR)」(ADR にする選択の範囲。immutable の例。"The ADR serves as an append-only log. Don't go back and edit accepted records."): https://learn.microsoft.com/en-us/azure/well-architected/architect-role/architecture-decision-record
+- Microsoft Azure Well-Architected Framework「Maintain an architecture decision record (ADR)」(immutable の例。"The ADR serves as an append-only log. Don't go back and edit accepted records."): https://learn.microsoft.com/en-us/azure/well-architected/architect-role/architecture-decision-record
 - AWS Prescriptive Guidance「Architectural decision record process」(immutable の例。"When the team accepts an ADR, it becomes immutable."): https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/adr-process.html
 - Catio「Architecture Decision Records (ADRs): The 2026 Guide」(immutable の例、2026-06-11。"Once accepted, the substance of an ADR should not be rewritten; material changes are captured by a new ADR that explicitly supersedes the original." / 書き換えてよい範囲として "Typo fixes and clarifying notes are fine." / immutable を採る理由として "That immutability is what makes the decision history trustworthy, …"): https://www.catio.tech/blog/architecture-decision-record
-- arc42 §9 Architecture Decisions (記録する決定の範囲): https://docs.arc42.org/section-9/
 - adr-tools (`adr new -s` が新旧の ADR を相互にリンクし、旧 ADR の Status を置き換え済みにする): https://github.com/npryce/adr-tools
