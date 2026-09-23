@@ -289,7 +289,7 @@ function handleSignOut() {
 
 React 公式もこの構造を採っている。React 19 の `TransitionFunction` は非同期処理を受け取るが、`onClick` に渡すハンドラ自体は同期である。
 mutation を伴う操作は、その同期ハンドラの内側で `startTransition` に非同期関数を渡す形 (Action) にし、pending は Transition から取る。この判断は ADR-0014 が持つ。
-2026-09-13 までは `startTransition` を第 3 の選択肢としない (pending の源が mutation の `isPending` と二重になる) としていたが、pending の源を Transition 側へ一本化することで解消した。
+`startTransition` を併用すると pending の源が mutation の `isPending` と二重になるが、pending の源を Transition 側へ一本化することでこれを避ける。
 
 ### 検討した選択肢
 
@@ -303,12 +303,12 @@ mutation を伴う操作は、その同期ハンドラの内側で `startTransit
 
 tailwind 領域のプラグイン選定は別軸なので分けて置く。
 
-| 案                                 | 評価                                                                                                                                                                 | 採否     |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `@shadcn/lint`                     | Tailwind CSS v4、`components.json`、theme CSS、shadcn component を理解し、色の統制を 3 つの専用 rule へ分けられる                                                    | **採用** |
-| `eslint-plugin-better-tailwindcss` | shadcn 専用 plugin が存在しなかった期間の代替。未知 class と正規表現による arbitrary color 検査はできるが、shadcn component と semantic token を専用モデルで扱わない | 移行     |
-| `eslint-plugin-tailwindcss`        | Tailwind v4 には対応するが peerDependencies は `eslint` だけで、oxlint 経由の利用を上流が想定していない (2026-08-17 に確認)                                          | 却下     |
-| 自前の正規表現でソースを走査する   | 字面しか見ないため theme の実体と乖離し、任意値の中身も読めない。撤去した                                                                                            | 却下     |
+| 案                                 | 評価                                                                                                                        | 採否     |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `@shadcn/lint`                     | Tailwind CSS v4、`components.json`、theme CSS、shadcn component を理解し、色の統制を 3 つの専用 rule へ分けられる           | **採用** |
+| `eslint-plugin-better-tailwindcss` | 未知 class と正規表現による arbitrary color 検査はできるが、shadcn component と semantic token を専用モデルで扱わない       | 却下     |
+| `eslint-plugin-tailwindcss`        | Tailwind v4 には対応するが peerDependencies は `eslint` だけで、oxlint 経由の利用を上流が想定していない (2026-08-17 に確認) | 却下     |
+| 自前の正規表現でソースを走査する   | 字面しか見ないため theme の実体と乖離し、任意値の中身も読めない                                                             | 却下     |
 
 ## Consequences
 
@@ -324,7 +324,7 @@ tailwind 領域のプラグイン選定は別軸なので分けて置く。
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。token だけを混ぜる表現にも行単位の抑制が要り、抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと無言で通る
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。この経路の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にして止める。ただし `eslint` がグラフから消えるわけではない。`eslint-plugin-testing-library` が `@typescript-eslint/utils` 経由で `eslint` を必須 peer に持ち、そちらは止まらない (節「基準にする上流設定」)
 - parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。型検査は tsgolint が担う (ADR-0002) ため `vp check` の結果は変わらない
-- 2026-09-19 の移行で lockfile の `typescript@7.0.2` は `6.0.3` へ置き換わり、Vite+ が読む実体も切り替わった。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らないため、7.0.2 は増分解決で積み上がっていた版である
+- 依存グラフへ `typescript` を持ち込むのはこの parser である。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らない (2026-09-19 確認)
 - eslint peer の optional 化と `typescript` の 6 系固定は撤去条件が同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` は不要になるが、`eslint` は `eslint-plugin-testing-library` 経由で残る。撤去で解けるのは `typescript` の 6 系固定だけである
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
 - theme に無いクラスを全て落とすため、`src/styles.css` へ token を足す前に utility を書くと lint で止まる。順序は token の定義が先になる

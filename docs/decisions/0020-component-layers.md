@@ -6,7 +6,7 @@
 
 ## Context
 
-`src/components/` は `directory-structure.md` で「ドメインを跨いで共有する自作コンポーネント」と 1 つに定義していたが、実際には役割が異なる 2 種類が同じ階層に混在していた。`page-header` / `data-table` / `dialog-scroll-body` / `form-fields` 等は registry を包んで外見を定義する部品 (著作側)、`route-error` / `not-found` は部品を並べて画面を組む側 (消費側) である。
+`src/components/` を「ドメインを跨いで共有する自作コンポーネント」と 1 つに定義すると、役割が異なる 2 種類が同じ階層に混在する。`page-header` / `data-table` / `dialog-scroll-body` / `form-fields` 等は registry を包んで外見を定義する部品 (著作側)、`route-error` / `not-found` は部品を並べて画面を組む側 (消費側) である。
 
 `@shadcn/lint` の `no-restyle` は、対象を 2 軸で設定する (https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md)。
 
@@ -29,7 +29,7 @@
 | `src/components/screens/` | 部品を並べて画面を組む共有コンポーネント                       | 適用する     |
 | `src/components/` (直下)  | 上のどれでもないもの。実例は `live-regions.tsx`                | 適用する     |
 
-`src/components/` の外では `.storybook/` も適用する側に置く。decorator は design system component を包んで `className` を渡す置き場になるため、`src/components/screens/` と同じ扱いにする。`vite.config.ts` の override は `files` に `src/**` と `.storybook/**` の 2 つを持つ (PR #35)。
+`src/components/` の外では `.storybook/` も適用する側に置く。decorator は design system component を包んで `className` を渡す置き場になるため、`src/components/screens/` と同じ扱いにする。`vite.config.ts` の override は `files` に `src/**` と `.storybook/**` の 2 つを持つ。
 
 直下を既定として残すのは、役割を決めきれないものの置き場所を無くさないためである。既定を「規則を適用する」側に置くので、著作として扱わせたいときだけ `parts/` を選ぶことになり、判断を省略した新規ファイルは規則が効く安全側に倒れる。
 

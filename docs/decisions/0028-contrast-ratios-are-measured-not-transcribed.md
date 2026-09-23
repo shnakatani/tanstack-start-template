@@ -73,7 +73,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である。
 
-検査ではないので `.claude/rules/testing.md` の検査の表には行を足さない。テストは `scripts-tools` project が拾うが、当時の include は `scripts/lib/` と `scripts/dev-env/` の 2 つを並べた許可リストで `scripts/contrast/` に一致しなかった。`scripts/**/*.test.ts` から `scripts/checks/**` を除く拒否リストへ変えて、ツールを足すたびに 1 行足す形をやめた。
+検査ではないので `.claude/rules/testing.md` の検査の表には行を足さない。テストは `scripts-tools` project が拾う。include は `scripts/**/*.test.ts` から `scripts/checks/**` を除く拒否リストにする。ディレクトリを並べる許可リストにすると、ツールを足すたびに 1 行足す必要があり、足し忘れたツールのテストは無言で走らない。
 
 色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを `axe.commons.color` 経由で呼ぶ形は、次の 3 点で採らない。
 
@@ -140,7 +140,7 @@ Understanding SC 1.4.3 の「the computed values should not be rounded」は比�
 
 ### 6. 検査は作らない
 
-トークンを動かしても何も落ちない。a11y の合否は従来どおり `src/components/contrast.stories.tsx` の axe が持つ。
+トークンを動かしても何も落ちない。a11y の合否は `src/components/contrast.stories.tsx` の axe が持つ。
 
 ADR-0024 の節 5 が禁じているのは、比を計算するコードを story として抱えさせ、a11y の検査を名乗らせることである。描画されない値を測るので、実際の画面が割っていても緑になる。
 

@@ -38,13 +38,13 @@ Router の how-to「How to Test Router with File-Based Routing」は生成済み
 
 ## 検討した選択肢
 
-| 案                                                                             | 評価                                                                           | 採否     |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | -------- |
-| root を差し替えた route tree + `Route.update`                                  | 実 `Route` の `validateSearch` / loader / wrapper をそのまま動かせる           | **採用** |
-| 生成済み `routeTree.gen.ts` を描く (how-to の形)                               | `__root.tsx` の devtools と `<html>` が browser test で動かない                | 却下     |
-| props 直渡しのページテストだけ                                                 | wrapper が一度も実行されない                                                   | 却下     |
-| `<form role="search">` にして `getByRole("search")` で引く (2026-09-23 の初版) | locator engine の欠落を本番のマークアップで吸収し、lint 抑制と再評価条件を積む | 却下     |
-| wrapper のテストを `route.test.tsx` に置く (2026-09-23 の初版)                 | `route.tsx` (レイアウトルート) のテストと読める                                | 却下     |
+| 案                                                         | 評価                                                                           | 採否     |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------ | -------- |
+| root を差し替えた route tree + `Route.update`              | 実 `Route` の `validateSearch` / loader / wrapper をそのまま動かせる           | **採用** |
+| 生成済み `routeTree.gen.ts` を描く (how-to の形)           | `__root.tsx` の devtools と `<html>` が browser test で動かない                | 却下     |
+| props 直渡しのページテストだけ                             | wrapper が一度も実行されない                                                   | 却下     |
+| `<form role="search">` にして `getByRole("search")` で引く | locator engine の欠落を本番のマークアップで吸収し、lint 抑制と再評価条件を積む | 却下     |
+| wrapper のテストを `route.test.tsx` に置く                 | `route.tsx` (レイアウトルート) のテストと読める                                | 却下     |
 
 ## 出典
 

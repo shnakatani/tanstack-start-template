@@ -41,15 +41,15 @@ grep -rnE 'expect\(\s*[A-Za-z_$][^;]*\.(element|query|all|elements)\(\)' --inclu
 
 45 件 / 13 ファイル。内訳と移行先は次のとおりで、45 件すべてがどれかの行に当たる。
 
-| 形                                                 | 件数 | 移行先                                                                                             |
-| -------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------- |
-| `expect(x.query()).not.toBeNull()`                 | 20   | `expect.element(x).toBeInTheDocument()`                                                            |
-| `expect(x.query()).toBeNull()`                     | 8    | 「最初から出ない」なら後述の `expectAbsent(x)`                                                     |
-| `expect(x.element().getAttribute(a)).toBe(v)`      | 6    | `expect.element(x).toHaveAttribute(a, v)`                                                          |
-| `expect(document.activeElement).toBe(x.element())` | 5    | `expect.element(x).toHaveFocus()`                                                                  |
-| `expect(x.all()).toHaveLength(n)`                  | 2    | `expect.element(x).toHaveLength(n)`                                                                |
-| `expect(x.element().textContent).toContain(t)`     | 2    | `expect.element(x).toHaveTextContent(t)`                                                           |
-| 要素を受け取るヘルパーへ渡す (`visibleIconNames`)  | 2    | 当時は移さなかった。helper は a9f46a1 で消え、引数を追う 2026-09-22 の改訂後のルールなら報告される |
+| 形                                                 | 件数 | 移行先                                         |
+| -------------------------------------------------- | ---- | ---------------------------------------------- |
+| `expect(x.query()).not.toBeNull()`                 | 20   | `expect.element(x).toBeInTheDocument()`        |
+| `expect(x.query()).toBeNull()`                     | 8    | 「最初から出ない」なら後述の `expectAbsent(x)` |
+| `expect(x.element().getAttribute(a)).toBe(v)`      | 6    | `expect.element(x).toHaveAttribute(a, v)`      |
+| `expect(document.activeElement).toBe(x.element())` | 5    | `expect.element(x).toHaveFocus()`              |
+| `expect(x.all()).toHaveLength(n)`                  | 2    | `expect.element(x).toHaveLength(n)`            |
+| `expect(x.element().textContent).toContain(t)`     | 2    | `expect.element(x).toHaveTextContent(t)`       |
+| 要素を受け取るヘルパーへ渡す (`visibleIconNames`)  | 2    | helper の引数も追うので報告する                |
 
 `src/components/action/button.test.tsx` の `expect(document.activeElement).toBe(button.element())` は `await button.click()` の直後にあった。ADR-0013 が同期読みの危うさとして挙げた形そのものである。
 
@@ -127,11 +127,11 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 この override は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定で固定するので、適用先か severity を動かすとそこが落ちる。
 
-### ADR-0013 を改訂する
+### ADR-0013 と rules との関係
 
-Consequences の「lint で表現できる形は無い」を、本 ADR が決めた判定へ差し替える。誤った一文を生きた文書に残すと、次に同じ検討をする人がもう一度同じ結論で止まる。
+ADR-0013 の Consequences は、禁じたい形のうち「同期読みの値を assert へ流すこと」を本 ADR の lint に委ねる。
 
-`.claude/rules/testing.md` には「locator の扱い」の節を足し、上の Decision の表を規範の形で置く。既存の「状態のアサートは semantic matcher を先に探す」「ブラウザテストの CSS とレイアウト実測」と重なる項目は、新しい節へ吸収して重複を残さない。
+`.claude/rules/testing.md`「locator の扱い」が、上の Decision の表を規範の形で持つ。
 
 ### ルールが追えない形
 
@@ -154,23 +154,23 @@ Consequences の「lint で表現できる形は無い」を、本 ADR が決め
 
 ### 本 ADR が扱わないもの
 
-| 対象                                                    | 持ち主                                                                                                         |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| assert の予算 (`expect.poll.timeout` / `actionTimeout`) | ADR-0030                                                                                                       |
-| 否定 assert と `toHaveStyle` の書き方                   | ADR-0031                                                                                                       |
-| クリックの発火方法                                      | ADR-0015。合成イベントを送る helper は 2026-09-22 の改訂で廃止され、その引数が同期読みだった経路も一緒に消えた |
+| 対象                                                    | 持ち主                                                                                 |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| assert の予算 (`expect.poll.timeout` / `actionTimeout`) | ADR-0030                                                                               |
+| 否定 assert と `toHaveStyle` の書き方                   | ADR-0031                                                                               |
+| クリックの発火方法                                      | ADR-0015。合成イベントを送る helper を置かないので、その引数が同期読みになる経路も無い |
 
-`getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0013 と `testing.md`「ブラウザテストの CSS とレイアウト実測」) は `expect.poll` のコールバックの中で読む。単一プロパティを文字列リテラルと比べる形は `toHaveStyle` で書けるので、そちらへ移した。poll の中で表す 3 つの形は ADR-0031 が持つ。
+`getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0013 と `testing.md`「ブラウザテストの CSS とレイアウト実測」) は `expect.poll` のコールバックの中で読む。単一プロパティを文字列リテラルと比べる形は `toHaveStyle` で書く。poll の中で表す 3 つの形は ADR-0031 が持つ。
 
 ## 検討した選択肢
 
-| 案                                                                                              | 評価                                                                                                                                     | 採否     |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `expect()` の引数に届く同期読みを lint で報告する                                               | 禁止したい形が式の構造で表せる。公式が DANGER 表記で同じ向きを案内しており、他エコシステムに先行例がある                                 | **採用** |
-| 代替 matcher の無い読み (`getBoundingClientRect` 等) を列挙して直接 `expect()` へ流すことを許す | 2026-09-22 まで採用。1 要素ずつ外すと helper の自己テスト 1 件を除き 0 件で、守る対象が無かった。`expect.poll` の中で読めば retry も付く | 撤回     |
-| レビューで見る (ADR-0013 の現状)                                                                | ADR-0013 の 3 日後の PR #16 (`91515ee`) が同じ形を新しく足している。判断を誤ってもほとんどの実行で通るため、レビューでは落ちない         | 却下     |
-| `element()` を全面禁止し `findElement()` に統一する                                             | `getBoundingClientRect` などの実測が待つ理由のない箇所まで `await` になる。ADR-0013 が同じ理由で却下している                             | 却下     |
-| `lint.overrides` で未移行ファイルを列挙して段階移行する                                         | 対象は 13 ファイルで、列挙と、それを消す作業のほうが移行より大きい                                                                       | 却下     |
+| 案                                                                                              | 評価                                                                                                                                            | 採否     |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `expect()` の引数に届く同期読みを lint で報告する                                               | 禁止したい形が式の構造で表せる。公式が DANGER 表記で同じ向きを案内しており、他エコシステムに先行例がある                                        | **採用** |
+| 代替 matcher の無い読み (`getBoundingClientRect` 等) を列挙して直接 `expect()` へ流すことを許す | 1 要素ずつ外すと helper の自己テスト 1 件を除き 0 件で、守る対象が無い (2026-09-22 実測)。`expect.poll` の中で読めば retry も付く               | 却下     |
+| レビューで見る                                                                                  | ADR-0013 の 3 日後のコミット `91515ee` が、レビューを経て同じ形を新しく足している。判断を誤ってもほとんどの実行で通るため、レビューでは落ちない | 却下     |
+| `element()` を全面禁止し `findElement()` に統一する                                             | `getBoundingClientRect` などの実測が待つ理由のない箇所まで `await` になる。ADR-0013 が同じ理由で却下している                                    | 却下     |
+| `lint.overrides` で未移行ファイルを列挙して段階移行する                                         | 対象は 13 ファイルで、列挙と、それを消す作業のほうが移行より大きい                                                                              | 却下     |
 
 ## 出典
 

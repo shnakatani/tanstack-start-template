@@ -204,7 +204,7 @@ axe を通したことは「WCAG を満たした」を意味しない。2026-09-
 
 ## Consequences
 
-- `expectNoA11yViolations` は `incomplete` を見ない。ADR-0018 の animation 無効化は、逆の基準だった頃の回避策である。基準を変えた今、あの回避策が他の理由 (実イベントの規律、ADR-0013 / ADR-0015) でも要るかは別に確かめる
+- `expectNoA11yViolations` は `incomplete` を見ない。ADR-0018 の animation 無効化は、`incomplete` を落とす基準に対する回避策として置かれている。`incomplete` を見ない基準の下で、その回避策が他の理由 (実イベントの規律、ADR-0013 / ADR-0015) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
 - story で統制できるのは markup までで、フォントは実行環境が持つ。テキストの折り返し位置が変われば矩形の重なり先も変わるので、同じ story が手元で緑・CI で赤になりうる。出たときに直す対象は markup 側にある (折り返して枠の外へ出る書き方をやめる)
 - `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (axe-core#4861 / #3486) 見直す

@@ -10,13 +10,6 @@
 
 framework の選定は `tanstackStart()` plugin と Storybook の Vite builder の衝突 (storybookjs/storybook#33747) が決める。標準の Vite builder はこの衝突を自分で回避する必要があり、server function を呼ぶ部品の story を組めない。
 
-本 ADR は 2 つの spec の決定を統合する。
-
-- 2026-09-19 の spec: 導入そのものの決定
-- 2026-09-20 の spec: play function の対象を再検討し、前者の「play を書く対象の判断軸」と「`action/` を対象外とする判断」を置き換えた
-
-spec はどちらも当時の記録として凍結する。以後の判断は後者を正とする。
-
 ## Decision
 
 ### 1. framework は TanStack 専用のものを使う
@@ -39,7 +32,7 @@ story の基本は部品が取りうる状態を並べることで、振る舞�
 
 `ui/` の play は「開く」までにする。開いた先の操作 (選択・送信・閉じる) は書かない。registry 部品の振る舞いは上流が持っていて、こちらの story で固定すると上流の更新のたびに落ちる。
 
-対象の層は `ui/` `action/` `parts/` とし、`screens/` は外す (実画面で見るほうが早い)。当初 `action/` も対象外としていたが、pending 表現に server function の stub が要るという当初の理由は誤りで、決着する Promise を渡すだけで pending の描画と解除が成立した (2026-09-20 実測)。
+対象の層は `ui/` `action/` `parts/` とし、`screens/` は外す (実画面で見るほうが早い)。`action/` の pending 表現に server function の stub は要らない。決着する Promise を渡すだけで pending の描画と解除が成立する (2026-09-20 実測)。
 
 play で書いた検証は既存のブラウザテストから削る。同じ振る舞いを 2 箇所で固定しない。
 
@@ -114,9 +107,9 @@ Storybook の test 実行では ADR-0018 の animation 無効化を適用しな�
 
 JS で比を計算する形そのものにも無理がある。ブラウザは sRGB 外の `oklch()` を clip し、alpha を持つ背景は下地と合成する。描画されていない値を計算しても実際の見え方と一致しない。
 
-実際に重なる組み合わせを実テキストとして描けば、`parameters.a11y.test` の axe がそのまま判定する。新しい依存は要らず、gamut も alpha も正確になる。この形で試したところ、当時の `--destructive: oklch(0.53 0.245 27.325)` (上流の既定値でも ADR-0024 移行後の値でもない、2026-09-20 時点でこのリポジトリが持っていた値) における `bg-destructive/20` と `text-destructive` が 3.74:1 で不合格になった。破壊ボタンの hover の実在の組み合わせである。
+実際に重なる組み合わせを実テキストとして描けば、`parameters.a11y.test` の axe がそのまま判定する。新しい依存は要らず、gamut も alpha も正確になる。2026-09-20 に `--destructive: oklch(0.53 0.245 27.325)` でこの形を試すと、`bg-destructive/20` と `text-destructive` が 3.74:1 で不合格になった。破壊ボタンの hover の実在の組み合わせである。
 
-この形を採り、実在の対を描く story を `src/components/contrast.stories.tsx` に置いた。トークンの値をどう決めるか、および axe がルールを持たない非テキストの 3:1 (WCAG 1.4.11) をどう扱うかは ADR-0024 が引き取った。
+この形を採り、実在の対を描く story を `src/components/contrast.stories.tsx` に置く。トークンの値をどう決めるか、および axe がルールを持たない非テキストの 3:1 (WCAG 1.4.11) をどう扱うかは ADR-0024 が持つ。
 
 トークンの一覧を CSSOM から読む選択の帰結として、`static` が要る。`inline` は utility へ値を直接埋め込むため、`rounded-*` の utility を書いても対応する変数を読む rule が生まれない。Tailwind は既定で参照されている変数だけを出力するので、実際に使っているトークンでもカタログから消える。
 
@@ -183,13 +176,13 @@ post 順の config フックで名前を戻す手も効かない。addon の上�
 
 `src/components/ui/` の registry 部品はすべてカタログ化する。消費側からの import 件数で絞らない。
 
-当初は「import 0 件の部品には story を書かない」としていたが、この基準は成立しなかった。理由は 3 つで、いずれも 2026-09-20 の実測による。
+「import 0 件の部品には story を書かない」という基準は成立しない。理由は 3 つで、いずれも 2026-09-20 の実測による。
 
 - **消費者の母数が捨てられる前提のもの。** `README.md` はデモアプリ (`src/features/notes/` と `src/routes/notes/`) の削除を利用者へ案内している。削除すると `empty` のように消費者が 0 件へ落ちる部品が出る。テンプレートの利用者にとって「テンプレート本体が今使っているか」はカタログの価値と無関係である
 - **基準が推移的に閉じない。** `sheet` / `tooltip` は `sidebar` からのみ、`textarea` / `input-group` は `combobox` からのみ参照され、その参照元自体に消費者がいない。`ui/` の外で数えると 0 件になるが、素朴に数えると 1 件以上になる。同じ状態の部品が数え方だけで両側へ分かれる
 - **検査の穴が残る。** story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる
 
-上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いており、この決定はその既定値へ寄せたことになる。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
+上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いており、この決定はその既定値に沿う。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
 
 story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかどうかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める。
 
@@ -211,7 +204,7 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 | 既存のブラウザテストを丸ごと story へ移す                | portable stories は state 更新を伴う再描画を支援しない。待機・実イベント・animation の規律を移植する動機も無い                                                        | 却下     |
 | トークンを公式の `ColorPalette` で書く                   | 色値を MDX へ書き写すため `styles.css` と二重管理になる                                                                                                               | 却下     |
 | トークンを専用 addon で一覧化する                        | `styles.css` へ注釈コメントを足す必要があり、Storybook 専用の記述が SSOT に混ざる                                                                                     | 却下     |
-| コントラスト比を自前で計算する                           | 対応する色空間を実装ごと抱える。`oklch()` を読めない実装になり、変換のためにブラウザの色パーサを借りる連鎖が起きた                                                    | 却下     |
+| コントラスト比を自前で計算する                           | 対応する色空間を実装ごと抱える。`oklch()` を読めない実装になり、変換のためにブラウザの色パーサを借りる連鎖が起きる                                                    | 却下     |
 | 全トークンを単一の背景と比べる                           | 画面上で重ならない組み合わせの比が並び、閾値を割ったかどうかの判断に使えない                                                                                          | 却下     |
 | `styles.css` に `static` を付ける                        | 未参照の宣言が本番 CSS へ乗り、この template から作られる全プロジェクトが払う。差の測り方は `@theme inline` と `@theme static inline` を入れ替えて `vp build` を 2 回 | 却下     |
 | トークン名を `styles.css` のソースから読む               | `static` が無いと未出力の変数は `getComputedStyle` で解決できず、名前だけが並ぶ                                                                                       | 却下     |
@@ -219,7 +212,7 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 | 検証専用 story をサイドバーへ出したまま置く              | 同じ見た目の story が並び、カタログとして読めなくなる (2026-09-20 に 1 部品で実測、9 story 中 4 つが重複)                                                             | 却下     |
 | 検証専用 story を別ファイルへ分ける                      | story glob と「部品の隣へ置く」規約の両方を変えることになる                                                                                                           | 却下     |
 | pending の見た目を決着しない action で作る               | 後続 story の Transition を止める (節 4 の実測)                                                                                                                       | 却下     |
-| `action/` を当初どおり対象外に保つ                       | pending 表現に server function の stub が要るという理由が実測で誤りと判明した                                                                                         | 却下     |
+| `action/` を対象外にする                                 | pending 表現に server function の stub が要るという理由は、実測で成り立たない (2026-09-20)                                                                            | 却下     |
 | 状態のカタログに徹し、対話的な部品にだけ play を書く     | 外見確認という目的を満たし、検証の二重化も保守費用の増大も避けられる                                                                                                  | **採用** |
 
 ## Consequences

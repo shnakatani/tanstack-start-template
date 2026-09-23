@@ -13,21 +13,21 @@
 - **Action**: `startTransition` に渡す非同期関数。`await` した Promise の決着まで Transition が続く (`useTransition` リファレンス)
 - **mutation**: `useMutation` を通して server function を呼ぶ操作 (POST 相当)。GET 相当のデータ取得は含まない
 
-### 現状
+### 決定時点のコード (2026-09-13)
 
-pending 表示は TanStack Query の mutation が持つ `isPending` から取っている (`.claude/rules/implementation.md`「イベントハンドラは同期に保つ」の 2026-09-13 改訂前の記述)。
-この ADR を書いた 2026-09-13 時点で、`startTransition` / `useTransition` / `useDeferredValue` / `useOptimistic` を使う箇所は `src/` に無かった。`useDeferredValue` はその後 ADR-0035 (2026-09-23) が検索の一覧で使い始めた。
+pending 表示は TanStack Query の mutation が持つ `isPending` から取っていた。
+`startTransition` / `useTransition` / `useDeferredValue` / `useOptimistic` を使う箇所は `src/` に無かった。
 
 ```bash
 grep -rn "useTransition\|startTransition\|useDeferredValue\|useOptimistic" src/   # 2026-09-13: 0 件
 grep -rln "useMutation(" src/ --include='*.tsx'                                   # 2026-09-13: 2 ファイル
 ```
 
-mutation を持つのは `src/routes/notes/-components/note-create-dialog.tsx` (追加) と `src/routes/notes/index.tsx` (削除) の 2 箇所である。
-どちらも `onSuccess` の中で `invalidateQueries` を `void` した直後にダイアログを `close()` する。
-削除の二重発火は `src/components/parts/delete-confirm-dialog.tsx` の `deleteConfirmMutationProps` が閉包のフラグで塞いでいる。コード上の理由は「`isPending` は再レンダー後にしか立たず、それより前に届く再クリックを `disabled` では止められない」だが、この前提は実測されていない (2026-09-13 に React の pending 描画は次のユーザーイベントより前に流れると確認した)。
+mutation を持つのは `src/routes/notes/-components/note-create-dialog.tsx` (追加) と `src/routes/notes/index.tsx` (削除) の 2 箇所だった。
+どちらも `onSuccess` の中で `invalidateQueries` を `void` した直後にダイアログを `close()` していた。
+削除の二重発火は `src/components/parts/delete-confirm-dialog.tsx` の `deleteConfirmMutationProps` が閉包のフラグで塞いでいた。コード上の理由は「`isPending` は再レンダー後にしか立たず、それより前に届く再クリックを `disabled` では止められない」だったが、この前提は実測されていなかった (2026-09-13 に React の pending 描画は次のユーザーイベントより前に流れると確認した)。
 
-mutation 以外のユーザー操作由来の更新は、`src/components/screens/route-error.tsx` の `handleRetry` (Error Boundary の `reset()` と `router.invalidate()`) と、ダイアログの開閉 (Base UI の handle) がある。
+mutation 以外のユーザー操作由来の更新は、`src/components/screens/route-error.tsx` の `handleRetry` (Error Boundary の `reset()` と `router.invalidate()`) と、ダイアログの開閉 (Base UI の handle) があった。
 
 ルート遷移は既に Transition である。
 `@tanstack/router-core` は match の commit を `router.startTransition` へ渡し (`load-client.js`)、`@tanstack/react-router` の `Transitioner` がそれを `React.startTransition` で包む。
@@ -127,7 +127,7 @@ React の `<form action>` + `useFormStatus` を使わないのは、submit の�
 react.dev が示す形は `useTransition` の `disabled={isPending}` と `useFormStatus` の `disabled={pending}` で、どちらも state だけで決着前の再操作を止める。`useActionState` は再操作を queue に積み、拒否しない。
 React はユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、2 回目の実イベントは `aria-disabled` の部品に届き、Base UI が click を止める。
 
-2026-09-13 まで Action 層の hook (当時の `useActionTransition`) は ref のフラグを併せ持っていた。理由は「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」だったが、この事象は実イベントでは起きず、フラグはその検証を通すためだけにあった。検証を実イベントで書き直した経緯と根拠は ADR-0015 が持つ。
+「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」ことを理由に ref のフラグを併せ持つ形は採らない。この事象は実イベントでは起きず、フラグはその検証を通すためだけのものになる。検証を実イベントで書く根拠は ADR-0015 が持つ。
 
 完了点 (a) (ADR-0016) では Action が close だけを含み Transition が確定直後に終わるため、close の animate-out の間は `isPending` の dedupe が効かない。同じ対象の mutation が pending なら handler を no-op にする (`queryClient.isMutating` の判定)。実例は `src/routes/notes/index.tsx` の `confirmDelete`。
 
@@ -165,17 +165,17 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | `useOptimistic` を一覧の行にも使う                            | TanStack/query #9742 の揺れが起きる。concurrent stores (react/react #35449) が出荷するまで成立しない                                                                | 却下     |
 | 基盤を React Aria へ替えて action prop を待つ                 | shadcn CLI は `--base aria` を持つが、shadcn-ui/ui #11724 (2026-09-01) の実測で API parity が無く porting になる。Action 層は基盤非依存なので、この判断と切り離せる | 別 ADR   |
 
-### 既存規範の改訂
+### 他の文書との関係
 
-| 文書                                   | 改訂                                                                                                                                   |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `.claude/rules/implementation.md`      | 「イベントハンドラは同期に保つ」を mutation を伴わない非同期処理に限定し、新節「ユーザー操作による更新は Transition の中で行う」を足す |
-| `.claude/rules/directory-structure.md` | コンポーネント配置の表に `src/components/action/` の行を足す                                                                           |
-| ADR-0004                               | 「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落を現在の事実に書き換え、`Revised` に経緯を残す            |
+| 文書                                   | この ADR に従う箇所                                                                                                        |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `.claude/rules/implementation.md`      | 「イベントハンドラは同期に保つ」は mutation を伴わない非同期処理に限る。「ユーザー操作による更新は Transition の中で行う」 |
+| `.claude/rules/directory-structure.md` | コンポーネント配置の表の `src/components/action/` の行                                                                     |
+| ADR-0004                               | 「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落                                              |
 
 ## Consequences
 
-- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と項目の busy は除く)。メモ画面の一覧のトリガーの全体無効化は ADR-0014 実装時の形だったが、ADR-0016 への移行で撤去した
+- pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と項目の busy は除く)。一覧のトリガーを全体で無効にするかは ADR-0016 の軸で決める
 - ダイアログを閉じる時点と、その間に止める範囲は ADR-0016 の軸で機能ごとに選ぶ。再取得完了前に閉じるときは、対象の項目が mutation の pending から busy を表現する
 - Transition 化で得るのは pending の自動管理、Action の順序保証 (完了点 (a) で Transition の外に出した mutation は除く。ADR-0016)、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 4 つ。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (制約 1、制約 4)
 - ルート遷移への `<ViewTransition>` 適用は別途判断する

@@ -97,13 +97,13 @@ grep -rn --include='*.test.tsx' -E '\.not\.(toHaveStyle|toBe)\(' src/ | grep -iE
 | 直接   | 実コードへ `.not.toHaveStyle("max-height: none")` を戻す    | `vp lint` が 1 件報告する                                                  |
 | 間接   | `lint.rules` は残したまま `lint.overrides` の適用先から外す | 違反が 0 件になり、`scripts/checks/integrity/lint-config.test.ts` が落ちる |
 
-### ADR-0013 を改訂する
+### ADR-0013 との関係
 
-ADR-0013 の Decision の表は「close 後に要素が消えたことの確認」に `expect.element(locator).not.toBeInTheDocument()` を充てていた。**これを `expectRemoved(locator)` へ改める。** ADR-0013 が決めた「待機を vitest の retry API に委ねる」ことは変えていない。`expectRemoved` はその式に名前を付けただけである。
+ADR-0013 の Decision の表は「close 後に要素が消えたことの確認」に **`expectRemoved(locator)` を充てる。** `expect.element(locator).not.toBeInTheDocument()` を素で書かない。ADR-0013 が決めた「待機を vitest の retry API に委ねる」ことはそのままで、`expectRemoved` はその式に名前を付けたものである。
 
 ### 肯定形は失敗するまで予算を使う
 
-否定から肯定の `expect.poll` へ移すと、失敗時の所要が変わる。否定は条件が最初から成立して即座に返っていたが、肯定は成立しない条件を assert の予算 (ADR-0030) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。挙動としては正しく、赤の所要が延びるのは検出力と引き換えである。
+否定を肯定の `expect.poll` で書くと、失敗時の所要が変わる。否定は条件が最初から成立すれば即座に返るが、肯定は成立しない条件を assert の予算 (ADR-0030) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。挙動としては正しく、赤の所要が延びるのは検出力と引き換えである。
 
 ### `toHaveStyle` で表せない 3 つの形
 

@@ -2,37 +2,35 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0013 (待機は retry API に委ねる。本 ADR は発火の側)。PR #16 (Action 層の導入) が持つ「二重発火を state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする
+- 関連: ADR-0013 (待機は retry API に委ねる。本 ADR は発火の側)、ADR-0014 (Action 層。「二重発火は state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする)
 
 ## Context
 
-PR #16 (Action 層の導入) の初期実装では、決着前の二重発火を塞ぐ実装に `useTransition` の `isPending` に加えて ref のフラグが入っていた。
-フラグを要求していたのは次の形のテストである。
+決着前の二重発火を塞ぐ実装に、`useTransition` の `isPending` に加えて ref のフラグを要求するテストの形がある。
 
 ```tsx
-// 当時は合成 click を送る helper を経由していた
 button.element().dispatchEvent(new MouseEvent("click", { bubbles: true }));
 button.element().dispatchEvent(new MouseEvent("click", { bubbles: true }));
 expect(action).toHaveBeenCalledOnce();
 ```
 
-`dispatchEvent` を同期に 2 回呼ぶと、1 回目のハンドラが積んだ state 更新は 2 回目より前に描画されない。フラグを外すとこのテストが落ち、フラグが「必要」に見えた。
+`dispatchEvent` を同期に 2 回呼ぶと、1 回目のハンドラが積んだ state 更新は 2 回目より前に描画されない。フラグを外すとこのテストが落ち、フラグが「必要」に見える。
 しかし実イベントでは 1 回のイベントごとに描画が済む。
 
-| 論点                       | 根拠                                                                                                                                                                                                                                                                                                      |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流す (react-dom 19.3.0 `scheduleImmediateRootScheduleTask`)                                                               |
-| React の保証               | reactwg/react-18 #21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                                                                                  |
-| 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する                              |
-| 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (PR #16 の `src/components/action/button.test.tsx` / `form.test.tsx` / `src/components/parts/delete-confirm-dialog.test.tsx` の 2 連射テスト、2026-09-13 の PR #16 branch で実測) |
+| 論点                       | 根拠                                                                                                                                                                                                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流す (react-dom 19.3.0 `scheduleImmediateRootScheduleTask`)                                  |
+| React の保証               | reactwg/react-18 #21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                                                     |
+| 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する |
+| 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (Action 層の button / form と削除確認ダイアログの 2 連射テストで実測)                                                                                |
 
 ### 合成 click は実物から静かにずれる
 
-当時の helper は `new MouseEvent("click", { bubbles: true })` を送っており、`cancelable` は既定の false だった。
+`new MouseEvent("click", { bubbles: true })` で送る合成 click は、`cancelable` が既定の false になる。
 実クリックと Enter 由来の click は cancelable=true かつ isTrusted=true である (2026-09-13、CDP 経由の実イベントで実測)。
-非 cancelable のイベントはリスナーが `preventDefault` で止められない (MDN `Event.cancelable`) ため、Base UI の `useButton` が `aria-disabled` の submit ボタンで呼ぶ `preventDefault` が効かず、form の暗黙 submit がテストでだけ通っていた。
+非 cancelable のイベントはリスナーが `preventDefault` で止められない (MDN `Event.cancelable`) ため、Base UI の `useButton` が `aria-disabled` の submit ボタンで呼ぶ `preventDefault` が効かず、form の暗黙 submit がテストでだけ通る。
 
-参照できる 3 つの実装はいずれも `bubbles` と `cancelable` を true にしており、当時はそれに合わせた。
+合成 click を実物へ寄せるとき、参照できる 3 つの実装はいずれも `bubbles` と `cancelable` を true にしている。
 
 | 参照                                        | 属性                                                                                                                              |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,7 +38,7 @@ expect(action).toHaveBeenCalledOnce();
 | Playwright `locator.dispatchEvent()`        | 「Events are `composed`, `cancelable` and bubble by default」。docs/input は `HTMLElement.click()` の挙動を起こす手段と位置づける |
 | testing-library `fireEvent.click`           | `event-map.js` の click は `bubbles` / `cancelable` / `composed` が true、`button` は 0                                           |
 
-合わせる先が 3 つあり、`isTrusted` はどうやっても合わない。この保守を続ける限り、同じ種類のずれが入りうる。
+合わせる先が 3 つあり、`isTrusted` はどうやっても合わない。合成 click の helper を保守する限り、同じ種類のずれが入りうる。
 
 ### vitest browser mode の API
 
@@ -56,11 +54,11 @@ expect(action).toHaveBeenCalledOnce();
 | Base UI    | `Button.test.tsx` の `focusableWhenDisabled` は user-event の `click` と `[Space]` / `[Enter]` を送り、ハンドラが 0 回であることを見る                                                                      |
 | React Aria | `Button.test.js` の `isPending` は user-event の `click` を 2 回、`tab` + `{Enter}` を 2 回送り、pending を立てた後の submit が来ないことを見る。同期 2 連射は無く、pending の描画を挟んでから 2 回目を送る |
 
-### 合成イベントを要求する場面は残っていない (2026-09-22 の再実測)
+### 合成イベントを要求する場面は無い (2026-09-22 実測)
 
-導入時の `dispatchNativeClick` は 2 つの理由を持っていた。inert バックドロップが pointer event を横取りすること、`aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトすることである。どちらも合成イベントを要求しない。
+合成イベントを使う理由に挙がるのは 2 つある。inert バックドロップが pointer event を横取りすること、`aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトすることである。どちらも合成イベントを要求しない。
 
-**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを呼んでいた 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) を `locator.click()` へ置き換えて browser project を全件走らせると全件通る。ADR-0018 の animation 無効化が効いているという仮説は外れた。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
+**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを押す 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) は、`locator.click()` で browser project を全件走らせると全件通る。ADR-0018 の animation 無効化が効いているためではない。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
 
 **enabled 判定に落ちる 2 箇所は、別々の解になる。** 分かれ目は対象に `pointer-events: none` が当たっているかである。`pointer-events: none` の対象を、click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った。
 
@@ -84,11 +82,11 @@ expect(action).toHaveBeenCalledOnce();
 
 `src/components/parts/segmented-radio-group.test.tsx` の対象には `aria-disabled:pointer-events-none` が当たる。合成 click + `not.toHaveBeenCalled()` が固有に捕まえるのは、`aria-disabled` と `pointer-events: none` が正しいまま base-ui 内部のクリックガードだけが退行する場合に限られる。これは上流の担当で、base-ui 自身の `Button.test.tsx` が同じことを見ている (上表)。
 
-この assert を外しても、クラスから `aria-disabled:pointer-events-none` を落とす mutant は `expected 'auto' to be 'none'` で 97ms のうちに捕まる。消費側が `disabled` を渡さなくなる退行は `aria-disabled` の assert が捕まえる。このリポジトリのコードを守る側は、合成イベント抜きで揃っている。
+合成 click の assert が無くても、クラスから `aria-disabled:pointer-events-none` を落とす mutant は `expected 'auto' to be 'none'` で 97ms のうちに捕まる。消費側が `disabled` を渡さなくなる退行は `aria-disabled` の assert が捕まえる。このリポジトリのコードを守る側は、合成イベント抜きで揃っている。
 
 ### テンプレートとして配る重さ
 
-`src/test/native-click.ts` は、このリポジトリを複製した利用者全員へ配られる。一方で残る消費者は 2 つとも sample の部品だった。利用者が sample を消すと、消費者ゼロの helper と、合成イベントという扱いの難しい手段だけが残る。上流ライブラリの内部を守るためにその重さを配らない。
+合成 click の helper を `src/test/` に置くと、このリポジトリを複製した利用者全員へ配られる。一方でそれを使いうる消費者は 2 つとも sample の部品である。利用者が sample を消すと、消費者ゼロの helper と、合成イベントという扱いの難しい手段だけが残る。上流ライブラリの内部を守るためにその重さを配らない。
 
 ## Decision
 
@@ -125,18 +123,18 @@ expect(action).toHaveBeenCalledOnce();
 | 合成イベントの間に `await Promise.resolve()` を挟む               | ブラウザが実イベント間で行う checkpoint の模倣で、React の描画が microtask で流れる知識をテストに焼き込む。React 側の実装が変わると意味が変わる    | 却下     |
 | 合成イベントの同期 2 連射を残し、実装に ref のフラグを持つ        | 起きない事象への防御をテストが要求する形。react.dev の `disabled={pending}` の形から外れる (ADR-0014)                                              | 却下     |
 | 2 回目を `click({ force: true })` で送る                          | `data-disabled:pointer-events-none` の部品では下の要素へ届き、何が止めたか分からない。キーボードなら部品自身に届く                                 | 却下     |
-| 合成 click の helper を残し、用途を 1 つに絞る                    | 残る消費者が sample の部品だけになる。テンプレートの利用者が sample を消すと、消費者ゼロの helper が配られたままになる                             | 却下     |
+| 合成 click の helper を置き、用途を 1 つに絞る                    | 消費者が sample の部品だけになる。テンプレートの利用者が sample を消すと、消費者ゼロの helper が配られたままになる                                 | 却下     |
 | 合成 click で base-ui 内部のガードを見続ける                      | 守る対象が上流ライブラリの内部で、base-ui 自身のテストが同じことを見ている。このリポジトリのコードは `pointer-events` と状態属性の assert で守れる | 却下     |
-| カスタムコマンドで Playwright の `locator.dispatchEvent()` を呼ぶ | 公式経路だが、server 側のコマンド定義と型拡張が要る。合成イベントを使う場面が無くなったので不要                                                    | 却下     |
+| カスタムコマンドで Playwright の `locator.dispatchEvent()` を呼ぶ | 公式経路だが、server 側のコマンド定義と型拡張が要る。合成イベントを使う場面が無いので不要                                                          | 却下     |
 
 ## Consequences
 
-- `src/test/native-click.ts` と `src/test/native-click.test.tsx` を削除する。合成イベントを使う場面が無くなったので、helper だけを残さない
-- ダイアログ内のボタンを呼んでいた 4 箇所を `locator.click()` へ移す (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル)
-- `src/components/parts/choice-card.test.tsx` は `.click({ force: true })` へ移す。対象に `pointer-events: none` が無く、click が実際に届く
-- `src/components/parts/segmented-radio-group.test.tsx` は合成 click と `not.toHaveBeenCalled()` を落とす。クリックが届かないことは `pointer-events` の assert が持つ
+- 合成イベントを送る helper は `src/test/` に置かない
+- ダイアログ内のボタンは `locator.click()` で押す (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル)
+- `src/components/parts/choice-card.test.tsx` は `.click({ force: true })` で押す。対象に `pointer-events: none` が無く、click が実際に届く
+- `src/components/parts/segmented-radio-group.test.tsx` はクリックが届かないことを `pointer-events` の assert で見る。合成 click と `not.toHaveBeenCalled()` は使わない
 - 二重発火のテストは `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書く
-- `.claude/rules/testing.md`「クリックの発火方法」の順序を「`.click()` → キーボード → `.click({ force: true })`」にし、`force` がヒットテストを越えないことを併記する
+- `.claude/rules/testing.md`「クリックの発火方法」は「`.click()` → キーボード → `.click({ force: true })`」の順序と、`force` がヒットテストを越えないことを持つ
 - 合成イベントを足したくなったら、この ADR へ戻って却下の根拠を読む。`force: true` で届くかを先に測り、届くなら合成イベントは要らない
 
 `cancelable` を実イベントに合わせる手順は、合成イベントごと消えたので持たない。2026-09-13 に `cancelable` の既定が false で Base UI の `preventDefault` が効かず、実物では止まる form 送信がテストでだけ通った。合成イベントの属性を実物へ合わせ続ける保守は、この種の食い違いを生む側に回る。

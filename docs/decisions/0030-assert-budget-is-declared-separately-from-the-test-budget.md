@@ -92,7 +92,7 @@ Playwright は同じ分け方を公式に持ち、「Auto-retrying assertions li
 
 対処は呼ばないことである。mount を待つ用途は `expect.element(locator).toBeInTheDocument()` で足り、実測は `expect.poll` のコールバックで `element()` を読めば retry する (ADR-0029)。2026-09-22 時点で `src/` に `findElement()` の呼び出しは無い。
 
-同日の導入時は `src/test/find-element.ts` に `{ timeout: ASSERT_TIMEOUT_MS }` を持たせる形を採り、文書化された既定 (テストの予算) を復元せず assert の予算を代わりに置いた。移行を終えると消費者がゼロになり、使い手のいない helper と自己テストを残す理由が無いので撤去した。
+`findElement` に `{ timeout: ASSERT_TIMEOUT_MS }` を渡す helper を置く形も採らない。呼び出しが 0 件なので、使い手のいない helper と自己テストが残るだけになる。
 
 代償のもう 1 つは、mount に `ASSERT_TIMEOUT_MS` 以上かかる要素を `expect.element` で待てなくなることである。このリポジトリでは全 project 同時実行の最遅テストが 3595ms なので届いているが、より重い画面を持つ利用者は値を上げる。
 
@@ -127,7 +127,7 @@ git grep -n '\.findElement(' main -- src/
 | 何もしない (vitest の既定のまま)                            | 赤になった assert 1 件が 14942ms かかる。テンプレートとして配るので、ブラウザテストが増えた先ほど効く    | 却下     |
 | `testTimeout` を短くして赤のコストを抑える                  | 待つべき assert の予算も一緒に縮む。遅い環境で緑のテストが落ちる                                         | 却下     |
 | `findElement` の既定を 15000 で復元する                     | 待機の予算が assert と 2 つに割れる。`findElement` がするのは肯定 assert と同じ種類の待機である          | 却下     |
-| `findElement()` に予算を渡す helper を置く                  | 2026-09-22 に採用したが、移行後に呼び出しが 0 件になり撤去した。mount 待ちは `expect.element` で足りる   | 撤回     |
+| `findElement()` に予算を渡す helper を置く                  | `src/` に呼び出しが 0 件で (2026-09-22 実測)、使い手がいない。mount 待ちは `expect.element` で足りる     | 却下     |
 
 ## 出典
 

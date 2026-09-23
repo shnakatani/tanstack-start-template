@@ -79,7 +79,7 @@ console.log(context.probeUser.uid);
 
 - 認証を足す手順が `src/start.ts` の 1 箇所になる。server function を新設しても認証は自動で通る
 - global function middleware が context へ足した値は、`.middleware()` を書かない server function からも型付きで読める (上記「実測」)
-- `beforeLoad` は残るので、未ログインで保護画面を開いたときのリダイレクトは従来どおり書ける。変わるのは、それを唯一の防御にしないことだけ
+- 未ログインで保護画面を開いたときのリダイレクトは `beforeLoad` に書いてよい。ただしそれを唯一の防御にしない
 - CSRF の現在の置き方 (global `requestMiddleware` + `filter`) は本 ADR の形と一致する。変更しない
 - 認可の middleware を足すとき、認証は既に global で通っている。認証への依存を明示したいなら `.middleware([authMiddleware])` で chain する
 - 認可の付け忘れを止める機械強制は持たない。base builder を置くまではレビューで見る

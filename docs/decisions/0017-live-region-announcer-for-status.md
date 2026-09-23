@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0014 (Action 層の pending 行を本 ADR が改訂する)、ADR-0016 (行の busy 表現の読み上げを本 ADR が引き取る)、ADR-0007 (a11y の床は WCAG 2.2 AA)、ADR-0034 (取得結果の通知はページの effect が決着で出す)
+- 関連: ADR-0014 (Action 層の pending 行は本 ADR に従う)、ADR-0016 (行の busy 表現の読み上げを本 ADR が引き取る)、ADR-0007 (a11y の床は WCAG 2.2 AA)、ADR-0034 (取得結果の通知はページの effect が決着で出す)
 
 ## Context
 
@@ -51,17 +51,17 @@ pending 中の状態をスクリーンリーダーへ伝えるために、条件
 | 自前の announcer を React の store (`useSyncExternalStore`) で描く  | Action の中の `announce()` で進行中の Transition が blocking に落ち得る (react.dev の Caveats)                                                              | 却下     |
 | `@react-aria/live-announcer` を入れる                               | 公式 lib だが 3.5.1 は `react-aria` (meta package) に依存する。React Aria への基盤変更は ADR-0014 で別 ADR 扱いにしており、announcer のために本体を入れない | 却下     |
 | ページ側で mutation の状態から文言を導く region                     | `useMutationState` から「削除しています」を組み立てる。ボタンの Transition の pending が届かず、issue #21 を解けない                                        | 却下     |
-| 項目ごとの `<output>` / 条件付き `Spinner` (ADR-0014 実装時の形)    | MDN / Base UI / Sara Soueidan の指針に反し、行数分の region が生まれる                                                                                      | 却下     |
+| 項目ごとの `<output>` / 条件付き `Spinner`                          | MDN / Base UI / Sara Soueidan の指針に反し、行数分の region が生まれる                                                                                      | 却下     |
 | `aria-busy` だけで伝える                                            | 変更中の印であって通知ではない。支援技術は busy の間の変化を無視してよい                                                                                    | 却下     |
 | toast で「削除しています」を出す                                    | 全員に見える通知になり、晴眼者には行の半透明で足りる情報が視覚のノイズになる                                                                                | 却下     |
 
 ## Consequences
 
-- ADR-0014「Action 層」の pending 行を「`Spinner` は視覚専用。状態は `aria-busy` と announcer」に改訂した (Revised)。同 ADR と `src/components/action/button.tsx` の子孫 role の表現を §5.2.9 の主語 (ユーザーエージェントが露出すべきでない) に揃えた。ADR-0016 の適用表の `<output>` の 1 文を本 ADR への参照に差し替えた
-- `.claude/rules/styling.md`「accessible name の与え方」の状態表示の行と直後の箇条書きに、通知は announcer に集約する、live region は初期マークアップに置いて消さない、を足した。同節の `role="status"` を accessible name で特定する記述は、announcer の文言で検証する形に改めた。`.claude/rules/styling.md`「状態表示」の `Spinner` の行に視覚専用 (`aria-hidden`) を添えた
-- テストは `getByRole("status", { name })` で項目の pending を掴む形をやめ、`aria-busy` と announcer の region のテキストで検証する
+- ADR-0014「Action 層」の pending 行は「`Spinner` は視覚専用。状態は `aria-busy` と announcer」とする。同 ADR と `src/components/action/button.tsx` の子孫 role の表現は §5.2.9 の主語 (ユーザーエージェントが露出すべきでない) に揃える。ADR-0016 の行の busy 表現の読み上げは本 ADR を参照する
+- `.claude/rules/styling.md`「accessible name の与え方」の状態表示の行と直後の箇条書きが、通知は announcer に集約する、live region は初期マークアップに置いて消さない、pending は announcer の文言で検証する、を持つ。同ファイル「状態表示」の `Spinner` の行は視覚専用 (`aria-hidden`) とする
+- テストは `getByRole("status", { name })` で項目の pending を掴まず、`aria-busy` と announcer の region のテキストで検証する
 - issue #21 (button 内の `role="status"` の露出) の対処は本 ADR で行う。実機のスクリーンリーダー (VoiceOver / NVDA) での読み上げ確認は #21 に残し、結果を本 ADR に日付付きで追記する
-- 削除完了で行ごと unmount されるとき、行のトリガーにあったフォーカスが body へ落ちる。ADR-0014 実装時からある事象で、本 ADR は完了の announce で通知は補うが、フォーカスの退避先は別途決める (起票)
+- 削除完了で行ごと unmount されるとき、行のトリガーにあったフォーカスが body へ落ちる。本 ADR は完了の announce で通知は補うが、フォーカスの退避先は別途決める (起票)
 - 再評価条件: Base UI か shadcn が announcer を出荷したら差し替える。React Aria へ基盤を変えるなら `announce` をそちらへ寄せる
 
 ## 出典
