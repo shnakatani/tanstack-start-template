@@ -13,7 +13,7 @@ palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-ra
 
 - semantic token を使う。淡色ハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0030 の段に乗せる
-- `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら ADR-0024 の許容リストにも記録する (`docs/guides/styling-and-tokens.md`「`color-mix()` を書く」)
+- `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら台帳 `docs/registry-deviations.md` にも記録する (`docs/guides/styling-and-tokens.md`「`color-mix()` を書く」)
 - 破壊操作は常時 destructive 色にする。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover だけの着色は touch 環境で出ない
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (ADR-0034)
@@ -79,11 +79,11 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
-- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする
-- `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える
-- 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`code-block.tsx`)
-- 本文の末尾側 padding がバー幅を上回り外側と端をそろえたいときだけ `data-has-overflow-y:pr-0` を書く。既定はバーも余白も `ScrollArea` 側 (ADR-0024)
-- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (ADR-0024)
+- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする (`docs/guides/registry.md`「公式のノブを先に探す」)
+- `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える (`docs/guides/registry.md`「公式のノブを先に探す」)
+- 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`docs/guides/registry.md`「公式のノブを先に探す」)
+- 本文の末尾側 padding がバー幅を上回り外側と端をそろえたいときだけ `data-has-overflow-y:pr-0` を書く。既定はバーも余白も `ScrollArea` 側 (`docs/registry-deviations.md` の scroll-area.tsx の行)
+- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (`docs/registry-deviations.md` の scroll-area.tsx の行)
 
 ### 親の gap で表現できない箇所
 

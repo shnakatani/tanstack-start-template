@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 // 付けて popup 外のみ適用にすることで、同じ意図を詳細度・順序に依存せず実現する。
 // aria-invalid 側のリングは対象外とし、popup 内でもエラー表示を維持する。
 // ガードテスト: input-group.test.tsx (--overwrite で patch が消えると fail する)。
-// 上流で修正されたらこの patch を落とし、ADR-0024 の行を削除する。
+// 上流で修正されたらこの patch を落とし、`docs/registry-deviations.md` の行を削除する。
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

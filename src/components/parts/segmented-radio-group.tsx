@@ -17,7 +17,7 @@ import { cn } from "cn";
  * 意匠は registry の Tabs (variant=default) から取っている。shadcn-ui/ui#8839 のとおり shadcn の
  * 現行 Tabs は実体が segmented control であり、この見た目が標準形である。ただし TabsTrigger は
  * cva 化されておらず借用できないため、値をこのファイルで持つ (registry を書き換えて export を
- * 増やすと ADR-0024 の許容リストに恒久的な乖離が増える)。
+ * 増やすと `docs/registry-deviations.md` の表に恒久的な乖離が増える)。
  *
  * **値の出所は tabs.tsx の tabsListVariants (トラック) と TabsTrigger (セグメント)。registry の
  * Tabs を再生成したときは突き合わせること。** そのままではない差分は次のとおり。

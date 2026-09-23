@@ -24,7 +24,7 @@ lint (`typescript/consistent-type-assertions`) が止める。`as const` は可�
 - 外部データ (DB の行 / API レスポンス等) は `v.parse(schema, data)` で検証する。スキーマは既存のもの (`src/features/<domain>/schema.ts`) を再利用する
 - テスト double もまず型注釈で表現する。抑制へ落とすのは、private constructor を持つ外部型のように構造的構築が閉じている場合だけ
 - 回避不能な場合のみ `oxlint-disable-next-line typescript/consistent-type-assertions` で行単位抑制し、理由を directive の `--` に書く
-- `src/components/ui/` の registry で抑制したら ADR-0024 の許容リストにも記録する
+- `src/components/ui/` の registry で抑制したら台帳 `docs/registry-deviations.md` にも記録する (ADR-0024)
 
 ## children prop は明示的に ReactNode で宣言する
 

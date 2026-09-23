@@ -64,10 +64,10 @@ paths:
 
 `src/components/ui/` を新規追加・改変したら、最初のコミット前に:
 
-1. 生成時 baseline を `docs/registry-baseline/<name>.tsx` に取る (新規追加時と `--overwrite` 再生成時)。手順は ADR-0024
-2. baseline との diff が許容リスト (ADR-0024) と 1:1 であることを確かめる。上流の形を保つ違反だけ行単位で抑制し、許容リストへ記録する
-3. コード側の理由コメントは、ADR だけでは実装者が誤る落とし穴に限る。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く
-4. 未使用での先行導入 (vendor preset) は許容する。chore コミットとして記録する
+1. 生成時 baseline を `docs/registry-baseline/<name>.tsx` に取る (新規追加時と `--overwrite` 再生成時)。手順は `docs/guides/registry.md`「baseline を取り直して取り込む」
+2. baseline との diff が台帳 `docs/registry-deviations.md` と 1:1 であることを確かめる。上流の形を保つ違反だけ行単位で抑制し、台帳へ記録する (ADR-0024)
+3. コード側の理由コメントは、ADR と台帳だけでは実装者が誤る落とし穴に限る。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く (`docs/guides/registry.md`「部品を足す」)
+4. 未使用での先行導入 (vendor preset) は許容する。chore コミットとして記録する (`docs/guides/registry.md`「部品を足す」)
 5. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらない (ADR-0048)
 
 ## ルートファイル

@@ -145,8 +145,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 
 ## Consequences
 
-- 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css`
-- 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0024 に従う
+- 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせと、上流が preset の値を変えたときの手順は `docs/guides/registry.md`「baseline と突き合わせる」にある
 - **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった
 - 測り直す手段は `mise run contrast` が持つ (ADR-0034)。比を書いた箇所を触るときは測り直す (手順は `docs/guides/styling-and-tokens.md`「比を測る」)
 - 「有彩色のアクセントは light と dark で役割を反転させる」の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける

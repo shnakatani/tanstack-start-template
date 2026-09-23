@@ -20,7 +20,7 @@ import {
 import { resolveColorToken } from "@/test/resolve-color-token";
 
 /**
- * ADR-0024 の許容リストにある sidebar.tsx の乖離 (`sidebarMenuButtonVariants` の開状態
+ * `docs/registry-deviations.md` の表にある sidebar.tsx の乖離 (`sidebarMenuButtonVariants` の開状態
  * selector) を守る。この乖離を使う消費側コンポーネントのテストでも同じ配色は見えるが、
  * 消費側が作り替えられると乖離のガードごと消えるため registry 側にも置く
  * (先例: `input-group.test.tsx`)。
@@ -114,7 +114,7 @@ describe("SidebarMenuButton の開状態 (ADR-0024 の乖離)", () => {
 });
 
 /**
- * ADR-0024 の許容リストにある sidebar.tsx の乖離 (keydown 購読を `useEffectEvent` へ
+ * `docs/registry-deviations.md` の表にある sidebar.tsx の乖離 (keydown 購読を `useEffectEvent` へ
  * 切り出し、依存を空にする) を守る。切り出しを誤ると stale closure でショートカットが
  * 無言で効かなくなるため、上流の形にも本乖離にも共通の可視挙動で押さえる。
  * 開閉は desktop の器が持つ `data-state` で見る (getBySlot の属性で状態ごとに掴む)。
