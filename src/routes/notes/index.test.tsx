@@ -32,7 +32,8 @@ const { listNotes } = await import("@/features/notes/functions");
 //   3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)
 // - fake timers は使わない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
 // - 検索欄の landmark は `<search>` 要素で、部品のテストは要素名で見る。同梱の locator engine が
-//   `search` role を `<search>` に写さない (2026-09-23 に実測)
+//   `search` role を `<search>` に写さない (2026-09-23 に実測)。`<form role="search">` にして
+//   `getByRole("search")` で引く形は採らない。本番のマークアップをテストの欠落に合わせない
 // - 同じ画面で `q` が別の値へ変わる経路は `router.navigate` で作る。確定は replace なので、memory history の
 //   `back()` では前の `q` に戻れない
 //

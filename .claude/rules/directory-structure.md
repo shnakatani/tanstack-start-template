@@ -31,7 +31,7 @@ paths:
 - `argTypes` の `options` に `cva` の variant を写すときは型で網羅を強制する。型検査も lint も一致を見ない (ADR-0044)
 - トークンの story に typography の階層のような class の規範を写さない。写すと片方だけが古くなり、突き合わせる検査も無い
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。余白は `.storybook/preview.css` が持つ (ADR-0047)
-- story から部品へ渡す `className` は layout に限る。story は lint (`no-restyle`) の対象外なのでレビューで見る (ADR-0028)
+- story から部品へ渡す `className` は layout に限る。story は lint (`no-restyle`) の対象外なのでレビューで見る (ADR-0045)
 
 ## features と hooks と lib と server の境界
 

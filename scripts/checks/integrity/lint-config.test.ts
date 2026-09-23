@@ -217,6 +217,7 @@ describe("書いた設定が解決後も残っている", () => {
   });
 
   it("型検査を lint へ合流させている", () => {
+    // 設定の値だけを見る。設定が真のまま tsgolint が黙って動かない場合は、この検査では捕まえられない
     expect(printedConfig.options).toEqual({ typeAware: true, typeCheck: true });
   });
 

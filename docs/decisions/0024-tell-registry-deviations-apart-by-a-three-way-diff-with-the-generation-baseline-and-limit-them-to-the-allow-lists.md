@@ -30,7 +30,7 @@ vp exec shadcn add <name> --diff | grep -c '^│ │ @@'
 
 ## Decision
 
-**registry コードと `src/styles.css` への改変は、生成時 baseline を交えた 3-way で判別し、baseline とローカルの差分を下の許容リストの行に限る。** registry コードの中の lint 抑制も許容リストの行に限る。
+**registry コードと `src/styles.css` への改変、および registry コードの中の行単位の lint 抑制は、生成時 baseline を交えた 3-way で判別し、下の許容リストの行に限る。**
 
 ### 検査手順
 

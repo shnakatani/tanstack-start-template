@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0044 (story を状態のカタログにする) / ADR-0024 (registry 統制、付随ファイルの扱い) / ADR-0013 (層)
+- 関連: ADR-0044 (story を状態のカタログにする) / ADR-0024 (registry 統制、付随ファイルの扱い) / ADR-0013 (層) / ADR-0028 (外見は部品側の variant で配る)
 
 ## Context
 
@@ -23,6 +23,8 @@ story を置く場所と、どの部品に story を書くかを決める。`.st
 - **検査の穴が残る。** story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる
 
 上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いており、この決定はその既定値に沿う。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
+
+story は `no-restyle` / `require-static-classes` の適用外である。`vite.config.ts` の override が `src/components/{ui,action,parts}/**` を `excludeFiles` で外しており、story もそこに置くためである。部品へ `className` を直接渡しても lint は鳴らない (2026-09-20 実測)。渡してよい範囲は消費側と同じで、`no-restyle` の `allow: ["layout"]` に収まる class に限る。外見を上書きする class は部品側の variant にする (ADR-0028)。catalog は実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る。
 
 story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかどうかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める。
 

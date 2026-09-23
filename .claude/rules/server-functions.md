@@ -35,4 +35,5 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 | ドメインに属さない server fn と helper | `src/server/` 直下                         |
 
 - 実処理のファイル名に `.server.` を必ず入れる。既定の遮断はファイル名パターンだけなので、`src/server/db/` を引かない実処理 (外部 API や secret だけを扱うもの) は接尾辞を落とすと client から import できてしまう (ADR-0012)
+- 部分一致の検索は `likeContains` (`src/server/db/like-pattern.ts`) を使い、パターンと `ESCAPE` を手で組まない。忘れた検索は `%` `_` を含む入力で黙って壊れる (SQLite の LIKE: https://www.sqlite.org/lang_expr.html#like)
 - `createServerFn` の宣言と実処理を 1 ファイルにまとめない。実処理を server function を経由せず単体テストできる側に残すため (ADR-0012)

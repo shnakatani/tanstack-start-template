@@ -39,6 +39,8 @@ export async function restoreDefaultViewport(): Promise<void> {
  *
  * 公式の `toBeInViewport({ ratio: 1 })` は使わない。sub-pixel layout では全体が見えていても比が 1 に
  * 届かず、収まっていても落ちる実行がある (w3c/IntersectionObserver#477。2026-09-22 に 3 回中 2 回)。
+ * `{ ratio: 0.99 }` に緩める回避策も採らない。「全体が収まる」の主張を失い、閾値の根拠を popup の
+ * 高さごとに持つことになる。
  */
 export async function expectWithinViewport(target: Locator): Promise<void> {
   await expect

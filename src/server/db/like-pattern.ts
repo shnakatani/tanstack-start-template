@@ -14,7 +14,9 @@ function escapePattern(text: string): string {
  * 2026-09-23 時点で open)。SQLite にも無いので、ここで組む workaround である。
  * `instr()` は大文字小文字を区別する完全一致になり、`lower()` を挟むと行ごとに遅くなるので、
  * SQLite の `LIKE` の既定 (ASCII の英字だけ大文字小文字を無視) を使う。
- * 検証は handlers.test.ts が実 SQLite で行う (`%` / `_` / `\` を含む検索語)。
+ * 検証は handlers.test.ts が実 SQLite で行う (`%` / `_` / `\` を含む検索語)。`ESCAPE` 句との対応は、
+ * エスケープの純粋関数だけを単体で見ても抜けたまま通るので、SQL まで通して見る。
+ * 先頭が `%` の LIKE は index が効かず全行を走査する。件数が問題になったら FTS5 を検討する。
  */
 export function likeContains(column: SQLWrapper, text: string): SQL {
   return sql`${column} LIKE ${`%${escapePattern(text)}%`} ESCAPE ${ESCAPE_CHAR}`;

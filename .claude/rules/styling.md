@@ -93,8 +93,8 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 ### 内部スクロールを持つダイアログの組み方
 
 - 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる。見出しとフッターが常に見える (Base UI Dialog の Inside scroll の形)
-- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なる
-- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。余白が無いと ring が端で切れる
+- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる (`dialog-scroll-body.tsx`)
+- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。スクロール領域の内側に余白が無いと、端の要素の ring が境界で切れる (`dialog-scroll-body.tsx`)
 
 `DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める (実例: `note-create-dialog.tsx`)。
 

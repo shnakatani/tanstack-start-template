@@ -30,6 +30,9 @@ export const dialogScrollLayout = "flex min-h-0 flex-col gap-6";
  * 恒常的に viewport 高を超えるダイアログはこれと `DialogScrollBody` で組み、本体だけをスクロール
  * させる (Base UI Dialog の Inside scroll の形に、送信を持つ中間コンテナを足したもの)。組み忘れても
  * registry の Dialog の backstop (`popupOverflowBackstop`) で Popup ごと流れるので、内容は読める。
+ * 見出しと X ボタンは sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか
+ * 実測しないと分からなくなる。shadcn の例のように本文を `max-h-[50vh]` で打ち切る形も採らない。
+ * 打ち切りの値が viewport と Dialog の余白に追随せず、ダイアログごとに値を持つことになる。
  * `dialogScrollLayout` を当てた `ActionForm` で、`DialogScrollBody` と `DialogFooter` を包む。
  *
  * 依存の向きを parts → action にしてあるのは、汎用の `ActionForm` が特定のダイアログの
