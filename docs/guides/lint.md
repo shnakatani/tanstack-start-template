@@ -2,11 +2,12 @@
 
 Oxlint の設定を書き換えるとき、ルールを足すとき、自前のルールを書くときの手順と落とし穴を持つ。
 
-| 決定                                                                           | ADR      |
-| ------------------------------------------------------------------------------ | -------- |
-| ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする | ADR-0012 |
-| 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める          | ADR-0032 |
-| assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む      | ADR-0044 |
+| 決定                                                                                      | ADR      |
+| ----------------------------------------------------------------------------------------- | -------- |
+| ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする            | ADR-0012 |
+| design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る | ADR-0031 |
+| 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める                     | ADR-0032 |
+| assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む                 | ADR-0044 |
 
 ## how-to
 
@@ -138,6 +139,28 @@ error にする側の 4 ルール (`eslint-recommended`) は根拠の向きが�
 - registry コードの中の抑制は、台帳 `docs/registry-deviations.md` の「行単位の lint 抑制」にも記録する (ADR-0027)
 - `perf` の `no-await-in-loop` は順序に依存するループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く
 
+### `require-static-classes` を層の境界で有効にする
+
+`shadcn/require-static-classes` は `vite.config.ts` の `overrides` で、`no-restyle` と同じ `files` / `excludeFiles` の組に相乗りさせる (ADR-0031)。design system 自身の内部では、消費側の上書きを見る規則も、消費側の `className` を読める形に保つ規則も意味を持たない。境界そのものは ADR-0016 が決める。
+
+- 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定する
+- 落ちた `className` は `no-raw-colors` と `no-unknown-classes` も中身を読めない。読める渡し方は「`require-static-classes` が読む className」にある
+
+### variant 関数を宣言する
+
+`cva` で作った variant 関数を消費側から呼ぶ形を採ったら、`vite.config.ts` の `settings.shadcn.variantFunctions` へ宣言する。宣言しないと、shadcn/ui の Button docs が「As Link」で推奨する `className={buttonVariants(...)}` の形が `require-static-classes` で落ちる。テンプレートの利用者が公式どおり書いて lint が止まるのは不備になる。
+
+- 宣言は違反を黙らせる例外ではなく、variant 関数が何かを linter へ伝える設定である。`componentImports` と同じ恒久設定として扱う
+- 宣言するのは消費側から呼ぶ variant 関数に限る。層の内側でしか呼ばない関数は規則に当たらない
+- `mergeFunctions` へは登録しない。登録先による違いは次のとおり (2026-09-19 実測)
+
+| 登録先             | variant 関数の呼び出しの扱い                                                                                                          | 採否     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `variantFunctions` | 解決され、pass-through の `className` が `no-raw-colors` / `no-unknown-classes` に読まれる                                            | **採用** |
+| `mergeFunctions`   | 解決されるが、渡したオブジェクトのキー名 (`variant` / `className`) を class と誤読し、`no-restyle` と `no-unknown-classes` が誤報する | 却下     |
+
+- `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (「JS plugin の落とし穴」)
+
 ### `@shadcn/lint` の発火を確かめる
 
 3 ルール (`no-raw-colors` / `no-arbitrary-values` / `no-unknown-classes`) の発火は `--print-config` に出ない。次を一時ファイルへ置いて `vp lint <path>` を走らせ、3 行とも診断が出たら消す。
@@ -201,8 +224,8 @@ JS plugin を足す前に、oxlint ネイティブのルールで代替できな
 | 抑制 directive に登録していない名前を書いてもエラーにならない                                                       | ルールは有効なまま、抑制だけが無言で外れる (2026-09-19 に Oxlint 1.82.0 で実測)                                                                                                            | `jsPlugins` のエントリを `{ name, specifier }` で書き、directive はその `name` で書く。`@shadcn/lint` は `{ name: "shadcn", specifier: "@shadcn/lint" }` |
 | `rules` のキーに別名 (`@shadcn/lint/no-raw-colors`) を書く                                                          | 設定のパースが `Plugin '@shadcn/lint' not found` で落ちる                                                                                                                                  | plugin の `meta.name`、診断コード、rule key、抑制 directive が同じ名前 (`shadcn`) を共有する                                                             |
 | `--print-config` は JS plugin を読み込む前に短絡し、plugin 由来のルール名を捨てる (oxc-project/oxc#22117)           | `jsPlugins` の宣言は出力に出るが、`shadcn/*` のルールは出ず、無効に見える                                                                                                                  | 発火は「`@shadcn/lint` の発火を確かめる」の probe で見る                                                                                                 |
-| `settings.shadcn.componentImports` や `variantFunctions` を消しても、`--print-config` に `settings.shadcn` が出ない | `componentImports` を消すと自作部品が規則から見えなくなり、routes からの上書きが素通りする。`variantFunctions` を消すと variant 関数の呼び出しが落ちる。宣言が消えたことを見張るものは無い | どちらも消さない。宣言の理由は ADR-0031 (`variantFunctions`) と ADR-0032 (`componentImports`) が持つ                                                     |
-| 引数を取らない関数を `mergeFunctions` へ登録する                                                                    | 規則を通しながら、戻り値の中身の検査を落とせる (2026-09-19 実測)                                                                                                                           | 抜け道として使わない。variant 関数は `variantFunctions` へ宣言する (ADR-0031)                                                                            |
+| `settings.shadcn.componentImports` や `variantFunctions` を消しても、`--print-config` に `settings.shadcn` が出ない | `componentImports` を消すと自作部品が規則から見えなくなり、routes からの上書きが素通りする。`variantFunctions` を消すと variant 関数の呼び出しが落ちる。宣言が消えたことを見張るものは無い | どちらも消さない。宣言の理由は「variant 関数を宣言する」(`variantFunctions`) と ADR-0032 (`componentImports`) が持つ                                     |
+| 引数を取らない関数を `mergeFunctions` へ登録する                                                                    | 規則を通しながら、戻り値の中身の検査を落とせる (2026-09-19 実測)                                                                                                                           | 抜け道として使わない。variant 関数は `variantFunctions` へ宣言する (「variant 関数を宣言する」)                                                          |
 
 ## explanation
 
@@ -247,6 +270,23 @@ recommended 外だが `correctness` 経由で有効なままのルールが 4 �
 off にする判断は違反が出たときに個別に行う (registry コードでの行単位抑制は台帳 `docs/registry-deviations.md` が持つ)。
 
 `anchor-ambiguous-text` は oxlint に実装があり名指しすれば足せるが、上流 recommended に含まれないため足さない。
+
+### `require-static-classes` が読む className
+
+規則を有効にした状態で `src/routes/` へ probe を置き、`vp lint <probe>` で測った (2026-09-19、`@shadcn/lint` 0.1.0)。
+
+| 消費側の書き方                              | `require-static-classes` | 中身が他の規則に読まれるか |
+| ------------------------------------------- | ------------------------ | -------------------------- |
+| 静的な文字列                                | 通る                     | 読まれる                   |
+| 同一ファイル内の `const` (再代入なし)       | 通る                     | 読まれる                   |
+| `cn()` の引数                               | 通る                     | 読まれる                   |
+| 他ファイルから import した `const`          | 落ちる                   | 読まれない                 |
+| 関数呼び出しの戻り値                        | 落ちる                   | 読まれない                 |
+| `variantFunctions` へ宣言した関数の呼び出し | 通る                     | 読まれる                   |
+
+- 同じ文字列 (`flex min-h-0 flex-col gap-6`) を 2 通りで渡すと差が出る。同一ファイルの `const` として渡すと含まれる `gap-6` に `no-restyle` が出るが、import した `const` として渡すと `require-static-classes` だけが出て中身の診断は消える
+- ファイルを跨いだ定数が解決されないのは実装上の制約である。`node_modules/@shadcn/lint/dist/index.js` の `resolveIdentifier` は、変数の定義が `Variable` 型でなければ解決を打ち切る (`def.type !== "Variable"`)。import 束縛はこの型を持たない
+- 規則を採用しない案の比較は ADR-0031 にある。`variantFunctions` を宣言しない案は、shadcn/ui が推奨する形が書けず、テンプレートの利用者が公式どおり書くと lint が止まるので却下した (shadcn/ui「Button」: https://ui.shadcn.com/docs/components/button)
 
 ### `correctness` と基準のずれ
 

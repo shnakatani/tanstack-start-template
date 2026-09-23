@@ -37,7 +37,7 @@ export default defineConfig({
           name: "scripts-tools",
           // 許可リストにすると、ツールを足すたびにここへ 1 行足すまでテストが無言で
           // 収集されない。検査だけを除いて残りを拾う形にする。検査は壊れる原因が違うので
-          // 別 project が持つ (拒否リストの形は ADR-0037)
+          // 別 project が持つ (拒否リストの形は docs/guides/styling-and-tokens.md「比の測り方を置いた理由」)
           //
           // 除外した `scripts/checks/` の中は各検査の project が拾う。いま拾っているのは
           // `checks-integrity` の `integrity/` だけなので、そこへ検査を足すときは project も

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0048 (framework) / ADR-0050 (play の操作とブラウザテストの分担) / ADR-0053 (story の a11y 検査) / ADR-0051 (story の置き場所と対象) / ADR-0052 (トークンの story が読む CSS の作り方) / ADR-0016 (層) / ADR-0020 (Transition)
+- 関連: ADR-0048 (framework) / ADR-0050 (play の操作とブラウザテストの分担) / ADR-0053 (story の a11y 検査) / ADR-0051 (story の置き場所と対象) / ADR-0016 (層) / ADR-0020 (Transition)
 
 ## Context
 

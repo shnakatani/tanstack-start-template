@@ -29,7 +29,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 **上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、「有彩色のアクセントは light と dark で役割を反転させる」以降で決める本リポジトリの段ではない。
 
-計測は生成した `styles.css` を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` (ADR-0037)。
+計測は生成した `styles.css` を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` (`docs/guides/styling-and-tokens.md`「比の測り方を置いた理由」)。
 
 この表は 2026-09-21 の観測として凍結する。8 色 17 テーマぶんの生成物が残っておらず、`mise run contrast` は `src/styles.css` のトークンしか読まないので測り直せない。
 
@@ -147,7 +147,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 
 - 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせと、上流が preset の値を変えたときの手順は `docs/guides/registry.md`「baseline と突き合わせる」にある
 - **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった
-- 測り直す手段は `mise run contrast` が持つ (ADR-0037)。比を書いた箇所を触るときは測り直す (手順は `docs/guides/styling-and-tokens.md`「比を測る」)
+- 測り直す手段は `mise run contrast` が持つ。比を書いた箇所を触るときは測り直す (手順は `docs/guides/styling-and-tokens.md`「比を測る」)
 - 「有彩色のアクセントは light と dark で役割を反転させる」の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
 - 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。この対は light dark とも 3:1 を大きく下回る。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
 - focus 指標の不足は `--ring` を `--primary` と同値にしても残る。`--background` の上で、`ring-ring/50` は light が 3:1 を割り dark は満たす。不透明で使う `border-ring` / `outline-ring` は light dark とも満たす

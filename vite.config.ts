@@ -67,7 +67,7 @@ export default defineConfig({
         componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
         // cva で作った variant 関数を宣言する。宣言しないと消費側の buttonVariants({...}) が
         // require-static-classes で落ちる。shadcn 公式の Button docs は「As Link」でこの形を
-        // 推奨しており、テンプレート利用者がそのまま書けるようにする (ADR-0031)。
+        // 推奨しており、テンプレート利用者がそのまま書けるようにする (docs/guides/lint.md「variant 関数を宣言する」)。
         // mergeFunctions は使わない。オブジェクトを渡す関数に当てるとキー名を class と誤読する
         variantFunctions: ["buttonVariants"],
       },

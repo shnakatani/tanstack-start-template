@@ -1,4 +1,4 @@
-/* scan の対象をアプリのソースへ絞る (ADR-0052) */
+/* scan の対象をアプリのソースへ絞る (docs/guides/styling-and-tokens.md「scan と `theme(static)` の範囲」) */
 @import "tailwindcss" source("../src");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -21,7 +21,7 @@
 
 /* static はここに付けない。付けると本番の CSS が使っていない変数の分まで持つ。
    カタログに要る分は .storybook/preview.css がこのファイルを theme(static) 付きで
-   読み直して掛ける (ADR-0052) */
+   読み直して掛ける (理由は先頭の source() と同じガイドの節) */
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;
@@ -84,7 +84,7 @@
      下の `@utility example-placeholder` だけで露出させる。通すと text-placeholder や
      data-placeholder:text-placeholder まで生成され、select の実テキストへ当てられる。
      そこは WCAG 1.4.3 が掛かり、dark の `--background` へ `--input/30` を重ねた上では割る
-     (`mise run contrast` で測る。ADR-0037)。公式も、utility を生やさない値は
+     (`mise run contrast` で測る。docs/guides/styling-and-tokens.md「比を測る」)。公式も、utility を生やさない値は
      @theme でなく :root へ置くとしている (tailwindcss.com/docs/theme) */
   --placeholder: oklch(56% 0.021 213.5); /* mist-500 */
   --accent: oklch(0.963 0.002 197.1);
