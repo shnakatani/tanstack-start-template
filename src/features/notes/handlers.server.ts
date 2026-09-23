@@ -1,8 +1,8 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import * as v from "valibot";
 
 import { createDb } from "@/server/db";
-import { escapeLikePattern, LIKE_ESCAPE_CHAR } from "@/server/db/like-pattern";
+import { likeContains } from "@/server/db/like-pattern";
 import { notes } from "@/server/db/schema";
 
 import { noteSchema } from "./schema";
@@ -22,10 +22,7 @@ export function createNoteHandlers(getDb: () => NotesDb) {
     list: async ({ q }: NoteListFilter): Promise<Note[]> => {
       // 空の q は絞り込みなし。`where(undefined)` は drizzle が条件なしとして扱う。
       // 部分一致は LIKE で、入力のワイルドカードは ESCAPE でリテラルにする (ADR-0033)
-      const titleMatches =
-        q === ""
-          ? undefined
-          : sql`${notes.title} LIKE ${`%${escapeLikePattern(q)}%`} ESCAPE ${LIKE_ESCAPE_CHAR}`;
+      const titleMatches = q === "" ? undefined : likeContains(notes.title, q);
       // createdAt はミリ秒精度で、同一ミリ秒の連続作成では順序が決まらない。
       // 単調増加する id を第 2 キーに置いて並びを決定的にする
       const rows = await getDb()

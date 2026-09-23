@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { BUSY_OPACITY_CLASS } from "./busy-opacity";
 import type { DataTableFeatures } from "./data-table-features";
 import { dataTableFeatures } from "./data-table-features";
 
@@ -78,14 +79,8 @@ export function DataTable<TData extends RowData>({
                 aria-busy={busy}
                 // busy 行の半透明は Tailwind の aria-busy variant (`[aria-busy="true"]`) で
                 // 当てる。aria-busy の型は Booleanish で文字列 "false" も来るが、属性セレクタは
-                // "true" にしか一致しないので JS で真偽を判定しない。
-                // 値が 60 なのは、`opacity-50` が light で本文のコントラストを WCAG 1.4.3 の
-                // 4.5:1 より下へ落とすため (ADR-0016)。dark は満たすが、テーマで値を変えない。
-                // 当たる対は `--background` の上の `--foreground` で、行の不透明度がそのまま
-                // 文字へ掛かるので不透明度を綴りへ移して測る:
-                //   mise run contrast -- --theme light --bg '--background' --fg '--foreground/50'
-                //   mise run contrast -- --theme light --bg '--background' --fg '--foreground/60'
-                className="aria-busy:opacity-60"
+                // "true" にしか一致しないので JS で真偽を判定しない。値の根拠は busy-opacity.ts
+                className={BUSY_OPACITY_CLASS}
               >
                 {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id} className={cell.column.columnDef.meta?.cellClassName}>

@@ -27,16 +27,15 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { listNotes } = await import("@/features/notes/functions");
 
-// debounce の待ちを広げる (理由は -components/notes-page.test.tsx の同じ vi.mock)。戻るの直前に打った途中入力が
-// 実値の待ちで決着すると、その通知が混ざって配列の完全一致が落ちる。作り直されたページの
-// 通知は debounce を待たない (初期値が q そのもの) ので、広げても Enter と戻るの通知は即座に出る
+// debounce の待ちを広げる (理由は -components/notes-page.test.tsx の同じ vi.mock)。確定と戻るの直後は
+// 編集の base が URL と合わず debounce 済みの値を使わないので、広げても Enter と戻るの通知は即座に出る
 vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
   ...(await importOriginal()),
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
+import { noteSearchbox } from "./-components/note-search-field.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
-import { NOTE_SEARCH_LABEL } from "./-lib/note-search";
 import { Route } from "./index";
 
 /**
@@ -82,10 +81,6 @@ async function renderRoute(initialLocation: string) {
   return { screen, router };
 }
 
-function searchbox(screen: Awaited<ReturnType<typeof renderRoute>>["screen"]) {
-  return screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL });
-}
-
 /**
  * route の定義。ページ本体の描画は -components/notes-page.test.tsx が持つ。
  * loader と wrapper (Route hooks と通知) は下の describe が実 router で見る
@@ -123,7 +118,7 @@ describe("/notes route の wrapper (実 router)", () => {
   it("URL の q が loader と入力欄に届く", async () => {
     const { screen } = await renderRoute("/notes?q=abc");
 
-    await expect.element(searchbox(screen)).toHaveValue("abc");
+    await expect.element(noteSearchbox(screen)).toHaveValue("abc");
     // loader が温めた key を component が読むので 1 回。loaderDeps が無いと空の deps の取得が先に走る
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "abc" } });
     // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
@@ -133,7 +128,7 @@ describe("/notes route の wrapper (実 router)", () => {
   it("入力して Enter すると URL の q が確定する", async () => {
     const { screen, router } = await renderRoute("/notes");
 
-    await searchbox(screen).fill("xyz");
+    await noteSearchbox(screen).fill("xyz");
     await userEvent.keyboard("{Enter}");
 
     await expect.poll(() => router.state.location.search).toEqual({ q: "xyz" });
@@ -145,22 +140,22 @@ describe("/notes route の wrapper (実 router)", () => {
       expect(readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
     });
     // 入力欄は作り直されず、フォーカスが残る (key={q} でページを作り直すと body へ落ちる)
-    await expect.element(searchbox(screen)).toHaveFocus();
+    await expect.element(noteSearchbox(screen)).toHaveFocus();
   });
 
   it("戻るで URL の q が変わると、入力欄の途中入力を捨ててその q に揃う", async () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
-    await expect.element(searchbox(screen)).toHaveValue("abc");
+    await expect.element(noteSearchbox(screen)).toHaveValue("abc");
 
-    await searchbox(screen).fill("xyz");
+    await noteSearchbox(screen).fill("xyz");
     await userEvent.keyboard("{Enter}");
     await expect.poll(() => router.state.location.href).toBe("/notes?q=xyz");
-    await searchbox(screen).fill("typed");
+    await noteSearchbox(screen).fill("typed");
 
     router.history.back();
 
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
-    await expect.element(searchbox(screen)).toHaveValue("abc");
+    await expect.element(noteSearchbox(screen)).toHaveValue("abc");
     // 戻るで入れ替わった結果も通知する。同じ条件へ戻っても、直前に通知した条件と違えば出す
     await vi.waitFor(() => {
       expect(readAnnouncements()).toEqual([
@@ -173,7 +168,7 @@ describe("/notes route の wrapper (実 router)", () => {
   it("空白だけで Enter すると q は URL に残らない", async () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
 
-    await searchbox(screen).fill("   ");
+    await noteSearchbox(screen).fill("   ");
     await userEvent.keyboard("{Enter}");
 
     await expect.poll(() => router.state.location.href).toBe("/notes");
@@ -182,7 +177,7 @@ describe("/notes route の wrapper (実 router)", () => {
   it("空にして Enter すると q が URL から消える", async () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
 
-    await searchbox(screen).fill("");
+    await noteSearchbox(screen).fill("");
     await userEvent.keyboard("{Enter}");
 
     await expect.poll(() => router.state.location.href).toBe("/notes");
@@ -192,7 +187,7 @@ describe("/notes route の wrapper (実 router)", () => {
     const capped = "a".repeat(NOTE_QUERY_MAX_LENGTH);
     const { screen } = await renderRoute(`/notes?q=${capped}a`);
 
-    await expect.element(searchbox(screen)).toHaveValue(capped);
+    await expect.element(noteSearchbox(screen)).toHaveValue(capped);
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: capped } });
   });
 

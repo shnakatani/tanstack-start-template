@@ -209,7 +209,6 @@ describe("noteListFilterSchema", () => {
     expect(v.parse(noteListFilterSchema, { q: "   " })).toEqual({ q: "" });
   });
 
-  // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は通り、cap+1 は落ちる
   // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は保ち、cap+1 は cap で切る (reject しない)
   it("上限を超えた分は切り詰め、エラーにしない", () => {
     const cap = NOTE_QUERY_MAX_LENGTH;

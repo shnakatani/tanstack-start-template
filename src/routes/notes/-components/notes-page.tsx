@@ -15,7 +15,6 @@ import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY, notesQueryOptions } from "@/features/notes/queries";
-import type { NoteListFilter } from "@/features/notes/schema";
 import { NOTE_ENTITY_LABEL, noteListFilterSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
@@ -29,43 +28,47 @@ import { NOTES_PAGE_TITLE } from "../-lib/notes-page-title";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 import { NoteSearchField } from "./note-search-field";
 
+/** URL / server function と同じ schema で正規化する (trim / 上限)。 */
+function normalizeQuery(text: string): string {
+  return v.parse(noteListFilterSchema, { q: text }).q;
+}
+
 /**
  * 一覧ページ本体。`q` は URL で確定した検索語、`onQueryChange` は確定の要求 (submit)。
  * route ファイルから export せずここに置く (ADR-0012)。入力欄と一覧の流れは ADR-0033、
  * 件数の通知は ADR-0034。
  */
 export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: string) => void }) {
+  // 入力欄の state は URL の q に対する編集。URL が変われば base が合わなくなり、表示も debounce 済みの
+  // 値も q に戻る (ADR-0033)
   const [edit, setEdit] = useState<{ base: string; text: string } | null>(null);
   const text = edit !== null && edit.base === q ? edit.text : q;
   function handleTextChange(next: string) {
     setEdit({ base: q, text: next });
   }
-  // URL / server function と同じ schema で正規化 (trim / 上限) するのは入力の直後の 1 回。以降の
-  // debounce / deferred / key / submit はこの値から導く
-  const draftQ = v.parse(noteListFilterSchema, { q: text }).q;
-  const [debouncedQ] = useDebouncedValue(draftQ, { wait: NOTE_SEARCH_DEBOUNCE_MS });
-  // 入力欄が URL と同じなら debounce を待たない (確定と戻るの直後に、温め済みの条件を遅らせない)
-  const settledQ = draftQ === q ? q : debouncedQ;
+  const draftQ = normalizeQuery(text);
+  const [debouncedEdit] = useDebouncedValue(edit, { wait: NOTE_SEARCH_DEBOUNCE_MS });
+  const settledQ =
+    debouncedEdit !== null && debouncedEdit.base === q ? normalizeQuery(debouncedEdit.text) : q;
   const deferredQ = useDeferredValue(settledQ);
-  const filter: NoteListFilter = { q: deferredQ };
-  const isStale = draftQ !== deferredQ;
-  const notesQuery = useSuspenseQuery(notesQueryOptions(filter));
+  const notesQuery = useSuspenseQuery(notesQueryOptions({ q: deferredQ }));
   const queryClient = useQueryClient();
+  const isStale = draftQ !== deferredQ;
 
   // 結果の入れ替わりの通知 (ADR-0034)。取得中は古い件数を読むので決着まで待ち、直前と同じ条件なら出さない。
   // ref の初期値が URL の q なので初期表示は通知されない
   const settled = !notesQuery.isFetching;
   const announcedQ = useRef(q);
-  const announceResults = useEffectEvent((settledQ: string) => {
-    announce(noteSearchResultMessage(settledQ, notesQuery.data.length));
+  const announceResults = useEffectEvent(() => {
+    announce(noteSearchResultMessage(deferredQ, notesQuery.data.length));
   });
   useEffect(() => {
-    if (!settled || announcedQ.current === filter.q) {
+    if (!settled || announcedQ.current === deferredQ) {
       return;
     }
-    announcedQ.current = filter.q;
-    announceResults(filter.q);
-  }, [filter.q, settled]);
+    announcedQ.current = deferredQ;
+    announceResults();
+  }, [deferredQ, settled]);
 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
@@ -110,9 +113,10 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds });
 
   function handleSubmit() {
-    // 入力欄も正規化後の値に揃える (trim と切り詰めが見える)。URL が変われば base が合わなくなり、
-    // 表示は新しい q から導かれる
-    setEdit({ base: q, text: draftQ });
+    // 正規化で値が変わるときだけ入力欄を揃える (trim と切り詰めが見える)
+    if (text !== draftQ) {
+      setEdit({ base: q, text: draftQ });
+    }
     onQueryChange(draftQ);
   }
 
@@ -156,7 +160,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
           {rows.length === 0 ? (
             <Empty>
               <EmptyHeader>
-                {filter.q === "" ? (
+                {deferredQ === "" ? (
                   <>
                     <EmptyTitle>{NOTE_ENTITY_LABEL}が登録されていません</EmptyTitle>
                     <EmptyDescription>右上の追加ボタンから登録できます</EmptyDescription>
@@ -164,7 +168,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
                 ) : (
                   <>
                     <EmptyTitle>
-                      『{filter.q}』に一致する{NOTE_ENTITY_LABEL}はありません
+                      『{deferredQ}』に一致する{NOTE_ENTITY_LABEL}はありません
                     </EmptyTitle>
                     <EmptyDescription>
                       検索語を変えるか、空にして全件を表示できます

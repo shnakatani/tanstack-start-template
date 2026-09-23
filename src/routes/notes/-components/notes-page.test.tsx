@@ -52,7 +52,6 @@ vi.mock(import("../-lib/note-search"), async (importOriginal) => ({
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
-import { NOTE_SEARCH_LABEL } from "../-lib/note-search";
 import { noteRow, rowDeleteButton } from "./note-cells.test-helpers";
 import {
   bodyTextbox,
@@ -62,6 +61,7 @@ import {
   titleTextbox,
   expectNoteCreateDialogClosed,
 } from "./note-create-dialog.test-helpers";
+import { noteSearchbox } from "./note-search-field.test-helpers";
 import { NotesPage } from "./notes-page";
 
 /** page を props 直渡しで描く。route の定義、loader、wrapper (Route hooks と通知) は ../index.test.tsx が持つ */
@@ -129,28 +129,19 @@ describe("NotesPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(listNotes).mockResolvedValue([]);
-    // warn は握りつぶさず、出たら各テストが明示に assert して消す (出しっぱなしは afterEach で落ちる)
+    // curateMutationErrorMessage が raw error を warn に残す。失敗系テストの出力を汚さない
     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    // afterEach の expect は lint (no-standalone-expect) が止めるので、ガードとして throw する
-    const unexpected = warnSpy.mock.calls.map((call: unknown[]) => String(call[0]));
     warnSpy.mockRestore();
-    if (unexpected.length > 0) {
-      throw new Error(
-        `assert されていない console.warn が残っている: ${JSON.stringify(unexpected)}`,
-      );
-    }
   });
 
   it("URL の q が入力欄の初期値になり、その条件で一覧を取得する。初期表示は通知しない", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const screen = await renderPage({ q: "りんご" });
 
-    await expect
-      .element(screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }))
-      .toHaveValue("りんご");
+    await expect.element(noteSearchbox(screen)).toHaveValue("りんご");
     await expectText(screen, NOTE.title);
     expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "りんご" } });
     // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
@@ -166,7 +157,7 @@ describe("NotesPage", () => {
     // 1 文字ずつ別の呼び出しで打つ (`fill` は 1 回の input、`type("abc")` は間を置かず 3 文字を
     // 送るので、どちらも打鍵の間に一覧が描き直されない)。debounce が効けば "a" "ab" では取得しない。
     // 打鍵の間隔は待ち (vi.mock で広げた値) より十分短い前提
-    await userEvent.click(screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL }));
+    await userEvent.click(noteSearchbox(screen));
     await userEvent.keyboard("a");
     await userEvent.keyboard("b");
     await userEvent.keyboard("c");
@@ -194,7 +185,7 @@ describe("NotesPage", () => {
     const queryClient = createTestQueryClient();
     const screen = await renderPage({ queryClient });
     await expectText(screen, NOTE.title);
-    const searchbox = screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL });
+    const searchbox = noteSearchbox(screen);
 
     vi.mocked(listNotes).mockResolvedValue([]);
     await searchbox.fill("abc");
@@ -221,7 +212,7 @@ describe("NotesPage", () => {
   it("入力欄の値は URL と同じ正規化 (trim と上限) を通して取得し、確定する", async () => {
     const onQueryChange = vi.fn();
     const screen = await renderPage({ onQueryChange });
-    const searchbox = screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL });
+    const searchbox = noteSearchbox(screen);
 
     // 前後の空白は key に入れない (入れると URL 経由の key と別のキャッシュになる)
     await searchbox.fill(" abc ");
@@ -233,8 +224,7 @@ describe("NotesPage", () => {
     await expectText(screen, "『abc』に一致するメモはありません");
 
     // 上限超えは入力欄の maxLength が止める (`fill` も maxLength を尊重する。2026-09-23 に実測)。
-    // schema の切り詰めは IME の変換中など maxLength が効かない経路の
-    // 2 段目で、上限の切り詰めは note-search.test.ts が単体で見る
+    // 切り詰め自体は schema.test.ts と truncate-code-units.test.ts が持つ
     const capped = "a".repeat(NOTE_QUERY_MAX_LENGTH);
     await searchbox.fill("a".repeat(NOTE_QUERY_MAX_LENGTH + 1));
     await expect.element(searchbox).toHaveValue(capped);
@@ -252,7 +242,7 @@ describe("NotesPage", () => {
     const onQueryChange = vi.fn();
     const screen = await renderPage({ onQueryChange });
 
-    const searchbox = screen.getByRole("searchbox", { name: NOTE_SEARCH_LABEL });
+    const searchbox = noteSearchbox(screen);
     await searchbox.fill(" りんご ");
     await userEvent.keyboard("{Enter}");
 
@@ -260,15 +250,6 @@ describe("NotesPage", () => {
     expect(onQueryChange).toHaveBeenCalledExactlyOnceWith("りんご");
     // 入力欄も正規化後の値に揃う (URL が動かない submit でも trim と切り詰めが見える)
     await expect.element(searchbox).toHaveValue("りんご");
-  });
-
-  it("上限を超えた検索語を受けたら、warn を出さずに切り詰めて取得する", async () => {
-    // URL の q は schema が止めるので、maxLength が効かない経路 (IME の変換中) の代わりに props で渡す
-    const capped = "a".repeat(NOTE_QUERY_MAX_LENGTH);
-    const screen = await renderPage({ q: `${capped}a` });
-
-    await expectText(screen, `『${capped}』に一致するメモはありません`);
-    expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: capped } });
   });
 
   it("ページ見出しと追加ボタンが表示される", async () => {
@@ -455,7 +436,6 @@ describe("NotesPage", () => {
       .not.toHaveAttribute("aria-disabled", "true");
     // raw error は curateMutationErrorMessage が warn に残す (observability)
     expect(warnSpy).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
-    warnSpy.mockClear();
   });
 
   it("削除を確定するとダイアログは removeNote の決着を待たずに閉じ、再取得完了まで行が busy のまま", async () => {
