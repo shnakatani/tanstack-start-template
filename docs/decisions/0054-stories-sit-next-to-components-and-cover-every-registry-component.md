@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0053 (story を状態のカタログにする) / ADR-0025 (registry 統制、付随ファイルの扱い) / ADR-0013 (層) / ADR-0031 (className)
+- 関連: ADR-0053 (story を状態のカタログにする) / ADR-0026 (registry 統制、付随ファイルの扱い) / ADR-0014 (層) / ADR-0032 (className)
 
 ## Context
 
@@ -12,7 +12,7 @@ story を置く場所と、どの部品に story を書くかを決める。`.st
 
 **story は部品と同じディレクトリに置き、`src/components/ui/` の registry 部品はすべてカタログ化する。**
 
-`*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0025)。
+`*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0026)。
 
 `src/components/ui/` の registry 部品はすべてカタログ化する。消費側からの import 件数で絞らない。
 
@@ -26,7 +26,7 @@ story を置く場所と、どの部品に story を書くかを決める。`.st
 
 story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかどうかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める。
 
-story は `no-restyle` / `require-static-classes` の適用外である。`vite.config.ts` の override が `src/components/{ui,action,parts}/**` を `excludeFiles` で外しており、story もそこに置くためである。部品へ `className` を直接渡しても lint は鳴らない (2026-09-20 実測)。渡してよい範囲は消費側と同じで、`no-restyle` の `allow: ["layout"]` に収まる class に限る。外見を上書きする class は部品側の variant にする (ADR-0031)。catalog は実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る。
+story は `no-restyle` / `require-static-classes` の適用外である。`vite.config.ts` の override が `src/components/{ui,action,parts}/**` を `excludeFiles` で外しており、story もそこに置くためである。部品へ `className` を直接渡しても lint は鳴らない (2026-09-20 実測)。渡してよい範囲は消費側と同じで、`no-restyle` の `allow: ["layout"]` に収まる class に限る。外見を上書きする class は部品側の variant にする (ADR-0032)。catalog は実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る。
 
 CSF の meta は 1 ファイルに 1 つで、`component` もそこに紐づく。1 つのファイルが複数の部品を export するとき、まとめて書くと別の部品の meta 配下に並ぶ。単独で描画できる部品は story ファイルを分ける。
 
@@ -36,4 +36,4 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 
 ## Consequences
 
-- `.stories.tsx` を registry のディレクトリに置くため、ADR-0025 の baseline 検査に除外が 1 種類増える
+- `.stories.tsx` を registry のディレクトリに置くため、ADR-0026 の baseline 検査に除外が 1 種類増える

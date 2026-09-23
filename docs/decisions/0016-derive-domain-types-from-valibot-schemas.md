@@ -1,4 +1,4 @@
-# ADR-0015: ドメイン型は valibot スキーマから導出する
+# ADR-0016: ドメイン型は valibot スキーマから導出する
 
 - Status: Accepted
 - Date: 2026-09-14

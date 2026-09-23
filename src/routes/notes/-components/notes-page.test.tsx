@@ -260,7 +260,7 @@ describe("NotesPage", () => {
 
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
     // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
-    // (ADR-0020「テンプレートのメモ画面への適用」)
+    // (ADR-0021「テンプレートのメモ画面への適用」)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
     const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
@@ -299,7 +299,7 @@ describe("NotesPage", () => {
   it("応答後の再取得中に開き直した追加ダイアログはキャンセルできる", async () => {
     // close を止める窓は「応答前」だけで、mutation の pending 全体ではない。応答で閉じた後は
     // 再取得の完了まで pending が続くが、その間に開き直したダイアログは先行 save の応答を
-    // 待っていないので閉じられる (ADR-0020 Decision の完了点 (b) の行)
+    // 待っていないので閉じられる (ADR-0021 Decision の完了点 (b) の行)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
     const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
@@ -442,7 +442,7 @@ describe("NotesPage", () => {
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "false");
-    // 止めるのは削除中の行だけ (ADR-0020「ブロック範囲」)。他の行のトリガーは有効のまま
+    // 止めるのは削除中の行だけ (ADR-0021「ブロック範囲」)。他の行のトリガーは有効のまま
     await expect
       .element(rowDeleteButton(screen, OTHER_NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
@@ -452,7 +452,7 @@ describe("NotesPage", () => {
     // 行は静的テキスト (sr-only) で状態を持つ (ADR-0037)
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
     // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の
-    // data-disabled: が担う (ADR-0026)。半透明 + pointer-events なしを算出スタイルで固定する
+    // data-disabled: が担う (ADR-0027)。半透明 + pointer-events なしを算出スタイルで固定する
     const targetTrigger = rowDeleteButton(screen, NOTE.title);
     await expect.element(targetTrigger).toHaveStyle("opacity: 0.5; pointer-events: none");
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0053 (story を状態のカタログにする) / ADR-0033 (コントラストの検算)
+- 関連: ADR-0053 (story を状態のカタログにする) / ADR-0034 (コントラストの検算)
 
 ## Context
 

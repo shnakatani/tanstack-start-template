@@ -16,7 +16,7 @@ import {
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
 /**
- * design system を著作する層 (ADR-0013)。`@shadcn/lint` の 2 軸をここから導出する。
+ * design system を著作する層 (ADR-0014)。`@shadcn/lint` の 2 軸をここから導出する。
  * 認識 (`componentImports`) はこの層の部品を design system component として登録し、
  * 適用 (`excludeFiles`) はこの層自身を規則の対象から外す。別々に書くと片方だけ直しても
  * 何も落ちず、新しい層の部品が規則から見えないまま消費側の上書きが素通りする
@@ -52,7 +52,7 @@ export default defineConfig({
       "jsx-a11y",
     ],
     // oxlint はネイティブに Tailwind と shadcn/ui 領域のルールを持たない。JS plugin として載せる
-    // (ADR-0032)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
+    // (ADR-0033)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
     jsPlugins: [
       { name: "shadcn", specifier: "@shadcn/lint" },
       // story は `storybook/test` 経由で testing-library の API をそのまま使う。oxlint は
@@ -67,7 +67,7 @@ export default defineConfig({
         componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
         // cva で作った variant 関数を宣言する。宣言しないと消費側の buttonVariants({...}) が
         // require-static-classes で落ちる。shadcn 公式の Button docs は「As Link」でこの形を
-        // 推奨しており、テンプレート利用者がそのまま書けるようにする (ADR-0031)。
+        // 推奨しており、テンプレート利用者がそのまま書けるようにする (ADR-0032)。
         // mergeFunctions は使わない。オブジェクトを渡す関数に当てるとキー名を class と誤読する
         variantFunctions: ["buttonVariants"],
       },
@@ -192,7 +192,7 @@ export default defineConfig({
       // oxlint に実装が無い。名指しが要るのは残る 2 つで、必要な理由は別々 --
       // Compiler が「対応する予定がない」構文 (this / with / インライン class 宣言)。
       // 未実装による bail out (react/todo) とは別で、書き換えれば消えるためコード側の
-      // 欠陥として扱う (ADR-0016)。oxlint では restriction のため既定 off
+      // 欠陥として扱う (ADR-0017)。oxlint では restriction のため既定 off
       "react/unsupported-syntax": "error",
       // 分割されたルール群とは別系統の、従来からある Rules of Hooks 検査。Compiler は
       // コンポーネントまたは hook として認識した関数しか解析しないため、通常の関数から
@@ -279,7 +279,7 @@ export default defineConfig({
       // prefer-tag-over-role も併せて有効にする。実装があるルールは rules へ書けば足せるが
       // (例: anchor-ambiguous-text)、基準を recommended に置いているので広げない
 
-      // -- shadcn: ルールは設計判断と対にして 1 つずつ名指しする (ADR-0032)。ここに置くのは
+      // -- shadcn: ルールは設計判断と対にして 1 つずつ名指しする (ADR-0033)。ここに置くのは
       // semantic color と theme に存在する class の統制に要る 3 つで、全層に効く。層の境界を
       // 持つ no-restyle と require-static-classes は下の overrides 側にある。inline style の
       // 統制は対になる設計判断が無いので採らない --
@@ -356,11 +356,11 @@ export default defineConfig({
       },
       {
         // no-restyle と require-static-classes は「消費側が design system component へ何を渡して
-        // いるか」を見る規則で、design system 自身の内部には意味を持たない (ADR-0013)。緩和では
+        // いるか」を見る規則で、design system 自身の内部には意味を持たない (ADR-0014)。緩和では
         // なく適用範囲の確定なので excludeFiles で外す。componentImports が無いと自作部品が規則
         // から見えず、routes からの上書きが素通りする。require-static-classes は他の shadcn
         // ルールの門番で、ここで落ちる className は no-raw-colors / no-unknown-classes も中身を
-        // 読めない (ADR-0031)
+        // 読めない (ADR-0032)
         files: ["src/**", ".storybook/**"],
         excludeFiles: DESIGN_SYSTEM_LAYERS.map((layer) => `src/components/${layer}/**`),
         rules: {
@@ -422,7 +422,7 @@ export default defineConfig({
       ".claude/worktrees/**",
       ".agents/**",
       ".claude/skills/**",
-      // registry の生成時 baseline (ADR-0025)。上流のコードをそのまま保存する記録なので
+      // registry の生成時 baseline (ADR-0026)。上流のコードをそのまま保存する記録なので
       // lint / 型検査の対象にしない。整形だけは合わせるため fmt 側では除外しない
       "docs/registry-baseline/**",
     ],
@@ -459,7 +459,7 @@ export default defineConfig({
           // ように native を引かないファイルは specifiers だけでは素通りし、UI が直接
           // import しても壊れずに層が漏れるため、パス単位で止める。
           // ドメインの実処理は src/features/<domain>/handlers.server.ts に置き、
-          // *.server.* 側が遮断する (ADR-0012)。この配列は既定を merge せず置換するので
+          // *.server.* 側が遮断する (ADR-0013)。この配列は既定を merge せず置換するので
           // (plugin.js の pick)、*.server.* を落とすと接尾辞の遮断ごと消える
           files: ["**/src/server/db/**", "**/*.server.*"],
         },

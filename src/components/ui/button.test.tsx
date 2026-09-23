@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
  * registry 乖離のガード。Base UI は disabled prop を state へ入れて data-disabled を必ず出すが
  * (@base-ui/react 1.8.0 の internals/getStateAttributesProps.js)、native disabled は
  * focusableWhenDisabled のとき付けない (utils/useFocusableWhenDisabled.js)。registry の
- * disabled: variant は後者の経路に当たらないので data-disabled: を足してある (ADR-0026)。
+ * disabled: variant は後者の経路に当たらないので data-disabled: を足してある (ADR-0027)。
  * native disabled の見た目は registry 自身の variant で、`Disabled` story が持つ。
  *
  * 見た目は ADR-0045 が決めた形 (opacity と pointer-events の指定) で見る。

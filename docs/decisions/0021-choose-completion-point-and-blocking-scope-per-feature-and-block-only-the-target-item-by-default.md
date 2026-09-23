@@ -1,12 +1,12 @@
-# ADR-0020: ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める
+# ADR-0021: ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0017 / ADR-0019 (Action 層と Transition。本 ADR はその上で「どこまで待つか」「何を止めるか」を決める)、ADR-0045 (二重発火の検証)
+- 関連: ADR-0018 / ADR-0020 (Action 層と Transition。本 ADR はその上で「どこまで待つか」「何を止めるか」を決める)、ADR-0045 (二重発火の検証)
 
 ## Context
 
-ADR-0017 は mutation を Action 層の Transition で実行し、pending を Transition から取ると決める。
+ADR-0018 は mutation を Action 層の Transition で実行し、pending を Transition から取ると決める。
 「操作をいつ完了と見なすか」と「完了までに何を触れなくするか」はその外にある問いである。1 つの画面で採った形 (一覧の再取得が終わるまでダイアログを閉じず、一覧の削除トリガーを全て無効化する) を Decision に書くと、他の機能を足すときに当てる軸が無く、その画面の選択が既定として写される。
 
 ### 前提となる仕様
@@ -35,7 +35,7 @@ ADR-0017 は mutation を Action 層の Transition で実行し、pending を Tr
 | 軸               | 選択肢                                                                                                                                       | 選ぶ基準                                                                                                                                                                                                                          |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 完了点           | (a) 確定操作の直後 (楽観) / (b) サーバー応答 / (c) 再取得完了                                                                                | 失敗時に戻す手間で決める。入力を持つフォームは (b)。1 件の削除や toggle は (a)。(c) は古いデータを一瞬も見せられない画面 (残高や在庫のように、表示値で次の操作の可否が決まる画面) に限り、理由を実装近傍に書く                    |
-| 楽観表示の置き場 | query が持つデータ → TanStack 側 (`variables` / `useMutationState`、複数箇所なら `onMutate` + rollback) / React だけの状態 → `useOptimistic` | ADR-0017「楽観表示の使い分け」に、複数の表示箇所では `onMutate` + rollback も選べることを足したもの。`useOptimistic` に query の `data` を渡さない (TanStack/query #9742)                                                         |
+| 楽観表示の置き場 | query が持つデータ → TanStack 側 (`variables` / `useMutationState`、複数箇所なら `onMutate` + rollback) / React だけの状態 → `useOptimistic` | ADR-0018「楽観表示の使い分け」に、複数の表示箇所では `onMutate` + rollback も選べることを足したもの。`useOptimistic` に query の `data` を渡さない (TanStack/query #9742)                                                         |
 | ブロック範囲     | 対象の項目だけ / 画面全体                                                                                                                    | 既定は対象の項目だけ。pending は mutation ごとに追う (1 件ずつなら `mutation.variables`、並行か別コンポーネントなら `mutationKey` + `useMutationState`)。画面全体を止めるのは並行操作が整合を壊すときだけで、理由を実装近傍に書く |
 
 完了点の軸が決めるのは「Transition を終える時点」であり、mutation の pending の長さではない。ダイアログを持つ操作では close の時点がそれに当たり、ダイアログの無い操作 (toggle、インライン編集、一括操作) では Action が return する時点がそれに当たる。
@@ -45,7 +45,7 @@ TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で i
 
 | 完了点 | Transition の終え方 (ダイアログなら close の時点)                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Transition の pending                                     |
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| (a)    | Action は `handle.close()` (ダイアログが無ければ何もしない) だけを含み、mutation は Transition の外で走らせる (`void runAction(...)` で捨てる。ADR-0017 の Action の順序保証と完了の観測はこの mutation には効かない)。Transition が確定直後に終わるため、close の animate-out の間や、ダイアログの無い操作では `isPending` の dedupe が効かない。同じ対象の mutation が pending なら action を no-op にする (`useMutationState` か `queryClient.isMutating` の判定)。失敗は `onError` の toast と項目の復帰で伝える    | 確定操作で終わる                                          |
+| (a)    | Action は `handle.close()` (ダイアログが無ければ何もしない) だけを含み、mutation は Transition の外で走らせる (`void runAction(...)` で捨てる。ADR-0018 の Action の順序保証と完了の観測はこの mutation には効かない)。Transition が確定直後に終わるため、close の animate-out の間や、ダイアログの無い操作では `isPending` の dedupe が効かない。同じ対象の mutation が pending なら action を no-op にする (`useMutationState` か `queryClient.isMutating` の判定)。失敗は `onError` の toast と項目の復帰で伝える    | 確定操作で終わる                                          |
 | (b)    | `onSuccess` の先頭で `handle.close()` を呼び、その後に再取得の Promise を返す (ダイアログが無ければ `mutateAsync` を await して return)。handle を複数の対象で共有するときは、閉じる前に開いている対象がこの mutation の対象と同じことを確かめる (先行操作の `onSuccess` が、別の対象で開き直したダイアログを閉じない)。入力フォームのように対象を比べられないダイアログでは、応答が届くまでユーザー起点の close を止める。判定は mutation の pending と一覧の再取得中かどうかから取る (実例: `note-create-dialog.tsx`) | 再取得完了まで続くが、閉じた後は見えない                  |
 | (c)    | `onSuccess` で再取得を await した後に `handle.close()` を呼ぶ                                                                                                                                                                                                                                                                                                                                                                                                                                                           | 再取得完了まで続き、ダイアログの pending 表示として見える |
 
@@ -73,9 +73,9 @@ TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で i
 
 ## Consequences
 
-- ADR-0017 の Decision 表「query の再取得」「ダイアログの開閉」行と、ADR-0019「mutation の書き方」の「再取得と close」行は本 ADR の軸に従う
+- ADR-0018 の Decision 表「query の再取得」「ダイアログの開閉」行と、ADR-0020「mutation の書き方」の「再取得と close」行は本 ADR の軸に従う
 - 再取得を待たずに閉じる代わりに、対象の項目に busy 表現を付け忘れると、古い一覧が pending 表示なしで見える。再取得の完了まで閉じない形はこの経路を「閉じない」ことで塞ぐが、本 ADR は項目の表現で塞ぐ
-- 再評価条件: concurrent stores (react/react #35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する (ADR-0017 と同じ)
+- 再評価条件: concurrent stores (react/react #35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する (ADR-0018 と同じ)
 
 ## 出典
 

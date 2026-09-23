@@ -1,8 +1,8 @@
-# ADR-0025: registry コードへの改変は生成時 baseline との 3-way で判別し、許容リストと 1:1 に保つ
+# ADR-0026: registry コードへの改変は生成時 baseline との 3-way で判別し、許容リストと 1:1 に保つ
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0026 (コードの乖離と行単位の lint 抑制の許容リスト)、ADR-0034 (`src/styles.css` の乖離の許容リスト)、ADR-0008 (registry コードも同じ lint を受ける)、ADR-0033 (`src/styles.css` の baseline とトークンの値の決め方)
+- 関連: ADR-0027 (コードの乖離と行単位の lint 抑制の許容リスト)、ADR-0035 (`src/styles.css` の乖離の許容リスト)、ADR-0008 (registry コードも同じ lint を受ける)、ADR-0034 (`src/styles.css` の baseline とトークンの値の決め方)
 
 ## Context
 
@@ -28,13 +28,13 @@ vp exec shadcn add <name> --diff | grep -c '^│ │ @@'
 
 ## Decision
 
-**判別は生成時 baseline を交えた 3-way で行い、baseline とローカルの差分を許容リスト (ADR-0026 / ADR-0034) と 1:1 に保つ。**
+**判別は生成時 baseline を交えた 3-way で行い、baseline とローカルの差分を許容リスト (ADR-0027 / ADR-0035) と 1:1 に保つ。**
 
 ### 検査手順
 
 生成時 baseline を `docs/registry-baseline/<name>.tsx` に保存する。
 
-- **意図的乖離** = baseline とローカルの diff。許容リスト (ADR-0026) と 1:1 で対応する
+- **意図的乖離** = baseline とローカルの diff。許容リスト (ADR-0027) と 1:1 で対応する
 - **上流 drift** = baseline と最新 CLI 出力の diff。追随候補になる
 
 ```bash
@@ -54,7 +54,7 @@ vp fmt docs/registry-baseline --write
 | 差分あり                      | `git merge-file <ローカル> <旧 baseline> <新 baseline>` で 3-way マージする。上書きすると許容リストの改変が消える |
 
 旧 baseline は `git show HEAD:docs/registry-baseline/<name>.tsx` で取る。
-取り込んだら `git diff --no-index` で baseline とローカルを全件突き合わせ、残る差分が許容リスト (ADR-0026) と 1:1 であることを確かめる。
+取り込んだら `git diff --no-index` で baseline とローカルを全件突き合わせ、残る差分が許容リスト (ADR-0027) と 1:1 であることを確かめる。
 
 `components.json` の `rsc: false` に基づく CLI 出力を基準とし、registry の生 JSON に含まれる `"use client"` は復元しない。
 ただし CLI は複数コンポーネントを 1 回で add すると `"use client"` を除去し損ねることがある (shadcn-ui/ui#8991)。2026-09-02 に 36 件を 1 回で add したときは 11 件に残った。
@@ -76,13 +76,13 @@ registry が宣言する依存は、コンポーネント本体が import して
 baseline の取得漏れは `scripts/checks/integrity/registry-baseline.test.ts` が双方向で検出する。
 `--overwrite` で再生成したら baseline も更新する。
 
-`src/styles.css` の baseline は `docs/registry-baseline/styles.css` に置く。`shadcn add` は出力しないため、作り直す手順は ADR-0033「土台は空ファイルへの生成物とし、自作分を載せ直す」が持つ。
-突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css` で、残る差分が ADR-0034 の許容リストと 1:1 で対応する。
+`src/styles.css` の baseline は `docs/registry-baseline/styles.css` に置く。`shadcn add` は出力しないため、作り直す手順は ADR-0034「土台は空ファイルへの生成物とし、自作分を載せ直す」が持つ。
+突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css` で、残る差分が ADR-0035 の許容リストと 1:1 で対応する。
 取得漏れは `registry-baseline.test.ts` が落とす (`EXTERNAL_REGISTRY_FILES` に `styles.css` を登録してある)。許容リストへの行の足し忘れは鳴らない。
 
 ### 許容リストに載せないもの
 
-`src/styles.css` はファイル全体が baseline の対象になったので、`@custom-variant` を含めた全行が ADR-0034 の表の突き合わせに載る (ADR-0033)。
+`src/styles.css` はファイル全体が baseline の対象になったので、`@custom-variant` を含めた全行が ADR-0035 の表の突き合わせに載る (ADR-0034)。
 `data-*` の `@custom-variant` 定義をローカルから削除し `@import "shadcn/tailwind.css"` へ一本化した件は、CLI の生成物も同じ定義を持たないため差分にならず、行を持たない。
 
 ### 追加と削除の基準

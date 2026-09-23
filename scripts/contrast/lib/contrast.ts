@@ -5,7 +5,7 @@
  * 動かしたあとの再測もできない (ADR-0039)。
  *
  * ここは検査ではない。合否は `src/components/contrast.stories.tsx` の axe が持つ
- * (ADR-0033「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。
+ * (ADR-0034「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。
  */
 
 import Color from "colorjs.io";

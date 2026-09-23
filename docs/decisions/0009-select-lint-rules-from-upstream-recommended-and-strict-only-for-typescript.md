@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0008 (プラグインの設定方法)、ADR-0016 (React Compiler の診断ルールの扱い)、ADR-0032 (色の統制に足す `@shadcn/lint`)、ADR-0010 (testing-library の適用範囲)、ADR-0011 (テスト専用コードの import 境界)、ADR-0018 (`no-misused-promises` が要求するハンドラの形)
+- 関連: ADR-0008 (プラグインの設定方法)、ADR-0017 (React Compiler の診断ルールの扱い)、ADR-0033 (色の統制に足す `@shadcn/lint`)、ADR-0010 (testing-library の適用範囲)、ADR-0011 (テスト専用コードの import 境界)、ADR-0019 (`no-misused-promises` が要求するハンドラの形)
 
 ## Context
 
@@ -33,7 +33,7 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 | `unicorn`    | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
 | `oxc`        | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
 
-`@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (ADR-0032)。
+`@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (ADR-0033)。
 
 `testing-library` もこの表に載らない。基準は上流の `flat/react` を写すが、適用を story と story 専用の helper に限り、基準から外すルールがある (ADR-0010)。
 
@@ -105,7 +105,7 @@ oxlint 1.79 で `react/react-compiler` は廃止され、React Compiler の診�
 | ルール                                                                                 | oxlint のカテゴリ | 扱い                                                                                           |
 | -------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------- |
 | `no-deriving-state-in-effects`                                                         | `perf`            | カテゴリ経由で error                                                                           |
-| `invariant` / `rule-suppression` / `syntax` / `todo`                                   | `restriction`     | off。`todo` は Compiler の未実装による bail out で、欠陥として扱わないと ADR-0016 が決めている |
+| `invariant` / `rule-suppression` / `syntax` / `todo`                                   | `restriction`     | off。`todo` は Compiler の未実装による bail out で、欠陥として扱わないと ADR-0017 が決めている |
 | `capitalized-calls` / `exhaustive-effect-dependencies` / `hooks` / `memo-dependencies` | `suspicious`      | off。上流が既定から外している                                                                  |
 
 `unsupported-syntax` だけを `restriction` から引き上げるのは、これが Compiler の未実装ではなく「対応する予定がない構文」(`this` / `with` / インライン `class` 宣言) を指すためである。
@@ -119,7 +119,7 @@ oxlint 1.79 で `react/react-compiler` は廃止され、React Compiler の診�
 
 recommended 外だが `correctness` 経由で有効なままのルールが 4 つある。
 `control-has-associated-label` / `lang` / `no-aria-hidden-on-focusable` / `prefer-tag-over-role` で、いずれも有効のまま残す。
-off にする判断は違反が出たときに個別に行う (registry コードでの行単位抑制は ADR-0026 の許容リストが持つ)。
+off にする判断は違反が出たときに個別に行う (registry コードでの行単位抑制は ADR-0027 の許容リストが持つ)。
 
 `anchor-ambiguous-text` は oxlint に実装があり名指しすれば足せるが、上流 recommended に含まれないため足さない。
 

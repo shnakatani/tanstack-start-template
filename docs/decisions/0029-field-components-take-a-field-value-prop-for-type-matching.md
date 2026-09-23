@@ -1,8 +1,8 @@
-# ADR-0028: fieldComponents の部品は値型を突き合わせる `fieldValue` prop を持つ
+# ADR-0029: fieldComponents の部品は値型を突き合わせる `fieldValue` prop を持つ
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0015 (ドメイン型はスキーマから導出する)
+- 関連: ADR-0016 (ドメイン型はスキーマから導出する)
 
 ## Context
 

@@ -41,7 +41,7 @@ export function NoteActionsCell({ row }: NoteCellContext) {
         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
         aria-label={`${note.title}を削除`}
-        // 止めるのは削除中の行だけ (ADR-0020「ブロック範囲」)。render 側の
+        // 止めるのは削除中の行だけ (ADR-0021「ブロック範囲」)。render 側の
         // focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
         // native disabled でフォーカスが body へ落ちるのを防ぐ
         // (Trigger の props 型は受けず Button primitive が受ける)

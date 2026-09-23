@@ -1,8 +1,8 @@
-# ADR-0030: viewport 高を超えるダイアログは本体だけを内部スクロールさせ、`DialogScrollForm` で組む
+# ADR-0031: viewport 高を超えるダイアログは本体だけを内部スクロールさせ、`DialogScrollForm` で組む
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0026 (Dialog の Viewport と `popupOverflowBackstop` の乖離)、ADR-0019 (`ActionForm`)
+- 関連: ADR-0027 (Dialog の Viewport と `popupOverflowBackstop` の乖離)、ADR-0020 (`ActionForm`)
 
 ## Context
 
@@ -19,7 +19,7 @@
 
 shadcn の例は本文の高さを `50vh` で打ち切る。フォームを包む `form` 要素の置き場は、どちらの公式例にも無い。
 
-registry の Dialog には、内部スクロールを組み忘れたダイアログでも内容が読めるよう、Popup を `max-h-full overflow-y-auto` で溢れさせる backstop (`popupOverflowBackstop`) を足してある (ADR-0026)。backstop が効くと Popup ごとスクロールし、見出しと X ボタンも流れる。
+registry の Dialog には、内部スクロールを組み忘れたダイアログでも内容が読めるよう、Popup を `max-h-full overflow-y-auto` で溢れさせる backstop (`popupOverflowBackstop`) を足してある (ADR-0027)。backstop が効くと Popup ごとスクロールし、見出しと X ボタンも流れる。
 
 ## Decision
 
@@ -44,7 +44,7 @@ registry の Dialog には、内部スクロールを組み忘れたダイアロ
 
 ## Consequences
 
-- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、同じファイルへ部品を足す (ADR-0031)
+- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、同じファイルへ部品を足す (ADR-0032)
 - `DialogContent` の padding を変えたら `DialogScrollBody` の `-mx-6` / `px-6` も変える
 
 ## 出典

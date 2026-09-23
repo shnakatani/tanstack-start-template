@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-02
-- 関連: ADR-0005 (Vite+ が版を管理する制約)、ADR-0016 (React Compiler が要求する依存)
+- 関連: ADR-0005 (Vite+ が版を管理する制約)、ADR-0017 (React Compiler が要求する依存)
 
 ## Context
 

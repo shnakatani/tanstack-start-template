@@ -1,8 +1,8 @@
-# ADR-0029: Select の値の解決は消費側が持ち、Base UI の自己リセットに依存しない
+# ADR-0030: Select の値の解決は消費側が持ち、Base UI の自己リセットに依存しない
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0026 (registry への改変の統制)
+- 関連: ADR-0027 (registry への改変の統制)
 
 ## Context
 

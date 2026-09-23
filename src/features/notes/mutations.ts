@@ -15,7 +15,7 @@ export type NoteDeleteTarget = DeleteTarget<Note["id"]>;
  * handle) を持つ route 側が足す (ADR-0037「呼び出し層」)。
  *
  * `mutationKey` は一覧側が `useMutationState` で pending な mutation を拾うための識別子
- * (ADR-0020「テンプレートのメモ画面への適用」)。queryKey (`["notes"]`) とは別物で、
+ * (ADR-0021「テンプレートのメモ画面への適用」)。queryKey (`["notes"]`) とは別物で、
  * `invalidateQueries` の対象にはならない。
  */
 export const createNoteMutation = mutationOptions({

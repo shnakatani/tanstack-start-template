@@ -14,7 +14,7 @@ import { describeA11yResults } from "./a11y-message";
  * dequelabs/axe-core#3907 が 2023-02-09 から open で、入力欄の境界を対象にした
  * ルール案 #854 は PARKED のまま閉じている。`--border` / `--input` の枠線と、
  * 不透明度を落として描く focus indicator (`ring-ring/50`) の比率はここでは
- * 検出できない。実測値と判断の根拠は ADR-0033 が持つ。
+ * 検出できない。実測値と判断の根拠は ADR-0034 が持つ。
  *
  * ヘルパー名を `expect` で始めるのは、`vitest/expect-expect` が assertion と認めるのが
  * `expect*` のパターンだから (ADR-0009)。

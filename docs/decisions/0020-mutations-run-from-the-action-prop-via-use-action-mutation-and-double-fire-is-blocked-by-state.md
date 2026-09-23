@@ -1,8 +1,8 @@
-# ADR-0019: mutation は Action 層の `action` prop から `useActionMutation` で呼び、二重発火は state だけで塞ぐ
+# ADR-0020: mutation は Action 層の `action` prop から `useActionMutation` で呼び、二重発火は state だけで塞ぐ
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0017 (ユーザー操作による更新は Transition を既定にする)、ADR-0020 (完了点とブロック範囲の軸)、ADR-0045 (二重発火の検証は実イベントで書く)、ADR-0026 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)
+- 関連: ADR-0018 (ユーザー操作による更新は Transition を既定にする)、ADR-0021 (完了点とブロック範囲の軸)、ADR-0045 (二重発火の検証は実イベントで書く)、ADR-0027 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0013 (配置の原則)
 
 ## Context
 
@@ -28,7 +28,7 @@ mutation 以外のユーザー操作由来の更新は、`src/components/screens
 
 ### 制約: registry の Button に action prop は無い
 
-`src/components/ui/button.tsx` は shadcn registry の出力で、改変は ADR-0026 の許容リストに限る。
+`src/components/ui/button.tsx` は shadcn registry の出力で、改変は ADR-0027 の許容リストに限る。
 包んでいる `@base-ui/react` 1.8.0 の Button の props は `NativeButtonProps` と `focusableWhenDisabled` だけで、`action` / pending 相当の prop は無い (`node_modules/@base-ui/react/button/Button.d.ts`)。
 
 | ライブラリ | 状況 (2026-09-13)                                                                                                                                                        |
@@ -67,7 +67,7 @@ React はユーザー起点のイベントごとに次のイベントより前�
 
 「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」ことを理由に ref のフラグを併せ持つ形は採らない。この事象は実イベントでは起きず、フラグはその検証を通すためだけのものになる。検証を実イベントで書く根拠は ADR-0045 が持つ。
 
-完了点 (a) (ADR-0020) では Action が close だけを含み Transition が確定直後に終わるため、close の animate-out の間は `isPending` の dedupe が効かない。同じ対象の mutation が pending なら handler を no-op にする (`queryClient.isMutating` の判定)。実例は `src/routes/notes/index.tsx` の `confirmDelete`。
+完了点 (a) (ADR-0021) では Action が close だけを含み Transition が確定直後に終わるため、close の animate-out の間は `isPending` の dedupe が効かない。同じ対象の mutation が pending なら handler を no-op にする (`queryClient.isMutating` の判定)。実例は `src/routes/notes/index.tsx` の `confirmDelete`。
 
 ### mutation の書き方
 
@@ -78,14 +78,14 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | 入力                    | `useMutation` の options。型で `onError` を必須にする。省略すると reject の吸収が無通知の失敗になるため、型で止める                                                                                                                                                                 |
 | 出力                    | `useMutation` の戻り値から `mutate` / `mutateAsync` を型で外し、`runAction(variables): Promise<void>` を足す。`runAction` は `mutateAsync` を await し、reject を吸収する。通知は `onError` (`toastMutationError`) が担う                                                           |
 | 呼び出し                | `action` prop から `runAction` を呼ぶ。`mutate` は Promise を返さず reject も `.catch(noop)` で握るため、Transition が完了も失敗も観測できない (`useMutation.js`)                                                                                                                   |
-| 再取得と close          | `onSuccess` は完了点によらず再取得の Promise を返す (TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く)。閉じる時点は ADR-0020 で選び、(c) では再取得を await した後に `handle.close()`、(b) では先頭で `close()`、(a) では Action 側で `close()` する |
+| 再取得と close          | `onSuccess` は完了点によらず再取得の Promise を返す (TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く)。閉じる時点は ADR-0021 で選び、(c) では再取得を await した後に `handle.close()`、(b) では先頭で `close()`、(a) では Action 側で `close()` する |
 | `await` 後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる (`useTransition` の既知の制限)。画面の更新は query の再取得に任せる                                                                                                                                         |
 
 ### 検討した選択肢
 
 | 案                                                            | 評価                                                                                                                                                                | 採否     |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| app 層に `src/components/action/` を置き `action` prop で包む | React Conf 2025 デモと同じ構造。registry を触らず (ADR-0026)、基盤にも依存しない。dedupe と pending の実装が 1 箇所に集まる                                         | **採用** |
+| app 層に `src/components/action/` を置き `action` prop で包む | React Conf 2025 デモと同じ構造。registry を触らず (ADR-0027)、基盤にも依存しない。dedupe と pending の実装が 1 箇所に集まる                                         | **採用** |
 | ref や閉包のフラグで同一タスク内の 2 連射も塞ぐ               | 実イベントでは起きない事象への防御で、その検証を書くためだけにフラグが要る (ADR-0045)。react.dev の形 (`disabled={pending}`) から外れる                             | 却下     |
 | 呼び出し側ごとに `useTransition` を書く                       | 決着前の dedupe と a11y の状態伝達を毎回書き直す。`deleteConfirmMutationProps` の閉包と同じ形が箇所ごとに散る                                                       | 却下     |
 | Base UI #5133 か React Aria #9894 の出荷を待つ                | どちらも 2026-09-13 時点で merge 済み実装が無く、時期も未定                                                                                                         | 却下     |

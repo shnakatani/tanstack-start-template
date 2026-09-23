@@ -95,7 +95,7 @@ peerDependencyRules:
     # 0.x の caret は minor を固定するため、上流がテストしている版が peer を満たさない。
     # 出口条件は上流が peer 範囲を自身の検証対象まで広げること。0.x のあいだは minor が
     # 上がるたびにずれ直しうるので、@vitejs/plugin-react を上げるたびに両者を読み比べる
-    # (dependabot.yml の react-compiler グループが 1 PR に束ねる)。ADR-0016 が経緯を持つ。
+    # (dependabot.yml の react-compiler グループが 1 PR に束ねる)。ADR-0017 が経緯を持つ。
     # キーを親つきの形にして、この緩和が @vitejs/plugin-react の下だけに効くようにする。
     # 値は検証済みの版に絞る。* にすると将来どの組み合わせでも警告が出ず、読み比べの発火点が消える
     "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"

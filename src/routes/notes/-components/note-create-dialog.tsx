@@ -43,12 +43,12 @@ export function NoteCreateDialog() {
 
   const createMutation = useActionMutation({
     ...createNoteMutation,
-    // 開始の通知の置き場 (ADR-0037)。この画面は variables 方式 (ADR-0020) なのでキャッシュは触らない。
+    // 開始の通知の置き場 (ADR-0037)。この画面は variables 方式 (ADR-0021) なのでキャッシュは触らない。
     // form の検証を通った後だけ走る。ボタンの pending は読み上げに出ないので開始を通知する
     onMutate: () => {
       announce("メモを保存しています");
     },
-    // 完了点 (b): 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0020)。
+    // 完了点 (b): 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0021)。
     // 一覧側は useMutationState でこの pending を読み、新しい行を先に出す。
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる
     onSuccess: async () => {
@@ -69,13 +69,13 @@ export function NoteCreateDialog() {
   // 止めるのは応答前だけ。閉じて開き直すと DialogContent がアンマウントされてフォームが
   // 作り直され、先行 save の応答が届いた時点で新しい入力ごと閉じる。handle を複数の対象で
   // 共有するダイアログと違い、入力フォームは開いている対象を mutation の対象と比べられない
-  // ので、閉じないことで塞ぐ (ADR-0020 Decision の完了点 (b) の行)。止めるのはこのダイアログ
-  // だけで、一覧の操作は止めない (ADR-0020「ブロック範囲」)。
+  // ので、閉じないことで塞ぐ (ADR-0021 Decision の完了点 (b) の行)。止めるのはこのダイアログ
+  // だけで、一覧の操作は止めない (ADR-0021「ブロック範囲」)。
   //
   // mutation の pending は応答後も再取得の完了まで続くので、それだけを見ると閉じた後の窓でも
   // true のままになり、開き直したダイアログが閉じられなくなる。再取得中かどうかで応答済みを
   // 判別する。無関係な background refetch と重なると応答前でも通す方向に倒れるが、それは
-  // ADR-0020 移行前の従来挙動 (何も止めない) と同じなので、閉じられなくなる側へは倒さない
+  // ADR-0021 移行前の従来挙動 (何も止めない) と同じなので、閉じられなくなる側へは倒さない
   const blocksClose = createMutation.isPending && !isRefetchingNotes;
 
   // 型は転送先の props から導出する (再宣言すると転送先の型変更に追随しない)
@@ -94,7 +94,7 @@ export function NoteCreateDialog() {
         </DialogHeader>
         {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで渡すのは表示ではなく
             close の可否で、handleOpenChange と同じ源から取らないと「押せるのに閉じない」ずれが
-            出る (ADR-0020 の完了点: サーバーの応答で閉じる) */}
+            出る (ADR-0021 の完了点: サーバーの応答で閉じる) */}
         <NoteCreateForm onSubmit={createMutation.runAction} blocksClose={blocksClose} />
       </DialogContent>
     </Dialog>

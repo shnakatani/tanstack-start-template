@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0026 (registry コードのガードはブラウザテストが担う)、ADR-0046 (animation を無効にして走らせる)、ADR-0047 (同期読みを assert へ流さない。本 ADR の規範を lint で強制する)、ADR-0048 (assert の予算。`findElement()` を呼ばない理由もここが持つ)、ADR-0049 (否定 assert が不在でも通ること)
+- 関連: ADR-0027 (registry コードのガードはブラウザテストが担う)、ADR-0046 (animation を無効にして走らせる)、ADR-0047 (同期読みを assert へ流さない。本 ADR の規範を lint で強制する)、ADR-0048 (assert の予算。`findElement()` を呼ばない理由もここが持つ)、ADR-0049 (否定 assert が不在でも通ること)
 
 ## Context
 

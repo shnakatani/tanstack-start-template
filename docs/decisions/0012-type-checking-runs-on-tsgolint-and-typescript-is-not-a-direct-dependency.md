@@ -1,4 +1,4 @@
-# ADR-0059: 型検査は tsgolint が担い、`typescript` パッケージを直接の依存に持たない
+# ADR-0012: 型検査は tsgolint が担い、`typescript` パッケージを直接の依存に持たない
 
 - Status: Accepted
 - Date: 2026-09-20

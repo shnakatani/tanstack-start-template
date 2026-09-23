@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0012 (ページ本体は `-components/`、route の property は export しない)、ADR-0022 (検証対象の route)、ADR-0023 (debounce のテスト)、ADR-0044 (待機は retry API に委ねる)
+- 関連: ADR-0013 (ページ本体は `-components/`、route の property は export しない)、ADR-0023 (検証対象の route)、ADR-0024 (debounce のテスト)、ADR-0044 (待機は retry API に委ねる)
 
 ## Context
 
@@ -27,7 +27,7 @@ Router の how-to「How to Test Router with File-Based Routing」は生成済み
 
 - `src/routes/notes/index.test.tsx` が route の定義と wrapper の往復を、`src/routes/notes/-components/notes-page.test.tsx` がページの描画を持つ。検索欄の locator は `note-search-field.test-helpers.ts` の 1 箇所
 - browser test は DEV で走るので、search の検証失敗は `RouteErrorContent` が `error.message` (Standard Schema の issues の JSON) をそのまま出す。テストは schema の文言が含まれることを見る
-- 同じ画面で `q` が別の値へ変わる経路 (Link、他画面からの戻る) は `router.navigate` で作る。確定は replace なので (ADR-0022)、memory history の `back()` では前の `q` に戻れない
+- 同じ画面で `q` が別の値へ変わる経路 (Link、他画面からの戻る) は `router.navigate` で作る。確定は replace なので (ADR-0023)、memory history の `back()` では前の `q` に戻れない
 - fake timers は使わない。vitest の browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058 open。修正 PR #11242 も open)
 
 ### 再評価の条件

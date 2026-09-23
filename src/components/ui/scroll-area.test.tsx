@@ -14,7 +14,7 @@ import { expectAbsent, expectRemoved } from "@/test/absent";
  *
  * viewport の高さが内容に追随する `max-h-*` では viewport 自身の resize が再計算を誘発する
  * ため差が出ない。高さが固定される使い方 (`h-*` や flex で伸びた領域) で顕在化する。
- * ADR-0026 の許容リストがこのファイルをガードに指名している。
+ * ADR-0027 の許容リストがこのファイルをガードに指名している。
  */
 function Harness() {
   const [many, setMany] = useState(true);

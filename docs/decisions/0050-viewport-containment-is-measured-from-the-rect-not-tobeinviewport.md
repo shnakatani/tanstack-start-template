@@ -2,11 +2,11 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0026 (Dialog / AlertDialog の viewport 溢れ backstop はブラウザテストが守る)、ADR-0044 (待機は retry API に委ねる)、ADR-0047 (matcher の無い実測は `expect.poll` の中で読む)、ADR-0049 (肯定形で書く)
+- 関連: ADR-0027 (Dialog / AlertDialog の viewport 溢れ backstop はブラウザテストが守る)、ADR-0044 (待機は retry API に委ねる)、ADR-0047 (matcher の無い実測は `expect.poll` の中で読む)、ADR-0049 (肯定形で書く)
 
 ## Context
 
-`src/components/ui/dialog.test.tsx` と `src/components/ui/alert-dialog.test.tsx` の 3 箇所が「長身コンテンツでも popup 全体が viewport 内に収まる」を固定する (ADR-0026 の backstop)。
+`src/components/ui/dialog.test.tsx` と `src/components/ui/alert-dialog.test.tsx` の 3 箇所が「長身コンテンツでも popup 全体が viewport 内に収まる」を固定する (ADR-0027 の backstop)。
 
 公式の `toBeInViewport({ ratio })` は IntersectionObserver で測り、`ratio` を「the minimal ratio of the element should be in viewport」と定める (vitest browser の assertions docs)。「全体が収まる」は `ratio: 1` にあたる。
 

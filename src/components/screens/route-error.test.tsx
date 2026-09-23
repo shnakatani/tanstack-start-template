@@ -24,7 +24,7 @@ async function renderError(error: Error, reset: () => void) {
  * 長いスタックトレースがパネル内でスクロールすることは `CodeBlock` の `Overflowing` story、
  * 内容が高くてもカードの上端が画面に残ることは `CenteredCard` が持つ挙動で、ここでは
  * 組み合わせているだけ。トリガーの色を本文と分けることは `no-restyle` が守る
- * (ADR-0013 が捕まえた実在の欠陥)。
+ * (ADR-0014 が捕まえた実在の欠陥)。
  */
 describe("RouteErrorContent", () => {
   afterEach(() => vi.unstubAllEnvs());

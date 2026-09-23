@@ -1,14 +1,14 @@
-# ADR-0033: セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める
+# ADR-0034: セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0034 (乖離の記録先) / ADR-0025 (baseline の運用) / ADR-0057 (story の axe を `error` で回す) / ADR-0035 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
+- 関連: ADR-0035 (乖離の記録先) / ADR-0026 (baseline の運用) / ADR-0057 (story の axe を `error` で回す) / ADR-0036 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
 
 ## Context
 
 `src/styles.css` の色は shadcn CLI が生成する。`shadcn init --preset <code>` と `shadcn apply <code> --only theme` はどちらも、知っているキーの値だけを書き換える。生成物を読まずに値を足すと、次の生成でその値が消えたか残ったかが差分に現れない。
 
-ADR-0025 の生成時 baseline は `src/components/ui/` を対象にしており、`src/styles.css` は対象外だった。そのため 3 種類の乖離 (上流にない追加 / 値の変更 / 意図した削除) を区別する手段がなく、判別のたびに上流の registry JSON を引いて突き合わせるところから始まっていた。
+ADR-0026 の生成時 baseline は `src/components/ui/` を対象にしており、`src/styles.css` は対象外だった。そのため 3 種類の乖離 (上流にない追加 / 値の変更 / 意図した削除) を区別する手段がなく、判別のたびに上流の registry JSON を引いて突き合わせるところから始まっていた。
 
 **base color を slate から mist へ動かしたのは、CLI が slate を生成先に持たなくなったためである。** 2026-09-21 に `shadcn@4.21.0` で観測した。
 
@@ -53,7 +53,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 `src/styles.css` を `@import "tailwindcss";` だけに戻してから生成し、生成物へ自作分を載せる。既存ファイルへ上書きする形は採らない。上流が生成しないキーが残り続け、消したつもりの値が消えない。
 
-生成は `shadcn init --preset b1Z7Mag76 --base base --force --no-reinstall` で行う。preset code は `shadcn preset decode` で `vega / mist / blue / chart blue / lucide / geist / radius default / menuAccent subtle / menuColor default` に展開される。`init` が併せて作る `src/lib/utils.ts` は削除する (ADR-0025)。
+生成は `shadcn init --preset b1Z7Mag76 --base base --force --no-reinstall` で行う。preset code は `shadcn preset decode` で `vega / mist / blue / chart blue / lucide / geist / radius default / menuAccent subtle / menuColor default` に展開される。`init` が併せて作る `src/lib/utils.ts` は削除する (ADR-0026)。
 
 preset code をプロジェクトから復元する `shadcn preset resolve` は、黙って別のコードを返すことがある。復元元と、選択肢に無い値だったときの振る舞いは次のとおり。
 
@@ -66,7 +66,7 @@ preset code をプロジェクトから復元する `shadcn preset resolve` は�
 
 2026-09-21 に `shadcn@4.21.0` で得た戻り値は、base color が slate だった頃が `bIm515k`、`--chart-*` を palette の外へ動かした場合が `bKX4z2W`、この節の手順を通した後が `b1Z7Mag76` である。復元が効くのは値が選択肢に収まっている間だけなので、生成に使うコードは文書側が持つ。
 
-生成物そのものを `docs/registry-baseline/styles.css` として持つ。乖離の記録先は ADR-0034 の許容リストで、本 ADR は値の決め方だけを持つ。
+生成物そのものを `docs/registry-baseline/styles.css` として持つ。乖離の記録先は ADR-0035 の許容リストで、本 ADR は値の決め方だけを持つ。
 
 ### 2. 有彩色のアクセントは light と dark で役割を反転させる
 
@@ -106,9 +106,9 @@ hue を変えるときは、候補の段を `src/styles.css` の `--primary` と
 | 兼ねていた用途           | 広い側 (名前を保つ)        | 狭い側 (切り出す)                  | 決定     |
 | ------------------------ | -------------------------- | ---------------------------------- | -------- |
 | tint の面とその上の文字  | `--destructive` (`text-X`) | `--destructive-surface` (`bg-X/N`) | 本 ADR   |
-| 通常の文字と例示テキスト | `--muted-foreground`       | `--placeholder` (`::placeholder`)  | ADR-0035 |
+| 通常の文字と例示テキスト | `--muted-foreground`       | `--placeholder` (`::placeholder`)  | ADR-0036 |
 
-切り出した側が緩い閾値を持つとは限らない。`--placeholder` は SC 1.4.3 を割る側を意図して選んでおり、その判断は ADR-0035 が持つ。
+切り出した側が緩い閾値を持つとは限らない。`--placeholder` は SC 1.4.3 を割る側を意図して選んでおり、その判断は ADR-0036 が持つ。
 
 露出の口は、そのトークンを当ててはいけない場所があるかで分ける。
 
@@ -125,7 +125,7 @@ hue を変えるときは、候補の段を `src/styles.css` の `--primary` と
 
 判定は `parameters.a11y.test` の axe に任せる (ADR-0057)。既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を足して axe の対象に入れる。
 
-対象はリポジトリが検査として持つものに限る。値を選ぶための計算は別で、本 ADR の Context と ADR-0035 の帯は oklch から計算した比を根拠に載せている。
+対象はリポジトリが検査として持つものに限る。値を選ぶための計算は別で、本 ADR の Context と ADR-0036 の帯は oklch から計算した比を根拠に載せている。
 
 禁じているのは、その計算を story として抱えて検査の顔をさせることである。描画されない値を測るので、実際の画面が割っていても緑になる。
 
@@ -161,7 +161,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 ## Consequences
 
 - 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css`
-- 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0025 に従う
+- 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0026 に従う
 - **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった
 - 測り直す手段は `mise run contrast` が持つ (ADR-0039)。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており (勧告本体には無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できないため、比率を書いた箇所を触るときは測り直す
 - 「有彩色のアクセントは light と dark で役割を反転させる」の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける

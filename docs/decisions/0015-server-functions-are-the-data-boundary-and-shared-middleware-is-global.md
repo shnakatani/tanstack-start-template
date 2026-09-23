@@ -1,4 +1,4 @@
-# ADR-0014: server function をデータ境界とし、全 fn 共通の middleware は global に載せる
+# ADR-0015: server function をデータ境界とし、全 fn 共通の middleware は global に載せる
 
 - Status: Accepted
 - Date: 2026-09-06

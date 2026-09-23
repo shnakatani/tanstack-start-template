@@ -14,7 +14,7 @@ import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import { maxShadowSpread } from "@/test/box-shadow";
 
 /**
- * input-group.tsx の registry 乖離 (popup 内リング抑制 patch、ADR-0026) のガード。
+ * input-group.tsx の registry 乖離 (popup 内リング抑制 patch、ADR-0027) のガード。
  * shadcn add --overwrite で patch が消えると本テストが fail する。
  *
  * リングは常設の shadow-xs に重なる box-shadow の層の spread で描かれ、これを表す matcher は
@@ -27,7 +27,7 @@ function ringSpread(group: Locator): number {
   return maxShadowSpread(getComputedStyle(group.element()).boxShadow);
 }
 
-describe("InputGroup の popup 内リング抑制 (ADR-0026)", () => {
+describe("InputGroup の popup 内リング抑制 (ADR-0027)", () => {
   it("combobox popup 内の検索入力はフォーカスしてもリングが付かず border も変わらない", async () => {
     const screen = await render(
       <Combobox items={["りんご", "みかん"]}>
@@ -56,7 +56,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0026)", () => {
 
     await screen.getByRole("combobox", { name: "開く" }).click();
 
-    // 入力が popup の中にあるので popup は role="dialog" になる (ADR-0026)
+    // 入力が popup の中にあるので popup は role="dialog" になる (ADR-0027)
     const popup = screen.getByRole("dialog", { name: "果物の候補" });
     const input = popup.getByRole("combobox", { name: "検索" });
     const group = popup.getBySlot("input-group");

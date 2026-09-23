@@ -197,7 +197,7 @@ describe("NoteCreateDialog", () => {
   });
 
   it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
-    // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0020)。
+    // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0021)。
     // 即 resolve だと応答前の窓が観測できない
     const invalidate = Promise.withResolvers<undefined>();
     const create = deferMock(createNote);
@@ -261,7 +261,7 @@ describe("NoteCreateDialog", () => {
     // handle を複数の対象で共有しないダイアログは、閉じる前に対象を比べられない。pending 中に
     // 閉じて開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の
     // 応答が届いた時点で新しい入力ごと閉じる。pending 中はユーザー起点の close を止める
-    // (ADR-0020 Decision の完了点 (b) の行)
+    // (ADR-0021 Decision の完了点 (b) の行)
     const create = deferMock(createNote);
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);

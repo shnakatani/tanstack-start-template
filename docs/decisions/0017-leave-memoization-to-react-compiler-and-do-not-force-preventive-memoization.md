@@ -1,8 +1,8 @@
-# ADR-0016: メモ化は React Compiler に委ね、予防的なメモ化を強制しない
+# ADR-0017: メモ化は React Compiler に委ね、予防的なメモ化を強制しない
 
 - Status: Accepted
 - Date: 2026-09-02
-- 関連: ADR-0009 (React Compiler ルールの選定基準)、ADR-0006 (依存の待機と pin の一般則)、ADR-0026 (registry コードは改変しない)
+- 関連: ADR-0009 (React Compiler ルールの選定基準)、ADR-0006 (依存の待機と pin の一般則)、ADR-0027 (registry コードは改変しない)
 
 ## Context
 
@@ -58,7 +58,7 @@ const sentinels = (code.match(/memo_cache_sentinel/g) ?? []).length;
 コンパイル出力の diff は判定に使えない。メモ化が保たれていても出力は必ず変わる。
 `useEffect` の依存へ流れる値は識別子ではなく正しさに関わるため、指標と別に確認する。
 
-registry コード (`src/components/ui/`) は ADR-0026 の統制対象なので、この判定の対象にせず改変しない。
+registry コード (`src/components/ui/`) は ADR-0027 の統制対象なので、この判定の対象にせず改変しない。
 
 ### bail out をビルドログへ出す (決定 6)
 
@@ -82,7 +82,7 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 未実装による bail out は `react/todo` が担う (カテゴリ分けと選定の基準は ADR-0009)。
 
 `react/todo` を `"error"` にすると bail out を修正すべき違反として扱うことになり、決定 5 と矛盾する。原因は Compiler の未実装でありコードの誤りではない。
-`vp lint -D react/todo` が報告するのは registry コードだけで、ADR-0026 により書き換えない (2026-09-02 確認)。件数は上流の追随で動くため、必要なときにこのコマンドで数える。
+`vp lint -D react/todo` が報告するのは registry コードだけで、ADR-0027 により書き換えない (2026-09-02 確認)。件数は上流の追随で動くため、必要なときにこのコマンドで数える。
 
 このコマンドは `logDiagnostics` の退路でもある。2026-09-02 に両方を同じツリーで走らせると、`vp build` のログと `vp lint -D react/todo` は同じ bail out を同じ数だけ報告し、後者は file:line まで出した。`oxc-transform-react` が非 fatal の Compiler 診断を `errors` から外したときは、ビルドログの代わりにこれをオンデマンドで叩く。
 `"warn"` にもできない。`vp check` は warn を exit 0 で通すため、gate に載らないルールは設定してあるだけの状態になる。

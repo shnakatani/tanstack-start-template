@@ -94,7 +94,7 @@ const EXPECTED_OVERRIDES = [
     },
   },
   {
-    // 層の境界に載せる規則と、その適用外にする層 (ADR-0013 / ADR-0031)。design system の著作側
+    // 層の境界に載せる規則と、その適用外にする層 (ADR-0014 / ADR-0032)。design system の著作側
     // (ui/ action/ parts/) だけを外し、消費側には規則を効かせる。広げると、広げた先の層で
     // className の上書きと動的な className が無診断で通る。.storybook/ も消費側として扱う
     // (decorator が design system component を包む置き場になる)
@@ -242,7 +242,7 @@ describe("書いた設定が解決後も残っている", () => {
         ),
       })),
       "override の適用先かルールか severity が変わった。適用先を広げるとその層で規則が無診断になり、" +
-        "ルールを消すか off にすると規則が無言で外れる (ADR-0032 / ADR-0010 / ADR-0011 / ADR-0013 / ADR-0031)",
+        "ルールを消すか off にすると規則が無言で外れる (ADR-0033 / ADR-0010 / ADR-0011 / ADR-0014 / ADR-0032)",
     ).toEqual(EXPECTED_OVERRIDES);
   });
 
@@ -256,7 +256,7 @@ describe("書いた設定が解決後も残っている", () => {
     expect(
       holders.map(({ files }) => files),
       "付随ファイルの除外が想定外の override に付いた。その override の規則が" +
-        "テストと story で無診断になる (ADR-0011 / ADR-0013 / ADR-0031)",
+        "テストと story で無診断になる (ADR-0011 / ADR-0014 / ADR-0032)",
     ).toEqual([["src/**", "scripts/**"]]);
     expect(
       holders[0]?.excludeFiles?.filter((glob) => COMPANION_GLOBS.has(glob)),

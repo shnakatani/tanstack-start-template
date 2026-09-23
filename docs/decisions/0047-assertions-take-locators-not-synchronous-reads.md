@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0044 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0009 (ルールの選定基準)、ADR-0032 (`jsPlugins` で足す判断)、ADR-0048 (本 ADR の移行で顕在化した assert の予算)、ADR-0049 (同じく顕在化した否定 assert の検出力)
+- 関連: ADR-0044 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0009 (ルールの選定基準)、ADR-0033 (`jsPlugins` で足す判断)、ADR-0048 (本 ADR の移行で顕在化した assert の予算)、ADR-0049 (同じく顕在化した否定 assert の検出力)
 
 ## Context
 
@@ -83,7 +83,7 @@ ADR-0044 が「lint で表現できる形は無い」と書いたのは、`eleme
 
 ### 機械強制は oxlint の JS plugin で書く
 
-ルールは `scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む。`vp lint` と `vp check` で走るので、検査のための実行経路を増やさない。`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0032 / ADR-0010)。
+ルールは `scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む。`vp lint` と `vp check` で走るので、検査のための実行経路を増やさない。`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0033 / ADR-0010)。
 
 API は同梱の `node_modules/vite-plus/docs/guide/lint.md` 「Writing Your Own Rules」に従う。型は `vite-plus/lint/plugins` の `definePlugin` / `defineRule` / `SourceCode`、テストは `vite-plus/lint/plugins-dev` の `RuleTester` から取る。同 docs は `@oxlint/plugins` と `oxlint` を直接依存に足すことを禁じ、理由を 2 つ挙げる。別に pin した写しが linter 本体からずれること、pnpm の strict layout では plugin ファイルから解決できないことである。
 

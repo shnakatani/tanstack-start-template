@@ -28,7 +28,7 @@ interface DataTableProps<TData extends RowData> extends Pick<
    *
    * `className` は受けない。返した class は `rowProps` のコールバックの中にあって
    * `no-restyle` が追えず、`<TableRow>` へ直接書けば落ちる class が無診断で通る。
-   * 外見は部品が持つ (ADR-0031)。半透明は `aria-busy` から下で当てる。
+   * 外見は部品が持つ (ADR-0032)。半透明は `aria-busy` から下で当てる。
    */
   rowProps?: (
     row: Row<DataTableFeatures, TData>,
@@ -38,8 +38,8 @@ interface DataTableProps<TData extends RowData> extends Pick<
 }
 
 /**
- * 列定義 (TanStack Table v9) を registry の `Table` 部品に描く共有部品 (ADR-0021)。
- * 列見出しの `scope="col"` の理由も ADR-0021。
+ * 列定義 (TanStack Table v9) を registry の `Table` 部品に描く共有部品 (ADR-0022)。
+ * 列見出しの `scope="col"` の理由も ADR-0022。
  */
 export function DataTable<TData extends RowData>({
   tableKey,

@@ -1,12 +1,12 @@
-# ADR-0024: LIKE の部分一致は利用者の入力をエスケープし、`ESCAPE` 句と対で bind する
+# ADR-0025: LIKE の部分一致は利用者の入力をエスケープし、`ESCAPE` 句と対で bind する
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0022 (絞り込み条件は URL が持つ)、ADR-0012 (`src/server/db/` の置き場)
+- 関連: ADR-0023 (絞り込み条件は URL が持つ)、ADR-0013 (`src/server/db/` の置き場)
 
 ## Context
 
-利用者の入力から `LIKE` の部分一致を組む場面がある。実例は `/notes` の title の絞り込み (ADR-0022) で、サーバ側で行う。SQLite の `LIKE` は `%` と `_` をワイルドカードとして扱い、既定では ASCII の英字だけ大文字小文字を区別しない (sqlite.org「SQLite only understands upper/lower case for ASCII characters by default」)。利用者の入力をそのまま渡すと `100%` が `100` で始まる全てに一致する。
+利用者の入力から `LIKE` の部分一致を組む場面がある。実例は `/notes` の title の絞り込み (ADR-0023) で、サーバ側で行う。SQLite の `LIKE` は `%` と `_` をワイルドカードとして扱い、既定では ASCII の英字だけ大文字小文字を区別しない (sqlite.org「SQLite only understands upper/lower case for ASCII characters by default」)。利用者の入力をそのまま渡すと `100%` が `100` で始まる全てに一致する。
 
 drizzle-orm 0.45 の `like` / `ilike` はパターンをそのまま受けるだけで、エスケープの helper は無い (drizzle-team/drizzle-orm#444、2023-04-13 起票、2026-09-23 時点で open)。SQLite にもエスケープ関数は無い。
 
