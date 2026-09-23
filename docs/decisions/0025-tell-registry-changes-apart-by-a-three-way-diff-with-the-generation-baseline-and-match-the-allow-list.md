@@ -76,8 +76,8 @@ registry が宣言する依存は、コンポーネント本体が import して
 baseline の取得漏れは `scripts/checks/integrity/registry-baseline.test.ts` が双方向で検出する。
 `--overwrite` で再生成したら baseline も更新する。
 
-`src/styles.css` の baseline は `docs/registry-baseline/styles.css` に置く。`shadcn add` は出力しないため、作り直す手順は ADR-0033「土台は空ファイルへの生成物とし、自作分を載せ直す」 が持つ。
-突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css` で、残る差分がADR-0034 の許容リスト と 1:1 で対応する。
+`src/styles.css` の baseline は `docs/registry-baseline/styles.css` に置く。`shadcn add` は出力しないため、作り直す手順は ADR-0033「土台は空ファイルへの生成物とし、自作分を載せ直す」が持つ。
+突き合わせは `git diff --no-index docs/registry-baseline/styles.css src/styles.css` で、残る差分が ADR-0034 の許容リストと 1:1 で対応する。
 取得漏れは `registry-baseline.test.ts` が落とす (`EXTERNAL_REGISTRY_FILES` に `styles.css` を登録してある)。許容リストへの行の足し忘れは鳴らない。
 
 ### 許容リストに載せないもの

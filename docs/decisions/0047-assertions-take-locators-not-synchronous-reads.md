@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0044 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0009 (ルールの選定基準。自前ルールを `jsPlugins` で足す判断)、ADR-0048 (本 ADR の移行で顕在化した assert の予算)、ADR-0049 (同じく顕在化した否定 assert の検出力)
+- 関連: ADR-0044 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0009 (ルールの選定基準)、ADR-0032 (`jsPlugins` で足す判断)、ADR-0048 (本 ADR の移行で顕在化した assert の予算)、ADR-0049 (同じく顕在化した否定 assert の検出力)
 
 ## Context
 

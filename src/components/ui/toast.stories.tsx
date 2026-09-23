@@ -19,7 +19,7 @@ const TYPE_LABELS = {
 } satisfies Record<ToastIconType, string>;
 
 /**
- * manager は story ごとに作る。module 変数に持たせると前の story の toast が残る (ADR-0053)
+ * manager は story ごとに作る。module 変数に持たせると前の story の toast が残る
  */
 function ToastExample({ type }: { type: ToastIconType }) {
   const [manager] = useState(() => createToastManager());

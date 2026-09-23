@@ -6,7 +6,8 @@
 
 ## Context
 
-`@shadcn/lint` は上流の `recommended` を持たない。
+色は semantic token だけに保ちたい。Tailwind は既定 palette の class を CSS として生成するので、palette 色や任意値の色を書けば画面にそのまま出る。
+oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たない。`@shadcn/lint` は上流の `recommended` を持たない。
 
 ## Decision
 

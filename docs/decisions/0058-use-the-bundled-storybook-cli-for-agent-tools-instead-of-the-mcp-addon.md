@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0005 (ツールチェーン) / ADR-0053 (Storybook を状態のカタログとして導入)
+- 関連: ADR-0005 (ツールチェーン) / ADR-0052 (Storybook の導入と framework) / ADR-0053 (story を状態のカタログにする)
 
 ## Context
 

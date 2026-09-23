@@ -6,7 +6,9 @@
 
 ## Context
 
-`src/styles.css` の baseline は `docs/registry-baseline/styles.css` に置く。`shadcn add` は出力しないため、作り直す手順は ADR-0033「土台は空ファイルへの生成物とし、自作分を載せ直す」 が持つ。
+`src/styles.css` は shadcn CLI の生成物を土台にしている。生成し直すと、ローカルで手を入れた箇所は消える。消えたものを戻せるよう、生成物から動かした箇所を 1 行ずつ記録する。
+
+`src/styles.css` の baseline は `docs/registry-baseline/styles.css` に置く。`shadcn add` は出力しないため、作り直す手順は ADR-0033「土台は空ファイルへの生成物とし、自作分を載せ直す」が持つ。
 
 ## Decision
 

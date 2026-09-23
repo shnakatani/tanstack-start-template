@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0052 (framework) / ADR-0055 (play の操作とブラウザテストの分担) / ADR-0056 (トークンの story) / ADR-0057 (story の a11y 検査) / ADR-0054 (story の置き場所と対象) / ADR-0017 (Transition) / ADR-0031 (className)
+- 関連: ADR-0052 (framework) / ADR-0055 (play の操作とブラウザテストの分担) / ADR-0056 (トークンの story) / ADR-0057 (story の a11y 検査) / ADR-0054 (story の置き場所と対象) / ADR-0013 (層) / ADR-0017 (Transition)
 
 ## Context
 

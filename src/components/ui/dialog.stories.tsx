@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /**
- * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る (ADR-0053)
+ * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る
  */
 function DialogExample({ showCloseButton }: { showCloseButton?: boolean }) {
   const [handle] = useState(() => createDialogHandle<undefined>());

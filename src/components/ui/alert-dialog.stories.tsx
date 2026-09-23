@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 /**
- * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る (ADR-0053)。
+ * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る。
  * アプリの確認ダイアログは `DeleteConfirmDialog` (parts) を通すので、ここは registry の意匠の見本
  */
 function AlertDialogExample({ media }: { media?: ReactNode }) {

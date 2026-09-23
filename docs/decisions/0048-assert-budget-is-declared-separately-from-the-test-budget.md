@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0047 (assert には locator を渡す。その移行で肯定 assert が増え、予算の既定が問題として現れた)、ADR-0044 (待機を retry API に委ねる)、ADR-0009 (ルールの選定基準。自前ルールを `jsPlugins` で足す判断)
+- 関連: ADR-0047 (assert には locator を渡す。その移行で肯定 assert が増え、予算の既定が問題として現れた)、ADR-0044 (待機を retry API に委ねる)、ADR-0009 (ルールの選定基準)、ADR-0032 (`jsPlugins` で足す判断)
 
 ## Context
 

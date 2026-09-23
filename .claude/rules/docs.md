@@ -11,7 +11,7 @@ paths:
 
 ## 置き場所
 
-- 規範は `.claude/rules/`、決定の経緯は `docs/decisions/`、いつ何を変えたかは git 履歴が持つ (ADR-0001)
+- 規範は `.claude/rules/`、決定の経緯は `docs/decisions/`、いつ何を変えたかは git 履歴が持つ。ADR の枠内の改訂と置き換えは ADR 自身にも `Revised` / `Superseded` で残す (ADR-0001 / ADR-0000)
 - 書くか削るかは、消したら実装者が誤った選択をするかで決める。基準は公式の best practices (https://code.claude.com/docs/en/best-practices)
 - `CLAUDE.md` は `AGENTS.md` への symlink。編集先は `AGENTS.md`
 
