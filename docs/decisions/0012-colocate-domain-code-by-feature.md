@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-09-06
 - Revised: 2026-09-14 (route-local のコンポーネントでないモジュールの置き場 `-lib/` と hook の置き場 `-hooks/` を足し、features と route のどちらに置くかの基準を書いた)
+- Revised: 2026-09-23 (ページ本体と loader を route ファイルの named export に残す決定を撤回。route の property を export すると code-split されないため、`-components/` と `-lib/` に置いて route ファイルからは export しない)
 - 関連: ADR-0011 (server function のデータ境界)
 
 ## Context
@@ -60,7 +61,9 @@ user が `files` を指定すると既定を置換する (同 `plugin.js` の `p
 
 - ドメインに属さないものは分けたまま置く。server 基盤は `src/server/`、汎用ロジックは `src/lib/`、React 依存の hook は `src/hooks/`
 - `src/routes/` は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まるとは限らないので、ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く
-- 画面そのもの (ページ本体) は route ファイルの named export のまま残す。その URL 配下だけで使う部品は `routes/<path>/-components/` に置く
+- route ファイルに置くのは `Route` と、export しない wrapper (`Route.useSearch` 等の Route hooks を吸収する component)。ページ本体は `routes/<path>/-components/` に、loader 本体は `routes/<path>/-lib/` に置き、route ファイルからは export しない。テストはそれぞれの置き場から import する
+- 理由は TanStack Router の automatic code splitting の規則「Do not export route properties」。route の property (`component` / `loader` 等) とそれが使うものを route ファイルから export すると main bundle に入り、code-split されない。2026-09-23 に `vp build` で確認: ページ本体と loader を named export していた形は `/notes` のコードが main chunk に入り、export をやめると `/notes` の chunk へ移った (差は main の約 3 割)。2026-09-06 から 2026-09-23 までは「ページ本体は route ファイルの named export に残す」としていたが、テストから直接呼ぶための export が分割を壊していた
+- 分割されない property (`pendingComponent` / `loader` / `loaderDeps` / `validateSearch` / `beforeLoad`。既定の `codeSplitGroupings` は `component` / `errorComponent` / `notFoundComponent`) は route ファイルに残る。それらが import する module は eager に読まれるので、遅延側 (ページ本体) と同じ module に置かない。pending 表示はページ本体と別ファイルにし、共有する定数は `-lib/` に置く
 - その URL 配下だけで使うコンポーネントでないモジュール (行の組み立て、列定義、dialog の handle、純粋関数、型) は `routes/<path>/-lib/` に、React hook は `routes/<path>/-hooks/` に置く。テストと fixture は対象と同じディレクトリ。`src/lib/` / `src/hooks/` と同じ線引きを route の中で繰り返す
 - features と route のどちらに置くかは消費者で決める。その route だけが使うなら route 側、複数の画面から使うか、ドメインの形 (schema / mutation) と同じ場所に居るべきものなら `src/features/<domain>/`。画面の描画の形 (一覧の行モデル) は前者、mutation の variables を絞る parser は後者
 - `src/features/<domain>/` 内部の import は相対パスで書く

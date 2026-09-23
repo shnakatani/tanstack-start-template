@@ -43,7 +43,7 @@ paths:
 | `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                                                  |
 | `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)                               |
 
-- 画面そのもの (ページ本体) は route ファイルの named export に残す。ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く (ADR-0012)
+- ページ本体は `routes/<path>/-components/` に置き、route ファイルからは export しない。ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く (ADR-0012)
 - `src/features/<domain>/` 内部の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)
 - React の hook を `src/lib/` に置かない
 - client bundle へ入るファイルから `src/server/db/` と native binding を持つ依存を import しない。DB へ触るのは `.server.` を持つファイルとテスト、`src/server/db/` の中に限る (遮断は `vite.config.ts` の `tanstackStart` の `importProtection`)
@@ -84,7 +84,9 @@ paths:
 ## ルートファイル
 
 - ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。その画面専用の純粋ロジックは `-lib/`、複雑な UI は `-components/`、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
-- Route hooks (`Route.useSearch` / `Route.useNavigate`) はルートファイル内の薄い wrapper component で吸収し、ページ本体は値とハンドラを props で受ける named export にする。Route hooks を混ぜるとページテストがテスト router で動かない
-- loader 本体も named export の関数に切り出す。route 定義に直書きすると loader だけを呼ぶテストが書けない (実例: `src/routes/notes/index.tsx` の `loadNotesPageData`)
+- Route hooks (`Route.useSearch` 等) はルートファイル内の export しない wrapper で吸収し、ページ本体は `-components/` に置いて値とハンドラを props で受ける。混ぜるとページテストがテスト router で動かない (実例: `src/routes/notes/-components/notes-page.tsx`)
+- loader 本体は `-lib/` の関数に切り出し、route ファイルからは export しない。route 定義に直書きすると loader だけを呼ぶテストが書けない (実例: `src/routes/notes/-lib/notes-page-loader.ts`)
+- route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入り code-split されない (ADR-0012)
+- 分割されない property (`pendingComponent` / `loader` / `validateSearch` 等) が import する module は eager に読まれる。ページ本体と同じ module に置かず、pending 表示は別ファイル、共有する定数は `-lib/` に置く (ADR-0012)
 - loader は Query を温めるためだけに呼び、値は component が `useSuspenseQuery` で読む。`useLoaderData` で Query 所有のデータを読むと、mutation の `invalidateQueries` では loader が再実行されず画面だけ古いまま残る
 - Route hooks を使う wrapper を足したら、実 router + `createMemoryHistory` で描いて検証する。props 直渡しでは wrapper が実行されない。tree は root を差し替えて組む (実例: `src/routes/notes/route.test.tsx`、理由は ADR-0033)
