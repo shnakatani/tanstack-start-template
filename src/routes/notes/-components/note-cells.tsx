@@ -12,7 +12,7 @@ type NoteCellContext = DataTableCellContext<NoteRow>;
 export function NoteCreatedAtCell({ row }: NoteCellContext) {
   if (row.original.kind !== "saved") {
     // 行の aria-busy が true の間は支援技術が内容の変化を無視してよい (WAI-ARIA 1.2 aria-busy)
-    // ので、このテキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0037)
+    // ので、このテキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0032)
     return "保存中";
   }
   // 整形は必ずタイムゾーンを明示した formatDateTime を通す。ローカル TZ 依存の整形は
@@ -32,7 +32,7 @@ export function NoteActionsCell({ row }: NoteCellContext) {
   return (
     <>
       {/* 削除中は行から可視の手掛かりが半透明しか出ないので、読み上げ用のテキストを足す。
-          位置づけは保存中の行の「保存中」と同じ (ADR-0037) */}
+          位置づけは保存中の行の「保存中」と同じ (ADR-0032) */}
       {isDeleting && <span className="sr-only">削除中</span>}
       <AlertDialogTrigger
         handle={noteDeleteDialogHandle}
@@ -41,7 +41,7 @@ export function NoteActionsCell({ row }: NoteCellContext) {
         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
         aria-label={`${note.title}を削除`}
-        // 止めるのは削除中の行だけ (ADR-0021「ブロック範囲」)。render 側の
+        // 止めるのは削除中の行だけ (ADR-0020「ブロック範囲」)。render 側の
         // focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
         // native disabled でフォーカスが body へ落ちるのを防ぐ
         // (Trigger の props 型は受けず Button primitive が受ける)

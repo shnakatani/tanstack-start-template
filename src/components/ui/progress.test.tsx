@@ -5,7 +5,7 @@ import { Progress, ProgressTrack } from "@/components/ui/progress";
 
 describe("Progress", () => {
   // registry は children の後に既定の Track を無条件で描画するため、Track を含む children を
-  // 渡すと 2 本になる。ローカルはフォールバック化してあり 1 本に保たれる (ADR-0026 の乖離)。
+  // 渡すと 2 本になる。ローカルはフォールバック化してあり 1 本に保たれる (ADR-0024 の乖離)。
   // locator は複数一致で throw するので、`expect.element` が 1 本であることまで固定する
   // 0 本なら toBeInTheDocument が落ちる
   it("Track を含む children を渡しても track が 1 本に保たれる", async () => {

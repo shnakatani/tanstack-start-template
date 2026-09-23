@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0009 (lint ルールの選定基準)、ADR-0033 (`jsPlugins` で足すもう 1 つのプラグイン)
+- 関連: ADR-0009 (lint ルールの選定基準)、ADR-0029 (`jsPlugins` で足すもう 1 つのプラグイン)
 
 ## Context
 

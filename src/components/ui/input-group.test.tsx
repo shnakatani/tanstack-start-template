@@ -14,12 +14,12 @@ import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import { maxShadowSpread } from "@/test/box-shadow";
 
 /**
- * input-group.tsx の registry 乖離 (popup 内リング抑制 patch、ADR-0026) のガード。
+ * input-group.tsx の registry 乖離 (popup 内リング抑制 patch、ADR-0024) のガード。
  * shadcn add --overwrite で patch が消えると本テストが fail する。
  *
  * リングは常設の shadow-xs に重なる box-shadow の層の spread で描かれ、これを表す matcher は
  * 無い。抑制は `:has()` の詳細度と `not-in-` の組み合わせで効くため描画して `expect.poll` の
- * 中で測る (ADR-0047)。transition-[box-shadow] の途中値は retry が吸収する。
+ * 中で測る (ADR-0039)。transition-[box-shadow] の途中値は retry が吸収する。
  */
 
 /** リングの spread。3px (ring-3) と 0 の間に中間値は無い */
@@ -27,7 +27,7 @@ function ringSpread(group: Locator): number {
   return maxShadowSpread(getComputedStyle(group.element()).boxShadow);
 }
 
-describe("InputGroup の popup 内リング抑制 (ADR-0026)", () => {
+describe("InputGroup の popup 内リング抑制 (ADR-0024)", () => {
   it("combobox popup 内の検索入力はフォーカスしてもリングが付かず border も変わらない", async () => {
     const screen = await render(
       <Combobox items={["りんご", "みかん"]}>
@@ -56,7 +56,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0026)", () => {
 
     await screen.getByRole("combobox", { name: "開く" }).click();
 
-    // 入力が popup の中にあるので popup は role="dialog" になる (ADR-0026)
+    // 入力が popup の中にあるので popup は role="dialog" になる (ADR-0024)
     const popup = screen.getByRole("dialog", { name: "果物の候補" });
     const input = popup.getByRole("combobox", { name: "検索" });
     const group = popup.getBySlot("input-group");
@@ -68,7 +68,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0026)", () => {
 
     // リングは box-shadow の spread で描画される。0 ならリング無し = 下の行への食い込みは構造的に
     // 起きない。border 色はフォーカスで変えない (popup 様式の border-input/30 のまま)。
-    // 2 つは同じ観測から取る (ADR-0049)
+    // 2 つは同じ観測から取る (ADR-0041)
     await expect
       .poll(() => {
         const style = getComputedStyle(group.element());

@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 /**
- * 落ちる向きを見るテストは assert の予算 (ADR-0048) を待たない。`vi.setConfig` の docs の例に
+ * 落ちる向きを見るテストは assert の予算 (ADR-0040) を待たない。`vi.setConfig` の docs の例に
  * `expect` は無いが、受け取る `RuntimeConfig` 型 (vitest 4.1.11 `config.d.ts`) が `expect` を持ち、
  * `expect.poll` は呼び出しごとに config を読む。timeout 0 でも 1 回は評価され、失敗文は同じ。
  * 他ファイルへは漏れない。`isolate` (既定 true。`browser.isolate` は vitest 4.1 で deprecated) でファイルごとに iframe が分かれ、config は

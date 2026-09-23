@@ -24,7 +24,7 @@ describe("fieldValue の型契約", () => {
 
 /**
  * 4 部品の配線 (正典ペア、aria-describedby ⇄ FieldError、sanitize、検証エラーの正規化、
- * Select の候補入れ替え、blur 検証) は `form-fields.stories.tsx` の play が持つ (ADR-0053)。
+ * Select の候補入れ替え、blur 検証) は `form-fields.stories.tsx` の play が持つ (ADR-0044)。
  * 検証エラーでラベルが destructive 色になるのは registry の Field が `data-[invalid=true]` で
  * 当てる継承で、`Invalid` story が正典ペアの付与を play で固定する。色は測らない。
  * ここに残すのは型テストだけ。

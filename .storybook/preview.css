@@ -1,7 +1,7 @@
 /* Storybook だけ theme(static) を掛けて、定義した全トークンを :root へ出させる。
    Tailwind は既定では utility から参照されている変数しか出力しないため、実際に使って
    いるトークンでもカタログに現れない。theme() は import 単位で効くので、本番の CSS は
-   src/styles.css をそのまま読み、未参照の宣言を持たない (ADR-0056)。
+   src/styles.css をそのまま読み、未参照の宣言を持たない (ADR-0046)。
    出典: 参照された変数だけを出力する既定と static は tailwindcss.com/docs/theme
    「Generating all CSS variables」、theme() が import 単位で効くことは
    tailwindcss.com/docs/preflight「Disabling Preflight」

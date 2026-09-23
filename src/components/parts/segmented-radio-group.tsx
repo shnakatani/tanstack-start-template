@@ -17,7 +17,7 @@ import { cn } from "cn";
  * 意匠は registry の Tabs (variant=default) から取っている。shadcn-ui/ui#8839 のとおり shadcn の
  * 現行 Tabs は実体が segmented control であり、この見た目が標準形である。ただし TabsTrigger は
  * cva 化されておらず借用できないため、値をこのファイルで持つ (registry を書き換えて export を
- * 増やすと ADR-0026 の許容リストに恒久的な乖離が増える)。
+ * 増やすと ADR-0024 の許容リストに恒久的な乖離が増える)。
  *
  * **値の出所は tabs.tsx の tabsListVariants (トラック) と TabsTrigger (セグメント)。registry の
  * Tabs を再生成したときは突き合わせること。** そのままではない差分は次のとおり。
@@ -59,7 +59,7 @@ const SEGMENTED_RADIO_GROUP =
  * 生まれず、flex-1 だけでは文字数ぶんの幅差がそのまま残るため、下限で揃える。
  * 未選択は text-foreground/60 で、トラック上のコントラストは light dark とも AA を満たす。
  * 選択は bg-background + shadow-sm の浮いたつまみで、文字は text-foreground。比は
- * `mise run contrast` で測る (ADR-0039)。
+ * `mise run contrast` で測る (ADR-0034)。
  * hover が選択済みの文字色を奪わないのは、選択時と hover 時がどちらも text-foreground で
  * 同色だからである (異なる色を選ぶと data-checked は :where() 包みで特異度がゼロ加算のため
  * hover に負ける。segmented-radio-group.test.tsx がこれを回帰として固定している)。
