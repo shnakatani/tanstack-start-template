@@ -120,10 +120,10 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 
 ## ドキュメント
 
-| パス                      | 内容                                                                                                                                    |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/decisions/`         | ADR。決定と却下理由。索引は `docs/decisions/README.md`                                                                                  |
-| `.claude/rules/`          | Claude が作業中に読み込む規範。`paths` に一致するファイルを読んだときロードされる。rules は ADR を指し、ADR とコードは rules を指さない |
-| `AGENTS.md`               | エージェントへの指示。`CLAUDE.md` は symlink                                                                                            |
-| `docs/registry-baseline/` | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0026)                                                             |
-| `docs/superpowers/`       | 設計仕様と実装計画の置き場所                                                                                                            |
+| パス                      | 内容                                                                                                                                                                                      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/decisions/`         | ADR。決定と却下理由。索引は `docs/decisions/README.md`                                                                                                                                    |
+| `.claude/rules/`          | Claude が作業中に読み込む規範。`paths` に一致するファイルを読んだときロードされる。rules は ADR を指し、ADR とコードは rules を指さない (rules の置き場所や書き方を主題にする ADR は除く) |
+| `AGENTS.md`               | エージェントへの指示。`CLAUDE.md` は symlink                                                                                                                                              |
+| `docs/registry-baseline/` | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0026)                                                                                                               |
+| `docs/superpowers/`       | 設計仕様と実装計画の置き場所                                                                                                                                                              |

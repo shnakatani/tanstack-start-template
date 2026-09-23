@@ -58,7 +58,7 @@ paths:
 
 ## 状態のアサートは semantic matcher を先に探す
 
-`toHaveAttribute` か `querySelector` を書く前に下表を見る。ユーザーから見た状態を先に見る。Testing Library の Guiding Principles "The more your tests resemble the way your software is used, the more confidence they can give you." に沿う。
+`toHaveAttribute` か `querySelector` を書く前に下表を見る。ユーザーから見た状態を先に見る (Testing Library の Guiding Principles)。
 
 | 見たいもの                                    | 使うもの                                                                                                                                            |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |

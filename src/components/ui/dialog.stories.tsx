@@ -78,8 +78,9 @@ export const Opened: Story = {
 };
 
 /**
- * 閉じる X を出さない形。registry が持つ prop だが、アプリでは既定 (`showCloseButton = true`)
- * のまま使う (ADR-0027)。
+ * `DialogContent` の閉じる X を出さない形。footer のキャンセルボタン (`DialogClose`) が tab 順に
+ * 残るので、閉じる button は失われない (WAI-ARIA APG の Dialog (Modal) Pattern は、閉じる
+ * button を tab 順に置くことを推奨している)。
  * X を消しても Esc と外側クリックは効いたまま
  */
 export const WithoutCloseButton: Story = {

@@ -10,7 +10,7 @@
 
 制約は次のとおり。
 
-- 一覧のデータは Query が所有し、loader は Query を温めるだけにする。`useLoaderData` で読むと、`invalidateQueries` で Query を更新しても画面が更新されない。絞り込み条件が変わっても loader の値を `useLoaderData` で読む形にはしない
+- 一覧のデータは Query が所有し、loader は Query を温めるだけにする。`useLoaderData` で読むと、`invalidateQueries` で Query を更新しても画面が更新されない。TanStack Router の External Data Loading の例も、loader は "ensure that the data is loaded" に使い、コンポーネントは `useSuspenseQuery` で "Read the data from the cache and subscribe to updates" としている。絞り込み条件が変わっても loader の値を `useLoaderData` で読む形にはしない
 - Router は search param を loader へ直接渡さない。loader が読む search は `loaderDeps` で宣言し、deps の組み合わせごとに別のキャッシュになる (Router の data-loading ガイド「Using loaderDeps to access search params」)
 - Router の search-params ガイドは、malformed な search param には fallback を用意して体験を止めないことを勧め、エラー表示は選んだときだけとする
 - URL の値を書き換える契機を打鍵にすると、1 文字ごとに履歴と loader が動く
@@ -55,6 +55,7 @@
 ## 出典
 
 - TanStack Router の search-params ガイド (Standard Schema、`stripSearchParams`、search middlewares、fallback の推奨): <https://tanstack.com/router/latest/docs/framework/react/guide/search-params>
+- TanStack Router の External Data Loading ガイド (loader は Query を温め、コンポーネントは `useSuspenseQuery` で読む例): <https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading>
 - TanStack Router の data-loading ガイド「Using loaderDeps to access search params」: <https://tanstack.com/router/latest/docs/framework/react/guide/data-loading>
 - TanStack/router#4973 (Search Params as Actual State。per-param codec の提案): <https://github.com/TanStack/router/issues/4973>
 - nuqs `history` option (既定 `replace`。push はナビゲーションに相当するときだけ): <https://nuqs.dev/docs/options>

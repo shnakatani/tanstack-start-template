@@ -116,11 +116,11 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ## 操作できる要素の組み方
 
-- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる。Playwright の click は hit-target を検査するので、奪われると click が落ちる (ADR-0045。registry の Input 単体は `src/components/ui/input-pointer.test.tsx` が見る)
+- input に疑似要素の hit 拡大やラッパーを掛けない。包んだ要素が pointer を奪い、本体がクリックを受け取れなくなる (ADR-0045。registry の Input 単体は `src/components/ui/input-pointer.test.tsx` が見る)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する
-- Dialog と Sheet の X ボタン (`showCloseButton`) は registry の既定 (`true`) のまま使う (ADR-0027)
+- `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。閉じる button が無いと、閉じ方が Escape に限られる (WAI-ARIA APG Dialog (Modal) Pattern)
 
 ## a11y 最低基準
 
