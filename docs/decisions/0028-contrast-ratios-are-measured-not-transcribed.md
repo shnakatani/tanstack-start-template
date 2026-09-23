@@ -114,17 +114,7 @@ Understanding SC 1.4.3 の「the computed values should not be rounded」は比�
 
 判定軸は `.claude/rules/docs.md`「数値」の 2 行である。リポジトリのコードや作業で動く数値は書かず測り方だけ残す行と、判断の根拠を兼ねる数値は日付を添えて残す行を、コントラスト比へ当てる。
 
-落としたもの。主張 (「割る」「満たす」) だけ残し、測り方として `mise run contrast` を添える。
-
-| 場所                                             | 落とした数値                                         |
-| ------------------------------------------------ | ---------------------------------------------------- |
-| `src/components/parts/data-table.tsx`            | `opacity-50` の比                                    |
-| `src/components/parts/segmented-radio-group.tsx` | 未選択と選択の比 (light / dark)                      |
-| `src/styles.css` の `--placeholder` のコメント   | select の実テキストへ当てたときの dark の比          |
-| ADR-0016                                         | `data-table.tsx` と同じ主張の写し。参照へ置き換えた  |
-| ADR-0024 の Consequences                         | `--border` / `--input` / `ring-ring/50` / chart の比 |
-
-残したもの。
+残す数値。
 
 | 場所                                        | 残す理由                                                                                      |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
