@@ -16,7 +16,7 @@ import { BUSY_OPACITY_CLASS } from "./busy-opacity";
 import type { DataTableFeatures } from "./data-table-features";
 import { dataTableFeatures } from "./data-table-features";
 
-/** 転送する option の型は `useTable` の options から導出する (`.claude/rules/typing.md`「ラッパー部品の転送 prop 型」) */
+/** 転送する option の型は `useTable` の options から導出する (再宣言すると転送先の型変更に追随しない) */
 interface DataTableProps<TData extends RowData> extends Pick<
   TableOptions<DataTableFeatures, TData>,
   "columns" | "data" | "getRowId"
@@ -39,7 +39,7 @@ interface DataTableProps<TData extends RowData> extends Pick<
 
 /**
  * 列定義 (TanStack Table v9) を registry の `Table` 部品に描く共有部品 (ADR-0019)。
- * 列見出しの `scope="col"` は `.claude/rules/implementation.md`「テーブルの列見出し」。
+ * 列見出しの `scope="col"` の理由も ADR-0019。
  */
 export function DataTable<TData extends RowData>({
   tableKey,

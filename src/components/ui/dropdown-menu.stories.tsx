@@ -67,7 +67,7 @@ export const Opened: Story = {
 
 /**
  * 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
- * (`implementation.md`「accessible name の与え方」)
+ * (`styling.md`「accessible name の与え方」)
  */
 export const Grouped: Story = {
   render: () => (

@@ -78,7 +78,7 @@ export function NoteCreateDialog() {
   // ADR-0016 移行前の従来挙動 (何も止めない) と同じなので、閉じられなくなる側へは倒さない
   const blocksClose = createMutation.isPending && !isRefetchingNotes;
 
-  // 型は転送先の props から導出する (`.claude/rules/typing.md`「ラッパー部品の転送 prop 型」)
+  // 型は転送先の props から導出する (再宣言すると転送先の型変更に追随しない)
   const handleOpenChange: ComponentProps<typeof Dialog>["onOpenChange"] = (open, details) => {
     // onSuccess の close は handle 経由なので reason が imperative-action になる。通す
     if (!open && blocksClose && details.reason !== "imperative-action") {
@@ -94,7 +94,7 @@ export function NoteCreateDialog() {
         </DialogHeader>
         {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで渡すのは表示ではなく
             close の可否で、handleOpenChange と同じ源から取らないと「押せるのに閉じない」ずれが
-            出る (`.claude/rules/implementation.md` の pending の項目) */}
+            出る (ADR-0016 の完了点 (b)) */}
         <NoteCreateForm onSubmit={createMutation.runAction} blocksClose={blocksClose} />
       </DialogContent>
     </Dialog>

@@ -21,7 +21,7 @@ export type ActionMutationOptions<
 
 /**
  * 戻り値の型から `mutate` / `mutateAsync` を外す。呼び出し側は `runAction` だけを通る
- * (`.claude/rules/implementation.md`「ユーザー操作による更新は Transition の中で行う」)。
+ * (ADR-0014)。
  * 実行時のオブジェクトは `useMutation` の戻り値そのままで、型だけで経路を絞る。
  */
 export type ActionMutationResult<

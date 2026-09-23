@@ -2,7 +2,7 @@
  * 決着の時点をテスト本文 (story なら play) が握る action の実装を作る。
  *
  * 実時間へ預ける形 (`setTimeout`) は、決着が次の操作より先に届いた回で偽 red になる
- * (testing.md「optimistic update テストは遅延 rejection で中間状態を観測」)。
+ * (testing.md「optimistic update は決着を握って観測する」)。
  *
  * Storybook の vitest 実行は 1 つの React root へ story を描き替えるため、決着しない
  * Transition が残ると後続 story と干渉する (ADR-0022)。`beforeEach` は開始時と終了時の

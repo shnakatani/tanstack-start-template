@@ -11,7 +11,7 @@ import { findLiveRegion, LIVE_REGION_IDS, type Politeness } from "@/lib/live-ann
  * region が無いのはテスト基盤の配線漏れなので throw する。空配列を返すと「通知が無い」と
  * 区別できず、`toEqual([])` の検証が region ごと消えても通ってしまう。
  * assertion ではなく値を得るヘルパーなので `expect*` 命名にしない
- * (`.claude/rules/testing.md`「assertion helper と型ナローイング」)。
+ * (`vitest/expect-expect` は `expect*` の呼び出しを assertion と数える)。
  */
 export function readAnnouncements(politeness: Politeness = "polite"): string[] {
   const region = findLiveRegion(politeness);
