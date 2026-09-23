@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0026 (コードの乖離と行単位の lint 抑制の許容リスト)、ADR-0034 (`src/styles.css` の乖離の許容リスト)、ADR-0008 (registry コードも同じ lint を受ける)、ADR-0036 (寸法の焼き込み禁止)、ADR-0033 (`src/styles.css` の baseline とトークンの値の決め方)
+- 関連: ADR-0026 (コードの乖離と行単位の lint 抑制の許容リスト)、ADR-0034 (`src/styles.css` の乖離の許容リスト)、ADR-0008 (registry コードも同じ lint を受ける)、ADR-0033 (`src/styles.css` の baseline とトークンの値の決め方)
 
 ## Context
 

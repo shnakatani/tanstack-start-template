@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0034 (乖離の記録先) / ADR-0025 (baseline の運用) / ADR-0057 (story の axe を `error` で回す) / ADR-0036 (適合の床は WCAG を採り推奨値を要件にしない) / ADR-0035 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
+- 関連: ADR-0034 (乖離の記録先) / ADR-0025 (baseline の運用) / ADR-0057 (story の axe を `error` で回す) / ADR-0035 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
 
 ## Context
 

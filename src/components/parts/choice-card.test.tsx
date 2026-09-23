@@ -40,8 +40,7 @@ function Harness({ disabled = false }: { disabled?: boolean }) {
  * ここに残すのは、Playwright の actionability を force で飛ばす実イベントが要る 2 件だけ
  * (有効な行で click が届く対照と、disabled の行)。
  *
- * 寸法は測らない。行間の `gap-2` は Tailwind の定義そのもので、44px の床は ADR-0036 が
- * 「焼き込みを禁じる」と決めた値である (要件は 24px の 2.5.8 で、それも機械で見ない)。
+ * 寸法は測らない。行間の `gap-2` は Tailwind の定義そのもので、値を焼き付けると上流が寸法を変えただけで落ちる。
  */
 describe("ChoiceCard", () => {
   // 同じ force click が有効な行では届いてトグルすることを先に固定する (肯定の対照)。これが無いと

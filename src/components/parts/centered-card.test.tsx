@@ -10,7 +10,7 @@ import { expectText } from "@/test/page-helpers";
  * (args だけで状態が決まる部品) 以上ここでしか固定できない。
  *
  * 寸法 (`max-w-sm` / `min-h-[50vh]` / `p-6`) は測らない。値は Tailwind の定義そのもので、
- * どの variant が何を当てるかは cva と story が持つ。機械で見ないのは ADR-0036 の決定。
+ * どの variant が何を当てるかは cva と story が持つ。値を焼き付けると上流が寸法を変えただけで落ちる。
  * `data-slot="card-title"` の祖先確認も消した。その slot を選ぶ CSS は無く、JSX の入れ子を
  * DOM で言い直すだけだった。
  */

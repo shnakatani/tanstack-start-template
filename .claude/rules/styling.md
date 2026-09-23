@@ -62,7 +62,6 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外
 - 表にない値を使う前に「意味が違うのか、単なる揺れか」を問う。同じ意味なら表の値に合わせる
 - 別の体系 (1 画面に収める縦予算など) を持つ画面を足すときは、表の対象外と明記し、値の根拠を実装近傍に書く
-- touch target と衝突したら touch target が優先する (ADR-0036)
 - registry の既定から値を変えるときは、まず公式の推奨へ合わせ、実機で見てから判断し、理由を実装近傍に書く (ADR-0025)
 
 ### 公式のノブ
@@ -115,15 +114,9 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - データなしは `Empty` 系で、メッセージと次のアクションへの導線をセットで示す
 - 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項でよい
 
-## touch target
+## 操作できる要素の組み方
 
-WCAG 2.2 AA 2.5.8 (24x24 CSS px) を床とし、視覚 = ヒット = registry 素寸法で一律に運用する。44px は要件ではない (ADR-0036)。
-
-- `h-11` / `min-h-11` / `min-w-11` / `size-11` を variant なしで書かない。寸法に機械強制は無くレビューで見る (ADR-0036)
-- 実機で誤タップが報告されたら、当該部品に `any-pointer-coarse:min-h-11` (icon 系は `min-w-11` も) を後付けする。以後の高さも同じ variant で書く (ADR-0036)
-- 実機の UI 確認ではタップ精度 (特に床ちょうどの要素) を観点に含める
-- `touch-action` を上書きしない。tap 遅延の除去は `src/routes/__root.tsx` の viewport meta が担う (ADR-0036)
-- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (ADR-0036)
+- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (`src/components/ui/touch-target.test.tsx` が見る)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する

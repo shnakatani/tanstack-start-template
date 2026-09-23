@@ -2,7 +2,6 @@
 
 - Status: Accepted
 - Date: 2026-09-02
-- 関連: ADR-0036 (a11y の適合水準をどう決めるか)
 
 ## Context
 

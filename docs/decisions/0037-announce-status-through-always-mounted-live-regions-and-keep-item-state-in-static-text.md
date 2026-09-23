@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0019 (Action 層の pending 行は本 ADR に従う)、ADR-0020 (行の busy 表現の読み上げを本 ADR が引き取る)、ADR-0036 (a11y の床は WCAG 2.2 AA)、ADR-0038 (取得結果の通知はページの effect が決着で出す)
+- 関連: ADR-0019 (Action 層の pending 行は本 ADR に従う)、ADR-0020 (行の busy 表現の読み上げを本 ADR が引き取る)、ADR-0038 (取得結果の通知はページの effect が決着で出す)
 
 ## Context
 

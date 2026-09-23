@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0037 (通知は常時 mount の live region に集約する。本 ADR が呼び出し層を取得結果へ広げる)、ADR-0022 (検索条件は URL が持つ)、ADR-0023 (入力欄は URL の q に対する編集として描画中に導く)、ADR-0036 (a11y の床は WCAG 2.2 AA)
+- 関連: ADR-0037 (通知は常時 mount の live region に集約する。本 ADR が呼び出し層を取得結果へ広げる)、ADR-0022 (検索条件は URL が持つ)、ADR-0023 (入力欄は URL の q に対する編集として描画中に導く)
 
 ## Context
 

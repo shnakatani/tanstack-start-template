@@ -19,7 +19,7 @@ async function renderError(error: Error, reset: () => void) {
 /**
  * screens/ は story のカタログの対象外で、見え方は実画面で見る (ADR-0053)。ここに残すのは
  * 表示の内容、production での秘匿、再試行の配線、スタックトレースのキーボード開閉で、
- * いずれも寸法や色を測らない (ADR-0036)。
+ * いずれも寸法や色を測らない。
  *
  * 長いスタックトレースがパネル内でスクロールすることは `CodeBlock` の `Overflowing` story、
  * 内容が高くてもカードの上端が画面に残ることは `CenteredCard` が持つ挙動で、ここでは
