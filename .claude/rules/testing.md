@@ -147,7 +147,7 @@ paths:
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (ADR-0046)
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (ADR-0046)
 - 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない
-- マウス位置を動かすテストは、overlay が閉じる前に自分で戻す。hover の配色が色の実測を揺らす (ADR-0046)
+- マウス位置を動かすテストは、overlay が閉じる前に自分で戻す。hover の配色が色の実測を揺らす
 - モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、前ファイルの emulation を読む (ADR-0046)
 
 ## ブラウザ操作ツールの使い分け

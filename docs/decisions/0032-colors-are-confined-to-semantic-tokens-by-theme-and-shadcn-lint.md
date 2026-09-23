@@ -7,7 +7,6 @@
 ## Context
 
 色は semantic token だけに保ちたい。Tailwind は既定 palette の class を CSS として生成するので、palette 色や任意値の色を書けば画面にそのまま出る。
-oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たない。`@shadcn/lint` は上流の `recommended` を持たない。
 
 ## Decision
 
@@ -40,7 +39,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 宣言が要る理由と `mergeFunctions` を使わない理由は ADR-0031 が持つ。
 `no-inline-styles` は対になる設計判断がまだ無いため有効化しない。
 
-`@shadcn/lint` のルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
+`@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書き、`@shadcn/lint` には `{ name: "shadcn", specifier: "@shadcn/lint" }` を使う。
 plugin 本体の `meta.name`、診断コード、rule key、抑制 directive が `shadcn` を共有する。

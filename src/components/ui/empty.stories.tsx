@@ -19,7 +19,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 一覧が空のとき。見出しと、次に何ができるかを対で出す */
+/** 一覧が空のとき。見出しと、次に何ができるかを対で出す (shadcn の Empty docs は EmptyHeader で状態を、EmptyContent で次の操作を持たせる) */
 export const Default: Story = {
   render: () => (
     <Empty>

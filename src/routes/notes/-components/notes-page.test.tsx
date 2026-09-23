@@ -108,7 +108,6 @@ async function openDeleteConfirm(screen: Screen, note: Note) {
   await expectText(screen, deleteConfirmDescription(note.title));
   // click で動いた実マウスは、ダイアログが閉じて下の要素が露出する前に退避する。乗ったままだと
   // 露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
-  // (ADR-0046)
   await parkMouse();
 }
 

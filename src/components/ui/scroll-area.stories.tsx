@@ -5,8 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 const LINES = Array.from({ length: 24 }, (_, index) => `${index + 1} 行目のテキスト`);
 
 /**
- * ScrollArea も高さを持たず、器の寸法をなぞる。story から `className` は渡さず decorator で
- * 与える (ADR-0054 / ADR-0057)。
+ * ScrollArea も高さを持たず、器の寸法をなぞる。この story は寸法を `className` で渡さず、
+ * decorator の器で与える (layout の class なら渡してもよい。ADR-0054)。
  * スクロールバーと、そのぶんの余白は `ScrollArea` 自身が持つ (ADR-0026)
  */
 const meta = {

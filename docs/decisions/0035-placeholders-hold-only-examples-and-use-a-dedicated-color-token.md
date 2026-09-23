@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0033 (トークンの値の決め方と `--muted-foreground` を下げた判断) / ADR-0026 / ADR-0034 (乖離の記録先) / ADR-0033「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」(`::placeholder` には届かない)
+- 関連: ADR-0033 (トークンの値の決め方、`--muted-foreground` を下げた判断、実描画と axe による検算。検算は `::placeholder` には届かない) / ADR-0026 / ADR-0034 (乖離の記録先)
 
 ## Context
 
@@ -87,7 +87,7 @@ light と dark で同じ `mist-500` になる。
 ## Consequences
 
 - **この色を見る検査は無い。`vp test run` が緑でも `--placeholder` の値について何も言っていない。** 動かすときは light dark の両方で、placeholder を入力欄の背景と、値を入れた同じ欄の文字の 2 つに人が見比べる
-- light の `mist-500` は帯の下端から 0.11 しか離れていない。`--background` か `--foreground` が動くと外れる。ADR-0033「土台は空ファイルへの生成物とし、自作分を載せ直す」 で生成をやり直したら帯を測り直す
+- light の `mist-500` は帯の下端から 0.11 しか離れていない。`--background` か `--foreground` が動くと外れる。ADR-0033「土台は空ファイルへの生成物とし、自作分を載せ直す」で生成をやり直したら帯を測り直す
 - dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.35。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0026 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準で、当てる口は `@utility` が持つ
