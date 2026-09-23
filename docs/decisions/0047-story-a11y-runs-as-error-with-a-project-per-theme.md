@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0044 (story を状態のカタログにし、ブラウザテストと役割を分ける)
+- 関連: ADR-0044 (story を状態のカタログにする) / ADR-0050 (story とブラウザテストの役割分担)
 
 ## Context
 

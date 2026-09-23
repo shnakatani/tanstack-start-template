@@ -74,7 +74,7 @@ export const NotCalledTwice: Story = {
     const button = saveButton();
     await userEvent.click(button);
     // storybook/test の操作は各手順を await するので、ここに来た時点で pending は描画済み
-    // (ADR-0044)。この story が固定するのは、描画された guard が再操作を塞ぐことだけ。
+    // (ADR-0050)。この story が固定するのは、描画された guard が再操作を塞ぐことだけ。
     // 描画が間に合わない速さの連打は play では起こせず、実イベントでの検証は
     // src/components/action/button.test.tsx が持つ
     await expect(button).toHaveAttribute("aria-disabled", "true");
