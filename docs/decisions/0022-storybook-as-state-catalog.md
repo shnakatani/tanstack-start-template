@@ -73,12 +73,12 @@ ADR-0015 が禁じた同期 2 連射は play では起きない。`storybook/tes
 
 どのブラウザテストが持つかを決めておく。story へ移した結果、実イベントの検証がリポジトリから消えることを防ぐ。
 
-| 対象                                                                                   | 実イベントの規律を持つテスト                                    |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `ActionButton` の二重発火 (`ActionButtonShell` の `disabled={isPending}`)              | `src/components/action/button.test.tsx`                         |
-| `ActionForm` / `ActionFormSubmit` の二重発火 (`ActionForm` の `if (isPending) return`) | `src/components/action/form.test.tsx`                           |
-| `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと                        | `src/routes/notes/index.test.tsx` の `confirmDelete` (ADR-0015) |
-| 画面側の二重確定の dedupe (`queryClient.isMutating`)                                   | `src/routes/notes/index.test.tsx` の Enter 2 連射               |
+| 対象                                                                                   | 実イベントの規律を持つテスト                                                     |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `ActionButton` の二重発火 (`ActionButtonShell` の `disabled={isPending}`)              | `src/components/action/button.test.tsx`                                          |
+| `ActionForm` / `ActionFormSubmit` の二重発火 (`ActionForm` の `if (isPending) return`) | `src/components/action/form.test.tsx`                                            |
+| `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと                        | `src/routes/notes/-components/notes-page.test.tsx` の `confirmDelete` (ADR-0015) |
+| 画面側の二重確定の dedupe (`queryClient.isMutating`)                                   | `src/routes/notes/-components/notes-page.test.tsx` の Enter 2 連射               |
 
 画面のテストは Action 層の guard を代替しない。`confirmDelete` は `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の時点で `isPending` は false になる。`disabled={isPending}` を外しても browser project は 1 件も落ちない (2026-09-20 実測)。経路が薄いラッパーを通ることは、その guard を通ることを意味しない。
 

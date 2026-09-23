@@ -17,7 +17,7 @@
 ### 現状
 
 pending 表示は TanStack Query の mutation が持つ `isPending` から取っている (`.claude/rules/implementation.md`「イベントハンドラは同期に保つ」の 2026-09-13 改訂前の記述)。
-`startTransition` / `useTransition` / `useDeferredValue` / `useOptimistic` を使う箇所は `src/` に無い。
+この ADR を書いた 2026-09-13 時点で、`startTransition` / `useTransition` / `useDeferredValue` / `useOptimistic` を使う箇所は `src/` に無かった。`useDeferredValue` はその後 ADR-0035 (2026-09-23) が検索の一覧で使い始めた。
 
 ```bash
 grep -rn "useTransition\|startTransition\|useDeferredValue\|useOptimistic" src/   # 2026-09-13: 0 件

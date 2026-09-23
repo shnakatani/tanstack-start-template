@@ -12,9 +12,9 @@ import { ActionButton } from "./button";
  * 持ち、play へは移さない」と決めている。play は Storybook の UI 上でも走るため CDP を
  * 使えず、`storybook/test` の合成イベントで操作する。
  *
- * 画面側 (`src/routes/notes/index.test.tsx`) はこの guard を代替しない。`confirmDelete` は
+ * 画面側のテスト (削除確認の Enter 2 連射) はこの guard を代替しない。画面の `confirmDelete` は
  * `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の
- * 時点で `isPending` は false になる。あのテストが固定しているのは画面側の
+ * 時点で `isPending` は false になる。画面側のテストが固定しているのは
  * `queryClient.isMutating` による dedupe で、`disabled={isPending}` を外しても落ちない
  * (2026-09-20 に mutant で実測)。
  */

@@ -4,9 +4,11 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   NOTE_BODY_MAX_LENGTH,
   NOTE_FIELD_LABELS,
+  NOTE_QUERY_MAX_LENGTH,
   NOTE_TITLE_MAX_LENGTH,
   noteIdSchema,
   noteInputSchema,
+  noteListFilterSchema,
   noteSchema,
 } from "./schema";
 
@@ -190,5 +192,53 @@ describe("noteIdSchema", () => {
   it("rejects a missing id", () => {
     const result = v.safeParse(noteIdSchema, {});
     expect(result.success).toBe(false);
+  });
+});
+
+describe("noteListFilterSchema", () => {
+  it("q が無ければ空文字に既定する", () => {
+    expect(v.parse(noteListFilterSchema, {})).toEqual({ q: "" });
+  });
+
+  it("q の前後の空白を落とす", () => {
+    expect(v.parse(noteListFilterSchema, { q: "  abc  " })).toEqual({ q: "abc" });
+  });
+
+  // title は空白だけを reject するが、q は空白だけ = 絞り込みなし (空文字) にする
+  it("空白だけの q は空文字 (絞り込みなし) になる", () => {
+    expect(v.parse(noteListFilterSchema, { q: "   " })).toEqual({ q: "" });
+  });
+
+  // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は保ち、cap+1 は cap で切る (reject しない)
+  it("上限を超えた分は切り詰め、エラーにしない", () => {
+    const cap = NOTE_QUERY_MAX_LENGTH;
+    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap - 1) })).toEqual({
+      q: "a".repeat(cap - 1),
+    });
+    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap) })).toEqual({ q: "a".repeat(cap) });
+    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap + 1) })).toEqual({
+      q: "a".repeat(cap),
+    });
+  });
+
+  it("trim してから切り詰める (前後の空白は上限に含めない)", () => {
+    expect(v.parse(noteListFilterSchema, { q: ` ${"a".repeat(NOTE_QUERY_MAX_LENGTH)} ` })).toEqual({
+      q: "a".repeat(NOTE_QUERY_MAX_LENGTH),
+    });
+  });
+
+  it("切り詰めは code unit で数え、割れたサロゲートを残さない (詳細は truncate-code-units.test.ts)", () => {
+    expect(
+      v.parse(noteListFilterSchema, { q: `${"あ".repeat(NOTE_QUERY_MAX_LENGTH - 1)}😀` }),
+    ).toEqual({
+      q: "あ".repeat(NOTE_QUERY_MAX_LENGTH - 1),
+    });
+  });
+
+  // URL の `?q=123` は Router の JSON パースで number になる (ADR-0033)。既定の英語文言を出さない
+  it("文字列以外の q は日本語の文言で落ちる", () => {
+    const result = v.safeParse(noteListFilterSchema, { q: 1 });
+    expect(result.success).toBe(false);
+    expect(result.issues?.[0]?.message).toBe("検索語は文字列で指定してください");
   });
 });

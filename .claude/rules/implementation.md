@@ -74,6 +74,7 @@ lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014
 | ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                                                                                      |
 | Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                                                                              |
 | 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                                                                        |
+| 検索条件の変更                    | URL の `navigate` (Router の Transition)。打鍵中の一覧は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にし、fallback に落とさない (実例: `src/routes/notes/-components/notes-page.tsx`、ADR-0035)                             |
 
 - pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)。項目の busy と楽観表示、完了点 (b) の close 阻止の判定は例外で、次の項目のとおり mutation の pending から取る
 - mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` (`toastMutationError`) は型で必須。`runAction` が `mutateAsync` の reject を吸収するため、`onError` が無いと失敗が無通知になる
@@ -178,6 +179,7 @@ lint は custom `<Button>` の中身を見ないため機械強制がない。�
 - 「隣接テキストが同じ意味」と言えるのは、そのテキストが実際に読み上げられるときに限る
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか、環境で挙動が揺れる (ADR-0017)
 - pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0017)
+- 取得結果 (検索の件数など) の通知は、ページの effect が取得の決着 (`isFetching` が false) で `announce()` し、直前に通知した条件と同じなら出さない。取得中に出すと古い件数を読み上げる (ADR-0034)
 - メニュー内の全項目を包む単一の `DropdownMenuGroup` には名前を与えない。base-ui の `MenuRoot` が popup に `aria-labelledby` を付けるため、メニュー自体がトリガー由来の名前を持つ
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 

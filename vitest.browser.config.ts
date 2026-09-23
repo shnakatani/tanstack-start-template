@@ -40,7 +40,7 @@ export default defineProject({
     //   (コメント 1 件、closed イベントの commit_id は null)、close を出口条件にしない。
     //   判定は include を外して browser project を回し、上の症状が出ないことで行う
     // テストからしか参照されない依存が増えたらここへ足す
-    include: ["@tanstack/react-query", "@tanstack/react-form", "axe-core"],
+    include: ["@tanstack/react-query", "@tanstack/react-form", "@tanstack/react-pacer", "axe-core"],
     // Start plugin 不在の test 環境では #tanstack-*-entry 仮想 import が解決不能
     exclude: [
       "@tanstack/react-start",
