@@ -116,7 +116,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ## 操作できる要素の組み方
 
-- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (`src/components/ui/touch-target.test.tsx` が見る)
+- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (`src/components/ui/input-pointer.test.tsx` が見る)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する
