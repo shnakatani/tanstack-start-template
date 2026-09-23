@@ -75,5 +75,5 @@ ADR とガイドとコードは rules を指さない。rules は作業中に読
 ## Consequences
 
 - 原型とリポジトリ層は別リポジトリにあり相互参照を張れない。ドリフトは避けられないが、リポジトリ層が出典を持つのでどちらが古いかは判別できる
-- ADR を改訂したとき、`Superseded` にしたとき、`Deprecated` にしたときは、`git grep -n 'ADR-NNNN'` で、その ADR を出典にする rules、ガイド、コードのコメント (ADR-0004)、AGENTS.md、README を追随させる
+- ADR を書き換えたときは、その ADR を出典にする rules、ガイド、コードのコメント (ADR-0004)、AGENTS.md、README を追随させる。洗い方は `docs/guides/writing-docs.md`「ADR を変えたら参照している側を直す」
 - ADR を書き換えるときの扱い (枠内の改訂は `Revised`、決定の置き換えは `Superseded`、実測値の追記や表現の補足は `Revised` に載せない) は ADR-0000 が持つ

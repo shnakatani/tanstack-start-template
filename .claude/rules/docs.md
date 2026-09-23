@@ -19,10 +19,10 @@ paths:
 
 ## 1 つのドキュメントの中
 
-- チャット内の参照 (`[Image #N]`) を残さない。文章で言い換える (ADR-0001)
-- 指示語 (「本 PR」「今回の」) を残さない。PR 番号か日付か commit hash に置換する (ADR-0001)
-- 相対日付を書かない。`YYYY-MM-DD` へ変換する (ADR-0001)
-- 追加一方にしない。編集のたびに統合と削除も検討する (ADR-0001)
+- チャット内の参照 (`[Image #N]`) を残さない。文章で言い換える (`docs/guides/writing-docs.md`「1 つの文書の中で書かないもの」)
+- 指示語 (「本 PR」「今回の」) を残さない。PR 番号か日付か commit hash に置換する (`docs/guides/writing-docs.md`「1 つの文書の中で書かないもの」)
+- 相対日付を書かない。`YYYY-MM-DD` へ変換する (`docs/guides/writing-docs.md`「1 つの文書の中で書かないもの」)
+- 追加一方にしない。編集のたびに統合と削除も検討する (`docs/guides/writing-docs.md`「1 つの文書の中で書かないもの」)
 
 ## 数値
 
