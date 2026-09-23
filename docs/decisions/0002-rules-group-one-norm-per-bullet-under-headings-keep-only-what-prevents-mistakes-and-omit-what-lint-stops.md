@@ -39,7 +39,7 @@ lint・型検査・build が止めるものは書かない。書くのは、lint
 答えが No なら削る。Yes ならそれは理由ではなく規範なので残す。
 
 規範は見出しでまとめ、1 項目 (箇条書き 1 つ、または表の 1 セル) に 1 規範を置く。
-公式の memory docs は "Specific, concise, well-structured instructions work best." とし、"**Structure**: use markdown headers and bullets to group related instructions" を挙げている。
+公式の memory docs は "Specific, concise, well-structured instructions work best." とし、"**Structure**: use markdown headers and bullets to group related instructions" を挙げている。この指針は CLAUDE.md について書かれているが、同じ節 (Write effective instructions) の Consistency は `.claude/rules/` も CLAUDE.md と並べて見直す対象に挙げており、rules も context として読み込まれるので、rules の項目にも当てる。
 
 1 項目の長さに上限は設けない。長くなったら、根拠の展開 (実測値、選択肢の比較、出典の解説) が混ざっている兆候として扱い、ADR へ移して出典キーだけを残す。
 ファイル全体の行数にも上限は設けない。
@@ -57,6 +57,7 @@ lint・型検査・build が止めるものは書かない。書くのは、lint
 | 規範のみ残す                     | 最も短いが、規約を破る場面で理由が 1 クリック先になり形骸化を招く                | 却下     |
 | 構造だけ変える                   | 長い行を分割して表を入れる。引きやすさは改善するが二重管理が残る                 | 却下     |
 | lint が止めるものも rules に書く | 止まる前にも読めるが、lint のメッセージと 2 か所で同じことを持ち、項目が埋もれる | 却下     |
+| 1 項目の字数に上限を置く         | 字数の上限には出典が無く、見出しと箇条書きで 1 項目 1 規範に分ければ足りる       | 却下     |
 
 ## Consequences
 

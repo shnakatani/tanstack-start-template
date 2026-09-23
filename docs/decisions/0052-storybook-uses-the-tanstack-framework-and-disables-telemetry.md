@@ -10,7 +10,7 @@ framework の選定は `tanstackStart()` plugin と Storybook の Vite builder �
 
 ## Decision
 
-**`tanstackStart()` plugin と衝突しない TanStack 専用 framework を使う。**
+**`tanstackStart()` plugin と衝突しない TanStack 専用 framework を使い、telemetry は `core.disableTelemetry` で切る。**
 
 router を memory-backed で自動ラップし、server function を自動 stub する。
 
@@ -25,10 +25,11 @@ telemetry は `core.disableTelemetry` で切る。既定で有効で、実行し
 
 ### 検討した選択肢
 
-| 案                             | 評価                                                                                                | 採否     |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- | -------- |
-| 標準の Vite builder を使う     | `tanstackStart()` との衝突を自分で回避することになり、server function を呼ぶ部品の story が組めない | 却下     |
-| TanStack 専用 framework を使う | router を memory-backed で自動ラップし、server function を自動 stub する                            | **採用** |
+| 案                               | 評価                                                                                                | 採否     |
+| -------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
+| 標準の Vite builder を使う       | `tanstackStart()` との衝突を自分で回避することになり、server function を呼ぶ部品の story が組めない | 却下     |
+| TanStack 専用 framework を使う   | router を memory-backed で自動ラップし、server function を自動 stub する                            | **採用** |
+| telemetry を既定のまま有効にする | このテンプレートから作られる全プロジェクトへ配られる設定なので、明示で潰す                          | 却下     |
 
 ## Consequences
 

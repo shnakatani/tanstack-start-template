@@ -31,7 +31,7 @@ registry の Dialog には、内部スクロールを組み忘れたダイアロ
 | 見出しと X ボタンを sticky にしない。backstop で流れる挙動は組み忘れの防御層として許容する      | sticky と内部スクロールの 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる                |
 | 本文の余白は `DialogScrollBody` が持つ (`px-6` / `py-4`)。消費側で padding を足さない           | スクロール領域の内側に余白が無いと、端の要素の `ring` / `box-shadow` が境界で切れる                             |
 
-各 className の実測の根拠は `dialog-scroll-body.tsx` の docstring が持つ。余白の見え方は `dialog-scroll-body.stories.tsx` の `Overflowing` で見る (寸法は測らない。値を焼き付けると上流が寸法を変えただけで落ちる)。
+各 className の実測の根拠は `dialog-scroll-body.tsx` の docstring が持つ。余白の見え方は `dialog-scroll-body.stories.tsx` の `Overflowing` で見る (寸法は測らない。実測の根拠は docstring が持ち、見え方は story で見る)。
 
 ### 検討した選択肢
 

@@ -48,7 +48,7 @@
 
 - 置き換えで旧 ADR を残すのは、旧い決定の Context と却下理由が、置き換えた理由を読む前提になるためである。旧 ADR を指す参照が残っても、`Superseded-by` が次の ADR へ誘導する (Nygard、adr-tools)
 - Catio は immutable を採る理由を "That immutability is what makes the decision history trustworthy, and it's what turns a corpus of files into a defensible record of the system architecture the team committed to." と書く。この ADR では、枠内の改訂にも `Revised` に日付と要約を残し、書き換える前の本文は git 履歴が持つ。いつ何を決めていたかは、この 2 つから辿れる
-- 枠内の改訂で git 履歴に任せてよいのは、Context と却下理由を書き換えないためである。決定の置き換えは Context と却下理由ごと変わり、置き換えた理由を読むにはそれらが要るので、旧 ADR を残す
+- 枠内の改訂では決定そのものと却下した案が変わらないので、旧い本文を読まなくても現在の決定の理由は読める。書き換える前の本文は git 履歴で足りる。決定の置き換えは決定と却下した案ごと変わり、置き換えた理由を読むには旧い決定の Context と却下理由が要るので、旧 ADR を残す
 - 枠内の改訂を新しい ADR にしないのは、範囲や条件を調整するたびに全文を書き直した ADR が増え、`Superseded` の連鎖が伸びるためである (本数が増え、ほぼ同じ内容の ADR が並ぶ)。書き換えた内容は `Revised` に日付と要約で残す。joelparkerhenderson/architecture-decision-record も、immutable より mutable の運用のほうが実際のチームでうまく回ったと書いている。ただし同リポジトリは新しい情報や運用の結果を日付つきで追記する形を採っており、実測値の追記を `Revised` に載せないこの ADR とは扱いが違う
 
 ### 形式

@@ -28,7 +28,7 @@ lint (`typescript/no-misused-promises`) が止める。直し方 (ADR-0019):
 
 - ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `void` やインラインの `async` を書かない
 - 待たない判断は内側で 1 回だけ表明する。呼び先が失敗を自分で処理するなら `void`、呼び出し側で通知や後始末をするなら `.catch()`
-- 操作の失敗を Error Boundary へ届けない。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる
+- 操作の失敗を Error Boundary へ届けない。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる (ADR-0020)
 - 実例は `src/components/screens/route-error.tsx` の `handleRetry`。mutation を伴う操作は次節に従う
 
 ## ユーザー操作による更新は Transition の中で行う

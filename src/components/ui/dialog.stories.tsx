@@ -78,8 +78,8 @@ export const Opened: Story = {
 };
 
 /**
- * 閉じる X を出さない形。registry が持つ prop だが、このリポジトリのモーダルは X ボタンを
- * 置いているので、アプリでは使わない。
+ * 閉じる X を出さない形。registry が持つ prop だが、アプリでは既定 (`showCloseButton = true`)
+ * のまま使う (ADR-0027)。
  * X を消しても Esc と外側クリックは効いたまま
  */
 export const WithoutCloseButton: Story = {

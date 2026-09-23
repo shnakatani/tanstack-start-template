@@ -17,7 +17,7 @@ const preview: Preview = {
   parameters: {
     // 違反を警告で留めない。addon はここで violations を見る (ADR-0057)
     a11y: { test: "error" },
-    // 狭幅の見え方は story で見る (寸法は機械で見ない。値を焼き付けると上流が寸法を変えただけで落ちる)。値は browser test と
+    // 狭幅の見え方は story で見る (寸法は機械で見ない。registry の部品の寸法は上流が決め、消費側が size を変えるのは正当な使い方なので、測ると上流の変更か最初に変える消費者でテストが消える)。値は browser test と
     // 同じ src/test/viewport-sizes から引き、写さない。addon-vitest は story ごとに
     // この options を page.viewport() へ渡す (vitest.storybook.config.ts)
     viewport: {

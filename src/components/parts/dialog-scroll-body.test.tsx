@@ -20,7 +20,7 @@ import { restoreDefaultViewport, setViewport, SHORT_VIEWPORT } from "@/test/view
  * 状態のカタログは `dialog-scroll-body.stories.tsx` が持つ (ADR-0053)。溢れる / 溢れないの
  * 2 状態は story の play が base-ui の `data-has-overflow-y` で確かめ、本文だけがスクロールする
  * こと (`min-h-0` を外すと play が落ちることを実測済み)、余白・区切り線・バーとの重なりは
- * その story で見る。寸法は測らない (値を焼き付けると上流が寸法を変えただけで落ちる)。
+ * その story で見る。寸法は測らない (ADR-0031)。
  *
  * ここに残すのは、キーボードの実イベントが要る 1 件だけ。Viewport の focus ring は Root の
  * `overflow-hidden` にクリップされるため `scroll-area-focus-outline` (`styles.css`) が Root の

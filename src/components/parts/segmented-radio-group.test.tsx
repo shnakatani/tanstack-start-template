@@ -44,7 +44,7 @@ function Filter({
 /**
  * ロールの確認と選択の通知は `segmented-radio-group.stories.tsx` の play が持ち、等幅・
  * トラックの高さ・aria-invalid の枠色・className のマージは同 story の状態カタログで見る
- * (ADR-0053)。寸法は測らない (値を焼き付けると上流が寸法を変えただけで落ちる)。
+ * (ADR-0053)。寸法は測らない。寸法は tabs の registry の値を写したもので、上流が決める (ADR-0026)。
  *
  * ここに残すのは Playwright の実 pointer / 実キーボードでしか確かめられない 3 件。story の
  * `userEvent.hover` は合成イベントで CSS の `:hover` を立てないため、hover と選択色の衝突は
