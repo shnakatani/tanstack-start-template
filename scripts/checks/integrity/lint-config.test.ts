@@ -9,7 +9,7 @@ import { REPO_ROOT } from "../../lib/repo-root";
 
 /**
  * lint の設定が「書いてあるだけ」ではなく解決後も生き残っていることを機械強制する。
- * 有効でないプラグインのルール設定は無診断で捨てられる (oxc-project/oxc#25579、ADR-0011)。
+ * 有効でないプラグインのルール設定は無診断で捨てられる (oxc-project/oxc#25579、`docs/guides/lint.md`「plugins は既定集合を置換する」)。
  *
  * 突き合わせの相手は `--print-config` の解決後設定にする。ルールが実際に発火することや、
  * categories の格上げで severity が上がることは oxlint 自身の責務なので踏まない。
@@ -47,7 +47,7 @@ const EXPECTED_OVERRIDES = [
     // testing-library の同名 API と誤認して誤検出が出る。`prefer-screen-queries` を allow から
     // 戻すと Storybook の `canvas` が落ちる。`no-node-access` は allow のままにする。
     // deny へ戻しても strict 判定で発火せず、有効に見えて無検査の状態になる
-    // (ADR-0013)
+    // (`docs/guides/lint.md`「testing-library を当てる範囲」)
     files: [
       "**/*.stories.ts",
       "**/*.stories.tsx",
@@ -180,11 +180,11 @@ beforeAll(() => {
 describe("書いた設定が解決後も残っている", () => {
   it("plugins が既定集合を保っている", () => {
     // 既定集合の spread を落とすと typescript / unicorn / oxc が無効になり、rules に書いた
-    // それらの設定が無診断で捨てられる (ADR-0011)。unicorn と jsx-a11y は名指しルールを
+    // それらの設定が無診断で捨てられる (`docs/guides/lint.md`「plugins は既定集合を置換する」)。unicorn と jsx-a11y は名指しルールを
     // 持たないため、下の突き合わせでは脱落を拾えない。plugins の値でしか見えない
     expect(
       [...printedConfig.plugins].sort(),
-      "plugins が変わった。OXLINT_DEFAULT_PLUGINS の spread を落としていないか (ADR-0011)",
+      "plugins が変わった。OXLINT_DEFAULT_PLUGINS の spread を落としていないか (docs/guides/lint.md「プラグインを足す」)",
     ).toEqual([...EXPECTED_PLUGINS].sort());
   });
 
@@ -201,13 +201,13 @@ describe("書いた設定が解決後も残っている", () => {
     }
     const printed = new Set(Object.keys(printedConfig.rules));
     const missing = written.filter((rule) => {
-      // extension rule は typescript/ で書いてもコアルールの名前へ解決される (ADR-0011)
+      // extension rule は typescript/ で書いてもコアルールの名前へ解決される (`docs/guides/lint.md`「plugins は既定集合を置換する」)
       const core = rule.startsWith("typescript/") ? rule.slice("typescript/".length) : rule;
       return !printed.has(rule) && !printed.has(core);
     });
     expect(
       missing,
-      "書いたルールが解決後設定から消えた。plugins から該当プラグインが落ちていないか (ADR-0011)",
+      "書いたルールが解決後設定から消えた。plugins から該当プラグインが落ちていないか (`docs/guides/lint.md`「plugins は既定集合を置換する」)",
     ).toEqual([]);
   });
 
@@ -243,7 +243,7 @@ describe("書いた設定が解決後も残っている", () => {
         ),
       })),
       "override の適用先かルールか severity が変わった。適用先を広げるとその層で規則が無診断になり、" +
-        "ルールを消すか off にすると規則が無言で外れる (ADR-0032 / ADR-0013 / ADR-0014 / ADR-0016 / ADR-0031)",
+        "ルールを消すか off にすると規則が無言で外れる (ADR-0032 / `docs/guides/lint.md`「testing-library を当てる範囲」 / ADR-0014 / ADR-0016 / ADR-0031)",
     ).toEqual(EXPECTED_OVERRIDES);
   });
 

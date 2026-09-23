@@ -83,7 +83,7 @@ ADR-0041 が「lint で表現できる形は無い」と書いたのは、`eleme
 
 ### 機械強制は oxlint の JS plugin で書く
 
-ルールは `scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む。`vp lint` と `vp check` で走るので、検査のための実行経路を増やさない。`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0032 / ADR-0013)。
+ルールは `scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む。`vp lint` と `vp check` で走るので、検査のための実行経路を増やさない。`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0032 / `docs/guides/lint.md`「testing-library を当てる範囲」)。
 
 ルールの書き方 (API、依存に足さないもの、木の辿り方) と、ルールを 2 通りに壊して確かめる手順は `docs/guides/lint.md`「自前のルールを書く」「検査を作ったら 2 通りに壊して確かめる」にある。
 
@@ -110,7 +110,7 @@ grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test
 
 段階移行のために `lint.overrides` で未移行ファイルを列挙する形は採らない。列挙が対象より大きくなり、一覧を消すための作業が別に要る。
 
-severity を `warn` にして移行を待つ形も採らない。`vp check` は warn で exit 1 にならないため、新規コードへの強制力を失う (ADR-0013 が `testing-library/no-debugging-utils` で同じ判断をしている)。
+severity を `warn` にして移行を待つ形も採らない。`vp check` は warn で exit 1 にならないため、新規コードへの強制力を失う (`docs/guides/lint.md`「testing-library を当てる範囲」 の `no-debugging-utils` と同じ判断)。
 
 移行で赤になったテストは、`expect.element` が待つようになったぶん実装の欠陥を新しく捕まえている可能性がある。赤は書き換えの失敗と区別して調べる。
 

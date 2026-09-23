@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0011 (プラグインの設定方法)、ADR-0019 (React Compiler の診断ルールの扱い)、ADR-0032 (色の統制に足す `@shadcn/lint`)、ADR-0013 (testing-library の適用範囲)、ADR-0014 (テスト専用コードの import 境界)、ADR-0021 (`no-misused-promises` が要求するハンドラの形)
+- 関連: ADR-0019 (React Compiler の診断ルールの扱い)、ADR-0032 (色の統制に足す `@shadcn/lint`)、ADR-0014 (テスト専用コードの import 境界)、ADR-0021 (`no-misused-promises` が要求するハンドラの形)
 
 ## Context
 
@@ -35,7 +35,7 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 
 `@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (ADR-0032)。
 
-`testing-library` もこの表に載らない。基準は上流の `flat/react` を写すが、適用を story と story 専用の helper に限り、基準から外すルールがある (ADR-0013)。
+`testing-library` もこの表に載らない。基準は上流の `flat/react` を写すが、適用を story と story 専用の helper に限り、基準から外すルールがある (`docs/guides/lint.md`「testing-library を当てる範囲」)。
 
 browser mode 側の待機は `vitest` プラグインが持つ。`require-awaited-expect-poll` が `expect.element` を対象にしており、`correctness` カテゴリ経由で既に有効である。
 
@@ -60,20 +60,7 @@ silent failure の源として扱っている書き方を検出するルール�
 
 `correctness` にある type-aware ルールと `strict-type-checked` は包含関係ではなく、部分的に重なる別の集合である。基準を strict に置いても oxlint 独自の `correctness` 選択は失わない。
 
-### 前提ごとの variant まで下ろす
-
-上流が前提ごとに config を分けている場合は、このプロジェクトの前提に合う variant まで指定する。
-
-| variant                             | 前提                     | variant を読まないと起きること                                                                                                    |
-| ----------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `react` の `jsx-runtime`            | React 17 以降の JSX 変換 | `react-in-jsx-scope` と `jsx-uses-react` が有効になり、JSX を書いた全ファイルが落ちる                                             |
-| `jsdoc` の `recommended-typescript` | TypeScript               | `require-param-type` / `require-property-type` / `require-returns-type` が有効になり、シグネチャが持つ型を JSDoc へ二重に書かせる |
-
-eslint コアと `import` の TypeScript 向け variant は、off にする側を機械的には写さない。
-上流が off にする根拠は「同じ誤りを TypeScript が既に扱う」ことで、off の各行には `ts(2451)` のような診断コードが添えられている。
-このリポジトリでも型検査は tsgolint が同じコードで報告するため、根拠自体は成り立つ。
-それでも写さずに個別判断へ落とすのは、oxlint 側でそのルールが報告する場面が残っているかがルールごとに違うためで、off にするかは probe の実測で決める。
-error にする側の 4 ルール (`eslint-recommended`) は根拠の向きが逆で、基準に含める (「基準にする上流設定」)。
+上流が前提ごとに config を分けている場合は、このプロジェクトの前提に合う variant まで指定する。variant の表と、TypeScript 向けの off を写さない理由は `docs/guides/lint.md`「前提ごとの variant まで下ろす」にある。
 
 ### React Compiler のルールは eslint-plugin-react-hooks を基準にする
 
@@ -95,19 +82,7 @@ oxlint 1.79 で `react/react-compiler` は廃止され、React Compiler の診�
 `unsupported-syntax` だけを `restriction` から引き上げるのは、これが Compiler の未実装ではなく「対応する予定がない構文」(`this` / `with` / インライン `class` 宣言) を指すためである。
 書き換えれば消えるのでコード側の欠陥として扱える。上流も `todo` を off にしたまま、このルールだけ recommended に入れている。
 
-### jsx-a11y は名指しがゼロになる
-
-上流 recommended のルールは全て `correctness` 経由で `error` になっており、`rules` へ足す先が 1 つも残らない。
-そのため `"jsx-a11y/<name>"` の行は 1 つも書いていない。
-判定を後から読めるよう、`vite.config.ts` の `rules` には jsx-a11y のセクション見出しコメントだけを置く。見出しが無いと「検討していない」と区別できない。
-
-recommended 外だが `correctness` 経由で有効なままのルールが 4 つある。
-`control-has-associated-label` / `lang` / `no-aria-hidden-on-focusable` / `prefer-tag-over-role` で、いずれも有効のまま残す。
-off にする判断は違反が出たときに個別に行う (registry コードでの行単位抑制は ADR-0027 の許容リストが持つ)。
-
-`anchor-ambiguous-text` は oxlint に実装があり名指しすれば足せるが、上流 recommended に含まれないため足さない。
-
-突き合わせの手順と、`--print-config` から JS plugin のルールが読めないことは `docs/guides/lint.md`「設定を書き換えたら解決後の設定で確かめる」にある。
+jsx-a11y は上流 recommended のルールが全て `correctness` 経由で有効になり、名指しがゼロになる。扱いは `docs/guides/lint.md`「jsx-a11y は名指しがゼロになる」にある。
 
 ### unicorn を選定しない理由
 
@@ -128,37 +103,7 @@ recommended に無くても、規約や他の決定を機械で守るために�
 
 `react/rules-of-hooks` と `react/unsupported-syntax` はここに載らない。どちらも基準 (eslint-plugin-react-hooks) に入っており、oxlint のカテゴリが `correctness` / `perf` の外にあるだけである (「React Compiler のルールは eslint-plugin-react-hooks を基準にする」)。
 
-### off にする条件
-
-基準で有効なルールを off にしてよいのは、次のいずれかに当たるときだけである。理由は `vite.config.ts` のコメントに残す。
-
-| 条件                                                          | 該当するルール                                                                        |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 同じ誤りを tsc が報告する                                     | `no-undef` (TS2304) / `no-redeclare` (TS2451) / `import/named` (TS2305)               |
-| 発火条件が名前だけで内容を見ていない                          | `promise/no-callback-in-promise` (引数名 `next` / `done` / `cb`)                      |
-| 公式の修正が別の欠陥を持ち込む                                | `oxc/no-map-spread` (修正が元オブジェクトの破壊的更新になる)                          |
-| 書き方の方針と衝突する                                        | `jsdoc/require-param` / `jsdoc/require-returns` (説明だけの JSDoc が書けなくなる)     |
-| 上流 recommended に無く `correctness` 経由で入る              | `vitest/require-mock-type-parameters`                                                 |
-| 基準の variant が off にするが `correctness` 経由で有効になる | `jsdoc/require-property-type` (カテゴリ側の有効化が勝つため `rules` で明示的に落とす) |
-
-基準がより緩いオプションを持つ場合も同様に、指定と理由を残す (`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames`)。
-`assertFunctionNames` は既定を置換するため、既定値を覆う指定にする。
-
-### テストファイルの緩和
-
-対象を絞った緩和はテストの 1 経路だけに置く。
-`**/*.test.{ts,tsx}` と `src/test/**` で off にするのは次の 5 つに限る。
-
-`no-non-null-assertion` / `no-unsafe-assignment` / `no-unsafe-call` / `no-unsafe-member-access` / `no-unsafe-return`
-
-この 5 つは typescript-eslint 本体が自身のテストディレクトリで off にしているものと同一である。
-範囲を絞って有効にするルール (`no-restricted-imports`) は緩和ではないので、この経路に載せず `excludeFiles` で対象を外す (ADR-0014)。
-モックは意図的に型を外した値を扱い、assertion は取り出す要素の存在を前提に書くため、欠陥ではなく書き方そのものに鳴る。上流も同じ判断をしているので、off の理由をこちらで発明する必要がない。
-
-`no-non-null-assertion` を strict 採用の動機に挙げていることとは矛盾しない。
-`array[expr]!` が silent failure になるのは lookup miss の結果が後段へ流れるからで、テストでは `!` の空振りがその場で TypeError になりテストの失敗として見える。
-
-テストファイルを type-aware lint の対象から外すことはしない。緩和は名指しの 5 ルールに限る。
+基準で有効なルールを off にしてよい条件と、テストファイルで緩める 5 つのルールは `docs/guides/lint.md`「ルールを off にする」「テストファイルの緩和」にある。
 
 ### 検討した選択肢
 

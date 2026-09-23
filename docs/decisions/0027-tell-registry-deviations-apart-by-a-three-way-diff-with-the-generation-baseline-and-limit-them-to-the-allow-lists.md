@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0011 (registry コードも同じ lint を受ける)、ADR-0016 (`no-restyle` の適用範囲)、ADR-0033 (`src/styles.css` の baseline とトークンの値の決め方)
+- 関連: ADR-0016 (`no-restyle` の適用範囲)、ADR-0033 (`src/styles.css` の baseline とトークンの値の決め方)
 
 ## Context
 
