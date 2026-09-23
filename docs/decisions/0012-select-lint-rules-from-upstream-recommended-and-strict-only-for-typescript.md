@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0019 (React Compiler の診断ルールの扱い)、ADR-0032 (色の統制に足す `@shadcn/lint`)、ADR-0014 (テスト専用コードの import 境界)、ADR-0021 (`no-misused-promises` が要求するハンドラの形)
+- 関連: ADR-0019 (React Compiler の診断ルールの扱い)、ADR-0032 (色の統制に足す `@shadcn/lint`)、ADR-0014 (テスト専用コードの import 境界)
 
 ## Context
 

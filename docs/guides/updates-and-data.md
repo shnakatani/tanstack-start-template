@@ -5,7 +5,6 @@
 | 決定                                                                                                | ADR      |
 | --------------------------------------------------------------------------------------------------- | -------- |
 | ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す | ADR-0020 |
-| イベントハンドラは同期関数とし、非同期処理は内側へ閉じる                                            | ADR-0021 |
 | mutation は Action 層の `action` prop から `useActionMutation` で呼び、二重発火は state だけで塞ぐ  | ADR-0022 |
 | ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める                    | ADR-0023 |
 | server function をデータ境界とし、全 fn 共通の middleware は global に載せる                        | ADR-0017 |
@@ -28,6 +27,21 @@ TanStack Query の `useQuery` / `useMutation`、TanStack Router のストア、B
 そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは、pending の管理、Action の順序保証、pending の切り替えを `<ViewTransition>` で装飾できることである (ADR-0020)。
 出典と実測は ADR-0020「制約: TanStack Query と Router のストアは Transition に参加しない」が持つ。`useOptimistic` に query の値を渡せない理由もここにある (「楽観表示を出す」)。
 
+### ハンドラを同期関数にする理由
+
+`typescript/no-misused-promises` は、名指しで足したルールのうち既存コードの構造に最も踏み込む。鳴った箇所の直し方として比べた案は次のとおり。
+
+| 案                                                      | 評価                                                                                        | 採否     |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------- |
+| 同期のハンドラを宣言し、非同期処理を内側へ閉じる        | 待たない判断が内側の 1 箇所に名前つきで残り、失敗の扱いを誰が持つかが読める                 | **採用** |
+| 呼び出し側の JSX で `void` する                         | ハンドラが名前を失って JSX へインライン化され、失敗の扱いを誰が持つかが読めなくなる         | 却下     |
+| 受け手の prop 型を `() => void \| Promise<void>` にする | 自作コンポーネント間でしか使えず DOM の prop には適用できないため、境界ごとに書き方が割れる | 却下     |
+| `checksVoidReturn.attributes` を off にする             | 本当に rejection を落としている箇所も検出できなくなる                                       | 却下     |
+
+- React 公式もこの構造を採っている。React 19 の `TransitionFunction` は非同期処理を受け取るが、`onClick` に渡すハンドラ自体は同期である (`useTransition` リファレンス)
+- mutation を伴う操作は、同期ハンドラの内側で `startTransition` に非同期関数を渡す形 (Action) にし、pending は Transition から取る (ADR-0020)。`startTransition` を併用すると pending の源が mutation の `isPending` と二重になるが、源を Transition 側へ一本化してこれを避ける
+- 非同期イベントハンドラの書き方は typescript-eslint のメンテナの回答に沿う (https://github.com/typescript-eslint/typescript-eslint/issues/11008)
+
 ### React Compiler が見ない箇所
 
 Compiler はコンポーネントか hook として認識した関数しか最適化しない。テーブルの列定義のように、コンポーネントでも hook でもない定義は最適化されないまま動く。
@@ -37,7 +51,14 @@ Compiler はコンポーネントか hook として認識した関数しか最�
 
 ### イベントハンドラを書く
 
-ADR-0021 の形に沿う。
+`async` 関数をイベントハンドラとして prop へ直接渡すと `typescript/no-misused-promises` が鳴る。直し方は次の形になる。理由と却下した書き方は「ハンドラを同期関数にする理由」が持つ。
+
+```tsx
+function handleSignOut() {
+  void performSignOut();
+}
+<DropdownMenuItem onClick={handleSignOut}>
+```
 
 - ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `async` 関数や `void` 式を直接書かない
 - 待たない判断は内側で 1 回だけ書く。呼び先が失敗を自分で通知するなら `void`、呼び出し側で通知や後始末をするなら `.catch()` を付ける
