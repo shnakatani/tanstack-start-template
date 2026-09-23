@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0035 (乖離の記録先) / ADR-0026 (baseline の運用) / ADR-0057 (story の axe を `error` で回す) / ADR-0036 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
+- 関連: ADR-0026 (乖離の記録先と baseline の運用) / ADR-0057 (story の axe を `error` で回す) / ADR-0036 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
 
 ## Context
 
@@ -66,7 +66,7 @@ preset code をプロジェクトから復元する `shadcn preset resolve` は�
 
 2026-09-21 に `shadcn@4.21.0` で得た戻り値は、base color が slate だった頃が `bIm515k`、`--chart-*` を palette の外へ動かした場合が `bKX4z2W`、この節の手順を通した後が `b1Z7Mag76` である。復元が効くのは値が選択肢に収まっている間だけなので、生成に使うコードは文書側が持つ。
 
-生成物そのものを `docs/registry-baseline/styles.css` として持つ。乖離の記録先は ADR-0035 の許容リストで、本 ADR は値の決め方だけを持つ。
+生成物そのものを `docs/registry-baseline/styles.css` として持つ。乖離の記録先は ADR-0026 の許容リストで、本 ADR は値の決め方だけを持つ。
 
 ### 2. 有彩色のアクセントは light と dark で役割を反転させる
 

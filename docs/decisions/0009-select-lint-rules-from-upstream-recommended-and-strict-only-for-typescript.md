@@ -119,7 +119,7 @@ oxlint 1.79 で `react/react-compiler` は廃止され、React Compiler の診�
 
 recommended 外だが `correctness` 経由で有効なままのルールが 4 つある。
 `control-has-associated-label` / `lang` / `no-aria-hidden-on-focusable` / `prefer-tag-over-role` で、いずれも有効のまま残す。
-off にする判断は違反が出たときに個別に行う (registry コードでの行単位抑制は ADR-0027 の許容リストが持つ)。
+off にする判断は違反が出たときに個別に行う (registry コードでの行単位抑制は ADR-0026 の許容リストが持つ)。
 
 `anchor-ambiguous-text` は oxlint に実装があり名指しすれば足せるが、上流 recommended に含まれないため足さない。
 

@@ -452,7 +452,7 @@ describe("NotesPage", () => {
     // 行は静的テキスト (sr-only) で状態を持つ (ADR-0037)
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
     // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の
-    // data-disabled: が担う (ADR-0027)。半透明 + pointer-events なしを算出スタイルで固定する
+    // data-disabled: が担う (ADR-0026)。半透明 + pointer-events なしを算出スタイルで固定する
     const targetTrigger = rowDeleteButton(screen, NOTE.title);
     await expect.element(targetTrigger).toHaveStyle("opacity: 0.5; pointer-events: none");
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー

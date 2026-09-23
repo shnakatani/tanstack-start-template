@@ -16,7 +16,7 @@ lint は Oxlint が担い、設定は Vite+ を通して `vite.config.ts` の `l
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `plugins`   | 既定集合を**置換**する。`OXLINT_DEFAULT_PLUGINS` を spread して追加分を続け、`lint-config.test.ts` の `EXPECTED_PLUGINS` にも足す (ADR-0008)                        |
 | `rules`     | `"warn"` で書かない。exit code に出ないので `"error"` で書く (ADR-0010)                                                                                             |
-| `overrides` | テストの型ルール緩和に使う。違反の抑制には使わず行単位で書く (ADR-0027)。規則の適用範囲を層に合わせるときだけ `excludeFiles` を使う (ADR-0014)                      |
+| `overrides` | テストの型ルール緩和に使う。違反の抑制には使わず行単位で書く (ADR-0026)。規則の適用範囲を層に合わせるときだけ `excludeFiles` を使う (ADR-0014)                      |
 | `jsPlugins` | 先に oxlint ネイティブで代替できないか確かめる。エントリは `{ name, specifier }` で書き、抑制 directive はその `name` で書く。他の名前だと無言で効かない (ADR-0033) |
 
 - `overrides` は `categories` を持てない。`plugins` はトップレベルと違い、継承した既定集合への追加になる (置換ではない) (ADR-0008)

@@ -20,7 +20,7 @@ export const Checked: Story = {
   args: { defaultChecked: true },
 };
 
-/** どちらでもない状態。親が子を部分的に含むときに使う。横棒は ADR-0027 の乖離で足したもの */
+/** どちらでもない状態。親が子を部分的に含むときに使う。横棒は ADR-0026 の乖離で足したもの */
 export const Indeterminate: Story = {
   args: { indeterminate: true },
 };

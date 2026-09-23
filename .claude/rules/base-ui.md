@@ -23,6 +23,6 @@ paths:
 
 ## Combobox と ItemGroup
 
-- `ComboboxContent` の中に `ComboboxInput` を置く構成だけ `aria-label` を渡す。外に置く構成で渡すと name prohibited の違反になる (ADR-0027)
-- 名前の過不足は story の axe が見る。popup を開く play を書かないと働かない (ADR-0027)
-- `ItemGroup` は `render={<ul />}`、子は `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の div のままだと list の構造が破綻する (ADR-0027)
+- `ComboboxContent` の中に `ComboboxInput` を置く構成だけ `aria-label` を渡す。外に置く構成で渡すと name prohibited の違反になる (ADR-0026)
+- 名前の過不足は story の axe が見る。popup を開く play を書かないと働かない (ADR-0026)
+- `ItemGroup` は `render={<ul />}`、子は `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の div のままだと list の構造が破綻する (ADR-0026)

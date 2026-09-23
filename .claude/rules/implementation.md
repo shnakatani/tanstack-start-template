@@ -59,7 +59,7 @@ lint では見ないのでレビューで見る (ADR-0018、Action 層と `useAc
 
 ## 手動メモ化の増減
 
-`useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は ADR-0017。`src/components/ui/` は ADR-0027 の統制下なので触らない。
+`useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は ADR-0017。`src/components/ui/` は ADR-0026 の統制下なので触らない。
 
 ## コンポーネントは function 宣言で定義する
 

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-// registry 乖離 (ADR-0027): 上流の popup 内リング抑制 (in-data-[slot=combobox-content]:
+// registry 乖離 (ADR-0026): 上流の popup 内リング抑制 (in-data-[slot=combobox-content]:
 // focus-within:ring-0 / border-inherit) は、付与側 has-[…]:ring-3 に :has() の詳細度算入
 // ((0,3,0) vs (0,2,0)) で常に負ける dead class (上流バグ。報告済み:
 // https://github.com/shadcn-ui/ui/issues/11444)。
@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 // 付けて popup 外のみ適用にすることで、同じ意図を詳細度・順序に依存せず実現する。
 // aria-invalid 側のリングは対象外とし、popup 内でもエラー表示を維持する。
 // ガードテスト: input-group.test.tsx (--overwrite で patch が消えると fail する)。
-// 上流で修正されたらこの patch を落とし、ADR-0027 の行を削除する。
+// 上流で修正されたらこの patch を落とし、ADR-0026 の行を削除する。
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

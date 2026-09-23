@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0009 (lint ルールの選定基準)、ADR-0027 (行単位の抑制の許容リスト)、ADR-0014 (`no-restyle` の適用範囲)、ADR-0032 (`require-static-classes` と variant 関数の宣言)、ADR-0010 (`eslint` を必須 peer に持つもう 1 つの経路)
+- 関連: ADR-0009 (lint ルールの選定基準)、ADR-0026 (行単位の抑制の許容リスト)、ADR-0014 (`no-restyle` の適用範囲)、ADR-0032 (`require-static-classes` と variant 関数の宣言)、ADR-0010 (`eslint` を必須 peer に持つもう 1 つの経路)
 
 ## Context
 
@@ -33,7 +33,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 
 `no-raw-colors` は `bg-[#333]` のような arbitrary color を検査しないため、`no-arbitrary-values` と対で使う。
 `no-raw-colors` は class だけでなく `fill` / `stroke` など SVG 属性の raw color も見る。移行前の 2 ルールに無かった検査で、統制の範囲はここだけ広がる。
-`no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制し ADR-0027 の許容リストへ記録する。
+`no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制し ADR-0026 の許容リストへ記録する。
 `no-restyle` は 2026-09-19 に ADR-0014 の層の決定と対で、`require-static-classes` は同日に ADR-0032 の配り方の決定と対で採用した。
 `require-static-classes` は `no-restyle` と同じ `overrides` に相乗りし、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言する。
 宣言が要る理由と `mergeFunctions` を使わない理由は ADR-0032 が持つ。

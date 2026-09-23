@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-19
-- 関連: ADR-0033 (`@shadcn/lint` のルールの選定)、ADR-0027 (registry コードの改変は許容リストで統制)、ADR-0013 (features / routes の配置の原則)、ADR-0020 (Action 層)、ADR-0022 (DataTable 部品の配置)
+- 関連: ADR-0033 (`@shadcn/lint` のルールの選定)、ADR-0026 (registry コードの改変は許容リストで統制)、ADR-0013 (features / routes の配置の原則)、ADR-0020 (Action 層)、ADR-0022 (DataTable 部品の配置)
 
 ## Context
 
@@ -42,7 +42,7 @@
 | 現状維持 (フラットな `src/components/`)                                | 部品 (著作) と画面の組み立て (消費) が同じ階層に混在し、`no-restyle` の適用範囲をパスで表せない                                                                                                        | 却下     |
 | `src/components/**` を丸ごと `excludeFiles`                            | 画面側の違反も一括で隠れる (2026-09-19 の実測で 18 件中 6 件、`screens/` の `route-error.tsx` に残る。`AccordionTrigger` の実在のコントラスト欠陥を含む)                                               | 却下     |
 | ecosystem の慣例に合わせて関心語で 1 段掘る (`errors/` / `layout/` 等) | BearStudio/start-ui-web、Kiranism/tanstack-start-dashboard、mugnavo/tanstarter の 3 件を `gh api` で確認 (2026-09-19)。いずれも著作/消費の役割分割を持たない。前例が無いことは分けない根拠にはならない | 不採用   |
-| 上流 README の形 (トップレベル `rules` + 著作側の override で `"off"`) | 規則を off にする形は、適用範囲の宣言と違反の緩和を設定の字面で区別できない。ADR-0027 が分ける違反の抑制 (行単位) と適用範囲 (`excludeFiles`) の区別に外れる                                           | 却下     |
+| 上流 README の形 (トップレベル `rules` + 著作側の override で `"off"`) | 規則を off にする形は、適用範囲の宣言と違反の緩和を設定の字面で区別できない。ADR-0026 が分ける違反の抑制 (行単位) と適用範囲 (`excludeFiles`) の区別に外れる                                           | 却下     |
 | `ui/` `action/` `parts/` `screens/` + 直下の 5 区分                    | 認識 (`componentImports`) と適用 (`excludeFiles`) の両軸をディレクトリ境界で表現できる。直下を既定にすることで判断の省略が安全側に倒れる                                                               | **採用** |
 
 ## Consequences
