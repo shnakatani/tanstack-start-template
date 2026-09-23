@@ -35,7 +35,7 @@ const SIZE_OPTIONS = variantOptions({
 /**
  * `ItemMedia` の variant は `Item` の `argTypes` に出せないので control では切り替えられない。
  * 網羅は 1 つの story の中で全件を並べて守る。`cva` に variant を足すと、この対応表の
- * `satisfies` がここで落ちる (ADR-0039)
+ * `satisfies` がここで落ちる (ADR-0053)
  */
 const MEDIA_VARIANT_LABELS = {
   default: "下地なし",
@@ -136,7 +136,7 @@ export const MediaVariants: Story = {
 /**
  * 並べる形。`ItemGroup` の既定は `role="list"` の div だが、その形だと子に
  * `role="listitem"` が要り、`<li>` は ul/ol/menu の中でしか置けないので HTML が破綻する。
- * `render` で `ul` / `li` へ倒すと ARIA も content model も揃う (ADR-0024)
+ * `render` で `ul` / `li` へ倒すと ARIA も content model も揃う (ADR-0026)
  */
 export const Grouped: Story = {
   render: () => (

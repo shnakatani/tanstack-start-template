@@ -10,7 +10,7 @@ import { REPO_ROOT } from "../../lib/repo-root";
 /**
  * docs/registry-baseline/ に生成時 baseline がそろっていることを機械強制する。
  *
- * ADR-0024 の 3-way 判別 (意図的乖離 = baseline とローカルの diff / 上流 drift = baseline と
+ * ADR-0026 の 3-way 判別 (意図的乖離 = baseline とローカルの diff / 上流 drift = baseline と
  * 最新 CLI 出力の diff) は baseline の存在が前提で、baseline を欠いたコンポーネントだけ
  * 判別手段が 2-way へ静かに退化する。型検査もビルドも docs/ 配下の欠落を検出しないため、
  * 取得し忘れをここで failure にする。
@@ -23,7 +23,7 @@ const UI_DIR = join(REPO_ROOT, "src", "components", "ui");
 const EXTERNAL_REGISTRY_FILES: Record<string, string> = {
   // sidebar の依存として CLI が出力する hook
   "use-mobile.ts": "src/hooks/use-mobile.ts",
-  // init がテーマを書き込む stylesheet。トークンの乖離もこの baseline との差分で判別する (ADR-0028)
+  // init がテーマを書き込む stylesheet。トークンの乖離もこの baseline との差分で判別する (ADR-0034)
   "styles.css": "src/styles.css",
 };
 

@@ -2,10 +2,10 @@
  * `src/styles.css` のトークンから WCAG のコントラスト比を計算する。
  *
  * 比を計算する手段がリポジトリに無いと、ADR に書いた値を誰も追試できず、トークンを
- * 動かしたあとの再測もできない (ADR-0031)。
+ * 動かしたあとの再測もできない (ADR-0039)。
  *
  * ここは検査ではない。合否は `src/components/contrast.stories.tsx` の axe が持つ
- * (ADR-0028「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。
+ * (ADR-0034「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。
  */
 
 import Color from "colorjs.io";

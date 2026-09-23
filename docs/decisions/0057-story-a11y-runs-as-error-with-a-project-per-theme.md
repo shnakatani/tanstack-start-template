@@ -1,8 +1,8 @@
-# ADR-0040: story の a11y は `error` で検査し、テーマごとに project を持つ
+# ADR-0057: story の a11y は `error` で検査し、テーマごとに project を持つ
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0039 (story を状態のカタログにし、ブラウザテストと役割を分ける)
+- 関連: ADR-0053 (story を状態のカタログにし、ブラウザテストと役割を分ける)
 
 ## Context
 

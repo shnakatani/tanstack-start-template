@@ -1,4 +1,4 @@
-# ADR-0025: 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる
+# ADR-0028: 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる
 
 - Status: Accepted
 - Date: 2026-09-02

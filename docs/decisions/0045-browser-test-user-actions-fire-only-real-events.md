@@ -1,8 +1,8 @@
-# ADR-0034: ブラウザテストのユーザー操作は実イベントだけで発火する
+# ADR-0045: ブラウザテストのユーザー操作は実イベントだけで発火する
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0033 (待機は retry API に委ねる。本 ADR は発火の側)、ADR-0019 (Action 層。「二重発火は state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする)
+- 関連: ADR-0044 (待機は retry API に委ねる。本 ADR は発火の側)、ADR-0020 (Action 層。「二重発火は state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする)
 
 ## Context
 
@@ -58,7 +58,7 @@ expect(action).toHaveBeenCalledOnce();
 
 合成イベントを使う理由に挙がるのは 2 つある。inert バックドロップが pointer event を横取りすること、`aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトすることである。どちらも合成イベントを要求しない。
 
-**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを押す 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) は、`locator.click()` で browser project を全件走らせると全件通る。ADR-0035 の animation 無効化が効いているためではない。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
+**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを押す 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) は、`locator.click()` で browser project を全件走らせると全件通る。ADR-0046 の animation 無効化が効いているためではない。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
 
 **enabled 判定に落ちる 2 箇所は、別々の解になる。** 分かれ目は対象に `pointer-events: none` が当たっているかである。`pointer-events: none` の対象を、click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った。
 
@@ -107,7 +107,7 @@ expect(action).toHaveBeenCalledOnce();
 | 条件               | 落ちる例                                                                                                              |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | Enabled            | native `disabled`、`aria-disabled="true"` の祖先を持つ要素                                                            |
-| Stable             | 開閉アニメーションの途中。既定では ADR-0035 の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
+| Stable             | 開閉アニメーションの途中。既定では ADR-0046 の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
 | Visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                      |
 | Receives Events    | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                               |
 
@@ -121,7 +121,7 @@ expect(action).toHaveBeenCalledOnce();
 | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | 実イベント (`click()` と `userEvent.keyboard`) で 2 連射する      | 実装の仕組み (描画のタイミング) をテストに書かない。Base UI と React Aria 自身のテストと同じ形。mutant で落ちることを確認済み                      | **採用** |
 | 合成イベントの間に `await Promise.resolve()` を挟む               | ブラウザが実イベント間で行う checkpoint の模倣で、React の描画が microtask で流れる知識をテストに焼き込む。React 側の実装が変わると意味が変わる    | 却下     |
-| 合成イベントの同期 2 連射を残し、実装に ref のフラグを持つ        | 起きない事象への防御をテストが要求する形。react.dev の `disabled={pending}` の形から外れる (ADR-0019)                                              | 却下     |
+| 合成イベントの同期 2 連射を残し、実装に ref のフラグを持つ        | 起きない事象への防御をテストが要求する形。react.dev の `disabled={pending}` の形から外れる (ADR-0020)                                              | 却下     |
 | 2 回目を `click({ force: true })` で送る                          | `data-disabled:pointer-events-none` の部品では下の要素へ届き、何が止めたか分からない。キーボードなら部品自身に届く                                 | 却下     |
 | 合成 click の helper を置き、用途を 1 つに絞る                    | 消費者が sample の部品だけになる。テンプレートの利用者が sample を消すと、消費者ゼロの helper が配られたままになる                                 | 却下     |
 | 合成 click で base-ui 内部のガードを見続ける                      | 守る対象が上流ライブラリの内部で、base-ui 自身のテストが同じことを見ている。このリポジトリのコードは `pointer-events` と状態属性の assert で守れる | 却下     |

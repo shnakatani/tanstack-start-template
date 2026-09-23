@@ -17,7 +17,7 @@ import {
 
 /**
  * AlertDialogContent の viewport 溢れ backstop。Dialog と共有する registry 乖離
- * (Viewport + `popupOverflowBackstop` + Popup の flex-col。ADR-0024 の許容リスト) のガード。
+ * (Viewport + `popupOverflowBackstop` + Popup の flex-col。ADR-0026 の許容リスト) のガード。
  * `registry-baseline.test.ts` は baseline の存在しか見ず、乖離が消えても落ちないことを
  * 実測した (2026-09-22) ので、乖離の機能はここで固定する。
  *

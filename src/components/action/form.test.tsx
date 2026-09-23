@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { ActionForm, ActionFormSubmit } from "./form";
 
 /**
- * 振る舞いのカタログは `form.stories.tsx` の play が持つ (ADR-0039)。ここに残すのは
+ * 振る舞いのカタログは `form.stories.tsx` の play が持つ (ADR-0053)。ここに残すのは
  * 決着前の二重発火を CDP 経由の実イベントで塞ぐ 2 case だけである。
  *
- * ADR-0039 は「ADR-0034 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、
+ * ADR-0053 は「ADR-0045 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、
  * play へは移さない」と決めている。play は Storybook の UI 上でも走るため CDP を使えず、
  * `storybook/test` の合成イベントで操作する。`ActionButton` の同じ規律は
  * `src/components/action/button.test.tsx` が持つ。画面側のテストは Action 層の guard を
- * 代替しない (理由は ADR-0039)。
+ * 代替しない (理由は ADR-0053)。
  */
 describe("ActionForm", () => {
   it("決着前の再 submit では submitAction を呼ばない", async () => {

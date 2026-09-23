@@ -1,8 +1,8 @@
-# ADR-0027: 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める
+# ADR-0033: 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0009 (lint ルールの選定基準)、ADR-0024 (行単位の抑制の許容リスト)、ADR-0013 (`no-restyle` の適用範囲)、ADR-0026 (`require-static-classes` と variant 関数の宣言)、ADR-0010 (`eslint` を必須 peer に持つもう 1 つの経路)
+- 関連: ADR-0009 (lint ルールの選定基準)、ADR-0026 (行単位の抑制の許容リスト)、ADR-0014 (`no-restyle` の適用範囲)、ADR-0032 (`require-static-classes` と variant 関数の宣言)、ADR-0010 (`eslint` を必須 peer に持つもう 1 つの経路)
 
 ## Context
 
@@ -21,7 +21,7 @@
 
 oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たないため、`jsPlugins` で `@shadcn/lint` を読み込む。
 `components.json` の UI alias と theme CSS を自動探索できるため、同じ値を `settings.shadcn` へ複製しない。
-`settings.shadcn.componentImports` はこの探索結果の書き直しではなく、`ui` alias の外側にある自作部品 (`parts/` 等) まで design system component として認識させる追加である (ADR-0013)。
+`settings.shadcn.componentImports` はこの探索結果の書き直しではなく、`ui` alias の外側にある自作部品 (`parts/` 等) まで design system component として認識させる追加である (ADR-0014)。
 
 | 有効にしたルール                | 見るもの                                                                                          |
 | ------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -33,10 +33,10 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 
 `no-raw-colors` は `bg-[#333]` のような arbitrary color を検査しないため、`no-arbitrary-values` と対で使う。
 `no-raw-colors` は class だけでなく `fill` / `stroke` など SVG 属性の raw color も見る。移行前の 2 ルールに無かった検査で、統制の範囲はここだけ広がる。
-`no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制し ADR-0024 の許容リストへ記録する。
-`no-restyle` は 2026-09-19 に ADR-0013 の層の決定と対で、`require-static-classes` は同日に ADR-0026 の配り方の決定と対で採用した。
+`no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制し ADR-0026 の許容リストへ記録する。
+`no-restyle` は 2026-09-19 に ADR-0014 の層の決定と対で、`require-static-classes` は同日に ADR-0032 の配り方の決定と対で採用した。
 `require-static-classes` は `no-restyle` と同じ `overrides` に相乗りし、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言する。
-宣言が要る理由と `mergeFunctions` を使わない理由は ADR-0026 が持つ。
+宣言が要る理由と `mergeFunctions` を使わない理由は ADR-0032 が持つ。
 `no-inline-styles` は対になる設計判断がまだ無いため有効化しない。
 
 `@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
@@ -78,7 +78,7 @@ theme と component の探索に失敗したときは、`vp lint` の出力へ `
 
 - `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、追随の発火条件は Dependabot PR の処理時とする。確認するのは plugin の読み込みと 3 ルールの発火の両方である
 - 3 ルールが発火していることを機械で見張るものは無い。`--print-config` の top-level `rules` に JS plugin 由来のルールが出ないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は Decision の probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる
-- `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (ADR-0026)
+- `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (ADR-0032)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。token だけを混ぜる表現にも行単位の抑制が要り、抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと無言で通る
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。この経路の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にして止める。ただし `eslint` がグラフから消えるわけではない。`eslint-plugin-testing-library` が `@typescript-eslint/utils` 経由で `eslint` を必須 peer に持ち、そちらは止まらない (ADR-0010)
 - parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。型検査は tsgolint が担い `typescript` を直接の依存に持たないため `vp check` の結果は変わらない
@@ -87,7 +87,7 @@ theme と component の探索に失敗したときは、`vp lint` の出力へ `
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
 - theme に無いクラスを全て落とすため、`src/styles.css` へ token を足す前に utility を書くと lint で止まる。順序は token の定義が先になる
 - `settings.shadcn.componentImports` を消すと自作部品が規則から見えなくなり、routes からの上書きが素通りする。`--print-config` に JS plugin 由来の設定は出ないため無言で効かなくなる
-- `no-restyle` の適用範囲はディレクトリで決まる (ADR-0013)。画面の組み立てを `parts/` へ置くと規則が効かない。機械では止まらない
+- `no-restyle` の適用範囲はディレクトリで決まる (ADR-0014)。画面の組み立てを `parts/` へ置くと規則が効かない。機械では止まらない
 
 ## 出典
 

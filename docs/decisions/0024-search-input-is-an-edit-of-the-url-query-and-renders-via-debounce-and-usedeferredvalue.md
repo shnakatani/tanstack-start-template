@@ -1,12 +1,12 @@
-# ADR-0023: 検索の入力欄は URL の q に対する編集として持ち、debounce → useDeferredValue → useSuspenseQuery で描く
+# ADR-0024: 検索の入力欄は URL の q に対する編集として持ち、debounce → useDeferredValue → useSuspenseQuery で描く
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0022 (絞り込み条件は URL が持つ)、ADR-0017 (Transition の既定と `useDeferredValue` の位置づけ)、ADR-0020 (楽観行の扱い)
+- 関連: ADR-0023 (絞り込み条件は URL が持つ)、ADR-0018 (Transition の既定と `useDeferredValue` の位置づけ)、ADR-0021 (楽観行の扱い)
 
 ## Context
 
-絞り込み条件は URL が持つ (ADR-0022)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。テンプレートとして示したいのは、ページのローディングを route loader の prefetch と `useSuspenseQuery` と `pendingComponent` で行う形を崩さずに打鍵へ追従する形で、`useDeferredValue` は ADR-0017 が「ローカルの非緊急化に使う」と位置づけたまま使う箇所が無かった。
+絞り込み条件は URL が持つ (ADR-0023)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。テンプレートとして示したいのは、ページのローディングを route loader の prefetch と `useSuspenseQuery` と `pendingComponent` で行う形を崩さずに打鍵へ追従する形で、`useDeferredValue` は ADR-0018 が「ローカルの非緊急化に使う」と位置づけたまま使う箇所が無かった。
 
 制約は次のとおり。
 

@@ -8,7 +8,7 @@ const LINES = Array.from({ length: 24 }, (_, index) => `${index + 1} 行目の�
  * ScrollArea も高さを持たず、器の寸法をなぞる。この story は寸法を `className` で渡さず、
  * decorator の器で与える (layout の class なら渡してもよい)。器の寸法に従ってスクロールする
  * ことを見せるため、器を ScrollArea の外に置く。
- * スクロールバーと、そのぶんの余白は `ScrollArea` 自身が持つ (ADR-0024)
+ * スクロールバーと、そのぶんの余白は `ScrollArea` 自身が持つ (ADR-0026)
  */
 const meta = {
   component: ScrollArea,
@@ -78,7 +78,7 @@ export const Fits: Story = {
 /**
  * 高さを `viewportClassName` で与える形。消費側 (`parts/code-block.tsx` /
  * `parts/dialog-scroll-body.tsx`) はこちらを使う。`viewportClassName` は Viewport へ
- * layout class を通すためにこのリポジトリが足した prop (ADR-0024 の乖離)
+ * layout class を通すためにこのリポジトリが足した prop (ADR-0026 の乖離)
  */
 export const SizedByViewportClassName: Story = {
   render: () => (

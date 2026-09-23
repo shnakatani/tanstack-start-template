@@ -94,7 +94,7 @@ const EXPECTED_OVERRIDES = [
     },
   },
   {
-    // 層の境界に載せる規則と、その適用外にする層 (ADR-0013 / ADR-0026)。design system の著作側
+    // 層の境界に載せる規則と、その適用外にする層 (ADR-0014 / ADR-0032)。design system の著作側
     // (ui/ action/ parts/) だけを外し、消費側には規則を効かせる。広げると、広げた先の層で
     // className の上書きと動的な className が無診断で通る。.storybook/ も消費側として扱う
     // (decorator が design system component を包む置き場になる)
@@ -103,7 +103,7 @@ const EXPECTED_OVERRIDES = [
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
-    // ブラウザテストの assert を守る自前ルール (ADR-0036 / ADR-0037)。
+    // ブラウザテストの assert を守る自前ルール (ADR-0047 / ADR-0049)。
     // 適用先と除外の理由は vite.config.ts の同じ override が持つ。
     // 期待値は手書きで持つ。`testHelperGlobs()` を spread すると vite.config.ts と同じ
     // 入力どうしの比較になり、種別が増えても検査が通ってしまう
@@ -242,7 +242,7 @@ describe("書いた設定が解決後も残っている", () => {
         ),
       })),
       "override の適用先かルールか severity が変わった。適用先を広げるとその層で規則が無診断になり、" +
-        "ルールを消すか off にすると規則が無言で外れる (ADR-0027 / ADR-0010 / ADR-0011 / ADR-0013 / ADR-0026)",
+        "ルールを消すか off にすると規則が無言で外れる (ADR-0033 / ADR-0010 / ADR-0011 / ADR-0014 / ADR-0032)",
     ).toEqual(EXPECTED_OVERRIDES);
   });
 
@@ -256,7 +256,7 @@ describe("書いた設定が解決後も残っている", () => {
     expect(
       holders.map(({ files }) => files),
       "付随ファイルの除外が想定外の override に付いた。その override の規則が" +
-        "テストと story で無診断になる (ADR-0011 / ADR-0013 / ADR-0026)",
+        "テストと story で無診断になる (ADR-0011 / ADR-0014 / ADR-0032)",
     ).toEqual([["src/**", "scripts/**"]]);
     expect(
       holders[0]?.excludeFiles?.filter((glob) => COMPANION_GLOBS.has(glob)),

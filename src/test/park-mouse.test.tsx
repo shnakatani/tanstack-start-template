@@ -11,7 +11,7 @@ describe("parkMouse", () => {
       <div data-testid="hover-cover" style={{ position: "fixed", inset: 0 }} />,
     );
     const cover = screen.getByTestId("hover-cover");
-    // `:hover` を見る matcher は無いので、poll の中で要素を引き直して読む (ADR-0036)
+    // `:hover` を見る matcher は無いので、poll の中で要素を引き直して読む (ADR-0047)
     const hovered = () => cover.element().matches(":hover");
 
     await cdp().send("Input.dispatchMouseEvent", {

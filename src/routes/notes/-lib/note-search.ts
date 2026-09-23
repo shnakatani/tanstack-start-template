@@ -5,13 +5,13 @@ export const NOTE_SEARCH_LABEL = `${NOTE_ENTITY_LABEL}を検索`;
 
 /**
  * 打鍵が止まってから一覧の取得を始めるまでの待ち。`useDebouncedValue` の `wait`。
- * 0 にすると打鍵ごとに server function が走る (ADR-0023)。
+ * 0 にすると打鍵ごとに server function が走る (ADR-0024)。
  * literal 型に固めない。ページのテストが `vi.mock` でこの値を広げる (`-components/notes-page.test.tsx` の `vi.mock`)
  */
 export const NOTE_SEARCH_DEBOUNCE_MS: number = 300;
 
 /**
- * 絞り込みの結果が入れ替わったときの通知文 (ADR-0030: `aria-busy` は印であって通知ではない)。
+ * 絞り込みの結果が入れ替わったときの通知文 (ADR-0037: `aria-busy` は印であって通知ではない)。
  * 件数は楽観行を含めない (取得した一覧の件数)。
  */
 export function noteSearchResultMessage(q: string, count: number): string {

@@ -10,7 +10,7 @@ type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
 /**
  * `argTypes` の control の選択肢。Storybook の `options` は `readonly any[]` で中身を検査せず、
  * 型検査も lint も `cva` との一致を見ない。`satisfies Record<..., null>` に通すことで、
- * `buttonVariants` に足した側と減らした側の両方がここで型エラーになる (ADR-0039)。
+ * `buttonVariants` に足した側と減らした側の両方がここで型エラーになる (ADR-0053)。
  *
  * `Button` を包む部品の story も同じ選択肢を出すため、写しを増やさずここから引く。
  */

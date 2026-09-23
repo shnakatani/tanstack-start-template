@@ -1,8 +1,8 @@
-# ADR-0018: イベントハンドラは同期関数とし、非同期処理は内側へ閉じる
+# ADR-0019: イベントハンドラは同期関数とし、非同期処理は内側へ閉じる
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0009 (`typescript/no-misused-promises` を名指しする基準)、ADR-0017 (mutation を伴う操作の Action)
+- 関連: ADR-0009 (`typescript/no-misused-promises` を名指しする基準)、ADR-0018 (mutation を伴う操作の Action)
 
 ## Context
 
@@ -26,7 +26,7 @@ function handleSignOut() {
 `checksVoidReturn.attributes` を off にすると、本当に rejection を落としている箇所も検出できなくなる。
 
 React 公式もこの構造を採っている。React 19 の `TransitionFunction` は非同期処理を受け取るが、`onClick` に渡すハンドラ自体は同期である。
-mutation を伴う操作は、その同期ハンドラの内側で `startTransition` に非同期関数を渡す形 (Action) にし、pending は Transition から取る。この判断は ADR-0017 が持つ。
+mutation を伴う操作は、その同期ハンドラの内側で `startTransition` に非同期関数を渡す形 (Action) にし、pending は Transition から取る。この判断は ADR-0018 が持つ。
 `startTransition` を併用すると pending の源が mutation の `isPending` と二重になるが、pending の源を Transition 側へ一本化することでこれを避ける。
 
 ## Consequences

@@ -9,7 +9,7 @@ TanStack Start と Vite+ で組んだ Web アプリケーションの template r
 | -------------- | ---------------------------------------------------------------- |
 | フレームワーク | TanStack Start (React 19 + TanStack Router / Query)              |
 | フォーム       | TanStack Form                                                    |
-| テーブル       | TanStack Table v9 (headless。shadcn Data Table の構成、ADR-0021) |
+| テーブル       | TanStack Table v9 (headless。shadcn Data Table の構成、ADR-0022) |
 | バリデーション | Valibot                                                          |
 | UI             | shadcn/ui (`base-vega` style、Base UI ベース) + Tailwind CSS v4  |
 | アイコン       | lucide-react                                                     |
@@ -60,7 +60,7 @@ mise run storybook                                # 部品とデザイントー�
 - 素の `pnpm` を叩くなら `corepack enable` を一度実行する。Vite+ の shim は `node` / `npm` / `npx` / `corepack` までで `pnpm` を含まない
 - chromium は `vp install` では入らない (`playwright` が install スクリプトを持たない)。未取得のまま `vp test run` すると browser project が落ちる
 - port は worktree ごとに変わる。main checkout は base のまま、linked worktree は base+1 から base+999 (`.mise.toml` の `serve` が base 3000、`storybook` が base 6006)
-- Storybook は部品の状態とデザイントークンを並べる。story は部品と同じディレクトリに置き、a11y を axe で自動検査する (ADR-0039 / ADR-0040)
+- Storybook は部品の状態とデザイントークンを並べる。story は部品と同じディレクトリに置き、a11y を axe で自動検査する (ADR-0053 / ADR-0057)
 
 ### 3. 名前を置換する
 
@@ -106,7 +106,7 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 
 ### 認証
 
-差し替え点は `src/start.ts` の `functionMiddleware` (データの防御) と `src/routes/_authed.tsx` の `beforeLoad` (画面遷移) の 2 つ。両方を埋める。`beforeLoad` だけでは、server function を route 抜きで直接呼ばれたときに endpoint が無防備なまま残る (ADR-0014)。
+差し替え点は `src/start.ts` の `functionMiddleware` (データの防御) と `src/routes/_authed.tsx` の `beforeLoad` (画面遷移) の 2 つ。両方を埋める。`beforeLoad` だけでは、server function を route 抜きで直接呼ばれたときに endpoint が無防備なまま残る (ADR-0015)。
 
 - `createStart` へ `functionMiddleware` を足し、`createMiddleware({ type: "function" })` で作った認証 middleware を渡す。これで全 server function が認証を通る。個々の `createServerFn` には書かない
 - `src/routes/_authed.tsx` を足して `beforeLoad` で未ログインを login へ送り、保護する route を `src/routes/_authed/` 配下へ移す。`_` で始まるセグメントは生成される URL から除かれるため、パスを変えずに階層だけ足せる
@@ -125,5 +125,5 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 | `docs/decisions/`         | ADR。決定と却下理由。索引は `docs/decisions/README.md`                                                                                                                                    |
 | `.claude/rules/`          | Claude が作業中に読み込む規範。`paths` に一致するファイルを読んだときロードされる。rules は ADR を指し、ADR とコードは rules を指さない (rules の置き場所や書き方を主題にする ADR は除く) |
 | `AGENTS.md`               | エージェントへの指示。`CLAUDE.md` は symlink                                                                                                                                              |
-| `docs/registry-baseline/` | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0024)                                                                                                               |
+| `docs/registry-baseline/` | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0026)                                                                                                               |
 | `docs/superpowers/`       | 設計仕様と実装計画の置き場所                                                                                                                                                              |

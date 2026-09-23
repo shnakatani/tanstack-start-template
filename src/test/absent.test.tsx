@@ -61,7 +61,7 @@ describe("expectAbsent", () => {
       const screen = await render(<div>ある</div>);
 
       // `{ timeout: 0 }` を外すと assert の予算 (`expect.poll.timeout`) を丸ごと使う。
-      // その退行をこの閾値が捕まえる (ADR-0037)。テスト側の timeout は予算より大きく取る。
+      // その退行をこの閾値が捕まえる (ADR-0049)。テスト側の timeout は予算より大きく取る。
       // 同値だと、退行が閾値の失敗ではなく「テストが timeout した」として出る
       const startedAt = performance.now();
       await expect(expectAbsent(screen.getByText("ある"))).rejects.toThrow(/toBeInTheDocument/);
