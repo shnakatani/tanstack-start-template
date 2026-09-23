@@ -69,7 +69,7 @@ TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で i
 | 機能ごとに 3 軸で選び、既定を持つ | 軸と既定が文書にあり、機能を足すときに同じ問いを立てられる                                                                                            | **採用** |
 | 全機能で (c) 再取得完了まで待つ   | 再取得が遅い環境でダイアログが固まる。React の非ブロッキングの設計と React Router の pending UI の形 (`state !== "idle"` の間 busy を出す) から外れる | 却下     |
 | 全機能で (a) 楽観                 | 入力を持つフォームの失敗時に戻す先が無い (TkDodo)。rollback の UX が悪い                                                                              | 却下     |
-| 軸を rules だけに書く             | 出典と却下理由が rules に入らない (ADR-0001)。半年後に「なぜ待たないのか」を辿れない                                                                  | 却下     |
+| 軸を rules だけに書く             | 出典と却下理由が rules に入らない (ADR-0042)。半年後に「なぜ待たないのか」を辿れない                                                                  | 却下     |
 
 ## Consequences
 

@@ -322,9 +322,8 @@ export default defineConfig({
           // 基準から外す。flat/react の中でこれだけが strict 判定 (`isTestingLibraryImported(true)`)
           // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
           // 発火しない。`settings` に utils-module を足せば発火するが、その形は
-          // `.claude/rules/testing.md`「状態のアサートは semantic matcher を先に探す」が
-          // querySelector を条件付きで許して
-          // いるのと両立しない (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる)
+          // querySelector を条件付きで許しているテストの規範と両立しない
+          // (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる。ADR-0004)
           "testing-library/no-node-access": "off",
           "testing-library/no-promise-in-fire-event": "error",
           "testing-library/no-render-in-lifecycle": "error",
