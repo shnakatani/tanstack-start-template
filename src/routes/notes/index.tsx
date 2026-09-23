@@ -28,9 +28,9 @@ function NotesRoute() {
   const { q } = Route.useSearch();
   const navigate = Route.useNavigate();
   function handleQueryChange(next: string) {
-    // navigate は Router が startTransition で commit する (ADR-0014)。確定は利用者の明示操作
-    // (submit) 1 回につき履歴 1 つで、戻るボタンが絞り込み前の一覧に戻る (ADR-0033)
-    void navigate({ search: (prev) => ({ ...prev, q: next }) });
+    // navigate は Router が startTransition で commit する (ADR-0014)。検索は同じ画面の絞り込みなので
+    // 履歴を積まない (replace)。戻るは 1 つ前の画面へ戻る (ADR-0033)
+    void navigate({ search: (prev) => ({ ...prev, q: next }), replace: true });
   }
   return <NotesPage q={q} onQueryChange={handleQueryChange} />;
 }

@@ -121,8 +121,8 @@ describe("/notes route", () => {
 
     await expect.poll(() => router.state.location.search).toEqual({ q: "xyz" });
     expect(router.state.location.href).toBe("/notes?q=xyz");
-    // 明示操作 1 回につき履歴 1 つ (push)。戻るで絞り込み前の一覧に戻れる
-    expect(router.history.length).toBe(2);
+    // 検索は同じ画面の絞り込みなので履歴を積まない (replace)。push に変わると 2 になる
+    expect(router.history.length).toBe(1);
     // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0034)
     await vi.waitFor(() => {
       expect(readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
@@ -131,7 +131,7 @@ describe("/notes route", () => {
     await expect.element(noteSearchbox(screen)).toHaveFocus();
   });
 
-  it("確定した後に戻ると、確定済みの編集は復活せず入力欄も一覧も元の q に揃う", async () => {
+  it("確定した後に URL の q が元の値へ戻っても、確定済みの編集は復活せず入力欄も一覧も q に揃う", async () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
 
@@ -139,8 +139,9 @@ describe("/notes route", () => {
     await userEvent.keyboard("{Enter}");
     await expect.poll(() => router.state.location.href).toBe("/notes?q=xyz");
 
-    // 途中入力を挟まずに戻る。編集を URL の値で紐付けると、同じ値に戻った瞬間に確定済みの編集が復活する
-    router.history.back();
+    // 途中入力を挟まずに、別の遷移 (Link や他画面からの戻る) で同じ値へ。編集を URL の値で紐付けると、
+    // 同じ値に戻った瞬間に確定済みの編集が復活する
+    await router.navigate({ to: "/notes", search: { q: "abc" } });
 
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
@@ -152,7 +153,7 @@ describe("/notes route", () => {
     });
   });
 
-  it("戻るで URL の q が変わると、入力欄の途中入力を捨ててその q に揃う", async () => {
+  it("別の遷移で URL の q が変わると、入力欄の途中入力を捨ててその q に揃う", async () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
 
@@ -161,11 +162,11 @@ describe("/notes route", () => {
     await expect.poll(() => router.state.location.href).toBe("/notes?q=xyz");
     await noteSearchbox(screen).fill("typed");
 
-    router.history.back();
+    await router.navigate({ to: "/notes", search: { q: "abc" } });
 
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
-    // 戻るで入れ替わった結果も通知する。同じ条件へ戻っても、直前に通知した条件と違えば出す
+    // 遷移で入れ替わった結果も通知する。同じ条件へ戻っても、直前に通知した条件と違えば出す
     await vi.waitFor(() => {
       expect(readAnnouncements()).toEqual([
         "『xyz』に一致するメモは 0 件です",
