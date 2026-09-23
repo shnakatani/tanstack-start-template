@@ -233,7 +233,7 @@ describe("NotesPage", () => {
     await expectText(screen, "『abc』に一致するメモはありません");
 
     // 上限超えは入力欄の maxLength が止める (`fill` も maxLength を尊重する。2026-09-23 に実測)。
-    // key を作る前の正規化 (toNoteListFilter) は IME の変換中など maxLength が効かない経路の
+    // schema の切り詰めは IME の変換中など maxLength が効かない経路の
     // 2 段目で、上限の切り詰めは note-search.test.ts が単体で見る
     const capped = "a".repeat(NOTE_QUERY_MAX_LENGTH);
     await searchbox.fill("a".repeat(NOTE_QUERY_MAX_LENGTH + 1));

@@ -1,5 +1,7 @@
 import * as v from "valibot";
 
+import { truncateCodeUnits } from "@/lib/truncate-code-units";
+
 /** ドメインの呼称。画面見出し・追加ボタン・削除確認の文言が使う。 */
 export const NOTE_ENTITY_LABEL = "メモ";
 
@@ -113,14 +115,18 @@ export const NOTE_QUERY_MAX_LENGTH = 100;
  * 一覧の絞り込み条件。URL の search param (`/notes?q=`) と `listNotes` の validator が同じ定義を使う。
  * valibot 1.x は Standard Schema なので、Router の `validateSearch` にそのまま渡せる (ADR-0033)。
  * `q` の既定は空文字 = 絞り込みなし。URL 上では `stripSearchParams` が既定値を落とす。
+ *
+ * 上限は reject せず切り詰める。search param は malformed でも体験を止めない (Router の search-params
+ * ガイド)。入力欄の maxLength と同じ規則で、IME の変換中など maxLength が効かない経路 (facebook/react#8683、
+ * Chromium 40520211) でも同じ値に収束する。文字列以外 (`?q=123` は Router の JSON パースで number) は
+ * 弾き、既定の英語文言を UI に出さない。
  */
 export const noteListFilterSchema = v.object({
   q: v.optional(
     v.pipe(
-      // URL の `?q=123` は Router の JSON パースで number になる。既定の英語文言を UI に出さない
       v.string(`${QUERY_LABEL}は文字列で指定してください`),
       v.trim(),
-      v.maxLength(NOTE_QUERY_MAX_LENGTH, maxLengthMessage(QUERY_LABEL, NOTE_QUERY_MAX_LENGTH)),
+      v.transform((text) => truncateCodeUnits(text, NOTE_QUERY_MAX_LENGTH)),
     ),
     "",
   ),

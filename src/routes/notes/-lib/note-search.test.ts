@@ -1,37 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
-
-import { noteSearchResultMessage, toNoteListFilter } from "./note-search";
-
-describe("toNoteListFilter", () => {
-  it("前後の空白を落とす (URL 経由の validateSearch と同じ正規化)", () => {
-    expect(toNoteListFilter("  abc  ")).toEqual({ q: "abc" });
-  });
-
-  it("空白だけなら絞り込みなし", () => {
-    expect(toNoteListFilter("   ")).toEqual({ q: "" });
-  });
-
-  // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は保ち、cap+1 は cap で切る
-  it("上限を超える分は切り、超えない分は保つ", () => {
-    const cap = NOTE_QUERY_MAX_LENGTH;
-    expect(toNoteListFilter("a".repeat(cap - 1))).toEqual({ q: "a".repeat(cap - 1) });
-    expect(toNoteListFilter("a".repeat(cap))).toEqual({ q: "a".repeat(cap) });
-    expect(toNoteListFilter("a".repeat(cap + 1))).toEqual({ q: "a".repeat(cap) });
-  });
-
-  it("切り詰めは code unit で数え、割れたサロゲートを残さない (詳細は truncate-code-units.test.ts)", () => {
-    const { q } = toNoteListFilter(`${"あ".repeat(NOTE_QUERY_MAX_LENGTH - 1)}😀`);
-    expect(q).toBe("あ".repeat(NOTE_QUERY_MAX_LENGTH - 1));
-  });
-
-  it("trim してから上限を数える (前後の空白は上限に含めない)", () => {
-    expect(toNoteListFilter(` ${"a".repeat(NOTE_QUERY_MAX_LENGTH)} `)).toEqual({
-      q: "a".repeat(NOTE_QUERY_MAX_LENGTH),
-    });
-  });
-});
+import { noteSearchResultMessage } from "./note-search";
 
 describe("noteSearchResultMessage", () => {
   it("検索語が空なら解除の文言", () => {

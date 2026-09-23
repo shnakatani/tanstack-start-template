@@ -1,6 +1,7 @@
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useDeferredValue, useEffect, useEffectEvent, useRef, useState } from "react";
+import * as v from "valibot";
 
 import { DataTable } from "@/components/parts/data-table";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
@@ -15,7 +16,7 @@ import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY, notesQueryOptions } from "@/features/notes/queries";
 import type { NoteListFilter } from "@/features/notes/schema";
-import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
+import { NOTE_ENTITY_LABEL, noteListFilterSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
@@ -23,11 +24,7 @@ import { toastMutationError } from "@/lib/mutation-error";
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
-import {
-  NOTE_SEARCH_DEBOUNCE_MS,
-  noteSearchResultMessage,
-  toNoteListFilter,
-} from "../-lib/note-search";
+import { NOTE_SEARCH_DEBOUNCE_MS, noteSearchResultMessage } from "../-lib/note-search";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-title";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 import { NoteSearchField } from "./note-search-field";
@@ -43,8 +40,9 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   function handleTextChange(next: string) {
     setEdit({ base: q, text: next });
   }
-  // 正規化 (trim / 上限) は入力の直後に 1 回。以降の debounce / deferred / key / submit はこの値から導く
-  const draftQ = toNoteListFilter(text).q;
+  // URL / server function と同じ schema で正規化 (trim / 上限) するのは入力の直後の 1 回。以降の
+  // debounce / deferred / key / submit はこの値から導く
+  const draftQ = v.parse(noteListFilterSchema, { q: text }).q;
   const [debouncedQ] = useDebouncedValue(draftQ, { wait: NOTE_SEARCH_DEBOUNCE_MS });
   // 入力欄が URL と同じなら debounce を待たない (確定と戻るの直後に、温め済みの条件を遅らせない)
   const settledQ = draftQ === q ? q : debouncedQ;

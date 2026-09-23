@@ -188,8 +188,16 @@ describe("/notes route の wrapper (実 router)", () => {
     await expect.poll(() => router.state.location.href).toBe("/notes");
   });
 
-  it("上限を超える q は route の error component に落ちる", async () => {
-    const { screen } = await renderRoute(`/notes?q=${"a".repeat(NOTE_QUERY_MAX_LENGTH + 1)}`);
+  it("上限を超える q は切り詰めて描き、エラーにしない (Router の search-params ガイドの fallback)", async () => {
+    const capped = "a".repeat(NOTE_QUERY_MAX_LENGTH);
+    const { screen } = await renderRoute(`/notes?q=${capped}a`);
+
+    await expect.element(searchbox(screen)).toHaveValue(capped);
+    expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: capped } });
+  });
+
+  it("文字列以外の q (JSON パースで number になる) は route の error component に落ちる", async () => {
+    const { screen } = await renderRoute("/notes?q=123");
 
     // Router は Standard Schema の issues を JSON にして SearchParamError を投げ、RouteErrorContent が
     // DEV では error.message をそのまま出す。schema の文言が含まれることを見る
@@ -197,11 +205,7 @@ describe("/notes route の wrapper (実 router)", () => {
       .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
       .toBeVisible();
     await expect
-      .element(
-        screen.getByText(`検索語は ${NOTE_QUERY_MAX_LENGTH} 文字以内で入力してください`, {
-          exact: false,
-        }),
-      )
+      .element(screen.getByText("検索語は文字列で指定してください", { exact: false }))
       .toBeInTheDocument();
     expect(vi.mocked(listNotes)).not.toHaveBeenCalled();
   });

@@ -210,19 +210,30 @@ describe("noteListFilterSchema", () => {
   });
 
   // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は通り、cap+1 は落ちる
-  it("上限までは通り、1 文字超えると落ちる", () => {
+  // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は保ち、cap+1 は cap で切る (reject しない)
+  it("上限を超えた分は切り詰め、エラーにしない", () => {
     const cap = NOTE_QUERY_MAX_LENGTH;
-    expect(v.safeParse(noteListFilterSchema, { q: "a".repeat(cap - 1) }).success).toBe(true);
-    expect(v.safeParse(noteListFilterSchema, { q: "a".repeat(cap) }).success).toBe(true);
-    const over = v.safeParse(noteListFilterSchema, { q: "a".repeat(cap + 1) });
-    expect(over.success).toBe(false);
-    expect(over.issues?.[0]?.message).toBe(`検索語は ${cap} 文字以内で入力してください`);
+    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap - 1) })).toEqual({
+      q: "a".repeat(cap - 1),
+    });
+    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap) })).toEqual({ q: "a".repeat(cap) });
+    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap + 1) })).toEqual({
+      q: "a".repeat(cap),
+    });
   });
 
-  it("trim してから上限を数える", () => {
+  it("trim してから切り詰める (前後の空白は上限に含めない)", () => {
+    expect(v.parse(noteListFilterSchema, { q: ` ${"a".repeat(NOTE_QUERY_MAX_LENGTH)} ` })).toEqual({
+      q: "a".repeat(NOTE_QUERY_MAX_LENGTH),
+    });
+  });
+
+  it("切り詰めは code unit で数え、割れたサロゲートを残さない (詳細は truncate-code-units.test.ts)", () => {
     expect(
-      v.safeParse(noteListFilterSchema, { q: ` ${"a".repeat(NOTE_QUERY_MAX_LENGTH)} ` }).success,
-    ).toBe(true);
+      v.parse(noteListFilterSchema, { q: `${"あ".repeat(NOTE_QUERY_MAX_LENGTH - 1)}😀` }),
+    ).toEqual({
+      q: "あ".repeat(NOTE_QUERY_MAX_LENGTH - 1),
+    });
   });
 
   // URL の `?q=123` は Router の JSON パースで number になる (ADR-0033)。既定の英語文言を出さない
