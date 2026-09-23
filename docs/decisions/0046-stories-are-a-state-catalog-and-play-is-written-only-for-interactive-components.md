@@ -23,17 +23,13 @@ story の基本は部品が取りうる状態を並べることで、振る舞�
 
 対象の層は `ui/` `action/` `parts/` とし、`screens/` は外す (実画面で見るほうが早い)。`action/` の pending 表現に server function の stub は要らない。決着する Promise を渡すだけで pending の描画と解除が成立する (2026-09-20 実測)。
 
-variant の網羅を story の数で表現しない。代表値を story にし、残りは `argTypes` の control で切り替える。
-
-`argTypes` の `options` は `readonly any[]` で、`satisfies Meta<typeof X>` を書いても中身を検査しない。`cva` の variant をリテラルで写すと、足したときに story だけ古くなり lint も型検査も鳴らない (2026-09-20 実測)。`satisfies Record<Variant, null>` のオブジェクトを出処にして `Object.keys` で渡すと、足した側が型エラーになる。
-
-story を variant の直積で増やすと、カタログが読み通せない長さになる。
+variant の網羅を story の数で表現しない。代表値を story にし、残りは `argTypes` の control で切り替える。`argTypes` の `options` を型で網羅させる書き方は `docs/guides/storybook.md`「story を書く」にある。
 
 ### 検証専用の story は `tags: ["!dev"]` でサイドバーから外す
 
 story の終了状態が他の story と同じ見た目になるものは検証専用として扱い、`tags: ["!dev"]` を付ける。サイドバーの一覧から消えるが、vitest の project 実行では対象に残る (実測: `index.json` の `tags` が `dev` を含まなくなる)。
 
-同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くものなので、その部品の状態が 1 つも並ばない事態を避ける (`ActionButtonShell` の `Idle` は `ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)。
+同じ見た目でも、別の部品の story なら残す (実例は `docs/guides/storybook.md`「story を書く」)。
 
 ### story に決着しない Promise を置かない
 

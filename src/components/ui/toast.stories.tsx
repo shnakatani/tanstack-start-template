@@ -8,7 +8,7 @@ import { createToastManager, Toaster } from "@/components/ui/toast";
 
 /**
  * 見出しの文言。`toast.tsx` の対応表を出処にしているので、icon を持つ種別が増減すると
- * ここが型エラーになる (ADR-0046)
+ * ここが型エラーになる (`docs/guides/storybook.md`「story を書く」)
  */
 const TYPE_LABELS = {
   success: "保存しました",

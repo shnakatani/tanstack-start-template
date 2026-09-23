@@ -30,7 +30,7 @@ export const Horizontal: Story = {
 
 /**
  * 縦線。`self-stretch` で親の高さに合わせるため、高さを持つ flex の親が要る。
- * 高さは story の外側で与える (部品へ className を渡さない。ADR-0048)
+ * 高さは story の外側で与える (部品へ className を渡さない。`docs/guides/storybook.md`「story を書く」)
  */
 export const Vertical: Story = {
   args: { orientation: "vertical" },

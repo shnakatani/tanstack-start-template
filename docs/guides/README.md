@@ -25,3 +25,4 @@
 | [styling-and-tokens.md](styling-and-tokens.md) | スタイルとトークン (色の当て方、外見の配り方、トークンの作り直し、比の測り方、間隔)                                                                       |
 | [accessibility.md](accessibility.md)           | アクセシビリティ (層ごとの役割、axe の緑と incomplete の読み方、a11y の tag、抑制の書き方、通知の文言)                                                    |
 | [testing.md](testing.md)                       | テストの書き方 (待つ口、同期読みの書き換え、クリックの発火、animation を戻すテスト、否定を肯定で書く、route の wrapper、viewport、検査スクリプトの置き方) |
+| [storybook.md](storybook.md)                   | Storybook (story の置き方と書き方、自動構成の外、play の書き方と移し方、CLI の使い方と MCP を入れない理由)                                                |

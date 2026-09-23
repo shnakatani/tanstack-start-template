@@ -44,7 +44,7 @@ post 順の config フックで名前を戻す手も効かない。addon の上�
 
 `layout` パラメータを当てるのは `WebView.prepareForStory` で (`storybook/dist/preview/runtime.js` の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
 
-この差は `.storybook/preview.css` が埋める。Storybook の UI では body へ `sb-main-*` が付くので、付いていないときだけ同じ `1rem` を当てる。story の decorator は器の形 (flex / gap) だけを持ち、余白を自分で足さない。
+この差は `.storybook/preview.css` が埋める。Storybook の UI では body へ `sb-main-*` が付くので、付いていないときだけ同じ `1rem` を当てる。decorator の書き方は `docs/guides/storybook.md`「story を書く」にある。
 
 埋めないと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、そのはみ出しが背景を持つ唯一の箱 (body) の外へ出て axe が色を測れなくなる。`html` は背景を持たないので受け止められない。
 

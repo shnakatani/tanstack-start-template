@@ -14,10 +14,7 @@ framework の選定は `tanstackStart()` plugin と Storybook の Vite builder �
 
 router を memory-backed で自動ラップし、server function を自動 stub する。
 
-自動構成が届かない範囲が 2 つある。
-
-- TanStack Query は対象外。preview の構成へ手動で置く
-- server-only 依存は `__mocks__` で遮断する
+自動構成が届かない範囲 (TanStack Query、server-only の依存) の扱いは `docs/guides/storybook.md`「自動構成の外を手で置く」にある。
 
 ### telemetry を切る
 

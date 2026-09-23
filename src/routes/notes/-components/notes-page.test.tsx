@@ -29,6 +29,15 @@ import { readAnnouncements } from "@/test/live-announcer";
 import { createTestQueryClient, expectText, type Screen } from "@/test/page-helpers";
 import { parkMouse } from "@/test/park-mouse";
 
+/*
+ * 実イベントの規律のうち、画面側の 2 つをこのファイルが持つ (ADR-0047)。play は合成イベントで
+ * 操作するので、story へ移すとリポジトリから消える。
+ * - `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと (`confirmDeleteButton(screen).click()`)
+ * - 画面側の二重確定の dedupe (`queryClient.isMutating`)。「確定直後にもう一度 Enter を送っても
+ *   removeNote は 1 回しか呼ばれない」が見る。Action 層の guard (`disabled={isPending}`) はこの経路では
+ *   代替されないので、`src/components/action/button.test.tsx` が別に持つ
+ */
+
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする
 vi.mock("@/features/notes/functions", () => ({

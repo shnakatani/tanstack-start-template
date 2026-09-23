@@ -14,9 +14,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 
 play で書いた検証は既存のブラウザテストから削る。同じ振る舞いを 2 箇所で固定しない。
 
-対象の全 case が移れば test ファイルごと削る。locator と文言を持つ `*.test-helpers.ts` は残す (`routes/` のテストが同じものを引く)。
-
-移行は story を書く部品に限り、一律移行はしない。ファイルごとに移せるかを実測してから進める。
+移す手順 (ファイルごとの実測、test ファイルと helper の扱い) は `docs/guides/storybook.md`「ブラウザテストから play へ移す」にある。移行は story を書く部品に限り、一律移行はしない。
 
 ### play の操作は合成イベントとし、実イベントの規律はブラウザテストが持つ
 
@@ -24,14 +22,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えず、`sto
 
 ADR-0039 が禁じた同期 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである。
 
-どのブラウザテストが持つかを決めておく。story へ移した結果、実イベントの検証がリポジトリから消えることを防ぐ。
-
-| 対象                                                                                   | 実イベントの規律を持つテスト                                                     |
-| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `ActionButton` の二重発火 (`ActionButtonShell` の `disabled={isPending}`)              | `src/components/action/button.test.tsx`                                          |
-| `ActionForm` / `ActionFormSubmit` の二重発火 (`ActionForm` の `if (isPending) return`) | `src/components/action/form.test.tsx`                                            |
-| `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと                        | `src/routes/notes/-components/notes-page.test.tsx` の `confirmDelete` (ADR-0039) |
-| 画面側の二重確定の dedupe (`queryClient.isMutating`)                                   | `src/routes/notes/-components/notes-page.test.tsx` の Enter 2 連射               |
+どのブラウザテストが実イベントの規律を持つかは、そのテストファイルの JSDoc に書く。story へ移した結果、実イベントの検証がリポジトリから消えることを防ぐ。
 
 画面のテストは Action 層の guard を代替しない。`confirmDelete` は `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の時点で `isPending` は false になる。`disabled={isPending}` を外しても browser project は 1 件も落ちない (2026-09-20 実測)。経路が薄いラッパーを通ることは、その guard を通ることを意味しない。
 
@@ -41,11 +32,7 @@ story を書かない部品のテストは触らない。story を書いた部�
 
 この 3 つは play を書く部品の話である。ADR-0046 で play を書かないと決めた部品 (args だけで状態が決まるもの) では、story が描画と axe しか走らせず何も検証しない。構造の契約もブラウザテストに残り、残す根拠は下の役割分担になる。JSDoc にはどちらの根拠で残したかを書く。
 
-popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0040 の扱う animate-out の窓に入る。
-
-待機は `storybook/test` の `waitFor` で書く。ADR-0038 の retry API は play から呼べない。
-
-Storybook の test 実行では ADR-0040 の animation 無効化を適用しない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら、`vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う。
+play の書き方 (閉じる play は unmount を待つ、`waitFor` で待つ、animation の無効化を入れる先) は `docs/guides/storybook.md`「play を書く」にある。
 
 ### story とブラウザテストの役割分担
 
@@ -66,7 +53,7 @@ Storybook の test 実行では ADR-0040 の animation 無効化を適用しな�
 ## Consequences
 
 - 検証が一部 CDP の実イベントから合成イベントへ移り、backdrop の遮りを含む pointer の忠実さは下がる。一方イベント間に描画が挟まる点は既存のブラウザテストと同じ性質になる
-- `storybook/test` の `expect` は vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を story へ機械的に写せない箇所が出る
+- `storybook/test` の `expect` は vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を story へ機械的に写せない箇所が出る (`docs/guides/storybook.md`「play を書く」)
 
 ## 出典
 
