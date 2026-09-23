@@ -1,4 +1,4 @@
-# ADR-0002: rules の 1 項目には消したら誤る規範だけを 200 字以下で書き、lint が止めるものは書かない
+# ADR-0002: rules は見出しと箇条書きで 1 項目 1 規範に分け、消したら誤る規範だけを書き、lint が止めるものは書かない
 
 - Status: Accepted
 - Date: 2026-09-23
@@ -38,17 +38,16 @@ lint・型検査・build が止めるものは書かない。書くのは、lint
 1 行ずつ「これを削除したら実装者が誤った選択をするか」を問う。
 答えが No なら削る。Yes ならそれは理由ではなく規範なので残す。
 
-1 項目 (箇条書き 1 つ、または表の 1 セル) は 200 字以下にする。
-ファイル全体の行数に上限は設けない。
+規範は見出しでまとめ、1 項目 (箇条書き 1 つ、または表の 1 セル) に 1 規範を置く。
+公式の memory docs は "Specific, concise, well-structured instructions work best." とし、"**Structure**: use markdown headers and bullets to group related instructions" を挙げている。
+
+1 項目の長さに上限は設けない。長くなったら、根拠の展開 (実測値、選択肢の比較、出典の解説) が混ざっている兆候として扱い、ADR へ移して出典キーだけを残す。
+ファイル全体の行数にも上限は設けない。
 規約があるのに繰り返し破られるなら、ファイルが長すぎて規則が埋もれている兆候として扱い、主題が複数混ざっていれば分割する。
 
 行数を基準にしないのは、Claude Code 公式の Best practices が行数を示さず、1 行ずつの削除可否と「長すぎると規則が埋もれる」症状を基準にしているためである。
 行数の目安は memory docs の "target under 200 lines per CLAUDE.md file" にあるが、これは毎セッション読み込まれる CLAUDE.md 1 ファイルの目安で、`paths` で条件ロードされる rules の項目の基準としては示されていない。
 表を採ると行数は増えるがトークンはさほど増えない。行数を基準に据えると表を避ける動機が生まれ、引きやすさを損なう。
-
-文字数の測定に `awk` の `length()` を使わない。
-macOS 同梱の BSD awk はバイト数を返し、日本語 1 文字を 3 と数える。同じ「200 字以下」が日本語主体の行と ASCII 主体の行で 3 倍ぶれる。
-`wc -m` か `perl -CSD` の `length()` を使う。
 
 ### 検討した選択肢
 
@@ -68,6 +67,6 @@ macOS 同梱の BSD awk はバイト数を返し、日本語 1 文字を 3 と�
 ## 出典
 
 - Claude Code Best practices (CLAUDE.md の判定基準 "Would removing this cause Claude to make mistakes?" と、長すぎると規則が埋もれる失敗パターン): https://code.claude.com/docs/en/best-practices
-- Claude Code: How Claude remembers your project (CLAUDE.md の "target under 200 lines per CLAUDE.md file"): https://code.claude.com/docs/en/memory
+- Claude Code: How Claude remembers your project ("Specific, concise, well-structured instructions work best."、"**Structure**: use markdown headers and bullets to group related instructions"、CLAUDE.md の "target under 200 lines per CLAUDE.md file"): https://code.claude.com/docs/en/memory
 - Lost in the Middle: How Language Models Use Long Contexts (context 中間での利用率低下): https://aclanthology.org/2024.tacl-1.9/
 - Context Rot: How Increasing Input Tokens Impacts LLM Performance (入力長に伴う劣化): https://research.trychroma.com/context-rot
