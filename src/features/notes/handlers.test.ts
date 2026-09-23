@@ -1,8 +1,13 @@
+import * as v from "valibot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { createDb, migrateDb } from "@/server/db";
 
 import { createNoteHandlers } from "./handlers.server";
+import { noteListFilterSchema } from "./schema";
+
+/** 絞り込みなし。schema の既定 (`q` を省略) から導き、既定が変われば追随する。 */
+const NO_FILTER = v.parse(noteListFilterSchema, {});
 
 /** migration 適用済みの空 DB を 1 件だけ抱えるテスト用の接続を作る。 */
 function createTestDb() {
@@ -29,7 +34,7 @@ describe("notes handlers", () => {
 
   describe("list", () => {
     it("1 件も無ければ空配列を返す", async () => {
-      expect(await handlers.list({ q: "" })).toEqual([]);
+      expect(await handlers.list(NO_FILTER)).toEqual([]);
     });
 
     it("createdAt の新しい順に返す", async () => {
@@ -37,7 +42,7 @@ describe("notes handlers", () => {
       vi.advanceTimersByTime(1000);
       await handlers.create({ title: "新しい", body: "" });
 
-      expect((await handlers.list({ q: "" })).map((note) => note.title)).toEqual([
+      expect((await handlers.list(NO_FILTER)).map((note) => note.title)).toEqual([
         "新しい",
         "古い",
       ]);
@@ -48,7 +53,7 @@ describe("notes handlers", () => {
       const first = await handlers.create({ title: "先", body: "" });
       const second = await handlers.create({ title: "後", body: "" });
 
-      const listed = await handlers.list({ q: "" });
+      const listed = await handlers.list(NO_FILTER);
       expect(listed.map((note) => note.createdAt.getTime())).toEqual([
         listed[0]!.createdAt.getTime(),
         listed[0]!.createdAt.getTime(),
@@ -128,13 +133,13 @@ describe("notes handlers", () => {
     it("title が maxLength(100) を超える行があれば throw する", async () => {
       insertRawRow({ title: "あ".repeat(101), body: "", createdAt: Date.now() });
 
-      await expect(handlers.list({ q: "" })).rejects.toThrow(/スキーマ検証に失敗/);
+      await expect(handlers.list(NO_FILTER)).rejects.toThrow(/スキーマ検証に失敗/);
     });
 
     it("title が空の行があれば throw する", async () => {
       insertRawRow({ title: "", body: "", createdAt: Date.now() });
 
-      await expect(handlers.list({ q: "" })).rejects.toThrow(/スキーマ検証に失敗/);
+      await expect(handlers.list(NO_FILTER)).rejects.toThrow(/スキーマ検証に失敗/);
     });
 
     // 読み出しゲートは値を書き換えない。trim して通すと、手書き SQL 由来の未 trim の行が
@@ -142,25 +147,25 @@ describe("notes handlers", () => {
     it("title が trim されていない行があれば throw する", async () => {
       insertRawRow({ title: "  padded  ", body: "", createdAt: Date.now() });
 
-      await expect(handlers.list({ q: "" })).rejects.toThrow(/スキーマ検証に失敗/);
+      await expect(handlers.list(NO_FILTER)).rejects.toThrow(/スキーマ検証に失敗/);
     });
 
     it("id が 1 未満の行があれば throw する (noteIdSchema と同じ制約で読む)", async () => {
       insertRawRow({ id: 0, title: "見出し", body: "", createdAt: Date.now() });
 
-      await expect(handlers.list({ q: "" })).rejects.toThrow(/スキーマ検証に失敗/);
+      await expect(handlers.list(NO_FILTER)).rejects.toThrow(/スキーマ検証に失敗/);
     });
 
     it("失敗した項目の位置を message に含める (どの行のどの項目かを追える)", async () => {
       insertRawRow({ title: "あ".repeat(101), body: "", createdAt: Date.now() });
 
-      await expect(handlers.list({ q: "" })).rejects.toThrow(/0\.title/);
+      await expect(handlers.list(NO_FILTER)).rejects.toThrow(/0\.title/);
     });
 
     it("正常な行だけなら throw しない", async () => {
       insertRawRow({ title: "見出し", body: "本文", createdAt: Date.now() });
 
-      expect(await handlers.list({ q: "" })).toHaveLength(1);
+      expect(await handlers.list(NO_FILTER)).toHaveLength(1);
     });
   });
 
@@ -169,7 +174,7 @@ describe("notes handlers", () => {
       const created = await handlers.create({ title: "見出し", body: "本文" });
 
       expect(created.id).toBeGreaterThan(0);
-      const listed = await handlers.list({ q: "" });
+      const listed = await handlers.list(NO_FILTER);
       expect(listed).toHaveLength(1);
       expect(listed[0]).toMatchObject({ id: created.id, title: "見出し", body: "本文" });
     });
@@ -177,14 +182,14 @@ describe("notes handlers", () => {
     it("createdAt に作成時刻を入れる", async () => {
       await handlers.create({ title: "見出し", body: "" });
 
-      const listed = await handlers.list({ q: "" });
+      const listed = await handlers.list(NO_FILTER);
       expect(listed[0]!.createdAt).toEqual(new Date("2026-08-17T09:00:00.000Z"));
     });
 
     it("空の body をそのまま保存する", async () => {
       await handlers.create({ title: "見出し", body: "" });
 
-      expect((await handlers.list({ q: "" }))[0]!.body).toBe("");
+      expect((await handlers.list(NO_FILTER))[0]!.body).toBe("");
     });
   });
 
@@ -195,7 +200,7 @@ describe("notes handlers", () => {
 
       await handlers.remove({ id: target.id });
 
-      expect((await handlers.list({ q: "" })).map((note) => note.id)).toEqual([survivor.id]);
+      expect((await handlers.list(NO_FILTER)).map((note) => note.id)).toEqual([survivor.id]);
     });
 
     it("存在しない id では throw する (削除 0 件を成功として黙らせない)", async () => {
@@ -218,7 +223,7 @@ describe("notes handlers", () => {
     try {
       await handlers.create({ title: "こちらだけ", body: "" });
 
-      expect(await handlers.list({ q: "" })).toHaveLength(1);
+      expect(await handlers.list(NO_FILTER)).toHaveLength(1);
       expect(await otherHandlers.list({ q: "" })).toHaveLength(0);
     } finally {
       otherDb.$client.close();
