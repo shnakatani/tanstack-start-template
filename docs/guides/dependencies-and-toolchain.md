@@ -4,9 +4,9 @@
 
 | 決定                                                   | ADR      |
 | ------------------------------------------------------ | -------- |
-| 開発ツールチェーンを mise と Vite+ に寄せる            | ADR-0005 |
-| 依存の更新は公開後 3 日待ち、pin には出口条件を付ける  | ADR-0006 |
-| workflow は zizmor で監査し、action は SHA で pin する | ADR-0007 |
+| 開発ツールチェーンを mise と Vite+ に寄せる            | ADR-0007 |
+| 依存の更新は公開後 3 日待ち、pin には出口条件を付ける  | ADR-0008 |
+| workflow は zizmor で監査し、action は SHA で pin する | ADR-0009 |
 
 ## how-to
 
@@ -22,11 +22,11 @@
 
 ### 秘密を足す
 
-秘密が要るようになったら、暗号化した env ファイルと、`dotenvx run --` のような復号の経路を、Vite の env 機構と分けて足す。Vite は既に在る環境変数を `.env` で上書きしないので、復号を先に済ませて `process.env` へ入れる形が噛み合う。Vite の `.env` 読み込みは `envDir: false` で切ってある (ADR-0005)。
+秘密が要るようになったら、暗号化した env ファイルと、`dotenvx run --` のような復号の経路を、Vite の env 機構と分けて足す。Vite は既に在る環境変数を `.env` で上書きしないので、復号を先に済ませて `process.env` へ入れる形が噛み合う。Vite の `.env` 読み込みは `envDir: false` で切ってある (ADR-0007)。
 
 ### Dependabot の alerts を有効にする
 
-テンプレートから作ったリポジトリで、Dependabot の alerts と security updates を有効にする (ADR-0006)。この設定はコードに現れない。
+テンプレートから作ったリポジトリで、Dependabot の alerts と security updates を有効にする (ADR-0008)。この設定はコードに現れない。
 
 ```bash
 gh api -X PUT /repos/<owner>/<repo>/vulnerability-alerts
@@ -35,7 +35,7 @@ gh api -X PUT /repos/<owner>/<repo>/automated-security-fixes
 
 ### 待機を前倒しする
 
-公開後 3 日を待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものかを確かめる (ADR-0006 の決定 3)。
+公開後 3 日を待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものかを確かめる (ADR-0008 の決定 3)。
 
 ```bash
 curl -s https://registry.npmjs.org/<pkg>/<version> | jq '{_npmUser, repository, attestations: .dist.attestations}'
@@ -50,18 +50,18 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 
 ### catalog にエントリを足す
 
-`vite-plus` と core (`vite` の alias 先) のように同一リリースで exact pin される対は、Dependabot のグループへ束ねてある (ADR-0006 の決定 5)。
+`vite-plus` と core (`vite` の alias 先) のように同一リリースで exact pin される対は、Dependabot のグループへ束ねてある (ADR-0008 の決定 5)。
 
 - `pnpm-workspace.yaml` の `catalog:` へエントリを足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` にも足す。逆は成り立たない (`patterns` は catalog に現れない推移依存もグロブで拾う)
 - グループは `minor-and-patch` より前に置く。Dependabot は先に一致したグループを採るので、後ろに置くと major の更新だけが別の PR に落ちる
 
 ### pin を足す
 
-pin には出口条件を書く (ADR-0006 の決定 6)。間接的に pin の圏内へ入るパッケージを見つけたら `ignore` へ足し、同じ出口条件を参照させる。出口条件の文字列を grep すれば、pin の全構成要素が見つかる状態を保つ。
+pin には出口条件を書く (ADR-0008 の決定 6)。間接的に pin の圏内へ入るパッケージを見つけたら `ignore` へ足し、同じ出口条件を参照させる。出口条件の文字列を grep すれば、pin の全構成要素が見つかる状態を保つ。
 
 ### workflow に action を足す
 
-- 新しい action は `@<SHA> # vX.Y.Z` で書く (ADR-0007)。手元で `zizmor --fix=all` を使うと SHA へ書き換わる。SHA 固定は unsafe fix に分類され、既定の `--fix=safe` では書き換わらない
+- 新しい action は `@<SHA> # vX.Y.Z` で書く (ADR-0009)。手元で `zizmor --fix=all` を使うと SHA へ書き換わる。SHA 固定は unsafe fix に分類され、既定の `--fix=safe` では書き換わらない
 - zizmor に新しい audit が入ると、action の更新 PR で既存の workflow が落ちうる。その PR の中で直すか、`.github/zizmor.yml` で理由を書いて無効にする
 
 ### 依存を上げたときに見直すもの
@@ -72,7 +72,7 @@ pin には出口条件を書く (ADR-0006 の決定 6)。間接的に pin の圏
 | oxlint (Vite+ 同梱) の minor 以上 | `docs/guides/lint.md`「上流 recommended の改訂に追随する」                                                                                                                                                            |
 | Base UI                           | `docs/guides/forms-and-inputs.md`「Select の値を解決する」の表                                                                                                                                                        |
 | axe-core                          | `docs/guides/accessibility.md`「axe を上げたとき」                                                                                                                                                                    |
-| vitest                            | assert の予算 (ADR-0042) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている (vitest の issue 9157) |
+| vitest                            | assert の予算 (ADR-0044) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている (vitest の issue 9157) |
 
 ### 走査対象を持つ config を足す
 

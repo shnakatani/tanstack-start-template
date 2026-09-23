@@ -8,7 +8,7 @@ import {
  * `useMutation` の options。`onError` を必須にする。
  *
  * `runAction` は `mutateAsync` の reject を吸収するので、通知は `onError` だけが担う。
- * 省略できる型のままだと、忘れた mutation の失敗が toast も出ずに消える (ADR-0019)。
+ * 省略できる型のままだと、忘れた mutation の失敗が toast も出ずに消える (ADR-0021)。
  */
 export type ActionMutationOptions<
   TData = unknown,
@@ -21,7 +21,7 @@ export type ActionMutationOptions<
 
 /**
  * 戻り値の型から `mutate` / `mutateAsync` を外す。呼び出し側は `runAction` だけを通る
- * (ADR-0019)。
+ * (ADR-0021)。
  * 実行時のオブジェクトは `useMutation` の戻り値そのままで、型だけで経路を絞る。
  */
 export type ActionMutationResult<

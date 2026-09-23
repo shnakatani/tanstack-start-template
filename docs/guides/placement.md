@@ -1,7 +1,7 @@
 # 配置と境界
 
 新しいファイルをどのディレクトリに置くか、route ファイルをどう組むかの手順と落とし穴を持つ。
-ドメインのコードを `src/features/<domain>/` に集めて環境を接尾辞で宣言する決定と、route の property を route ファイルから export しない決定は ADR-0012、コンポーネントを役割で分けて design system の境界をディレクトリで示す決定は ADR-0013 が持つ。
+ドメインのコードを `src/features/<domain>/` に集めて環境を接尾辞で宣言する決定と、route の property を route ファイルから export しない決定は ADR-0014、コンポーネントを役割で分けて design system の境界をディレクトリで示す決定は ADR-0015 が持つ。
 
 ## how-to
 
@@ -23,10 +23,10 @@
 
 ### route ファイルを組む
 
-ADR-0012 の「route の property を export しない」に沿って、次の順で組む。
+ADR-0014 の「route の property を export しない」に沿って、次の順で組む。
 
 1. ページ本体を `-components/` に書き、Route hooks を使わずに props で値を受ける。Route hooks を混ぜると、ページのテストが router 無しで描けなくなる
-2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは ADR-0044 の形で書く
+2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは ADR-0046 の形で書く
 3. loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる
 4. pending 表示は、ページ本体と別のファイルに置く。`pendingComponent` は分割されない property で、それが import する module は eager に読まれる
 5. loader と `validateSearch` とページ本体が共有する定数は `-lib/` に置き、ページ本体の module に置かない (理由は 4 と同じ)
@@ -58,6 +58,6 @@ registry 由来でない付随ファイル (`*.test.*` / `*.stories.*` / `*.test
 
 | 落とし穴                                                         | 起きること                                                                                                 | 避け方                                               |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `vite.config.ts` の `importProtection.client.files` を書き換える | user が `files` を書くと既定を置換する。`"**/*.server.*"` を落とすと既定は戻らず、接尾辞による遮断が消える | 書き換えるときは `"**/*.server.*"` を残す (ADR-0012) |
+| `vite.config.ts` の `importProtection.client.files` を書き換える | user が `files` を書くと既定を置換する。`"**/*.server.*"` を落とすと既定は戻らず、接尾辞による遮断が消える | 書き換えるときは `"**/*.server.*"` を残す (ADR-0014) |
 | `importProtection` に `excludeFiles` を書く                      | 書いた時点で既定の `**/node_modules/**` が消える                                                           | 既定の値も自分で書き足す                             |
-| `src` の外のファイルに Tailwind の utility を書く                | scan の対象が `src` に絞られているので、その utility の CSS は生成されない。気付くのは効かないときだけ     | utility を書くファイルは `src` の中に置く (ADR-0049) |
+| `src` の外のファイルに Tailwind の utility を書く                | scan の対象が `src` に絞られているので、その utility の CSS は生成されない。気付くのは効かないときだけ     | utility を書くファイルは `src` の中に置く (ADR-0051) |

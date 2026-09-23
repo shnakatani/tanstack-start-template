@@ -49,7 +49,7 @@ function AlertDialogExample({ media }: { media?: ReactNode }) {
   );
 }
 
-/** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (ADR-0046) */
+/** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (ADR-0048) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "削除する" }));
   await screen.findByRole("alertdialog");

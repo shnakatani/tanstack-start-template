@@ -9,7 +9,7 @@ import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story
 /**
  * 解決後の値を伴う全トークンを名前順で集める。`styles.css` が SSOT なので値は写さない。
  * Tailwind は theme を `@layer theme` に出すので、`collectRootCustomProperties` は `@layer` を含む
- * グループ規則を再帰的に辿る。全トークンが出力されるのは Storybook の CSS だけ (ADR-0049)。
+ * グループ規則を再帰的に辿る。全トークンが出力されるのは Storybook の CSS だけ (ADR-0051)。
  * light と dark は `@storybook/addon-themes` の class 切り替えで出し分け、読み取り結果は
  * `useSyncExternalStore` で購読する。`key` による remount は play の状態を捨てるので採らない
  */

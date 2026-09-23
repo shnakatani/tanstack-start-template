@@ -235,7 +235,7 @@ describe("noteListFilterSchema", () => {
     });
   });
 
-  // URL の `?q=123` は Router の JSON パースで number になる (ADR-0022)。既定の英語文言を出さない
+  // URL の `?q=123` は Router の JSON パースで number になる (ADR-0024)。既定の英語文言を出さない
   it("文字列以外の q は日本語の文言で落ちる", () => {
     const result = v.safeParse(noteListFilterSchema, { q: 1 });
     expect(result.success).toBe(false);

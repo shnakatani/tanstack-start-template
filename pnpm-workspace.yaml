@@ -15,7 +15,7 @@ allowBuilds:
 # install 時の lockfile 再検証の双方に効き、明示設定のため strict 挙動 (非 TTY では未成熟版が即エラー)。
 # セキュリティ修正の前倒しは vp pm audit --fix が minimumReleaseAgeExclude に自動追記する。
 # .github/dependabot.yml の cooldown (3 日) と揃えている。変更時は両方と .github/zizmor.yml の下限を
-# 更新する。詳細: ADR-0006
+# 更新する。詳細: ADR-0008
 minimumReleaseAge: 4320
 
 # 待機の除外リストから、lockfile がもう解決しないエントリを vp add / update / remove が自動で消す
@@ -25,7 +25,7 @@ minimumReleaseAge: 4320
 # Vite+ がいずれかを直接解決しなくなったら、vp migrate が書いた恒久除外が消えうる
 minimumReleaseAgeExcludePrune: true
 
-# 3 日待機の例外リスト。系統が 2 つある (ADR-0006)。
+# 3 日待機の例外リスト。系統が 2 つある (ADR-0008)。
 #
 # 1. 下記の Vite+ 一族は vp migrate が書き込む恒久除外。Vite+ が exact pin する一族を
 #    待機で隔離すると vp install が壊れるため、上流が意図して名前とグロブで書く。
@@ -72,8 +72,8 @@ catalog:
 # 連鎖する (経路は `vp why eslint` で出る)。peerDependenciesMeta はどれも未宣言だが、それは
 # @typescript-eslint/parser も同じで optional 化が効く条件のほうなので、外れない理由には
 # ならない。使わないのは、外せたとしても utils のルート import が ts-eslint 経由で eslint を
-# 実行時に読み、plugin が落ちるためである (ADR-0010 に実測あり)。
-# 追跡先は typescript-eslint#11939 と oxc-project/oxc#17734 (ADR-0010)
+# 実行時に読み、plugin が落ちるためである (ADR-0012 に実測あり)。
+# 追跡先は typescript-eslint#11939 と oxc-project/oxc#17734 (ADR-0012)
 packageExtensions:
   "@typescript-eslint/parser@^8":
     peerDependenciesMeta:
@@ -95,7 +95,7 @@ peerDependencyRules:
     # 0.x の caret は minor を固定するため、上流がテストしている版が peer を満たさない。
     # 出口条件は上流が peer 範囲を自身の検証対象まで広げること。0.x のあいだは minor が
     # 上がるたびにずれ直しうるので、@vitejs/plugin-react を上げるたびに両者を読み比べる
-    # (dependabot.yml の react-compiler グループが 1 PR に束ねる)。ADR-0016 が経緯を持つ。
+    # (dependabot.yml の react-compiler グループが 1 PR に束ねる)。ADR-0018 が経緯を持つ。
     # キーを親つきの形にして、この緩和が @vitejs/plugin-react の下だけに効くようにする。
     # 値は検証済みの版に絞る。* にすると将来どの組み合わせでも警告が出ず、読み比べの発火点が消える
     "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"

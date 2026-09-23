@@ -4,11 +4,11 @@
 
 | 決定                                                              | ADR      |
 | ----------------------------------------------------------------- | -------- |
-| ドメイン型は valibot スキーマから導出する                         | ADR-0015 |
-| `type="number"` ではなく Base UI の `NumberField` を使う          | ADR-0025 |
-| `fieldComponents` の部品は `fieldValue` prop で値型を突き合わせる | ADR-0026 |
-| Select の値の解決は Base UI の自己リセットに頼らない              | ADR-0027 |
-| placeholder は例示だけを持ち、専用の色トークンを使う              | ADR-0031 |
+| ドメイン型は valibot スキーマから導出する                         | ADR-0017 |
+| `type="number"` ではなく Base UI の `NumberField` を使う          | ADR-0027 |
+| `fieldComponents` の部品は `fieldValue` prop で値型を突き合わせる | ADR-0028 |
+| Select の値の解決は Base UI の自己リセットに頼らない              | ADR-0029 |
+| placeholder は例示だけを持ち、専用の色トークンを使う              | ADR-0033 |
 
 ## how-to
 
@@ -25,12 +25,12 @@
 
 ### 数値の入力欄を組む
 
-`NumberField` を使う (ADR-0025)。`Field` / `FieldLabel` / `FieldError` の構成と見た目は他の入力欄と同じにし、`NumberField.Input` に `render={<Input />}` を渡して registry の `Input` の意匠をそのまま使う。
+`NumberField` を使う (ADR-0027)。`Field` / `FieldLabel` / `FieldError` の構成と見た目は他の入力欄と同じにし、`NumberField.Input` に `render={<Input />}` を渡して registry の `Input` の意匠をそのまま使う。
 テストの取り方は `docs/guides/testing.md`「入力部品を操作する」にある。
 
 ### `fieldComponents` の部品を書く
 
-`fieldValue` prop の決定 (ADR-0026) に沿って、部品ごとに次を守る。実例は `src/components/parts/form-fields.tsx`。
+`fieldValue` prop の決定 (ADR-0028) に沿って、部品ごとに次を守る。実例は `src/components/parts/form-fields.tsx`。
 
 - 部品は `FieldValueTypeCheckProps<T>` を extends する
 - prop の名前は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる
@@ -38,7 +38,7 @@
 
 ### Select の値を解決する
 
-選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない (ADR-0027)。値の解決は消費側で引き取り、次の形にする。実例は `src/components/parts/form-fields.tsx` の `FormSelectField`。
+選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない (ADR-0029)。値の解決は消費側で引き取り、次の形にする。実例は `src/components/parts/form-fields.tsx` の `FormSelectField`。
 
 | 受けたもの                | 扱い                                                       | 守らないと                                                                                             |
 | ------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -67,18 +67,18 @@
 | フッターの手前で、描画が空になる条件分岐がある   | 中間コンテナの外 (分岐によらず常時表示を保つ)           |
 | ヘッダーと本体の間に固定表示の兄弟要素を挟まない | 中間コンテナを省き、`DialogScrollBody` を直接置いてよい |
 
-- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、`dialog-scroll-body.tsx` へ部品を足す (ADR-0028)
+- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、`dialog-scroll-body.tsx` へ部品を足す (ADR-0030)
 - `DialogContent` の padding を変えたら、`DialogScrollBody` の `-mx-6` / `px-6` も変える
 - 組み忘れても、registry の Dialog が持つ backstop (`popupOverflowBackstop`) で Popup ごと流れるので、内容は読める。ただし見出しと X ボタンも流れる
 
 ### 入力欄の周りに要素を置く
 
-- input の上に疑似要素や別の要素を重ねて、hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる。テストでは Playwright の hit-target 検査で click が落ちる (ADR-0039)。registry の `Input` 単体は `src/components/ui/input-pointer.test.tsx` が見る
+- input の上に疑似要素や別の要素を重ねて、hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる。テストでは Playwright の hit-target 検査で click が落ちる (ADR-0041)。registry の `Input` 単体は `src/components/ui/input-pointer.test.tsx` が見る
 - checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`src/components/parts/choice-card.tsx`) を使う。単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置き、グループの外枠は `FieldSet` と `FieldLegend` にする
 
 ### placeholder を足す
 
-placeholder を足すときは、次の 2 つを確かめる (ADR-0031)。
+placeholder を足すときは、次の 2 つを確かめる (ADR-0033)。
 
 1. 例示か。ラベルの代わりでも、書式や条件の説明でもないか
 2. ラベルが名指していない情報を足していないか

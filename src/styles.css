@@ -1,4 +1,4 @@
-/* scan の対象をアプリのソースへ絞る (ADR-0049) */
+/* scan の対象をアプリのソースへ絞る (ADR-0051) */
 @import "tailwindcss" source("../src");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -21,7 +21,7 @@
 
 /* static はここに付けない。付けると本番の CSS が使っていない変数の分まで持つ。
    カタログに要る分は .storybook/preview.css がこのファイルを theme(static) 付きで
-   読み直して掛ける (ADR-0049) */
+   読み直して掛ける (ADR-0051) */
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;
@@ -80,11 +80,11 @@
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
   --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.13 */
-  /* ::placeholder 疑似要素に載る例示テキスト専用 (ADR-0031)。`@theme inline` へ通さず
+  /* ::placeholder 疑似要素に載る例示テキスト専用 (ADR-0033)。`@theme inline` へ通さず
      下の `@utility example-placeholder` だけで露出させる。通すと text-placeholder や
      data-placeholder:text-placeholder まで生成され、select の実テキストへ当てられる。
      そこは WCAG 1.4.3 が掛かり、dark の `--background` へ `--input/30` を重ねた上では割る
-     (`mise run contrast` で測る。ADR-0034)。公式も、utility を生やさない値は
+     (`mise run contrast` で測る。ADR-0036)。公式も、utility を生やさない値は
      @theme でなく :root へ置くとしている (tailwindcss.com/docs/theme) */
   --placeholder: oklch(56% 0.021 213.5); /* mist-500 */
   --accent: oklch(0.963 0.002 197.1);
@@ -127,7 +127,7 @@
   --muted: oklch(0.275 0.011 216.9);
   --muted-foreground: oklch(0.723 0.014 214.4);
   /* --placeholder は light と同値 (mist-500) のため再宣言しない。2 箇所に同じ値を置くと
-     片方だけ動かせてしまい、それを見る検査が無い (ADR-0031)。適用範囲は :root 側の注記 */
+     片方だけ動かせてしまい、それを見る検査が無い (ADR-0033)。適用範囲は :root 側の注記 */
   --accent: oklch(0.275 0.011 216.9);
   --accent-foreground: oklch(0.987 0.002 197.1);
   --destructive: oklch(80.8% 0.114 19.571); /* red-300 */
@@ -151,7 +151,7 @@
   --sidebar-ring: oklch(80.9% 0.105 251.813);
 }
 
-/* 例示の placeholder に色を当てる唯一の口 (ADR-0031)。`--placeholder` を `@theme inline` へ
+/* 例示の placeholder に色を当てる唯一の口 (ADR-0033)。`--placeholder` を `@theme inline` へ
    通していないので、この utility を経由しない限り当てられない。select の data-placeholder は
    実テキストで WCAG 1.4.3 が掛かるため、ここから到達できないことが制約になる。
    入れ子の擬似要素を持つ custom utility は公式の形 (tailwindcss.com/docs/adding-custom-styles

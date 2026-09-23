@@ -22,14 +22,14 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     "await expect.poll(() => rows.all().length).toBe(3);",
     // `expect.poll` の引数はコールバックごと retry される
     'await expect.poll(() => el.element().textContent).toBe("x");',
-    // 束縛して matcher の期待値に使う形は、観測の基準値との比較 (ADR-0043)
+    // 束縛して matcher の期待値に使う形は、観測の基準値との比較 (ADR-0045)
     "const before = getComputedStyle(a.element()).color; await expect.poll(() => getComputedStyle(a.element()).color).toBe(before);",
     'const before = a.element().getAttribute("a"); await expect.element(b).toHaveAttribute("a", before);',
     "const before = a.element().textContent; expect(y).toBe(before);",
     // assert へ届かない同期読み
     "el.element().focus();",
     'const label = el.element().closest("label");',
-    // `vi.waitFor` も retry の口 (ADR-0038)。assert へ直に届く形をここで固定する
+    // `vi.waitFor` も retry の口 (ADR-0040)。assert へ直に届く形をここで固定する
     'vi.waitFor(() => { expect(el.element().textContent).toBe("x"); });',
   ],
   invalid: [
@@ -105,7 +105,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       errors: [{ messageId: "syncRead" }],
     },
     {
-      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (ADR-0041)
+      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (ADR-0043)
       code: "const el = locator.element(); expect(document.activeElement).toBe(el);",
       errors: [{ messageId: "syncRead" }],
     },
@@ -137,7 +137,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       code: "expect(new Set(el.elements()).size).toBe(1);",
       errors: [{ messageId: "syncRead" }],
     },
-    // 変数へ束縛してから渡す形。スコープ解析が外れるとここだけ無言で通る (ADR-0041)
+    // 変数へ束縛してから渡す形。スコープ解析が外れるとここだけ無言で通る (ADR-0043)
     {
       code: "const el = locator.element(); expect(el).toBeTruthy();",
       errors: [{ messageId: "syncRead" }],
@@ -192,7 +192,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       errors: [{ messageId: "syncRead" }],
     },
     {
-      // このリポジトリは `as` を禁じている (ADR-0009) が、抑制付きで入ったときに
+      // このリポジトリは `as` を禁じている (ADR-0011) が、抑制付きで入ったときに
       // 透かせないと報告が無言で消える。WRAPPER_TYPES の TSAsExpression を守る
       code: "expect(locator.query() as Element).not.toBeNull();",
       filename: "a.ts",
@@ -212,7 +212,7 @@ tester.run("no-find-element", noFindElement, {
       errors: [{ messageId: "findElement" }],
     },
     {
-      // timeout を明示しても呼ばない。予算を呼び出しごとに持つ形は 2026-09-22 に撤去した (ADR-0042)
+      // timeout を明示しても呼ばない。予算を呼び出しごとに持つ形は 2026-09-22 に撤去した (ADR-0044)
       code: "await locator.findElement({ timeout: 5000 });",
       errors: [{ messageId: "findElement" }],
     },
@@ -238,7 +238,7 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
     "expect(getComputedStyle(a).width).not.toBe(`${before}px`);",
     // 識別子を含む配列は観測の比較
     "expect(getComputedStyle(a).color).not.toStrictEqual([before]);",
-    // ADR-0043 が推奨する肯定形。src/components/ui/dialog.test.tsx の綴り
+    // ADR-0045 が推奨する肯定形。src/components/ui/dialog.test.tsx の綴り
     "await expect.poll(() => Number.parseFloat(getComputedStyle(x).maxHeight)).toBeGreaterThan(0);",
     // 同じく肯定形。src/components/parts/segmented-radio-group.test.tsx の綴り
     `await expect
@@ -305,7 +305,7 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
       errors: [{ messageId: "negatedStyleLiteral" }],
     },
     {
-      // ADR-0043 が推奨する肯定形を否定へ倒した退行。src の 8 箇所がこの綴り
+      // ADR-0045 が推奨する肯定形を否定へ倒した退行。src の 8 箇所がこの綴り
       code: "await expect.poll(() => Number.parseFloat(getComputedStyle(x).maxHeight)).not.toBe(0);",
       errors: [{ messageId: "negatedStyleLiteral" }],
     },

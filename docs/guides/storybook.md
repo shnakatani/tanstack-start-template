@@ -4,11 +4,11 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 
 | 決定                                                                            | ADR      |
 | ------------------------------------------------------------------------------- | -------- |
-| Storybook は TanStack 専用の framework を使い、telemetry を切る                 | ADR-0045 |
-| story は状態のカタログとし、play は対話的な部品にだけ書く                       | ADR-0046 |
-| play は合成イベントで書き、実イベントの規律と移せない検証はブラウザテストに残す | ADR-0047 |
-| story は部品の隣に置き、registry の部品はすべてカタログ化する                   | ADR-0048 |
-| story の a11y は `error` で回し、テーマごとに project を分ける                  | ADR-0050 |
+| Storybook は TanStack 専用の framework を使い、telemetry を切る                 | ADR-0047 |
+| story は状態のカタログとし、play は対話的な部品にだけ書く                       | ADR-0048 |
+| play は合成イベントで書き、実イベントの規律と移せない検証はブラウザテストに残す | ADR-0049 |
+| story は部品の隣に置き、registry の部品はすべてカタログ化する                   | ADR-0050 |
+| story の a11y は `error` で回し、テーマごとに project を分ける                  | ADR-0052 |
 
 ## how-to
 
@@ -23,22 +23,22 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 
 - variant の網羅を story の数で表さない。代表値を story にし、残りは `argTypes` の control で切り替える。直積で増やすと、カタログが読み通せない長さになる
 - `argTypes` の `options` は `readonly any[]` で、`satisfies Meta<typeof X>` を書いても中身を検査しない。`cva` の variant をリテラルで写すと、variant を足したときに story だけ古くなり、lint も型検査も鳴らない (2026-09-20 実測)。`satisfies Record<Variant, null>` のオブジェクトを出処にして `Object.keys` で渡すと、足した側が型エラーになる
-- 検証専用の story (終了状態が他の story と同じ見た目になるもの) には `tags: ["!dev"]` を付ける (ADR-0046)。ただし同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くので、その部品の状態が 1 つも並ばない事態を避ける。実例は `ActionButtonShell` の `Idle` (`ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)
-- story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。story は `no-restyle` / `require-static-classes` の適用外なので lint は鳴らない。外見を上書きする class は部品側の variant にする (ADR-0028)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る
-- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。vitest から走らせた story には Storybook の `layout: "padded"` が効かず、その差は `.storybook/preview.css` が埋める (ADR-0050)
+- 検証専用の story (終了状態が他の story と同じ見た目になるもの) には `tags: ["!dev"]` を付ける (ADR-0048)。ただし同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くので、その部品の状態が 1 つも並ばない事態を避ける。実例は `ActionButtonShell` の `Idle` (`ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)
+- story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。story は `no-restyle` / `require-static-classes` の適用外なので lint は鳴らない。外見を上書きする class は部品側の variant にする (ADR-0030)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る
+- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。vitest から走らせた story には Storybook の `layout: "padded"` が効かず、その差は `.storybook/preview.css` が埋める (ADR-0052)
 
 ### 自動構成の外を手で置く
 
-TanStack 専用の framework は、router を memory-backed で自動ラップし、server function を自動で stub する (ADR-0045)。次の 2 つは自動構成が届かない。
+TanStack 専用の framework は、router を memory-backed で自動ラップし、server function を自動で stub する (ADR-0047)。次の 2 つは自動構成が届かない。
 
 - TanStack Query は対象外。Query を使う部品の story を書くようになったら、QueryClient を `.storybook/preview.tsx` の構成へ手で置く
 - server-only の依存を引く部品の story を書くようになったら、その依存を `__mocks__` で遮断する
 
 ### play を書く
 
-- play の操作は `storybook/test` の合成イベントで書く (ADR-0047)。play は Storybook の UI 上でも走るので CDP を使えない
-- 待機は `storybook/test` の `waitFor` で書く。ブラウザテストの retry API (ADR-0038) は play から呼べない
-- popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (ADR-0040)
+- play の操作は `storybook/test` の合成イベントで書く (ADR-0049)。play は Storybook の UI 上でも走るので CDP を使えない
+- 待機は `storybook/test` の `waitFor` で書く。ブラウザテストの retry API (ADR-0040) は play から呼べない
+- popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (ADR-0042)
 - Storybook の test 実行では、ブラウザテストの animation の無効化を適用していない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら `vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う
 - `storybook/test` の `expect` は、vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を play へ機械的に写せない箇所がある
 

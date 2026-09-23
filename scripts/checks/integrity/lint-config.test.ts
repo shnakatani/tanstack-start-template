@@ -9,7 +9,7 @@ import { REPO_ROOT } from "../../lib/repo-root";
 
 /**
  * lint の設定が「書いてあるだけ」ではなく解決後も生き残っていることを機械強制する。
- * 有効でないプラグインのルール設定は無診断で捨てられる (oxc-project/oxc#25579、ADR-0008)。
+ * 有効でないプラグインのルール設定は無診断で捨てられる (oxc-project/oxc#25579、ADR-0010)。
  *
  * 突き合わせの相手は `--print-config` の解決後設定にする。ルールが実際に発火することや、
  * categories の格上げで severity が上がることは oxlint 自身の責務なので踏まない。
@@ -47,7 +47,7 @@ const EXPECTED_OVERRIDES = [
     // testing-library の同名 API と誤認して誤検出が出る。`prefer-screen-queries` を allow から
     // 戻すと Storybook の `canvas` が落ちる。`no-node-access` は allow のままにする。
     // deny へ戻しても strict 判定で発火せず、有効に見えて無検査の状態になる
-    // (ADR-0010)
+    // (ADR-0012)
     files: [
       "**/*.stories.ts",
       "**/*.stories.tsx",
@@ -82,7 +82,7 @@ const EXPECTED_OVERRIDES = [
   },
   {
     // 緩和の適用先とルール。適用先を広げると本体コードでも no-unsafe-* が無効になり、ルールを
-    // 増やすとテストコードの型検査がその分だけ緩む (ADR-0009「テストファイルの緩和」)
+    // 増やすとテストコードの型検査がその分だけ緩む (ADR-0011「テストファイルの緩和」)
     files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
     excludeFiles: undefined,
     rules: {
@@ -94,7 +94,7 @@ const EXPECTED_OVERRIDES = [
     },
   },
   {
-    // 層の境界に載せる規則と、その適用外にする層 (ADR-0013 / ADR-0028)。design system の著作側
+    // 層の境界に載せる規則と、その適用外にする層 (ADR-0015 / ADR-0030)。design system の著作側
     // (ui/ action/ parts/) だけを外し、消費側には規則を効かせる。広げると、広げた先の層で
     // className の上書きと動的な className が無診断で通る。.storybook/ も消費側として扱う
     // (decorator が design system component を包む置き場になる)
@@ -103,7 +103,7 @@ const EXPECTED_OVERRIDES = [
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
-    // ブラウザテストの assert を守る自前ルール (ADR-0041 / ADR-0042 / ADR-0043)。
+    // ブラウザテストの assert を守る自前ルール (ADR-0043 / ADR-0044 / ADR-0045)。
     // 適用先と除外の理由は vite.config.ts の同じ override が持つ。
     // 期待値は手書きで持つ。`testHelperGlobs()` を spread すると vite.config.ts と同じ
     // 入力どうしの比較になり、種別が増えても検査が通ってしまう
@@ -119,7 +119,7 @@ const EXPECTED_OVERRIDES = [
   },
   {
     // テスト専用のコードの import 禁止。緩和ではなく適用先を絞った有効化なので、テスト側は
-    // off ではなく excludeFiles で外す (ADR-0011)。付随ファイルぶんは
+    // off ではなく excludeFiles で外す (ADR-0013)。付随ファイルぶんは
     // 下で差し引くので、ここに残るのは src/test/** だけになる
     files: ["src/**", "scripts/**"],
     excludeFiles: ["src/test/**"],
@@ -180,18 +180,18 @@ beforeAll(() => {
 describe("書いた設定が解決後も残っている", () => {
   it("plugins が既定集合を保っている", () => {
     // 既定集合の spread を落とすと typescript / unicorn / oxc が無効になり、rules に書いた
-    // それらの設定が無診断で捨てられる (ADR-0008)。unicorn と jsx-a11y は名指しルールを
+    // それらの設定が無診断で捨てられる (ADR-0010)。unicorn と jsx-a11y は名指しルールを
     // 持たないため、下の突き合わせでは脱落を拾えない。plugins の値でしか見えない
     expect(
       [...printedConfig.plugins].sort(),
-      "plugins が変わった。OXLINT_DEFAULT_PLUGINS の spread を落としていないか (ADR-0008)",
+      "plugins が変わった。OXLINT_DEFAULT_PLUGINS の spread を落としていないか (ADR-0010)",
     ).toEqual([...EXPECTED_PLUGINS].sort());
   });
 
   it("rules に書いたルールが解決後設定に残っている", () => {
     // 無効なプラグインのルールは、ルール名が検証されるにもかかわらず解決後設定から消える。
     // 消えること自体が信号になるので、書いた側との差で名指し単位の取りこぼしを検出する。
-    // jsPlugin のルールは有効でも出力に現れないため対象から外す (oxc#22117、ADR-0009)
+    // jsPlugin のルールは有効でも出力に現れないため対象から外す (oxc#22117、ADR-0011)
     const jsPluginNames = (printedConfig.jsPlugins ?? []).map((plugin) => plugin.name);
     const written = Object.keys(viteConfig.lint?.rules ?? {}).filter(
       (rule) => !jsPluginNames.some((name) => rule.startsWith(`${name}/`)),
@@ -201,13 +201,13 @@ describe("書いた設定が解決後も残っている", () => {
     }
     const printed = new Set(Object.keys(printedConfig.rules));
     const missing = written.filter((rule) => {
-      // extension rule は typescript/ で書いてもコアルールの名前へ解決される (ADR-0008)
+      // extension rule は typescript/ で書いてもコアルールの名前へ解決される (ADR-0010)
       const core = rule.startsWith("typescript/") ? rule.slice("typescript/".length) : rule;
       return !printed.has(rule) && !printed.has(core);
     });
     expect(
       missing,
-      "書いたルールが解決後設定から消えた。plugins から該当プラグインが落ちていないか (ADR-0008)",
+      "書いたルールが解決後設定から消えた。plugins から該当プラグインが落ちていないか (ADR-0010)",
     ).toEqual([]);
   });
 
@@ -243,7 +243,7 @@ describe("書いた設定が解決後も残っている", () => {
         ),
       })),
       "override の適用先かルールか severity が変わった。適用先を広げるとその層で規則が無診断になり、" +
-        "ルールを消すか off にすると規則が無言で外れる (ADR-0029 / ADR-0010 / ADR-0011 / ADR-0013 / ADR-0028)",
+        "ルールを消すか off にすると規則が無言で外れる (ADR-0031 / ADR-0012 / ADR-0013 / ADR-0015 / ADR-0030)",
     ).toEqual(EXPECTED_OVERRIDES);
   });
 
@@ -257,12 +257,12 @@ describe("書いた設定が解決後も残っている", () => {
     expect(
       holders.map(({ files }) => files),
       "付随ファイルの除外が想定外の override に付いた。その override の規則が" +
-        "テストと story で無診断になる (ADR-0011 / ADR-0013 / ADR-0028)",
+        "テストと story で無診断になる (ADR-0013 / ADR-0015 / ADR-0030)",
     ).toEqual([["src/**", "scripts/**"]]);
     expect(
       holders[0]?.excludeFiles?.filter((glob) => COMPANION_GLOBS.has(glob)),
       "付随ファイルの除外が欠けた。その種別のファイルが自分の helper を import できなくなる " +
-        "(ADR-0011)",
+        "(ADR-0013)",
     ).toEqual(companionGlobs("**/"));
   });
 });

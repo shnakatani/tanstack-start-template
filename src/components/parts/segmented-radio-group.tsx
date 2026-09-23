@@ -59,7 +59,7 @@ const SEGMENTED_RADIO_GROUP =
  * 生まれず、flex-1 だけでは文字数ぶんの幅差がそのまま残るため、下限で揃える。
  * 未選択は text-foreground/60 で、トラック上のコントラストは light dark とも AA を満たす。
  * 選択は bg-background + shadow-sm の浮いたつまみで、文字は text-foreground。比は
- * `mise run contrast` で測る (ADR-0034)。
+ * `mise run contrast` で測る (ADR-0036)。
  * hover が選択済みの文字色を奪わないのは、選択時と hover 時がどちらも text-foreground で
  * 同色だからである (異なる色を選ぶと data-checked は :where() 包みで特異度がゼロ加算のため
  * hover に負ける。segmented-radio-group.test.tsx がこれを回帰として固定している)。

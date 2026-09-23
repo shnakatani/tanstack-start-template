@@ -15,7 +15,7 @@ const preview: Preview = {
     }),
   ],
   parameters: {
-    // 違反を警告で留めない。addon はここで violations を見る (ADR-0050)
+    // 違反を警告で留めない。addon はここで violations を見る (ADR-0052)
     a11y: { test: "error" },
     // 狭幅の見え方は story で見る。寸法は機械で見ない。registry の部品の寸法は上流が決め、
     // 消費側が size を変えるのは正当な使い方なので、測ると上流の変更や消費側の変更でテストが

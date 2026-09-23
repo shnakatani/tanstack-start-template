@@ -27,7 +27,7 @@ import { useFieldContext } from "@/hooks/form-context";
  * fieldValue は部品内部では使わず、消費側の field.state.value を受けて値型を突き合わせる
  * ためだけに存在する。useFieldContext のジェネリクスは実フィールドと型で結びつかないため、
  * これが唯一の突き合わせ経路となる (TanStack/form discussion #1240 のメンテナ回答)。
- * 撤去の条件は ADR-0026。
+ * 撤去の条件は ADR-0028。
  */
 interface FieldValueTypeCheckProps<T> {
   fieldValue: T;
@@ -131,7 +131,7 @@ export function FormTextField({
     <Field
       className={fieldClassName}
       // ラベルの destructive 色は registry の Field が `data-[invalid=true]:text-destructive` で
-      // 持ち、FieldLabel はそれを継承する。JS で色を足さない (ADR-0028)
+      // 持ち、FieldLabel はそれを継承する。JS で色を足さない (ADR-0030)
       data-invalid={invalid || undefined}
       data-disabled={disabled || undefined}
     >

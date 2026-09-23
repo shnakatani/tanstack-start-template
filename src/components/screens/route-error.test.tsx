@@ -17,14 +17,14 @@ async function renderError(error: Error, reset: () => void) {
 }
 
 /**
- * screens/ は story のカタログの対象外で、見え方は実画面で見る (ADR-0046)。ここに残すのは
+ * screens/ は story のカタログの対象外で、見え方は実画面で見る (ADR-0048)。ここに残すのは
  * 表示の内容、production での秘匿、再試行の配線、スタックトレースのキーボード開閉で、
  * いずれも寸法や色を測らない。寸法と色は並べた部品が持ち、その部品のテストと story が見る。
  *
  * 長いスタックトレースがパネル内でスクロールすることは `CodeBlock` の `Overflowing` story、
  * 内容が高くてもカードの上端が画面に残ることは `CenteredCard` が持つ挙動で、ここでは
  * 組み合わせているだけ。トリガーの色を本文と分けることは `no-restyle` が守る
- * (ADR-0013 が捕まえた実在の欠陥)。
+ * (ADR-0015 が捕まえた実在の欠陥)。
  */
 describe("RouteErrorContent", () => {
   afterEach(() => vi.unstubAllEnvs());
@@ -48,7 +48,7 @@ describe("RouteErrorContent", () => {
 
     const { screen } = await renderError(error, vi.fn());
 
-    // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (ADR-0043)
+    // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (ADR-0045)
     await expectText(screen, ROUTE_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText("削除対象のノートが見つかりません: id=42"));
     await expectAbsent(screen.getByRole("button", { name: "スタックトレース" }));
@@ -75,7 +75,7 @@ describe("RouteErrorContent", () => {
     await expect
       .element(screen.getByRole("heading", { name: "スタックトレース", level: 3 }))
       .toBeInTheDocument();
-    // 肯定 anchor は直上の見出し。閉じている間は中身が出ない (ADR-0043)
+    // 肯定 anchor は直上の見出し。閉じている間は中身が出ない (ADR-0045)
     await expectAbsent(screen.getByText(/at loader/));
   });
 

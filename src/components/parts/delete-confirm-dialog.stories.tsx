@@ -172,7 +172,7 @@ export const NotCalledTwice: Story = {
 /** payload なしで開かれたら warn して呼ばない */
 export const WithoutPayload: Story = {
   // 終了状態は Opened とほぼ同じ見た目 (payload なしでは説明文が空になるだけ) なので
-  // カタログには出さない (ADR-0046)
+  // カタログには出さない (ADR-0048)
   tags: ["!dev"],
   render: (args) => <WithoutTrigger {...args} />,
   play: async ({ args }) => {

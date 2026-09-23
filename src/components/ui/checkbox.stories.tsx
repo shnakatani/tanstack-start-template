@@ -20,7 +20,7 @@ export const Checked: Story = {
   args: { defaultChecked: true },
 };
 
-/** どちらでもない状態。親が子を部分的に含むときに使う。横棒は ADR-0024 の乖離で足したもの */
+/** どちらでもない状態。親が子を部分的に含むときに使う。横棒は ADR-0026 の乖離で足したもの */
 export const Indeterminate: Story = {
   args: { indeterminate: true },
 };
@@ -37,7 +37,7 @@ export const Invalid: Story = {
 
 /**
  * クリックで選択に移る。状態が変わるところまでを play が持つ。
- * 終了状態は Checked と同じ見た目なのでカタログには出さない (ADR-0046)
+ * 終了状態は Checked と同じ見た目なのでカタログには出さない (ADR-0048)
  */
 export const Toggled: Story = {
   tags: ["!dev"],

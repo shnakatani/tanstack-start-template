@@ -5,10 +5,10 @@ import { render } from "vitest-browser-react";
 import { ActionButton } from "./button";
 
 /**
- * 振る舞いのカタログは `button.stories.tsx` の play が持つ (ADR-0046)。ここに残すのは
+ * 振る舞いのカタログは `button.stories.tsx` の play が持つ (ADR-0048)。ここに残すのは
  * 決着前の二重発火を CDP 経由の実イベントで塞ぐ 1 case だけである。
  *
- * ADR-0047 は「ADR-0039 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま
+ * ADR-0049 は「ADR-0041 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま
  * 持ち、play へは移さない」と決めている。play は Storybook の UI 上でも走るため CDP を
  * 使えず、`storybook/test` の合成イベントで操作する。
  *

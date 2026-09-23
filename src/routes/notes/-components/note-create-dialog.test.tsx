@@ -120,7 +120,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("あ");
     await titleTextbox(screen).fill("");
 
-    // 肯定 anchor。入力が空になった状態を固定してからエラーの不在を見る (ADR-0043)
+    // 肯定 anchor。入力が空になった状態を固定してからエラーの不在を見る (ADR-0045)
     await expect.element(titleTextbox(screen)).toHaveValue("");
     await expectAbsent(screen.getByText(`${NOTE_FIELD_LABELS.title}を入力してください`));
   });
@@ -189,7 +189,7 @@ describe("NoteCreateDialog", () => {
 
     await saveButton(screen).click();
 
-    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0043)
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0045)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする
@@ -197,7 +197,7 @@ describe("NoteCreateDialog", () => {
   });
 
   it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
-    // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0020)。
+    // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0022)。
     // 即 resolve だと応答前の窓が観測できない
     const invalidate = Promise.withResolvers<undefined>();
     const create = deferMock(createNote);
@@ -225,7 +225,7 @@ describe("NoteCreateDialog", () => {
   });
 
   it("保存の開始と完了を announcer が通知する", async () => {
-    // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える (ADR-0032)
+    // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える (ADR-0034)
     const create = deferMock(createNote);
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);
@@ -261,7 +261,7 @@ describe("NoteCreateDialog", () => {
     // handle を複数の対象で共有しないダイアログは、閉じる前に対象を比べられない。pending 中に
     // 閉じて開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の
     // 応答が届いた時点で新しい入力ごと閉じる。pending 中はユーザー起点の close を止める
-    // (ADR-0020 Decision の完了点 (b) の行)
+    // (ADR-0022 Decision の完了点 (b) の行)
     const create = deferMock(createNote);
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);

@@ -1,5 +1,5 @@
 # node と pnpm の版は package.json (devEngines.runtime / packageManager) が持ち、Vite+ が解決する
-# (ADR-0005)。開発者のグローバル mise 設定が node / pnpm を持つと、その PATH が vp の shim を
+# (ADR-0007)。開発者のグローバル mise 設定が node / pnpm を持つと、その PATH が vp の shim を
 # 覆って版が食い違う。ここで無効化すると mise は PATH へ注入しなくなる
 [settings]
 disable_tools = ["node", "pnpm"]
