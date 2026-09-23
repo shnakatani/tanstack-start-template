@@ -35,7 +35,6 @@ Tailwind は既定で、utility から参照されている変数だけを出力
 ## Consequences
 
 - トークンの一覧が `styles.css` から自動で出る
-- `src` の外に置いたファイルに書いた utility は生成されない。気付くのは、その utility が効かないときである
 
 ## 出典
 

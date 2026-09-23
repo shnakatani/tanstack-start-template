@@ -62,9 +62,7 @@ user が `files` を指定すると既定を置換する (同 `plugin.js` の `p
 - route ファイルに置くのは `Route` と、export しない wrapper (`Route.useSearch` 等の Route hooks を吸収する component)。ページ本体は `routes/<path>/-components/` に置いて route ファイルからは export しない。loader は `createFileRoute` の options に直接書く (型が推論される。既定では code-split の対象外なので置き場で chunk は変わらない)。ページ本体のテストは `-components/` から import し、loader は router 経由で検証する
 - 理由は TanStack Router の automatic code splitting の規則「Do not export route properties」。route の property (`component` / `loader` 等) とそれが使うものを route ファイルから export すると main bundle に入り、code-split されない。2026-09-23 に `vp build` で確認: ページ本体と loader を named export する形では `/notes` のコードが main chunk に入り、export しない形では `/notes` の chunk へ移る (差は main の約 3 割)。テストから直接呼ぶためにページ本体を route ファイルの named export に残す形は、この分割を壊す
 - 分割されない property (`pendingComponent` / `loader` / `loaderDeps` / `validateSearch` / `beforeLoad`。既定の `codeSplitGroupings` は `component` / `errorComponent` / `notFoundComponent`) は route ファイルに残る。それらが import する module は eager に読まれるので、遅延側 (ページ本体) と同じ module に置かない。pending 表示はページ本体と別ファイルにし、共有する定数は `-lib/` に置く
-- その URL 配下だけで使うコンポーネントでないモジュール (行の組み立て、列定義、dialog の handle、純粋関数、型) は `routes/<path>/-lib/` に、React hook は `routes/<path>/-hooks/` に置く。テストと fixture は対象と同じディレクトリ。`src/lib/` / `src/hooks/` と同じ線引きを route の中で繰り返す
-- features と route のどちらに置くかは消費者で決める。その route だけが使うなら route 側、複数の画面から使うか、ドメインの形 (schema / mutation) と同じ場所に居るべきものなら `src/features/<domain>/`。画面の描画の形 (一覧の行モデル) は前者、mutation の variables を絞る parser は後者
-- `src/features/<domain>/` 内部の import は相対パスで書く
+- route の中の置き場 (`-components/` / `-lib/` / `-hooks/`) と、features か route かの決め方は `docs/guides/placement.md`「route の中の置き場」「features か route か」にある
 
 ### 検討した選択肢
 
@@ -82,8 +80,7 @@ user が `files` を指定すると既定を置換する (同 `plugin.js` の `p
 - サンプル機能を消すとき、ドメインの本体が `src/features/notes/` と `src/routes/notes/` の 2 ディレクトリに収まる。`src/server/db/schema.ts` や `drizzle/` のように外に残るものは `README.md`「サンプル機能を残すか決める」が持つ
 - `src/server/` は「ドメインに属さないもの」になり、ディレクトリ名が環境を語らなくなる。そのため `importProtection` が client から import できるファイルを除外として説明する必要も無い
 - client-safe なファイルと `.server.ts` が同居する。安全性は同居しないことではなく接尾辞を必ず付けることに依存する
-- `vite.config.ts` の `importProtection.client.files` から `"**/*.server.*"` を落とすと、既定が復活せず接尾辞の遮断が消える。`excludeFiles` も同じで、書いた瞬間に既定の `**/node_modules/**` が消える
-- 横断的な server function を足すときは `src/server/` 直下に置く。ドメイン 1 つに属するかどうかが判断の分かれ目
+- `vite.config.ts` の `importProtection` は user の `files` と `excludeFiles` が既定を置換するので、書き換えると接尾辞の遮断が消えうる (手順は `docs/guides/placement.md`「落とし穴」)
 - 再評価条件: TanStack Start が既定でディレクトリ単位の環境境界を持ったとき。既定の判定材料にディレクトリが入らないという本 ADR の前提が変わる
 
 ## 出典

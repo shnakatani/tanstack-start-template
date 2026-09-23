@@ -7,19 +7,19 @@ paths:
 
 ## コンポーネント配置
 
-| 配置先                       | 内容                                                                                                                                      |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先)                                                                           |
-| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0019)                                                  |
-| `src/components/parts/`      | registry を包んで外見を定義する自作部品。層の規則 (`no-restyle` / `require-static-classes`) の適用外 (ADR-0013 / ADR-0028)                |
-| `src/components/screens/`    | 部品を並べて画面を組む共有コンポーネント。層の規則を適用する (ADR-0013 / ADR-0028)                                                        |
-| `src/components/`            | 上のどれでもないもの。層の規則を適用する (ADR-0013 / ADR-0028)。実例は `live-regions.tsx`                                                 |
-| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント                                                                                            |
-| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される                                                             |
-| `routes/<path>/-lib/`        | その URL 配下だけで使う、コンポーネントでないモジュール (行の組み立て、列定義、dialog の handle、型)。テストは同じディレクトリ (ADR-0021) |
-| `routes/<path>/-hooks/`      | その URL 配下だけで使う React hook (`use-*`)。`src/hooks/` と同じ線引き (ADR-0021)                                                        |
+| 配置先                       | 内容                                                                                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先。ADR-0013)                                                                                                         |
+| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0019)                                                                                          |
+| `src/components/parts/`      | registry を包んで外見を定義する自作部品。層の規則 (`no-restyle` / `require-static-classes`) の適用外 (ADR-0013 / ADR-0028)                                                        |
+| `src/components/screens/`    | 部品を並べて画面を組む共有コンポーネント。層の規則を適用する (ADR-0013 / ADR-0028)                                                                                                |
+| `src/components/`            | 上のどれでもないもの。層の規則を適用する (ADR-0013 / ADR-0028)。実例は `live-regions.tsx`                                                                                         |
+| `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント (ADR-0012)                                                                                                                         |
+| `routes/<path>/-components/` | その URL 配下だけで使うコンポーネント。`-` prefix は routeTree から除外される (`docs/guides/placement.md`「route の中の置き場」)                                                  |
+| `routes/<path>/-lib/`        | その URL 配下だけで使う、コンポーネントでないモジュール (行の組み立て、列定義、dialog の handle、型)。テストは同じディレクトリ (`docs/guides/placement.md`「route の中の置き場」) |
+| `routes/<path>/-hooks/`      | その URL 配下だけで使う React hook (`use-*`)。`src/hooks/` と同じ線引き (`docs/guides/placement.md`「route の中の置き場」)                                                        |
 
-- `routes/<path>/-` で始まるディレクトリの中の import は相対パスで書く
+- `routes/<path>/-` で始まるディレクトリの中の import は相対パスで書く (`docs/guides/placement.md`「route の中の置き場」)
 - `parts/` と `screens/` の取り違えは機械で止まらない。外見を定義するなら `parts/`、既存の部品を並べるだけなら `screens/`。消費者が 1 つでも同じ (ADR-0013)
 - className を書きたいことは `parts/` へ移す理由にならない。層の規則から外れるために移すのは逆 (ADR-0013 / ADR-0028)
 - 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の部品を参照で渡す (ADR-0021)
@@ -42,8 +42,8 @@ paths:
 | `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                                                  |
 | `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)                               |
 
-- `src/features/<domain>/` の中の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)
-- DB と native binding を持つ依存に触るのは、`.server.` を持つファイルとテストと `src/server/db/` の中だけ。client からの import は build (`importProtection`) が止める
+- `src/features/<domain>/` の中の import は相対パスで書く。ディレクトリごと移せる形を保つ (`docs/guides/placement.md`「features か route か」)
+- DB と native binding を持つ依存に触るのは、`.server.` を持つファイルとテストと `src/server/db/` の中だけ。client からの import は build (`importProtection`) が止める (ADR-0012)
 
 ## テストとスクリプトの配置
 
@@ -72,10 +72,10 @@ paths:
 
 ## ルートファイル
 
-- ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。純粋ロジックは `-lib/`、UI は `-components/`、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
-- ページ本体は `-components/` に置き、Route hooks (`Route.useSearch` 等) はルートファイル内の export しない wrapper で吸収して props で渡す。混ぜるとページテストが動かない (実例: `notes-page.tsx`)
+- ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。純粋ロジックは `-lib/`、UI は `-components/`、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す (`docs/guides/placement.md`「features か route か」)
+- ページ本体は `-components/` に置き、Route hooks (`Route.useSearch` 等) はルートファイル内の export しない wrapper で吸収して props で渡す。混ぜるとページテストが動かない (`docs/guides/placement.md`「route ファイルを組む」)
 - Route hooks を使う wrapper は、実 router + `createMemoryHistory` で描いて検証する。tree は root を差し替えて組む (実例: `src/routes/notes/index.test.tsx`、ADR-0044)
-- loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる
+- loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる (`docs/guides/placement.md`「route ファイルを組む」)
 - loader は Query を温めるためだけに呼び、値は `useSuspenseQuery` で読む。`useSuspenseQuery` はキャッシュを読んで更新を購読するので、invalidate で描き直される (TanStack Router「External Data Loading」)
 - route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入る (ADR-0012)
 - 分割されない property (`pendingComponent` / `loader` / `validateSearch` 等) が import する module は eager に読まれる。ページ本体と同じ module に置かず、pending 表示は別ファイル、共有する定数は `-lib/` に置く (ADR-0012)
