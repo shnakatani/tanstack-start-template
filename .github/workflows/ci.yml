@@ -20,17 +20,17 @@ jobs:
     # browser mode は特定の条件で無言でハングする (AGENTS.md)。既定の 6 時間を待たずに切る
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 後続の step は push しない。credential を $RUNNER_TEMP に残さない
+          persist-credentials: false
 
       # Vite+ 公式が案内する 1 ステップ。Node.js・パッケージマネージャ・依存キャッシュを
-      # まとめて用意する (setup-node と pnpm のセットアップは要らない)。
-      # 版は exact で指定する。公式が「Do not use the v1 tag. The v1 tag no longer
-      # receives updates.」と明記しており、追随は dependabot の github-actions に任せる
-      - uses: voidzero-dev/setup-vp@v1.20.0
+      # まとめて用意し、`vp install` まで走らせる (run-install の既定が true)。
+      # setup-node と pnpm のセットアップ、`vp install` の step は要らない
+      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
         with:
           cache: true
-
-      - run: vp install
 
       # playwright は install スクリプトを持たないため chromium は vp install では入らない。
       # 未取得のまま browser project を走らせると実行ファイル不在で落ちる
