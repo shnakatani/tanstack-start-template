@@ -14,7 +14,8 @@ allowBuilds:
 # supply-chain 対策: 公開後 3 日 (4320 分) 未満のバージョンを解決しない。解決時 (vp add / update) と
 # install 時の lockfile 再検証の双方に効き、明示設定のため strict 挙動 (非 TTY では未成熟版が即エラー)。
 # セキュリティ修正の前倒しは vp pm audit --fix が minimumReleaseAgeExclude に自動追記する。
-# .github/dependabot.yml の cooldown (3 日) と揃えている。変更時は両方更新する。詳細: ADR-0005
+# .github/dependabot.yml の cooldown (3 日) と揃えている。変更時は両方と .github/zizmor.yml の下限を
+# 更新する。詳細: ADR-0005
 minimumReleaseAge: 4320
 
 # 待機の除外リストから、lockfile がもう解決しないエントリを vp add / update / remove が自動で消す

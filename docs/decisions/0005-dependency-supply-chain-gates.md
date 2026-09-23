@@ -40,6 +40,8 @@ alerts / security updates / version updates の 3 機能は private リポジト
 
 **2 つの値は対で持つ。片方だけ変えない。** 単位が違う (分と日) ので、変更時は両ファイルの相互参照コメントを辿って揃える。
 
+`.github/zizmor.yml` の `rules.dependabot-cooldown.config.days: 3` は、`cooldown` がこの待機を下回ったら CI を落とす下限である (ADR-0038)。zizmor 1.30.1 の既定は 7 日 (2026-09-23 確認) だが、7 日案は下の「検討した選択肢」で却下しているので、下限を待機に合わせる。待機を変えるときはこの値も揃える。
+
 `minimumReleaseAge` は明示設定すると pnpm が strict 挙動を既定 true にする。
 範囲内に成熟版がないとき未成熟版を黙って解決する fallback が閉じ、非 TTY (CI やエージェントのシェル実行) では即エラーになる。
 

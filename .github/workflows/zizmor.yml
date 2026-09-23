@@ -1,0 +1,33 @@
+name: zizmor
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# advanced-security: false では SARIF を上げないので security-events: write は要らない
+permissions: {}
+
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    # private リポジトリの checkout に要る (zizmor-action の README の例と同じ)
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 指摘があれば job を落とす。Advanced Security へ送る既定のモードは job を落とさず、
+      # merge を止めるには ruleset が要る。private かつ GHAS 無しのリポジトリでは使えない。
+      # zizmor 本体の版は action が digest 付きで固定するので、action の追随に乗る。
+      # 設定は .github/zizmor.yml が持つ
+      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          advanced-security: false
