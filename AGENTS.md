@@ -12,11 +12,18 @@ mise run verify   # vp check → vp test run → vp build → ビルド成果物
 ## 開発上の注意
 
 - コミット前に `vp check --fix` 必須
-- `vp test` を複数並行で走らせない。orphan 化した runner が残ると、後続の実行が collection エラーで巻き添えになる
-- テストの full run が普段の所要を大きく超えたら、完走を待たずに異常として止める。パイプ越しに実行していないか、orphan の runner が残っていないかを確認してから再実行する。切り分けの手順は `.claude/rules/testing.md`「実行」
 - **worktree のパスに `+` を含めない**。vitest browser が URL 上で `+` をスペースと解釈してテストファイルを取得できず、browser mode が無言でハングする。unit と scripts は通るため気付きにくい。Claude Code の `EnterWorktree` は名前のスラッシュを `+` へ変換するので、`/` を含まない名前を渡す
 - ブラウザテスト用の chromium は `vp install` では入らない（`playwright` が install スクリプトを持たない）。`vp exec playwright install chromium --only-shell` で取得する
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
+
+## テストの実行
+
+- `vp test run <path>` で 1 回実行する (`vp test` は watch モード)
+- `vp test` を複数並行で走らせない。orphan の runner が残ると後続が collection エラーで巻き添えになる。kill 後は `ps` で残存を確かめる
+- background で走らせるときはパイプを付けない。buffering で完了まで出力が見えず、ハングと実行中を区別できない
+- full run が普段の所要を大きく超えたら止めて切り分ける。`ps -o pid,etime,time -p <pid>` で CPU 時間が伸びていなければ待っても終わらない
+- worktree では中へ cd してから `vp install` と `vp test run` を打つ。`--root <worktree>` は依存を二重に解決し、collection が全滅する
+- `vp check` がコードを変えずに 2 回続けて結果が割れたら、上流の非決定的な発火 (oxc-project/oxc#21752) を疑う
 
 ## Storybook の skill と tools
 

@@ -2,28 +2,21 @@
 paths:
   - "src/**/*.test.*"
   - "scripts/**/*.test.*"
+  - "src/test/**"
+  - "**/*.test-helpers.*"
 ---
 
 # テストルール
 
-## 冒頭チェックリスト
+## 進め方
 
-- [ ] import は `vite-plus/test` (`vitest` 直接 import 禁止)
-- [ ] worktree では中へ cd してから `vp test run` (要 `vp install`。`--root` は使わない)
-- [ ] TDD: failing test → fail 確認 → 最小実装 → pass 確認
-- [ ] 新規テスト前に同一対象の既存テストを grep
-
-## import
-
-```typescript
-import { describe, it, expect, vi } from "vite-plus/test";
-```
-
-`vitest` から直接 import しない。`vite-plus/test` が re-export している。
+- TDD で進める。failing test を書き `vp test run <path>` で fail を確かめ、最小実装で pass させ、テストを変えずにリファクタする
+- 新規テストの前に、同じ関数・スキーマをテストする既存ファイルを `grep -rn "<name>" src/ scripts/` で探す
+- `describe` / `it` / `expect` / `vi` は `vite-plus/test` から import する。`vitest` を直接 import しない (`vite-plus/test` が re-export する)
 
 ## テストの種別と置き場所
 
-壊れる原因が違うものを同じ project に混ぜない。混ざると、失敗したときに直す対象がアプリなのかスクリプトなのか設定なのか読み取れない。
+壊れる原因が違うものを同じ project に混ぜない。混ざると、失敗したときに直す対象がアプリかスクリプトか設定か読み取れない。
 
 | 種別                   | 壊れる原因                   | 置き場所                                            | 実行                                       |
 | ---------------------- | ---------------------------- | --------------------------------------------------- | ------------------------------------------ |
@@ -35,223 +28,128 @@ import { describe, it, expect, vi } from "vite-plus/test";
 
 スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める。
 
-| 対象                                                                | 置き場所                     | 理由                                                                                                         |
-| ------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`response-headers.ts` / `repo-root.ts`)                               |
-| テストだけが使う fixture                                            | そのテストと同じディレクトリ | 本番の import グラフに入らないものを `scripts/lib/` へ置くと、共有物と見分けが付かない (`git-test-utils.ts`) |
-| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`derive-dev-port.sh` と隣の `.ts`)                                                     |
-| 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読み込まれるだけのファイルが見分けられない (`contrast/report.ts` と `contrast/lib/`)   |
+| 対象                                                                | 置き場所                     | 理由                                                                       |
+| ------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------- |
+| 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`response-headers.ts`)              |
+| テストだけが使う fixture                                            | そのテストと同じディレクトリ | `scripts/lib/` に置くと共有物と見分けが付かない (`git-test-utils.ts`)      |
+| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`derive-dev-port.sh` と隣の `.ts`)                   |
+| 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読まれるだけのファイルが見分けられない (`contrast/`) |
 
-- `src/` 全体へ規範を当てるソース検査は、いま 1 つも無い。新設するときは `scripts/checks/source/` と `checks-source` project を対で作り、判定ロジックは `scripts/lib/` に置いて単体テストを別に持つ。判定と適用を同じファイルに書くと、判定の境界条件を試すために `src/` を壊す必要が出る
-- ソース検査を新設する前に lint で表現できないかを先に見る。class 名や import の規約は lint プラグイン (必要なら `jsPlugins`、ADR-0004) が持つほうが、字面走査より対象の実体に近い
-- 落ちたときに判断が要らない検査は作らない。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す (実例: `lint-config.test.ts` の緩和ルールの drift hint、`registry-baseline.test.ts` の 3-way 判別)
-- 期待値の書き換えしか選択肢が無い検査は、上流更新のたびに鳴って判断を鈍らせる。撤去した先例は ADR-0009
-- 整合検査は「片方を直して片方を忘れた」を捕まえるもので、アプリのコードが 1 行も変わらなくても落ちうる。現在は ADR 索引・lint 設定の解決結果・registry baseline の 3 つ
-- ビルド成果物が要る検査は vitest の project にしない。project は build との順序を持てないので、`mise run verify` と CI の `vp build` のあとに独立した step として並べる
-- その判定ロジックは `scripts/lib/` へ切り出して単体テストを別に持つ。成果物が要るのは実行側だけで、判定は成果物なしで試せる (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
-- 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物を検査した結果が緑になる
-- project を足したら `vitest.config.ts` の `projects` に追加する。include に一致しないテストは収集されず、書いたのに 1 度も走らない状態が無言で成立する
-- 検査は `scripts/checks/` の下へ置く。`scripts-tools` は `scripts/checks/**` を除いた残り全部を拾うので、外へ置いた検査は走らないのではなく `scripts-tools` へ合流する。壊れる原因が混ざり、落ちたときに直す対象が読めなくなる
+- 検査は `scripts/checks/` の下へ置く。外へ置くと `scripts-tools` へ合流し、落ちたときに直す対象が読めなくなる
+- project を足したら `vitest.config.ts` の `projects` に追加する。include に一致しないテストは無言で 1 度も走らない
+- `src/` 全体へ当てるソース検査は、先に lint (必要なら `jsPlugins`) で表せないかを見る。字面走査より対象の実体に近い (ADR-0004)
+- ソース検査を作るなら `scripts/checks/source/` と `checks-source` project を対で作り、判定は `scripts/lib/` に置いて単体テストを別に持つ
+- 落ちたときに判断が要らない検査は作らない。期待値の書き換えしか選択肢が無い検査は上流更新のたびに鳴り、判断を鈍らせる (ADR-0009)
+- ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない
+- 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (`security-headers.ts` / `response-headers.ts`)
+- 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる
 
 ## a11y の検査は tag で分ける
 
-判断の根拠と棄却した選択肢は ADR-0027 が持つ。
+- `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tagsFilter a11y` (ADR-0027)
+- tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tagsFilter a11y` は story を走らせない (ADR-0027)
+- tag の定義は `vitest.browser.config.ts` の `test.tags`。定義に無い tag はエラーで落ちる (ADR-0027)
+- 挙動テストの途中の状態を測る `expectNoA11yViolations` には tag を付けない。専用テストへ降ろすと操作の再現が重複する (ADR-0027)
 
-- `axe` を回して「アクセシブルか」を問うテストは `it(名前, { tags: ["a11y"] }, ...)` を付ける。単独実行は `vp test run --tagsFilter a11y`、除外は `--tagsFilter '!a11y'`
-- tag が効くのは browser project だけ。story 側の a11y は `addon-a11y` が全 story へ一律に当てる仕組みで、Storybook が生成するテストは vitest tag を持たない。`--tagsFilter a11y` は story を 1 件も走らせない
-- 専用の project を足さない。分けたいのは関心と単独実行で、runner の設定は挙動テストと同じ。project を足すとそのぶん描画が増える (vitest 公式 test-tags の "When to reach for tags")
-- tag の定義は `vitest.browser.config.ts` の `test.tags`。`strictTags` が既定で有効なので、定義に無い tag を書くとエラーで落ちる
-- 挙動テストの途中の状態を測る `expectNoA11yViolations` には tag を付けない。その状態は操作の途中にしか無く、専用テストへ降ろすと操作の再現が重複する。`--tagsFilter '!a11y'` でも走る
+## 境界値
 
-## 実行
-
-- `vp test run <path>` で 1 回実行 (`vp test` は watch モード)
-- `vp test` を**複数並行で走らせない**。orphan 化した runner が残ると後続実行が collection エラーで巻き添えになる。kill 後は `ps` で実プロセスの残存を確認してから再実行する
-- background 実行するときは grep 等の**パイプを付けない**。生出力で流し、途中経過は出力ファイルを Read する。パイプの buffering で完了まで出力が見えず、ハングと実行中を区別できなくなる
-- 所要時間が普段の full run を大きく超えたら、完走を待たずに止めて切り分ける
-- 進行の判定は経過時間と CPU 時間で行う (`ps -o pid,etime,time -p <pid>`)。CPU 時間が経過時間に対して伸びていなければ待っても終わらない
-- `vp check` が同一コミットで乱数的に落ちることがある。`typescript/no-unnecessary-type-assertion` が非決定的に発火する上流バグで、`--threads=1` でも再現する (oxc-project/oxc#21752)。コードを変えずに 2 回続けて結果が割れたらこれを疑う
-
-## worktree でのテスト実行
-
-worktree (`.claude/worktrees/**`) では `vp install` 済みを前提に、worktree の中へ cd してから実行する:
-
-```bash
-cd <worktree絶対パス> && vp install             # 初回のみ
-cd <worktree絶対パス> && vp test run <path>     # unit / browser とも可
-```
-
-- `vp test run --root <worktree>` は**使わない**。worktree に node_modules が存在すると runner (main 側) とテスト依存 (worktree 側) の二重解決になり、collection が `Cannot read properties of undefined (reading 'config')` で全滅する
-
-## TDD サイクル
-
-1. failing test を書く
-2. `vp test run <path>` で fail 確認
-3. 最小実装で pass させる
-4. `vp test run <path>` で pass 確認
-5. リファクタ (テスト不変)
-
-## 着手前の確認
-
-新規テスト追加前に、同じ関数・スキーマをテストする既存ファイルがないか grep:
-
-```bash
-grep -rn "<functionName>" src/ scripts/
-```
-
-## 境界値テストは数式コメント先行
-
-```ts
-// 900 + 200 = 1100 → slice(-1000) で先頭 100 件破棄
-expect(result[0]).toBe(existing[100]);
-```
-
-cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
+- 境界値テストは期待値の数式をコメントで先に書く (例: `// 900 + 200 = 1100 → slice(-1000) で先頭 100 件破棄`)
+- cap の境界値は `cap-1 / cap / cap+1` の 3 点で見る
 
 ## 状態のアサートは semantic matcher を先に探す
 
-発火: `toHaveAttribute` か `querySelector` を書こうとした時。Storybook 公式が採る Testing Library の query 優先順位と同じ理由で、ユーザーから見た状態を見るアサートを先に置く。
+`toHaveAttribute` か `querySelector` を書く前に下表を見る。Testing Library の query 優先順位と同じく、ユーザーから見た状態を先に見る。
 
-| 見たいもの                                    | 使うもの                           |
-| --------------------------------------------- | ---------------------------------- |
-| 検証エラー (`aria-invalid` / `checkValidity`) | `toBeInvalid()`                    |
-| 選択状態 (`aria-checked` / native checked)    | `toBeChecked()`                    |
-| native `disabled`                             | `toBeDisabled()` / `toBeEnabled()` |
-| `aria-describedby` が指す文言                 | `toHaveAccessibleDescription()`    |
-| accessible name                               | `toHaveAccessibleName()`           |
+| 見たいもの                                    | 使うもの                                                                                                                                 |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 検証エラー (`aria-invalid` / `checkValidity`) | `toBeInvalid()`                                                                                                                          |
+| 選択状態 (`aria-checked` / native checked)    | `toBeChecked()`                                                                                                                          |
+| native `disabled`                             | `toBeDisabled()` / `toBeEnabled()`                                                                                                       |
+| `aria-disabled` と Base UI の `Checkbox`      | `toHaveAttribute("aria-disabled", "true")`。Checkbox の native `disabled` は a11y tree に出ない隠し input が持つ (Base UI Checkbox docs) |
+| `aria-describedby` が指す文言                 | `toHaveAccessibleDescription()`                                                                                                          |
+| accessible name                               | `toHaveAccessibleName()`                                                                                                                 |
 
-- `aria-disabled` に相当する matcher は無い。`toBeDisabled` は `aria-disabled` を見ないので、`toHaveAttribute("aria-disabled", "true")` で見る
-- `aria-busy` も相当が無い。`getByRole(..., { busy: true })` で絞るか属性で見る
-- Base UI の styling hook (`data-checked` / `data-invalid` / `data-disabled` 等) は見た目を駆動する属性そのものなので属性で見てよい。ARIA 側と重ねて見るときは、別々に付くことをコメントで残す
-- `querySelector` で要素を掴むのは、accessibility tree に差が出ない対象に限る。掴む理由を実装近傍に書く。書けないならそのアサートは消す
-- 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (実例: `ActionButtonShell` は `aria-labelledby` で名前を固定するため、Spinner の `aria-hidden` を外しても `toHaveAccessibleName` は落ちない)
+- `aria-busy` に相当する matcher は無い。`getByRole(..., { busy: true })` で絞るか属性で見る
+- Base UI の styling hook (`data-checked` 等) は見た目を駆動する属性なので属性で見てよい。ARIA 側と重ねるときは別々に付くことをコメントに残す
+- `querySelector` で掴むのは accessibility tree に差が出ない対象に限り、理由を実装近傍に書く。書けないならそのアサートは消す
+- 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (`ActionButtonShell` の `toHaveAccessibleName`)
 
 ## assertion helper と型ナローイング
 
-- assertion を実行するテストヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` のパターンと、`vite.config.ts` に名指しした関数だけ。命名を外すとヘルパーだけを呼ぶテストが落ちる (ADR-0004)
-- 上の対象はテスト本文に現れる呼び出し名だけで、内部クロージャは含まない。値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
-- ヘルパーが受け取る引数の前提検査は型ナローイングと分けて `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガードで、`expect*` 命名の縛りも要らない
-- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は戻り値が `void` で型を絞らない (vitest-dev/vitest#8695)
-- 条件分岐で assertion を囲まない。`if` 内の `expect` は `vitest/no-conditional-expect` が報告する (ADR-0004)
-- announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読む (region 不在は throw)。region は `src/test/browser-setup.tsx` が毎テスト描くので、各テストの描画には足さない (ADR-0017)
+- assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と名指しした関数だけ (ADR-0004)
+- 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
+- ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
+- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest-dev/vitest#8695)
+- announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読む。region は `browser-setup.tsx` が毎テスト描く (ADR-0017)
 
 ## mock の注意点
 
 - `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する
-- `vi.stubEnv` 使用時は `afterEach(() => vi.unstubAllEnvs())`
-- **`vi.mock()` の factory 内では chained なモックメソッドを使わない**。返り値は `vi.fn(() => Promise.resolve(x))` の形で書く (factory の外の `vi.mocked(fn).mockResolvedValue(x)` は正常)
-- factory は巻き上げられるため、`vi.fn().mockResolvedValue(x)` は browser mode でだけ mocking エラーになる。非ブラウザテストでは通るので気付きにくい
-- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。実値だと verify の負荷で打鍵の間隔に負けて途中の取得が混ざる。広げる定数は literal 型に固めない (ADR-0036)
+- `vi.stubEnv` を使ったら `afterEach(() => vi.unstubAllEnvs())`
+- `vi.mock()` の factory 内では `vi.fn(() => Promise.resolve(x))` の形で書く。`vi.fn().mockResolvedValue(x)` は巻き上げで browser mode でだけ落ちる
+- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない (ADR-0036)
+
+## optimistic update は決着を握って観測する
+
+- optimistic state は `src/test/defer-mock.ts` の `deferMock` で決着を握って観測する。`mockRejectedValue` は即 reject して中間状態が見えない
+- assertion の順序は、optimistic state の確認 → `reject()` → ロールバックの確認
 
 ## テスト環境制約に遭遇したら
 
 1. 代替手段を検討する
 2. 実行環境で条件分岐できるなら `skipIf` を使う
-3. 恒久的に無効化するなら、理由付きの `oxlint-disable-next-line vitest/no-disabled-tests` を `it.skip` の直前に置く。`it.todo` も `vitest/warn-todo` の理由付き抑制が要る
-4. 完全削除する場合はコミットメッセージに未テスト範囲を記載する
+3. 恒久的に無効化するなら、`it.skip` の直前に理由付きの `oxlint-disable-next-line vitest/no-disabled-tests` を置く (`it.todo` は `vitest/warn-todo`)
+4. 完全に削除するなら、コミットメッセージに未テスト範囲を書く
 
 ## クリックの発火方法
 
-手段は場面で決める。1 が弾かれたら Playwright のエラー文言が示す条件を確かめ、それに対応する行へ移る。通るまで手段を替える順序ではない。テストが通るように手段を下げると、実物では起きない事象を固定する (ADR-0015)。
+手段は場面で決める。1 が弾かれたら Playwright のエラー文言が示す条件を読み、対応する行へ移る。通るまで手段を替えると実物で起きない事象を固定する (ADR-0015)。
 
-| 順  | 場面                                                  | 使うもの                                                                                                                         |
-| --- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | 既定                                                  | `.click()`                                                                                                                       |
-| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し (直前の実クリックで乗っているならそのまま) `userEvent.keyboard("{Enter}")` (ADR-0015) |
-| 3   | Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が無いことを先に確かめる (ADR-0015)                                     |
-| -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。合成イベントを対象へ直接送ってライブラリ内部のガードまで見に行かない (ADR-0015)               |
-| -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きず、固定すると実装に無用の防御を要求する                     |
+| 順  | 場面                                                  | 使うもの                                                                                     |
+| --- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 1   | 既定                                                  | `.click()`                                                                                   |
+| 2   | Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し `userEvent.keyboard("{Enter}")` (ADR-0015)        |
+| 3   | Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が無いことを先に確かめる (ADR-0015) |
+| -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。ライブラリ内部のガードまで見に行かない (ADR-0015)         |
+| -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きない (ADR-0015)          |
 
-`.click()` は visible / enabled / stable を待ってから、viewport 内の座標と hit-target を確かめる (`playwright-core` の `_performPointerAction`)。弾かれる典型は次のとおり。
-
-| 条件               | 落ちる例                                                                                                                                      |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| enabled            | native `disabled`、`aria-disabled="true"`                                                                                                     |
-| stable             | 開閉アニメーションの途中。既定 (ADR-0018) では 0.01ms で終わる。animation を戻したテストでは settled 状態を `expect.element` で待ってから押す |
-| visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                                              |
-| hit-target         | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                                                       |
-
-- **どの条件で落ちたかは Playwright のエラー文言に出る。** 推測で切り替えず、文言を読んでから選ぶ
-- `click({ force: true })` は上の 5 条件をまとめて飛ばす。animation を戻したテストでは、スライドイン途中だと "Element is outside of the viewport" で落ちる
-- **`force: true` は actionability の検査だけを飛ばし、ブラウザのヒットテストは越えない。** 対象が `pointer-events: none` ならイベントは下の要素へ落ち、対象のハンドラは呼ばれない。「押しても何も起きない」をこの形で書くと、`pointer-events` から導かれるだけの assert になる (ADR-0015)
+- `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (ADR-0015)
 - 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (ADR-0015)
+- `sr-only` のテキストは 1px + clip で viewport 判定に落ちる。`getByRole(..., { name })` で本体を掴む
 
 ## locator の扱い
 
-- 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (ADR-0029)
-- locator に対応する matcher が無い実測 (rect / computed style / `matches()`) は `expect.poll` のコールバックの中で読む。比較の基準値を 1 回だけ読むときは、先に `expect.element` で mount を待つ (ADR-0013 / ADR-0029)
-- 機械強制は `browser-test/prefer-locator-methods`。`vp lint` / `vp check` で走る。grep は束縛を挟む形を取りこぼすので、件数はこのルールで数える (ADR-0029)
-- assert の予算は `vitest.browser.config.ts` が `expect.poll.timeout` と `actionTimeout` の対で宣言する。片方だけにすると残り予算か vitest の既定へ戻る (ADR-0030)
-- 予算の値は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` が持つ。上げるときはここを変える。config へ直接書くと helper 側の閾値が追随しない (ADR-0030)
-- **`testTimeout` は動かさない。** 締めるのは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も縮み、遅い環境で緑のテストが落ちる (ADR-0030)
-- 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く。要素が無ければ 1 回目で通るので、単独では何も検証していない (ADR-0031)
-- 要素が在る状態から消えるのを待つときは `src/test/absent.ts` の `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は `browser-test/no-bare-absence-assertion` が止める (ADR-0031)
-- `toHaveLength` も一致ゼロで通るので、`expectAbsent` と同じく描画を待つ肯定 assert を先に置く。ほかの否定 matcher は要素が引けない間 retry するので要らない (ADR-0031)
-- 2 つの helper は落ちる向きが違う。`expectAbsent` は「いま在る」で落ち、`expectRemoved` はその向きに落ちない。予算を揃えると前者の反証条件が消える (ADR-0031)
-- locator は複数一致で throw する (vitest の locators docs「strict and throw if multiple elements match」)。`expect.element` は retry のたびに引き直すので「1 件だけ」を assert の前提に使える。使うなら依拠を実装近傍に書く。書かないと前提ごと消される
+同期読みを `expect()` へ渡す形、`findElement()`、素の不在 assert、リテラルとの否定スタイル比較は lint (`browser-test/*`) が止める。
+
+- matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` の中で読む。基準値を 1 回だけ読むときは先に `expect.element` で mount を待つ (ADR-0029)
+- 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件は `vi.waitFor` (ADR-0013)
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0029)
-- 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件 (mock の呼び出し回数など) は `vi.waitFor` (ADR-0013)
-- `expect.poll` と `vi.waitFor` はコールバックを retry するので、中の同期読みはルールの対象外。`expect.element` は引数の式を 1 度しか評価せず、同期読みを渡すとその値のまま retry する (ADR-0029)
-- 同期読み由来の値は、関数の引数・演算・テンプレート・`await`・1 段の束縛を通っても `expect()` / `assert` に届けば報告される。連鎖を束縛して matcher の期待値に使う形 (操作前の基準値) は報告しない。観測どうしの比較は綴りで潰れない (ADR-0029 / ADR-0031)
+- assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない (ADR-0030)
+- `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる (ADR-0030)
+- 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (ADR-0031)
+- 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/absent.ts`)。`expectAbsent` と取り違えない (ADR-0031)
+- `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (ADR-0031)
+- locator は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される
 
 ## ブラウザテストの CSS とレイアウト実測
 
-ブラウザテストでは Tailwind が実 CSS に解決される (`vitest.browser.config.ts` の `@tailwindcss/vite` と、`test.setupFiles` の `src/test/browser-setup.tsx` による `src/styles.css` の import)。
-`getBoundingClientRect` / `getComputedStyle` によるレイアウト検証が書けるので、**レイアウト回帰は className の `toContain` ではなく実挙動で守る**。
+ブラウザテストでは Tailwind が実 CSS に解決される。レイアウト回帰は className の `toContain` ではなく、実測で守る。
 
-- viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変更したら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
-- 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。公式の `toBeInViewport({ ratio: 1 })` は収まっていても落ちる実行がある。一部が見えることは公式の `toBeInViewport()` でよい (ADR-0032)
-- 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` に明示してあり、`DEFAULT_VIEWPORT` と一致させて管理する
-- 単一プロパティを文字列リテラルと比べるだけなら `await expect.element(x).toHaveStyle("prop: value")` を使う。**文字列形式で、複数プロパティは `;` で 1 つにまとめる。** オブジェクト形式は失敗しても差分が出ない。分けて書くと予算を個別に使い、同時に成立しない状態も通る (ADR-0031)
-- **1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。** jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える (ADR-0031)
-- **スタイルを否定で確かめない。** `not.toHaveStyle` も算出値との `not.toBe` も、綴りや単位が 1 つ外れると潰れた状態のまま通る (ADR-0031)
-- 肯定形は主張で選ぶ。「描かれている」なら 1 回の観測から数値を出して `toBeGreaterThan(0)`、当たっている token が分かっているなら `src/test/resolve-color-token.ts` の `resolveColorToken()` の値と比べる (ADR-0031)
-- 機械強制は `browser-test/no-negated-style-literal`。`not.toHaveStyle` は形を問わず (宣言名は常に字面)、値の matcher は期待値がリテラルのときだけ報告する (ADR-0031)
-- `getComputedStyle` を `expect.poll` で読む主張は、2 回の観測の比較・数値の大小・擬似要素の 3 つ。`toHaveStyle` がこの 3 つを表せない (ADR-0031)
-- `locator.findElement()` を呼ばない。`browser-test/no-find-element` が止める。`actionTimeout` を置いた config では待ち時間が上限なしになり、`Test timed out` で落ちて locator 名が出力から消える (ADR-0030)
-- `element()` は retry せず、mount が間に合わないと落ちる。`render()` は `act` で flush するため、操作前から在る要素は `element()` でよい (ADR-0013)
-- animation は `src/test/browser-setup.tsx` が毎テスト止める (Base UI のフラグ + `prefers-reduced-motion: reduce`)。窓を検証するテストだけ冒頭で `src/test/animations.ts` の `enableAnimations()` を await する (ADR-0018)
-- transition の後に「変化しないこと」を見る assert は、途中値の前に通る。既定の reduced motion で settled 状態を読むので待つ helper は置かない。animation を戻したテストでは変化する側の値を先に待つ (ADR-0018)
-- Dialog / Popover / Sheet の close 後に消えたことは `await expectRemoved(locator)` で待つ (ADR-0013 / ADR-0031)。animation を戻したテストでは `animate-out` 完了後に消える
-- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。閉じかけの popup の focus guard と見出しが axe の incomplete に出る (ADR-0018)
-- `sr-only` のテキストノードは 1px + clip されるため Playwright の viewport 判定に落ちる。`getByRole(..., { name })` でボタン本体を掴む
-- flex column の中に「溢れるコンテンツ」をテスト用に作るときは `height` ではなく `minHeight` を使う (flex item は既定で縮むため `height` では溢れない)
-- hover 由来の配色との交絡は `src/test/park-mouse.ts` が `browser-setup.tsx` の `beforeEach` で断つ。マウス位置を動かすテストは自分で戻す。戻すのは overlay が閉じる前。露出した要素の hover と transition を axe が測ると色の実測が揺れる (ADR-0018)
-- ブラウザテストのモジュール最上位で描画や算出値 (`getComputedStyle` / `resolveColorToken` / `matchMedia`) を読まない。`beforeEach` より前に走り、前ファイルの emulation が残った状態を読む (ADR-0018)
-
-## synthetic KeyboardEvent は `code` プロパティ必須
-
-一部のライブラリは `event.code` (物理キー) で判定し、`key` だけ渡すと発火しない:
-
-```typescript
-// NG: code がない場合、code ベースの判定を行うライブラリでは発火しない
-document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-
-// OK
-document.dispatchEvent(
-  new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }),
-);
-```
-
-synthetic event を書く前に `grep -n "<eventName>" node_modules/<lib>/dist/*.js` で matching 条件を確認する。
-
-## optimistic update テストは遅延 rejection で中間状態を観測
-
-`mockRejectedValue` は microtask で即 reject するため、optimistic state が一瞬で消えて assertion が通らない。決着の時点は `src/test/defer-mock.ts` の `deferMock` でテスト本文が握る (`setTimeout` で遅らせる形は待ち時間の分だけ遅く、実行環境で揺れる):
-
-```typescript
-// NG: 即 reject → optimistic state を観測不能
-vi.mocked(updateFn).mockRejectedValue(new Error("fail"));
-
-// OK: 未決着の Promise に差し替え、中間状態を検証してから reject する
-const update = deferMock(updateFn);
-// ... optimistic state の assertion ...
-update.reject(new Error("fail"));
-```
-
-テストの assertion 順序: optimistic state 確認 → reject 後のロールバック確認。
+- viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変えたら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
+- 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない (ADR-0032)
+- 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる
+- スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (ADR-0031)
+- 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (ADR-0031)
+- スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (ADR-0031)
+- `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素の 3 つだけ (ADR-0031)
+- 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (ADR-0013)
+- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を await する (ADR-0018)
+- animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (ADR-0018)
+- popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (ADR-0018)
+- 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない
+- マウス位置を動かすテストは、overlay が閉じる前に自分で戻す。hover の配色が色の実測を揺らす (ADR-0018)
+- モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、前ファイルの emulation を読む (ADR-0018)
 
 ## ブラウザ操作ツールの使い分け
 
-見た目の確認は claude-in-chrome、`mousedown` / `mousemove` / `mouseup` の間隔に依存する操作の検証は playwright-cli を使う。
-claude-in-chrome は 1 操作を 1 ツール呼び出しで送るため、押下から移動までの間隔を制御できず、長押し判定やドラッグ開始のしきい値を狙って踏めない。
+見た目の確認は claude-in-chrome、`mousedown` / `mousemove` / `mouseup` の間隔に依存する操作 (長押し、ドラッグ開始) は playwright-cli で検証する。claude-in-chrome は操作の間隔を制御できない。
