@@ -11,7 +11,10 @@ mise run verify   # vp check → vp test run → vp build → ビルド成果物
 
 ## 開発上の注意
 
-- コミット前に `vp check --fix` 必須
+- 実装中は 1 ファイル目を `vp check --fix` まで通してから横展開する。コミット前にも `vp check --fix` を通し、出た整形差分は `git restore` で捨てずにコミットする
+- マージ前は `mise run verify` を通す。verify の `vp check` は書き換えずに落とすので、整形差分を残したまま回すとそこで止まる
+- パッケージは `vp add` / `vp rm` で操作し、pnpm / npm / yarn を直接打たない (lockfile の解決が Vite+ の管理から外れる)。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`
+- Vitest / Oxlint / Oxfmt を直接 install しない。Vite+ が内包する
 - **worktree のパスに `+` を含めない**。vitest browser が URL 上で `+` をスペースと解釈してテストファイルを取得できず、browser mode が無言でハングする。unit と scripts は通るため気付きにくい。Claude Code の `EnterWorktree` は名前のスラッシュを `+` へ変換するので、`/` を含まない名前を渡す
 - ブラウザテスト用の chromium は `vp install` では入らない（`playwright` が install スクリプトを持たない）。`vp exec playwright install chromium --only-shell` で取得する
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
