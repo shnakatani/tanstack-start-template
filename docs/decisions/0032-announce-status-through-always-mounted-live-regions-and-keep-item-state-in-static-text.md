@@ -8,10 +8,10 @@
 
 pending 中の状態をスクリーンリーダーへ伝えるために、条件付きで mount される live region を 2 箇所で使っていた。
 
-| 場所                                                      | 形                                                                                                                        |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `src/components/action/button.tsx` の `ActionButtonShell` | pending 中だけ `Spinner` (`role="status"` + `aria-label`) をボタンの子として描画する (ADR-0019「Action 層」の pending 行) |
-| `src/routes/notes/index.tsx` の削除中の行と保存中の行     | 行の中に `<output>` (暗黙ロール status) で「削除中」「保存中」を置く (ADR-0020 の適用表に付けた 1 文)                     |
+| 場所                                                      | 形                                                                                                           |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `src/components/action/button.tsx` の `ActionButtonShell` | pending 中だけ `Spinner` (`role="status"` + `aria-label`) をボタンの子として描画する (ADR-0019「Action 層」) |
+| `src/routes/notes/index.tsx` の削除中の行と保存中の行     | 行の中に `<output>` (暗黙ロール status) で「削除中」「保存中」を置く (ADR-0020 の適用表に付けた 1 文)        |
 
 どちらも live region が内容ごと DOM に現れ、内容ごと消える。公式資料と先行例はこの形を避けるよう言っている。
 
@@ -57,7 +57,7 @@ pending 中の状態をスクリーンリーダーへ伝えるために、条件
 
 ## Consequences
 
-- ADR-0019「Action 層」の pending 行は「`Spinner` は視覚専用。状態は `aria-busy` と announcer」とする。同 ADR と `src/components/action/button.tsx` の子孫 role の表現は §5.2.9 の主語 (ユーザーエージェントが露出すべきでない) に揃える。ADR-0020 の行の busy 表現の読み上げは本 ADR を参照する
+- `docs/guides/updates-and-data.md`「Action 層の部品が守る契約」の pending 行は「`Spinner` は視覚専用。状態は `aria-busy` と announcer」とする。ガイドと `src/components/action/button.tsx` の子孫 role の表現は §5.2.9 の主語 (ユーザーエージェントが露出すべきでない) に揃える。ADR-0020 の行の busy 表現の読み上げは本 ADR を参照する
 - テストは `getByRole("status", { name })` で項目の pending を掴まず、`aria-busy` と announcer の region のテキストで検証する
 - issue #21 (button 内の `role="status"` の露出) の対処は本 ADR で行う。実機のスクリーンリーダー (VoiceOver / NVDA) での読み上げ確認は #21 に残し、結果を本 ADR に日付付きで追記する
 - 削除完了で行ごと unmount されるとき、行のトリガーにあったフォーカスが body へ落ちる。本 ADR は完了の announce で通知は補うが、フォーカスの退避先は別途決める (起票)

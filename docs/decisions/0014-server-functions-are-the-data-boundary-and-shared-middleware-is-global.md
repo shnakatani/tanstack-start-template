@@ -81,10 +81,8 @@ console.log(context.probeUser.uid);
 - global function middleware が context へ足した値は、`.middleware()` を書かない server function からも型付きで読める (上記「実測」)
 - 未ログインで保護画面を開いたときのリダイレクトは `beforeLoad` に書いてよい。ただしそれを唯一の防御にしない
 - CSRF の現在の置き方 (global `requestMiddleware` + `filter`) は本 ADR の形と一致する。変更しない
-- 認可の middleware を足すとき、認証は既に global で通っている。認証への依存を明示したいなら `.middleware([authMiddleware])` で chain する
+- 認可の middleware と、その付け忘れを lint で止めるときの適用範囲は `docs/guides/updates-and-data.md`「認可を足す」にある
 - 認可の付け忘れを止める機械強制は持たない。base builder を置くまではレビューで見る
-- lint で直接 import を禁じるなら、適用範囲は `src` 全体 (`.ts` と `.tsx` の両方) にする。server function は route ファイルでも宣言できるので、server function のディレクトリに絞ると宣言を 1 つ外へ移すだけで迂回できる
-- 一律の禁止は base builder 自身の定義ファイルも落とす。`overrides` の `excludeFiles` でそのファイルだけ外す (2026-09-06 に実測)
 - 再評価条件: TanStack Start が server function への middleware 付与を型で強制する API を入れたとき。base builder と lint の必要性を見直す
 
 ## 出典

@@ -14,8 +14,9 @@
 
 ## 主題
 
-| ファイル                           | 主題                                                                                                       |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [writing-docs.md](writing-docs.md) | ドキュメントの書き方 (ADR・rules・AGENTS.md の書き方、比の洗い出し)                                        |
-| [lint.md](lint.md)                 | lint の運用 (解決後の設定での確かめ方、抑制、自前のルール、設定と JS plugin の落とし穴)                    |
-| [placement.md](placement.md)       | 配置と境界 (route の中の置き場、route ファイルの組み方、features か route か、importProtection の落とし穴) |
+| ファイル                                   | 主題                                                                                                                        |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| [writing-docs.md](writing-docs.md)         | ドキュメントの書き方 (ADR・rules・AGENTS.md の書き方、比の洗い出し)                                                         |
+| [lint.md](lint.md)                         | lint の運用 (解決後の設定での確かめ方、抑制、自前のルール、設定と JS plugin の落とし穴)                                     |
+| [placement.md](placement.md)               | 配置と境界 (route の中の置き場、route ファイルの組み方、features か route か、importProtection の落とし穴)                  |
+| [updates-and-data.md](updates-and-data.md) | React の更新とデータ取得 (ハンドラ、Action 層と mutation、完了点の組み方、楽観表示、認可、部分一致の検索、手動メモ化の判定) |

@@ -32,31 +32,7 @@
 
 ### 手動メモ化を残す条件 (決定 4)
 
-React チームは既存コードの手動メモ化を残すよう推奨している。
-Compiler がメモ化スコープを作るのは値の identity を同じコンパイル単位の中で観測できるときに限られ、カスタム hook の返り値へ入るだけの導出は消費側が見えずスコープが粗くなる。
-一括で外すと依存ガードを失い、劣化が下流へ連鎖する。ガード数が同じでもスコープが融合して依存集合が広がることもあり、どちらの劣化も外形からは読み取れない。
-
-撤去の前後でコンパイルし、次の 3 つを比べる。1 つでも悪化したら撤去しない。
-
-| 指標           | 悪化の条件 |
-| -------------- | ---------- |
-| 依存ガード数   | 減った     |
-| 依存比較の総数 | 増えた     |
-| mount 時固定   | 減った     |
-
-```js
-import { transformSync } from "oxc-transform-react";
-const { code } = transformSync(filename, source, {
-  lang: filename.endsWith(".tsx") ? "tsx" : "ts",
-});
-const guards = (code.match(/if \(\$\[\d+\] !==/g) ?? []).length;
-const deps = (code.match(/\$\[\d+\] !==/g) ?? []).length;
-const sentinels = (code.match(/memo_cache_sentinel/g) ?? []).length;
-```
-
-依存比較の総数を見るのは、スコープが融合して依存集合が広がる劣化を捕まえるためである。ガード数だけでは取りこぼす。
-コンパイル出力の diff は判定に使えない。メモ化が保たれていても出力は必ず変わる。
-`useEffect` の依存へ流れる値は識別子ではなく正しさに関わるため、指標と別に確認する。
+React チームは既存コードの手動メモ化を残すよう推奨している。撤去の前後で比べる指標と計測のコードは `docs/guides/updates-and-data.md`「手動メモ化を外すか判定する」にある。
 
 registry コード (`src/components/ui/`) は ADR-0024 の統制対象なので、この判定の対象にせず改変しない。
 
@@ -82,9 +58,7 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 未実装による bail out は `react/todo` が担う (カテゴリ分けと選定の基準は ADR-0009)。
 
 `react/todo` を `"error"` にすると bail out を修正すべき違反として扱うことになり、決定 5 と矛盾する。原因は Compiler の未実装でありコードの誤りではない。
-`vp lint -D react/todo` が報告するのは registry コードだけで、ADR-0024 により書き換えない (2026-09-02 確認)。件数は上流の追随で動くため、必要なときにこのコマンドで数える。
-
-このコマンドは `logDiagnostics` の退路でもある。2026-09-02 に両方を同じツリーで走らせると、`vp build` のログと `vp lint -D react/todo` は同じ bail out を同じ数だけ報告し、後者は file:line まで出した。`oxc-transform-react` が非 fatal の Compiler 診断を `errors` から外したときは、ビルドログの代わりにこれをオンデマンドで叩く。
+`vp lint -D react/todo` は `logDiagnostics` の退路としてその場で叩く (2026-09-02 に、ビルドログと同じ bail out を同じ数だけ報告すると確かめた)。使い方は `docs/guides/updates-and-data.md`「React Compiler の診断を読む」にある。
 `"warn"` にもできない。`vp check` は warn を exit 0 で通すため、gate に載らないルールは設定してあるだけの状態になる。
 
 `react/unsupported-syntax` は分けて扱い `"error"` で入れる。
@@ -104,14 +78,12 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 
 ## Consequences
 
-- Compiler の適用は experimental な機能に乗る (`@vitejs/plugin-react` の README が明記)。壊れたときの退避は `@vitejs/plugin-react` と `oxc-transform-react` を前の版へ揃えて下げることで行い、babel へは戻さない
+- Compiler の適用は experimental な機能に乗る (`@vitejs/plugin-react` の README が明記)。壊れたときの退避は `docs/guides/updates-and-data.md`「React Compiler の診断を読む」にある
 - `package.json` から babel を外しても install からは消えない。`@vitejs/plugin-react` の optional peer として `@rolldown/plugin-babel` と `babel-plugin-react-compiler` と `@babel/core` が lockfile に残る (2026-09-02 実測: `vp why babel-plugin-react-compiler` が plugin-react 経由で解決する)。プロジェクト root からは解決できないので (`require.resolve` が `MODULE_NOT_FOUND`)、`vite.config.ts` から使うことはできない
 - Compiler は client 環境だけで走る。自前コードの SSR 出力にメモ化は入らない (2026-09-02 実測: `grep -c useMemoCache .output/server/_ssr/ssr.mjs` が 0)。`.output/server/_libs/` にはコンパイル済みで配布される base-ui と react-router が入るため、`.output/server` を丸ごと grep すると当たる。単一レンダーの経路なのでメモ化の効きどころが無い
 - `oxc-transform-react` は `@vitejs/plugin-react` の optional peer で、宣言された範囲 (`^0.145.0`) が上流自身の devDependency (`^0.147.0`) より狭い。範囲の是正までは `pnpm-workspace.yaml` の `peerDependencyRules` で受ける
 - bail out はビルドログにしか出ない。増減はゲートにならず、気づくのはログを読んだときになる。決定 5 が bail out を欠陥として扱わないので、この非対称は意図どおりである
 - Compiler が黙って外れる経路 (`vite.config.ts` から `compiler` オプションが消える) を機械で見張るものは無い。塞ぐならビルド成果物を見る検査が要る
-- Compiler がカバーしない箇所 (コンポーネントでも hook でもない定義、たとえばテーブルの column 定義) は最適化されないまま動く。仕様どおりの挙動であり、性能問題として顕在化した箇所だけ手でメモ化する
-- 新しいコードでは手動メモ化を書かない。既にあるものは決定 4 の判定を通してから外す
 - メモ化が正しさや依存ガードに効く箇所があれば、その規範は rules 側に置く。Compiler への委譲はそれを否定しない
 - Rules of React の検査を外すと Compiler が bail out する土壌ができる。分割後のルール群は導入の前提として据え置く
 - `compiler` オプションが experimental でなくなったら決定 1 を見直す。`peerDependencyRules` の緩和の出口条件は `pnpm-workspace.yaml` のコメントが持つ

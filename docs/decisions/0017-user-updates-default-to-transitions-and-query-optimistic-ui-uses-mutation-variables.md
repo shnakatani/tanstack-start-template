@@ -6,12 +6,7 @@
 
 ## Context
 
-### 用語
-
-- **Transition**: `startTransition` に渡した関数の中で行う state 更新。割り込み可能で、Suspense の fallback を出さずに待てる
-- **緊急更新**: Transition でない state 更新。React は即座に描画へ反映する
-- **Action**: `startTransition` に渡す非同期関数。`await` した Promise の決着まで Transition が続く (`useTransition` リファレンス)
-- **mutation**: `useMutation` を通して server function を呼ぶ操作 (POST 相当)。GET 相当のデータ取得は含まない
+Transition・緊急更新・Action・mutation の用語は `docs/guides/updates-and-data.md`「用語」が持つ。
 
 ### React 側の方針
 
@@ -80,7 +75,7 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 | query を経由しない部品のローカル値 | `useOptimistic` を Action の中で set する                                                                                                                                                                                  | React の想定どおりの経路。React Aria #9894 が同じ設計を採る                                                                                                                                |
 | Router の state                    | Router に任せる                                                                                                                                                                                                            | 自前の acknowledgement で整合を取っている (「TanStack Query と Router のストアは Transition に参加しない」)                                                                                |
 
-判定は `useOptimistic` の第 1 引数で行う。`useQuery` / `useSuspenseQuery` の `data` とそこから計算した値を渡さない。
+`useOptimistic` へ渡してよい値の見分け方は `docs/guides/updates-and-data.md`「楽観表示を出す」にある。
 
 ### 検討した選択肢
 

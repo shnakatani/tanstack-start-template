@@ -52,13 +52,7 @@ mutation 以外のユーザー操作由来の更新は、`src/components/screens
 最初に置くのは `button.tsx`、`alert-dialog.tsx`、`form.tsx` の 3 つで、メモ画面の 2 経路が使う最小集合である。`form.tsx` だけは `ui/` に対応部品が無く、素の `<form>` を包む。
 React の `<form action>` + `useFormStatus` を使わないのは、submit の経路を TanStack Form の `handleSubmit` (FormData を経由しない) にするためと、決着前の二重 submit を部品側の dedupe で塞ぐためである。`ActionForm` の context は `useFormStatus` と同じ形で pending を子孫へ渡す。
 
-| 契約     | 内容                                                                                                                                                                                                                                                                                                                                                                                           |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `action` | `() => Promise<void> \| void`。`startTransition` に直接渡す (同期 / 非同期どちらも受け、決着まで pending が続く)                                                                                                                                                                                                                                                                               |
-| pending  | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定する。`Spinner` は視覚専用 (`aria-hidden`)。状態は要素自身の `aria-busy` + `aria-disabled` で持ち、通知は feature 側が announcer で出す (ADR-0032)。button の子孫はユーザーエージェントが accessibility API に露出すべきでない (WAI-ARIA 1.2 §5.2.9) |
-| 二重発火 | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (「二重発火は state だけで塞ぐ」)                                                                                                                                                                                                                                                                      |
-| 失敗     | 部品は握らない。呼び出し側が Action の中で処理し切る (「Action の reject は Error Boundary へ届く」)。mutation は次項の `useActionMutation` を通す                                                                                                                                                                                                                                             |
-| 基盤依存 | 契約は Base UI に依存しない。Base UI #5133 か React Aria #9894 が出荷したら内部実装だけ差し替える                                                                                                                                                                                                                                                                                              |
+部品が守る契約 (`action` の型、pending の a11y、二重発火、失敗、基盤への依存) は `docs/guides/updates-and-data.md`「Action 層の部品が守る契約」にある。
 
 ### 二重発火は state だけで塞ぐ
 
@@ -67,19 +61,11 @@ React はユーザー起点のイベントごとに次のイベントより前�
 
 「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」ことを理由に ref のフラグを併せ持つ形は採らない。この事象は実イベントでは起きず、フラグはその検証を通すためだけのものになる。検証を実イベントで書く根拠は ADR-0039 が持つ。
 
-完了点 (a) (ADR-0020) では Action が close だけを含み Transition が確定直後に終わるため、close の animate-out の間は `isPending` の dedupe が効かない。同じ対象の mutation が pending なら handler を no-op にする (`queryClient.isMutating` の判定)。実例は `src/routes/notes/index.tsx` の `confirmDelete`。
+完了点 (a) (ADR-0020) では Action が close だけを含み Transition が確定直後に終わるため、`isPending` の dedupe が効かない間がある。その間の防ぎ方は `docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」にある。
 
 ### mutation の書き方
 
-mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、次を持つ。
-
-| 項目                    | 規範                                                                                                                                                                                                                                                                                |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 入力                    | `useMutation` の options。型で `onError` を必須にする。省略すると reject の吸収が無通知の失敗になるため、型で止める                                                                                                                                                                 |
-| 出力                    | `useMutation` の戻り値から `mutate` / `mutateAsync` を型で外し、`runAction(variables): Promise<void>` を足す。`runAction` は `mutateAsync` を await し、reject を吸収する。通知は `onError` (`toastMutationError`) が担う                                                           |
-| 呼び出し                | `action` prop から `runAction` を呼ぶ。`mutate` は Promise を返さず reject も `.catch(noop)` で握るため、Transition が完了も失敗も観測できない (`useMutation.js`)                                                                                                                   |
-| 再取得と close          | `onSuccess` は完了点によらず再取得の Promise を返す (TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く)。閉じる時点は ADR-0020 で選び、(c) では再取得を await した後に `handle.close()`、(b) では先頭で `close()`、(a) では Action 側で `close()` する |
-| `await` 後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる (`useTransition` の既知の制限)。画面の更新は query の再取得に任せる                                                                                                                                         |
+mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、型で `onError` を必須にし、`mutate` / `mutateAsync` を外して `runAction` を足す。入力・出力・呼び出し・再取得と close・`await` 後の state 更新の書き方は `docs/guides/updates-and-data.md`「mutation の書き方」にある。
 
 ### 検討した選択肢
 
@@ -93,7 +79,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ## Consequences
 
-- `useActionMutation` を通さない Action の reject は Error Boundary へ届く (「Action の reject は Error Boundary へ届く」)。lint で検出できないため、Action を書くときのレビュー観点に含める
+- `useActionMutation` を通さない Action の reject は Error Boundary へ届く (「Action の reject は Error Boundary へ届く」)。lint で検出できないため、レビューで見る
 - 後続作業
   - 値を持つ部品の `changeAction` 版 (`checkbox` / `select` / `toggle` / `toggle-group` / `radio-group` / `combobox`)。`useOptimistic` で表示を先に進める設計が要り、Button 系とは別に扱う
   - React Aria への基盤変更の ADR。発火条件は「React Aria #9894 の実装が出荷した」か「a11y 要件で Base UI に不足が出た」のどちらか

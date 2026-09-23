@@ -42,7 +42,7 @@ export type ActionMutationResult<
 };
 
 /**
- * Action 層から呼ぶ mutation。`useMutation` の薄い wrapper (ADR-0019「mutation の書き方」)。
+ * Action 層から呼ぶ mutation。`useMutation` の薄い wrapper (`docs/guides/updates-and-data.md`「mutation の書き方」)。
  *
  * `mutate` ではなく `mutateAsync` を使う理由: `mutate` は Promise を返さず reject も
  * `.catch(noop)` で握るため、Transition が完了も失敗も観測できない。
