@@ -7,9 +7,9 @@ import { expectText } from "@/test/page-helpers";
 import { PageHeader } from "./page-header";
 
 /**
- * 状態のカタログは `page-header.stories.tsx` が持つ (ADR-0044)。ここに残すのは、title が h1 で
+ * 状態のカタログは `page-header.stories.tsx` が持つ (ADR-0046)。ここに残すのは、title が h1 で
  * あること、actions の有無で領域が出入りすること、帯の寸法で、story に play が無い以上ここで
- * しか固定できない。とくに「出ない」ことは見た目のカタログでは表せない (ADR-0050 の役割分担)。
+ * しか固定できない。とくに「出ない」ことは見た目のカタログでは表せない (ADR-0047 の役割分担)。
  *
  * カードのページ見出しとの寸法一致は測らない。どちらも同じ `pageTitle` (`page-title.tsx`) を
  * 当てる 1 つの出処で、外見の上書きは層の規則が止める (ADR-0013)。
@@ -36,7 +36,7 @@ describe("PageHeader", () => {
   it("actions を渡さないとアクション領域が表示されない", async () => {
     const screen = await render(<PageHeader title="メモ一覧" />);
 
-    // 肯定 anchor。描画が済んでいることを先に固定してから不在を見る (ADR-0041)
+    // 肯定 anchor。描画が済んでいることを先に固定してから不在を見る (ADR-0043)
     await expect.element(screen.getByRole("heading", { name: "メモ一覧" })).toBeInTheDocument();
     await expectAbsent(screen.getByText("追加"));
   });

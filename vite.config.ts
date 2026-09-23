@@ -59,7 +59,7 @@ export default defineConfig({
       // testing-library をネイティブに持たないため ESLint plugin として載せる (ADR-0010)
       { name: "testing-library", specifier: "eslint-plugin-testing-library" },
       // ブラウザテストの assert に locator を渡させる自前ルール。上流の
-      // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0039)
+      // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0041)
       { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
     ],
     settings: {
@@ -369,7 +369,7 @@ export default defineConfig({
         },
       },
       {
-        // ブラウザテストと、そこへ locator を配る helper が対象 (ADR-0039)。テスト本文だけに
+        // ブラウザテストと、そこへ locator を配る helper が対象 (ADR-0041)。テスト本文だけに
         // 当てると、helper へ切り出した同期読みがルールから外れる (testing-library の override と
         // 同じ穴の塞ぎ方)。`src/test/` には browser の helper と unit のテストが同居するので、
         // 後者を `excludeFiles` で外す。unit は locator を持たず、drizzle の
@@ -380,11 +380,11 @@ export default defineConfig({
         excludeFiles: ["src/test/*.test.ts"],
         rules: {
           "browser-test/prefer-locator-methods": "error",
-          // `locator.findElement()` を止める (ADR-0040)。正当な呼び出し元は無く、除外も置かない
+          // `locator.findElement()` を止める (ADR-0042)。正当な呼び出し元は無く、除外も置かない
           "browser-test/no-find-element": "error",
-          // スタイルの否定 assert が素通りする形を止める (ADR-0041)
+          // スタイルの否定 assert が素通りする形を止める (ADR-0043)
           "browser-test/no-negated-style-literal": "error",
-          // 不在の assert を helper の名前で読み分けさせる (ADR-0041)
+          // 不在の assert を helper の名前で読み分けさせる (ADR-0043)
           "browser-test/no-bare-absence-assertion": "error",
         },
       },
@@ -397,7 +397,7 @@ export default defineConfig({
         // (files の否定 glob は oxlint 1.79 では効かない)。story 自身も出荷される bundle に
         // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)。
         // `.storybook/**` は対象外。Storybook は story をテストとして走らせるテスト基盤で
-        // (ADR-0044)、`preview.tsx` が `src/test/viewport-sizes.ts` を読む
+        // (ADR-0046)、`preview.tsx` が `src/test/viewport-sizes.ts` を読む
         files: ["src/**", "scripts/**"],
         excludeFiles: [...companionGlobs("**/"), "src/test/**"],
         rules: {

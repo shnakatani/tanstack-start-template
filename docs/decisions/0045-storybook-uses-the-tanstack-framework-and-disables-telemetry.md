@@ -1,8 +1,8 @@
-# ADR-0043: Storybook は TanStack 専用の framework で導入し、telemetry を切る
+# ADR-0045: Storybook は TanStack 専用の framework で導入し、telemetry を切る
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0044 (story を状態のカタログにする) / ADR-0005 (ツールチェーン。明示で潰す既定の揃え方)
+- 関連: ADR-0046 (story を状態のカタログにする) / ADR-0005 (ツールチェーン。明示で潰す既定の揃え方)
 
 ## Context
 

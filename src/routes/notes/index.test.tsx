@@ -27,7 +27,7 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { listNotes } = await import("@/features/notes/functions");
 
-// この画面に固有のテストの書き方 (route 全般の書き方は ADR-0042):
+// この画面に固有のテストの書き方 (route 全般の書き方は ADR-0044):
 // - debounce のテストは 1 文字ずつ別の `userEvent.keyboard` で打つ。`fill` は 1 回の input、`type("abc")` は
 //   3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)
 // - fake timers は使わない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
@@ -50,7 +50,7 @@ import { Route } from "./index";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
- * `<html>` を描くので browser test では使えない (ADR-0042)。root は本番と同じ context 型を持ち、
+ * `<html>` を描くので browser test では使えない (ADR-0044)。root は本番と同じ context 型を持ち、
  * `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
  */
 const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({

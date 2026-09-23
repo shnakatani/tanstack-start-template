@@ -116,7 +116,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ## 操作できる要素の組み方
 
-- input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (テストでは Playwright の hit-target 検査で click が落ちる。ADR-0037。registry の Input 単体は `src/components/ui/input-pointer.test.tsx` が見る)
+- input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (テストでは Playwright の hit-target 検査で click が落ちる。ADR-0039。registry の Input 単体は `src/components/ui/input-pointer.test.tsx` が見る)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する

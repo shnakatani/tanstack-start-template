@@ -1,12 +1,12 @@
-# ADR-0039: assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む
+# ADR-0041: assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0036 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0009 (ルールの選定基準)、ADR-0029 (`jsPlugins` で足す判断)、ADR-0040 (本 ADR の移行で顕在化した assert の予算)、ADR-0041 (同じく顕在化した否定 assert の検出力)
+- 関連: ADR-0038 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0009 (ルールの選定基準)、ADR-0029 (`jsPlugins` で足す判断)、ADR-0042 (本 ADR の移行で顕在化した assert の予算)、ADR-0043 (同じく顕在化した否定 assert の検出力)
 
 ## Context
 
-ADR-0036 は「待機は retry API に委ねる」節で操作後の検証を `expect.element` に寄せると決めたが、強制はレビューに置いた。
+ADR-0038 は「待機は retry API に委ねる」節で操作後の検証を `expect.element` に寄せると決めたが、強制はレビューに置いた。
 同 ADR の Consequences は理由を「lint で表現できる形は無い」と書いている。この一文が誤っていた。
 
 ### 同期読みは retry を持たず、失敗したときに何も言わない
@@ -51,7 +51,7 @@ grep -rnE 'expect\(\s*[A-Za-z_$][^;]*\.(element|query|all|elements)\(\)' --inclu
 | `expect(x.element().textContent).toContain(t)`     | 2    | `expect.element(x).toHaveTextContent(t)`       |
 | 要素を受け取るヘルパーへ渡す (`visibleIconNames`)  | 2    | helper の引数も追うので報告する                |
 
-`src/components/action/button.test.tsx` の `expect(document.activeElement).toBe(button.element())` は `await button.click()` の直後にあった。ADR-0036 が同期読みの危うさとして挙げた形そのものである。
+`src/components/action/button.test.tsx` の `expect(document.activeElement).toBe(button.element())` は `await button.click()` の直後にあった。ADR-0038 が同期読みの危うさとして挙げた形そのものである。
 
 **この grep は取りこぼす。** ルールを有効にすると、上の 45 件に加えて 9 件が出た。いずれも同期読みを変数へ束縛してから assert へ渡す形で、1 行の正規表現では束縛と使用が別の行にあるため見えない。`src/components/ui/sidebar.test.tsx` の `expect(trigger.getAttribute("aria-expanded")).toBe("true")` は `userEvent.keyboard("{Enter}")` の直後にあり、retry を持たないまま操作後の属性を読んでいた。件数を数える手段としては lint のほうが正確で、grep は着手前の規模感にしか使えない。
 
@@ -59,8 +59,8 @@ grep -rnE 'expect\(\s*[A-Za-z_$][^;]*\.(element|query|all|elements)\(\)' --inclu
 
 ### lint で書けるかを確かめていなかった
 
-ADR-0036 が「lint で表現できる形は無い」と書いたのは、`element()` を許すかどうかが「操作を挟んだか」という実行時の履歴で決まると考えたためである。
-しかし禁止したい形は履歴ではなく式の構造で表せる。**同期読みの値が `expect()` の引数へ届くこと**を報告すればよい。`element()` をどこで読むか (ADR-0036) は assert の外側の話なので、この判定とは独立する。
+ADR-0038 が「lint で表現できる形は無い」と書いたのは、`element()` を許すかどうかが「操作を挟んだか」という実行時の履歴で決まると考えたためである。
+しかし禁止したい形は履歴ではなく式の構造で表せる。**同期読みの値が `expect()` の引数へ届くこと**を報告すればよい。`element()` をどこで読むか (ADR-0038) は assert の外側の話なので、この判定とは独立する。
 
 同じ趣旨のルールは他のエコシステムに先行例がある。`eslint-plugin-playwright` の [`prefer-web-first-assertions`](https://github.com/playwright-community/eslint-plugin-playwright/blob/main/docs/rules/prefer-web-first-assertions.md) が `expect(await locator.isVisible()).toBe(true)` を報告し、"web first assertions will automatically wait for the conditions to be fulfilled resulting in more resilient tests" を理由に挙げる。対象 API が違うため流用はできない。
 
@@ -73,11 +73,11 @@ ADR-0036 が「lint で表現できる形は無い」と書いたのは、`eleme
 | 規範                                                                                                                                                                                    | 守らないと何が壊れるか                                                                                                                           |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 同期読み (`element()` / `query()` / `all()` / `elements()`) の値を `expect()` の引数にしない。`expect.element` を通す。変数へ束縛してから渡すのも同じ                                   | 同期読みは retry を持たない。DOM が確定する前に評価されると、実装が正しくてもテストが落ちる。失敗しても locator の名前が出力に残らない           |
-| matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` のコールバックの中で読む。比較の基準値を 1 回だけ読むときは、先に `expect.element` で mount を待つ (ADR-0036) | 直接 `expect()` へ流す形はルールが止める。helper 越しの読みはルールが追わない (「ルールが追えない形」) ので、poll の中にあることはレビューで見る |
+| matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` のコールバックの中で読む。比較の基準値を 1 回だけ読むときは、先に `expect.element` で mount を待つ (ADR-0038) | 直接 `expect()` へ流す形はルールが止める。helper 越しの読みはルールが追わない (「ルールが追えない形」) ので、poll の中にあることはレビューで見る |
 
-`element()` を読む場所の規範は ADR-0036 のままである。本 ADR が狭めるのは、その値を assert へ渡す経路だけである。
+`element()` を読む場所の規範は ADR-0038 のままである。本 ADR が狭めるのは、その値を assert へ渡す経路だけである。
 
-この移行で 2 つの問題が顕在化し、それぞれ別の ADR が決めている。assert の予算 (赤が 15 秒かかる) は ADR-0040、否定 assert の検出力 (不在や綴り違いで通る) は ADR-0041 である。
+この移行で 2 つの問題が顕在化し、それぞれ別の ADR が決めている。assert の予算 (赤が 15 秒かかる) は ADR-0042、否定 assert の検出力 (不在や綴り違いで通る) は ADR-0043 である。
 
 ## Consequences
 
@@ -127,9 +127,9 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 この override は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定で固定するので、適用先か severity を動かすとそこが落ちる。
 
-### ADR-0036 と rules との関係
+### ADR-0038 と rules との関係
 
-ADR-0036 の Consequences は、禁じたい形のうち「同期読みの値を assert へ流すこと」を本 ADR の lint に委ねる。
+ADR-0038 の Consequences は、禁じたい形のうち「同期読みの値を assert へ流すこと」を本 ADR の lint に委ねる。
 
 ### ルールが追えない形
 
@@ -141,7 +141,7 @@ ADR-0036 の Consequences は、禁じたい形のうち「同期読みの値を
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 束縛を 2 段以上またぐ                               | `const el = x.element(); const t = el.textContent; expect(t)...`                                                    | 参照を 1 段だけ辿る。任意段を追うのは taint 解析になる                                                                                                                                                                        |
 | helper の戻り値                                     | `expect(titleTextbox(screen).query())` を別ファイルの helper が包む                                                 | 関数を跨いだ追跡が要る。先行例 (`eslint-plugin-playwright`) も 1 段の dereference に留めている                                                                                                                                |
-| 束縛した観測の基準値を matcher の期待値に使う       | `const before = getComputedStyle(x.element()).color; … .toBe(before)`                                               | 操作の前後の観測を比べる形 (ADR-0041「2 回の観測を比べる」)。連鎖を束縛した値は `expect()` / `assert` の主語に届くときだけ報告する。要素そのものの束縛 (`const el = x.element()`) と、束縛せず直に matcher へ渡す形は報告する |
+| 束縛した観測の基準値を matcher の期待値に使う       | `const before = getComputedStyle(x.element()).color; … .toBe(before)`                                               | 操作の前後の観測を比べる形 (ADR-0043「2 回の観測を比べる」)。連鎖を束縛した値は `expect()` / `assert` の主語に届くときだけ報告する。要素そのものの束縛 (`const el = x.element()`) と、束縛せず直に matcher へ渡す形は報告する |
 | 束縛した同期読みを retry コールバックの中で参照する | `const el = x.element(); await expect.poll(() => el.textContent)`                                                   | 要素は引き直されず stale のまま retry される。基準値の参照 (`before`) と型なしで区別できないので飛ばす。要素は poll の中で引き直す                                                                                            |
 | 宣言以外の束縛                                      | `let el; el = x.element(); expect(el)`、`for (const row of rows.all())`、`rows.all().forEach((row) => expect(row))` | 追うのは `const` / `let` の宣言子だけ。代入・for-of・コールバック引数は追わない                                                                                                                                               |
 | 値の流れを止める節点                                | `expect(map[x.element().id])`、`expect((f(), x.element()))`、`` html`${x.element().outerHTML}` ``                   | 計算プロパティのキー、sequence、tagged template は透かさない                                                                                                                                                                  |
@@ -154,11 +154,11 @@ ADR-0036 の Consequences は、禁じたい形のうち「同期読みの値を
 
 | 対象                                                    | 持ち主                                                                                 |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| assert の予算 (`expect.poll.timeout` / `actionTimeout`) | ADR-0040                                                                               |
-| 否定 assert と `toHaveStyle` の書き方                   | ADR-0041                                                                               |
-| クリックの発火方法                                      | ADR-0037。合成イベントを送る helper を置かないので、その引数が同期読みになる経路も無い |
+| assert の予算 (`expect.poll.timeout` / `actionTimeout`) | ADR-0042                                                                               |
+| 否定 assert と `toHaveStyle` の書き方                   | ADR-0043                                                                               |
+| クリックの発火方法                                      | ADR-0039。合成イベントを送る helper を置かないので、その引数が同期読みになる経路も無い |
 
-`getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0036) は `expect.poll` のコールバックの中で読む。単一プロパティを文字列リテラルと比べる形は `toHaveStyle` で書く。poll の中で表す 3 つの形は ADR-0041 が持つ。
+`getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0038) は `expect.poll` のコールバックの中で読む。単一プロパティを文字列リテラルと比べる形は `toHaveStyle` で書く。poll の中で表す 3 つの形は ADR-0043 が持つ。
 
 ## 検討した選択肢
 
@@ -166,8 +166,8 @@ ADR-0036 の Consequences は、禁じたい形のうち「同期読みの値を
 | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `expect()` の引数に届く同期読みを lint で報告する                                               | 禁止したい形が式の構造で表せる。公式が DANGER 表記で同じ向きを案内しており、他エコシステムに先行例がある                                        | **採用** |
 | 代替 matcher の無い読み (`getBoundingClientRect` 等) を列挙して直接 `expect()` へ流すことを許す | 1 要素ずつ外すと helper の自己テスト 1 件を除き 0 件で、守る対象が無い (2026-09-22 実測)。`expect.poll` の中で読めば retry も付く               | 却下     |
-| レビューで見る                                                                                  | ADR-0036 の 3 日後のコミット `91515ee` が、レビューを経て同じ形を新しく足している。判断を誤ってもほとんどの実行で通るため、レビューでは落ちない | 却下     |
-| `element()` を全面禁止し `findElement()` に統一する                                             | `getBoundingClientRect` などの実測が待つ理由のない箇所まで `await` になる。ADR-0036 が同じ理由で却下している                                    | 却下     |
+| レビューで見る                                                                                  | ADR-0038 の 3 日後のコミット `91515ee` が、レビューを経て同じ形を新しく足している。判断を誤ってもほとんどの実行で通るため、レビューでは落ちない | 却下     |
+| `element()` を全面禁止し `findElement()` に統一する                                             | `getBoundingClientRect` などの実測が待つ理由のない箇所まで `await` になる。ADR-0038 が同じ理由で却下している                                    | 却下     |
 | `lint.overrides` で未移行ファイルを列挙して段階移行する                                         | 対象は 13 ファイルで、列挙と、それを消す作業のほうが移行より大きい                                                                              | 却下     |
 
 ## 出典

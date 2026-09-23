@@ -42,12 +42,12 @@ async function renderOpenDialog() {
     </Dialog>,
   );
   await screen.getByRole("button", { name: "開く" }).click();
-  // mount は builtin の matcher で待つ。`findElement()` は呼ばない (ADR-0036 / ADR-0040)
+  // mount は builtin の matcher で待つ。`findElement()` は呼ばない (ADR-0038 / ADR-0042)
   await expect.element(screen.getByRole("dialog")).toBeInTheDocument();
   return screen;
 }
 
-// 既定値は browser-setup.tsx の beforeEach が立てる (ADR-0038)
+// 既定値は browser-setup.tsx の beforeEach が立てる (ADR-0040)
 describe("animation の既定", () => {
   it("既定では prefers-reduced-motion: reduce が立ち、CSS の transition と animation が 0.01ms になる", async () => {
     // inline の通常宣言より styles.css の reduced-motion ブロック (!important) が勝つ

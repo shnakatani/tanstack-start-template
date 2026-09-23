@@ -23,7 +23,7 @@ export const Route = createFileRoute("/notes/")({
   component: NotesRoute,
 });
 
-/** Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける (ADR-0012 / ADR-0042)。 */
+/** Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける (ADR-0012 / ADR-0044)。 */
 function NotesRoute() {
   const { q } = Route.useSearch();
   const navigate = Route.useNavigate();

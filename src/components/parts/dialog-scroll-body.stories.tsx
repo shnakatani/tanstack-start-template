@@ -19,7 +19,7 @@ import { DialogScrollBody, DialogScrollForm } from "./dialog-scroll-body";
  *
  * 寸法と色の回帰 (区切り線の対称性、focus ring がクリップされないこと、本文と縦バーの
  * 重なり、`dialogScrollLayout` の flex 指定) は `dialog-scroll-body.test.tsx` が
- * `getComputedStyle` / `getBoundingClientRect` で持ち続ける (ADR-0050)。
+ * `getComputedStyle` / `getBoundingClientRect` で持ち続ける (ADR-0047)。
  * ここの play は「その story が名乗る状態になっているか」だけを `data-has-overflow-y` で確かめる。
  *
  * 溢れはフィールドの実数で作る。`height` 指定では flex item が潰れて溢れを再現できない。

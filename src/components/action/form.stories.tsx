@@ -10,7 +10,7 @@ import { ActionForm, ActionFormSubmit } from "./form";
 /**
  * 決着しない Promise を story に置かない。Storybook の vitest 実行は 1 つの React root へ
  * story を描き替えるため、決着しない Transition が残ると後続 story が pending のまま
- * 止まる (ADR-0044)。pending 中の描画は `ActionButtonShell` の story が args だけで持つ。
+ * 止まる (ADR-0046)。pending 中の描画は `ActionButtonShell` の story が args だけで持つ。
  *
  * 決着の時点は play が `settling.settle()` で握る。仕組みと理由は
  * `src/test/settling-action.ts` が持つ。play は必ず決着させてから終える。
@@ -37,7 +37,7 @@ type Story = StoryObj<typeof meta>;
 /**
  * 待機していない状態。サイドバーに出る唯一の story なので、submit しても決着する action に
  * する。`settlingAction` のままだと play が無い分だけ誰も `settle()` を呼ばず、submit した
- * 人の画面で pending のまま戻らない (ADR-0044)
+ * 人の画面で pending のまま戻らない (ADR-0046)
  */
 export const Default: Story = { args: { submitAction: fn() } };
 

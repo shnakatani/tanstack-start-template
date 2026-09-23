@@ -4,7 +4,7 @@ import { render } from "vitest-browser-react";
 import { TableSkeleton } from "./table-skeleton";
 
 /**
- * 状態のカタログは `table-skeleton.stories.tsx` が持つ (ADR-0044)。ここに残すのは、
+ * 状態のカタログは `table-skeleton.stories.tsx` が持つ (ADR-0046)。ここに残すのは、
  * 読み込み中であることを支援技術に伝える契約 (`role="status"` + `aria-label`) だけ。
  *
  * セルの数は数えない。`columns × (rows + 1)` は部品の `Array.from` そのものの算術で、

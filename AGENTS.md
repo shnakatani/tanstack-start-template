@@ -28,7 +28,7 @@ mise run verify   # マージ前に通す: vp check → vp test run → vp build
 
 ## Storybook の skill と tools
 
-UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。ただし play を書く範囲は skill の「Simulate key user flows」ではなく ADR-0044 に従い、操作で状態が変わる部品にだけ書く。この節は、CLI が `--help` に出ないので、AGENTS.md を削るときも消さない。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい。
+UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。ただし play を書く範囲は skill の「Simulate key user flows」ではなく ADR-0046 に従い、操作で状態が変わる部品にだけ書く。この節は、CLI が `--help` に出ないので、AGENTS.md を削るときも消さない。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい。
 
 - 部品の props・API・使い方は `vp exec storybook tools docs list` / `docs show` で答える。ソースや型定義から答えない
 - `vp exec storybook tools stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない

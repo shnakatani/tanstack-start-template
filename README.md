@@ -60,7 +60,7 @@ mise run storybook                                # 部品とデザイントー�
 - 素の `pnpm` を叩くなら `corepack enable` を一度実行する。Vite+ の shim は `node` / `npm` / `npx` / `corepack` までで `pnpm` を含まない
 - chromium は `vp install` では入らない (`playwright` が install スクリプトを持たない)。未取得のまま `vp test run` すると browser project が落ちる
 - port は worktree ごとに変わる。main checkout は base のまま、linked worktree は base+1 から base+999 (`.mise.toml` の `serve` が base 3000、`storybook` が base 6006)
-- Storybook は部品の状態とデザイントークンを並べる。story は部品と同じディレクトリに置き、a11y を axe で自動検査する (ADR-0044 / ADR-0045 / ADR-0046 / ADR-0047)
+- Storybook は部品の状態とデザイントークンを並べる。story は部品と同じディレクトリに置き、a11y を axe で自動検査する (ADR-0046 / ADR-0048 / ADR-0049 / ADR-0050)
 
 ### 3. 名前を置換する
 

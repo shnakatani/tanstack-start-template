@@ -120,7 +120,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("あ");
     await titleTextbox(screen).fill("");
 
-    // 肯定 anchor。入力が空になった状態を固定してからエラーの不在を見る (ADR-0041)
+    // 肯定 anchor。入力が空になった状態を固定してからエラーの不在を見る (ADR-0043)
     await expect.element(titleTextbox(screen)).toHaveValue("");
     await expectAbsent(screen.getByText(`${NOTE_FIELD_LABELS.title}を入力してください`));
   });
@@ -189,7 +189,7 @@ describe("NoteCreateDialog", () => {
 
     await saveButton(screen).click();
 
-    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0041)
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0043)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする

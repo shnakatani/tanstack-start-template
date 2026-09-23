@@ -1,8 +1,8 @@
-# ADR-0044: story は状態のカタログとし、play は操作で状態が変わる部品にだけ書く
+# ADR-0046: story は状態のカタログとし、play は操作で状態が変わる部品にだけ書く
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0043 (framework) / ADR-0050 (play の操作とブラウザテストの分担) / ADR-0047 (story の a11y 検査) / ADR-0045 (story の置き場所と対象) / ADR-0046 (トークンの story が読む CSS の作り方) / ADR-0013 (層) / ADR-0017 (Transition)
+- 関連: ADR-0045 (framework) / ADR-0047 (play の操作とブラウザテストの分担) / ADR-0050 (story の a11y 検査) / ADR-0048 (story の置き場所と対象) / ADR-0049 (トークンの story が読む CSS の作り方) / ADR-0013 (層) / ADR-0017 (Transition)
 
 ## Context
 

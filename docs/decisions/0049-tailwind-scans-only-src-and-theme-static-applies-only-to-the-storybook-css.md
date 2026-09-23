@@ -1,8 +1,8 @@
-# ADR-0046: Tailwind の scan は `src` に絞り、`theme(static)` は Storybook の CSS にだけ掛けて本番の CSS に載せない
+# ADR-0049: Tailwind の scan は `src` に絞り、`theme(static)` は Storybook の CSS にだけ掛けて本番の CSS に載せない
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0044 (story を状態のカタログにする) / ADR-0030 (コントラストの検算)
+- 関連: ADR-0046 (story を状態のカタログにする) / ADR-0030 (コントラストの検算)
 
 ## Context
 

@@ -103,7 +103,7 @@ const EXPECTED_OVERRIDES = [
     rules: { "shadcn/no-restyle": "deny", "shadcn/require-static-classes": "deny" },
   },
   {
-    // ブラウザテストの assert を守る自前ルール (ADR-0039 / ADR-0040 / ADR-0041)。
+    // ブラウザテストの assert を守る自前ルール (ADR-0041 / ADR-0042 / ADR-0043)。
     // 適用先と除外の理由は vite.config.ts の同じ override が持つ。
     // 期待値は手書きで持つ。`testHelperGlobs()` を spread すると vite.config.ts と同じ
     // 入力どうしの比較になり、種別が増えても検査が通ってしまう

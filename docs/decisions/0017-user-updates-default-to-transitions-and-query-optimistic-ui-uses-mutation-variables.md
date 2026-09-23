@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0019 (Action 層と `useActionMutation`)、ADR-0018 (ハンドラを同期関数にする理由。mutation を伴う操作の Transition の判断はこの ADR が持つ)、ADR-0024 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0037 (二重発火の検証は実イベントで書く)、ADR-0020 (完了点とブロック範囲の軸)
+- 関連: ADR-0019 (Action 層と `useActionMutation`)、ADR-0018 (ハンドラを同期関数にする理由。mutation を伴う操作の Transition の判断はこの ADR が持つ)、ADR-0024 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0039 (二重発火の検証は実イベントで書く)、ADR-0020 (完了点とブロック範囲の軸)
 
 ## Context
 

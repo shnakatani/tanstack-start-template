@@ -18,13 +18,13 @@ const FRUITS: Fruit[] = [
 ];
 
 /**
- * 状態のカタログは `data-table.stories.tsx` が持つ (ADR-0044)。ここに残すのは構造の契約で、
+ * 状態のカタログは `data-table.stories.tsx` が持つ (ADR-0046)。ここに残すのは構造の契約で、
  * 列見出しの順と `scope=col`、`cellClassName` の転写、`rowProps` の属性、空表示の `colSpan`
  * である。busy 行の半透明は Tailwind の `aria-busy:` variant が CSS で当てるので、JS の分岐も
  * それを測るテストも無い。見え方は `BusyRow` story が持つ。
  *
- * この部品は args だけで状態が決まるので story に play を書かない (ADR-0044)。play の無い
- * story は描画と axe しか走らせないため、上の契約はここでしか固定できない (ADR-0050 の
+ * この部品は args だけで状態が決まるので story に play を書かない (ADR-0046)。play の無い
+ * story は描画と axe しか走らせないため、上の契約はここでしか固定できない (ADR-0047 の
  * 役割分担)。
  */
 describe("DataTable", () => {

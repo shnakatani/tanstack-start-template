@@ -1,8 +1,8 @@
-# ADR-0042: Route hooks を使う wrapper は、root を差し替えた route tree に実 Route を付け、memory history の router で route ファイルのテストが検証する
+# ADR-0044: Route hooks を使う wrapper は、root を差し替えた route tree に実 Route を付け、memory history の router で route ファイルのテストが検証する
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0012 (ページ本体は `-components/`、route の property は export しない)、ADR-0036 (待機は retry API に委ねる)
+- 関連: ADR-0012 (ページ本体は `-components/`、route の property は export しない)、ADR-0038 (待機は retry API に委ねる)
 
 ## Context
 

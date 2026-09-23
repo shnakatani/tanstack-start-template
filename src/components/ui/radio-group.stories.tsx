@@ -42,7 +42,7 @@ export const OtherSelected: Story = { args: { defaultValue: "archived" } };
 export const Disabled: Story = { args: { disabled: true } };
 
 /**
- * 選び直したところ。終了状態は OtherSelected と同じ見た目なのでカタログには出さない (ADR-0044)
+ * 選び直したところ。終了状態は OtherSelected と同じ見た目なのでカタログには出さない (ADR-0046)
  */
 export const Selected: Story = {
   tags: ["!dev"],

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0022 (絞り込み条件は URL が持つ)、ADR-0017 (Transition の既定と `useDeferredValue` の位置づけ)、ADR-0020 (楽観行の扱い)、ADR-0033 (取得結果の通知)、ADR-0042 (テスト)
+- 関連: ADR-0022 (絞り込み条件は URL が持つ)、ADR-0017 (Transition の既定と `useDeferredValue` の位置づけ)、ADR-0020 (楽観行の扱い)、ADR-0033 (取得結果の通知)、ADR-0044 (テスト)
 
 ## Context
 

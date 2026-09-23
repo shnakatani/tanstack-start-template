@@ -1,8 +1,8 @@
-# ADR-0037: ブラウザテストのユーザー操作は実イベントだけで発火する
+# ADR-0039: ブラウザテストのユーザー操作は実イベントだけで発火する
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0036 (待機は retry API に委ねる。本 ADR は発火の側)、ADR-0019 (Action 層。「二重発火は state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする)
+- 関連: ADR-0038 (待機は retry API に委ねる。本 ADR は発火の側)、ADR-0019 (Action 層。「二重発火は state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする)
 
 ## Context
 
@@ -58,7 +58,7 @@ expect(action).toHaveBeenCalledOnce();
 
 合成イベントを使う理由に挙がるのは 2 つある。inert バックドロップが pointer event を横取りすること、`aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトすることである。どちらも合成イベントを要求しない。
 
-**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを押す 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) は、`locator.click()` で browser project を全件走らせると全件通る。ADR-0038 の animation 無効化が効いているためではない。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
+**バックドロップは再現しない。** Dialog / AlertDialog の中のボタンを押す 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) は、`locator.click()` で browser project を全件走らせると全件通る。ADR-0040 の animation 無効化が効いているためではない。registry の AlertDialog を開いて実行ボタンを押す最小構成で、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通り、ハンドラが 1 回呼ばれる。
 
 **enabled 判定に落ちる 2 箇所は、別々の解になる。** 分かれ目は対象に `pointer-events: none` が当たっているかである。`pointer-events: none` の対象を、click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った。
 
@@ -107,7 +107,7 @@ expect(action).toHaveBeenCalledOnce();
 | 条件               | 落ちる例                                                                                                              |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | Enabled            | native `disabled`、`aria-disabled="true"` の祖先を持つ要素                                                            |
-| Stable             | 開閉アニメーションの途中。既定では ADR-0038 の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
+| Stable             | 開閉アニメーションの途中。既定では ADR-0040 の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
 | Visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                      |
 | Receives Events    | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                               |
 

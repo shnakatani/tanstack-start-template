@@ -35,7 +35,7 @@ const SIZE_OPTIONS = variantOptions({
 /**
  * `ItemMedia` の variant は `Item` の `argTypes` に出せないので control では切り替えられない。
  * 網羅は 1 つの story の中で全件を並べて守る。`cva` に variant を足すと、この対応表の
- * `satisfies` がここで落ちる (ADR-0044)
+ * `satisfies` がここで落ちる (ADR-0046)
  */
 const MEDIA_VARIANT_LABELS = {
   default: "下地なし",

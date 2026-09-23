@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0024 (乖離の記録先と baseline の運用) / ADR-0047 (story の axe を `error` で回す) / ADR-0031 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
+- 関連: ADR-0024 (乖離の記録先と baseline の運用) / ADR-0050 (story の axe を `error` で回す) / ADR-0031 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
 
 ## Context
 
@@ -123,7 +123,7 @@ hue を変えるときは、候補の段を `src/styles.css` の `--primary` と
 
 ### 5. リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない
 
-判定は `parameters.a11y.test` の axe に任せる (ADR-0047)。既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を足して axe の対象に入れる。
+判定は `parameters.a11y.test` の axe に任せる (ADR-0050)。既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を足して axe の対象に入れる。
 
 対象はリポジトリが検査として持つものに限る。値を選ぶための計算は別で、本 ADR の Context と ADR-0031 の帯は oklch から計算した比を根拠に載せている。
 
@@ -144,7 +144,7 @@ JS で比を計算する形そのものにも無理がある。ブラウザは s
 
 **この検算は addon の合否だけでは足りない。** `@storybook/addon-a11y@10.6.0` は `violations` の件数だけで合否を決める (同 addon の `hasViolations`)。`color-contrast` は背景を解決できないと `violations` ではなく `incomplete` へ落ちるので、story を包む要素が変わって解決できなくなると、addon だけでは検査が緑のまま何も見なくなる。判定できなかった項目を合否へ入れる仕組みと、どの層で入れるかは ADR-0035 が持つ。
 
-hover の状態を作って測る形は、ポインタを当てる形も擬似クラスを強制する形も採らない。ポインタを当てると `transition-colors` の途中の合成色を axe が測る。擬似クラスを強制しても同じで、Storybook の test 実行は animation を止めない方針のため (ADR-0050) 途中の色が残り、さらに addon が描画後に axe を回すので状態を保つ decorator か別の走査が要る。手で組み合わせを並べる方が、持ち物が一覧だけで済む。
+hover の状態を作って測る形は、ポインタを当てる形も擬似クラスを強制する形も採らない。ポインタを当てると `transition-colors` の途中の合成色を axe が測る。擬似クラスを強制しても同じで、Storybook の test 実行は animation を止めない方針のため (ADR-0047) 途中の色が残り、さらに addon が描画後に axe を回すので状態を保つ decorator か別の走査が要る。手で組み合わせを並べる方が、持ち物が一覧だけで済む。
 
 ### 検討した選択肢
 

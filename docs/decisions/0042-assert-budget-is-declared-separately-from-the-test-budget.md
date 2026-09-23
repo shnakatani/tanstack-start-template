@@ -1,14 +1,14 @@
-# ADR-0040: assert の予算をテストの予算と分けて宣言する
+# ADR-0042: assert の予算をテストの予算と分けて宣言する
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0039 (assert には locator を渡す。その移行で肯定 assert が増え、予算の既定が問題として現れた)、ADR-0036 (待機を retry API に委ねる)、ADR-0009 (ルールの選定基準)、ADR-0029 (`jsPlugins` で足す判断)
+- 関連: ADR-0041 (assert には locator を渡す。その移行で肯定 assert が増え、予算の既定が問題として現れた)、ADR-0038 (待機を retry API に委ねる)、ADR-0009 (ルールの選定基準)、ADR-0029 (`jsPlugins` で足す判断)
 
 ## Context
 
 ### 退行したときのテストが 15 秒かかる
 
-ADR-0039 の移行で `expect.element` の肯定 assert が増え、「最初から出ないこと」の確認も `.not.toBeInTheDocument()` になった。この形は退行で赤になったとき、テストの残り予算を使い切る。移行前の `expect(x.query()).toBeNull()` は同期の 1 回読みで、赤は即座だった。テンプレートとして配るので、ブラウザテストが増えた先ほど効く。
+ADR-0041 の移行で `expect.element` の肯定 assert が増え、「最初から出ないこと」の確認も `.not.toBeInTheDocument()` になった。この形は退行で赤になったとき、テストの残り予算を使い切る。移行前の `expect(x.query()).toBeNull()` は同期の 1 回読みで、赤は即座だった。テンプレートとして配るので、ブラウザテストが増えた先ほど効く。
 
 ### 設定値を読んでいるのは `expect.poll` だけ
 
@@ -30,7 +30,7 @@ ADR-0039 の移行で `expect.element` の肯定 assert が増え、「最初か
 
 #8308 のコメントは回避策として Playwright provider の `actionTimeout` を挙げる。この設定を入れると `expect.poll.timeout` が `expect.element` にも効く。
 
-**予算の宣言は「最初から出ない」否定 assert の無駄待ちを解かない。** 待って成立しない条件にはどんな予算を渡しても使い切るためで、そちらは呼び出しごとに打ち切る形が要る (ADR-0041 の `expectAbsent`)。本 ADR が決めるのは、待つ意味のある assert の上限だけである。
+**予算の宣言は「最初から出ない」否定 assert の無駄待ちを解かない。** 待って成立しない条件にはどんな予算を渡しても使い切るためで、そちらは呼び出しごとに打ち切る形が要る (ADR-0043 の `expectAbsent`)。本 ADR が決めるのは、待つ意味のある assert の上限だけである。
 
 ## Decision
 
@@ -90,7 +90,7 @@ Playwright は同じ分け方を公式に持ち、「Auto-retrying assertions li
 
 `actionTimeout` があると vitest は呼び出し側の options をそのまま返し、`findElement` の待機ループには既定が無くなる。要素が現れないと回り続け、テスト全体が `Test timed out` で落ちて locator の名前が出力から消える (2026-09-22 実測。`actionTimeout` なしでは 7905ms で `Cannot find element with locator: page.getByText('ない')`)。この相互作用は docs のどのページにも書かれておらず、上流の issue にも無い (同日に検索)。
 
-対処は呼ばないことである。mount を待つ用途は `expect.element(locator).toBeInTheDocument()` で足り、実測は `expect.poll` のコールバックで `element()` を読めば retry する (ADR-0039)。2026-09-22 時点で `src/` に `findElement()` の呼び出しは無い。
+対処は呼ばないことである。mount を待つ用途は `expect.element(locator).toBeInTheDocument()` で足り、実測は `expect.poll` のコールバックで `element()` を読めば retry する (ADR-0041)。2026-09-22 時点で `src/` に `findElement()` の呼び出しは無い。
 
 `findElement` に `{ timeout: ASSERT_TIMEOUT_MS }` を渡す helper を置く形も採らない。呼び出しが 0 件なので、使い手のいない helper と自己テストが残るだけになる。
 
@@ -98,7 +98,7 @@ Playwright は同じ分け方を公式に持ち、「Auto-retrying assertions li
 
 ### `findElement()` は lint で止める
 
-`locator.findElement()` を書けば同じ穴に戻る。しかも失敗は「テストが `Test timed out` で落ちる」形なので、原因が locator だと読めない。規範と docstring だけでは気づけない種類の壊れ方なので、`browser-test/no-find-element` が止める。ルールの置き方は ADR-0039「機械強制は oxlint の JS plugin で書く」に従う。
+`locator.findElement()` を書けば同じ穴に戻る。しかも失敗は「テストが `Test timed out` で落ちる」形なので、原因が locator だと読めない。規範と docstring だけでは気づけない種類の壊れ方なので、`browser-test/no-find-element` が止める。ルールの置き方は ADR-0041「機械強制は oxlint の JS plugin で書く」に従う。
 
 導入時の違反は 0 件である。2026-09-22 の移行前は呼び出しが 16 箇所あり、`actionTimeout` を足した時点で全部が上限なしになっていた (2026-09-22)。退行の記録はそれで足りる。
 
@@ -112,7 +112,7 @@ git grep -n '\.findElement(' main -- src/
 
 ### 呼び出しごとの指定は残る
 
-`expectAbsent` (ADR-0041) が渡す `{ timeout: 0 }` はこの設定と独立に効く (2026-09-22 実測で 53ms)。呼び出しごとの指定が先に読まれるためで、予算を宣言しても「待たない」は書ける。
+`expectAbsent` (ADR-0043) が渡す `{ timeout: 0 }` はこの設定と独立に効く (2026-09-22 実測で 53ms)。呼び出しごとの指定が先に読まれるためで、予算を宣言しても「待たない」は書ける。
 
 ### 再評価の条件
 

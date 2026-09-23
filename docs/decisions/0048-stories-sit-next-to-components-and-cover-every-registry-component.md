@@ -1,8 +1,8 @@
-# ADR-0045: story は部品の隣に置き、registry 部品は全件カタログにする
+# ADR-0048: story は部品の隣に置き、registry 部品は全件カタログにする
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0044 (story を状態のカタログにする) / ADR-0024 (registry 統制、付随ファイルの扱い) / ADR-0013 (層) / ADR-0028 (外見は部品側の variant で配る)
+- 関連: ADR-0046 (story を状態のカタログにする) / ADR-0024 (registry 統制、付随ファイルの扱い) / ADR-0013 (層) / ADR-0028 (外見は部品側の variant で配る)
 
 ## Context
 

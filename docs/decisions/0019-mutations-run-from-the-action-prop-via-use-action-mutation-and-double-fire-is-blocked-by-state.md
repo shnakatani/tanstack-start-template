@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0017 (ユーザー操作による更新は Transition を既定にする)、ADR-0020 (完了点とブロック範囲の軸)、ADR-0037 (二重発火の検証は実イベントで書く)、ADR-0024 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)
+- 関連: ADR-0017 (ユーザー操作による更新は Transition を既定にする)、ADR-0020 (完了点とブロック範囲の軸)、ADR-0039 (二重発火の検証は実イベントで書く)、ADR-0024 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)
 
 ## Context
 
@@ -65,7 +65,7 @@ React の `<form action>` + `useFormStatus` を使わないのは、submit の�
 react.dev が示す形は `useTransition` の `disabled={isPending}` と `useFormStatus` の `disabled={pending}` で、どちらも state だけで決着前の再操作を止める。`useActionState` は再操作を queue に積み、拒否しない。
 React はユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、2 回目の実イベントは `aria-disabled` の部品に届き、Base UI が click を止める。
 
-「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」ことを理由に ref のフラグを併せ持つ形は採らない。この事象は実イベントでは起きず、フラグはその検証を通すためだけのものになる。検証を実イベントで書く根拠は ADR-0037 が持つ。
+「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」ことを理由に ref のフラグを併せ持つ形は採らない。この事象は実イベントでは起きず、フラグはその検証を通すためだけのものになる。検証を実イベントで書く根拠は ADR-0039 が持つ。
 
 完了点 (a) (ADR-0020) では Action が close だけを含み Transition が確定直後に終わるため、close の animate-out の間は `isPending` の dedupe が効かない。同じ対象の mutation が pending なら handler を no-op にする (`queryClient.isMutating` の判定)。実例は `src/routes/notes/index.tsx` の `confirmDelete`。
 
@@ -86,7 +86,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | 案                                                            | 評価                                                                                                                                                                | 採否     |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | app 層に `src/components/action/` を置き `action` prop で包む | React Conf 2025 デモと同じ構造。registry を触らず (ADR-0024)、基盤にも依存しない。dedupe と pending の実装が 1 箇所に集まる                                         | **採用** |
-| ref や閉包のフラグで同一タスク内の 2 連射も塞ぐ               | 実イベントでは起きない事象への防御で、その検証を書くためだけにフラグが要る (ADR-0037)。react.dev の形 (`disabled={pending}`) から外れる                             | 却下     |
+| ref や閉包のフラグで同一タスク内の 2 連射も塞ぐ               | 実イベントでは起きない事象への防御で、その検証を書くためだけにフラグが要る (ADR-0039)。react.dev の形 (`disabled={pending}`) から外れる                             | 却下     |
 | 呼び出し側ごとに `useTransition` を書く                       | 決着前の dedupe と a11y の状態伝達を毎回書き直す。`deleteConfirmMutationProps` の閉包と同じ形が箇所ごとに散る                                                       | 却下     |
 | Base UI #5133 か React Aria #9894 の出荷を待つ                | どちらも 2026-09-13 時点で merge 済み実装が無く、時期も未定                                                                                                         | 却下     |
 | 基盤を React Aria へ替えて action prop を待つ                 | shadcn CLI は `--base aria` を持つが、shadcn-ui/ui #11724 (2026-09-01) の実測で API parity が無く porting になる。Action 層は基盤非依存なので、この判断と切り離せる | 別 ADR   |

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0017 / ADR-0019 (Action 層と Transition。本 ADR はその上で「どこまで待つか」「何を止めるか」を決める)、ADR-0037 (二重発火の検証)
+- 関連: ADR-0017 / ADR-0019 (Action 層と Transition。本 ADR はその上で「どこまで待つか」「何を止めるか」を決める)、ADR-0039 (二重発火の検証)
 
 ## Context
 

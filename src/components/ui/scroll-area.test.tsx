@@ -51,7 +51,7 @@ describe("ScrollArea", () => {
 /**
  * 余白が `ScrollBar` の太さと一致することを、Viewport の端とバーの端の一致で固定する。
  * 一致で見るのは、足りなければバーが内容に被り、余ればバーの無い空帯が残るため。
- * 端の一致は矩形でしか表せないので `getBoundingClientRect` を読む。mount を `expect.element` で待ってから読む (ADR-0036)。
+ * 端の一致は矩形でしか表せないので `getBoundingClientRect` を読む。mount を `expect.element` で待ってから読む (ADR-0038)。
  *
  * 寸法は `size-24` = 4px * 24 = 96px、`pb-2.5` / `pr-2.5` = 4px * 2.5 = 10px
  * (`--spacing` は既定の 0.25rem。`src/styles.css` の `@theme` は色しか触っていない)。
@@ -76,7 +76,7 @@ function Overflowing({ x, y }: { x: boolean | number; y: boolean }) {
 
 type Orientation = "horizontal" | "vertical";
 
-/** poll のコールバックの中から呼び、observation ごとに locator を引き直す (ADR-0039) */
+/** poll のコールバックの中から呼び、observation ごとに locator を引き直す (ADR-0041) */
 function rect(locator: Locator): DOMRect {
   return locator.element().getBoundingClientRect();
 }
@@ -137,7 +137,7 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     await expect.element(vertical).toBeInTheDocument();
 
     // 隙間は差の絶対値を整数 px に丸めて 0 と比べる (0.5px 未満のずれは符号を問わず許す。
-    // `Math.round(-0.3)` は `-0` で、`toEqual` は `Object.is` で比べるので絶対値を取る)。2 つは 1 回の観測から取る (ADR-0041)
+    // `Math.round(-0.3)` は `-0` で、`toEqual` は `Object.is` で比べるので絶対値を取る)。2 つは 1 回の観測から取る (ADR-0043)
     await expect
       .poll(() => {
         const vp = rect(viewport);
@@ -193,7 +193,7 @@ describe("ScrollArea のスクロールバー分の余白", () => {
     await expect.element(vertical).toBeInTheDocument();
     await expect.element(horizontal).toBeInTheDocument();
 
-    // 3 つの隙間は 1 回の観測から取る。分けると別々の瞬間で成立してよいことになる (ADR-0041)
+    // 3 つの隙間は 1 回の観測から取る。分けると別々の瞬間で成立してよいことになる (ADR-0043)
     await expect
       .poll(() => {
         const vbar = rect(vertical);

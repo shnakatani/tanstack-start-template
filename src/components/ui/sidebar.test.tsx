@@ -28,7 +28,7 @@ import { resolveColorToken } from "@/test/resolve-color-token";
  * 配色は `toHaveStyle` を token の解決値で見る。閉状態は背景が透明で前景は継承した
  * `--foreground` (light では accent の前景と別値。dark は同値。styles.css)。開くのは pointer
  * ではなくキーボードで、hover の配色と混同しない (マウスは browser-setup の parkMouse が
- * 退避済み。ADR-0038)。
+ * 退避済み。ADR-0040)。
  */
 // トークンが未定義なら resolveColorToken が投げる。ここで存在を見張り直さない
 const closedStyle = () =>

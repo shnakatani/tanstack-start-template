@@ -1,4 +1,4 @@
-/* scan の対象をアプリのソースへ絞る (ADR-0046) */
+/* scan の対象をアプリのソースへ絞る (ADR-0049) */
 @import "tailwindcss" source("../src");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -21,7 +21,7 @@
 
 /* static はここに付けない。付けると本番の CSS が使っていない変数の分まで持つ。
    カタログに要る分は .storybook/preview.css がこのファイルを theme(static) 付きで
-   読み直して掛ける (ADR-0046) */
+   読み直して掛ける (ADR-0049) */
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;

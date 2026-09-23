@@ -47,7 +47,7 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
   );
 }
 
-/** 開くところまで。絞り込みと選択は書かない (ADR-0044) */
+/** 開くところまで。絞り込みと選択は書かない (ADR-0046) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
   await screen.findByRole("listbox");

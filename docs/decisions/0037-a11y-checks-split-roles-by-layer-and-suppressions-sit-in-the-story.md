@@ -1,8 +1,8 @@
-# ADR-0049: a11y の検査は層ごとに役割を分け、抑制は出た story に理由と出口を添えて置く
+# ADR-0037: a11y の検査は層ごとに役割を分け、抑制は出た story に理由と出口を添えて置く
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0035 (`incomplete` を落とす層) / ADR-0047 (story の a11y 検査) / ADR-0009 (静的 lint の構成)
+- 関連: ADR-0035 (`incomplete` を落とす層) / ADR-0050 (story の a11y 検査) / ADR-0009 (静的 lint の構成)
 
 ## Context
 
@@ -21,7 +21,7 @@
 | story の axe            | 部品が取りうる状態。操作の後も `play` で見る                                                 | 部品か story     |
 | ブラウザテストの axe    | story を置けないページと文書全体 (`src/routes/`)。ランドマーク構造など部品へ分解できないもの | そのケースの実装 |
 
-境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (ADR-0044)。分かれるのは**置ける場所**と、そこから来る**描画を統制できるか** (ADR-0035) である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
+境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (ADR-0046)。分かれるのは**置ける場所**と、そこから来る**描画を統制できるか** (ADR-0035) である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
 
 ### 抑制は story の `parameters.a11y` に置き、理由と出口を添える
 

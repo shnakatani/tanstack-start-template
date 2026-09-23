@@ -1,8 +1,8 @@
-# ADR-0050: play は合成イベントで書き、実イベントの規律と移せない検証はブラウザテストに残す
+# ADR-0047: play は合成イベントで書き、実イベントの規律と移せない検証はブラウザテストに残す
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0044 (play を書く部品の軸) / ADR-0036 (待機) / ADR-0037 (実イベント) / ADR-0038 (animation)
+- 関連: ADR-0046 (play を書く部品の軸) / ADR-0038 (待機) / ADR-0039 (実イベント) / ADR-0040 (animation)
 
 ## Context
 
@@ -20,9 +20,9 @@ play で書いた検証は既存のブラウザテストから削る。同じ振
 
 ### play の操作は合成イベントとし、実イベントの規律はブラウザテストが持つ
 
-play は Storybook の UI 上でも実行されるため CDP を使えず、`storybook/test` の合成イベントで操作する。ADR-0037 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、play へは移さない。
+play は Storybook の UI 上でも実行されるため CDP を使えず、`storybook/test` の合成イベントで操作する。ADR-0039 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま持ち、play へは移さない。
 
-ADR-0037 が禁じた同期 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである。
+ADR-0039 が禁じた同期 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである。
 
 どのブラウザテストが持つかを決めておく。story へ移した結果、実イベントの検証がリポジトリから消えることを防ぐ。
 
@@ -30,7 +30,7 @@ ADR-0037 が禁じた同期 2 連射は play では起きない。`storybook/tes
 | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `ActionButton` の二重発火 (`ActionButtonShell` の `disabled={isPending}`)              | `src/components/action/button.test.tsx`                                          |
 | `ActionForm` / `ActionFormSubmit` の二重発火 (`ActionForm` の `if (isPending) return`) | `src/components/action/form.test.tsx`                                            |
-| `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと                        | `src/routes/notes/-components/notes-page.test.tsx` の `confirmDelete` (ADR-0037) |
+| `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと                        | `src/routes/notes/-components/notes-page.test.tsx` の `confirmDelete` (ADR-0039) |
 | 画面側の二重確定の dedupe (`queryClient.isMutating`)                                   | `src/routes/notes/-components/notes-page.test.tsx` の Enter 2 連射               |
 
 画面のテストは Action 層の guard を代替しない。`confirmDelete` は `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の時点で `isPending` は false になる。`disabled={isPending}` を外しても browser project は 1 件も落ちない (2026-09-20 実測)。経路が薄いラッパーを通ることは、その guard を通ることを意味しない。
@@ -39,13 +39,13 @@ story を書かない部品のテストは触らない。story を書いた部�
 
 移せないのはレイアウトと配色の実測 (`getComputedStyle` / `getBoundingClientRect`)、型契約 (`expectTypeOf`)、CDP 経由の実イベントの 3 つである。`src/components/ui/` の既存テスト 26 case のうち 25 case がこれに当たる (2026-09-20 実測)。
 
-この 3 つは play を書く部品の話である。ADR-0044 で play を書かないと決めた部品 (args だけで状態が決まるもの) では、story が描画と axe しか走らせず何も検証しない。構造の契約もブラウザテストに残り、残す根拠は下の役割分担になる。JSDoc にはどちらの根拠で残したかを書く。
+この 3 つは play を書く部品の話である。ADR-0046 で play を書かないと決めた部品 (args だけで状態が決まるもの) では、story が描画と axe しか走らせず何も検証しない。構造の契約もブラウザテストに残り、残す根拠は下の役割分担になる。JSDoc にはどちらの根拠で残したかを書く。
 
-popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0038 の扱う animate-out の窓に入る。
+popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が ADR-0040 の扱う animate-out の窓に入る。
 
-待機は `storybook/test` の `waitFor` で書く。ADR-0036 の retry API は play から呼べない。
+待機は `storybook/test` の `waitFor` で書く。ADR-0038 の retry API は play から呼べない。
 
-Storybook の test 実行では ADR-0038 の animation 無効化を適用しない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら、`vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う。
+Storybook の test 実行では ADR-0040 の animation 無効化を適用しない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら、`vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う。
 
 ### story とブラウザテストの役割分担
 
@@ -54,7 +54,7 @@ Storybook の test 実行では ADR-0038 の animation 無効化を適用しな�
 | story                | どんな状態があるか。目で見るカタログ                   |
 | 既存のブラウザテスト | その状態が壊れていないか。寸法と色を固定する回帰の防止 |
 
-役割が違うため両方残す。ADR-0036 / ADR-0037 / ADR-0038 が固めた待機・実イベント・animation 無効化の規律は既存のテストが持ち続ける。
+役割が違うため両方残す。ADR-0038 / ADR-0039 / ADR-0040 が固めた待機・実イベント・animation 無効化の規律は既存のテストが持ち続ける。
 
 ### 検討した選択肢
 

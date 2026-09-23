@@ -44,7 +44,7 @@ function Filter({
 /**
  * ロールの確認と選択の通知は `segmented-radio-group.stories.tsx` の play が持ち、等幅・
  * トラックの高さ・aria-invalid の枠色・className のマージは同 story の状態カタログで見る
- * (ADR-0044)。寸法は測らない。寸法は tabs の registry の値を写したもので、上流が決める (ADR-0024)。
+ * (ADR-0046)。寸法は測らない。寸法は tabs の registry の値を写したもので、上流が決める (ADR-0024)。
  *
  * ここに残すのは Playwright の実 pointer / 実キーボードでしか確かめられない 3 件。story の
  * `userEvent.hover` は合成イベントで CSS の `:hover` を立てないため、hover と選択色の衝突は
@@ -58,7 +58,7 @@ describe("SegmentedRadioGroup", () => {
     const foreground = resolveColorToken("--foreground");
     await expect.element(selected).toHaveStyle(`color: ${foreground}`);
 
-    // transition-all は browser-setup の reduced motion で 0.01ms になり、settled 状態を即座に読める (ADR-0038)
+    // transition-all は browser-setup の reduced motion で 0.01ms になり、settled 状態を即座に読める (ADR-0040)
     await userEvent.hover(selected);
 
     // 選択時の文字色と hover 時の文字色が別トークンだと、data-checked が :where() 包みで
@@ -88,7 +88,7 @@ describe("SegmentedRadioGroup", () => {
 
     await expect.element(item).toHaveAttribute("aria-disabled", "true");
     // クリックが届かないことは pointer-events の指定で見る。イベントを対象へ届かせて
-    // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (ADR-0037)
+    // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (ADR-0039)
     await expect.element(item).toHaveStyle("opacity: 0.5; pointer-events: none");
   });
 });
