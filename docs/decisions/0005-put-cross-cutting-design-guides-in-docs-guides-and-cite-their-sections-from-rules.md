@@ -50,7 +50,7 @@ memory docs は import について "Imported files are expanded and loaded into
 ## Consequences
 
 - rules の項目がガイドの節を出典に指しても、Claude がガイドまで辿るかは確かめていない。rules が規範そのものを持つので、辿らなくても規範は効く
-- ガイドの見出しを変えたら、`git grep -n 'docs/guides/<file>.md「'` で指している rules とコメントを直す。見出しへの参照は機械で検査しない
+- ガイドの見出しを変えたら、`git grep -n 'docs/guides/<file>.md「'` で指している rules・コメント・ADR・他のガイドを直す。見出しへの参照は機械で検査しない
 - 主題の一覧は `docs/guides/README.md` が持つ
 
 ## 出典

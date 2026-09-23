@@ -36,4 +36,4 @@ ADR は番号で指し、番号は使い回さない。決定が置き換わっ�
 
 - コメントから rules へのリンクを張らないので、コメントを読んだ人が現在の規範の文面を知るには、ADR かガイドを読んだうえで rules を探す
 - ADR を分割したら、コメント中の `ADR-NNNN` を内容で振り分け直す。参照は `git grep -n "ADR-NNNN"` で拾える
-- ガイドの見出しを変えたら、`git grep -n 'docs/guides/<file>.md「'` でコメントを直す (ADR-0005)
+- ガイドの見出しを変えたら、`git grep -n 'docs/guides/<file>.md「'` でコメントを直す。rules・ADR・他のガイドも同じ grep で拾える (ADR-0005)
