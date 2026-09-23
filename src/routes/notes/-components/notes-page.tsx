@@ -35,7 +35,8 @@ function normalizeQuery(text: string): string {
 
 /**
  * 一覧ページ本体。`q` は URL で確定した検索語、`onQueryChange` は確定の要求 (submit)。
- * route ファイルから export せずここに置く (ADR-0013)。入力欄と一覧の流れは ADR-0024。
+ * route ファイルから export せずここに置く (ADR-0013)。入力欄と一覧の流れは ADR-0024、
+ * 件数の通知は ADR-0038。
  */
 export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: string) => void }) {
   // URL の q が変わった世代。値ではなく世代で編集を紐付ける: 履歴は同じ値へ戻れるので、値で照合すると
@@ -63,7 +64,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const queryClient = useQueryClient();
   const isStale = draftQ !== deferredQ;
 
-  // 結果の入れ替わりの通知。announcer (ADR-0037) を、取得の決着を契機にここから呼ぶ。取得中は古い件数を読むので決着まで待ち、直前と同じ条件なら出さない。
+  // 結果の入れ替わりの通知 (ADR-0038)。取得中は古い件数を読むので決着まで待ち、直前と同じ条件なら出さない。
   // ref の初期値が URL の q なので初期表示は通知されない
   const settled = !notesQuery.isFetching;
   const announcedQ = useRef(q);

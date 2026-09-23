@@ -124,8 +124,8 @@ paths:
 - matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` の中で読む。基準値を 1 回だけ読むときは先に `expect.element` で mount を待つ (ADR-0047)
 - 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件は `vi.waitFor` (ADR-0044)
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0047)
-- assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない
-- `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる
+- assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない (ADR-0048)
+- `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる (ADR-0048)
 - 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (ADR-0049)
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/absent.ts`)。`expectAbsent` と取り違えない (ADR-0049)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (ADR-0049)

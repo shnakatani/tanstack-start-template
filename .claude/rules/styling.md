@@ -143,7 +143,7 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 - 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0037)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0037)
 - pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0037)
-- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む
+- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0038)
 - メニュー全体を包む単一の `DropdownMenuGroup` には名前を与えない。メニュー自体がトリガー由来の名前を持つ
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 - ナビゲーションは landmark (`nav`、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける

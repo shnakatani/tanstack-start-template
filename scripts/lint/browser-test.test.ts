@@ -212,7 +212,7 @@ tester.run("no-find-element", noFindElement, {
       errors: [{ messageId: "findElement" }],
     },
     {
-      // timeout を明示しても呼ばない。予算は呼び出しごとに持たず、src/test/assert-budget.ts が持つ
+      // timeout を明示しても呼ばない。予算を呼び出しごとに持つ形は 2026-09-22 に撤去した (ADR-0048)
       code: "await locator.findElement({ timeout: 5000 });",
       errors: [{ messageId: "findElement" }],
     },

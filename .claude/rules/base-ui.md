@@ -18,8 +18,8 @@ paths:
 
 ## Select: 候補が変わったときの自己リセットに依存しない
 
-- 現在値が候補から消えたことを `onValueChange` の `null` 通知で検出しない。通知が来ない条件がある。値の解決は消費側で引き取る (実例: `FormSelectField`)
-- `null` や `options` に無い値を受けたら、表示を保ったまま `console.warn` に現在値と突合元を残す。黙って値が消えると気付けない
+- 現在値が候補から消えたことを `onValueChange` の `null` 通知で検出しない。通知が来ない条件がある。値の解決は消費側で引き取る (ADR-0030)
+- `null` や `options` に無い値を受けたら、表示を保ったまま `console.warn` に現在値と突合元を残す (ADR-0030)
 
 ## Combobox と ItemGroup
 

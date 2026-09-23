@@ -27,7 +27,7 @@ import { useFieldContext } from "@/hooks/form-context";
  * fieldValue は部品内部では使わず、消費側の field.state.value を受けて値型を突き合わせる
  * ためだけに存在する。useFieldContext のジェネリクスは実フィールドと型で結びつかないため、
  * これが唯一の突き合わせ経路となる (TanStack/form discussion #1240 のメンテナ回答)。
- * `@tanstack/react-form` の stable の公開型に値型を突き合わせる API が無いあいだの workaround である。
+ * 撤去の条件は ADR-0029。
  */
 interface FieldValueTypeCheckProps<T> {
   fieldValue: T;
@@ -210,12 +210,6 @@ interface FormSelectFieldProps<T extends string>
   options: readonly { value: T; label: string }[];
 }
 
-/**
- * 現在値が候補から消えたことを `onValueChange` の `null` 通知で検出しない。Base UI の Select の
- * 自己リセットは docs に書かれておらず、`null` が来ない条件があり、版で経路も変わる
- * (1.8.0 の `SelectPositioner` の `onMapChange`)。値の解決はここで引き取り、`null` や候補に無い値を
- * 受けたら表示を保ったまま `console.warn` に残す。
- */
 export function FormSelectField<T extends string>({
   label,
   options,

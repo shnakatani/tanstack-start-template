@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0052 (framework) / ADR-0057 (story の a11y 検査) / ADR-0044 (待機) / ADR-0045 (実イベント) / ADR-0046 (animation) / ADR-0014 (層) / ADR-0018 (Transition)
+- 関連: ADR-0052 (framework) / ADR-0057 (story の a11y 検査) / ADR-0044 (待機) / ADR-0045 (実イベント) / ADR-0046 (animation) / ADR-0054 (story の置き場所と対象) / ADR-0014 (層) / ADR-0018 (Transition)
 
 ## Context
 

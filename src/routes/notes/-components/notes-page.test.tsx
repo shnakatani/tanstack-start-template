@@ -163,7 +163,7 @@ describe("NotesPage", () => {
     await expectText(screen, "『abc』に一致するメモはありません");
     await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
-    // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する
+    // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0038)
     await expect.poll(() => readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
   });
 

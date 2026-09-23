@@ -21,7 +21,7 @@ export async function expectAbsent(target: Locator): Promise<void> {
 }
 
 /**
- * 要素が在る状態から消えるのを待つ。**assert の予算ぶん待つ** (`assert-budget.ts`)。
+ * 要素が在る状態から消えるのを待つ。**assert の予算ぶん待つ** (ADR-0048)。
  *
  * base-ui は `animate-out` の完了まで unmount を遅らせるため、消えるのを待つ側には retry の
  * 予算が要る (ADR-0046)。`expectAbsent` に置き換えると unmount を待たずに落ちる。

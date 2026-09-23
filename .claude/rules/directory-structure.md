@@ -25,10 +25,11 @@ paths:
 - 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の部品を参照で渡す (ADR-0022)
 - ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0013)
 - route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない
-- story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まる
-- story を置けるのは `src/components/` 配下だけ。他へ置くと `.storybook/main.ts` の `stories` から無言で外れる
-- 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分ける。親を要求する部品は親の story で扱う
+- story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まる (ADR-0054)
+- story を置けるのは `src/components/` 配下だけ。他へ置くと `.storybook/main.ts` の `stories` から無言で外れる (ADR-0054)
+- 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分ける。親を要求する部品は親の story で扱う。CSF の meta は 1 ファイルに 1 つで、まとめると別の部品の meta 配下に並ぶ
 - `argTypes` の `options` に `cva` の variant を写すときは型で網羅を強制する。型検査も lint も一致を見ない (ADR-0053)
+- トークンの story に typography の階層のような class の規範を写さない。写すと片方だけが古くなり、突き合わせる検査も無い
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。余白は `.storybook/preview.css` が持つ (ADR-0057)
 - story から部品へ渡す `className` は layout に限る。story は lint (`no-restyle`) の対象外なのでレビューで見る (ADR-0032)
 
@@ -52,10 +53,11 @@ paths:
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                           |
 | 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` では対象と同じ `-components/` か `-lib/`、route ファイル自身の分はその隣 |
-| story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` に置くと出荷されうる                                                 |
+| story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` に置くと出荷されうる (ADR-0054)                                      |
 
 - 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
 - helper や `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0011)
+- story (`*.stories.*`) も `no-restricted-imports` の対象から外す。出荷される bundle に入らない
 - helper のテストは、DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project) に置く
 
 ## shadcn コンポーネント導入時のチェック
@@ -66,7 +68,7 @@ paths:
 2. baseline との diff が許容リスト (ADR-0026) と 1:1 であることを確かめる。上流の形を保つ違反だけ行単位で抑制し、許容リストへ記録する
 3. コード側の理由コメントは、ADR だけでは実装者が誤る落とし穴に限る。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く
 4. 未使用での先行導入 (vendor preset) は許容する。chore コミットとして記録する
-5. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらない
+5. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらない (ADR-0054)
 
 ## ルートファイル
 

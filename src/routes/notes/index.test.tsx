@@ -123,7 +123,7 @@ describe("/notes route", () => {
     expect(router.state.location.href).toBe("/notes?q=xyz");
     // 検索は同じ画面の絞り込みなので履歴を積まない (replace)。push に変わると 2 になる
     expect(router.history.length).toBe(1);
-    // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない)
+    // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0038)
     await vi.waitFor(() => {
       expect(readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
     });
