@@ -5,16 +5,6 @@ paths:
 
 # 型の規律
 
-コンポーネントとデータ境界の型付けの基準。実装ワークフロー全般は `implementation.md`。
-
-## 冒頭チェックリスト
-
-- [ ] 型アサーション (`as`) を書いていない (`as const` は可)
-- [ ] `children` を受けるコンポーネントは `children: ReactNode` を明示宣言している
-- [ ] ラッパー部品の転送 prop を自前で再宣言していない (`Pick<ComponentProps<typeof 転送先>, ...>` で導出)
-- [ ] `fieldComponents` の部品に値型突き合わせ用の `fieldValue` prop がある
-- [ ] ドメイン型のフィールドを手書きで宣言していない (スキーマから `InferOutput` で導出している)
-
 ## ドメイン型はスキーマから導出する
 
 - ドメイン型は `src/features/<domain>/schema.ts` のスキーマから `InferOutput<typeof xxxSchema>` で導出し、手書きのフィールド宣言を新設しない。二重管理するとスキーマへのフィールド追加が型に伝わらず、実行時の `v.parse` まで気付けない (ADR-0008)
@@ -28,13 +18,13 @@ paths:
 
 ## 型アサーション (`as`) 全面禁止
 
-lint `typescript/consistent-type-assertions: never` で検出する (ADR-0004)。
+lint (`typescript/consistent-type-assertions`) が止める。`as const` は可。直し方 (ADR-0004):
 
 - 型が合わないときはキャストせず実装を変える。代替はランタイムガード / `as const` / 型ガード関数 / 親型 API
-- 外部データ (DB の行 / API レスポンス等) は `v.parse(schema, data)` で検証する。スキーマは既存のもの (ドメインなら `src/features/<domain>/schema.ts`) を SSOT として再利用し、不在なら新規定義してから parse する
+- 外部データ (DB の行 / API レスポンス等) は `v.parse(schema, data)` で検証する。スキーマは既存のもの (`src/features/<domain>/schema.ts`) を再利用する
 - テスト double もまず型注釈で表現する。抑制へ落とすのは、private constructor を持つ外部型のように構造的構築が閉じている場合だけ
-- 回避不能な場合のみ `oxlint-disable-next-line typescript/consistent-type-assertions` で行単位抑制し、回避できない理由を directive の `--` に書く
-- `src/components/ui/` の registry も同じ検査を受ける。抑制の可否は他と同じで、追加で要るのは ADR-0006 の許容リストへの記録
+- 回避不能な場合のみ `oxlint-disable-next-line typescript/consistent-type-assertions` で行単位抑制し、理由を directive の `--` に書く
+- `src/components/ui/` の registry で抑制したら ADR-0006 の許容リストにも記録する
 
 ## children prop は明示的に ReactNode で宣言する
 
@@ -42,7 +32,7 @@ lint `typescript/consistent-type-assertions: never` で検出する (ADR-0004)�
 - 型は `ReactNode` に固定する (`ReactElement` 等へ狭めるのは本当に制約したいときだけ、理由コメント付き)
 - `PropsWithChildren` は使わない。children が常に optional になり必須を表現できない (react.dev と React TypeScript Cheatsheet の第一形が明示宣言)
 - JSX 子要素と違うセマンティクスのものを受けるなら、`children` ではなく別名の prop (例: `renderRow` / `rows`) にする
-- 対象外: shadcn 生成コード (`src/components/ui/`) と外部 API の型都合。除外されるのは本ルールだけで、`directory-structure.md` の shadcn 導入チェックは従来どおり適用する
+- 対象外: shadcn 生成コード (`src/components/ui/`) と外部 API の型都合
 
 ## ラッパー部品の転送 prop 型は転送先の ComponentProps から導出する
 
@@ -53,9 +43,8 @@ lint `typescript/consistent-type-assertions: never` で検出する (ADR-0004)�
 
 ## fieldComponents の部品は値型突き合わせ用の prop を持たせる
 
-- 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。generic interface 1 つ (`src/components/parts/form-fields.tsx` の `FieldValueTypeCheckProps<T>`) に集約して各部品が extends する
-- `useFieldContext<T>()` の `T` は呼び出し側の宣言だけで実フィールドと結びつかず、number フィールドに文字列部品を使っても通る。`field.state.value` は `name` から型付けされるため、これが唯一の突き合わせ経路 (TanStack/form discussion #1240)
-- prop 名は `value` にしない。部品が内部で `Input` へ `value` を渡す構成と紛れる
-- `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。この型テストを落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をせず通過する
-- 撤去条件: `@tanstack/react-form` の公開型 (`.d.ts`) に、フィールドの値型を消費側へ突き合わせる API が入ったら不要
-- 撤去の判定は `.d.ts` に出るかで行い、名前一致でしない。TanStack/form#1606 は 2025-11-03 から停止した draft で、v2 alpha にある同名の `createFieldComponent` は `.d.ts` に出ない内部 factory
+- 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。型は `FieldValueTypeCheckProps<T>` (`form-fields.tsx`) を extends する (ADR-0039)
+- `useFieldContext<T>()` の `T` は実フィールドと結び付かず、値型の違う部品を差しても通る。`fieldValue` が唯一の突き合わせ経路 (ADR-0039)
+- prop 名は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる
+- `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をしない
+- 撤去の条件は ADR-0039。判定は公開型 (`.d.ts`) に出るかで行い、名前の一致では行わない
