@@ -12,9 +12,9 @@ axe の結果が緑であることを、どこまで「測った」「WCAG を�
 
 ### 緑は「測った」を意味しない
 
-`incomplete` を塞いでも、`passes` に入ったことは「測った」の証明にならない。`color-contrast` は画面に出ていない要素を `return true` で合格にする (`axe.js` の `_isVisibleOnScreen` 分岐、`messageKey: 'hidden'`)。検査が空振りしても緑になる形は残る。
+`incomplete` を塞いでも、`passes` に入ったことは「測った」の証明にならない。`color-contrast` は画面に出ていない要素を `return true` で合格にする (`axe.js` の `_isVisibleOnScreen` 分岐、`messageKey: 'hidden'`)。この空振りは `passes` にも数えられるので、`passes` の件数を見ても捕まえられない。
 
-この形は axe に固有ではない。前件が成立しないまま成立する assertion は vacuous pass と呼ばれ、定石は「失敗を厳しくする」ではなく「実際に測った件数が 0 でないことを別に要求する」である。`expectNoA11yViolations` の `passes.length > 0` はその粗い版で、ルール単位では見ていない。
+この形は axe に固有ではない。前件が成立しないまま成立する assertion は vacuous pass と呼ばれ、定石は「失敗を厳しくする」ではなく「実際に測った件数が 0 でないことを別に要求する」である。`expectNoA11yViolations` の `passes.length > 0` はその粗い版で、ルール単位では見ていない。捕まえるのはルールが 1 つも走らなかった場合 (対象が空、設定で全ルールが外れた) だけで、上の `hidden` の空振りは捕まえない。
 
 緑を静かに壊す設定と、axe が担当しない範囲 (1.4.11 など) は `docs/guides/accessibility.md`「axe の緑が意味しないこと」にある。
 

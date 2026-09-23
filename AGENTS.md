@@ -19,7 +19,7 @@ mise run verify   # マージ前に通す: vp check → vp test run → vp build
 ## テストの実行
 
 - テストは TDD で書く。failing test を書き、`vp test run <path>` で落ちることを確かめてから最小の実装で通す
-- テストの置き場所は壊れる原因で分ける。アプリの単体は `src/**/*.test.ts`、ブラウザは `src/**/*.test.tsx`、スクリプトは `scripts/**/*.test.ts`、設定と文書の整合検査は `scripts/checks/integrity/`。新しいテストファイルを書くだけでは `paths` の rules は読み込まれない (ADR-0003)
+- テストの置き場所は壊れる原因で分ける。アプリの単体は `src/**/*.test.ts`、ブラウザは `src/**/*.test.tsx`、スクリプトは `scripts/**/*.test.ts` (`scripts/checks/**` を除く)、設定と文書の整合検査は `scripts/checks/integrity/`、ビルド成果物の検査は `scripts/checks/runtime/` (vitest の project ではなく `vp build` の後に走らせる)。新しいテストファイルを書くだけでは `paths` の rules は読み込まれない (ADR-0003)
 - `vp test run <path>` で 1 回実行する (`vp test` は watch モード)
 - `vp test` を複数並行で走らせない。orphan の runner が残ると後続が collection エラーで巻き添えになる。kill 後は `ps` で残存を確かめる
 - background で走らせるときはパイプを付けない。buffering で完了まで出力が見えず、ハングと実行中を区別できない
@@ -37,7 +37,7 @@ UI と story を触る前に `vp exec storybook skills` を実行し、`stories`
 
 ## 仕様書・設計判断
 
-- `docs/decisions/` - ADR（インフラ・ツールチェーン等の構造変更に着手する前に必ず参照）
+- `docs/decisions/` - ADR。ツールチェーン・lint 方針・型の作り方・UI 基盤を変える前に、`docs/decisions/README.md` の一覧で該当する ADR を探す
 - `docs/guides/` - 設計ガイド。部品をまたぐ作法の説明と手順。rules の項目が出典として節を指す
 
 <!-- intent-skills:start -->

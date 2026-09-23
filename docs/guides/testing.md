@@ -179,7 +179,7 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 ### viewport に収まることを測る
 
-viewport の定数は `src/test/viewport.ts` が持つ。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`vitest.browser.config.ts` の `browser.viewport` が `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。
+viewport の寸法の定数は `src/test/viewport-sizes.ts` が持ち、`src/test/viewport.ts` が再 export する。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`vitest.browser.config.ts` の `browser.viewport` が `viewport-sizes.ts` から `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。config から `viewport.ts` を読むと、browser mode の外で落ちる (`viewport-sizes.ts` の docstring)。
 
 popup の全体が viewport に収まることは、`src/test/viewport.ts` の `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。実測と理由は `src/test/viewport.ts` の docstring が持つ。
 
