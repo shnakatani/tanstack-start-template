@@ -43,8 +43,6 @@ import 束縛はこの型を持たないため、定数の中身まで辿れな�
 `src/components/ui/dialog.tsx` も同種の class 定数を 2 つ export するが、消費側が `src/components/ui/alert-dialog.tsx` で層の内側に閉じているため規則に当たらない。
 **当たるのは定数を共有するパターンではなく、共有が層の境界を越えることである。**
 
-件数の再測は `vp lint 2>&1 | grep -c 'require-static-classes'` で行う。
-
 ## Decision
 
 ### 1. 規則を `no-restyle` と同じ層の境界で有効にする
@@ -100,7 +98,6 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 - 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`lint-config.test.ts` が規則名と severity を固定する
 - variant 関数を消費側から呼ぶ形を採るたびに `variantFunctions` への追加が要る。忘れると呼び出しが落ちるので、気付けない失敗にはならない
 - `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。ADR-0029 の Consequences)
-- 引数を取らない関数を `mergeFunctions` へ登録すると、規則を通しながら戻り値の中身の検査を落とせる (2026-09-19 実測)。抜け道として使わない
 - design system の層から外へ class 文字列を配る形が閉じる。層の内側での共有は残る
 
 ## 出典

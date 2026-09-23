@@ -85,27 +85,7 @@ ADR-0038 が「lint で表現できる形は無い」と書いたのは、`eleme
 
 ルールは `scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む。`vp lint` と `vp check` で走るので、検査のための実行経路を増やさない。`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0029 / ADR-0010)。
 
-API は同梱の `node_modules/vite-plus/docs/guide/lint.md` 「Writing Your Own Rules」に従う。型は `vite-plus/lint/plugins` の `definePlugin` / `defineRule` / `SourceCode`、テストは `vite-plus/lint/plugins-dev` の `RuleTester` から取る。同 docs は `@oxlint/plugins` と `oxlint` を直接依存に足すことを禁じ、理由を 2 つ挙げる。別に pin した写しが linter 本体からずれること、pnpm の strict layout では plugin ファイルから解決できないことである。
-
-この形が使えるのは vite-plus 0.3.2 の版に両方の entrypoint があるためで、2026-09-22 に実測して確かめた。`vite-plus/lint/plugins` から `defineRule` を import した TypeScript は型解決に成功する (`TS2307` は出ない)。`RuleTester` に `describe` / `it` を渡したルールのテストは scripts-tools project で通る。
-
-**木は親だけを辿る。** oxlint の node は `parent` を持つので、`Object.values` で部分木を降りる走査は木を登り直して無限再帰する (2026-09-22 に `RangeError: Maximum call stack size exceeded` で観測)。判定は値の使われ方を上へ辿る形で書く。
-
-ルールが効かなくなる壊し方を 2 つ決め、どちらも赤になることを確かめた (2026-09-22)。直接と束縛の違反を 1 件ずつ持つファイルへ `vp lint` を当てると 2 件が報告される。
-
-| 壊し方         | 操作                                                                | 報告件数                                     |
-| -------------- | ------------------------------------------------------------------- | -------------------------------------------- |
-| (壊していない) | —                                                                   | 2                                            |
-| 直接           | `vite.config.ts` の `lint.rules` でルールを `off` にする            | 0                                            |
-| 間接           | 変数束縛の追跡 (`context.sourceCode.getDeclaredVariables`) を止める | 1 (直接の形だけが残り、束縛の形が無言で通る) |
-
-間接の側を置くのは、束縛を挟む形が実際に多いためである。次のコマンドで数えると 64 行 / 17 ファイルあった (2026-09-22)。
-
-```bash
-grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test.tsx' src/
-```
-
-追跡が外れても直接の形だけは報告され続けるので、設定は有効に見える。ルールのテストはこの 2 つの形を `RuleTester` の invalid に置いてある。
+ルールの書き方 (API、依存に足さないもの、木の辿り方) と、ルールを 2 通りに壊して確かめる手順は `docs/guides/lint.md`「自前のルールを書く」「検査を作ったら 2 通りに壊して確かめる」にある。このルールのテストは、直接と変数束縛の 2 つの形を `RuleTester` の invalid に置いている。
 
 ### 移行は 1 つの PR で終える
 

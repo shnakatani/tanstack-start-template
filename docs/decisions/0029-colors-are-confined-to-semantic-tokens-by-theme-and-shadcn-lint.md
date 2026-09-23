@@ -42,28 +42,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書き、`@shadcn/lint` には `{ name: "shadcn", specifier: "@shadcn/lint" }` を使う。
-plugin 本体の `meta.name`、診断コード、rule key、抑制 directive が `shadcn` を共有する。
-`rules` のキーに別名 (`@shadcn/lint/no-raw-colors`) を書くと設定のパースが `Plugin '@shadcn/lint' not found` で落ちる。
-一方、抑制 directive は未登録の名前を書いてもエラーにならず、ただ効かない (2026-09-19 に Oxlint 1.82.0 で実測)。名前を揃えないと、rule は有効なまま抑制だけが無言で外れる。
-JS plugin は lint 時間を伸ばす。測るときは `time vp lint` を 2 回ずつ実行して 2 回目同士を比べる (1 回目には解決のコストが乗る)。
-
-3 ルールの発火は `--print-config` に出ないため、次を一時ファイルへ置いて `vp lint <path>` を走らせ、3 行とも診断が出たら消す。
-
-```tsx
-export function Probe() {
-  return (
-    <div>
-      <span className="bg-blue-500" /> {/* no-raw-colors */}
-      <span className="bg-[#333]" /> {/* no-arbitrary-values */}
-      <span className="not-a-real-class" /> {/* no-unknown-classes */}
-    </div>
-  );
-}
-```
-
-theme と component の探索に失敗したときは、`vp lint` の出力へ `[@shadcn/lint]` の警告が出る。
-`components.json` の `tailwind.css` が存在しないパスなら代替の stylesheet を使う旨、Tailwind を import する stylesheet が 1 つも無ければ `no-raw-colors` が宣言済み token を確認できない旨、`ui` alias がディレクトリに解決しなければ design-system component を認識しない旨をそれぞれ報告する (2026-09-19 に実測)。
-3 ルールは警告を出したうえで発火し続け、診断から token の提案が減る。silent failure ではないので、この解決を見張る検査は置かない。
+抑制 directive の名前、lint 時間の測り方、3 ルールの発火を確かめる probe、探索に失敗したときの警告は `docs/guides/lint.md`「`@shadcn/lint` の発火を確かめる」と「JS plugin の落とし穴」にある。
 
 ### 検討した選択肢
 
@@ -76,8 +55,8 @@ theme と component の探索に失敗したときは、`vp lint` の出力へ `
 
 ## Consequences
 
-- `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、追随の発火条件は Dependabot PR の処理時とする。確認するのは plugin の読み込みと 3 ルールの発火の両方である
-- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` の top-level `rules` に JS plugin 由来のルールが出ないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は Decision の probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる
+- `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、Dependabot PR の処理時に確かめる (手順は `docs/guides/lint.md`「上流 recommended の改訂に追随する」)
+- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` の top-level `rules` に JS plugin 由来のルールが出ないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる (`docs/guides/lint.md`「`@shadcn/lint` の発火を確かめる」)
 - `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (ADR-0028)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。token だけを混ぜる表現にも行単位の抑制が要り、抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと無言で通る
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。この経路の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にして止める。ただし `eslint` がグラフから消えるわけではない。`eslint-plugin-testing-library` が `@typescript-eslint/utils` 経由で `eslint` を必須 peer に持ち、そちらは止まらない (ADR-0010)
@@ -86,7 +65,6 @@ theme と component の探索に失敗したときは、`vp lint` の出力へ `
 - eslint peer の optional 化と `typescript` の 6 系固定は撤去条件が同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` は不要になるが、`eslint` は `eslint-plugin-testing-library` 経由で残る。撤去で解けるのは `typescript` の 6 系固定だけである
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
 - theme に無いクラスを全て落とすため、`src/styles.css` へ token を足す前に utility を書くと lint で止まる。順序は token の定義が先になる
-- `settings.shadcn.componentImports` を消すと自作部品が規則から見えなくなり、routes からの上書きが素通りする。`--print-config` に JS plugin 由来の設定は出ないため無言で効かなくなる
 - `no-restyle` の適用範囲はディレクトリで決まる (ADR-0013)。画面の組み立てを `parts/` へ置くと規則が効かない。機械では止まらない
 
 ## 出典

@@ -51,14 +51,7 @@ silent failure の源として扱っている書き方を検出するルール�
 どちらも `strict-type-checked` には入り、`recommended-type-checked` には入らない。
 
 名指しするルールは、基準がオプションを指定していればそのオプションも写す。
-基準と違うオプションを置くのは次の 2 つで、いずれも理由を `vite.config.ts` のコメントに残す。
-
-| ルール                         | 指定                                     | 理由                                                                                                                                        |
-| ------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `no-confusing-void-expression` | `ignoreVoidReturningFunctions` を足す    | 素の設定は戻り値型が `void` の prop へ渡すアロー省略記法にも鳴り、`void` を値として使う本来の誤りと区別できない                             |
-| `only-throw-error`             | `allow` に TanStack Router の `Redirect` | `throw redirect()` は Router の制御フロー契約で、SSR では投げた `Response` がそのまま HTTP 307 になる。`Error` を投げる置き換えが存在しない |
-
-`only-throw-error` の `allow` に `notFound()` を登録しないのは、使っていないためである。使い始めた時点で lint が鳴るので、そこで足す。
+基準と違うオプションを置くときは、理由を `vite.config.ts` のそのルールのコメントに残す。
 
 `restrict-template-expressions` は基準がオプションを指定しているが、名指しせず oxlint の既定に委ねる。
 既定が false にするのは `allowArray` と `allowNever` の 2 つで、typescript-eslint 本体も `strict-type-checked` の上へ同じ位置の値を戻しており、oxc 自身の設定もこのルールを名指ししていない。
@@ -97,16 +90,7 @@ oxlint 1.79 で `react/react-compiler` は廃止され、React Compiler の診�
 | `unsupported-syntax`             | `restriction`     | `rules` へ名指し |
 | `config` / `gating`              | 実装なし          | —                |
 
-突き合わせは `vp lint --print-config` の `rules` を `react/` で絞り、上流のルール一覧 (「出典」) と比べる。
-
-上流が既定 off にするルールのうち oxlint に実装があるのは 9 で、有効になるのは `perf` 経由の 1 つだけである。
-分割後の 22 は、上流 recommended-latest に入る 13 (`correctness` の 12 と `unsupported-syntax`) とこの 9 で尽きる。`exhaustive-deps` と `rules-of-hooks` は分割前からあるルールで、22 には含まれない。
-
-| ルール                                                                                 | oxlint のカテゴリ | 扱い                                                                                           |
-| -------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------- |
-| `no-deriving-state-in-effects`                                                         | `perf`            | カテゴリ経由で error                                                                           |
-| `invariant` / `rule-suppression` / `syntax` / `todo`                                   | `restriction`     | off。`todo` は Compiler の未実装による bail out で、欠陥として扱わないと ADR-0016 が決めている |
-| `capitalized-calls` / `exhaustive-effect-dependencies` / `hooks` / `memo-dependencies` | `suspicious`      | off。上流が既定から外している                                                                  |
+上流が既定 off にするルールのうち oxlint に実装があるものは有効にしない (`perf` 経由で入る 1 つを除く)。一覧は `docs/guides/lint.md`「React Compiler の既定 off のルール」にある。
 
 `unsupported-syntax` だけを `restriction` から引き上げるのは、これが Compiler の未実装ではなく「対応する予定がない構文」(`this` / `with` / インライン `class` 宣言) を指すためである。
 書き換えれば消えるのでコード側の欠陥として扱える。上流も `todo` を off にしたまま、このルールだけ recommended に入れている。
@@ -123,11 +107,7 @@ off にする判断は違反が出たときに個別に行う (registry コー�
 
 `anchor-ambiguous-text` は oxlint に実装があり名指しすれば足せるが、上流 recommended に含まれないため足さない。
 
-突き合わせの手順は `vp lint --print-config` の `rules` を `jsx_a11y/` で絞り、上流 recommended の一覧と `comm` で両方向の差を取る。
-`--print-config` の `rules` は「カテゴリで有効になったもの」と「設定で名指ししたもの」の和なので、名前が出る = 有効と読んでよい。
-
-**逆は成り立たない。** `--print-config` は JS plugin を遅延ロードする前に短絡し、plugin 由来のルール名を未知として捨てる (oxc-project/oxc#22117)。
-`jsPlugins` の宣言自体は出力に現れるが `shadcn/*` rule は現れず、出力だけ見ると無効に見える。lint 実行時の発火は一時 probe で確認する。
+突き合わせの手順と、`--print-config` から JS plugin のルールが読めないことは `docs/guides/lint.md`「設定を書き換えたら解決後の設定で確かめる」にある。
 
 ### unicorn を選定しない理由
 
@@ -193,13 +173,9 @@ recommended に無くても、規約や他の決定を機械で守るために�
 ## Consequences
 
 - `correctness` と `perf` へのルール追加は次の `vp check` で自動的に入る。この 2 カテゴリだけが opt-out である。依存更新で違反が増えたら、修正するか off にするかを判断する
-- 名指ししたルールは `rules` に並ぶため、上流 recommended の改訂には自動追随しない。追随は Dependabot PR の処理時に、oxlint (Vite+ 同梱) の minor 以上の更新が来たら基準表のプラグインを突き合わせる
+- 名指ししたルールは `rules` に並ぶため、上流 recommended の改訂には自動追随しない。追随の手順は `docs/guides/lint.md`「上流 recommended の改訂に追随する」にある
 - 名指ししたルールが oxlint 側で改名・廃止されると `vp lint` が設定のパースで落ちる (`Rule 'react-compiler' not found in plugin 'react'`)。取りこぼしは起きないが、更新の PR は lint が動かない状態から始まる
-- typescript-eslint は依存に入っていないため、`strict` の改訂を知らせる発火条件がない。追随はこの ADR を読み直すときに行う
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは解決後設定の `rules` に列挙されないため、値でしか見えない
-- `perf` の `no-await-in-loop` は順序依存のループにも鳴る。機械的に `Promise.all` へ倒さず、抑制と理由の記述で扱う
-- vitest プラグインはテストファイル以外にも効き、行頭がテスト呼び出しに見えるコメントは `no-commented-out-tests` で報告される
-- ルールを足すか迷ったら、まず上流 recommended に入っているかを確認する。入っていないものを足すときは「基準から外れる名指し」の表に理由とともに追記する
 
 ## 出典
 

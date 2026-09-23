@@ -39,21 +39,7 @@ const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 spread を落として追加分だけを書くと、`typescript` を含む既定の検査が無言で消える。
 これが本 ADR の中心で、プラグインを 1 つ足すたびに確認する不変条件である。
 
-### 同居する 3 つの落とし穴
-
-いずれも「設定したつもりで効いていない」状態を無診断で作る。
-
-**`overrides` の中の `plugins` はトップレベルと意味が逆である。** トップレベルは既定集合を置換するが、override では継承した集合へ**追加**する。
-そのため override に 1 つだけ書いてもベース側のプラグインは無効にならず、トップレベルの感覚で「絞ったつもり」の override は絞れていない。
-`overrides` は `categories` を持てないので、カテゴリをプラグイン単位に絞ることもできない。
-
-**サブディレクトリに置いた `.oxlintrc.json` は `vp lint` に読まれない。** ルールを `"error"` にしても診断は出ず、`"off"` にしても CLI の指定がそのまま通る。
-置いた設定は丸ごと無言で no-op になる。Vite+ の公式ドキュメントも lint 設定は `vite.config.ts` の `lint` ブロックへ置くとし、`.oxlintrc.json` の併用を推奨しないと明記している。
-
-**CLI の `-D` は設定ファイルの `rules` と挙動が違い、未知のルール名を無言で無視する** (`exit 0`、診断なし)。
-ルールごとの違反件数を `-D` で数えると、打ち間違いが「違反 0 件」に見える。
-0 件を結論にする前に `--print-config` の出力にそのルール名があることを確かめる。
-`-D` にプラグイン名を付けずにルール名を渡すと、同じ名前のルールを持つプラグインがすべて有効になる。2026-09-23 に oxlint 1.82.0 で、`-D prefer-spread` を渡すと eslint(prefer-spread) と unicorn(prefer-spread) の両方が報告した (`-D eslint/prefer-spread` なら片方だけ)。
+`overrides` の中の `plugins`、サブディレクトリの `.oxlintrc.json`、CLI の `-D` にも、設定したつもりで効いていない状態を作る落とし穴がある。避け方は `docs/guides/lint.md`「設定の落とし穴」にある。
 
 ### 検討した選択肢
 
@@ -67,11 +53,8 @@ spread を落として追加分だけを書くと、`typescript` を含む既定
 ## Consequences
 
 - 既定検査が、追加プラグインの設定によって無言で消えなくなる
-- プラグインを追加すると既存違反が一度に顕在化する。件数が多く別の判断軸を持つ検査は、独立した変更へ分ける
 - 行単位の抑制は領域を問わず使ってよい。registry コードで追加で要るのは ADR-0024 の許容リストへの記録であって、抑制の可否そのものではない
-- `plugins` の取りこぼしは lint の出力では気付けないため、`scripts/checks/integrity/lint-config.test.ts` が解決後設定の `plugins` を期待値と突き合わせる。プラグインを足したら期待値にも足す
-- 名指しルールが解決後設定に残っているかも併せて見る。`vite.config.ts` の `lint.rules` に書いたキーが `--print-config` の `rules` に残ることを確かめれば、プラグイン脱落で捨てられたルールを名指し単位で検出できる
-- 突き合わせでは 2 つのキー形を跨ぐ。eslint コアルールは接頭辞なしのまま出力され、`typescript/` 接頭辞で書いた extension rule はコアルールの名前へ解決される (2026-09-02 時点で `no-array-constructor` と `no-useless-constructor` の 2 件)
+- `plugins` の取りこぼしは lint の出力では気付けないため、`scripts/checks/integrity/lint-config.test.ts` が解決後設定の `plugins` と名指しのルールを期待値と突き合わせる。突き合わせの手順は `docs/guides/lint.md`「設定を書き換えたら解決後の設定で確かめる」にある
 - oxlint が未有効プラグインのルールへ警告を出すようになれば、この突き合わせは不要になる (oxc-project/oxc#25579)
 
 ## 出典
