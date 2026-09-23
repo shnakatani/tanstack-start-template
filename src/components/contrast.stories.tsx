@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 /**
  * 既定の story が描かない tint の組み合わせを実テキストとして描き、`parameters.a11y.test` の
- * axe に判定させる (ADR-0033 の節 5)。この story は比を計算しない。計算を持たせると、描画では
+ * axe に判定させる (ADR-0033「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。この story は比を計算しない。計算を持たせると、描画では
  * なく計算のほうを検査することになり、story が描いた色と判定がずれても気づけない。比を数で
  * 知りたいときは `mise run contrast` を使う (ADR-0039)。
  *

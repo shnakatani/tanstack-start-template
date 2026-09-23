@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0034 (乖離の記録先) / ADR-0025 (baseline の運用) / ADR-0057 (検算を実描画と axe で行う) / ADR-0036 (適合の床は WCAG を採り推奨値を要件にしない) / ADR-0035 (節 4 を placeholder へ適用した事例)
+- 関連: ADR-0034 (乖離の記録先) / ADR-0025 (baseline の運用) / ADR-0057 (検算を実描画と axe で行う) / ADR-0036 (適合の床は WCAG を採り推奨値を要件にしない) / ADR-0035 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
 
 ## Context
 
@@ -27,7 +27,7 @@ Unknown base color: slate. Available base colors: neutral, zinc, stone, mauve, o
 
 slate の値を持ち続けても壊れてはいなかった。動かしたのは、CLI が生成しない palette を抱え続けるのをやめるためである。
 
-**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、節 2 以降で決める本リポジトリの段ではない。
+**上流の既定値は複数の対で WCAG 1.4.3 を割る。** 2026-09-21 に `shadcn@4.21.0` の生成物を実測した結果を示す。測ったのは上流が生成した値そのもので、「有彩色のアクセントは light と dark で役割を反転させる」以降で決める本リポジトリの段ではない。
 
 計測は生成した `styles.css` を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` (ADR-0039)。
 
@@ -164,7 +164,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 - 上流が preset の値を変えたら baseline を再生成し、差分を許容リストと突き合わせる。手順は ADR-0025に従う
 - **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった
 - 測り直す手段は `mise run contrast` が持つ (ADR-0039)。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており (勧告本体には無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できないため、比率を書いた箇所を触るときは測り直す
-- 節 2 の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
+- 「有彩色のアクセントは light と dark で役割を反転させる」の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
 - 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。この対は light dark とも 3:1 を大きく下回る。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
 - focus 指標の不足は `--ring` を `--primary` と同値にしても残る。`--background` の上で、`ring-ring/50` は light が 3:1 を割り dark は満たす。不透明で使う `border-ring` / `outline-ring` は light dark とも満たす
 - chart の 5 トークンは light と dark で同値で、1 本の blue ramp が両モードを兼ねる。明るい端が light の下地に、暗い端が dark の下地に紛れる。WCAG 1.4.11 の 3:1 を割るのは light の `--chart-1`、dark の `--chart-4`、dark の `--chart-5` である
