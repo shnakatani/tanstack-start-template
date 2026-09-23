@@ -46,7 +46,6 @@ registry の Dialog には、内部スクロールを組み忘れたダイアロ
 
 - 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、同じファイルへ部品を足す (ADR-0031)
 - `DialogContent` の padding を変えたら `DialogScrollBody` の `-mx-6` / `px-6` も変える
-- フッターの配置 (中間コンテナの内か外か) は `.claude/rules/styling.md`「内部スクロールを持つダイアログの組み方」の表が持つ
 
 ## 出典
 

@@ -121,7 +121,7 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 
 ルールが「locator かどうか」をメソッド名と引数ゼロだけで判定し、適用先の glob がその補いになっている。型で判定できれば glob は要らないが、oxlint の JS plugin は型情報を持たない。公式の JS plugin ガイドが「Not supported yet」に「Lint rules that rely on TypeScript type-awareness」を挙げている。
 
-型の代わりに receiver の連鎖を辿る案は採らない。`confirmDeleteButton(screen).element()` のように helper が返す locator は連鎖に生成口を持たず、型なしでは追えない。この形は 2026-09-22 時点で 3 件あり、`.claude/rules/directory-structure.md`「テストとスクリプトの配置」が helper への切り出しを勧めているので増える側である。
+型の代わりに receiver の連鎖を辿る案は採らない。`confirmDeleteButton(screen).element()` のように helper が返す locator は連鎖に生成口を持たず、型なしでは追えない。この形は 2026-09-22 時点で 3 件あり、特定の部品の locator は `*.test-helpers.ts` の helper へ切り出す形を採っているので、増える側である。
 
 先行例も receiver を見ない。`eslint-plugin-playwright` の `prefer-web-first-assertions` は `expect()` から辿って引数をスコープで解決し、メソッド名 (`isVisible` / `innerText` / `getAttribute` 等) だけで判定する。適用範囲の限定は利用者の設定に委ねている。本ルールが glob で範囲を限るのは同じ形で、`element` / `all` のように名前が一般的なぶん範囲の限定が要る、という違いだけである。
 
@@ -130,8 +130,6 @@ severity を `warn` にして移行を待つ形も採らない。`vp check` は 
 ### ADR-0044 と rules との関係
 
 ADR-0044 の Consequences は、禁じたい形のうち「同期読みの値を assert へ流すこと」を本 ADR の lint に委ねる。
-
-`.claude/rules/testing.md`「locator の扱い」が、上の Decision の表を規範の形で持つ。
 
 ### ルールが追えない形
 
@@ -160,7 +158,7 @@ ADR-0044 の Consequences は、禁じたい形のうち「同期読みの値を
 | 否定 assert と `toHaveStyle` の書き方                   | ADR-0049                                                                               |
 | クリックの発火方法                                      | ADR-0045。合成イベントを送る helper を置かないので、その引数が同期読みになる経路も無い |
 
-`getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0044 と `testing.md`「ブラウザテストの CSS とレイアウト実測」) は `expect.poll` のコールバックの中で読む。単一プロパティを文字列リテラルと比べる形は `toHaveStyle` で書く。poll の中で表す 3 つの形は ADR-0049 が持つ。
+`getBoundingClientRect` と `getComputedStyle` による実測 (ADR-0044) は `expect.poll` のコールバックの中で読む。単一プロパティを文字列リテラルと比べる形は `toHaveStyle` で書く。poll の中で表す 3 つの形は ADR-0049 が持つ。
 
 ## 検討した選択肢
 

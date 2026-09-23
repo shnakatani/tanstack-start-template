@@ -121,7 +121,7 @@ ADR-0047 のルールは `expect.poll` のコールバックの中を見ない�
 
 `await expectAbsent(x)` の肯定 anchor が「同じ操作の効果を表す」かは構文で決まらない。直前の文が肯定 assert かどうかだけなら構文で見られるが、そのルールは作らない。違反が 0 件で、守る対象が無いためである。anchor の欠落が実際に起きた記録も無い (`1d987d5` の取り違えは名前の選択の誤りで、anchor の欠落ではない)。
 
-代わりに、**要件を利用者が必ず読む場所へ置く。** `browser-test/no-bare-absence-assertion` の診断メッセージが anchor 要件を持つ。素の形を書いた利用者は `expectAbsent` と `expectRemoved` のどちらかを選ぶ地点に立たされ、そこで同時に anchor 要件を受け取る。`src/test/absent.ts` の docstring と `.claude/rules/testing.md` も規範として持ち、名前の真偽と anchor の妥当性はレビューで見る。
+代わりに、**要件を利用者が必ず読む場所へ置く。** `browser-test/no-bare-absence-assertion` の診断メッセージが anchor 要件を持つ。素の形を書いた利用者は `expectAbsent` と `expectRemoved` のどちらかを選ぶ地点に立たされ、そこで同時に anchor 要件を受け取る。`src/test/absent.ts` の docstring も規範として持ち、名前の真偽と anchor の妥当性はレビューで見る。
 
 束縛を 2 段以上またぐ形も辿らない。ADR-0047 のルールと同じ理由で、任意段を追うのは taint 解析になる。
 

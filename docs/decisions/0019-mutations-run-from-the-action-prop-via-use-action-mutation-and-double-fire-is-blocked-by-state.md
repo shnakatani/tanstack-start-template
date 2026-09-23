@@ -40,7 +40,7 @@ mutation 以外のユーザー操作由来の更新は、`src/components/screens
 ### 制約: Action の reject は Error Boundary へ届く
 
 `useTransition` リファレンスは、`startTransition` に渡した関数が throw または reject すると最寄りの Error Boundary が fallback を出すと書く。
-`.claude/rules/implementation.md`「イベントハンドラは同期に保つ」は、操作の失敗を Error Boundary へ届けず toast か画面内表示で通知すると定める。両立させるには、Action の中で失敗を処理し切る必要がある。
+操作の失敗は Error Boundary へ届けず、toast か画面内表示で通知する。Error Boundary は画面ごと差し替わるためである。両立させるには、Action の中で失敗を処理し切る必要がある。
 
 ## Decision
 
@@ -90,12 +90,6 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | 呼び出し側ごとに `useTransition` を書く                       | 決着前の dedupe と a11y の状態伝達を毎回書き直す。`deleteConfirmMutationProps` の閉包と同じ形が箇所ごとに散る                                                       | 却下     |
 | Base UI #5133 か React Aria #9894 の出荷を待つ                | どちらも 2026-09-13 時点で merge 済み実装が無く、時期も未定                                                                                                         | 却下     |
 | 基盤を React Aria へ替えて action prop を待つ                 | shadcn CLI は `--base aria` を持つが、shadcn-ui/ui #11724 (2026-09-01) の実測で API parity が無く porting になる。Action 層は基盤非依存なので、この判断と切り離せる | 別 ADR   |
-
-### 他の文書との関係
-
-| 文書                                   | この ADR に従う箇所                                    |
-| -------------------------------------- | ------------------------------------------------------ |
-| `.claude/rules/directory-structure.md` | コンポーネント配置の表の `src/components/action/` の行 |
 
 ## Consequences
 

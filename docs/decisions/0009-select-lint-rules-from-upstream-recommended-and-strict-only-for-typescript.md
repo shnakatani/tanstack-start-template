@@ -102,11 +102,11 @@ oxlint 1.79 で `react/react-compiler` は廃止され、React Compiler の診�
 上流が既定 off にするルールのうち oxlint に実装があるのは 9 で、有効になるのは `perf` 経由の 1 つだけである。
 分割後の 22 は、上流 recommended-latest に入る 13 (`correctness` の 12 と `unsupported-syntax`) とこの 9 で尽きる。`exhaustive-deps` と `rules-of-hooks` は分割前からあるルールで、22 には含まれない。
 
-| ルール                                                                                 | oxlint のカテゴリ | 扱い                                                                                                        |
-| -------------------------------------------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
-| `no-deriving-state-in-effects`                                                         | `perf`            | カテゴリ経由で error。effect からの派生 state を禁じる規範 (`.claude/rules/implementation.md`) がこれに依る |
-| `invariant` / `rule-suppression` / `syntax` / `todo`                                   | `restriction`     | off。`todo` は Compiler の未実装による bail out で、欠陥として扱わないと ADR-0016 が決めている              |
-| `capitalized-calls` / `exhaustive-effect-dependencies` / `hooks` / `memo-dependencies` | `suspicious`      | off。上流が既定から外している                                                                               |
+| ルール                                                                                 | oxlint のカテゴリ | 扱い                                                                                           |
+| -------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------- |
+| `no-deriving-state-in-effects`                                                         | `perf`            | カテゴリ経由で error                                                                           |
+| `invariant` / `rule-suppression` / `syntax` / `todo`                                   | `restriction`     | off。`todo` は Compiler の未実装による bail out で、欠陥として扱わないと ADR-0016 が決めている |
+| `capitalized-calls` / `exhaustive-effect-dependencies` / `hooks` / `memo-dependencies` | `suspicious`      | off。上流が既定から外している                                                                  |
 
 `unsupported-syntax` だけを `restriction` から引き上げるのは、これが Compiler の未実装ではなく「対応する予定がない構文」(`this` / `with` / インライン `class` 宣言) を指すためである。
 書き換えれば消えるのでコード側の欠陥として扱える。上流も `todo` を off にしたまま、このルールだけ recommended に入れている。

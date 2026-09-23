@@ -6,7 +6,7 @@
 
 ## Context
 
-絞り込み条件は URL が持つ (ADR-0022)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。テンプレートとして示したいのは、`useSuspenseQuery` の規範 (`.claude/rules/styling.md`「状態表示」) を崩さずに打鍵へ追従する形で、`useDeferredValue` は ADR-0017 が「ローカルの非緊急化に使う」と位置づけたまま使う箇所が無かった。
+絞り込み条件は URL が持つ (ADR-0022)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。テンプレートとして示したいのは、ページのローディングを route loader の prefetch と `useSuspenseQuery` と `pendingComponent` で行う形を崩さずに打鍵へ追従する形で、`useDeferredValue` は ADR-0017 が「ローカルの非緊急化に使う」と位置づけたまま使う箇所が無かった。
 
 制約は次のとおり。
 
@@ -57,7 +57,7 @@ React docs は debounce と `useDeferredValue` を「You can also use these tech
 | `key={q}` でページを作り直す                                                            | React docs の「全 state のリセット」の形だが、確定のたびに入力欄のフォーカスが消え、テーブルやダイアログの state も捨てる。通知の記憶を wrapper へ持ち上げる必要が生まれる | 却下     |
 | 編集を `{ base: q, text }` で持ち、`base === q` で有効性を見る (2026-09-23 の中間版)    | 履歴が同じ値へ戻ると確定済みの編集が復活する                                                                                                                               | 却下     |
 | 文字列を debounce し「入力欄が URL と同じなら待たない」特例を置く (2026-09-23 の中間版) | 確定や戻るの後に debounce 済みの古い文字列が第 3 の条件を描く。特例はその一部しか隠さない                                                                                  | 却下     |
-| `useQuery` + `placeholderData: keepPreviousData`                                        | 古いデータを残せるが、`useSuspenseQuery` + `pendingComponent` の規範 (`.claude/rules/styling.md`) から外れ、ページに `isPending` 分岐が戻る                                | 却下     |
+| `useQuery` + `placeholderData: keepPreviousData`                                        | 古いデータを残せるが、`useSuspenseQuery` + `pendingComponent` の形から外れ、ページに `isPending` 分岐が戻る                                                                | 却下     |
 | debounce を `useEffect` + `setTimeout` で手組みする                                     | effect 内の setState を lint が止める (`react/set-state-in-effect`)。Pacer と `use-debounce` が公式の形を持つ                                                              | 却下     |
 | `use-debounce`                                                                          | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる。Pacer の撤退先として残す                                                                               | 保留     |
 

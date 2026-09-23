@@ -50,7 +50,7 @@ port 6006 の Storybook を停止し、`--no-attach` を付けて 1 つずつ実
 
 ## Consequences
 
-- `storybook --help` に `skills` と `tools` が出ないため、`AGENTS.md` から外れた瞬間に見落とされる。サイズ制限 (`.claude/rules/docs.md`「AGENTS.md」) の中で維持する必要がある
+- `storybook --help` に `skills` と `tools` が出ないため、`AGENTS.md` から外れた瞬間に見落とされる。AGENTS.md の行数の目安の中で維持する必要がある
 - `write-story` skill は上流の規約で、このリポジトリの決定と食い違う箇所がある (「ALWAYS write a Storybook story for any component written」「Simulate key user flows」)。上限は ADR-0053 / ADR-0054 が持つ。ADR に上限が書かれていない項目は上流の既定値が入る
 - `find-by-component` を使うには Storybook を起動する。起動を省くと silent に空が返る
 - MCP へ移るなら、port を固定するか、worktree ごとに登録し直す運用が要る

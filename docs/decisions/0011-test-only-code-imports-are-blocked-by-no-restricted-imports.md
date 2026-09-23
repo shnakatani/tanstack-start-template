@@ -6,7 +6,7 @@
 
 ## Context
 
-テスト専用のコードの置き場所は `.claude/rules/directory-structure.md`「テストとスクリプトの配置」が持つ。
+テスト専用のコード (`*.test-helpers.ts`、`src/test/`) は、アプリのコードと同じツリーに置く。
 アプリのコードが誤って import しても、helper が型しか引かなければ build は通り、fixture がそのまま client と server の bundle に入る (2026-09-14 に `vp build` で確認)。
 レビューで見るしかなかった境界を lint で止める。
 

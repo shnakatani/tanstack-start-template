@@ -48,7 +48,6 @@
 - ブラウザテストは本番と違い animation を待たず、CSS の transition / animation も 0.01ms の条件 (reduced motion を選んだユーザーと同じ) で走る。閉じかけの popup の挙動を守るテストは `await enableAnimations()` を明示し、animation ありの条件で走っていることが本文から読めるようにする
 - transition の後に「変化しないこと」を見るテスト (`src/components/parts/segmented-radio-group.test.tsx` の hover) は、retry では途中値の前に通ってしまう。reduced motion で settled 状態を即座に観測するので、`getAnimations()` の完了を待つ helper は置かない。待つ側の形は MDN `Animation.finished` の例そのものだが、観測の前に止める側 (Playwright の screenshot `animations: "disabled"`、Chromatic の最終フレーム停止) が主流で、待つ helper に直接の先行例は無い
 - 二重発火の dedupe テスト (ADR-0045) は animate-out の窓を踏む必要があるため、animation を戻して走らせる
-- `.claude/rules/testing.md`「ブラウザテストの CSS とレイアウト実測」が、既定と戻し方、popup を閉じた後の a11y 検査の順序を持つ
 - 再評価条件: Base UI が閉じかけの popup を a11y tree と focus 順から外す変更 (PR #5537) を出荷したとき、および axe-core が focus guard の heuristics を更新したとき
 
 ## 出典

@@ -30,7 +30,7 @@ story は `no-restyle` / `require-static-classes` の適用外である。`vite.
 
 CSF の meta は 1 ファイルに 1 つで、`component` もそこに紐づく。1 つのファイルが複数の部品を export するとき、まとめて書くと別の部品の meta 配下に並ぶ。単独で描画できる部品は story ファイルを分ける。
 
-トークンの story は CSS 変数の値を見せる場所で、typography の階層のような class の規範は持たない。`styling.md` の表を story へ写すと片方だけが古くなる。markdown と code を突き合わせる機械検査は持っていない。
+トークンの story は CSS 変数の値を見せる場所で、typography の階層のような class の規範は持たない。typography の規範を story へ写すと片方だけが古くなる。markdown と code を突き合わせる機械検査は持っていない。
 
 story は出荷される bundle に入らないため、`no-restricted-imports` の対象からも外す。
 

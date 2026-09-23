@@ -10,7 +10,7 @@
 
 制約は次のとおり。
 
-- 一覧のデータは Query が所有し、loader は Query を温めるだけ (ADR-0012、`.claude/rules/directory-structure.md`「ルートファイル」)。絞り込み条件が変わっても loader の値を `useLoaderData` で読む形にはしない
+- 一覧のデータは Query が所有し、loader は Query を温めるだけ (ADR-0012)。絞り込み条件が変わっても loader の値を `useLoaderData` で読む形にはしない
 - Router は search param を loader へ直接渡さない。loader が読む search は `loaderDeps` で宣言し、deps の組み合わせごとに別のキャッシュになる (Router の data-loading ガイド「Using loaderDeps to access search params」)
 - Router の search-params ガイドは、malformed な search param には fallback を用意して体験を止めないことを勧め、エラー表示は選んだときだけとする
 - URL の値を書き換える契機を打鍵にすると、1 文字ごとに履歴と loader が動く

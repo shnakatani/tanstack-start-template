@@ -100,7 +100,7 @@ expect(action).toHaveBeenCalledOnce();
 | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせてライブラリ内部のガードまで見に行かない                                                                         |
 | 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                                                                                         |
 
-判定に落ちた条件は Playwright のエラー文言で確かめてから行を選ぶ (`.claude/rules/testing.md`「クリックの発火方法」)。
+判定に落ちた条件は Playwright のエラー文言で確かめてから行を選ぶ。
 
 `.click()` が弾く条件は Playwright の Actionability が定める Visible / Stable / Receives Events / Enabled である。このリポジトリで弾かれる典型を次に置く。
 
@@ -134,7 +134,6 @@ expect(action).toHaveBeenCalledOnce();
 - `src/components/parts/choice-card.test.tsx` は `.click({ force: true })` で押す。対象に `pointer-events: none` が無く、click が実際に届く
 - `src/components/parts/segmented-radio-group.test.tsx` はクリックが届かないことを `pointer-events` の assert で見る。合成 click と `not.toHaveBeenCalled()` は使わない
 - 二重発火のテストは `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書く
-- `.claude/rules/testing.md`「クリックの発火方法」は「`.click()` → キーボード → `.click({ force: true })`」の順序と、`force` がヒットテストを越えないことを持つ
 - 合成イベントを足したくなったら、この ADR へ戻って却下の根拠を読む。`force: true` で届くかを先に測り、届くなら合成イベントは要らない
 
 `cancelable` を実イベントに合わせる手順は、合成イベントごと消えたので持たない。2026-09-13 に `cancelable` の既定が false で Base UI の `preventDefault` が効かず、実物では止まる form 送信がテストでだけ通った。合成イベントの属性を実物へ合わせ続ける保守は、この種の食い違いを生む側に回る。

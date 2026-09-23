@@ -74,7 +74,6 @@ TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で i
 ## Consequences
 
 - ADR-0017 の Decision 表「query の再取得」「ダイアログの開閉」行と、ADR-0019「mutation の書き方」の「再取得と close」行は本 ADR の軸に従う
-- `.claude/rules/implementation.md`「ユーザー操作による更新は Transition の中で行う」は、close の行と再取得の項目を本 ADR の軸に合わせ、ブロック範囲の項目を持つ
 - 再取得を待たずに閉じる代わりに、対象の項目に busy 表現を付け忘れると、古い一覧が pending 表示なしで見える。再取得の完了まで閉じない形はこの経路を「閉じない」ことで塞ぐが、本 ADR は項目の表現で塞ぐ
 - 再評価条件: concurrent stores (react/react #35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する (ADR-0017 と同じ)
 

@@ -6,7 +6,7 @@
 
 ## Context
 
-`.claude/rules/directory-structure.md`「ルートファイル」は「Route hooks を使う wrapper は実 router で描いて検証する」を規範として持っていたが、実例が無かった。props 直渡しのページテストでは wrapper (`Route.useSearch` / `Route.useNavigate`) が一度も実行されず、URL → props と操作 → URL の往復が silent に壊れる。
+Route hooks を使う wrapper は、実 router で描いて検証する必要がある。props 直渡しのページテストでは wrapper (`Route.useSearch` / `Route.useNavigate`) が一度も実行されず、URL → props と操作 → URL の往復が silent に壊れる。
 
 Router の how-to「How to Test Router with File-Based Routing」は生成済みの `routeTree.gen.ts` を `createMemoryHistory` で描く形を示す。この repo では `__root.tsx` が `TanStackDevtools` と `<html>` を描くため、browser test でそのまま import すると "Invalid hook call" (React の二重解決) と `<html>` を `<div>` の中に描く警告で動かない (2026-09-23 に実測)。
 

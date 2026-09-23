@@ -26,7 +26,7 @@
 | 特定のファイルを読んで編集するとき                             | `paths` つきの `.claude/rules/` |
 | Bash でコマンドを打つだけの操作 (テストの実行、依存の操作など) | `AGENTS.md`                     |
 
-- `AGENTS.md` が大きくなりすぎたら、ファイルを読む場面の規範を `paths` つきの rules へ分ける。大きさの目安は `.claude/rules/docs.md`「AGENTS.md」が持つ
+- `AGENTS.md` が大きくなりすぎたら、ファイルを読む場面の規範を `paths` つきの rules へ分ける
 - ファイルを読む前に要る規範 (書き始める前の手順) は、`paths` の rules を置いたうえで `AGENTS.md` から読む契機を作る
 
 ### 検討した選択肢
