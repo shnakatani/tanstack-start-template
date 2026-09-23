@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-19
-- 関連: ADR-0004 (ルールの選定)、ADR-0006 (registry コードの改変は許容リストで統制)、ADR-0012 (features / routes の配置の原則)、ADR-0014 (Action 層)、ADR-0019 (DataTable 部品の配置)
+- 関連: ADR-0045 (`@shadcn/lint` のルールの選定)、ADR-0006 (registry コードの改変は許容リストで統制)、ADR-0012 (features / routes の配置の原則)、ADR-0014 (Action 層)、ADR-0019 (DataTable 部品の配置)
 
 ## Context
 

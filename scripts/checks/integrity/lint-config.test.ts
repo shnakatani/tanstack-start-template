@@ -47,7 +47,7 @@ const EXPECTED_OVERRIDES = [
     // testing-library の同名 API と誤認して誤検出が出る。`prefer-screen-queries` を allow から
     // 戻すと Storybook の `canvas` が落ちる。`no-node-access` は allow のままにする。
     // deny へ戻しても strict 判定で発火せず、有効に見えて無検査の状態になる
-    // (ADR-0004「基準にする上流設定」)
+    // (ADR-0046)
     files: [
       "**/*.stories.ts",
       "**/*.stories.tsx",
@@ -119,7 +119,7 @@ const EXPECTED_OVERRIDES = [
   },
   {
     // テスト専用のコードの import 禁止。緩和ではなく適用先を絞った有効化なので、テスト側は
-    // off ではなく excludeFiles で外す (ADR-0004「基準から外れる名指し」)。付随ファイルぶんは
+    // off ではなく excludeFiles で外す (ADR-0047)。付随ファイルぶんは
     // 下で差し引くので、ここに残るのは src/test/** だけになる
     files: ["src/**", "scripts/**"],
     excludeFiles: ["src/test/**"],
@@ -242,7 +242,7 @@ describe("書いた設定が解決後も残っている", () => {
         ),
       })),
       "override の適用先かルールか severity が変わった。適用先を広げるとその層で規則が無診断になり、" +
-        "ルールを消すか off にすると規則が無言で外れる (ADR-0004 / ADR-0020 / ADR-0021)",
+        "ルールを消すか off にすると規則が無言で外れる (ADR-0045 / ADR-0046 / ADR-0047 / ADR-0020 / ADR-0021)",
     ).toEqual(EXPECTED_OVERRIDES);
   });
 
@@ -256,12 +256,12 @@ describe("書いた設定が解決後も残っている", () => {
     expect(
       holders.map(({ files }) => files),
       "付随ファイルの除外が想定外の override に付いた。その override の規則が" +
-        "テストと story で無診断になる (ADR-0004 / ADR-0020 / ADR-0021)",
+        "テストと story で無診断になる (ADR-0047 / ADR-0020 / ADR-0021)",
     ).toEqual([["src/**", "scripts/**"]]);
     expect(
       holders[0]?.excludeFiles?.filter((glob) => COMPANION_GLOBS.has(glob)),
       "付随ファイルの除外が欠けた。その種別のファイルが自分の helper を import できなくなる " +
-        "(ADR-0004「基準から外れる名指し」)",
+        "(ADR-0047)",
     ).toEqual(companionGlobs("**/"));
   });
 });

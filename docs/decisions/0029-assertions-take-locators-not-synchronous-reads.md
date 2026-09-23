@@ -83,7 +83,7 @@ ADR-0013 が「lint で表現できる形は無い」と書いたのは、`eleme
 
 ### 機械強制は oxlint の JS plugin で書く
 
-ルールは `scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む。`vp lint` と `vp check` で走るので、検査のための実行経路を増やさない。`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0004)。
+ルールは `scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む。`vp lint` と `vp check` で走るので、検査のための実行経路を増やさない。`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0045 / ADR-0046)。
 
 API は同梱の `node_modules/vite-plus/docs/guide/lint.md` 「Writing Your Own Rules」に従う。型は `vite-plus/lint/plugins` の `definePlugin` / `defineRule` / `SourceCode`、テストは `vite-plus/lint/plugins-dev` の `RuleTester` から取る。同 docs は `@oxlint/plugins` と `oxlint` を直接依存に足すことを禁じ、理由を 2 つ挙げる。別に pin した写しが linter 本体からずれること、pnpm の strict layout では plugin ファイルから解決できないことである。
 
@@ -111,7 +111,7 @@ grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test
 
 段階移行のために `lint.overrides` で未移行ファイルを列挙する形は採らない。列挙が対象より大きくなり、一覧を消すための作業が別に要る。
 
-severity を `warn` にして移行を待つ形も採らない。`vp check` は warn で exit 1 にならないため、新規コードへの強制力を失う (ADR-0004 が `testing-library/no-debugging-utils` で同じ判断をしている)。
+severity を `warn` にして移行を待つ形も採らない。`vp check` は warn で exit 1 にならないため、新規コードへの強制力を失う (ADR-0046 が `testing-library/no-debugging-utils` で同じ判断をしている)。
 
 移行で赤になったテストは、`expect.element` が待つようになったぶん実装の欠陥を新しく捕まえている可能性がある。赤は書き換えの失敗と区別して調べる。
 

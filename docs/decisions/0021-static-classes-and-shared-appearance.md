@@ -2,16 +2,16 @@
 
 - Status: Accepted
 - Date: 2026-09-19
-- 関連: ADR-0004 (ルールの選定)、ADR-0014 (Action 層の責務)、ADR-0020 (コンポーネントの層と適用範囲の表し方)
+- 関連: ADR-0045 (`@shadcn/lint` のルールの選定)、ADR-0014 (Action 層の責務)、ADR-0020 (コンポーネントの層と適用範囲の表し方)
 
 ## Context
 
 `@shadcn/lint` で design system の契約を守る系統は `no-restyle` と `require-static-classes` の 2 つある。
-前者は ADR-0020 の層の決定と対で先に採り、後者は保留していた (ADR-0004)。
+前者は ADR-0020 の層の決定と対で先に採り、後者は保留していた (ADR-0045)。
 
 後者は、消費側が design system component へ渡す `className` を linter が読める形に保つ規則である。
 読めない `className` があると `no-raw-colors` と `no-unknown-classes` はその中身を検査できない。
-色と未知 class の統制 (ADR-0004) の手前にある門番にあたる。
+色と未知 class の統制 (ADR-0045) の手前にある門番にあたる。
 
 ### 何が読まれ、何が読まれないか
 
@@ -99,7 +99,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 - 恒久的な例外はゼロで、`overrides` に足すのは規則 1 行だけになる。違反が増えても行は増えない
 - 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`lint-config.test.ts` が規則名と severity を固定する
 - variant 関数を消費側から呼ぶ形を採るたびに `variantFunctions` への追加が要る。忘れると呼び出しが落ちるので、気付けない失敗にはならない
-- `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。ADR-0004 の Consequences)
+- `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`componentImports` と同じ経路。ADR-0045 の Consequences)
 - 引数を取らない関数を `mergeFunctions` へ登録すると、規則を通しながら戻り値の中身の検査を落とせる (2026-09-19 実測)。抜け道として使わない
 - design system の層から外へ class 文字列を配る形が閉じる。層の内側での共有は残る
 

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0004 (ハンドラを同期関数にする理由。「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0016 (完了点とブロック範囲の軸)
+- 関連: ADR-0048 (ハンドラを同期関数にする理由。`startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0016 (完了点とブロック範囲の軸)
 
 ## Context
 
@@ -171,7 +171,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `.claude/rules/implementation.md`      | 「イベントハンドラは同期に保つ」は mutation を伴わない非同期処理に限る。「ユーザー操作による更新は Transition の中で行う」 |
 | `.claude/rules/directory-structure.md` | コンポーネント配置の表の `src/components/action/` の行                                                                     |
-| ADR-0004                               | 「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落                                              |
+| ADR-0048                               | `startTransition` に関する段落                                                                                             |
 
 ## Consequences
 

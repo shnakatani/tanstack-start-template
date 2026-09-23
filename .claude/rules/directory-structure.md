@@ -55,7 +55,7 @@ paths:
 | story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` に置くと出荷されうる (ADR-0022)                                      |
 
 - 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
-- helper や `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0004)
+- helper や `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0047)
 - helper のテストは、DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project) に置く
 
 ## shadcn コンポーネント導入時のチェック
