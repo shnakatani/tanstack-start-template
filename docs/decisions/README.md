@@ -25,10 +25,11 @@
 
 ### lint
 
-| #                                                                                          | タイトル                                                                       | Status   | Date       | 要約                                                                                                                             |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| [0012](0012-select-lint-rules-from-upstream-recommended-and-strict-only-for-typescript.md) | ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする | Accepted | 2026-09-20 | カテゴリ有効化は `correctness` と `perf` に限る。off の条件、テストの緩和 5 ルール、jsx-a11y の名指しゼロもここが持つ            |
-| [0014](0014-test-only-code-imports-are-blocked-by-no-restricted-imports.md)                | テスト専用コードの import は `no-restricted-imports` で止める                  | Accepted | 2026-09-20 | `*.test-helpers` と `src/test/` をアプリのコードから import させない。範囲は `excludeFiles` で絞り、テストの緩和経路には載せない |
+| #                                                                                          | タイトル                                                                       | Status   | Date       | 要約                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | -------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0012](0012-select-lint-rules-from-upstream-recommended-and-strict-only-for-typescript.md) | ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする | Accepted | 2026-09-20 | カテゴリ有効化は `correctness` と `perf` に限る。off の条件、テストの緩和 5 ルール、jsx-a11y の名指しゼロもここが持つ                                                                           |
+| [0014](0014-test-only-code-imports-are-blocked-by-no-restricted-imports.md)                | テスト専用コードの import は `no-restricted-imports` で止める                  | Accepted | 2026-09-20 | `*.test-helpers` と `src/test/` をアプリのコードから import させない。範囲は `excludeFiles` で絞り、テストの緩和経路には載せない                                                                |
+| [0054](0054-browser-test-norms-are-enforced-by-custom-jsplugins-rules.md)                  | ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める      | Accepted | 2026-09-24 | 同期読みを assert へ流す、`findElement()`、期待値がリテラルの否定、素の不在 assert の 4 つを `scripts/lint/browser-test.ts` のルールが `error` で止める。式の構造で表せない規範はレビューで見る |
 
 ### 配置と境界
 
