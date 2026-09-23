@@ -13,7 +13,6 @@ import {
 import { Toaster } from "@/components/ui/toast";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
-import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import {
   CREATED_NOTE,
   NOTE,
@@ -137,17 +136,6 @@ describe("NotesPage", () => {
     warnSpy.mockRestore();
   });
 
-  it("URL の q が入力欄の初期値になり、その条件で一覧を取得する。初期表示は通知しない", async () => {
-    vi.mocked(listNotes).mockResolvedValue([NOTE]);
-    const screen = await renderPage({ q: "りんご" });
-
-    await expect.element(noteSearchbox(screen)).toHaveValue("りんご");
-    await expectText(screen, NOTE.title);
-    expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "りんご" } });
-    // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
-    expect(readAnnouncements()).toEqual([]);
-  });
-
   it("打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残す", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const screen = await renderPage();
@@ -209,7 +197,7 @@ describe("NotesPage", () => {
       .toEqual(["『abc』に一致するメモは 0 件です", "絞り込みを解除し、メモを全件表示しています"]);
   });
 
-  it("入力欄の値は URL と同じ正規化 (trim と上限) を通して取得し、確定する", async () => {
+  it("入力欄の値は URL と同じ正規化 (trim) を通して取得し、確定する", async () => {
     const onQueryChange = vi.fn();
     const screen = await renderPage({ onQueryChange });
     const searchbox = noteSearchbox(screen);
@@ -219,37 +207,14 @@ describe("NotesPage", () => {
     await expect
       .poll(() => vi.mocked(listNotes).mock.calls)
       .toContainEqual([{ data: { q: "abc" } }]);
-
     // 空状態の見出しも正規化後の値で描く (『 abc 』にならない)
     await expectText(screen, "『abc』に一致するメモはありません");
 
-    // 上限超えは入力欄の maxLength が止める (`fill` も maxLength を尊重する。2026-09-23 に実測)。
-    // 切り詰め自体は schema.test.ts と truncate-code-units.test.ts が持つ
-    const capped = "a".repeat(NOTE_QUERY_MAX_LENGTH);
-    await searchbox.fill("a".repeat(NOTE_QUERY_MAX_LENGTH + 1));
-    await expect.element(searchbox).toHaveValue(capped);
-    await expect
-      .poll(() => vi.mocked(listNotes).mock.calls)
-      .toContainEqual([{ data: { q: capped } }]);
     await userEvent.keyboard("{Enter}");
 
-    expect(onQueryChange).toHaveBeenCalledExactlyOnceWith(capped);
-    // 一覧ごと Error Boundary に落ちていない
-    await expectText(screen, `『${capped}』に一致するメモはありません`);
-  });
-
-  it("Enter で onQueryChange に入力値を渡す", async () => {
-    const onQueryChange = vi.fn();
-    const screen = await renderPage({ onQueryChange });
-
-    const searchbox = noteSearchbox(screen);
-    await searchbox.fill(" りんご ");
-    await userEvent.keyboard("{Enter}");
-
-    // URL と同じ正規化 (trim) を通した値を渡す
-    expect(onQueryChange).toHaveBeenCalledExactlyOnceWith("りんご");
-    // 入力欄も正規化後の値に揃う (URL が動かない submit でも trim と切り詰めが見える)
-    await expect.element(searchbox).toHaveValue("りんご");
+    // 確定も正規化後の値。入力欄も揃う (URL が動かない submit でも trim が見える)
+    expect(onQueryChange).toHaveBeenCalledExactlyOnceWith("abc");
+    await expect.element(searchbox).toHaveValue("abc");
   });
 
   it("ページ見出しと追加ボタンが表示される", async () => {

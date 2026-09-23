@@ -39,17 +39,26 @@ function normalizeQuery(text: string): string {
  * 件数の通知は ADR-0034。
  */
 export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: string) => void }) {
-  // 入力欄の state は URL の q に対する編集。URL が変われば base が合わなくなり、表示も debounce 済みの
-  // 値も q に戻る (ADR-0033)
-  const [edit, setEdit] = useState<{ base: string; text: string } | null>(null);
-  const text = edit !== null && edit.base === q ? edit.text : q;
+  // URL の q が変わった世代。値ではなく世代で編集を紐付ける: 履歴は同じ値へ戻れるので、値で照合すると
+  // 確定した後に戻ったとき古い編集が復活する。prop の変化は描画中に導く (React docs「Adjusting some
+  // state when a prop changes」。ADR-0033)
+  const [urlGeneration, setUrlGeneration] = useState({ q, generation: 0 });
+  if (urlGeneration.q !== q) {
+    setUrlGeneration({ q, generation: urlGeneration.generation + 1 });
+  }
+  const { generation } = urlGeneration;
+  // 入力欄の state はその世代の URL に対する編集。世代が進めば表示も debounce 済みの値も q に戻る
+  const [edit, setEdit] = useState<{ generation: number; text: string } | null>(null);
+  const text = edit !== null && edit.generation === generation ? edit.text : q;
   function handleTextChange(next: string) {
-    setEdit({ base: q, text: next });
+    setEdit({ generation, text: next });
   }
   const draftQ = normalizeQuery(text);
   const [debouncedEdit] = useDebouncedValue(edit, { wait: NOTE_SEARCH_DEBOUNCE_MS });
   const settledQ =
-    debouncedEdit !== null && debouncedEdit.base === q ? normalizeQuery(debouncedEdit.text) : q;
+    debouncedEdit !== null && debouncedEdit.generation === generation
+      ? normalizeQuery(debouncedEdit.text)
+      : q;
   const deferredQ = useDeferredValue(settledQ);
   const notesQuery = useSuspenseQuery(notesQueryOptions({ q: deferredQ }));
   const queryClient = useQueryClient();
@@ -115,7 +124,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   function handleSubmit() {
     // 正規化で値が変わるときだけ入力欄を揃える (trim と切り詰めが見える)
     if (text !== draftQ) {
-      setEdit({ base: q, text: draftQ });
+      setEdit({ generation, text: draftQ });
     }
     onQueryChange(draftQ);
   }

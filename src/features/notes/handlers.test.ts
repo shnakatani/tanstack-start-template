@@ -224,7 +224,7 @@ describe("notes handlers", () => {
       await handlers.create({ title: "こちらだけ", body: "" });
 
       expect(await handlers.list(NO_FILTER)).toHaveLength(1);
-      expect(await otherHandlers.list({ q: "" })).toHaveLength(0);
+      expect(await otherHandlers.list(NO_FILTER)).toHaveLength(0);
     } finally {
       otherDb.$client.close();
     }

@@ -107,8 +107,6 @@ export const noteIdSchema = v.object({
 });
 export type NoteId = v.InferOutput<typeof noteIdSchema>;
 
-/** 絞り込みの検索語の呼称。検証メッセージが使う。 */
-const QUERY_LABEL = "検索語";
 export const NOTE_QUERY_MAX_LENGTH = 100;
 
 /**
@@ -124,7 +122,7 @@ export const NOTE_QUERY_MAX_LENGTH = 100;
 export const noteListFilterSchema = v.object({
   q: v.optional(
     v.pipe(
-      v.string(`${QUERY_LABEL}は文字列で指定してください`),
+      v.string("検索語は文字列で指定してください"),
       v.trim(),
       v.transform((text) => truncateCodeUnits(text, NOTE_QUERY_MAX_LENGTH)),
     ),

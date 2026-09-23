@@ -1,4 +1,5 @@
 import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
+import * as v from "valibot";
 
 import { notesQueryOptions } from "@/features/notes/queries";
 import { noteListFilterSchema } from "@/features/notes/schema";
@@ -9,8 +10,8 @@ import { NotesPagePending } from "./-components/notes-page-pending";
 export const Route = createFileRoute("/notes/")({
   // URL の search を schema で検証する。valibot 1.x は Standard Schema なので adapter 不要
   validateSearch: noteListFilterSchema,
-  // 既定値 (q="") は URL に書かない。/notes と /notes?q= を同じ場所にする
-  search: { middlewares: [stripSearchParams({ q: "" })] },
+  // 既定値は URL に書かない。/notes と /notes?q= を同じ場所にする。既定は schema から導く
+  search: { middlewares: [stripSearchParams(v.getDefaults(noteListFilterSchema))] },
   // loader が読む search は deps として宣言する。deps が変わると loader が走り直し、条件ごとに
   // 別のキャッシュになる (Router docs「Using loaderDeps to access search params」)
   loaderDeps: ({ search }) => ({ q: search.q }),

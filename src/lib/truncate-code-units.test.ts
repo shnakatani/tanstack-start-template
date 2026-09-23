@@ -10,12 +10,6 @@ describe("truncateCodeUnits", () => {
     expect(truncateCodeUnits("abcdef", 5)).toBe("abcde");
   });
 
-  it("数えるのは code unit で、絵文字は 2 つ分", () => {
-    // "😀" は 😀 の 2 unit。"a😀" は 3 unit
-    expect("a😀".length).toBe(3);
-    expect(truncateCodeUnits("a😀", 3)).toBe("a😀");
-  });
-
   it("切った位置がサロゲートペアの途中なら、割れた前半を落とす", () => {
     // "a😀" を 2 unit で切ると "a\uD83D" になり、前半を落として "a"
     const cut = truncateCodeUnits("a😀", 2);

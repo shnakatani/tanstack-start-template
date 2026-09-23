@@ -41,7 +41,7 @@ export function NoteSearchField({
             type="search"
             aria-label={NOTE_SEARCH_LABEL}
             placeholder={NOTE_SEARCH_LABEL}
-            // schema と同じ上限。超えた入力は Error Boundary に落ちるので入力欄で止める (ADR-0033)
+            // schema と同じ上限。超えた分は schema が切り詰めるので、ここは打てる長さを揃えるだけ (ADR-0033)
             maxLength={NOTE_QUERY_MAX_LENGTH}
             value={value}
             onChange={(event) => onValueChange(event.target.value)}

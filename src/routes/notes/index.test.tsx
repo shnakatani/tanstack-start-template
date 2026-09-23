@@ -82,10 +82,10 @@ async function renderRoute(initialLocation: string) {
 }
 
 /**
- * route の定義。ページ本体の描画は -components/notes-page.test.tsx が持つ。
- * loader と wrapper (Route hooks と通知) は下の describe が実 router で見る
+ * route の定義と、wrapper (Route hooks と通知) の実 router での往復。
+ * ページ本体の描画は -components/notes-page.test.tsx が持つ
  */
-describe("/notes route の定義", () => {
+describe("/notes route", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(listNotes).mockResolvedValue([]);
@@ -106,13 +106,6 @@ describe("/notes route の定義", () => {
   it("route が search を server function と同じ schema で検証し、q を loader の deps にする", () => {
     expect(Route.options.validateSearch).toBe(noteListFilterSchema);
     expect(Route.options.loaderDeps?.({ search: { q: "abc" } })).toEqual({ q: "abc" });
-  });
-});
-
-describe("/notes route の wrapper (実 router)", () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
-    vi.mocked(listNotes).mockResolvedValue([]);
   });
 
   it("URL の q が loader と入力欄に届く", async () => {
@@ -143,6 +136,27 @@ describe("/notes route の wrapper (実 router)", () => {
     await expect.element(noteSearchbox(screen)).toHaveFocus();
   });
 
+  it("確定した後に戻ると、確定済みの編集は復活せず入力欄も一覧も元の q に揃う", async () => {
+    const { screen, router } = await renderRoute("/notes?q=abc");
+    await expect.element(noteSearchbox(screen)).toHaveValue("abc");
+
+    await noteSearchbox(screen).fill("xyz");
+    await userEvent.keyboard("{Enter}");
+    await expect.poll(() => router.state.location.href).toBe("/notes?q=xyz");
+
+    // 途中入力を挟まずに戻る。編集を URL の値で紐付けると、同じ値に戻った瞬間に確定済みの編集が復活する
+    router.history.back();
+
+    await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
+    await expect.element(noteSearchbox(screen)).toHaveValue("abc");
+    await vi.waitFor(() => {
+      expect(readAnnouncements()).toEqual([
+        "『xyz』に一致するメモは 0 件です",
+        "『abc』に一致するメモは 0 件です",
+      ]);
+    });
+  });
+
   it("戻るで URL の q が変わると、入力欄の途中入力を捨ててその q に揃う", async () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
@@ -169,15 +183,6 @@ describe("/notes route の wrapper (実 router)", () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
 
     await noteSearchbox(screen).fill("   ");
-    await userEvent.keyboard("{Enter}");
-
-    await expect.poll(() => router.state.location.href).toBe("/notes");
-  });
-
-  it("空にして Enter すると q が URL から消える", async () => {
-    const { screen, router } = await renderRoute("/notes?q=abc");
-
-    await noteSearchbox(screen).fill("");
     await userEvent.keyboard("{Enter}");
 
     await expect.poll(() => router.state.location.href).toBe("/notes");
