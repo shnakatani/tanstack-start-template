@@ -89,4 +89,5 @@ paths:
 - route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入り code-split されない (ADR-0012)
 - 分割されない property (`pendingComponent` / `loader` / `validateSearch` 等) が import する module は eager に読まれる。ページ本体と同じ module に置かず、pending 表示は別ファイル、共有する定数は `-lib/` に置く (ADR-0012)
 - loader は Query を温めるためだけに呼び、値は component が `useSuspenseQuery` で読む。`useLoaderData` で Query 所有のデータを読むと、mutation の `invalidateQueries` では loader が再実行されず画面だけ古いまま残る
-- Route hooks を使う wrapper を足したら、実 router + `createMemoryHistory` で描いて検証する。props 直渡しでは wrapper が実行されない。tree は root を差し替えて組む (実例: `src/routes/notes/route.test.tsx`、理由は ADR-0033)
+- Route hooks を使う wrapper を足したら、実 router + `createMemoryHistory` で描いて検証する。props 直渡しでは wrapper が実行されない。tree は root を差し替えて組む (実例: `src/routes/notes/index.test.tsx`、理由は ADR-0033)
+- route ファイルのテストは route ファイル名に `.test` を付ける (`index.test.tsx`)。`route.test.tsx` と名付けない。`route.tsx` はディレクトリのレイアウトルートの予約名で、そのテストと読める (Router の file-naming-conventions)

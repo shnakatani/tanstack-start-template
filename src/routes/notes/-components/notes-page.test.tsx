@@ -64,8 +64,7 @@ import {
 } from "./note-create-dialog.test-helpers";
 import { NotesPage } from "./notes-page";
 
-/** page を props 直渡しで描く。wrapper (Route hooks と通知) は ../route.test.tsx が実 router で見る。
- * loader と Route の定義は ../index.test.tsx */
+/** page を props 直渡しで描く。route の定義、loader、wrapper (Route hooks と通知) は ../index.test.tsx が持つ */
 async function renderPage({
   q = "",
   onQueryChange = () => {},

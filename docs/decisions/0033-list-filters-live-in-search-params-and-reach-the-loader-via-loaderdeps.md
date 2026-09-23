@@ -40,7 +40,7 @@
 
 ### wrapper のテストは root を差し替えた route tree で描く
 
-生成済み `routeTree.gen.ts` は `__root.tsx` が `TanStackDevtools` と `<html>` を描き、browser test では "Invalid hook call" と `<html>` を `<div>` の中に描く警告で動かない (2026-09-23 に実測)。`src/routes/notes/route.test.tsx` は root だけを `createRootRouteWithContext<{ queryClient }>()({ component: () => <Outlet /> })` に差し替え、`Route` を生成コードと同じ `update({ id, path, getParentRoute })` で付ける。`update` の公開型に id / path / getParentRoute が無いので (生成コードは `as any`)、交差型で注釈した変数を渡す。
+生成済み `routeTree.gen.ts` は `__root.tsx` が `TanStackDevtools` と `<html>` を描き、browser test では "Invalid hook call" と `<html>` を `<div>` の中に描く警告で動かない (2026-09-23 に実測)。`src/routes/notes/index.test.tsx` は root だけを `createRootRouteWithContext<{ queryClient }>()({ component: () => <Outlet /> })` に差し替え、`Route` を生成コードと同じ `update({ id, path, getParentRoute })` で付ける。`update` の公開型に id / path / getParentRoute が無いので (生成コードは `as any`)、交差型で注釈した変数を渡す。
 
 Router の how-to「How to Test Router with File-Based Routing」は生成済みの `routeTree` をそのまま `createMemoryHistory` で描く形を示す。root が devtools を持たないプロジェクトではその形で足りる。
 
@@ -54,11 +54,11 @@ React docs は debounce と `useDeferredValue` を「You can also use these tech
 
 - `@tanstack/react-pacer` は beta で API が変わりうる (docs の overview「TanStack Pacer is currently in beta and its API is still subject to change」)。利用箇所は `NotesPage` の `useDebouncedValue` 1 つに閉じる。追従できない変更が来たら `use-debounce` の `useDebounce(value, wait)` に差し替える。差し替え後も `useDeferredValue` の段は残す
 - `<search>` 要素は使わず `<form role="search">` で組む。同梱の `@vitest/browser` の locator engine が `search` role を `<search>` に写さないため、`getByRole("searchbox")` は取れても `getByRole("search")` が取れない (2026-09-23 に実測。理由は `note-search-field.tsx` の抑制コメントが持つ)
-- ページテスト (`-components/notes-page.test.tsx`) は `NotesPage` に props を直接渡す。wrapper の往復 (URL → 入力欄、Enter → URL、空で確定 → `q` が消える、上限超え → error component) は `route.test.tsx` が持つ
+- ページテスト (`-components/notes-page.test.tsx`) は `NotesPage` に props を直接渡す。wrapper の往復 (URL → 入力欄、Enter → URL、空で確定 → `q` が消える、上限超え → error component) は `index.test.tsx` が持つ
 - debounce のテストは 1 文字ずつ別の `userEvent.keyboard` で打つ。`fill` は 1 回の input、`type("abc")` は 3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)。待ちの実値 (`NOTE_SEARCH_DEBOUNCE_MS`) は `mise run verify` の負荷で打鍵の間隔に負けるので、テストは module の partial mock で待ちを広げる (`-components/notes-page.test.tsx` の `vi.mock`)
 - 切り詰めは warn しない。IME の変換中に上限を超えるのは通常の入力で、warn にすると日本語入力のたびに鳴る誤検知になる。切り詰めは maxLength と同じ規則を先に当てるだけで、submit では入力欄に反映して見せる。切った位置がサロゲートペアの途中なら前半を落とす。落とさないと URL では U+FFFD に化け、`LIKE` にも当たらない (2026-09-23 に better-sqlite3 で実測)
-- 通知の契機と重複除去は ADR-0034 が持つ。テストは `-components/notes-page.test.tsx` が debounce 後と無効化済みキャッシュの決着を、`route.test.tsx` が Enter と戻るの通知とフォーカスの維持を見る
-- submit の `navigate` を `replace: true` に変えても URL は同じなので、履歴の数を見るテスト (`route.test.tsx`「入力して Enter すると URL の q が確定する」の `router.history.length`) が無いと退行に気付けない
+- 通知の契機と重複除去は ADR-0034 が持つ。テストは `-components/notes-page.test.tsx` が debounce 後と無効化済みキャッシュの決着を、`index.test.tsx` が Enter と戻るの通知とフォーカスの維持を見る
+- submit の `navigate` を `replace: true` に変えても URL は同じなので、履歴の数を見るテスト (`index.test.tsx`「入力して Enter すると URL の q が確定する」の `router.history.length`) が無いと退行に気付けない
 - URL の `q` は Router の既定の search パーサが JSON として先に読むので、手で書いた `?q=123` `?q=true` は number / boolean になり schema が落とす (アプリ内の navigate は `?q=%22123%22` に包むので往復は保たれる)。schema の `v.string()` に日本語の文言を持たせ、error component に技術文言を出さない。coerce やパーサの差し替えはしない: 他の route の search にも波及し、数値を検索したい利用者が URL を手で書く経路のためだけに既定を外す理由が無い
 - search の検証失敗は `/notes` の route 境界に落ちる。dev server で `/notes?q=<101 文字>` を SSR すると HTTP 500 で `RouteErrorContent` (見出し「エラーが発生しました」、DEV では Standard Schema の issues の JSON を持つ `error.message`) が描かれ、root の全画面エラーにはならない (2026-09-23 に実測)。route テストは `defaultErrorComponent` を本番と同じ `RouteErrorContent` にし、見出しと schema の文言を見る
 
@@ -66,7 +66,7 @@ React docs は debounce と `useDeferredValue` を「You can also use these tech
 
 - Pacer が 1.0 になったら beta の注記を消す。API が変わって追従できなければ上の差し替え先へ
 - `@vitest/browser` の locator engine が `search` role を `<search>` に写すようになったら `<form role="search">` を `<search>` に戻す
-- `__root.tsx` が browser test で描けるようになったら、`route.test.tsx` を生成済み `routeTree` で描く形 (how-to の形) に戻す
+- `__root.tsx` が browser test で描けるようになったら、`index.test.tsx` を生成済み `routeTree` で描く形 (how-to の形) に戻す
 
 ## 検討した選択肢
 

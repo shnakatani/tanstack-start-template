@@ -42,7 +42,7 @@ ADR-0017 は通知を `announce()` (常時 mount の live region) に集約し�
 | 初期表示 (URL の `q`) は通知しない。`useRef(q)` の初期値が URL の `q` なので、最初の決着は同じ条件として捨てられる                                                                                              | ページを開くたびに件数を読み上げる。結果の入れ替わりではない                                                                           |
 | この形はページが URL の変化をまたいで生き続けることに依存する。`key={q}` でページを作り直す形にしない                                                                                                           | 作り直すと ref が初期化され、debounce が明ける前の Enter と戻るで通知が消える (2026-09-23 のレビューで 3 名が指摘)                     |
 | 文言は `noteSearchResultMessage` (`src/routes/notes/-lib/note-search.ts`) が持つ。0 件も件数の形で、条件が空なら解除の文言                                                                                      | 空状態の見出し (『…』に一致するメモはありません) と同じ文字列にすると、テストの `getByText` が live region と見出しの 2 要素に解決する |
-| テストは `readAnnouncements()` の配列を丸ごと比べる。ページのテスト (`-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`route.test.tsx`) が Enter と戻るを見る | `toContain` だと重複や余計な通知が通る                                                                                                 |
+| テストは `readAnnouncements()` の配列を丸ごと比べる。ページのテスト (`-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`index.test.tsx`) が Enter と戻るを見る | `toContain` だと重複や余計な通知が通る                                                                                                 |
 
 ## Consequences
 
