@@ -1,8 +1,8 @@
-# ADR-0054: ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める
+# ADR-0009: ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める
 
 - Status: Accepted
 - Date: 2026-09-24
-- 関連: ADR-0012 (ルールの選定基準)、ADR-0032 (`jsPlugins` で足す判断)
+- 関連: ADR-0007 (ルールの選定基準)、ADR-0023 (`jsPlugins` で足す判断)
 
 ## Context
 
@@ -18,7 +18,7 @@
 規範そのもの (何を書き、なぜそう書くか) と実測は `docs/guides/testing.md` にある。ここで決めるのは、その規範をどう守らせるかである。
 
 - レビューでは守れなかった。同期読みを assert へ流す形は、待機を retry API に委ねると決めた 3 日後のコミット `91515ee` が、レビューを経て新しく足している。判断を誤ってもほとんどの実行で通るため、レビューでは落ちない。不在の取り違え (`src/routes/notes/-components/note-cells.test.tsx` の 4 件) もレビューが見つけて `1d987d5` で直したが、機械では出なかった
-- 上流の `@vitest/eslint-plugin` はこの形のルールを持たない。ルールの一覧を `gh api repos/vitest-dev/eslint-plugin-vitest/contents/docs/rules` で取り、`locator` / `element` / `browser` / `poll` を含む名前を数えると 82 本中 1 本で (2026-09-22)、該当した `require-awaited-expect-poll` は `await` の付け忘れを見るもの (ADR-0012 が `correctness` 経由で有効と記録)
+- 上流の `@vitest/eslint-plugin` はこの形のルールを持たない。ルールの一覧を `gh api repos/vitest-dev/eslint-plugin-vitest/contents/docs/rules` で取り、`locator` / `element` / `browser` / `poll` を含む名前を数えると 82 本中 1 本で (2026-09-22)、該当した `require-awaited-expect-poll` は `await` の付け忘れを見るもの (ADR-0007 が `correctness` 経由で有効と記録)
 - 同じ趣旨のルールは他のエコシステムにある。`eslint-plugin-playwright` の `prefer-web-first-assertions` が `expect(await locator.isVisible()).toBe(true)` を報告し、"web first assertions will automatically wait for the conditions to be fulfilled resulting in more resilient tests" を理由に挙げる。対象 API が違うため流用はできない
 - 禁止したい形は実行時の履歴ではなく式の構造で表せる。「同期読みの値が `expect()` の引数へ届くこと」「期待値がリテラルの否定」は 1 ファイルの構文で判定できる
 
@@ -33,7 +33,7 @@
 | `browser-test/no-negated-style-literal`  | 期待値がリテラルの否定。`expect(...)` 起点は `toHaveStyle` だけ、`getComputedStyle(...)` 起点は `toHaveStyle` 以外の全部 | `docs/guides/testing.md`「否定を肯定で書く」     |
 | `browser-test/no-bare-absence-assertion` | 素の `expect.element(x).not.toBeInTheDocument()`。`expectAbsent` / `expectRemoved` を通させる                            | `docs/guides/testing.md`「否定を肯定で書く」     |
 
-- 実行経路は増やさない。`vp lint` と `vp check` で走り、`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0032、`docs/guides/lint.md`「testing-library を当てる範囲」)
+- 実行経路は増やさない。`vp lint` と `vp check` で走り、`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0023、`docs/guides/lint.md`「testing-library を当てる範囲」)
 - severity は `error` にする。`vp check` は warn で exit 1 にならないため、新規コードへの強制力を失う
 - 適用先はブラウザテスト本文と、そこへ locator を配る helper (`src/test/**` と `*.test-helpers.*`) にする。テスト本文だけに当てると、helper へ切り出した同期読みがルールから外れる。glob は `scripts/lib/companion-files.ts` から引く
 - `src/test/*.test.ts` は外す。unit project は locator を持たず、drizzle の `db.select().from(x).all()` が同じメソッド名で誤検出になる (2026-09-22 実測。`src/**` へ広げると `src/server/db/index.test.ts` の 2 件が出る)

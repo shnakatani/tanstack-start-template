@@ -80,7 +80,7 @@
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.963 0.002 197.1);
   --muted-foreground: oklch(45% 0.017 213.2); /* mist-600。生成物は mist-500 で --muted 上 4.13 */
-  /* ::placeholder 疑似要素に載る例示テキスト専用 (ADR-0034)。`@theme inline` へ通さず
+  /* ::placeholder 疑似要素に載る例示テキスト専用 (ADR-0025)。`@theme inline` へ通さず
      下の `@utility example-placeholder` だけで露出させる。通すと text-placeholder や
      data-placeholder:text-placeholder まで生成され、select の実テキストへ当てられる。
      そこは WCAG 1.4.3 が掛かり、dark の `--background` へ `--input/30` を重ねた上では割る
@@ -127,7 +127,7 @@
   --muted: oklch(0.275 0.011 216.9);
   --muted-foreground: oklch(0.723 0.014 214.4);
   /* --placeholder は light と同値 (mist-500) のため再宣言しない。2 箇所に同じ値を置くと
-     片方だけ動かせてしまい、それを見る検査が無い (ADR-0034)。適用範囲は :root 側の注記 */
+     片方だけ動かせてしまい、それを見る検査が無い (ADR-0025)。適用範囲は :root 側の注記 */
   --accent: oklch(0.275 0.011 216.9);
   --accent-foreground: oklch(0.987 0.002 197.1);
   --destructive: oklch(80.8% 0.114 19.571); /* red-300 */
@@ -151,7 +151,7 @@
   --sidebar-ring: oklch(80.9% 0.105 251.813);
 }
 
-/* 例示の placeholder に色を当てる唯一の口 (ADR-0034)。`--placeholder` を `@theme inline` へ
+/* 例示の placeholder に色を当てる唯一の口 (ADR-0025)。`--placeholder` を `@theme inline` へ
    通していないので、この utility を経由しない限り当てられない。select の data-placeholder は
    実テキストで WCAG 1.4.3 が掛かるため、ここから到達できないことが制約になる。
    入れ子の擬似要素を持つ custom utility は公式の形 (tailwindcss.com/docs/adding-custom-styles

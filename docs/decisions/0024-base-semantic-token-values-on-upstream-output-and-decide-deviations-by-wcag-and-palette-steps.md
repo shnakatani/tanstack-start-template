@@ -1,14 +1,14 @@
-# ADR-0033: セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める
+# ADR-0024: セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0027 (乖離の記録先と baseline の運用) / ADR-0038 (story の axe を `error` で回す) / ADR-0034 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
+- 関連: ADR-0020 (乖離の記録先と baseline の運用) / ADR-0028 (story の axe を `error` で回す) / ADR-0025 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
 
 ## Context
 
 `src/styles.css` の色は shadcn CLI が生成する。`shadcn init --preset <code>` と `shadcn apply <code> --only theme` はどちらも、知っているキーの値だけを書き換える。生成物を読まずに値を足すと、次の生成でその値が消えたか残ったかが差分に現れない。
 
-ADR-0027 の生成時 baseline は `src/components/ui/` を対象にしており、`src/styles.css` は対象外だった。そのため 3 種類の乖離 (上流にない追加 / 値の変更 / 意図した削除) を区別する手段がなく、判別のたびに上流の registry JSON を引いて突き合わせるところから始まっていた。
+ADR-0020 の生成時 baseline は `src/components/ui/` を対象にしており、`src/styles.css` は対象外だった。そのため 3 種類の乖離 (上流にない追加 / 値の変更 / 意図した削除) を区別する手段がなく、判別のたびに上流の registry JSON を引いて突き合わせるところから始まっていた。
 
 **base color を slate から mist へ動かしたのは、CLI が slate を生成先に持たなくなったためである。** 2026-09-21 に `shadcn@4.21.0` で観測した。
 
@@ -55,7 +55,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 生成のコマンド、preset code、`shadcn preset resolve` が黙って別のコードを返す落とし穴は `docs/guides/styling-and-tokens.md`「トークンを作り直す」にある。生成に使うコードは文書が持つ。
 
-生成物そのものを `docs/registry-baseline/styles.css` として持つ。乖離の記録先は ADR-0027 の許容リストで、本 ADR は値の決め方だけを持つ。
+生成物そのものを `docs/registry-baseline/styles.css` として持つ。乖離の記録先は ADR-0020 の許容リストで、本 ADR は値の決め方だけを持つ。
 
 ### 2. 有彩色のアクセントは light と dark で役割を反転させる
 
@@ -93,9 +93,9 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 | 兼ねていた用途           | 広い側 (名前を保つ)        | 狭い側 (切り出す)                  | 決定     |
 | ------------------------ | -------------------------- | ---------------------------------- | -------- |
 | tint の面とその上の文字  | `--destructive` (`text-X`) | `--destructive-surface` (`bg-X/N`) | 本 ADR   |
-| 通常の文字と例示テキスト | `--muted-foreground`       | `--placeholder` (`::placeholder`)  | ADR-0034 |
+| 通常の文字と例示テキスト | `--muted-foreground`       | `--placeholder` (`::placeholder`)  | ADR-0025 |
 
-切り出した側が緩い閾値を持つとは限らない。`--placeholder` は SC 1.4.3 を割る側を意図して選んでおり、その判断は ADR-0034 が持つ。
+切り出した側が緩い閾値を持つとは限らない。`--placeholder` は SC 1.4.3 を割る側を意図して選んでおり、その判断は ADR-0025 が持つ。
 
 露出の口は、そのトークンを当ててはいけない場所があるかで分ける。
 
@@ -108,9 +108,9 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 ### 5. リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない
 
-判定は `parameters.a11y.test` の axe に任せる (ADR-0038)。既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を足して axe の対象に入れる。
+判定は `parameters.a11y.test` の axe に任せる (ADR-0028)。既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を足して axe の対象に入れる。
 
-対象はリポジトリが検査として持つものに限る。値を選ぶための計算は別で、本 ADR の Context と ADR-0034 の帯は oklch から計算した比を根拠に載せている。
+対象はリポジトリが検査として持つものに限る。値を選ぶための計算は別で、本 ADR の Context と ADR-0025 の帯は oklch から計算した比を根拠に載せている。
 
 禁じているのは、その計算を story として抱えて検査の顔をさせることである。描画されない値を測るので、実際の画面が割っていても緑になる。
 
@@ -127,7 +127,7 @@ JS で比を計算する形そのものにも無理がある。ブラウザは s
 
 実在の対を描く story の置き場は `docs/guides/styling-and-tokens.md`「実在の対を story で描く」にある。
 
-**この検算は addon の合否だけでは足りない。** `@storybook/addon-a11y@10.6.0` は `violations` の件数だけで合否を決める (同 addon の `hasViolations`)。`color-contrast` は背景を解決できないと `violations` ではなく `incomplete` へ落ちるので、story を包む要素が変わって解決できなくなると、addon だけでは検査が緑のまま何も見なくなる。判定できなかった項目を合否へ入れる仕組みと、どの層で入れるかは ADR-0038 が持つ。
+**この検算は addon の合否だけでは足りない。** `@storybook/addon-a11y@10.6.0` は `violations` の件数だけで合否を決める (同 addon の `hasViolations`)。`color-contrast` は背景を解決できないと `violations` ではなく `incomplete` へ落ちるので、story を包む要素が変わって解決できなくなると、addon だけでは検査が緑のまま何も見なくなる。判定できなかった項目を合否へ入れる仕組みと、どの層で入れるかは ADR-0028 が持つ。
 
 hover の状態を作って測る形は、ポインタを当てる形も擬似クラスを強制する形も採らない。ポインタを当てると `transition-colors` の途中の合成色を axe が測る。擬似クラスを強制しても同じで、Storybook の test 実行は animation を止めない方針のため (`docs/guides/storybook.md`「play を書く」) 途中の色が残り、さらに addon が描画後に axe を回すので状態を保つ decorator か別の走査が要る。手で組み合わせを並べる方が、持ち物が一覧だけで済む。
 

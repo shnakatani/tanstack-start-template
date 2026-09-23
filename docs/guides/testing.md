@@ -4,9 +4,9 @@
 
 | 決定                                                                                                   | ADR      |
 | ------------------------------------------------------------------------------------------------------ | -------- |
-| ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める                              | ADR-0054 |
-| mutation は Action 層の `action` prop から `useActionMutation` で呼び、二重発火は state だけで塞ぐ     | ADR-0022 |
-| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0038 |
+| ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める                              | ADR-0009 |
+| mutation は Action 層の `action` prop から `useActionMutation` で呼び、二重発火は state だけで塞ぐ     | ADR-0016 |
+| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0028 |
 
 ## explanation
 
@@ -49,7 +49,7 @@ const inputGroup = findInputGroup(input.element());
 | animation を待つ helper に mount 待ちを足す   | 「アニメーションを待つ」名前と責務がずれる。待つ対象を引数で渡す設計になり、呼び出し側の判断が増える                                                      | 却下     |
 | `element()` を全廃して `findElement()` に統一 | `render()` 直後は `act` で flush 済みで、待つ理由がない。同期で読める箇所まで `await` を増やすことになる                                                  | 却下     |
 
-同期読みを assert へ流す形は lint が止める (ADR-0054)。生 DOM を読む場所 (操作を挟んだか) の残りの形はレビューで見る。
+同期読みを assert へ流す形は lint が止める (ADR-0009)。生 DOM を読む場所 (操作を挟んだか) の残りの形はレビューで見る。
 
 ### 合成イベントが実物からずれる理由
 
@@ -65,7 +65,7 @@ const inputGroup = findInputGroup(input.element());
 | Playwright `locator.dispatchEvent()`        | 「Events are `composed`, `cancelable` and bubble by default」。docs/input は `HTMLElement.click()` の挙動を起こす手段と位置づける |
 | testing-library `fireEvent.click`           | `event-map.js` の click は `bubbles` / `cancelable` / `composed` が true、`button` は 0                                           |
 
-同期に 2 回 dispatch すると、1 回目のハンドラが積んだ state 更新は 2 回目より前に描画されない。実イベントでは 1 回ごとに描画が済むので、この形を固定したテストは実装に無用の防御 (ref のフラグ) を要求する。根拠と実測は ADR-0022「二重発火は state だけで塞ぐ」が持つ。ライブラリ自身のテストも同期 2 連射を書かない。
+同期に 2 回 dispatch すると、1 回目のハンドラが積んだ state 更新は 2 回目より前に描画されない。実イベントでは 1 回ごとに描画が済むので、この形を固定したテストは実装に無用の防御 (ref のフラグ) を要求する。根拠と実測は ADR-0016「二重発火は state だけで塞ぐ」が持つ。ライブラリ自身のテストも同期 2 連射を書かない。
 
 | ライブラリ | 二重発火・disabled のテストの書き方                                                                                                                                                                         |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -84,7 +84,7 @@ const inputGroup = findInputGroup(input.element());
 | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | 実イベント (`click()` と `userEvent.keyboard`) で 2 連射する      | 実装の仕組み (描画のタイミング) をテストに書かない。Base UI と React Aria 自身のテストと同じ形。mutant で落ちることを確認済み                      | **採用** |
 | 合成イベントの間に `await Promise.resolve()` を挟む               | ブラウザが実イベント間で行う checkpoint の模倣で、React の描画が microtask で流れる知識をテストに焼き込む。React 側の実装が変わると意味が変わる    | 却下     |
-| 合成イベントの同期 2 連射を残し、実装に ref のフラグを持つ        | 起きない事象への防御をテストが要求する形。react.dev の `disabled={pending}` の形から外れる (ADR-0022)                                              | 却下     |
+| 合成イベントの同期 2 連射を残し、実装に ref のフラグを持つ        | 起きない事象への防御をテストが要求する形。react.dev の `disabled={pending}` の形から外れる (ADR-0016)                                              | 却下     |
 | 2 回目を `click({ force: true })` で送る                          | `data-disabled:pointer-events-none` の部品では下の要素へ届き、何が止めたか分からない。キーボードなら部品自身に届く                                 | 却下     |
 | 合成 click の helper を置き、用途を 1 つに絞る                    | 消費者が sample の部品だけになる。利用者が sample を消すと、消費者ゼロの helper が配られたままになる                                               | 却下     |
 | 合成 click で base-ui 内部のガードを見続ける                      | 守る対象が上流ライブラリの内部で、base-ui 自身のテストが同じことを見ている。このリポジトリのコードは `pointer-events` と状態属性の assert で守れる | 却下     |
@@ -252,7 +252,7 @@ Router の how-to「How to Test Router with File-Based Routing」は生成済み
 
 - `src/` 全体へ当てるソース検査を作るなら、`scripts/checks/source/` と `checks-source` project を対で作る。先に lint (必要なら `jsPlugins`) で表せないかを見る
 - 判定を `scripts/lib/` の純粋関数へ分け、単体テストを別に持つ。判定と適用を同じファイルに書くと、判定の境界条件を試すために `src/` を壊す必要が出る。実例は、実行側の `scripts/checks/runtime/security-headers.ts` と判定の `scripts/lib/response-headers.ts`
-- 落ちたときに判断が要る検査だけを作る。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す。実例は `scripts/checks/integrity/lint-config.test.ts` の緩和の適用先とルールの検査 (広げたのが意図なら期待値へ足し、誤りなら設定を直す) と、`scripts/checks/integrity/registry-baseline.test.ts` の 3-way の判別である。期待値の書き換えしか選択肢が無い検査は、上流の更新のたびに鳴って判断を鈍らせる (ADR-0019 が bail out の一覧を固定しない理由と同じ)
+- 落ちたときに判断が要る検査だけを作る。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す。実例は `scripts/checks/integrity/lint-config.test.ts` の緩和の適用先とルールの検査 (広げたのが意図なら期待値へ足し、誤りなら設定を直す) と、`scripts/checks/integrity/registry-baseline.test.ts` の 3-way の判別である。期待値の書き換えしか選択肢が無い検査は、上流の更新のたびに鳴って判断を鈍らせる (ADR-0014 が bail out の一覧を固定しない理由と同じ)
 
 ## how-to
 
@@ -270,7 +270,7 @@ Router の how-to「How to Test Router with File-Based Routing」は生成済み
 - `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (「animation を無効にして走らせる理由」)
 - `toHaveTextContent` は文字列を渡すと部分一致になる。完全一致が要るなら正規表現を渡す
 - 変化しないことの検証 (disabled な行がトグルしない等) は retry では強くならない。`expect.element` は条件を満たした時点で返るので、更新の前に成功しうる。待つ対象がある検証へ言い換えられないかを先に考える
-- 生 DOM を読む箇所が「操作を挟んだか」で待ち方を誤っても、テストは大半の実行で通る。lint が止めるのは同期読みを assert へ流す形だけなので (ADR-0054)、残りはレビューで見る
+- 生 DOM を読む箇所が「操作を挟んだか」で待ち方を誤っても、テストは大半の実行で通る。lint が止めるのは同期読みを assert へ流す形だけなので (ADR-0009)、残りはレビューで見る
 
 ### 同期読みを書き換える
 
@@ -326,7 +326,7 @@ animation は `src/test/browser-setup.tsx` が毎テスト止める (「animatio
 
 ### 否定を肯定で書く
 
-否定 assert は、期待値がリテラルなら書かない。肯定で書く。例外は、要素が在る状態から消えるのを待つ `expectRemoved(locator)` と、期待値が別の観測である比較の 2 つに限る。理由は「否定 assert が素通りする経路」「不在を 2 つの名前で書き分ける理由」、lint で止める範囲は ADR-0054 にある。
+否定 assert は、期待値がリテラルなら書かない。肯定で書く。例外は、要素が在る状態から消えるのを待つ `expectRemoved(locator)` と、期待値が別の観測である比較の 2 つに限る。理由は「否定 assert が素通りする経路」「不在を 2 つの名前で書き分ける理由」、lint で止める範囲は ADR-0009 にある。
 
 | 書き方                                                                                                                              | 守らないと                                                                                                 |
 | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -389,12 +389,12 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 ### 入力部品を操作する
 
-- `NumberField` (ADR-0028) のロールは `spinbutton` ではなく `textbox` になる。`getByRole("textbox")` で取る
+- `NumberField` (ADR-0021) のロールは `spinbutton` ではなく `textbox` になる。`getByRole("textbox")` で取る
 - locator の `fill()` は、controlled な `type="text"` では既存の値を置き換えず追記になる。要素を全選択してから打つ
 
 ### 状態と通知を検証する
 
-- pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0035)
+- pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
 - announcer の region は `src/test/browser-setup.tsx` が毎テスト描く。文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
 - 同じ通知の経路を 2 つのテストで見ない。`/notes` では、ページのテスト (`-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`index.test.tsx`) が Enter と戻るを見る
 

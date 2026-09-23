@@ -1,12 +1,12 @@
-# ADR-0034: placeholder には例示だけを置き、色を専用トークンへ切る
+# ADR-0025: placeholder には例示だけを置き、色を専用トークンへ切る
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0033 (トークンの値の決め方、`--muted-foreground` を下げた判断、実描画と axe による検算。検算は `::placeholder` には届かない) / ADR-0027 (乖離の記録先)
+- 関連: ADR-0024 (トークンの値の決め方、`--muted-foreground` を下げた判断、実描画と axe による検算。検算は `::placeholder` には届かない) / ADR-0020 (乖離の記録先)
 
 ## Context
 
-ADR-0033「値は palette の段に乗せる」に従って `--muted-foreground` の light を `mist-600` へ下げた。`--muted` の上で WCAG 2.2 SC 1.4.3 の 4.5:1 を満たすためである。
+ADR-0024「値は palette の段に乗せる」に従って `--muted-foreground` の light を `mist-600` へ下げた。`--muted` の上で WCAG 2.2 SC 1.4.3 の 4.5:1 を満たすためである。
 このトークンは `::placeholder` も塗っており、下げると例示テキストが入力済みの値と紛れる方向へ動く。
 
 placeholder には向きの逆な要求が 2 つ掛かる。
@@ -35,7 +35,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 **「何を置くか」と「その色が適合するか」は別の問いで、軸も違う。** 置くものは Carbon (#7515) の分類に従い、例示か指示かで分ける。色が免除されるかは w3c/wcag#4343 の軸で、ラベルが名指していない情報を足すかで分かれる。2 つは一致しない。例示でも書式を伝えるもの (`placeholder="Mary Smith"`) は、置いてよいが免除には入らない。その場合この色は不適合になる。どこが不適合かは Consequences が持つ。
 
-トークンを切る形そのものは ADR-0033「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」が持つ。
+トークンを切る形そのものは ADR-0024「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」が持つ。
 
 ### 対象外 — `select` の空状態
 
@@ -44,7 +44,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 ### 段の選択
 
-「背景と 4.5:1」と「入力値と 3:1」を両方課したときに成立する帯と、palette の段 (ADR-0033「値は palette の段に乗せる」) の比。2026-09-21 の実測である。`src/styles.css` がトークンとして宣言している段は `mise run contrast` で測り直せる (`docs/guides/styling-and-tokens.md`「比を測る」)。light の `mist-500` は `--placeholder`、`mist-600` は `--muted-foreground`。dark の `mist-500` は `--placeholder`、`mist-400` は `--muted-foreground` が持つ。light の `mist-400` と dark の `mist-600` はトークンになっていないので、この手段では測れない。
+「背景と 4.5:1」と「入力値と 3:1」を両方課したときに成立する帯と、palette の段 (ADR-0024「値は palette の段に乗せる」) の比。2026-09-21 の実測である。`src/styles.css` がトークンとして宣言している段は `mise run contrast` で測り直せる (`docs/guides/styling-and-tokens.md`「比を測る」)。light の `mist-500` は `--placeholder`、`mist-600` は `--muted-foreground`。dark の `mist-500` は `--placeholder`、`mist-400` は `--muted-foreground` が持つ。light の `mist-400` と dark の `mist-600` はトークンになっていないので、この手段では測れない。
 帯の下端は 4.5:1、上端は入力値との 3:1 が保てる限界で、どちらも背景との比で表している。
 
 上端は `mise run contrast` では出せない。解き方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
@@ -89,7 +89,7 @@ light と dark で同じ `mist-500` になる。
 - **この色を見る検査は無い。`vp test run` が緑でも `--placeholder` の値について何も言っていない。** 動かすときの見比べ方は `docs/guides/styling-and-tokens.md`「比を測る」にある
 - light の `mist-500` は帯の下端から 0.11 しか離れていない。`--background` か `--foreground` が動くと外れる
 - dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.35。placeholder へ書式や指示を書くと、そのまま不適合になる
-- 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0027 の許容リストが行を持つ
+- 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0020 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。当て方は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある
 - **消費側からの上書きが決定的でない。** `cn` が `@utility` で作った class を知らないためで、詳細は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある。registry の `placeholder:text-muted-foreground` なら `cn` が確実に落とす。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない
 - placeholder を足すときは 2 つを確かめる。(1) 例示か (ラベルの代わりでも、書式や条件の説明でもないか)。(2) ラベルが名指していない情報を足していないか。確かめ方は `docs/guides/forms-and-inputs.md`「placeholder を足す」にある

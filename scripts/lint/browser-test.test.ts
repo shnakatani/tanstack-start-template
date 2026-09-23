@@ -105,7 +105,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       errors: [{ messageId: "syncRead" }],
     },
     {
-      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (ADR-0054)
+      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (ADR-0009)
       code: "const el = locator.element(); expect(document.activeElement).toBe(el);",
       errors: [{ messageId: "syncRead" }],
     },
@@ -137,7 +137,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       code: "expect(new Set(el.elements()).size).toBe(1);",
       errors: [{ messageId: "syncRead" }],
     },
-    // 変数へ束縛してから渡す形。スコープ解析が外れるとここだけ無言で通る (ADR-0054)
+    // 変数へ束縛してから渡す形。スコープ解析が外れるとここだけ無言で通る (ADR-0009)
     {
       code: "const el = locator.element(); expect(el).toBeTruthy();",
       errors: [{ messageId: "syncRead" }],
@@ -192,7 +192,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       errors: [{ messageId: "syncRead" }],
     },
     {
-      // このリポジトリは `as` を禁じている (ADR-0012) が、抑制付きで入ったときに
+      // このリポジトリは `as` を禁じている (ADR-0007) が、抑制付きで入ったときに
       // 透かせないと報告が無言で消える。WRAPPER_TYPES の TSAsExpression を守る
       code: "expect(locator.query() as Element).not.toBeNull();",
       filename: "a.ts",
@@ -212,7 +212,7 @@ tester.run("no-find-element", noFindElement, {
       errors: [{ messageId: "findElement" }],
     },
     {
-      // timeout を明示しても呼ばない。予算を呼び出しごとに持つ形は 2026-09-22 に撤去した (ADR-0054)
+      // timeout を明示しても呼ばない。予算を呼び出しごとに持つ形は 2026-09-22 に撤去した (ADR-0009)
       code: "await locator.findElement({ timeout: 5000 });",
       errors: [{ messageId: "findElement" }],
     },

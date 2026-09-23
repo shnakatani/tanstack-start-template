@@ -18,7 +18,7 @@ const TODAY = new Date(2026, 8, 20);
  * 日付セルの色の検査を残すため (`docs/guides/accessibility.md`「story で出た違反を抑制する」)。
  *
  * 上流へは未起票 (2026-09-21 に shadcn-ui/ui を検索して該当なし)。投げるなら shadcn-ui/ui。
- * 外せるのは registry baseline の差分で nav の位置指定が変わったとき (ADR-0027)
+ * 外せるのは registry baseline の差分で nav の位置指定が変わったとき (ADR-0020)
  */
 function excludeFromA11y(...selectors: readonly string[]) {
   return { a11y: { context: { exclude: [".rdp-caption_label", ...selectors] } } };

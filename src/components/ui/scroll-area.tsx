@@ -16,7 +16,7 @@ function ScrollArea({ className, viewportClassName, children, ...props }: Scroll
       // に置くのは、バーの位置決めの基準が Root の padding box で、幅が外から決まる Root では
       // padding が Viewport だけを縮めるため (Viewport 側に置くと属性つき selector が消費側の
       // `px-*` に詳細度で勝ち、片側だけを無言で潰す)。`data-has-overflow-*` で出し分けるのは、
-      // 無条件に空けるとバーの無い空帯が残るため。乖離の理由は ADR-0027
+      // 無条件に空けるとバーの無い空帯が残るため。乖離の理由は ADR-0020
       className={cn("relative data-has-overflow-x:pb-2.5 data-has-overflow-y:pr-2.5", className)}
       {...props}
     >

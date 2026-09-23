@@ -27,7 +27,7 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * 素の表。列見出しには `scope="col"` を付ける。暗黙の role は locator と一部の支援技術で
- * columnheader に解決されない (ADR-0024)。
+ * columnheader に解決されない (ADR-0018)。
  * アプリの一覧は `DataTable` (parts) を通すので、ここは registry の意匠の見本
  */
 export const Default: Story = {

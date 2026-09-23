@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 /**
  * registry 乖離のガード。registry はチェックマークしか持たず、base-ui が checked と
  * indeterminate のどちらでも Indicator を描くため、素のままだと両者が同じ絵になる
- * (shadcn-ui/ui#9357、ADR-0027)。見えているアイコンを両方について見る。片側だけ見ると、
+ * (shadcn-ui/ui#9357、ADR-0020)。見えているアイコンを両方について見る。片側だけ見ると、
  * 両方が同時に見える壊れ方 (片側の `hidden` だけが落ちた状態) を見逃す。
  */
 describe("Checkbox", () => {

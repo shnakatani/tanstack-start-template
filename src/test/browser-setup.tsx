@@ -30,7 +30,7 @@ beforeEach(async () => {
 });
 
 /**
- * `announce()` (ADR-0035) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
+ * `announce()` (ADR-0026) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
  * 持つが、部品やページ単体の描画はそこを通らない。テストごとに置くと置き忘れが
  * `readAnnouncements` の throw まで出てこないので、setup で 1 回描く。
  * vitest-browser-react の cleanup は次のテストの `beforeEach` で走り (この setup より先に登録される)、

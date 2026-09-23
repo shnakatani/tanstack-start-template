@@ -1,8 +1,8 @@
-# ADR-0015: ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する
+# ADR-0010: ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0017 (server function のデータ境界)
+- 関連: ADR-0012 (server function のデータ境界)
 
 ## Context
 

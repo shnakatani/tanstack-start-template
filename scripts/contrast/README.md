@@ -12,4 +12,4 @@ mise run contrast
 
 引数の書き方は上を実行すると出る。
 
-合否は持たない。a11y の判定は Storybook の axe が持つ (ADR-0033「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。理由とファイルの分担は `docs/guides/styling-and-tokens.md`「比の測り方を置いた理由」、限界は同「測り方の限界」にある。
+合否は持たない。a11y の判定は Storybook の axe が持つ (ADR-0024「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。理由とファイルの分担は `docs/guides/styling-and-tokens.md`「比の測り方を置いた理由」、限界は同「測り方の限界」にある。

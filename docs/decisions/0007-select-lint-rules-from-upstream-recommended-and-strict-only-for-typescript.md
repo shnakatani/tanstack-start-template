@@ -1,8 +1,8 @@
-# ADR-0012: ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする
+# ADR-0007: ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0019 (React Compiler の診断ルールの扱い)、ADR-0032 (色の統制に足す `@shadcn/lint`)、ADR-0014 (テスト専用コードの import 境界)
+- 関連: ADR-0014 (React Compiler の診断ルールの扱い)、ADR-0023 (色の統制に足す `@shadcn/lint`)、ADR-0008 (テスト専用コードの import 境界)
 
 ## Context
 
@@ -33,7 +33,7 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 | `unicorn`    | 選定しない。`correctness` と `perf` に入る分だけ使う                                                                                       |
 | `oxc`        | 上流に対応する設定がない。`correctness` と `perf` で拾う                                                                                   |
 
-`@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (ADR-0032)。
+`@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (ADR-0023)。
 
 `testing-library` もこの表に載らない。基準は上流の `flat/react` を写すが、適用を story と story 専用の helper に限り、基準から外すルールがある (`docs/guides/lint.md`「testing-library を当てる範囲」)。
 
@@ -97,9 +97,9 @@ recommended に無くても、規約や他の決定を機械で守るために�
 | ルール                                  | 名指しの理由                                                                       |
 | --------------------------------------- | ---------------------------------------------------------------------------------- |
 | `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                             |
-| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0014) |
+| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008) |
 
-テスト専用コードの import を止める範囲と手段の比較は ADR-0014 が持つ。
+テスト専用コードの import を止める範囲と手段の比較は ADR-0008 が持つ。
 
 `react/rules-of-hooks` と `react/unsupported-syntax` はここに載らない。どちらも基準 (eslint-plugin-react-hooks) に入っており、oxlint のカテゴリが `correctness` / `perf` の外にあるだけである (「React Compiler のルールは eslint-plugin-react-hooks を基準にする」)。
 

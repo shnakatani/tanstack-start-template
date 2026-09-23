@@ -51,7 +51,7 @@ describe("RootDocument", () => {
   });
 
   /**
-   * announcer の region は初期マークアップに含まれていることが要件 (ADR-0035)。
+   * announcer の region は初期マークアップに含まれていることが要件 (ADR-0026)。
    * `announce()` の側は region が在る前提で書かれており、配線が外れると
    * 通知が warn だけ残して届かなくなる。その配線をここで守る。
    */

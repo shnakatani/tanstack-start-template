@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-// registry 乖離 (ADR-0027): 上流の popup 内リング抑制 (in-data-[slot=combobox-content]:
+// registry 乖離 (ADR-0020): 上流の popup 内リング抑制 (in-data-[slot=combobox-content]:
 // focus-within:ring-0 / border-inherit) は、付与側 has-[…]:ring-3 に :has() の詳細度算入
 // ((0,3,0) vs (0,2,0)) で常に負ける dead class (上流バグ。報告済み:
 // https://github.com/shadcn-ui/ui/issues/11444)。

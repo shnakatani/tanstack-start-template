@@ -4,10 +4,10 @@
 
 | 決定                                                                                        | ADR      |
 | ------------------------------------------------------------------------------------------- | -------- |
-| design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る   | ADR-0031 |
-| 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める                       | ADR-0032 |
-| セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める | ADR-0033 |
-| placeholder には例示だけを置き、色を専用トークンへ切る                                      | ADR-0034 |
+| design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る   | ADR-0022 |
+| 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める                       | ADR-0023 |
+| セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める | ADR-0024 |
+| placeholder には例示だけを置き、色を専用トークンへ切る                                      | ADR-0025 |
 
 ## how-to
 
@@ -15,21 +15,21 @@
 
 - semantic token を使う。淡いハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token で書く
 - 新しい意味のある色は、`src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。定義より前に utility を書くと、`no-unknown-classes` が止める
-- 露出の口 (`@theme inline` で utility にするか、`:root` と `@utility` だけにするか) は、誤った当て方を誘う既存の書き方があるかで選ぶ (ADR-0033 の決定 4)
+- 露出の口 (`@theme inline` で utility にするか、`:root` と `@utility` だけにするか) は、誤った当て方を誘う既存の書き方があるかで選ぶ (ADR-0024 の決定 4)
 - `@theme inline` へ通した面のトークンを文字として書く余地は残る。面のトークンを文字に使うなら、載る下地ごとに比を測る。2026-09-22 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.76、`--muted` / `--accent` / `--secondary` で 4.28〜4.33 になり、後者は SC 1.4.3 を割る
 - `-foreground` を「面の上の文字」以外の意味で使わない。上流はこの接尾辞を solid な面の上の文字に割り当てており、別の意味を載せると次の生成で衝突する
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
-- `cn` は npm の `cn` パッケージから import する。registry が `@/lib/utils` ではなくそこから取るので、`src/lib/utils.ts` は置かない (ADR-0027)
+- `cn` は npm の `cn` パッケージから import する。registry が `@/lib/utils` ではなくそこから取るので、`src/lib/utils.ts` は置かない (ADR-0020)
 
 ### `color-mix()` を書く
 
-`no-arbitrary-values` は、`color-mix()` の材料が semantic token だけでも color category と判定する (ADR-0032)。`var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書き、registry の中なら台帳 `docs/registry-deviations.md` の「行単位の lint 抑制」にも記録する。
+`no-arbitrary-values` は、`color-mix()` の材料が semantic token だけでも color category と判定する (ADR-0023)。`var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書き、registry の中なら台帳 `docs/registry-deviations.md` の「行単位の lint 抑制」にも記録する。
 
 抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと、診断なしで通る。抑制した行を触るときは、足す class が token だけかを目で確かめる。
 
 ### 外見を層の外へ配る
 
-design system の層 (`ui/` / `action/` / `parts/`) から外へ class 文字列を配らない (ADR-0031)。外見を共有したいときは、次のどれかにする。
+design system の層 (`ui/` / `action/` / `parts/`) から外へ class 文字列を配らない (ADR-0022)。外見を共有したいときは、次のどれかにする。
 
 | 配り方                                                                     | 使う場面                       |
 | -------------------------------------------------------------------------- | ------------------------------ |
@@ -38,12 +38,12 @@ design system の層 (`ui/` / `action/` / `parts/`) から外へ class 文字列
 | `cva` の variant として配り、`settings.shadcn.variantFunctions` へ宣言する | 同じ部品の見た目を分けるとき   |
 
 - 層の内側での共有は対象外で、class 定数の export 自体は禁じない。消費側が import すれば規則が落とす
-- 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0016) と、汎用の層が負う責務の範囲 (ADR-0022) で決める
+- 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0011) と、汎用の層が負う責務の範囲 (ADR-0016) で決める
 - variant 関数を消費側から呼ぶ形を採るたびに、`vite.config.ts` の `settings.shadcn.variantFunctions` へ足す。忘れると呼び出しが lint で落ちるので、気付けない失敗にはならない
 
 ### トークンを作り直す
 
-上流の preset が変わったときや、base color を変えたときは、生成物からやり直す (ADR-0033 の決定 1)。
+上流の preset が変わったときや、base color を変えたときは、生成物からやり直す (ADR-0024 の決定 1)。
 
 1. `src/styles.css` を `@import "tailwindcss";` だけに戻す
 2. `shadcn init --preset b1Z7Mag76 --base base --force --no-reinstall` で生成する。preset code は `shadcn preset decode` で `vega / mist / blue / chart blue / lucide / geist / radius default / menuAccent subtle / menuColor default` に展開される
@@ -72,7 +72,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 - `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である
 - 比を書いた箇所を触るときは測り直す。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない
 - 表示は切り捨てなので、2 桁の値が実際の比を上回ることはない。`4.59` と出た値が 4.6 を満たすことはない
-- `--primary` の hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置き、`mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。4.6 を下回る hue は light を `<hue>-900` にする (ADR-0033 の決定 2)
+- `--primary` の hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置き、`mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。4.6 を下回る hue は light を `<hue>-900` にする (ADR-0024 の決定 2)
 - placeholder の帯の上端 (入力値との 3:1) は `mise run contrast` では出せない。入力値 (`--foreground`) と 3:1 になる輝度を解いてから、背景との比へ直す。light は例示が入力値より明るいので `Lp = 3 * (L入力値 + 0.05) - 0.05`、dark は暗いので `Lp = (L入力値 + 0.05) / 3 - 0.05` を解き、`Lp` と背景の輝度で比を取る。輝度の式は `scripts/contrast/lib/contrast.ts` にある
 - 比を計算できない入力は黙って通さず throw する。silent に通すと、画面に存在しない比が文書へ写る。throw する入力は次のとおり
 
@@ -91,7 +91,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 ### 実在の対を story で描く
 
-既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を `src/components/contrast.stories.tsx` に足し、axe の対象に入れる (ADR-0033 の決定 5)。比を計算する story は書かない。
+既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を `src/components/contrast.stories.tsx` に足し、axe の対象に入れる (ADR-0024 の決定 5)。比を計算する story は書かない。
 
 ### axe の比と突き合わせる
 
@@ -137,9 +137,9 @@ getContrast(parse(toHex(measured.backdrop)), parse(toHex(measured.foreground)));
 
 ### 比の測り方を置いた理由
 
-ADR-0033 の Context は、上流生成物の値を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったと書く。その変換器はリポジトリに無かった。測り方が無いと、文書の数値を誰も追試できず、トークンを動かしたあとの再測もできない。
+ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったと書く。その変換器はリポジトリに無かった。測り方が無いと、文書の数値を誰も追試できず、トークンを動かしたあとの再測もできない。
 
-書き写した比はトークンに追随しない。2026-09-21 のトークン刷新では `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった。4 件目は ADR-0023 に残っていた。`opacity-50` の比を ADR-0023 と `data-table.tsx` が別の値で書いており、同じ主張を 2 箇所へ写したことが原因である。
+書き写した比はトークンに追随しない。2026-09-21 のトークン刷新では `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった。4 件目は ADR-0017 に残っていた。`opacity-50` の比を ADR-0017 と `data-table.tsx` が別の値で書いており、同じ主張を 2 箇所へ写したことが原因である。
 
 そこで測り方をリポジトリへ置き、動く数値は文書から落とし、検査は作らない。
 
@@ -155,7 +155,7 @@ ADR-0033 の Context は、上流生成物の値を oklch から sRGB へ変換�
 | 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]`          |
 
 - テストは `scripts-tools` project が拾う。include は `scripts/**/*.test.ts` から `scripts/checks/**` を除く拒否リストにする。ディレクトリを並べる許可リストにすると、ツールを足すたびに 1 行足す必要があり、足し忘れたツールのテストは無言で走らない
-- 検査は作らない。トークンを動かしても何も落ちない。a11y の合否は `src/components/contrast.stories.tsx` の axe が持つ (ADR-0033「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。この変換器は story ではなく合否も持たないので、その決定と両立する。単体テストが落ちるのは変換器が壊れたときで、配色の可否を判定しているのではない。測るのは文書へ書く値を人が選ぶためである
+- 検査は作らない。トークンを動かしても何も落ちない。a11y の合否は `src/components/contrast.stories.tsx` の axe が持つ (ADR-0024「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。この変換器は story ではなく合否も持たないので、その決定と両立する。単体テストが落ちるのは変換器が壊れたときで、配色の可否を判定しているのではない。測るのは文書へ書く値を人が選ぶためである
 
 先行例 (2026-09-22 調査)。デザインシステム 20 件 (うち 2 件は対象リポジトリを特定できず未確認) と、ブラウザで色を解決する手法、文書の数値をテストで固定する手法を調べた。
 
@@ -176,7 +176,7 @@ ADR-0033 の Context は、上流生成物の値を oklch から sRGB へ変換�
 | マーカー型                           | 数値の隣に対の定義を置き、文書を走査して突き合わせる | 却下     | 台帳より軽いがモデルの乖離は同じく残る。先行例も無い                                                                          |
 | 重複削除のみ                         | 装置を足さず写しを 1 つにする                        | 部分採用 | 「同じ主張を 2 箇所へ書かない」として取り込む。単独では測り方の欠落が残る                                                     |
 | ブラウザの canvas で測る             | 1x1 canvas へ塗って `getImageData` で読む            | 却下     | 先行例ゼロ。Brave と Firefox が読み取り結果へノイズを混ぜるため chromium 固定に依存する                                       |
-| トークン定義に要求比を持たせ段を解く | Material 型                                          | 却下     | 生成の仕組みごと持つことになり、上流生成物を土台とする ADR-0033「土台は空ファイルへの生成物とし、自作分を載せ直す」と衝突する |
+| トークン定義に要求比を持たせ段を解く | Material 型                                          | 却下     | 生成の仕組みごと持つことになり、上流生成物を土台とする ADR-0024「土台は空ファイルへの生成物とし、自作分を載せ直す」と衝突する |
 | 現状維持                             |                                                      | 却下     | 4 件目の陳腐化が実在した                                                                                                      |
 | axe の算法へ寄せる                   | `axe.commons.color` を使うか、その算法を再現する     | 部分採用 | 8bit へ落とす点は定義どおりなので採る。層ごとの丸め・ブレンドモード・影・DOM のスタックは採らない                             |
 
@@ -216,9 +216,9 @@ ADR-0033 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 | 場所                                        | 残す理由                                                                                      |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| ADR-0033 の Context の上流既定値の表        | 種別 B。本リポジトリのトークンではないので再計算できない                                      |
-| ADR-0033 の palette の hue 表               | どの hue を 1 段下げるかの論証そのもの。上流 palette の値なので本リポジトリの変更では動かない |
-| ADR-0034 の帯の表                           | 数値が消えると、帯に入る段がどれかを追試できない                                              |
+| ADR-0024 の Context の上流既定値の表        | 種別 B。本リポジトリのトークンではないので再計算できない                                      |
+| ADR-0024 の palette の hue 表               | どの hue を 1 段下げるかの論証そのもの。上流 palette の値なので本リポジトリの変更では動かない |
+| ADR-0025 の帯の表                           | 数値が消えると、帯に入る段がどれかを追試できない                                              |
 | `segmented-radio-group.test.tsx` の回帰の値 | 過去の観測として固定したもの                                                                  |
 | `src/styles.css` の段を選んだ理由のコメント | 種別 B。上流が生成した段 (blue-700 / mist-500 / blue-800) の比で、本リポジトリの値ではない    |
 

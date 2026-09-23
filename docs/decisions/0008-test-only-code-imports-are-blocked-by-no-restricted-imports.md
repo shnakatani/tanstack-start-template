@@ -1,8 +1,8 @@
-# ADR-0014: テスト専用コードの import は `no-restricted-imports` で止める
+# ADR-0008: テスト専用コードの import は `no-restricted-imports` で止める
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0012 (lint ルールの選定基準と「基準から外れる名指し」、テストファイルの緩和)
+- 関連: ADR-0007 (lint ルールの選定基準と「基準から外れる名指し」、テストファイルの緩和)
 
 ## Context
 

@@ -1,8 +1,8 @@
-# ADR-0038: a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす
+# ADR-0028: a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす
 
 - Status: Accepted
 - Date: 2026-09-24
-- 関連: ADR-0035 (a11y 検査の対象)
+- 関連: ADR-0026 (a11y 検査の対象)
 
 ## Context
 

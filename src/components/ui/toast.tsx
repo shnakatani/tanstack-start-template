@@ -142,7 +142,7 @@ function ToastClose({
  * icon を持つ type と、その絵の対応表。base-ui の `type` は `string` で任意の値を許し
  * (`useToastManager.d.ts`)、上流 registry もこの 5 つを if 連鎖で並べているだけなので、
  * 種別を足しても消しても型も lint も鳴らない。対応表を唯一の出処にして、消費側が
- * `satisfies Record<ToastIconType, ...>` で網羅を強制できるようにする (ADR-0027 の乖離)。
+ * `satisfies Record<ToastIconType, ...>` で網羅を強制できるようにする (ADR-0020 の乖離)。
  *
  * 対応表に無い type は icon なしで通す。狭めると base-ui が許す独自の type を塞ぐ。
  * ここは silent failure ではない。独自の type で icon が出ないのは仕様どおりの結果で、

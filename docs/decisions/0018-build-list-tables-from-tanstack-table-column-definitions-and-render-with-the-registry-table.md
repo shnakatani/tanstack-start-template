@@ -1,12 +1,12 @@
-# ADR-0024: 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す
+# ADR-0018: 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0027 (registry コードは触らない)、ADR-0019 (手動メモ化の増減)、ADR-0015 (配置の原則)、ADR-0020 / ADR-0023 (楽観表示は mutation の pending から取る)
+- 関連: ADR-0020 (registry コードは触らない)、ADR-0014 (手動メモ化の増減)、ADR-0010 (配置の原則)、ADR-0015 / ADR-0017 (楽観表示は mutation の pending から取る)
 
 ## Context
 
-`src/routes/notes/index.tsx` の一覧は、列見出しの配列 (`NOTE_TABLE_HEADERS`) と各行の `TableCell` を別々に書いていた。見出しとセルの対応を型が結ばないので、列を足すときに片方だけ書き忘れても検査で落ちない。保存中の楽観行 (ADR-0023) も確定行とは別に手書きの `TableRow` で描いており、同じ列構造を 2 箇所で維持していた。
+`src/routes/notes/index.tsx` の一覧は、列見出しの配列 (`NOTE_TABLE_HEADERS`) と各行の `TableCell` を別々に書いていた。見出しとセルの対応を型が結ばないので、列を足すときに片方だけ書き忘れても検査で落ちない。保存中の楽観行 (ADR-0017) も確定行とは別に手書きの `TableRow` で描いており、同じ列構造を 2 箇所で維持していた。
 
 | 出典                                                                                 | 内容                                                                                                                                                                                                                                                       |
 | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -24,12 +24,12 @@
 
 ## Decision
 
-**一覧テーブルは TanStack Table v9 の列定義 (`createColumnHelper`) を SSOT にし、shadcn「Data Table」と同じ構成の `DataTable` 部品 (`src/components/parts/data-table.tsx`) が registry の `Table` に `FlexRender` で描く。楽観表示の設計は ADR-0023 のままで、data 配列を組み立てる側に閉じる。**
+**一覧テーブルは TanStack Table v9 の列定義 (`createColumnHelper`) を SSOT にし、shadcn「Data Table」と同じ構成の `DataTable` 部品 (`src/components/parts/data-table.tsx`) が registry の `Table` に `FlexRender` で描く。楽観表示の設計は ADR-0017 のままで、data 配列を組み立てる側に閉じる。**
 
 | 対象             | 形                                                                                                                                                                                                                                                                                                                                                        |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DataTable` 部品 | `src/components/parts/data-table.tsx` (registry ではない自作の共有部品の置き場)。`columns` / `data` / `tableKey` / `getRowId` / `rowProps` / `emptyText` を受け、`useTable` と `FlexRender`、見出しの `scope="col"`、devtools 登録、空行を持つ。features は `src/components/parts/data-table-features.ts` (shadcn の `data-table-features.ts` と同じ役割) |
-| 楽観的更新       | Table は機構を持たない。variables 方式 (ADR-0023) は data の組み立てで、キャッシュ書き換え方式はキャッシュ配列で、どちらも Table 側は変わらない。楽観的更新を扱う画面が増えたら TanStack DB への寄せ替えを ADR-0023 の再評価で扱う                                                                                                                        |
+| 楽観的更新       | Table は機構を持たない。variables 方式 (ADR-0017) は data の組み立てで、キャッシュ書き換え方式はキャッシュ配列で、どちらも Table 側は変わらない。楽観的更新を扱う画面が増えたら TanStack DB への寄せ替えを ADR-0017 の再評価で扱う                                                                                                                        |
 
 列定義の置き場、型、行の型、data の組み立て、描画、features、cell への関数、devtools、skill の組み方は `docs/guides/lists-and-search.md`「一覧テーブルを組む」にある。
 
@@ -40,13 +40,13 @@
 | TanStack Table v9 の列定義 + registry の Table | 公式 (shadcn Data Table) と同じ形。見出しとセルが 1 つの定義に載る。sorting / filtering を足すときも feature の登録で済む。同梱 skill が実装の規範を持つ                                                                                                        | **採用** |
 | 自前の `{ header, cell }` 配列                 | 型では結べるが、並び替えや表示切替を足すたびに自作が増える。公式の先行例が無い                                                                                                                                                                                  | 却下     |
 | 現状維持 (見出し配列とセルを別々に書く)        | 列を足すときに片方だけ書き忘れても検査で落ちない。楽観行の列構造が 2 箇所                                                                                                                                                                                       | 却下     |
-| shadcn の `DataTable` 部品を持つ               | 描画の骨組み (`FlexRender`、`scope="col"`、devtools、空行) が 1 箇所に集まり、ページは列定義と data を渡すだけになる。置き場は registry ではない自作部品の `src/components/parts/` (ADR-0027 で `components/ui/` は registry 専用、ADR-0016 で `parts/` に分離) | **採用** |
+| shadcn の `DataTable` 部品を持つ               | 描画の骨組み (`FlexRender`、`scope="col"`、devtools、空行) が 1 箇所に集まり、ページは列定義と data を渡すだけになる。置き場は registry ではない自作部品の `src/components/parts/` (ADR-0020 で `components/ui/` は registry 専用、ADR-0011 で `parts/` に分離) | **採用** |
 | `createTableHook` で app 共通の factory を作る | 同梱 skill `create-table-hook` が「table が 1 つのうちは factory を作らず `useTable` 単体」と明言。2 つ目の table で共通の規約が要るようになったら再評価                                                                                                        | 再評価   |
-| TanStack DB で楽観状態ごと置き換える           | 楽観的更新を扱う画面が 1 つのうちは ADR-0023 の variables 方式で足りる。Query の collection 化は画面横断の変更になる                                                                                                                                            | 再評価   |
+| TanStack DB で楽観状態ごと置き換える           | 楽観的更新を扱う画面が 1 つのうちは ADR-0017 の variables 方式で足りる。Query の collection 化は画面横断の変更になる                                                                                                                                            | 再評価   |
 
 ## Consequences
 
-- 依存に `@tanstack/react-table` と `@tanstack/react-table-devtools` が入る (ADR-0009 の待機 3 日は経過)。`@tanstack/table-core` と `@tanstack/react-store` が同梱で入る
+- 依存に `@tanstack/react-table` と `@tanstack/react-table-devtools` が入る (ADR-0005 の待機 3 日は経過)。`@tanstack/table-core` と `@tanstack/react-store` が同梱で入る
 - route-local の `-lib/` / `-hooks/` と、features と route のどちらに置くかの基準は `docs/guides/placement.md`「route の中の置き場」「features か route か」にある
 - 再評価条件: 2 つ目の一覧画面が出たとき (`createTableHook` の factory)、sorting / pagination を足すとき (`autoResetPageIndex`)、楽観的更新を扱う画面が増えたとき (TanStack DB)
 

@@ -1,8 +1,8 @@
-# ADR-0032: 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める
+# ADR-0023: 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0012 (lint ルールの選定基準)、ADR-0027 (行単位の抑制の許容リスト)、ADR-0016 (`no-restyle` の適用範囲)、ADR-0031 (層の外へ class 文字列を配らない)
+- 関連: ADR-0007 (lint ルールの選定基準)、ADR-0020 (行単位の抑制の許容リスト)、ADR-0011 (`no-restyle` の適用範囲)、ADR-0022 (層の外へ class 文字列を配らない)
 
 ## Context
 
@@ -21,7 +21,7 @@
 
 oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たないため、`jsPlugins` で `@shadcn/lint` を読み込む。
 `components.json` の UI alias と theme CSS を自動探索できるため、同じ値を `settings.shadcn` へ複製しない。
-`settings.shadcn.componentImports` はこの探索結果の書き直しではなく、`ui` alias の外側にある自作部品 (`parts/` 等) まで design system component として認識させる追加である (ADR-0016)。
+`settings.shadcn.componentImports` はこの探索結果の書き直しではなく、`ui` alias の外側にある自作部品 (`parts/` 等) まで design system component として認識させる追加である (ADR-0011)。
 
 | 有効にしたルール                | 見るもの                                                                                          |
 | ------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -34,7 +34,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `no-raw-colors` は `bg-[#333]` のような arbitrary color を検査しないため、`no-arbitrary-values` と対で使う。
 `no-raw-colors` は class だけでなく `fill` / `stroke` など SVG 属性の raw color も見る。移行前の 2 ルールに無かった検査で、統制の範囲はここだけ広がる。
 `no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制する (書き方は `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」)。
-`no-restyle` は 2026-09-19 に ADR-0016 の層の決定と対で、`require-static-classes` は同日に ADR-0031 の配り方の決定と対で採用した。
+`no-restyle` は 2026-09-19 に ADR-0011 の層の決定と対で、`require-static-classes` は同日に ADR-0022 の配り方の決定と対で採用した。
 `require-static-classes` は `no-restyle` と同じ `overrides` に相乗りし、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言する。
 宣言が要る理由と `mergeFunctions` を使わない理由は `docs/guides/lint.md`「variant 関数を宣言する」にある。
 `no-inline-styles` は対になる設計判断がまだ無いため有効化しない。
@@ -64,7 +64,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 - 依存グラフへ `typescript` を持ち込むのはこの parser である。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らない (2026-09-19 確認)
 - eslint peer の optional 化と `typescript` の 6 系固定は撤去条件が同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` は不要になるが、`eslint` は `eslint-plugin-testing-library` 経由で残る。撤去で解けるのは `typescript` の 6 系固定だけである
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
-- `no-restyle` の適用範囲はディレクトリで決まる (ADR-0016)。画面の組み立てを `parts/` へ置くと規則が効かない。機械では止まらない
+- `no-restyle` の適用範囲はディレクトリで決まる (ADR-0011)。画面の組み立てを `parts/` へ置くと規則が効かない。機械では止まらない
 
 ## 出典
 

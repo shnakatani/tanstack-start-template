@@ -4,9 +4,9 @@
 
 | 決定                                                                | ADR      |
 | ------------------------------------------------------------------- | -------- |
-| ドメイン型は valibot スキーマから導出する                           | ADR-0018 |
-| 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる | ADR-0028 |
-| placeholder には例示だけを置き、色を専用トークンへ切る              | ADR-0034 |
+| ドメイン型は valibot スキーマから導出する                           | ADR-0013 |
+| 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる | ADR-0021 |
+| placeholder には例示だけを置き、色を専用トークンへ切る              | ADR-0025 |
 
 ## how-to
 
@@ -23,7 +23,7 @@
 
 ### 数値の入力欄を組む
 
-`NumberField` を使う (ADR-0028)。`Field` / `FieldLabel` / `FieldError` の構成と見た目は他の入力欄と同じにし、`NumberField.Input` に `render={<Input />}` を渡して registry の `Input` の意匠をそのまま使う。
+`NumberField` を使う (ADR-0021)。`Field` / `FieldLabel` / `FieldError` の構成と見た目は他の入力欄と同じにし、`NumberField.Input` に `render={<Input />}` を渡して registry の `Input` の意匠をそのまま使う。
 テストの取り方は `docs/guides/testing.md`「入力部品を操作する」にある。
 
 ### `fieldComponents` の部品を書く
@@ -65,7 +65,7 @@
 | フッターの手前で、描画が空になる条件分岐がある   | 中間コンテナの外 (分岐によらず常時表示を保つ)           |
 | ヘッダーと本体の間に固定表示の兄弟要素を挟まない | 中間コンテナを省き、`DialogScrollBody` を直接置いてよい |
 
-- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、`dialog-scroll-body.tsx` へ部品を足す (ADR-0031)
+- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、`dialog-scroll-body.tsx` へ部品を足す (ADR-0022)
 - `DialogContent` の padding を変えたら、`DialogScrollBody` の `-mx-6` / `px-6` も変える
 - 組み忘れても、registry の Dialog が持つ backstop (`popupOverflowBackstop`) で Popup ごと流れるので、内容は読める。ただし見出しと X ボタンも流れる
 
@@ -76,7 +76,7 @@
 
 ### placeholder を足す
 
-placeholder を足すときは、次の 2 つを確かめる (ADR-0034)。
+placeholder を足すときは、次の 2 つを確かめる (ADR-0025)。
 
 1. 例示か。ラベルの代わりでも、書式や条件の説明でもないか
 2. ラベルが名指していない情報を足していないか

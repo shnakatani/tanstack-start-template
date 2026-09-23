@@ -4,7 +4,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 
 | 決定                                                                                                   | ADR      |
 | ------------------------------------------------------------------------------------------------------ | -------- |
-| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0038 |
+| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0028 |
 
 ## how-to
 
@@ -13,7 +13,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 - story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まる
 - story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める
 - `src/components/ui/` の registry 部品は、消費側からの import が 0 件でもすべて story を書く。理由は「registry 部品を全件カタログにする理由」にある
-- `src/components/ui/` に置いた `*.stories.tsx` は、`*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0027)
+- `src/components/ui/` に置いた `*.stories.tsx` は、`*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0020)
 - 1 つのファイルが複数の部品を export するときは、単独で描画できる部品ごとに story ファイルを分ける。親を要求する部品は親の story で扱う。CSF の meta は 1 ファイルに 1 つなので、まとめると別の部品の meta の配下に並ぶ
 - story だけが使うロジックは、story と同じディレクトリの `<名前>.story-helpers.ts` に置く。`src/lib/` に置くと出荷されうる
 - トークンの story に、typography の階層のような class の規範を写さない。写すと片方だけが古くなり、突き合わせる検査も無い
@@ -23,7 +23,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 - variant の網羅を story の数で表さない。代表値を story にし、残りは `argTypes` の control で切り替える。直積で増やすと、カタログが読み通せない長さになる
 - `argTypes` の `options` は `readonly any[]` で、`satisfies Meta<typeof X>` を書いても中身を検査しない。`cva` の variant をリテラルで写すと、variant を足したときに story だけ古くなり、lint も型検査も鳴らない (2026-09-20 実測)。`satisfies Record<Variant, null>` のオブジェクトを出処にして `Object.keys` で渡すと、足した側が型エラーになる
 - 検証専用の story (終了状態が他の story と同じ見た目になるもの) には `tags: ["!dev"]` を付ける。サイドバーの一覧から消えるが、vitest の project 実行では対象に残る (`index.json` の `tags` が `dev` を含まなくなる。2026-09-20 実測)。付け忘れはレビューで見る。ただし同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くので、その部品の状態が 1 つも並ばない事態を避ける。実例は `ActionButtonShell` の `Idle` (`ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)
-- story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。story は `no-restyle` / `require-static-classes` の適用外なので lint は鳴らない。外見を上書きする class は部品側の variant にする (ADR-0031)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る
+- story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。story は `no-restyle` / `require-static-classes` の適用外なので lint は鳴らない。外見を上書きする class は部品側の variant にする (ADR-0022)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない。lint が鳴らないぶんはレビューで見る
 - pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く (`src/test/settling-action.ts`)。Storybook の vitest 実行は 1 つの React root へ story を描き替えるので、決着しない Transition が残ると後続 story の Transition と干渉し、後続 story が pending のまま止まる (2026-09-20 実測)
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。vitest から走らせた story には Storybook の `layout: "padded"` が効かず、その差は `.storybook/preview.css` が埋める (「vitest 経由の story に padding を当てる理由」)
 
@@ -87,7 +87,7 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 
 framework の選定は `tanstackStart()` plugin と Storybook の Vite builder の衝突 (storybookjs/storybook の issue 33747) が決める。標準の Vite builder はこの衝突を自分で回避する必要があり、server function を呼ぶ部品の story を組めない。TanStack 専用 framework (`@storybook/tanstack-react`) は router を memory-backed で自動ラップし、server function を自動 stub する。
 
-telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` (ADR-0008) と同じく明示で潰す側に揃える。
+telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` (ADR-0004) と同じく明示で潰す側に揃える。
 
 | 案                               | 評価                                                                                                | 採否     |
 | -------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |

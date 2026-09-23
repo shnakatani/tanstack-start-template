@@ -5,7 +5,7 @@
  * 動かしたあとの再測もできない (docs/guides/styling-and-tokens.md「比の測り方を置いた理由」)。
  *
  * ここは検査ではない。合否は `src/components/contrast.stories.tsx` の axe が持つ
- * (ADR-0033「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。
+ * (ADR-0024「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。
  *
  * 計算が寄りかかっている前提。消えたときに気づけるよう挙げる。
  *

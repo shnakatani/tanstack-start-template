@@ -1,8 +1,8 @@
-# ADR-0017: server function をデータ境界とし、全 fn 共通の middleware は global に載せる
+# ADR-0012: server function をデータ境界とし、全 fn 共通の middleware は global に載せる
 
 - Status: Accepted
 - Date: 2026-09-06
-- 関連: ADR-0012 (lint ルールの選定基準)
+- 関連: ADR-0007 (lint ルールの選定基準)
 
 ## Context
 
@@ -61,7 +61,7 @@ console.log(context.probeUser.uid);
 | 未ログインを login へ送る画面遷移              | route の `beforeLoad`                                        | 画面が出るだけ。データは server function 側が守る                                               |
 
 - 認証は `createMiddleware({ type: "function" })` で作り、`src/start.ts` の `functionMiddleware` へ渡す。個々の `createServerFn` には書かない
-- 認可の base builder は、ロールによる出し分けが必要になった時点で足す。`createServerFn` の直接 import を lint で禁じるかも、その時点で ADR-0012 の選定基準に当てて判断する。禁じられること自体は oxlint の `no-restricted-imports` で確認した (下記「出典」)
+- 認可の base builder は、ロールによる出し分けが必要になった時点で足す。`createServerFn` の直接 import を lint で禁じるかも、その時点で ADR-0007 の選定基準に当てて判断する。禁じられること自体は oxlint の `no-restricted-imports` で確認した (下記「出典」)
 - middleware の付与の有無を `scripts/checks/` の走査で検査しない
 
 ### 検討した選択肢

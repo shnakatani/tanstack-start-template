@@ -4,9 +4,9 @@
 
 | 決定                                                                                                                              | ADR      |
 | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す                                                  | ADR-0024 |
-| 一覧の絞り込み条件は URL の search param が持ち、loaderDeps で loader に渡す                                                      | ADR-0025 |
-| ページは URL の変化で作り直さず、取得結果の入れ替わりはページの effect が取得の決着で通知し、直前に通知した条件と同じなら出さない | ADR-0036 |
+| 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す                                                  | ADR-0018 |
+| 一覧の絞り込み条件は URL の search param が持ち、loaderDeps で loader に渡す                                                      | ADR-0019 |
+| ページは URL の変化で作り直さず、取得結果の入れ替わりはページの effect が取得の決着で通知し、直前に通知した条件と同じなら出さない | ADR-0027 |
 
 ## how-to
 
@@ -19,8 +19,8 @@
 | 列定義の置き場  | その画面だけの列は `routes/<path>/-lib/<画面>-columns.ts` (JSX を持たない設定)。描画を持つ列は、`cell` に `-components/` の部品の参照を渡す (`FlexRender` が cell の context を props にして描く。TanStack Table「Flex Render」)。ドメインをまたいで使う列は `src/features/<domain>/`                                                                                                                                                                                                                         |
 | 型              | features は `src/components/parts/data-table-features.ts` に 1 つ置き、`createColumnHelper<DataTableFeatures, Row>()` と `helper.columns([...])` で定義する。`ColumnDef[]` の注釈で値の型を広げない。cell の className は `columnMeta` (`metaHelper`) で列定義が持つ                                                                                                                                                                                                                                          |
 | 行の型          | 確定行と保存中の行の union にする (`src/routes/notes/-lib/note-rows.ts` の `NoteRow`)。cell が `kind` で分岐するので、楽観行も同じ列定義で描ける。行モデルは画面の描画の形なので route の `-lib/` に置き、mutation の variables を絞る parser は `src/features/<domain>/` に置く                                                                                                                                                                                                                              |
-| data の組み立て | ページが純粋関数 (`toNoteRows`、単体テスト付き) で組んで `DataTable` に渡す。派生値は hook より後ろで作る。hook の間に挟むと React Compiler が scope を切れず、毎 render 新しい参照になる。`useMemo` は書かない (ADR-0019)。`getRowId` で `creating-<submittedAt>` / `saved-<id>` を付け、React の key にも使う                                                                                                                                                                                               |
-| 描画            | `DataTable` が `table.getHeaderGroups()` / `row.getAllCells()` と `<table.FlexRender>` で描く。registry の `Table*` は触らない (ADR-0027)。行の `aria-busy` はページが `rowProps` で `row.original` から決め、半透明は `DataTable` が `aria-busy` から当てる。`rowProps` に `className` を通さない。コールバックの中の class は `no-restyle` が追えず、`<TableRow>` へ直接書けば落ちる class が診断なしで通る (ADR-0031)。空状態の案内はページの `Empty` 部品が持ち、`DataTable` の空行は単体で使うときの既定 |
+| data の組み立て | ページが純粋関数 (`toNoteRows`、単体テスト付き) で組んで `DataTable` に渡す。派生値は hook より後ろで作る。hook の間に挟むと React Compiler が scope を切れず、毎 render 新しい参照になる。`useMemo` は書かない (ADR-0014)。`getRowId` で `creating-<submittedAt>` / `saved-<id>` を付け、React の key にも使う                                                                                                                                                                                               |
+| 描画            | `DataTable` が `table.getHeaderGroups()` / `row.getAllCells()` と `<table.FlexRender>` で描く。registry の `Table*` は触らない (ADR-0020)。行の `aria-busy` はページが `rowProps` で `row.original` から決め、半透明は `DataTable` が `aria-busy` から当てる。`rowProps` に `className` を通さない。コールバックの中の class は `no-restyle` が追えず、`<TableRow>` へ直接書けば落ちる class が診断なしで通る (ADR-0022)。空状態の案内はページの `Empty` 部品が持ち、`DataTable` の空行は単体で使うときの既定 |
 | features        | 使う機能だけを登録する。sorting / pagination を足すときは、対応する feature と row model を足し、楽観行の出入りで data が変わるたびにページが戻らないよう `autoResetPageIndex` を見直す                                                                                                                                                                                                                                                                                                                       |
 | cell への関数   | module 定数は import で足りる。削除確認の handle は `-lib/note-delete-dialog-handle.ts` が持ち、trigger を描く cell 部品 (`-components/note-cells.tsx`) と Root を描くページの両方がそこに依存する (列定義 → cell 部品 → handle の向き)。Root の実体が共有部品 (`DeleteConfirmDialog`) なら wrapper を挟まない。cell が画面の callback を要するようになったら `tableMeta` (`metaHelper`) で渡す                                                                                                               |
 | devtools        | `DataTable` が `tableKey` を `useTable` の `key` に渡し、`useTanStackTableDevtools(table)` を直後に呼ぶ。`RootComponent` の `TanStackDevtools` に `tableDevtoolsPlugin()` を並べる                                                                                                                                                                                                                                                                                                                            |
@@ -28,7 +28,7 @@
 
 ### 絞り込み条件を URL に置く
 
-ADR-0025 に沿って、次のように組む。実例は `src/routes/notes/index.tsx` と `src/features/notes/`。
+ADR-0019 に沿って、次のように組む。実例は `src/routes/notes/index.tsx` と `src/features/notes/`。
 
 | 対象      | 組み方                                                                                                                                                                                                                                 | 守らないと                                                                                                                                                                                                                                                   |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -58,12 +58,12 @@ ADR-0025 に沿って、次のように組む。実例は `src/routes/notes/inde
 
 ### TanStack Table v9 の前提
 
-ADR-0024 の Context が出典を持つ。組むときに効くのは次の 4 点である。
+ADR-0018 の Context が出典を持つ。組むときに効くのは次の 4 点である。
 
 - data と columns の参照が変わると、row model と column model を作り直す。React Compiler があれば `useMemo` は要らないが、columns は module スコープに置き、data は query の参照をそのまま使う (docs「React Compiler」)
 - query の結果は `data` に直接渡し、state に写さない。写すと、キャッシュに遅れる同期経路が増える (skill `with-tanstack-query`)
 - cell に関数や状態を渡す経路は `table.options.meta` (docs「Table and Column Meta」)
-- 楽観表示は Table ではなく Query 側の関心事である。Table は機構を持たない (ADR-0024)
+- 楽観表示は Table ではなく Query 側の関心事である。Table は機構を持たない (ADR-0018)
 
 ### debounce と `useDeferredValue` を両方通す理由
 
@@ -76,12 +76,12 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 
 ### 入力欄を URL の編集として持つ理由
 
-絞り込み条件は URL が持つ (ADR-0025)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。示したいのは、ページのローディングを route loader の prefetch と `useSuspenseQuery` と `pendingComponent` で行う形を崩さずに打鍵へ追従する形である。制約は次のとおり。
+絞り込み条件は URL が持つ (ADR-0019)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。示したいのは、ページのローディングを route loader の prefetch と `useSuspenseQuery` と `pendingComponent` で行う形を崩さずに打鍵へ追従する形である。制約は次のとおり。
 
 - Suspense モードで queryKey を変えると、更新を Transition に包まない限り fallback に置き換わる。打鍵のたびに skeleton へ落ちる一覧は作らない
 - 打鍵ごとに server function を呼ばない
 - URL の `q` が変わったら (確定、戻る / 進む、Link) 入力欄はその値に揃う。React docs はこの同期を「`key` で作り直す」か「描画中に計算する」で行い、effect で setState しない
-- 同じ画面の要素を作り直さない (ADR-0036)
+- 同じ画面の要素を作り直さない (ADR-0027)
 
 | 案                                                                              | 評価                                                                                                          | 採否     |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
@@ -92,7 +92,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 | debounce を `useEffect` + `setTimeout` で手組みする                             | effect 内の setState を lint が止める (`react/set-state-in-effect`)。Pacer と `use-debounce` が公式の形を持つ | 却下     |
 | `use-debounce`                                                                  | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる。Pacer の撤退先として残す                  | 保留     |
 
-`key={q}` でページを作り直す案は ADR-0036 が却下している。
+`key={q}` でページを作り直す案は ADR-0027 が却下している。
 
 出典:
 
@@ -106,6 +106,6 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 ### 入力欄と URL の関係で起きること
 
 - 確定と戻るの直後は、編集の世代が URL と合わない。debounce の待ちを経ずに、URL の条件 (loader が温めたキャッシュ) を描く
-- ページは URL の変化をまたいで生き続ける (ADR-0036)。そのため、結果の通知の記憶 (`useRef`) をページに置ける
+- ページは URL の変化をまたいで生き続ける (ADR-0027)。そのため、結果の通知の記憶 (`useRef`) をページに置ける
 - 打鍵中の再描画は少ない。`useDebouncedValue` は selector を渡さない限り store の購読で再描画せず、React Compiler の出力で `v.parse` は入力値ごとに memo され、`DataTable` は打鍵で作り直されない (2026-09-23 に oxc-transform-react で確認)
 - 手で書いた `/notes?q=<101 文字>` を開くと、URL バーも切り詰め後の 100 文字に書き換わる。Router が `validateSearch` の出力で location を組み直す (2026-09-23 に dev server で実測)

@@ -171,7 +171,7 @@ describe("NotesPage", () => {
     await expectText(screen, "『abc』に一致するメモはありません");
     await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
-    // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0036)
+    // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0027)
     await expect.poll(() => readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
   });
 
@@ -286,7 +286,7 @@ describe("NotesPage", () => {
     // 応答でダイアログが閉じ、再取得中も行は busy のまま
     await expectNoteCreateDialogClosed(screen);
     await expect.element(noteRow(screen, CREATED_NOTE)).toHaveAttribute("aria-busy", "true");
-    // 行は静的テキストで状態を持つ (ADR-0035)。live region にはしないので、仮想カーソルで
+    // 行は静的テキストで状態を持つ (ADR-0026)。live region にはしないので、仮想カーソルで
     // 行を読んだときにだけ出る。通知は announcer が担う
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
@@ -450,17 +450,17 @@ describe("NotesPage", () => {
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "false");
-    // 止めるのは削除中の行だけ (ADR-0023「ブロック範囲」)。他の行のトリガーは有効のまま
+    // 止めるのは削除中の行だけ (ADR-0017「ブロック範囲」)。他の行のトリガーは有効のまま
     await expect
       .element(rowDeleteButton(screen, OTHER_NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
     await expect
       .element(rowDeleteButton(screen, NOTE.title))
       .toHaveAttribute("aria-disabled", "true");
-    // 行は静的テキスト (sr-only) で状態を持つ (ADR-0035)
+    // 行は静的テキスト (sr-only) で状態を持つ (ADR-0026)
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
     // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の
-    // data-disabled: が担う (ADR-0027)。半透明 + pointer-events なしを算出スタイルで固定する
+    // data-disabled: が担う (ADR-0020)。半透明 + pointer-events なしを算出スタイルで固定する
     const targetTrigger = rowDeleteButton(screen, NOTE.title);
     await expect.element(targetTrigger).toHaveStyle("opacity: 0.5; pointer-events: none");
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
@@ -506,7 +506,7 @@ describe("NotesPage", () => {
       pending.resolve(undefined);
     }
 
-    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0035)
+    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)
     await vi.waitFor(() => {
       expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しました`);
       expect(readAnnouncements()).toContain(`『${OTHER_NOTE.title}』を削除しました`);
@@ -514,7 +514,7 @@ describe("NotesPage", () => {
   });
 
   it("削除の開始と完了を announcer が通知する", async () => {
-    // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0035)
+    // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0026)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
     const remove = deferMock(removeNote);
     const screen = await renderPage();

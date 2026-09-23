@@ -197,7 +197,7 @@ describe("NoteCreateDialog", () => {
   });
 
   it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
-    // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0023)。
+    // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0017)。
     // 即 resolve だと応答前の窓が観測できない
     const invalidate = Promise.withResolvers<undefined>();
     const create = deferMock(createNote);
@@ -225,7 +225,7 @@ describe("NoteCreateDialog", () => {
   });
 
   it("保存の開始と完了を announcer が通知する", async () => {
-    // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える (ADR-0035)
+    // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える (ADR-0026)
     const create = deferMock(createNote);
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);

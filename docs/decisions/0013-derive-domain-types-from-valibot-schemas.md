@@ -1,8 +1,8 @@
-# ADR-0018: ドメイン型は valibot スキーマから導出する
+# ADR-0013: ドメイン型は valibot スキーマから導出する
 
 - Status: Accepted
 - Date: 2026-09-14
-- 関連: ADR-0012 (`typescript/consistent-type-assertions` による型アサーション禁止)
+- 関連: ADR-0007 (`typescript/consistent-type-assertions` による型アサーション禁止)
 
 ## Context
 

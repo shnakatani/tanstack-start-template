@@ -1,8 +1,8 @@
-# ADR-0027: registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る
+# ADR-0020: registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0016 (`no-restyle` の適用範囲)、ADR-0033 (`src/styles.css` の baseline とトークンの値の決め方)
+- 関連: ADR-0011 (`no-restyle` の適用範囲)、ADR-0024 (`src/styles.css` の baseline とトークンの値の決め方)
 
 ## Context
 
@@ -50,14 +50,14 @@ baseline の取得漏れは `scripts/checks/integrity/registry-baseline.test.ts`
 `files: ["src/components/ui/**"]` の glob で一括 off にすると、後から追加されるファイルにも無条件で免除が及び、台帳の表と 1:1 で対応しなくなる。
 
 これは違反の抑制についての規範である。規則そのものの適用範囲を決めることは別で、`overrides` の `excludeFiles` で書く。
-`no-restyle` は「消費側が design system を上書きしていないか」を見る規則で、registry の内部には意味を持たないため `src/components/ui/**` を適用外にしてある (ADR-0016)。
+`no-restyle` は「消費側が design system を上書きしていないか」を見る規則で、registry の内部には意味を持たないため `src/components/ui/**` を適用外にしてある (ADR-0011)。
 適用外にした規則は許容リストに載らない。載るのは、適用される規則に対して個別に抑制した箇所である。
 
 抑制の書き方の落とし穴は `docs/guides/lint.md`「行単位で抑制する」にある。
 
 ### 許容リストに載せないもの
 
-`src/styles.css` はファイル全体が baseline の対象になったので、`@custom-variant` を含めた全行が台帳の「`src/styles.css` の乖離」の突き合わせに載る (ADR-0033)。
+`src/styles.css` はファイル全体が baseline の対象になったので、`@custom-variant` を含めた全行が台帳の「`src/styles.css` の乖離」の突き合わせに載る (ADR-0024)。
 `data-*` の `@custom-variant` 定義をローカルから削除し `@import "shadcn/tailwind.css"` へ一本化した件は、CLI の生成物も同じ定義を持たないため差分にならず、行を持たない。
 
 ### 追加と削除の基準

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 /**
  * 既定の story が描かない tint の組み合わせを実テキストとして描き、`parameters.a11y.test` の
- * axe に判定させる (ADR-0033「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。この story は比を計算しない。計算を持たせると、描画では
+ * axe に判定させる (ADR-0024「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。この story は比を計算しない。計算を持たせると、描画では
  * なく計算のほうを検査することになり、story が描いた色と判定がずれても気づけない。比を数で
  * 知りたいときは `mise run contrast` を使う (docs/guides/styling-and-tokens.md「比を測る」)。
  *
@@ -19,7 +19,7 @@ import type { ReactNode } from "react";
  * light と dark は project が分かれており (`vitest.config.ts`)、`vp test run` と
  * `mise run verify` では同じ story が両方で走る。片方でしか現れない不透明度も両方で描かれる。
  * Storybook 経由の実行 (test panel / `storybook tools test run`) は light だけなので、
- * dark 側を確かめるときは `vp test run` で回す (ADR-0038)。2026-09-21 時点では
+ * dark 側を確かめるときは `vp test run` で回す (ADR-0028)。2026-09-21 時点では
  * どちらのテーマでも 4.5:1 を満たす。いちばん狭いのは light 側で描いた
  * `bg-destructive-surface/30` で、トークンを動かすと画面に存在しない対で落ちうる。そのときは
  * 落ちた対がそのテーマで現れるかを先に確かめる。同じ色なら `mise run contrast` と axe の比は

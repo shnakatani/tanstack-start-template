@@ -5,7 +5,7 @@ import * as React from "react";
 /**
  * `children` に `ProgressLabel` を置くと base-ui が `aria-labelledby` を張る
  * (`progress/root/ProgressRoot.js`)。置かない形は名前を持たないので、型で `aria-label` を
- * 要求する。既定値は持てない (名前は消費側しか知らない) (ADR-0027 の乖離)
+ * 要求する。既定値は持てない (名前は消費側しか知らない) (ADR-0020 の乖離)
  */
 function Progress({
   className,

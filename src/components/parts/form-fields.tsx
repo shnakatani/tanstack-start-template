@@ -131,7 +131,7 @@ export function FormTextField({
     <Field
       className={fieldClassName}
       // ラベルの destructive 色は registry の Field が `data-[invalid=true]:text-destructive` で
-      // 持ち、FieldLabel はそれを継承する。JS で色を足さない (ADR-0031)
+      // 持ち、FieldLabel はそれを継承する。JS で色を足さない (ADR-0022)
       data-invalid={invalid || undefined}
       data-disabled={disabled || undefined}
     >

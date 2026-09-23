@@ -15,7 +15,7 @@ export default defineConfig({
   // vite.config.ts と同じく .env を読まない。vitest.config.ts は vite.config.ts を
   // 継承せず上書きする (Vitest 公式「all options in your vite.config will be ignored」)。
   // mergeConfig で引き継ぐ手はあるが、この config は tanstackStart() を外すために
-  // 分けているので、全体を継承すると plugin ごと戻ってしまう。1 行だけ写す (ADR-0008)
+  // 分けているので、全体を継承すると plugin ごと戻ってしまう。1 行だけ写す (ADR-0004)
   envDir: false,
   plugins: [viteReact()],
   resolve: {

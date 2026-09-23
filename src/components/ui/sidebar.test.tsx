@@ -36,7 +36,7 @@ const closedStyle = () =>
 const accentStyle = () =>
   `background-color: ${resolveColorToken("--sidebar-accent")}; color: ${resolveColorToken("--sidebar-accent-foreground")}`;
 
-describe("SidebarMenuButton の開状態 (ADR-0027 の乖離)", () => {
+describe("SidebarMenuButton の開状態 (ADR-0020 の乖離)", () => {
   it("popup の trigger にすると、開いている間だけ accent の配色になる", async () => {
     const screen = await render(
       <SidebarProvider open>
@@ -119,7 +119,7 @@ describe("SidebarMenuButton の開状態 (ADR-0027 の乖離)", () => {
  * 無言で効かなくなるため、上流の形にも本乖離にも共通の可視挙動で押さえる。
  * 開閉は desktop の器が持つ `data-state` で見る (getBySlot の属性で状態ごとに掴む)。
  */
-describe("キーボードショートカットでの開閉 (ADR-0027 の乖離)", () => {
+describe("キーボードショートカットでの開閉 (ADR-0020 の乖離)", () => {
   it("Meta+B で開状態が切り替わる", async () => {
     const screen = await render(
       <SidebarProvider defaultOpen>

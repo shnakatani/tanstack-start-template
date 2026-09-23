@@ -9,7 +9,7 @@ TanStack Start と Vite+ で組んだ Web アプリケーションの template r
 | -------------- | ---------------------------------------------------------------- |
 | フレームワーク | TanStack Start (React 19 + TanStack Router / Query)              |
 | フォーム       | TanStack Form                                                    |
-| テーブル       | TanStack Table v9 (headless。shadcn Data Table の構成、ADR-0024) |
+| テーブル       | TanStack Table v9 (headless。shadcn Data Table の構成、ADR-0018) |
 | バリデーション | Valibot                                                          |
 | UI             | shadcn/ui (`base-vega` style、Base UI ベース) + Tailwind CSS v4  |
 | アイコン       | lucide-react                                                     |
@@ -19,7 +19,7 @@ TanStack Start と Vite+ で組んだ Web アプリケーションの template r
 | テスト         | Vitest (browser mode は Playwright chromium)                     |
 | 最適化         | React Compiler (`oxc-transform-react`)                           |
 
-版の pin は、Node.js と pnpm が `package.json` (`devEngines.runtime` と `packageManager`)、Vite+ 一族が `pnpm-workspace.yaml` の `catalog:` (ADR-0008)。
+版の pin は、Node.js と pnpm が `package.json` (`devEngines.runtime` と `packageManager`)、Vite+ 一族が `pnpm-workspace.yaml` の `catalog:` (ADR-0004)。
 
 ## 使い始める
 
@@ -60,7 +60,7 @@ mise run storybook                                # 部品とデザイントー�
 - 素の `pnpm` を叩くなら `corepack enable` を一度実行する。Vite+ の shim は `node` / `npm` / `npx` / `corepack` までで `pnpm` を含まない
 - chromium は `vp install` では入らない (`playwright` が install スクリプトを持たない)。未取得のまま `vp test run` すると browser project が落ちる
 - port は worktree ごとに変わる。main checkout は base のまま、linked worktree は base+1 から base+999 (`.mise.toml` の `serve` が base 3000、`storybook` が base 6006)
-- Storybook は部品の状態とデザイントークンを並べる。story は部品と同じディレクトリに置き、a11y を axe で自動検査する (`docs/guides/storybook.md`、ADR-0038)
+- Storybook は部品の状態とデザイントークンを並べる。story は部品と同じディレクトリに置き、a11y を axe で自動検査する (`docs/guides/storybook.md`、ADR-0028)
 
 ### 3. 名前を置換する
 
@@ -93,7 +93,7 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 | `vp test run --project <名前>` | project 単位で実行する。`unit` / `browser` / `checks-integrity` / `scripts-tools` |
 
 `vp` 組み込みコマンドの一覧は `vp help`。コミット前は `vp check --fix`、本番ビルドは `vp build` (出力は `.output/`、起動は `vp run start`)。
-`vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスク。同名でも別物になるので実行前に両方を確認する (ADR-0008)。
+`vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスク。同名でも別物になるので実行前に両方を確認する (ADR-0004)。
 
 ## 差し替え口
 
@@ -106,7 +106,7 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 
 ### 認証
 
-差し替え点は `src/start.ts` の `functionMiddleware` (データの防御) と `src/routes/_authed.tsx` の `beforeLoad` (画面遷移) の 2 つ。両方を埋める。`beforeLoad` だけでは、server function を route 抜きで直接呼ばれたときに endpoint が無防備なまま残る (ADR-0017)。
+差し替え点は `src/start.ts` の `functionMiddleware` (データの防御) と `src/routes/_authed.tsx` の `beforeLoad` (画面遷移) の 2 つ。両方を埋める。`beforeLoad` だけでは、server function を route 抜きで直接呼ばれたときに endpoint が無防備なまま残る (ADR-0012)。
 
 - `createStart` へ `functionMiddleware` を足し、`createMiddleware({ type: "function" })` で作った認証 middleware を渡す。これで全 server function が認証を通る。個々の `createServerFn` には書かない
 - `src/routes/_authed.tsx` を足して `beforeLoad` で未ログインを login へ送り、保護する route を `src/routes/_authed/` 配下へ移す。`_` で始まるセグメントは生成される URL から除かれるため、パスを変えずに階層だけ足せる
@@ -116,7 +116,7 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 デプロイ先は Nitro の preset で決まる。`vite.config.ts` の `nitro()` へ `preset` を渡す前に、選定理由を ADR へ記録する。
 
 - `package.json` の `nitro` は `catalog:` ではなく `3.0.260610-beta` を exact pin する。TanStack Start が要求するのが nitro 3 の beta ラインで、`npm view nitro dist-tags` の `latest` も同じ版を指すため
-- 出口条件: nitro 3 の stable 版が dist-tag `latest` に載ったとき。`catalog:` へ戻せるか再評価する (pin の規律は ADR-0009)
+- 出口条件: nitro 3 の stable 版が dist-tag `latest` に載ったとき。`catalog:` へ戻せるか再評価する (pin の規律は ADR-0005)
 
 ## ドキュメント
 
@@ -126,6 +126,6 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 | `docs/guides/`                | 設計ガイド。部品をまたぐ作法の説明と、その作法で組む手順・落とし穴への対処。主題の一覧は `docs/guides/README.md`                                                                                              |
 | `.claude/rules/`              | Claude が作業中に読み込む規範。`paths` に一致するファイルを読んだときロードされる。rules は ADR かガイドの節を指し、ADR とガイドとコードは rules を指さない (rules の置き場所や書き方を主題にする ADR は除く) |
 | `AGENTS.md`                   | エージェントへの指示。`CLAUDE.md` は symlink                                                                                                                                                                  |
-| `docs/registry-baseline/`     | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0027)                                                                                                                                   |
-| `docs/registry-deviations.md` | baseline から動かした行の台帳 (コードの乖離、行単位の lint 抑制、`src/styles.css` の乖離、registry の値を複製したファイル)。baseline との差分と 1:1 で対応する (ADR-0027)                                     |
+| `docs/registry-baseline/`     | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0020)                                                                                                                                   |
+| `docs/registry-deviations.md` | baseline から動かした行の台帳 (コードの乖離、行単位の lint 抑制、`src/styles.css` の乖離、registry の値を複製したファイル)。baseline との差分と 1:1 で対応する (ADR-0020)                                     |
 | `docs/superpowers/`           | 設計仕様と実装計画の置き場所                                                                                                                                                                                  |

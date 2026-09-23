@@ -1,12 +1,12 @@
-# ADR-0031: design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る
+# ADR-0022: design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る
 
 - Status: Accepted
 - Date: 2026-09-24
-- 関連: ADR-0016 (コンポーネントの層と適用範囲の表し方)、ADR-0032 (`@shadcn/lint` のルールの選定)、ADR-0022 (Action 層の責務)
+- 関連: ADR-0011 (コンポーネントの層と適用範囲の表し方)、ADR-0023 (`@shadcn/lint` のルールの選定)、ADR-0016 (Action 層の責務)
 
 ## Context
 
-消費側が design system component へ渡す `className` は、`@shadcn/lint` の `no-raw-colors` と `no-unknown-classes` が中身を読めて初めて色と未知 class の統制 (ADR-0032) に掛かる。
+消費側が design system component へ渡す `className` は、`@shadcn/lint` の `no-raw-colors` と `no-unknown-classes` が中身を読めて初めて色と未知 class の統制 (ADR-0023) に掛かる。
 中身が読めるかは渡し方で決まり、他ファイルから import した `const` は読まれない (2026-09-19、`@shadcn/lint` 0.1.0 の実測。渡し方ごとの表は `docs/guides/lint.md`「`require-static-classes` が読む className」)。
 `@shadcn/lint` の `resolveIdentifier` が `Variable` 型でない定義で解決を打ち切り、import 束縛はこの型を持たないためである。
 

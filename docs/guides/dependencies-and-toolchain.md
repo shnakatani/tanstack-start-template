@@ -4,9 +4,9 @@
 
 | 決定                                                                     | ADR      |
 | ------------------------------------------------------------------------ | -------- |
-| 開発環境のツールチェーンは mise と Vite+ に寄せる                        | ADR-0008 |
-| 依存更新は待機 3 日で統一し、pin には出口条件を書く                      | ADR-0009 |
-| GitHub Actions の定義は zizmor で検査し、action は commit SHA で固定する | ADR-0010 |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                        | ADR-0004 |
+| 依存更新は待機 3 日で統一し、pin には出口条件を書く                      | ADR-0005 |
+| GitHub Actions の定義は zizmor で検査し、action は commit SHA で固定する | ADR-0006 |
 
 ## how-to
 
@@ -22,11 +22,11 @@
 
 ### 秘密を足す
 
-秘密が要るようになったら、暗号化した env ファイルと、`dotenvx run --` のような復号の経路を、Vite の env 機構と分けて足す。Vite は既に在る環境変数を `.env` で上書きしないので、復号を先に済ませて `process.env` へ入れる形が噛み合う。Vite の `.env` 読み込みは `envDir: false` で切ってある (ADR-0008)。
+秘密が要るようになったら、暗号化した env ファイルと、`dotenvx run --` のような復号の経路を、Vite の env 機構と分けて足す。Vite は既に在る環境変数を `.env` で上書きしないので、復号を先に済ませて `process.env` へ入れる形が噛み合う。Vite の `.env` 読み込みは `envDir: false` で切ってある (ADR-0004)。
 
 ### Dependabot の alerts を有効にする
 
-テンプレートから作ったリポジトリで、Dependabot の alerts と security updates を有効にする (ADR-0009)。この設定はコードに現れない。
+テンプレートから作ったリポジトリで、Dependabot の alerts と security updates を有効にする (ADR-0005)。この設定はコードに現れない。
 
 ```bash
 gh api -X PUT /repos/<owner>/<repo>/vulnerability-alerts
@@ -35,7 +35,7 @@ gh api -X PUT /repos/<owner>/<repo>/automated-security-fixes
 
 ### 待機を前倒しする
 
-公開後 3 日を待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものかを確かめる (ADR-0009 の決定 3)。
+公開後 3 日を待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものかを確かめる (ADR-0005 の決定 3)。
 
 ```bash
 curl -s https://registry.npmjs.org/<pkg>/<version> | jq '{_npmUser, repository, attestations: .dist.attestations}'
@@ -50,18 +50,18 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 
 ### catalog にエントリを足す
 
-`vite-plus` と core (`vite` の alias 先) のように同一リリースで exact pin される対は、Dependabot のグループへ束ねてある (ADR-0009 の決定 5)。
+`vite-plus` と core (`vite` の alias 先) のように同一リリースで exact pin される対は、Dependabot のグループへ束ねてある (ADR-0005 の決定 5)。
 
 - `pnpm-workspace.yaml` の `catalog:` へエントリを足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` にも足す。逆は成り立たない (`patterns` は catalog に現れない推移依存もグロブで拾う)
 - グループは `minor-and-patch` より前に置く。Dependabot は先に一致したグループを採るので、後ろに置くと major の更新だけが別の PR に落ちる
 
 ### pin を足す
 
-pin には出口条件を書く (ADR-0009 の決定 6)。間接的に pin の圏内へ入るパッケージを見つけたら `ignore` へ足し、同じ出口条件を参照させる。出口条件の文字列を grep すれば、pin の全構成要素が見つかる状態を保つ。
+pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏内へ入るパッケージを見つけたら `ignore` へ足し、同じ出口条件を参照させる。出口条件の文字列を grep すれば、pin の全構成要素が見つかる状態を保つ。
 
 ### workflow に action を足す
 
-- 新しい action は `@<SHA> # vX.Y.Z` で書く (ADR-0010)。手元で `zizmor --fix=all` を使うと SHA へ書き換わる。SHA 固定は unsafe fix に分類され、既定の `--fix=safe` では書き換わらない
+- 新しい action は `@<SHA> # vX.Y.Z` で書く (ADR-0006)。手元で `zizmor --fix=all` を使うと SHA へ書き換わる。SHA 固定は unsafe fix に分類され、既定の `--fix=safe` では書き換わらない
 - zizmor に新しい audit が入ると、action の更新 PR で既存の workflow が落ちうる。その PR の中で直すか、`.github/zizmor.yml` で理由を書いて無効にする
 
 ### 依存を上げたときに見直すもの

@@ -1,8 +1,8 @@
-# ADR-0008: 開発環境のツールチェーンは mise と Vite+ に寄せる
+# ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0009 (依存更新の待機)
+- 関連: ADR-0005 (依存更新の待機)
 
 ## Context
 
@@ -72,7 +72,7 @@ package manager の版は `packageManager` が決める。`vp env pin` が書き
 | `packageManager`     | pnpm の版                       | exact             |
 
 Node.js を major までにするのは、minor 差が解決結果を変えないためである。
-pnpm を exact にするのは、minor で解決挙動そのものが変わり、`minimumReleaseAge` や `peerDependencyRules` の扱いが動くと lockfile が手元ごとに割れるためである (ADR-0009)。
+pnpm を exact にするのは、minor で解決挙動そのものが変わり、`minimumReleaseAge` や `peerDependencyRules` の扱いが動くと lockfile が手元ごとに割れるためである (ADR-0005)。
 
 `devEngines.runtime.onFail` は `error` にする。pnpm も同じフィールドを読み、`download` だと宣言した runtime を自前で解決して lockfile へ記録するためで、runtime は Vite+ が同じ宣言から解決して持っているので 2 つ目の実体は要らない。`vp env pin` の後に戻す手順と実測は `docs/guides/dependencies-and-toolchain.md`「Node.js の版を打ち直す」にある。
 
@@ -109,7 +109,7 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 個別に組むと、lint の設定形式・formatter の整形規則・test runner の解決規則がそれぞれ独立に動き、その組み合わせの検証を自分で持つことになる。
 
 代償として、Vite+ が版を管理するパッケージ群は Vite+ のリリース単位でしか動かせない。
-この制約が依存更新のゲートに与える影響は ADR-0009 が持つ。
+この制約が依存更新のゲートに与える影響は ADR-0005 が持つ。
 
 ### 検討した選択肢
 

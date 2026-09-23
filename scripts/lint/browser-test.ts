@@ -5,7 +5,7 @@ import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plu
  * どれがどの ADR かは各ルールの `meta.docs.description` が持つ。一覧は下の `definePlugin`。
  *
  * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
- * 適用先 glob の決め方は ADR-0054 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
+ * 適用先 glob の決め方は ADR-0009 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
  * `lint.overrides` にあり、`scripts/checks/integrity/lint-config.test.ts` が固定する。
  */
 
@@ -167,7 +167,7 @@ function valueFlowTop(node: Node): Node {
 /**
  * その同期読みが変数へ束縛されているなら、その変数の read 参照を返す。
  *
- * 複数のルールがこの追跡に依拠している。ADR-0054 の Consequences の壊し方の表が固定しているのも
+ * 複数のルールがこの追跡に依拠している。ADR-0009 の Consequences の壊し方の表が固定しているのも
  * この追跡なので、数える対象の定義を 1 箇所に置く。束縛の右辺が `x.element().getAttribute(a)`
  * のような連鎖でも、その先頭の同期読みから辿れる
  */
@@ -238,7 +238,7 @@ export const preferLocatorMethods = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "locator の同期読みを assert へ流さず、expect.element を通す (ADR-0054)",
+      description: "locator の同期読みを assert へ流さず、expect.element を通す (ADR-0009)",
     },
     messages: {
       syncRead:
@@ -280,11 +280,11 @@ export const noFindElement = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "locator.findElement() を呼ばない。mount は expect.element で待つ (ADR-0054)",
+      description: "locator.findElement() を呼ばない。mount は expect.element で待つ (ADR-0009)",
     },
     messages: {
       findElement:
-        "`locator.findElement()` を呼ばない。mount を待つなら `expect.element(locator).toBeInTheDocument()` を使う。この config は `actionTimeout` を置いており、`findElement()` は待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える (ADR-0054)",
+        "`locator.findElement()` を呼ばない。mount を待つなら `expect.element(locator).toBeInTheDocument()` を使う。この config は `actionTimeout` を置いており、`findElement()` は待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える (ADR-0009)",
     },
   },
   create(context) {
@@ -442,7 +442,7 @@ export const noNegatedStyleLiteral = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "スタイルをリテラルとの否定で確かめない (ADR-0054)",
+      description: "スタイルをリテラルとの否定で確かめない (ADR-0009)",
     },
     messages: {
       negatedStyleLiteral:
@@ -479,11 +479,11 @@ export const noBareAbsenceAssertion = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "不在の assert は expectAbsent / expectRemoved を通す (ADR-0054)",
+      description: "不在の assert は expectAbsent / expectRemoved を通す (ADR-0009)",
     },
     messages: {
       bareAbsence:
-        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない。`expectAbsent` は要素が無ければ 1 回目で通るので、同じ操作の効果を表す肯定 assert を先に置く。無いと何も検証していない (ADR-0054)",
+        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない。`expectAbsent` は要素が無ければ 1 回目で通るので、同じ操作の効果を表す肯定 assert を先に置く。無いと何も検証していない (ADR-0009)",
     },
   },
   create(context) {

@@ -1,8 +1,8 @@
-# ADR-0010: GitHub Actions の定義は zizmor で検査し、action は commit SHA で固定する
+# ADR-0006: GitHub Actions の定義は zizmor で検査し、action は commit SHA で固定する
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0009 (依存更新の待機)
+- 関連: ADR-0005 (依存更新の待機)
 
 ## Context
 
@@ -22,7 +22,7 @@ tag と branch は後から付け替えられる。GitHub の security hardening
 | 2   | `uses:` は `@<SHA> # vX.Y.Z` の形で書く                                        | zizmor の `unpinned-uses` の既定方針 (全 action に SHA 固定を求める) に従う。Dependabot は SHA とバージョンコメントの組を更新する                                                                                             |
 | 3   | `actions/checkout` には `persist-credentials: false` を渡す                    | 後続の step は push しない。v6 以降の checkout は credential を `$RUNNER_TEMP` のファイルへ書き、同じ job の後続 step から読める                                                                                              |
 | 4   | zizmor 本体の版は指定しない (`version: latest`)                                | action は `latest` を、同梱の `support/versions` にある digest 付きの image へ解決する (v0.6.4 の `action.sh`)。action の SHA を固定すれば本体の版も固定され、Dependabot の追随と cooldown に乗る                             |
-| 5   | 設定は `.github/zizmor.yml` に置き、`dependabot-cooldown` の下限を 3 日にする  | 待機の日数は ADR-0009 が決める。zizmor 1.30.1 の既定 7 日 (2026-09-23 確認) に合わせると、却下した案を検査が強制する                                                                                                          |
+| 5   | 設定は `.github/zizmor.yml` に置き、`dependabot-cooldown` の下限を 3 日にする  | 待機の日数は ADR-0005 が決める。zizmor 1.30.1 の既定 7 日 (2026-09-23 確認) に合わせると、却下した案を検査が強制する                                                                                                          |
 
 ### 検討した選択肢
 

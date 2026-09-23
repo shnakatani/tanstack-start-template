@@ -49,7 +49,7 @@ export function storyGlobs(prefix: string): string[] {
 }
 
 /**
- * テスト専用の helper に当たる種別。locator を持ちうる側で、ブラウザテストの規範 (ADR-0054) を
+ * テスト専用の helper に当たる種別。locator を持ちうる側で、ブラウザテストの規範 (ADR-0009) を
  * 当てる範囲でもある。`satisfies` が {@link COMPANION_KINDS} の外の綴りを型で止める。
  */
 const TEST_HELPER_KINDS = [
@@ -83,7 +83,7 @@ export function companionFilePattern(): string {
 
 /**
  * ブラウザテストの glob。`vitest.browser.config.ts` の `include` と、`vite.config.ts` の
- * browser-test ルールの適用先が同じ集合を指す (ADR-0054)。片方だけ変えると lint の適用先が
+ * browser-test ルールの適用先が同じ集合を指す (ADR-0009)。片方だけ変えると lint の適用先が
  * 黙って browser project から外れる
  */
 export const BROWSER_TEST_GLOB = "src/**/*.test.tsx";

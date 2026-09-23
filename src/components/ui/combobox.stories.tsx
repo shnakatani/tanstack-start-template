@@ -31,7 +31,7 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
       />
       {/* popup 内に入力欄を置く構成では base-ui が popup へ role="dialog" を付けるため
           (`combobox/popup/ComboboxPopup.js` の `inputInsidePopup ? 'dialog' : 'presentation'`)、
-          名前が要る。与えないと axe の aria-dialog-name で落ちる (ADR-0027) */}
+          名前が要る。与えないと axe の aria-dialog-name で落ちる (ADR-0020) */}
       <ComboboxContent aria-label="果物の候補">
         <ComboboxInput aria-label="果物を検索" placeholder="検索" showTrigger={false} />
         <ComboboxEmpty>該当なし</ComboboxEmpty>
@@ -106,7 +106,7 @@ export const NoItems: Story = {
 
 /**
  * 入力欄の中で完結する形。`ComboboxInput` の既定 trigger を出す。アイコンだけのボタンで、
- * 名前は registry 側の既定 `aria-label` が持つ (上流 shadcn-ui/ui#11589、ADR-0027 の乖離)
+ * 名前は registry 側の既定 `aria-label` が持つ (上流 shadcn-ui/ui#11589、ADR-0020 の乖離)
  */
 export const InlineWithTrigger: Story = {
   render: () => (

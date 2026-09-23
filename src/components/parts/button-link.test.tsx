@@ -15,7 +15,7 @@ import { ButtonLink } from "./button-link";
  * (docs/guides/storybook.md「カタログと play の範囲」「story とブラウザテストの分担」)。
  *
  * 寸法は測らない。寸法は registry の size 目盛りが決め、上流が決める値なので、測ると上流が変えただけで落ちる。
- * 消費側が縮められないことは層の規則 (ADR-0016 / ADR-0031) が止める。
+ * 消費側が縮められないことは層の規則 (ADR-0011 / ADR-0022) が止める。
  */
 describe("ButtonLink", () => {
   it("リンクテキストが表示される", async () => {

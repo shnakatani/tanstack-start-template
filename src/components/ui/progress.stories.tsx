@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/progress";
 
 /**
- * `children` を渡すと registry の既定の Track と Indicator が描かれない (ADR-0027 の乖離)。
+ * `children` を渡すと registry の既定の Track と Indicator が描かれない (ADR-0020 の乖離)。
  * 素の形は `children` を渡さずフォールバックに任せる
  */
 const meta = {

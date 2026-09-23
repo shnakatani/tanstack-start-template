@@ -23,13 +23,13 @@ export const Route = createFileRoute("/notes/")({
   component: NotesRoute,
 });
 
-/** Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける (ADR-0015 / docs/guides/testing.md「route の wrapper をテストする」)。 */
+/** Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける (ADR-0010 / docs/guides/testing.md「route の wrapper をテストする」)。 */
 function NotesRoute() {
   const { q } = Route.useSearch();
   const navigate = Route.useNavigate();
   function handleQueryChange(next: string) {
-    // navigate は Router が startTransition で commit する (ADR-0020)。検索は同じ画面の絞り込みなので
-    // 履歴を積まない (replace)。戻るは 1 つ前の画面へ戻る (ADR-0025)
+    // navigate は Router が startTransition で commit する (ADR-0015)。検索は同じ画面の絞り込みなので
+    // 履歴を積まない (replace)。戻るは 1 つ前の画面へ戻る (ADR-0019)
     void navigate({ search: (prev) => ({ ...prev, q: next }), replace: true });
   }
   return <NotesPage q={q} onQueryChange={handleQueryChange} />;

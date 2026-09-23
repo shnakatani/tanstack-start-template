@@ -4,11 +4,11 @@
 
 | 決定                                                                                                | ADR      |
 | --------------------------------------------------------------------------------------------------- | -------- |
-| ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す | ADR-0020 |
-| mutation は Action 層の `action` prop から `useActionMutation` で呼び、二重発火は state だけで塞ぐ  | ADR-0022 |
-| ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める                    | ADR-0023 |
-| server function をデータ境界とし、全 fn 共通の middleware は global に載せる                        | ADR-0017 |
-| メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                          | ADR-0019 |
+| ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す | ADR-0015 |
+| mutation は Action 層の `action` prop から `useActionMutation` で呼び、二重発火は state だけで塞ぐ  | ADR-0016 |
+| ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める                    | ADR-0017 |
+| server function をデータ境界とし、全 fn 共通の middleware は global に載せる                        | ADR-0012 |
+| メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                          | ADR-0014 |
 
 ## explanation
 
@@ -24,8 +24,8 @@
 ### query のキャッシュとダイアログの close は Transition に乗らない
 
 TanStack Query の `useQuery` / `useMutation`、TanStack Router のストア、Base UI のダイアログの handle は、どれも `useSyncExternalStore` で購読されている。React はこの購読の更新を、Transition の中で起きても緊急更新として描く。
-そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは、pending の管理、Action の順序保証、pending の切り替えを `<ViewTransition>` で装飾できることである (ADR-0020)。
-出典と実測は ADR-0020「制約: TanStack Query と Router のストアは Transition に参加しない」が持つ。`useOptimistic` に query の値を渡せない理由もここにある (「楽観表示を出す」)。
+そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは、pending の管理、Action の順序保証、pending の切り替えを `<ViewTransition>` で装飾できることである (ADR-0015)。
+出典と実測は ADR-0015「制約: TanStack Query と Router のストアは Transition に参加しない」が持つ。`useOptimistic` に query の値を渡せない理由もここにある (「楽観表示を出す」)。
 
 ### ハンドラを同期関数にする理由
 
@@ -39,13 +39,13 @@ TanStack Query の `useQuery` / `useMutation`、TanStack Router のストア、B
 | `checksVoidReturn.attributes` を off にする             | 本当に rejection を落としている箇所も検出できなくなる                                       | 却下     |
 
 - React 公式もこの構造を採っている。React 19 の `TransitionFunction` は非同期処理を受け取るが、`onClick` に渡すハンドラ自体は同期である (`useTransition` リファレンス)
-- mutation を伴う操作は、同期ハンドラの内側で `startTransition` に非同期関数を渡す形 (Action) にし、pending は Transition から取る (ADR-0020)。`startTransition` を併用すると pending の源が mutation の `isPending` と二重になるが、源を Transition 側へ一本化してこれを避ける
+- mutation を伴う操作は、同期ハンドラの内側で `startTransition` に非同期関数を渡す形 (Action) にし、pending は Transition から取る (ADR-0015)。`startTransition` を併用すると pending の源が mutation の `isPending` と二重になるが、源を Transition 側へ一本化してこれを避ける
 - 非同期イベントハンドラの書き方は typescript-eslint のメンテナの回答に沿う (https://github.com/typescript-eslint/typescript-eslint/issues/11008)
 
 ### React Compiler が見ない箇所
 
 Compiler はコンポーネントか hook として認識した関数しか最適化しない。テーブルの列定義のように、コンポーネントでも hook でもない定義は最適化されないまま動く。
-これは仕様どおりの挙動で、欠陥として扱わない (ADR-0019)。
+これは仕様どおりの挙動で、欠陥として扱わない (ADR-0014)。
 
 ## how-to
 
@@ -67,7 +67,7 @@ function handleSignOut() {
 
 ### mutation を Action 層から呼ぶ
 
-mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton` / `AlertDialogActionButton` / `ActionForm`) に `action` を渡し、Action の中で `useActionMutation` の `runAction` を呼ぶ (ADR-0022)。
+mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton` / `AlertDialogActionButton` / `ActionForm`) に `action` を渡し、Action の中で `useActionMutation` の `runAction` を呼ぶ (ADR-0016)。
 
 #### Action 層の部品が守る契約
 
@@ -76,8 +76,8 @@ mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton`
 | 契約         | 内容                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `action`     | `() => Promise<void> \| void`。`startTransition` に直接渡す。同期と非同期のどちらも受け、決着まで pending が続く                                                                                                                                                                                                                                                                                            |
-| pending      | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定する。`Spinner` は視覚専用 (`aria-hidden`)。状態は要素自身の `aria-busy` と `aria-disabled` で持ち、通知は feature 側が announcer で出す (ADR-0035)。button の子孫はユーザーエージェントが accessibility API に露出すべきでない (SHOULD NOT。WAI-ARIA 1.2 §5.2.9) |
-| 二重発火     | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (ADR-0022「二重発火は state だけで塞ぐ」)                                                                                                                                                                                                                                                                           |
+| pending      | `useTransition` の `isPending`。`aria-disabled` と `focusableWhenDisabled` でフォーカスを保つ。名前は `aria-labelledby` で children に固定する。`Spinner` は視覚専用 (`aria-hidden`)。状態は要素自身の `aria-busy` と `aria-disabled` で持ち、通知は feature 側が announcer で出す (ADR-0026)。button の子孫はユーザーエージェントが accessibility API に露出すべきでない (SHOULD NOT。WAI-ARIA 1.2 §5.2.9) |
+| 二重発火     | 決着前の再クリックは `isPending` (`aria-disabled`) が塞ぐ。ref や閉包のフラグは持たない (ADR-0016「二重発火は state だけで塞ぐ」)                                                                                                                                                                                                                                                                           |
 | 失敗         | 部品は握らない。呼び出し側が Action の中で処理し切る。mutation は `useActionMutation` を通す                                                                                                                                                                                                                                                                                                                |
 | 基盤への依存 | 契約は Base UI に依存しない。Base UI (issue 5133) か React Aria (PR 9894) が `action` prop を出荷したら、内部の実装だけを差し替える                                                                                                                                                                                                                                                                         |
 
@@ -97,7 +97,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ### 完了点ごとに Transition を終える
 
-完了点 (a) (b) (c) のどれを選ぶかは ADR-0023 の軸で決める。選んだら、次の形で組む。ダイアログの無い操作では、Action が return する時点が close の時点に当たる。
+完了点 (a) (b) (c) のどれを選ぶかは ADR-0017 の軸で決める。選んだら、次の形で組む。ダイアログの無い操作では、Action が return する時点が close の時点に当たる。
 
 | 完了点             | Transition の終え方                                                                                                                                                                        | Transition の pending                                       |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
@@ -128,13 +128,13 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ### 楽観表示を出す
 
-- query が持つデータとその派生値の楽観表示は、mutation の pending (`variables` / `useMutationState`) から描く。複数の表示箇所を同時に更新するなら `onMutate` でキャッシュを書き換え、失敗時に rollback する (ADR-0020、ADR-0023)
+- query が持つデータとその派生値の楽観表示は、mutation の pending (`variables` / `useMutationState`) から描く。複数の表示箇所を同時に更新するなら `onMutate` でキャッシュを書き換え、失敗時に rollback する (ADR-0015、ADR-0017)
 - `useOptimistic` の第 1 引数に `useQuery` / `useSuspenseQuery` の `data` と、そこから計算した値を渡さない。query のストアは Transition に乗らないので、楽観値と再取得の結果が揺れる (TanStack/query #9742)
 - `useOptimistic` を使うのは、query を経由しない部品のローカル値だけにする
 
 ### メモ画面の実例
 
-`/notes` の削除と追加は、ADR-0023 の軸を次のように当てている。新しい操作を足すときの見本になる。
+`/notes` の削除と追加は、ADR-0017 の軸を次のように当てている。新しい操作を足すときの見本になる。
 
 | 操作 | 完了点                       | 表現                                                                                                                                                                                                                                               | 理由                                                                                                                 |
 | ---- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -142,12 +142,12 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | 追加 | (b) サーバー応答で閉じる     | `onSuccess` の先頭で閉じ、再取得の Promise を返す。mutation はダイアログ側にあるので `mutationKey` を付け、一覧側で `useMutationState` の `variables` を読んで新しい行を半透明で出し、再取得の完了で実データに置き換える                           | 楽観で閉じると、失敗したときに入力を戻す先が無い                                                                     |
 
 - 半透明は `src/components/parts/busy-opacity.ts` の `BUSY_OPACITY_CLASS` を使う。値の理由と、当たる対の測り方は同じ定数の docstring が持つ
-- 半透明と `aria-busy` は読み上げに出ない。通知は announcer で出し、行には仮想カーソル用の静的テキスト (「削除中」「保存中」) を置く (ADR-0035)
+- 半透明と `aria-busy` は読み上げに出ない。通知は announcer で出し、行には仮想カーソル用の静的テキスト (「削除中」「保存中」) を置く (ADR-0026)
 - `variables` を行へ絞るスキーマは `src/features/notes/deleting-ids.ts` と `src/features/notes/creating-rows.ts`、filters は `src/features/notes/mutations.ts` が持つ
 
 ### 認可を足す
 
-認証は `src/start.ts` の global middleware に載せ、全 server function に通す (ADR-0017)。認可はその上に、要るようになった時点で次の順で足す。
+認証は `src/start.ts` の global middleware に載せ、全 server function に通す (ADR-0012)。認可はその上に、要るようになった時点で次の順で足す。
 
 1. `createServerFn` を包む base builder を作り、認可の middleware を載せる。認証への依存を明示したいなら `.middleware([authMiddleware])` で chain する
 2. 認可の付け忘れを lint で止めるなら、`createServerFn` の直接の import を禁じる。適用範囲は `src` 全体 (`.ts` と `.tsx`) にする。server function は route ファイルでも宣言できるので、server function のディレクトリに絞ると、宣言を 1 つ外へ移すだけで迂回できる
@@ -160,11 +160,11 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ### 手動メモ化を書く
 
-新しいコードで予防的に `useMemo` / `useCallback` を書かない。性能の問題として実際に現れた箇所だけを手でメモ化する (ADR-0019)。
+新しいコードで予防的に `useMemo` / `useCallback` を書かない。性能の問題として実際に現れた箇所だけを手でメモ化する (ADR-0014)。
 
 ### 手動メモ化を外すか判定する
 
-既存の `useMemo` / `useCallback` は、撤去の前後でコンパイル出力が悪化しないことを測れた箇所だけ外す (ADR-0019 の決定 4)。
+既存の `useMemo` / `useCallback` は、撤去の前後でコンパイル出力が悪化しないことを測れた箇所だけ外す (ADR-0014 の決定 4)。
 Compiler がメモ化のスコープを作るのは、値の identity を同じコンパイル単位の中で観測できるときに限られる。カスタム hook の返り値へ入るだけの導出は消費側が見えず、スコープが粗くなる。一括で外すと依存のガードを失い、劣化が下流へ連鎖する。ガードの数が同じでもスコープが融合して依存の集合が広がることがあり、どちらも外形からは読み取れない。
 
 撤去の前後でコンパイルし、次の 3 つを比べる。1 つでも悪化したら外さない。
@@ -188,10 +188,10 @@ const sentinels = (code.match(/memo_cache_sentinel/g) ?? []).length;
 - 依存比較の総数を見るのは、スコープが融合して依存の集合が広がる劣化を捕まえるためである。ガードの数だけでは取りこぼす
 - コンパイル出力の diff は判定に使えない。メモ化が保たれていても、出力は必ず変わる
 - `useEffect` の依存へ流れる値は、指標とは別に確かめる。識別子ではなく正しさに関わる
-- `src/components/ui/` は ADR-0027 の統制下なので、判定の対象にせず改変しない
+- `src/components/ui/` は ADR-0020 の統制下なので、判定の対象にせず改変しない
 
 ### React Compiler の診断を読む
 
 - bail out は `vp build` のログに出る (`compiler.logDiagnostics`)。ログの行は `[plugin vite:react-compiler]` で始まり、`error` / `warn` を含まない。`react-compiler` で grep する
-- `vp lint -D react/todo` は同じ bail out を file:line つきで報告する (2026-09-02 に同じツリーで件数が一致)。`oxc-transform-react` が非 fatal の診断をビルドログへ出さなくなったときは、こちらをその場で叩く。`react/todo` は設定で有効にしない (ADR-0019 の決定 3)
-- Compiler の適用が壊れたら、`@vitejs/plugin-react` と `oxc-transform-react` を前の版へ揃えて下げる。babel の経路へは戻さない (ADR-0019)
+- `vp lint -D react/todo` は同じ bail out を file:line つきで報告する (2026-09-02 に同じツリーで件数が一致)。`oxc-transform-react` が非 fatal の診断をビルドログへ出さなくなったときは、こちらをその場で叩く。`react/todo` は設定で有効にしない (ADR-0014 の決定 3)
+- Compiler の適用が壊れたら、`@vitejs/plugin-react` と `oxc-transform-react` を前の版へ揃えて下げる。babel の経路へは戻さない (ADR-0014)
