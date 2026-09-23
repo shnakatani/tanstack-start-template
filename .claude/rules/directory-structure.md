@@ -19,19 +19,18 @@ paths:
 | `routes/<path>/-lib/`        | その URL 配下だけで使う、コンポーネントでないモジュール (行の組み立て、列定義、dialog の handle、型)。テストは同じディレクトリ (ADR-0019) |
 | `routes/<path>/-hooks/`      | その URL 配下だけで使う React hook (`use-*`)。`src/hooks/` と同じ線引き (ADR-0019)                                                        |
 
-- `routes/<path>/-` で始まるディレクトリ (`-components/` `-lib/` `-hooks/`) の中の import は相対パスで書く
-- 一覧テーブルは `DataTable` (`src/components/parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` (横断なら `src/features/<domain>/`) に書き、cell の描画は `-components/` の部品を参照で渡す (ADR-0019)
-- 部品と画面の取り違えは機械で止まらない。判断軸は役割: registry や自作部品を包んで外見そのものを定義するなら `parts/`、既存の部品を並べて画面を組むだけなら `screens/`。消費者が 1 つでも、外見の定義を担うなら `parts/` (ADR-0020)
-- story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。サイドバーの見出しはファイルパスから決める。2 つの出処を持つと、部品名を変えたときに片方が古いまま残る (ADR-0022)
-- story を置けるのは `src/components/` 配下だけ。`.storybook/main.ts` の `stories` がそこしか見ないので、`features/` や `routes/**/-components/` へ置いても無言で対象から外れる (ADR-0022)
-- 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分け、その部品名から名前を取る (`button.tsx` の `ActionButtonShell` は `button-shell.stories.tsx`)。理由は ADR-0022
-- 親を要求する部品は単独の meta を持てないので、親の story ファイルで扱う (`ActionFormSubmit` は `ActionForm` の外で描画すると throw する)
-- `argTypes` の `options` に `cva` の variant を写すときは、型で網羅を強制する。型検査も lint も一致を見ないので、写しただけだと古いまま通る (ADR-0022)
-- story の decorator に余白を足さない。canvas の余白は `.storybook/preview.css` が持ち、decorator は器の形 (flex / gap) だけを持つ (ADR-0022)
-- story から部品へ渡す `className` は layout に限り、外見を上書きする class は部品の variant にする。story は lint (`no-restyle`) の対象外なのでレビューで見る (ADR-0021 / ADR-0022)
-- className を書きたくなったこと自体は `parts/` への移動理由にならない。静的か動的かを問わない。層の規則から外れるために移すのは逆 (ADR-0020 / ADR-0021)
-- `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
-- route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
+- `routes/<path>/-` で始まるディレクトリの中の import は相対パスで書く
+- `parts/` と `screens/` の取り違えは機械で止まらない。外見を定義するなら `parts/`、既存の部品を並べるだけなら `screens/`。消費者が 1 つでも同じ (ADR-0020)
+- className を書きたいことは `parts/` へ移す理由にならない。層の規則から外れるために移すのは逆 (ADR-0020 / ADR-0021)
+- 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の部品を参照で渡す (ADR-0019)
+- ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0012)
+- route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない
+- story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まる (ADR-0022)
+- story を置けるのは `src/components/` 配下だけ。他へ置くと `.storybook/main.ts` の `stories` から無言で外れる (ADR-0022)
+- 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分ける。親を要求する部品は親の story で扱う (ADR-0022)
+- `argTypes` の `options` に `cva` の variant を写すときは型で網羅を強制する。型検査も lint も一致を見ない (ADR-0022)
+- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。余白は `.storybook/preview.css` が持つ (ADR-0022)
+- story から部品へ渡す `className` は layout に限る。story は lint (`no-restyle`) の対象外なのでレビューで見る (ADR-0021 / ADR-0022)
 
 ## features と hooks と lib と server の境界
 
@@ -42,47 +41,41 @@ paths:
 | `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                                                  |
 | `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)                               |
 
-- ページ本体は `routes/<path>/-components/` に置き、route ファイルからは export しない。ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く (ADR-0012)
-- `src/features/<domain>/` 内部の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)
-- React の hook を `src/lib/` に置かない
-- DB (`src/server/db/`) と native binding を持つ依存に触るのは、`.server.` を持つファイルとテストと `src/server/db/` の中だけ。client bundle からの import は build (`importProtection`) が止める
+- `src/features/<domain>/` の中の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)
+- DB と native binding を持つ依存に触るのは、`.server.` を持つファイルとテストと `src/server/db/` の中だけ。client からの import は build (`importProtection`) が止める
 
 ## テストとスクリプトの配置
 
-テスト専用ヘルパーは 2 段に置く。2 つのテストで同じ locator を書き分けると、ラベル変更で片方だけ落ちる。
+テスト専用ヘルパーは 2 段に置く。同じ locator を 2 つのテストで書き分けると、ラベル変更で片方だけ落ちる。
 
-| 対象                                         | 置き場所                                                                                                                                                                  |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                                                               |
-| 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下では対象と同じ `-components/` か `-lib/` に置き、route ファイル自身の helper は route ファイルの隣に置く |
-| story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` へ置かない。プロダクトコードと読まれ、誰かが import すれば出荷される (ADR-0022)                          |
+| 対象                                         | 置き場所                                                                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                           |
+| 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` では対象と同じ `-components/` か `-lib/`、route ファイル自身の分はその隣 |
+| story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` に置くと出荷されうる (ADR-0022)                                      |
 
-- 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` だけが定義する。lint や coverage のパターンはそこから導くので、種別を足すときはそこだけを直す
-- `*.test-helpers.ts` / `*.story-helpers.ts` は `vp test` の include (`vitest.config.ts`) に一致せず、テストとして収集されない
-- route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-` で始まるディレクトリの中は元から除外される
-- `*.test-helpers.ts` / `*.story-helpers.ts` / `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0004)
-- helper のテストの置き方は対象の実行環境で決める。DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project)
+- 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
+- helper や `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0004)
+- helper のテストは、DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project) に置く
 
 ## shadcn コンポーネント導入時のチェック
 
 `src/components/ui/` を新規追加・改変したら、最初のコミット前に:
 
-1. `vp check --fix` を通す。registry コードも他と同じ検査を受ける。上流の形を保つ必要がある違反だけ行単位で抑制し、ADR-0006 の許容リストへ記録する
-2. インタラクティブなコンポーネントは registry 素寸法のまま使う (`button.tsx` 参照、ADR-0007)。`min-h-11` 等の 44px 焼き込みや独自の hit 拡大を足さない
-   - **input を包むラッパーを足さない**。疑似要素が input を覆い、本体がポインタを受け取れなくなる (ADR-0007)
-3. 生成時 baseline を `docs/registry-baseline/<name>.tsx` に取得する (新規追加時と `--overwrite` 再生成時の両方)。手順は ADR-0006「検査手順」
-4. baseline との diff が許容リスト (ADR-0006) と 1:1 であることを確認してからコミットする。乖離の理由は ADR-0006 が持つ。コード側の理由コメントは、ADR の記述だけでは実装者が誤る場合 (打ち消し不能な落とし穴など) に限る。素のまま使っていることの説明は書かない (ADR に載っていなければ上流のものと判別できる)
-   - 例外は `oxlint-disable` directive の `--` 説明。ADR と重複しても、「なぜそのルールを抑制してよいのか」をその行に書く (「なぜ上流の形を保つのか」ではない)。抑制の妥当性はその行を読む人が判断するため
+1. インタラクティブな部品は registry 素寸法のまま使う。44px の焼き込みや独自の hit 拡大、input を包むラッパーを足さない (ADR-0007)
+2. 生成時 baseline を `docs/registry-baseline/<name>.tsx` に取る (新規追加時と `--overwrite` 再生成時)。手順は ADR-0006「検査手順」
+3. baseline との diff が許容リスト (ADR-0006) と 1:1 であることを確かめる。上流の形を保つ違反だけ行単位で抑制し、許容リストへ記録する
+4. コード側の理由コメントは、ADR だけでは実装者が誤る落とし穴に限る。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く
 5. 未使用での先行導入 (vendor preset) は許容する。chore コミットとして記録する
-6. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらないまま利用者へ配られる (ADR-0022 の節 8)
+6. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらない (ADR-0022)
 
 ## ルートファイル
 
-- ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。その画面専用の純粋ロジックは `-lib/`、複雑な UI は `-components/`、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
-- Route hooks (`Route.useSearch` 等) はルートファイル内の export しない wrapper で吸収し、ページ本体は `-components/` に置いて値とハンドラを props で受ける。混ぜるとページテストがテスト router で動かない (実例: `src/routes/notes/-components/notes-page.tsx`)
-- loader は `createFileRoute` の options に直接書く。`context` と `deps` の型が推論され、関数に切り出すと引数の型を手で書くことになる。既定では code-split の対象外なので置き場で chunk は変わらない。検証は router 経由 (実例: `src/routes/notes/index.test.tsx`)
-- route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入り code-split されない (ADR-0012)
+- ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。純粋ロジックは `-lib/`、UI は `-components/`、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
+- ページ本体は `-components/` に置き、Route hooks (`Route.useSearch` 等) はルートファイル内の export しない wrapper で吸収して props で渡す。混ぜるとページテストが動かない (実例: `notes-page.tsx`)
+- Route hooks を使う wrapper は、実 router + `createMemoryHistory` で描いて検証する。tree は root を差し替えて組む (実例: `src/routes/notes/index.test.tsx`、ADR-0036)
+- loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる
+- loader は Query を温めるためだけに呼び、値は `useSuspenseQuery` で読む。`useLoaderData` で読むと `invalidateQueries` で画面が更新されない
+- route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入る (ADR-0012)
 - 分割されない property (`pendingComponent` / `loader` / `validateSearch` 等) が import する module は eager に読まれる。ページ本体と同じ module に置かず、pending 表示は別ファイル、共有する定数は `-lib/` に置く (ADR-0012)
-- loader は Query を温めるためだけに呼び、値は component が `useSuspenseQuery` で読む。`useLoaderData` で Query 所有のデータを読むと、mutation の `invalidateQueries` では loader が再実行されず画面だけ古いまま残る
-- Route hooks を使う wrapper を足したら、実 router + `createMemoryHistory` で描いて検証する。props 直渡しでは wrapper が実行されない。tree は root を差し替えて組む (実例: `src/routes/notes/index.test.tsx`、理由は ADR-0036)
-- route ファイルのテストは route ファイル名に `.test` を付ける (`index.test.tsx`)。`route.test.tsx` と名付けない。`route.tsx` はディレクトリのレイアウトルートの予約名で、そのテストと読める (Router の file-naming-conventions)
+- route ファイルのテストは route ファイル名に `.test` を付ける (`index.test.tsx`)。`route.test.tsx` はレイアウトルートのテストと読める (Router の file-naming-conventions)
