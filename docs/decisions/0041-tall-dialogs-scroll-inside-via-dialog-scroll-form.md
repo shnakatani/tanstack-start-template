@@ -11,11 +11,11 @@
 
 公式の例は次のとおり。
 
-| 出典                                                 | 形                                                                                                                                                              |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base UI Dialog「Inside scroll dialog」               | Popup は画面に収めたまま、Header と Actions の間に `ScrollArea` を置いて本体だけをスクロールさせる。Popup の直下に Header / ScrollArea.Root / Actions を並べる  |
-| Base UI Dialog「Outside scroll dialog」              | Viewport 側をスクロールさせ、Popup が画面の下端を越えて伸びる                                                                                                   |
-| shadcn Dialog「Scrollable Content」「Sticky Footer」 | Header と Footer の間の本文を `-mx-4 max-h-[50vh] overflow-y-auto px-4` の div でスクロールさせる。Header / Footer は sticky ではなく、本文の外に置いて固定する |
+| 出典                                                 | 形                                                                                                                                                                           |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base UI Dialog「Inside scroll dialog」               | Popup は画面に収めたまま、Header と Actions の間に `ScrollArea` を置いて本体だけをスクロールさせる。Popup の直下に Header / ScrollArea.Root / Actions を並べる               |
+| Base UI Dialog「Outside scroll dialog」              | Viewport 側をスクロールさせ、Popup が画面の下端を越えて伸びる                                                                                                                |
+| shadcn Dialog「Scrollable Content」「Sticky Footer」 | Header と Footer の間の本文を `-mx-4 no-scrollbar max-h-[50vh] overflow-y-auto px-4` の div でスクロールさせる。Header / Footer は sticky ではなく、本文の外に置いて固定する |
 
 shadcn の例は本文の高さを `50vh` で打ち切る。フォームを包む `form` 要素の置き場は、どちらの公式例にも無い。
 

@@ -19,6 +19,7 @@ paths:
 | `overrides` | テストの型ルール緩和に使う。違反の抑制には使わず行単位で書く (ADR-0006)。規則の適用範囲を層に合わせるときだけ `excludeFiles` を使う (ADR-0020)                      |
 | `jsPlugins` | 先に oxlint ネイティブで代替できないか確かめる。エントリは `{ name, specifier }` で書き、抑制 directive はその `name` で書く。他の名前だと無言で効かない (ADR-0004) |
 
+- `overrides` は `categories` を持てない。`plugins` はトップレベルと違い、継承した既定集合への追加になる (置換ではない)
 - 有効でないプラグインのルールを `rules` に書くと無言で無視される。設定してあることは、その検査が動いていることを意味しない (ADR-0003)
 - lint 設定は `vite.config.ts` の `lint` に集約する。サブディレクトリの `.oxlintrc.json` は `vp lint` が読まず no-op になる (ADR-0003)
 - CLI の `-D` は未知のルール名を exit 0 で無視する。0 件を結論にする前に `--print-config` でルール名の実在を確かめる (ADR-0003)
@@ -39,7 +40,7 @@ paths:
 ## script とタスク
 
 - マージ前検証を `vp run` のタスクへまとめない。Vite Task は親の環境変数を素通しせず、結果をキャッシュして gate がリプレイされる (ADR-0002)
-- built-in と同名の script を新設しない。`vp <name>` は built-in、`vp run <name>` は script を指し、同名でも別物になる (ADR-0002)
+- built-in と同名の script を新設しない。`vp <name>` の built-in と `vp run <name>` の script が別物になり取り違える。ただし `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す
 - ビルド成果物を起動する検査は `vp build` の後に置く。CI も同じ順序で workflow に並べる
 
 ## React Compiler (`vite.config.ts` の `plugins`)

@@ -21,12 +21,13 @@ mise run verify   # vp check → vp test run → vp build → ビルド成果物
 
 ## テストの実行
 
+- テストを書き始める前に `.claude/rules/testing.md` を読む (TDD の手順、置き場所)。テストを新規作成するだけでは paths の rules は読み込まれない
 - `vp test run <path>` で 1 回実行する (`vp test` は watch モード)
 - `vp test` を複数並行で走らせない。orphan の runner が残ると後続が collection エラーで巻き添えになる。kill 後は `ps` で残存を確かめる
 - background で走らせるときはパイプを付けない。buffering で完了まで出力が見えず、ハングと実行中を区別できない
 - full run が普段の所要を大きく超えたら止めて切り分ける。`ps -o pid,etime,time -p <pid>` で CPU 時間が伸びていなければ待っても終わらない
 - worktree では中へ cd してから `vp install` と `vp test run` を打つ。`--root <worktree>` は依存を二重に解決し、collection が全滅する
-- `vp check` がコードを変えずに 2 回続けて結果が割れたら、上流の非決定的な発火 (oxc-project/oxc#21752) を疑う
+- `vp check` がコードを変えずに 2 回続けて結果が割れたら、上流の非決定的な発火 (`typescript/no-unnecessary-type-assertion`、oxc-project/oxc#21752) を疑う。`--threads=1` でも再現する (2026-09 時点、vite-plus 同梱の oxlint で観測)
 
 ## Storybook の skill と tools
 
