@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
+- 関連: ADR-0059 (型検査は tsgolint が担う) / ADR-0052 (Storybook の telemetry) / ADR-0006 (Vite+ が版を管理する制約)
 
 ## Context
 
@@ -89,19 +90,6 @@ runtime は Vite+ が同じ宣言から解決して持っているので 2 つ�
 | `.mise.toml` の `[tools]` を出所にする     | Vite+ は `package.json` を見続けるので二重宣言が残り、食い違いは検出も解消もされない                                               | 却下     |
 | mise に `package.json` を読ませる          | 解決するのが mise と Vite+ の 2 つになる。mise が `node` / `pnpm` を PATH へ注入し直すため、`disable_tools` で止めている衝突が戻る | 却下     |
 | 両方に宣言し、一致を整合検査で強制する     | 宣言が 2 つある状態は変わらず、検査の維持コストだけが増える                                                                        | 却下     |
-
-### 型検査は tsgolint が担い、`typescript` は依存に持たない
-
-`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsgolint と TypeScript Go ツールチェーンである (Vite+ の `docs/guide/check.md`)。
-`typescript` パッケージを直接の依存に置かなくても動く。2026-09-02 の実測では、`devDependencies` から外した状態で `vp check` が `TS2322` を報告した。
-型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で機械強制する。設定が真のまま tsgolint が黙って動かない場合は捕まえられない。
-
-実体は Vite+ 一族の推移依存として入るため install からは消えない。
-直接の依存に戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけとする。
-
-### Storybook の telemetry を切る
-
-telemetry は `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` と同じく明示で潰す側に揃える。
 
 ### mise を選ぶ理由
 

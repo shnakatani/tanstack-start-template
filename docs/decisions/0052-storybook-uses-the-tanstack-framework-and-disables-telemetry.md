@@ -1,8 +1,8 @@
-# ADR-0052: Storybook は TanStack 専用の framework で導入する
+# ADR-0052: Storybook は TanStack 専用の framework で導入し、telemetry を切る
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0053 (story を状態のカタログにする) / ADR-0005 (ツールチェーン)
+- 関連: ADR-0053 (story を状態のカタログにする) / ADR-0005 (ツールチェーン。明示で潰す既定の揃え方)
 
 ## Context
 
@@ -18,6 +18,10 @@ router を memory-backed で自動ラップし、server function を自動 stub 
 
 - TanStack Query は対象外。preview の構成へ手動で置く
 - server-only 依存は `__mocks__` で遮断する
+
+### telemetry を切る
+
+telemetry は `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` (ADR-0005) と同じく明示で潰す側に揃える。
 
 ### 検討した選択肢
 
