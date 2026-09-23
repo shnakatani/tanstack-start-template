@@ -5,7 +5,7 @@ import type { Locator } from "vite-plus/test/browser/context";
  * 要素が最初から無いことを検証する。**待たない。**
  *
  * 在る状態から消えるのを待つなら `expectRemoved` を使う。どちらも同じ matcher を呼び、
- * 違いは retry の予算だけなので、名前でどちらのつもりかを表明する (docs/guides/testing.md「否定を肯定で書く」)。
+ * 違いは retry の予算だけなので、名前でどちらのつもりかを表明する (docs/guides/testing.md「不在を 2 つの名前で書き分ける理由」)。
  *
  * 待たないのは効率のためではなく、**落ちる向きを変えるため**である。予算を渡すと
  * 「いま在る」で落ちなくなり、この assert が持つ唯一の反証条件が消える。
@@ -13,7 +13,7 @@ import type { Locator } from "vite-plus/test/browser/context";
  *
  * この matcher は要素が無ければ 1 回目の試行で通る。**単独では何も検証していない**ので、
  * 同じ操作の効果を表す肯定 assert を先に置く。retry を持たない assert が flake を招くのは
- * Playwright が公式に警告している形で、その肯定 assert が緩和にあたる (docs/guides/testing.md「否定を肯定で書く」)。
+ * Playwright が公式に警告している形で、その肯定 assert が緩和にあたる (docs/guides/testing.md「不在を 2 つの名前で書き分ける理由」)。
  */
 export async function expectAbsent(target: Locator): Promise<void> {
   // oxlint-disable-next-line browser-test/no-bare-absence-assertion -- 不在確認の実体はここ

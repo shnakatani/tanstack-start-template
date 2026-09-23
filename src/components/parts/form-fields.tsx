@@ -201,6 +201,15 @@ export function FormNumberField({ label, disabled }: FormNumberFieldProps) {
   );
 }
 
+interface FormSelectFieldProps<T extends string>
+  extends
+    Pick<ComponentProps<typeof Select>, "disabled">,
+    Pick<ComponentProps<typeof SelectValue>, "placeholder">,
+    FieldValueTypeCheckProps<T> {
+  label: string;
+  options: readonly { value: T; label: string }[];
+}
+
 /**
  * 選んでいた値が候補から消えたことを、Base UI の `onValueChange(null)` で検出しない。
  * 値の解決はこの部品が引き取り、`null` と options に無い値は表示を保ったまま warn に残す。
@@ -217,21 +226,18 @@ export function FormNumberField({ label, disabled }: FormNumberFieldProps) {
  * | 現在値が候補に無く、マウント時の値が候補にある                   | マウント時の値へ戻す。`null` は来ない |
  * | 現在値もマウント時の値も候補に無い                               | `null` で `setValue` する             |
  *
- * 通知が来ない条件があり、件数が変わらないときに何もしない分岐は 1.8.0 で撤去された
- * (CHANGELOG v1.8.0、mui/base-ui の PR 5469)。版ごとに経路が変わるので、自己リセットに任せる案は
- * 採らない。項目がいつ登録されるか (トリガーを一度もフォーカスしていない間は登録されないか) は
- * 未確認。この部品を包まずに `Select` を使うときの書き方は docs/guides/forms-and-inputs.md
- * 「Select の値を解決する」。
+ * 通知が来ない条件がある。項目の登録の変化を拾う `CompositeList` は件数に加えて要素の同一性も
+ * 比べ、件数が変わらないときに何もしない分岐は 1.8.0 で撤去された (CHANGELOG v1.8.0、
+ * mui/base-ui の PR 5469)。版ごとに経路が変わるので、自己リセットに任せる案は採らない。
+ * 項目がいつ登録されるか (トリガーを一度もフォーカスしていない間は登録されないか) は未確認。
+ * この部品を包まずに `Select` を使うときの書き方は
+ * docs/guides/forms-and-inputs.md「Select の値を解決する」。
+ *
+ * 出典: Base UI Select (https://base-ui.com/react/components/select)、CHANGELOG
+ * (https://github.com/mui/base-ui/blob/master/CHANGELOG.md)、PR 5469
+ * (https://github.com/mui/base-ui/pull/5469)、`SelectPositioner` の実装
+ * (https://github.com/mui/base-ui/blob/master/packages/react/src/select/positioner/SelectPositioner.tsx)
  */
-interface FormSelectFieldProps<T extends string>
-  extends
-    Pick<ComponentProps<typeof Select>, "disabled">,
-    Pick<ComponentProps<typeof SelectValue>, "placeholder">,
-    FieldValueTypeCheckProps<T> {
-  label: string;
-  options: readonly { value: T; label: string }[];
-}
-
 export function FormSelectField<T extends string>({
   label,
   options,

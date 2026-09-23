@@ -47,7 +47,7 @@ const EXPECTED_OVERRIDES = [
     // testing-library の同名 API と誤認して誤検出が出る。`prefer-screen-queries` を allow から
     // 戻すと Storybook の `canvas` が落ちる。`no-node-access` は allow のままにする。
     // deny へ戻しても strict 判定で発火せず、有効に見えて無検査の状態になる
-    // (`docs/guides/lint.md`「testing-library を当てる範囲」)
+    // (`docs/guides/lint.md`「testing-library を story に限る理由」)
     files: [
       "**/*.stories.ts",
       "**/*.stories.tsx",
@@ -191,7 +191,7 @@ describe("書いた設定が解決後も残っている", () => {
   it("rules に書いたルールが解決後設定に残っている", () => {
     // 無効なプラグインのルールは、ルール名が検証されるにもかかわらず解決後設定から消える。
     // 消えること自体が信号になるので、書いた側との差で名指し単位の取りこぼしを検出する。
-    // jsPlugin のルールは有効でも出力に現れないため対象から外す (oxc#22117、ADR-0007)
+    // jsPlugin のルールは有効でも出力に現れないため対象から外す (`docs/guides/lint.md`「JS plugin の落とし穴」)
     const jsPluginNames = (printedConfig.jsPlugins ?? []).map((plugin) => plugin.name);
     const written = Object.keys(viteConfig.lint?.rules ?? {}).filter(
       (rule) => !jsPluginNames.some((name) => rule.startsWith(`${name}/`)),
@@ -201,7 +201,7 @@ describe("書いた設定が解決後も残っている", () => {
     }
     const printed = new Set(Object.keys(printedConfig.rules));
     const missing = written.filter((rule) => {
-      // extension rule は typescript/ で書いてもコアルールの名前へ解決される (`docs/guides/lint.md`「plugins は既定集合を置換する」)
+      // extension rule は typescript/ で書いてもコアルールの名前へ解決される (`docs/guides/lint.md`「設定を書き換えたら解決後の設定で確かめる」)
       const core = rule.startsWith("typescript/") ? rule.slice("typescript/".length) : rule;
       return !printed.has(rule) && !printed.has(core);
     });

@@ -53,13 +53,6 @@ Compiler はコンポーネントか hook として認識した関数しか最�
 
 `async` 関数をイベントハンドラとして prop へ直接渡すと `typescript/no-misused-promises` が鳴る。直し方は次の形になる。理由と却下した書き方は「ハンドラを同期関数にする理由」が持つ。
 
-```tsx
-function handleSignOut() {
-  void performSignOut();
-}
-<DropdownMenuItem onClick={handleSignOut}>
-```
-
 - ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `async` 関数や `void` 式を直接書かない
 - 待たない判断は内側で 1 回だけ書く。呼び先が失敗を自分で通知するなら `void`、呼び出し側で通知や後始末をするなら `.catch()` を付ける
 - 実例は `src/components/screens/route-error.tsx` の `handleRetry`

@@ -23,23 +23,14 @@
 
 ### 待機を retry API に委ねる理由
 
-`src/components/ui/input-group.test.tsx` の combobox popup のテストが、full run でのみ落ちることがあった。失敗時の DOM には trigger しか無く、`aria-expanded="false"` だった。click は完了しているが、React の再レンダーと base-ui の Portal の mount が終わっていない瞬間に、popup 内の要素を取りに行っていた。
+操作の直後に popup の中の要素を同期で取りに行くと、click は完了していても React の再レンダーと base-ui の Portal の mount が終わっていないことがある。失敗は full run のような負荷の高い実行でだけ出て、単独実行では通る。待ったつもりの手段が待っていないのが原因になる。
 
-```tsx
-await screen.getByRole("combobox", { name: "開く" }).click();
-await waitForAnimations();
+| API                                       | 実際の挙動                                                                                                           |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `getAnimations({ subtree: true })` を待つ | 呼んだ時点の animation だけを待つ。popup が未 mount なら空配列で即解決する                                           |
+| `Locator.element()`                       | retry しない。`@vitest/browser` の `context.d.ts` が「If no elements match the selector, an error is thrown.」と書く |
 
-const input = screen.getByRole("combobox", { name: "検索" });
-const inputGroup = findInputGroup(input.element());
-```
-
-| 使っていた API        | 実際の挙動                                                                                                           |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `waitForAnimations()` | 呼んだ時点の `getAnimations({ subtree: true })` だけを待つ。popup が未 mount なら空配列で即解決する                  |
-| `Locator.element()`   | retry しない。`@vitest/browser` の `context.d.ts` が「If no elements match the selector, an error is thrown.」と書く |
-
-- 同じ形は `dialog.test.tsx` / `alert-dialog.test.tsx` / `dialog-scroll-body.test.tsx` にもあった。落ちたのが combobox だけだったのは確率の差である
-- 操作の直後に `element().getAttribute(...)` を同期で読む形も見つかった。要素は操作前から在るので `element()` は成功するが、読む値が更新前になりうる。`src/components/ui/sidebar.test.tsx` の `expect(trigger.getAttribute("aria-expanded")).toBe("true")` は `userEvent.keyboard("{Enter}")` の直後にあった
+- 要素が操作前から在る場合も同じで、操作の直後に `element().getAttribute(...)` を同期で読むと `element()` は成功するが、読む値が更新前になりうる
 - この規範はブラウザテストにだけ効く。unit project は DOM を持たず、`render` も locator も無い
 
 | 案                                            | 評価                                                                                                                                                      | 採否     |
@@ -74,8 +65,15 @@ const inputGroup = findInputGroup(input.element());
 
 合成イベントを要求する場面は無い (2026-09-22 実測)。理由に挙がる 2 つはどちらも合成イベントを要求しない。
 
-- inert バックドロップが pointer event を横取りする件は再現しない。Dialog / AlertDialog の中のボタンを押す 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`note-create-dialog.test.tsx` の `clickSave` とキャンセル) は `locator.click()` で全件通る。registry の AlertDialog の最小構成でも、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通る
-- `aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトする 2 箇所は、対象に `pointer-events: none` が当たっているかで解が分かれる。`src/components/parts/choice-card.test.tsx` の対象には当たっておらず、`Checkbox` への `disabled` の転送を落とす mutant で測ると `.click()` は false red、`.click({ force: true })` は 41ms で緑になり mutant で赤になる。`segmented-radio-group.test.tsx` の対象には当たっており、クリックが届かないことを `pointer-events` の assert (`expected 'auto' to be 'none'` を 97ms で捕まえる) と `aria-disabled` の assert で見る
+- inert バックドロップが pointer event を横取りする件は再現しない。Dialog / AlertDialog の中のボタンを押す 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) は `locator.click()` で全件通る。registry の AlertDialog の最小構成でも、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通る
+- `aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトする 2 箇所は、対象に `pointer-events: none` が当たっているかで解が分かれる。`src/components/parts/choice-card.test.tsx` の対象には当たっておらず、`Checkbox` への `disabled` の転送を落とす mutant で測ると `.click()` は false red、`.click({ force: true })` は 41ms で緑になり mutant で赤になる。`src/components/parts/segmented-radio-group.test.tsx` の対象には当たっており、クリックが届かないことを `pointer-events` の assert (`expected 'auto' to be 'none'` を 97ms で捕まえる) と `aria-disabled` の assert で見る
+- `pointer-events: none` の対象を click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った (2026-09-22)。`force` が飛ばすのは actionability の検査で、ブラウザのヒットテストは残るので、`force` のイベントは対象へ届かず下の要素へ落ちる
+
+| 経路                             | 対象のハンドラ | 下の器のハンドラ  |
+| -------------------------------- | -------------- | ----------------- |
+| `.click({ force: true })`        | 0 回           | 1 回              |
+| 合成 click を対象へ直接 dispatch | 1 回           | 1 回 (バブリング) |
+
 - vitest の `Locator` (`@vitest/browser` 4.1.11) に `dispatchEvent` は無い。Playwright の `locator.dispatchEvent()` を届かせる公式経路はカスタムコマンド (`BrowserCommand`) だけである。vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)
 
 合成 click の helper を `src/test/` に置くと、テンプレートを複製した利用者全員へ配られる。使いうる消費者は 2 つとも sample の部品で、sample を消すと消費者ゼロの helper だけが残る。
@@ -123,17 +121,16 @@ const inputGroup = findInputGroup(input.element());
 - 予算の差は、落ちる向きの差である。`expectAbsent` は「いま在る」で落ちる。予算を渡すとその向きに落ちなくなり、この assert が持つ唯一の反証条件が消える。`expectRemoved` はもともとその向きに落ちない。2 つを 1 本へ畳むと `expectAbsent` の検出力が消える
 - この差は `src/test/absent.test.tsx` が両方向のミューテーションで固定している (2026-09-22 実測)。`expectRemoved` から予算を奪うと「unmount が操作より後ろでも通る」が落ち、`expectAbsent` に予算を与えると「要素が在れば落ちる」の所要時間の閾値が落ちる (外すと同じ assert が 4 秒以上かけて落ちる)
 - 既存のテストで緑が割れないことは、差が無いことを意味しない。`expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、animation が毎テスト止まるので、assert の行では unmount が済んでいる。予算が効くのは `enableAnimations()` を呼んだテストと、flush を伴わない経路で消える場合である
-- 名前を分けたのは、取り違えが実際に起きたためでもある。`src/routes/notes/-components/note-cells.test.tsx` の 4 件は「最初から無い」を素の形で書いており、レビューが見つけて `1d987d5` で直した
 - `@testing-library/dom` の `waitForElementToBeRemoved` は、要素が最初から無いと throw して取り違えをランタイムで止める。この保証は移植できない。公式 API は操作の前に捕まえた要素を受け取る設計で、操作の後に assert を書く形では正当な消滅待ちでも `already removed` で落ちる (2026-09-22 に両方の向きで実測)
 
-| 案                                                                            | 評価                                                                                                                                                                                                           | 採否     |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 期待値がリテラルの否定をやめて肯定形へ移し、不在は 2 つの helper で書き分ける | 経路 2-3 は「期待値の綴りで否定が真になる」に還元できる。経路 1 と `toHaveLength` は期待値を取らないので、`expectAbsent` と肯定 anchor が持つ                                                                  | **採用** |
-| 否定 assert には触れない                                                      | `.not.toBeInTheDocument()` の赤が予算を使い切る。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                                       | 却下     |
-| `not.toHaveStyle` だけを止める                                                | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                                                       | 却下     |
-| 否定 matcher を全面禁止する                                                   | 観測どうしの比較 10 件が書けなくなる。綴りで潰れない形まで巻き込む                                                                                                                                             | 却下     |
-| `waitForElementToBeRemoved` を使う                                            | 捕まえた要素の identity と「論理的に在る」が一致しない。React の再調停でノードが差し替わると、捕まえた側だけが detach して素通りする。`notes-page.test.tsx` の楽観行が実データ行へ置き換わる経路がこれに当たる | 却下     |
-| `toHaveStyle` をオブジェクト形式で書く                                        | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない                                                                                                   | 却下     |
+| 案                                                                            | 評価                                                                                                                                                                                                                                        | 採否     |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 期待値がリテラルの否定をやめて肯定形へ移し、不在は 2 つの helper で書き分ける | 経路 2-3 は「期待値の綴りで否定が真になる」に還元できる。経路 1 と `toHaveLength` は期待値を取らないので、`expectAbsent` と肯定 anchor が持つ                                                                                               | **採用** |
+| 否定 assert には触れない                                                      | `.not.toBeInTheDocument()` の赤が予算を使い切る。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                                                                    | 却下     |
+| `not.toHaveStyle` だけを止める                                                | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                                                                                    | 却下     |
+| 否定 matcher を全面禁止する                                                   | 観測どうしの比較 10 件が書けなくなる。綴りで潰れない形まで巻き込む                                                                                                                                                                          | 却下     |
+| `waitForElementToBeRemoved` を使う                                            | 捕まえた要素の identity と「論理的に在る」が一致しない。React の再調停でノードが差し替わると、捕まえた側だけが detach して素通りする。`src/routes/notes/-components/notes-page.test.tsx` の楽観行が実データ行へ置き換わる経路がこれに当たる | 却下     |
+| `toHaveStyle` をオブジェクト形式で書く                                        | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない                                                                                                                                | 却下     |
 
 失敗時の文言は次のとおり (2026-09-22)。
 
@@ -396,7 +393,7 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 - pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
 - announcer の region は `src/test/browser-setup.tsx` が毎テスト描く。文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
-- 同じ通知の経路を 2 つのテストで見ない。`/notes` では、ページのテスト (`-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`index.test.tsx`) が Enter と戻るを見る
+- 同じ通知の経路を 2 つのテストで見ない。`/notes` では、ページのテスト (`src/routes/notes/-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`src/routes/notes/index.test.tsx`) が Enter と戻るを見る
 
 ### viewport に収まることを測る
 
@@ -409,3 +406,49 @@ popup の全体が viewport に収まることは、`src/test/viewport.ts` の `
 - 呼び出し側は先に mount を待たなくてよい。helper 自身が poll し、要素が無ければ `element()` の throw (`Cannot find element with locator: …`) がそのまま失敗文になる
 - 一部が見えていること (`ratio` 0) は、公式の `toBeInViewport()` のまま使う。End キーで最下部へ届くことの検証は公式の matcher で足りる
 - `max-height` を `toHaveStyle` で見る形は採らない。Tailwind の class を写す同語反復で、収まるかどうかは内容の高さと viewport で決まる
+
+## 出典
+
+explanation と how-to が拠る一次情報。
+
+- 同梱の `@vitest/browser` 4.1.11 の `context.d.ts` (同期読み 4 メソッドと `findElement` の docstring) と `matchers.d.ts` (`expect.element` が受ける型の docstring)
+- `@testing-library/dom` の `waitForElementToBeRemoved` (要素が最初から無いと throw する): <https://testing-library.com/docs/dom-testing-library/api-async/>
+- axe-core issue #4832: https://github.com/dequelabs/axe-core/issues/4832
+- Base UI `Button.test.tsx`: https://github.com/mui/base-ui/blob/master/packages/react/src/button/Button.test.tsx
+- Base UI `test/setupVitest.ts`: https://github.com/mui/base-ui/blob/master/test/setupVitest.ts
+- Base UI Handbook「Animation」: https://base-ui.com/react/handbook/animation
+- Base UI issue #5519: https://github.com/mui/base-ui/issues/5519
+- Base UI PR #5537: https://github.com/mui/base-ui/pull/5537
+- Chrome DevTools Protocol `Emulation.setEmulatedMedia`: <https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setEmulatedMedia>
+- Cypress の Assertions「Negative assertions」(否定 assert は意図しない理由で通るので肯定 assert と組にする): <https://docs.cypress.io/app/references/assertions>
+- Cypress の retry-ability (`cy.get(..., { timeout: 0 }).should('not.exist')` を「check synchronously that the element does not exist (no retry)」の形として載せる。`expectAbsent` と同じ形): <https://docs.cypress.io/app/core-concepts/retry-ability>
+- HTML Standard「clean up after running script」: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
+- HTML Standard「fire a synthetic pointer event」: https://html.spec.whatwg.org/multipage/webappapis.html#fire-a-synthetic-pointer-event
+- jest-dom の `toHaveStyle`: <https://github.com/testing-library/jest-dom#tohavestyle>
+- MDN `Animation.finished` (待つ側の形): <https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished>
+- MDN `Event.cancelable`: https://developer.mozilla.org/en-US/docs/Web/API/Event/cancelable
+- Playwright の Assertions (「non-retrying assertions ... can lead to a flaky test」。`expectAbsent` の `{ timeout: 0 }` が該当し、肯定 anchor が緩和にあたる): <https://playwright.dev/docs/test-assertions>
+- Playwright の Test timeouts (assertion timeout を test timeout と分ける): <https://playwright.dev/docs/test-timeouts>
+- Playwright `BrowserContextOptions.reducedMotion` (`prefers-reduced-motion` のエミュレーション): <https://playwright.dev/docs/api/class-browser#browser-new-context>
+- Playwright `locator.dispatchEvent()`: https://playwright.dev/docs/api/class-locator#locator-dispatch-event
+- Playwright Actionability (`force` が飛ばす判定、Enabled / Receives Events の定義): https://playwright.dev/docs/actionability
+- Playwright Actions「Programmatic click」: https://playwright.dev/docs/input#programmatic-click
+- Playwright screenshot の `animations` オプション (観測の前に止める側の先行例): <https://playwright.dev/docs/api/class-page#page-screenshot>
+- React Aria Components `Button.test.js`: https://github.com/adobe/react-spectrum/blob/main/packages/react-aria-components/test/Button.test.js
+- reactwg/react-18 #21 Automatic batching for fewer renders in React 18: https://github.com/reactwg/react-18/discussions/21
+- scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」: https://github.com/scirexs/svseeds-ui/blob/main/.ws/knowledge/vitest-browser-userevent-skips-aria-disabled.md
+- testing-library `event-map.js`: https://github.com/testing-library/dom-testing-library/blob/main/src/event-map.js
+- vitest browser の assertion API: <https://vitest.dev/guide/browser/assertion-api>
+- vitest browser の locator: <https://vitest.dev/guide/browser/locators>
+- vitest Commands (カスタムコマンドから Playwright の `page` / `frame` を使う): https://vitest.dev/guide/browser/commands
+- vitest Interactivity API (CDP / webdriver でイベントを偽装しない): https://vitest.dev/guide/browser/interactivity-api
+- vitest Locators: https://vitest.dev/api/browser/locators
+- vitest-dev/vitest #5770 Interactivity API for Browser Mode: https://github.com/vitest-dev/vitest/issues/5770
+- vitest-dev/vitest#6983 / PR #6984 (`actionTimeout` の導入と、`expect.poll.timeout` が `expect.element` の口だというメンテナ回答): <https://github.com/vitest-dev/vitest/issues/6983>
+- vitest-dev/vitest#7871 (action の timeout がテストの残り予算で縮む): <https://github.com/vitest-dev/vitest/issues/7871>
+- vitest-dev/vitest#8308 (OPEN。`expect.poll.timeout` が `expect.element` に効かない): <https://github.com/vitest-dev/vitest/issues/8308>
+- vitest-dev/vitest#9157 (`testTimeout` の既定が docs と食い違う可能性): <https://github.com/vitest-dev/vitest/issues/9157>
+- vitest-dev/vitest#9751 (OPEN。timeout 設定の集約): <https://github.com/vitest-dev/vitest/issues/9751>
+- vitest「Playwright」(contextOptions): https://vitest.dev/config/browser/playwright
+- vitest「retry」: https://vitest.dev/config/retry
+- vitest「TestCase」(diagnostic): https://vitest.dev/api/advanced/test-case

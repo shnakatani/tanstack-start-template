@@ -72,7 +72,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 - `@tanstack/react-pacer` 0.23.0 の `useDebouncedValue` は `useState` の setter をそのまま、依存する `@tanstack/pacer` 0.22.0 の `Debouncer` (`setTimeout`) に渡し、`startTransition` を通さない (`react-pacer` の `dist/debouncer/useDebouncedState.js`、`pacer` の `dist/debouncer.js`。どちらにも `startTransition` の参照は無い)
 - そのため debounce 後の値でそのまま `useSuspenseQuery` を呼ぶと、緊急更新の中で Suspend し、Suspense が古い一覧を `display: none` で隠す。Suspense モードで queryKey を変えるなら更新を Transition に包む (TanStack Query の Suspense ガイド「wrap your updates that change the QueryKey into startTransition」)
 - `src/routes/notes/-components/notes-page.test.tsx`「打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残す」は古い行を `toBeVisible` で見て、この欠落を落とす (`toBeInTheDocument` では隠れた木も通る)
-- `@tanstack/react-pacer` は beta で API が変わりうる (Pacer の overview「TanStack Pacer is currently in beta and its API is still subject to change」)。利用箇所は `NotesPage` の `useDebouncedValue` 1 つに閉じる。追従できない変更が来たら `use-debounce` の `useDebounce(value, wait)` に差し替え、`useDeferredValue` の段は残す
+- `@tanstack/react-pacer` は beta で API が変わりうる (Pacer の overview「TanStack Pacer is currently in beta and its API is still subject to change」)。利用箇所は `NotesPage` の `useDebouncedValue` 1 つに閉じる
 
 ### 入力欄を URL の編集として持つ理由
 
@@ -86,11 +86,11 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 | 案                                                                              | 評価                                                                                                          | 採否     |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
 | 編集を世代で紐付け、編集ごと debounce → `useDeferredValue` → `useSuspenseQuery` | URL の変化で編集も debounce 済みの値も無効になり、要素を作り直さない                                          | **採用** |
-| 編集を `{ base: q, text }` で持ち、`base === q` で有効性を見る                  | 履歴が同じ値へ戻ると確定済みの編集が復活する (2026-09-23 のレビューで指摘)                                    | 却下     |
+| 編集を `{ base: q, text }` で持ち、`base === q` で有効性を見る                  | 履歴が同じ値へ戻ると確定済みの編集が復活する                                                                  | 却下     |
 | 文字列を debounce し「入力欄が URL と同じなら待たない」特例を置く               | 確定や戻るの後に debounce 済みの古い文字列が第 3 の条件を描く。特例はその一部しか隠さない                     | 却下     |
 | `useQuery` + `placeholderData: keepPreviousData`                                | 古いデータを残せるが、`useSuspenseQuery` + `pendingComponent` の形から外れ、ページに `isPending` 分岐が戻る   | 却下     |
 | debounce を `useEffect` + `setTimeout` で手組みする                             | effect 内の setState を lint が止める (`react/set-state-in-effect`)。Pacer と `use-debounce` が公式の形を持つ | 却下     |
-| `use-debounce`                                                                  | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる。Pacer の撤退先として残す                  | 保留     |
+| `use-debounce`                                                                  | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる                                            | 保留     |
 
 `key={q}` でページを作り直す案は ADR-0027 が却下している。
 

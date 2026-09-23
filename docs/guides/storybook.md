@@ -2,9 +2,12 @@
 
 story を書くとき、play を書くとき、Storybook の agent 向けツールを使うときの手順と、その形にしている理由を持つ。
 
-| 決定                                                                                                   | ADR      |
-| ------------------------------------------------------------------------------------------------------ | -------- |
-| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0028 |
+| 決定                                                                                                               | ADR      |
+| ------------------------------------------------------------------------------------------------------------------ | -------- |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                                                                  | ADR-0004 |
+| registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0020 |
+| design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る                          | ADR-0022 |
+| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす             | ADR-0028 |
 
 ## how-to
 
@@ -53,7 +56,7 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 
 ### play を書く
 
-- play の操作は `storybook/test` の合成イベントで書く。play は Storybook の UI 上でも走るので CDP を使えない。実イベントでの発火の規律 (`docs/guides/testing.md`) はブラウザテスト側が持ち、play へは移さない (「story とブラウザテストの分担」)
+- play の操作は `storybook/test` の合成イベントで書く。play は Storybook の UI 上でも走るので CDP を使えない。実イベントでの発火の規律 (`docs/guides/testing.md`「クリックを発火する」「合成イベントが実物からずれる理由」) はブラウザテスト側が持ち、play へは移さない (「story とブラウザテストの分担」)
 - 同期の 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである
 - 待機は `storybook/test` の `waitFor` で書く。ブラウザテストの retry API (`docs/guides/testing.md`「待つ口を選ぶ」) は play から呼べない
 - popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (`docs/guides/testing.md`「animation を無効にして走らせる理由」)
@@ -100,7 +103,7 @@ telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既�
 
 ### story を状態のカタログにする理由
 
-部品の状態 (variant / tone / disabled) を並べて見る場所が無く、確認手段はアプリの画面を開くことだけだった。story をその場所にし、振る舞いの検証は play を書く部品に限る。
+story は部品の状態 (variant / tone / disabled) を、アプリの画面を開かずに並べて見る場所である。振る舞いの検証は play を書く部品に限る。
 
 | 案                                                       | 評価                                                                                                      | 採否     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------- |
@@ -123,7 +126,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 | story                | どんな状態があるか。目で見るカタログ                   |
 | 既存のブラウザテスト | その状態が壊れていないか。寸法と色を固定する回帰の防止 |
 
-- 役割が違うため両方残す。待機・実イベント・animation 無効化の規律 (`docs/guides/testing.md`) は既存のテストが持ち続ける
+- 役割が違うため両方残す。待機・実イベント・animation 無効化の規律 (`docs/guides/testing.md`「待つ口を選ぶ」「クリックを発火する」「animation を無効にして走らせる理由」) は既存のテストが持ち続ける
 - 移せないのはレイアウトと配色の実測、型契約、CDP 経由の実イベントの 3 つである。`src/components/ui/` の既存テスト 26 case のうち 25 case がこれに当たる (2026-09-20 実測)
 - 画面のテストは Action 層の guard を代替しない。`confirmDelete` は `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の時点で `isPending` は false になる。`disabled={isPending}` を外しても browser project は 1 件も落ちない (2026-09-20 実測)。経路が薄いラッパーを通ることは、その guard を通ることを意味しない
 - 検証が一部 CDP の実イベントから合成イベントへ移り、backdrop の遮りを含む pointer の忠実さは下がる。一方イベント間に描画が挟まる点は既存のブラウザテストと同じ性質になる
@@ -147,7 +150,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 
 `layout` パラメータを当てるのは `WebView.prepareForStory` で (`storybook/dist/preview/runtime.js` の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
 
-- この差は `.storybook/preview.css` が埋める。Storybook の UI では body へ `sb-main-*` が付くので、付いていないときだけ同じ `1rem` を当てる
+- この差は `.storybook/preview.css` の `body:not(.sb-show-main)` が埋める。Storybook の UI では body へ `sb-show-main` が付くので、付いていないときだけ同じ `1rem` を当てる。`sb-main-*` で見ないのは、`layout: "none"` の story が UI 側でも `sb-main-*` を持たないため (理由は同ファイルのコメント)
 - 埋めないと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、そのはみ出しが背景を持つ唯一の箱 (body) の外へ出て axe が色を測れなくなる。`html` は背景を持たないので受け止められない
 
 ### CLI を使い、MCP を入れない理由

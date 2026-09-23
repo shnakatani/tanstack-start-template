@@ -37,7 +37,7 @@
 
 ### Select の値を解決する
 
-選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない。Base UI の自己リセットは公式 docs に無い挙動で、通知が来ない条件があり、版で経路が変わる。値の解決は消費側で引き取り、次の形にする。実例と、通知が来る条件の読み取りは `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
+選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない。値の解決は消費側で引き取り、次の形にする。理由は「Select の値を消費側で解決する理由」にある。実例と、通知が来る条件の読み取りは `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
 
 | 受けたもの                | 扱い                                                       | 守らないと                                                                                             |
 | ------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -109,15 +109,15 @@ placeholder を足すときは、次の 2 つを確かめる (ADR-0025)。
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------- |
 | 使わない `fieldValue` prop で値型を突き合わせる | 消費側の 1 prop で、`name` 由来の型と部品の型が衝突すれば型エラーになる。discussion 1240 の採用回答と同じ形 | **採用** |
 | `useFieldContext<T>()` の宣言に任せる           | 宣言が実フィールドと結び付かない (discussion 1240)                                                          | 却下     |
-| 上流の値型を突き合わせる API を待つ             | stable の公開型に無い (下の表)                                                                              | 見送り   |
+| 上流の値型を突き合わせる API を待つ             | stable (1.33.5) の公開型に無い (2026-09-23、`npm pack` で取得して確認)                                      | 見送り   |
 
-上流の公開型の状況 (2026-09-23 時点、`npm pack` で取得して確認):
+- 出典: TanStack/form discussion 1240 (https://github.com/TanStack/form/discussions/1240)、Form Composition (https://tanstack.com/form/latest/docs/framework/react/guides/form-composition)
 
-| 版                       | 公開型の状況                                                                                                                                                                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1.33.5 (`latest`)        | 値型を突き合わせる API は無い。`dist/esm/createFormHook.d.ts` は `fieldComponents` を `Record<string, ComponentType<any>>` で受ける                                                                                                                     |
-| 2.0.0-alpha.2 (`alpha`)  | `getFormHookHelpers()` の `fieldComponent.strict` / `loose` と `fieldBrand` が `dist/AppForm/getFormHookHelpers.public.d.ts` に公開されている。`FieldWithValue<T>` の prop を持つ部品を包み、値型の一致を型で要求すると JSDoc が書く (型の挙動は未実測) |
-| 2.0.0-alpha.2 (`alpha`)  | 同名の `createFieldComponent` は `dist/ReactForm/Components.lib.js` の内部 factory で、`.d.ts` には出ない                                                                                                                                               |
-| TanStack/form の PR 1606 | 「Allow restricting field component to field value」。draft のまま 2025-11-03 から更新が無い                                                                                                                                                            |
+### Select の値を消費側で解決する理由
 
-- 出典: TanStack/form discussion 1240 (https://github.com/TanStack/form/discussions/1240)、PR 1606 (https://github.com/TanStack/form/pull/1606)、Form Composition (https://tanstack.com/form/latest/docs/framework/react/guides/form-composition)
+Base UI の `Select` は、候補が変わって現在値が候補から消えたとき、自分で値を戻して `onValueChange` を呼ぶことがある。この自己リセットは公式 docs に無い挙動で、通知が来ない条件があり、版で経路が変わる。条件の読み取りと版は `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
+
+| 案                                             | 評価                                                             | 採否     |
+| ---------------------------------------------- | ---------------------------------------------------------------- | -------- |
+| 消費側で値を解決し、Base UI の通知は警告に使う | 通知の有無に依らず form の値が決まる                             | **採用** |
+| Base UI の自己リセットに任せる                 | 公式 docs に無い挙動で、通知されない条件があり、版で経路が変わる | 却下     |

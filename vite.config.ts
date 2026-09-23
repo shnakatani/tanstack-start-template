@@ -301,7 +301,7 @@ export default defineConfig({
         // upstream recommended (flat/react) は `vitest-browser-react` も Storybook も前提に
         // しておらず、基準をそのまま写せない唯一のプラグインになる。基準から外すのが
         // `prefer-screen-queries` と `no-node-access`、severity を上げるのが `no-debugging-utils`
-        // である。件数は下の rules と `docs/guides/lint.md`「testing-library を当てる範囲」 の表が持つ
+        // である。件数は下の rules と `docs/guides/lint.md`「testing-library を story に限る理由」 の表が持つ
         // 拡張子は companion-files.ts が唯一の定義。`.stories.ts` を置いても外れない
         files: storyGlobs("**/"),
         rules: {
@@ -314,7 +314,7 @@ export default defineConfig({
           "testing-library/no-container": "error",
           // 上流は warn。`vp check` は warn で落ちないため、warn のままだと commit された
           // screen.debug() が素通りする。この config の方針 (categories の直前のコメント) に
-          // 合わせて error で入れる (`docs/guides/lint.md`「testing-library を当てる範囲」)
+          // 合わせて error で入れる (`docs/guides/lint.md`「testing-library を story に限る理由」)
           "testing-library/no-debugging-utils": "error",
           "testing-library/no-dom-import": ["error", "react"],
           "testing-library/no-global-regexp-flag-in-query": "error",
@@ -323,7 +323,7 @@ export default defineConfig({
           // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
           // 発火しない。`settings` に utils-module を足せば発火するが、その形は
           // querySelector を条件付きで許しているテストの規範と両立しない
-          // (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる。`docs/guides/lint.md`「testing-library を当てる範囲」)
+          // (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる。`docs/guides/lint.md`「testing-library を story に限る理由」)
           "testing-library/no-node-access": "off",
           "testing-library/no-promise-in-fire-event": "error",
           "testing-library/no-render-in-lifecycle": "error",

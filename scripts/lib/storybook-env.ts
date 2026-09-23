@@ -7,9 +7,7 @@
  * `Project name ... is not unique` で止まる。上流は storybookjs/storybook の issue 32427 で、
  * 同じ light / dark 構成の報告が付いている。真のときは light の 1 つに絞る (ADR-0028)。
  *
- * post 順の config フックで名前を戻す手は効かない。addon の上書きは `order: "pre"` で入り、
- * post 順では戻せなかった (2026-09-21 実測)。同じ手が `cacheDir` には効くので、次に触る人が
- * 同じ実験をやり直さないよう書いておく。
+ * config フックで名前を戻す手が効かないことは `vitest.storybook.config.ts` の docstring にある。
  */
 export function isStorybookRun(value: string | undefined): boolean {
   // 読み方を addon へ揃える。addon は `optionalEnvToBoolean` で読み、`"false"` と `"0"` と

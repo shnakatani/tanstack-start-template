@@ -1,8 +1,8 @@
 import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plus/lint/plugins";
 
 /**
- * ブラウザテストの assert を守る oxlint の JS plugin。ルールごとに決定が別の ADR にあり、
- * どれがどの ADR かは各ルールの `meta.docs.description` が持つ。一覧は下の `definePlugin`。
+ * ブラウザテストの assert を守る oxlint の JS plugin。ルールで止める決定は ADR-0009 が 4 ルールぶん
+ * まとめて持ち、各ルールが止める規範の説明は診断メッセージが指すガイドの節にある。一覧は下の `definePlugin`。
  *
  * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
  * 適用先 glob の決め方は ADR-0009 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
