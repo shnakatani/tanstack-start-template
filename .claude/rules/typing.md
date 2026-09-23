@@ -43,8 +43,7 @@ lint (`typescript/consistent-type-assertions`) が止める。`as const` は可�
 
 ## fieldComponents の部品は値型突き合わせ用の prop を持たせる
 
-- 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。型は `FieldValueTypeCheckProps<T>` (`form-fields.tsx`) を extends する (ADR-0029)
-- `useFieldContext<T>()` の `T` は実フィールドと結び付かず、値型の違う部品を差しても通る。`fieldValue` が唯一の突き合わせ経路 (ADR-0029)
+- 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。型は `FieldValueTypeCheckProps<T>` (`form-fields.tsx`) を extends する (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」)
+- `useFieldContext<T>()` の `T` は実フィールドと結び付かず、値型の違う部品を差しても通る。`fieldValue` が唯一の突き合わせ経路 (`docs/guides/forms-and-inputs.md`「`fieldValue` で値型を突き合わせる理由」)
 - prop 名は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」)
 - `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をしない (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」)
-- 撤去の条件は ADR-0029。判定は公開型 (`.d.ts`) に出るかで行い、名前の一致では行わない

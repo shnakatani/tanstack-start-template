@@ -6,8 +6,6 @@
 | ------------------------------------------------------------------- | -------- |
 | ドメイン型は valibot スキーマから導出する                           | ADR-0018 |
 | 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる | ADR-0028 |
-| fieldComponents の部品は値型を突き合わせる `fieldValue` prop を持つ | ADR-0029 |
-| Select の値の解決は消費側が持ち、Base UI の自己リセットに依存しない | ADR-0030 |
 | placeholder には例示だけを置き、色を専用トークンへ切る              | ADR-0034 |
 
 ## how-to
@@ -30,15 +28,16 @@
 
 ### `fieldComponents` の部品を書く
 
-ADR-0029 に沿って、部品ごとに次を守る。実例は `src/components/parts/form-fields.tsx`。
+`createFormHook` の `fieldComponents` に登録する部品は、部品の中では使わない `fieldValue` prop を持ち、消費側が `fieldValue={field.state.value}` を渡す。理由は「`fieldValue` で値型を突き合わせる理由」にある。部品ごとに次を守る。実例は `src/components/parts/form-fields.tsx`。
 
-- 部品は `FieldValueTypeCheckProps<T>` を extends する
+- 部品は `FieldValueTypeCheckProps<T>` を extends する。守らないと、値型の違うフィールドへ差しても型検査が通り、実行時に値の型が崩れる
+- 消費側は部品を使うたびに `fieldValue={field.state.value}` を書く。必須 prop なので、書き忘れは型検査が止める
 - prop の名前は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる
 - `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。prop が外れても誰も気付かないためで、この型テストを落とすのは `vp check` の type-aware lint である。`vp test run` は型検査をしない
 
 ### Select の値を解決する
 
-選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない (ADR-0030)。値の解決は消費側で引き取り、次の形にする。実例は `src/components/parts/form-fields.tsx` の `FormSelectField`。
+選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない。Base UI の自己リセットは公式 docs に無い挙動で、通知が来ない条件があり、版で経路が変わる。値の解決は消費側で引き取り、次の形にする。実例と、通知が来る条件の読み取りは `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
 
 | 受けたもの                | 扱い                                                       | 守らないと                                                                                             |
 | ------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -47,7 +46,6 @@ ADR-0029 に沿って、部品ごとに次を守る。実例は `src/components/
 | 候補から消えた値          | 保持するか再選択を促すかを消費側で決める                   | 通知が来ない条件 (未登録、`null`、マウント時の値へ戻る) で、解決できない値がトリガーに内部値のまま残る |
 
 - `FormSelectField` を包まずに `Select` を使う箇所は、同じ引き取りを自分で書く
-- Base UI を更新したら、`SelectPositioner` の `onMapChange` と CHANGELOG の Select の項を見直し、この表を実物に合わせる
 
 ### 高さのあるダイアログを組む
 
@@ -101,3 +99,25 @@ placeholder を足すときは、次の 2 つを確かめる (ADR-0034)。
 
 - Outside scroll を採らないのは、見出しと X ボタンが流れるためである。backstop が効いたとき (組み忘れたとき) と同じ見え方を、正規の形にすることになる
 - shadcn の例のように本文を `max-h-[50vh]` で打ち切らないのは、打ち切りの値が viewport と Dialog の余白に追随せず、ダイアログごとに値を持つことになるためである
+
+### `fieldValue` で値型を突き合わせる理由
+
+`fieldComponents` に登録した部品は `useFieldContext<T>()` でフィールドを読む。`T` は部品側の宣言にすぎず、実際にどのフィールドへ差されたかとは結び付かない。number のフィールドに文字列の部品を差しても型検査は通る。TanStack/form の discussion 1240 が同じ事象を挙げ、pre-bound の field component は型安全でないと報告している (2025-03-07 起票)。
+消費側で `name` から型付けされるのは `field.state.value` だけで、部品へ値の型を知らせる経路はこの値を props で受けるしかない。
+
+| 案                                              | 評価                                                                                                        | 採否     |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------- |
+| 使わない `fieldValue` prop で値型を突き合わせる | 消費側の 1 prop で、`name` 由来の型と部品の型が衝突すれば型エラーになる。discussion 1240 の採用回答と同じ形 | **採用** |
+| `useFieldContext<T>()` の宣言に任せる           | 宣言が実フィールドと結び付かない (discussion 1240)                                                          | 却下     |
+| 上流の値型を突き合わせる API を待つ             | stable の公開型に無い (下の表)                                                                              | 見送り   |
+
+上流の公開型の状況 (2026-09-23 時点、`npm pack` で取得して確認):
+
+| 版                       | 公開型の状況                                                                                                                                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.33.5 (`latest`)        | 値型を突き合わせる API は無い。`dist/esm/createFormHook.d.ts` は `fieldComponents` を `Record<string, ComponentType<any>>` で受ける                                                                                                                     |
+| 2.0.0-alpha.2 (`alpha`)  | `getFormHookHelpers()` の `fieldComponent.strict` / `loose` と `fieldBrand` が `dist/AppForm/getFormHookHelpers.public.d.ts` に公開されている。`FieldWithValue<T>` の prop を持つ部品を包み、値型の一致を型で要求すると JSDoc が書く (型の挙動は未実測) |
+| 2.0.0-alpha.2 (`alpha`)  | 同名の `createFieldComponent` は `dist/ReactForm/Components.lib.js` の内部 factory で、`.d.ts` には出ない                                                                                                                                               |
+| TanStack/form の PR 1606 | 「Allow restricting field component to field value」。draft のまま 2025-11-03 から更新が無い                                                                                                                                                            |
+
+- 出典: TanStack/form discussion 1240 (https://github.com/TanStack/form/discussions/1240)、PR 1606 (https://github.com/TanStack/form/pull/1606)、Form Composition (https://tanstack.com/form/latest/docs/framework/react/guides/form-composition)
