@@ -37,6 +37,7 @@ UI と story を触る前に `vp exec storybook skills` を実行し、`stories`
 ## 仕様書・設計判断
 
 - `docs/decisions/` - ADR（インフラ・ツールチェーン等の構造変更に着手する前に必ず参照）
+- `docs/guides/` - 設計ガイド。部品をまたぐ作法の説明と手順。rules の項目が出典として節を指す
 
 <!-- intent-skills:start -->
 
