@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0027 (乖離の記録先と baseline の運用) / ADR-0053 (story の axe を `error` で回す) / ADR-0034 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
+- 関連: ADR-0027 (乖離の記録先と baseline の運用) / ADR-0038 (story の axe を `error` で回す) / ADR-0034 (「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」を placeholder へ適用した事例)
 
 ## Context
 
@@ -108,7 +108,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 ### 5. リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない
 
-判定は `parameters.a11y.test` の axe に任せる (ADR-0053)。既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を足して axe の対象に入れる。
+判定は `parameters.a11y.test` の axe に任せる (ADR-0038)。既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を足して axe の対象に入れる。
 
 対象はリポジトリが検査として持つものに限る。値を選ぶための計算は別で、本 ADR の Context と ADR-0034 の帯は oklch から計算した比を根拠に載せている。
 

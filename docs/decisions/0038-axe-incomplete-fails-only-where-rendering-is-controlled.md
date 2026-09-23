@@ -1,12 +1,14 @@
-# ADR-0038: axe の incomplete は描画を統制できる層でだけ落とし、`color-contrast` の incomplete は外さない
+# ADR-0038: a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす
 
 - Status: Accepted
-- Date: 2026-09-21
-- 関連: ADR-0043 (incomplete に噛まれた事故と回避策) / ADR-0035 (a11y 検査の対象) / ADR-0053 (story を検査の単位にする)
+- Date: 2026-09-24
+- 関連: ADR-0043 (incomplete に噛まれた事故と回避策) / ADR-0035 (a11y 検査の対象)
 
 ## Context
 
-同じ axe を 2 つの層が回しており、**合否の基準が食い違っている**。理由はどこにも書かれていない。
+この ADR は a11y の自動検査の合否を決める。何を合否に入れるかを戻すと、a11y の違反が CI を通り抜ける。
+
+story を書いた部品は、`parameters.a11y.test` の設定しだいで axe の対象になる。同じ axe を 2 つの層が回しており、**合否の基準が食い違っている**。理由はどこにも書かれていない。
 
 | 層                             | きっかけ                       | 合否の基準                                 | 対象                     |
 | ------------------------------ | ------------------------------ | ------------------------------------------ | ------------------------ |
@@ -64,6 +66,23 @@ axe-core 自身が `incomplete` を人の判断へ回す設計だと書いてい
 逆向きの前例もある。AbsaOSS/cps-shared-ui#857 は、pa11y が `incomplete` で落ちる一方 Playwright 側は無視するという本 ADR と同じ構図を、`incomplete` を warning へ降ろして一本化することで解いた。
 
 ## Decision
+
+### story の a11y は `error` で検査する
+
+`parameters.a11y.test` を `"error"` にする。story を書いた部品は自動で axe の対象になり、検査の範囲がブラウザテストより広がる。
+
+違反が出たら抑制せず直す。部品側の欠陥なら部品を直す。story 単位の `parameters.a11y` は global の `"error"` より強いので、書けば黙る。抑制するときの書き方は `docs/guides/accessibility.md`「story で出た違反を抑制する」にある。
+
+### テーマごとに project を持ち、Storybook 経由の実行では light だけにする
+
+a11y を light と dark の両方へ当てるため、`vitest.storybook.config.ts` の `storybookProject()` を `initialGlobals` のテーマ違いで 2 つ作る。これは `@storybook/addon-vitest` の型が名指しで勧める形で、「define one Vitest project per theme, each with a different value」と書いてある。
+
+その形のまま Storybook 経由で走らせると、project 名が衝突して起動しない (storybookjs/storybook の issue 32427、2025-09-07 から open)。`VITEST_STORYBOOK` が真のときだけ light の 1 つに絞る。判定の正本は `mise run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。衝突の仕組みと真偽の読み方は `scripts/lib/storybook-env.ts` の docstring にある。
+
+| 経路                                       | テーマ        |
+| ------------------------------------------ | ------------- |
+| `vp test run` / `mise run verify` / CI     | light と dark |
+| Storybook の test panel / `tools test run` | light のみ    |
 
 ### `incomplete` を落とすかは、描画を統制できる層かで決める
 
@@ -130,6 +149,11 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 
 | 案                                              | 採否 | 理由                                                                                                                                         |
 | ----------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **story の a11y を `error` にする**             | 採用 | story を書いた部品が自動で合否に入る                                                                                                         |
+| `addon-a11y` の既定 (`todo`) のままにする       | 却下 | 違反が warning に留まり、合否に入らない                                                                                                      |
+| **テーマごとに project を 2 つ持つ**            | 採用 | addon の型が勧める形で、dark の a11y も正本で検査される                                                                                      |
+| 2 project を 1 つへ戻す                         | 却下 | addon の型が勧める形を捨てることになり、dark の a11y 検査が正本からも消える                                                                  |
+| テーマごとに `configDir` を分ける               | 却下 | 上流のバグのために設定ディレクトリを 2 つ持つ。テンプレートとして読む人の負担が増える                                                        |
 | **`addon-a11y` が積んだレポートを読み直す**     | 採用 | 走査範囲と `parameters.a11y` の解釈が 1 つで済む。axe を 2 回回さない                                                                        |
 | `preview.tsx` で axe を回し直す                 | 却下 | addon の走査範囲と既定を写すことになる。実装したところ上の 2 つの穴が開いた                                                                  |
 | run 全体で「レポートを 1 件でも見たか」だけ見る | 却下 | addon-vitest は test panel のトグルを `globals.a11y.manual` へ run 全体で渡す。全 story が走らない形になるので、run 単位でも同じ偽陽性が出る |
@@ -145,6 +169,8 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 
 ## Consequences
 
+- story を書いた部品は axe の検査対象になり、検査範囲が既存のブラウザテストより広がる。`vp test run` に storybook project が加わり、CI の実行時間が伸びる
+- vitest から走らせた story には canvas の padding が当たらない。差を `.storybook/preview.css` が埋める理由は `docs/guides/storybook.md`「vitest 経由の story に padding を当てる理由」にある
 - `expectNoA11yViolations` は `incomplete` を見ない。ADR-0043 の animation 無効化は、`incomplete` を落とす基準に対する回避策として置かれている。`incomplete` を見ない基準の下で、その回避策が他の理由 (実イベントの規律、ADR-0041 / ADR-0042) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
 - story で統制できるのは markup までで、フォントは実行環境が持つ。CI でだけ赤になったときの扱いは `docs/guides/accessibility.md`「story が CI でだけ赤になったら」にある
@@ -163,3 +189,4 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 - pa11y が incomplete の格下げレバーを足した PR: https://github.com/pa11y/pa11y/pull/685
 - 2 基準の併存を incomplete の格下げで解いた例: https://github.com/AbsaOSS/cps-shared-ui/issues/857
 - Storybook の a11y テスト (violations が合否): https://storybook.js.org/docs/writing-tests/accessibility-testing
+- Storybook: Vitest addon: https://storybook.js.org/docs/writing-tests/integrations/vitest-addon

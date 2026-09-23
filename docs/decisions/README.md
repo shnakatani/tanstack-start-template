@@ -77,7 +77,7 @@
 | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [0035](0035-announce-status-through-always-mounted-live-regions-and-keep-item-state-in-static-text.md) | 状態の通知は常時 mount の live region に集約し、項目の状態は静的テキストと `aria-busy` で持つ                                     | Accepted | 2026-09-23 | root に polite / assertive の region を 1 組常時 mount し `announce()` で更新する。項目 (行・ボタン) は `aria-busy` と静的テキストで状態を持ち、live region を条件付きで mount しない。`Spinner` は視覚専用                   |
 | [0036](0036-query-result-announcements-come-from-the-page-effect-when-the-query-settles.md)            | ページは URL の変化で作り直さず、取得結果の入れ替わりはページの effect が取得の決着で通知し、直前に通知した条件と同じなら出さない | Accepted | 2026-09-24 | ページを `key={q}` で作り直さない。ページの `useEffect` が条件と `isFetching` の決着を契機に `announce()` し、`useRef` の直前の条件と同じなら出さない。初期表示は通知しない。ADR-0035 の呼び出し層を query 由来の結果へ広げる |
-| [0038](0038-axe-incomplete-fails-only-where-rendering-is-controlled.md)                                | axe の incomplete は描画を統制できる層でだけ落とし、`color-contrast` の incomplete は外さない                                     | Accepted | 2026-09-21 | `incomplete` は「判定できなかった」「JS エラー」「失敗にするのが怖い」が混ざるバケツ。単一部品を描く story では落とし、ブラウザテストでは落とさない。除外は (ルール, messageKey) の粒度                                       |
+| [0038](0038-axe-incomplete-fails-only-where-rendering-is-controlled.md)                                | a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす                            | Accepted | 2026-09-24 | story の a11y を `error` にし、light と dark の project で回す (Storybook 経由は light だけ)。`incomplete` は story でだけ落とし、ブラウザテストでは落とさない。`color-contrast` の `incomplete` は外さない                   |
 
 ### ブラウザテスト
 
@@ -93,9 +93,8 @@
 
 ### Storybook
 
-| #                                                                 | タイトル                                                       | Status   | Date       | 要約                                                                                                                                                                  |
-| ----------------------------------------------------------------- | -------------------------------------------------------------- | -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [0053](0053-story-a11y-runs-as-error-with-a-project-per-theme.md) | story の a11y は `error` で検査し、テーマごとに project を持つ | Accepted | 2026-09-20 | 違反は抑制せず直す。light と dark の 2 project を持ち、`VITEST_STORYBOOK` が真のときだけ light に絞る。vitest 経由の story の余白は `.storybook/preview.css` が埋める |
+| #   | タイトル | Status | Date | 要約 |
+| --- | -------- | ------ | ---- | ---- |
 
 ## 新しい ADR を書く手順
 
