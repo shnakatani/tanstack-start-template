@@ -79,7 +79,8 @@ export const Opened: Story = {
 
 /**
  * 閉じる X を出さない形。registry が持つ prop だが、このリポジトリのモーダルは visible close を
- * 置くのでアプリでは使わない。スワイプと backdrop タップだけで閉じる形にしないため。
+ * 置くのでアプリでは使わない。WAI-ARIA APG の Dialog (Modal) Pattern は、閉じる button を
+ * tab 順に置くことを "strongly recommended" としている。
  * X を消しても Esc と外側クリックは効いたまま
  */
 export const WithoutCloseButton: Story = {

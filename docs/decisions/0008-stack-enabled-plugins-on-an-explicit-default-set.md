@@ -54,6 +54,8 @@ spread を落として追加分だけを書くと、`typescript` を含む既定
 ルールごとの違反件数を `-D` で数えると、打ち間違いが「違反 0 件」に見える。
 0 件を結論にする前に `--print-config` の出力にそのルール名があることを確かめる。
 
+`-D` にプラグイン名を付けずにルール名を渡すと、同じ名前のルールを持つプラグインがすべて有効になる。2026-09-23 に oxlint 1.82.0 で、`-D prefer-spread` を渡すと eslint(prefer-spread) と unicorn(prefer-spread) の両方が報告した (`-D eslint/prefer-spread` なら片方だけ)。ルールごとの件数は診断の `plugin(rule)` 別に数える。
+
 ### 検討した選択肢
 
 | 案                                       | 評価                                                                        | 採否     |

@@ -19,7 +19,11 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 一覧が空のとき。見出しと、次に何ができるかを対で出す (shadcn の Empty docs は EmptyHeader で状態を、EmptyContent で次の操作を持たせる) */
+/**
+ * 一覧が空のとき。見出しと、次に何ができるかを対で出す。この story は次の操作を説明文で示す
+ * (`EmptyHeader` は shadcn の Empty docs で "wraps the empty media, title, and description")。
+ * ボタンで添える形は `WithAction` の `EmptyContent` ("such as a button, input or a link")
+ */
 export const Default: Story = {
   render: () => (
     <Empty>

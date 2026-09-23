@@ -43,11 +43,12 @@
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 決定そのものが別の決定に置き換わる              | 新しい ADR を起こし、旧 ADR と一覧の行の Status を `Superseded` にする。`Supersedes` / `Superseded-by` の行に互いの `ADR-NNNN` を書く。markdown リンクを添えるのは `Superseded-by` だけ (`.claude/rules/docs.md`「ドキュメントの間」) |
 | 同じ決定の枠内で内容を改める (範囲・条件の調整) | その ADR を書き換え、`Revised` に日付と要約を書く。一覧の Date 欄も `YYYY-MM-DD（YYYY-MM-DD 改訂）`                                                                                                                                   |
-| 用語・表現の補足、実測値の追記                  | 書き換えるだけで `Revised` に載せない。決定の内容は変わっていない (Catio の "Typo fixes and clarifying notes are fine.")                                                                                                              |
+| 用語・表現の補足、実測値の追記                  | 書き換えるだけで `Revised` に載せない。決定の内容は変わっていない (用語・表現の補足は Catio の "Typo fixes and clarifying notes are fine." の範囲)                                                                                    |
 | 代替なしで使わなくなる                          | `Deprecated` にする                                                                                                                                                                                                                   |
 
 - 置き換えで旧 ADR を残すのは、旧い決定の Context と却下理由が、置き換えた理由を読む前提になるためである。旧 ADR を指す参照が残っても、`Superseded-by` が次の ADR へ誘導する (Nygard、adr-tools)
-- 枠内の改訂を新しい ADR にしないのは、範囲や条件を調整するたびに新しい ADR を起こすと、1 つの決定の現在の内容が複数の ADR に散り、読み手が組み立て直すことになるためである。書き換えた内容は `Revised` に日付と要約で残す。joelparkerhenderson/architecture-decision-record も、immutable より mutable の運用のほうが実際のチームでうまく回ったと書いている。ただし同リポジトリは新しい情報や運用の結果を日付つきで追記する形を採っており、実測値の追記を `Revised` に載せないこの ADR とは扱いが違う
+- Catio は immutable を採る理由を "That immutability is what makes the decision history trustworthy, and it's what turns a corpus of files into a defensible record of the system architecture the team committed to." と書く。この ADR では、枠内の改訂にも `Revised` に日付と要約を残し、書き換える前の本文は git 履歴が持つ。いつ何を決めていたかは、この 2 つから辿れる
+- 枠内の改訂を新しい ADR にしないのは、範囲や条件を調整するたびに全文を書き直した ADR が増え、`Superseded` の連鎖が伸びるためである (本数が増え、ほぼ同じ内容の ADR が並ぶ)。書き換えた内容は `Revised` に日付と要約で残す。joelparkerhenderson/architecture-decision-record も、immutable より mutable の運用のほうが実際のチームでうまく回ったと書いている。ただし同リポジトリは新しい情報や運用の結果を日付つきで追記する形を採っており、実測値の追記を `Revised` に載せないこの ADR とは扱いが違う
 
 ### 形式
 
@@ -68,12 +69,12 @@
 
 ### 検討した選択肢
 
-| 案                                                 | 評価                                                                                                                                                                                                          | 採否     |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1 本 1 決定、変わったら Superseded、枠内は Revised | Nygard の形式に沿い、置き換えの前後を両方読める。枠内の調整で ADR が増えない                                                                                                                                  | **採用** |
-| 変わったら常に既存の ADR を書き換える              | 本数は増えないが、旧い決定の Context と却下理由が git 履歴にしか残らない                                                                                                                                      | 却下     |
-| immutable (採択後は Status 以外を変えない)         | Fowler、Microsoft Well-Architected、AWS Prescriptive Guidance、Catio が採る形。ただし範囲や条件の調整のたびに新しい ADR を起こすことになり、1 つの決定の現在の内容が複数の ADR に散って、読み手が組み立て直す | 却下     |
-| 1 本に関連する決定をまとめる                       | 1 本で文脈を読めるが、一部だけが置き換わったとき Status で表せない。節の序数で指す参照がずれる                                                                                                                | 却下     |
+| 案                                                 | 評価                                                                                                                                                                                       | 採否     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 1 本 1 決定、変わったら Superseded、枠内は Revised | Nygard の形式に沿い、置き換えの前後を両方読める。枠内の調整で ADR が増えない                                                                                                               | **採用** |
+| 変わったら常に既存の ADR を書き換える              | 本数は増えないが、旧い決定の Context と却下理由が git 履歴にしか残らない                                                                                                                   | 却下     |
+| immutable (採択後は Status 以外を変えない)         | Fowler、Microsoft Well-Architected、AWS Prescriptive Guidance、Catio が採る形。ただし範囲や条件の調整のたびに全文を書き直した ADR が増え、`Superseded` の連鎖が伸びる (本数と重複が増える) | 却下     |
+| 1 本に関連する決定をまとめる                       | 1 本で文脈を読めるが、一部だけが置き換わったとき Status で表せない。節の序数で指す参照がずれる                                                                                             | 却下     |
 
 ## Consequences
 
@@ -89,5 +90,5 @@
 - Martin Fowler「Architecture Decision Record」(immutable の例。"Once an ADR is accepted, it should never be reopened or changed - instead it should be superseded."): https://martinfowler.com/bliki/ArchitectureDecisionRecord.html
 - Microsoft Azure Well-Architected Framework「Maintain an architecture decision record (ADR)」(immutable の例。"The ADR serves as an append-only log. Don't go back and edit accepted records."): https://learn.microsoft.com/en-us/azure/well-architected/architect-role/architecture-decision-record
 - AWS Prescriptive Guidance「Architectural decision record process」(immutable の例。"When the team accepts an ADR, it becomes immutable."): https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/adr-process.html
-- Catio「Architecture Decision Records (ADRs): The 2026 Guide」(immutable の例、2026-06-11。"Once accepted, the substance of an ADR should not be rewritten; material changes are captured by a new ADR that explicitly supersedes the original." / 書き換えてよい範囲として "Typo fixes and clarifying notes are fine."): https://www.catio.tech/blog/architecture-decision-record
+- Catio「Architecture Decision Records (ADRs): The 2026 Guide」(immutable の例、2026-06-11。"Once accepted, the substance of an ADR should not be rewritten; material changes are captured by a new ADR that explicitly supersedes the original." / 書き換えてよい範囲として "Typo fixes and clarifying notes are fine." / immutable を採る理由として "That immutability is what makes the decision history trustworthy, …"): https://www.catio.tech/blog/architecture-decision-record
 - adr-tools (`adr new -s` が新旧の ADR を相互にリンクし、旧 ADR の Status を置き換え済みにする): https://github.com/npryce/adr-tools
