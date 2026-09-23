@@ -58,7 +58,7 @@ const routeTree = testRootRoute.addChildren([Route.update(attachment)]);
 /**
  * wrapper (`Route.useSearch` / `Route.useNavigate`) を実 router で動かし、URL → props と
  * 操作 → URL の往復を見る (TanStack Router how-to「Test Router with File-Based Routing」の形を
- * memory history で)。props 直渡しの page テスト (index.test.tsx) では wrapper が一度も実行されない
+ * memory history で)。props 直渡しの page テスト (-components/notes-page.test.tsx) では wrapper が一度も実行されない
  */
 async function renderRoute(initialLocation: string) {
   const queryClient = createTestQueryClient();
