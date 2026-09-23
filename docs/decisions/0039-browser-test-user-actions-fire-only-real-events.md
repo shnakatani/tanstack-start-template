@@ -92,28 +92,7 @@ expect(action).toHaveBeenCalledOnce();
 
 **ユーザー操作は実イベント (Playwright / CDP 経由) だけで発火する。合成イベント (`element.dispatchEvent`) は使わない。同期に 2 回 dispatch する検証は書かない。**
 
-| 場面                                                  | 使うもの                                                                                                                                                                  |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 既定                                                  | `locator.click()`                                                                                                                                                         |
-| Playwright に弾かれ、キーボードで同じ活性化が起こせる | `userEvent.tab()` で対象へフォーカスを移し (直前の実クリックで乗っているならそのまま) `userEvent.keyboard("{Enter}")`。キーボードは enabled / hit-target の判定を受けない |
-| Playwright に弾かれ、pointer 経由の click が要る      | `.click({ force: true })`。対象に `pointer-events: none` が当たっていないことを先に確かめる                                                                               |
-| 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせてライブラリ内部のガードまで見に行かない                                                                         |
-| 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                                                                                         |
-
-判定に落ちた条件は Playwright のエラー文言で確かめてから行を選ぶ。
-
-`.click()` が弾く条件は Playwright の Actionability が定める Visible / Stable / Receives Events / Enabled である。このリポジトリで弾かれる典型を次に置く。
-
-| 条件               | 落ちる例                                                                                                              |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| Enabled            | native `disabled`、`aria-disabled="true"` の祖先を持つ要素                                                            |
-| Stable             | 開閉アニメーションの途中。既定では ADR-0040 の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
-| Visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                      |
-| Receives Events    | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                               |
-
-`force: true` はこの検査をまとめて飛ばす。animation を戻したテストでは、スライドイン途中の要素が "Element is outside of the viewport" で落ちる。viewport 内の座標の確認は公式の 4 条件の定義に書かれておらず、`playwright-core` の `_performPointerAction` が行う (ソースの読み取りで、公式 docs では未確認)。
-
-`force: true` を選ぶ前に、対象へイベントが届くかを確かめる。`force` は actionability の検査を飛ばすだけで、ブラウザのヒットテストは越えない。届かない対象に使うと、押した結果を見る assert が `pointer-events` から導かれるだけのものに変わる。
+場面ごとの手段と、`.click()` を弾く Actionability の条件、`force: true` を選ぶ前の確認は `docs/guides/testing.md`「クリックを発火する」にある。判定に落ちた条件は Playwright のエラー文言で確かめてから手段を選ぶ。`force` は actionability の検査を飛ばすだけで、ブラウザのヒットテストは越えない。
 
 ### 検討した選択肢
 
@@ -134,7 +113,7 @@ expect(action).toHaveBeenCalledOnce();
 - `src/components/parts/choice-card.test.tsx` は `.click({ force: true })` で押す。対象に `pointer-events: none` が無く、click が実際に届く
 - `src/components/parts/segmented-radio-group.test.tsx` はクリックが届かないことを `pointer-events` の assert で見る。合成 click と `not.toHaveBeenCalled()` は使わない
 - 二重発火のテストは `click()` と `userEvent.keyboard("{Enter}")` の実イベントで書く
-- 合成イベントを足したくなったら、この ADR へ戻って却下の根拠を読む。`force: true` で届くかを先に測り、届くなら合成イベントは要らない
+- 合成イベントを足したくなったら、この ADR へ戻って却下の根拠を読む。先に確かめることは `docs/guides/testing.md`「クリックを発火する」にある
 
 `cancelable` を実イベントに合わせる手順は、合成イベントごと消えたので持たない。2026-09-13 に `cancelable` の既定が false で Base UI の `preventDefault` が効かず、実物では止まる form 送信がテストでだけ通った。合成イベントの属性を実物へ合わせ続ける保守は、この種の食い違いを生む側に回る。
 

@@ -40,15 +40,7 @@ const inputGroup = findInputGroup(input.element());
 
 **要素の取得と状態の検証は vitest の retry API に委ね、待機を自前で組み立てない。**
 
-| 場面                                       | 使うもの                                                                                                                                   |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 操作の結果として現れる要素の mount         | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (ADR-0042)                                                 |
-| 操作後の要素の実測 (rect / computed style) | 先に `expect.element` で mount を待ってから `locator.element()` を読む。retry が要るなら `expect.poll` のコールバックの中で読む (ADR-0041) |
-| 操作後の属性・テキストの検証               | `await expect.element(locator).toHaveAttribute(...)`                                                                                       |
-| `render()` 直後、操作前の要素の生 DOM      | `locator.element()`                                                                                                                        |
-| close 後に要素が消えたことの確認           | `expectRemoved(locator)` (`src/test/absent.ts`。ADR-0043)                                                                                  |
-
-animation は ADR-0040 の既定で止まるので、開く操作のあとは `expect.element(locator).toBeInTheDocument()` で mount を待ち、実測は `expect.poll` の中で読む (ADR-0041)。`getAnimations()` の完了を待つ helper は置かない。
+場面ごとに使う API (mount 待ち、操作後の実測、属性の検証、`render()` 直後の生 DOM、消滅の確認) は `docs/guides/testing.md`「待つ口を選ぶ」にある。`getAnimations()` の完了を待つ helper は置かない。animation は ADR-0040 の既定で止まる。
 
 ### 検討した選択肢
 
@@ -61,8 +53,5 @@ animation は ADR-0040 の既定で止まるので、開く操作のあとは `e
 
 ## Consequences
 
-- 生 DOM を読む箇所は「操作を挟んだか」で待ち方が分かれる。判断を誤ってもテストは大半の実行で通るため、レビューで見る。禁じたい形のうち「同期読みの値を assert へ流すこと」は式の構造で表せるので lint が持つ (ADR-0041)。`element()` を操作前の要素と retry コールバックの中に限ることは実行時の履歴で決まるため、レビューで見る
-- 変化しないことの検証 (disabled な行がトグルしない等) は retry では強くならない。`expect.element` は条件を満たした時点で返るので、更新前に成功しうる。待つ対象がある検証へ言い換えられないかを先に考える
-- `expect.element` の matcher (`toHaveAttribute` / `toHaveTextContent`) を使う。`toHaveTextContent` は文字列で部分一致になるため、完全一致が要る箇所は正規表現を渡す
-- `vi.waitFor` は locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列の中身など) に残す。要素が消えたことは `expect.element` の `.not.toBeInTheDocument()` が表せる (`.not.toBeInTheDocument()` のときだけ Locator を `.query()` で引くため、無くても throw しない。この特例が「最初から無くても通る」の出どころで、扱いは ADR-0043 が持つ)。vitest の wait-for レシピは assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける
+- 生 DOM を読む箇所は「操作を挟んだか」で待ち方が分かれる。禁じたい形のうち「同期読みの値を assert へ流すこと」は式の構造で表せるので lint が持つ (ADR-0041)。残りはレビューで見る (観点は `docs/guides/testing.md`「待つ口を選ぶ」)
 - この決定はブラウザテストにだけ効く。unit project は DOM を持たず、`render` も locator も無い

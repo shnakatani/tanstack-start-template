@@ -8,8 +8,8 @@ paths:
 ## 数値入力は NumberField を使う
 
 - `type="number"` の入力欄を新設しない。`NumberField` を使う。`type="number"` は NVDA の要素一覧で unlabeled になり、ホイールで値が無言に増減する (ADR-0025)
-- テストでは `getByRole("textbox")` で取る。`spinbutton` にはならない
-- locator の `fill()` は既存値を置換せず追記になる。要素を全選択してから打つ
+- テストでは `getByRole("textbox")` で取る。`spinbutton` にはならない (`docs/guides/testing.md`「入力部品を操作する」)
+- locator の `fill()` は既存値を置換せず追記になる。要素を全選択してから打つ (`docs/guides/testing.md`「入力部品を操作する」)
 
 ## Select: `items` prop 必須
 

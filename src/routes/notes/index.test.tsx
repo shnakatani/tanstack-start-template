@@ -27,10 +27,8 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { listNotes } = await import("@/features/notes/functions");
 
-// この画面に固有のテストの書き方 (route 全般の書き方は ADR-0044):
-// - debounce のテストは 1 文字ずつ別の `userEvent.keyboard` で打つ。`fill` は 1 回の input、`type("abc")` は
-//   3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)
-// - fake timers は使わない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
+// この画面に固有のテストの書き方 (route 全般の書き方は ADR-0044、debounce の打ち方と fake timers を
+// 使わない理由は `docs/guides/testing.md`「debounce のある入力をテストする」):
 // - 検索欄の landmark は `<search>` 要素で、部品のテストは要素名で見る。同梱の locator engine が
 //   `search` role を `<search>` に写さない (2026-09-23 に実測)。`<form role="search">` にして
 //   `getByRole("search")` で引く形は採らない。本番のマークアップをテストの欠落に合わせない

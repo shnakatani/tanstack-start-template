@@ -24,14 +24,12 @@
 
 **ブラウザテストは animation を無効にした状態 (Base UI のフラグ + `prefers-reduced-motion: reduce`) を既定にし、閉じかけの popup が残る窓そのものを検証するテストだけが自分のテストの間だけ animation を戻す。popup を閉じた後の a11y 検査は unmount を待ってから行う。**
 
-| 対象                         | 形                                                                                                                                                                                                                                                                                                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 既定                         | `src/test/browser-setup.tsx` の `beforeEach` が `src/test/animations.ts` の `disableAnimations()` を毎テスト呼ぶ。`globalThis.BASE_UI_ANIMATIONS_DISABLED = true` で閉じた popup は animate-out を待たずに unmount し、CDP `Emulation.setEmulatedMedia` の `prefers-reduced-motion: reduce` で `src/styles.css` の reduced-motion ブロックが CSS の animation / transition を 0.01ms にする |
-| 窓を踏むテスト               | 本文の先頭で `await enableAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻す (`parkMouse` と同じ形)。Base UI 自身のテスト基盤は `onTestFinished` でも戻すが、`beforeEach` が毎テスト走る本リポジトリでは戻す経路を 2 つ持たない。対象は「閉じかけの popup が残る間の挙動」を検証するもの (二重発火の dedupe など)                                                                 |
-| 止まった後に残るもの         | 無限アニメーション (Spinner) は `animation-iteration-count: 1` で 1 周して止まる。rect や算出スタイルは `expect.poll` の中で読む (ADR-0041) ので、残る 0.01ms も待たない。`data-starting-style` / `data-ending-style` の付与は変わらないが、既定では次の描画で unmount するため `data-ending-style` は観測できない                                                                          |
-| popup を閉じた後の a11y 検査 | popup の要素を `expectRemoved()` (ADR-0043) で待ってから `expectNoA11yViolations()` を呼ぶ。既定では窓が無いが、規範として置き、animation を戻したテストでも同じ形で書く                                                                                                                                                                                                                    |
-| `includeHidden`              | 既定では確定直後の行が `aria-hidden` 配下に残らないため、閉じた後の行取得に `includeHidden` を渡さない。モーダルが開いている間の取得には引き続き要る                                                                                                                                                                                                                                        |
-| 上流                         | Base UI PR #5537 がマージされたら、本 ADR の既定を外せるかを再評価する。`inert` は focus guard の問題を消すが、閉じかけの popup の見出しが `heading-order` の incomplete に出る事象は残りうる                                                                                                                                                                                               |
+| 対象 | 形                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 既定 | `src/test/browser-setup.tsx` の `beforeEach` が `src/test/animations.ts` の `disableAnimations()` を毎テスト呼ぶ。`globalThis.BASE_UI_ANIMATIONS_DISABLED = true` で閉じた popup は animate-out を待たずに unmount し、CDP `Emulation.setEmulatedMedia` の `prefers-reduced-motion: reduce` で `src/styles.css` の reduced-motion ブロックが CSS の animation / transition を 0.01ms にする |
+| 上流 | Base UI PR #5537 がマージされたら、本 ADR の既定を外せるかを再評価する。`inert` は focus guard の問題を消すが、閉じかけの popup の見出しが `heading-order` の incomplete に出る事象は残りうる                                                                                                                                                                                               |
+
+窓を踏むテストで animation を戻す書き方、止まった後に残るもの、閉じた後の a11y 検査の順序、`includeHidden` の扱いは `docs/guides/testing.md`「animation を戻すテストを書く」にある。
 
 ### 検討した選択肢
 
@@ -46,8 +44,8 @@
 ## Consequences
 
 - ブラウザテストは本番と違い animation を待たず、CSS の transition / animation も 0.01ms の条件 (reduced motion を選んだユーザーと同じ) で走る。閉じかけの popup の挙動を守るテストは `await enableAnimations()` を明示し、animation ありの条件で走っていることが本文から読めるようにする
-- transition の後に「変化しないこと」を見るテスト (`src/components/parts/segmented-radio-group.test.tsx` の hover) は、retry では途中値の前に通ってしまう。reduced motion で settled 状態を即座に観測するので、`getAnimations()` の完了を待つ helper は置かない。待つ側の形は MDN `Animation.finished` の例そのものだが、観測の前に止める側 (Playwright の screenshot `animations: "disabled"`、Chromatic の最終フレーム停止) が主流で、待つ helper に直接の先行例は無い
-- 二重発火の dedupe テスト (ADR-0039) は animate-out の窓を踏む必要があるため、animation を戻して走らせる
+- transition の後に「変化しないこと」を見るテストは、retry では途中値の前に通ってしまう。reduced motion で settled 状態を即座に観測するので、`getAnimations()` の完了を待つ helper は置かない。待つ側の形は MDN `Animation.finished` の例そのものだが、観測の前に止める側 (Playwright の screenshot `animations: "disabled"`、Chromatic の最終フレーム停止) が主流で、待つ helper に直接の先行例は無い
+- 二重発火の dedupe テスト (ADR-0039) は animate-out の窓を踏む必要があるため、animation を戻して走らせる (書き方は `docs/guides/testing.md`「animation を戻すテストを書く」)
 - 再評価条件: Base UI が閉じかけの popup を a11y tree と focus 順から外す変更 (PR #5537) を出荷したとき、および axe-core が focus guard の heuristics を更新したとき
 
 ## 出典

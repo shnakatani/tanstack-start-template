@@ -37,17 +37,7 @@
 
 **否定 assert は、期待値がリテラルなら書かない。肯定で書く。** 例外は、要素が在る状態から消えるのを待つ `expectRemoved(locator)` と、期待値が別の観測である比較の 2 つに限る。
 
-| 規範                                                                                                                                | 守らないと何が壊れるか                                                                                     |
-| ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く       | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
-| 要素が在る状態から消えるのを待つときは `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は書かない | 2 つは同じ matcher を呼ぶので、名前が無いとどちらのつもりかが字面で読めない                                |
-| `.not.toBeInTheDocument()` 以外の否定 matcher には肯定 assert を添えなくてよい                                                      | 要素が引けない間 retry するため、不在のまま通ることがない                                                  |
-| 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                      | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
-| スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                                | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
-| `toHaveStyle` は文字列形式で書き、複数プロパティは `;` で 1 つにまとめる                                                            | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
-| `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                      | jest-dom は宣言を後勝ちで畳むため、先に書いたほうが黙って消える                                            |
-
-肯定形の書き方は主張で決まる。「描かれている」「上限がある」なら `expect.poll(() => Number.parseFloat(getComputedStyle(x).outlineWidth)).toBeGreaterThan(0)` のように 1 回の観測から数値を出す。綴りを外しても `NaN` になって落ちる。当たっている token が分かっているなら `expect.element(x).toHaveStyle(`color: ${resolveColorToken("--foreground")}`)` のように値そのものと比べる (`src/components/parts/segmented-radio-group.test.tsx`)。観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると別々の瞬間で成立してよいことになる。
+「最初から出ないこと」と消滅待ちの書き分け、件数、スタイルの肯定形、`toHaveStyle` の書き方は `docs/guides/testing.md`「否定を肯定で書く」にある。
 
 ## Consequences
 
@@ -99,23 +89,9 @@ grep -rn --include='*.test.tsx' -E '\.not\.(toHaveStyle|toBe)\(' src/ | grep -iE
 
 ### ADR-0038 との関係
 
-ADR-0038 の Decision の表は「close 後に要素が消えたことの確認」に **`expectRemoved(locator)` を充てる。** `expect.element(locator).not.toBeInTheDocument()` を素で書かない。ADR-0038 が決めた「待機を vitest の retry API に委ねる」ことはそのままで、`expectRemoved` はその式に名前を付けたものである。
+`docs/guides/testing.md`「待つ口を選ぶ」の表は「close 後に要素が消えたことの確認」に **`expectRemoved(locator)` を充てる。** `expect.element(locator).not.toBeInTheDocument()` を素で書かない。ADR-0038 が決めた「待機を vitest の retry API に委ねる」ことはそのままで、`expectRemoved` はその式に名前を付けたものである。
 
-### 肯定形は失敗するまで予算を使う
-
-否定を肯定の `expect.poll` で書くと、失敗時の所要が変わる。否定は条件が最初から成立すれば即座に返るが、肯定は成立しない条件を assert の予算 (ADR-0042) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。挙動としては正しく、赤の所要が延びるのは検出力と引き換えである。
-
-### `toHaveStyle` で表せない 3 つの形
-
-`toHaveStyle` で表せないので、`getComputedStyle` を `expect.poll` のコールバックの中で読む (ADR-0041)。
-
-| 形                 | 例                                                                                                 |
-| ------------------ | -------------------------------------------------------------------------------------------------- |
-| 2 回の観測を比べる | `src/components/ui/sidebar.test.tsx` の「開く前後で背景色が変わったこと」                          |
-| 数値の大小         | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                       |
-| 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない (2026-09-22 に実測) |
-
-ADR-0041 のルールは `expect.poll` のコールバックの中を見ないので、この 3 つより広い形も通る。狭めるには matcher を見る分岐が要る。先行例の `prefer-web-first-assertions` は `supportedMatchers` で matcher を見ているが、あれは autofix の可否を決めるためで範囲の限定ではない。本 ADR のルールは期待値がリテラルの否定だけを狭く止める。
+肯定形は失敗するまで予算 (ADR-0042) を使う。`toHaveStyle` で表せない 3 つの形 (2 回の観測の比較、数値の大小、擬似要素) の書き方と合わせて `docs/guides/testing.md`「否定を肯定で書く」にある。ADR-0041 のルールは `expect.poll` のコールバックの中を見ないので、この 3 つより広い形も通る。本 ADR のルールは期待値がリテラルの否定だけを狭く止める。
 
 ### ルールが追えない形
 

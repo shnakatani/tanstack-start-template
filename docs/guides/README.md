@@ -14,13 +14,14 @@
 
 ## 主題
 
-| ファイル                                       | 主題                                                                                                                        |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [writing-docs.md](writing-docs.md)             | ドキュメントの書き方 (ADR・rules・AGENTS.md の書き方、比の洗い出し)                                                         |
-| [lint.md](lint.md)                             | lint の運用 (解決後の設定での確かめ方、抑制、自前のルール、設定と JS plugin の落とし穴)                                     |
-| [placement.md](placement.md)                   | 配置と境界 (route の中の置き場、route ファイルの組み方、features か route か、importProtection の落とし穴)                  |
-| [updates-and-data.md](updates-and-data.md)     | React の更新とデータ取得 (ハンドラ、Action 層と mutation、完了点の組み方、楽観表示、認可、部分一致の検索、手動メモ化の判定) |
-| [lists-and-search.md](lists-and-search.md)     | 一覧・絞り込み・検索 (一覧テーブル、URL の絞り込み条件、検索の入力欄)                                                       |
-| [forms-and-inputs.md](forms-and-inputs.md)     | フォームと入力部品 (スキーマ、数値の入力欄、fieldComponents、Select の値の解決、高さのあるダイアログ、placeholder)          |
-| [styling-and-tokens.md](styling-and-tokens.md) | スタイルとトークン (色の当て方、外見の配り方、トークンの作り直し、比の測り方、間隔)                                         |
-| [accessibility.md](accessibility.md)           | アクセシビリティ (層ごとの役割、axe の緑と incomplete の読み方、a11y の tag、抑制の書き方、通知の文言)                      |
+| ファイル                                       | 主題                                                                                                                                                      |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [writing-docs.md](writing-docs.md)             | ドキュメントの書き方 (ADR・rules・AGENTS.md の書き方、比の洗い出し)                                                                                       |
+| [lint.md](lint.md)                             | lint の運用 (解決後の設定での確かめ方、抑制、自前のルール、設定と JS plugin の落とし穴)                                                                   |
+| [placement.md](placement.md)                   | 配置と境界 (route の中の置き場、route ファイルの組み方、features か route か、importProtection の落とし穴)                                                |
+| [updates-and-data.md](updates-and-data.md)     | React の更新とデータ取得 (ハンドラ、Action 層と mutation、完了点の組み方、楽観表示、認可、部分一致の検索、手動メモ化の判定)                               |
+| [lists-and-search.md](lists-and-search.md)     | 一覧・絞り込み・検索 (一覧テーブル、URL の絞り込み条件、検索の入力欄)                                                                                     |
+| [forms-and-inputs.md](forms-and-inputs.md)     | フォームと入力部品 (スキーマ、数値の入力欄、fieldComponents、Select の値の解決、高さのあるダイアログ、placeholder)                                        |
+| [styling-and-tokens.md](styling-and-tokens.md) | スタイルとトークン (色の当て方、外見の配り方、トークンの作り直し、比の測り方、間隔)                                                                       |
+| [accessibility.md](accessibility.md)           | アクセシビリティ (層ごとの役割、axe の緑と incomplete の読み方、a11y の tag、抑制の書き方、通知の文言)                                                    |
+| [testing.md](testing.md)                       | テストの書き方 (待つ口、同期読みの書き換え、クリックの発火、animation を戻すテスト、否定を肯定で書く、route の wrapper、viewport、検査スクリプトの置き方) |
