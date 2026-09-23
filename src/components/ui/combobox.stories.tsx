@@ -47,7 +47,7 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
   );
 }
 
-/** 開くところまで。絞り込みと選択は書かない (ADR-0049) */
+/** 開くところまで。絞り込みと選択は書かない (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
   await screen.findByRole("listbox");

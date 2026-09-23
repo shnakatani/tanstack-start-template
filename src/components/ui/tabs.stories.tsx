@@ -50,7 +50,7 @@ export const LineList: Story = {
 };
 
 /**
- * 切り替えたところ。選ぶまでを play が持ち、その先の操作は書かない (ADR-0049)。
+ * 切り替えたところ。選ぶまでを play が持ち、その先の操作は書かない (docs/guides/storybook.md「カタログと play の範囲」)。
  * 終了状態は OtherTabSelected と同じ見た目なのでカタログには出さない
  */
 export const Switched: Story = {

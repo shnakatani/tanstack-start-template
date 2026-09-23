@@ -19,7 +19,7 @@ shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す�
 2. 同じ部品の生成時 baseline を取る (次節のコマンド)。`--overwrite` で再生成したときも取り直す
 3. baseline との差分が台帳と 1:1 であることを確かめる (「baseline と突き合わせる」)
 4. 上流の形を保つための lint 違反だけを行単位で抑制し、台帳の「行単位の lint 抑制」へ記録する。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く
-5. story を書く。消費側からの import が 0 件でも書く (ADR-0051)
+5. story を書く。消費側からの import が 0 件でも書く (`docs/guides/storybook.md`「registry 部品を全件カタログにする理由」)
 
 - コード側の理由コメントは、ADR と台帳だけでは実装者が誤る落とし穴に限る
 - 使っていない部品を先に入れること (vendor preset) は許す。chore のコミットとして記録する

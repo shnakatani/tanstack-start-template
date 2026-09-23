@@ -37,7 +37,7 @@ export const Invalid: Story = {
 
 /**
  * クリックで選択に移る。状態が変わるところまでを play が持つ。
- * 終了状態は Checked と同じ見た目なのでカタログには出さない (ADR-0049)
+ * 終了状態は Checked と同じ見た目なのでカタログには出さない (docs/guides/storybook.md「story を書く」)
  */
 export const Toggled: Story = {
   tags: ["!dev"],

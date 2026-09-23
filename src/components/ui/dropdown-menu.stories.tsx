@@ -35,7 +35,7 @@ function DropdownMenuExample() {
   );
 }
 
-/** 開くところまで。選択は書かない (ADR-0049) */
+/** 開くところまで。選択は書かない (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "操作" }));
   await screen.findByRole("menu");

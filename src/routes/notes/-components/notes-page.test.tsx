@@ -122,7 +122,7 @@ async function submitCreate(screen: Screen, note: Note) {
 }
 
 /**
- * 実イベントの規律のうち、画面側の 2 つをこのファイルが持つ (ADR-0050)。play は合成イベントで
+ * 実イベントの規律のうち、画面側の 2 つをこのファイルが持つ (docs/guides/storybook.md「story とブラウザテストの分担」)。play は合成イベントで
  * 操作するので、story へ移すとリポジトリから消える。
  * - `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと (`confirmDeleteButton(screen).click()`)
  * - 画面側の二重確定の dedupe (`queryClient.isMutating`)。「確定直後にもう一度 Enter を送っても

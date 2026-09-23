@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0048 (Storybook の telemetry) / ADR-0009 (依存更新の待機)
+- 関連: ADR-0009 (依存更新の待機)
 
 ## Context
 

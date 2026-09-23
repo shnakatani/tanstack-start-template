@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0049 (story を状態のカタログにする) / ADR-0050 (story とブラウザテストの役割分担)
+- 関連: ADR-0038 (`incomplete` を落とす層)。story のカタログとブラウザテストの分担は `docs/guides/storybook.md`「story とブラウザテストの分担」
 
 ## Context
 

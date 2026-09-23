@@ -26,7 +26,7 @@ paths:
 - ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0015)
 - route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない
 - story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まる (`docs/guides/storybook.md`「story を置く」)
-- story を置けるのは `src/components/` 配下だけ。他へ置くと `.storybook/main.ts` の `stories` から無言で外れる (ADR-0051)
+- story を置けるのは `src/components/` 配下だけ。他へ置くと `.storybook/main.ts` の `stories` から無言で外れる (`docs/guides/storybook.md`「story を置く」)
 - 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分ける。親を要求する部品は親の story で扱う。CSF の meta は 1 ファイルに 1 つで、まとめると別の部品の meta 配下に並ぶ (`docs/guides/storybook.md`「story を置く」)
 - `argTypes` の `options` に `cva` の variant を写すときは型で網羅を強制する。型検査も lint も一致を見ない (`docs/guides/storybook.md`「story を書く」)
 - トークンの story に typography の階層のような class の規範を写さない。写すと片方だけが古くなり、突き合わせる検査も無い (`docs/guides/storybook.md`「story を置く」)
@@ -68,7 +68,7 @@ paths:
 2. baseline との diff が台帳 `docs/registry-deviations.md` と 1:1 であることを確かめる。上流の形を保つ違反だけ行単位で抑制し、台帳へ記録する (ADR-0027)
 3. コード側の理由コメントは、ADR と台帳だけでは実装者が誤る落とし穴に限る。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く (`docs/guides/registry.md`「部品を足す」)
 4. 未使用での先行導入 (vendor preset) は許容する。chore コミットとして記録する (`docs/guides/registry.md`「部品を足す」)
-5. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらない (ADR-0051)
+5. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらない (`docs/guides/storybook.md`「story を置く」)
 
 ## ルートファイル
 

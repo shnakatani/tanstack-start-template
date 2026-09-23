@@ -22,7 +22,7 @@ axe の検査の置き場所と読み方、抑制の書き方、読み上げの�
 | story の axe            | 部品が取りうる状態。操作の後も `play` で見る                                                   | 部品か story     |
 | ブラウザテストの axe    | story を置けないページと文書全体 (`src/routes/`)。ランドマーク構造など、部品へ分解できないもの | そのケースの実装 |
 
-境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (ADR-0049)。分かれるのは置ける場所と、そこから来る描画を統制できるか (ADR-0038) である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
+境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (`docs/guides/storybook.md`「カタログと play の範囲」)。分かれるのは置ける場所と、そこから来る描画を統制できるか (ADR-0038) である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
 
 ブラウザテストの axe が見るのは、`expectNoA11yViolations` を書いたケースだけである。書いていない画面は、devtools の a11y パネルで触りながら確かめる。
 

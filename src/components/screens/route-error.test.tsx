@@ -17,7 +17,7 @@ async function renderError(error: Error, reset: () => void) {
 }
 
 /**
- * screens/ は story のカタログの対象外で、見え方は実画面で見る (ADR-0049)。ここに残すのは
+ * screens/ は story のカタログの対象外で、見え方は実画面で見る (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは
  * 表示の内容、production での秘匿、再試行の配線、スタックトレースのキーボード開閉で、
  * いずれも寸法や色を測らない。寸法と色は並べた部品が持ち、その部品のテストと story が見る。
  *
