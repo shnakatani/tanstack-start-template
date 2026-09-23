@@ -92,9 +92,9 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ### 内部スクロールを持つダイアログの組み方
 
-- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる (ADR-0031)
-- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なる (ADR-0031)
-- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。余白が無いと ring が端で切れる (ADR-0031)
+- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる。見出しとフッターが常に見える (Base UI Dialog の Inside scroll の形)
+- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なる
+- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。余白が無いと ring が端で切れる
 
 `DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める (実例: `note-create-dialog.tsx`)。
 
@@ -143,7 +143,7 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 - 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0037)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0037)
 - pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0037)
-- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0038)
+- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む
 - メニュー全体を包む単一の `DropdownMenuGroup` には名前を与えない。メニュー自体がトリガー由来の名前を持つ
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 - ナビゲーションは landmark (`nav`、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける

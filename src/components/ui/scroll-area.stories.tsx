@@ -6,7 +6,7 @@ const LINES = Array.from({ length: 24 }, (_, index) => `${index + 1} 行目の�
 
 /**
  * ScrollArea も高さを持たず、器の寸法をなぞる。この story は寸法を `className` で渡さず、
- * decorator の器で与える (layout の class なら渡してもよい。ADR-0054)。器の寸法に従ってスクロールする
+ * decorator の器で与える (layout の class なら渡してもよい)。器の寸法に従ってスクロールする
  * ことを見せるため、器を ScrollArea の外に置く。
  * スクロールバーと、そのぶんの余白は `ScrollArea` 自身が持つ (ADR-0027)
  */

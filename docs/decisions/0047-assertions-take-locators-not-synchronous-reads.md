@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0044 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0009 (ルールの選定基準)、ADR-0033 (`jsPlugins` で足す判断)、ADR-0048 (本 ADR の移行で顕在化した assert の予算)、ADR-0049 (同じく顕在化した否定 assert の検出力)
+- 関連: ADR-0044 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0009 (ルールの選定基準)、ADR-0033 (`jsPlugins` で足す判断)、ADR-0049 (同じく顕在化した否定 assert の検出力)
 
 ## Context
 
@@ -77,7 +77,7 @@ ADR-0044 が「lint で表現できる形は無い」と書いたのは、`eleme
 
 `element()` を読む場所の規範は ADR-0044 のままである。本 ADR が狭めるのは、その値を assert へ渡す経路だけである。
 
-この移行で 2 つの問題が顕在化し、それぞれ別の ADR が決めている。assert の予算 (赤が 15 秒かかる) は ADR-0048、否定 assert の検出力 (不在や綴り違いで通る) は ADR-0049 である。
+この移行で 2 つの問題が顕在化し、それぞれ別の ADR が決めている。assert の予算 (赤が 15 秒かかる) は `src/test/assert-budget.ts` が持ち、否定 assert の検出力 (不在や綴り違いで通る) は ADR-0049 が決めている。
 
 ## Consequences
 
@@ -154,7 +154,7 @@ ADR-0044 の Consequences は、禁じたい形のうち「同期読みの値を
 
 | 対象                                                    | 持ち主                                                                                 |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| assert の予算 (`expect.poll.timeout` / `actionTimeout`) | ADR-0048                                                                               |
+| assert の予算 (`expect.poll.timeout` / `actionTimeout`) | `src/test/assert-budget.ts`                                                            |
 | 否定 assert と `toHaveStyle` の書き方                   | ADR-0049                                                                               |
 | クリックの発火方法                                      | ADR-0045。合成イベントを送る helper を置かないので、その引数が同期読みになる経路も無い |
 

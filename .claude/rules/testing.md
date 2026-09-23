@@ -46,10 +46,10 @@ paths:
 
 ## a11y の検査は tag で分ける
 
-- `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tagsFilter a11y` (ADR-0043)
-- tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tagsFilter a11y` は story を走らせない (ADR-0043)
-- tag の定義は `vitest.browser.config.ts` の `test.tags`。定義に無い tag はエラーで落ちる (ADR-0043)
-- 挙動テストの途中の状態を測る `expectNoA11yViolations` には tag を付けない。専用テストへ降ろすと操作の再現が重複する (ADR-0043)
+- `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tagsFilter a11y`
+- tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tagsFilter a11y` は story を走らせない
+- tag の定義は `vitest.browser.config.ts` の `test.tags`。定義に無い tag はエラーで落ちる
+- 挙動テストの途中の状態を測る `expectNoA11yViolations` には tag を付けない。専用テストへ降ろすと操作の再現が重複する
 
 ## 境界値
 
@@ -87,7 +87,7 @@ paths:
 - `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する
 - `vi.stubEnv` を使ったら `afterEach(() => vi.unstubAllEnvs())`
 - `vi.mock()` の factory 内では `vi.fn(() => Promise.resolve(x))` の形で書く。`vi.fn().mockResolvedValue(x)` は巻き上げで browser mode でだけ落ちる
-- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない (ADR-0051)
+- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
 
 ## optimistic update は決着を握って観測する
 
@@ -124,8 +124,8 @@ paths:
 - matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` の中で読む。基準値を 1 回だけ読むときは先に `expect.element` で mount を待つ (ADR-0047)
 - 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件は `vi.waitFor` (ADR-0044)
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (ADR-0047)
-- assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない (ADR-0048)
-- `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる (ADR-0048)
+- assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない
+- `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる
 - 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (ADR-0049)
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/absent.ts`)。`expectAbsent` と取り違えない (ADR-0049)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (ADR-0049)
@@ -136,7 +136,7 @@ paths:
 ブラウザテストでは Tailwind が実 CSS に解決される。レイアウト回帰は className の `toContain` ではなく、実測で守る。
 
 - viewport 定数と `expectWithinViewport` は `src/test/viewport.ts`。`page.viewport()` で変えたら `afterEach` で `DEFAULT_VIEWPORT` へ戻す
-- 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない (ADR-0050)
+- 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。sub-pixel の誤差で、収まっていても落ちる実行がある (w3c/IntersectionObserver#477)
 - 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる
 - スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (ADR-0049)
 - 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (ADR-0049)

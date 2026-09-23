@@ -1,5 +1,6 @@
 /* scan の対象をアプリのソースへ絞る。既定はリポジトリ全体で、Markdown の字面まで本番 CSS へ
-   出る。除外を並べる形を採らない理由と効果の測り方は ADR-0056 */
+   出る。`@source not` で除外を並べる形は symlink と後から増える置き場を取りこぼすので採らない。
+   効果は source() を外して vp build を 2 回回せば測れる */
 @import "tailwindcss" source("../src");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -22,7 +23,7 @@
 
 /* static はここに付けない。付けると本番の CSS が使っていない変数の分まで持つ。
    カタログに要る分は .storybook/preview.css がこのファイルを theme(static) 付きで
-   読み直して掛ける (ADR-0056) */
+   読み直して掛ける */
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;

@@ -32,7 +32,7 @@ UI と story を触る前に `vp exec storybook skills` を実行し、`stories`
 
 - 部品の props・API・使い方は `vp exec storybook tools docs list` / `docs show` で答える。ソースや型定義から答えない
 - `vp exec storybook tools stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない
-- MCP (`@storybook/addon-mcp`) は入れない。理由と起動の要否は ADR-0058
+- MCP (`@storybook/addon-mcp`) は入れない。MCP の登録は URL を 1 つしか持てず、worktree ごとに変わる Storybook の port へ配れない
 
 ## 仕様書・設計判断
 

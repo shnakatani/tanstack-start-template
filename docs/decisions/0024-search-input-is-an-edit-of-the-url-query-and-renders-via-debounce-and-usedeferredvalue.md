@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0023 (絞り込み条件は URL が持つ)、ADR-0018 (Transition の既定と `useDeferredValue` の位置づけ)、ADR-0021 (楽観行の扱い)、ADR-0038 (取得結果の通知)、ADR-0051 (テスト)
+- 関連: ADR-0023 (絞り込み条件は URL が持つ)、ADR-0018 (Transition の既定と `useDeferredValue` の位置づけ)、ADR-0021 (楽観行の扱い)
 
 ## Context
 
@@ -39,9 +39,9 @@ React docs は debounce と `useDeferredValue` を「You can also use these tech
 ## Consequences
 
 - `@tanstack/react-pacer` は beta で API が変わりうる (docs の overview「TanStack Pacer is currently in beta and its API is still subject to change」)。利用箇所は `NotesPage` の `useDebouncedValue` 1 つに閉じる。追従できない変更が来たら `use-debounce` の `useDebounce(value, wait)` に差し替える。差し替え後も `useDeferredValue` の段は残す
-- 待ちの実値は `src/routes/notes/-lib/note-search.ts` の `NOTE_SEARCH_DEBOUNCE_MS`。テストは module の partial mock で広げるので literal 型に固めない (ADR-0051)
+- 待ちの実値は `src/routes/notes/-lib/note-search.ts` の `NOTE_SEARCH_DEBOUNCE_MS`。テストは module の partial mock で広げるので literal 型に固めない
 - 確定と戻るの直後は編集の世代が URL と合わないので、debounce の待ちを経ずに URL の条件 (loader が温めたキャッシュ) を描く
-- ページは URL の変化をまたいで生き続けるので、結果の通知の記憶 (`useRef`) をページに置ける (ADR-0038)
+- ページは URL の変化をまたいで生き続けるので、結果の通知の記憶 (`useRef`) をページに置ける
 - 打鍵中の再描画: `useDebouncedValue` は selector を渡さない限り store の購読で再描画しない。React Compiler の出力で `v.parse` は入力値ごとに memo され、`DataTable` は打鍵で作り直されない (2026-09-23 に oxc-transform-react で確認)
 
 ### 再評価の条件

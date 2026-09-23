@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- 関連: ADR-0027 (registry コードのガードはブラウザテストが担う)、ADR-0046 (animation を無効にして走らせる)、ADR-0047 (同期読みを assert へ流さない。本 ADR の規範を lint で強制する)、ADR-0048 (assert の予算。`findElement()` を呼ばない理由もここが持つ)、ADR-0049 (否定 assert が不在でも通ること)
+- 関連: ADR-0027 (registry コードのガードはブラウザテストが担う)、ADR-0046 (animation を無効にして走らせる)、ADR-0047 (同期読みを assert へ流さない。本 ADR の規範を lint で強制する)、ADR-0049 (否定 assert が不在でも通ること)
 
 ## Context
 
@@ -42,7 +42,7 @@ const inputGroup = findInputGroup(input.element());
 
 | 場面                                       | 使うもの                                                                                                                                   |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 操作の結果として現れる要素の mount         | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (ADR-0048)                                                 |
+| 操作の結果として現れる要素の mount         | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (待ち時間が上限なしになる)                                 |
 | 操作後の要素の実測 (rect / computed style) | 先に `expect.element` で mount を待ってから `locator.element()` を読む。retry が要るなら `expect.poll` のコールバックの中で読む (ADR-0047) |
 | 操作後の属性・テキストの検証               | `await expect.element(locator).toHaveAttribute(...)`                                                                                       |
 | `render()` 直後、操作前の要素の生 DOM      | `locator.element()`                                                                                                                        |
@@ -52,12 +52,12 @@ animation は ADR-0046 の既定で止まるので、開く操作のあとは `e
 
 ### 検討した選択肢
 
-| 案                                            | 評価                                                                                                                                                                 | 採否     |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `expect.element` に寄せる                     | vitest が retry 間隔と失敗時の DOM 出力を持つ。待機の実装がテスト側に残らない。生 DOM の mount 待ちも `expect.element` で足り、`findElement()` は呼ばない (ADR-0048) | **採用** |
-| `element()` のまま `vi.waitFor` で全体を囲む  | 同じ待機が書ける。ただし囲む範囲の判断がテストごとに要り、囲み忘れが `src/components/ui/input-group.test.tsx` と同じ形で再発する                                     | 却下     |
-| animation を待つ helper に mount 待ちを足す   | 「アニメーションを待つ」名前と責務がずれる。待つ対象を引数で渡す設計になり、呼び出し側の判断が増える                                                                 | 却下     |
-| `element()` を全廃して `findElement()` に統一 | `render()` 直後は `act` で flush 済みで、待つ理由がない。同期で読める箇所まで `await` を増やすことになる                                                             | 却下     |
+| 案                                            | 評価                                                                                                                                                                                 | 採否     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| `expect.element` に寄せる                     | vitest が retry 間隔と失敗時の DOM 出力を持つ。待機の実装がテスト側に残らない。生 DOM の mount 待ちも `expect.element` で足り、`findElement()` は呼ばない (待ち時間が上限なしになる) | **採用** |
+| `element()` のまま `vi.waitFor` で全体を囲む  | 同じ待機が書ける。ただし囲む範囲の判断がテストごとに要り、囲み忘れが `src/components/ui/input-group.test.tsx` と同じ形で再発する                                                     | 却下     |
+| animation を待つ helper に mount 待ちを足す   | 「アニメーションを待つ」名前と責務がずれる。待つ対象を引数で渡す設計になり、呼び出し側の判断が増える                                                                                 | 却下     |
+| `element()` を全廃して `findElement()` に統一 | `render()` 直後は `act` で flush 済みで、待つ理由がない。同期で読める箇所まで `await` を増やすことになる                                                                             | 却下     |
 
 ## Consequences
 

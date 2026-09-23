@@ -280,11 +280,11 @@ export const noFindElement = defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "locator.findElement() を呼ばない。mount は expect.element で待つ (ADR-0048)",
+      description: "locator.findElement() を呼ばない。mount は expect.element で待つ",
     },
     messages: {
       findElement:
-        "`locator.findElement()` を呼ばない。mount を待つなら `expect.element(locator).toBeInTheDocument()` を使う。この config は `actionTimeout` を置いており、`findElement()` は待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える (ADR-0048)",
+        "`locator.findElement()` を呼ばない。mount を待つなら `expect.element(locator).toBeInTheDocument()` を使う。この config は `actionTimeout` を置いており、`findElement()` は待ち時間が上限なしになる。要素が現れないとテストが `Test timed out` で落ち、locator の名前が出力から消える",
     },
   },
   create(context) {

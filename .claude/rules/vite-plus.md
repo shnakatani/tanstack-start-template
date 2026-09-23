@@ -20,6 +20,10 @@ paths:
 - built-in と同名の script を新設しない。`vp <name>` の built-in と `vp run <name>` の script が別物になり取り違える。ただし `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す
 - ビルド成果物を起動する検査は `vp build` の後に置く。CI も同じ順序で workflow に並べる
 
+## 型検査
+
+- `typescript` を直接の依存に置かない。型検査は `vp check` の type-aware lint (tsgolint) が担い、`typescript` は推移依存として入る。直接の依存へ戻すのは、リポジトリのコードが `typescript` を import するときだけ
+
 ## React Compiler (`vite.config.ts` の `plugins`)
 
 - `viteReact({ compiler: { logDiagnostics: true } })` の `logDiagnostics` と `compiler` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0017)

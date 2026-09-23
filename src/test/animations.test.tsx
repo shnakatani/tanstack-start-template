@@ -42,7 +42,7 @@ async function renderOpenDialog() {
     </Dialog>,
   );
   await screen.getByRole("button", { name: "開く" }).click();
-  // mount は builtin の matcher で待つ。`findElement()` は呼ばない (ADR-0044 / ADR-0048)
+  // mount は builtin の matcher で待つ。`findElement()` は呼ばない (ADR-0044。上限なしで待つため)
   await expect.element(screen.getByRole("dialog")).toBeInTheDocument();
   return screen;
 }

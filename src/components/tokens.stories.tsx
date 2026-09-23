@@ -8,7 +8,6 @@ import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story
 
 /**
  * 解決後の値を伴う全トークンを名前順で集める。`styles.css` が SSOT なので値は写さない
- * (ADR-0056)。
  */
 function readAllTokens(): ThemeToken[] {
   const style = getComputedStyle(document.documentElement);
@@ -28,7 +27,7 @@ function byPrefix(tokens: ThemeToken[], prefix: string): ThemeToken[] {
 
 /**
  * テーマごとに 1 回だけ読む。値は CSSOM と getComputedStyle から取るので React の依存に
- * 現れず、購読しないと切り替えても止まる (ADR-0056)。
+ * 現れず、購読しないと切り替えても止まる。
  *
  * 種別ごとの絞り込みもここで済ませる。render 側で絞ると、CSSOM の走査こそ 1 回でも、
  * `dropRedundantColorAliases` の warn が再 render のたびに出る。走査と警告はテーマが

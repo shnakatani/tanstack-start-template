@@ -380,7 +380,8 @@ export default defineConfig({
         excludeFiles: ["src/test/*.test.ts"],
         rules: {
           "browser-test/prefer-locator-methods": "error",
-          // `locator.findElement()` を止める (ADR-0048)。正当な呼び出し元は無く、除外も置かない
+          // `locator.findElement()` を止める。`actionTimeout` を置いた config では待ち時間が上限なしになる。
+          // 正当な呼び出し元は無く、除外も置かない
           "browser-test/no-find-element": "error",
           // スタイルの否定 assert が素通りする形を止める (ADR-0049)
           "browser-test/no-negated-style-literal": "error",

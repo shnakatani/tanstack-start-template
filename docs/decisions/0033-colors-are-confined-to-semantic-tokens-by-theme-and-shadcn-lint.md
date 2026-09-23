@@ -81,7 +81,7 @@ theme と component の探索に失敗したときは、`vp lint` の出力へ `
 - `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (ADR-0032)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。token だけを混ぜる表現にも行単位の抑制が要り、抑制は class 文字列の行全体に効く。抑制した行へ後から色の任意値を足すと無言で通る
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。この経路の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にして止める。ただし `eslint` がグラフから消えるわけではない。`eslint-plugin-testing-library` が `@typescript-eslint/utils` 経由で `eslint` を必須 peer に持ち、そちらは止まらない (ADR-0010)
-- parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。型検査は tsgolint が担う (ADR-0012) ため `vp check` の結果は変わらない
+- parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。型検査は tsgolint が担い `typescript` を直接の依存に持たないため `vp check` の結果は変わらない
 - 依存グラフへ `typescript` を持ち込むのはこの parser である。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らない (2026-09-19 確認)
 - eslint peer の optional 化と `typescript` の 6 系固定は撤去条件が同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` は不要になるが、`eslint` は `eslint-plugin-testing-library` 経由で残る。撤去で解けるのは `typescript` の 6 系固定だけである
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)

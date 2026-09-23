@@ -40,7 +40,7 @@ import { Route } from "./index";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
- * `<html>` を描くので browser test では使えない (ADR-0051)。root は本番と同じ context 型を持ち、
+ * `<html>` を描くので browser test では使えない。root は本番と同じ context 型を持ち、
  * `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
  */
 const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -123,7 +123,7 @@ describe("/notes route", () => {
     expect(router.state.location.href).toBe("/notes?q=xyz");
     // 検索は同じ画面の絞り込みなので履歴を積まない (replace)。push に変わると 2 になる
     expect(router.history.length).toBe(1);
-    // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0038)
+    // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない)
     await vi.waitFor(() => {
       expect(readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
     });

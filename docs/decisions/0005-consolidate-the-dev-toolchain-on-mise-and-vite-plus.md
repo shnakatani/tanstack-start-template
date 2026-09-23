@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0012 (型検査は tsgolint が担う) / ADR-0052 (Storybook の telemetry) / ADR-0006 (依存更新の待機)
+- 関連: ADR-0052 (Storybook の telemetry) / ADR-0006 (依存更新の待機)
 
 ## Context
 
