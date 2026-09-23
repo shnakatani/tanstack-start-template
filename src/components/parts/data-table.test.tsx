@@ -24,7 +24,7 @@ const FRUITS: Fruit[] = [
  * それを測るテストも無い。見え方は `BusyRow` story が持つ。
  *
  * この部品は args だけで状態が決まるので story に play を書かない (ADR-0053)。play の無い
- * story は描画と axe しか走らせないため、上の契約はここでしか固定できない (ADR-0055 の
+ * story は描画と axe しか走らせないため、上の契約はここでしか固定できない (ADR-0053 の
  * 役割分担)。
  */
 describe("DataTable", () => {

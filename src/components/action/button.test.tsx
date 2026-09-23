@@ -8,7 +8,7 @@ import { ActionButton } from "./button";
  * 振る舞いのカタログは `button.stories.tsx` の play が持つ (ADR-0053)。ここに残すのは
  * 決着前の二重発火を CDP 経由の実イベントで塞ぐ 1 case だけである。
  *
- * ADR-0055 は「ADR-0045 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま
+ * ADR-0053 は「ADR-0045 が定めた実イベントでの発火の規律はブラウザテスト側がそのまま
  * 持ち、play へは移さない」と決めている。play は Storybook の UI 上でも走るため CDP を
  * 使えず、`storybook/test` の合成イベントで操作する。
  *
