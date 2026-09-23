@@ -59,7 +59,7 @@ pending 中の状態をスクリーンリーダーへ伝えるために、条件
 ## Consequences
 
 - ADR-0014「Action 層」の pending 行を「`Spinner` は視覚専用。状態は `aria-busy` と announcer」に改訂した (Revised)。同 ADR と `src/components/action/button.tsx` の子孫 role の表現を §5.2.9 の主語 (ユーザーエージェントが露出すべきでない) に揃えた。ADR-0016 の適用表の `<output>` の 1 文を本 ADR への参照に差し替えた
-- `.claude/rules/implementation.md`「accessible name の与え方」の状態表示の行と直後の箇条書きに、通知は announcer に集約する、live region は初期マークアップに置いて消さない、を足した。同節の `role="status"` を accessible name で特定する記述は、announcer の文言で検証する形に改めた。`.claude/rules/styling.md`「状態表示」の `Spinner` の行に視覚専用 (`aria-hidden`) を添えた
+- `.claude/rules/styling.md`「accessible name の与え方」の状態表示の行と直後の箇条書きに、通知は announcer に集約する、live region は初期マークアップに置いて消さない、を足した。同節の `role="status"` を accessible name で特定する記述は、announcer の文言で検証する形に改めた。`.claude/rules/styling.md`「状態表示」の `Spinner` の行に視覚専用 (`aria-hidden`) を添えた
 - テストは `getByRole("status", { name })` で項目の pending を掴む形をやめ、`aria-busy` と announcer の region のテキストで検証する
 - issue #21 (button 内の `role="status"` の露出) の対処は本 ADR で行う。実機のスクリーンリーダー (VoiceOver / NVDA) での読み上げ確認は #21 に残し、結果を本 ADR に日付付きで追記する
 - 削除完了で行ごと unmount されるとき、行のトリガーにあったフォーカスが body へ落ちる。ADR-0014 実装時からある事象で、本 ADR は完了の announce で通知は補うが、フォーカスの退避先は別途決める (起票)

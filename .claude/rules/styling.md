@@ -7,49 +7,30 @@ paths:
 
 # スタイリング規約
 
-色・タイポグラフィ・spacing・状態表示の基準。touch target の制約は `implementation.md` (ADR-0007) が優先する。
-
-## 冒頭チェックリスト
-
-- [ ] 色は semantic token のみ (palette 直書き・任意値への色の直書き・SVG 属性への直書き禁止)
-- [ ] 本文に `text-xs` を使わない / ページ見出しとセクション見出しを同サイズにしない
-- [ ] `isLoading ? <Skeleton>` の即時分岐を新設しない (loader prefetch + `pendingComponent`)
-
 ## 色は semantic token のみ
 
-- `primary` / `secondary` / `muted` / `accent` / `destructive` / `destructive-surface` / `success` / `sidebar-*` 等の semantic token を使う
-- palette 色の直書き (`bg-blue-500` / `text-gray-900` 等) と任意値への色の直書き (`bg-[#hex]` / `bg-[rgb(...)]`) は禁止。淡色ハイライトは `bg-primary/10` のような opacity variant で表現する
-- SVG の `fill` / `stroke` に色を直書きしない。`currentColor` か semantic token を参照する
-- 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。定義前に utility を書くと未知クラスとして落ちる。露出は下表で選び、値は ADR-0024 の段に乗せる
-- `var(--...)` だけを材料にした `color-mix()` は許可する。`no-arbitrary-values` は材料を区別しないため、行単位で抑制する。registry 内なら ADR-0006 の許容リストにも記録する
-- 破壊操作は常時 destructive 色を使い、強度は主張度で分ける。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover でのみ着色すると touch 環境で色が出ず、破壊操作だと伝わらない
+palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-raw-colors`、`shadcn/no-arbitrary-values`) が止める。直し方:
+
+- semantic token を使う。淡色ハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token
+- 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0024 の段に乗せる
+- `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら ADR-0006 の許容リストにも記録する
+- 破壊操作は常時 destructive 色にする。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover だけの着色は touch 環境で出ない
+- `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
+- 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (ADR-0028)
+- コントラストは本文 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark は light と別に検算する。opacity variant は背景合成で比が変わる
+- トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0024)
+- 色だけで情報を伝えない。アイコンかテキストを併用し、併用先が識別に寄与しないなら `sr-only` で補う
 
 Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` の変更だけで完結する。
 
 ### 新しい色の露出のさせ方
 
-判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない。それは実測して ADR-0024 へ残す。
+判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない (ADR-0025)。
 
 | 誤用を誘う既存の形 | 露出                               | 例                         |
 | ------------------ | ---------------------------------- | -------------------------- |
 | 無い               | `@theme inline` で token 化        | `--destructive-surface`    |
 | 在る               | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0025) |
-
-`@theme inline` へ通すと `text-*` / `bg-*` / `border-*` と variant の全組み合わせが生える。`--placeholder` を通すと `data-placeholder:text-placeholder` が生え、`select` の既存の `data-placeholder:text-muted-foreground` を置き換える形で実テキスト (WCAG 1.4.3 が掛かる) へ当てられる。
-
-### 統制の 2 層 (ADR-0004)
-
-| 層  | 場所                                                | 効き方                                                                |
-| --- | --------------------------------------------------- | --------------------------------------------------------------------- |
-| 1   | `src/styles.css` の `@theme` (`--color-*: initial`) | 既定 palette の utility が CSS ごと生成されない                       |
-| 2   | `@shadcn/lint` の 3 ルール (`vite.config.ts`)       | `vp check` で未知 class、palette・raw color、arbitrary color を落とす |
-
-`no-unknown-classes` は theme に無い class、`no-raw-colors` は palette・未定義 token・SVG の raw color、`no-arbitrary-values` の `deny: ["color"]` は arbitrary color を担当する。
-
-- 1 層目の `@theme` は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
-- `black` と `white` だけは 1 層目で再登録してある。registry の overlay が scrim を `bg-black/10` で描いており、消すとモーダルの背景が素通しになる
-- 2 層目はテストファイルにも効く。字面走査の頃と違って `.test.*` / `.gen.*` の除外は無い
-- `styles.css` に `static` を付けない。Storybook のカタログのために `.storybook/preview.css` が同じファイルを `theme(static)` 付きで読み直す。本番の CSS は未参照の宣言を持たない (ADR-0022)
 
 ## typography 階層
 
@@ -60,24 +41,33 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 | 本文・フォームラベル         | `text-base` / `text-sm`   |
 | 補足・タイムスタンプ・バッジ | `text-xs` 可              |
 
-- ページ見出しの実装は `src/components/parts/page-header.tsx` が持つ。ページ側で見出しの class を書き直さない
-- 本文に `text-xs` を使わない (タブレット可読性)
-- ページ見出しとセクション見出しを同サイズにしない (階層が消える)
-- カードの中のページ見出しは `CardPageTitle` (`src/components/parts/page-title.tsx`) を通す。`CardTitle` へ寸法の class を直接書かない。外見は `PageHeader` と同じ `pageTitle` が持つ
+- ページ見出しは `src/components/parts/page-header.tsx` が持つ。カードの中は `CardPageTitle` (`page-title.tsx`) を通し、class を書き直さない
+- 本文に `text-xs` を使わない (タブレット可読性)。ページ見出しとセクション見出しを同サイズにしない (階層が消える)
 
 ## spacing 基準
 
-**間隔の表現手法は shadcn skill (`.claude/skills/shadcn/rules/styling.md`) が正本**で、本節は値と、正本を狭める追加規定を持つ。
+間隔の表現手法は shadcn skill (`.claude/skills/shadcn/rules/styling.md`) に従う。本節は値と、skill を狭める追加規定を持つ。
 
-- `space-x-*` / `space-y-*` は使わず `flex` + `gap-*` で表現する (正本の規約)
-- 兄弟の間隔を子の margin (`mb-*` / `mt-*` / `ml-*` / `mr-*`) で作らない。間隔の所有者を親に置き、子が並ぶ文脈を知らなくても済むようにする。正本は「className for layout only」で `mt-4` を可例に挙げるが、兄弟の間隔を作る用途に限り本ファイルが上書きして禁止する (例外は「親の gap で表現できない箇所」)
-- どちらも機械強制はないため、レビューで見る
+- 兄弟の間隔を子の margin (`mb-*` / `mt-*` 等) で作らない。親の `gap-*` に置く。skill は `mt-4` を可例に挙げるが、兄弟の間隔に限りここで禁止する
+- 機械強制は無いのでレビューで見る。例外は「親の gap で表現できない箇所」に挙げたものだけ
+- registry 内部の間隔 (Dialog や Card の padding、`Field` 系の間隔) は registry の既定を基準にし、下の表に写さない
 
-表の値は全て app 固有の判断値で、変更するときは実測して本表を更新する。
+| 対象                         | 値                                        |
+| ---------------------------- | ----------------------------------------- |
+| ページ本体 padding           | `p-4`                                     |
+| ページ本体の縦積み           | `gap-4`                                   |
+| ページ見出し帯 (page-header) | `min-h-15 py-3` (`h-9` の actions と等高) |
+| リスト行間                   | `gap-2`                                   |
 
-registry コンポーネント内部の間隔 (ダイアログや Card の padding、`Field` 系のフィールド間隔、`Badge` / `Item` のチップ密度) は registry の既定が基準値で、本表には写さない。消費側 className での間隔調整は、正本の「className for layout only」が layout 用として許容する。
+- ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外
+- 表にない値を使う前に「意味が違うのか、単なる揺れか」を問う。同じ意味なら表の値に合わせる
+- 別の体系 (1 画面に収める縦予算など) を持つ画面を足すときは、表の対象外と明記し、値の根拠を実装近傍に書く
+- touch target と衝突したら touch target が優先する (ADR-0007)
+- registry の既定から値を変えるときは、まず公式の推奨へ合わせ、実機で見てから判断し、理由を実装近傍に書く (ADR-0006)
 
-ただし打ち消しクラスを積む前に、公式が用意したノブを探す。正本の「Customizing Components」は variant → className → 新規 variant → wrapper の順しか挙げず CSS 変数のノブに触れないため、確認できたものを本節に置く。
+### 公式のノブ
+
+打ち消しクラスを積む前に、公式が用意したノブを探す。
 
 | やりたいこと                      | 使うもの                                          | 出典                      |
 | --------------------------------- | ------------------------------------------------- | ------------------------- |
@@ -89,58 +79,25 @@ registry コンポーネント内部の間隔 (ダイアログや Card の paddi
 
 Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
-`--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなり、消費側が `px` を手書きする羽目になる。「見出し帯 + 全幅テーブル」は `Card` の用途ではないので器を自前にする。
-
-`scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry が Viewport に持たせた focus ring がどちらでも消え、キーボード操作の指標が失われる。
-
-スクロールバーは `ScrollArea` が縦横とも描き、その分の余白も持つ (ADR-0006)。
-
-背景を持つスクロール領域は、器と中身の両方へ背景を置く。器側だけだと、スクロールで中身が器より高くなったときに axe がテキストの背景を解決できない (dequelabs/axe-core#621 で入った意図した挙動)。中身側だけだと、バーのぶんの余白が地のまま残る。実例は `src/components/parts/code-block.tsx`。
-
-| 器                                                          | 消費側が書くもの                                            |
-| ----------------------------------------------------------- | ----------------------------------------------------------- |
-| 既定 (末尾側 padding がバー幅以下)                          | 何も書かない。バーも余白も `ScrollArea` 側                  |
-| 本文の末尾側 padding がバー幅を上回り、外側と端をそろえたい | `data-has-overflow-y:pr-0` (実例: `dialog-scroll-body.tsx`) |
-
-`<ScrollBar orientation="horizontal" />` を消費側で合成しない。合成に委ねると、余白は出るのにバーが無い器を作れる (ADR-0006)。
-
-| 対象                         | 値                                        |
-| ---------------------------- | ----------------------------------------- |
-| ページ本体 padding           | `p-4`                                     |
-| ページ本体の縦積み           | `gap-4`                                   |
-| ページ見出し帯 (page-header) | `min-h-15 py-3` (`h-9` の actions と等高) |
-| リスト行間                   | `gap-2`                                   |
-
-### 表の読み方
-
-- ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外
-- touch target の制約 (`implementation.md`、ADR-0007) と衝突する場合はそちらが優先
-- 表にない値を使う前に「意味が違うのか、単なる揺れか」を自問する。意味が同じなら表の値に合わせる
-- 別の体系 (1 画面へ収める縦予算で決まる密度など) を持つ画面を足すときは、その画面を本表の対象外と明記し、値の根拠を実装近傍に書く
-
-### registry の既定から変えている箇所
-
-まず公式の推奨へ合わせ、実機で見てから UI/UX 上のカスタマイズを判断する。変える値を増やすときは実装近傍に理由を書く。カスタマイズ自体は公式の想定 (「The top layer of your component code is open for modification」) で、`src/components/ui/` のソースまで変えた分は ADR-0006 が持つ。
-
-- 複数選択リストの行間は `ChoiceCardList` が詰める。`FieldGroup` 素の gap はフォームのフィールド間の値で行の並びには過大なため正本も上書きを例示しており、そこからさらに 1 段詰めてある
+- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする
+- `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える
+- 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`code-block.tsx`)
+- 本文の末尾側 padding がバー幅を上回り外側と端をそろえたいときだけ `data-has-overflow-y:pr-0` を書く。既定はバーも余白も `ScrollArea` 側 (ADR-0006)
+- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (ADR-0006)
 
 ### 親の gap で表現できない箇所
 
 子の margin で兄弟の間隔を作ってよい例外。増やすときは実装近傍にも同じ理由を書く。
 
-- `src/components/ui/` (registry 素) は対象外。`FieldLegend` の `mb-3` のように registry 自身が margin で間隔を取る箇所は消費側で上書きしない
-- 負マージンによる親 padding の打ち消しと `*-auto` による整列は兄弟の間隔ではないため、ここには挙げない
+- `src/components/ui/` (registry 素) は対象外。`FieldLegend` の `mb-3` のように registry 自身が margin で取る間隔は消費側で上書きしない
 
 ### 内部スクロールを持つダイアログの組み方
 
-`DialogScrollForm` + `DialogScrollBody` (`src/components/parts/dialog-scroll-body.tsx`) で組む。ヘッダーとフッターの間の中間コンテナを `DialogScrollForm` にし、本体だけをスクロールさせる (見出しと X ボタンが流れない)。各 className の根拠は同ファイルの docstring。
+- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる (ADR-0041)
+- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なる (ADR-0041)
+- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。余白が無いと ring が端で切れる (ADR-0041)
 
-恒常的に viewport 高を超えるダイアログは必ずこの方式で組む。`popupOverflowBackstop` 発火時に X 閉じるボタンが流れる挙動は、内部スクロールを組み忘れても内容が読める防御層として許容し、sticky は作らない。sticky を足すと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる。
-
-本文の余白は `DialogScrollBody` が持つ (`px-6` / `py-4`)。消費側で padding を足さない。
-`ring` / `box-shadow` は border box の外側に描かれるため、スクロール領域に余白がないと端の要素で切れる。余白の見え方は `dialog-scroll-body.stories.tsx` の `Overflowing` で見る (寸法は測らない。ADR-0007)。
-
-`DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める。
+`DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める (実例: `note-create-dialog.tsx`)。
 
 | ケース                                           | 配置                                                      |
 | ------------------------------------------------ | --------------------------------------------------------- |
@@ -148,15 +105,59 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 | フッターの手前で描画が空になる条件分岐がある     | 中間コンテナの外 (分岐によらず常時表示を保つ)             |
 | ヘッダーと本体の間に固定表示の兄弟要素を挟まない | 中間コンテナを省略し、`DialogScrollBody` を直接置いてよい |
 
-実例は `src/routes/notes/-components/note-create-dialog.tsx` (`DialogScrollForm` が中間コンテナ、`DialogFooter` はその内側)。
-
 ## 状態表示
 
-- ページのローディング表示は route loader prefetch + `useSuspenseQuery` + route の `pendingComponent` に統一する。表示タイミングは `src/router.tsx` の `defaultPendingMs` / `defaultPendingMinMs` に任せる
-- ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が一瞬点滅するちらつきの原因
-- skeleton の見た目はレイアウト模倣 (共有: `src/components/parts/table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付与する (`pendingComponent` 内も同様)
-- 列数など実テーブルと合わせる値は、実テーブル側の定義を SSOT にして両方から参照する。別々に持つとロード完了時にレイアウトシフトが出る
-- ボタン内の送信中表示: `Spinner` (loading-buttons パターン。Skeleton にしない)。視覚専用 (`aria-hidden`)。状態は `aria-busy` で持つ (ADR-0017)
-- `Spinner` を使う側は必ず `aria-hidden` を渡す。registry の `Spinner` は `role="status"` を持つが、button の子では露出されるとは限らない (WAI-ARIA 1.2 §5.2.9、ADR-0017)
-- データなし: `Empty` 系。メッセージ + 次のアクションへの導線をセットで示す
-- 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項で良い
+- ページのローディングは route loader の prefetch + `useSuspenseQuery` + route の `pendingComponent` に統一する。タイミングは `src/router.tsx` の既定に任せる
+- ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が点滅する
+- skeleton はレイアウトを模倣する (`table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付ける
+- 列数など実テーブルと合わせる値は、実テーブル側の定義を SSOT にして両方から参照する。別々に持つとロード完了時にレイアウトがずれる
+- ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0017)
+- データなしは `Empty` 系で、メッセージと次のアクションへの導線をセットで示す
+- 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項でよい
+
+## touch target
+
+WCAG 2.2 AA 2.5.8 (24x24 CSS px) を床とし、視覚 = ヒット = registry 素寸法で一律に運用する。44px は要件ではない (ADR-0007)。
+
+- `h-11` / `min-h-11` / `min-w-11` / `size-11` を variant なしで書かない。寸法に機械強制は無くレビューで見る (ADR-0007)
+- 実機で誤タップが報告されたら、当該部品に `any-pointer-coarse:min-h-11` (icon 系は `min-w-11` も) を後付けする。以後の高さも同じ variant で書く (ADR-0007)
+- 実機の UI 確認ではタップ精度 (特に床ちょうどの要素) を観点に含める
+- `touch-action` を上書きしない。tap 遅延の除去は `src/routes/__root.tsx` の viewport meta が担う (ADR-0007)
+- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (ADR-0007)
+- checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う
+- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
+- `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する
+- ドロワーとモーダルには visible close (X ボタン) を置く。スワイプと backdrop タップだけにしない
+
+## a11y 最低基準
+
+lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yViolations` を書いたケースだけを見るので、他は devtools の A11y パネルで触りながら確かめる。
+
+### accessible name の与え方
+
+迷ったら与える側に倒す。与えない判断をしたら理由を実装近傍に残す。
+
+| 対象                                                  | 対応                                                                                                             |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| テキストを持たない操作要素 (ボタン / リンク / トグル) | 要素に `aria-label`                                                                                              |
+| 状態や属性を伝える唯一の手段になっているアイコン      | `aria-hidden` + 隣接の `sr-only` テキスト                                                                        |
+| 隣接テキストが同じ意味を持つアイコン                  | `aria-hidden`。名前を足さない。そのテキストが実際に読み上げられるときに限る                                      |
+| 可視テキストが既に accessible name の要素             | 何も足さない (次項)                                                                                              |
+| name from author のロールを持つ要素                   | 可視テキストがあっても `aria-label` (次項)                                                                       |
+| テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0019)                  |
+| ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0017) |
+
+- 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0017)
+- live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0017)
+- pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0017)
+- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0034)
+- メニュー全体を包む単一の `DropdownMenuGroup` には名前を与えない。メニュー自体がトリガー由来の名前を持つ
+- 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
+- ナビゲーションは landmark (`nav`、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける
+
+### 可視テキストを持つ要素に aria-label を足さない
+
+- `span` / `div` (ロール `generic`) に `aria-label` を付けない。name prohibited (WAI-ARIA 1.2 §5.2.8.6)。別要素の可視テキストは `aria-labelledby` で指す
+- 例外は name from author のロール。`role="combobox"` (Combobox / Select / Popover の trigger) は可視テキストと同値でも `aria-label` が要る (WAI-ARIA 1.2 §5.2.8)
+- 可視テキストを子要素へ分割すると Chrome が境界に空白を入れて名前が分断される。略記と全文を出し分けるなら可視側を `aria-hidden`、全文を 1 つの `sr-only` に置く
+- 名前に関わる要素を切り出す前後で `getByRole({ name })` の結果が変わらないことを確かめる
