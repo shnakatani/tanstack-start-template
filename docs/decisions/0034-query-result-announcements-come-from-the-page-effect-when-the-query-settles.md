@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0017 (通知は常時 mount の live region に集約する。本 ADR が呼び出し層を取得結果へ広げる)、ADR-0033 (検索条件は URL が持ち、入力欄は URL の q に対する編集として描画中に導く)、ADR-0007 (a11y の床は WCAG 2.2 AA)
+- 関連: ADR-0017 (通知は常時 mount の live region に集約する。本 ADR が呼び出し層を取得結果へ広げる)、ADR-0033 (検索条件は URL が持つ)、ADR-0035 (入力欄は URL の q に対する編集として描画中に導く)、ADR-0007 (a11y の床は WCAG 2.2 AA)
 
 ## Context
 
@@ -49,7 +49,7 @@ ADR-0017 は通知を `announce()` (常時 mount の live region) に集約し�
 - ADR-0017 の「呼び出し層」を広げる: mutation の通知は feature 側の `onMutate` / `onSuccess`、取得結果の通知はページの effect。どちらも部品は announce しない
 - オフラインで `fetchStatus` が `paused` のときは `isFetching` が false なので古いキャッシュの件数を通知し、再接続後の再取得で件数が変わっても同じ条件なので通知し直さない。表示中の一覧と件数は一致しているので誤通知ではなく、`fetchStatus === "idle"` で見ると通知ゼロになるほうが悪い
 - 通知が消える経路は ref の更新を消す mutant (「abc」→「」で 2 件目が出ない) で、取得中の通知は決着の条件を外す mutant で、それぞれ `-components/notes-page.test.tsx` が落ちることを 2026-09-23 に確認した
-- 2026-09-23 の初版は「ページが `onResultsSettled(q, count)` で報告し、route component が `useRef` で重複を除いて通知する」だった。当時はページを `key={q}` で作り直しており、記憶を URL の変化をまたぐ場所に置く必要があった。作り直しをやめた (ADR-0033) ことで前提が消えたので、同日に本 ADR を書き直した
+- 2026-09-23 の初版は「ページが `onResultsSettled(q, count)` で報告し、route component が `useRef` で重複を除いて通知する」だった。当時はページを `key={q}` で作り直しており、記憶を URL の変化をまたぐ場所に置く必要があった。作り直しをやめた (ADR-0035) ことで前提が消えたので、同日に本 ADR を書き直した
 
 ### 再評価の条件
 

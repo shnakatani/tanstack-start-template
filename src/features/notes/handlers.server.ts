@@ -21,7 +21,7 @@ export function createNoteHandlers(getDb: () => NotesDb) {
   return {
     list: async ({ q }: NoteListFilter): Promise<Note[]> => {
       // 空の q は絞り込みなし。`where(undefined)` は drizzle が条件なしとして扱う。
-      // 部分一致は LIKE で、入力のワイルドカードは ESCAPE でリテラルにする (ADR-0033)
+      // 部分一致は LIKE で、入力のワイルドカードは ESCAPE でリテラルにする (ADR-0037)
       const titleMatches = q === "" ? undefined : likeContains(notes.title, q);
       // createdAt はミリ秒精度で、同一ミリ秒の連続作成では順序が決まらない。
       // 単調増加する id を第 2 キーに置いて並びを決定的にする

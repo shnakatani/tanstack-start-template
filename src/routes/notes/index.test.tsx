@@ -40,7 +40,7 @@ import { Route } from "./index";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
- * `<html>` を描くので browser test では使えない (ADR-0033)。root は本番と同じ context 型を持ち、
+ * `<html>` を描くので browser test では使えない (ADR-0036)。root は本番と同じ context 型を持ち、
  * `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
  */
 const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
