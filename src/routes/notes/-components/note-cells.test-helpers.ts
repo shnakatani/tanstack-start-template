@@ -3,7 +3,7 @@ import type { Screen } from "@/test/page-helpers";
 
 /**
  * メモの行。モーダル表示中は行が aria-hidden 配下に入るので、その間に取るときは includeHidden を
- * 渡す。閉じた後は不要 (Base UI の animation は無効で、close の次の描画で unmount する。ADR-0042)。
+ * 渡す。閉じた後は不要 (Base UI の animation は無効で、close の次の描画で unmount する。ADR-0043)。
  */
 export function noteRow(screen: Screen, note: Pick<Note, "title">, { includeHidden = false } = {}) {
   return screen.getByRole("row", { name: new RegExp(note.title), includeHidden });

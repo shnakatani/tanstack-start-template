@@ -12,7 +12,7 @@ function ItemGroup({ className, render, ...props }: useRender.ComponentProps<"di
         // 既定の div は list の意味を role で持つ。この形では子も `role="listitem"` が要るが、
         // `<li>` は ul/ol/menu の中でしか置けないため HTML としては破綻する。
         // 意味を正しく出すなら `render={<ul />}` と `Item render={<li />}` の対で使う
-        // (ADR-0026)。上流も同じ欠陥を追跡している
+        // (ADR-0027)。上流も同じ欠陥を追跡している
         // (shadcn-ui/ui#11532「announces as an empty list」)
         // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- 既定のタグを ul にすると、li 以外を子に取る既存の使い方が content model 違反になる
         role: "list",
@@ -32,7 +32,7 @@ function ItemGroup({ className, render, ...props }: useRender.ComponentProps<"di
  * 項目の間の区切り。registry は base-ui の `Separator` を使うが、それだと `role="separator"` と
  * `aria-orientation` が付き、`ItemGroup` (list) の子に置けない。`role="presentation"` へ倒しても
  * `aria-orientation` が `aria-allowed-attr` で落ちる。対で export される部品どうしが組めないので、
- * 装飾の線として描き直す (ADR-0026 の乖離)。`render` で `li` へ倒せば list の中でも使える
+ * 装飾の線として描き直す (ADR-0027 の乖離)。`render` で `li` へ倒せば list の中でも使える
  */
 function ItemSeparator({ className, render, ...props }: useRender.ComponentProps<"div">) {
   return useRender({

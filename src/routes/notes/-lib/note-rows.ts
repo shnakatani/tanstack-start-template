@@ -10,7 +10,7 @@ type CreatingNoteRow = { kind: "creating" } & CreatingRow;
 /** 一覧の 1 行。確定行と保存中の行の union で、cell は `kind` で分岐する (`docs/guides/lists-and-search.md`「一覧テーブルを組む」の行の型の行)。 */
 export type NoteRow = SavedNoteRow | CreatingNoteRow;
 
-/** busy 表現 (aria-busy + 半透明) を付ける行。保存中の行と、削除中の確定行 (ADR-0022) */
+/** busy 表現 (aria-busy + 半透明) を付ける行。保存中の行と、削除中の確定行 (ADR-0023) */
 export function isNoteRowBusy(row: NoteRow): boolean {
   return row.kind === "creating" || row.isDeleting;
 }
@@ -27,7 +27,7 @@ export function getNoteRowId(row: NoteRow): string {
 
 /**
  * 一覧の行を組み立てる。保存中の行を先頭に置き (一覧は createdAt の降順)、確定行には削除中か
- * どうかを付ける。再取得完了で保存中の行は実データに置き換わる (ADR-0022)。
+ * どうかを付ける。再取得完了で保存中の行は実データに置き換わる (ADR-0023)。
  */
 export function toNoteRows({
   notes,

@@ -4,8 +4,8 @@ shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す�
 
 | 決定                                                                                                               | ADR      |
 | ------------------------------------------------------------------------------------------------------------------ | -------- |
-| registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0026 |
-| セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める                        | ADR-0032 |
+| registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0027 |
+| セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める                        | ADR-0033 |
 
 乖離の一覧は台帳 `docs/registry-deviations.md` が持つ。baseline は `docs/registry-baseline/` にある。
 
@@ -19,7 +19,7 @@ shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す�
 2. 同じ部品の生成時 baseline を取る (次節のコマンド)。`--overwrite` で再生成したときも取り直す
 3. baseline との差分が台帳と 1:1 であることを確かめる (「baseline と突き合わせる」)
 4. 上流の形を保つための lint 違反だけを行単位で抑制し、台帳の「行単位の lint 抑制」へ記録する。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く
-5. story を書く。消費側からの import が 0 件でも書く (ADR-0050)
+5. story を書く。消費側からの import が 0 件でも書く (ADR-0051)
 
 - コード側の理由コメントは、ADR と台帳だけでは実装者が誤る落とし穴に限る
 - 使っていない部品を先に入れること (vendor preset) は許す。chore のコミットとして記録する
@@ -31,7 +31,7 @@ shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す�
 ```bash
 vp dlx -- shadcn@latest add <name...> --path docs/registry-baseline --overwrite -y
 # CLI は registry が宣言する依存を package.json と lockfile へ足す。--path で baseline だけを
-# 再生成するときも書き込むが、vendor した部品の契約なのでそのまま受け入れる (ADR-0026)
+# 再生成するときも書き込むが、vendor した部品の契約なのでそのまま受け入れる (ADR-0027)
 git diff package.json
 # 先頭の "use client" が残っていたら削除する (下記の CLI のバグ)
 vp fmt docs/registry-baseline --write
@@ -90,7 +90,7 @@ registry の見た目を変えたいときは、打ち消しの class を積む�
 ### 生成コードを直接変えてよい理由
 
 shadcn の docs は「The top layer of your component code is open for modification」とし (https://ui.shadcn.com/docs の Open Code)、生成コードを直接変えること自体を公式の想定にしている。
-統制するのは「してはいけない改変」ではなく、再生成と上流の追随を安全に回すために「何を変えたか」を残すことである。そのための記録が baseline と台帳で、変える前にまず公式の推奨に合わせ、実機で見てから判断する (ADR-0026「追加と削除の基準」)。
+統制するのは「してはいけない改変」ではなく、再生成と上流の追随を安全に回すために「何を変えたか」を残すことである。そのための記録が baseline と台帳で、変える前にまず公式の推奨に合わせ、実機で見てから判断する (ADR-0027「追加と削除の基準」)。
 
 ### 公式のノブを書き留める理由
 

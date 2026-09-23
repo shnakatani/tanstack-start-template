@@ -7,24 +7,24 @@ paths:
 
 ## ドメイン型はスキーマから導出する
 
-- ドメイン型は `src/features/<domain>/schema.ts` のスキーマから `InferOutput<typeof xxxSchema>` で導出し、手書きのフィールド宣言を新設しない。二重管理するとスキーマへのフィールド追加が型に伝わらず、実行時の `v.parse` まで気付けない (ADR-0017)
-- サーバーが付与するフィールド (id / 生成日時等) は、入力スキーマとは別に保存済みスキーマを `entries` の spread で組み立ててそこから導出する。別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる (ADR-0017)
-- 導出には `InferOutput` を使う。`InferInput` は default 付きフィールド (`v.optional(v.boolean(), false)`) を optional にし、読み出し後の形と食い違う (ADR-0017)
-- 項目の呼称は `v.metadata({ label })` でスキーマの各項目に載せ、消費側は `v.getMetadata(entries.x).label` から `satisfies Record<keyof T, string>` 付きの object に写して読む。素の定数 object を別に持たない。持つと項目追加で呼称が漏れても型で落ちない (ADR-0017)
-- 例外はスキーマ由来型どうしを組み合わせる合成ヘルパー型。手書きになる場合は理由をコメントで残す (ADR-0017)
+- ドメイン型は `src/features/<domain>/schema.ts` のスキーマから `InferOutput<typeof xxxSchema>` で導出し、手書きのフィールド宣言を新設しない。二重管理するとスキーマへのフィールド追加が型に伝わらず、実行時の `v.parse` まで気付けない (ADR-0018)
+- サーバーが付与するフィールド (id / 生成日時等) は、入力スキーマとは別に保存済みスキーマを `entries` の spread で組み立ててそこから導出する。別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる (ADR-0018)
+- 導出には `InferOutput` を使う。`InferInput` は default 付きフィールド (`v.optional(v.boolean(), false)`) を optional にし、読み出し後の形と食い違う (ADR-0018)
+- 項目の呼称は `v.metadata({ label })` でスキーマの各項目に載せ、消費側は `v.getMetadata(entries.x).label` から `satisfies Record<keyof T, string>` 付きの object に写して読む。素の定数 object を別に持たない。持つと項目追加で呼称が漏れても型で落ちない (ADR-0018)
+- 例外はスキーマ由来型どうしを組み合わせる合成ヘルパー型。手書きになる場合は理由をコメントで残す (ADR-0018)
 - 導出型とその導出元が一致することの型テストを書かない。常に真になり変更を検出しない (`docs/guides/forms-and-inputs.md`「スキーマの型テストを書く」)
 - 導出元の選択を守るテストは導出型を直接参照する (`expectTypeOf<Note["createdAt"]>()`)。スキーマ由来型どうしの比較は導出元の書き換えを検出しない (`docs/guides/forms-and-inputs.md`「スキーマの型テストを書く」)
 - `v.object` から `v.omit` で入力スキーマを派生させたら、未知キーが silent に strip される挙動をテストで固定する。`v.strictObject` 由来なら reject されるので、派生元を確かめてから書く (`docs/guides/forms-and-inputs.md`「スキーマを書く」)
 
 ## 型アサーション (`as`) 全面禁止
 
-lint (`typescript/consistent-type-assertions`) が止める。`as const` は可。直し方 (ADR-0011):
+lint (`typescript/consistent-type-assertions`) が止める。`as const` は可。直し方 (ADR-0012):
 
 - 型が合わないときはキャストせず実装を変える。代替はランタイムガード / `as const` / 型ガード関数 / 親型 API
 - 外部データ (DB の行 / API レスポンス等) は `v.parse(schema, data)` で検証する。スキーマは既存のもの (`src/features/<domain>/schema.ts`) を再利用する
 - テスト double もまず型注釈で表現する。抑制へ落とすのは、private constructor を持つ外部型のように構造的構築が閉じている場合だけ
 - 回避不能な場合のみ `oxlint-disable-next-line typescript/consistent-type-assertions` で行単位抑制し、理由を directive の `--` に書く
-- `src/components/ui/` の registry で抑制したら台帳 `docs/registry-deviations.md` にも記録する (ADR-0026)
+- `src/components/ui/` の registry で抑制したら台帳 `docs/registry-deviations.md` にも記録する (ADR-0027)
 
 ## children prop は明示的に ReactNode で宣言する
 
@@ -43,8 +43,8 @@ lint (`typescript/consistent-type-assertions`) が止める。`as const` は可�
 
 ## fieldComponents の部品は値型突き合わせ用の prop を持たせる
 
-- 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。型は `FieldValueTypeCheckProps<T>` (`form-fields.tsx`) を extends する (ADR-0028)
-- `useFieldContext<T>()` の `T` は実フィールドと結び付かず、値型の違う部品を差しても通る。`fieldValue` が唯一の突き合わせ経路 (ADR-0028)
+- 部品内部では使わない `fieldValue` prop を置き、消費側が `fieldValue={field.state.value}` を渡す。型は `FieldValueTypeCheckProps<T>` (`form-fields.tsx`) を extends する (ADR-0029)
+- `useFieldContext<T>()` の `T` は実フィールドと結び付かず、値型の違う部品を差しても通る。`fieldValue` が唯一の突き合わせ経路 (ADR-0029)
 - prop 名は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」)
 - `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。落とすのは `vp check` の type-aware lint で、`vp test run` は型検査をしない (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」)
-- 撤去の条件は ADR-0028。判定は公開型 (`.d.ts`) に出るかで行い、名前の一致では行わない
+- 撤去の条件は ADR-0029。判定は公開型 (`.d.ts`) に出るかで行い、名前の一致では行わない

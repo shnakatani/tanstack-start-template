@@ -33,7 +33,7 @@ function ToastExample({ type }: { type: ToastIconType }) {
   );
 }
 
-/** 出すところまで。閉じる操作は既存のブラウザテストが持つ (ADR-0048) */
+/** 出すところまで。閉じる操作は既存のブラウザテストが持つ (ADR-0049) */
 async function raise(title: string): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "通知を出す" }));
   await screen.findByText(title);

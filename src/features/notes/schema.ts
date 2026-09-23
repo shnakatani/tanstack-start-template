@@ -5,7 +5,7 @@ import { truncateCodeUnits } from "@/lib/truncate-code-units";
 /** ドメインの呼称。画面見出し・追加ボタン・削除確認の文言が使う。 */
 export const NOTE_ENTITY_LABEL = "メモ";
 
-/** 項目の呼称。検証メッセージと各項目の `v.metadata({ label })` が同じ定数を使う (ADR-0017 §4)。 */
+/** 項目の呼称。検証メッセージと各項目の `v.metadata({ label })` が同じ定数を使う (ADR-0018 §4)。 */
 const TITLE_LABEL = "タイトル";
 const BODY_LABEL = "本文";
 /**

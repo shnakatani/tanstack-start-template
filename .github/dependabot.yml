@@ -14,7 +14,7 @@ updates:
     # pnpm-workspace.yaml の minimumReleaseAge (4320 分 = 3 日) と揃えた明示設定。変更時は両方と
     # .github/zizmor.yml の下限を更新する。
     # GitHub デフォルト (3 日) と同値だが、ポリシーの対をここに固定する。security updates は cooldown 対象外。
-    # Vite+ 管理下のパッケージは pnpm 側だけ待機を外している (ADR-0008)。bot 側は 3 日を維持し、
+    # Vite+ 管理下のパッケージは pnpm 側だけ待機を外している (ADR-0009)。bot 側は 3 日を維持し、
     # グループ内の全メンバーが同じ日に eligible になる状態を保つ
     cooldown:
       default-days: 3

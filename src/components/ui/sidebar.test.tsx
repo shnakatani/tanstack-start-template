@@ -28,7 +28,7 @@ import { resolveColorToken } from "@/test/resolve-color-token";
  * 配色は `toHaveStyle` を token の解決値で見る。閉状態は背景が透明で前景は継承した
  * `--foreground` (light では accent の前景と別値。dark は同値。styles.css)。開くのは pointer
  * ではなくキーボードで、hover の配色と混同しない (マウスは browser-setup の parkMouse が
- * 退避済み。ADR-0042)。
+ * 退避済み。ADR-0043)。
  */
 // トークンが未定義なら resolveColorToken が投げる。ここで存在を見張り直さない
 const closedStyle = () =>
@@ -36,7 +36,7 @@ const closedStyle = () =>
 const accentStyle = () =>
   `background-color: ${resolveColorToken("--sidebar-accent")}; color: ${resolveColorToken("--sidebar-accent-foreground")}`;
 
-describe("SidebarMenuButton の開状態 (ADR-0026 の乖離)", () => {
+describe("SidebarMenuButton の開状態 (ADR-0027 の乖離)", () => {
   it("popup の trigger にすると、開いている間だけ accent の配色になる", async () => {
     const screen = await render(
       <SidebarProvider open>
@@ -119,7 +119,7 @@ describe("SidebarMenuButton の開状態 (ADR-0026 の乖離)", () => {
  * 無言で効かなくなるため、上流の形にも本乖離にも共通の可視挙動で押さえる。
  * 開閉は desktop の器が持つ `data-state` で見る (getBySlot の属性で状態ごとに掴む)。
  */
-describe("キーボードショートカットでの開閉 (ADR-0026 の乖離)", () => {
+describe("キーボードショートカットでの開閉 (ADR-0027 の乖離)", () => {
   it("Meta+B で開状態が切り替わる", async () => {
     const screen = await render(
       <SidebarProvider defaultOpen>

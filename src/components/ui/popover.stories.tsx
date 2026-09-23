@@ -25,7 +25,7 @@ function PopoverExample() {
   );
 }
 
-/** 開くところまで。開いた先の操作は書かない (ADR-0048) */
+/** 開くところまで。開いた先の操作は書かない (ADR-0049) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "表示の設定" }));
   await screen.findByRole("dialog");

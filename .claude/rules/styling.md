@@ -12,25 +12,25 @@ paths:
 palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-raw-colors`、`shadcn/no-arbitrary-values`) が止める。直し方:
 
 - semantic token を使う。淡色ハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token (`docs/guides/styling-and-tokens.md`「色を当てる」)
-- 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0032 の段に乗せる
+- 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0033 の段に乗せる
 - `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら台帳 `docs/registry-deviations.md` にも記録する (`docs/guides/styling-and-tokens.md`「`color-mix()` を書く」)
 - 破壊操作は常時 destructive 色にする。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover だけの着色は touch 環境で出ない
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
-- 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (ADR-0036)
+- 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (ADR-0037)
 - コントラストは本文 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark は light と別に検算する。opacity variant は背景合成で比が変わる
-- トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0032)
+- トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0033)
 - 色だけで情報を伝えない。アイコンかテキストを併用し、併用先が識別に寄与しないなら `sr-only` で補う
 
 Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` の変更だけで完結する。
 
 ### 新しい色の露出のさせ方
 
-判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない (ADR-0032)。
+判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない (ADR-0033)。
 
 | 誤用を誘う既存の形 | 露出                               | 例                         |
 | ------------------ | ---------------------------------- | -------------------------- |
 | 無い               | `@theme inline` で token 化        | `--destructive-surface`    |
-| 在る               | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0033) |
+| 在る               | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0034) |
 
 ## typography 階層
 
@@ -63,7 +63,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外
 - 表にない値を使う前に「意味が違うのか、単なる揺れか」を問う。同じ意味なら表の値に合わせる
 - 別の体系 (1 画面に収める縦予算など) を持つ画面を足すときは、表の対象外と明記し、値の根拠を実装近傍に書く
-- registry の既定から値を変えるときは、まず公式の推奨へ合わせ、実機で見てから判断し、理由を実装近傍に書く (ADR-0026)
+- registry の既定から値を変えるときは、まず公式の推奨へ合わせ、実機で見てから判断し、理由を実装近傍に書く (ADR-0027)
 
 ### 公式のノブ
 
@@ -111,7 +111,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が点滅する
 - skeleton はレイアウトを模倣する (`table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付ける
 - 列数など実テーブルと合わせる値は、実テーブル側の定義を SSOT にして両方から参照する。別々に持つとロード完了時にレイアウトがずれる
-- ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0034)
+- ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0035)
 - データなしは `Empty` 系で、メッセージと次のアクションへの導線をセットで示す
 - 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項でよい
 
@@ -138,13 +138,13 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 | 隣接テキストが同じ意味を持つアイコン                  | `aria-hidden`。名前を足さない。そのテキストが実際に読み上げられるときに限る                                      |
 | 可視テキストが既に accessible name の要素             | 何も足さない (次項)                                                                                              |
 | name from author のロールを持つ要素                   | 可視テキストがあっても `aria-label` (次項)                                                                       |
-| テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0023)                  |
-| ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0034) |
+| テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0024)                  |
+| ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0035) |
 
-- 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0034)
-- live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0034)
+- 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0035)
+- live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0035)
 - pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (`docs/guides/testing.md`「状態と通知を検証する」)
-- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0035)
+- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0036)
 - メニュー全体を包む単一の `DropdownMenuGroup` には名前を与えない。メニュー自体がトリガー由来の名前を持つ
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 - ナビゲーションは landmark (`nav`、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける

@@ -12,7 +12,7 @@ paths:
 ## 置き場所
 
 - 規範は `.claude/rules/`、部品をまたぐ作法の説明と手順は `docs/guides/`、決定と選択肢の比較は `docs/decisions/`、1 つの部品に閉じた注意は docstring、いつ何を変えたかは git 履歴が持つ。ADR の枠内の改訂と置き換えは ADR 自身にも `Revised` / `Superseded` で残す (ADR-0001 / ADR-0000)
-- ADR にするのは構造・主要な品質特性・戻しにくさに効く選択だけにする。手順や規範の表は ADR ではなくガイドに置く (ADR-0053)
+- ADR にするのは構造・主要な品質特性・戻しにくさに効く選択だけにする。手順や規範の表は ADR ではなくガイドに置く (ADR-0007)
 - 書くか削るかは、消したら実装者が誤った選択をするかで決める。基準は公式の best practices (https://code.claude.com/docs/en/best-practices)
 - `CLAUDE.md` は `AGENTS.md` への symlink。編集先は `AGENTS.md`
 - rules は根拠として ADR かガイドの節を指す。ADR とガイドとコードは rules を指さない。rules は利用者が書き換えるので、指すと参照先が消える。例外は rules の置き場所や書き方を主題にする ADR で、置き場所として rules に触れてよい (ADR-0001)

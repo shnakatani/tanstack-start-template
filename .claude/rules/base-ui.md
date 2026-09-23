@@ -7,7 +7,7 @@ paths:
 
 ## 数値入力は NumberField を使う
 
-- `type="number"` の入力欄を新設しない。`NumberField` を使う。`type="number"` は NVDA の要素一覧で unlabeled になり、ホイールで値が無言に増減する (ADR-0027)
+- `type="number"` の入力欄を新設しない。`NumberField` を使う。`type="number"` は NVDA の要素一覧で unlabeled になり、ホイールで値が無言に増減する (ADR-0028)
 - テストでは `getByRole("textbox")` で取る。`spinbutton` にはならない (`docs/guides/testing.md`「入力部品を操作する」)
 - locator の `fill()` は既存値を置換せず追記になる。要素を全選択してから打つ (`docs/guides/testing.md`「入力部品を操作する」)
 
@@ -18,7 +18,7 @@ paths:
 
 ## Select: 候補が変わったときの自己リセットに依存しない
 
-- 現在値が候補から消えたことを `onValueChange` の `null` 通知で検出しない。通知が来ない条件がある。値の解決は消費側で引き取る (ADR-0029)
+- 現在値が候補から消えたことを `onValueChange` の `null` 通知で検出しない。通知が来ない条件がある。値の解決は消費側で引き取る (ADR-0030)
 - `null` や `options` に無い値を受けたら、表示を保ったまま `console.warn` に現在値と突合元を残す (`docs/guides/forms-and-inputs.md`「Select の値を解決する」)
 
 ## Combobox と ItemGroup

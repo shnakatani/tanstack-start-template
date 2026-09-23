@@ -21,7 +21,7 @@ export function createTestQueryClient(config?: Omit<QueryClientConfig, "defaultO
  * ダイアログがまだ開いていることを検証する。
  *
  * close は同期的に `data-open` → `data-closed` を切り替えるが、Popup の unmount は次の描画で、
- * animation を戻したテスト (ADR-0042) では animate-out の完了まで残る。要素の存在だけを見ると
+ * animation を戻したテスト (ADR-0043) では animate-out の完了まで残る。要素の存在だけを見ると
  * 「close 済みだがまだ DOM にある」を「開いたまま」と誤判定するので、`data-open` を見る。
  * Popup は `aria-hidden` 配下に入ることがあるため `includeHidden` で取る。
  */
@@ -36,7 +36,7 @@ export async function expectText(screen: Screen, text: string) {
   await expect.element(screen.getByText(text)).toBeInTheDocument();
 }
 
-/** 指定ラベルの textbox がすべて空であることを検証する。値は locator の matcher で見る (ADR-0043) */
+/** 指定ラベルの textbox がすべて空であることを検証する。値は locator の matcher で見る (ADR-0044) */
 export async function expectEmptyTextboxes(screen: Screen, labels: string[]) {
   await Promise.all(
     labels.map(async (label) => {

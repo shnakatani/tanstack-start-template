@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-24
-- 関連: ADR-0053 (何を ADR にするか)
+- 関連: ADR-0007 (何を ADR にするか)
 
 ## Context
 

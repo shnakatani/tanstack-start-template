@@ -36,7 +36,7 @@ export const Collapsed: Story = {};
 
 /**
  * 開いた状態。portal を使わないので `canvas` で取れる。
- * 開く操作までを play が持ち、開いた先の操作は書かない (ADR-0048)
+ * 開く操作までを play が持ち、開いた先の操作は書かない (ADR-0049)
  */
 export const Expanded: Story = {
   play: async ({ canvas }) => {

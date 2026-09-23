@@ -4,13 +4,13 @@
 
 | 決定                                                                                                                                        | ADR      |
 | ------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| ブラウザテストの待機は vitest の retry API に委ね、自前の待機を積まない                                                                     | ADR-0040 |
-| ブラウザテストのユーザー操作は実イベントだけで発火する                                                                                      | ADR-0041 |
-| ブラウザテストは animation を無効にして走らせ、animate-out の窓を踏むテストだけ戻す                                                         | ADR-0042 |
-| assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む                                                                   | ADR-0043 |
-| assert の予算をテストの予算と分けて宣言する                                                                                                 | ADR-0044 |
-| 否定 assert は不在や綴り違いでも通るので、肯定で書く                                                                                        | ADR-0045 |
-| Route hooks を使う wrapper は、root を差し替えた route tree に実 Route を付け、memory history の router で route ファイルのテストが検証する | ADR-0046 |
+| ブラウザテストの待機は vitest の retry API に委ね、自前の待機を積まない                                                                     | ADR-0041 |
+| ブラウザテストのユーザー操作は実イベントだけで発火する                                                                                      | ADR-0042 |
+| ブラウザテストは animation を無効にして走らせ、animate-out の窓を踏むテストだけ戻す                                                         | ADR-0043 |
+| assert には locator を渡し、matcher の無い実測は `expect.poll` の中で読む                                                                   | ADR-0044 |
+| assert の予算をテストの予算と分けて宣言する                                                                                                 | ADR-0045 |
+| 否定 assert は不在や綴り違いでも通るので、肯定で書く                                                                                        | ADR-0046 |
+| Route hooks を使う wrapper は、root を差し替えた route tree に実 Route を付け、memory history の router で route ファイルのテストが検証する | ADR-0047 |
 
 ## explanation
 
@@ -18,17 +18,17 @@
 
 `locator.element()` / `query()` / `all()` / `elements()` は同期で値を返し、retry しない (`@vitest/browser` の `context.d.ts`)。操作の直後に読むと、React の再レンダーや Portal の mount が終わる前の DOM を読むことがある。そのまま `expect()` へ渡すと、実装が正しくてもテストが落ち、失敗しても locator の名前が出力に残らない。
 `expect.element(locator)` は locator を retry のたびに引き直し、条件が成り立つまで待つ。
-一方、`render()` の直後は同期で読んでよい。`vitest-browser-react` の `render` は `act` の中で初回レンダーと effect を flush してから返る。詳細と実測は ADR-0040 と ADR-0043 の Context が持つ。
+一方、`render()` の直後は同期で読んでよい。`vitest-browser-react` の `render` は `act` の中で初回レンダーと effect を flush してから返る。詳細と実測は ADR-0041 と ADR-0044 の Context が持つ。
 
 ### 合成イベントが実物からずれる理由
 
-`new MouseEvent("click", { bubbles: true })` で送る合成 click は、`cancelable` が既定の false になり、`isTrusted` も false になる。実クリックと Enter 由来の click は両方 true である。非 cancelable のイベントはリスナーが `preventDefault` で止められないので、たとえば `aria-disabled` の submit ボタンで Base UI が呼ぶ `preventDefault` が効かず、form の暗黙 submit がテストでだけ通る。属性を実物へ合わせても `isTrusted` は合わず、同じ種類のずれが残る。詳細は ADR-0041 の Context が持つ。
+`new MouseEvent("click", { bubbles: true })` で送る合成 click は、`cancelable` が既定の false になり、`isTrusted` も false になる。実クリックと Enter 由来の click は両方 true である。非 cancelable のイベントはリスナーが `preventDefault` で止められないので、たとえば `aria-disabled` の submit ボタンで Base UI が呼ぶ `preventDefault` が効かず、form の暗黙 submit がテストでだけ通る。属性を実物へ合わせても `isTrusted` は合わず、同じ種類のずれが残る。詳細は ADR-0042 の Context が持つ。
 
 `.click({ force: true })` が飛ばすのは Playwright の actionability の検査で、ブラウザ自身のヒットテストは残る。対象に `pointer-events: none` が当たっていると、`force` のイベントは対象へ届かず下の要素へ落ちる。
 
 ### 否定 assert が素通りする経路
 
-否定 assert は「実装が壊れているのに緑で通る」向きに倒れやすい。経路は 3 つある (ADR-0045 の Context)。
+否定 assert は「実装が壊れているのに緑で通る」向きに倒れやすい。経路は 3 つある (ADR-0046 の Context)。
 
 | 経路                                        | 例                                                                                                                                                            |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -44,7 +44,7 @@
 
 - `src/` 全体へ当てるソース検査を作るなら、`scripts/checks/source/` と `checks-source` project を対で作る。先に lint (必要なら `jsPlugins`) で表せないかを見る
 - 判定を `scripts/lib/` の純粋関数へ分け、単体テストを別に持つ。判定と適用を同じファイルに書くと、判定の境界条件を試すために `src/` を壊す必要が出る。実例は、実行側の `scripts/checks/runtime/security-headers.ts` と判定の `scripts/lib/response-headers.ts`
-- 落ちたときに判断が要る検査だけを作る。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す。実例は `scripts/checks/integrity/lint-config.test.ts` の緩和の適用先とルールの検査 (広げたのが意図なら期待値へ足し、誤りなら設定を直す) と、`scripts/checks/integrity/registry-baseline.test.ts` の 3-way の判別である。期待値の書き換えしか選択肢が無い検査は、上流の更新のたびに鳴って判断を鈍らせる (ADR-0018 が bail out の一覧を固定しない理由と同じ)
+- 落ちたときに判断が要る検査だけを作る。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す。実例は `scripts/checks/integrity/lint-config.test.ts` の緩和の適用先とルールの検査 (広げたのが意図なら期待値へ足し、誤りなら設定を直す) と、`scripts/checks/integrity/registry-baseline.test.ts` の 3-way の判別である。期待値の書き換えしか選択肢が無い検査は、上流の更新のたびに鳴って判断を鈍らせる (ADR-0019 が bail out の一覧を固定しない理由と同じ)
 
 ## how-to
 
@@ -52,14 +52,14 @@
 
 | 場面                                                                                | 使うもの                                                                                                                                                                                               |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (ADR-0044)                                                                                                             |
-| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい (ADR-0043) |
+| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (ADR-0045)                                                                                                             |
+| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい (ADR-0044) |
 | 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                                   |
 | `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                                    |
 | close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/absent.ts`)                                                                                                                                                        |
 | locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `vi.waitFor`。vitest の wait-for のレシピも、assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける                                                  |
 
-- `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (ADR-0042)
+- `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (ADR-0043)
 - `toHaveTextContent` は文字列を渡すと部分一致になる。完全一致が要るなら正規表現を渡す
 - 変化しないことの検証 (disabled な行がトグルしない等) は retry では強くならない。`expect.element` は条件を満たした時点で返るので、更新の前に成功しうる。待つ対象がある検証へ言い換えられないかを先に考える
 - 生 DOM を読む箇所が「操作を挟んだか」で待ち方を誤っても、テストは大半の実行で通る。lint が止めるのは同期読みを assert へ流す形だけなので、残りはレビューで見る
@@ -82,7 +82,7 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 
 ### クリックを発火する
 
-手段は場面で決める (ADR-0041)。`.click()` が弾かれたら、Playwright のエラー文言が示す条件を読んでから行を選ぶ。通るまで手段を替えると、実物で起きない事象を固定する。
+手段は場面で決める (ADR-0042)。`.click()` が弾かれたら、Playwright のエラー文言が示す条件を読んでから行を選ぶ。通るまで手段を替えると、実物で起きない事象を固定する。
 
 | 場面                                                  | 使うもの                                                                                                                                                                   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -97,7 +97,7 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 | 条件               | 落ちる例                                                                                                              |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | Enabled            | native `disabled`、`aria-disabled="true"` の祖先を持つ要素                                                            |
-| Stable             | 開閉アニメーションの途中。既定では ADR-0042 の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
+| Stable             | 開閉アニメーションの途中。既定では ADR-0043 の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
 | Visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                      |
 | Receives Events    | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                               |
 
@@ -106,7 +106,7 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 
 ### animation を戻すテストを書く
 
-animation は `src/test/browser-setup.tsx` が毎テスト止める (ADR-0042)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
+animation は `src/test/browser-setup.tsx` が毎テスト止める (ADR-0043)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
 
 - 本文の先頭で `await enableAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻すので、戻す処理は書かない (`parkMouse` と同じ形)
 - 無限アニメーション (Spinner) は既定で 1 周して止まる。rect や算出スタイルは `expect.poll` の中で読むので、残る 0.01ms も待たない
@@ -118,7 +118,7 @@ animation は `src/test/browser-setup.tsx` が毎テスト止める (ADR-0042)�
 
 ### 否定を肯定で書く
 
-否定 assert は、期待値がリテラルなら書かない (ADR-0045)。
+否定 assert は、期待値がリテラルなら書かない (ADR-0046)。
 
 | 書き方                                                                                                                              | 守らないと                                                                                                 |
 | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -135,7 +135,7 @@ animation は `src/test/browser-setup.tsx` が毎テスト止める (ADR-0042)�
 - 「描かれている」「上限がある」なら、`expect.poll(() => Number.parseFloat(getComputedStyle(x).outlineWidth)).toBeGreaterThan(0)` のように 1 回の観測から数値を出す。綴りを外しても `NaN` になって落ちる
 - 当たっている token が分かっているなら、`expect.element(x).toHaveStyle(`color: ${resolveColorToken("--foreground")}`)` のように値そのものと比べる (`src/components/parts/segmented-radio-group.test.tsx`)
 - 観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると、別々の瞬間に成立してよいことになる
-- 肯定形は、失敗するときに assert の予算 (ADR-0044) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。赤の所要が延びるのは検出力と引き換えである
+- 肯定形は、失敗するときに assert の予算 (ADR-0045) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。赤の所要が延びるのは検出力と引き換えである
 
 `toHaveStyle` で表せない次の 3 つの形は、`getComputedStyle` を `expect.poll` のコールバックの中で読む。
 
@@ -147,11 +147,11 @@ animation は `src/test/browser-setup.tsx` が毎テスト止める (ADR-0042)�
 
 ### 予算を呼び出しごとに外す
 
-assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で宣言する (ADR-0044)。呼び出しごとの `{ timeout: 0 }` はこの設定と独立に効く (2026-09-22 実測で 53ms)。呼び出しごとの指定が先に読まれるので、予算を宣言しても「待たない」は書ける。実例は `expectAbsent`。
+assert の予算は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で宣言する (ADR-0045)。呼び出しごとの `{ timeout: 0 }` はこの設定と独立に効く (2026-09-22 実測で 53ms)。呼び出しごとの指定が先に読まれるので、予算を宣言しても「待たない」は書ける。実例は `expectAbsent`。
 
 ### route の wrapper をテストする
 
-route ファイルの wrapper は、root を差し替えた tree と memory history で描く (ADR-0046)。実例は `src/routes/notes/index.test.tsx`。
+route ファイルの wrapper は、root を差し替えた tree と memory history で描く (ADR-0047)。実例は `src/routes/notes/index.test.tsx`。
 
 | 組み方                                                                                                                                                                                                                                                                                                                 | 守らないと                                                                                                                                                                                                     |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -168,12 +168,12 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 ### 入力部品を操作する
 
-- `NumberField` (ADR-0027) のロールは `spinbutton` ではなく `textbox` になる。`getByRole("textbox")` で取る
+- `NumberField` (ADR-0028) のロールは `spinbutton` ではなく `textbox` になる。`getByRole("textbox")` で取る
 - locator の `fill()` は、controlled な `type="text"` では既存の値を置き換えず追記になる。要素を全選択してから打つ
 
 ### 状態と通知を検証する
 
-- pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0034)
+- pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0035)
 - announcer の region は `src/test/browser-setup.tsx` が毎テスト描く。文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
 - 同じ通知の経路を 2 つのテストで見ない。`/notes` では、ページのテスト (`-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`index.test.tsx`) が Enter と戻るを見る
 

@@ -12,7 +12,7 @@ export type NoteDeleteTarget = DeleteTarget<Note["id"]>;
 /**
  * mutation の定義。`queries.ts` の `queryOptions` と同じ置き方で、`mutationKey` と `mutationFn` を
  * 1 箇所に結ぶ。`onMutate` / `onSuccess` / `onError` は、通知の文言と閉じる対象 (ダイアログの
- * handle) を持つ route 側が足す (ADR-0034「呼び出し層」)。
+ * handle) を持つ route 側が足す (ADR-0035「呼び出し層」)。
  *
  * `mutationKey` は一覧側が `useMutationState` で pending な mutation を拾うための識別子
  * (`docs/guides/updates-and-data.md`「メモ画面の実例」)。queryKey (`["notes"]`) とは別物で、

@@ -5,7 +5,7 @@ import { FullScreenNotice } from "@/components/parts/centered-card";
 import { expectText } from "@/test/page-helpers";
 
 /**
- * 状態のカタログは `centered-card.stories.tsx` が持つ (ADR-0048)。狭幅での余白も `Narrow`
+ * 状態のカタログは `centered-card.stories.tsx` が持つ (ADR-0049)。狭幅での余白も `Narrow`
  * story で見る。ここに残すのは、見出しが h1 であることだけで、story に play が無い
  * (args だけで状態が決まる部品) 以上ここでしか固定できない。
  *

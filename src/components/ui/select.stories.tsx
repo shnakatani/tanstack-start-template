@@ -41,7 +41,7 @@ function SelectExample({ defaultValue }: { defaultValue?: string }) {
   );
 }
 
-/** 開くところまで。選択は既存のブラウザテストが持つ (ADR-0048) */
+/** 開くところまで。選択は既存のブラウザテストが持つ (ADR-0049) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "状態" }));
   await screen.findByRole("listbox");

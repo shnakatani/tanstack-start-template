@@ -4,8 +4,8 @@
 
 | 決定                                                                                         | ADR      |
 | -------------------------------------------------------------------------------------------- | -------- |
-| ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する | ADR-0014 |
-| `src/components/` を役割で分け、design system の著作と消費の境界をディレクトリで表す         | ADR-0015 |
+| ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する | ADR-0015 |
+| `src/components/` を役割で分け、design system の著作と消費の境界をディレクトリで表す         | ADR-0016 |
 
 ## how-to
 
@@ -27,10 +27,10 @@
 
 ### route ファイルを組む
 
-ADR-0014 に沿って、次の順で組む。
+ADR-0015 に沿って、次の順で組む。
 
 1. ページ本体を `-components/` に書き、Route hooks を使わずに props で値を受ける。Route hooks を混ぜると、ページのテストが router 無しで描けなくなる
-2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは ADR-0046 の形で書く
+2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは ADR-0047 の形で書く
 3. loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる
 4. pending 表示は、ページ本体と別のファイルに置く。`pendingComponent` は分割されない property で、それが import する module は eager に読まれる
 5. loader と `validateSearch` とページ本体が共有する定数は `-lib/` に置き、ページ本体の module に置かない (理由は 4 と同じ)
@@ -44,7 +44,7 @@ ADR-0014 に沿って、次の順で組む。
 | その route だけが使う                                | route 側 (`-components/` / `-lib/` / `-hooks/`)                                                                          |
 | 複数の画面から使う                                   | `src/features/<domain>/`                                                                                                 |
 | ドメインの形 (schema、mutation) と同じ場所に居るべき | `src/features/<domain>/`                                                                                                 |
-| どのドメインにも属さない                             | React に依存しない汎用ロジックと型は `src/lib/`、React の hook は `src/hooks/`、server の基盤は `src/server/` (ADR-0014) |
+| どのドメインにも属さない                             | React に依存しない汎用ロジックと型は `src/lib/`、React の hook は `src/hooks/`、server の基盤は `src/server/` (ADR-0015) |
 
 画面の描画の形 (一覧の行モデル) は route 側、mutation の variables を絞る parser は `src/features/<domain>/` になる。
 `src/features/<domain>/` の中の import も相対パスで書き、ディレクトリごと移せる形を保つ。
@@ -63,6 +63,6 @@ registry 由来でない付随ファイル (`*.test.*` / `*.stories.*` / `*.test
 
 | 落とし穴                                                         | 起きること                                                                                                 | 避け方                                               |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `vite.config.ts` の `importProtection.client.files` を書き換える | user が `files` を書くと既定を置換する。`"**/*.server.*"` を落とすと既定は戻らず、接尾辞による遮断が消える | 書き換えるときは `"**/*.server.*"` を残す (ADR-0014) |
+| `vite.config.ts` の `importProtection.client.files` を書き換える | user が `files` を書くと既定を置換する。`"**/*.server.*"` を落とすと既定は戻らず、接尾辞による遮断が消える | 書き換えるときは `"**/*.server.*"` を残す (ADR-0015) |
 | `importProtection` に `excludeFiles` を書く                      | 書いた時点で既定の `**/node_modules/**` が消える                                                           | 既定の値も自分で書き足す                             |
-| `src` の外のファイルに Tailwind の utility を書く                | scan の対象が `src` に絞られているので、その utility の CSS は生成されない。気付くのは効かないときだけ     | utility を書くファイルは `src` の中に置く (ADR-0051) |
+| `src` の外のファイルに Tailwind の utility を書く                | scan の対象が `src` に絞られているので、その utility の CSS は生成されない。気付くのは効かないときだけ     | utility を書くファイルは `src` の中に置く (ADR-0052) |

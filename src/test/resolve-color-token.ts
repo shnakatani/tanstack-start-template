@@ -11,7 +11,7 @@ const UNRESOLVED = "rgb(1, 0, 1)";
  *
  * 宣言の字面と算出値は一致しない。`styles.css` はトークンの値を Tailwind の palette の段から
  * 写す約束で、palette 側が `oklch(44.4% ...)` と百分率で書くのに対し、算出値は
- * `oklch(0.444 ...)` へ正規化される (ADR-0032)。`getPropertyValue` で読んだ字面を
+ * `oklch(0.444 ...)` へ正規化される (ADR-0033)。`getPropertyValue` で読んだ字面を
  * 要素の算出色と比べると、値が同じでも落ちる。
  *
  * 解決は probe 要素をツリーへ挿して行う。`color` へ `var(...)` を置いて読み戻すと、正規化と
