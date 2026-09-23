@@ -55,7 +55,7 @@
 
 - 依存に `@tanstack/react-table` と `@tanstack/react-table-devtools` が入る (ADR-0005 の待機 3 日は経過)。`@tanstack/table-core` と `@tanstack/react-store` が同梱で入る
 - `TableSkeleton` の列数は列定義の `length` から採る。列を足すと skeleton も追随する
-- `.claude/rules/directory-structure.md` が列定義の置き場を持つ。route-local の `-lib/` / `-hooks/` と、features と route のどちらに置くかの基準は ADR-0012 (Revised) が持つ。`.claude/rules/styling.md` が見出しセルの `scope="col"` を持つ
+- `.claude/rules/directory-structure.md` が列定義の置き場を持つ。route-local の `-lib/` / `-hooks/` と、features と route のどちらに置くかの基準は ADR-0012 が持つ。`.claude/rules/styling.md` が見出しセルの `scope="col"` を持つ
 - 再評価条件: 2 つ目の一覧画面が出たとき (`createTableHook` の factory)、sorting / pagination を足すとき (`autoResetPageIndex`)、楽観的更新を扱う画面が増えたとき (TanStack DB)
 
 ## 出典
