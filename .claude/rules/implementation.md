@@ -72,6 +72,11 @@ Why: 巻き上げでページ本体を上、ヘルパーを下に置ける。`.t
 
 `SelectItem` / `DropdownMenuItem` を `SelectContent` / `DropdownMenuContent` の直下に置かない (shadcn skill の `rules/composition.md`)。機械強制は無いのでレビューで見る。
 
+## lint の抑制
+
+- 行単位の抑制 (`oxlint-disable-next-line`) は違反が報告される行の直前に置く。`.map()` の行に置いても `key` の行には効かない
+- `no-await-in-loop` は順序依存のループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く (ADR-0004)
+
 ## dead code を発見したら即決 3 択
 
 1. **削除** (呼び出し元なし)

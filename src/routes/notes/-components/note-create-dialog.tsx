@@ -94,7 +94,7 @@ export function NoteCreateDialog() {
         </DialogHeader>
         {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで渡すのは表示ではなく
             close の可否で、handleOpenChange と同じ源から取らないと「押せるのに閉じない」ずれが
-            出る (ADR-0016 の完了点 (b)) */}
+            出る (ADR-0016 の完了点: サーバーの応答で閉じる) */}
         <NoteCreateForm onSubmit={createMutation.runAction} blocksClose={blocksClose} />
       </DialogContent>
     </Dialog>

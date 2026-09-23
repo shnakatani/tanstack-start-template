@@ -2,6 +2,8 @@
 paths:
   - "vite.config.*"
   - "package.json"
+  - ".mise.toml"
+  - ".github/workflows/**"
 ---
 
 # Vite+ ツールチェーン設定

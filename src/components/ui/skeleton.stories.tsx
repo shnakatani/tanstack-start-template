@@ -3,8 +3,9 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * 寸法の API が `className` しかない部品なので、story も消費側と同じ形で描く
- * (`directory-structure.md`「コンポーネント配置」の例外)。
+ * 寸法の API が `className` しかない部品なので、story も消費側と同じ形で描く。
+ * 寸法は layout の class なので、story の className を layout に限る規範の範囲に収まる
+ * (`directory-structure.md`「コンポーネント配置」)。
  * 実際の一覧の待機表示は `TableSkeleton` (parts) が持つ
  */
 const meta = {
