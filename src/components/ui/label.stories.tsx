@@ -7,7 +7,7 @@ const meta = {
   component: Label,
   args: { children: "メモのタイトル", htmlFor: "note-title" },
   // 単体の label は結び付く control が無いと意味を持たないので、対になる input と並べて描く。
-  // 器は decorator で外側に当てる (`directory-structure.md`「コンポーネント配置」)
+  // 器は decorator で外側に当てる (ADR-0057)
   render: (args) => (
     <>
       <Label {...args} />

@@ -16,8 +16,8 @@ const FRUITS = ["りんご", "みかん", "ぶどう", "もも"];
 
 /**
  * `ComboboxTrigger` が付ける `role="combobox"` は name from author なので、可視テキストが
- * あっても `aria-label` が要る (`styling.md`「可視テキストを持つ要素に aria-label を
- * 足さない」の例外)。外すと `getByRole` の名前解決が 0 件になる
+ * あっても `aria-label` が要る (WAI-ARIA 1.2 §5.2.8)。外すと
+ * `getByRole` の名前解決が 0 件になる
  */
 function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
   return (
@@ -31,7 +31,7 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
       />
       {/* popup 内に入力欄を置く構成では base-ui が popup へ role="dialog" を付けるため
           (`combobox/popup/ComboboxPopup.js` の `inputInsidePopup ? 'dialog' : 'presentation'`)、
-          名前が要る。与えないと axe の aria-dialog-name で落ちる (`base-ui.md`) */}
+          名前が要る。与えないと axe の aria-dialog-name で落ちる (ADR-0026) */}
       <ComboboxContent aria-label="果物の候補">
         <ComboboxInput aria-label="果物を検索" placeholder="検索" showTrigger={false} />
         <ComboboxEmpty>該当なし</ComboboxEmpty>

@@ -409,7 +409,7 @@ export default defineConfig({
                   // alias (@/test/) と相対 (./test/ ../test/) の両方の specifier を止める
                   regex: "\\.(test|story)-helpers$|\\.stories$|(^@|\\.)/test/",
                   message:
-                    "テストと story だけが使うコード。アプリのコードから import しない (directory-structure.md「テストとスクリプトの配置」)",
+                    "テストと story だけが使うコード。アプリのコードから import しない (ADR-0011)",
                 },
               ],
             },
@@ -448,7 +448,7 @@ export default defineConfig({
     tailwindcss(),
     tanstackStart({
       // テストとテスト専用ヘルパーを route ファイル扱いから外す。外さないと generator が
-      // 「Route を export していない」と毎ビルド警告する (directory-structure.md「テストとスクリプトの配置」)
+      // 「Route を export していない」と毎ビルド警告する
       router: { routeFileIgnorePattern: companionFilePattern() },
       importProtection: {
         client: {

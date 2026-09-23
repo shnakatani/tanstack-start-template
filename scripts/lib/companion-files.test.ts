@@ -9,7 +9,7 @@ import {
 } from "./companion-files";
 
 describe("COMPANION_KINDS", () => {
-  it("directory-structure.md が定める 4 種別を持つ", () => {
+  it("付随ファイルの 4 種別を持つ", () => {
     expect([...COMPANION_KINDS]).toEqual(["test", "test-helpers", "story-helpers", "stories"]);
   });
 });

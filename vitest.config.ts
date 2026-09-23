@@ -69,7 +69,7 @@ export default defineConfig({
       include: ["src/**"],
       exclude: [
         "src/routeTree.gen.ts",
-        // 付随ファイルは出荷されないので分母に入れない (directory-structure.md)
+        // 付随ファイルは出荷されないので分母に入れない
         ...companionGlobs("src/**/"),
         "src/test/**",
         "src/**/*.d.ts",

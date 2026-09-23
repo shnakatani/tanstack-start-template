@@ -105,7 +105,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       errors: [{ messageId: "syncRead" }],
     },
     {
-      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (testing.md「locator の扱い」)
+      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (ADR-0047)
       code: "const el = locator.element(); expect(document.activeElement).toBe(el);",
       errors: [{ messageId: "syncRead" }],
     },
@@ -192,7 +192,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       errors: [{ messageId: "syncRead" }],
     },
     {
-      // このリポジトリは `as` を禁じている (typing.md) が、抑制付きで入ったときに
+      // このリポジトリは `as` を禁じている (ADR-0009) が、抑制付きで入ったときに
       // 透かせないと報告が無言で消える。WRAPPER_TYPES の TSAsExpression を守る
       code: "expect(locator.query() as Element).not.toBeNull();",
       filename: "a.ts",

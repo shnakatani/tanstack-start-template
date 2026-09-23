@@ -19,7 +19,7 @@ const OPTIONS = [
 ];
 
 /**
- * `items` を渡さないとトリガーに生の value が出る (`base-ui.md`「Select: `items` prop 必須」)。
+ * `items` を渡さないとトリガーに生の value が出る (Base UI の Select docs「Formatting the value」)。
  * ここは registry の意匠の見本で、フォームの中では `FormSelectField` (parts) を通す
  */
 function SelectExample({ defaultValue }: { defaultValue?: string }) {

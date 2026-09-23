@@ -6,8 +6,8 @@ const LINES = Array.from({ length: 24 }, (_, index) => `${index + 1} 行目の�
 
 /**
  * ScrollArea も高さを持たず、器の寸法をなぞる。story から `className` は渡さず decorator で
- * 与える (`directory-structure.md`「コンポーネント配置」)。
- * スクロールバーと、そのぶんの余白は `ScrollArea` 自身が持つ (`styling.md`「spacing 基準」)
+ * 与える (ADR-0054 / ADR-0057)。
+ * スクロールバーと、そのぶんの余白は `ScrollArea` 自身が持つ (ADR-0026)
  */
 const meta = {
   component: ScrollArea,

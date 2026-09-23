@@ -1,6 +1,6 @@
 /**
  * アプリのコードと同じディレクトリに置くが、アプリのコードではないファイルの種別。
- * `<名前>.<種別>.ts` / `.tsx` の形で置く (directory-structure.md「テストとスクリプトの配置」)。
+ * `<名前>.<種別>.ts` / `.tsx` の形で置く。
  *
  * この一覧が唯一の定義で、lint の適用外と story への適用範囲 (`vite.config.ts`)、coverage の
  * 除外 (`vitest.config.ts`)、registry baseline の突き合わせ (`registry-baseline.test.ts`)、

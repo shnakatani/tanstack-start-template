@@ -108,7 +108,7 @@ async function openDeleteConfirm(screen: Screen, note: Note) {
   await expectText(screen, deleteConfirmDescription(note.title));
   // click で動いた実マウスは、ダイアログが閉じて下の要素が露出する前に退避する。乗ったままだと
   // 露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
-  // (testing.md「ブラウザテストの CSS とレイアウト実測」)
+  // (ADR-0046)
   await parkMouse();
 }
 
@@ -378,7 +378,7 @@ describe("NotesPage", () => {
   it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
     const rawMessage = `削除対象のノートが見つかりません: id=${NOTE.id}`;
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
-    // 即 reject だと busy の窓が観測できない (testing.md「optimistic update は決着を握って観測する」)
+    // 即 reject だと busy の窓が観測できない
     const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
@@ -459,7 +459,7 @@ describe("NotesPage", () => {
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
     // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
     // 楽観行の検査と同じ理由で、a11y tag を付けた専用テストへは降ろさない。
-    // popup を閉じた後の axe は unmount を待ってから (testing.md「ブラウザテストの CSS とレイアウト実測」)
+    // popup を閉じた後の axe は unmount を待ってから (ADR-0046)
     await expectDeleteConfirmClosed(screen);
     await expectNoA11yViolations(document.body);
 
@@ -542,7 +542,7 @@ describe("NotesPage", () => {
 
     // 1 発目は実クリック。2 発目は close の animate-out の間で Playwright が stable 判定で
     // 弾く (locator.click: "element is not stable") ので、クリックで乗ったフォーカスへ Enter を
-    // 送る (testing.md「クリックの発火方法」の順 1 → 2)。Base UI の finalFocus は unmount 時
+    // 送る (ADR-0045。クリックが弾かれたらキーボードで押す)。Base UI の finalFocus は unmount 時
     // (animate-out の後、FloatingFocusManager の effect cleanup) に走るので、animate-out の間は
     // フォーカスが確定ボタンに残る。それを固定する。残っていなければ Enter は別の要素に届き、
     // guard を通らないまま 1 回で緑になる (肯定 anchor。ADR-0049)

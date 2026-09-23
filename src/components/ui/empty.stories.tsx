@@ -19,7 +19,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 一覧が空のとき。見出しと、次に何ができるかを対で出す (`styling.md`「状態表示」) */
+/** 一覧が空のとき。見出しと、次に何ができるかを対で出す */
 export const Default: Story = {
   render: () => (
     <Empty>

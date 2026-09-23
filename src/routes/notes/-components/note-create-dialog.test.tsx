@@ -198,7 +198,7 @@ describe("NoteCreateDialog", () => {
 
   it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
     // 完了点 (b): 閉じるのは応答時点で、再取得の完了は待たない (ADR-0020)。
-    // 即 resolve だと応答前の窓が観測できない (testing.md「optimistic update は決着を握って観測する」)
+    // 即 resolve だと応答前の窓が観測できない
     const invalidate = Promise.withResolvers<undefined>();
     const create = deferMock(createNote);
     const { screen, invalidateSpy } = await renderDialog();
