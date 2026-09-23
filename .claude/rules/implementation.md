@@ -35,14 +35,14 @@ lint (`typescript/no-misused-promises`) が止める。直し方 (`docs/guides/u
 
 lint では見ないのでレビューで見る (ADR-0020、Action 層と `useActionMutation` は ADR-0022、完了点とブロック範囲は ADR-0023)。
 
-| 更新の種類                        | 書き方                                                                                                                                  |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                              |
-| mutation 成功後のダイアログ close | 閉じる時点は ADR-0023 の完了点の軸で選び、理由を実装近傍に書く。選択肢は ADR-0023                                                       |
-| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                     |
-| Error Boundary の reset と再読込  | 前節の `handleRetry` の形のまま。`router.invalidate()` の描画は Router が Transition 化する                                             |
-| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                       |
-| 検索条件の変更                    | URL の `navigate`。打鍵中は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にする (`notes-page.tsx`、ADR-0026) |
+| 更新の種類                        | 書き方                                                                                                                                                                                 |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                             |
+| mutation 成功後のダイアログ close | 閉じる時点は ADR-0023 の完了点の軸で選び、理由を実装近傍に書く。選択肢は ADR-0023                                                                                                      |
+| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                    |
+| Error Boundary の reset と再読込  | 前節の `handleRetry` の形のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                            |
+| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                      |
+| 検索条件の変更                    | URL の `navigate`。打鍵中は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にする (`notes-page.tsx`、`docs/guides/lists-and-search.md`「検索の入力欄を組む」) |
 
 - pending 表示は Action 層の `isPending` から取る。例外は項目の busy・楽観表示・close 阻止で、mutation の pending から取る (ADR-0023)
 - mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` は型で必須。`runAction` が reject を吸収するので、無いと失敗が無通知になる (`docs/guides/updates-and-data.md`「mutation の書き方」)

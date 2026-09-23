@@ -5,7 +5,7 @@ export const NOTE_SEARCH_LABEL = `${NOTE_ENTITY_LABEL}を検索`;
 
 /**
  * 打鍵が止まってから一覧の取得を始めるまでの待ち。`useDebouncedValue` の `wait`。
- * 0 にすると打鍵ごとに server function が走る (ADR-0026)。
+ * 0 にすると打鍵ごとに server function が走る (docs/guides/lists-and-search.md「検索の入力欄を組む」)。
  * literal 型に固めない。ページのテストが `vi.mock` でこの値を広げる (`-components/notes-page.test.tsx` の `vi.mock`)
  */
 export const NOTE_SEARCH_DEBOUNCE_MS: number = 300;

@@ -35,13 +35,13 @@ function normalizeQuery(text: string): string {
 
 /**
  * 一覧ページ本体。`q` は URL で確定した検索語、`onQueryChange` は確定の要求 (submit)。
- * route ファイルから export せずここに置く (ADR-0015)。入力欄と一覧の流れは ADR-0026、
- * 件数の通知は ADR-0036。
+ * route ファイルから export せずここに置く (ADR-0015)。入力欄と一覧の流れは
+ * docs/guides/lists-and-search.md「検索の入力欄を組む」、作り直さない決定と件数の通知は ADR-0036。
  */
 export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: string) => void }) {
   // URL の q が変わった世代。値ではなく世代で編集を紐付ける: 履歴は同じ値へ戻れるので、値で照合すると
   // 確定した後に戻ったとき古い編集が復活する。prop の変化は描画中に導く (React docs「Adjusting some
-  // state when a prop changes」。ADR-0026)
+  // state when a prop changes」)
   const [urlGeneration, setUrlGeneration] = useState({ q, generation: 0 });
   if (urlGeneration.q !== q) {
     setUrlGeneration({ q, generation: urlGeneration.generation + 1 });
