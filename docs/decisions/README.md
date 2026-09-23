@@ -14,6 +14,7 @@
 | [0002](0002-rules-group-one-norm-per-bullet-under-headings-keep-only-what-prevents-mistakes-and-omit-what-lint-stops.md) | rules は見出しと箇条書きで 1 項目 1 規範に分け、消したら誤る規範だけを書き、lint が止めるものは書かない | Accepted | 2026-09-23 | 見出しと箇条書きで 1 項目 1 規範に分け、規範・理由 1 文・出典キー 1 つを書く。実測と比較は ADR へ。削除可否は「消したら誤るか」で判定する。lint・型検査・build が止めるものは書かず、lint が案内しない直し方だけを書く |
 | [0003](0003-place-norms-by-when-they-load-and-bash-only-norms-in-agents-md.md)                                           | 規範の置き場所は読み込まれる契機で決め、Bash で打つだけの操作の規範は AGENTS.md に置く                  | Accepted | 2026-09-23 | `paths` の rules は一致するファイルを読んだときにしか読み込まれない。ファイルを読まずに始まる操作の規範は、開始時に読み込まれる AGENTS.md に置く                                                                       |
 | [0004](0004-code-comments-point-to-adrs-not-rules.md)                                                                    | ソースと設定のコメントは rules ではなく ADR を指す                                                      | Accepted | 2026-09-23 | 利用者が rules を差し替えても、ADR は番号ごと付いてくる。理由を持つ ADR が無ければコメント自身に理由を書く                                                                                                             |
+| [0051](0051-put-cross-cutting-design-guides-in-docs-guides-and-cite-their-sections-from-rules.md)                        | 部品をまたぐ作法の説明と手順は docs/guides に置き、rules は出典としてその節を指す                       | Accepted | 2026-09-24 | ADR は決定だけを持ち、部品をまたぐ作法の説明と手順は `docs/guides/` の主題ごとのガイドが持つ。rules はガイドを import も案内もせず、規範を自分で持って出典としてガイドの節を指す                                       |
 
 ### 開発環境・依存・CI
 
