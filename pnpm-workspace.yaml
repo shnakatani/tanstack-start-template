@@ -53,7 +53,7 @@ minimumReleaseAgeExclude:
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.3.2
   vitest: 4.1.11
-  vite-plus: 0.3.2
+  vite-plus: 0.3.3
   "@vitest/browser-playwright": 4.1.11
   "@vitest/coverage-v8": 4.1.11
 # @shadcn/lint は @typescript-eslint/parser を dependencies に持つが、oxlint 経由では読まない。
