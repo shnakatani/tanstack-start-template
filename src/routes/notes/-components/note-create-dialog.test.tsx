@@ -261,7 +261,7 @@ describe("NoteCreateDialog", () => {
     // handle を複数の対象で共有しないダイアログは、閉じる前に対象を比べられない。pending 中に
     // 閉じて開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の
     // 応答が届いた時点で新しい入力ごと閉じる。pending 中はユーザー起点の close を止める
-    // (ADR-0022 Decision の完了点 (b) の行)
+    // (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))
     const create = deferMock(createNote);
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);

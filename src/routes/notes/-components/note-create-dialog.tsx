@@ -69,7 +69,7 @@ export function NoteCreateDialog() {
   // 止めるのは応答前だけ。閉じて開き直すと DialogContent がアンマウントされてフォームが
   // 作り直され、先行 save の応答が届いた時点で新しい入力ごと閉じる。handle を複数の対象で
   // 共有するダイアログと違い、入力フォームは開いている対象を mutation の対象と比べられない
-  // ので、閉じないことで塞ぐ (ADR-0022 Decision の完了点 (b) の行)。止めるのはこのダイアログ
+  // ので、閉じないことで塞ぐ (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))。止めるのはこのダイアログ
   // だけで、一覧の操作は止めない (ADR-0022「ブロック範囲」)。
   //
   // mutation の pending は応答後も再取得の完了まで続くので、それだけを見ると閉じた後の窓でも

@@ -29,15 +29,6 @@ import { readAnnouncements } from "@/test/live-announcer";
 import { createTestQueryClient, expectText, type Screen } from "@/test/page-helpers";
 import { parkMouse } from "@/test/park-mouse";
 
-/*
- * 実イベントの規律のうち、画面側の 2 つをこのファイルが持つ (ADR-0049)。play は合成イベントで
- * 操作するので、story へ移すとリポジトリから消える。
- * - `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと (`confirmDeleteButton(screen).click()`)
- * - 画面側の二重確定の dedupe (`queryClient.isMutating`)。「確定直後にもう一度 Enter を送っても
- *   removeNote は 1 回しか呼ばれない」が見る。Action 層の guard (`disabled={isPending}`) はこの経路では
- *   代替されないので、`src/components/action/button.test.tsx` が別に持つ
- */
-
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする
 vi.mock("@/features/notes/functions", () => ({
@@ -130,6 +121,14 @@ async function submitCreate(screen: Screen, note: Note) {
   await parkMouse();
 }
 
+/**
+ * 実イベントの規律のうち、画面側の 2 つをこのファイルが持つ (ADR-0049)。play は合成イベントで
+ * 操作するので、story へ移すとリポジトリから消える。
+ * - `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと (`confirmDeleteButton(screen).click()`)
+ * - 画面側の二重確定の dedupe (`queryClient.isMutating`)。「確定直後にもう一度 Enter を送っても
+ *   removeNote は 1 回しか呼ばれない」が見る。Action 層の guard (`disabled={isPending}`) はこの経路では
+ *   代替されないので、`src/components/action/button.test.tsx` が別に持つ
+ */
 describe("NotesPage", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
@@ -308,7 +307,7 @@ describe("NotesPage", () => {
   it("応答後の再取得中に開き直した追加ダイアログはキャンセルできる", async () => {
     // close を止める窓は「応答前」だけで、mutation の pending 全体ではない。応答で閉じた後は
     // 再取得の完了まで pending が続くが、その間に開き直したダイアログは先行 save の応答を
-    // 待っていないので閉じられる (ADR-0022 Decision の完了点 (b) の行)
+    // 待っていないので閉じられる (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
     const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
