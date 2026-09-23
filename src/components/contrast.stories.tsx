@@ -19,7 +19,7 @@ import type { ReactNode } from "react";
  * light と dark は project が分かれており (`vitest.config.ts`)、`vp test run` と
  * `mise run verify` では同じ story が両方で走る。片方でしか現れない不透明度も両方で描かれる。
  * Storybook 経由の実行 (test panel / `storybook tools test run`) は light だけなので、
- * dark 側を確かめるときは `vp test run` で回す (ADR-0022 の節 7-1)。2026-09-21 時点では
+ * dark 側を確かめるときは `vp test run` で回す (ADR-0054)。2026-09-21 時点では
  * どちらのテーマでも 4.5:1 を満たす。いちばん狭いのは light 側で描いた
  * `bg-destructive-surface/30` で、トークンを動かすと画面に存在しない対で落ちうる。そのときは
  * 落ちた対がそのテーマで現れるかを先に確かめる。同じ色なら `mise run contrast` と axe の比は

@@ -33,7 +33,7 @@ type Story = StoryObj<typeof meta>;
 /**
  * 待機していない状態。サイドバーに出る唯一の story なので、押しても決着する action にする。
  * `settlingAction` のままだと play が無い分だけ誰も `settle()` を呼ばず、押した人の画面で
- * pending のまま戻らない (ADR-0022 節 4)
+ * pending のまま戻らない (ADR-0022)
  */
 export const Default: Story = { args: { action: fn() } };
 
@@ -74,7 +74,7 @@ export const NotCalledTwice: Story = {
     const button = saveButton();
     await userEvent.click(button);
     // storybook/test の操作は各手順を await するので、ここに来た時点で pending は描画済み
-    // (ADR-0022 節 5)。この story が固定するのは、描画された guard が再操作を塞ぐことだけ。
+    // (ADR-0052)。この story が固定するのは、描画された guard が再操作を塞ぐことだけ。
     // 描画が間に合わない速さの連打は play では起こせず、実イベントでの検証は
     // src/components/action/button.test.tsx が持つ
     await expect(button).toHaveAttribute("aria-disabled", "true");

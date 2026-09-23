@@ -2,7 +2,7 @@
  * Storybook 経由の実行か。真ならテーマごとの project を作れない。
  *
  * `@storybook/addon-vitest` はこのとき project 名を `storybook:${configDir}` へ上書きするので、
- * 同じ `configDir` から 2 つ作ると名前が衝突して Vitest が起動しない (ADR-0022 の節 7-1)。
+ * 同じ `configDir` から 2 つ作ると名前が衝突して Vitest が起動しない (ADR-0054)。
  */
 export function isStorybookRun(value: string | undefined): boolean {
   // 読み方を addon へ揃える。addon は `optionalEnvToBoolean` で読み、`"false"` と `"0"` と

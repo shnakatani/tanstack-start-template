@@ -37,7 +37,7 @@ type Story = StoryObj<typeof meta>;
 /**
  * 待機していない状態。サイドバーに出る唯一の story なので、submit しても決着する action に
  * する。`settlingAction` のままだと play が無い分だけ誰も `settle()` を呼ばず、submit した
- * 人の画面で pending のまま戻らない (ADR-0022 節 4)
+ * 人の画面で pending のまま戻らない (ADR-0022)
  */
 export const Default: Story = { args: { submitAction: fn() } };
 

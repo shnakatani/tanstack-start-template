@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0027 (a11y の検査を tag で分ける) / ADR-0004 (静的 lint の構成) / ADR-0017 (a11y 検査の対象) / ADR-0018 (incomplete に噛まれた事故と回避策) / ADR-0022 (story を検査の単位にする) / ADR-0024 (1.4.11 を axe が持たない) / ADR-0025 (`::placeholder` を axe が誤って評価する)
+- 関連: ADR-0027 (a11y の検査を tag で分ける) / ADR-0004 (静的 lint の構成) / ADR-0017 (a11y 検査の対象) / ADR-0018 (incomplete に噛まれた事故と回避策) / ADR-0054 (story を検査の単位にする) / ADR-0024 (1.4.11 を axe が持たない) / ADR-0025 (`::placeholder` を axe が誤って評価する)
 
 ## Context
 
@@ -137,7 +137,7 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 | story の axe            | 部品が取りうる状態。操作の後も `play` で見る                                                 | 部品か story     |
 | ブラウザテストの axe    | story を置けないページと文書全体 (`src/routes/`)。ランドマーク構造など部品へ分解できないもの | そのケースの実装 |
 
-境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (ADR-0022 の節 2)。分かれるのは**置ける場所**と、そこから来る**描画を統制できるか** (節 1) である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
+境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (ADR-0022)。分かれるのは**置ける場所**と、そこから来る**描画を統制できるか** (節 1) である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
 
 ### 4. 抑制は story の `parameters.a11y` に置き、理由と出口を添える
 

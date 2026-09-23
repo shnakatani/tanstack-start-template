@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0024 (トークンの値の決め方と `--muted-foreground` を下げた判断) / ADR-0006 / ADR-0050 (乖離の記録先) / ADR-0022 (実描画と axe による検算。`::placeholder` には届かない)
+- 関連: ADR-0024 (トークンの値の決め方と `--muted-foreground` を下げた判断) / ADR-0006 / ADR-0050 (乖離の記録先) / ADR-0054 (実描画と axe による検算。`::placeholder` には届かない)
 
 ## Context
 

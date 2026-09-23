@@ -11,7 +11,7 @@ import { ButtonLink } from "./button-link";
 /**
  * 状態のカタログは `button-link.stories.tsx` が持つ (ADR-0022)。ここに残すのは、要素が `a` で
  * あること・`data-slot`・`button-group` の子孫セレクタが当たる経路で、story に play が無い
- * (節 2 の args だけで状態が決まる部品) 以上ここでしか固定できない (節 7 の役割分担)。
+ * (ADR-0022 の args だけで状態が決まる部品) 以上ここでしか固定できない (ADR-0052 の役割分担)。
  *
  * 寸法は測らない。24px の床は registry の size 目盛りが持つデザインシステムの規範で、
  * 消費側が縮められないことは層の規則 (ADR-0020 / ADR-0021) が止める。機械で見ないのは

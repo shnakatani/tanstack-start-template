@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0026 (axe で何を測り何を測らないか) / ADR-0022 (story を検査の単位にする) / ADR-0018 (incomplete に噛まれた事故)
+- 関連: ADR-0026 (axe で何を測り何を測らないか) / ADR-0054 (story を検査の単位にする) / ADR-0018 (incomplete に噛まれた事故)
 
 ## Context
 

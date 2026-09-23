@@ -21,6 +21,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 // isPending は prop なので、対で並べると同じ部品の 2 状態として見比べられる。Idle は
-// action/button の Default と同じ見た目になるが、別の部品の story なので残す (ADR-0022 節 3)
+// action/button の Default と同じ見た目になるが、別の部品の story なので残す (ADR-0022)
 export const Idle: Story = { args: { isPending: false } };
 export const Pending: Story = { args: { isPending: true } };

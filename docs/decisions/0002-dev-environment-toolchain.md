@@ -99,6 +99,10 @@ runtime は Vite+ が同じ宣言から解決して持っているので 2 つ�
 実体は Vite+ 一族の推移依存として入るため install からは消えない。
 直接の依存に戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけとする。
 
+### Storybook の telemetry を切る
+
+telemetry は `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` と同じく明示で潰す側に揃える。
+
 ### mise を選ぶ理由
 
 | 候補      | 対象ツールの網羅       | 学習コスト      | クローン後の手順                    | 備考                                     |
