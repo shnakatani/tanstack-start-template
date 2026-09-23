@@ -15,7 +15,7 @@ const TODAY = new Date(2026, 8, 20);
  * 見出しを外すのは、registry 素の nav が `absolute inset-x-0 top-0` で見出しへ重なり、axe が
  * 背景を決められないため (bgOverlap)。原因は部品の構造なので meta へ置き、出ない story だけが
  * 例外を書く。nav は透明なので実際の配色は変わらない。ルールごと切らずに要素で外すのは、
- * 日付セルの色の検査を残すため (ADR-0042)。
+ * 日付セルの色の検査を残すため (ADR-0040)。
  *
  * 上流へは未起票 (2026-09-21 に shadcn-ui/ui を検索して該当なし)。投げるなら shadcn-ui/ui。
  * 外せるのは registry baseline の差分で nav の位置指定が変わったとき (ADR-0026)
