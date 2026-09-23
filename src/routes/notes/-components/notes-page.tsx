@@ -116,7 +116,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     }),
   });
 
-  // 派生値は hook より後ろで作る (ADR-0021「data の組み立て」。oxc-transform-react の出力で実測)
+  // 派生値は hook より後ろで作る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」の data の組み立て行。oxc-transform-react の出力で実測)
   const deletingIds = parseDeletingIds(pendingDeleteVariables);
   const creatingRows = parseCreatingRows(pendingCreateStates);
   const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds });

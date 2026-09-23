@@ -22,7 +22,7 @@ paths:
 - `routes/<path>/-` で始まるディレクトリの中の import は相対パスで書く (`docs/guides/placement.md`「route の中の置き場」)
 - `parts/` と `screens/` の取り違えは機械で止まらない。外見を定義するなら `parts/`、既存の部品を並べるだけなら `screens/`。消費者が 1 つでも同じ (ADR-0013)
 - className を書きたいことは `parts/` へ移す理由にならない。層の規則から外れるために移すのは逆 (ADR-0013 / ADR-0028)
-- 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の部品を参照で渡す (ADR-0021)
+- 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の部品を参照で渡す (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0012)
 - route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない
 - story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まる (ADR-0048)

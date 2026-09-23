@@ -109,7 +109,7 @@ describe("/notes route", () => {
     const screen = await render(<RouterProvider router={router} />);
 
     await expect.element(screen.getByRole("status", { name: "読み込み中" })).toBeInTheDocument();
-    // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (ADR-0021)
+    // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
     await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
   });
 

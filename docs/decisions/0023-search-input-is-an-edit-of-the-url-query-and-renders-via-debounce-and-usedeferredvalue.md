@@ -25,10 +25,8 @@
 | 編集を `q` の値ではなく世代で紐付ける                                                                                                                                                                                                | 履歴が同じ値へ戻ったとき (abc → xyz を確定 → abc へ戻る)、値で照合すると確定済みの編集が復活する (2026-09-23 のレビューで指摘)                                                |
 | debounce するのは編集そのもの (`useDebouncedValue(edit)`)。debounce 済みの編集も世代が一致するときだけ使い、違えば URL の `q` を条件にする                                                                                           | 文字列を debounce すると、確定や戻るで URL が変わった後も debounce 済みの古い値が生き残り、URL でも入力でもない第 3 の条件を描く                                              |
 | 条件は `useDeferredValue` を通してから `useSuspenseQuery` の key にする                                                                                                                                                              | 無いと新しい key で Suspend した瞬間に Suspense が古い一覧を隠す (下の節)                                                                                                     |
-| 入力欄の編集 (draft と debounce 済み) は URL / server function と同じ `noteListFilterSchema` で正規化する (trim / 上限)。正規化は入力の直後に 1 回で、下流はその値から導く                                                           | 正規化を下流の複数箇所で呼ぶと呼び忘れた経路が生の値で走る。`" abc"` と `"abc"` が別のキャッシュになる                                                                        |
-| 入力と表示中の条件がずれている間 (正規化後の入力値と deferred な条件が違う。debounce の待ちと取得中) は一覧を `StaleContent` (`src/components/parts/stale-content.tsx`) で包み `aria-busy` + 半透明で残す                            | 古い一覧が新しい条件の結果に見える。React docs の `isStale` の形。生の文字列で比べると、submit で入力欄を揃えた直後に条件が同じまま印が出る                                   |
-| submit では入力欄も正規化後の値に揃える (値が変わるときだけ setState)                                                                                                                                                                | URL が同じ (同じ条件で Enter) だと作り直しも遷移も起きず、trim と切り詰めが見えない                                                                                           |
-| 楽観行 (追加中) は条件によらず一覧の先頭に出す (`toNoteRows` の合成順のまま)                                                                                                                                                         | 保存後の再取得で条件に合わなければ消える。追加中だけ条件で隠すと「追加したのに出ない」に見える                                                                                |
+
+正規化、入力と条件がずれている間の表示、submit で入力欄を揃える、楽観行の位置の組み方は `docs/guides/lists-and-search.md`「検索の入力欄を組む」にある。
 
 ### `useDeferredValue` を外せない理由
 
@@ -40,9 +38,6 @@ React docs は debounce と `useDeferredValue` を「You can also use these tech
 
 - `@tanstack/react-pacer` は beta で API が変わりうる (docs の overview「TanStack Pacer is currently in beta and its API is still subject to change」)。利用箇所は `NotesPage` の `useDebouncedValue` 1 つに閉じる。追従できない変更が来たら `use-debounce` の `useDebounce(value, wait)` に差し替える。差し替え後も `useDeferredValue` の段は残す
 - 待ちの実値は `src/routes/notes/-lib/note-search.ts` の `NOTE_SEARCH_DEBOUNCE_MS`。テストは module の partial mock で広げるので literal 型に固めない
-- 確定と戻るの直後は編集の世代が URL と合わないので、debounce の待ちを経ずに URL の条件 (loader が温めたキャッシュ) を描く
-- ページは URL の変化をまたいで生き続けるので、結果の通知の記憶 (`useRef`) をページに置ける (ADR-0033)
-- 打鍵中の再描画: `useDebouncedValue` は selector を渡さない限り store の購読で再描画しない。React Compiler の出力で `v.parse` は入力値ごとに memo され、`DataTable` は打鍵で作り直されない (2026-09-23 に oxc-transform-react で確認)
 
 ### 再評価の条件
 

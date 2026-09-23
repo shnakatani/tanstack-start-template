@@ -111,7 +111,7 @@ export const NOTE_QUERY_MAX_LENGTH = 100;
 
 /**
  * 一覧の絞り込み条件。URL の search param (`/notes?q=`) と `listNotes` の validator が同じ定義を使う。
- * valibot 1.x は Standard Schema なので、Router の `validateSearch` にそのまま渡せる (ADR-0022)。
+ * valibot 1.x は Standard Schema なので、Router の `validateSearch` にそのまま渡せる (`docs/guides/lists-and-search.md`「絞り込み条件を URL に置く」)。
  * `q` の既定は空文字 = 絞り込みなし。URL 上では `stripSearchParams` が既定値を落とす。
  *
  * 上限は reject せず切り詰める。search param は malformed でも体験を止めない (Router の search-params
