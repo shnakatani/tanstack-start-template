@@ -21,17 +21,9 @@ describe("toNoteListFilter", () => {
     expect(toNoteListFilter("a".repeat(cap + 1))).toEqual({ q: "a".repeat(cap) });
   });
 
-  it("切った位置がサロゲートペアの途中なら、割れた前半を落とす", () => {
-    // "😀" は 2 code unit。99 文字 + 絵文字 = 101 unit を 100 で切ると前半 (\uD83D) だけ残る
+  it("切り詰めは code unit で数え、割れたサロゲートを残さない (詳細は truncate-code-units.test.ts)", () => {
     const { q } = toNoteListFilter(`${"あ".repeat(NOTE_QUERY_MAX_LENGTH - 1)}😀`);
     expect(q).toBe("あ".repeat(NOTE_QUERY_MAX_LENGTH - 1));
-    // Router の search は URLSearchParams で書く。割れたままだと U+FFFD (%EF%BF%BD) に化ける
-    expect(new URLSearchParams({ q }).toString()).toBe(`q=${encodeURIComponent(q)}`);
-  });
-
-  it("上限ちょうどでペアが収まるなら保つ", () => {
-    const text = `${"a".repeat(NOTE_QUERY_MAX_LENGTH - 2)}😀`;
-    expect(toNoteListFilter(text)).toEqual({ q: text });
   });
 
   it("trim してから上限を数える (前後の空白は上限に含めない)", () => {

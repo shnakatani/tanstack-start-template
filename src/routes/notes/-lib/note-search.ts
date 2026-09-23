@@ -6,6 +6,7 @@ import {
   NOTE_QUERY_MAX_LENGTH,
   noteListFilterSchema,
 } from "@/features/notes/schema";
+import { truncateCodeUnits } from "@/lib/truncate-code-units";
 
 /** 検索欄のアクセシブルネーム。placeholder と同じ文言 (見た目と読み上げを揃える)。 */
 export const NOTE_SEARCH_LABEL = `${NOTE_ENTITY_LABEL}を検索`;
@@ -26,16 +27,14 @@ export const NOTE_SEARCH_DEBOUNCE_MS: number = 300;
  * 変換中の change は facebook/react#8683)、確定の仕方によっては確定後も超える (Chromium 40520211)。
  * schema に通して throw させると一覧ごと Error Boundary に落ちる (ADR-0033)。
  * 切り詰めは maxLength と同じ規則を先に当てるだけなので記録しない。submit では入力欄にも反映する。
+ * 呼ぶのは入力の直後に 1 回で、debounce / deferred / key / submit はその値から導く (使い忘れる場所を作らない)。
  * render から呼ぶので純粋に保つ
  */
 export function toNoteListFilter(text: string): NoteListFilter {
-  // 上限は UTF-16 の code unit で数える (maxLength と同じ)。切った位置がサロゲートペアの途中なら
-  // 前半だけが残り、URL では U+FFFD に化けて LIKE にも当たらないので、その 1 unit を落とす
-  const cut = text
-    .trim()
-    .slice(0, NOTE_QUERY_MAX_LENGTH)
-    .replace(/[\uD800-\uDBFF]$/u, "");
-  return v.parse(noteListFilterSchema, { q: cut });
+  // 上限は input の maxLength と同じく UTF-16 の code unit で数える
+  return v.parse(noteListFilterSchema, {
+    q: truncateCodeUnits(text.trim(), NOTE_QUERY_MAX_LENGTH),
+  });
 }
 
 /**

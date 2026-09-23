@@ -14,6 +14,7 @@ import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY, notesQueryOptions } from "@/features/notes/queries";
+import type { NoteListFilter } from "@/features/notes/schema";
 import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
@@ -42,14 +43,14 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   function handleTextChange(next: string) {
     setEdit({ base: q, text: next });
   }
-  const [debouncedText] = useDebouncedValue(text, { wait: NOTE_SEARCH_DEBOUNCE_MS });
+  // 正規化 (trim / 上限) は入力の直後に 1 回。以降の debounce / deferred / key / submit はこの値から導く
+  const draftQ = toNoteListFilter(text).q;
+  const [debouncedQ] = useDebouncedValue(draftQ, { wait: NOTE_SEARCH_DEBOUNCE_MS });
   // 入力欄が URL と同じなら debounce を待たない (確定と戻るの直後に、温め済みの条件を遅らせない)
-  const settledText = text === q ? q : debouncedText;
-  const deferredText = useDeferredValue(settledText);
-  // key にする前に URL / server function と同じ正規化を通す (理由は toNoteListFilter の docstring)
-  const filter = toNoteListFilter(deferredText);
-  // 正規化後で比べる。生の文字列だと、submit で入力欄を揃えた直後に条件が同じまま印が出る
-  const isStale = toNoteListFilter(text).q !== filter.q;
+  const settledQ = draftQ === q ? q : debouncedQ;
+  const deferredQ = useDeferredValue(settledQ);
+  const filter: NoteListFilter = { q: deferredQ };
+  const isStale = draftQ !== deferredQ;
   const notesQuery = useSuspenseQuery(notesQueryOptions(filter));
   const queryClient = useQueryClient();
 
@@ -111,11 +112,10 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds });
 
   function handleSubmit() {
-    const next = toNoteListFilter(text).q;
-    // 入力欄を正規化後の値に揃える (trim と切り詰めが見える)。URL が変われば base が合わなくなり、
+    // 入力欄も正規化後の値に揃える (trim と切り詰めが見える)。URL が変われば base が合わなくなり、
     // 表示は新しい q から導かれる
-    setEdit({ base: q, text: next });
-    onQueryChange(next);
+    setEdit({ base: q, text: draftQ });
+    onQueryChange(draftQ);
   }
 
   // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0016)。
