@@ -20,12 +20,7 @@ version updates は「新しいバージョンが出た」ことしか教えな�
 ### 1. alerts と security updates を有効化する
 
 リポジトリ設定の Dependabot alerts と Dependabot security updates を有効にする。
-この設定はコードに現れないため、本 ADR がその記録を持つ。
-
-```bash
-gh api -X PUT /repos/<owner>/<repo>/vulnerability-alerts
-gh api -X PUT /repos/<owner>/<repo>/automated-security-fixes
-```
+この設定はコードに現れないため、本 ADR がその記録を持つ。有効にするコマンドは `docs/guides/dependencies-and-toolchain.md`「Dependabot の alerts を有効にする」にある。
 
 alerts / security updates / version updates の 3 機能は private リポジトリでも追加費用がかからない。
 
@@ -51,13 +46,7 @@ Dependabot security updates は cooldown の対象外で、手元では `vp pm a
 
 3 日待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものであることを確認する。
 
-```bash
-curl -s https://registry.npmjs.org/<pkg>/<version> | jq '{_npmUser, repository, attestations: .dist.attestations}'
-curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
-```
-
-`_npmUser` に `trustedPublisher` があれば OIDC による公開である。個人トークンでの公開は、トークン漏洩が成立経路になるため前倒しの根拠には足りない。
-attestation の `subject` が対象の package と version に一致し、`workflow.repository` が公式リポジトリで、`workflow.ref` が既定ブランチかリリースタグであることまで見る。
+確かめ方 (`_npmUser` の `trustedPublisher`、attestation の `subject` と `workflow`) は `docs/guides/dependencies-and-toolchain.md`「待機を前倒しする」にある。個人トークンでの公開は、トークン漏洩が成立経路になるため前倒しの根拠には足りない。
 
 **追記は必ずバージョンまで固定する** (`@scope/pkg@x.y.z`)。
 パッケージ名だけを書くと、そのパッケージの全バージョンが恒久的に待機の対象外になる。バージョンを固定しておけば次のリリースで待機が自動的に復活し、エントリの消し忘れが穴として残らない。
@@ -81,9 +70,7 @@ bot 側の待機は外さない。`cooldown: default-days: 3` は全パッケー
 `vite-plus` と core (`vite` の alias 先) は同一リリースで exact pin される対だが、bot からは無関係な別パッケージに見える。
 別々の PR に割れると、どちらをマージしてもリリースされたことのない組み合わせになる。
 
-- `.github/dependabot.yml` の `groups` に `vite-plus` グループを置く
-- `pnpm-workspace.yaml` の `catalog:` へエントリを足したら `patterns` にも足す。逆は成り立たない (`patterns` は catalog に現れない推移依存もグロブで拾う)
-- グループは `minor-and-patch` より前に置く。Dependabot は先に一致したグループを採るため、後ろに置くと major 更新だけが別 PR に落ちる
+`.github/dependabot.yml` の `groups` に `vite-plus` グループを置く。catalog へ足すときの手順とグループの並び順は `docs/guides/dependencies-and-toolchain.md`「catalog にエントリを足す」にある。
 
 ### 6. pin には出口条件を書く
 
@@ -101,7 +88,7 @@ bot 側の待機は外さない。`cooldown: default-days: 3` は全パッケー
 
 独立した定期チェックは設けない。忘れられる運用を作らない。
 
-- **連鎖 pin は同じ出口条件へ束ねる。** 間接的に pin 圏へ入るパッケージを見つけたら `ignore` へ追記し、同じ出口条件を参照させる。出口条件の文字列を grep すれば pin の全構成要素が見つかる状態を保つ
+- **連鎖 pin は同じ出口条件へ束ねる。** 束ね方は `docs/guides/dependencies-and-toolchain.md`「pin を足す」にある
 
 ### 7. 宣言レンジは `pnpm update` が書き換える
 
@@ -132,7 +119,7 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 ## Consequences
 
 - 公開 3 日未満の新版へ意図的に上げたい場面では、3 日待つか provenance を確認して `minimumReleaseAgeExclude` へ追記するかを明示的に判断する
-- 追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で削除する。`@scope/*` のパターンは常に残るため、Vite+ 一族の恒久除外は刈られない
+- 追記したエントリの後始末は `minimumReleaseAgeExcludePrune` が持つ (`docs/guides/dependencies-and-toolchain.md`「待機を前倒しする」)
 - Dependabot の version updates PR は weekly スケジュールと 3 日 cooldown の合成で、リリースから最長 1 週間強遅れて届く
 - pin のリスクは「advisory が出てから対応するまでの遅延」に限定される。検知は自動のまま残るので、無検知の放置は起きない
 - Dependabot PR の処理が「依存更新の取り込み」と「pin の出口確認」を兼ねる。手順が 1 段増えるが、独立した定期タスクを管理するより忘れにくい

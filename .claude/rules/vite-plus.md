@@ -22,7 +22,7 @@ paths:
 
 ## 型検査
 
-- `typescript` を直接の依存に置かない。型検査は `vp check` の type-aware lint (tsgolint) が担い、`typescript` は推移依存として入る。直接の依存へ戻すのは、リポジトリのコードが `typescript` を import するときだけ (Vite+ の `docs/guide/check.md`)
+- `typescript` を直接の依存に置かない。型検査は `vp check` の type-aware lint (tsgolint) が担い、`typescript` は推移依存として入る。直接の依存へ戻すのは、リポジトリのコードが `typescript` を import するときだけ (`docs/guides/dependencies-and-toolchain.md`「`typescript` を直接の依存に置かない理由」)
 
 ## React Compiler (`vite.config.ts` の `plugins`)
 

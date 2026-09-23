@@ -57,7 +57,7 @@ Vitest の config は Vite の config を継承せず上書きする (公式が�
 `mergeConfig` で引き継ぐ手はあるが採らない。test 用の config を分けているのは `tanstackStart()` を外すためで (TanStack/router#6246 の回避)、全体を継承すると plugin ごと戻る。
 片方だけに書くと、暗号化した `.env` を置いた時点でビルドとテストで挙動が割れ、最も切り分けにくい形の不具合になる。
 
-秘密が要るようになったら、暗号化した env ファイルと `dotenvx run --` のような復号経路を Vite の env 機構と分けて足す。Vite は「既に存在する環境変数を `.env` で上書きしない」仕様なので、復号を先に済ませて `process.env` へ入れる形が噛み合う。
+秘密が要るようになったときの足し方は `docs/guides/dependencies-and-toolchain.md`「秘密を足す」にある。
 
 ### runtime と package manager の版は `package.json` が持つ
 
@@ -74,11 +74,7 @@ package manager の版は `packageManager` が決める。`vp env pin` が書き
 Node.js を major までにするのは、minor 差が解決結果を変えないためである。
 pnpm を exact にするのは、minor で解決挙動そのものが変わり、`minimumReleaseAge` や `peerDependencyRules` の扱いが動くと lockfile が手元ごとに割れるためである (ADR-0006)。
 
-`devEngines.runtime.onFail` は `error` にする。
-pnpm も同じフィールドを読み、`download` だと宣言した runtime を自前で解決して lockfile へ記録し `node_modules` へ展開する。
-2026-09-02 の実測では、`vp remove` の再解決で `node@runtime:24.20.0` と全プラットフォーム分の tarball URL が lockfile に入り、`node_modules/node` が生えた。
-runtime は Vite+ が同じ宣言から解決して持っているので 2 つ目の実体は要らない。`error` にすると、宣言を満たさない Node.js で pnpm を動かしたときの検査だけが残る。
-`vp env pin` が書き込む既定値は `download` なので、pin を打ち直したら戻す。
+`devEngines.runtime.onFail` は `error` にする。pnpm も同じフィールドを読み、`download` だと宣言した runtime を自前で解決して lockfile へ記録するためで、runtime は Vite+ が同じ宣言から解決して持っているので 2 つ目の実体は要らない。`vp env pin` の後に戻す手順と実測は `docs/guides/dependencies-and-toolchain.md`「Node.js の版を打ち直す」にある。
 
 同じ版を `.mise.toml` の `[tools]` にも宣言すると、2 つの宣言は別々に解決される。
 2026-09-02 の実測では mise が 24.12.0、Vite+ が 24.20.0 を選び、`vp env doctor` が PATH 上の `node` を「vp shim ではない」と警告した。
@@ -105,8 +101,7 @@ runtime は Vite+ が同じ宣言から解決して持っているので 2 つ�
 この表は 2026-08-17 に、版の pin も mise に持たせる前提で比べたものである。
 版の解決は Vite+ が持つが、タスクランナーと `[env]` の担い手としての比較はそのまま成り立つ。
 
-宣言だけでは効かないので、mise のシェル hook を導入手順に含める。
-hook を入れていない手元では `[env]` が読まれず、`DB_FILE_NAME` が未設定のまま走る。
+宣言だけでは効かないので、mise のシェル hook を導入手順に含める (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)。
 
 ### Vite+ を選ぶ理由
 
@@ -126,10 +121,10 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 
 ## Consequences
 
-- Node.js と pnpm 以外のツールを足すときは `.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
+- Node.js と pnpm 以外のツールは `.mise.toml` の `[tools]` へ宣言する (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
 - 開発者のグローバル mise 設定が `node` や `pnpm` を持っていても、`.mise.toml` の `[settings] disable_tools` がその PATH 注入を止める。2026-09-02 の実測では、設定前は `mise env` の PATH に `installs/node/24/bin` と `installs/pnpm/latest` が `~/.vite-plus/bin` より前に入り、設定後は両方が消えて `node` が vp の shim (24.20.0) に解決した
-- Vite+ が既定で作る shim は `node` / `npm` / `npx` / `corepack` で、`pnpm` は含まれない。素の `pnpm` が要るなら `corepack enable` を実行する。Vite+ の corepack shim は `--install-directory` を Vite+ の bin へ向けるので、作られた launcher は PATH に載り `packageManager` の版に従う
-- Vite+ の更新は同梱ツールの一括更新になる。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるため、更新 PR は `mise run verify` の結果まで見て判断する
+- Vite+ が既定で作る shim は `pnpm` を含まない。素の `pnpm` の用意の仕方は `docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」にある
+- Vite+ の更新は同梱ツールの一括更新になる。更新 PR で見るものは `docs/guides/dependencies-and-toolchain.md`「依存を上げたときに見直すもの」にある
 - `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名でも別物なので、実行前に `package.json` と `vite.config.ts` を確認する
 
 ## 出典

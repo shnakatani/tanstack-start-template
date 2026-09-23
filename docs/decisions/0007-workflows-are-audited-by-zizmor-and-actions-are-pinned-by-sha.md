@@ -35,8 +35,7 @@ tag と branch は後から付け替えられる。GitHub の security hardening
 
 ## Consequences
 
-- 新しい action を足すときは `@<SHA> # vX.Y.Z` で書く。手元で `zizmor --fix=all` を使うと SHA へ書き換わる (SHA 固定は unsafe fix に分類され、既定の `--fix=safe` では書き換わらない)
-- zizmor に新しい audit が入ると、action の更新 PR で既存の workflow が落ちうる。その PR の中で直すか、`.github/zizmor.yml` で理由を書いて無効化する
+- action を足すときの書き方と、新しい audit で落ちたときの扱いは `docs/guides/dependencies-and-toolchain.md`「workflow に action を足す」にある
 - 指摘は GitHub の annotation ではなく job のログに出る
 - 再評価の条件は、zizmor-action が stable 版を出したとき (README は後方互換の無い変更がありうると書いている)、GitHub が action の tag を不変にする仕組みを既定にしたとき
 
