@@ -74,7 +74,7 @@ paths:
 - ページ本体は `-components/` に置き、Route hooks (`Route.useSearch` 等) はルートファイル内の export しない wrapper で吸収して props で渡す。混ぜるとページテストが動かない (実例: `notes-page.tsx`)
 - Route hooks を使う wrapper は、実 router + `createMemoryHistory` で描いて検証する。tree は root を差し替えて組む (実例: `src/routes/notes/index.test.tsx`、ADR-0051)
 - loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる
-- loader は Query を温めるためだけに呼び、値は `useSuspenseQuery` で読む。`useLoaderData` で読むと `invalidateQueries` で画面が更新されない (TanStack Router「External Data Loading」)
+- loader は Query を温めるためだけに呼び、値は `useSuspenseQuery` で読む。`useSuspenseQuery` はキャッシュを読んで更新を購読するので、invalidate で描き直される (TanStack Router「External Data Loading」)
 - route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入る (ADR-0013)
 - 分割されない property (`pendingComponent` / `loader` / `validateSearch` 等) が import する module は eager に読まれる。ページ本体と同じ module に置かず、pending 表示は別ファイル、共有する定数は `-lib/` に置く (ADR-0013)
 - route ファイルのテストは route ファイル名に `.test` を付ける (`index.test.tsx`)。`route.test.tsx` はレイアウトルートのテストと読める (Router の file-naming-conventions)
