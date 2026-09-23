@@ -15,6 +15,7 @@
 | [0003](0003-place-norms-by-when-they-load-and-bash-only-norms-in-agents-md.md)                                           | 規範の置き場所は読み込まれる契機で決め、Bash で打つだけの操作の規範は AGENTS.md に置く                  | Accepted | 2026-09-23 | `paths` の rules は一致するファイルを読んだときにしか読み込まれない。ファイルを読まずに始まる操作の規範は、開始時に読み込まれる AGENTS.md に置く                                                                       |
 | [0004](0004-code-comments-point-to-adrs-not-rules.md)                                                                    | ソースと設定のコメントは rules ではなく ADR を指す                                                      | Accepted | 2026-09-23 | 利用者が rules を差し替えても、ADR は番号ごと付いてくる。理由を持つ ADR が無ければコメント自身に理由を書く                                                                                                             |
 | [0051](0051-put-cross-cutting-design-guides-in-docs-guides-and-cite-their-sections-from-rules.md)                        | 部品をまたぐ作法の説明と手順は docs/guides に置き、rules は出典としてその節を指す                       | Accepted | 2026-09-24 | ADR は決定だけを持ち、部品をまたぐ作法の説明と手順は `docs/guides/` の主題ごとのガイドが持つ。rules はガイドを import も案内もせず、規範を自分で持って出典としてガイドの節を指す                                       |
+| [0052](0052-a-guide-covers-one-topic-splits-how-to-from-explanation-and-points-to-code-and-adrs.md)                      | 設計ガイドは 1 本に 1 主題を持ち、手順と説明を節で分け、コードと決定は参照で指す                        | Accepted | 2026-09-24 | 主題の中を how-to と explanation の節に分ける (Diátaxis)。コードはパス、決定は ADR 番号で指して写さない。経緯を書かず、コードと決定に合わせて書き換える                                                                |
 
 ### 開発環境・依存・CI
 
