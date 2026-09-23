@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 
 /**
  * `addon-a11y` が積んだ結果を読み直す annotation を、**`@storybook/addon-a11y` より前**に登録する
- * ための local preset (ADR-0026 の節 1)。
+ * ための local preset (ADR-0056)。
  *
  * 順序が要る。`afterEach` は `[project, component, story]` を `reverse()` して走らせるので
  * (`storybook` の `applyAfterEach`)、annotation の並びで先にいるものほど

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0026 (axe で何を測り何を測らないか) / ADR-0054 (story を検査の単位にする) / ADR-0018 (incomplete に噛まれた事故)
+- 関連: ADR-0056 (`incomplete` を落とす層) / ADR-0026 (axe で何を測り何を測らないか) / ADR-0054 (story を検査の単位にする) / ADR-0018 (incomplete に噛まれた事故)
 
 ## Context
 
@@ -77,7 +77,7 @@ project を選んだ 2 件の理由は、いずれも runner の設定と単独�
 
 - `--tagsFilter '!a11y'` でも、挙動テストに相乗りしている assert は走る。a11y を完全に外した実行はできない
 - tag の定義は browser project にしかない。他の project でも使うなら、その project の `test.tags` へ足す
-- story 側の a11y は `addon-a11y` が全 story へ一律に当てるので、tag の対象外 (ADR-0026)
+- story 側の a11y は `addon-a11y` が全 story へ一律に当てるので、tag の対象外 (ADR-0057)
 - 相乗りの assert を降ろす判断を後からするなら、共通の setup を helper へ切り出して重複を避ける
 
 ## 出典
