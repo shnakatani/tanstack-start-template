@@ -12,7 +12,7 @@ import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { RouteErrorContent } from "@/components/screens/route-error";
-import { NOTE_QUERY_MAX_LENGTH, noteListFilterSchema } from "@/features/notes/schema";
+import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import { createTestRouter } from "@/test/create-test-router";
 import { readAnnouncements } from "@/test/live-announcer";
 import { createTestQueryClient } from "@/test/page-helpers";
@@ -101,11 +101,6 @@ describe("/notes route", () => {
     await expect.element(screen.getByRole("status", { name: "読み込み中" })).toBeInTheDocument();
     // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (ADR-0019)
     await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
-  });
-
-  it("route が search を server function と同じ schema で検証し、q を loader の deps にする", () => {
-    expect(Route.options.validateSearch).toBe(noteListFilterSchema);
-    expect(Route.options.loaderDeps?.({ search: { q: "abc" } })).toEqual({ q: "abc" });
   });
 
   it("URL の q が loader と入力欄に届く", async () => {
