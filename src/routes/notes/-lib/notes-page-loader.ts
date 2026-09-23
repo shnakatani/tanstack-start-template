@@ -7,7 +7,9 @@ import type { NoteListFilter } from "@/features/notes/schema";
  * 一覧 loader 本体。route ファイルから export せず `-lib/` に置く。route の property (loader /
  * component) を route ファイルから export すると main bundle に入り code-split されない
  * (TanStack Router「Rules of Splitting」)。ここに置けば loader だけを呼ぶテストが書ける。
- * context は LoaderFnContext の構造的部分型として受け、テストでは最小オブジェクトを渡す。
+ * 引数は `LoaderFnContext` の構造的部分型で書く。Router の型からは導けない: `typeof Route` は route が
+ * この関数から型を推論するので循環し (TS2502)、`LoaderFnContext<..., AnyRoute, ...>` は `context` が
+ * `any` に解ける (2026-09-23 に実測)。テストでは最小オブジェクトを渡す。
  * `deps` は `loaderDeps` が search から取り出した絞り込み条件 (ADR-0033)。
  */
 export function loadNotesPageData({

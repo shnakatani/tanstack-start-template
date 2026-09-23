@@ -66,6 +66,7 @@ React docs は debounce と `useDeferredValue` を「You can also use these tech
 
 - Pacer が 1.0 になったら beta の注記を消す。API が変わって追従できなければ上の差し替え先へ
 - `@vitest/browser` の locator engine が `search` role を `<search>` に写すようになったら `<form role="search">` を `<search>` に戻す
+- drizzle-orm が `like` のエスケープ helper を出荷したら (drizzle-team/drizzle-orm#444)、`escapeLikePattern` を消して置き換える
 - `__root.tsx` が browser test で描けるようになったら、`index.test.tsx` を生成済み `routeTree` で描く形 (how-to の形) に戻す
 
 ## 検討した選択肢
@@ -93,6 +94,7 @@ React docs は debounce と `useDeferredValue` を「You can also use these tech
 - TanStack Pacer の overview (beta の注記) と `useDebouncedValue`: <https://tanstack.com/pacer/latest/docs/overview> / <https://tanstack.com/pacer/latest/docs/framework/react/reference/functions/useDebouncedValue>
 - 同梱の `@tanstack/react-pacer` 0.23.0 `dist/debouncer/useDebouncedState.js` と、その依存 `@tanstack/pacer` 0.22.0 `dist/debouncer.js` (`setState` を Transition に包まない)
 - SQLite の `LIKE` (ASCII のみ case-insensitive、`ESCAPE`): <https://sqlite.org/lang_expr.html#like>
+- drizzle-team/drizzle-orm#444 (`like` へのエスケープ helper の要望。open): <https://github.com/drizzle-team/drizzle-orm/issues/444>
 - HTML Standard「maxlength」(防止は may): <https://html.spec.whatwg.org/multipage/input.html#attr-input-maxlength>
 - facebook/react#8683 (IME の変換中に change が走る) / Chromium 40520211 (変換中に外をクリックすると maxlength を超えたまま確定する): <https://github.com/facebook/react/issues/8683> / <https://issues.chromium.org/issues/40520211>
 - TanStack/router#3162 (search param に束縛した入力欄でカーソルが末尾へ跳ぶ。局所 state を挟む回避策): <https://github.com/TanStack/router/issues/3162>

@@ -20,8 +20,8 @@ export const Route = createFileRoute("/notes/")({
 });
 
 /**
- * Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける
- * (`.claude/rules/directory-structure.md`「ルートファイル」)。`key={q}` でページを作り直さない。
+ * Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける (ADR-0012)。
+ * `key={q}` でページを作り直さない。
  * URL の q に入力欄を揃えるのはページ側が描画中に導く (ADR-0033)
  */
 function NotesRoute() {

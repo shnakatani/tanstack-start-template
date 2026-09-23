@@ -24,8 +24,7 @@ export const NOTE_SEARCH_DEBOUNCE_MS: number = 300;
  * 正規化 (trim) を通す。通さないと `" abc"` と `"abc"` が別のキャッシュになり、取得が 2 回走る。
  * 上限は input の `maxLength` と同じ値で切る。IME の変換中は maxLength が効かず (React の
  * 変換中の change は facebook/react#8683)、確定の仕方によっては確定後も超える (Chromium 40520211)。
- * schema に通して throw させると一覧ごと Error Boundary に落ちる
- * (`.claude/rules/implementation.md`「操作の失敗を Error Boundary へ届けない」)。
+ * schema に通して throw させると一覧ごと Error Boundary に落ちる (ADR-0033)。
  * 切り詰めは maxLength と同じ規則を先に当てるだけなので記録しない。submit では入力欄にも反映する。
  * render から呼ぶので純粋に保つ
  */
