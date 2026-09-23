@@ -85,7 +85,7 @@ paths:
 
 - ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。その画面専用の純粋ロジックは `-lib/`、複雑な UI は `-components/`、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す
 - Route hooks (`Route.useSearch` 等) はルートファイル内の export しない wrapper で吸収し、ページ本体は `-components/` に置いて値とハンドラを props で受ける。混ぜるとページテストがテスト router で動かない (実例: `src/routes/notes/-components/notes-page.tsx`)
-- loader 本体は `-lib/` の関数に切り出し、route ファイルからは export しない。route 定義に直書きすると loader だけを呼ぶテストが書けない (実例: `src/routes/notes/-lib/notes-page-loader.ts`)
+- loader は route ファイルに書き、export しない。既定では code-split の対象外で `-lib/` に出しても main bundle に入る。検証は router 経由 (実例: `src/routes/notes/index.test.tsx`「URL の q が loader と入力欄に届く」)
 - route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入り code-split されない (ADR-0012)
 - 分割されない property (`pendingComponent` / `loader` / `validateSearch` 等) が import する module は eager に読まれる。ページ本体と同じ module に置かず、pending 表示は別ファイル、共有する定数は `-lib/` に置く (ADR-0012)
 - loader は Query を温めるためだけに呼び、値は component が `useSuspenseQuery` で読む。`useLoaderData` で Query 所有のデータを読むと、mutation の `invalidateQueries` では loader が再実行されず画面だけ古いまま残る

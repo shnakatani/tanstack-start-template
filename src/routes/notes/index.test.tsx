@@ -15,7 +15,6 @@ import { RouteErrorContent } from "@/components/screens/route-error";
 import { NOTE_QUERY_MAX_LENGTH, noteListFilterSchema } from "@/features/notes/schema";
 import { createTestRouter } from "@/test/create-test-router";
 import { readAnnouncements } from "@/test/live-announcer";
-import { collectLoaderQueryKeys } from "@/test/loader-helpers";
 import { createTestQueryClient } from "@/test/page-helpers";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
@@ -38,7 +37,6 @@ vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
 
 import { noteColumns } from "./-lib/note-columns";
 import { NOTE_SEARCH_LABEL } from "./-lib/note-search";
-import { loadNotesPageData } from "./-lib/notes-page-loader";
 import { Route } from "./index";
 
 /**
@@ -89,10 +87,10 @@ function searchbox(screen: Awaited<ReturnType<typeof renderRoute>>["screen"]) {
 }
 
 /**
- * route の定義と loader。ページ本体の描画は -components/notes-page.test.tsx が持つ。
- * wrapper (Route hooks と通知) は下の describe が実 router で見る
+ * route の定義。ページ本体の描画は -components/notes-page.test.tsx が持つ。
+ * loader と wrapper (Route hooks と通知) は下の describe が実 router で見る
  */
-describe("/notes route の定義と loader", () => {
+describe("/notes route の定義", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(listNotes).mockResolvedValue([]);
@@ -110,21 +108,6 @@ describe("/notes route の定義と loader", () => {
     await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
   });
 
-  it("loader が deps の q で notes を prefetch する", async () => {
-    // loader 本体が query で notes クエリを populate することを検証する。
-    // 欠落すると pendingComponent 解消後に useSuspenseQuery が再 suspend する
-    const queryClient = createTestQueryClient();
-    const querySpy = vi.spyOn(queryClient, "query");
-
-    await loadNotesPageData({ context: { queryClient }, deps: { q: "abc" } });
-
-    expect(collectLoaderQueryKeys(querySpy.mock.calls)).toContain(
-      JSON.stringify(["notes", { q: "abc" }]),
-    );
-    expect(vi.mocked(listNotes)).toHaveBeenCalledWith({ data: { q: "abc" } });
-  });
-
-  // stripSearchParams の効きは下の「空にして Enter すると q が URL から消える」が見る
   it("route が search を server function と同じ schema で検証し、q を loader の deps にする", () => {
     expect(Route.options.validateSearch).toBe(noteListFilterSchema);
     expect(Route.options.loaderDeps?.({ search: { q: "abc" } })).toEqual({ q: "abc" });

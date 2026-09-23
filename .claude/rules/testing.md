@@ -130,14 +130,14 @@ cap 境界値は `cap-1 / cap / cap+1` の 3 点セット。
 
 - assertion を実行するテストヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` のパターンと、`vite.config.ts` に名指しした関数だけ。命名を外すとヘルパーだけを呼ぶテストが落ちる (ADR-0004)
 - 上の対象はテスト本文に現れる呼び出し名だけで、内部クロージャは含まない。値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
-- ヘルパーが受け取る引数の前提検査は型ナローイングと分けて `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガードで、`expect*` 命名の縛りも要らない (実例: `src/test/loader-helpers.ts`)
+- ヘルパーが受け取る引数の前提検査は型ナローイングと分けて `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガードで、`expect*` 命名の縛りも要らない
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は戻り値が `void` で型を絞らない (vitest-dev/vitest#8695)
 - 条件分岐で assertion を囲まない。`if` 内の `expect` は `vitest/no-conditional-expect` が報告する (ADR-0004)
 - announcer の文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読む (region 不在は throw)。region は `src/test/browser-setup.tsx` が毎テスト描くので、各テストの描画には足さない (ADR-0017)
 
 ## mock の注意点
 
-- `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する (実例: `src/test/loader-helpers.ts`)
+- `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する
 - `vi.stubEnv` 使用時は `afterEach(() => vi.unstubAllEnvs())`
 - **`vi.mock()` の factory 内では chained なモックメソッドを使わない**。返り値は `vi.fn(() => Promise.resolve(x))` の形で書く (factory の外の `vi.mocked(fn).mockResolvedValue(x)` は正常)
 - factory は巻き上げられるため、`vi.fn().mockResolvedValue(x)` は browser mode でだけ mocking エラーになる。非ブラウザテストでは通るので気付きにくい

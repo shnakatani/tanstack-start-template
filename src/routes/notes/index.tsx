@@ -1,10 +1,31 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
 
+import { notesQueryOptions } from "@/features/notes/queries";
+import type { NoteListFilter } from "@/features/notes/schema";
 import { noteListFilterSchema } from "@/features/notes/schema";
 
 import { NotesPage } from "./-components/notes-page";
 import { NotesPagePending } from "./-components/notes-page-pending";
-import { loadNotesPageData } from "./-lib/notes-page-loader";
+
+/**
+ * 一覧 loader。export しない (route の property を export すると main bundle に入り code-split
+ * されない。ADR-0012)。loader は既定の分割対象ではないので、ここに書いても `-lib/` に置いても main に
+ * 入る。検証は router 経由 (index.test.tsx「URL の q が loader と入力欄に届く」) で行う。
+ * 引数は `LoaderFnContext` の構造的部分型。`deps` は `loaderDeps` が search から取り出した絞り込み条件 (ADR-0033)
+ */
+function loadNotesPageData({
+  context,
+  deps,
+}: {
+  context: { queryClient: QueryClient };
+  deps: NoteListFilter;
+}) {
+  // staleTime: "static" はこの呼び出しだけに効き、キャッシュがあれば必ずそれを返す
+  // (無ければ取得する)。queryOptions 側の staleTime を書き換えると observer の再取得まで
+  // 止まるため、上書きは呼び出し側に置く
+  return context.queryClient.query({ ...notesQueryOptions(deps), staleTime: "static" });
+}
 
 export const Route = createFileRoute("/notes/")({
   // URL の search を schema で検証する。valibot 1.x は Standard Schema なので adapter 不要
