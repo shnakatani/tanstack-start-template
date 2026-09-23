@@ -25,7 +25,7 @@ story 側へ同じ基準を当てると落ちる。出るルールは 3 つで�
 | `aria-valid-attr-value` | `aria-haspopup` と `aria-controls` を併せ持つ trigger          |
 | `color-contrast`        | 要素の重なりと擬似要素で背景を決められない                     |
 
-件数は部品と story が増えれば動く。数え直すときは `src/test/a11y-story.ts` の `IGNORED_INCOMPLETE` を空にし、**story 側の `parameters.a11y.config.rules` も併せて外して** storybook の project を回し、落ちた story と失敗メッセージのルール ID を読む。後者を残すと、ルールごと止めた story は `incomplete` も出ないので数から漏れる。「`incomplete` を落とすかは、描画を統制できる層かで決める」の除外行の棚卸しもこれで行う。
+件数は部品と story が増えれば動く。数え直し方は `docs/guides/accessibility.md`「`incomplete` を数え直す」にある。
 
 ## incomplete は「判定できなかった」ではなく混成のバケツである
 
@@ -95,7 +95,7 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 
 **逆向き (落とすものを名指しする) にしない。** axe のメタデータには「この incomplete は判定不能を意味する」を表すフラグが無い (`audit.data.checks[*]` のキーは `impact` と `messages` の 2 つだけ。`getRules()` にも出ない。2026-09-21 実測)。落とすものを列挙すると、新しい原因が出たときに CI は無音のまま緑を出す。
 
-外れたものが一度も出なくなったら、その行を消す。当たらない除外を残すと、なぜ外したかを誰も再現できなくなる。
+外れたものが一度も出なくなったら、その行を消す (手順は `docs/guides/accessibility.md`「`incomplete` を数え直す」)。
 
 検査は `addon-a11y` が `reporting` へ積んだ結果を読み直す形で入れる。**axe を回し直さない。**
 回し直す形は 2026-09-21 に実装して 2 つの穴が開いた。どちらも実測で確認した。
@@ -147,11 +147,11 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 
 - `expectNoA11yViolations` は `incomplete` を見ない。ADR-0040 の animation 無効化は、`incomplete` を落とす基準に対する回避策として置かれている。`incomplete` を見ない基準の下で、その回避策が他の理由 (実イベントの規律、ADR-0038 / ADR-0039) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
-- story で統制できるのは markup までで、フォントは実行環境が持つ。テキストの折り返し位置が変われば矩形の重なり先も変わるので、同じ story が手元で緑・CI で赤になりうる。出たときに直す対象は markup 側にある (折り返して枠の外へ出る書き方をやめる)
+- story で統制できるのは markup までで、フォントは実行環境が持つ。CI でだけ赤になったときの扱いは `docs/guides/accessibility.md`「story が CI でだけ赤になったら」にある
 - `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (axe-core#4861 / #3486) 見直す
 - レポートが無いことを落とす条件は、addon が走る条件に `test: "todo"` を足したものである (todo は addon が走って warning へ降ろす形なので、合否へ入れない側で揃える)。公式は「走ったか」を知る API を持たない (`storybook.js.org/docs/writing-tests/accessibility-testing` に記載なし)。addon が条件を足すと、こちらが偽陽性を出して知らせる
 - `a11y-incomplete` の annotation は `.storybook/main.ts` の `addons` で `@storybook/addon-a11y` より前に置く。並びが変わると addon の結果を読めなくなり、「レポートが無い」で落ちる
-- 名指しのリストは axe の出荷物と突き合わせられない。版が上がって `color-contrast` の分岐が変わっても音が鳴らないので、更新時に「`color-contrast` の `incomplete` は外さない」の 3 分岐を読み直す
+- 名指しのリストは axe の出荷物と突き合わせられない。版が上がって `color-contrast` の分岐が変わっても音が鳴らないので、更新時に読み直す (手順は `docs/guides/accessibility.md`「axe を上げたとき」)
 
 ## 出典
 

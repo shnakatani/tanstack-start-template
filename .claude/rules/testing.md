@@ -49,7 +49,7 @@ paths:
 - `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tagsFilter a11y`。`--tagsFilter '!a11y'` で外しても、挙動テストに相乗りした assert は走る (vitest の Test Tags)
 - tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tagsFilter a11y` は story を走らせない (vitest の Test Tags)
 - tag の定義は `vitest.browser.config.ts` の `test.tags`。定義に無い tag はエラーで落ちる (vitest の Test Tags の `strictTags`)
-- 挙動テストの途中の状態を測る `expectNoA11yViolations` には tag を付けない。専用テストへ降ろすと操作の再現が重複する (`vitest.browser.config.ts` の tags のコメント)
+- 挙動テストの途中の状態を測る `expectNoA11yViolations` には tag を付けない。専用テストへ降ろすと操作の再現が重複する (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 
 ## 境界値
 
