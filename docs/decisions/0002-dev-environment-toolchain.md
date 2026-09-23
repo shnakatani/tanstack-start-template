@@ -1,9 +1,7 @@
 # ADR-0002: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-08-17
-- Revised: 2026-09-02 (runtime と package manager の版の出所を `package.json` へ一本化し、mise は tasks と環境変数だけを持つようにした。型検査を tsgolint に委ね `typescript` を依存から外した。アプリ名を環境変数からモジュール定数へ戻した)
-- Revised: 2026-09-20 (dev server と Storybook の port の導出を、トップレベルの `[env]` からタスクの `env` へ移した)
+- Date: 2026-09-20
 
 ## Context
 

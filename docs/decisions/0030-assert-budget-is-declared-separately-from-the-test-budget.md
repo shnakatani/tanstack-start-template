@@ -2,7 +2,6 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- Revised: 2026-09-22 (`findElement()` に予算を渡す helper `src/test/find-element.ts` を撤去した。`src/` に呼び出しが無く、mount 待ちは `expect.element` で足りる。ルールは `browser-test/no-find-element` として呼び出しそのものを止める)
 - 関連: ADR-0029 (assert には locator を渡す。その移行で肯定 assert が増え、予算の既定が問題として現れた)、ADR-0013 (待機を retry API に委ねる)、ADR-0004 (ルールの選定基準。自前ルールを `jsPlugins` で足す判断)
 
 ## Context

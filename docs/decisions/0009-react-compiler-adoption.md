@@ -1,8 +1,7 @@
 # ADR-0009: メモ化は React Compiler に委ね、予防的なメモ化を強制しない
 
 - Status: Accepted
-- Date: 2026-08-17
-- Revised: 2026-09-02 (Compiler の適用を babel から oxc ネイティブへ移し、bail out の扱いをビルドログへ変更。`react/react-compiler` 廃止に伴う lint ルールの指定も書き換えた)
+- Date: 2026-09-02
 - 関連: ADR-0004 (React Compiler ルールの選定基準)、ADR-0005 (依存の待機と pin の一般則)、ADR-0006 (registry コードは改変しない)
 
 ## Context

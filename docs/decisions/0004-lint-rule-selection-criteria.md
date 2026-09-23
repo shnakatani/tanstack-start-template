@@ -1,15 +1,7 @@
 # ADR-0004: ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする
 
 - Status: Accepted
-- Date: 2026-08-17
-- Revised: 2026-09-02 (React Compiler の診断が per-category ルールへ分割されたのに伴い、基準へ eslint-plugin-react-hooks を足し `react/unsupported-syntax` を名指しへ加えた)
-- Revised: 2026-09-07 (jsPlugin の名前の決まり方と `settings.entryPoint` の解決失敗の挙動を実測に合わせ、fixture による検査を撤去した)
-- Revised: 2026-09-13 (「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落を ADR-0014 に合わせて書き換えた。mutation を伴う操作は Action の中で行い pending を Transition から取る。ハンドラを同期関数として宣言する規範はそのまま)
-- Revised: 2026-09-14 (`no-restricted-imports` を名指しへ加えた。テスト専用のコード (`*.test-helpers.ts` と `src/test/`) のアプリ側からの import を lint で止める。緩和の 5 ルールは変えない)
-- Revised: 2026-09-19 (Tailwind と shadcn/ui 領域の JS plugin を `eslint-plugin-better-tailwindcss` から `@shadcn/lint` へ移し、未知 class、raw color、arbitrary color の 3 ルールへ責務を分けた)
-- Revised: 2026-09-19 (`no-restyle` を採用ルールへ加え、`settings.shadcn.componentImports` と `overrides.excludeFiles` で適用範囲を design system の層に合わせた。層の決定は ADR-0020)
-- Revised: 2026-09-19 (`require-static-classes` を採用ルールへ加え、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言した。層の境界は ADR-0020、配り方の規範は ADR-0021)
-- Revised: 2026-09-20 (`testing-library` を基準表へ加えた。`jsPlugins` 経由で `flat/react` を写し、適用を story に限る。`prefer-screen-queries` と `no-node-access` を外す)
+- Date: 2026-09-20
 - 関連: ADR-0003 (プラグインの設定方法)、ADR-0009 (React Compiler の診断ルールの扱い)
 
 ## Context

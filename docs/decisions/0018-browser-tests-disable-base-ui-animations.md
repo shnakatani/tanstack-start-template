@@ -1,8 +1,7 @@
 # ADR-0018: ブラウザテストは animation を無効にして走らせ、animate-out の窓を踏むテストだけ戻す
 
 - Status: Accepted
-- Date: 2026-09-14
-- Revised: 2026-09-22 (既定に `prefers-reduced-motion: reduce` のエミュレーションを足し、CSS の animation / transition も止めた。rect の実測が `expect.poll` へ移って enter animation を走らせる理由が消え、`waitForAnimations()` を撤去した。切り替えの関数は `src/test/animations.ts` の `disableAnimations()` / `enableAnimations()`)
+- Date: 2026-09-22
 - 関連: ADR-0013 (待機は vitest の retry API に委ねる)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0017 (a11y 検査の対象)
 
 ## Context

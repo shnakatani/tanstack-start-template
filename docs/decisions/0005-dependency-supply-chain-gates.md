@@ -1,8 +1,7 @@
 # ADR-0005: 依存更新は待機 3 日で統一し、pin には出口条件を書く
 
 - Status: Accepted
-- Date: 2026-08-17
-- Revised: 2026-09-02 (`playwright` の範囲を `*` から caret へ改め、`minimumReleaseAgeExcludePrune` を有効にした)
+- Date: 2026-09-02
 - 関連: ADR-0002 (Vite+ が版を管理する制約)、ADR-0009 (React Compiler が要求する依存)
 
 ## Context

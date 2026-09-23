@@ -2,7 +2,6 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- Revised: 2026-09-22 (同期読みを `expect()` へ直接流してよい形の列挙 (`getBoundingClientRect` など 7 要素) を撤去した。再評価の条件の測り方で 1 要素ずつ外すと、helper の自己テストの `matches` 1 件を除き 0 件で、実測は既に `expect.poll` の中か helper の中にあった)
 - 関連: ADR-0013 (待機を retry API に委ねる。本 ADR はその規範を lint へ落とし、`element()` を許す範囲を狭める)、ADR-0004 (ルールの選定基準。自前ルールを `jsPlugins` で足す判断)、ADR-0030 (本 ADR の移行で顕在化した assert の予算)、ADR-0031 (同じく顕在化した否定 assert の検出力)
 
 ## Context

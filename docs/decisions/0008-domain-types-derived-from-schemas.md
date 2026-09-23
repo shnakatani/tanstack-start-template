@@ -1,8 +1,7 @@
 # ADR-0008: ドメイン型は valibot スキーマから導出する
 
 - Status: Accepted
-- Date: 2026-08-17
-- Revised: 2026-09-14 (項目の呼称もスキーマの metadata から導出する決定を足した。TanStack Table の `header` もこのリポジトリのフォーム部品の `label` も文字列を受け取るだけで schema と結ぶ方針を持たないため、結ぶ層はこちらで持つ)
+- Date: 2026-09-14
 - 関連: ADR-0004 (`typescript/consistent-type-assertions` による型アサーション禁止)
 
 ## Context

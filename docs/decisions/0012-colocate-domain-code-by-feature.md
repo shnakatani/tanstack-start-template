@@ -1,9 +1,7 @@
 # ADR-0012: ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する
 
 - Status: Accepted
-- Date: 2026-09-06
-- Revised: 2026-09-14 (route-local のコンポーネントでないモジュールの置き場 `-lib/` と hook の置き場 `-hooks/` を足し、features と route のどちらに置くかの基準を書いた)
-- Revised: 2026-09-23 (ページ本体と loader を route ファイルの named export に残す決定を撤回。route の property を export すると code-split されないため、ページ本体は `-components/` に置き、loader は route ファイル内に留めて、どちらも export しない)
+- Date: 2026-09-23
 - 関連: ADR-0011 (server function のデータ境界)
 
 ## Context

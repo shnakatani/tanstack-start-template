@@ -1,9 +1,7 @@
 # ADR-0015: ブラウザテストのユーザー操作は実イベントだけで発火する
 
 - Status: Accepted
-- Date: 2026-09-13
-- Revised: 2026-09-22 (合成イベントの用途が全て消えたため `src/test/native-click.ts` を廃止し、決定を実イベントのみへ狭めた)
-- Revised: 2026-09-22 (キーボードで活性化する行の `element.focus()` を `userEvent.tab()` へ改めた。vitest の interactivity API にフォーカスを当てる口は無く、`keyboard` は「currently focused element」へ届く。直前の実クリックが対象へフォーカスを乗せているならそのまま送る)
+- Date: 2026-09-22
 - 関連: ADR-0013 (待機は retry API に委ねる。本 ADR は発火の側)。PR #16 (Action 層の導入) が持つ「二重発火を state だけで塞ぐ」判断は、本 ADR の検証方法を前提にする
 
 ## Context

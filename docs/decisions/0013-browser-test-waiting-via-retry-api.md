@@ -1,12 +1,7 @@
 # ADR-0013: ブラウザテストの待機は vitest の retry API に委ね、自前の待機を積まない
 
 - Status: Accepted
-- Date: 2026-09-11
-- Revised: 2026-09-14 (close 後に要素が消えたことの確認を `vi.waitFor` + `.query()` から `expect.element(...).not.toBeInTheDocument()` へ改めた。vitest の assertions ドキュメントが「無いこと」をこの matcher で示し、`vi.waitFor` は assertion で表せない条件の道具と位置づけているため)
-- Revised: 2026-09-22 (「lint で表現できる形は無い」を撤回した。同期読みが assert へ届く形は式の構造で表せる。ADR-0029)
-- Revised: 2026-09-22 (close 後に要素が消えたことの確認を `expect.element(...).not.toBeInTheDocument()` から `expectRemoved(locator)` へ改めた。同じ matcher を呼ぶ不在確認と字面で区別が付かず、取り違えが実際に起きたため。ADR-0031)
-- Revised: 2026-09-22 (操作後の生 DOM を `findElement()` で取る行を消した。`src/` に呼び出しが無くなり、mount を待つ用途は `expect.element` で足りる。`actionTimeout` を置いた config では `findElement()` の待ち時間が上限なしになる。ADR-0030)
-- Revised: 2026-09-22 (`waitForAnimations()` を撤去した。ADR-0018 が CSS の animation / transition も止めるようになり、実測は `expect.poll` の中で読む)
+- Date: 2026-09-22
 - 関連: ADR-0006 (registry コードのガードはブラウザテストが担う)、ADR-0018 (animation を無効にして走らせる。`waitForAnimations()` は 2026-09-22 に撤去した)、ADR-0029 (同期読みを assert へ流さない。本 ADR の規範を lint へ落とした)、ADR-0030 (assert の予算。`findElement()` を呼ばない理由もここが持つ)、ADR-0031 (否定 assert が不在でも通ること)
 
 ## Context

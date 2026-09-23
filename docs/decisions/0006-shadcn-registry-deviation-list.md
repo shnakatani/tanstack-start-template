@@ -1,8 +1,7 @@
 # ADR-0006: registry コードへの改変は許容リストと生成時 baseline で統制する
 
 - Status: Accepted
-- Date: 2026-08-17
-- Revised: 2026-09-21 (`src/styles.css` を生成時 baseline の対象に加え、その乖離の許容リストを新設した。`@custom-variant` の削除を表に載せない扱いは、ファイル全体が対象になったため取り下げた)
+- Date: 2026-09-21
 - 関連: ADR-0003 (registry コードも同じ lint を受ける)、ADR-0007 (寸法の焼き込み禁止)、ADR-0024 (`src/styles.css` の baseline とトークンの値の決め方)
 
 ## Context

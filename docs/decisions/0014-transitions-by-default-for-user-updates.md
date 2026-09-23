@@ -1,8 +1,7 @@
 # ADR-0014: ユーザー操作による更新は Transition を既定にし、pending は Transition から取る
 
 - Status: Accepted
-- Date: 2026-09-13
-- Revised: 2026-09-14 (完了点とブロック範囲の選択を ADR-0016 の軸へ移し、再取得完了まで待つこととトリガーの全体無効化を既定から外した。pending の状態伝達を Spinner の `role="status"` から `aria-busy` + announcer (ADR-0017) へ)
+- Date: 2026-09-14
 - 関連: ADR-0004 (ハンドラを同期関数にする理由。「`no-misused-promises` が要求する実装の形」の `startTransition` に関する段落をこの ADR が覆す)、ADR-0006 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0012 (配置の原則)、ADR-0015 (二重発火の検証は実イベントで書く)、ADR-0016 (完了点とブロック範囲の軸)
 
 ## Context
