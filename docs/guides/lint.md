@@ -105,7 +105,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 
 ### `require-static-classes` を層の境界で有効にする
 
-`shadcn/require-static-classes` は `vite.config.ts` の `overrides` で、`no-restyle` と同じ `files` / `excludeFiles` の組に相乗りさせる (ADR-0022)。境界そのものは ADR-0011 が決める。理由は「`require-static-classes` が読む className」にある。
+`shadcn/require-static-classes` は `vite.config.ts` の `overrides` で、`no-restyle` と同じ `files` / `excludeFiles` の組に相乗りさせる (ADR-0022)。境界そのものは ADR-0011 が決める。理由は「`require-static-classes` を層の境界に限る理由」にある。
 
 - 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定する
 

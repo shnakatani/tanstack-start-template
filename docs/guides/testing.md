@@ -88,8 +88,6 @@
 | 合成 click で base-ui 内部のガードを見続ける                      | 守る対象が上流ライブラリの内部で、base-ui 自身のテストが同じことを見ている。このリポジトリのコードは `pointer-events` と状態属性の assert で守れる | 却下     |
 | カスタムコマンドで Playwright の `locator.dispatchEvent()` を呼ぶ | 公式経路だが、server 側のコマンド定義と型拡張が要る。合成イベントを使う場面が無いので不要                                                          | 却下     |
 
-`.click({ force: true })` が飛ばすのは Playwright の actionability の検査で、ブラウザ自身のヒットテストは残る。対象に `pointer-events: none` が当たっていると、`force` のイベントは対象へ届かず下の要素へ落ちる。
-
 ### 否定 assert が素通りする経路
 
 否定 assert は「実装が壊れているのに緑で通る」向きに倒れやすい。経路は 3 つある。
@@ -140,7 +138,7 @@
 | `toHaveStyle({ pointerEvents: "auto" })`                 | `Expected styles could not be parsed by the browser. Did you make a typo?` だけで差分が出ない |
 | `expect(getComputedStyle(x).pointerEvents).toBe("auto")` | `expected 'none' to be 'auto'`                                                                |
 
-- 先行例: Playwright の Assertions は「non-retrying assertions ... can lead to a flaky test」と書く (`expectAbsent` の `{ timeout: 0 }` が該当し、肯定 anchor が緩和にあたる)。Cypress の retry-ability は `cy.get(..., { timeout: 0 }).should('not.exist')` を同期の不在確認の形として載せ、Assertions の「Negative assertions」は否定 assert を肯定 assert と組にするよう書く
+- 先行例: Playwright の Assertions は「non-retrying assertions ... can lead to a flaky test」と書く (`expectAbsent` の `{ timeout: 0 }` が該当し、肯定 anchor が緩和にあたる)。Cypress の retry-ability は `cy.get(..., { timeout: 0 }).should('not.exist')` を同期の不在確認の形として載せ、Assertions の「Negative assertions」は "Negative assertions may pass for reasons you weren't expecting." と書く。肯定 assert と組にするのは、この否定の弱さに対するこのリポジトリの規範である (`src/test/absent.ts`)
 
 ### animation を無効にして走らせる理由
 
@@ -420,7 +418,7 @@ explanation と how-to が拠る一次情報。
 - Base UI issue #5519: https://github.com/mui/base-ui/issues/5519
 - Base UI PR #5537: https://github.com/mui/base-ui/pull/5537
 - Chrome DevTools Protocol `Emulation.setEmulatedMedia`: <https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setEmulatedMedia>
-- Cypress の Assertions「Negative assertions」(否定 assert は意図しない理由で通るので肯定 assert と組にする): <https://docs.cypress.io/app/references/assertions>
+- Cypress の Assertions「Negative assertions」("Negative assertions may pass for reasons you weren't expecting."): <https://docs.cypress.io/app/references/assertions>
 - Cypress の retry-ability (`cy.get(..., { timeout: 0 }).should('not.exist')` を「check synchronously that the element does not exist (no retry)」の形として載せる。`expectAbsent` と同じ形): <https://docs.cypress.io/app/core-concepts/retry-ability>
 - HTML Standard「clean up after running script」: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
 - HTML Standard「fire a synthetic pointer event」: https://html.spec.whatwg.org/multipage/webappapis.html#fire-a-synthetic-pointer-event

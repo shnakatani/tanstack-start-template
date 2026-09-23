@@ -90,7 +90,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 | 文字列を debounce し「入力欄が URL と同じなら待たない」特例を置く               | 確定や戻るの後に debounce 済みの古い文字列が第 3 の条件を描く。特例はその一部しか隠さない                     | 却下     |
 | `useQuery` + `placeholderData: keepPreviousData`                                | 古いデータを残せるが、`useSuspenseQuery` + `pendingComponent` の形から外れ、ページに `isPending` 分岐が戻る   | 却下     |
 | debounce を `useEffect` + `setTimeout` で手組みする                             | effect 内の setState を lint が止める (`react/set-state-in-effect`)。Pacer と `use-debounce` が公式の形を持つ | 却下     |
-| `use-debounce`                                                                  | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる                                            | 保留     |
+| `use-debounce`                                                                  | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる                                            | 却下     |
 
 `key={q}` でページを作り直す案は ADR-0027 が却下している。
 

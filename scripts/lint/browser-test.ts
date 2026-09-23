@@ -2,7 +2,9 @@ import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plu
 
 /**
  * ブラウザテストの assert を守る oxlint の JS plugin。ルールで止める決定は ADR-0009 が 4 ルールぶん
- * まとめて持ち、各ルールが止める規範の説明は診断メッセージが指すガイドの節にある。一覧は下の `definePlugin`。
+ * まとめて持つ。規範の説明は各ルールの診断メッセージが指す先にある。`prefer-locator-methods` と
+ * `no-negated-style-literal` は docs/guides/testing.md の節、`no-find-element` は ADR-0009、
+ * `no-bare-absence-assertion` は ADR-0009 と `src/test/absent.ts` を指す。一覧は下の `definePlugin`。
  *
  * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
  * 適用先 glob の決め方は ADR-0009 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
