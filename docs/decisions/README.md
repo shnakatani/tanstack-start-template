@@ -137,6 +137,6 @@
    ```
 
 3. Context / Decision / Consequences の節を書く
-4. この README の一覧へ 1 行追記する
+4. この README の一覧の、決定が属するテーマの節へ 1 行追記する
 
 追記漏れと参照切れは `scripts/checks/integrity/adr-index.test.ts` が検出する。
