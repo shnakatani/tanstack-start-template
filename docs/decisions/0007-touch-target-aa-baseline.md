@@ -61,7 +61,7 @@
 - 誤タップの報告が誤タップレバーの発動条件になる。予防的に 44px 化しない
 - tap 遅延の除去は viewport meta に依存する。`__root.tsx` から `width=device-width` を外すと遅延が復活するため、この meta は touch target の前提として扱う
 - registry 外で作る部品は registry の size variant を持たないため、床を割っていないかと focus-visible のスタイルを持つかを個別に確認することになる
-- 素寸法で運用する以上、registry の更新で寸法が変わればこちらの実寸も変わる。ADR-0006 の baseline diff がその変化を可視化する
+- 素寸法で運用する以上、registry の更新で寸法が変わればこちらの実寸も変わる。ADR-0049 の baseline diff がその変化を可視化する
 
 ## 出典
 

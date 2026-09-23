@@ -10,7 +10,7 @@ import { REPO_ROOT } from "../../lib/repo-root";
 /**
  * docs/registry-baseline/ に生成時 baseline がそろっていることを機械強制する。
  *
- * ADR-0006 の 3-way 判別 (意図的乖離 = baseline とローカルの diff / 上流 drift = baseline と
+ * ADR-0049 の 3-way 判別 (意図的乖離 = baseline とローカルの diff / 上流 drift = baseline と
  * 最新 CLI 出力の diff) は baseline の存在が前提で、baseline を欠いたコンポーネントだけ
  * 判別手段が 2-way へ静かに退化する。型検査もビルドも docs/ 配下の欠落を検出しないため、
  * 取得し忘れをここで failure にする。

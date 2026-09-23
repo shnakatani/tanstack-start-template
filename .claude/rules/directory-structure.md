@@ -63,7 +63,7 @@ paths:
 `src/components/ui/` を新規追加・改変したら、最初のコミット前に:
 
 1. インタラクティブな部品は registry 素寸法のまま使う。44px の焼き込みや独自の hit 拡大、input を包むラッパーを足さない (ADR-0007)
-2. 生成時 baseline を `docs/registry-baseline/<name>.tsx` に取る (新規追加時と `--overwrite` 再生成時)。手順は ADR-0006「検査手順」
+2. 生成時 baseline を `docs/registry-baseline/<name>.tsx` に取る (新規追加時と `--overwrite` 再生成時)。手順は ADR-0049
 3. baseline との diff が許容リスト (ADR-0006) と 1:1 であることを確かめる。上流の形を保つ違反だけ行単位で抑制し、許容リストへ記録する
 4. コード側の理由コメントは、ADR だけでは実装者が誤る落とし穴に限る。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く
 5. 未使用での先行導入 (vendor preset) は許容する。chore コミットとして記録する

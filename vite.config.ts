@@ -422,7 +422,7 @@ export default defineConfig({
       ".claude/worktrees/**",
       ".agents/**",
       ".claude/skills/**",
-      // registry の生成時 baseline (ADR-0006)。上流のコードをそのまま保存する記録なので
+      // registry の生成時 baseline (ADR-0049)。上流のコードをそのまま保存する記録なので
       // lint / 型検査の対象にしない。整形だけは合わせるため fmt 側では除外しない
       "docs/registry-baseline/**",
     ],

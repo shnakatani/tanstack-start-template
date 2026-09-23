@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0002 (ツールチェーン) / ADR-0006 (registry 統制、付随ファイルの扱い) / ADR-0013 (待機) / ADR-0014 (Transition) / ADR-0015 (実イベント) / ADR-0018 (animation) / ADR-0020 (層) / ADR-0021 (className)
+- 関連: ADR-0002 (ツールチェーン) / ADR-0049 (registry 統制、付随ファイルの扱い) / ADR-0013 (待機) / ADR-0014 (Transition) / ADR-0015 (実イベント) / ADR-0018 (animation) / ADR-0020 (層) / ADR-0021 (className)
 
 ## Context
 
@@ -172,7 +172,7 @@ post 順の config フックで名前を戻す手も効かない。addon の上�
 
 ### 8. story はコンポーネントと並べ、registry の baseline から除く
 
-`*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0006)。
+`*.stories.tsx` は部品と同じディレクトリに置く。`src/components/ui/` に置いたものも `*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0049)。
 
 `src/components/ui/` の registry 部品はすべてカタログ化する。消費側からの import 件数で絞らない。
 
@@ -220,7 +220,7 @@ story は出荷される bundle に入らないため、`no-restricted-imports` 
 - 部品の状態を並べて見る場所ができ、トークンの一覧も `styles.css` から自動で出る
 - story を書いた部品は axe の検査対象になり、検査範囲が既存のブラウザテストより広がる
 - テストの実行対象が増え、`vp test run` に storybook project が加わり CI の実行時間が伸びる
-- `.stories.tsx` を registry のディレクトリに置くため、ADR-0006 の baseline 検査に除外が 1 種類増える
+- `.stories.tsx` を registry のディレクトリに置くため、ADR-0049 の baseline 検査に除外が 1 種類増える
 - Storybook の静的ビルドは検証しない (storybookjs/storybook#33747 が未解決)
 - 検証が一部 CDP の実イベントから合成イベントへ移り、backdrop の遮りを含む pointer の忠実さは下がる。一方イベント間に描画が挟まる点は既存のブラウザテストと同じ性質になる
 - サイドバーに出る story と出ない story ができ、`tags` の付け忘れでカタログが汚れうる。機械検査は置かず、レビューで見る

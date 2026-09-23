@@ -125,5 +125,5 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 | `docs/decisions/`         | ADR。決定と却下理由。索引は `docs/decisions/README.md`                      |
 | `.claude/rules/`          | 実装時に引く規範。`paths` に一致するファイルを読んだときロードされる        |
 | `AGENTS.md`               | エージェントへの指示。`CLAUDE.md` は symlink                                |
-| `docs/registry-baseline/` | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0006) |
+| `docs/registry-baseline/` | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0049) |
 | `docs/superpowers/`       | 設計仕様と実装計画の置き場所                                                |
