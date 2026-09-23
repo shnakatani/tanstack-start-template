@@ -7,6 +7,7 @@
 
 | #                                                                                                      | タイトル                                                                                              | Status   | Date       | 要約                                                                                                                                                                                                                                                                                                                               |
 | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | -------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0000](0000-record-one-decision-per-adr-and-supersede-when-it-changes.md)                              | 決定は 1 本に 1 つずつ ADR に記録し、決定が変わったら新しい ADR で置き換える                          | Accepted | 2026-09-23 | 1 本 1 決定、連番は使い回さない。決定が置き換わったら新しい ADR を起こして旧 ADR を `Superseded` に、同じ決定の枠内の改訂は `Revised` に書く                                                                                                                                                                                       |
 | [0001](0001-docs-norms-decisions-history-layers.md)                                                    | ドキュメントを規範と経緯と履歴の 3 層に分ける                                                         | Accepted | 2026-08-17 | 規範は `.claude/rules/`、経緯と選択肢比較は `docs/decisions/`、変更の記録は git 履歴。rules は 1 項目 200 字以下で、削除可否は「消したら誤るか」で判定する                                                                                                                                                                         |
 | [0002](0002-dev-environment-toolchain.md)                                                              | 開発環境のツールチェーンは mise と Vite+ に寄せる                                                     | Accepted | 2026-09-20 | Node.js と pnpm の版は `package.json` (`devEngines.runtime` / `packageManager`) が持ち、Vite+ が解決する。mise は tasks と `[env]`。クローン後は `mise install` と `vp install` の 2 段                                                                                                                                            |
 | [0003](0003-plugins-via-explicit-default-set.md)                                                       | 有効にするプラグインは既定集合を明示して積む                                                          | Accepted | 2026-08-17 | `lint.plugins` は既定集合を置換する。明示しないと `typescript` 等が無効になり、`rules` の設定が無診断で捨てられる。既定集合を定数にして spread する                                                                                                                                                                                |
@@ -49,47 +50,24 @@
 | [0040](0040-select-value-resolution-does-not-rely-on-base-ui-self-reset.md)                            | Select の値の解決は消費側が持ち、Base UI の自己リセットに依存しない                                   | Accepted | 2026-09-23 | 候補から値が消えたときの `onValueChange(null)` は docs に無く、来ない条件があり、版で経路が変わる。`FormSelectField` が値を保持して `console.warn` に残す                                                                                                                                                                          |
 | [0041](0041-tall-dialogs-scroll-inside-via-dialog-scroll-form.md)                                      | viewport 高を超えるダイアログは本体だけを内部スクロールさせ、`DialogScrollForm` で組む                | Accepted | 2026-09-23 | Base UI の Inside scroll の形に送信を持つ中間コンテナを足す。見出しは sticky にせず、backstop で流れる挙動は組み忘れの防御層として許容する                                                                                                                                                                                         |
 
-## フォーマット規約
+## 新しい ADR を書く手順
 
-新規 ADR は連番でファイルを作る: `NNNN-kebab-case-slug.md`。作成後はこの README の一覧へ 1 行追記する。
+形式・Status・決定が変わったときの扱いは ADR-0000 が決める。
+
+1. 連番でファイルを作る: `NNNN-kebab-case-slug.md`
+2. 見出しとメタデータを次の形で書く。タイトル prefix は `ADR-NNNN:`（ハイフン）で統一する
+
+   ```markdown
+   # ADR-NNNN: 日本語タイトル
+
+   - Status: Proposed | Accepted | Deprecated | Superseded
+   - Date: YYYY-MM-DD
+   - （任意）Revised: YYYY-MM-DD (改訂内容の要約)
+   - （任意）Supersedes: ADR-NNNN / Superseded-by: ADR-NNNN
+   - （任意）関連: ADR-NNNN (関係の一言)
+   ```
+
+3. Context / Decision / Consequences の節を書く
+4. この README の一覧へ 1 行追記する
+
 追記漏れと参照切れは `scripts/checks/integrity/adr-index.test.ts` が検出する。
-
-### タイトルとメタデータ
-
-```markdown
-# ADR-NNNN: 日本語タイトル
-
-- Status: Proposed | Accepted | Deprecated | Superseded
-- Date: YYYY-MM-DD
-- （任意）Revised: YYYY-MM-DD (改訂内容の要約)
-- （任意）Supersedes: ADR-NNNN / Superseded-by: ADR-NNNN
-- （任意）関連: ADR-NNNN (関係の一言)
-```
-
-- タイトル prefix は `ADR-NNNN:`（ハイフン）で統一する
-- 決定が後続 ADR で置き換わったら旧 ADR を `Superseded` にし、相互に `Supersedes` / `Superseded-by` をリンクする
-- 同じ ADR の枠内で決定を改訂したときは `Revised` に日付と要約を書き、一覧の Date 欄も `YYYY-MM-DD（YYYY-MM-DD 改訂）` にする。対象は決定の内容が変わる改訂に限る（用語・表現の補足や実測値の追記は `Revised` に載せない）
-
-| Status     | 意味                                            |
-| ---------- | ----------------------------------------------- |
-| Proposed   | 提案中（レビュー待ち）                          |
-| Accepted   | 採用・有効                                      |
-| Deprecated | 非推奨（代替なしで使わなくなった）              |
-| Superseded | 別 ADR に置き換えられた（`Superseded-by` 併記） |
-
-### セクション構成
-
-最低限 3 つ。題材に応じて調査・設定セクションを足してよい:
-
-- **Context** — 背景・制約・要件。判断の前提を書く
-- **Decision** — 何を選んだか。**検討した選択肢の比較表**（候補 / 評価軸 / 採否）と**却下理由**を必ず含める
-- **Consequences** — 採用結果として起きること（メリット・デメリット・後続作業・再評価条件）
-
-任意セクション例: 「調査結果」（実測の根拠）、「設定上の注意 / リスク」、「出典」。
-
-### 記述ルール
-
-- 主張は実コード・実測で裏づける。コード参照は `src/path/to/file.ts` のようにファイルパスで書き、半年後も追える形にする
-- 決定の文そのものを個別の部品名に依存させない。部品は改名されるが ADR は凍結されるので、決定が宙に浮く。根拠としてのファイルパス参照は上のとおり書いてよい
-- 指示語（「本 PR」「今回の」）・チャット内画像参照（`[Image #N]`）を書かない。相対日付は絶対日付（`YYYY-MM-DD`）に変換する（`.claude/rules/docs.md`）
-- 外部料金・ライブラリ仕様など変動する数値は、前提条件と確認時点を明記し、可能なら出典 URL を「出典」セクションに置く
