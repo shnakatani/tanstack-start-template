@@ -82,7 +82,7 @@ const EXPECTED_OVERRIDES = [
   },
   {
     // 緩和の適用先とルール。適用先を広げると本体コードでも no-unsafe-* が無効になり、ルールを
-    // 増やすとテストコードの型検査がその分だけ緩む (ADR-0012「テストファイルの緩和」)
+    // 増やすとテストコードの型検査がその分だけ緩む (docs/guides/lint.md「テストファイルの緩和」)
     files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
     excludeFiles: undefined,
     rules: {
