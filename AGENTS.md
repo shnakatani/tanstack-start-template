@@ -14,7 +14,7 @@ mise run verify   # マージ前に通す: vp check → vp test run → vp build
 - 実装中は 1 ファイル目を `vp check --fix` まで通してから横展開する
 - パッケージは `vp add` / `vp rm` で操作し、pnpm / npm / yarn を直接打たない (lockfile の解決が Vite+ の管理から外れる)。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
 - **worktree のパスに `+` を含めない**。vitest browser が URL 上の `+` をスペースと解釈し、browser mode が無言でハングする。`EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
-- 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
+- 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0006
 
 ## テストの実行
 
@@ -32,7 +32,7 @@ UI と story を触る前に `vp exec storybook skills` を実行し、`stories`
 
 - 部品の props・API・使い方は `vp exec storybook tools docs list` / `docs show` で答える。ソースや型定義から答えない
 - `vp exec storybook tools stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない
-- MCP (`@storybook/addon-mcp`) は入れない。理由と起動の要否は ADR-0023
+- MCP (`@storybook/addon-mcp`) は入れない。理由と起動の要否は ADR-0058
 
 ## 仕様書・設計判断
 

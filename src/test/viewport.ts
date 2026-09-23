@@ -37,7 +37,7 @@ export async function restoreDefaultViewport(): Promise<void> {
  * 持ち、ここは locator から矩形を読んで poll する。空配列を期待するので、失敗文にはみ出した
  * 辺と px が残る。要素が無ければ `element()` が throw し、予算ぶん retry してから落ちる。
  *
- * 公式の `toBeInViewport({ ratio: 1 })` を使わない理由と実測は ADR-0032。
+ * 公式の `toBeInViewport({ ratio: 1 })` を使わない理由と実測は ADR-0050。
  */
 export async function expectWithinViewport(target: Locator): Promise<void> {
   await expect

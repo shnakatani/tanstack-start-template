@@ -12,25 +12,25 @@ paths:
 palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-raw-colors`、`shadcn/no-arbitrary-values`) が止める。直し方:
 
 - semantic token を使う。淡色ハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token
-- 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0024 の段に乗せる
-- `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら ADR-0006 の許容リストにも記録する
+- 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0033 の段に乗せる
+- `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら ADR-0026 の許容リストにも記録する
 - 破壊操作は常時 destructive 色にする。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover だけの着色は touch 環境で出ない
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
-- 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (ADR-0028)
+- 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (ADR-0039)
 - コントラストは本文 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark は light と別に検算する。opacity variant は背景合成で比が変わる
-- トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0024)
+- トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0033)
 - 色だけで情報を伝えない。アイコンかテキストを併用し、併用先が識別に寄与しないなら `sr-only` で補う
 
 Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` の変更だけで完結する。
 
 ### 新しい色の露出のさせ方
 
-判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない (ADR-0025)。
+判定は「誤った当て方を誘う既存の書き方があるか」。閾値を割る組み合わせが在ること自体は理由にならない (ADR-0035)。
 
 | 誤用を誘う既存の形 | 露出                               | 例                         |
 | ------------------ | ---------------------------------- | -------------------------- |
 | 無い               | `@theme inline` で token 化        | `--destructive-surface`    |
-| 在る               | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0025) |
+| 在る               | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0035) |
 
 ## typography 階層
 
@@ -62,8 +62,8 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外
 - 表にない値を使う前に「意味が違うのか、単なる揺れか」を問う。同じ意味なら表の値に合わせる
 - 別の体系 (1 画面に収める縦予算など) を持つ画面を足すときは、表の対象外と明記し、値の根拠を実装近傍に書く
-- touch target と衝突したら touch target が優先する (ADR-0007)
-- registry の既定から値を変えるときは、まず公式の推奨へ合わせ、実機で見てから判断し、理由を実装近傍に書く (ADR-0049)
+- touch target と衝突したら touch target が優先する (ADR-0036)
+- registry の既定から値を変えるときは、まず公式の推奨へ合わせ、実機で見てから判断し、理由を実装近傍に書く (ADR-0025)
 
 ### 公式のノブ
 
@@ -82,8 +82,8 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする
 - `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える
 - 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`code-block.tsx`)
-- 本文の末尾側 padding がバー幅を上回り外側と端をそろえたいときだけ `data-has-overflow-y:pr-0` を書く。既定はバーも余白も `ScrollArea` 側 (ADR-0006)
-- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (ADR-0006)
+- 本文の末尾側 padding がバー幅を上回り外側と端をそろえたいときだけ `data-has-overflow-y:pr-0` を書く。既定はバーも余白も `ScrollArea` 側 (ADR-0026)
+- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (ADR-0026)
 
 ### 親の gap で表現できない箇所
 
@@ -93,9 +93,9 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ### 内部スクロールを持つダイアログの組み方
 
-- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる (ADR-0041)
-- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なる (ADR-0041)
-- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。余白が無いと ring が端で切れる (ADR-0041)
+- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる (ADR-0030)
+- 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なる (ADR-0030)
+- 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。余白が無いと ring が端で切れる (ADR-0030)
 
 `DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める (実例: `note-create-dialog.tsx`)。
 
@@ -111,19 +111,19 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が点滅する
 - skeleton はレイアウトを模倣する (`table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付ける
 - 列数など実テーブルと合わせる値は、実テーブル側の定義を SSOT にして両方から参照する。別々に持つとロード完了時にレイアウトがずれる
-- ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0017)
+- ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0037)
 - データなしは `Empty` 系で、メッセージと次のアクションへの導線をセットで示す
 - 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項でよい
 
 ## touch target
 
-WCAG 2.2 AA 2.5.8 (24x24 CSS px) を床とし、視覚 = ヒット = registry 素寸法で一律に運用する。44px は要件ではない (ADR-0007)。
+WCAG 2.2 AA 2.5.8 (24x24 CSS px) を床とし、視覚 = ヒット = registry 素寸法で一律に運用する。44px は要件ではない (ADR-0036)。
 
-- `h-11` / `min-h-11` / `min-w-11` / `size-11` を variant なしで書かない。寸法に機械強制は無くレビューで見る (ADR-0007)
-- 実機で誤タップが報告されたら、当該部品に `any-pointer-coarse:min-h-11` (icon 系は `min-w-11` も) を後付けする。以後の高さも同じ variant で書く (ADR-0007)
+- `h-11` / `min-h-11` / `min-w-11` / `size-11` を variant なしで書かない。寸法に機械強制は無くレビューで見る (ADR-0036)
+- 実機で誤タップが報告されたら、当該部品に `any-pointer-coarse:min-h-11` (icon 系は `min-w-11` も) を後付けする。以後の高さも同じ variant で書く (ADR-0036)
 - 実機の UI 確認ではタップ精度 (特に床ちょうどの要素) を観点に含める
-- `touch-action` を上書きしない。tap 遅延の除去は `src/routes/__root.tsx` の viewport meta が担う (ADR-0007)
-- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (ADR-0007)
+- `touch-action` を上書きしない。tap 遅延の除去は `src/routes/__root.tsx` の viewport meta が担う (ADR-0036)
+- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (ADR-0036)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する
@@ -144,13 +144,13 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 | 隣接テキストが同じ意味を持つアイコン                  | `aria-hidden`。名前を足さない。そのテキストが実際に読み上げられるときに限る                                      |
 | 可視テキストが既に accessible name の要素             | 何も足さない (次項)                                                                                              |
 | name from author のロールを持つ要素                   | 可視テキストがあっても `aria-label` (次項)                                                                       |
-| テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0019)                  |
-| ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0017) |
+| テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0021)                  |
+| ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0037) |
 
-- 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0017)
-- live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0017)
-- pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0017)
-- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0034)
+- 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0037)
+- live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0037)
+- pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0037)
+- 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0038)
 - メニュー全体を包む単一の `DropdownMenuGroup` には名前を与えない。メニュー自体がトリガー由来の名前を持つ
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 - ナビゲーションは landmark (`nav`、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける

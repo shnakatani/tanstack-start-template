@@ -77,7 +77,7 @@ export const Fits: Story = {
 /**
  * 高さを `viewportClassName` で与える形。消費側 (`parts/code-block.tsx` /
  * `parts/dialog-scroll-body.tsx`) はこちらを使う。`viewportClassName` は Viewport へ
- * layout class を通すためにこのリポジトリが足した prop (ADR-0006 の乖離)
+ * layout class を通すためにこのリポジトリが足した prop (ADR-0026 の乖離)
  */
 export const SizedByViewportClassName: Story = {
   render: () => (

@@ -15,9 +15,9 @@ const preview: Preview = {
     }),
   ],
   parameters: {
-    // 違反を警告で留めない。addon はここで violations を見る (ADR-0054)
+    // 違反を警告で留めない。addon はここで violations を見る (ADR-0057)
     a11y: { test: "error" },
-    // 狭幅の見え方は story で見る (ADR-0007「寸法は機械で見ない」)。値は browser test と
+    // 狭幅の見え方は story で見る (ADR-0036「寸法は機械で見ない」)。値は browser test と
     // 同じ src/test/viewport-sizes から引き、写さない。addon-vitest は story ごとに
     // この options を page.viewport() へ渡す (vitest.storybook.config.ts)
     viewport: {

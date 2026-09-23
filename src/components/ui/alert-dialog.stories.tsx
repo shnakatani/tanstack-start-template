@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 /**
- * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る (ADR-0022)。
+ * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る (ADR-0053)。
  * アプリの確認ダイアログは `DeleteConfirmDialog` (parts) を通すので、ここは registry の意匠の見本
  */
 function AlertDialogExample({ media }: { media?: ReactNode }) {
@@ -49,7 +49,7 @@ function AlertDialogExample({ media }: { media?: ReactNode }) {
   );
 }
 
-/** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (ADR-0022) */
+/** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (ADR-0053) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "削除する" }));
   await screen.findByRole("alertdialog");

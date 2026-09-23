@@ -16,12 +16,12 @@ paths:
 
 ## script とタスク
 
-- マージ前検証を `vp run` のタスクへまとめない。Vite Task は親の環境変数を素通しせず、結果をキャッシュして gate がリプレイされる (ADR-0002)
+- マージ前検証を `vp run` のタスクへまとめない。Vite Task は親の環境変数を素通しせず、結果をキャッシュして gate がリプレイされる (ADR-0005)
 - built-in と同名の script を新設しない。`vp <name>` の built-in と `vp run <name>` の script が別物になり取り違える。ただし `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す
 - ビルド成果物を起動する検査は `vp build` の後に置く。CI も同じ順序で workflow に並べる
 
 ## React Compiler (`vite.config.ts` の `plugins`)
 
-- `viteReact({ compiler: { logDiagnostics: true } })` の `logDiagnostics` と `compiler` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0009)
+- `viteReact({ compiler: { logDiagnostics: true } })` の `logDiagnostics` と `compiler` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0016)
 - bail out のログは `vp build` では `[plugin vite:react-compiler]` だけで `error` / `warn` を含まない。ビルドログは `react-compiler` で grep する
-- babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0009)
+- babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0016)

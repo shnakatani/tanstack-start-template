@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0011 (server function のデータ境界)
+- 関連: ADR-0014 (server function のデータ境界)
 
 ## Context
 

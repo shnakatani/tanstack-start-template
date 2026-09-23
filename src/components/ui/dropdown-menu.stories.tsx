@@ -35,7 +35,7 @@ function DropdownMenuExample() {
   );
 }
 
-/** 開くところまで。選択は書かない (ADR-0022) */
+/** 開くところまで。選択は書かない (ADR-0053) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "操作" }));
   await screen.findByRole("menu");

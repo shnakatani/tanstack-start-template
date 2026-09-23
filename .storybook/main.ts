@@ -1,7 +1,7 @@
 import type { StorybookConfig } from "@storybook/tanstack-react";
 
 const config: StorybookConfig = {
-  // story は部品と同じディレクトリに置く (ADR-0055)。src/components/ の外は対象にしない
+  // story は部品と同じディレクトリに置く (ADR-0054)。src/components/ の外は対象にしない
   stories: ["../src/components/**/*.stories.@(ts|tsx)"],
   // a11y-incomplete は addon-a11y より前に置く。afterEach は annotation の並びの逆順に走るので、
   // 前に置いたものほど後に走る (.storybook/a11y-incomplete/preset.ts)

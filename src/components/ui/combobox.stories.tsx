@@ -47,7 +47,7 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
   );
 }
 
-/** 開くところまで。絞り込みと選択は書かない (ADR-0022) */
+/** 開くところまで。絞り込みと選択は書かない (ADR-0053) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
   await screen.findByRole("listbox");
@@ -106,7 +106,7 @@ export const NoItems: Story = {
 
 /**
  * 入力欄の中で完結する形。`ComboboxInput` の既定 trigger を出す。アイコンだけのボタンで、
- * 名前は registry 側の既定 `aria-label` が持つ (上流 shadcn-ui/ui#11589、ADR-0006 の乖離)
+ * 名前は registry 側の既定 `aria-label` が持つ (上流 shadcn-ui/ui#11589、ADR-0026 の乖離)
  */
 export const InlineWithTrigger: Story = {
   render: () => (

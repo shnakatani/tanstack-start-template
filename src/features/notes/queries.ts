@@ -16,7 +16,7 @@ const NOTES_STALE_TIME_MS = 30_000;
  */
 export const NOTES_QUERY_KEY = ["notes"] as const;
 
-/** 絞り込み条件ごとの一覧クエリ。条件は先頭キーの後ろに継ぎ足す (ADR-0033)。 */
+/** 絞り込み条件ごとの一覧クエリ。条件は先頭キーの後ろに継ぎ足す (ADR-0022)。 */
 export function notesQueryOptions(filter: NoteListFilter) {
   return queryOptions({
     queryKey: [...NOTES_QUERY_KEY, filter],

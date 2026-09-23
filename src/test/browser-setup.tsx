@@ -21,7 +21,7 @@ import "@/test/slot-locator";
  * 前のテストの状態が次へ残るため。
  *
  * - マウス位置: 前テストの click 位置に hover 状態が残ると、配色の検証が実行順に依存する
- * - animation: Base UI のフラグと reduced motion のエミュレーション (ADR-0018)。戻し方は animations.ts
+ * - animation: Base UI のフラグと reduced motion のエミュレーション (ADR-0046)。戻し方は animations.ts
  *
  * 2 つは独立した CDP 呼び出しなので並行に送る。
  */
@@ -30,7 +30,7 @@ beforeEach(async () => {
 });
 
 /**
- * `announce()` (ADR-0017) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
+ * `announce()` (ADR-0037) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
  * 持つが、部品やページ単体の描画はそこを通らない。テストごとに置くと置き忘れが
  * `readAnnouncements` の throw まで出てこないので、setup で 1 回描く。
  * vitest-browser-react の cleanup は次のテストの `beforeEach` で走り (この setup より先に登録される)、

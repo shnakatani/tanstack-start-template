@@ -12,14 +12,14 @@ type ActionButtonShellProps = Omit<
 };
 
 /**
- * pending を prop で受ける Button の共通部 (ADR-0058「Action 層」)。`ActionButton` と
+ * pending を prop で受ける Button の共通部 (ADR-0019「Action 層」)。`ActionButton` と
  * `ActionFormSubmit` (`form.tsx`) が使う。
  *
  * - pending 中は `disabled` + `focusableWhenDisabled` で `aria-disabled` にし、フォーカスを保ったまま
  *   Base UI が click を止める。決着前の二重発火はこの `isPending` だけで塞ぐ (react.dev の
  *   useTransition / useFormStatus が示す `disabled={pending}` の形)。React はユーザーイベントごとに
  *   次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、ref や閉包のフラグは持たない
- *   (ADR-0058「二重発火は state だけで塞ぐ」、検証方法は ADR-0015)
+ *   (ADR-0019「二重発火は state だけで塞ぐ」、検証方法は ADR-0045)
  * - accessible name は `aria-labelledby` で children に固定する。pending の文言を子に置くと
  *   name from content で「処理中保存」のように名前が変わり、AT の読み上げとテストの
  *   `exact: true` が揺れる。`aria-label` を渡した部品はそちらが名前になる
@@ -28,7 +28,7 @@ type ActionButtonShellProps = Omit<
  * - 状態は要素自身の `aria-busy` + `aria-disabled` で持つ。`Spinner` は視覚専用 (`aria-hidden`)。
  *   WAI-ARIA 1.2 §5.2.9 により button の子孫はユーザーエージェントが accessibility API に
  *   露出すべきでないので、子の `role="status"` に頼らない。通知は feature 側が `announce()`
- *   (ADR-0017) で出す
+ *   (ADR-0037) で出す
  */
 function ActionButtonShell({
   isPending,
@@ -56,12 +56,12 @@ function ActionButtonShell({
 }
 
 type ActionButtonProps = Omit<ActionButtonShellProps, "isPending" | "onClick"> & {
-  /** クリックで実行する Action。`startTransition` に渡し、決着まで pending になる (ADR-0058) */
+  /** クリックで実行する Action。`startTransition` に渡し、決着まで pending になる (ADR-0019) */
   action: () => Promise<void> | void;
 };
 
 /**
- * `action` prop を受ける Button (ADR-0058「Action 層」)。pending は `useTransition` の `isPending` から取る。
+ * `action` prop を受ける Button (ADR-0019「Action 層」)。pending は `useTransition` の `isPending` から取る。
  * Action の reject はここでは握らない。呼び出し側が Action の中で処理し切る
  * (mutation は `useActionMutation` の `runAction` が吸収する)。
  */

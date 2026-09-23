@@ -11,7 +11,7 @@ export default defineProject({
   // vite.config.ts と同じく .env を読まない。vitest.config.ts は vite.config.ts を
   // 継承せず上書きする (Vitest 公式「all options in your vite.config will be ignored」)。
   // mergeConfig で引き継ぐ手はあるが、この config は tanstackStart() を外すために
-  // 分けているので、全体を継承すると plugin ごと戻ってしまう。1 行だけ写す (ADR-0002)
+  // 分けているので、全体を継承すると plugin ごと戻ってしまう。1 行だけ写す (ADR-0005)
   envDir: false,
   // Tailwind をブラウザテストでも実 CSS に解決する。setupFiles の
   // src/test/browser-setup.tsx が src/styles.css を import し、この plugin が
@@ -52,10 +52,10 @@ export default defineProject({
     name: "browser",
     // assert の予算。テストの予算 (`testTimeout`) と分ける。値とその根拠は
     // `src/test/assert-budget.ts` が持つ。`actionTimeout` と対で効き、これを消すと
-    // vitest の既定 1000ms、`actionTimeout` を消すと残り予算を使い切る側へ戻る (ADR-0030)
+    // vitest の既定 1000ms、`actionTimeout` を消すと残り予算を使い切る側へ戻る (ADR-0048)
     expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
-    // project を足すとそのぶん描画が増えるため。根拠と棄却した選択肢は ADR-0027。
+    // project を足すとそのぶん描画が増えるため。根拠と棄却した選択肢は ADR-0043。
     //
     // `strictTags` は既定で有効なので、ここに無い tag を書いたテストはエラーで落ちる。
     tags: [

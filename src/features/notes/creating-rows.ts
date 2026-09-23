@@ -15,7 +15,7 @@ export type CreatingRow = v.InferOutput<typeof creatingRowSchema>;
 
 /**
  * pending な追加 mutation の状態を一覧の楽観行へ変換する
- * (ADR-0016「テンプレートのメモ画面への適用」)。
+ * (ADR-0020「テンプレートのメモ画面への適用」)。
  *
  * `mutation.state.variables` の型は `unknown` なので、行に描く前に schema で型へ絞る。
  * NoteInput の形でない値は描けないので `parseEach` が warn を残して除外する。

@@ -16,7 +16,7 @@ const THEMES = ["light", "dark"] as const;
  */
 function storybookProject(theme: (typeof THEMES)[number]) {
   return defineProject({
-    // vite.config.ts と同じく .env を読まない (ADR-0002)
+    // vite.config.ts と同じく .env を読まない (ADR-0005)
     envDir: false,
     plugins: [
       viteReact(),
@@ -100,6 +100,6 @@ export function storybookProjects() {
 
   // 縮退を黙って通さない。VITEST_STORYBOOK がシェルへ残ったまま `vp test run` を叩くと、
   // dark の a11y 検査が消えたことに誰も気付けない
-  console.warn("[storybook] VITEST_STORYBOOK が真なので light だけを回す (ADR-0054)");
+  console.warn("[storybook] VITEST_STORYBOOK が真なので light だけを回す (ADR-0057)");
   return [storybookProject("light")];
 }

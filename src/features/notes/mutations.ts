@@ -12,10 +12,10 @@ export type NoteDeleteTarget = DeleteTarget<Note["id"]>;
 /**
  * mutation の定義。`queries.ts` の `queryOptions` と同じ置き方で、`mutationKey` と `mutationFn` を
  * 1 箇所に結ぶ。`onMutate` / `onSuccess` / `onError` は、通知の文言と閉じる対象 (ダイアログの
- * handle) を持つ route 側が足す (ADR-0017「呼び出し層」)。
+ * handle) を持つ route 側が足す (ADR-0037「呼び出し層」)。
  *
  * `mutationKey` は一覧側が `useMutationState` で pending な mutation を拾うための識別子
- * (ADR-0016「テンプレートのメモ画面への適用」)。queryKey (`["notes"]`) とは別物で、
+ * (ADR-0020「テンプレートのメモ画面への適用」)。queryKey (`["notes"]`) とは別物で、
  * `invalidateQueries` の対象にはならない。
  */
 export const createNoteMutation = mutationOptions({

@@ -17,7 +17,7 @@ import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "./form-fields";
  *
  * ラベルの色 (`fieldLabelClassName` の合成順) は `getComputedStyle` で固定する回帰として
  * `form-fields.test.tsx` に残る。`fieldValue` の型契約も `expectTypeOf` のまま残る
- * (ADR-0052)。
+ * (ADR-0055)。
  */
 
 const nameSchema = v.pipe(v.string(), v.trim(), v.minLength(1, "名前を入力してください"));
