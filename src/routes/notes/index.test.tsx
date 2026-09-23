@@ -28,7 +28,7 @@ vi.mock("@/features/notes/functions", () => ({
 const { listNotes } = await import("@/features/notes/functions");
 
 // debounce の待ちを広げる (理由は -components/notes-page.test.tsx の同じ vi.mock)。確定と戻るの直後は
-// 編集の base が URL と合わず debounce 済みの値を使わないので、広げても Enter と戻るの通知は即座に出る
+// 編集の世代が URL と合わず debounce 済みの値を使わないので、広げても Enter と戻るの通知は即座に出る
 vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
   ...(await importOriginal()),
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
