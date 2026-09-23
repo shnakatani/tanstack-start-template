@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-21
-- 関連: ADR-0039 (緑を測った証明としない) / ADR-0040 (層ごとの役割と抑制の置き場所) / ADR-0043 (incomplete に噛まれた事故と回避策) / ADR-0035 (a11y 検査の対象) / ADR-0053 (story を検査の単位にする)
+- 関連: ADR-0043 (incomplete に噛まれた事故と回避策) / ADR-0035 (a11y 検査の対象) / ADR-0053 (story を検査の単位にする)
 
 ## Context
 
