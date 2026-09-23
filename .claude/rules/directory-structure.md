@@ -28,11 +28,10 @@ paths:
 - 親を要求する部品は単独の meta を持てないので、親の story ファイルで扱う (`ActionFormSubmit` は `ActionForm` の外で描画すると throw する)
 - `argTypes` の `options` に `cva` の variant を写すときは、型で網羅を強制する。型検査も lint も一致を見ないので、写しただけだと古いまま通る (ADR-0022)
 - story の decorator に余白を足さない。canvas の余白は `.storybook/preview.css` が持ち、decorator は器の形 (flex / gap) だけを持つ (ADR-0022)
-- story から部品へ渡す `className` は layout に限る。消費側と同じ範囲で、`vite.config.ts` の `no-restyle` が `allow: ["layout"]` を持つ。寸法の API が `className` しかない部品 (`Skeleton`) もこれで収まる。外見を上書きする class は部品の variant にする。story は層の規則の `excludeFiles` に入り lint が鳴らないので、ここはレビューで見る (ADR-0021 / ADR-0022)
+- story から部品へ渡す `className` は layout に限り、外見を上書きする class は部品の variant にする。story は lint (`no-restyle`) の対象外なのでレビューで見る (ADR-0021 / ADR-0022)
 - className を書きたくなったこと自体は `parts/` への移動理由にならない。静的か動的かを問わない。層の規則から外れるために移すのは逆 (ADR-0020 / ADR-0021)
 - `routes/` の階層は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まる保証は無いので、ドメイン固有の共有部品を `routes/` 側へ置かない (ADR-0012)
 - route ファイルの rename / 移動時、`createFileRoute` のパス文字列は plugin が自動更新する。手で書き換えない
-- 公式の詳細は TanStack の intent skill (`@tanstack/router-plugin` / `@tanstack/router-core`) を load して確認する
 
 ## features と hooks と lib と server の境界
 
@@ -46,13 +45,9 @@ paths:
 - ページ本体は `routes/<path>/-components/` に置き、route ファイルからは export しない。ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く (ADR-0012)
 - `src/features/<domain>/` 内部の import は相対パスで書く。ディレクトリごと移せる形を保つ (ADR-0012)
 - React の hook を `src/lib/` に置かない
-- client bundle へ入るファイルから `src/server/db/` と native binding を持つ依存を import しない。DB へ触るのは `.server.` を持つファイルとテスト、`src/server/db/` の中に限る (遮断は `vite.config.ts` の `tanstackStart` の `importProtection`)
-- `src/features/<domain>/` のファイル名と、横断的な server function の置き場所は `server-functions.md`「ファイルの置き場所と名前」が持つ
-- server function の認証・認可をどこへ置くかは `server-functions.md`「関心事の置き場所」が持つ
+- DB (`src/server/db/`) と native binding を持つ依存に触るのは、`.server.` を持つファイルとテストと `src/server/db/` の中だけ。client bundle からの import は build (`importProtection`) が止める
 
 ## テストとスクリプトの配置
-
-`scripts/` 配下の分け方と実行 project は `testing.md`「テストの種別と置き場所」が持つ。
 
 テスト専用ヘルパーは 2 段に置く。2 つのテストで同じ locator を書き分けると、ラベル変更で片方だけ落ちる。
 
@@ -62,10 +57,10 @@ paths:
 | 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` 配下では対象と同じ `-components/` か `-lib/` に置き、route ファイル自身の helper は route ファイルの隣に置く |
 | story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` へ置かない。プロダクトコードと読まれ、誰かが import すれば出荷される (ADR-0022)                          |
 
-- 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` が唯一の定義で、lint の適用外・story への適用範囲・coverage の除外・registry baseline の突き合わせ・route ファイル判定のパターンはそこから導出する。種別を足すときはそこだけを直す
+- 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` だけが定義する。lint や coverage のパターンはそこから導くので、種別を足すときはそこだけを直す
 - `*.test-helpers.ts` / `*.story-helpers.ts` は `vp test` の include (`vitest.config.ts`) に一致せず、テストとして収集されない
 - route ファイルの隣に置いた `*.test-helpers.ts` は `routeFileIgnorePattern` (`vite.config.ts`) が route ファイル扱いから外す。`-` で始まるディレクトリの中は元から除外される
-- `*.test-helpers.ts` / `*.story-helpers.ts` / `src/test/` をアプリのコードから import しない。型しか引かない helper は build を壊さず、fixture が bundle に入る。lint の `no-restricted-imports` が止め、テストと story と helper は対象外 (ADR-0004)
+- `*.test-helpers.ts` / `*.story-helpers.ts` / `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0004)
 - helper のテストの置き方は対象の実行環境で決める。DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project)
 
 ## shadcn コンポーネント導入時のチェック
