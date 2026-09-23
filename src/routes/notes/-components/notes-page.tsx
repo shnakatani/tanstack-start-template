@@ -1,6 +1,6 @@
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useDeferredValue, useEffect, useEffectEvent, useState } from "react";
+import { useDeferredValue, useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { DataTable } from "@/components/parts/data-table";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
@@ -22,7 +22,11 @@ import { toastMutationError } from "@/lib/mutation-error";
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
-import { NOTE_SEARCH_DEBOUNCE_MS, toNoteListFilter } from "../-lib/note-search";
+import {
+  NOTE_SEARCH_DEBOUNCE_MS,
+  noteSearchResultMessage,
+  toNoteListFilter,
+} from "../-lib/note-search";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-title";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 import { NoteSearchField } from "./note-search-field";
@@ -34,26 +38,29 @@ import { NoteSearchField } from "./note-search-field";
  * (TanStack Router「Rules of Splitting」、ADR-0012)。ページテストはここから import して props で描く。
  */
 /**
- * 一覧ページ本体。`q` は URL で確定した検索語、`onQueryChange` は確定の要求 (submit)、
- * `onResultsSettled` は「この条件の一覧が取得済みで表示中」の報告 (通知するかは呼び出し側が決める)。
+ * 一覧ページ本体。`q` は URL で確定した検索語、`onQueryChange` は確定の要求 (submit)。
+ *
+ * 入力欄の state は「URL の `q` に対する編集」として持ち、表示値は描画中に導く。URL が変われば
+ * (Enter の確定、戻る / 進む) 編集の `base` が合わなくなり、入力欄は自動的に `q` に戻る。`key={q}` で
+ * ページを作り直す形にしない: 入力欄が作り直されて確定のたびにフォーカスが消え、テーブルやダイアログの
+ * state も捨てる (React docs「Adjusting some state when a prop changes」の「描画中に計算する」の形。ADR-0033)。
  *
  * 入力欄の値 `text` は緊急更新 (ADR-0014)。一覧は `text` を debounce (打鍵が止まるまで取得しない)
  * したうえで `useDeferredValue` に通す。新しい条件の取得で Suspend している間、React は古い
  * deferred 値で描き続けるので skeleton には落ちない (React docs `useDeferredValue` の Suspense
  * 統合。TanStack Query の Suspense ガイドと transition.test.tsx が同じ形を持つ。ADR-0033)。
  */
-export function NotesPage({
-  q,
-  onQueryChange,
-  onResultsSettled,
-}: {
-  q: string;
-  onQueryChange: (q: string) => void;
-  onResultsSettled: (q: string, count: number) => void;
-}) {
-  const [text, setText] = useState(q);
+export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: string) => void }) {
+  const [edit, setEdit] = useState<{ base: string; text: string } | null>(null);
+  const text = edit !== null && edit.base === q ? edit.text : q;
+  function handleTextChange(next: string) {
+    setEdit({ base: q, text: next });
+  }
   const [debouncedText] = useDebouncedValue(text, { wait: NOTE_SEARCH_DEBOUNCE_MS });
-  const deferredText = useDeferredValue(debouncedText);
+  // 入力欄が URL の条件と同じなら debounce を待たない。確定と戻るの直後に、loader が温めた条件を
+  // 300ms 遅れて表示することになる
+  const settledText = text === q ? q : debouncedText;
+  const deferredText = useDeferredValue(settledText);
   // key にする前に URL / server function と同じ正規化を通す (理由は toNoteListFilter の docstring)
   const filter = toNoteListFilter(deferredText);
   // 入力と表示中の条件がずれている間 (debounce の待ちと取得中) は古い一覧を印付きで残す。
@@ -62,18 +69,22 @@ export function NotesPage({
   const notesQuery = useSuspenseQuery(notesQueryOptions(filter));
   const queryClient = useQueryClient();
 
-  // 条件の一覧が取得済みになったら報告する (通知は wrapper が出す。ADR-0017 / ADR-0033)。
-  // 報告は live region への DOM 副作用の契機なので effect に置く。契機は条件と取得の決着で、
-  // 件数は最新値を読むだけなので useEffectEvent に切り出す。取得中 (無効化済みキャッシュの
-  // 再取得など) に報告すると古い件数を読み上げるので、決着まで待つ
+  // 結果の入れ替わりを通知する (ADR-0017 / ADR-0034)。行の半透明と aria-busy は読み上げに出ない。
+  // live region への書き込みは DOM 副作用なので effect に置く。契機は条件と取得の決着で、件数は
+  // 最新値を読むだけなので useEffectEvent に切り出す。取得中 (無効化済みキャッシュの再取得など) に
+  // 通知すると古い件数を読み上げるので決着まで待つ。直前に通知した条件と同じなら出さない
+  // (背景 refetch、Strict Mode の二重 effect)。初期表示 (URL の q) は入れ替わりではないので通知しない
   const settled = !notesQuery.isFetching;
-  const reportResults = useEffectEvent((settledQ: string) => {
-    onResultsSettled(settledQ, notesQuery.data.length);
+  const announcedQ = useRef(q);
+  const announceResults = useEffectEvent((settledQ: string) => {
+    announce(noteSearchResultMessage(settledQ, notesQuery.data.length));
   });
   useEffect(() => {
-    if (settled) {
-      reportResults(filter.q);
+    if (!settled || announcedQ.current === filter.q) {
+      return;
     }
+    announcedQ.current = filter.q;
+    announceResults(filter.q);
   }, [filter.q, settled]);
 
   const deleteMutation = useActionMutation({
@@ -120,9 +131,10 @@ export function NotesPage({
 
   function handleSubmit() {
     const next = toNoteListFilter(text).q;
-    // 確定後の q が今の URL と同じなら navigate は履歴も作り直しも起こさない (Router が同一 location
-    // を load だけにする)。入力欄も正規化後の値に揃えて、切り詰めが見えるようにする
-    setText(next);
+    // 入力欄を正規化後の値に揃える (trim と切り詰めが見える)。URL が同じなら navigate は履歴を
+    // 作らず (Router が同一 location を load だけにする)、この編集がそのまま表示に残る。URL が
+    // 変われば base が合わなくなり、表示は新しい q (= next) から導かれる
+    setEdit({ base: q, text: next });
     onQueryChange(next);
   }
 
@@ -149,7 +161,11 @@ export function NotesPage({
         title={NOTES_PAGE_TITLE}
         actions={
           <>
-            <NoteSearchField value={text} onValueChange={setText} onSubmit={handleSubmit} />
+            <NoteSearchField
+              value={text}
+              onValueChange={handleTextChange}
+              onSubmit={handleSubmit}
+            />
             <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
               ＋ {NOTE_ENTITY_LABEL}を追加
             </DialogTrigger>

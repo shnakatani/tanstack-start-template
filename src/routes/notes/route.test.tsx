@@ -109,10 +109,12 @@ describe("/notes の search param", () => {
     expect(router.state.location.href).toBe("/notes?q=xyz");
     // 明示操作 1 回につき履歴 1 つ (push)。戻るで絞り込み前の一覧に戻れる
     expect(router.history.length).toBe(2);
-    // 作り直されたページの結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0033)
+    // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0034)
     await vi.waitFor(() => {
       expect(readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
     });
+    // 入力欄は作り直されず、フォーカスが残る (key={q} でページを作り直すと body へ落ちる)
+    await expect.element(searchbox(screen)).toHaveFocus();
   });
 
   it("戻るで URL の q が変わると、入力欄の途中入力を捨ててその q に揃う", async () => {

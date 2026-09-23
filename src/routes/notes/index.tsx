@@ -1,12 +1,9 @@
 import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
-import { useRef } from "react";
 
 import { noteListFilterSchema } from "@/features/notes/schema";
-import { announce } from "@/lib/live-announcer";
 
 import { NotesPage } from "./-components/notes-page";
 import { NotesPagePending } from "./-components/notes-page-pending";
-import { noteSearchResultMessage } from "./-lib/note-search";
 import { loadNotesPageData } from "./-lib/notes-page-loader";
 
 export const Route = createFileRoute("/notes/")({
@@ -24,9 +21,8 @@ export const Route = createFileRoute("/notes/")({
 
 /**
  * Route hooks を吸収する薄い wrapper。ページ本体は値とハンドラを props で受ける
- * (`.claude/rules/directory-structure.md`「ルートファイル」)。
- * `key={q}` で URL の q が変わるたびにページの入力欄の state を作り直す
- * (React docs「Resetting all state when a prop changes」。effect で setState しない)。
+ * (`.claude/rules/directory-structure.md`「ルートファイル」)。`key={q}` でページを作り直さない。
+ * URL の q に入力欄を揃えるのはページ側が描画中に導く (ADR-0033)
  */
 function NotesRoute() {
   const { q } = Route.useSearch();
@@ -36,25 +32,5 @@ function NotesRoute() {
     // (submit) 1 回につき履歴 1 つで、戻るボタンが絞り込み前の一覧に戻る (ADR-0033)
     void navigate({ search: (prev) => ({ ...prev, q: next }) });
   }
-
-  // 結果の入れ替わりの通知 (ADR-0017)。「最後に通知した条件」は `key={q}` で作り直されるページの
-  // 外に持つ。ページに持たせると、debounce が明ける前の Enter や戻るで作り直された瞬間の条件を
-  // 「直前と同じ」と見なして通知が消える。初期表示 (URL の q) は入れ替わりではないので通知しない
-  const announcedQ = useRef(q);
-  function handleResultsSettled(settledQ: string, count: number) {
-    if (announcedQ.current === settledQ) {
-      return;
-    }
-    announcedQ.current = settledQ;
-    announce(noteSearchResultMessage(settledQ, count));
-  }
-
-  return (
-    <NotesPage
-      key={q}
-      q={q}
-      onQueryChange={handleQueryChange}
-      onResultsSettled={handleResultsSettled}
-    />
-  );
+  return <NotesPage q={q} onQueryChange={handleQueryChange} />;
 }
