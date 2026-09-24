@@ -56,7 +56,7 @@ export default defineConfig({
     jsPlugins: [
       { name: "shadcn", specifier: "@shadcn/lint" },
       // story は `storybook/test` 経由で testing-library の API をそのまま使う。oxlint は
-      // testing-library をネイティブに持たないため ESLint plugin として載せる (`docs/guides/lint.md`「testing-library を当てる範囲」)
+      // testing-library をネイティブに持たないため ESLint plugin として載せる (`docs/guides/lint/configuration.md`「testing-library を当てる範囲」)
       { name: "testing-library", specifier: "eslint-plugin-testing-library" },
       // ブラウザテストの assert に locator を渡させる自前ルール。上流の
       // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0009)
@@ -67,7 +67,7 @@ export default defineConfig({
         componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
         // cva で作った variant 関数を宣言する。宣言しないと消費側の buttonVariants({...}) が
         // require-static-classes で落ちる。shadcn 公式の Button docs は「As Link」でこの形を
-        // 推奨しており、テンプレート利用者がそのまま書けるようにする (docs/guides/lint.md「variant 関数を宣言する」)。
+        // 推奨しており、テンプレート利用者がそのまま書けるようにする (docs/guides/lint/tailwind-and-shadcn.md「variant 関数を宣言する」)。
         // mergeFunctions は使わない。オブジェクトを渡す関数に当てるとキー名を class と誤読する
         variantFunctions: ["buttonVariants"],
       },
@@ -301,11 +301,11 @@ export default defineConfig({
         // upstream recommended (flat/react) は `vitest-browser-react` も Storybook も前提に
         // しておらず、基準をそのまま写せない唯一のプラグインになる。基準から外すのが
         // `prefer-screen-queries` と `no-node-access`、severity を上げるのが `no-debugging-utils`
-        // である。件数は下の rules と `docs/guides/lint.md`「testing-library を story に限る理由」 の表が持つ
+        // である。件数は下の rules と `docs/guides/lint/configuration.md`「testing-library を story に限る理由」 の表が持つ
         // 拡張子は companion-files.ts が唯一の定義。`.stories.ts` を置いても外れない
         files: storyGlobs("**/"),
         rules: {
-          // eslint-plugin-testing-library の flat/react (`docs/guides/lint.md`「testing-library を当てる範囲」)
+          // eslint-plugin-testing-library の flat/react (`docs/guides/lint/configuration.md`「testing-library を当てる範囲」)
           "testing-library/await-async-events": ["error", { eventModule: "userEvent" }],
           "testing-library/await-async-queries": "error",
           "testing-library/await-async-utils": "error",
@@ -314,7 +314,7 @@ export default defineConfig({
           "testing-library/no-container": "error",
           // 上流は warn。`vp check` は warn で落ちないため、warn のままだと commit された
           // screen.debug() が素通りする。この config の方針 (categories の直前のコメント) に
-          // 合わせて error で入れる (`docs/guides/lint.md`「testing-library を story に限る理由」)
+          // 合わせて error で入れる (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
           "testing-library/no-debugging-utils": "error",
           "testing-library/no-dom-import": ["error", "react"],
           "testing-library/no-global-regexp-flag-in-query": "error",
@@ -323,7 +323,7 @@ export default defineConfig({
           // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
           // 発火しない。`settings` に utils-module を足せば発火するが、その形は
           // querySelector を条件付きで許しているテストの規範と両立しない
-          // (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる。`docs/guides/lint.md`「testing-library を story に限る理由」)
+          // (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる。`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
           "testing-library/no-node-access": "off",
           "testing-library/no-promise-in-fire-event": "error",
           "testing-library/no-render-in-lifecycle": "error",

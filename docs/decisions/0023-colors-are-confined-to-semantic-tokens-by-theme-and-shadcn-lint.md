@@ -36,13 +36,13 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制する (書き方は `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」)。
 `no-restyle` は 2026-09-19 に ADR-0011 の層の決定と対で、`require-static-classes` は同日に ADR-0022 の配り方の決定と対で採用した。
 `require-static-classes` は `no-restyle` と同じ `overrides` に相乗りし、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言する。
-宣言が要る理由と `mergeFunctions` を使わない理由は `docs/guides/lint.md`「variant 関数を宣言する」にある。
+宣言が要る理由と `mergeFunctions` を使わない理由は `docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」にある。
 `no-inline-styles` は対になる設計判断がまだ無いため有効化しない。
 
 `@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書き、`@shadcn/lint` には `{ name: "shadcn", specifier: "@shadcn/lint" }` を使う。
-抑制 directive の名前、lint 時間の測り方、3 ルールの発火を確かめる probe、探索に失敗したときの警告は `docs/guides/lint.md`「`@shadcn/lint` の発火を確かめる」と「JS plugin の落とし穴」にある。3 ルールは探索に失敗しても警告を出したうえで発火し続ける。診断の token の提案が減り、`no-raw-colors` が宣言済みの token を確かめられず、design system component を認識しなくなることもあるが、警告が出るので silent failure ではない。そのため、この解決を見張る検査は置かない。
+抑制 directive の名前、lint 時間の測り方、3 ルールの発火を確かめる probe、探索に失敗したときの警告は `docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の発火を確かめる」と「JS plugin の落とし穴」にある。3 ルールは探索に失敗しても警告を出したうえで発火し続ける。診断の token の提案が減り、`no-raw-colors` が宣言済みの token を確かめられず、design system component を認識しなくなることもあるが、警告が出るので silent failure ではない。そのため、この解決を見張る検査は置かない。
 
 ### 検討した選択肢
 
@@ -55,11 +55,11 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 
 ## Consequences
 
-- `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、Dependabot PR の処理時に確かめる (手順は `docs/guides/lint.md`「上流 recommended の改訂に追随する」)
-- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` の top-level `rules` に JS plugin 由来のルールが出ないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる (`docs/guides/lint.md`「`@shadcn/lint` の発火を確かめる」)
-- `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (`docs/guides/lint.md`「`require-static-classes` を層の境界で有効にする」)
+- `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、Dependabot PR の処理時に確かめる (手順は `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」)
+- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` の top-level `rules` に JS plugin 由来のルールが出ないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる (`docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の発火を確かめる」)
+- `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (`docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。抑制した行の扱いは `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」にある
-- `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。この経路の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にして止める。ただし `eslint` がグラフから消えるわけではない。`eslint-plugin-testing-library` が `@typescript-eslint/utils` 経由で `eslint` を必須 peer に持ち、そちらは止まらない (`docs/guides/lint.md`「testing-library を story に限る理由」)
+- `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。この経路の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にして止める。ただし `eslint` がグラフから消えるわけではない。`eslint-plugin-testing-library` が `@typescript-eslint/utils` 経由で `eslint` を必須 peer に持ち、そちらは止まらない (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
 - parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。型検査は tsgolint が担い `typescript` を直接の依存に持たないため `vp check` の結果は変わらない
 - 依存グラフへ `typescript` を持ち込むのはこの parser である。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らない (2026-09-19 確認)
 - eslint peer の optional 化と `typescript` の 6 系固定は撤去条件が同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` は不要になるが、`eslint` は `eslint-plugin-testing-library` 経由で残る。撤去で解けるのは `typescript` の 6 系固定だけである

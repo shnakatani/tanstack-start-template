@@ -53,7 +53,7 @@ baseline の取得漏れは `scripts/checks/integrity/registry-baseline.test.ts`
 `no-restyle` は「消費側が design system を上書きしていないか」を見る規則で、registry の内部には意味を持たないため `src/components/ui/**` を適用外にしてある (ADR-0011)。
 適用外にした規則は許容リストに載らない。載るのは、適用される規則に対して個別に抑制した箇所である。
 
-抑制の書き方の落とし穴は `docs/guides/lint.md`「行単位で抑制する」にある。
+抑制の書き方の落とし穴は `docs/guides/lint/configuration.md`「行単位で抑制する」にある。
 
 ### 許容リストに載せないもの
 

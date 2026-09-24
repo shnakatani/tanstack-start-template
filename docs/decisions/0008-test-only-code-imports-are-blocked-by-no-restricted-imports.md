@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-20
-- 関連: ADR-0007 (lint ルールの選定基準と「基準から外れる名指し」)。テストファイルの緩和は `docs/guides/lint.md`「テストファイルの緩和」
+- 関連: ADR-0007 (lint ルールの選定基準と「基準から外れる名指し」)。テストファイルの緩和は `docs/guides/lint/configuration.md`「テストファイルの緩和」
 
 ## Context
 
@@ -24,7 +24,7 @@ eslint コアの `no-restricted-imports` を、範囲を絞って当てる。
 `patterns` の `regex` で `.test-helpers` 終わりの specifier と、alias (`@/test/`) または相対 (`./test/` `../test/`) で `test/` を指す specifier を止める。
 当てる範囲は `overrides` の `files` (`src/**` `scripts/**`) と `excludeFiles` (テスト、`*.test-helpers`、`src/test/`) で絞る。
 oxc-project/oxc#20881 が示す `files` の否定 glob (`!**/*.test.ts`) は oxlint 1.79.0 では除外として効かず (2026-09-14 に最小構成で実測)、`excludeFiles` が効く。
-全体で error にしてテスト側で off にする形は取らない。off はテストの緩和経路に載り、`*.test-helpers` を緩和へ足すことになる (`docs/guides/lint.md`「テストファイルの緩和」の 5 ルールは helper に要らない)。
+全体で error にしてテスト側で off にする形は取らない。off はテストの緩和経路に載り、`*.test-helpers` を緩和へ足すことになる (`docs/guides/lint/configuration.md`「テストファイルの緩和」の 5 ルールは helper に要らない)。
 
 ## Consequences
 

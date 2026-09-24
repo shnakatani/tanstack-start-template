@@ -35,7 +35,7 @@ oxlint のカテゴリ (`correctness` / `perf` / `pedantic` / `style` / `restric
 
 `@shadcn/lint` はこの表に載らない。oxlint ネイティブではなく `jsPlugins` 経由で、基準も recommended ではなく設計判断と対にしたルールを名指しするためである (ADR-0023)。
 
-`testing-library` もこの表に載らない。基準は上流の `flat/react` を写すが、適用を story と story 専用の helper に限り、基準から外すルールがある (`docs/guides/lint.md`「testing-library を当てる範囲」)。
+`testing-library` もこの表に載らない。基準は上流の `flat/react` を写すが、適用を story と story 専用の helper に限り、基準から外すルールがある (`docs/guides/lint/configuration.md`「testing-library を当てる範囲」)。
 
 browser mode 側の待機は `vitest` プラグインが持つ。`require-awaited-expect-poll` が `expect.element` を対象にしており、`correctness` カテゴリ経由で既に有効である。
 
@@ -60,7 +60,7 @@ silent failure の源として扱っている書き方を検出するルール�
 
 `correctness` にある type-aware ルールと `strict-type-checked` は包含関係ではなく、部分的に重なる別の集合である。基準を strict に置いても oxlint 独自の `correctness` 選択は失わない。
 
-上流が前提ごとに config を分けている場合は、このプロジェクトの前提に合う variant まで指定する。variant の表と、TypeScript 向けの off を写さない理由は `docs/guides/lint.md`「前提ごとの variant まで下ろす」にある。
+上流が前提ごとに config を分けている場合は、このプロジェクトの前提に合う variant まで指定する。variant の表と、TypeScript 向けの off を写さない理由は `docs/guides/lint/configuration.md`「前提ごとの variant まで下ろす」にある。
 
 ### React Compiler のルールは eslint-plugin-react-hooks を基準にする
 
@@ -77,12 +77,12 @@ oxlint 1.79 で `react/react-compiler` は廃止され、React Compiler の診�
 | `unsupported-syntax`             | `restriction`     | `rules` へ名指し |
 | `config` / `gating`              | 実装なし          | —                |
 
-上流が既定 off にするルールのうち oxlint に実装があるものは有効にしない (`perf` 経由で入る 1 つを除く)。一覧は `docs/guides/lint.md`「React Compiler の既定 off のルール」にある。
+上流が既定 off にするルールのうち oxlint に実装があるものは有効にしない (`perf` 経由で入る 1 つを除く)。一覧は `docs/guides/lint/configuration.md`「React Compiler の既定 off のルール」にある。
 
 `unsupported-syntax` だけを `restriction` から引き上げるのは、これが Compiler の未実装ではなく「対応する予定がない構文」(`this` / `with` / インライン `class` 宣言) を指すためである。
 書き換えれば消えるのでコード側の欠陥として扱える。上流も `todo` を off にしたまま、このルールだけ recommended に入れている。
 
-jsx-a11y は上流 recommended のルールが全て `correctness` 経由で有効になり、名指しがゼロになる。扱いは `docs/guides/lint.md`「jsx-a11y は名指しがゼロになる」にある。
+jsx-a11y は上流 recommended のルールが全て `correctness` 経由で有効になり、名指しがゼロになる。扱いは `docs/guides/lint/configuration.md`「jsx-a11y は名指しがゼロになる」にある。
 
 ### unicorn を選定しない理由
 
@@ -103,7 +103,7 @@ recommended に無くても、規約や他の決定を機械で守るために�
 
 `react/rules-of-hooks` と `react/unsupported-syntax` はここに載らない。どちらも基準 (eslint-plugin-react-hooks) に入っており、oxlint のカテゴリが `correctness` / `perf` の外にあるだけである (「React Compiler のルールは eslint-plugin-react-hooks を基準にする」)。
 
-基準で有効なルールを off にしてよい条件と、テストファイルで緩める 5 つのルールは `docs/guides/lint.md`「ルールを off にする」「テストファイルの緩和」にある。
+基準で有効なルールを off にしてよい条件と、テストファイルで緩める 5 つのルールは `docs/guides/lint/configuration.md`「ルールを off にする」「テストファイルの緩和」にある。
 
 ### 検討した選択肢
 
@@ -118,7 +118,7 @@ recommended に無くても、規約や他の決定を機械で守るために�
 ## Consequences
 
 - `correctness` と `perf` へのルール追加は次の `vp check` で自動的に入る。この 2 カテゴリだけが opt-out である。依存更新で違反が増えたら、修正するか off にするかを判断する
-- 名指ししたルールは `rules` に並ぶため、上流 recommended の改訂には自動追随しない。追随の手順は `docs/guides/lint.md`「上流 recommended の改訂に追随する」にある
+- 名指ししたルールは `rules` に並ぶため、上流 recommended の改訂には自動追随しない。追随の手順は `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」にある
 - 名指ししたルールが oxlint 側で改名・廃止されると `vp lint` が設定のパースで落ちる (`Rule 'react-compiler' not found in plugin 'react'`)。取りこぼしは起きないが、更新の PR は lint が動かない状態から始まる
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは解決後設定の `rules` に列挙されないため、値でしか見えない
 

@@ -7,7 +7,7 @@
 ## Context
 
 消費側が design system component へ渡す `className` は、`@shadcn/lint` の `no-raw-colors` と `no-unknown-classes` が中身を読めて初めて色と未知 class の統制 (ADR-0023) に掛かる。
-中身が読めるかは渡し方で決まり、他ファイルから import した `const` は読まれない (2026-09-19、`@shadcn/lint` 0.1.0 の実測。渡し方ごとの表は `docs/guides/lint.md`「`require-static-classes` が読む className」)。
+中身が読めるかは渡し方で決まり、他ファイルから import した `const` は読まれない (2026-09-19、`@shadcn/lint` 0.1.0 の実測。渡し方ごとの表は `docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` が読む className」)。
 `@shadcn/lint` の `resolveIdentifier` が `Variable` 型でない定義で解決を打ち切り、import 束縛はこの型を持たないためである。
 
 `require-static-classes` を一時的に足して測った違反は、`src/routes/` の 2 件だけだった (2026-09-19)。
@@ -21,7 +21,7 @@
 
 **design system の層 (`ui/` / `action/` / `parts/`) から外へ class 文字列を配らない。外見を層の外と共有するときは、部品・prop・`cva` の variant のどれかで配る。この決定は `@shadcn/lint` の `require-static-classes` を層の境界 (`no-restyle` と同じ適用範囲) で有効にして守る。** 層の内側での共有は対象外とする。
 
-配り方の選び方は `docs/guides/styling-and-tokens.md`「外見を層の外へ配る」、この決定を lint で守る設定 (`require-static-classes` の適用範囲と `variantFunctions` の宣言) は `docs/guides/lint.md`「`require-static-classes` を層の境界で有効にする」と「variant 関数を宣言する」にある。
+配り方の選び方は `docs/guides/styling-and-tokens.md`「外見を層の外へ配る」、この決定を lint で守る設定 (`require-static-classes` の適用範囲と `variantFunctions` の宣言) は `docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」と「variant 関数を宣言する」にある。
 
 ### 検討した選択肢
 
