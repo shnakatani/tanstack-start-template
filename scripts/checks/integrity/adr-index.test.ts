@@ -7,7 +7,7 @@ import { REPO_ROOT } from "../../lib/repo-root";
 
 /**
  * docs/decisions/README.md の索引と ADR ファイルの整合を機械強制する
- * (README 規約「作成後はこの README の一覧へ 1 行追記する」の実効化)。
+ * (README の「新しい ADR を書く手順」と ADR-0000 の実効化)。
  */
 
 const DECISIONS_DIR = resolve(REPO_ROOT, "docs", "decisions");

@@ -24,42 +24,42 @@ lint では見ないのでレビューで見る。
 
 ## イベントハンドラは同期に保つ
 
-lint (`typescript/no-misused-promises`) が止める。直し方 (ADR-0004):
+lint (`typescript/no-misused-promises`) が止める。直し方 (`docs/guides/updates-and-data.md`「イベントハンドラを書く」):
 
 - ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `void` やインラインの `async` を書かない
 - 待たない判断は内側で 1 回だけ表明する。呼び先が失敗を自分で処理するなら `void`、呼び出し側で通知や後始末をするなら `.catch()`
-- 操作の失敗を Error Boundary へ届けない。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる
+- 操作の失敗を Error Boundary へ届けない。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる (ADR-0016)
 - 実例は `src/components/screens/route-error.tsx` の `handleRetry`。mutation を伴う操作は次節に従う
 
 ## ユーザー操作による更新は Transition の中で行う
 
-lint では見ないのでレビューで見る (ADR-0014、完了点とブロック範囲は ADR-0016)。
+lint では見ないのでレビューで見る (ADR-0015、Action 層と `useActionMutation` は ADR-0016、完了点とブロック範囲は ADR-0017)。
 
-| 更新の種類                        | 書き方                                                                                                                                  |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                              |
-| mutation 成功後のダイアログ close | 閉じる時点は ADR-0016 の完了点の軸で選び、理由を実装近傍に書く。選択肢は ADR-0016                                                       |
-| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                     |
-| Error Boundary の reset と再読込  | 前節の `handleRetry` の形のまま。`router.invalidate()` の描画は Router が Transition 化する                                             |
-| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                       |
-| 検索条件の変更                    | URL の `navigate`。打鍵中は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にする (`notes-page.tsx`、ADR-0035) |
+| 更新の種類                        | 書き方                                                                                                                                                                                 |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                             |
+| mutation 成功後のダイアログ close | 閉じる時点は ADR-0017 の完了点の軸で選び、理由を実装近傍に書く。選択肢は ADR-0017                                                                                                      |
+| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                    |
+| Error Boundary の reset と再読込  | 前節の `handleRetry` の形のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                            |
+| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                      |
+| 検索条件の変更                    | URL の `navigate`。打鍵中は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にする (`notes-page.tsx`、`docs/guides/lists-and-search.md`「検索の入力欄を組む」) |
 
-- pending 表示は Action 層の `isPending` から取る。例外は項目の busy・楽観表示・close 阻止で、mutation の pending から取る (ADR-0016)
-- mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` は型で必須。`runAction` が reject を吸収するので、無いと失敗が無通知になる
-- Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る
-- `onSuccess` は再取得の Promise を返す。再取得完了前に close するなら、対象の項目にその pending から busy 表現を付ける (ADR-0016)
-- 止めるのは対象の項目だけにする。並行操作が整合を壊すときだけ全体を止め、理由を実装近傍に書く (ADR-0016)
-- Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる
-- `useOptimistic` に query の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (ADR-0014)
-- mutation の pending は、1 件ずつなら `isPending && variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState` で読む (ADR-0016)
-- `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける。`variables` は `parseEach` (`src/lib/parse-each.ts`) で絞る (ADR-0016)
-- `useMutationState` の `select` の中で throw しない。描画中に走るので一覧ごと Error Boundary へ落ちる (ADR-0016)
-- 操作の開始の announce は `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`、ADR-0017)
-- 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない (ADR-0014)
+- pending 表示は Action 層の `isPending` から取る。例外は項目の busy・楽観表示・close 阻止で、mutation の pending から取る (ADR-0017)
+- mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` は型で必須。`runAction` が reject を吸収するので、無いと失敗が無通知になる (`docs/guides/updates-and-data.md`「mutation の書き方」)
+- Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る (ADR-0016)
+- `onSuccess` は再取得の Promise を返す。再取得完了前に close するなら、対象の項目にその pending から busy 表現を付ける (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」)
+- 止めるのは対象の項目だけにする。並行操作が整合を壊すときだけ全体を止め、理由を実装近傍に書く (ADR-0017)
+- Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる (`docs/guides/updates-and-data.md`「mutation の書き方」)
+- `useOptimistic` に query の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (`docs/guides/updates-and-data.md`「楽観表示を出す」)
+- mutation の pending は、1 件ずつなら `isPending && variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState` で読む (`docs/guides/updates-and-data.md`「mutation の pending を読む」)
+- `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける。`variables` は `parseEach` (`src/lib/parse-each.ts`) で絞る (`docs/guides/updates-and-data.md`「mutation の pending を読む」)
+- `useMutationState` の `select` の中で throw しない。描画中に走るので一覧ごと Error Boundary へ落ちる (`docs/guides/updates-and-data.md`「mutation の pending を読む」)
+- 操作の開始の announce は `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`、ADR-0026)
+- 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない (ADR-0016)
 
 ## 手動メモ化の増減
 
-`useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は ADR-0009。`src/components/ui/` は ADR-0006 の統制下なので触らない。
+`useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は `docs/guides/updates-and-data.md`「手動メモ化を外すか判定する」。`src/components/ui/` は ADR-0020 の統制下なので触らない。
 
 ## コンポーネントは function 宣言で定義する
 
@@ -74,8 +74,8 @@ Why: 巻き上げでページ本体を上、ヘルパーを下に置ける。`.t
 
 ## lint の抑制
 
-- 行単位の抑制 (`oxlint-disable-next-line`) は違反が報告される行の直前に置く。`.map()` の行に置いても `key` の行には効かない
-- `no-await-in-loop` は順序依存のループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く (ADR-0004)
+- 行単位の抑制 (`oxlint-disable-next-line`) は違反が報告される行の直前に置く。`.map()` の行に置いても `key` の行には効かない (`docs/guides/lint/configuration.md`「行単位で抑制する」)
+- `no-await-in-loop` は順序依存のループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く (`docs/guides/lint/configuration.md`「行単位で抑制する」)
 
 ## dead code を発見したら即決 3 択
 

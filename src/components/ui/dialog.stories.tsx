@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /**
- * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る (ADR-0022)
+ * handle は story ごとに作る。module 変数に持たせると前の story の開閉状態が残る
  */
 function DialogExample({ showCloseButton }: { showCloseButton?: boolean }) {
   const [handle] = useState(() => createDialogHandle<undefined>());
@@ -45,7 +45,7 @@ function DialogExample({ showCloseButton }: { showCloseButton?: boolean }) {
   );
 }
 
-/** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (ADR-0022) */
+/** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "メモを追加" }));
   await screen.findByRole("dialog");
@@ -78,8 +78,9 @@ export const Opened: Story = {
 };
 
 /**
- * 閉じる X を出さない形。registry が持つ prop だが、このリポジトリのモーダルは visible close を
- * 置く決まりなのでアプリでは使わない (`styling.md`「touch target」)。
+ * `DialogContent` の閉じる X を出さない形。footer のキャンセルボタン (`DialogClose`) が tab 順に
+ * 残るので、閉じる button は失われない (WAI-ARIA APG の Dialog (Modal) Pattern は、閉じる
+ * button を tab 順に置くことを推奨している)。
  * X を消しても Esc と外側クリックは効いたまま
  */
 export const WithoutCloseButton: Story = {

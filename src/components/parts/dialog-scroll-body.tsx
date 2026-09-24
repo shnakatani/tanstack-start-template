@@ -27,10 +27,16 @@ export const dialogScrollLayout = "flex min-h-0 flex-col gap-6";
 
 /**
  * 内部スクロール方式のダイアログで、送信を伴う中間コンテナになる `form`。
+ * 恒常的に viewport 高を超えるダイアログはこれと `DialogScrollBody` で組み、本体だけをスクロール
+ * させる (Base UI Dialog の Inside scroll の形に、送信を持つ中間コンテナを足したもの)。組み忘れても
+ * registry の Dialog の backstop (`popupOverflowBackstop`) で Popup ごと流れるので、内容は読める。
+ * 見出しと X ボタンは sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか
+ * 実測しないと分からなくなる。shadcn の例のように本文を `max-h-[50vh]` で打ち切る形も採らない。
+ * 打ち切りの値が viewport と Dialog の余白に追随せず、ダイアログごとに値を持つことになる。
  * `dialogScrollLayout` を当てた `ActionForm` で、`DialogScrollBody` と `DialogFooter` を包む。
  *
  * 依存の向きを parts → action にしてあるのは、汎用の `ActionForm` が特定のダイアログの
- * レイアウトを知らずに済むようにするため。逆向きにすると Action 層の責務が広がる (ADR-0014)。
+ * レイアウトを知らずに済むようにするため。逆向きにすると Action 層の責務が広がる (ADR-0016)。
  */
 export function DialogScrollForm({ className, ...props }: ActionFormProps) {
   return <ActionForm className={cn(dialogScrollLayout, className)} {...props} />;
@@ -68,7 +74,7 @@ export function DialogScrollForm({ className, ...props }: ActionFormProps) {
  * 内へ寄って端がそろわなくなる。バーを本文の余白の上に載せる形は base-ui 公式の inside-scroll
  * デモと同じで、あちらも header / 本文 / footer を同じ `p-4` に置き `w-4` のバーを載せている。
  * ただし公式のバーは hover / スクロール中しかポインタを受けないのに対し registry のバーは
- * 常時受けるので、末尾側の余白を持たない器での既定の退避そのものは要る (ADR-0006)。
+ * 常時受けるので、末尾側の余白を持たない器での既定の退避そのものは要る (ADR-0020)。
  * `px-6` がバー幅を下回ると本文がバーに隠れるため、降りてよいことは `Overflowing` story で
  * 本文とバーが重ならないことで見る。
  * 降りられるのは `cn` の衝突解決が既定側の `pr-2.5` を落とすからで、詳細度は同じ、

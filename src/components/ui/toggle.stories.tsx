@@ -37,7 +37,7 @@ export const Disabled: Story = {
 };
 
 /**
- * クリックで押下状態に移る。終了状態は Pressed と同じ見た目なのでカタログには出さない (ADR-0022)
+ * クリックで押下状態に移る。終了状態は Pressed と同じ見た目なのでカタログには出さない (docs/guides/storybook.md「story を書く」)
  */
 export const Toggled: Story = {
   tags: ["!dev"],

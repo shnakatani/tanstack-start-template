@@ -9,13 +9,13 @@ import { ButtonLink } from "./button-link";
 
 // to は routeTree の実在パスしか受け付けないため /notes を渡す
 /**
- * 状態のカタログは `button-link.stories.tsx` が持つ (ADR-0022)。ここに残すのは、要素が `a` で
- * あること・`data-slot`・`button-group` の子孫セレクタが当たる経路で、story に play が無い
- * (節 2 の args だけで状態が決まる部品) 以上ここでしか固定できない (節 7 の役割分担)。
+ * 状態のカタログは `button-link.stories.tsx` が持つ。ここに残すのは、要素が `a` であること・
+ * `data-slot`・`button-group` の子孫セレクタが当たる経路で、args だけで状態が決まる部品なので
+ * story に play が無い以上、ここでしか固定できない
+ * (docs/guides/storybook.md「カタログと play の範囲」「story とブラウザテストの分担」)。
  *
- * 寸法は測らない。24px の床は registry の size 目盛りが持つデザインシステムの規範で、
- * 消費側が縮められないことは層の規則 (ADR-0020 / ADR-0021) が止める。機械で見ないのは
- * ADR-0007 の決定 (「寸法は機械で見ない」)。
+ * 寸法は測らない。寸法は registry の size 目盛りが決め、上流が決める値なので、測ると上流が変えただけで落ちる。
+ * 消費側が縮められないことは層の規則 (ADR-0011 / ADR-0022) が止める。
  */
 describe("ButtonLink", () => {
   it("リンクテキストが表示される", async () => {

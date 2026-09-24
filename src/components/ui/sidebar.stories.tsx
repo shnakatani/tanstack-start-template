@@ -156,7 +156,7 @@ export const Loading: Story = {
 };
 
 /**
- * トリガーで畳むところ。終了状態は Collapsed と同じ見た目なのでカタログには出さない (ADR-0022)
+ * トリガーで畳むところ。終了状態は Collapsed と同じ見た目なのでカタログには出さない (docs/guides/storybook.md「story を書く」)
  */
 export const Toggled: Story = {
   tags: ["!dev"],

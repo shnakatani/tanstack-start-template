@@ -27,7 +27,7 @@ export const Destructive: Story = {
   args: { variant: "destructive" },
 };
 
-/** Empty 状態の CTA が使う組み合わせ。テキストリンクの意匠のまま touch target の床を満たす (ADR-0007) */
+/** Empty 状態の CTA が使う組み合わせ。テキストリンクの意匠のまま、WCAG 2.2 の 2.5.8 (24x24 CSS px) を満たす */
 export const Link: Story = {
   args: { variant: "link", size: "sm", children: "新規登録する" },
 };

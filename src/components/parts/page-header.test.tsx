@@ -7,12 +7,12 @@ import { expectText } from "@/test/page-helpers";
 import { PageHeader } from "./page-header";
 
 /**
- * 状態のカタログは `page-header.stories.tsx` が持つ (ADR-0022)。ここに残すのは、title が h1 で
+ * 状態のカタログは `page-header.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは、title が h1 で
  * あること、actions の有無で領域が出入りすること、帯の寸法で、story に play が無い以上ここで
- * しか固定できない。とくに「出ない」ことは見た目のカタログでは表せない (節 7 の役割分担)。
+ * しか固定できない。とくに「出ない」ことは見た目のカタログでは表せない (docs/guides/storybook.md「story とブラウザテストの分担」)。
  *
  * カードのページ見出しとの寸法一致は測らない。どちらも同じ `pageTitle` (`page-title.tsx`) を
- * 当てる 1 つの出処で、外見の上書きは層の規則が止める (styling.md「typography 階層」)。
+ * 当てる 1 つの出処で、外見の上書きは層の規則が止める (ADR-0011)。
  */
 describe("PageHeader", () => {
   // ページの見出しなので h1。h2 だと画面に h1 が 1 つも無い状態になり、
@@ -36,7 +36,7 @@ describe("PageHeader", () => {
   it("actions を渡さないとアクション領域が表示されない", async () => {
     const screen = await render(<PageHeader title="メモ一覧" />);
 
-    // 肯定 anchor。描画が済んでいることを先に固定してから不在を見る (ADR-0031)
+    // 肯定 anchor。描画が済んでいることを先に固定してから不在を見る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expect.element(screen.getByRole("heading", { name: "メモ一覧" })).toBeInTheDocument();
     await expectAbsent(screen.getByText("追加"));
   });

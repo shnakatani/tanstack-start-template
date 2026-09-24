@@ -18,7 +18,8 @@ mise run verify   # マージ前に通す: vp check → vp test run → vp build
 
 ## テストの実行
 
-- テストを書き始める前に `.claude/rules/testing.md` を読む (TDD の手順、置き場所)。テストを新規作成するだけでは paths の rules は読み込まれない
+- テストは TDD で書く。failing test を書き、`vp test run <path>` で落ちることを確かめてから最小の実装で通す
+- テストの置き場所は壊れる原因で分ける。アプリの単体は `src/**/*.test.ts`、ブラウザは `src/**/*.test.tsx`、スクリプトは `scripts/**/*.test.ts` (`scripts/checks/**` を除く)、設定と文書の整合検査は `scripts/checks/integrity/`、ビルド成果物の検査は `scripts/checks/runtime/` (vitest の project ではなく `vp build` の後に走らせる)。新しいテストファイルを書くだけでは `paths` の rules は読み込まれない (ADR-0003)
 - `vp test run <path>` で 1 回実行する (`vp test` は watch モード)
 - `vp test` を複数並行で走らせない。orphan の runner が残ると後続が collection エラーで巻き添えになる。kill 後は `ps` で残存を確かめる
 - background で走らせるときはパイプを付けない。buffering で完了まで出力が見えず、ハングと実行中を区別できない
@@ -28,15 +29,16 @@ mise run verify   # マージ前に通す: vp check → vp test run → vp build
 
 ## Storybook の skill と tools
 
-UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい。
+UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。ただし play を書く範囲は skill の「Simulate key user flows」ではなく `docs/guides/storybook.md`「カタログと play の範囲」に従い、操作で状態が変わる部品にだけ書く。この節は、CLI が `--help` に出ないので、AGENTS.md を削るときも消さない。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい。
 
 - 部品の props・API・使い方は `vp exec storybook tools docs list` / `docs show` で答える。ソースや型定義から答えない
 - `vp exec storybook tools stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない
-- MCP (`@storybook/addon-mcp`) は入れない。理由と起動の要否は ADR-0023
+- MCP (`@storybook/addon-mcp`) は入れない。MCP の登録は URL を 1 つしか持てず、worktree ごとに変わる Storybook の port へ配れない
 
 ## 仕様書・設計判断
 
-- `docs/decisions/` - ADR（インフラ・ツールチェーン等の構造変更に着手する前に必ず参照）
+- `docs/decisions/` - ADR。ツールチェーン・lint 方針・型の作り方・UI 基盤を変える前に、`docs/decisions/README.md` の一覧で該当する ADR を探す
+- `docs/guides/` - 設計ガイド。部品をまたぐ作法の説明と手順。rules の項目が出典として節を指す
 
 <!-- intent-skills:start -->
 

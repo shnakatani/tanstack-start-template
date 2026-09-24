@@ -108,7 +108,6 @@ async function openDeleteConfirm(screen: Screen, note: Note) {
   await expectText(screen, deleteConfirmDescription(note.title));
   // click で動いた実マウスは、ダイアログが閉じて下の要素が露出する前に退避する。乗ったままだと
   // 露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
-  // (testing.md「ブラウザテストの CSS とレイアウト実測」)
   await parkMouse();
 }
 
@@ -122,6 +121,14 @@ async function submitCreate(screen: Screen, note: Note) {
   await parkMouse();
 }
 
+/**
+ * 実イベントの規律のうち、画面側の 2 つをこのファイルが持つ (docs/guides/storybook.md「story とブラウザテストの分担」)。play は合成イベントで
+ * 操作するので、story へ移すとリポジトリから消える。
+ * - `DeleteConfirmDialog` の確定とキャンセルへ実 pointer が届くこと (`confirmDeleteButton(screen).click()`)
+ * - 画面側の二重確定の dedupe (`queryClient.isMutating`)。「確定直後にもう一度 Enter を送っても
+ *   removeNote は 1 回しか呼ばれない」が見る。Action 層の guard (`disabled={isPending}`) はこの経路では
+ *   代替されないので、`src/components/action/button.test.tsx` が別に持つ
+ */
 describe("NotesPage", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
@@ -164,7 +171,7 @@ describe("NotesPage", () => {
     await expectText(screen, "『abc』に一致するメモはありません");
     await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
-    // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0034)
+    // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0027)
     await expect.poll(() => readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
   });
 
@@ -261,7 +268,7 @@ describe("NotesPage", () => {
 
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
     // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
-    // (ADR-0016「テンプレートのメモ画面への適用」)
+    // (`docs/guides/updates-and-data.md`「メモ画面の実例」)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
     const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
@@ -279,7 +286,7 @@ describe("NotesPage", () => {
     // 応答でダイアログが閉じ、再取得中も行は busy のまま
     await expectNoteCreateDialogClosed(screen);
     await expect.element(noteRow(screen, CREATED_NOTE)).toHaveAttribute("aria-busy", "true");
-    // 行は静的テキストで状態を持つ (ADR-0017)。live region にはしないので、仮想カーソルで
+    // 行は静的テキストで状態を持つ (ADR-0026)。live region にはしないので、仮想カーソルで
     // 行を読んだときにだけ出る。通知は announcer が担う
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
@@ -300,7 +307,7 @@ describe("NotesPage", () => {
   it("応答後の再取得中に開き直した追加ダイアログはキャンセルできる", async () => {
     // close を止める窓は「応答前」だけで、mutation の pending 全体ではない。応答で閉じた後は
     // 再取得の完了まで pending が続くが、その間に開き直したダイアログは先行 save の応答を
-    // 待っていないので閉じられる (ADR-0016 Decision の完了点 (b) の行)
+    // 待っていないので閉じられる (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
     const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
@@ -378,7 +385,7 @@ describe("NotesPage", () => {
   it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
     const rawMessage = `削除対象のノートが見つかりません: id=${NOTE.id}`;
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
-    // 即 reject だと busy の窓が観測できない (testing.md「optimistic update は決着を握って観測する」)
+    // 即 reject だと busy の窓が観測できない
     const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
@@ -391,7 +398,7 @@ describe("NotesPage", () => {
 
     remove.reject(new Error(rawMessage));
 
-    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (ADR-0031)
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
@@ -443,23 +450,23 @@ describe("NotesPage", () => {
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "false");
-    // 止めるのは削除中の行だけ (ADR-0016「ブロック範囲」)。他の行のトリガーは有効のまま
+    // 止めるのは削除中の行だけ (ADR-0017「ブロック範囲」)。他の行のトリガーは有効のまま
     await expect
       .element(rowDeleteButton(screen, OTHER_NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
     await expect
       .element(rowDeleteButton(screen, NOTE.title))
       .toHaveAttribute("aria-disabled", "true");
-    // 行は静的テキスト (sr-only) で状態を持つ (ADR-0017)
+    // 行は静的テキスト (sr-only) で状態を持つ (ADR-0026)
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
     // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の
-    // data-disabled: が担う (ADR-0006)。半透明 + pointer-events なしを算出スタイルで固定する
+    // data-disabled: が担う (ADR-0020)。半透明 + pointer-events なしを算出スタイルで固定する
     const targetTrigger = rowDeleteButton(screen, NOTE.title);
     await expect.element(targetTrigger).toHaveStyle("opacity: 0.5; pointer-events: none");
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
     // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
     // 楽観行の検査と同じ理由で、a11y tag を付けた専用テストへは降ろさない。
-    // popup を閉じた後の axe は unmount を待ってから (testing.md「ブラウザテストの CSS とレイアウト実測」)
+    // popup を閉じた後の axe は unmount を待ってから (docs/guides/testing/user-interactions.md「animation を戻すテストを書く」)
     await expectDeleteConfirmClosed(screen);
     await expectNoA11yViolations(document.body);
 
@@ -499,7 +506,7 @@ describe("NotesPage", () => {
       pending.resolve(undefined);
     }
 
-    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0017)
+    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)
     await vi.waitFor(() => {
       expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しました`);
       expect(readAnnouncements()).toContain(`『${OTHER_NOTE.title}』を削除しました`);
@@ -507,7 +514,7 @@ describe("NotesPage", () => {
   });
 
   it("削除の開始と完了を announcer が通知する", async () => {
-    // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0017)
+    // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0026)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
     const remove = deferMock(removeNote);
     const screen = await renderPage();
@@ -531,7 +538,7 @@ describe("NotesPage", () => {
 
   it("確定直後にもう一度 Enter を送っても removeNote は 1 回しか呼ばれない", async () => {
     // close の animate-out の窓 (閉じかけのダイアログにボタンが残る間) を踏む検証なので、
-    // このテストだけ Base UI の animation を戻す (ADR-0018)。無効のままだと 2 発目が
+    // このテストだけ Base UI の animation を戻す (docs/guides/testing/user-interactions.md「animation を戻すテストを書く」)。無効のままだと 2 発目が
     // unmount 後に届き、guard を外しても通ってしまう
     await enableAnimations();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
@@ -542,10 +549,10 @@ describe("NotesPage", () => {
 
     // 1 発目は実クリック。2 発目は close の animate-out の間で Playwright が stable 判定で
     // 弾く (locator.click: "element is not stable") ので、クリックで乗ったフォーカスへ Enter を
-    // 送る (testing.md「クリックの発火方法」の順 1 → 2)。Base UI の finalFocus は unmount 時
+    // 送る (docs/guides/testing/user-interactions.md「クリックを発火する」。クリックが弾かれたらキーボードで押す)。Base UI の finalFocus は unmount 時
     // (animate-out の後、FloatingFocusManager の effect cleanup) に走るので、animate-out の間は
     // フォーカスが確定ボタンに残る。それを固定する。残っていなければ Enter は別の要素に届き、
-    // guard を通らないまま 1 回で緑になる (肯定 anchor。ADR-0031)
+    // guard を通らないまま 1 回で緑になる (肯定 anchor。docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await confirmDeleteButton(screen).click();
     await expect.element(confirmDeleteButton(screen)).toHaveFocus();
     await userEvent.keyboard("{Enter}");

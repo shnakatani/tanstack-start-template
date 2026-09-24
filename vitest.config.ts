@@ -15,7 +15,7 @@ export default defineConfig({
   // vite.config.ts と同じく .env を読まない。vitest.config.ts は vite.config.ts を
   // 継承せず上書きする (Vitest 公式「all options in your vite.config will be ignored」)。
   // mergeConfig で引き継ぐ手はあるが、この config は tanstackStart() を外すために
-  // 分けているので、全体を継承すると plugin ごと戻ってしまう。1 行だけ写す (ADR-0002)
+  // 分けているので、全体を継承すると plugin ごと戻ってしまう。1 行だけ写す (ADR-0004)
   envDir: false,
   plugins: [viteReact()],
   resolve: {
@@ -37,7 +37,7 @@ export default defineConfig({
           name: "scripts-tools",
           // 許可リストにすると、ツールを足すたびにここへ 1 行足すまでテストが無言で
           // 収集されない。検査だけを除いて残りを拾う形にする。検査は壊れる原因が違うので
-          // 別 project が持つ (`.claude/rules/testing.md` の表)
+          // 別 project が持つ (拒否リストの形は docs/guides/styling-and-tokens.md「比の測り方を置いた理由」)
           //
           // 除外した `scripts/checks/` の中は各検査の project が拾う。いま拾っているのは
           // `checks-integrity` の `integrity/` だけなので、そこへ検査を足すときは project も
@@ -69,7 +69,7 @@ export default defineConfig({
       include: ["src/**"],
       exclude: [
         "src/routeTree.gen.ts",
-        // 付随ファイルは出荷されないので分母に入れない (directory-structure.md)
+        // 付随ファイルは出荷されないので分母に入れない
         ...companionGlobs("src/**/"),
         "src/test/**",
         "src/**/*.d.ts",

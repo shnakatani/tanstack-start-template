@@ -8,7 +8,7 @@ import { createToastManager, Toaster } from "@/components/ui/toast";
 
 /**
  * 見出しの文言。`toast.tsx` の対応表を出処にしているので、icon を持つ種別が増減すると
- * ここが型エラーになる (ADR-0022)
+ * ここが型エラーになる (`docs/guides/storybook.md`「story を書く」)
  */
 const TYPE_LABELS = {
   success: "保存しました",
@@ -19,7 +19,7 @@ const TYPE_LABELS = {
 } satisfies Record<ToastIconType, string>;
 
 /**
- * manager は story ごとに作る。module 変数に持たせると前の story の toast が残る (ADR-0022)
+ * manager は story ごとに作る。module 変数に持たせると前の story の toast が残る
  */
 function ToastExample({ type }: { type: ToastIconType }) {
   const [manager] = useState(() => createToastManager());
@@ -33,7 +33,7 @@ function ToastExample({ type }: { type: ToastIconType }) {
   );
 }
 
-/** 出すところまで。閉じる操作は既存のブラウザテストが持つ (ADR-0022) */
+/** 出すところまで。閉じる操作は既存のブラウザテストが持つ (docs/guides/storybook.md「カタログと play の範囲」) */
 async function raise(title: string): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "通知を出す" }));
   await screen.findByText(title);

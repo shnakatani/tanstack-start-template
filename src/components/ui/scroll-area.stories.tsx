@@ -5,9 +5,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 const LINES = Array.from({ length: 24 }, (_, index) => `${index + 1} 行目のテキスト`);
 
 /**
- * ScrollArea も高さを持たず、器の寸法をなぞる。story から `className` は渡さず decorator で
- * 与える (`directory-structure.md`「コンポーネント配置」)。
- * スクロールバーと、そのぶんの余白は `ScrollArea` 自身が持つ (`styling.md`「spacing 基準」)
+ * ScrollArea も高さを持たず、器の寸法をなぞる。この story は寸法を `className` で渡さず、
+ * decorator の器で与える (layout の class なら渡してもよい。`docs/guides/storybook.md`「story を書く」)。器の寸法に従ってスクロールする
+ * ことを見せるため、器を ScrollArea の外に置く。
+ * スクロールバーと、そのぶんの余白は `ScrollArea` 自身が持つ (ADR-0020)
  */
 const meta = {
   component: ScrollArea,
@@ -77,7 +78,7 @@ export const Fits: Story = {
 /**
  * 高さを `viewportClassName` で与える形。消費側 (`parts/code-block.tsx` /
  * `parts/dialog-scroll-body.tsx`) はこちらを使う。`viewportClassName` は Viewport へ
- * layout class を通すためにこのリポジトリが足した prop (ADR-0006 の乖離)
+ * layout class を通すためにこのリポジトリが足した prop (ADR-0020 の乖離)
  */
 export const SizedByViewportClassName: Story = {
   render: () => (

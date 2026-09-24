@@ -1,0 +1,111 @@
+# 一覧・絞り込み・検索
+
+一覧テーブル、URL の search param による絞り込み、打鍵に追従する検索欄を組むときの手順と、その形にしている理由を持つ。実例は `/notes` (`src/routes/notes/`) にある。
+
+| 決定                                                                                                                              | ADR      |
+| --------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す                                                  | ADR-0018 |
+| 一覧の絞り込み条件は URL の search param が持ち、loaderDeps で loader に渡す                                                      | ADR-0019 |
+| ページは URL の変化で作り直さず、取得結果の入れ替わりはページの effect が取得の決着で通知し、直前に通知した条件と同じなら出さない | ADR-0027 |
+
+## how-to
+
+### 一覧テーブルを組む
+
+ページは `DataTable` (`src/components/parts/data-table.tsx`) に列定義と data を渡す。列定義や table の設定を触るときは、同梱の skill `@tanstack/react-table#getting-started` と `@tanstack/table-core#core` / `#table-features` / `#typescript` を load する。v8 の `useReactTable` の形は書かない。
+
+| 対象            | 組み方                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 列定義の置き場  | その画面だけの列は `routes/<path>/-lib/<画面>-columns.ts` (JSX を持たない設定)。描画を持つ列は、`cell` に `-components/` の部品の参照を渡す (`FlexRender` が cell の context を props にして描く。TanStack Table「Flex Render」)。ドメインをまたいで使う列は `src/features/<domain>/`                                                                                                                                                                                                                         |
+| 型              | features は `src/components/parts/data-table-features.ts` に 1 つ置き、`createColumnHelper<DataTableFeatures, Row>()` と `helper.columns([...])` で定義する。`ColumnDef[]` の注釈で値の型を広げない。cell の className は `columnMeta` (`metaHelper`) で列定義が持つ                                                                                                                                                                                                                                          |
+| 行の型          | 確定行と保存中の行の union にする (`src/routes/notes/-lib/note-rows.ts` の `NoteRow`)。cell が `kind` で分岐するので、楽観行も同じ列定義で描ける。行モデルは画面の描画の形なので route の `-lib/` に置き、mutation の variables を絞る parser は `src/features/<domain>/` に置く                                                                                                                                                                                                                              |
+| data の組み立て | ページが純粋関数 (`toNoteRows`、単体テスト付き) で組んで `DataTable` に渡す。派生値は hook より後ろで作る。hook の間に挟むと React Compiler が scope を切れず、毎 render 新しい参照になる。`useMemo` は書かない (ADR-0014)。`getRowId` で `creating-<submittedAt>` / `saved-<id>` を付け、React の key にも使う                                                                                                                                                                                               |
+| 描画            | `DataTable` が `table.getHeaderGroups()` / `row.getAllCells()` と `<table.FlexRender>` で描く。registry の `Table*` は触らない (ADR-0020)。行の `aria-busy` はページが `rowProps` で `row.original` から決め、半透明は `DataTable` が `aria-busy` から当てる。`rowProps` に `className` を通さない。コールバックの中の class は `no-restyle` が追えず、`<TableRow>` へ直接書けば落ちる class が診断なしで通る (ADR-0022)。空状態の案内はページの `Empty` 部品が持ち、`DataTable` の空行は単体で使うときの既定 |
+| features        | 使う機能だけを登録する。sorting / pagination を足すときは、対応する feature と row model を足し、楽観行の出入りで data が変わるたびにページが戻らないよう `autoResetPageIndex` を見直す                                                                                                                                                                                                                                                                                                                       |
+| cell への関数   | module 定数は import で足りる。削除確認の handle は `-lib/note-delete-dialog-handle.ts` が持ち、trigger を描く cell 部品 (`-components/note-cells.tsx`) と Root を描くページの両方がそこに依存する (列定義 → cell 部品 → handle の向き)。Root の実体が共有部品 (`DeleteConfirmDialog`) なら wrapper を挟まない。cell が画面の callback を要するようになったら `tableMeta` (`metaHelper`) で渡す                                                                                                               |
+| devtools        | `DataTable` が `tableKey` を `useTable` の `key` に渡し、`useTanStackTableDevtools(table)` を直後に呼ぶ。`RootComponent` の `TanStackDevtools` に `tableDevtoolsPlugin()` を並べる                                                                                                                                                                                                                                                                                                                            |
+| loading         | `TableSkeleton` の列数は列定義の `length` から採る。列を足すと skeleton も追随する                                                                                                                                                                                                                                                                                                                                                                                                                            |
+
+### 絞り込み条件を URL に置く
+
+ADR-0019 に沿って、次のように組む。実例は `src/routes/notes/index.tsx` と `src/features/notes/`。
+
+| 対象      | 組み方                                                                                                                                                                                                                                               | 守らないと                                                                                                                                                                                                                                                   |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| schema    | 絞り込み条件の schema は 1 つ (`src/features/notes/schema.ts` の `noteListFilterSchema`) にし、server function の `.validator` と route の `validateSearch` が同じものを使う。valibot 1.x は Standard Schema なので adapter は要らない               | URL では通るのにサーバで落ちる (またはその逆の) 組み合わせが生まれる                                                                                                                                                                                         |
+| 既定値    | `search.middlewares` の `stripSearchParams(v.getDefaults(noteListFilterSchema))` で URL から落とす。既定は schema から導く                                                                                                                           | `/notes` と `/notes?q=` が別の場所になり、履歴と link の比較が揺れる。既定を写すと schema と別々に動く                                                                                                                                                       |
+| loader    | loader が読む search は `loaderDeps: ({ search }) => ({ q: search.q })` で宣言し、`loader` は options に直接書いて `notesQueryOptions(deps)` を温める。検証は router 経由 (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) | deps に無い search は loader に届かず、preload が別条件のデータを表示側に残す (Router の data-loading ガイドの page 2 の例)。loader を関数に切り出すと、引数の型を手で書くことになる (`typeof Route` は循環し、`LoaderFnContext` は `AnyRoute` 経由で `any`) |
+| query key | `notesQueryOptions(filter)` の key は `[...NOTES_QUERY_KEY, filter]` にする。mutation の invalidate は `NOTES_QUERY_KEY` の前方一致のまま                                                                                                            | 条件ごとに key を分けないと、条件の違う一覧が同じキャッシュを上書きする。invalidate を条件付きの key にすると、他の条件の一覧が古いまま残る                                                                                                                  |
+
+### 検索の入力欄を組む
+
+入力欄の state は「URL の `q` が変わった世代に対する編集」として持ち、表示値は描画中に導く。編集そのものを debounce し、世代が一致する debounce 済みの編集だけを条件にして `useDeferredValue` → `useSuspenseQuery` に通す。理由と却下した案は「入力欄を URL の編集として持つ理由」にある。実例は `src/routes/notes/-components/notes-page.tsx` と `note-search-field.tsx`。
+
+| 対象       | 組み方                                                                                                                                                                                                                               | 守らないと                                                                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 世代       | `q` が変わった回数を「世代」として描画中に導く (`useState` + prop の変化で更新。React docs「Adjusting some state when a prop changes」)。編集は `{ generation, text }` で持ち、表示値は世代が一致するときだけ `text`、それ以外は `q` | `key={q}` でページを作り直すと確定 (Enter) のたびに入力欄が新しい要素になりフォーカスが body へ落ちる (2026-09-23 に実測)。effect で setState すると 1 描画ぶん古い値が見える |
+| 紐付け     | 編集を `q` の値ではなく世代で紐付ける                                                                                                                                                                                                | 履歴が同じ値へ戻ったとき (abc → xyz を確定 → abc へ戻る)、値で照合すると確定済みの編集が復活する                                                                              |
+| debounce   | debounce するのは編集そのもの (`useDebouncedValue(edit)`)。debounce 済みの編集も世代が一致するときだけ使い、違えば URL の `q` を条件にする                                                                                           | 文字列を debounce すると、確定や戻るで URL が変わった後も debounce 済みの古い値が生き残り、URL でも入力でもない第 3 の条件を描く                                              |
+| deferred   | 条件は `useDeferredValue` を通してから `useSuspenseQuery` の key にする                                                                                                                                                              | 無いと新しい key で Suspend した瞬間に Suspense が古い一覧を隠す (「debounce と `useDeferredValue` を両方通す理由」)                                                          |
+| 正規化     | 入力欄の編集 (draft と debounce 済み) は、URL / server function と同じ `noteListFilterSchema` で正規化する (trim と上限)。正規化は入力の直後に 1 回で、下流はその値から導く                                                          | 下流の複数箇所で呼ぶと、呼び忘れた経路が生の値で走る。`" abc"` と `"abc"` が別のキャッシュになる                                                                              |
+| ずれの表示 | 入力と表示中の条件がずれている間 (正規化後の入力値と deferred な条件が違う。debounce の待ちと取得中) は、一覧を `StaleContent` (`src/components/parts/stale-content.tsx`) で包み、`aria-busy` と半透明で残す                         | 古い一覧が新しい条件の結果に見える (React docs の `useDeferredValue` の `isStale` の形)。生の文字列で比べると、submit で入力欄を揃えた直後に、条件が同じまま印が出る          |
+| submit     | submit では入力欄も正規化後の値に揃える (値が変わるときだけ setState)                                                                                                                                                                | URL が同じ (同じ条件で Enter) だと作り直しも遷移も起きず、trim と切り詰めが見えない                                                                                           |
+| 楽観行     | 追加中の行は、条件によらず一覧の先頭に出す (`toNoteRows` の合成順のまま)                                                                                                                                                             | 追加中だけ条件で隠すと「追加したのに出ない」に見える。保存後の再取得で条件に合わなければ消える                                                                                |
+
+待ちの実値は `src/routes/notes/-lib/note-search.ts` の `NOTE_SEARCH_DEBOUNCE_MS` が持つ。テストは module の partial mock で広げるので、literal 型に固めない。
+
+## explanation
+
+### TanStack Table v9 の前提
+
+ADR-0018 の Context が出典を持つ。組むときに効くのは次の 4 点である。
+
+- data と columns の参照が変わると、row model と column model を作り直す。React Compiler があれば `useMemo` は要らないが、columns は module スコープに置き、data は query の参照をそのまま使う (docs「React Compiler」)
+- query の結果は `data` に直接渡し、state に写さない。写すと、キャッシュに遅れる同期経路が増える (skill `with-tanstack-query`)
+- cell に関数や状態を渡す経路は `table.options.meta` (docs「Table and Column Meta」)
+- 楽観表示は Table ではなく Query 側の関心事である。Table は機構を持たない (ADR-0018)
+
+### debounce と `useDeferredValue` を両方通す理由
+
+debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fallback を防ぐ。役割が違うので、片方では足りない。React docs も debounce と `useDeferredValue` を「You can also use these techniques together」と併用可とし、debounce の役割を「fire fewer network requests」に置く。
+
+- `@tanstack/react-pacer` 0.23.0 の `useDebouncedValue` は `useState` の setter をそのまま、依存する `@tanstack/pacer` 0.22.0 の `Debouncer` (`setTimeout`) に渡し、`startTransition` を通さない (`react-pacer` の `dist/debouncer/useDebouncedState.js`、`pacer` の `dist/debouncer.js`。どちらにも `startTransition` の参照は無い)
+- そのため debounce 後の値でそのまま `useSuspenseQuery` を呼ぶと、緊急更新の中で Suspend し、Suspense が古い一覧を `display: none` で隠す。Suspense モードで queryKey を変えるなら更新を Transition に包む (TanStack Query の Suspense ガイド「wrap your updates that change the QueryKey into startTransition」)
+- `src/routes/notes/-components/notes-page.test.tsx`「打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残す」は古い行を `toBeVisible` で見て、この欠落を落とす (`toBeInTheDocument` では隠れた木も通る)
+- `@tanstack/react-pacer` は beta で API が変わりうる (Pacer の overview「TanStack Pacer is currently in beta and its API is still subject to change」)。利用箇所は `NotesPage` の `useDebouncedValue` 1 つに閉じる
+
+### 入力欄を URL の編集として持つ理由
+
+絞り込み条件は URL が持つ (ADR-0019)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。示したいのは、ページのローディングを route loader の prefetch と `useSuspenseQuery` と `pendingComponent` で行う形を崩さずに打鍵へ追従する形である。制約は次のとおり。
+
+- Suspense モードで queryKey を変えると、更新を Transition に包まない限り fallback に置き換わる。打鍵のたびに skeleton へ落ちる一覧は作らない
+- 打鍵ごとに server function を呼ばない
+- URL の `q` が変わったら (確定、戻る / 進む、Link) 入力欄はその値に揃う。React docs はこの同期を「`key` で作り直す」か「描画中に計算する」で行い、effect で setState しない
+- 同じ画面の要素を作り直さない (ADR-0027)
+
+| 案                                                                              | 評価                                                                                                          | 採否     |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
+| 編集を世代で紐付け、編集ごと debounce → `useDeferredValue` → `useSuspenseQuery` | URL の変化で編集も debounce 済みの値も無効になり、要素を作り直さない                                          | **採用** |
+| 編集を `{ base: q, text }` で持ち、`base === q` で有効性を見る                  | 履歴が同じ値へ戻ると確定済みの編集が復活する                                                                  | 却下     |
+| 文字列を debounce し「入力欄が URL と同じなら待たない」特例を置く               | 確定や戻るの後に debounce 済みの古い文字列が第 3 の条件を描く。特例はその一部しか隠さない                     | 却下     |
+| `useQuery` + `placeholderData: keepPreviousData`                                | 古いデータを残せるが、`useSuspenseQuery` + `pendingComponent` の形から外れ、ページに `isPending` 分岐が戻る   | 却下     |
+| debounce を `useEffect` + `setTimeout` で手組みする                             | effect 内の setState を lint が止める (`react/set-state-in-effect`)。Pacer と `use-debounce` が公式の形を持つ | 却下     |
+| `use-debounce`                                                                  | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる                                            | 却下     |
+
+`key={q}` でページを作り直す案は ADR-0027 が却下している。
+
+出典:
+
+- TanStack Query の Suspense ガイド: <https://tanstack.com/query/latest/docs/framework/react/guides/suspense>
+- TanStack Query の `packages/react-query/src/__tests__/transition.test.tsx` (`useDeferredValue` + `useSuspenseQuery` の形): <https://github.com/TanStack/query/blob/main/packages/react-query/src/__tests__/transition.test.tsx>
+- React docs `useDeferredValue` (Suspense 統合、debounce との併用、`isStale`): <https://react.dev/reference/react/useDeferredValue>
+- React docs「Adjusting some state when a prop changes」: <https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes>
+- TanStack Pacer の overview と `useDebouncedValue`: <https://tanstack.com/pacer/latest/docs/overview> / <https://tanstack.com/pacer/latest/docs/framework/react/reference/functions/useDebouncedValue>
+- TanStack/router の issue 3162 (search param に束縛した入力欄でカーソルが末尾へ跳ぶ。局所 state を挟む回避策): <https://github.com/TanStack/router/issues/3162>
+
+### 入力欄と URL の関係で起きること
+
+- 確定と戻るの直後は、編集の世代が URL と合わない。debounce の待ちを経ずに、URL の条件 (loader が温めたキャッシュ) を描く
+- ページは URL の変化をまたいで生き続ける (ADR-0027)。そのため、結果の通知の記憶 (`useRef`) をページに置ける
+- 打鍵中の再描画は少ない。`useDebouncedValue` は selector を渡さない限り store の購読で再描画せず、React Compiler の出力で `v.parse` は入力値ごとに memo され、`DataTable` は打鍵で作り直されない (2026-09-23 に oxc-transform-react で確認)
+- 手で書いた `/notes?q=<101 文字>` を開くと、URL バーも切り詰め後の 100 文字に書き換わる。Router が `validateSearch` の出力で location を組み直す (2026-09-23 に dev server で実測)

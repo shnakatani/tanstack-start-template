@@ -40,14 +40,14 @@ export const Dashed: Story = {
   args: { variant: "dashed", children: "項目を追加" },
 };
 
-/** 破壊操作。テキストを伴う場合は常時 destructive 色で出す (`styling.md`「色は semantic token のみ」) */
+/** 破壊操作。テキストを伴う場合は常時 destructive 色で出す (hover だけの着色は touch 環境で出ない) */
 export const Destructive: Story = {
   args: { variant: "destructive", children: "削除する" },
 };
 
 /**
  * 破壊操作のアイコンボタン。hover でのみ着色すると touch 環境で色が出ないため、
- * アイコン単体でも destructive 系の variant を当てる (`styling.md`「色は semantic token のみ」)
+ * アイコン単体でも destructive 系の variant を当てる (hover だけの着色は touch 環境で出ない)
  */
 export const DestructiveIcon: Story = {
   args: {

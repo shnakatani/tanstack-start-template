@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>;
 /** 既定。画面の中に留め置く知らせ。操作を止める必要があるなら `AlertDialog` を使う */
 export const Default: Story = {};
 
-/** 異常や失敗。色だけで伝えないようアイコンか文言を添える (`styling.md`「色は semantic token のみ」) */
+/** 異常や失敗。色だけで伝えないようアイコンか文言を添える (WCAG 1.4.1) */
 export const Destructive: Story = {
   args: { variant: "destructive" },
   render: (args) => (

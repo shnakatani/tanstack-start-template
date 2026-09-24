@@ -7,8 +7,12 @@ import { createThemeSnapshotStore } from "./theme-snapshot.story-helpers";
 import { dropRedundantColorAliases, type ThemeToken } from "./theme-tokens.story-helpers";
 
 /**
- * 解決後の値を伴う全トークンを名前順で集める。`styles.css` が SSOT なので値は写さない
- * (ADR-0022)。
+ * 解決後の値を伴う全トークンを名前順で集める。`styles.css` が SSOT なので値は写さない。
+ * Tailwind は theme を `@layer theme` に出すので、`collectRootCustomProperties` は `@layer` を含む
+ * グループ規則を再帰的に辿る。全トークンが出力されるのは Storybook の CSS だけ
+ * (docs/guides/styling-and-tokens.md「scan と `theme(static)` の範囲」)。
+ * light と dark は `@storybook/addon-themes` の class 切り替えで出し分け、読み取り結果は
+ * `useSyncExternalStore` で購読する。`key` による remount は play の状態を捨てるので採らない
  */
 function readAllTokens(): ThemeToken[] {
   const style = getComputedStyle(document.documentElement);
@@ -28,7 +32,7 @@ function byPrefix(tokens: ThemeToken[], prefix: string): ThemeToken[] {
 
 /**
  * テーマごとに 1 回だけ読む。値は CSSOM と getComputedStyle から取るので React の依存に
- * 現れず、購読しないと切り替えても止まる (ADR-0022)。
+ * 現れず、購読しないと切り替えても止まる。
  *
  * 種別ごとの絞り込みもここで済ませる。render 側で絞ると、CSSOM の走査こそ 1 回でも、
  * `dropRedundantColorAliases` の warn が再 render のたびに出る。走査と警告はテーマが

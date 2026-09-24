@@ -27,6 +27,14 @@ vi.mock("@/features/notes/functions", () => ({
 
 const { listNotes } = await import("@/features/notes/functions");
 
+// この画面に固有のテストの書き方 (route 全般の書き方は docs/guides/testing/route-wrappers.md「route の wrapper をテストする」、debounce の打ち方と fake timers を
+// 使わない理由は `docs/guides/testing/user-interactions.md`「debounce のある入力をテストする」):
+// - 検索欄の landmark は `<search>` 要素で、部品のテストは要素名で見る。同梱の locator engine が
+//   `search` role を `<search>` に写さない (2026-09-23 に実測)。`<form role="search">` にして
+//   `getByRole("search")` で引く形は採らない。本番のマークアップをテストの欠落に合わせない
+// - 同じ画面で `q` が別の値へ変わる経路は `router.navigate` で作る。確定は replace なので、memory history の
+//   `back()` では前の `q` に戻れない
+//
 // debounce の待ちを広げる (理由は -components/notes-page.test.tsx の同じ vi.mock)。確定と戻るの直後は
 // 編集の世代が URL と合わず debounce 済みの値を使わないので、広げても Enter と戻るの通知は即座に出る
 vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
@@ -40,7 +48,7 @@ import { Route } from "./index";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
- * `<html>` を描くので browser test では使えない (ADR-0036)。root は本番と同じ context 型を持ち、
+ * `<html>` を描くので browser test では使えない (docs/guides/testing/route-wrappers.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
  * `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
  */
 const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -99,7 +107,7 @@ describe("/notes route", () => {
     const screen = await render(<RouterProvider router={router} />);
 
     await expect.element(screen.getByRole("status", { name: "読み込み中" })).toBeInTheDocument();
-    // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (ADR-0019)
+    // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
     await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
   });
 
@@ -123,7 +131,7 @@ describe("/notes route", () => {
     expect(router.state.location.href).toBe("/notes?q=xyz");
     // 検索は同じ画面の絞り込みなので履歴を積まない (replace)。push に変わると 2 になる
     expect(router.history.length).toBe(1);
-    // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0034)
+    // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0027)
     await vi.waitFor(() => {
       expect(readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
     });

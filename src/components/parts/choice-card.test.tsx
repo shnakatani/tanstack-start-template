@@ -36,16 +36,15 @@ function Harness({ disabled = false }: { disabled?: boolean }) {
 
 /**
  * 行のトグルと id の紐づきは `choice-card.stories.tsx` の play が持ち、trailing の位置・
- * 行間・disabled の見え方 (cursor / data-disabled) は同 story の状態カタログで見る (ADR-0022)。
+ * 行間・disabled の見え方 (cursor / data-disabled) は同 story の状態カタログで見る (docs/guides/storybook.md「カタログと play の範囲」)。
  * ここに残すのは、Playwright の actionability を force で飛ばす実イベントが要る 2 件だけ
  * (有効な行で click が届く対照と、disabled の行)。
  *
- * 寸法は測らない。行間の `gap-2` は Tailwind の定義そのもので、44px の床は ADR-0007 が
- * 「焼き込みを禁じる」と決めた値である (要件は 24px の 2.5.8 で、それも機械で見ない)。
+ * 寸法は測らない。行間の `gap-2` は Tailwind の定義そのもので、測っても Tailwind の定義を言い直すだけになる。
  */
 describe("ChoiceCard", () => {
   // 同じ force click が有効な行では届いてトグルすることを先に固定する (肯定の対照)。これが無いと
-  // 下の disabled のテストは click が届かなくても緑になる (ADR-0031)
+  // 下の disabled のテストは click が届かなくても緑になる (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
   it("有効な行は label の force click でトグルする", async () => {
     const screen = await render(<Harness />);
 
@@ -61,12 +60,13 @@ describe("ChoiceCard", () => {
     const checkbox = screen.getByRole("checkbox", { name: /チームA/ });
 
     // disabled な checkbox と対の label なので actionability の enabled 判定に落ちる。
-    // 対象に pointer-events: none が無く click は実際に届くため force で検査だけ飛ばす (ADR-0015)
+    // 対象に pointer-events: none が無く click は実際に届くため force で検査だけ飛ばす (docs/guides/testing/user-interactions.md「クリックを発火する」)
     await screen.getByText("チームA").click({ force: true });
 
     await expect.element(checkbox).not.toHaveAttribute("data-checked");
     // Base UI の Checkbox は native disabled を隠し input に持ち、露出する span には
-    // aria-disabled が付く。「押せると主張しない」は ARIA で見る (testing.md「状態のアサートは semantic matcher を先に探す」)
+    // aria-disabled が付く。「押せると主張しない」は ARIA で見る。支援技術に届くのは span の
+    // aria-disabled で、隠し input の disabled は accessibility tree に出ない
     await expect.element(checkbox).toHaveAttribute("aria-disabled", "true");
   });
 });

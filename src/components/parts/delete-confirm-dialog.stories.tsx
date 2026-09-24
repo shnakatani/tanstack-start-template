@@ -32,7 +32,7 @@ interface StoryArgs {
 /**
  * Trigger を介さず handle だけで開く。imperative open では payload が入らないので、
  * 確定しても onConfirm を呼ばず warn だけが残る経路になる。
- * mount 時の open は DOM 副作用なので useEffect に置く (implementation.md)。
+ * mount 時の open は DOM 副作用なので useEffect に置く。
  * `target` は Trigger が payload へ載せる値なので、この経路では使わない
  */
 function WithoutTrigger({ target: _target, ...props }: StoryArgs) {
@@ -172,7 +172,7 @@ export const NotCalledTwice: Story = {
 /** payload なしで開かれたら warn して呼ばない */
 export const WithoutPayload: Story = {
   // 終了状態は Opened とほぼ同じ見た目 (payload なしでは説明文が空になるだけ) なので
-  // カタログには出さない (ADR-0022)
+  // カタログには出さない (docs/guides/storybook.md「story を書く」)
   tags: ["!dev"],
   render: (args) => <WithoutTrigger {...args} />,
   play: async ({ args }) => {

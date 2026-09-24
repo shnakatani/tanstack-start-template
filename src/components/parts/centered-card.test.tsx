@@ -5,12 +5,12 @@ import { FullScreenNotice } from "@/components/parts/centered-card";
 import { expectText } from "@/test/page-helpers";
 
 /**
- * 状態のカタログは `centered-card.stories.tsx` が持つ (ADR-0022)。狭幅での余白も `Narrow`
+ * 状態のカタログは `centered-card.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。狭幅での余白も `Narrow`
  * story で見る。ここに残すのは、見出しが h1 であることだけで、story に play が無い
  * (args だけで状態が決まる部品) 以上ここでしか固定できない。
  *
  * 寸法 (`max-w-sm` / `min-h-[50vh]` / `p-6`) は測らない。値は Tailwind の定義そのもので、
- * どの variant が何を当てるかは cva と story が持つ。機械で見ないのは ADR-0007 の決定。
+ * どの variant が何を当てるかは cva と story が持つ。測っても Tailwind の定義を言い直すだけになる。
  * `data-slot="card-title"` の祖先確認も消した。その slot を選ぶ CSS は無く、JSX の入れ子を
  * DOM で言い直すだけだった。
  */

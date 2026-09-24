@@ -17,7 +17,7 @@ import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "./form-fields";
  *
  * ラベルの色 (`fieldLabelClassName` の合成順) は `getComputedStyle` で固定する回帰として
  * `form-fields.test.tsx` に残る。`fieldValue` の型契約も `expectTypeOf` のまま残る
- * (ADR-0022 の節 7)。
+ * (docs/guides/storybook.md「story とブラウザテストの分担」)。
  */
 
 const nameSchema = v.pipe(v.string(), v.trim(), v.minLength(1, "名前を入力してください"));
@@ -387,7 +387,7 @@ export const Disabled: Story = {
     await expect(status.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
 
     // getByRole("checkbox") が返すのは span なので aria で見る。native の disabled は
-    // 隣の隠し input が持つが、aria-hidden で accessibility tree に出ない (testing.md「状態のアサートは semantic matcher を先に探す」)
+    // 隣の隠し input が持つが、aria-hidden で accessibility tree に出ない
     const canEdit = screen.getByRole("checkbox", { name: "編集者として割り当て可能" });
     await expect(canEdit).toHaveAttribute("aria-disabled", "true");
     await expect(canEdit.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");

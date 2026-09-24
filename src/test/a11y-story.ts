@@ -6,12 +6,12 @@ import { describeA11yResults } from "./a11y-message";
 // story の a11y 合否判定。消費者は `.storybook/a11y-incomplete/preview.ts` だけで、
 // ブラウザテストからは呼ばない。
 //
-// 層を分ける軸は ADR-0026 の節 1。story は描画を統制できるので `incomplete` を落とし、
+// 層を分ける軸は ADR-0028。story は描画を統制できるので `incomplete` を落とし、
 // 組み上げて操作するブラウザテストでは落とさない。
 
 /**
  * 合否から外す `incomplete`。単一部品でも統制の外へ出る状態だけを、
- * (ルール, `messageKey`) の粒度で挙げる (ADR-0026 の節 1)。
+ * (ルール, `messageKey`) の粒度で挙げる (ADR-0028)。
  *
  * 落とすほうを名指しにしない。axe のメタデータには「この incomplete は判定不能を意味する」を
  * 表すフラグが無いので、落とすほうを列挙すると新しい原因が出たときに無言で緑になる。
@@ -50,13 +50,13 @@ export function checkA11yIncomplete(context: {
 
   const report = context.reporting.reports.find((item) => item.type === "a11y");
   if (report === undefined) {
-    return "addon-a11y のレポートが無い。afterEach の実行順が変わったか、a11y の検査自体が動いていない (ADR-0026 の節 1)";
+    return "addon-a11y のレポートが無い。afterEach の実行順が変わったか、a11y の検査自体が動いていない (ADR-0028)";
   }
   // addon が走査に失敗した形。`vp test run` では addon 自身が rethrow するので重ねない
   // (test panel 経由は panel 表示のみ。同 chunk の `getIsVitestStandaloneRun`)
   if (isErrorResult(report.result)) return null;
   if (!hasIncompleteResults(report.result)) {
-    return "addon-a11y のレポートを読めない。addon の結果の形が変わった (ADR-0026 の節 1)";
+    return "addon-a11y のレポートを読めない。addon の結果の形が変わった (ADR-0028)";
   }
 
   const unexpected = collectUnexpectedIncomplete(report.result.incomplete);
@@ -122,7 +122,7 @@ export function collectUnexpectedIncomplete(incomplete: readonly axe.Result[]): 
  * `messageKey` で外すものは、その node が挙げた `messageKey` が**すべて**外す対象のときだけ
  * 落とす。axe は node 単位でしか報告せず、1 つの node には同じルールの複数の check が載る
  * (`aria-valid-attr-value` のルールは `aria-errormessage` / `aria-level` も `all` に持つ)。
- * 外さないキーが 1 つでも混ざっていたら、その node は部品側の信号を含んでいる (ADR-0026 の節 1)。
+ * 外さないキーが 1 つでも混ざっていたら、その node は部品側の信号を含んでいる (ADR-0028)。
  *
  * 同じ check の中では `messageKey` は 1 つしか立たない (`ariaValidAttrValueEvaluate` は
  * 単一の変数へ代入して `this.data` を 1 回だけ呼ぶ)。混ざるのは別の check どうしである。

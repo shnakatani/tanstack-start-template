@@ -35,7 +35,7 @@ const SIZE_OPTIONS = variantOptions({
 /**
  * `ItemMedia` の variant は `Item` の `argTypes` に出せないので control では切り替えられない。
  * 網羅は 1 つの story の中で全件を並べて守る。`cva` に variant を足すと、この対応表の
- * `satisfies` がここで落ちる (ADR-0022)
+ * `satisfies` がここで落ちる (`docs/guides/storybook.md`「story を書く」)
  */
 const MEDIA_VARIANT_LABELS = {
   default: "下地なし",
@@ -51,7 +51,7 @@ const MEDIA_VARIANT_LABELS = {
 function mediaVariants(): ItemMediaVariant[] {
   const labels: Record<ItemMediaVariant, string> = MEDIA_VARIANT_LABELS;
   // filter は実行時には全件を通す。`Object.keys` が string[] を返すのを型アサーション無しで
-  // 絞る手が型述語しかないため置いている (`typing.md` がアサーションを禁じている)
+  // 絞る手が型述語しかないため置いている (型アサーションは ADR-0007 が禁じている)
   return Object.keys(labels).filter((key): key is ItemMediaVariant => key in labels);
 }
 
@@ -136,7 +136,7 @@ export const MediaVariants: Story = {
 /**
  * 並べる形。`ItemGroup` の既定は `role="list"` の div だが、その形だと子に
  * `role="listitem"` が要り、`<li>` は ul/ol/menu の中でしか置けないので HTML が破綻する。
- * `render` で `ul` / `li` へ倒すと ARIA も content model も揃う (`base-ui.md`「Combobox と ItemGroup」)
+ * `render` で `ul` / `li` へ倒すと ARIA も content model も揃う (ADR-0020)
  */
 export const Grouped: Story = {
   render: () => (

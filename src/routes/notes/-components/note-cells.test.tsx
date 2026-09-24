@@ -84,7 +84,7 @@ describe("NoteActionsCell", () => {
       .element(rowDeleteButton(screen, NOTE.title))
       .toHaveAttribute("aria-disabled", "true");
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
-    // 止めるのは削除中の行だけ (ADR-0016「ブロック範囲」)
+    // 止めるのは削除中の行だけ (ADR-0017「ブロック範囲」)
     await expect
       .element(rowDeleteButton(screen, OTHER_NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");

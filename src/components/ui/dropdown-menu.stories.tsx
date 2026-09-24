@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /**
- * 項目は必ず `DropdownMenuGroup` の中に置く (`implementation.md`「Item は Group の中に置く」)。
+ * 項目は必ず `DropdownMenuGroup` の中に置く (shadcn skill の `rules/composition.md`)。
  * 全項目を包む単一の Group には名前を与えない。base-ui がトリガー由来の名前を popup へ付ける
  */
 function DropdownMenuExample() {
@@ -35,7 +35,7 @@ function DropdownMenuExample() {
   );
 }
 
-/** 開くところまで。選択は書かない (ADR-0022) */
+/** 開くところまで。選択は書かない (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "操作" }));
   await screen.findByRole("menu");
@@ -67,7 +67,6 @@ export const Opened: Story = {
 
 /**
  * 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
- * (`styling.md`「accessible name の与え方」)
  */
 export const Grouped: Story = {
   render: () => (

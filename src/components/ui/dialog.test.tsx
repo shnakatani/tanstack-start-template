@@ -14,7 +14,7 @@ import {
 
 /**
  * 共有 DialogContent の viewport 溢れ backstop。registry 乖離 (Viewport + `popupOverflowBackstop`
- * + Popup の flex-col。ADR-0006 の許容リスト) のガードで、`registry-baseline.test.ts` は
+ * + Popup の flex-col。`docs/registry-deviations.md`) のガードで、`registry-baseline.test.ts` は
  * baseline の存在しか見ず乖離が消えても落ちないことを実測した (2026-09-22)。
  *
  * 到達性は実キーボードで見る (Popup は開いたとき focus を受け、End で末尾へスクロールする)。

@@ -16,7 +16,7 @@ export interface ReadableStyleSheet {
  * Tailwind v4 は `@theme` の内容を `@layer theme { :root, :host { ... } }` へ出すため、
  * トップレベルの `CSSStyleRule` だけでなく `@layer` / `@media` 等のグループ規則
  * (`CSSGroupingRule` を継承する rule 全般) の中も再帰的に辿る。辿らないと `@layer` の中の
- * 宣言を見落とす (ADR-0022)。
+ * 宣言を見落とす。
  *
  * 対象の判定は `Element.matches()` に委ねる。`selectorText` を `,` で分けて `:root` と
  * 比べる形にすると、`:is(:root, .x)` のように `,` を内側に持つ selector を取りこぼす。

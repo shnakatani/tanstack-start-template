@@ -43,7 +43,7 @@ function SheetExample({ side }: { side?: SheetSide }) {
   );
 }
 
-/** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (ADR-0022) */
+/** 開くところまで。開いた先の操作は既存のブラウザテストが持つ (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("button", { name: "絞り込み" }));
   await screen.findByRole("dialog");

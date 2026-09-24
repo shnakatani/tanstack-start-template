@@ -27,7 +27,7 @@ import { useFieldContext } from "@/hooks/form-context";
  * fieldValue は部品内部では使わず、消費側の field.state.value を受けて値型を突き合わせる
  * ためだけに存在する。useFieldContext のジェネリクスは実フィールドと型で結びつかないため、
  * これが唯一の突き合わせ経路となる (TanStack/form discussion #1240 のメンテナ回答)。
- * 撤去の条件は ADR-0039。
+ * 比較した案は docs/guides/forms-and-inputs.md「`fieldValue` で値型を突き合わせる理由」。
  */
 interface FieldValueTypeCheckProps<T> {
   fieldValue: T;
@@ -131,7 +131,7 @@ export function FormTextField({
     <Field
       className={fieldClassName}
       // ラベルの destructive 色は registry の Field が `data-[invalid=true]:text-destructive` で
-      // 持ち、FieldLabel はそれを継承する。JS で色を足さない (ADR-0021)
+      // 持ち、FieldLabel はそれを継承する。JS で色を足さない (ADR-0022)
       data-invalid={invalid || undefined}
       data-disabled={disabled || undefined}
     >
@@ -210,6 +210,34 @@ interface FormSelectFieldProps<T extends string>
   options: readonly { value: T; label: string }[];
 }
 
+/**
+ * 選んでいた値が候補から消えたことを、Base UI の `onValueChange(null)` で検出しない。
+ * 値の解決はこの部品が引き取り、`null` と options に無い値は表示を保ったまま warn に残す。
+ *
+ * Base UI の自己リセットは公式 docs の Select に書かれていない (同梱の docs を `reset` /
+ * `onValueChange` で検索、2026-09-23、1.8.0)。実装は `select/positioner/SelectPositioner.mjs`
+ * の `onMapChange` にあり、1.8.0 のソース上の扱いは次のとおり (読み取りで、挙動は未実測)。
+ *
+ * | 条件                                                             | ソース上の扱い                        |
+ * | ---------------------------------------------------------------- | ------------------------------------- |
+ * | 項目が 1 件も登録されていない (`valuesRef.current.length === 0`) | 何もしない                            |
+ * | 初回の登録 (`prevSize === 0`)                                    | 何もしない                            |
+ * | 単一選択で現在値が `null`                                        | 何もしない                            |
+ * | 現在値が候補に無く、マウント時の値が候補にある                   | マウント時の値へ戻す。`null` は来ない |
+ * | 現在値もマウント時の値も候補に無い                               | `null` で `setValue` する             |
+ *
+ * 通知が来ない条件がある。項目の登録の変化を拾う `CompositeList` は件数に加えて要素の同一性も
+ * 比べ、件数が変わらないときに何もしない分岐は 1.8.0 で撤去された (CHANGELOG v1.8.0、
+ * mui/base-ui の PR 5469)。版ごとに経路が変わるので、自己リセットに任せる案は採らない。
+ * 項目がいつ登録されるか (トリガーを一度もフォーカスしていない間は登録されないか) は未確認。
+ * この部品を包まずに `Select` を使うときの書き方は
+ * docs/guides/forms-and-inputs.md「Select の値を解決する」。
+ *
+ * 出典: Base UI Select (https://base-ui.com/react/components/select)、CHANGELOG
+ * (https://github.com/mui/base-ui/blob/master/CHANGELOG.md)、PR 5469
+ * (https://github.com/mui/base-ui/pull/5469)、`SelectPositioner` の実装
+ * (https://github.com/mui/base-ui/blob/master/packages/react/src/select/positioner/SelectPositioner.tsx)
+ */
 export function FormSelectField<T extends string>({
   label,
   options,
@@ -224,8 +252,8 @@ export function FormSelectField<T extends string>({
       <Select
         value={field.state.value}
         onValueChange={(value) => {
-          // 候補が入れ替わったとき Base UI は現在値を null で通知してくる。この自己リセットに
-          // 委ねると form の値が黙って消えるため、値の解決はここで引き取る。
+          // 候補が入れ替わったとき Base UI は現在値を null で通知してくることがある。この
+          // 自己リセットに委ねると form の値が黙って消えるため、値の解決はここで引き取る。
           if (value === null) {
             console.warn("[FormSelectField] 候補から現在値が消えました。値は保持します", {
               currentValue: field.state.value,

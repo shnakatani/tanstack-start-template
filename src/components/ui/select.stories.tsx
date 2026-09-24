@@ -19,7 +19,7 @@ const OPTIONS = [
 ];
 
 /**
- * `items` を渡さないとトリガーに生の value が出る (`base-ui.md`「Select: `items` prop 必須」)。
+ * `items` を渡さないとトリガーに生の value が出る (Base UI の Select docs「Formatting the value」)。
  * ここは registry の意匠の見本で、フォームの中では `FormSelectField` (parts) を通す
  */
 function SelectExample({ defaultValue }: { defaultValue?: string }) {
@@ -41,7 +41,7 @@ function SelectExample({ defaultValue }: { defaultValue?: string }) {
   );
 }
 
-/** 開くところまで。選択は既存のブラウザテストが持つ (ADR-0022) */
+/** 開くところまで。選択は既存のブラウザテストが持つ (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "状態" }));
   await screen.findByRole("listbox");

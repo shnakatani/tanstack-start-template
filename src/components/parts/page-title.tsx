@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { CardTitle } from "@/components/ui/card";
 
 /**
- * ページ見出しの外見 (`styling.md` の typography 階層)。
+ * ページ見出しの外見。
  *
  * `PageHeader` の `<h1>` と `CardPageTitle` の `CardTitle` が同じ寸法を持つ必要があるが、
  * 器 (header の中か Card の中か) が違うので部品は分かれる。外見だけをここが持ち、両方が消費する。
