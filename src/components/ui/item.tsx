@@ -12,7 +12,7 @@ function ItemGroup({ className, render, ...props }: useRender.ComponentProps<"di
         // 既定の div は list の意味を role で持つ。この形では子も `role="listitem"` が要るが、
         // `<li>` は ul/ol/menu の中でしか置けないため HTML としては破綻する。
         // 意味を正しく出すなら `render={<ul />}` と `Item render={<li />}` の対で使う
-        // (`.claude/rules/base-ui.md`「ItemGroup」)。上流も同じ欠陥を追跡している
+        // (ADR-0006)。上流も同じ欠陥を追跡している
         // (shadcn-ui/ui#11532「announces as an empty list」)
         // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- 既定のタグを ul にすると、li 以外を子に取る既存の使い方が content model 違反になる
         role: "list",

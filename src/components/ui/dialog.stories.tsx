@@ -79,7 +79,7 @@ export const Opened: Story = {
 
 /**
  * 閉じる X を出さない形。registry が持つ prop だが、このリポジトリのモーダルは visible close を
- * 置く決まりなのでアプリでは使わない (`implementation.md`「幅と閉じる手段」)。
+ * 置く決まりなのでアプリでは使わない (`styling.md`「touch target」)。
  * X を消しても Esc と外側クリックは効いたまま
  */
 export const WithoutCloseButton: Story = {

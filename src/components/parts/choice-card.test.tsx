@@ -66,7 +66,7 @@ describe("ChoiceCard", () => {
 
     await expect.element(checkbox).not.toHaveAttribute("data-checked");
     // Base UI の Checkbox は native disabled を隠し input に持ち、露出する span には
-    // aria-disabled が付く。「押せると主張しない」は ARIA で見る (base-ui.md)
+    // aria-disabled が付く。「押せると主張しない」は ARIA で見る (testing.md「状態のアサートは semantic matcher を先に探す」)
     await expect.element(checkbox).toHaveAttribute("aria-disabled", "true");
   });
 });

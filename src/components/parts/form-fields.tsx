@@ -27,7 +27,7 @@ import { useFieldContext } from "@/hooks/form-context";
  * fieldValue は部品内部では使わず、消費側の field.state.value を受けて値型を突き合わせる
  * ためだけに存在する。useFieldContext のジェネリクスは実フィールドと型で結びつかないため、
  * これが唯一の突き合わせ経路となる (TanStack/form discussion #1240 のメンテナ回答)。
- * issue #1606 の createFieldComponent が正式 API として入ったら、この prop は不要になる。
+ * 撤去の条件は ADR-0039。
  */
 interface FieldValueTypeCheckProps<T> {
   fieldValue: T;

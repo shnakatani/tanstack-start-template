@@ -106,6 +106,17 @@ expect(action).toHaveBeenCalledOnce();
 
 判定に落ちた条件は Playwright のエラー文言で確かめてから行を選ぶ (`.claude/rules/testing.md`「クリックの発火方法」)。
 
+`.click()` が弾く条件は Playwright の Actionability が定める Visible / Stable / Receives Events / Enabled である。このリポジトリで弾かれる典型を次に置く。
+
+| 条件               | 落ちる例                                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Enabled            | native `disabled`、`aria-disabled="true"` の祖先を持つ要素                                                            |
+| Stable             | 開閉アニメーションの途中。既定では ADR-0018 の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
+| Visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                      |
+| Receives Events    | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                               |
+
+`force: true` はこの検査をまとめて飛ばす。animation を戻したテストでは、スライドイン途中の要素が "Element is outside of the viewport" で落ちる。viewport 内の座標の確認は公式の 4 条件の定義に書かれておらず、`playwright-core` の `_performPointerAction` が行う (ソースの読み取りで、公式 docs では未確認)。
+
 `force: true` を選ぶ前に、対象へイベントが届くかを確かめる。`force` は actionability の検査を飛ばすだけで、ブラウザのヒットテストは越えない。届かない対象に使うと、押した結果を見る assert が `pointer-events` から導かれるだけのものに変わる。
 
 ### 検討した選択肢

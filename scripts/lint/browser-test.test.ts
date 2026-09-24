@@ -105,7 +105,7 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
       errors: [{ messageId: "syncRead" }],
     },
     {
-      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (testing.md「フォーカスは toHaveFocus で見る」)
+      // 要素そのものの束縛は、matcher の期待値に来ても基準値ではない (testing.md「locator の扱い」)
       code: "const el = locator.element(); expect(document.activeElement).toBe(el);",
       errors: [{ messageId: "syncRead" }],
     },

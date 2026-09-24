@@ -387,7 +387,7 @@ export const Disabled: Story = {
     await expect(status.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
 
     // getByRole("checkbox") が返すのは span なので aria で見る。native の disabled は
-    // 隣の隠し input が持つが、aria-hidden で accessibility tree に出ない (base-ui.md)
+    // 隣の隠し input が持つが、aria-hidden で accessibility tree に出ない (testing.md「状態のアサートは semantic matcher を先に探す」)
     const canEdit = screen.getByRole("checkbox", { name: "編集者として割り当て可能" });
     await expect(canEdit).toHaveAttribute("aria-disabled", "true");
     await expect(canEdit.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");

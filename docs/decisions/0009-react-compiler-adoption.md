@@ -113,7 +113,7 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 - Compiler が黙って外れる経路 (`vite.config.ts` から `compiler` オプションが消える) を機械で見張るものは無い。塞ぐならビルド成果物を見る検査が要る
 - Compiler がカバーしない箇所 (コンポーネントでも hook でもない定義、たとえばテーブルの column 定義) は最適化されないまま動く。仕様どおりの挙動であり、性能問題として顕在化した箇所だけ手でメモ化する
 - 新しいコードでは手動メモ化を書かない。既にあるものは決定 4 の判定を通してから外す
-- 「Select の `items` prop」のように、メモ化が正しさや依存ガードに効く箇所は規範として rules 側に残る。Compiler への委譲はそれを否定しない
+- メモ化が正しさや依存ガードに効く箇所があれば、その規範は rules 側に置く。Compiler への委譲はそれを否定しない
 - Rules of React の検査を外すと Compiler が bail out する土壌ができる。分割後のルール群は導入の前提として据え置く
 - `compiler` オプションが experimental でなくなったら決定 1 を見直す。`peerDependencyRules` の緩和の出口条件は `pnpm-workspace.yaml` のコメントが持つ
 

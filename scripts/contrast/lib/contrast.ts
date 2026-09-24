@@ -39,8 +39,8 @@ function parseBlock(css: string, selector: string): TokenTable {
   // セレクタを行頭に固定する。固定しないと `@media` が `:root` を外から包む形で、
   // 条件付きの値が無条件のトークンとして表へ入る。
   //
-  // 行頭で足りるのは、入れ子を必ず字下げするフォーマッタを commit 前に通すからである
-  // (AGENTS.md「コミット前に `vp check --fix` 必須」)。字下げなしの入れ子は
+  // 行頭で足りるのは、入れ子を必ず字下げするフォーマッタを pre-commit hook が通すからである
+  // (vite-plus.md「staged 設定 (pre-commit hook)」)。字下げなしの入れ子は
   // `vp check` が `Format issues found in above 1 files.` として弾く。フォーマッタを
   // 外すとこの前提が消える
   const found = new RegExp(`^${escapeForRegExp(selector)}\\s*\\{([\\s\\S]*?)\\n\\}`, "m").exec(

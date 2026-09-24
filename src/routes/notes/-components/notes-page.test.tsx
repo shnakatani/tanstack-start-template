@@ -108,7 +108,7 @@ async function openDeleteConfirm(screen: Screen, note: Note) {
   await expectText(screen, deleteConfirmDescription(note.title));
   // click で動いた実マウスは、ダイアログが閉じて下の要素が露出する前に退避する。乗ったままだと
   // 露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
-  // (testing.md「マウス位置を動かすテストは自分で戻す」)
+  // (testing.md「ブラウザテストの CSS とレイアウト実測」)
   await parkMouse();
 }
 
@@ -378,7 +378,7 @@ describe("NotesPage", () => {
   it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
     const rawMessage = `削除対象のノートが見つかりません: id=${NOTE.id}`;
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
-    // 即 reject だと busy の窓が観測できない (testing.md「遅延 rejection で中間状態を観測」)
+    // 即 reject だと busy の窓が観測できない (testing.md「optimistic update は決着を握って観測する」)
     const remove = deferMock(removeNote);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);

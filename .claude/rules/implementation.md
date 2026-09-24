@@ -5,121 +5,77 @@ paths:
 
 # 実装ワークフロー
 
-型の規律 (型アサーション禁止 / children prop 宣言 / 転送 prop の ComponentProps 導出) は `typing.md` に分離した。
+## useEffect の中で setState しない
 
-## 冒頭チェックリスト
+lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止める。代替のうち lint が案内しないもの:
 
-- [ ] イベントハンドラを同期関数として宣言し、prop へ直接渡している (JSX に `void` とインライン `async` を書いていない)
-- [ ] useEffect 内で setState していない
-- [ ] コンポーネントを `function` 宣言で定義している
-- [ ] mutation を伴う操作を `src/components/action/` の `action` 経由にし、pending を Transition から取っている
-
-## useEffect 内で setState 禁止
-
-lint 検出: effect 内の `setState` を `react/set-state-in-effect` が、そこから派生させた state を `react/no-deriving-state-in-effects` が捕まえる。外部ストアの購読 (代替 4) は lint で検出できないためレビューで見る。
-
-代替:
-
-1. render 中に計算可能 → 直接計算 (安定化は React Compiler が担う。「手動メモ化の増減」参照)
-2. ユーザー操作への応答 → event handler
-3. DOM 接続/切断に連動 → React 19 callback ref + cleanup return
-4. 外部ストアへの購読 → `useSyncExternalStore`
-5. データ取得 → TanStack Query (route loader の `queryClient.query({ ...options, staleTime: "static" })` prefetch + `useSuspenseQuery`。実例: `src/routes/notes/index.tsx`)
-
-useEffect が正当なのは DOM 副作用 (focus / scroll / 外部 widget 初期化) と、router へ変化を伝える副作用 (`router.invalidate()` 等) のみ。
-
-router へ伝える副作用は、追従が必要な期間で置き場所を決める。
-
-- mount 中だけ成立すれば足りるなら effect でよい
-- 画面遷移中や `errorComponent` 表示中も成立させたいなら router 層で購読する。effect は mount 状態に縛られ、その画面が出ていない間は追従が途切れる
+- 外部ストアへの購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る
+- データ取得は TanStack Query。route loader で `queryClient.query({ ...options, staleTime: "static" })` を温め、`useSuspenseQuery` で読む (`src/routes/notes/index.tsx`)
+- useEffect が正当なのは DOM 副作用 (focus / scroll / 外部 widget 初期化) と、router へ変化を伝える副作用 (`router.invalidate()` 等) だけ
+- router へ伝える副作用は、mount 中だけ成立すれば足りるなら effect、画面遷移中や `errorComponent` 表示中も要るなら router 層で購読する
 
 ## Effect が読む最新値は useEffectEvent へ切り出す
 
-lint 検出なし。oxlint に `useEffectEvent` の制約を見るルールが無いため、下の 3 点はレビューで見る (2026-09-02 実測)。
+lint では見ないのでレビューで見る。
 
-- 購読を張り直したくないのに最新の props / state を読む必要がある箇所は `useEffectEvent` へ切り出し、依存から外す。実例は `src/components/ui/sidebar.tsx` の keydown 購読
-- **依存配列を埋める逃げ道に使わない。** 再実行の契機そのものである値を隠すとバグが見えなくなる。`calendar.tsx` の `modifiers.focused` は契機なので切り出さない
-- Effect Event は Effect か他の Effect Event の中からしか呼べない。ユーザーイベントハンドラ・レンダー中・他コンポーネントへの受け渡し・依存配列への記載はいずれも不可
+- 購読を張り直さずに最新の props / state を読む箇所は `useEffectEvent` へ切り出し、依存から外す (`src/components/ui/sidebar.tsx` の keydown 購読)
+- 依存配列を埋める逃げ道に使わない。再実行の契機そのものである値を隠すとバグが見えなくなる (`calendar.tsx` の `modifiers.focused`)
+- Effect Event は Effect か他の Effect Event の中からしか呼ばない。ハンドラ・レンダー中・他コンポーネントへの受け渡し・依存配列は不可
 
 ## イベントハンドラは同期に保つ
 
-lint 検出: `typescript/no-misused-promises` が、`void` を返す prop へ Promise を返す関数を渡すと落とす。
+lint (`typescript/no-misused-promises`) が止める。直し方 (ADR-0004):
 
-対象は mutation (`useMutation` を通す server function 呼び出し) を伴わない非同期処理。mutation を伴う操作は次節「ユーザー操作による更新は Transition の中で行う」が持つ。
-
-- `async` 関数をハンドラとして prop へ直接渡さない。ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる
-- JSX の prop に `void` やインラインの `async` を書かない。名前付きハンドラを定義して直接渡す
+- ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `void` やインラインの `async` を書かない
 - 待たない判断は内側で 1 回だけ表明する。呼び先が失敗を自分で処理するなら `void`、呼び出し側で通知や後始末をするなら `.catch()`
-- **操作の失敗を Error Boundary へ届けない**。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる
-
-```tsx
-// src/components/screens/route-error.tsx。再実行の結果は loader と error boundary が受けるため待たない
-function handleRetry() {
-  reset();
-  void router.invalidate();
-}
-<Button onClick={handleRetry}>
-```
-
-判断の経緯は ADR-0004「`no-misused-promises` が要求する実装の形」。
+- 操作の失敗を Error Boundary へ届けない。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる
+- 実例は `src/components/screens/route-error.tsx` の `handleRetry`。mutation を伴う操作は次節に従う
 
 ## ユーザー操作による更新は Transition の中で行う
 
-lint 検出なし。レビューで見る。判断の経緯と制約は ADR-0014、完了点とブロック範囲の軸は ADR-0016。
+lint では見ないのでレビューで見る (ADR-0014、完了点とブロック範囲は ADR-0016)。
 
-| 更新の種類                        | 書き方                                                                                                                                                                                                                                                   |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                                                                                               |
-| mutation 成功後のダイアログ close | 閉じる時点は ADR-0016 の完了点の軸で選び、理由を実装近傍に書く (無いと形だけ写される)。(a) Action 内で `close()` + `void runAction()` / (b) `onSuccess` 先頭で `close()` し再取得の Promise を返す / (c) `onSuccess` で再取得を await した後に `close()` |
-| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                                                                                      |
-| Error Boundary の reset と再読込  | 前節の形 (`handleRetry`) のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                                                                              |
-| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                                                                        |
-| 検索条件の変更                    | URL の `navigate` (Router の Transition)。打鍵中の一覧は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にし、fallback に落とさない (実例: `src/routes/notes/-components/notes-page.tsx`、ADR-0035)                             |
+| 更新の種類                        | 書き方                                                                                                                                  |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                              |
+| mutation 成功後のダイアログ close | 閉じる時点は ADR-0016 の完了点の軸で選び、理由を実装近傍に書く。選択肢は ADR-0016                                                       |
+| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                     |
+| Error Boundary の reset と再読込  | 前節の `handleRetry` の形のまま。`router.invalidate()` の描画は Router が Transition 化する                                             |
+| 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                       |
+| 検索条件の変更                    | URL の `navigate`。打鍵中は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にする (`notes-page.tsx`、ADR-0035) |
 
-- pending 表示は Action 層の `isPending` から取る。mutation の `isPending` を直接 UI へ渡さない (pending の源が二重になる)。項目の busy と楽観表示、完了点 (b) の close 阻止の判定は例外で、次の項目のとおり mutation の pending から取る
-- mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` (`toastMutationError`) は型で必須。`runAction` が `mutateAsync` の reject を吸収するため、`onError` が無いと失敗が無通知になる
+- pending 表示は Action 層の `isPending` から取る。例外は項目の busy・楽観表示・close 阻止で、mutation の pending から取る (ADR-0016)
+- mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` は型で必須。`runAction` が reject を吸収するので、無いと失敗が無通知になる
 - Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る
-- `onSuccess` は再取得の Promise を返す (mutation の pending が再取得完了まで続く)。再取得完了前に close するときは、対象の項目 (行など) にその pending から busy 表現を付ける。付けないと古い一覧が pending 表示なしで見える (ADR-0016)
-- 止めるのは対象の項目だけにする。画面全体を止めると、無関係な操作まで待たされる。並行操作が整合を壊すときだけ全体を止め、理由を実装近傍に書く (ADR-0016)
+- `onSuccess` は再取得の Promise を返す。再取得完了前に close するなら、対象の項目にその pending から busy 表現を付ける (ADR-0016)
+- 止めるのは対象の項目だけにする。並行操作が整合を壊すときだけ全体を止め、理由を実装近傍に書く (ADR-0016)
 - Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる
-- `useOptimistic` に `useQuery` / `useSuspenseQuery` の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (ADR-0014「楽観表示の使い分け」)
-- mutation の pending の読み方: 1 件ずつなら `mutation.isPending && mutation.variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState`。`useMutation` 1 つの `variables` は 2 件目で移る (ADR-0016)
-- `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける (既定は前方一致)。`variables` は `unknown` なので `parseEach` (`src/lib/parse-each.ts`) でスキーマへ絞り、外れ値は warn に残して除く (ADR-0016)
+- `useOptimistic` に query の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (ADR-0014)
+- mutation の pending は、1 件ずつなら `isPending && variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState` で読む (ADR-0016)
+- `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける。`variables` は `parseEach` (`src/lib/parse-each.ts`) で絞る (ADR-0016)
 - `useMutationState` の `select` の中で throw しない。描画中に走るので一覧ごと Error Boundary へ落ちる (ADR-0016)
-- 操作の開始の announce は mutation の `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`)。lint 検出なし。Action を書くときのレビュー観点に含める (ADR-0017)
-- 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない。pending は次のユーザーイベントより前に描画される (ADR-0014)
+- 操作の開始の announce は `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`、ADR-0017)
+- 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない (ADR-0014)
 
 ## 手動メモ化の増減
 
-React Compiler が値と関数の安定化を担う (ADR-0009)。
-`useMemo` / `useCallback` は足すのも外すのも実測が要る。判定手順は ADR-0009 が持つ。
-`src/components/ui/` は ADR-0006 の統制下なので触らない。
+`useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は ADR-0009。`src/components/ui/` は ADR-0006 の統制下なので触らない。
 
 ## コンポーネントは function 宣言で定義する
 
-- トップレベル定義は `function Foo(props) {}` で書く。`const Foo = () => {}` にしない
-- コンポーネント内の名前付きヘルパーも `function` 宣言。型注釈が要るときだけ arrow const
-- インラインのコールバック (`onClick` の中身など) は arrow で書く
-- 対象外: shadcn 生成コード (`src/components/ui/`) は生成された形のまま置く
+- トップレベルのコンポーネントとコンポーネント内の名前付きヘルパーは `function` 宣言で書く。型注釈が要るヘルパーだけ arrow const
+- インラインのコールバック (`onClick` の中身など) は arrow で書く。shadcn 生成コード (`src/components/ui/`) は生成された形のまま置く
 
 Why: 巻き上げでページ本体を上、ヘルパーを下に置ける。`.tsx` で generics を `<T,>` ハックなしに書ける。
 
 ## Item は Group の中に置く
 
-`SelectItem` / `DropdownMenuItem` を `SelectContent` / `DropdownMenuContent` の直下に置かない。正本は shadcn skill の `.claude/skills/shadcn/rules/composition.md`。
+`SelectItem` / `DropdownMenuItem` を `SelectContent` / `DropdownMenuContent` の直下に置かない (shadcn skill の `rules/composition.md`)。機械強制は無いのでレビューで見る。
 
-包み忘れに機械強制は無い。規範として守り、レビューで見る。
-以前は JSX の字面を走査する自前の検査を当てていたが、変数へ組み立てて Content に差す Item と別コンポーネントへ切り出した Item は同一 JSX 木の字面に現れず、警告なしで見逃していた。守れる範囲がレビューの代わりにならないため撤去した。
+## lint の抑制
 
-## 検証フロー
-
-実装中は 1 ファイル目を `vp check --fix` まで通してから横展開する。整形と自動修正が入るのはこの経路と commit 前の staged hook (`vp staged`、`.claude/rules/vite-plus.md`) だけで、`mise run verify` の `vp check` は書き換えない。
-
-マージ前は `mise run verify` (`vp check` → `vp test run` → `vp build` → ヘッダ検査) を通す。verify の `vp check` は `--fix` を持たず書き換えずに落とすので、整形差分を残したまま回すとそこで止まる。
-
-## formatter 差分は常にコミット
-
-`vp check --fix` で出た差分は全てコミットする。`git restore` で無視しない。
+- 行単位の抑制 (`oxlint-disable-next-line`) は違反が報告される行の直前に置く。`.map()` の行に置いても `key` の行には効かない
+- `no-await-in-loop` は順序依存のループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く (ADR-0004)
 
 ## dead code を発見したら即決 3 択
 
@@ -127,78 +83,8 @@ Why: 巻き上げでページ本体を上、ヘルパーを下に置ける。`.t
 2. **同等修正** (呼ばれている)
 3. **スコープ外** → 別 PR へ切り出す
 
-削除の前に git blame で導入コミットを確認する。
-line-level で「効かない」だけを根拠に削除すると、feature-level では生きた意図を別実装で置換すべきケースを見落とし silent regression になる。
-
-## touch target
-
-touch target は画面によらず一律に扱う。共有 UI 部品で実現するため、特定の画面だけ緩めることはしない。
-
-touch target は WCAG 2.2 AA 2.5.8 (24x24 CSS px) を適合の床とし、視覚 = ヒット = registry 素寸法で運用する (ADR-0007)。
-44px (HIG / WCAG AAA) は要件ではない。
-registry 部品 (`src/components/ui/`) はアプリ独自の hit 拡大 (疑似要素) も寸法の入力デバイス分岐も持たない。
-
-- `h-11` / `min-h-11` / `min-w-11` / `size-11` を variant なしで書かない (ADR-0007)。寸法に機械強制は無く、レビューで見る
-- 実機で誤タップが報告されたら、当該部品に `any-pointer-coarse:min-h-11` (icon 系は `min-w-11` も) を後付けする (ADR-0007 の誤タップレバー)。後付け後にタッチ環境の高さを変えるときは同じ variant で書く。素の `h-*` では `min-height` を打ち消せず、マウス環境だけ縮む
-- 実機 UI 確認ではタップ精度 (特に床ちょうどの要素) を観点に含める
-- `touch-action` を上書きしない。tap 遅延の除去は `src/routes/__root.tsx` の viewport meta (`width=device-width`) が担う (ADR-0007)
-
-### input と checkbox 行
-
-- input に疑似要素の hit 拡大を掛けない。ラッパーで包むと本体がポインタを受け取れなくなる (ADR-0007)
-- checkbox 行を素の `<label>` で包む手組みや、手書きの `role="group"` を新規に書かない
-- 複数選択は `ChoiceCard` / `ChoiceCardList` (`src/components/parts/choice-card.tsx`) を使う。公式の Choice Card 構成 (`FieldLabel` で `Field` を包む) と行間・クリック領域・disabled 時の見え方はこの部品が持つので、手で組み直さない
-- 単独は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
-
-### 幅と閉じる手段
-
-- `table-fixed` + `min-w-[N]` を持つコンポーネントは境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅時に列幅が最小化し silent に違反する。列幅の配分を計算で予測してから測る
-- ドロワーとモーダルには visible close (X ボタン) を置く。スワイプと backdrop タップだけでは不十分
-
-## a11y 最低基準
-
-lint は custom `<Button>` の中身を見ないため機械強制がない。実装時に自己チェックする。
-
-強制は 2 層で持つ。テスト側は `src/test/a11y.ts` の `expectNoA11yViolations` が書いたケースだけを見る。書いていない画面は devtools の A11y パネル (`src/routes/__root.tsx` の `a11yDevtoolsPlugin`) で触りながら気付く。
-
-### accessible name の与え方
-
-迷ったら与える側に倒す。
-与えない判断をしたら理由コメントを実装近傍に残す。
-
-| 対象                                                  | 対応                                                                                                                                                                                                                           |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| テキストを持たない操作要素 (ボタン / リンク / トグル) | 要素に `aria-label`                                                                                                                                                                                                            |
-| 状態や属性を伝える唯一の手段になっているアイコン      | `aria-hidden` + 隣接の `sr-only` テキスト                                                                                                                                                                                      |
-| 隣接テキストが同じ意味を持つアイコン                  | `aria-hidden`。名前を足さない                                                                                                                                                                                                  |
-| 可視テキストが既に accessible name の要素             | 何も足さない (次項)                                                                                                                                                                                                            |
-| name from author のロールを持つ要素                   | 可視テキストがあっても `aria-label` (次項)                                                                                                                                                                                     |
-| テーブルの列見出し (`th`)                             | `scope="col"` を付ける。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0019)                                                                                                                       |
-| ローディング等の状態表示                              | 通知は `src/lib/live-announcer.ts` の `announce()` (region は `role="log"` + `aria-live` で常時 mount)。項目に `<output>` / `role="status"` を足さない。例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0017) |
-
-- 「隣接テキストが同じ意味」と言えるのは、そのテキストが実際に読み上げられるときに限る
-- live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか、環境で挙動が揺れる (ADR-0017)
-- pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (ADR-0017)
-- 取得結果 (検索の件数など) の通知は、ページの effect が取得の決着 (`isFetching` が false) で `announce()` し、直前に通知した条件と同じなら出さない。取得中に出すと古い件数を読み上げる (ADR-0034)
-- メニュー内の全項目を包む単一の `DropdownMenuGroup` には名前を与えない。base-ui の `MenuRoot` が popup に `aria-labelledby` を付けるため、メニュー自体がトリガー由来の名前を持つ
-- 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
-
-### 可視テキストを持つ要素に aria-label を足さない
-
-`span` / `div` の既定ロール `generic` は name prohibited で、`aria-label` による命名が MUST NOT (WAI-ARIA 1.2 §5.2.8.6)。
-別要素の可視テキストを名前にしたいときは `aria-labelledby` を使う。
-例外は name from author のロール。`role="combobox"` (Combobox / Select / Popover の trigger) は内容から名前を取らないため、可視テキストと同値でも `aria-label` が要る。外すと名前が消える (WAI-ARIA 1.2 §5.2.8 Name From)。
-
-可視テキストを子要素へ分割すると、Chrome がテキスト境界に空白を入れて accessible name が分断される。略記と全文を出し分けるときは可視側を `aria-hidden` にして全文を 1 つの `sr-only` に置く。切り出す前に `getByRole({ name })` で名前が変わらないことを確かめる。
-
-### 色とコントラスト
-
-- 比を測るときは `mise run contrast` を使う。このリポジトリのトークンで動く比は文書やコメントへ書き写さず、測り方だけ残す。追随しないことを検出する手段が無い。上流の一時点の観測や、論証を兼ねる数値は残してよい。判定軸は ADR-0028 の節 4
-- コントラストは本文テキスト 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark mode は light と別に検算する (opacity variant は背景合成で比率が変わる)
-- トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0024)
-- 色だけで情報を伝えない。アイコンやテキストを併用し、併用先が識別に寄与しないなら `sr-only` で補う
-- ナビゲーションは landmark (`nav` 要素、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける
+削除の前に git blame で導入コミットを確認する。行単位で「効かない」だけを根拠に消すと、別実装で置き換えるべき意図を落とす。
 
 ## 技術選択は plan 提示 → 反応待ち
 
-3 案以上の技術選択や DB スキーマ変更を伴う判断は plan 提示してユーザー反応を待つ。
+3 案以上の技術選択や DB スキーマ変更を伴う判断は plan を提示してユーザーの反応を待つ。

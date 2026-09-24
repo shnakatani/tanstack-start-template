@@ -16,7 +16,7 @@ const FRUITS = ["りんご", "みかん", "ぶどう", "もも"];
 
 /**
  * `ComboboxTrigger` が付ける `role="combobox"` は name from author なので、可視テキストが
- * あっても `aria-label` が要る (`implementation.md`「可視テキストを持つ要素に aria-label を
+ * あっても `aria-label` が要る (`styling.md`「可視テキストを持つ要素に aria-label を
  * 足さない」の例外)。外すと `getByRole` の名前解決が 0 件になる
  */
 function ComboboxExample({ items = FRUITS }: { items?: string[] }) {

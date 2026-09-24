@@ -56,7 +56,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0006)", () => {
 
     await screen.getByRole("combobox", { name: "開く" }).click();
 
-    // 入力が popup の中にあるので popup は role="dialog" になる (base-ui.md)
+    // 入力が popup の中にあるので popup は role="dialog" になる (ADR-0006)
     const popup = screen.getByRole("dialog", { name: "果物の候補" });
     const input = popup.getByRole("combobox", { name: "検索" });
     const group = popup.getBySlot("input-group");
