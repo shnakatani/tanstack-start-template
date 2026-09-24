@@ -74,7 +74,7 @@ paths:
 
 - ルートファイル (`routes/**/*.tsx`) はルーティングとページ構成に専念する。純粋ロジックは `-lib/`、UI は `-components/`、ドメインに属するなら `src/features/<domain>/`、属さないなら `src/lib/` へ切り出す (`docs/guides/placement.md`「features か route か」)
 - ページ本体は `-components/` に置き、Route hooks (`Route.useSearch` 等) はルートファイル内の export しない wrapper で吸収して props で渡す。混ぜるとページテストが動かない (`docs/guides/placement.md`「route ファイルを組む」)
-- Route hooks を使う wrapper は、実 router + `createMemoryHistory` で描いて検証する。tree は root を差し替えて組む (実例: `src/routes/notes/index.test.tsx`、`docs/guides/testing.md`「route の wrapper をテストする」)
+- Route hooks を使う wrapper は、実 router + `createMemoryHistory` で描いて検証する。tree は root を差し替えて組む (実例: `src/routes/notes/index.test.tsx`、`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」)
 - loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる (`docs/guides/placement.md`「route ファイルを組む」)
 - loader は Query を温めるためだけに呼び、値は `useSuspenseQuery` で読む。`useSuspenseQuery` はキャッシュを読んで更新を購読するので、invalidate で描き直される (TanStack Router「External Data Loading」)
 - route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入る (ADR-0010)

@@ -51,7 +51,7 @@ GOV.UK Design System は利用者テストの結果として number パターン
 
 ## Consequences
 
-- ロールが `spinbutton` から `textbox` へ変わる。テストでの取り方と `fill()` の注意は `docs/guides/testing.md`「入力部品を操作する」にある
+- ロールが `spinbutton` から `textbox` へ変わる。テストでの取り方と `fill()` の注意は `docs/guides/testing/user-interactions.md`「入力部品を操作する」にある
 - ブラウザの `validity.badInput` は起きない。数値として読める前置部分が採られ、表示も commit した値へ正規化される (`2e` → `2`)。入力欄の表示と form の値が食い違ったまま残ることはない
 - `NumberField` は `role="spinbutton"` も `aria-valuenow` も付けない。上表の不具合を避ける代償として、値の範囲を ARIA で伝える経路は無くなる。範囲を伝える必要があるフィールドでは `Field` の説明文で補う
 - Base UI が推奨形をやめたときは再評価する。判断の根拠は上表の 3 症状であって、ライブラリの選択ではない

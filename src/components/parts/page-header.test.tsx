@@ -36,7 +36,7 @@ describe("PageHeader", () => {
   it("actions を渡さないとアクション領域が表示されない", async () => {
     const screen = await render(<PageHeader title="メモ一覧" />);
 
-    // 肯定 anchor。描画が済んでいることを先に固定してから不在を見る (docs/guides/testing.md「否定を肯定で書く」)
+    // 肯定 anchor。描画が済んでいることを先に固定してから不在を見る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expect.element(screen.getByRole("heading", { name: "メモ一覧" })).toBeInTheDocument();
     await expectAbsent(screen.getByText("追加"));
   });

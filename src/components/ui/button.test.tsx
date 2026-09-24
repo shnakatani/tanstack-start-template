@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
  * disabled: variant は後者の経路に当たらないので data-disabled: を足してある (ADR-0020)。
  * native disabled の見た目は registry 自身の variant で、`Disabled` story が持つ。
  *
- * 見た目は docs/guides/testing.md「クリックを発火する」の形 (opacity と pointer-events の指定) で見る。
+ * 見た目は docs/guides/testing/user-interactions.md「クリックを発火する」の形 (opacity と pointer-events の指定) で見る。
  */
 describe("Button の disabled の見た目", () => {
   it("focusableWhenDisabled の disabled でも無効表示とポインタ遮断が当たる", async () => {

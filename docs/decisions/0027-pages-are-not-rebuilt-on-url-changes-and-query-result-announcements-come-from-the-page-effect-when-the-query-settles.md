@@ -41,7 +41,7 @@ ADR-0026 は通知を `announce()` (常時 mount の live region) に集約し�
 | 初期表示 (URL の `q`) は通知しない。`useRef(q)` の初期値が URL の `q` なので、最初の決着は同じ条件として捨てられる | ページを開くたびに件数を読み上げる。結果の入れ替わりではない                                                                                                                                                   |
 | ページを `key={q}` で作り直さない。通知の記憶も入力欄も、URL の変化をまたいで同じ要素に残す                        | 作り直すと確定 (Enter) のたびに入力欄が新しい要素になりフォーカスが body へ落ちる (2026-09-23 に実測)。ref も初期化され、debounce が明ける前の Enter と戻るで通知が消える (2026-09-23 のレビューで 3 名が指摘) |
 
-入力欄の組み方は `docs/guides/lists-and-search.md`「検索の入力欄を組む」、文言の書き方は `docs/guides/accessibility.md`「読み上げの通知を書く」、テストでの比べ方は `docs/guides/testing.md`「状態と通知を検証する」にある。
+入力欄の組み方は `docs/guides/lists-and-search.md`「検索の入力欄を組む」、文言の書き方は `docs/guides/accessibility.md`「読み上げの通知を書く」、テストでの比べ方は `docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」にある。
 
 ## Consequences
 

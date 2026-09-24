@@ -22,14 +22,14 @@ tester.run("prefer-locator-methods", preferLocatorMethods, {
     "await expect.poll(() => rows.all().length).toBe(3);",
     // `expect.poll` の引数はコールバックごと retry される
     'await expect.poll(() => el.element().textContent).toBe("x");',
-    // 束縛して matcher の期待値に使う形は、観測の基準値との比較 (docs/guides/testing.md「否定を肯定で書く」)
+    // 束縛して matcher の期待値に使う形は、観測の基準値との比較 (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     "const before = getComputedStyle(a.element()).color; await expect.poll(() => getComputedStyle(a.element()).color).toBe(before);",
     'const before = a.element().getAttribute("a"); await expect.element(b).toHaveAttribute("a", before);',
     "const before = a.element().textContent; expect(y).toBe(before);",
     // assert へ届かない同期読み
     "el.element().focus();",
     'const label = el.element().closest("label");',
-    // `vi.waitFor` も retry の口 (docs/guides/testing.md「待つ口を選ぶ」)。assert へ直に届く形をここで固定する
+    // `vi.waitFor` も retry の口 (docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」)。assert へ直に届く形をここで固定する
     'vi.waitFor(() => { expect(el.element().textContent).toBe("x"); });',
   ],
   invalid: [
@@ -238,7 +238,7 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
     "expect(getComputedStyle(a).width).not.toBe(`${before}px`);",
     // 識別子を含む配列は観測の比較
     "expect(getComputedStyle(a).color).not.toStrictEqual([before]);",
-    // docs/guides/testing.md「否定を肯定で書く」が推奨する肯定形。src/components/ui/dialog.test.tsx の綴り
+    // docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」が推奨する肯定形。src/components/ui/dialog.test.tsx の綴り
     "await expect.poll(() => Number.parseFloat(getComputedStyle(x).maxHeight)).toBeGreaterThan(0);",
     // 同じく肯定形。src/components/parts/segmented-radio-group.test.tsx の綴り
     `await expect
@@ -305,7 +305,7 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
       errors: [{ messageId: "negatedStyleLiteral" }],
     },
     {
-      // docs/guides/testing.md「否定を肯定で書く」が推奨する肯定形を否定へ倒した退行。src の 8 箇所がこの綴り
+      // docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」が推奨する肯定形を否定へ倒した退行。src の 8 箇所がこの綴り
       code: "await expect.poll(() => Number.parseFloat(getComputedStyle(x).maxHeight)).not.toBe(0);",
       errors: [{ messageId: "negatedStyleLiteral" }],
     },

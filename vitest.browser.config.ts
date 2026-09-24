@@ -52,7 +52,7 @@ export default defineProject({
     name: "browser",
     // assert の予算。テストの予算 (`testTimeout`) と分ける。値とその根拠は
     // `src/test/assert-budget.ts` が持つ。`actionTimeout` と対で効き、これを消すと
-    // vitest の既定 1000ms、`actionTimeout` を消すと残り予算を使い切る側へ戻る (docs/guides/testing.md「assert の予算を宣言する」)
+    // vitest の既定 1000ms、`actionTimeout` を消すと残り予算を使い切る側へ戻る (docs/guides/testing/waiting-and-assertions.md「assert の予算を宣言する」)
     expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
     // project を足すとそのぶん描画が増えるため。挙動テストの途中の状態を測る assert には

@@ -16,7 +16,7 @@ story を書いた部品は、`parameters.a11y.test` の設定しだいで axe �
 
 `addon-a11y` の既定は `test: "todo"` で、違反が出ても warning に留まり合否へ入らない (同 addon の `parameters`)。
 
-ブラウザテストの側で `incomplete` を合否に入れると、確認ダイアログを閉じた直後の検査が Base UI の focus guard を `aria-hidden-focus` の `incomplete` として拾い、CI でだけ落ちる (`docs/guides/testing.md`「animation を無効にして走らせる理由」)。
+ブラウザテストの側で `incomplete` を合否に入れると、確認ダイアログを閉じた直後の検査が Base UI の focus guard を `aria-hidden-focus` の `incomplete` として拾い、CI でだけ落ちる (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)。
 
 story 側で `incomplete` を合否に入れると次の 3 つのルールが出る。いずれも部品の構造から来る。
 
@@ -94,7 +94,7 @@ a11y を light と dark の両方へ当てるため、`vitest.storybook.config.t
 | story (`src/components/**`)      | できる。props も decorator も自分で書く    | 統制しているのに判定できない     | 落とす   |
 | ブラウザテスト (`src/routes/**`) | できない。合成とタイミングと実行環境が絡む | 組み合わせの結果。避けようがない | 都度読む |
 
-ブラウザテストで落とさないのは、**そこで出るものが部品の問題ではなく、実行環境の速さで結果が変わるからである。** 確定でダイアログを閉じた直後の検査は閉じかけの popup を拾い、この窓の内側に落ちるか外側に落ちるかは実行環境の速さで決まる。遅い CI ほど内側に落ちる (`docs/guides/testing.md`「animation を無効にして走らせる理由」)。ここで `incomplete` を落とすと、直しようのないものがエラーになり、animation を無効にする回避策が要る。
+ブラウザテストで落とさないのは、**そこで出るものが部品の問題ではなく、実行環境の速さで結果が変わるからである。** 確定でダイアログを閉じた直後の検査は閉じかけの popup を拾い、この窓の内側に落ちるか外側に落ちるかは実行環境の速さで決まる。遅い CI ほど内側に落ちる (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)。ここで `incomplete` を落とすと、直しようのないものがエラーになり、animation を無効にする回避策が要る。
 
 story で落とすのは逆の理由による。描くものを自分で決めているのに axe が判定できないなら、それは部品側の信号である。調べる価値がある。
 
@@ -172,7 +172,7 @@ axe を回し直す形には 2 つの穴がある (2026-09-21 に実装して実
 
 - story を書いた部品は axe の検査対象になり、検査範囲が既存のブラウザテストより広がる。`vp test run` に storybook project が加わり、CI の実行時間が伸びる
 - vitest から走らせた story には canvas の padding が当たらない。差を `.storybook/preview.css` が埋める理由は `docs/guides/storybook.md`「vitest 経由の story に padding を当てる理由」にある
-- `expectNoA11yViolations` は `incomplete` を見ない。ブラウザテストの animation 無効化 (`docs/guides/testing.md`「animation を無効にして走らせる理由」) は、`incomplete` を落とす基準の下で要る回避策である。`incomplete` を見ない基準の下で、その回避策が他の理由 (待機と実イベントの規律) でも要るかは別に確かめる
+- `expectNoA11yViolations` は `incomplete` を見ない。ブラウザテストの animation 無効化 (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」) は、`incomplete` を落とす基準の下で要る回避策である。`incomplete` を見ない基準の下で、その回避策が他の理由 (待機と実イベントの規律) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
 - story で統制できるのは markup までで、フォントは実行環境が持つ。CI でだけ赤になったときの扱いは `docs/guides/accessibility.md`「story が CI でだけ赤になったら」にある
 - `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (axe-core#4861 / #3486) 見直す

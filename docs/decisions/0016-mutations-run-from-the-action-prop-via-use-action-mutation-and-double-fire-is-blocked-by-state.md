@@ -68,7 +68,7 @@ React はユーザー起点のイベントごとに次のイベントより前�
 | 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する |
 | 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (Action 層の button / form と削除確認ダイアログの 2 連射テストで実測)                                                                                |
 
-二重発火の検証を実イベントで書く手順は `docs/guides/testing.md`「クリックを発火する」にある。
+二重発火の検証を実イベントで書く手順は `docs/guides/testing/user-interactions.md`「クリックを発火する」にある。
 
 完了点 (a) (ADR-0017) では Action が close だけを含み Transition が確定直後に終わるため、`isPending` の dedupe が効かない間がある。その間の防ぎ方は `docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」にある。
 

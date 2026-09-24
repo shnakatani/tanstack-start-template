@@ -56,10 +56,10 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 
 ### play を書く
 
-- play の操作は `storybook/test` の合成イベントで書く。play は Storybook の UI 上でも走るので CDP を使えない。実イベントでの発火の規律 (`docs/guides/testing.md`「クリックを発火する」「合成イベントが実物からずれる理由」) はブラウザテスト側が持ち、play へは移さない (「story とブラウザテストの分担」)
+- play の操作は `storybook/test` の合成イベントで書く。play は Storybook の UI 上でも走るので CDP を使えない。実イベントでの発火の規律 (`docs/guides/testing/user-interactions.md`「クリックを発火する」「合成イベントが実物からずれる理由」) はブラウザテスト側が持ち、play へは移さない (「story とブラウザテストの分担」)
 - 同期の 2 連射は play では起きない。`storybook/test` の操作が各手順を await するためである
-- 待機は `storybook/test` の `waitFor` で書く。ブラウザテストの retry API (`docs/guides/testing.md`「待つ口を選ぶ」) は play から呼べない
-- popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (`docs/guides/testing.md`「animation を無効にして走らせる理由」)
+- 待機は `storybook/test` の `waitFor` で書く。ブラウザテストの retry API (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」) は play から呼べない
+- popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)
 - Storybook の test 実行では、ブラウザテストの animation の無効化を適用していない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら `vitest.storybook.config.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う
 - `storybook/test` の `expect` は、vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を play へ機械的に写せない箇所がある
 
@@ -126,7 +126,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 | story                | どんな状態があるか。目で見るカタログ                   |
 | 既存のブラウザテスト | その状態が壊れていないか。寸法と色を固定する回帰の防止 |
 
-- 役割が違うため両方残す。待機・実イベント・animation 無効化の規律 (`docs/guides/testing.md`「待つ口を選ぶ」「クリックを発火する」「animation を無効にして走らせる理由」) は既存のテストが持ち続ける
+- 役割が違うため両方残す。待機・実イベント・animation 無効化の規律 (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」、`docs/guides/testing/user-interactions.md`「クリックを発火する」「animation を無効にして走らせる理由」) は既存のテストが持ち続ける
 - 移せないのはレイアウトと配色の実測、型契約、CDP 経由の実イベントの 3 つである。`src/components/ui/` の既存テスト 26 case のうち 25 case がこれに当たる (2026-09-20 実測)
 - 画面のテストは Action 層の guard を代替しない。`confirmDelete` は `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の時点で `isPending` は false になる。`disabled={isPending}` を外しても browser project は 1 件も落ちない (2026-09-20 実測)。経路が薄いラッパーを通ることは、その guard を通ることを意味しない
 - 検証が一部 CDP の実イベントから合成イベントへ移り、backdrop の遮りを含む pointer の忠実さは下がる。一方イベント間に描画が挟まる点は既存のブラウザテストと同じ性質になる

@@ -21,7 +21,7 @@ import "@/test/slot-locator";
  * 前のテストの状態が次へ残るため。
  *
  * - マウス位置: 前テストの click 位置に hover 状態が残ると、配色の検証が実行順に依存する
- * - animation: Base UI のフラグと reduced motion のエミュレーション (docs/guides/testing.md「animation を無効にして走らせる理由」)。戻し方は animations.ts
+ * - animation: Base UI のフラグと reduced motion のエミュレーション (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)。戻し方は animations.ts
  *
  * 2 つは独立した CDP 呼び出しなので並行に送る。
  */

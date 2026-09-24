@@ -3,7 +3,7 @@ import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plu
 /**
  * ブラウザテストの assert を守る oxlint の JS plugin。ルールで止める決定は ADR-0009 が 4 ルールぶん
  * まとめて持つ。規範の説明は各ルールの診断メッセージが指す先にある。`prefer-locator-methods` と
- * `no-negated-style-literal` は docs/guides/testing.md の節、`no-find-element` は ADR-0009、
+ * `no-negated-style-literal` は docs/guides/testing/waiting-and-assertions.md の節、`no-find-element` は ADR-0009、
  * `no-bare-absence-assertion` は ADR-0009 と `src/test/absent.ts` を指す。一覧は下の `definePlugin`。
  *
  * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
@@ -219,7 +219,7 @@ function reachesAssertion(syncRead: Node): boolean {
  * 束縛した値が assert の主語 (`expect(v)` / `expect.element(v)`) に届くかを判定する。
  *
  * matcher の期待値 (`toBe(before)`) は含めない。束縛してから期待値に使う形は、操作の前に取った
- * 観測の基準値と操作の後の観測を比べる書き方で、docs/guides/testing.md「否定を肯定で書く」が認める「2 回の観測を比べる」に当たる。
+ * 観測の基準値と操作の後の観測を比べる書き方で、docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」が認める「2 回の観測を比べる」に当たる。
  * 束縛せず直に matcher へ渡す形 (`toBe(x.element())`) は `reachesAssertion` が報告する
  */
 function reachesAssertionSubject(reference: Node): boolean {
@@ -244,7 +244,7 @@ export const preferLocatorMethods = defineRule({
     },
     messages: {
       syncRead:
-        "locator の同期読みを expect() へ渡さない。expect.element を通す。matcher の無い実測は expect.poll のコールバックの中で読む。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (docs/guides/testing.md「同期読みを書き換える」)",
+        "locator の同期読みを expect() へ渡さない。expect.element を通す。matcher の無い実測は expect.poll のコールバックの中で読む。retry が無く、DOM の確定前に評価されると実装が正しくてもテストが落ちる (docs/guides/testing/waiting-and-assertions.md「同期読みを書き換える」)",
     },
   },
   create(context) {
@@ -304,7 +304,7 @@ export const noFindElement = defineRule({
  *
  * `not.toHaveStyle` は引数の形を問わず報告する。ブラウザが解釈できない宣言は期待集合から落ちて
  * `.not` が真になり、値に式を埋めても宣言名 (`colr:`) の綴りは検証されない。引数全体が式
- * (`closedStyle()`) でも同じ (docs/guides/testing.md「否定を肯定で書く」)。
+ * (`closedStyle()`) でも同じ (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)。
  * 値の matcher では、式を含むテンプレートリテラル (`` `${before}px` ``) は観測を埋め込んだ比較なので外す
  */
 function isLiteralArgument(call: ESTree.CallExpression): boolean {
@@ -324,7 +324,7 @@ function isLiteralArgument(call: ESTree.CallExpression): boolean {
 const ASSERT_SUBJECT_CALLEES = new Set(["expect", "soft", "poll"]);
 
 /**
- * 算出値を数値へ変える呼び出し。docs/guides/testing.md「否定を肯定で書く」が肯定形の書き方として勧めているので、
+ * 算出値を数値へ変える呼び出し。docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」が肯定形の書き方として勧めているので、
  * 透かさないと「勧めた形を否定へ倒した退行」だけが無検査になる
  */
 const VALUE_WRAPPER_CALLEES = new Set(["Number", "parseFloat", "parseInt"]);
@@ -448,7 +448,7 @@ export const noNegatedStyleLiteral = defineRule({
     },
     messages: {
       negatedStyleLiteral:
-        "スタイルをリテラルとの否定で確かめない。`not.toHaveStyle` は宣言を解釈できないと素通りし、算出値との `not.toBe` は単位や綴りが 1 つ外れると潰れた状態でも通る。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる (docs/guides/testing.md「否定を肯定で書く」)",
+        "スタイルをリテラルとの否定で確かめない。`not.toHaveStyle` は宣言を解釈できないと素通りし、算出値との `not.toBe` は単位や綴りが 1 つ外れると潰れた状態でも通る。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)",
     },
   },
   create(context) {
