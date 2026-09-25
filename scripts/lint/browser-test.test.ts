@@ -285,7 +285,7 @@ tester.run("no-negated-style-literal", noNegatedStyleLiteral, {
       errors: [{ messageId: "negatedStyleLiteral" }],
     },
     {
-      // 変数へ束縛してから読む形。`dialog-scroll-body.test.tsx` が踏んでいた綴り
+      // 変数へ束縛してから読む形。`dialog-scroll-form.test.tsx` が踏んでいた綴り
       code: 'const shown = getComputedStyle(x); expect(shown.borderTopColor).not.toBe("rgba(0, 0, 0, 0)");',
       errors: [{ messageId: "negatedStyleLiteral" }],
     },

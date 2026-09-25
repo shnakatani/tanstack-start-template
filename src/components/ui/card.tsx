@@ -35,12 +35,14 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
 
 /**
  * `size="page"` はページ全体の見出しの寸法。`PageHeader` の `<h1>` も同じ関数を呼び、2 つの
- * ページ見出しの寸法の出どころを 1 つにする
+ * ページ見出しの寸法の出どころを 1 つにする。
+ * `leading-normal` は font-size の後ろに置く。`cn` は後ろの font-size が前の `leading-*` を
+ * 上書きするとみなして落とすため、base に置くと registry の行の高さから外れる
  */
-const cardTitleVariants = cva("font-heading leading-normal", {
+const cardTitleVariants = cva("font-heading", {
   variants: {
     size: {
-      default: "text-base font-medium group-data-[size=sm]/card:text-sm",
+      default: "text-base leading-normal font-medium group-data-[size=sm]/card:text-sm",
       page: "text-lg font-semibold",
     },
     /** 意味色の出し分け。破壊的な文脈にだけ destructive を使う */
