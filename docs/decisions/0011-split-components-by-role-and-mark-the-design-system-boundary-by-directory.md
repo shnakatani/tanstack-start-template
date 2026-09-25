@@ -38,7 +38,7 @@
 
 `src/components/` の外では `.storybook/` も適用する側に置く。decorator は design system component を包んで `className` を渡す置き場になるため、`src/components/screens/` と同じ扱いにする。`vite.config.ts` の override は `files` に `src/**` と `.storybook/**` の 2 つを持つ。
 
-`parts/` と `screens/` と直下は、どれもファイルの中が `no-restyle` に検査される。違うのは、`componentImports` が持つのは `parts/` だけで、消費側が渡す `className` が部品として検査されるのは `parts/` の部品に限ることである。`screens/` の部品が受けた `className` を `<Button>` へそのまま転送すると、消費側が渡した `bg-muted` と `rounded-full` は包みとして追跡され、Button の `no-restyle` で落ちた (2026-09-25 実測、`@shadcn/lint` 0.1.0)。転送せず素の要素に当てる部品は、`no-restyle.md` の Limits のとおり対象外になる。部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/` に置く。直下を残すのは、役割を決めきれないものの置き場所を無くさないためである。
+`parts/` と `screens/` と直下は、どれもファイルの中が `no-restyle` に検査される。違うのは、`componentImports` が持つのは `parts/` だけで、消費側が渡す `className` が部品として検査されるのは `parts/` の部品に限ることである。`screens/` の部品が受けた `className` を `<Button>` へそのまま転送すると、消費側が渡した `bg-muted` と `rounded-full` は包みとして追跡され、Button の `no-restyle` で落ちた (2026-09-25 実測、`@shadcn/lint` 0.1.0)。`screens/` や直下の部品が転送せず素の要素に当てる `className` は、`no-restyle.md` の Limits のとおり対象外になる (`parts/` の部品が受けた `className` は、転送するかどうかによらず検査される)。部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/` に置く。直下を残すのは、役割を決めきれないものの置き場所を無くさないためである。
 
 `action/` を `parts/` の下へ移さないのは、分ける軸が違うためである。`parts/` は ui 部品を組み合わせる層で、`action/` は振る舞い (Transition と pending) を与える層である。どちらも規則を適用するが、組み合わせの変更と振る舞いの変更は別の理由で起きる。
 

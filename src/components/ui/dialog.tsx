@@ -2,7 +2,6 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { cn } from "cn";
 import { XIcon } from "lucide-react";
 import * as React from "react";
-import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -218,7 +217,7 @@ function DialogScrollBody({
   children,
   ...props
 }: Omit<React.ComponentProps<typeof ScrollArea>, "viewportClassName" | "children"> & {
-  children: ReactNode;
+  children: React.ReactNode;
 }) {
   return (
     <ScrollArea
