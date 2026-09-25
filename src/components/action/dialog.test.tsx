@@ -29,7 +29,7 @@ import { ActionFormSubmit } from "./form";
  * - 送信: `DialogContent` は Portal で body 直下へ出る。form が DOM の上で送信ボタンと入力欄の
  *   祖先になっているかは、実際にクリックと Enter を送らないと分からない
  * - form の `display: contents`: 見出し・本文・フッターを Popup の flex の子として並べる前提。
- *   外すと本文とフッターの間の gap が消え、内部スクロールも form の `min-h-0` 頼みになる
+ *   外すと本文とフッターの間の gap が消え、form が `min-height: auto` の flex item になって内部スクロールが成立しない
  * - focus outline: Viewport の focus ring は Root の `overflow-hidden` にクリップされるため
  *   `scroll-area-focus-outline` (`styles.css`) が Root の outline で代替しており、
  *   `:has(> viewport:focus-visible)` が実際の Tab 移動で効くかは描画して押さないと分からない
@@ -79,7 +79,7 @@ describe("ActionDialogContent", () => {
 
     await dialog.getByRole("button", { name: "保存", exact: true }).click();
 
-    await expect.poll(() => submitAction.mock.calls.length).toBe(1);
+    await vi.waitFor(() => expect(submitAction).toHaveBeenCalledOnce());
   });
 
   it("入力欄で Enter を押すと submitAction が呼ばれる", async () => {
@@ -89,12 +89,12 @@ describe("ActionDialogContent", () => {
     await dialog.getByRole("textbox", { name: "項目 1", exact: true }).click();
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => submitAction.mock.calls.length).toBe(1);
+    await vi.waitFor(() => expect(submitAction).toHaveBeenCalledOnce());
   });
 
   // form の box を消し、見出し・本文・フッターを Popup の flex の子にする。本文の前後の間隔は
   // Popup の gap が持つ
-  it("form が box を作らず、本文が Popup の flex の子として並ぶ", async () => {
+  it("form が box を作らない (display: contents)", async () => {
     const dialog = await openFormDialog();
 
     // 名前の無い form は accessibility tree に form の役割として出ないので、slot で掴む

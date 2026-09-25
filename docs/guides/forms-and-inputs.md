@@ -100,9 +100,7 @@ placeholder を足すときは、次の 2 つを確かめる (ADR-0025)。
 | Base UI Dialog「Outside scroll dialog」              | Viewport 側をスクロールさせ、Popup が画面の下端を越えて伸びる                                                                                                                |
 | shadcn Dialog「Scrollable Content」「Sticky Footer」 | Header と Footer の間の本文を `-mx-4 no-scrollbar max-h-[50vh] overflow-y-auto px-4` の div でスクロールさせる。Header / Footer は sticky ではなく、本文の外に置いて固定する |
 
-`ActionDialogContent` は Base UI の Inside scroll の並びを保ったまま、`DialogContent` の中を `form` で包む。form は `display: contents` で box を作らないので、見出し・本文・フッターは Popup の直下と同じく flex の子として並ぶ。
-
-- form の置き場所を出典の形に合わせない理由は「フォームを `DialogContent` の中に置く理由」にある
+`ActionDialogContent` は Base UI の Inside scroll の並びを保ったまま、`DialogContent` の中を `form` で包む。form は `display: contents` で box を作らないので、見出し・本文・フッターは Popup の直下と同じく flex の子として並ぶ。form の置き場所を出典の形に合わせない理由は「フォームを `DialogContent` の中に置く理由」にある。
 
 - Outside scroll を採らないのは、見出しと X ボタンが流れるためである。backstop が効いたとき (組み忘れたとき) と同じ見え方を、正規の形にすることになる
 - shadcn の例のように本文を `max-h-[50vh]` で打ち切らないのは、打ち切りの値が viewport と Dialog の余白に追随せず、ダイアログごとに値を持つことになるためである

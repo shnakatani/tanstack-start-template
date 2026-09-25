@@ -66,7 +66,7 @@ export function NoteCreateDialog() {
   // 再描画されず、応答が届いても止めたままになる
   const isRefetchingNotes = useIsFetching({ queryKey: NOTES_QUERY_KEY }) > 0;
 
-  // 止めるのは応答前だけ。閉じて開き直すと DialogContent がアンマウントされてフォームが
+  // 止めるのは応答前だけ。閉じて開き直すと handleOpenChangeComplete が key を替えてフォームが
   // 作り直され、先行 save の応答が届いた時点で新しい入力ごと閉じる。handle を複数の対象で
   // 共有するダイアログと違い、入力フォームは開いている対象を mutation の対象と比べられない
   // ので、閉じないことで塞ぐ (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))。止めるのはこのダイアログ
@@ -79,7 +79,9 @@ export function NoteCreateDialog() {
   const blocksClose = createMutation.isPending && !isRefetchingNotes;
 
   // 閉じる animation が終わってから作り直す。閉じた瞬間に替えると、消えていく途中の
-  // ダイアログの入力が空になって見える
+  // ダイアログの入力が空になって見える。onOpenChangeComplete(false) は Base UI が Portal を
+  // unmount するのと同じ callback で呼ばれる。閉じる途中で開き直すと、Portal も unmount されず
+  // 入力は残る
   const [formKey, setFormKey] = useState(0);
   function handleOpenChangeComplete(open: boolean) {
     if (!open) {
@@ -111,8 +113,10 @@ export function NoteCreateDialog() {
 
 /**
  * 入力フォームとそれを包むダイアログの中身。submit にフォームの状態が要るので、見出しを含む
- * `ActionDialogContent` ごとここで描く。フィールドに `autoFocus` は渡さない — base-ui の Popup が既定でポップアップ内の
- * 最初の tabbable へフォーカスを移し、タッチ操作のときだけ仮想キーボードを開かないよう Popup
+ * `ActionDialogContent` ごとここで描く。
+ *
+ * フィールドに `autoFocus` は渡さない — base-ui の Popup が既定でポップアップ内の最初の
+ * tabbable へフォーカスを移し、タッチ操作のときだけ仮想キーボードを開かないよう Popup
  * 自身を選ぶ。`autoFocus` はこの出し分けを潰す (初期フォーカス位置は
  * `note-create-dialog.test.tsx` が固定している)。
  */
