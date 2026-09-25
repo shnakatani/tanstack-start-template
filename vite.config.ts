@@ -17,11 +17,11 @@ const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
 /**
  * `@shadcn/lint` が design system component として認識する層 (ADR-0011)。`routes/` などから
- * これらの部品へ渡す className を `no-restyle` が検査する。`action/` は見た目を持たない層なので
- * 含めない。`ActionButton` のように ui 部品へ className を転送する部品は、包みとして追跡されて
- * 転送先の contract で検査される
+ * これらの部品へ渡す className を `no-restyle` と `require-static-classes` が検査する。
+ * `action/` は ui 部品を async React (Transition) にした層で、ui と同じく design system の部品として
+ * 認識する。外すと `ActionForm` への見た目の上書きや動的な className が無診断で通る
  */
-const DESIGN_SYSTEM_COMPONENT_LAYERS = ["ui", "parts"] as const;
+const DESIGN_SYSTEM_COMPONENT_LAYERS = ["ui", "action", "parts"] as const;
 
 export default defineConfig({
   // Vite の .env 読み込みを切る。秘密を暗号化して .env ごとコミットする方式 (dotenvx 等) は、
@@ -363,7 +363,7 @@ export default defineConfig({
         // no-restyle と require-static-classes は「design system component へ何を渡しているか」を
         // 見る規則で、部品ディレクトリ (ui/) の内部には意味を持たない (ADR-0011)。緩和ではなく
         // 適用範囲の確定なので excludeFiles で外す。parts/ と action/ は外さない。見た目の差は
-        // ui/ の variant で持つ。require-static-classes は他の shadcn ルールの門番で、ここで落ちる
+        // ui/ の variant で持ち、action/ が ui に見た目を足さないこともここで見張る。require-static-classes は他の shadcn ルールの門番で、ここで落ちる
         // className は no-raw-colors / no-unknown-classes も中身を読めない (ADR-0022)
         files: ["src/**", ".storybook/**"],
         excludeFiles: ["src/components/ui/**"],
