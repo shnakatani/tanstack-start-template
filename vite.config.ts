@@ -368,7 +368,15 @@ export default defineConfig({
         files: ["src/**", ".storybook/**"],
         excludeFiles: ["src/components/ui/**"],
         rules: {
-          "shadcn/no-restyle": ["error", { allow: ["layout"] }],
+          // ScrollArea の Viewport は Root の角丸を受け継いで中身と focus ring を切り抜くので、
+          // 置かれた器に合わせる角丸 (class グループ rounded) だけを呼び出し側に許す (ADR-0011)
+          "shadcn/no-restyle": [
+            "error",
+            {
+              allow: ["layout"],
+              contracts: [{ pattern: "^ScrollArea$", allow: ["layout", "rounded"] }],
+            },
+          ],
           "shadcn/require-static-classes": "error",
         },
       },
