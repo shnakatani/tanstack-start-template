@@ -119,7 +119,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 - input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
-- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
+- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`)。ラベルに className を足さない。太さとカーソルは registry の既定のままで、shadcn の単独 checkbox の例と同じ。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)
 - `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)
 
