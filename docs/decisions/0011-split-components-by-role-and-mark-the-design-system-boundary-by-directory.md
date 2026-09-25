@@ -29,7 +29,7 @@
 | `src/components/screens/` | 部品を並べて画面を組む共有コンポーネント                                                            | 適用する     |
 | `src/components/` (直下)  | 上のどれでもないもの。実例は `live-regions.tsx`                                                     | 適用する     |
 
-適用外を `ui/` だけにするのは上流の既定の形である。shadcn-ui/lint の `docs/adoption.md` の設定例は `components/ui/**` だけで規則を外し、`docs/rules/no-restyle.md` は "Turn this rule off inside your component directory so components can style their own internals." と書く。
+適用外の範囲を `ui/` だけにするのは上流の既定の範囲である。書き方は上流と違い、規則を `"off"` にせず `excludeFiles` で外す (下の比較表)。shadcn-ui/lint の `docs/adoption.md` の設定例は `components/ui/**` だけで規則を外し、`docs/rules/no-restyle.md` は "Turn this rule off inside your component directory so components can style their own internals." と書く。
 
 認識の軸 (`componentImports`) は `ui/` と `parts/` を持ち、`action/` を持たない。
 
@@ -38,7 +38,7 @@
 
 `src/components/` の外では `.storybook/` も適用する側に置く。decorator は design system component を包んで `className` を渡す置き場になるため、`src/components/screens/` と同じ扱いにする。`vite.config.ts` の override は `files` に `src/**` と `.storybook/**` の 2 つを持つ。
 
-`parts/` と `screens/` と直下はどれも規則が効くので、3 つの違いは lint ではなく役割だけである。部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/` に置く。直下を残すのは、役割を決めきれないものの置き場所を無くさないためである。
+`parts/` と `screens/` と直下は、どれもファイルの中が `no-restyle` に検査される。違うのは、`componentImports` が持つのは `parts/` だけで、消費側が渡す `className` が部品として検査されるのは `parts/` の部品に限ることである。`screens/` や直下の部品へ渡した `className` は、その部品が ui 部品へ転送して包みとして追跡されるときだけ検査される。部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/` に置く。直下を残すのは、役割を決めきれないものの置き場所を無くさないためである。
 
 `action/` を `parts/` の下へ移さないのは、分ける軸が違うためである。`parts/` は ui 部品を組み合わせる層で、`action/` は振る舞い (Transition と pending) を与える層である。どちらも規則を適用するが、組み合わせの変更と振る舞いの変更は別の理由で起きる。
 
@@ -46,22 +46,24 @@ ui 部品の見た目の差をどこで持つか (既定と公式のノブ、`ui
 
 ### 検討した選択肢
 
-| 案                                                                     | 評価                                                                                                                                                                                                        | 採否     |
-| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 現状維持 (フラットな `src/components/`)                                | 部品と画面の組み立てが同じ階層に混在し、`no-restyle` の適用範囲をパスで表せない                                                                                                                             | 却下     |
-| `src/components/**` を丸ごと `excludeFiles`                            | 画面側の違反も一括で隠れる (2026-09-19 の実測で 18 件中 6 件、`screens/` の `route-error.tsx` に残る。`AccordionTrigger` の実在のコントラスト欠陥を含む)                                                    | 却下     |
-| ecosystem の慣例に合わせて関心語で 1 段掘る (`errors/` / `layout/` 等) | BearStudio/start-ui-web、Kiranism/tanstack-start-dashboard、mugnavo/tanstarter の 3 件を `gh api` で確認 (2026-09-19)。いずれも著作/消費の役割分割を持たない。前例が無いことは分けない根拠にはならない      | 不採用   |
-| 上流 README の形 (トップレベル `rules` + 著作側の override で `"off"`) | 規則を off にする形は、適用範囲の宣言と違反の緩和を設定の字面で区別できない。ADR-0020 が分ける違反の抑制 (行単位) と適用範囲 (`excludeFiles`) の区別に外れる                                                | 却下     |
-| `ui/` `action/` `parts/` `screens/` + 直下の 5 区分                    | 認識 (`componentImports`) と適用 (`excludeFiles`) の両軸をディレクトリ境界で表現できる                                                                                                                      | **採用** |
-| 適用外を `ui/` だけにする                                              | 上流 `docs/adoption.md` の設定例の形で、Hephaestus、nocturne、Jovie、t3code も部品ディレクトリだけを外す (2026-09-25 確認)。`parts/` の中の見た目の上書きも診断され、見た目の差が `ui/` の variant に集まる | **採用** |
-| 適用外を `ui/` `action/` `parts/` にする                               | `parts/` の中で ui 部品への見た目の上書きが無診断で通り、見た目が `ui/` の variant に集まらない。合成部品も部品ディレクトリへ同居させて丸ごと外す stella がこの形に近い (2026-09-25 確認)                   | 却下     |
+| 案                                                                                      | 評価                                                                                                                                                                                                                                                                                      | 採否     |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 現状維持 (フラットな `src/components/`)                                                 | 部品と画面の組み立てが同じ階層に混在し、`no-restyle` の適用範囲をパスで表せない                                                                                                                                                                                                           | 却下     |
+| `src/components/**` を丸ごと `excludeFiles`                                             | 画面側の違反も一括で隠れる (2026-09-19 の実測で 18 件中 6 件、`screens/` の `route-error.tsx` に残る。`AccordionTrigger` の実在のコントラスト欠陥を含む)                                                                                                                                  | 却下     |
+| ecosystem の慣例に合わせて関心語で 1 段掘る (`errors/` / `layout/` 等)                  | BearStudio/start-ui-web、Kiranism/tanstack-start-dashboard、mugnavo/tanstarter の 3 件を `gh api` で確認 (2026-09-19)。いずれも著作/消費の役割分割を持たない。前例が無いことは分けない根拠にはならない                                                                                    | 不採用   |
+| 上流 README の形 (トップレベル `rules` + 著作側の override で `"off"`)                  | 規則を off にする形は、適用範囲の宣言と違反の緩和を設定の字面で区別できない。ADR-0020 が分ける違反の抑制 (行単位) と適用範囲 (`excludeFiles`) の区別に外れる                                                                                                                              | 却下     |
+| `ui/` `action/` `parts/` `screens/` + 直下の 5 区分 (区分のみ。適用外の範囲は下の 2 行) | 認識 (`componentImports`) と適用 (`excludeFiles`) の両軸をディレクトリ境界で表現できる                                                                                                                                                                                                    | **採用** |
+| 適用外を `ui/` だけにする                                                               | 上流 `docs/adoption.md` の設定例の範囲で、Hephaestus、nocturne、Jovie、t3code も部品ディレクトリだけを外す (2026-09-25 確認)。範囲だけを採り、書き方は上流 README の形の行で選んだ `excludeFiles` にする。`parts/` の中の見た目の上書きも診断され、見た目の差が `ui/` の variant に集まる | **採用** |
+| 適用外を `ui/` `action/` `parts/` にする                                                | `parts/` の中で ui 部品への見た目の上書きが無診断で通り、見た目が `ui/` の variant に集まらない。合成部品も部品ディレクトリへ同居させて丸ごと外す stella がこの形に近い (2026-09-25 確認)                                                                                                 | 却下     |
 
 ## Consequences
 
 - 恒久的な例外はゼロになる。`excludeFiles` に書くのは `ui/` の 1 行で、層の宣言であって違反の抑制ではない。違反が増えても行は増えない
 - 規則の有効化は `vite.config.ts` が持ち、適用範囲の決定はこの ADR が持つ。層の増減は両方を動かす
 - `parts/` で ui 部品の見た目を変えたくなったら、`ui/` の variant を足す。registry からの乖離になるので、台帳 `docs/registry-deviations.md` に行が増える (ADR-0020)
-- **機械で止まらない誤りが 1 つ残る。** ui 部品にあるものを素の要素で作り直すと、規則は効かない。`no-restyle` は認識した design system component だけを見る (`no-restyle.md` の Limits)。レビューで見る
+- **機械で止まらない誤りが 2 つ残る。** どちらもレビューで見る
+  - ui 部品にあるものを素の要素で作り直すと、規則は効かない。`no-restyle` は認識した design system component だけを見る (`no-restyle.md` の Limits)
+  - 配る部品を `screens/` や直下へ置くと `componentImports` に入らず、消費側がその部品へ渡す見た目の上書きは、ui 部品への転送として追跡される場合を除いて検査されない
 - ドメイン固有の見た目を持つ共有部品の置き場所は未定義。現時点で該当は無く、出てきた時点で `parts/` に置くか `src/features/<domain>/` 側の扱いとするかを決める (ADR-0010)
 
 ## 出典
@@ -69,11 +71,12 @@ ui 部品の見た目の差をどこで持つか (既定と公式のノブ、`ui
 - shadcn-ui/lint「no-restyle」(部品ディレクトリで規則を off にする案内と、Limits): https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md
 - shadcn-ui/lint「Adoption」(`components/ui/**` だけを外す設定例): https://github.com/shadcn-ui/lint/blob/main/docs/adoption.md
 - shadcn-ui/lint「Rules」(`componentImports` の設定): https://github.com/shadcn-ui/lint/blob/main/docs/rules.md
-- Hephaestus (`webapp/.oxlintrc.json`): https://github.com/hephaestus-build/Hephaestus/blob/main/webapp/.oxlintrc.json
-- nocturne (`src/Web/packages/app/eslint.config.js`): https://github.com/nightscout/nocturne/blob/main/src/Web/packages/app/eslint.config.js
-- Jovie (`apps/web/eslint.config.js`): https://github.com/JovieInc/Jovie/blob/main/apps/web/eslint.config.js
-- t3code (`vite.config.ts`): https://github.com/pingdotgg/t3code/blob/main/vite.config.ts
-- stella (`oxlint.config.ts`): https://github.com/stella/stella/blob/main/oxlint.config.ts
+- 採用例の設定 (2026-09-25 時点の commit)
+  - Hephaestus (`webapp/.oxlintrc.json`): https://github.com/hephaestus-build/Hephaestus/blob/bf8dd2c9b456dd75d76666b7f762e1824efe0fa5/webapp/.oxlintrc.json
+  - nocturne (`src/Web/packages/app/eslint.config.js`): https://github.com/nightscout/nocturne/blob/3bd69247114ca49009de5bdcfc39d628af0ac55e/src/Web/packages/app/eslint.config.js
+  - Jovie (`apps/web/eslint.config.js`): https://github.com/JovieInc/Jovie/blob/f1fba6f034be825b4008ac81a4aa60082d52bb9a/apps/web/eslint.config.js
+  - t3code (`vite.config.ts`): https://github.com/pingdotgg/t3code/blob/7b84431161a64c9f9e9b57637dec23474a1b4236/vite.config.ts
+  - stella (`oxlint.config.ts`): https://github.com/stella/stella/blob/23eb2814b4fe5ade08c30b77d8006098d3746931/oxlint.config.ts
 - BearStudio/start-ui-web: https://github.com/BearStudio/start-ui-web
 - Kiranism/tanstack-start-dashboard: https://github.com/Kiranism/tanstack-start-dashboard
 - mugnavo/tanstarter: https://github.com/mugnavo/tanstarter

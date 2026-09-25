@@ -20,7 +20,7 @@ paths:
 | `routes/<path>/-hooks/`      | その URL 配下だけで使う React hook (`use-*`)。`src/hooks/` と同じ線引き (`docs/guides/placement.md`「route の中の置き場」)                                                        |
 
 - `routes/<path>/-` で始まるディレクトリの中の import は相対パスで書く (`docs/guides/placement.md`「route の中の置き場」)
-- 部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/`。どちらも層の規則が効く (ADR-0011)
+- 部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/`。配る部品を `screens/` や直下へ置くと `componentImports` に入らず、消費側が渡す見た目の上書きが検査から漏れる (ADR-0011)
 - 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の部品を参照で渡す (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0010)
 - route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない
