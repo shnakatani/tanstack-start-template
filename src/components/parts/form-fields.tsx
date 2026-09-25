@@ -49,8 +49,6 @@ interface FormTextFieldProps
   label: string;
   /** handleChange 前に入力値を整形する (例: 数字のみに制限する) */
   sanitize?: (raw: string) => string;
-  /** 1 つの値を複数入力へ分割するような密な配置の上書き用 (例: "gap-1") */
-  fieldClassName?: string;
 }
 
 /**
@@ -123,13 +121,11 @@ export function FormTextField({
   disabled,
   maxLength,
   sanitize,
-  fieldClassName,
 }: FormTextFieldProps) {
   const { field, id, errorId, errors, invalid } = useFormFieldState<string>();
 
   return (
     <Field
-      className={fieldClassName}
       // ラベルの destructive 色は registry の Field が `data-[invalid=true]:text-destructive` で
       // 持ち、FieldLabel はそれを継承する。JS で色を足さない (ADR-0022)
       data-invalid={invalid || undefined}
@@ -335,9 +331,7 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
         disabled={disabled}
         onCheckedChange={field.handleChange}
       />
-      <FieldLabel htmlFor={id} className="cursor-pointer font-normal">
-        {label}
-      </FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
     </Field>
   );
 }
