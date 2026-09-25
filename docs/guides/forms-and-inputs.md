@@ -49,23 +49,28 @@
 
 ### 高さのあるダイアログを組む
 
-入力項目が多く、恒常的に viewport の高さを超えるダイアログは、`DialogScrollForm` (`src/components/parts/dialog-scroll-form.tsx`) と `DialogScrollBody` (`src/components/ui/dialog.tsx`) で本体だけを内部スクロールさせる。見出し・X ボタン・フッターが常に見える。実例は `src/routes/notes/-components/note-create-dialog.tsx`、見え方は `dialog-scroll-form.stories.tsx` の `Overflowing` で確かめる。
+入力項目が多く、恒常的に viewport の高さを超えるダイアログは、本文を `DialogScrollBody` (`src/components/ui/dialog.tsx`) で包み、本文だけを内部スクロールさせる。見出し・X ボタン・フッターが常に見える。フォームを持つダイアログは、器を `ActionDialogContent` (`src/components/action/dialog.tsx`) にする。実例は `src/routes/notes/-components/note-create-dialog.tsx`、見え方は `src/components/action/dialog.stories.tsx` の `Overflowing` で確かめる。
 
-| 組み方                                                                                          | 守らないと                                                                                                            |
-| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Header と Footer の間の中間コンテナを `DialogScrollForm` にし、本体を `DialogScrollBody` にする | 中間コンテナが縦の flex container で `min-h-0` を持たないと、内容の高さを下限にして縮まず、内部スクロールが成立しない |
-| 見出しと X ボタンを sticky にしない                                                             | sticky と内部スクロールの 2 つの固定機構が重なり、どちらが効いているかを実測しないと分からなくなる                    |
-| 本文の余白は `DialogScrollBody` が持つ (`px-6` / `py-4`)。消費側で padding を足さない           | スクロール領域の内側に余白が無いと、端の要素の `ring` / `box-shadow` が境界で切れる                                   |
+```tsx
+<ActionDialogContent submitAction={save}>
+  <DialogHeader>…</DialogHeader>
+  <DialogScrollBody>
+    <FieldGroup>…</FieldGroup>
+  </DialogScrollBody>
+  <DialogFooter>
+    <ActionFormSubmit>保存</ActionFormSubmit>
+  </DialogFooter>
+</ActionDialogContent>
+```
 
-フッター (`DialogFooter` / `AlertDialogFooter`) は、常時表示すべきかで置き場所を決める。
+| 組み方                                                                                                      | 守らないと                                                                                                |
+| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 見出し・本文・フッターを器の子として同じ深さに並べる。送信を持たないダイアログの器は `DialogContent` にする | 間に box を挟むと、本文とフッターの間隔と内部スクロールを Popup (`flex-col gap-6 min-h-0`) が持てなくなる |
+| フォームを包む `form` を `DialogContent` の外に置かない。`ActionDialogContent` を使う                       | `DialogContent` は Portal で body の下へ出るので、DOM の上で送信ボタンが form の外になり送信が起きない    |
+| フッターは `DialogScrollBody` の後ろに置き、本文の中へ入れない                                              | 本文の中のフッターはスクロールで流れる                                                                    |
+| 見出しと X ボタンを sticky にしない                                                                         | sticky と内部スクロールの 2 つの固定機構が重なり、どちらが効いているかを実測しないと分からなくなる        |
+| 本文の余白は `DialogScrollBody` が持つ (`px-6` / `py-4`)。消費側で padding を足さない                       | スクロール領域の内側に余白が無いと、端の要素の `ring` / `box-shadow` が境界で切れる                       |
 
-| ケース                                           | 置き場所                                                |
-| ------------------------------------------------ | ------------------------------------------------------- |
-| 条件分岐なくフッターが常に描かれる               | 中間コンテナの内側 (`DialogScrollBody` の後ろ)          |
-| フッターの手前で、描画が空になる条件分岐がある   | 中間コンテナの外 (分岐によらず常時表示を保つ)           |
-| ヘッダーと本体の間に固定表示の兄弟要素を挟まない | 中間コンテナを省き、`DialogScrollBody` を直接置いてよい |
-
-- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、`dialog-scroll-form.tsx` へ部品を足す (ADR-0022)
 - `DialogContent` の padding を変えたら、`DialogScrollBody` の `-mx-6` / `px-6` も変える
 - 組み忘れても、registry の Dialog が持つ backstop (`popupOverflowBackstop`) で Popup ごと流れるので、内容は読める。ただし見出しと X ボタンも流れる
 
@@ -95,10 +100,26 @@ placeholder を足すときは、次の 2 つを確かめる (ADR-0025)。
 | Base UI Dialog「Outside scroll dialog」              | Viewport 側をスクロールさせ、Popup が画面の下端を越えて伸びる                                                                                                                |
 | shadcn Dialog「Scrollable Content」「Sticky Footer」 | Header と Footer の間の本文を `-mx-4 no-scrollbar max-h-[50vh] overflow-y-auto px-4` の div でスクロールさせる。Header / Footer は sticky ではなく、本文の外に置いて固定する |
 
-`DialogScrollForm` は Base UI の Inside scroll の形に、送信を持つ中間コンテナ (`form`) を足したものである。フォームを包む `form` 要素の置き場所は、どの公式例にも無い。
+`ActionDialogContent` は Base UI の Inside scroll の並びを保ったまま、`DialogContent` の中を `form` で包む。form は `display: contents` で box を作らないので、見出し・本文・フッターは Popup の直下と同じく flex の子として並ぶ。
+
+- form の置き場所を出典の形に合わせない理由は「フォームを `DialogContent` の中に置く理由」にある
 
 - Outside scroll を採らないのは、見出しと X ボタンが流れるためである。backstop が効いたとき (組み忘れたとき) と同じ見え方を、正規の形にすることになる
 - shadcn の例のように本文を `max-h-[50vh]` で打ち切らないのは、打ち切りの値が viewport と Dialog の余白に追随せず、ダイアログごとに値を持つことになるためである
+
+### フォームを `DialogContent` の中に置く理由
+
+form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
+
+| 案                                                                                                                                                                                | 評価                                                                                                                                                                                                             | 採否     |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| form を `DialogContent` の外に置き、見出し・本文・フッターを `DialogContent` の直下に並べる (shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx` の「With Form」) | `DialogContent` は Portal で body の下へ出るので、DOM の上で送信ボタンが form の外になり、送信が起きない。ブラウザテストで送信ボタンの `form` が `null`、`onSubmit` が 0 回だった (form を中に置いた対照は 1 回) | 却下     |
+| Popup を `render` で form として描く                                                                                                                                              | Popup は描いた要素に `role="dialog"` を付ける。ARIA in HTML が form 要素に許す役割は none / presentation / search で、dialog を含まない                                                                          | 却下     |
+| `DialogContent` の中を `display: contents` の form で包む (`ActionDialogContent`)                                                                                                 | form が入力欄と送信ボタンの祖先になり、Enter とクリックで送信が起きる。form は box を作らないので、並びは Base UI の Inside scroll と同じになる                                                                  | **採用** |
+
+- React docs の `createPortal` は「A portal only changes the physical placement of the DOM node」と書く。HTML 仕様の form owner は「nearest ancestor form element」で、React の木の上の親子関係を見ない
+- 上流で同じ症状に触れているのは shadcn-ui/ui の discussion 2918 のコメントだけである
+- `display: contents` の要素は、ブラウザによって accessibility tree から消える (MDN「display」、子孫は残る)。Adrian Roselli は操作・フォーカスを受ける要素に使わないよう勧め、定期的な確認を求める (2025-07-31 の追記)。この form は操作もフォーカスも受けず、名前を持たないので form の役割として公開されない。確認は `src/components/action/dialog.stories.tsx` の axe が担う
 
 ### `fieldValue` で値型を突き合わせる理由
 

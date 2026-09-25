@@ -95,17 +95,12 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ### 内部スクロールを持つダイアログの組み方
 
-- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`parts/dialog-scroll-form.tsx` と `ui/dialog.tsx`) で組み、本体だけをスクロールさせる。見出しとフッターが常に見える (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- 恒常的に viewport 高を超えるダイアログは本文を `DialogScrollBody` (`ui/dialog.tsx`) で包み、本文だけをスクロールさせる。見出しとフッターが常に見える (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- 見出し・本文・フッターは器の子として同じ深さに並べる。器はフォームを持つなら `ActionDialogContent` (`action/dialog.tsx`)、持たないなら `DialogContent`。間に box を挟むと Popup の gap と内部スクロールが効かない (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- form を `DialogContent` の外に置かない。Portal で送信ボタンが form の外へ出て送信が起きない (`docs/guides/forms-and-inputs.md`「フォームを `DialogContent` の中に置く理由」)
+- フッターは `DialogScrollBody` の後ろに置き、本文の中へ入れない。本文の中ではスクロールで流れる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。スクロール領域の内側に余白が無いと、端の要素の ring が境界で切れる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
-
-`DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)。
-
-| ケース                                           | 配置                                                      |
-| ------------------------------------------------ | --------------------------------------------------------- |
-| 条件分岐なくフッターが常に描画される             | 中間コンテナの内側 (`DialogScrollBody` の後ろ)            |
-| フッターの手前で描画が空になる条件分岐がある     | 中間コンテナの外 (分岐によらず常時表示を保つ)             |
-| ヘッダーと本体の間に固定表示の兄弟要素を挟まない | 中間コンテナを省略し、`DialogScrollBody` を直接置いてよい |
 
 ## 状態表示
 

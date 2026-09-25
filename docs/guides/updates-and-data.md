@@ -60,7 +60,7 @@ Compiler はコンポーネントか hook として認識した関数しか最�
 
 ### mutation を Action 層から呼ぶ
 
-mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton` / `AlertDialogActionButton` / `ActionForm`) に `action` を渡し、Action の中で `useActionMutation` の `runAction` を呼ぶ (ADR-0016)。
+mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton` / `AlertDialogActionButton` / `ActionForm` / `ActionDialogContent`) に `action` を渡し、Action の中で `useActionMutation` の `runAction` を呼ぶ (ADR-0016)。
 
 #### Action 層の部品が守る契約
 
