@@ -82,7 +82,7 @@ registry の見た目を変えたいときは、打ち消しの class を積む�
 
 - `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて、診断なしで効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする
 - `scroll-area-focus-outline` (`src/styles.css`) は、Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。当てないと registry の focus ring が消える
-- ScrollArea のバーと、そのぶんの余白は `ScrollArea` の Root が既定で持つ (台帳 `docs/registry-deviations.md` の scroll-area.tsx の行)。この余白を降りられるのは `ui/` の中だけで、実例は `src/components/ui/dialog.tsx` の `DialogScrollBody` にある。`ui/` の外では contract が `ScrollArea` に角丸しか許さない (ADR-0011) ので、降りたい消費側は降りる形を持つ `ui/` の部品を使うか、`ui/` に部品を足して台帳に行を足す (ADR-0020)
+- ScrollArea のバーと、そのぶんの余白は `ScrollArea` の Root が既定で持つ (台帳 `docs/registry-deviations.md` の scroll-area.tsx の行)。この余白を降りられるのは `ui/` の中だけで、実例は `src/components/ui/dialog.tsx` の `DialogScrollBody` にある。`ui/` の外では contract が `ScrollArea` に layout に加えて角丸 (class グループ `rounded`) だけを許す (ADR-0011) ので、降りたい消費側は降りる形を持つ `ui/` の部品を使うか、`ui/` に部品を足して台帳に行を足す (ADR-0020)
 - 背景を持つスクロール領域は、器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (実例は `src/components/parts/code-block.tsx`)
 
 ## explanation
