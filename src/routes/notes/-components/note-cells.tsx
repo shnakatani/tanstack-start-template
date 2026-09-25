@@ -5,8 +5,14 @@ import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import type { NoteRow } from "../-lib/note-rows";
+import { noteInputOf } from "../-lib/note-rows";
 
 type NoteCellContext = DataTableCellContext<NoteRow>;
+
+/** 本文の cell。長い本文で列が広がらないよう、1 行に切り詰める */
+export function NoteBodyCell({ row }: NoteCellContext) {
+  return <div className="max-w-xs truncate">{noteInputOf(row.original).body}</div>;
+}
 
 /** 作成日時の cell。保存中の行はまだ日時を持たないので、その位置で保存中を伝える。 */
 export function NoteCreatedAtCell({ row }: NoteCellContext) {

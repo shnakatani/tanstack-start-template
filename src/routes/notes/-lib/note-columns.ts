@@ -3,7 +3,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import type { DataTableFeatures } from "@/components/parts/data-table-features";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 
-import { NoteActionsCell, NoteCreatedAtCell } from "../-components/note-cells";
+import { NoteActionsCell, NoteBodyCell, NoteCreatedAtCell } from "../-components/note-cells";
 import type { NoteRow } from "./note-rows";
 import { noteInputOf } from "./note-rows";
 
@@ -22,7 +22,7 @@ export const noteColumns = helper.columns([
   helper.accessor((row) => noteInputOf(row).body, {
     id: "body",
     header: NOTE_FIELD_LABELS.body,
-    meta: { cellClassName: "max-w-xs truncate" },
+    cell: NoteBodyCell,
   }),
   helper.display({ id: "createdAt", header: NOTE_FIELD_LABELS.createdAt, cell: NoteCreatedAtCell }),
   helper.display({ id: "actions", header: "操作", cell: NoteActionsCell }),

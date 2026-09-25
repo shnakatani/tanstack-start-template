@@ -9,7 +9,7 @@ type Fruit = { id: number; name: string; price: number };
 const helper = createColumnHelper<DataTableFeatures, Fruit>();
 const columns = helper.columns([
   helper.accessor("name", { header: "名前" }),
-  helper.accessor("price", { header: "価格", meta: { cellClassName: "text-right" } }),
+  helper.accessor("price", { header: "価格" }),
 ]);
 const FRUITS: Fruit[] = [
   { id: 1, name: "りんご", price: 120 },
