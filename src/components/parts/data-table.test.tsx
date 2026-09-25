@@ -10,7 +10,7 @@ type Fruit = { id: number; name: string; price: number };
 const helper = createColumnHelper<DataTableFeatures, Fruit>();
 const columns = helper.columns([
   helper.accessor("name", { header: "名前" }),
-  helper.accessor("price", { header: "価格", meta: { cellClassName: "text-right" } }),
+  helper.accessor("price", { header: "価格" }),
 ]);
 const FRUITS: Fruit[] = [
   { id: 1, name: "りんご", price: 120 },
@@ -19,7 +19,7 @@ const FRUITS: Fruit[] = [
 
 /**
  * 状態のカタログは `data-table.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは構造の契約で、
- * 列見出しの順と `scope=col`、`cellClassName` の転写、`rowProps` の属性、空表示の `colSpan`
+ * 列見出しの順と `scope=col`、`rowProps` の属性、空表示の `colSpan`
  * である。busy 行の半透明は Tailwind の `aria-busy:` variant が CSS で当てるので、JS の分岐も
  * それを測るテストも無い。見え方は `BusyRow` story が持つ。
  *
@@ -39,15 +39,6 @@ describe("DataTable", () => {
       .element(screen.getByRole("row", { name: /りんご/ }).getByRole("cell"))
       .toHaveLength(2);
     await expect.element(screen.getByRole("cell", { name: "80" })).toBeInTheDocument();
-  });
-
-  it("列定義の cellClassName をセルに写す", async () => {
-    const screen = await render(<DataTable tableKey="fruits" columns={columns} data={FRUITS} />);
-
-    await expect.element(screen.getByRole("cell", { name: "120" })).toHaveClass("text-right");
-    await expect
-      .element(screen.getByRole("cell", { name: "りんご" }))
-      .not.toHaveClass("text-right");
   });
 
   it("rowProps で行ごとの属性を足せる", async () => {

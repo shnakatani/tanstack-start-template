@@ -6,12 +6,11 @@ import { Field, FieldContent, FieldGroup, FieldLabel, FieldTitle } from "@/compo
 
 /**
  * 複数選択リストの器。`FieldGroup` 素の gap はフォームのフィールド間の値で行の並びには
- * 過大なため、shadcn の正典も checkbox グループでは上書きを例示する。
- * その例示値からさらに 1 段詰めるのは、候補が数十件並ぶ画面で同じ高さに収まる行数を
- * 優先した判断。
+ * 過大なため、registry の `FieldGroup` が持つ `data-[slot=checkbox-group]:gap-3` に寄せる。
+ * shadcn の registry の例 (`dialog-example.tsx`) も `data-slot="checkbox-group"` で同じ間隔にしている。
  */
 function ChoiceCardList({ children }: { children: ReactNode }) {
-  return <FieldGroup className="gap-2">{children}</FieldGroup>;
+  return <FieldGroup data-slot="checkbox-group">{children}</FieldGroup>;
 }
 
 /**

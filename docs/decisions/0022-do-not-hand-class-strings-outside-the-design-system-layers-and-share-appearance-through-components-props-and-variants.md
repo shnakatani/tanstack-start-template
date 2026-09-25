@@ -1,7 +1,7 @@
 # ADR-0022: design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る
 
 - Status: Accepted
-- Date: 2026-09-24
+- Date: 2026-09-25
 - 関連: ADR-0011 (コンポーネントの層と適用範囲の表し方)、ADR-0023 (`@shadcn/lint` のルールの選定)、ADR-0016 (Action 層の責務)
 
 ## Context
@@ -11,7 +11,7 @@
 `@shadcn/lint` の `resolveIdentifier` が `Variable` 型でない定義で解決を打ち切り、import 束縛はこの型を持たないためである。
 
 `require-static-classes` を一時的に足して測った違反は、`src/routes/` の 2 件だけだった (2026-09-19)。
-`src/components/screens/` と直下、`src/features/` は 0 件である。`ui/` `action/` `parts/` は `excludeFiles` の内側なので測っていない。
+`src/components/screens/` と直下、`src/features/` は 0 件である。測定時の `excludeFiles` (`ui/` `action/` `parts/`) の内側は測っていない。
 2 件はどちらも `src/components/` の層が export した class 定数を `src/routes/` が import し、design system component へ渡す形である。
 
 `src/components/ui/dialog.tsx` も同種の class 定数を 2 つ export するが、消費側が `src/components/ui/alert-dialog.tsx` で層の内側に閉じているため規則に当たらない。
@@ -19,7 +19,7 @@
 
 ## Decision
 
-**design system の層 (`ui/` / `action/` / `parts/`) から外へ class 文字列を配らない。外見を層の外と共有するときは、部品・prop・`cva` の variant のどれかで配る。この決定は `@shadcn/lint` の `require-static-classes` を層の境界 (`no-restyle` と同じ適用範囲) で有効にして守る。** 層の内側での共有は対象外とする。
+**部品ディレクトリ (`ui/`) から外へ class 文字列を配らない。外見を層の外と共有するときは、部品・prop・`cva` の variant のどれかで配る。この決定は `@shadcn/lint` の `require-static-classes` を層の境界 (`no-restyle` と同じ適用範囲) で有効にして守る。** `ui/` の内側での共有は対象外とする。この ADR の「層」の内と外は、`ui/` とそれ以外を指す (ADR-0011)。
 
 配り方の選び方は `docs/guides/styling-and-tokens.md`「外見を層の外へ配る」、この決定を lint で守る設定 (`require-static-classes` の適用範囲と `variantFunctions` の宣言) は `docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」と「variant 関数を宣言する」にある。
 
@@ -35,7 +35,7 @@
 
 - 消費側の `className` はすべて linter が読める形になり、`no-raw-colors` と `no-unknown-classes` の検査が届く範囲が確定する
 - 恒久的な例外はゼロで、違反が増えても抑制行は増えない
-- design system の層から外へ class 文字列を配る形が閉じる。層の内側での共有は残る
+- `ui/` から外へ class 文字列を配る形が閉じる。`parts/` や `action/` が export した class 定数も、他のファイルが import して部品へ渡せば規則が落とす。`ui/` の内側での共有は残る
 
 ## 出典
 

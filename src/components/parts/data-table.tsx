@@ -12,7 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { BUSY_OPACITY_CLASS } from "./busy-opacity";
 import type { DataTableFeatures } from "./data-table-features";
 import { dataTableFeatures } from "./data-table-features";
 
@@ -28,7 +27,7 @@ interface DataTableProps<TData extends RowData> extends Pick<
    *
    * `className` は受けない。返した class は `rowProps` のコールバックの中にあって
    * `no-restyle` が追えず、`<TableRow>` へ直接書けば落ちる class が無診断で通る。
-   * 外見は部品が持つ (ADR-0022)。半透明は `aria-busy` から下で当てる。
+   * 外見は部品が持つ (ADR-0022)。半透明は registry の `TableRow` が `aria-busy` から当てる。
    */
   rowProps?: (
     row: Row<DataTableFeatures, TData>,
@@ -74,16 +73,9 @@ export function DataTable<TData extends RowData>({
             // しまい、JSX の後勝ちで静かに落ちる
             const busy = rowProps?.(row)["aria-busy"];
             return (
-              <TableRow
-                key={row.id}
-                aria-busy={busy}
-                // busy 行の半透明は Tailwind の aria-busy variant (`[aria-busy="true"]`) で
-                // 当てる。aria-busy の型は Booleanish で文字列 "false" も来るが、属性セレクタは
-                // "true" にしか一致しないので JS で真偽を判定しない。値の根拠は busy-opacity.ts
-                className={BUSY_OPACITY_CLASS}
-              >
+              <TableRow key={row.id} aria-busy={busy}>
                 {row.getAllCells().map((cell) => (
-                  <TableCell key={cell.id} className={cell.column.columnDef.meta?.cellClassName}>
+                  <TableCell key={cell.id}>
                     <table.FlexRender cell={cell} />
                   </TableCell>
                 ))}

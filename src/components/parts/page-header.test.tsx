@@ -11,8 +11,8 @@ import { PageHeader } from "./page-header";
  * あること、actions の有無で領域が出入りすること、帯の寸法で、story に play が無い以上ここで
  * しか固定できない。とくに「出ない」ことは見た目のカタログでは表せない (docs/guides/storybook.md「story とブラウザテストの分担」)。
  *
- * カードのページ見出しとの寸法一致は測らない。どちらも同じ `pageTitle` (`page-title.tsx`) を
- * 当てる 1 つの出処で、外見の上書きは層の規則が止める (ADR-0011)。
+ * カードのページ見出しとの寸法一致は測らない。どちらも `CardTitle` の `size="page"`
+ * (`ui/card.tsx` の `cardTitleVariants`) を当てる 1 つの出処で、外見の上書きは層の規則が止める (ADR-0011)。
  */
 describe("PageHeader", () => {
   // ページの見出しなので h1。h2 だと画面に h1 が 1 つも無い状態になり、

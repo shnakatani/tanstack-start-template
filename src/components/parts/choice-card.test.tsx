@@ -40,7 +40,7 @@ function Harness({ disabled = false }: { disabled?: boolean }) {
  * ここに残すのは、Playwright の actionability を force で飛ばす実イベントが要る 2 件だけ
  * (有効な行で click が届く対照と、disabled の行)。
  *
- * 寸法は測らない。行間の `gap-2` は Tailwind の定義そのもので、測っても Tailwind の定義を言い直すだけになる。
+ * 寸法は測らない。行間は registry の `data-[slot=checkbox-group]:gap-3` で決まり、測っても Tailwind の定義を言い直すだけになる。
  */
 describe("ChoiceCard", () => {
   // 同じ force click が有効な行では届いてトグルすることを先に固定する (肯定の対照)。これが無いと

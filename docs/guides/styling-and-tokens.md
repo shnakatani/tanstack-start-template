@@ -29,17 +29,41 @@
 
 ### 外見を層の外へ配る
 
-design system の層 (`ui/` / `action/` / `parts/`) から外へ class 文字列を配らない (ADR-0022)。外見を共有したいときは、次のどれかにする。
+部品ディレクトリ (`ui/`) から外へ class 文字列を配らない (ADR-0022)。外見を共有したいときは、次のどれかにする。
 
-| 配り方                                                                     | 使う場面                       |
-| -------------------------------------------------------------------------- | ------------------------------ |
-| 部品として配る                                                             | 外見と構造がひとまとまりのとき |
-| prop として受ける                                                          | 消費側が値を選ぶとき           |
-| `cva` の variant として配り、`settings.shadcn.variantFunctions` へ宣言する | 同じ部品の見た目を分けるとき   |
+| 配り方                                                                              | 使う場面                       |
+| ----------------------------------------------------------------------------------- | ------------------------------ |
+| 部品として配る                                                                      | 外見と構造がひとまとまりのとき |
+| prop として受ける                                                                   | 消費側が値を選ぶとき           |
+| `ui/` の `cva` の variant として配り、`settings.shadcn.variantFunctions` へ宣言する | 同じ部品の見た目を分けるとき   |
 
-- 層の内側での共有は対象外で、class 定数の export 自体は禁じない。消費側が import すれば規則が落とす
+- `ui/` の内側での共有は対象外で、class 定数の export 自体は禁じない。`ui/` の外のファイルが import して部品へ渡せば規則が落とす
 - 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0011) と、汎用の層が負う責務の範囲 (ADR-0016) で決める
 - variant 関数を消費側から呼ぶ形を採るたびに、`vite.config.ts` の `settings.shadcn.variantFunctions` へ足す。忘れると呼び出しが lint で落ちるので、気付けない失敗にはならない
+- 宣言するのは `ui/` の variant 関数だけにする。`ui/` の外の `cva` を宣言すると、定義の中の class が `no-restyle` に検査されずに部品へ通る (ADR-0023)
+
+### 部品の見た目を変える
+
+ui 部品の見た目を変えたいときは、上の行から順に当てはめ、最初に当てはまった行の直し方を採る。
+
+| 順  | 当てはまる場面                                                                                  | 直し方                                                                                                                                                                                                                           | 出典                                                                                                                                                                                                                                                                      |
+| --- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | 公式の例が既定のまま使っている場面か、公式のノブ (data 属性・CSS 変数・prop) で同じ見た目になる | 上書きをやめて既定かノブに寄せる                                                                                                                                                                                                 | shadcn skill `customization.md`「Customizing Components」の順 (既存の variant → className → 新しい variant → 包み)。2 番目の className は `no-restyle` が止めるので、このテンプレートでは飛ばす: https://github.com/shadcn-ui/ui/blob/main/skills/shadcn/customization.md |
+| 1   | 汎用の概念で、再利用する見た目                                                                  | `ui/` の `cva` に variant を足し、台帳 `docs/registry-deviations.md` に行を足す                                                                                                                                                  | ADR-0020「追加と削除の基準」                                                                                                                                                                                                                                              |
+| 2   | 1 つの部品だけの装飾                                                                            | ui 部品の外側を素の要素で包み、そこに class を書く。素の要素は `no-restyle` の対象外                                                                                                                                             | shadcn「Data Table」の Cell Formatting (https://ui.shadcn.com/docs/components/data-table)、shadcn-ui/lint `docs/rules/no-restyle.md` の Limits                                                                                                                            |
+| 3   | 画面ごとに値が変わるのが正しい変更                                                              | `no-restyle` の `contracts` で、その部品のその範囲だけを許す。粒度は class グループか個別の class にする。実例は `ScrollArea` に layout に加えて角丸 (class グループ `rounded`) だけを許す contract (`vite.config.ts`、ADR-0011) | shadcn-ui/lint `docs/design-systems.md`: https://github.com/shadcn-ui/lint/blob/main/docs/design-systems.md                                                                                                                                                               |
+| 4   | `@utility` で定義した class                                                                     | 個別の `allow` で通るかを実測し、通らなければ行単位で抑制して上流 issue を理由に書く                                                                                                                                             | https://github.com/shadcn-ui/lint/issues/4 、https://github.com/shadcn-ui/lint/issues/18 (2026-09-25 時点で open)                                                                                                                                                         |
+
+- contract は部品の名前で決まり、置き場所では決まらない。許すと検査が走る全ファイルでその部品に同じ自由が生まれるので、値を画面ごとにそろえたい見た目を contract にしない (shadcn-ui/lint `docs/rules.md`「Contracts」: https://github.com/shadcn-ui/lint/blob/main/docs/rules.md)
+- contract に `allow` を書くと、トップレベルの `allow` を置き換える。contract 側にも `layout` を書き直す (同「Contracts」)
+
+`ui/` の外では、`ScrollArea` の見た目を次の 3 か所に分けて持たせる。Viewport は Root の角丸を受け継いで中身と focus ring を切り抜くので、角丸だけは Root に当てる (ADR-0011)。
+
+| 見た目       | 置き場所                         | 例 (`src/components/parts/code-block.tsx`)                                                                    |
+| ------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 角丸         | `ScrollArea` の `className`      | `rounded`                                                                                                     |
+| 余白         | 中身の要素                       | `pre` の `p-3`                                                                                                |
+| 地の色と枠線 | `ScrollArea` を包む器 (素の要素) | 外側の `div` の `bg-muted` (本文の `pre` にも同じ地を置く。`docs/guides/registry.md`「公式のノブを先に探す」) |
 
 ### トークンを作り直す
 

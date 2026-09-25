@@ -1,6 +1,8 @@
 import { cn } from "cn";
 import * as React from "react";
 
+import { BUSY_OPACITY_CLASS } from "@/lib/busy-opacity";
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div data-slot="table-container" className="relative w-full overflow-x-auto">
@@ -43,6 +45,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
       data-slot="table-row"
       className={cn(
         "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        BUSY_OPACITY_CLASS,
         className,
       )}
       {...props}

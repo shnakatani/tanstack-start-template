@@ -16,12 +16,12 @@ import {
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
 /**
- * design system を著作する層 (ADR-0011)。`@shadcn/lint` の 2 軸をここから導出する。
- * 認識 (`componentImports`) はこの層の部品を design system component として登録し、
- * 適用 (`excludeFiles`) はこの層自身を規則の対象から外す。別々に書くと片方だけ直しても
- * 何も落ちず、新しい層の部品が規則から見えないまま消費側の上書きが素通りする
+ * `@shadcn/lint` が design system component として認識する層 (ADR-0011)。`routes/` などから
+ * これらの部品へ渡す className を `no-restyle` と `require-static-classes` が検査する。
+ * `action/` は ui 部品を async React (Transition) にした層で、ui と同じく design system の部品として
+ * 認識する。外すと `ActionForm` への見た目の上書きや動的な className が無診断で通る
  */
-const DESIGN_SYSTEM_LAYERS = ["ui", "action", "parts"] as const;
+const DESIGN_SYSTEM_COMPONENT_LAYERS = ["ui", "action", "parts"] as const;
 
 export default defineConfig({
   // Vite の .env 読み込みを切る。秘密を暗号化して .env ごとコミットする方式 (dotenvx 等) は、
@@ -64,12 +64,17 @@ export default defineConfig({
     ],
     settings: {
       shadcn: {
-        componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
+        componentImports: DESIGN_SYSTEM_COMPONENT_LAYERS.map(
+          (layer) => `^@/components/${layer}(/|$)`,
+        ),
         // cva で作った variant 関数を宣言する。宣言しないと消費側の buttonVariants({...}) が
         // require-static-classes で落ちる。shadcn 公式の Button docs は「As Link」でこの形を
         // 推奨しており、テンプレート利用者がそのまま書けるようにする (docs/guides/lint/tailwind-and-shadcn.md「variant 関数を宣言する」)。
+        // 宣言するのは ui/ が定義した variant 関数だけにする。宣言した関数の呼び出しは cva の
+        // 定義の中の class が no-restyle に検査されずに通るため、ui/ の外の cva を宣言すると
+        // 見た目の上書きの抜け道になる (ADR-0023)。
         // mergeFunctions は使わない。オブジェクトを渡す関数に当てるとキー名を class と誤読する
-        variantFunctions: ["buttonVariants"],
+        variantFunctions: ["buttonVariants", "cardTitleVariants"],
       },
     },
     // カテゴリ丸ごとの有効化は correctness と perf に限る。他はプラグインごとの上流
@@ -355,16 +360,23 @@ export default defineConfig({
         },
       },
       {
-        // no-restyle と require-static-classes は「消費側が design system component へ何を渡して
-        // いるか」を見る規則で、design system 自身の内部には意味を持たない (ADR-0011)。緩和では
-        // なく適用範囲の確定なので excludeFiles で外す。componentImports が無いと自作部品が規則
-        // から見えず、routes からの上書きが素通りする。require-static-classes は他の shadcn
-        // ルールの門番で、ここで落ちる className は no-raw-colors / no-unknown-classes も中身を
-        // 読めない (ADR-0022)
+        // no-restyle と require-static-classes は「design system component へ何を渡しているか」を
+        // 見る規則で、部品ディレクトリ (ui/) の内部には意味を持たない (ADR-0011)。緩和ではなく
+        // 適用範囲の確定なので excludeFiles で外す。parts/ と action/ は外さない。見た目の差は
+        // ui/ の variant で持ち、action/ が ui に見た目を足さないこともここで見張る。require-static-classes は他の shadcn ルールの門番で、ここで落ちる
+        // className は no-raw-colors / no-unknown-classes も中身を読めない (ADR-0022)
         files: ["src/**", ".storybook/**"],
-        excludeFiles: DESIGN_SYSTEM_LAYERS.map((layer) => `src/components/${layer}/**`),
+        excludeFiles: ["src/components/ui/**"],
         rules: {
-          "shadcn/no-restyle": ["error", { allow: ["layout"] }],
+          // ScrollArea の Viewport は Root の角丸を受け継いで中身と focus ring を切り抜くので、layout に
+          // 加えて、置かれた器に合わせる角丸 (class グループ rounded) だけを呼び出し側に許す (ADR-0011)
+          "shadcn/no-restyle": [
+            "error",
+            {
+              allow: ["layout"],
+              contracts: [{ pattern: "^ScrollArea$", allow: ["layout", "rounded"] }],
+            },
+          ],
           "shadcn/require-static-classes": "error",
         },
       },

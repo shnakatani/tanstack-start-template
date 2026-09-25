@@ -79,10 +79,12 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
+- ui 部品の見た目を変えるときは、既定か公式のノブ → `ui/` の variant → 素の要素で包む → contract の順に選ぶ。contract は部品の名前で全ファイルに効くので、値をそろえたい見た目に使わない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
+- `ScrollArea` の内側の余白は中身の要素に書く。lint が余白を止めたときに案内する margin と親の gap は外側の直し方で、内側の余白には使えない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
 - `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える (`docs/guides/registry.md`「公式のノブを先に探す」)
 - 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`docs/guides/registry.md`「公式のノブを先に探す」)
-- 本文の末尾側 padding がバー幅を上回り外側と端をそろえたいときだけ `data-has-overflow-y:pr-0` を書く。既定はバーも余白も `ScrollArea` 側 (`docs/guides/registry.md`「公式のノブを先に探す」)
+- `ScrollArea` のバー幅の余白を降りるのは `ui/` の部品の中だけにし (実例は `ui/dialog.tsx` の `DialogScrollBody`)、`ui/` の外で要るなら `ui/` の部品を使うか足す。`ui/` の外では contract が `ScrollArea` に layout と角丸しか許さないため (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (`docs/registry-deviations.md` の scroll-area.tsx の行)
 
 ### 親の gap で表現できない箇所
@@ -93,17 +95,12 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ### 内部スクロールを持つダイアログの組み方
 
-- 恒常的に viewport 高を超えるダイアログは `DialogScrollForm` + `DialogScrollBody` (`dialog-scroll-body.tsx`) で組み、本体だけをスクロールさせる。見出しとフッターが常に見える (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- 恒常的に viewport 高を超えるダイアログは本文を `DialogScrollBody` (`ui/dialog.tsx`) で包み、本文だけをスクロールさせる。見出しとフッターが常に見える (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- 見出し・本文・フッターは器の子として同じ深さに並べる。器はフォームを持つなら `ActionDialogContent` (`action/dialog.tsx`)、持たないなら `DialogContent`。間に box を挟むと Popup の gap と内部スクロールが効かない (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- form を `DialogContent` の外に置かない。Portal で送信ボタンが form の外へ出て送信が起きない (`docs/guides/forms-and-inputs.md`「フォームを `DialogContent` の中に置く理由」)
+- フッターは `DialogScrollBody` の後ろに置き、本文の中へ入れない。本文の中ではスクロールで流れる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。スクロール領域の内側に余白が無いと、端の要素の ring が境界で切れる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
-
-`DialogFooter` / `AlertDialogFooter` の配置は「常時表示すべきか」で決める (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)。
-
-| ケース                                           | 配置                                                      |
-| ------------------------------------------------ | --------------------------------------------------------- |
-| 条件分岐なくフッターが常に描画される             | 中間コンテナの内側 (`DialogScrollBody` の後ろ)            |
-| フッターの手前で描画が空になる条件分岐がある     | 中間コンテナの外 (分岐によらず常時表示を保つ)             |
-| ヘッダーと本体の間に固定表示の兄弟要素を挟まない | 中間コンテナを省略し、`DialogScrollBody` を直接置いてよい |
 
 ## 状態表示
 
@@ -119,7 +116,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 - input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
-- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor className="cursor-pointer font-normal"`)。グループの外枠は `FieldSet` + `FieldLegend`
+- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`)。ラベルに className を足さない。太さとカーソルは registry の既定のままで、shadcn の単独 checkbox の例と同じ。グループの外枠は `FieldSet` + `FieldLegend`
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)
 - `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)
 

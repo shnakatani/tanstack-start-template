@@ -29,8 +29,8 @@ function ScrollArea({ className, viewportClassName, children, ...props }: Scroll
       >
         {/* Content は base-ui が ResizeObserver で thumb を再計算するためのパート。
             registry はこれを省いており、内容が縮んでも overflow 判定が更新されない
-            (shadcn-ui/ui#10534 / mui/base-ui#4696)。上の余白と dialog-scroll-body.tsx の
-            区切り線が data-has-overflow-* で出し分けるため、機能構造として補う */}
+            (shadcn-ui/ui#10534 / mui/base-ui#4696)。上の余白と ui/dialog.tsx の
+            DialogScrollBody の区切り線が data-has-overflow-* で出し分けるため、機能構造として補う */}
         <ScrollAreaPrimitive.Content data-slot="scroll-area-content">
           {children}
         </ScrollAreaPrimitive.Content>

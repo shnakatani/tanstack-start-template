@@ -1,26 +1,26 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { expect, fn, screen, waitFor } from "storybook/test";
 
-import { ActionFormSubmit } from "@/components/action/form";
 import {
   Dialog,
-  DialogContent,
   DialogFooter,
   DialogHeader,
+  DialogScrollBody,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-import { DialogScrollBody, DialogScrollForm } from "./dialog-scroll-body";
+import { ActionDialogContent } from "./dialog";
+import { ActionFormSubmit } from "./form";
 
 /**
- * 内部スクロール方式のダイアログのカタログ。溢れている状態と溢れていない状態を並べる。
+ * フォームを持つダイアログのカタログ。溢れている状態と溢れていない状態を並べる。
  *
- * 寸法と色の回帰 (区切り線の対称性、focus ring がクリップされないこと、本文と縦バーの
- * 重なり、`dialogScrollLayout` の flex 指定) は `dialog-scroll-body.test.tsx` が
- * `getComputedStyle` / `getBoundingClientRect` で持ち続ける (docs/guides/storybook.md「story とブラウザテストの分担」)。
+ * 送信の経路、form の `display: contents`、キーボードでの focus outline は `dialog.test.tsx` が
+ * 実イベントと computed style で持つ (docs/guides/storybook.md「story とブラウザテストの分担」)。
  * ここの play は「その story が名乗る状態になっているか」だけを `data-has-overflow-y` で確かめる。
+ * 見出しと本文、本文とフッターの間隔、区切り線、本文と縦バーの重なりはこの story で見る。
  *
  * 溢れはフィールドの実数で作る。`height` 指定では flex item が潰れて溢れを再現できない。
  */
@@ -31,31 +31,29 @@ interface StoryArgs {
   submitAction: () => Promise<void> | void;
 }
 
-function ScrollDialog({ fieldCount, submitAction }: StoryArgs) {
+function FormDialog({ fieldCount, submitAction }: StoryArgs) {
   return (
     // defaultOpen で開いた状態を見せるので trigger は置かない。置いてもダイアログの裏に
     // 隠れて読者からは見えない
     <Dialog defaultOpen>
-      <DialogContent>
+      <ActionDialogContent submitAction={submitAction}>
         <DialogHeader>
           <DialogTitle>フォーム</DialogTitle>
         </DialogHeader>
-        <DialogScrollForm submitAction={submitAction}>
-          <DialogScrollBody>
-            <FieldGroup>
-              {Array.from({ length: fieldCount }, (_, index) => (
-                <Field key={index}>
-                  <FieldLabel htmlFor={`field-${index}`}>項目 {index + 1}</FieldLabel>
-                  <Input id={`field-${index}`} />
-                </Field>
-              ))}
-            </FieldGroup>
-          </DialogScrollBody>
-          <DialogFooter>
-            <ActionFormSubmit>保存</ActionFormSubmit>
-          </DialogFooter>
-        </DialogScrollForm>
-      </DialogContent>
+        <DialogScrollBody>
+          <FieldGroup>
+            {Array.from({ length: fieldCount }, (_, index) => (
+              <Field key={index}>
+                <FieldLabel htmlFor={`field-${index}`}>項目 {index + 1}</FieldLabel>
+                <Input id={`field-${index}`} />
+              </Field>
+            ))}
+          </FieldGroup>
+        </DialogScrollBody>
+        <DialogFooter>
+          <ActionFormSubmit>保存</ActionFormSubmit>
+        </DialogFooter>
+      </ActionDialogContent>
     </Dialog>
   );
 }
@@ -70,7 +68,7 @@ function scrollBody(): HTMLElement {
 }
 
 const meta = {
-  render: (args) => <ScrollDialog {...args} />,
+  render: (args) => <FormDialog {...args} />,
   args: { fieldCount: 20, submitAction: fn() },
 } satisfies Meta<StoryArgs>;
 

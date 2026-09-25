@@ -1,17 +1,17 @@
 import { revalidateLogic } from "@tanstack/react-form";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
-import type { ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 
+import { ActionDialogContent } from "@/components/action/dialog";
 import { ActionFormSubmit } from "@/components/action/form";
-import { DialogScrollBody, DialogScrollForm } from "@/components/parts/dialog-scroll-body";
 import { Button } from "@/components/ui/button";
 import {
   createDialogHandle,
   Dialog,
   DialogClose,
-  DialogContent,
   DialogFooter,
   DialogHeader,
+  DialogScrollBody,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
@@ -31,12 +31,12 @@ import { toastMutationError } from "@/lib/mutation-error";
 export const noteCreateDialogHandle = createDialogHandle<undefined>();
 
 /**
- * メモの追加ダイアログ。内部スクロール方式 (`DialogScrollForm` + `DialogScrollBody`) で、
+ * メモの追加ダイアログ。内部スクロール方式 (`ActionDialogContent` + `DialogScrollBody`) で、
  * ヘッダーとフッターを固定したまま入力領域だけをスクロールさせる。
  *
- * mutation はここが持ち、フォームの状態は開くたびに作り直す。`DialogContent` は Portal 配下で
- * 閉じるとアンマウントされるため、フォーム本体を子コンポーネントに分けておくと
- * 「前回の入力が残った状態で開く」が構造的に起こらない。
+ * mutation はここが持ち、フォームの状態は開くたびに作り直す。フォームの submit は
+ * `ActionDialogContent` に渡すので、フォームの状態を持つ `NoteCreateForm` は Portal の外に居続ける。
+ * 閉じ終わったら key を替えて作り直し、「前回の入力が残った状態で開く」を起こさない。
  */
 export function NoteCreateDialog() {
   const queryClient = useQueryClient();
@@ -66,7 +66,7 @@ export function NoteCreateDialog() {
   // 再描画されず、応答が届いても止めたままになる
   const isRefetchingNotes = useIsFetching({ queryKey: NOTES_QUERY_KEY }) > 0;
 
-  // 止めるのは応答前だけ。閉じて開き直すと DialogContent がアンマウントされてフォームが
+  // 止めるのは応答前だけ。閉じて開き直すと handleOpenChangeComplete が key を替えてフォームが
   // 作り直され、先行 save の応答が届いた時点で新しい入力ごと閉じる。handle を複数の対象で
   // 共有するダイアログと違い、入力フォームは開いている対象を mutation の対象と比べられない
   // ので、閉じないことで塞ぐ (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))。止めるのはこのダイアログ
@@ -78,6 +78,17 @@ export function NoteCreateDialog() {
   // ADR-0017 移行前の従来挙動 (何も止めない) と同じなので、閉じられなくなる側へは倒さない
   const blocksClose = createMutation.isPending && !isRefetchingNotes;
 
+  // 閉じる animation が終わってから作り直す。閉じた瞬間に替えると、消えていく途中の
+  // ダイアログの入力が空になって見える。onOpenChangeComplete(false) は Base UI が Portal を
+  // unmount するのと同じ callback で呼ばれる。閉じる途中で開き直すと、Portal も unmount されず
+  // 入力は残る
+  const [formKey, setFormKey] = useState(0);
+  function handleOpenChangeComplete(open: boolean) {
+    if (!open) {
+      setFormKey((key) => key + 1);
+    }
+  }
+
   // 型は転送先の props から導出する (再宣言すると転送先の型変更に追随しない)
   const handleOpenChange: ComponentProps<typeof Dialog>["onOpenChange"] = (open, details) => {
     // onSuccess の close は handle 経由なので reason が imperative-action になる。通す
@@ -87,23 +98,25 @@ export function NoteCreateDialog() {
   };
 
   return (
-    <Dialog handle={noteCreateDialogHandle} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>メモを追加</DialogTitle>
-        </DialogHeader>
-        {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで渡すのは表示ではなく
-            close の可否で、handleOpenChange と同じ源から取らないと「押せるのに閉じない」ずれが
-            出る (ADR-0017 の完了点: サーバーの応答で閉じる) */}
-        <NoteCreateForm onSubmit={createMutation.runAction} blocksClose={blocksClose} />
-      </DialogContent>
+    <Dialog
+      handle={noteCreateDialogHandle}
+      onOpenChange={handleOpenChange}
+      onOpenChangeComplete={handleOpenChangeComplete}
+    >
+      {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで渡すのは表示ではなく
+          close の可否で、handleOpenChange と同じ源から取らないと「押せるのに閉じない」ずれが
+          出る (ADR-0017 の完了点: サーバーの応答で閉じる) */}
+      <NoteCreateForm key={formKey} onSubmit={createMutation.runAction} blocksClose={blocksClose} />
     </Dialog>
   );
 }
 
 /**
- * 入力フォーム。フィールドに `autoFocus` は渡さない — base-ui の Popup が既定でポップアップ内の
- * 最初の tabbable へフォーカスを移し、タッチ操作のときだけ仮想キーボードを開かないよう Popup
+ * 入力フォームとそれを包むダイアログの中身。submit にフォームの状態が要るので、見出しを含む
+ * `ActionDialogContent` ごとここで描く。
+ *
+ * フィールドに `autoFocus` は渡さない — base-ui の Popup が既定でポップアップ内の最初の
+ * tabbable へフォーカスを移し、タッチ操作のときだけ仮想キーボードを開かないよう Popup
  * 自身を選ぶ。`autoFocus` はこの出し分けを潰す (初期フォーカス位置は
  * `note-create-dialog.test.tsx` が固定している)。
  */
@@ -130,7 +143,10 @@ function NoteCreateForm({
 
   return (
     // 検証に失敗すると handleSubmit は onSubmit を呼ばずに resolve し、Transition もすぐ終わる
-    <DialogScrollForm submitAction={() => form.handleSubmit()}>
+    <ActionDialogContent submitAction={() => form.handleSubmit()}>
+      <DialogHeader>
+        <DialogTitle>メモを追加</DialogTitle>
+      </DialogHeader>
       <DialogScrollBody>
         <FieldGroup>
           {/* validator は server function と同じ noteInputSchema の項目定義を使う。
@@ -161,6 +177,6 @@ function NoteCreateForm({
         </DialogClose>
         <ActionFormSubmit>保存</ActionFormSubmit>
       </DialogFooter>
-    </DialogScrollForm>
+    </ActionDialogContent>
   );
 }

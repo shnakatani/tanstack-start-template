@@ -60,7 +60,7 @@ Compiler はコンポーネントか hook として認識した関数しか最�
 
 ### mutation を Action 層から呼ぶ
 
-mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton` / `AlertDialogActionButton` / `ActionForm`) に `action` を渡し、Action の中で `useActionMutation` の `runAction` を呼ぶ (ADR-0016)。
+mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton` / `AlertDialogActionButton` / `ActionForm` / `ActionDialogContent`) に `action` を渡し、Action の中で `useActionMutation` の `runAction` を呼ぶ (ADR-0016)。
 
 #### Action 層の部品が守る契約
 
@@ -134,7 +134,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | 削除 | (a) 確定でダイアログを閉じる | 行を `aria-busy` と半透明にし、行のトリガーだけを無効にする。mutation に `mutationKey` を付け、一覧側で `useMutationState` (`status: "pending"`) の `variables` を配列で読み、行ごとに判定する。同時の削除を許し、各 mutation は自分の再取得を待つ | 失敗は toast と行の復帰で戻せる。確定で閉じるので、共有の handle を先行する削除の `onSuccess` が閉じる問題も起きない |
 | 追加 | (b) サーバー応答で閉じる     | `onSuccess` の先頭で閉じ、再取得の Promise を返す。mutation はダイアログ側にあるので `mutationKey` を付け、一覧側で `useMutationState` の `variables` を読んで新しい行を半透明で出し、再取得の完了で実データに置き換える                           | 楽観で閉じると、失敗したときに入力を戻す先が無い                                                                     |
 
-- 半透明は `src/components/parts/busy-opacity.ts` の `BUSY_OPACITY_CLASS` を使う。値の理由と、当たる対の測り方は同じ定数の docstring が持つ
+- 半透明は `src/lib/busy-opacity.ts` の `BUSY_OPACITY_CLASS` を使う。値の理由と、当たる対の測り方は同じ定数の docstring が持つ
 - 半透明と `aria-busy` は読み上げに出ない。通知は announcer で出し、行には仮想カーソル用の静的テキスト (「削除中」「保存中」) を置く (ADR-0026)
 - `variables` を行へ絞るスキーマは `src/features/notes/deleting-ids.ts` と `src/features/notes/creating-rows.ts`、filters は `src/features/notes/mutations.ts` が持つ
 

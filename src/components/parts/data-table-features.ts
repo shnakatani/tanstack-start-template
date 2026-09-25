@@ -1,11 +1,12 @@
 import type { CellContext, RowData } from "@tanstack/react-table";
-import { metaHelper, tableFeatures } from "@tanstack/react-table";
+import { tableFeatures } from "@tanstack/react-table";
 
-/** 列定義が持つ描画の指定。`DataTable` が td に写す。 */
-type DataTableColumnMeta = { cellClassName?: string };
-
-/** 一覧テーブル共通の features。増やし方は `docs/guides/lists-and-search.md`「一覧テーブルを組む」の features 行。 */
-export const dataTableFeatures = tableFeatures({ columnMeta: metaHelper<DataTableColumnMeta>() });
+/**
+ * 一覧テーブル共通の features。増やし方は `docs/guides/lists-and-search.md`「一覧テーブルを組む」の features 行。
+ * cell の見た目は列の `cell` 部品の中で書き、td へ class を写す meta は持たない。td の className は
+ * 動的になり `require-static-classes` が落とす (ADR-0022)
+ */
+export const dataTableFeatures = tableFeatures({});
 
 export type DataTableFeatures = typeof dataTableFeatures;
 

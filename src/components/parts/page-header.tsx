@@ -1,7 +1,7 @@
 import { cn } from "cn";
 import type { ReactNode } from "react";
 
-import { pageTitle } from "@/components/parts/page-title";
+import { cardTitleVariants } from "@/components/ui/card";
 
 /**
  * 画面の見出し行。`title` はページの h1 として描く。
@@ -14,7 +14,9 @@ export function PageHeader({ title, actions }: { title: string; actions?: ReactN
   return (
     // h-9 (36px) の actions + py-3 (24px) と min-h-15 (60px) を一致させ、actions の有無で等高にする。
     <header className="flex min-h-15 items-center justify-between border-b border-border bg-background px-4 py-3">
-      <h1 className={cn(pageTitle(), "flex items-center text-foreground")}>{title}</h1>
+      <h1 className={cn(cardTitleVariants({ size: "page" }), "flex items-center text-foreground")}>
+        {title}
+      </h1>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </header>
   );
