@@ -10,8 +10,8 @@ paths:
 | 配置先                       | 内容                                                                                                                                                                              |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先。ADR-0011)                                                                                                         |
-| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0016)                                                                                          |
-| `src/components/parts/`      | registry を包んで外見を定義する自作部品。層の規則 (`no-restyle` / `require-static-classes`) の適用外 (ADR-0011 / ADR-0022)                                                        |
+| `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0016)。層の規則を適用する (ADR-0011)                                                           |
+| `src/components/parts/`      | ui 部品を組み合わせる自作部品。見た目の差は `ui/` の variant で持つ。層の規則を適用する (ADR-0011 / ADR-0022)                                                                     |
 | `src/components/screens/`    | 部品を並べて画面を組む共有コンポーネント。層の規則を適用する (ADR-0011 / ADR-0022)                                                                                                |
 | `src/components/`            | 上のどれでもないもの。層の規則を適用する (ADR-0011 / ADR-0022)。実例は `live-regions.tsx`                                                                                         |
 | `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント (ADR-0010)                                                                                                                         |
@@ -20,8 +20,7 @@ paths:
 | `routes/<path>/-hooks/`      | その URL 配下だけで使う React hook (`use-*`)。`src/hooks/` と同じ線引き (`docs/guides/placement.md`「route の中の置き場」)                                                        |
 
 - `routes/<path>/-` で始まるディレクトリの中の import は相対パスで書く (`docs/guides/placement.md`「route の中の置き場」)
-- `parts/` と `screens/` の取り違えは機械で止まらない。外見を定義するなら `parts/`、既存の部品を並べるだけなら `screens/`。消費者が 1 つでも同じ (ADR-0011)
-- className を書きたいことは `parts/` へ移す理由にならない。層の規則から外れるために移すのは逆 (ADR-0011 / ADR-0022)
+- 部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/`。どちらも層の規則が効く (ADR-0011)
 - 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の部品を参照で渡す (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0010)
 - route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない
@@ -31,7 +30,7 @@ paths:
 - `argTypes` の `options` に `cva` の variant を写すときは型で網羅を強制する。型検査も lint も一致を見ない (`docs/guides/storybook.md`「story を書く」)
 - トークンの story に typography の階層のような class の規範を写さない。写すと片方だけが古くなり、突き合わせる検査も無い (`docs/guides/storybook.md`「story を置く」)
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。余白は `.storybook/preview.css` が持つ (`docs/guides/storybook.md`「story を書く」)
-- story から部品へ渡す `className` は layout に限る。story は lint (`no-restyle`) の対象外なのでレビューで見る (`docs/guides/storybook.md`「story を書く」)
+- `ui/` の story から部品へ渡す `className` は layout に限る。`ui/` は lint (`no-restyle`) の適用外なのでレビューで見る (`docs/guides/storybook.md`「story を書く」)
 
 ## features と hooks と lib と server の境界
 

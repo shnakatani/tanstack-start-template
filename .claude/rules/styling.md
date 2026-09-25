@@ -79,6 +79,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
+- ui 部品の見た目を変えるときは、既定か公式のノブ → `ui/` の variant → 素の要素で包む → contract の順に選ぶ。contract は部品の名前で全ファイルに効くので、値をそろえたい見た目に使わない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
 - `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える (`docs/guides/registry.md`「公式のノブを先に探す」)
 - 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`docs/guides/registry.md`「公式のノブを先に探す」)
