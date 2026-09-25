@@ -165,7 +165,7 @@ function DialogDescription({ className, ...props }: DialogPrimitive.Description.
  * `-mx-6` と `px-6` は `DialogContent` の `p-6` (`ui/dialog.tsx`) を打ち消して Viewport の
  * 内側へ移すためのペア。Viewport は `overflow: scroll` なので、内側に余白がないと入力の
  * focus ring (`input.tsx` の `focus-visible:ring-3` = box-shadow 3px) が境界でクリップされる。
- * **`DialogContent` の padding を変えたらこの値も変える**。ずれは `parts/dialog-scroll-form.stories.tsx`
+ * **`DialogContent` の padding を変えたらこの値も変える**。ずれは `action/dialog.stories.tsx`
  * の `Overflowing` で、本文と見出しの左端の揃いとして見える。
  *
  * `py-4` は同じクリップを縦で防ぐ。先頭・末尾に来た要素 (input の focus ring、`card.tsx` の
@@ -208,9 +208,9 @@ function DialogDescription({ className, ...props }: DialogPrimitive.Description.
  * 依存になるので公式どおり残す。**機能を担っているのは `flex-col` (外すと内部スクロールが
  * 効かない) と `-mx-6` / `px-6` (外すと内容が 24px 内側へずれ、focus ring がクリップされる)**。
  *
- * 一方 `dialogScrollLayout` 側が `flex-1` を持たないのは、公式の inside-scroll 例が Popup
- * の直下に Header / ScrollArea.Root / Actions を置き `form` に相当する中間要素を持たないため、
- * 参照すべき公式指定が存在しないからである (Root 側とは判断の基準が違う)。
+ * フォームを持つダイアログでも、Root は Popup の flex の子になる。`ActionDialogContent`
+ * (`action/dialog.tsx`) の form が `display: contents` で box を作らないため、公式の
+ * inside-scroll 例と同じく Popup の直下に Header / ScrollArea.Root / Actions が並ぶ。
  */
 function DialogScrollBody({
   className,
