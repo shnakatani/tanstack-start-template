@@ -16,12 +16,12 @@ import {
 const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
 
 /**
- * design system を著作する層 (ADR-0011)。`@shadcn/lint` の 2 軸をここから導出する。
- * 認識 (`componentImports`) はこの層の部品を design system component として登録し、
- * 適用 (`excludeFiles`) はこの層自身を規則の対象から外す。別々に書くと片方だけ直しても
- * 何も落ちず、新しい層の部品が規則から見えないまま消費側の上書きが素通りする
+ * `@shadcn/lint` が design system component として認識する層 (ADR-0011)。`routes/` などから
+ * これらの部品へ渡す className を `no-restyle` が検査する。`action/` は見た目を持たない層なので
+ * 含めない。`ActionButton` のように ui 部品へ className を転送する部品は、包みとして追跡されて
+ * 転送先の contract で検査される
  */
-const DESIGN_SYSTEM_LAYERS = ["ui", "action", "parts"] as const;
+const DESIGN_SYSTEM_COMPONENT_LAYERS = ["ui", "parts"] as const;
 
 export default defineConfig({
   // Vite の .env 読み込みを切る。秘密を暗号化して .env ごとコミットする方式 (dotenvx 等) は、
@@ -64,7 +64,9 @@ export default defineConfig({
     ],
     settings: {
       shadcn: {
-        componentImports: DESIGN_SYSTEM_LAYERS.map((layer) => `^@/components/${layer}(/|$)`),
+        componentImports: DESIGN_SYSTEM_COMPONENT_LAYERS.map(
+          (layer) => `^@/components/${layer}(/|$)`,
+        ),
         // cva で作った variant 関数を宣言する。宣言しないと消費側の buttonVariants({...}) が
         // require-static-classes で落ちる。shadcn 公式の Button docs は「As Link」でこの形を
         // 推奨しており、テンプレート利用者がそのまま書けるようにする (docs/guides/lint/tailwind-and-shadcn.md「variant 関数を宣言する」)。
@@ -355,14 +357,13 @@ export default defineConfig({
         },
       },
       {
-        // no-restyle と require-static-classes は「消費側が design system component へ何を渡して
-        // いるか」を見る規則で、design system 自身の内部には意味を持たない (ADR-0011)。緩和では
-        // なく適用範囲の確定なので excludeFiles で外す。componentImports が無いと自作部品が規則
-        // から見えず、routes からの上書きが素通りする。require-static-classes は他の shadcn
-        // ルールの門番で、ここで落ちる className は no-raw-colors / no-unknown-classes も中身を
-        // 読めない (ADR-0022)
+        // no-restyle と require-static-classes は「design system component へ何を渡しているか」を
+        // 見る規則で、部品ディレクトリ (ui/) の内部には意味を持たない (ADR-0011)。緩和ではなく
+        // 適用範囲の確定なので excludeFiles で外す。parts/ と action/ は外さない。見た目の差は
+        // ui/ の variant で持つ。require-static-classes は他の shadcn ルールの門番で、ここで落ちる
+        // className は no-raw-colors / no-unknown-classes も中身を読めない (ADR-0022)
         files: ["src/**", ".storybook/**"],
-        excludeFiles: DESIGN_SYSTEM_LAYERS.map((layer) => `src/components/${layer}/**`),
+        excludeFiles: ["src/components/ui/**"],
         rules: {
           "shadcn/no-restyle": ["error", { allow: ["layout"] }],
           "shadcn/require-static-classes": "error",
