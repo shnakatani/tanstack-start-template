@@ -70,8 +70,11 @@ export default defineConfig({
         // cva で作った variant 関数を宣言する。宣言しないと消費側の buttonVariants({...}) が
         // require-static-classes で落ちる。shadcn 公式の Button docs は「As Link」でこの形を
         // 推奨しており、テンプレート利用者がそのまま書けるようにする (docs/guides/lint/tailwind-and-shadcn.md「variant 関数を宣言する」)。
+        // 宣言するのは ui/ が定義した variant 関数だけにする。宣言した関数の呼び出しは cva の
+        // 定義の中の class が no-restyle に検査されずに通るため、ui/ の外の cva を宣言すると
+        // 見た目の上書きの抜け道になる (ADR-0023)。
         // mergeFunctions は使わない。オブジェクトを渡す関数に当てるとキー名を class と誤読する
-        variantFunctions: ["buttonVariants"],
+        variantFunctions: ["buttonVariants", "cardTitleVariants"],
       },
     },
     // カテゴリ丸ごとの有効化は correctness と perf に限る。他はプラグインごとの上流

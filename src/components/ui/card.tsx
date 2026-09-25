@@ -1,3 +1,4 @@
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 import * as React from "react";
 
@@ -32,14 +33,38 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * `size="page"` はページ全体の見出しの寸法。`PageHeader` の `<h1>` も同じ関数を呼び、2 つの
+ * ページ見出しの寸法の出どころを 1 つにする
+ */
+const cardTitleVariants = cva("font-heading leading-normal", {
+  variants: {
+    size: {
+      default: "text-base font-medium group-data-[size=sm]/card:text-sm",
+      page: "text-lg font-semibold",
+    },
+    /** 意味色の出し分け。破壊的な文脈にだけ destructive を使う */
+    tone: {
+      default: "",
+      destructive: "text-destructive",
+    },
+  },
+  defaultVariants: {
+    size: "default",
+    tone: "default",
+  },
+});
+
+function CardTitle({
+  className,
+  size,
+  tone,
+  ...props
+}: React.ComponentProps<"div"> & VariantProps<typeof cardTitleVariants>) {
   return (
     <div
       data-slot="card-title"
-      className={cn(
-        "font-heading text-base leading-normal font-medium group-data-[size=sm]/card:text-sm",
-        className,
-      )}
+      className={cn(cardTitleVariants({ size, tone }), className)}
       {...props}
     />
   );
@@ -88,4 +113,13 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent };
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  cardTitleVariants,
+  CardAction,
+  CardDescription,
+  CardContent,
+};
