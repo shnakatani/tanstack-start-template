@@ -59,7 +59,7 @@ function AlertDialogContent({
             popupOverflowBackstop,
             // base-ui の AlertDialog.Viewport も Dialog.Viewport と同じ scrollable な配置
             // コンテナ。Dialog で先行した内部スクロール方式を展開できるよう縦積みは flex
-            // column にし、必要な本体を DialogScrollBody で包む。
+            // column にし、必要な本体を DialogScrollBody (`ui/dialog.tsx`) で包む。
             "group/alert-dialog-content relative flex min-h-0 w-full flex-col gap-6 rounded-xl bg-popover p-6 text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className,
           )}

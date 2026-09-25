@@ -7,18 +7,19 @@ import {
   DialogContent,
   DialogFooter,
   DialogHeader,
+  DialogScrollBody,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-import { DialogScrollBody, DialogScrollForm } from "./dialog-scroll-body";
+import { DialogScrollForm } from "./dialog-scroll-form";
 
 /**
  * 内部スクロール方式のダイアログのカタログ。溢れている状態と溢れていない状態を並べる。
  *
  * 寸法と色の回帰 (区切り線の対称性、focus ring がクリップされないこと、本文と縦バーの
- * 重なり、`dialogScrollLayout` の flex 指定) は `dialog-scroll-body.test.tsx` が
+ * 重なり、`dialogScrollLayout` の flex 指定) は `dialog-scroll-form.test.tsx` が
  * `getComputedStyle` / `getBoundingClientRect` で持ち続ける (docs/guides/storybook.md「story とブラウザテストの分担」)。
  * ここの play は「その story が名乗る状態になっているか」だけを `data-has-overflow-y` で確かめる。
  *

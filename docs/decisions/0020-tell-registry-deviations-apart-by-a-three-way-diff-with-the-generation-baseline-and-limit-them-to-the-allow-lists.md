@@ -69,6 +69,10 @@ baseline の取得漏れは `scripts/checks/integrity/registry-baseline.test.ts`
 同じ意匠の `className` 上書きが複数箇所に現れ、それが既存 variant で表現できないなら、variant へ引き上げる方が消費側に色と typography が散るより健全である。
 この経路で追加するときは、どの variant の `className` 上書きを畳んだのかと、既存 variant で表現できない理由を許容リストの行に書く。
 
+registry に相当する部品が無く、registry の部品へ当てる見た目を 1 つの用途に組み替える部品も、`ui/` に足してよい。
+`no-restyle` は部品ディレクトリ (`ui/`) の外で registry の部品への見た目の上書きを止めるため (ADR-0011)、その部品は `ui/` にしか置けない。
+追加するときは、用途と、registry に相当する部品が無いことを許容リストの行に書く。
+
 上記に当たらない、見た目や意味論の好みでソースを書き換えることはせず、上流に合わせる。
 ローカルの実装が上流と同じ結果になったら行を削除する。
 

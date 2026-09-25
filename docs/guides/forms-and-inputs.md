@@ -49,7 +49,7 @@
 
 ### 高さのあるダイアログを組む
 
-入力項目が多く、恒常的に viewport の高さを超えるダイアログは、`DialogScrollForm` と `DialogScrollBody` (`src/components/parts/dialog-scroll-body.tsx`) で本体だけを内部スクロールさせる。見出し・X ボタン・フッターが常に見える。実例は `src/routes/notes/-components/note-create-dialog.tsx`、見え方は `dialog-scroll-body.stories.tsx` の `Overflowing` で確かめる。
+入力項目が多く、恒常的に viewport の高さを超えるダイアログは、`DialogScrollForm` (`src/components/parts/dialog-scroll-form.tsx`) と `DialogScrollBody` (`src/components/ui/dialog.tsx`) で本体だけを内部スクロールさせる。見出し・X ボタン・フッターが常に見える。実例は `src/routes/notes/-components/note-create-dialog.tsx`、見え方は `dialog-scroll-form.stories.tsx` の `Overflowing` で確かめる。
 
 | 組み方                                                                                          | 守らないと                                                                                                            |
 | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -65,7 +65,7 @@
 | フッターの手前で、描画が空になる条件分岐がある   | 中間コンテナの外 (分岐によらず常時表示を保つ)           |
 | ヘッダーと本体の間に固定表示の兄弟要素を挟まない | 中間コンテナを省き、`DialogScrollBody` を直接置いてよい |
 
-- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、`dialog-scroll-body.tsx` へ部品を足す (ADR-0022)
+- 送信を伴わない `div` の中間コンテナが要るときは、`dialogScrollLayout` を層の外へ配らず、`dialog-scroll-form.tsx` へ部品を足す (ADR-0022)
 - `DialogContent` の padding を変えたら、`DialogScrollBody` の `-mx-6` / `px-6` も変える
 - 組み忘れても、registry の Dialog が持つ backstop (`popupOverflowBackstop`) で Popup ごと流れるので、内容は読める。ただし見出しと X ボタンも流れる
 
