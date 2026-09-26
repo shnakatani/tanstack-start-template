@@ -3,6 +3,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
 import { NotFoundContent } from "@/components/screens/not-found";
+import { PendingContent } from "@/components/screens/pending";
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { toast } from "@/components/ui/toast";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
@@ -36,6 +37,9 @@ export function getRouter() {
     // root の全画面エラーに落ちる)
     defaultErrorComponent: RouteErrorContent,
     defaultNotFoundComponent: NotFoundContent,
+    // route の pendingComponent が無いときの Suspense の受け皿。未設定だと境界が張られず、
+    // suspend が root の Outlet まで巻き上がって何も描かれない (ADR-0029)
+    defaultPendingComponent: PendingContent,
   });
 
   setupRouterSsrQueryIntegration({ router, queryClient });

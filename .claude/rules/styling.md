@@ -105,6 +105,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 ## 状態表示
 
 - ページのローディングは route loader の prefetch + `useSuspenseQuery` + route の `pendingComponent` に統一する。タイミングは `src/router.tsx` の既定に任せる
+- route に `pendingComponent` が無い画面は、router の `defaultPendingComponent` (`PendingContent`) が受ける。消さない。無いと suspend が root まで巻き上がって何も描かれない (ADR-0029)
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が点滅する
 - skeleton はレイアウトを模倣する (`table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付ける
 - 列数など実テーブルと合わせる値は、実テーブル側の定義を SSOT にして両方から参照する。別々に持つとロード完了時にレイアウトがずれる
@@ -138,7 +139,7 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 | テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                  |
 | ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026) |
 
-- 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`) (ADR-0026)
+- 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`、`PendingContent`) (ADR-0026)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0026)
 - pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 - 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0027)
