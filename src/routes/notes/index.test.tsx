@@ -19,7 +19,7 @@ import { createTestQueryClient } from "@/test/app/query-client";
 import { readAnnouncements } from "@/test/assert/live-announcer";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
-vi.mock("@/features/notes/functions");
+vi.mock(import("@/features/notes/functions"));
 
 // この画面に固有のテストの書き方 (route 全般の書き方は docs/guides/testing/route-wrappers.md「route の wrapper をテストする」、debounce の打ち方と fake timers を
 // 使わない理由は `docs/guides/testing/user-interactions.md`「debounce のある入力をテストする」):

@@ -32,7 +32,7 @@ import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
-vi.mock("@/features/notes/functions");
+vi.mock(import("@/features/notes/functions"));
 
 /**
  * debounce の待ちを 1500ms に広げる。実値 (`NOTE_SEARCH_DEBOUNCE_MS`) だと、`mise run verify` の負荷で

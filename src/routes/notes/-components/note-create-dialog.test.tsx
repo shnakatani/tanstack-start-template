@@ -20,7 +20,7 @@ import {
 } from "@/test/assert/screen-assertions";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
-vi.mock("@/features/notes/functions");
+vi.mock(import("@/features/notes/functions"));
 
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 import {
