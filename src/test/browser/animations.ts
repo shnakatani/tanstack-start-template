@@ -16,7 +16,7 @@ async function emulateReducedMotion(value: "reduce" | "no-preference"): Promise<
 }
 
 /**
- * ブラウザテストの既定 (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)。`src/test/browser-setup.tsx` の `beforeEach` が毎テスト呼ぶ。
+ * ブラウザテストの既定 (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)。`src/test/browser/browser-setup.tsx` の `beforeEach` が毎テスト呼ぶ。
  * Base UI のスイッチ (上の宣言) と `prefers-reduced-motion: reduce` のエミュレーションを同時に
  * 立てる。後者は `src/styles.css` の reduced-motion ブロックが CSS の animation / transition を
  * 0.01ms にする。エミュレーションは page スコープで次のテストへ残るが、次の `beforeEach` が

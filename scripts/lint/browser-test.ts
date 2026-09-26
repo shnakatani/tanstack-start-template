@@ -4,7 +4,7 @@ import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plu
  * ブラウザテストの assert を守る oxlint の JS plugin。ルールで止める決定は ADR-0009 が 4 ルールぶん
  * まとめて持つ。規範の説明は各ルールの診断メッセージが指す先にある。`prefer-locator-methods` と
  * `no-negated-style-literal` は docs/guides/testing/waiting-and-assertions.md の節、`no-find-element` は ADR-0009、
- * `no-bare-absence-assertion` は ADR-0009 と `src/test/absent.ts` を指す。一覧は下の `definePlugin`。
+ * `no-bare-absence-assertion` は ADR-0009 と `src/test/assert/absent.ts` を指す。一覧は下の `definePlugin`。
  *
  * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
  * 適用先 glob の決め方は ADR-0009 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
@@ -485,7 +485,7 @@ export const noBareAbsenceAssertion = defineRule({
     },
     messages: {
       bareAbsence:
-        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない。`expectAbsent` は要素が無ければ 1 回目で通るので、同じ操作の効果を表す肯定 assert を先に置く。無いと何も検証していない (ADR-0009)",
+        "`expect.element(...).not.toBeInTheDocument()` を直に書かない。最初から出ないなら `expectAbsent(locator)`、在る状態から消えるのを待つなら `expectRemoved(locator)` を使う (`src/test/assert/absent.ts`)。同じ matcher なので、名前を付けないとどちらのつもりかが字面で読めない。`expectAbsent` は要素が無ければ 1 回目で通るので、同じ操作の効果を表す肯定 assert を先に置く。無いと何も検証していない (ADR-0009)",
     },
   },
   create(context) {

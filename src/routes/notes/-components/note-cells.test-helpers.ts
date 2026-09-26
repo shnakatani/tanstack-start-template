@@ -1,5 +1,5 @@
 import type { Note } from "@/features/notes/schema";
-import type { Screen } from "@/test/page-helpers";
+import type { Screen } from "@/test/assert/screen-assertions";
 
 /**
  * メモの行。モーダル表示中は行が aria-hidden 配下に入るので、その間に取るときは includeHidden を

@@ -1,4 +1,4 @@
-import type { Screen } from "@/test/page-helpers";
+import type { Screen } from "@/test/assert/screen-assertions";
 
 import { NOTE_SEARCH_LABEL } from "../-lib/note-search";
 

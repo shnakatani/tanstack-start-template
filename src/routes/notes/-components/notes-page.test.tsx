@@ -20,14 +20,15 @@ import {
   OTHER_NOTE,
 } from "@/features/notes/schema.test-helpers";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
-import { expectNoA11yViolations } from "@/test/a11y";
-import { expectAbsent, expectRemoved } from "@/test/absent";
-import { enableAnimations } from "@/test/animations";
-import { createTestRouter } from "@/test/create-test-router";
-import { deferMock } from "@/test/defer-mock";
-import { readAnnouncements } from "@/test/live-announcer";
-import { createTestQueryClient, expectText, type Screen } from "@/test/page-helpers";
-import { parkMouse } from "@/test/park-mouse";
+import { expectNoA11yViolations } from "@/test/a11y/a11y";
+import { createTestRouter } from "@/test/app/create-test-router";
+import { deferMock } from "@/test/app/defer-mock";
+import { createTestQueryClient } from "@/test/app/query-client";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
+import { readAnnouncements } from "@/test/assert/live-announcer";
+import { expectText, type Screen } from "@/test/assert/screen-assertions";
+import { enableAnimations } from "@/test/browser/animations";
+import { parkMouse } from "@/test/browser/park-mouse";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする

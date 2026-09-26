@@ -59,6 +59,23 @@ ADR-0010 に沿って、次の順で組む。
 
 registry 由来でない付随ファイル (`*.test.*` / `*.stories.*` / `*.test-helpers.*` / `*.story-helpers.*`) は `src/components/ui/` に置いてよい。`shadcn add` の出力に含まれないので baseline を持たず、registry の網羅検査の対象にならない。付随ファイルの種別は `scripts/lib/companion-files.ts` が定義する。
 
+### `src/test/` に helper を置く
+
+ドメインを跨ぐテストの helper は、そのファイルが何を作るかで `src/test/` の下のディレクトリを選ぶ。誰が呼ぶかでは選ばない。1 つの helper を setup とテスト本文の両方が呼ぶことがあり (`park-mouse.ts`)、呼び出し元では置き先が 1 つに決まらない。ファイル名の prefix (`a11y-*`、`viewport-*`) も分類の代わりにしない。prefix を持たない helper の置き先が決まらない。
+
+| 何を作るか                                                            | ディレクトリ        | 例                                                                |
+| --------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------- |
+| browser project の実行環境 (setup、config が読む定数)                 | `src/test/browser/` | `browser-setup.tsx`、`park-mouse.ts`、`viewport-sizes.ts`         |
+| テスト本文が呼ぶ assert と実測、その引数の型                          | `src/test/assert/`  | `absent.ts`、`viewport.ts`、`screen-assertions.ts`                |
+| axe の実行と結果の整形                                                | `src/test/a11y/`    | `a11y.ts`、`a11y-story.ts`                                        |
+| アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場 | `src/test/app/`     | `create-test-router.tsx`、`query-client.ts`、`settling-action.ts` |
+
+- config が読む定数は、テスト本文が使うものでも `browser/` に置く。assert の helper と同じファイルにすると、config が browser mode の import (`vite-plus/test/browser`) を引いて落ちる (`viewport-sizes.ts` の docstring)
+- 1 つのファイルに役割が 2 つ混ざったら、ファイルを分けてそれぞれのディレクトリへ置く。混ざったファイルが残ると、次の helper を置くときの手本が 2 通りになる
+- helper のテストは helper と同じディレクトリに置く
+- ディレクトリ名と重なる prefix (`a11y/a11y-story.ts` の `a11y-`) は外さない。文書はファイル名だけで helper を指すことが多く、`story.ts` や `setup.tsx` のような名前はファイル名だけで引いたときに 1 つに決まらない
+- `helpers`・`utils` のような中身を表さない名前にしない。役割が混ざった受け皿になり、上の「ファイルを分ける」が働かなくなる
+
 ## 落とし穴
 
 | 落とし穴                                                         | 起きること                                                                                                 | 避け方                                                                                                            |

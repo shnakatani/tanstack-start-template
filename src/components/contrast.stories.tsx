@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
  * 色が出ており、axe がそこを測ると最終的な配色には存在しない比が報告される。代わりに hover で
  * 現れる utility を、prefix を外した形で静的に描く。
  *
- * ブラウザテスト側がマウスを退避させるのは別の理由による (`src/test/park-mouse.ts`)。全体 run で
+ * ブラウザテスト側がマウスを退避させるのは別の理由による (`src/test/browser/park-mouse.ts`)。全体 run で
  * 前のファイルの click 位置が残り、開状態の検証が hover の配色と交絡するのを防ぐためで、
  * story の実行経路には関わらない。
  *

@@ -35,7 +35,7 @@
 
 ### animation を戻すテストを書く
 
-animation は `src/test/browser-setup.tsx` が毎テスト止める (「animation を無効にして走らせる理由」)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
+animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「animation を無効にして走らせる理由」)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
 
 - 本文の先頭で `await enableAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻すので、戻す処理は書かない (`parkMouse` と同じ形)
 - 無限アニメーション (Spinner) は既定で 1 周して止まる。rect や算出スタイルは `expect.poll` の中で読むので、残る 0.01ms も待たない
@@ -122,7 +122,7 @@ animation は `src/test/browser-setup.tsx` が毎テスト止める (「animatio
 | vitest.dev「Playwright」                                             | `contextOptions` は `browser.newContext` へ素通しで、context は session 単位 (1 つの session が複数ファイルを順に走らせる)。`reducedMotion: "reduce"` でメディア機能を偽装できる                                     |
 | vitest.dev「retry」「TestCase」                                      | `retry` は全体 / test 単位 / `condition` で絞れる。retry 後に通ったテストは `TestDiagnostic.flaky` で拾える                                                                                                          |
 
-既定は `src/test/browser-setup.tsx` の `beforeEach` が `src/test/animations.ts` の `disableAnimations()` を毎テスト呼んで作る。`globalThis.BASE_UI_ANIMATIONS_DISABLED = true` で閉じた popup は animate-out を待たずに unmount し、CDP `Emulation.setEmulatedMedia` の `prefers-reduced-motion: reduce` で `src/styles.css` の reduced-motion ブロックが CSS の animation / transition を 0.01ms にする。
+既定は `src/test/browser/browser-setup.tsx` の `beforeEach` が `src/test/browser/animations.ts` の `disableAnimations()` を毎テスト呼んで作る。`globalThis.BASE_UI_ANIMATIONS_DISABLED = true` で閉じた popup は animate-out を待たずに unmount し、CDP `Emulation.setEmulatedMedia` の `prefers-reduced-motion: reduce` で `src/styles.css` の reduced-motion ブロックが CSS の animation / transition を 0.01ms にする。
 
 | 案                                                            | 評価                                                                                                                                                                                                                                                                                                       | 採否     |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |

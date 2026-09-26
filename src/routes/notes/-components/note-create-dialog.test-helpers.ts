@@ -1,8 +1,8 @@
 import { expect } from "vite-plus/test";
 
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
-import { expectRemoved } from "@/test/absent";
-import type { Screen } from "@/test/page-helpers";
+import { expectRemoved } from "@/test/assert/absent";
+import type { Screen } from "@/test/assert/screen-assertions";
 
 /**
  * 追加ダイアログのテスト用 locator。部品のテストとページのテストの両方が同じフォームを操作する

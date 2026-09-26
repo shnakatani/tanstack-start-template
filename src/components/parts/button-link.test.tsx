@@ -2,8 +2,8 @@ import { RouterProvider } from "@tanstack/react-router";
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
-import { createTestRouter } from "@/test/create-test-router";
-import { expectText } from "@/test/page-helpers";
+import { createTestRouter } from "@/test/app/create-test-router";
+import { expectText } from "@/test/assert/screen-assertions";
 
 import { ButtonLink } from "./button-link";
 

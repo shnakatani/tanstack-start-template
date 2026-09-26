@@ -28,7 +28,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 - 検証専用の story (終了状態が他の story と同じ見た目になるもの) には `tags: ["!dev"]` を付ける。サイドバーの一覧から消えるが、vitest の project 実行では対象に残る (`index.json` の `tags` が `dev` を含まなくなる。2026-09-20 実測)。付け忘れはレビューで見る。ただし同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くので、その部品の状態が 1 つも並ばない事態を避ける。実例は `ActionButtonShell` の `Idle` (`ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)
 - story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。外見を上書きする class は部品側の variant にする (ADR-0022)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない
 - `ui/` の story は `no-restyle` / `require-static-classes` の適用外で、lint は鳴らない (ADR-0011)。鳴らないぶんはレビューで見る。`parts/` や `action/` など `ui/` の外の story は、消費側と同じく lint が止める
-- pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く (`src/test/settling-action.ts`)。Storybook の vitest 実行は 1 つの React root へ story を描き替えるので、決着しない Transition が残ると後続 story の Transition と干渉し、後続 story が pending のまま止まる (2026-09-20 実測)
+- pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く (`src/test/app/settling-action.ts`)。Storybook の vitest 実行は 1 つの React root へ story を描き替えるので、決着しない Transition が残ると後続 story の Transition と干渉し、後続 story が pending のまま止まる (2026-09-20 実測)
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。vitest から走らせた story には Storybook の `layout: "padded"` が効かず、その差は `.storybook/preview.css` が埋める (「vitest 経由の story に padding を当てる理由」)
 
 ### カタログと play の範囲

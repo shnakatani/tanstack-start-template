@@ -11,7 +11,7 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/combobox";
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
-import { maxShadowSpread } from "@/test/box-shadow";
+import { maxShadowSpread } from "@/test/assert/box-shadow";
 
 /**
  * input-group.tsx の registry 乖離 (popup 内リング抑制 patch、ADR-0020) のガード。

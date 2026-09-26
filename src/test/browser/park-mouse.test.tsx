@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { cdp } from "vite-plus/test/browser/context";
 import { render } from "vitest-browser-react";
 
-import { parkMouse } from "@/test/park-mouse";
+import { parkMouse } from "@/test/browser/park-mouse";
 
 describe("parkMouse", () => {
   it("viewport 全面を覆う要素の hover を解除する", async () => {

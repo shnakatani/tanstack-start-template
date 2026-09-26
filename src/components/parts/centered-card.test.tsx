@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { FullScreenNotice } from "@/components/parts/centered-card";
-import { expectText } from "@/test/page-helpers";
+import { expectText } from "@/test/assert/screen-assertions";
 
 /**
  * 状態のカタログは `centered-card.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。狭幅での余白も `Narrow`

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test";
 
-import { createSettlingAction } from "@/test/settling-action";
+import { createSettlingAction } from "@/test/app/settling-action";
 
 import { ActionButton } from "./button";
 import { CAUGHT_PREFIX, CaughtHere, silenceConsoleError } from "./catch-boundary.story-helpers";
@@ -12,7 +12,7 @@ import { CAUGHT_PREFIX, CaughtHere, silenceConsoleError } from "./catch-boundary
  * 止まる (docs/guides/storybook.md「story を書く」)。pending の外見は ActionButtonShell の story が args だけで持つ。
  *
  * 決着の時点は play が `settling.settle()` で握る。仕組みと理由は
- * `src/test/settling-action.ts` が持つ。play は必ず決着させてから終える。
+ * `src/test/app/settling-action.ts` が持つ。play は必ず決着させてから終える。
  */
 const settling = createSettlingAction();
 const settlingAction = fn(settling.impl);

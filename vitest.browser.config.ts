@@ -4,8 +4,8 @@ import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
 import { BROWSER_TEST_GLOB } from "./scripts/lib/companion-files";
-import { ASSERT_TIMEOUT_MS } from "./src/test/assert-budget";
-import { DEFAULT_VIEWPORT } from "./src/test/viewport-sizes";
+import { ASSERT_TIMEOUT_MS } from "./src/test/browser/assert-budget";
+import { DEFAULT_VIEWPORT } from "./src/test/browser/viewport-sizes";
 
 export default defineProject({
   // vite.config.ts と同じく .env を読まない。vitest.config.ts は vite.config.ts を
@@ -14,7 +14,7 @@ export default defineProject({
   // 分けているので、全体を継承すると plugin ごと戻ってしまう。1 行だけ写す (ADR-0004)
   envDir: false,
   // Tailwind をブラウザテストでも実 CSS に解決する。setupFiles の
-  // src/test/browser-setup.tsx が src/styles.css を import し、この plugin が
+  // src/test/browser/browser-setup.tsx が src/styles.css を import し、この plugin が
   // ユーティリティクラスを生成する。node 側 (vitest.config.ts) には不要。
   plugins: [viteReact(), tailwindcss()],
   resolve: {
@@ -51,7 +51,7 @@ export default defineProject({
   test: {
     name: "browser",
     // assert の予算。テストの予算 (`testTimeout`) と分ける。値とその根拠は
-    // `src/test/assert-budget.ts` が持つ。`actionTimeout` と対で効き、これを消すと
+    // `src/test/browser/assert-budget.ts` が持つ。`actionTimeout` と対で効き、これを消すと
     // vitest の既定 1000ms、`actionTimeout` を消すと残り予算を使い切る側へ戻る (docs/guides/testing/waiting-and-assertions.md「assert の予算を宣言する」)
     expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
@@ -66,7 +66,7 @@ export default defineProject({
           "この project で axe を回すテスト。story 側の a11y は addon が別に当てるので含まない",
       },
     ],
-    setupFiles: ["src/test/browser-setup.tsx"],
+    setupFiles: ["src/test/browser/browser-setup.tsx"],
     include: [BROWSER_TEST_GLOB],
     exclude: [
       "**/node_modules/**",
@@ -82,7 +82,7 @@ export default defineProject({
       // (#8308 が OPEN)。固定値にするとテスト後半ほど予算が縮む問題も消える (#7871)
       provider: playwright({ actionTimeout: ASSERT_TIMEOUT_MS }),
       headless: true,
-      // 既定 viewport は src/test/viewport.ts が持つ。写すとどちらかが古くなるので import する
+      // 既定 viewport は src/test/browser/viewport-sizes.ts が持つ。写すとどちらかが古くなるので import する
       viewport: DEFAULT_VIEWPORT,
       instances: [{ browser: "chromium" }],
     },

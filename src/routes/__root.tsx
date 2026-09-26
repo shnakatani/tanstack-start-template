@@ -45,7 +45,7 @@ function RootComponent() {
           },
           // useTable に key を渡した table が登録される (ADR-0018)
           tableDevtoolsPlugin(),
-          // axe-core を開発中の画面へ当てる。テスト側の強制 (src/test/a11y.ts) は書いた
+          // axe-core を開発中の画面へ当てる。テスト側の強制 (src/test/a11y/a11y.ts) は書いた
           // ケースしか見ないため、画面を触りながら気付ける経路を別に持つ。
           // panel は host から theme と devtoolsOpen を受け取るので plugin 形で渡す
           a11yDevtoolsPlugin(),

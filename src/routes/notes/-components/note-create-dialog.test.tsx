@@ -8,15 +8,15 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
-import { expectAbsent } from "@/test/absent";
-import { deferMock } from "@/test/defer-mock";
-import { readAnnouncements } from "@/test/live-announcer";
+import { deferMock } from "@/test/app/defer-mock";
+import { createTestQueryClient } from "@/test/app/query-client";
+import { expectAbsent } from "@/test/assert/absent";
+import { readAnnouncements } from "@/test/assert/live-announcer";
 import {
-  createTestQueryClient,
   expectDialogOpen,
   expectEmptyTextboxes,
   expectText,
-} from "@/test/page-helpers";
+} from "@/test/assert/screen-assertions";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする

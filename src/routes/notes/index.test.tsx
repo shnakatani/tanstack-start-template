@@ -13,9 +13,9 @@ import { render } from "vitest-browser-react";
 
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
-import { createTestRouter } from "@/test/create-test-router";
-import { readAnnouncements } from "@/test/live-announcer";
-import { createTestQueryClient } from "@/test/page-helpers";
+import { createTestRouter } from "@/test/app/create-test-router";
+import { createTestQueryClient } from "@/test/app/query-client";
+import { readAnnouncements } from "@/test/assert/live-announcer";
 
 // server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする

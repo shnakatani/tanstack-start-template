@@ -4,7 +4,7 @@ import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
 
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { createSettlingAction } from "@/test/settling-action";
+import { createSettlingAction } from "@/test/app/settling-action";
 
 import { DeleteConfirmDialog, type DeleteTarget } from "./delete-confirm-dialog";
 import { deleteConfirmDescription } from "./delete-confirm-dialog.test-helpers";
@@ -17,7 +17,7 @@ const TARGET: DeleteTarget = { id: "w1", name: "田中太郎" };
  * useTransition が entangle して pending のまま止まる (2026-09-20 実測)。
  *
  * 決着の時点は play が `settling.settle()` で握る。仕組みと理由は
- * `src/test/settling-action.ts` が持つ。play は必ず決着させてから終える。
+ * `src/test/app/settling-action.ts` が持つ。play は必ず決着させてから終える。
  */
 const settling = createSettlingAction();
 const settlingConfirm = fn(settling.impl);

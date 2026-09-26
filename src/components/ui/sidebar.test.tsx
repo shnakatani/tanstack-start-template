@@ -17,7 +17,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { resolveColorToken } from "@/test/resolve-color-token";
+import { resolveColorToken } from "@/test/assert/resolve-color-token";
 
 /**
  * `docs/registry-deviations.md` の表にある sidebar.tsx の乖離 (`sidebarMenuButtonVariants` の開状態

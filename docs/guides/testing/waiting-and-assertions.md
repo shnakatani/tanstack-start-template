@@ -17,7 +17,7 @@
 | 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい |
 | 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                        |
 | `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                         |
-| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/absent.ts`)                                                                                                                                             |
+| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/assert/absent.ts`)                                                                                                                                      |
 | locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `vi.waitFor`。vitest の wait-for のレシピも、assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける                                       |
 
 - `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)
@@ -45,15 +45,15 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 
 否定 assert は、期待値がリテラルなら書かない。肯定で書く。例外は、要素が在る状態から消えるのを待つ `expectRemoved(locator)` と、期待値が別の観測である比較の 2 つに限る。理由は「否定 assert が素通りする経路」「不在を 2 つの名前で書き分ける理由」、lint で止める範囲は ADR-0009 にある。
 
-| 書き方                                                                                                                              | 守らないと                                                                                                 |
-| ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 「最初から出ないこと」は `src/test/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く       | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
-| 要素が在る状態から消えるのを待つときは `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は書かない | 2 つは同じ matcher を呼ぶので、名前が無いとどちらのつもりかが字面で読めない                                |
-| `.not.toBeInTheDocument()` 以外の否定 matcher には、肯定 assert を添えなくてよい                                                    | 要素が引けない間 retry するので、不在のまま通ることがない                                                  |
-| 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                      | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
-| スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                                | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
-| `toHaveStyle` は文字列形式で書き、複数のプロパティは `;` で 1 つにまとめる                                                          | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
-| `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                      | jest-dom は宣言を後勝ちで畳むので、先に書いたほうが黙って消える                                            |
+| 書き方                                                                                                                               | 守らないと                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| 「最初から出ないこと」は `src/test/assert/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
+| 要素が在る状態から消えるのを待つときは `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は書かない  | 2 つは同じ matcher を呼ぶので、名前が無いとどちらのつもりかが字面で読めない                                |
+| `.not.toBeInTheDocument()` 以外の否定 matcher には、肯定 assert を添えなくてよい                                                     | 要素が引けない間 retry するので、不在のまま通ることがない                                                  |
+| 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                       | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
+| スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                                 | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
+| `toHaveStyle` は文字列形式で書き、複数のプロパティは `;` で 1 つにまとめる                                                           | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
+| `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                       | jest-dom は宣言を後勝ちで畳むので、先に書いたほうが黙って消える                                            |
 
 肯定形の書き方は主張で決まる。
 
@@ -74,23 +74,23 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 
 assert の予算をテストの予算と分けて宣言する。`vitest.browser.config.ts` に `expect.poll.timeout` と `browser.providerOptions.actionTimeout` を対で置き、値は 5000ms にする。理由は「assert の予算を分ける理由」にある。
 
-| 規範                                                                                                                     | 守らないと何が壊れるか                                                                                                       |
-| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `expect.poll.timeout` と `actionTimeout` を対で置く                                                                      | `actionTimeout` を消すと残り予算を使い切る側へ戻り、`expect.poll.timeout` を消すと vitest の既定 1000ms になる               |
-| 予算の値は `src/test/assert-budget.ts` の `ASSERT_TIMEOUT_MS` の 1 か所だけが持ち、config と helper の両方がそこから読む | 数字を 2 か所に置くと、重い画面を持つ利用者が上げる場所が 2 つになる                                                         |
-| `testTimeout` は動かさない                                                                                               | 締めるべきは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も一緒に縮み、遅い環境で緑が落ちる |
-| `locator.findElement()` を呼ばない。mount は `expect.element(locator).toBeInTheDocument()` で待つ                        | `actionTimeout` があると `findElement()` の待ち時間が上限なしになる。`Test timed out` で落ち、locator 名が消える             |
+| 規範                                                                                                                             | 守らないと何が壊れるか                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `expect.poll.timeout` と `actionTimeout` を対で置く                                                                              | `actionTimeout` を消すと残り予算を使い切る側へ戻り、`expect.poll.timeout` を消すと vitest の既定 1000ms になる               |
+| 予算の値は `src/test/browser/assert-budget.ts` の `ASSERT_TIMEOUT_MS` の 1 か所だけが持ち、config と helper の両方がそこから読む | 数字を 2 か所に置くと、重い画面を持つ利用者が上げる場所が 2 つになる                                                         |
+| `testTimeout` は動かさない                                                                                                       | 締めるべきは assert の予算であって、テストの予算ではない。短くすると待つべき assert の予算も一緒に縮み、遅い環境で緑が落ちる |
+| `locator.findElement()` を呼ばない。mount は `expect.element(locator).toBeInTheDocument()` で待つ                                | `actionTimeout` があると `findElement()` の待ち時間が上限なしになる。`Test timed out` で落ち、locator 名が消える             |
 
 - 呼び出しごとの `{ timeout: 0 }` はこの設定と独立に効く (2026-09-22 実測で 53ms)。呼び出しごとの指定が先に読まれるので、予算を宣言しても「待たない」は書ける。実例は `expectAbsent`
 - 予算の宣言は「最初から出ない」否定 assert の無駄待ちを解かない。待って成立しない条件にはどんな予算を渡しても使い切るので、そちらは `expectAbsent` の `{ timeout: 0 }` が持つ
 
 ### viewport に収まることを測る
 
-viewport の寸法の定数は `src/test/viewport-sizes.ts` が持ち、`src/test/viewport.ts` が再 export する。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`vitest.browser.config.ts` の `browser.viewport` が `viewport-sizes.ts` から `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。config から `viewport.ts` を読むと、browser mode の外で落ちる (`viewport-sizes.ts` の docstring)。
+viewport の寸法の定数は `src/test/browser/viewport-sizes.ts` が持ち、`src/test/assert/viewport.ts` が再 export する。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`vitest.browser.config.ts` の `browser.viewport` が `viewport-sizes.ts` から `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。config から `viewport.ts` を読むと、browser mode の外で落ちる (`viewport-sizes.ts` の docstring)。
 
-popup の全体が viewport に収まることは、`src/test/viewport.ts` の `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。実測と理由は `src/test/viewport.ts` の docstring が持つ。
+popup の全体が viewport に収まることは、`src/test/assert/viewport.ts` の `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。実測と理由は `src/test/assert/viewport.ts` の docstring が持つ。
 
-- 判定は `src/test/viewport-overflows.ts` の純粋関数が持ち、はみ出した辺と px を文字列で返す。helper は `toEqual([])` で比べるので、失敗文に `bottom +40px` のような原因が残る
+- 判定は `src/test/assert/viewport-overflows.ts` の純粋関数が持ち、はみ出した辺と px を文字列で返す。helper は `toEqual([])` で比べるので、失敗文に `bottom +40px` のような原因が残る
 - 高さか幅が 0 の要素は、収まっているとは見なさない。潰れた要素ははみ出しを自明に満たす。`toBeInViewport` も面積 0 の要素に ratio 1 を返す (IntersectionObserver 仕様「Run the Update Intersection Observations Steps」の step 12)
 - 呼び出し側は先に mount を待たなくてよい。helper 自身が poll し、要素が無ければ `element()` の throw (`Cannot find element with locator: …`) がそのまま失敗文になる
 - 一部が見えていること (`ratio` 0) は、公式の `toBeInViewport()` のまま使う。End キーで最下部へ届くことの検証は公式の matcher で足りる
@@ -99,7 +99,7 @@ popup の全体が viewport に収まることは、`src/test/viewport.ts` の `
 ### 状態と通知を検証する
 
 - pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
-- announcer の region は `src/test/browser-setup.tsx` が毎テスト描く。文言は `src/test/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
+- announcer の region は `src/test/browser/browser-setup.tsx` が毎テスト描く。文言は `src/test/assert/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
 - 同じ通知の経路を 2 つのテストで見ない。`/notes` では、ページのテスト (`src/routes/notes/-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`src/routes/notes/index.test.tsx`) が Enter と戻るを見る
 
 ## explanation
@@ -162,10 +162,10 @@ popup の全体が viewport に収まることは、`src/test/viewport.ts` の `
 
 ### 不在を 2 つの名前で書き分ける理由
 
-`src/test/absent.ts` は同じ matcher を呼ぶ 2 つの helper を置く。`expectAbsent(x)` は `{ timeout: 0 }` で打ち切る不在確認、`expectRemoved(x)` は assert の予算ぶん待つ消滅待ちである。
+`src/test/assert/absent.ts` は同じ matcher を呼ぶ 2 つの helper を置く。`expectAbsent(x)` は `{ timeout: 0 }` で打ち切る不在確認、`expectRemoved(x)` は assert の予算ぶん待つ消滅待ちである。
 
 - 予算の差は、落ちる向きの差である。`expectAbsent` は「いま在る」で落ちる。予算を渡すとその向きに落ちなくなり、この assert が持つ唯一の反証条件が消える。`expectRemoved` はもともとその向きに落ちない。2 つを 1 本へ畳むと `expectAbsent` の検出力が消える
-- この差は `src/test/absent.test.tsx` が両方向のミューテーションで固定している (2026-09-22 実測)。`expectRemoved` から予算を奪うと「unmount が操作より後ろでも通る」が落ち、`expectAbsent` に予算を与えると「要素が在れば落ちる」の所要時間の閾値が落ちる (外すと同じ assert が 4 秒以上かけて落ちる)
+- この差は `src/test/assert/absent.test.tsx` が両方向のミューテーションで固定している (2026-09-22 実測)。`expectRemoved` から予算を奪うと「unmount が操作より後ろでも通る」が落ち、`expectAbsent` に予算を与えると「要素が在れば落ちる」の所要時間の閾値が落ちる (外すと同じ assert が 4 秒以上かけて落ちる)
 - 既存のテストで緑が割れないことは、差が無いことを意味しない。`expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、animation が毎テスト止まるので、assert の行では unmount が済んでいる。予算が効くのは `enableAnimations()` を呼んだテストと、flush を伴わない経路で消える場合である
 - `@testing-library/dom` の `waitForElementToBeRemoved` は、要素が最初から無いと throw して取り違えをランタイムで止める。この保証は移植できない。公式 API は操作の前に捕まえた要素を受け取る設計で、操作の後に assert を書く形では正当な消滅待ちでも `already removed` で落ちる (2026-09-22 に両方の向きで実測)
 
@@ -186,7 +186,7 @@ popup の全体が viewport に収まることは、`src/test/viewport.ts` の `
 | `toHaveStyle({ pointerEvents: "auto" })`                 | `Expected styles could not be parsed by the browser. Did you make a typo?` だけで差分が出ない |
 | `expect(getComputedStyle(x).pointerEvents).toBe("auto")` | `expected 'none' to be 'auto'`                                                                |
 
-- 先行例: Playwright の Assertions は「non-retrying assertions ... can lead to a flaky test」と書く (`expectAbsent` の `{ timeout: 0 }` が該当し、肯定 anchor が緩和にあたる)。Cypress の retry-ability は `cy.get(..., { timeout: 0 }).should('not.exist')` を同期の不在確認の形として載せ、Assertions の「Negative assertions」は "Negative assertions may pass for reasons you weren't expecting." と書く。肯定 assert と組にするのは、この否定の弱さに対するこのリポジトリの規範である (`src/test/absent.ts`)
+- 先行例: Playwright の Assertions は「non-retrying assertions ... can lead to a flaky test」と書く (`expectAbsent` の `{ timeout: 0 }` が該当し、肯定 anchor が緩和にあたる)。Cypress の retry-ability は `cy.get(..., { timeout: 0 }).should('not.exist')` を同期の不在確認の形として載せ、Assertions の「Negative assertions」は "Negative assertions may pass for reasons you weren't expecting." と書く。肯定 assert と組にするのは、この否定の弱さに対するこのリポジトリの規範である (`src/test/assert/absent.ts`)
 
 ### assert の予算を分ける理由
 

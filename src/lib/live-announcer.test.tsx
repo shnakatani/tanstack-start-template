@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { readAnnouncements } from "@/test/live-announcer";
+import { readAnnouncements } from "@/test/assert/live-announcer";
 
 import { announce, LIVE_REGION_IDS } from "./live-announcer";
 
@@ -53,7 +53,7 @@ describe("announce", () => {
 
   it("region が無いときは warn して何もしない", () => {
     // client で region が見つからない異常 (配線が外れた状態) を作る。id だけ外す理由と
-    // 次のテストで region が戻ることの検証は src/test/live-announcer.test.tsx が持つ
+    // 次のテストで region が戻ることの検証は src/test/assert/live-announcer.test.tsx が持つ
     document.getElementById(LIVE_REGION_IDS.polite)?.removeAttribute("id");
 
     announce("届かない");
