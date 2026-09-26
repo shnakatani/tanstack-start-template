@@ -11,6 +11,7 @@ import {
   deleteConfirmDescription,
 } from "@/components/parts/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
+import { createNote, listNotes, removeNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
 import {
@@ -30,15 +31,8 @@ import { expectText, type Screen } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
 
-// server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
-// 呼び出しの形 (引数と戻り値) だけを検証対象にする
-vi.mock("@/features/notes/functions", () => ({
-  listNotes: vi.fn(),
-  createNote: vi.fn(),
-  removeNote: vi.fn(),
-}));
-
-const { createNote, listNotes, removeNote } = await import("@/features/notes/functions");
+// 差し替え先は src/features/notes/__mocks__/functions.ts
+vi.mock("@/features/notes/functions");
 
 /**
  * debounce の待ちを 1500ms に広げる。実値 (`NOTE_SEARCH_DEBOUNCE_MS`) だと、`mise run verify` の負荷で

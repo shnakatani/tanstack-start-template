@@ -12,20 +12,14 @@ import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { RouteErrorContent } from "@/components/screens/route-error";
+import { listNotes } from "@/features/notes/functions";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { readAnnouncements } from "@/test/assert/live-announcer";
 
-// server functions は実 DB (better-sqlite3) を掴むため、ブラウザテストからは呼ばせない。
-// 呼び出しの形 (引数と戻り値) だけを検証対象にする
-vi.mock("@/features/notes/functions", () => ({
-  listNotes: vi.fn(),
-  createNote: vi.fn(),
-  removeNote: vi.fn(),
-}));
-
-const { listNotes } = await import("@/features/notes/functions");
+// 差し替え先は src/features/notes/__mocks__/functions.ts
+vi.mock("@/features/notes/functions");
 
 // この画面に固有のテストの書き方 (route 全般の書き方は docs/guides/testing/route-wrappers.md「route の wrapper をテストする」、debounce の打ち方と fake timers を
 // 使わない理由は `docs/guides/testing/user-interactions.md`「debounce のある入力をテストする」):

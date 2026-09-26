@@ -76,6 +76,8 @@ export default defineConfig({
         "src/routeTree.gen.ts",
         // 付随ファイルは出荷されないので分母に入れない
         ...companionGlobs("src/**/"),
+        // vi.mock の差し替え先。テストだけが読み、出荷されない
+        "src/**/__mocks__/**",
         "src/test/**",
         "src/**/*.d.ts",
       ],
