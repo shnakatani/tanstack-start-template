@@ -52,3 +52,11 @@ grep に出ないものが 1 つある。画面の見出しと head の `title` 
 
 `docs/decisions/` の ADR、`docs/guides/` のガイド、`.claude/rules/` は、このテンプレートの前提で下した判断をそのまま持っている。
 前提が違うものは、ADR を `Superseded` にするか、ガイドと rules を書き換えてから実装に入る。
+
+## 6. この文書を消す
+
+この文書と、この文書を指す 3 か所を消す。
+
+- `README.md` の冒頭の「テンプレートから始めたら、`TEMPLATE_SETUP.md` の手順を…」の 1 文
+- `README.md`「ドキュメント」の表の `TEMPLATE_SETUP.md` の行
+- `.claude/rules/docs.md` の `paths` の `TEMPLATE_SETUP.md`

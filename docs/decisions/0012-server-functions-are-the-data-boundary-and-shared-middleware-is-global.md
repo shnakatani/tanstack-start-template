@@ -1,7 +1,7 @@
 # ADR-0012: server function をデータ境界とし、全 fn 共通の middleware は global に載せる
 
 - Status: Accepted
-- Date: 2026-09-27
+- Date: 2026-09-06
 - 関連: ADR-0007 (lint ルールの選定基準)
 
 ## Context
