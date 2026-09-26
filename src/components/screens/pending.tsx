@@ -6,7 +6,7 @@ import { Spinner } from "@/components/ui/spinner";
  * ごとに違うので、レイアウトを模倣しない。
  *
  * status は name from author のロールなので、可視テキストがあっても `aria-label` で名前を与える。
- * ページ全体を置き換える pending 表示は、状態を `announce()` で通知する規範の例外 (ADR-0026)。
+ * route の pending 表示は、状態を `announce()` で通知する規範の例外 (ADR-0026、ADR-0029)。
  */
 export function PendingContent() {
   return (

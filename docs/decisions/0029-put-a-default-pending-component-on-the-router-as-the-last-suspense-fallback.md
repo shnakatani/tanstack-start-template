@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-26
-- 関連: ADR-0026 (状態の通知。ページ全体を置き換える pending 表示の例外)
+- 関連: ADR-0026 (状態の通知。route の pending 表示の例外)
 
 ## Context
 
@@ -16,13 +16,15 @@ route の pending 表示 (`pendingComponent`) は、表示のためだけでな�
 
 `defaultPendingComponent` には既定値が無い (`RouterOptionsType`)。`defaultErrorComponent` と違い、未設定のときに安全側へ倒れない。
 
-テンプレートで `pendingComponent` を持つのは `/notes/` だけである。
+2026-09-26 時点で、テンプレートで `pendingComponent` を持つのは `/notes/` だけである。
 
 ## Decision
 
 `src/router.tsx` の `defaultPendingComponent` に `PendingContent` (`src/components/screens/pending.tsx`) を置く。中身は Spinner と「読み込み中」を中央に置いた汎用の表示で、レイアウトを模倣しない。
 
 ページ固有の skeleton は各 route の `pendingComponent` が持つ。route の値が優先される。
+
+ADR-0026 の例外 (状態を `announce()` で通知しない) を `PendingContent` にも当てる。route の pending 表示で、live region の文言として読ませるものではない。
 
 ### 検討した選択肢
 
@@ -40,7 +42,7 @@ route の pending 表示 (`pendingComponent`) は、表示のためだけでな�
 - 全 route が「pending 表示を持つ route」になり、読み込みが `defaultPendingMs` を超えると pending 表示が出る
 - route ごとに既定を外す手段は無い (router の issue 7773、PR 8093 が open)
 - 既定の表示はレイアウトを模倣しないため、読み込みの完了時にレイアウトがずれる。ずれが問題になるページは、その route に `pendingComponent` を足す
-- 既定が効いていることは `src/router.test.ts` が見る
+- 既定に `PendingContent` が置かれていることは `src/router.test.ts` が見る。suspend したときに描かれることは `@tanstack/react-router` の `Match.tsx` の実装に拠る
 
 ## 出典
 

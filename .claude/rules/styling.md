@@ -139,7 +139,7 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 | テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                  |
 | ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026) |
 
-- 状態表示の例外はページ全体を置き換える pending 表示 (`TableSkeleton`、`PendingContent`) (ADR-0026)
+- 状態表示の例外は route の pending 表示 (`TableSkeleton`、`PendingContent`) (ADR-0026、ADR-0029)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0026)
 - pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 - 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0027)
