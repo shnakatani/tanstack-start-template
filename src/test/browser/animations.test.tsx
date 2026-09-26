@@ -63,9 +63,20 @@ describe("animation の既定", () => {
     );
 
     expect(matchMedia("(prefers-reduced-motion: reduce)").matches).toBe(true);
+    const motion = screen.getByTestId("motion");
+    await expect.element(motion).toBeInTheDocument();
+    // toHaveStyle は期待値を同じ document の要素で正規化するので、`*` に当たる !important が
+    // 期待値側にも当たって何を書いても一致する。値は computed style から秒で読む
+    // (Chromium は 0.01ms を "1e-05s" と直列化する)
     await expect
-      .element(screen.getByTestId("motion"))
-      .toHaveStyle("transition-duration: 0.01ms; animation-duration: 0.01ms");
+      .poll(() => {
+        const style = getComputedStyle(motion.element());
+        return [
+          Number.parseFloat(style.transitionDuration),
+          Number.parseFloat(style.animationDuration),
+        ];
+      })
+      .toEqual([0.000_01, 0.000_01]);
   });
 
   it("既定では閉じた Dialog が animate-out を待たずに unmount する", async () => {

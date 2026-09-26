@@ -62,13 +62,14 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 - 観測が 2 つ要るなら 1 つの poll の中でまとめる。分けると、別々の瞬間に成立してよいことになる
 - 肯定形は、失敗するときに assert の予算 (「assert の予算を宣言する」) いっぱいまで retry してから落ちる (2026-09-22 実測で 5121ms / 5343ms)。赤の所要が延びるのは検出力と引き換えである
 
-`toHaveStyle` で表せない次の 3 つの形は、`getComputedStyle` を `expect.poll` のコールバックの中で読む。
+`toHaveStyle` で表せない次の 4 つの形は、`getComputedStyle` を `expect.poll` のコールバックの中で読む。
 
-| 形                 | 例                                                                                                                                            |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2 回の観測を比べる | `src/components/ui/input-group.test.tsx` で、フォーカスの前に `borderBefore` を読み、フォーカスの後の border 色を poll の中で読んで比べる箇所 |
-| 数値の大小         | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                                                                  |
-| 擬似要素を読む     | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない                                                                |
+| 形                              | 例                                                                                                                                                                                                                                                                         |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2 回の観測を比べる              | `src/components/ui/input-group.test.tsx` で、フォーカスの前に `borderBefore` を読み、フォーカスの後の border 色を poll の中で読んで比べる箇所                                                                                                                              |
+| 数値の大小                      | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                                                                                                                                                                                               |
+| 擬似要素を読む                  | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない                                                                                                                                                                                             |
+| `!important` が当たるプロパティ | `toHaveStyle` は期待値の文字列を同じ document に挿した要素で正規化する (vitest の `toHaveStyle.ts` の `computeCSSStyleDeclaration`)。`*` に当たる `!important` は期待値側にも当たり、何を書いても一致する。`src/test/browser/animations.test.tsx` の reduced motion の検証 |
 
 ### assert の予算を宣言する
 
@@ -260,3 +261,4 @@ explanation と how-to が拠る一次情報。
 - vitest-dev/vitest#8308 (OPEN。`expect.poll.timeout` が `expect.element` に効かない): <https://github.com/vitest-dev/vitest/issues/8308>
 - vitest-dev/vitest#9157 (`testTimeout` の既定が docs と食い違う可能性): <https://github.com/vitest-dev/vitest/issues/9157>
 - vitest-dev/vitest#9751 (OPEN。timeout 設定の集約): <https://github.com/vitest-dev/vitest/issues/9751>
+- Vitest の `toHaveStyle` の実装 (期待値の正規化): <https://github.com/vitest-dev/vitest/blob/v4.1.11/packages/browser/src/client/tester/expect/toHaveStyle.ts>

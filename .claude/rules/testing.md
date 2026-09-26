@@ -141,7 +141,7 @@ paths:
 - スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
-- `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素の 3 つだけ (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
+- `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素・`!important` が当たるプロパティの 4 つだけ (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 - animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を await する (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
