@@ -160,13 +160,16 @@ export default defineConfig({
       "typescript/no-unsafe-member-access": "error",
       "typescript/no-unsafe-return": "error",
       "typescript/no-useless-constructor": "error",
-      // throw redirect() は TanStack Router の制御フロー契約で、SSR では投げた Response
-      // がそのまま HTTP 307 になる。TanStack 公式が only-throw-error との衝突を認めて
-      // この allow 設定を案内している (docs の eslint-plugin-router)。notFound() は
-      // 使っていないため登録しない。使い始めたら lint が鳴るので、そこで足す
+      // throw redirect() と throw notFound() は TanStack Router の制御フロー。公式が
+      // only-throw-error との衝突を認め、この 2 つを allow するよう案内している (docs の eslint-plugin-router)
       "typescript/only-throw-error": [
         "error",
-        { allow: [{ from: "package", package: "@tanstack/router-core", name: "Redirect" }] },
+        {
+          allow: [
+            { from: "package", package: "@tanstack/router-core", name: "Redirect" },
+            { from: "package", package: "@tanstack/router-core", name: "NotFoundError" },
+          ],
+        },
       ],
       "typescript/prefer-literal-enum-member": "error",
       "typescript/prefer-promise-reject-errors": "error",
