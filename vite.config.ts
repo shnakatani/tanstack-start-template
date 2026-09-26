@@ -61,9 +61,10 @@ export default defineConfig({
       // ブラウザテストの assert に locator を渡させる自前ルール。上流の
       // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0009)
       { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
-      // TanStack Query / Router の契約の検査。oxlint はネイティブに持たず、ネイティブ化の予定も無い
-      // (ADR-0007)。name に `/` を含めない。設定のキーは解決できるが、抑制 directive の解決が
-      // 追いついていない (oxc の PR 17073)
+      // TanStack Query / Router の契約の検査。oxlint はネイティブに持たず、ネイティブ化を求めた
+      // oxc の issue 11648 は discussion へ移され、実装は入っていない (ADR-0007)。name は他の
+      // jsPlugins (shadcn / testing-library / browser-test) と同じく、短い名前を診断・rules の
+      // キー・抑制 directive で共有する
       { name: "tanstack-query", specifier: "@tanstack/eslint-plugin-query" },
       { name: "tanstack-router", specifier: "@tanstack/eslint-plugin-router" },
     ],
@@ -267,7 +268,8 @@ export default defineConfig({
       "tanstack-query/no-unstable-deps": "error",
       "tanstack-query/infinite-query-property-order": "error",
       "tanstack-query/mutation-property-order": "error",
-      // recommended-strict だけにある。queryKey を queryOptions の 1 か所で定義させる (ADR-0007)
+      // recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、
+      // queryOptions の 1 か所で定義させる (ADR-0007)
       "tanstack-query/prefer-query-options": "error",
       // no-void-query-fn は登録しない。型情報が要り、oxlint の JS plugin では常に無診断になる (ADR-0007)
 

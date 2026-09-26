@@ -100,7 +100,7 @@ recommended に無くても、規約や他の決定を機械で守るために�
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                     |
 | `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)                                         |
-| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。queryKey を queryOptions の 1 か所で定義させ、invalidate や setQueryData での手書きを止める |
+| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる |
 
 テスト専用コードの import を止める範囲と手段の比較は ADR-0008 が持つ。
 
@@ -124,7 +124,7 @@ recommended に無くても、規約や他の決定を機械で守るために�
 - 名指ししたルールは `rules` に並ぶため、上流 recommended の改訂には自動追随しない。追随の手順は `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」にある
 - 名指ししたルールが oxlint 側で改名・廃止されると `vp lint` が設定のパースで落ちる (`Rule 'react-compiler' not found in plugin 'react'`)。取りこぼしは起きないが、更新の PR は lint が動かない状態から始まる
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは解決後設定の `rules` に列挙されないため、値でしか見えない
-- TanStack の 2 plugin は JS plugin で載せる。oxlint にネイティブの実装は無く、ネイティブ化を求めた oxc の issue 11648 は実装なしで閉じられている (2026-09-26 に oxc の issue と PR を検索)。JS plugin は型情報を受け取れないので、型情報を使う `no-void-query-fn` は入れず、`no-rest-destructuring` は型情報を使うケースを見逃す
+- TanStack の 2 plugin は JS plugin で載せる。oxlint にネイティブの実装は無く、ネイティブ化を求めた oxc の issue 11648 は discussion へ移され、実装は入っていない (2026-09-26 に oxc の issue と PR を検索)。JS plugin は型情報を受け取れないので、型情報を使う `no-void-query-fn` は入れず、`no-rest-destructuring` は型情報を使うケースを見逃す
 - `prefer-query-options` は `QueryClient` のメソッド呼び出しを、client の出どころを同じファイルの `useQueryClient()` か `new QueryClient()` まで辿れたときだけ検査する。引数や router の context で受け取った client の呼び出しと、定数で渡した `queryKey` は検査されない (`@tanstack/eslint-plugin-query` 5.103.2 のルールの実装と、2026-09-26 の probe で確認)
 - 上流が warn にしているルールは error で入れる。`vp check` は警告では落ちない
 
