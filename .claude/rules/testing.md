@@ -43,6 +43,7 @@ paths:
 - ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる
+- テスト中に `process.env.TZ` を切り替えるのは forks / vmForks の project だけ。threads では `Date` に効かず無言で通る。TZ を固定するだけなら globalSetup で決める (`vitest.config.ts` の unit project のコメント)
 
 ## a11y の検査は tag で分ける
 
