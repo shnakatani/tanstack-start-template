@@ -6,7 +6,7 @@
 ## プロジェクトを作る
 
 ```bash
-vp dlx gitpick shnakatani/tanstack-start-template my-app
+vp dlx gitpick shnakatani/tanstack-start-template my-app && cd my-app && git init
 ```
 
 <details>
@@ -32,11 +32,11 @@ grep に出ない `src/lib/app-name.ts` の `APP_NAME` も替える。
 
 ## 置き換える箇所
 
-| 対象     | 場所                                                                            |
-| -------- | ------------------------------------------------------------------------------- |
-| DB       | `src/server/db/`、`drizzle.config.ts`                                           |
-| 認証     | `src/start.ts` の `createStart`、新しく作る `src/routes/_authed.tsx` (ADR-0012) |
-| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                       |
+| 対象     | 場所                                                                       |
+| -------- | -------------------------------------------------------------------------- |
+| DB       | `src/server/db/`、`drizzle.config.ts`                                      |
+| 認証     | `src/start.ts` の `createStart`、保護する route の `beforeLoad` (ADR-0012) |
+| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                  |
 
 サンプル機能 (`/notes`) は `src/features/notes/` と `src/routes/notes/` にある。
 
