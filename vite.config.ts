@@ -61,6 +61,11 @@ export default defineConfig({
       // ブラウザテストの assert に locator を渡させる自前ルール。上流の
       // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0009)
       { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
+      // TanStack Query / Router の契約の検査。oxlint はネイティブに持たず、ネイティブ化の予定も無い
+      // (ADR-0007)。name に `/` を含めない。設定のキーは解決できるが、抑制 directive の解決が
+      // 追いついていない (oxc の PR 17073)
+      { name: "tanstack-query", specifier: "@tanstack/eslint-plugin-query" },
+      { name: "tanstack-router", specifier: "@tanstack/eslint-plugin-router" },
     ],
     settings: {
       shadcn: {
@@ -252,6 +257,24 @@ export default defineConfig({
       // 結果や fixture を壊せない箇所では新規オブジェクトを作るしかなく、確保回数が
       // spread と同じになって効果が消える (ADR-0007)
       "oxc/no-map-spread": "off",
+
+      // -- tanstack-query: @tanstack/eslint-plugin-query の recommended と prefer-query-options (ADR-0007) --
+      "tanstack-query/exhaustive-deps": "error",
+      // 上流は warn。vp check は警告では落ちないので error で入れる。型情報を使う一部のケースは
+      // oxlint の JS plugin では見えない (ADR-0007)
+      "tanstack-query/no-rest-destructuring": "error",
+      "tanstack-query/stable-query-client": "error",
+      "tanstack-query/no-unstable-deps": "error",
+      "tanstack-query/infinite-query-property-order": "error",
+      "tanstack-query/mutation-property-order": "error",
+      // recommended-strict だけにある。queryKey を queryOptions の 1 か所で定義させる (ADR-0007)
+      "tanstack-query/prefer-query-options": "error",
+      // no-void-query-fn は登録しない。型情報が要り、oxlint の JS plugin では常に無診断になる (ADR-0007)
+
+      // -- tanstack-router: @tanstack/eslint-plugin-router の recommended (ADR-0007) --
+      "tanstack-router/route-param-names": "error",
+      // 上流は warn。上と同じ理由で error で入れる
+      "tanstack-router/create-route-property-order": "error",
 
       // -- vitest: @vitest/eslint-plugin の recommended (ADR-0007) --
       // assertFunctionNames は既定 (expect / expectTypeOf / assert / assertType) へ足すのでは
