@@ -38,8 +38,8 @@ minimumReleaseAgeExclude:
 # dependabot.yml の vite-plus グループが束ねる
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.3.2
-  vitest: 4.1.11
-  vite-plus: 0.3.2
+  vitest: 5.0.1
+  vite-plus: 0.3.3
   "@vitest/browser-playwright": 4.1.11
   "@vitest/coverage-v8": 4.1.11
 # @shadcn/lint が依存に持つ @typescript-eslint/parser は、oxlint 経由では読まれないのに eslint を必須 peer に持つ。
