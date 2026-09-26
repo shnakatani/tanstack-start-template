@@ -1,7 +1,7 @@
 # ADR-0007: ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする
 
 - Status: Accepted
-- Date: 2026-09-20
+- Date: 2026-09-26
 - 関連: ADR-0014 (React Compiler の診断ルールの扱い)、ADR-0023 (色の統制に足す `@shadcn/lint`)、ADR-0008 (テスト専用コードの import 境界)
 
 ## Context
