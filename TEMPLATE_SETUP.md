@@ -42,5 +42,5 @@ grep に出ない `src/lib/app-name.ts` の `APP_NAME` も替える。
 
 ## 後始末
 
-- `README.md` の冒頭の説明と技術スタックの表を、自分のプロジェクトに合わせる
+- `README.md` の冒頭の説明と技術スタックを、自分のプロジェクトに合わせる
 - この文書と、これを指す 3 か所 (`README.md` の冒頭の 1 文と「ドキュメント」の表の行、`.claude/rules/docs.md` の `paths`) を消す
