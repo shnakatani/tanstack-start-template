@@ -389,7 +389,7 @@ export default defineConfig({
         // (`**/*.test.ts`) では書かない。その綴りは import 禁止の override が持つ印で、
         // `lint-config.test.ts` の「付随ファイルの除外は…」がそちらの専有を検査している
         files: [BROWSER_TEST_GLOB, "src/test/**", ...testHelperGlobs("**/")],
-        excludeFiles: ["src/test/*.test.ts"],
+        excludeFiles: ["src/test/**/*.test.ts"],
         rules: {
           "browser-test/prefer-locator-methods": "error",
           // `locator.findElement()` を止める (ADR-0009)。正当な呼び出し元は無く、除外も置かない
@@ -409,7 +409,7 @@ export default defineConfig({
         // (files の否定 glob は oxlint 1.79 では効かない)。story 自身も出荷される bundle に
         // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)。
         // `.storybook/**` は対象外。Storybook は story をテストとして走らせるテスト基盤で
-        // (docs/guides/storybook.md「カタログと play の範囲」)、`preview.tsx` が `src/test/viewport-sizes.ts` を読む
+        // (docs/guides/storybook.md「カタログと play の範囲」)、`preview.tsx` が `src/test/browser/viewport-sizes.ts` を読む
         files: ["src/**", "scripts/**"],
         excludeFiles: [...companionGlobs("**/"), "src/test/**"],
         rules: {

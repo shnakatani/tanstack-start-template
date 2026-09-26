@@ -2,8 +2,8 @@ import { expect } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
 import type { Locator } from "vite-plus/test/browser/context";
 
+import { DEFAULT_VIEWPORT, type Viewport } from "../browser/viewport-sizes";
 import { viewportOverflows } from "./viewport-overflows";
-import { DEFAULT_VIEWPORT, type Viewport } from "./viewport-sizes";
 
 /**
  * ブラウザテストのレイアウト検証で使う viewport の操作とアサーション。寸法は
@@ -17,7 +17,7 @@ export {
   NARROW_VIEWPORT,
   SHORT_VIEWPORT,
   TABLET_VIEWPORT,
-} from "./viewport-sizes";
+} from "../browser/viewport-sizes";
 
 /**
  * viewport を切り替える。定数と `page.viewport()` の引数展開を 1 箇所に閉じ、

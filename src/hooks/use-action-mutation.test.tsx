@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { renderHook } from "vitest-browser-react";
 
-import { createTestQueryClient } from "@/test/page-helpers";
+import { createTestQueryClient } from "@/test/app/query-client";
 
 import { useActionMutation } from "./use-action-mutation";
 

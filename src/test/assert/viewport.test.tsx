@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { expectWithinViewport } from "@/test/viewport";
+import { expectWithinViewport } from "@/test/assert/viewport";
 
 afterEach(() => {
   vi.resetConfig();

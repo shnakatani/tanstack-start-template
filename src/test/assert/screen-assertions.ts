@@ -1,21 +1,8 @@
-import { QueryClient, type QueryClientConfig } from "@tanstack/react-query";
 import { expect } from "vite-plus/test";
 import type { render } from "vitest-browser-react";
 
 /** `render()` の戻り値。locator を取るヘルパーの引数型に使う。 */
 export type Screen = Awaited<ReturnType<typeof render>>;
-
-/**
- * テスト用の QueryClient。retry を切るのは、失敗ケースの検証が既定のリトライ回数だけ
- * 待たされてタイムアウトするため。`defaultOptions` は上書きさせず、queryCache のような
- * 差し込みだけを config で受ける (テストごとに retry の既定が変わると失敗の原因が読めない)。
- */
-export function createTestQueryClient(config?: Omit<QueryClientConfig, "defaultOptions">) {
-  return new QueryClient({
-    ...config,
-    defaultOptions: { queries: { retry: false } },
-  });
-}
 
 /**
  * ダイアログがまだ開いていることを検証する。

@@ -50,14 +50,22 @@ paths:
 
 | 対象                                         | 置き場所                                                                                                                              |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/`                                                                                                                           |
+| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/<役割>/`。役割は下の表                                                                                                      |
 | 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` では対象と同じ `-components/` か `-lib/`、route ファイル自身の分はその隣 |
 | story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` に置くと出荷されうる (`docs/guides/storybook.md`「story を置く」)    |
 
+| `src/test/` のディレクトリ | 入れるもの                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `src/test/browser/`        | browser project の実行環境を組むもの。config と setup が読む定数もここに置く |
+| `src/test/assert/`         | テスト本文が呼ぶ assert と実測、その引数の型                                 |
+| `src/test/a11y/`           | axe の実行と結果の整形                                                       |
+| `src/test/app/`            | アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場        |
+
+- `src/test/` の helper は上の表のディレクトリに置き、直下に置かない。直下に並べると prefix だけが分類になり、新しい helper の置き先を名前から決められない (`docs/guides/placement.md`「`src/test/` に helper を置く」)
 - 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
 - helper や `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0008)
 - story (`*.stories.*`) も `no-restricted-imports` の対象から外す。出荷される bundle に入らない
-- helper のテストは、DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project) に置く
+- helper のテストは helper と同じディレクトリに置く。DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project) にする
 
 ## shadcn コンポーネント導入時のチェック
 

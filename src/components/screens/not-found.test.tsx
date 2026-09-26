@@ -2,7 +2,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
-import { createTestRouter } from "@/test/create-test-router";
+import { createTestRouter } from "@/test/app/create-test-router";
 
 import { NotFoundContent } from "./not-found";
 

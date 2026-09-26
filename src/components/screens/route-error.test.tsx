@@ -3,9 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { expectAbsent, expectRemoved } from "@/test/absent";
-import { createTestRouter } from "@/test/create-test-router";
-import { expectText } from "@/test/page-helpers";
+import { createTestRouter } from "@/test/app/create-test-router";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
+import { expectText } from "@/test/assert/screen-assertions";
 
 import { ROUTE_ERROR_FALLBACK_MESSAGE, RouteErrorContent } from "./route-error";
 

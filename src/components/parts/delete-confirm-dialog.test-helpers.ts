@@ -1,4 +1,4 @@
-import type { Screen } from "@/test/page-helpers";
+import type { Screen } from "@/test/assert/screen-assertions";
 
 /** 確認ダイアログの確定ボタン。行のトリガー (「<名前>を削除」) と区別するため exact で取る。 */
 export function confirmDeleteButton(screen: Screen) {

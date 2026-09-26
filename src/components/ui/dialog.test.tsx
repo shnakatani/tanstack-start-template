@@ -10,7 +10,7 @@ import {
   setViewport,
   SHORT_VIEWPORT,
   TABLET_VIEWPORT,
-} from "@/test/viewport";
+} from "@/test/assert/viewport";
 
 /**
  * 共有 DialogContent の viewport 溢れ backstop。registry 乖離 (Viewport + `popupOverflowBackstop`

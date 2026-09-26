@@ -5,7 +5,7 @@ import { findLiveRegion, LIVE_REGION_IDS, type Politeness } from "@/lib/live-ann
  * 戻り値はその時点までの通知を追記順に並べた配列になる。1 件 1 要素にするのは、連結した
  * 1 本の文字列だと `toContain` が件をまたいだ部分一致で通るため。
  *
- * region は `src/test/browser-setup.tsx` の `beforeEach` が `<LiveRegions />` を描いて用意する。
+ * region は `src/test/browser/browser-setup.tsx` の `beforeEach` が `<LiveRegions />` を描いて用意する。
  * 本番は `RootDocument` が持つが、部品やページ単体の描画はそこを通らない。
  *
  * region が無いのはテスト基盤の配線漏れなので throw する。空配列を返すと「通知が無い」と

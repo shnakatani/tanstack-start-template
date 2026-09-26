@@ -4,7 +4,7 @@ import type { Locator } from "vite-plus/test/browser/context";
 import { render } from "vitest-browser-react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { expectAbsent, expectRemoved } from "@/test/absent";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 
 /**
  * registry は `{children}` を `ScrollArea.Viewport` へ直接置き、base-ui の

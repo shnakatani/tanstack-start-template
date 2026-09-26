@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { restoreDefaultViewport, setViewport, SHORT_VIEWPORT } from "@/test/viewport";
+import { restoreDefaultViewport, setViewport, SHORT_VIEWPORT } from "@/test/assert/viewport";
 
 import { ActionDialogContent } from "./dialog";
 import { ActionFormSubmit } from "./form";

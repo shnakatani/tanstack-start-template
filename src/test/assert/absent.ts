@@ -9,7 +9,7 @@ import type { Locator } from "vite-plus/test/browser/context";
  *
  * 待たないのは効率のためではなく、**落ちる向きを変えるため**である。予算を渡すと
  * 「いま在る」で落ちなくなり、この assert が持つ唯一の反証条件が消える。
- * `{ timeout: 0 }` を外す退行は `src/test/absent.test.tsx` の所要時間の閾値が捕まえる。
+ * `{ timeout: 0 }` を外す退行は `src/test/assert/absent.test.tsx` の所要時間の閾値が捕まえる。
  *
  * この matcher は要素が無ければ 1 回目の試行で通る。**単独では何も検証していない**ので、
  * 同じ操作の効果を表す肯定 assert を先に置く。retry を持たない assert が flake を招くのは

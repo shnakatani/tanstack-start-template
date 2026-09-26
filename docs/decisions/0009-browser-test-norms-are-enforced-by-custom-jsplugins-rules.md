@@ -36,21 +36,21 @@
 - 実行経路は増やさない。`vp lint` と `vp check` で走り、`@shadcn/lint` と `eslint-plugin-testing-library` が既に同じ経路に載っている (ADR-0023、`docs/guides/lint/configuration.md`「testing-library を当てる範囲」)
 - severity は `error` にする。`vp check` は warn で exit 1 にならないため、新規コードへの強制力を失う
 - 適用先はブラウザテスト本文と、そこへ locator を配る helper (`src/test/**` と `*.test-helpers.*`) にする。テスト本文だけに当てると、helper へ切り出した同期読みがルールから外れる。glob は `scripts/lib/companion-files.ts` から引く
-- `src/test/*.test.ts` は外す。unit project は locator を持たず、drizzle の `db.select().from(x).all()` が同じメソッド名で誤検出になる (2026-09-22 実測。`src/**` へ広げると `src/server/db/index.test.ts` の 2 件が出る)
+- `src/test/**/*.test.ts` は外す。unit project は locator を持たず、drizzle の `db.select().from(x).all()` が同じメソッド名で誤検出になる (2026-09-22 実測。`src/**` へ広げると `src/server/db/index.test.ts` の 2 件が出る)
 - ルールは「locator かどうか」をメソッド名と引数ゼロだけで判定し、適用先の glob がその補いになる。oxlint の JS plugin は型情報を持たない (公式の JS plugin ガイドの「Not supported yet」に「Lint rules that rely on TypeScript type-awareness」)
 - 未移行のファイルを `lint.overrides` で列挙して段階的に当てる形は取らない。列挙が対象より大きくなり、一覧を消す作業が別に要る
 - ルールの書き方と、2 通りに壊して効いていることを確かめる手順は `docs/guides/lint/custom-rules.md`「自前のルールを書く」「検査を作ったら 2 通りに壊して確かめる」にある
 
 ### ルールで止めない規範
 
-| 規範                                                  | 止めない理由                                                                                                                                                                                |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 生 DOM を読む場所 (操作を挟んだか) の残りの形         | 実行時の履歴で決まり、式の構造で表せない。レビューで見る                                                                                                                                    |
-| 合成イベントを使わない                                | 合成イベントを送る helper を `src/test/` に置かないことで経路を持たない                                                                                                                     |
-| animation を無効にする既定                            | `src/test/browser-setup.tsx` の setup が持ち、書き手が選ぶものではない                                                                                                                      |
-| route の wrapper のテストの置き方                     | 置き方の選択で、式の形に出ない。レビューで見る                                                                                                                                              |
-| `expectAbsent` の肯定 anchor が同じ操作の効果を表すか | 構文で決まらない。直前の文が肯定 assert かどうかなら見られるが、違反が 0 件で守る対象が無い。要件は `no-bare-absence-assertion` の診断メッセージと `src/test/absent.ts` の docstring に置く |
-| `expectAbsent` と `expectRemoved` のどちらが正しいか  | ルールが見るのは「名前を付けたか」で、「名前が正しいか」ではない。素で書けば必ずどちらかを選ぶ地点に立たされることだけを買う                                                                |
+| 規範                                                  | 止めない理由                                                                                                                                                                                       |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 生 DOM を読む場所 (操作を挟んだか) の残りの形         | 実行時の履歴で決まり、式の構造で表せない。レビューで見る                                                                                                                                           |
+| 合成イベントを使わない                                | 合成イベントを送る helper を `src/test/` に置かないことで経路を持たない                                                                                                                            |
+| animation を無効にする既定                            | `src/test/browser/browser-setup.tsx` の setup が持ち、書き手が選ぶものではない                                                                                                                     |
+| route の wrapper のテストの置き方                     | 置き方の選択で、式の形に出ない。レビューで見る                                                                                                                                                     |
+| `expectAbsent` の肯定 anchor が同じ操作の効果を表すか | 構文で決まらない。直前の文が肯定 assert かどうかなら見られるが、違反が 0 件で守る対象が無い。要件は `no-bare-absence-assertion` の診断メッセージと `src/test/assert/absent.ts` の docstring に置く |
+| `expectAbsent` と `expectRemoved` のどちらが正しいか  | ルールが見るのは「名前を付けたか」で、「名前が正しいか」ではない。素で書けば必ずどちらかを選ぶ地点に立たされることだけを買う                                                                       |
 
 ### 検討した選択肢
 
@@ -78,7 +78,7 @@
 | `prefer-locator-methods`    | `lint.rules` で `off` にすると 2 件 → 0 件                          | 変数束縛の追跡 (`context.sourceCode.getDeclaredVariables`) を止めると 2 件 → 1 件 (束縛の形が無言で通る) |
 | `no-find-element`           | `off` にすると 1 件 → 0 件                                          | メソッド名の判定を壊すと 1 件 → 0 件                                                                     |
 | `no-negated-style-literal`  | 実コードへ `.not.toHaveStyle("max-height: none")` を戻すと 1 件報告 | `lint.rules` を残したまま override の適用先から外すと 0 件になり、`lint-config.test.ts` が落ちる         |
-| `no-bare-absence-assertion` | 実コードへ素の形を戻すと 1 件報告                                   | `lint.rules` を残したまま `src/test/absent.ts` の行単位抑制を外すと helper 自身が報告される              |
+| `no-bare-absence-assertion` | 実コードへ素の形を戻すと 1 件報告                                   | `lint.rules` を残したまま `src/test/assert/absent.ts` の行単位抑制を外すと helper 自身が報告される       |
 
 - 変数束縛を 1 段追うのは、束縛を挟む形が多いためである。`grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test.tsx' src/` で 64 行 / 17 ファイルあった (2026-09-22)。追跡が外れても直接の形は報告され続けるので、設定は有効に見える。`no-negated-style-literal` の上の 1 件も束縛を挟む形で、追跡が無いと違反が 0 件に見えてルールが効いているように読める
 

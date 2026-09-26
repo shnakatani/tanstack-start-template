@@ -12,9 +12,9 @@ import { render } from "vitest-browser-react";
 
 import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
-import { disableAnimations } from "@/test/animations";
-import { parkMouse } from "@/test/park-mouse";
-import "@/test/slot-locator";
+import { disableAnimations } from "@/test/browser/animations";
+import { parkMouse } from "@/test/browser/park-mouse";
+import "@/test/browser/slot-locator";
 
 /**
  * page スコープに残る状態を毎テスト前に既定へ戻す。1 つの session が複数ファイルを順に走らせ、

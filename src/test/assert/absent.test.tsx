@@ -2,8 +2,8 @@ import { useState } from "react";
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { ASSERT_TIMEOUT_MS } from "../browser/assert-budget";
 import { expectAbsent, expectRemoved } from "./absent";
-import { ASSERT_TIMEOUT_MS } from "./assert-budget";
 
 /**
  * 表示の時点をテストが操作で決める。実時間のタイマーで出すと、負荷の高い実行では

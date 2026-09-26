@@ -7,7 +7,7 @@ import {
   SegmentedRadioGroup,
   SegmentedRadioGroupItem,
 } from "@/components/parts/segmented-radio-group";
-import { resolveColorToken } from "@/test/resolve-color-token";
+import { resolveColorToken } from "@/test/assert/resolve-color-token";
 
 /** 1 文字と 2 文字のラベルを混ぜる。等幅化の検証に使う */
 function Filter({

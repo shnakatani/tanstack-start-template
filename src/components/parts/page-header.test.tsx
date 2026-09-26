@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
-import { expectAbsent } from "@/test/absent";
-import { expectText } from "@/test/page-helpers";
+import { expectAbsent } from "@/test/assert/absent";
+import { expectText } from "@/test/assert/screen-assertions";
 
 import { PageHeader } from "./page-header";
 

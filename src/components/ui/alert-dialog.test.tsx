@@ -13,7 +13,7 @@ import {
   restoreDefaultViewport,
   setViewport,
   TABLET_VIEWPORT,
-} from "@/test/viewport";
+} from "@/test/assert/viewport";
 
 /**
  * AlertDialogContent の viewport 溢れ backstop。Dialog と共有する registry 乖離

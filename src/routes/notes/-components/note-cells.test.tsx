@@ -17,7 +17,7 @@ import {
   NOTE_CREATED_AT_TEXT,
   OTHER_NOTE,
 } from "@/features/notes/schema.test-helpers";
-import { expectAbsent } from "@/test/absent";
+import { expectAbsent } from "@/test/assert/absent";
 
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";

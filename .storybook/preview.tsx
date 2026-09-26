@@ -1,7 +1,7 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview } from "@storybook/tanstack-react";
 
-import { NARROW_VIEWPORT } from "@/test/viewport-sizes";
+import { NARROW_VIEWPORT } from "@/test/browser/viewport-sizes";
 
 import "./preview.css";
 
@@ -20,7 +20,7 @@ const preview: Preview = {
     // 狭幅の見え方は story で見る。寸法は機械で見ない。registry の部品の寸法は上流が決め、
     // 消費側が size を変えるのは正当な使い方なので、測ると上流の変更や消費側の変更でテストが
     // 落ち、そのたびに消される。値は browser test と
-    // 同じ src/test/viewport-sizes から引き、写さない。addon-vitest は story ごとに
+    // 同じ src/test/browser/viewport-sizes から引き、写さない。addon-vitest は story ごとに
     // この options を page.viewport() へ渡す (vitest.storybook.config.ts)
     viewport: {
       options: {

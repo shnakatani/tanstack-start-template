@@ -31,8 +31,8 @@ axe の結果が緑でも、「測った」ことも「WCAG を満たした」�
 
 - `incomplete` を塞いでも、`passes` に入ったことは「測った」の証明にならない。`color-contrast` は、画面に出ていない要素を合格にする (`axe.js` の `_isVisibleOnScreen` 分岐、`messageKey: 'hidden'`)。この空振りは `passes` にも数えられるので、`passes` の件数を見ても捕まえられない
 - この形は axe に固有ではない。前件が成立しないまま成立する assertion は vacuous pass と呼ばれ、定石は「失敗を厳しくする」ではなく「実際に測った件数が 0 でないことを別に要求する」である
-- `expectNoA11yViolations` (`src/test/a11y.ts`) の `passes.length > 0` はその粗い版で、ルール単位では見ていない。捕まえるのはルールが 1 つも走らなかった場合 (対象が空、設定で全ルールが外れた) だけで、`hidden` の空振りは捕まえない
-- `passes` の件数を要求するのはブラウザテストの層だけで、story の層 (`src/test/a11y-story.ts`) は `passes` を見ない。story の層で空振りの緑を落とすものは無い
+- `expectNoA11yViolations` (`src/test/a11y/a11y.ts`) の `passes.length > 0` はその粗い版で、ルール単位では見ていない。捕まえるのはルールが 1 つも走らなかった場合 (対象が空、設定で全ルールが外れた) だけで、`hidden` の空振りは捕まえない
+- `passes` の件数を要求するのはブラウザテストの層だけで、story の層 (`src/test/a11y/a11y-story.ts`) は `passes` を見ない。story の層で空振りの緑を落とすものは無い
 
 | 案                                                       | 評価                                                                                                                                                                  | 採否     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -118,13 +118,13 @@ a11y の検査は、ブラウザテストの中に 2 種類が混ざっている
 | ルール | `parameters.a11y.config.rules`    | その story のどの要素でも、同じ理由で出る                | `combobox.stories.tsx` の `aria-hidden-focus`、`table-skeleton.stories.tsx` の `empty-table-header` |
 | 要素   | `parameters.a11y.context.exclude` | 特定の要素だけが判定できず、同じ規則を他の要素では見たい | `calendar.stories.tsx` の見出しの除外                                                               |
 
-`src/test/a11y-story.ts` の `IGNORED_INCOMPLETE` とは守備範囲が違う。あちらは `incomplete` だけを合否から外し、`config.rules` はルールごと止めるので `violations` も消える。同じルール名が両方に現れても重複ではない。片方を消せるかは、消して落ちるかで決める (次節の数え直し)。
+`src/test/a11y/a11y-story.ts` の `IGNORED_INCOMPLETE` とは守備範囲が違う。あちらは `incomplete` だけを合否から外し、`config.rules` はルールごと止めるので `violations` も消える。同じルール名が両方に現れても重複ではない。片方を消せるかは、消して落ちるかで決める (次節の数え直し)。
 
 ### `incomplete` を数え直す
 
 `IGNORED_INCOMPLETE` の行が今も要るかは、次の手順で確かめる。
 
-1. `src/test/a11y-story.ts` の `IGNORED_INCOMPLETE` を空にする
+1. `src/test/a11y/a11y-story.ts` の `IGNORED_INCOMPLETE` を空にする
 2. story 側の `parameters.a11y.config.rules` も併せて外す。残すと、ルールごと止めた story は `incomplete` も出さないので数から漏れる
 3. storybook の project を回し、落ちた story と失敗メッセージのルール ID を読む
 4. 一度も出なくなった除外の行は消す。当たらない除外を残すと、なぜ外したかを誰も再現できなくなる

@@ -1,7 +1,7 @@
 import { QueryCache } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { createTestQueryClient } from "@/test/page-helpers";
+import { createTestQueryClient } from "@/test/app/query-client";
 
 import {
   BACKGROUND_REFETCH_ERROR_MESSAGE,

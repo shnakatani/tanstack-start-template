@@ -109,7 +109,7 @@ const EXPECTED_OVERRIDES = [
     // 入力どうしの比較になり、種別が増えても検査が通ってしまう
     // (`companion-files.ts` の docstring が禁じている)
     files: ["src/**/*.test.tsx", "src/test/**", "**/*.test-helpers.ts", "**/*.test-helpers.tsx"],
-    excludeFiles: ["src/test/*.test.ts"],
+    excludeFiles: ["src/test/**/*.test.ts"],
     rules: {
       "browser-test/prefer-locator-methods": "deny",
       "browser-test/no-find-element": "deny",

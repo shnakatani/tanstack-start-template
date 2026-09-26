@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { expectRemoved } from "./absent";
+import { expectRemoved } from "../assert/absent";
 import { enableAnimations } from "./animations";
 
 /**

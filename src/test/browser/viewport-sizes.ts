@@ -2,7 +2,7 @@
  * viewport の寸法。寸法はすべてここに置く。`vitest.browser.config.ts` が
  * `DEFAULT_VIEWPORT` を `browser.viewport` として読むため、このファイルは
  * `vite-plus/test/browser` を import しない。
- * `src/test/viewport.ts` は browser mode でしか動かず、config から読むと
+ * `src/test/assert/viewport.ts` は browser mode でしか動かず、config から読むと
  * 「vitest/browser can be imported only inside the Browser Mode」で落ちる (2026-09-20 実測)。
  */
 export interface Viewport {
