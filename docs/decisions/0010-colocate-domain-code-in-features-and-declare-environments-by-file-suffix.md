@@ -77,7 +77,7 @@ user が `files` を指定すると既定を置換する (同 `plugin.js` の `p
 ## Consequences
 
 - ドメインが増えても `src/lib/` と `src/server/` は平たくならない。増えるのは `src/features/` 直下のディレクトリ 1 つ
-- サンプル機能を消すとき、ドメインの本体が `src/features/notes/` と `src/routes/notes/` の 2 ディレクトリに収まる。`src/server/db/schema.ts` や `drizzle/` のように外に残るものは `README.md`「サンプル機能を残すか決める」が持つ
+- サンプル機能を消すとき、ドメインの本体が `src/features/notes/` と `src/routes/notes/` の 2 ディレクトリに収まる。`src/server/db/schema.ts` や `drizzle/` のように外に残るものは `grep -rln notes src/ drizzle/` で出る
 - `src/server/` は「ドメインに属さないもの」になり、ディレクトリ名が環境を語らなくなる。そのため `importProtection` が client から import できるファイルを除外として説明する必要も無い
 - client-safe なファイルと `.server.ts` が同居する。安全性は同居しないことではなく接尾辞を必ず付けることに依存する
 - `vite.config.ts` の `importProtection` は user の `files` と `excludeFiles` が既定を置換するので、書き換えると接尾辞の遮断が消えうる (手順は `docs/guides/placement.md`「落とし穴」)

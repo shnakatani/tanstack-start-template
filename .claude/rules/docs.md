@@ -5,6 +5,7 @@ paths:
   - "AGENTS.md"
   - "CLAUDE.md"
   - "README.md"
+  - "TEMPLATE_SETUP.md"
 ---
 
 # ドキュメント作法
