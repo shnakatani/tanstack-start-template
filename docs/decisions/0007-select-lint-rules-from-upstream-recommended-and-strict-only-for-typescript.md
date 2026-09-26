@@ -57,7 +57,7 @@ silent failure の源として扱っている書き方を検出するルール�
 
 `restrict-template-expressions` は基準のオプションから `allowNumber` だけを true に戻して名指しする。
 oxlint の既定はルール自身の既定 (`allow*` の 5 つが true) で、名指ししないと基準から外れる。
-基準の `allowNumber: false` は浮動小数の表示 (`${0.1 + 0.2}`) を狙ったもので (typescript-eslint の issue 9311)、整数の埋め込みにも鳴る。2026-09-27 に基準の値で測ると `allowNumber` で 33 件鳴り、29 件が件数や id などの整数、4 件はテストの診断文に埋めた DOMRect の座標だった。利用者に見せる浮動小数の表示は、このルールに頼らず `toFixed()` などで書く。テストの診断文のように値そのものを見せたいものは丸めない。
+基準の `allowNumber: false` は浮動小数の表示 (`${0.1 + 0.2}`) を狙ったもので、整数の埋め込みにも鳴る (typescript-eslint の issue 9311)。利用者に見せる浮動小数の表示は、このルールに頼らず `toFixed()` などで書く。テストの診断文のように値そのものを見せたいものは丸めない。
 `allowBoolean` は基準どおり false にする。`` `btn ${active && "active"}` `` は `active` が false のとき `"false"` を埋め込み、型が `false | "active"` なので `allowBoolean: true` では通る (2026-09-27 に oxlint 1.82.0 で実測)。typescript-eslint 本体の `eslint.config.mjs` はこのルールの `allow*` を 5 つとも true に戻しているが、`allowBoolean` の誤りを止めるため採らない。
 なお `correctness` に入るルールも `rules` へ名指しすればオプションを上書きできる。名指ししないルールだけがカテゴリ既定で動く。
 
