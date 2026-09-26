@@ -35,8 +35,6 @@ oxlint は「設定したつもりで効いていない」状態を診断なし�
 oxlint (Vite+ 同梱) の minor 以上の更新が Dependabot の PR で来たら、ADR-0007 の基準表のプラグインごとに上流の一覧と突き合わせる。
 typescript-eslint は依存に入っていないので、`strict` の改訂を知らせるものが無い。ADR-0007 を読み直すときに追随する。
 
-`jsPlugins` は oxlint 側が alpha 扱いで、semver の対象外と明記している。Dependabot の PR を処理するときに、plugin の読み込みと、`@shadcn/lint` の 3 ルールの発火の両方を確かめる (`docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の発火を確かめる」)。
-
 ### プラグインを足す
 
 `vite.config.ts` の `OXLINT_DEFAULT_PLUGINS` で既定集合を明示し、`lint.plugins` はその spread へ追加プラグインを積む。spread を落としてはいけない理由は「plugins は既定集合を置換する」にある。プラグインを 1 つ足すたびに確かめる。

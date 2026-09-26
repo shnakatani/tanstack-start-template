@@ -1,6 +1,6 @@
 # Tailwind と shadcn の lint
 
-`@shadcn/lint` のルールを層の境界に当てるとき、variant 関数を宣言するとき、発火を確かめるときの手順と、その理由を持つ。
+`@shadcn/lint` のルールを層の境界に当てるとき、variant 関数を宣言するとき、時間と警告を読むときの手順と、その理由を持つ。
 
 | 決定                                                                                      | ADR      |
 | ----------------------------------------------------------------------------------------- | -------- |
@@ -31,21 +31,7 @@
 
 - `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」)
 
-### `@shadcn/lint` の発火を確かめる
-
-3 ルール (`no-raw-colors` / `no-arbitrary-values` / `no-unknown-classes`) の発火は `--print-config` に出ない。次を一時ファイルへ置いて `vp lint <path>` を走らせ、3 行とも診断が出たら消す。
-
-```tsx
-export function Probe() {
-  return (
-    <div>
-      <span className="bg-blue-500" /> {/* no-raw-colors */}
-      <span className="bg-[#333]" /> {/* no-arbitrary-values */}
-      <span className="not-a-real-class" /> {/* no-unknown-classes */}
-    </div>
-  );
-}
-```
+### `@shadcn/lint` の時間と警告を読む
 
 - JS plugin は lint の時間を伸ばす。測るときは `time vp lint` を 2 回ずつ実行して、2 回目同士を比べる。1 回目には解決のコストが乗る
 - theme と component の探索に失敗すると、`vp lint` の出力に `[@shadcn/lint]` の警告が出る (2026-09-19 に実測)。`components.json` の `tailwind.css` が無いパスなら代わりの stylesheet を使う旨、Tailwind を import する stylesheet が無ければ `no-raw-colors` が宣言済みの token を確かめられない旨、`ui` alias がディレクトリに解決しなければ design system component を認識しない旨を報告する。3 ルールは警告を出したまま発火し続け、診断の token の提案が減る
