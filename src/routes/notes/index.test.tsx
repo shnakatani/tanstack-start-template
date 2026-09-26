@@ -80,6 +80,8 @@ async function renderRoute(initialLocation: string) {
     // (既定値の同一性は測らない)。無いと root の外まで抜けて組み込みの ErrorComponent が描き、
     // "wasn't caught by any route" の warn が出る (2026-09-23 に実測)
     defaultErrorComponent: RouteErrorContent,
+    // pending 表示の最小表示時間 (既定 500ms) を打ち消す (src/test/app/create-test-router.tsx と同じ)
+    defaultPendingMinMs: 0,
   });
   const screen = await render(
     <QueryClientProvider client={queryClient}>
