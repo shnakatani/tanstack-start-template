@@ -116,6 +116,7 @@ paths:
 - `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
 - 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
 - `sr-only` のテキストは 1px + clip で viewport 判定に落ちる。`getByRole(..., { name })` で本体を掴む (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
+- `userEvent.wheel` をスクロールの手段にしない。要素を表示させるのは locator の操作の自動スクロールに任せ、位置が要るなら `scrollTop` か `scrollIntoView()` で作る (`docs/guides/testing/user-interactions.md`「スクロールさせる」)
 
 ## locator の扱い
 
@@ -129,6 +130,7 @@ paths:
 - 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/assert/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
+- `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えない。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 - locator は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される
 
 ## ブラウザテストの CSS とレイアウト実測

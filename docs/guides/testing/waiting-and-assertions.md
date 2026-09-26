@@ -22,6 +22,7 @@
 
 - `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)
 - `toHaveTextContent` は文字列を渡すと部分一致になる。完全一致が要るなら正規表現を渡す
+- `toHaveTextContent` は受け取った側のテキストの NBSP (U+00A0) を空白に置き換えてから比べ、期待値は置き換えない。`normalizeWhitespace: false` でも置き換わる。期待値に NBSP を書くと必ず落ち、NBSP が失われても通る。NBSP そのものを確かめるなら `element().textContent` を読む (vitest の `toHaveTextContent.ts`)
 - 変化しないことの検証 (disabled な行がトグルしない等) は retry では強くならない。`expect.element` は条件を満たした時点で返るので、更新の前に成功しうる。待つ対象がある検証へ言い換えられないかを先に考える
 - 生 DOM を読む箇所が「操作を挟んだか」で待ち方を誤っても、テストは大半の実行で通る。lint が止めるのは同期読みを assert へ流す形だけなので (ADR-0009)、残りはレビューで見る
 
@@ -262,3 +263,4 @@ explanation と how-to が拠る一次情報。
 - vitest-dev/vitest#9157 (`testTimeout` の既定が docs と食い違う可能性): <https://github.com/vitest-dev/vitest/issues/9157>
 - vitest-dev/vitest#9751 (OPEN。timeout 設定の集約): <https://github.com/vitest-dev/vitest/issues/9751>
 - Vitest の `toHaveStyle` の実装 (期待値の正規化): <https://github.com/vitest-dev/vitest/blob/v4.1.11/packages/browser/src/client/tester/expect/toHaveStyle.ts>
+- Vitest の `toHaveTextContent` の実装 (NBSP の置き換え): https://github.com/vitest-dev/vitest/blob/v4.1.11/packages/browser/src/client/tester/expect/toHaveTextContent.ts

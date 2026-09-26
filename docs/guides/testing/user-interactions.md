@@ -33,6 +33,16 @@
 - `force: true` はこの検査をまとめて飛ばす。animation を戻したテストでは、スライドインの途中の要素が "Element is outside of the viewport" で落ちる。viewport 内の座標の確認は公式の 4 条件の定義に無く、`playwright-core` の `_performPointerAction` が行う (ソースの読み取りで、公式 docs では未確認)
 - 合成イベントを足したくなったら、先に `force: true` で届くかを測る。届くなら合成イベントは要らない
 
+### スクロールさせる
+
+`userEvent.wheel` をスクロールの手段にしない。wheel は `wheel` イベントを聞く UI (拡大縮小、横スクロールのタブ、canvas) を検証するための操作で、スクロールが終わるのを待たずに返る。
+
+| 目的                               | 書き方                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| 要素を表示させてから操作する       | locator の操作 (`click()` など) に任せる。操作の前に自動でスクロールする |
+| スクロール位置そのものが要る       | `element().scrollTop = n` か `element().scrollIntoView()` で作る         |
+| `wheel` イベントへの反応を検証する | `userEvent.wheel`                                                        |
+
 ### animation を戻すテストを書く
 
 animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「animation を無効にして走らせる理由」)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
@@ -167,3 +177,5 @@ explanation と how-to が拠る一次情報。
 - vitest「Playwright」(contextOptions): https://vitest.dev/config/browser/playwright
 - vitest「retry」: https://vitest.dev/config/retry
 - vitest「TestCase」(diagnostic): https://vitest.dev/api/advanced/test-case
+- Vitest の userEvent.wheel: https://vitest.dev/api/browser/interactivity#userevent-wheel
+- Playwright の Mouse.wheel ("does not wait for the scrolling to finish"): https://playwright.dev/docs/api/class-mouse#mouse-wheel
