@@ -163,6 +163,7 @@ explanation と how-to が拠る一次情報。
 - MDN `Event.cancelable`: https://developer.mozilla.org/en-US/docs/Web/API/Event/cancelable
 - Playwright `BrowserContextOptions.reducedMotion` (`prefers-reduced-motion` のエミュレーション): <https://playwright.dev/docs/api/class-browser#browser-new-context>
 - Playwright `locator.dispatchEvent()`: https://playwright.dev/docs/api/class-locator#locator-dispatch-event
+- Playwright `mouse.wheel()` ("does not wait for the scrolling to finish"): https://playwright.dev/docs/api/class-mouse#mouse-wheel
 - Playwright Actionability (`force` が飛ばす判定、Enabled / Receives Events の定義): https://playwright.dev/docs/actionability
 - Playwright Actions「Programmatic click」: https://playwright.dev/docs/input#programmatic-click
 - Playwright screenshot の `animations` オプション (観測の前に止める側の先行例): <https://playwright.dev/docs/api/class-page#page-screenshot>
@@ -170,6 +171,7 @@ explanation と how-to が拠る一次情報。
 - reactwg/react-18 #21 Automatic batching for fewer renders in React 18: https://github.com/reactwg/react-18/discussions/21
 - scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」: https://github.com/scirexs/svseeds-ui/blob/main/.ws/knowledge/vitest-browser-userevent-skips-aria-disabled.md
 - testing-library `event-map.js`: https://github.com/testing-library/dom-testing-library/blob/main/src/event-map.js
+- vitest `userEvent.wheel`: https://vitest.dev/api/browser/interactivity#userevent-wheel
 - vitest Commands (カスタムコマンドから Playwright の `page` / `frame` を使う): https://vitest.dev/guide/browser/commands
 - vitest Interactivity API (CDP / webdriver でイベントを偽装しない): https://vitest.dev/guide/browser/interactivity-api
 - vitest Locators: https://vitest.dev/api/browser/locators
@@ -177,5 +179,3 @@ explanation と how-to が拠る一次情報。
 - vitest「Playwright」(contextOptions): https://vitest.dev/config/browser/playwright
 - vitest「retry」: https://vitest.dev/config/retry
 - vitest「TestCase」(diagnostic): https://vitest.dev/api/advanced/test-case
-- Vitest の userEvent.wheel: https://vitest.dev/api/browser/interactivity#userevent-wheel
-- Playwright の Mouse.wheel ("does not wait for the scrolling to finish"): https://playwright.dev/docs/api/class-mouse#mouse-wheel
