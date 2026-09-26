@@ -123,8 +123,6 @@ export default defineConfig({
       // 上流が eslint コアルールを拡張したもの (extension rule) は、oxlint がプラグイン接頭辞を
       // 落としてコアルールへ解決する。ここに書けるが診断は eslint(...) 名で出る。同じ理由で
       // no-unused-expressions と no-unused-vars は書かない (コアルールが correctness にあり既に有効)。
-      // restrict-template-expressions は名指しでオプションを上書きできるが、上流本体と oxc が
-      // 揃って既定の位置にいるため書かない (ADR-0007)
       "typescript/ban-ts-comment": ["error", { minimumDescriptionLength: 10 }],
       "typescript/no-array-constructor": "error",
       // ignoreVoidReturningFunctions は基準から外す。素の設定は戻り値型が void の
@@ -184,6 +182,20 @@ export default defineConfig({
           allowBoolean: false,
           allowNullish: false,
           allowNumberAndString: false,
+          allowRegExp: false,
+        },
+      ],
+      // strict-type-checked の値から allowNumber だけを true に戻す。整数の埋め込みにまで鳴り、
+      // String() を書き足すだけになる。allowBoolean は false のまま: `${a && "x"}` が "false" を
+      // 埋め込む誤りを止める (ADR-0007)
+      "typescript/restrict-template-expressions": [
+        "error",
+        {
+          allowAny: false,
+          allowBoolean: false,
+          allowNever: false,
+          allowNullish: false,
+          allowNumber: true,
           allowRegExp: false,
         },
       ],
