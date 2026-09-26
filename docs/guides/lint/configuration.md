@@ -176,7 +176,7 @@ off にする判断は違反が出たときに個別に行う (registry コー�
 
 - `no-debugging-utils` を `error` へ上げるのは、`vp check` が warn で exit 1 にならず、`warn` のままだと commit された `screen.debug()` が素通りするためである
 - `no-node-access` を有効のまま残すと、設定上は error でも無検査になる
-- このプラグインは ESLint 本体を依存へ持ち込む。`packageExtensions` で peer を optional にしても外さない。`@typescript-eslint/utils` のルート import が `eslint` を実行時に読むため、外せたとしてもプラグインが落ちるからである (2026-09-20 に 3 通り試して実測)。機序 (`eslint` を必須 peer に持つ依存が連鎖すること) は `pnpm-workspace.yaml` のコメントが持つ。oxlint の jsPlugins が読み込む中でだけ動き、出荷物には入らない。
+- このプラグインは ESLint 本体を依存へ持ち込む。`packageExtensions` で peer を optional にしても外さない。`@typescript-eslint/utils` のルート import が `eslint` を実行時に読むため、外せたとしてもプラグインが落ちるからである (2026-09-20 に 3 通り試して実測)。機序 (`eslint` を必須 peer に持つ依存が連鎖すること) は `vp why eslint` で見る。oxlint の jsPlugins が読み込む中でだけ動き、出荷物には入らない。
 - `eslint-plugin-testing-library` の追加で dev 依存が増え、`eslint` が展開される。増分は `git diff pnpm-lock.yaml` の `packages:` の差で数える。外すと `Failed to load JS plugin: eslint-plugin-testing-library / Cannot find module 'eslint'` で config のパースごと落ちるため fail-closed である
 
 ### TypeScript 向け variant の off を写さない理由
