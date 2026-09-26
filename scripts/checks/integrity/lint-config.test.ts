@@ -212,7 +212,7 @@ describe("書いた設定が解決後も残っている", () => {
   });
 
   it("categories の格上げが効いている", () => {
-    // categories で有効になったルールは解決後設定の rules に列挙されない。値でしか見えない
+    // categories で有効になったルールは rules に名指ししないので、前の突き合わせでは脱落を拾えない。値で押さえる
     expect(printedConfig.categories).toEqual({ correctness: "deny", perf: "deny" });
   });
 
