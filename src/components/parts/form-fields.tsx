@@ -209,7 +209,8 @@ interface FormSelectFieldProps<T extends string>
 /**
  * 選んでいた値が候補から消えたことを、Base UI の `onValueChange(null)` で検出しない。
  * 値の解決はこの部品が引き取り、`null` と options に無い値は表示を保ったまま warn に残す。
- * 候補から消えた値の保存は止めない。消費側が `form.AppField` の validators で止める
+ * 候補から消えた値の保存は止めない。`options` が描画中に変わりうるとき (query や別の
+ * フィールドから来るとき) は、消費側が `form.AppField` の validators で止める
  * (docs/guides/forms-and-inputs.md「Select の値を解決する」)。
  *
  * Base UI の自己リセットは公式 docs の Select に書かれていない (同梱の docs を `reset` /

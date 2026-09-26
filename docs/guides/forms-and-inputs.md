@@ -39,14 +39,14 @@
 
 選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない。値の解決は消費側で引き取り、次の形にする。理由は「Select の値を消費側で解決する理由」にある。実例と、通知が来る条件の読み取りは `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
 
-| 受けたもの                | 扱い                                                                                                                                | 守らないと                                                                               |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `onValueChange` の `null` | form の値を消さない。`console.warn` に現在値と突合元を残す                                                                          | 候補の入れ替えで form の値が黙って消える                                                 |
-| `options` に無い値        | 表示を保ったまま、`console.warn` に値と突合元を残す                                                                                 | Base UI との配線の不整合が誰にも見えない                                                 |
-| 候補から消えた値          | 表示は保つ。保存は消費側の validator で止め、選び直しを促す (`form-fields.stories.tsx` の `SelectBlocksSubmitWhenValueLeftOptions`) | 通知が来ない条件 (未登録、`null`、マウント時の値へ戻る) で、候補に無い値のまま送信される |
+| 受けたもの                | 扱い                                                                                                                                                                                                            | 守らないと                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `onValueChange` の `null` | form の値を消さない。`console.warn` に現在値と突合元を残す                                                                                                                                                      | 候補の入れ替えで form の値が黙って消える                                                 |
+| `options` に無い値        | 表示を保ったまま、`console.warn` に値と突合元を残す                                                                                                                                                             | Base UI との配線の不整合が誰にも見えない                                                 |
+| 候補から消えた値          | 表示は保つ。`options` が描画中に変わりうるとき (query や別のフィールドから来るとき) は、保存を消費側の validator で止め、選び直しを促す (`form-fields.stories.tsx` の `SelectBlocksSubmitWhenValueLeftOptions`) | 通知が来ない条件 (未登録、`null`、マウント時の値へ戻る) で、候補に無い値のまま送信される |
 
 - `FormSelectField` を包まずに `Select` を使う箇所は、同じ引き取りを自分で書く
-- validator は `form.AppField` の `validators` に宣言する。部品の中から足す公式の形は無い。validator は送信時にも走るので、候補の変化で再検証されなくても送信で止まる (TanStack Form の validation ガイド)
+- `options` が描画中に変わりうるとき (query や別のフィールドから来るとき)、validator は `form.AppField` の `validators` に宣言する。部品の中から足す公式の形は見つからない (2026-09-26 に TanStack Form の validation と form-composition のガイドを確認)。validator は送信時にも走るので、候補の変化で再検証されなくても送信で止まる (TanStack Form の validation ガイド)
 - 候補が別のフィールドから決まるなら、依存元の `listeners` で値を空に戻す形もある (TanStack Form の listeners ガイド)。候補が query など form の外から来るときは validator で止める
 
 ### 高さのあるダイアログを組む
@@ -143,5 +143,4 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 | 消費側で値を解決し、Base UI の通知は警告に使う | 通知の有無に依らず form の値が決まる                             | **採用** |
 | Base UI の自己リセットに任せる                 | 公式 docs に無い挙動で、通知されない条件があり、版で経路が変わる | 却下     |
 
-- TanStack Form の validation (送信時にも validator が走る): https://tanstack.com/form/latest/docs/framework/react/guides/validation
-- TanStack Form の listeners (無効になった依存値のリセット): https://tanstack.com/form/latest/docs/framework/react/guides/listeners
+- 出典: TanStack Form の validation ガイド (https://tanstack.com/form/latest/docs/framework/react/guides/validation)、listeners ガイド (https://tanstack.com/form/latest/docs/framework/react/guides/listeners)

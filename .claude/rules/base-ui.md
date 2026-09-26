@@ -20,7 +20,7 @@ paths:
 
 - 現在値が候補から消えたことを `onValueChange` の `null` 通知で検出しない。通知が来ない条件がある。値の解決は消費側で引き取る (`docs/guides/forms-and-inputs.md`「Select の値を解決する」)
 - `null` や `options` に無い値を受けたら、表示を保ったまま `console.warn` に現在値と突合元を残す (`docs/guides/forms-and-inputs.md`「Select の値を解決する」)
-- `FormSelectField` を使うときは、値が `options` にあるかの validator を `form.AppField` に宣言する。部品は値を保持するだけで、候補から消えた値のまま送信される (`docs/guides/forms-and-inputs.md`「Select の値を解決する」)
+- `FormSelectField` の `options` が描画中に変わりうるとき (query や別のフィールドから来るとき) は、値が `options` にあるかの validator を `form.AppField` に宣言する。部品は値を保持するだけで、候補から消えた値のまま送信される (`docs/guides/forms-and-inputs.md`「Select の値を解決する」)
 
 ## Combobox と ItemGroup
 
