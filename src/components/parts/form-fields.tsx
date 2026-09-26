@@ -323,8 +323,11 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
     });
   }
 
+  // registry の horizontal Field は子の FieldLabel を flex-auto で伸ばし、Field 自身は w-full なので、
+  // フォームの幅いっぱいまでラベルが伸びて右の余白でもトグルする。shadcn の単独チェックボックスの例は
+  // 器の幅を w-56 に絞っており、行を中身の幅に縮めるのはその形に合わせたもの
   return (
-    <Field orientation="horizontal" data-disabled={disabled || undefined}>
+    <Field orientation="horizontal" className="w-fit" data-disabled={disabled || undefined}>
       <Checkbox
         id={id}
         checked={field.state.value}
