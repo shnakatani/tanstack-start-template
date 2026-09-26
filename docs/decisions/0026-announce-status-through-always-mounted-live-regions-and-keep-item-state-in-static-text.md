@@ -45,15 +45,15 @@ pending 中の状態をスクリーンリーダーへ伝えるために、条件
 
 ### 検討した選択肢
 
-| 案                                                                  | 評価                                                                                                                                                        | 採否     |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 自前の announcer (初期マークアップに 1 組、`announce()` は素の DOM) | 依存を増やさず、MDN の最上位の推奨と Base UI `Combobox.Status` / React Aria の指針に沿う。Transition と干渉しない                                           | **採用** |
-| 自前の announcer を React の store (`useSyncExternalStore`) で描く  | Action の中の `announce()` で進行中の Transition が blocking に落ち得る (react.dev の Caveats)                                                              | 却下     |
-| `@react-aria/live-announcer` を入れる                               | 公式 lib だが 3.5.1 は `react-aria` (meta package) に依存する。React Aria への基盤変更は ADR-0016 で別 ADR 扱いにしており、announcer のために本体を入れない | 却下     |
-| ページ側で mutation の状態から文言を導く region                     | `useMutationState` から「削除しています」を組み立てる。ボタンの Transition の pending が届かず、ボタンの中の `role="status"` が露出しない問題を解けない     | 却下     |
-| 項目ごとの `<output>` / 条件付き `Spinner`                          | MDN / Base UI / Sara Soueidan の指針に反し、行数分の region が生まれる                                                                                      | 却下     |
-| `aria-busy` だけで伝える                                            | 変更中の印であって通知ではない。支援技術は busy の間の変化を無視してよい                                                                                    | 却下     |
-| toast で「削除しています」を出す                                    | 全員に見える通知になり、晴眼者には行の半透明で足りる情報が視覚のノイズになる                                                                                | 却下     |
+| 案                                                                  | 評価                                                                                                                                                          | 採否     |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 自前の announcer (初期マークアップに 1 組、`announce()` は素の DOM) | 依存を増やさず、MDN の最上位の推奨と Base UI `Combobox.Status` / React Aria の指針に沿う。Transition と干渉しない                                             | **採用** |
+| 自前の announcer を React の store (`useSyncExternalStore`) で描く  | Action の中の `announce()` で進行中の Transition が blocking に落ち得る (react.dev の Caveats)                                                                | 却下     |
+| `@react-aria/live-announcer` を入れる                               | 公式 lib だが 3.5.1 は `react-aria` (meta package) に依存する。React Aria への基盤変更は ADR-0016 で別 ADR 扱いにしており、announcer のために本体を入れない   | 却下     |
+| ページ側で mutation の状態から文言を導く region                     | `useMutationState` から「削除しています」を組み立てる。ボタンの Transition の pending が届かず、ボタンの中の `role="status"` の露出の保証が無い問題を解けない | 却下     |
+| 項目ごとの `<output>` / 条件付き `Spinner`                          | MDN / Base UI / Sara Soueidan の指針に反し、行数分の region が生まれる                                                                                        | 却下     |
+| `aria-busy` だけで伝える                                            | 変更中の印であって通知ではない。支援技術は busy の間の変化を無視してよい                                                                                      | 却下     |
+| toast で「削除しています」を出す                                    | 全員に見える通知になり、晴眼者には行の半透明で足りる情報が視覚のノイズになる                                                                                  | 却下     |
 
 ## Consequences
 
