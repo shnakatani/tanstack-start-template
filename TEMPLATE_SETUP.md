@@ -1,57 +1,46 @@
 # テンプレートから始めたときの手順
 
 テンプレートから始めた直後に一度だけ要る手順をまとめた。
-すべて済んだら、この文書ごと消す。ずっと使う情報は `README.md` が持つ。
+済んだらこの文書を消す。
 
-## 1. リポジトリを作る
-
-GitHub のリポジトリごと作るなら `gh repo create --template` を使う。元の履歴は引き継がない。
+## プロジェクトを作る
 
 ```bash
-gh repo create my-app --template shnakatani/tanstack-start-template --private --clone
+vp dlx gitpick shnakatani/tanstack-start-template my-app
 ```
 
-リモートを作らずファイルだけ要るなら `vp create` を使う。`.git` は作られない。
+<details>
+<summary>ほかのコマンドで作ったとき (2026-09-27 に確認)</summary>
 
-```bash
-vp create github:shnakatani/tanstack-start-template
-```
+| コマンド                                                              | 起きること                                                                                                          |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `vp create github:shnakatani/tanstack-start-template`                 | `CLAUDE.md` と `.claude/skills/` の symlink が、degit のキャッシュを指す絶対パスに書き換わって壊れる (degit 3.10.0) |
+| `vp create github:shnakatani/tanstack-start-template -- --mode=git`   | symlink は壊れない。`--mode=git` は degit の docs が非推奨としている                                                |
+| `vp dlx giget gh:shnakatani/tanstack-start-template my-app`           | gitpick と同じ結果                                                                                                  |
+| `gh repo create my-app --template shnakatani/tanstack-start-template` | GitHub にリポジトリが作られる                                                                                       |
+| `git clone` / `gh repo clone`                                         | テンプレートの履歴と `origin` が残る                                                                                |
 
-作ったら `README.md`「環境を用意する」を済ませる。
+</details>
 
-## 2. 名前を置換する
+## 名前を置換する
 
 ```bash
 grep -rn "tanstack-start-template" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.output .
 ```
 
-grep に出ないものが 1 つある。画面の見出しと head の `title` が参照する `src/lib/app-name.ts` の `APP_NAME` (`TanStack Start Template`)。
+grep に出ない `src/lib/app-name.ts` の `APP_NAME` も替える。
 
-## 3. サンプル機能
+## 置き換える箇所
 
-動作確認用のメモ機能 (`/notes`) が入っている。本体は `src/features/notes/` と `src/routes/notes/`。
+| 対象     | 場所                                                                            |
+| -------- | ------------------------------------------------------------------------------- |
+| DB       | `src/server/db/`、`drizzle.config.ts`                                           |
+| 認証     | `src/start.ts` の `createStart`、新しく作る `src/routes/_authed.tsx` (ADR-0012) |
+| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                       |
 
-## 4. 差し替え口を埋める
+サンプル機能 (`/notes`) は `src/features/notes/` と `src/routes/notes/` にある。
 
-| 対象     | 差し替え点                                                              | 手順                                                                                                                                                                                                                                                                    |
-| -------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DB       | `src/server/db/` と `drizzle.config.ts`                                 | 接続と dialect を移行先に合わせる                                                                                                                                                                                                                                       |
-| 認証     | `src/start.ts` の `createStart` と、新しく作る `src/routes/_authed.tsx` | `createStart` に `functionMiddleware` を足して認証の middleware を渡す。`src/routes/_authed.tsx` の `beforeLoad` で未ログインを login へ送り、保護する route を `src/routes/_authed/` の下へ移す (`_` で始まるセグメントは URL に出ない)。両方を埋める。決定は ADR-0012 |
-| デプロイ | `vite.config.ts` の `nitro()` の `preset`                               | 選定理由を ADR へ記録してから `preset` を渡す                                                                                                                                                                                                                           |
+## 後始末
 
-## 5. 引き継いだ決定を見直す
-
-`docs/decisions/` の ADR、`docs/guides/` のガイド、`.claude/rules/` は、このテンプレートの前提で下した判断をそのまま持っている。
-前提が違うものは、ADR を `Superseded` にするか、ガイドと rules を書き換えてから実装に入る。
-
-## 6. README を書き換える
-
-`README.md` の冒頭の説明と技術スタックの表は、このテンプレートの説明のまま。自分のプロジェクトの説明と、差し替えた技術に書き換える。
-
-## 7. この文書を消す
-
-この文書と、この文書を指す 3 か所を消す。
-
-- `README.md` の冒頭で `TEMPLATE_SETUP.md` を指す 1 文
-- `README.md`「ドキュメント」の表の `TEMPLATE_SETUP.md` の行
-- `.claude/rules/docs.md` の `paths` の `TEMPLATE_SETUP.md`
+- `README.md` の冒頭の説明と技術スタックの表を、自分のプロジェクトに合わせる
+- この文書と、これを指す 3 か所 (`README.md` の冒頭の 1 文と「ドキュメント」の表の行、`.claude/rules/docs.md` の `paths`) を消す

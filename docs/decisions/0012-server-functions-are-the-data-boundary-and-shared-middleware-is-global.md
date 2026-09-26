@@ -12,7 +12,7 @@
 TanStack Start の server function は、それを呼ぶ画面とは独立に到達できる RPC endpoint になる。
 公式スキル `@tanstack/start-client-core#start-core/server-functions` は Common Mistakes の 1 件目に「route guard で server function を守る」を CRITICAL として置き、`beforeLoad` は route の UI を守るものでデータ境界ではないと述べる (skill の `library_version` は 1.170.14、2026-09-06 に確認)。
 
-用意してあるのが差し替え口だけなので、埋め方を誤っても動くものは動く。
+用意してあるのは置き換える箇所だけなので、埋め方を誤っても動くものは動く。
 保護する route を `src/routes/_authed/` 配下へ移して `beforeLoad` で判定するところまでで止めると、画面は守られる一方で server function は無認証で呼べるまま残る。
 
 付け忘れの防ぎ方は、規約と機械検査で守るか、付け忘れられない構造にするかの 2 通りある。

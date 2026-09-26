@@ -1,7 +1,7 @@
 # tanstack-start-template
 
 TanStack Start と Vite+ で組んだ Web アプリケーションの template repository。
-バックエンドサービス・認証・デプロイ先は選定しておらず、DB をローカルの SQLite に仮置きしたうえで、それぞれの差し替え口だけを用意してある。
+バックエンドサービス・認証・デプロイ先は選定しておらず、DB をローカルの SQLite に仮置きしたうえで、それぞれ置き換える箇所だけを用意してある。
 テンプレートから始めたら、`TEMPLATE_SETUP.md` の手順を済ませてから、その文書ごと消す。
 
 ## 技術スタック
@@ -57,13 +57,10 @@ mise run storybook                                # 部品とデザイントー�
 
 ## ドキュメント
 
-| パス                          | 内容                                                                                                                                                                                                          |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/decisions/`             | ADR。決定と却下理由。索引は `docs/decisions/README.md`                                                                                                                                                        |
-| `docs/guides/`                | 設計ガイド。部品をまたぐ作法の説明と、その作法で組む手順・落とし穴への対処。主題の一覧は `docs/guides/README.md`                                                                                              |
-| `.claude/rules/`              | Claude が作業中に読み込む規範。`paths` に一致するファイルを読んだときロードされる。rules は ADR かガイドの節を指し、ADR とガイドとコードは rules を指さない (rules の置き場所や書き方を主題にする ADR は除く) |
-| `TEMPLATE_SETUP.md`           | テンプレートから始めた直後に一度だけ要る手順。済んだら消す                                                                                                                                                    |
-| `AGENTS.md`                   | エージェントへの指示。`CLAUDE.md` は symlink                                                                                                                                                                  |
-| `docs/registry-baseline/`     | shadcn registry の生成時 baseline。改変と上流 drift の判別に使う (ADR-0020)                                                                                                                                   |
-| `docs/registry-deviations.md` | baseline から動かした行の台帳 (コードの乖離、行単位の lint 抑制、`src/styles.css` の乖離、registry の値を複製したファイル)。baseline との差分と 1:1 で対応する (ADR-0020)                                     |
-| `docs/superpowers/`           | 設計仕様と実装計画の置き場所                                                                                                                                                                                  |
+| パス                          | 内容                                           |
+| ----------------------------- | ---------------------------------------------- |
+| `TEMPLATE_SETUP.md`           | テンプレートから始めた直後の手順               |
+| `docs/decisions/`             | ADR                                            |
+| `docs/guides/`                | 設計ガイド                                     |
+| `docs/registry-baseline/`     | shadcn registry の生成時の baseline (ADR-0020) |
+| `docs/registry-deviations.md` | baseline から動かした行の台帳 (ADR-0020)       |
