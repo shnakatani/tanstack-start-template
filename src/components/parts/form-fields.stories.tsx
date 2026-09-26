@@ -228,18 +228,40 @@ function CustomErrorForm({ error }: { error: unknown }) {
 }
 
 /** 候補を丸ごと入れ替えるフォーム。現在値も初期値も候補から消す */
-function ReplaceableSelectForm({ onChangeValue }: StoryArgs) {
+function ReplaceableSelectForm({ onChangeValue, onSubmit }: StoryArgs) {
   const [options, setOptions] =
     useState<readonly { value: string; label: string }[]>(STATUS_OPTIONS);
   const form = useAppForm({
     defaultValues: { type: "inactive" },
     validationLogic: revalidateLogic(),
+    onSubmit: ({ value }) => {
+      onSubmit(value.type);
+    },
   });
 
   return (
-    <form>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.handleSubmit();
+      }}
+    >
       <FieldGroup>
-        <form.AppField name="type" listeners={{ onChange: ({ value }) => onChangeValue(value) }}>
+        <form.AppField
+          name="type"
+          listeners={{ onChange: ({ value }) => onChangeValue(value) }}
+          // 候補から消えた値のまま保存させない。FormSelectField は値を保持するだけで、
+          // 保存を止めるのは消費側の validator (docs/guides/forms-and-inputs.md「Select の値を解決する」)
+          validators={{
+            onDynamic: v.pipe(
+              v.string(),
+              v.check(
+                (value) => options.some((option) => option.value === value),
+                "選び直してください",
+              ),
+            ),
+          }}
+        >
           {(field) => (
             <>
               <field.FormSelectField
@@ -258,6 +280,7 @@ function ReplaceableSelectForm({ onChangeValue }: StoryArgs) {
           <Button type="button" variant="outline" onClick={() => setOptions(ARCHIVED_OPTIONS)}>
             候補を入れ替える
           </Button>
+          <Button type="submit">送信</Button>
         </Field>
       </FieldGroup>
     </form>
@@ -464,6 +487,28 @@ export const SelectKeepsValueWhenOptionsReplaced: Story = {
       ),
     );
     await expect(screen.getByTestId("current-value")).toHaveTextContent(/^active$/);
+  },
+};
+
+/** 候補から消えた値のまま送信すると、送信が止まり選び直しを促す */
+export const SelectBlocksSubmitWhenValueLeftOptions: Story = {
+  tags: ["!dev"],
+  render: (args) => <ReplaceableSelectForm {...args} />,
+  beforeEach: captureConsoleWarn,
+  play: async ({ args }) => {
+    await chooseStatus("有効");
+    await userEvent.click(screen.getByRole("button", { name: "候補を入れ替える" }));
+    await waitFor(() =>
+      expect(consoleWarn).toHaveBeenCalledWith(
+        "[FormSelectField] 候補から現在値が消えました。値は保持します",
+        { currentValue: "active", options: ARCHIVED_OPTIONS },
+      ),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "送信" }));
+
+    await expect(await screen.findByText("選び直してください")).toBeInTheDocument();
+    await expect(args.onSubmit).not.toHaveBeenCalled();
   },
 };
 
