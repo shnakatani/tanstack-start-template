@@ -1,12 +1,12 @@
 # ADR-0012: server function をデータ境界とし、全 fn 共通の middleware は global に載せる
 
 - Status: Accepted
-- Date: 2026-09-06
+- Date: 2026-09-27
 - 関連: ADR-0007 (lint ルールの選定基準)
 
 ## Context
 
-このテンプレートは認証プロバイダを選定していない (リポジトリ直下の `README.md`「差し替え口」節)。
+このテンプレートは認証プロバイダを選定していない。
 決めるのは「何で認証するか」ではなく、**どこで守るか**と**付け忘れをどう無くすか**の 2 つである。
 
 TanStack Start の server function は、それを呼ぶ画面とは独立に到達できる RPC endpoint になる。
