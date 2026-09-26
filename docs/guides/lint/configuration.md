@@ -35,8 +35,6 @@ oxlint は「設定したつもりで効いていない」状態を診断なし�
 oxlint (Vite+ 同梱) の minor 以上の更新が Dependabot の PR で来たら、ADR-0007 の基準表のプラグインごとに上流の一覧と突き合わせる。
 typescript-eslint は依存に入っていないので、`strict` の改訂を知らせるものが無い。ADR-0007 を読み直すときに追随する。
 
-`jsPlugins` は oxlint 側が alpha 扱いで、semver の対象外と明記している。Dependabot の PR を処理するときに、plugin の読み込みと、`@shadcn/lint` の 3 ルールの発火の両方を確かめる (`docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の発火を確かめる」)。
-
 ### プラグインを足す
 
 `vite.config.ts` の `OXLINT_DEFAULT_PLUGINS` で既定集合を明示し、`lint.plugins` はその spread へ追加プラグインを積む。spread を落としてはいけない理由は「plugins は既定集合を置換する」にある。プラグインを 1 つ足すたびに確かめる。
@@ -178,7 +176,7 @@ off にする判断は違反が出たときに個別に行う (registry コー�
 
 - `no-debugging-utils` を `error` へ上げるのは、`vp check` が warn で exit 1 にならず、`warn` のままだと commit された `screen.debug()` が素通りするためである
 - `no-node-access` を有効のまま残すと、設定上は error でも無検査になる
-- このプラグインは ESLint 本体を依存へ持ち込む。`packageExtensions` で peer を optional にしても外さない。`@typescript-eslint/utils` のルート import が `eslint` を実行時に読むため、外せたとしてもプラグインが落ちるからである (2026-09-20 に 3 通り試して実測)。機序 (`eslint` を必須 peer に持つ依存が連鎖すること) は `pnpm-workspace.yaml` のコメントが持つ。oxlint の jsPlugins が読み込む中でだけ動き、出荷物には入らない。
+- このプラグインは ESLint 本体を依存へ持ち込む。`packageExtensions` で peer を optional にしても外さない。`@typescript-eslint/utils` のルート import が `eslint` を実行時に読むため、外せたとしてもプラグインが落ちるからである (2026-09-20 に 3 通り試して実測)。機序 (`eslint` を必須 peer に持つ依存が連鎖すること) は `vp why eslint` で見る。oxlint の jsPlugins が読み込む中でだけ動き、出荷物には入らない。
 - `eslint-plugin-testing-library` の追加で dev 依存が増え、`eslint` が展開される。増分は `git diff pnpm-lock.yaml` の `packages:` の差で数える。外すと `Failed to load JS plugin: eslint-plugin-testing-library / Cannot find module 'eslint'` で config のパースごと落ちるため fail-closed である
 
 ### TypeScript 向け variant の off を写さない理由

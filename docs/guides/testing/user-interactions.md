@@ -33,6 +33,16 @@
 - `force: true` はこの検査をまとめて飛ばす。animation を戻したテストでは、スライドインの途中の要素が "Element is outside of the viewport" で落ちる。viewport 内の座標の確認は公式の 4 条件の定義に無く、`playwright-core` の `_performPointerAction` が行う (ソースの読み取りで、公式 docs では未確認)
 - 合成イベントを足したくなったら、先に `force: true` で届くかを測る。届くなら合成イベントは要らない
 
+### スクロールさせる
+
+`userEvent.wheel` をスクロールの手段にしない。wheel は `wheel` イベントを聞く UI (拡大縮小、横スクロールのタブ、canvas) を検証するための操作で、スクロールが終わるのを待たずに返る。
+
+| 目的                               | 書き方                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| 要素を表示させてから操作する       | locator の操作 (`click()` など) に任せる。操作の前に自動でスクロールする |
+| スクロール位置そのものが要る       | `element().scrollTop = n` か `element().scrollIntoView()` で作る         |
+| `wheel` イベントへの反応を検証する | `userEvent.wheel`                                                        |
+
 ### animation を戻すテストを書く
 
 animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「animation を無効にして走らせる理由」)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
@@ -153,6 +163,7 @@ explanation と how-to が拠る一次情報。
 - MDN `Event.cancelable`: https://developer.mozilla.org/en-US/docs/Web/API/Event/cancelable
 - Playwright `BrowserContextOptions.reducedMotion` (`prefers-reduced-motion` のエミュレーション): <https://playwright.dev/docs/api/class-browser#browser-new-context>
 - Playwright `locator.dispatchEvent()`: https://playwright.dev/docs/api/class-locator#locator-dispatch-event
+- Playwright `mouse.wheel()` ("does not wait for the scrolling to finish"): https://playwright.dev/docs/api/class-mouse#mouse-wheel
 - Playwright Actionability (`force` が飛ばす判定、Enabled / Receives Events の定義): https://playwright.dev/docs/actionability
 - Playwright Actions「Programmatic click」: https://playwright.dev/docs/input#programmatic-click
 - Playwright screenshot の `animations` オプション (観測の前に止める側の先行例): <https://playwright.dev/docs/api/class-page#page-screenshot>
@@ -160,6 +171,7 @@ explanation と how-to が拠る一次情報。
 - reactwg/react-18 #21 Automatic batching for fewer renders in React 18: https://github.com/reactwg/react-18/discussions/21
 - scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」: https://github.com/scirexs/svseeds-ui/blob/main/.ws/knowledge/vitest-browser-userevent-skips-aria-disabled.md
 - testing-library `event-map.js`: https://github.com/testing-library/dom-testing-library/blob/main/src/event-map.js
+- vitest `userEvent.wheel`: https://vitest.dev/api/browser/interactivity#userevent-wheel
 - vitest Commands (カスタムコマンドから Playwright の `page` / `frame` を使う): https://vitest.dev/guide/browser/commands
 - vitest Interactivity API (CDP / webdriver でイベントを偽装しない): https://vitest.dev/guide/browser/interactivity-api
 - vitest Locators: https://vitest.dev/api/browser/locators

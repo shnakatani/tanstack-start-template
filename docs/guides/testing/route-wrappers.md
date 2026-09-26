@@ -18,6 +18,17 @@ Route hooks を使う wrapper は、root だけをテスト用に差し替えた
 
 browser test は DEV で走るので、search の検証に失敗すると `RouteErrorContent` が `error.message` (Standard Schema の issues の JSON) をそのまま出す。テストは schema の文言が含まれることを見る。
 
+### pending 表示の時間を扱う
+
+テスト用の router には `defaultPendingMinMs: 0` を渡す。pending 表示がいったん出ると、最小表示時間 (既定 500ms) がそのままテストの待ちになる。`defaultPendingMs` は既定のまま置く。0 にすると毎回 pending を踏む。
+
+pending 表示が route の読み込み中に出ることを検証するテストは、対象 route の `pendingMs` を下げる。表示を部品として描くだけなら、`createTestRouter` で `pendingComponent` を直接描く (`src/routes/notes/index.test.tsx` の pending のテスト)。
+
+| 手順                                                | 守らないと                                                                                    |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 対象 route の `Route.options.pendingMs` を 0 にする | 既定の `pendingMs` のままだと、pending が出る前に読み込みが終わり、pending 表示を観測できない |
+| `afterEach` で `pendingMs` を元の値へ戻す           | テストが同じ `Route` インスタンスを使い回すので、後続のテストまで pending を踏む              |
+
 ## explanation
 
 ### route の wrapper を実 router で描く理由
@@ -33,4 +44,4 @@ Router の how-to「How to Test Router with File-Based Routing」は生成済み
 | props 直渡しのページテストだけ                   | wrapper が一度も実行されない                                         | 却下     |
 | wrapper のテストを `route.test.tsx` に置く       | `route.tsx` (レイアウトルート) のテストと読める                      | 却下     |
 
-- 出典: TanStack Router の how-to「How to Test Router with File-Based Routing」(https://tanstack.com/router/latest/docs/framework/react/how-to/test-file-based-routing)、「How to Set Up Testing with Code-Based Routing」(https://tanstack.com/router/latest/docs/framework/react/how-to/setup-testing)、file-naming-conventions (https://tanstack.com/router/latest/docs/framework/react/routing/file-naming-conventions)
+- 出典: TanStack Router の how-to「How to Test Router with File-Based Routing」(https://tanstack.com/router/latest/docs/framework/react/how-to/test-file-based-routing)、「How to Set Up Testing with Code-Based Routing」(https://tanstack.com/router/latest/docs/framework/react/how-to/setup-testing)、file-naming-conventions (https://tanstack.com/router/latest/docs/framework/react/routing/file-naming-conventions)、テストの案内に `defaultPendingMinMs` が欠けていることを上流が認めた issue (https://github.com/TanStack/router/issues/4569)

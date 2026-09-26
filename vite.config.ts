@@ -61,6 +61,12 @@ export default defineConfig({
       // ブラウザテストの assert に locator を渡させる自前ルール。上流の
       // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0009)
       { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
+      // TanStack Query / Router の契約の検査。oxlint はネイティブに持たず、ネイティブ化を求めた
+      // oxc の issue 11648 は discussion へ移され、実装は入っていない (ADR-0007)。name は他の
+      // jsPlugins (shadcn / testing-library / browser-test) と同じく、短い名前を診断・rules の
+      // キー・抑制 directive で共有する
+      { name: "tanstack-query", specifier: "@tanstack/eslint-plugin-query" },
+      { name: "tanstack-router", specifier: "@tanstack/eslint-plugin-router" },
     ],
     settings: {
       shadcn: {
@@ -154,13 +160,16 @@ export default defineConfig({
       "typescript/no-unsafe-member-access": "error",
       "typescript/no-unsafe-return": "error",
       "typescript/no-useless-constructor": "error",
-      // throw redirect() は TanStack Router の制御フロー契約で、SSR では投げた Response
-      // がそのまま HTTP 307 になる。TanStack 公式が only-throw-error との衝突を認めて
-      // この allow 設定を案内している (docs の eslint-plugin-router)。notFound() は
-      // 使っていないため登録しない。使い始めたら lint が鳴るので、そこで足す
+      // throw redirect() と throw notFound() は TanStack Router の制御フロー。公式が
+      // only-throw-error との衝突を認め、この 2 つを allow するよう案内している (docs の eslint-plugin-router)
       "typescript/only-throw-error": [
         "error",
-        { allow: [{ from: "package", package: "@tanstack/router-core", name: "Redirect" }] },
+        {
+          allow: [
+            { from: "package", package: "@tanstack/router-core", name: "Redirect" },
+            { from: "package", package: "@tanstack/router-core", name: "NotFoundError" },
+          ],
+        },
       ],
       "typescript/prefer-literal-enum-member": "error",
       "typescript/prefer-promise-reject-errors": "error",
@@ -252,6 +261,25 @@ export default defineConfig({
       // 結果や fixture を壊せない箇所では新規オブジェクトを作るしかなく、確保回数が
       // spread と同じになって効果が消える (ADR-0007)
       "oxc/no-map-spread": "off",
+
+      // -- tanstack-query: @tanstack/eslint-plugin-query の recommended と prefer-query-options (ADR-0007) --
+      "tanstack-query/exhaustive-deps": "error",
+      // 上流は warn。vp check は警告では落ちないので error で入れる。型情報を使う一部のケースは
+      // oxlint の JS plugin では見えない (ADR-0007)
+      "tanstack-query/no-rest-destructuring": "error",
+      "tanstack-query/stable-query-client": "error",
+      "tanstack-query/no-unstable-deps": "error",
+      "tanstack-query/infinite-query-property-order": "error",
+      "tanstack-query/mutation-property-order": "error",
+      // recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、
+      // queryOptions の 1 か所で定義させる (ADR-0007)
+      "tanstack-query/prefer-query-options": "error",
+      // no-void-query-fn は登録しない。型情報が要り、oxlint の JS plugin では常に無診断になる (ADR-0007)
+
+      // -- tanstack-router: @tanstack/eslint-plugin-router の recommended (ADR-0007) --
+      "tanstack-router/route-param-names": "error",
+      // 上流は warn。上と同じ理由で error で入れる
+      "tanstack-router/create-route-property-order": "error",
 
       // -- vitest: @vitest/eslint-plugin の recommended (ADR-0007) --
       // assertFunctionNames は既定 (expect / expectTypeOf / assert / assertType) へ足すのでは

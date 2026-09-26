@@ -1,7 +1,7 @@
 # ADR-0023: 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める
 
 - Status: Accepted
-- Date: 2026-09-25
+- Date: 2026-09-27
 - 関連: ADR-0007 (lint ルールの選定基準)、ADR-0020 (行単位の抑制の許容リスト)、ADR-0011 (`no-restyle` の適用範囲)、ADR-0022 (層の外へ class 文字列を配らない)
 
 ## Context
@@ -43,7 +43,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書き、`@shadcn/lint` には `{ name: "shadcn", specifier: "@shadcn/lint" }` を使う。
-抑制 directive の名前、lint 時間の測り方、3 ルールの発火を確かめる probe、探索に失敗したときの警告は `docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の発火を確かめる」と「JS plugin の落とし穴」にある。3 ルールは探索に失敗しても警告を出したうえで発火し続ける。診断の token の提案が減り、`no-raw-colors` が宣言済みの token を確かめられず、design system component を認識しなくなることもあるが、警告が出るので silent failure ではない。そのため、この解決を見張る検査は置かない。
+抑制 directive の名前は `docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」に、lint 時間の測り方と探索に失敗したときの警告は `docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の時間と警告を読む」にある。3 ルールは探索に失敗しても警告を出したうえで発火し続ける。診断の token の提案が減り、`no-raw-colors` が宣言済みの token を確かめられず、design system component を認識しなくなることもあるが、警告が出るので silent failure ではない。そのため、この解決を見張る検査は置かない。
 
 ### 検討した選択肢
 
@@ -56,14 +56,12 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 
 ## Consequences
 
-- `jsPlugins` は alpha 扱いで semver の対象外だと oxlint 側が明記している。oxlint の更新で読み込み方が変わりうるため、Dependabot PR の処理時に確かめる (手順は `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」)
-- 3 ルールが発火していることを機械で見張るものは無い。`--print-config` の top-level `rules` に JS plugin 由来のルールが出ないため、`rules` から 3 行を消しても `"off"` にしても整合性テストと `vp check` は通る。確認は probe を一時ファイルへ置いて `vp lint <path>` を走らせる手動の手順になる (`docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の発火を確かめる」)
+- 3 ルールが発火していることを常時見張る仕組みは置かない。`--print-config` の top-level `rules` に JS plugin 由来のルールは出ず、`rules` から消しても `"off"` にしても整合性テストと `vp check` は通る。`jsPlugins` は oxlint 側が alpha 扱いで semver の対象外と明記しているが、依存の更新の内容を確かめるときに jsPlugins に変化があれば、そのとき動作を確かめる
 - `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (`docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。抑制した行の扱いは `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」にある
-- `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。この経路の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にして止める。ただし `eslint` がグラフから消えるわけではない。`eslint-plugin-testing-library` が `@typescript-eslint/utils` 経由で `eslint` を必須 peer に持ち、そちらは止まらない (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
-- parser の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。型検査は tsgolint が担い `typescript` を直接の依存に持たないため `vp check` の結果は変わらない
-- 依存グラフへ `typescript` を持ち込むのはこの parser である。`@shadcn/lint` を外した fresh resolve では `typescript` 自体が入らない (2026-09-19 確認)
-- eslint peer の optional 化と `typescript` の 6 系固定は撤去条件が同じで、上流が parser を optional peer へ移すこと (shadcn-ui/lint#1)。移れば `packageExtensions` は不要になるが、`eslint` は `eslint-plugin-testing-library` 経由で残る。撤去で解けるのは `typescript` の 6 系固定だけである
+- `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。parser の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にする。いま ESLint は `eslint-plugin-testing-library` と TanStack の 2 plugin が `@typescript-eslint/utils` 経由で必須にしているので入るが、それらが外れれば ESLint も外れる (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
+- `@typescript-eslint/parser` と `@typescript-eslint/utils` の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。`packageExtensions` は既存の peer 範囲を上書きしない (2026-09-19 に pnpm 11.25.0 で実測)。型検査は tsgolint が担い `typescript` を直接の依存に持たないため、`vp check` の結果は変わらない
+- `packageExtensions` の撤去条件は、上流が parser の eslint を optional peer へ移すこと (shadcn-ui/lint#1)。`typescript` の 6 系固定は、typescript-eslint が `typescript` 7 を peer に含めるまで解けない
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
 - `no-restyle` は認識した design system component だけを見る (ADR-0011)。ui 部品にあるものを素の要素で作り直すと規則が効かない。機械では止まらない
 

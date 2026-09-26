@@ -43,6 +43,7 @@ paths:
 - ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる
+- テスト中に `process.env.TZ` を切り替えるのは forks / vmForks の project だけ。threads / vmThreads では `Date` に効かず無言で通る。TZ を固定するだけなら globalSetup で決める (Vitest の common-errors「Time Zone Does Not Change in Worker Threads」)
 
 ## a11y の検査は tag で分ける
 
@@ -116,6 +117,7 @@ paths:
 - `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
 - 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
 - `sr-only` のテキストは 1px + clip で viewport 判定に落ちる。`getByRole(..., { name })` で本体を掴む (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
+- `userEvent.wheel` をスクロールの手段にしない。要素を表示させるのは locator の操作の自動スクロールに任せ、位置が要るなら `scrollTop` か `scrollIntoView()` で作る (`docs/guides/testing/user-interactions.md`「スクロールさせる」)
 
 ## locator の扱い
 
@@ -129,6 +131,7 @@ paths:
 - 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/assert/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
+- `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えない。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 - locator は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される
 
 ## ブラウザテストの CSS とレイアウト実測
@@ -141,7 +144,7 @@ paths:
 - スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
-- `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素の 3 つだけ (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
+- `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素・期待値側の要素にも当たる `!important` (`*` など) の 4 つだけ (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 - animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を await する (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
