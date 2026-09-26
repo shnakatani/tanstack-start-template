@@ -27,36 +27,31 @@ grep -rn "tanstack-start-template" --exclude-dir=node_modules --exclude-dir=.git
 
 grep に出ないものが 1 つある。画面の見出しと head の `title` が参照する `src/lib/app-name.ts` の `APP_NAME` (`TanStack Start Template`)。
 
-## 3. サンプル機能を残すか決める
+## 3. サンプル機能
 
-動作確認用にメモの一覧・作成・削除 (`/notes`) が入っている。本体は `src/features/notes/` と `src/routes/notes/` の 2 ディレクトリ。その外に散っているものも含めた全対象は `grep -rln notes src/ drizzle/` で出る。
-
-削除ではなく差し替えが要るのは 2 ファイル。
-
-| ファイル                                    | 差し替え先                                                            |
-| ------------------------------------------- | --------------------------------------------------------------------- |
-| `src/server/db/index.test.ts`               | 疎通ケースを自プロジェクトのテーブルへ                                |
-| `src/components/parts/button-link.test.tsx` | `to="/notes"` を残す側のパスへ (`to` は routeTree に実在するパスだけ) |
-
-消したあとは `mise run db:generate` で migration を作り直す。
+動作確認用のメモ機能 (`/notes`) が入っている。本体は `src/features/notes/` と `src/routes/notes/`。
 
 ## 4. 差し替え口を埋める
 
-| 対象     | 差し替え点                                                                                        | 手順                                                                                                                                                      |
-| -------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DB       | `src/server/db/index.ts` の `createDb` (接続) と `drizzle.config.ts` (dialect と schema / 出力先) | `createDb` の import を移行先のドライバ (`drizzle-orm/d1` / `drizzle-orm/libsql` など) へ替える。`src/server/db/schema.ts` と `drizzle/` はそのまま使える |
-| 認証     | `src/start.ts` の `functionMiddleware` と `src/routes/_authed.tsx` の `beforeLoad`                | 両方を埋める。決定とコード例は ADR-0012                                                                                                                   |
-| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                                         | 選定理由を ADR へ記録してから `preset` を渡す                                                                                                             |
+| 対象     | 差し替え点                                                                                 | 手順                                                                                                                                                                                                                                                                    |
+| -------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DB       | `src/server/db/index.ts` の接続 (`createDb` と、あれば `migrateDb`) と `drizzle.config.ts` | 接続を移行先のドライバへ替える。better-sqlite3 固有の設定が `vite.config.ts` と `pnpm-workspace.yaml` の `allowBuilds` に残るので外す。`src/server/db/schema.ts` と `drizzle/` はそのまま使える                                                                         |
+| 認証     | `src/start.ts` の `createStart` と、新しく作る `src/routes/_authed.tsx`                    | `createStart` に `functionMiddleware` を足して認証の middleware を渡す。`src/routes/_authed.tsx` の `beforeLoad` で未ログインを login へ送り、保護する route を `src/routes/_authed/` の下へ移す (`_` で始まるセグメントは URL に出ない)。両方を埋める。決定は ADR-0012 |
+| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                                  | 選定理由を ADR へ記録してから `preset` を渡す                                                                                                                                                                                                                           |
 
 ## 5. 引き継いだ決定を見直す
 
 `docs/decisions/` の ADR、`docs/guides/` のガイド、`.claude/rules/` は、このテンプレートの前提で下した判断をそのまま持っている。
 前提が違うものは、ADR を `Superseded` にするか、ガイドと rules を書き換えてから実装に入る。
 
-## 6. この文書を消す
+## 6. README を書き換える
+
+`README.md` の冒頭の説明と技術スタックの表は、このテンプレートの説明のまま。自分のプロジェクトの説明と、差し替えた技術に書き換える。
+
+## 7. この文書を消す
 
 この文書と、この文書を指す 3 か所を消す。
 
-- `README.md` の冒頭の「テンプレートから始めたら、`TEMPLATE_SETUP.md` の手順を…」の 1 文
+- `README.md` の冒頭で `TEMPLATE_SETUP.md` を指す 1 文
 - `README.md`「ドキュメント」の表の `TEMPLATE_SETUP.md` の行
 - `.claude/rules/docs.md` の `paths` の `TEMPLATE_SETUP.md`
