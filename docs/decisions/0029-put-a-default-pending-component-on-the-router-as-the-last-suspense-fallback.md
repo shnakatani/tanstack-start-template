@@ -24,7 +24,7 @@ route の pending 表示 (`pendingComponent`) は、表示のためだけでな�
 
 ページ固有の skeleton は各 route の `pendingComponent` が持つ。route の値が優先される。
 
-ADR-0026 の例外 (状態を `announce()` で通知しない) を `PendingContent` にも当てる。route の pending 表示で、live region の文言として読ませるものではない。
+ADR-0026 の例外 (状態を `announce()` で通知しない) を `PendingContent` にも当てる。route の pending 表示で、`announce()` が書き込む常時 mount の live region へ流す通知ではない。
 
 ### 検討した選択肢
 
