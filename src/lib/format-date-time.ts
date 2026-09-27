@@ -12,20 +12,19 @@ export const APP_TIME_ZONE = "Asia/Tokyo";
  * (ブラウザの TZ) で別の文字列になり React が hydration mismatch を報告する。
  * 両者の TZ が食い違う環境でしか出ないため、開発機だけを見ていると気付けない。
  *
- * ロケールに `sv-SE` を選ぶのは、数値既定の年月日時分が `yyyy-MM-dd HH:mm` の並びに
- * なるため。表示言語ではなく数値の並びだけをこのロケールから採っている。
+ * 書式は画面の言語 (`<html lang="ja">`) のロケールに任せる。区切りや並びを自前で決めない。
  */
-const dateTimeFormatter = new Intl.DateTimeFormat("sv-SE", {
+const dateTimeFormatter = new Intl.DateTimeFormat("ja", {
   timeZone: APP_TIME_ZONE,
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
-  hour12: false,
+  hourCycle: "h23",
 });
 
-/** 日時を基準タイムゾーンの `yyyy-MM-dd HH:mm` で返す。 */
+/** 日時を基準タイムゾーンの年・月・日・時・分で、画面の言語の書式で返す。 */
 export function formatDateTime(date: Date): string {
   return dateTimeFormatter.format(date);
 }
