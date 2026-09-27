@@ -75,6 +75,7 @@ WCAG 2.3.3 (Level AAA) の motion animation は "addition of steps between condi
 - `reduced-motion.test.tsx` は各部品を `no-preference` と `reduce` の両方で読む。`no-preference` の値は上流のままなので、media query 自体の誤りも落ちる。載せていない部品は見ない
 - 付けた variant は registry の部品への乖離で、`docs/registry-deviations.md` に記録する。`--overwrite` で再生成したら 3-way で付け直す
 - spinner は reduced motion でも回り続ける。skeleton の pulse も続く
+- toast は出入りを移動だけで表し、フェードを持たない。reduced motion では瞬時に出入りする
 - 上流 (shadcn、Base UI、tw-animate-css) が reduced motion を既定で扱うようになったら、乖離を外してこの ADR を見直す。付け忘れを止める上流の仕組みが出たら、付け忘れの防ぎ方を見直す
 
 ## 出典

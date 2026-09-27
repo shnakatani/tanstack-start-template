@@ -181,7 +181,7 @@ describe.each<Motion>(["no-preference", "reduce"])("prefers-reduced-motion: %s",
     await expect.element(screen.getByRole("button")).toHaveStyle(expected.button);
   });
 
-  it("Toast は移動の transition を外し、フェードを残す", async () => {
+  it("Toast は出入りと積み直しの移動を transition させない", async () => {
     await emulateMotion(motion);
     const manager = createToastManager();
     await render(<Toaster toastManager={manager} />);
