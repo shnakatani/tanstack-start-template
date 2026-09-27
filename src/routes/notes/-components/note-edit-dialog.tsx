@@ -1,5 +1,5 @@
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 
 import { Dialog } from "@/components/ui/dialog";
 import { updateNoteMutation } from "@/features/notes/mutations";
@@ -69,8 +69,10 @@ export function NoteEditDialog() {
       onOpenChangeComplete={handleOpenChangeComplete}
     >
       {({ payload }) => {
+        // payload は行の編集ボタン (この handle の Trigger) が必ず渡し、payload 無しで開く呼び出しは
+        // アプリに無い。閉じている間は payload 無しで呼ばれるので、Base UI の docs の例と同じく描かない
         if (!payload) {
-          return <MissingPayloadWarning />;
+          return null;
         }
         return (
           <NoteFormContent
@@ -87,29 +89,4 @@ export function NoteEditDialog() {
       }}
     </Dialog>
   );
-}
-
-/**
- * payload 無しで開いたことを warn に残す。Trigger 経由なら payload は必ず入る。imperative open 等で
- * 欠けると何も描かれず無反応に見えるので、原因を追えるようにする。
- *
- * render function は閉じている間も payload 無しで呼ばれ、Trigger で開くときも payload は開いた後の
- * 描画で届く (Trigger の layout effect が store へ入れる。開いた状態で payload 無しの commit が
- * 挟まる)。描画中や effect の中で判定すると普段の開閉のたびに warn が出るので、次の task まで
- * 待ち、それまでに payload が届いてこの部品が外れたら取り消す。Dialog の `onOpenChange` の
- * eventDetails と `onOpenChangeComplete` は payload を受け取らないので、そちらでは判定できない
- * (Base UI の Dialog の API reference)。
- */
-function MissingPayloadWarning() {
-  // 依存配列を付けず、描画のたびに予約し直す。この部品は閉じている間から mount したまま
-  // payload 無しの open を迎えるので、mount 時の 1 回 (`[]`) だけでは開いたことを見られない
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (noteEditDialogHandle.isOpen) {
-        console.warn("[NoteEditDialog] opened with no payload");
-      }
-    }, 0);
-    return () => clearTimeout(timer);
-  });
-  return null;
 }

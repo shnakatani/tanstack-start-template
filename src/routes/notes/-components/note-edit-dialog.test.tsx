@@ -89,8 +89,6 @@ describe("NoteEditDialog", () => {
       .toHaveAccessibleName(
         `${NOTE_FIELD_LABELS.dueDate} ${formatCalendarDateLabel(NOTE.dueDate, "long")}`,
       );
-    // Trigger で開くと payload は開いた後の描画で届く。その間を欠落と取り違えて warn しない
-    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining("[NoteEditDialog]"));
   });
 
   it("開いた直後のフォーカスが先頭の入力にある", async () => {
@@ -202,19 +200,5 @@ describe("NoteEditDialog", () => {
     await openNoteEditDialog(screen, OTHER_NOTE);
 
     await expect.element(bodyTextbox(screen)).toHaveValue(OTHER_NOTE.body);
-  });
-
-  it("payload 無しで開くと warn を残し、フォームを描かない", async () => {
-    // Trigger が 1 つだけ登録されていると、trigger を指定しない open でも Base UI がその Trigger を
-    // 選び、payload が入る。Trigger を置かずに開き、payload の来る経路を無くす
-    const { screen } = await renderDialog([]);
-
-    noteEditDialogHandle.open(null);
-
-    await vi.waitFor(() => {
-      expect(warnSpy).toHaveBeenCalledWith("[NoteEditDialog] opened with no payload");
-    });
-    expect(noteEditDialogHandle.isOpen).toBe(true);
-    await expectAbsent(titleTextbox(screen));
   });
 });
