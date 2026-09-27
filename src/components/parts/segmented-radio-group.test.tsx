@@ -58,7 +58,7 @@ describe("SegmentedRadioGroup", () => {
     const foreground = resolveColorToken("--foreground");
     await expect.element(selected).toHaveStyle(`color: ${foreground}`);
 
-    // transition-all は browser-setup の reduced motion で 0.01ms になり、settled 状態を即座に読める (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)
+    // transition-all は browser-setup の停止用 CSS で 0 秒になり、settled 状態を即座に読める (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)
     await userEvent.hover(selected);
 
     // 選択時の文字色と hover 時の文字色が別トークンだと、data-checked が :where() 包みで

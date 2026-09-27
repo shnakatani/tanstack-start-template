@@ -47,8 +47,8 @@
 
 animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「animation を無効にして走らせる理由」)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
 
-- 本文の先頭で `await enableAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻すので、戻す処理は書かない (`parkMouse` と同じ形)
-- 無限アニメーション (Spinner) は既定で 1 周して止まる。rect や算出スタイルは `expect.poll` の中で読むので、残る 0.01ms も待たない
+- 本文の先頭で `enableAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻すので、戻す処理は書かない (`parkMouse` と同じ形)
+- 無限アニメーション (Spinner) も既定では時間が 0 秒になり、描画の時点で終わっている (`getAnimations()` が空、2026-09-27 に実測)
 - 既定では閉じた popup が次の描画で unmount するので、`data-ending-style` は観測できない
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。既定では窓が無いが、animation を戻したテストでも同じ形で書く
 - 閉じた後の行の取得に `includeHidden` を渡さない。既定では確定直後の行が `aria-hidden` の配下に残らない。モーダルが開いている間の取得には引き続き要る
@@ -132,17 +132,18 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 | vitest.dev「Playwright」                                             | `contextOptions` は `browser.newContext` へ素通しで、context は session 単位 (1 つの session が複数ファイルを順に走らせる)。`reducedMotion: "reduce"` でメディア機能を偽装できる                                     |
 | vitest.dev「retry」「TestCase」                                      | `retry` は全体 / test 単位 / `condition` で絞れる。retry 後に通ったテストは `TestDiagnostic.flaky` で拾える                                                                                                          |
 
-既定は `src/test/browser/browser-setup.tsx` の `beforeEach` が `src/test/browser/animations.ts` の `disableAnimations()` を毎テスト呼んで作る。`globalThis.BASE_UI_ANIMATIONS_DISABLED = true` で閉じた popup は animate-out を待たずに unmount し、CDP `Emulation.setEmulatedMedia` の `prefers-reduced-motion: reduce` で `src/styles.css` の reduced-motion ブロックが CSS の animation / transition を 0.01ms にする。
+既定は `src/test/browser/browser-setup.tsx` の `beforeEach` が `src/test/browser/animations.ts` の `disableAnimations()` を毎テスト呼んで作る。`globalThis.BASE_UI_ANIMATIONS_DISABLED = true` で閉じた popup は animate-out を待たずに unmount し、`document.head` へ注入する停止用の CSS が、CSS の animation / transition の時間と遅延を 0 秒にする。本番の CSS には依存しない。
 
-| 案                                                            | 評価                                                                                                                                                                                                                                                                                                       | 採否     |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| Base UI のフラグで animation を無効にし、必要なテストだけ戻す | 窓そのものが消える。Base UI 自身のテスト基盤と同じ形で、per-test で戻す前例もある。影響は Base UI の unmount 待ちに限られ、tw-animate-css の enter や rect 実測には及ばない                                                                                                                                | **採用** |
-| `prefers-reduced-motion: reduce` のエミュレーション           | Playwright の context 単位の設定ではテスト単位に戻せないので、CDP `Emulation.setEmulatedMedia` で `beforeEach` から per-test に立てる。次のテストの `beforeEach` が立て直すので、戻す経路を持たない (`parkMouse` と同じ形)。rect 実測は `expect.poll` の中で読むので、enter animation を走らせる理由が無い | **採用** |
-| 検査の順序だけを規範化する (unmount を待ってから axe)         | 根本の窓が残り、書き忘れると同じ形で再発する。採用案の補助として規範には残す                                                                                                                                                                                                                               | 補助     |
-| vitest の `retry` で吸収する                                  | 原因を消さず、失敗が隠れる。入れるなら flaky を可視化する reporter とセットで、別途判断する                                                                                                                                                                                                                | 却下     |
-| 上流 (Base UI の PR 5537、axe-core の issue 4832) を待つ      | 時期が未定。PR 5537 が入っても `heading-order` の incomplete は残りうる                                                                                                                                                                                                                                    | 却下     |
+| 案                                                                         | 評価                                                                                                                                                                                                                                                                                                                               | 採否     |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Base UI のフラグで animation を無効にし、必要なテストだけ戻す              | 窓そのものが消える。Base UI 自身のテスト基盤と同じ形で、per-test で戻す前例もある。影響は Base UI の unmount 待ちに限られ、tw-animate-css の enter や rect 実測には及ばない                                                                                                                                                        | **採用** |
+| テスト専用の停止用 CSS を注入する                                          | vitest.dev「Visual Regression Testing」の「Disable animations」が挙げる形 (setup から `*` の duration と delay を `0s !important`)。テストの条件が本番の CSS から独立する。`beforeEach` が入れ、`enableAnimations()` が外す (`parkMouse` と同じ形)。rect 実測は `expect.poll` の中で読むので、enter animation を走らせる理由が無い | **採用** |
+| `prefers-reduced-motion: reduce` をエミュレートし、本番の CSS に止めさせる | テストの条件が本番の reduced motion の扱いに縛られ、本番側を変えるとテストの前提が崩れる                                                                                                                                                                                                                                           | 却下     |
+| 検査の順序だけを規範化する (unmount を待ってから axe)                      | 根本の窓が残り、書き忘れると同じ形で再発する。採用案の補助として規範には残す                                                                                                                                                                                                                                                       | 補助     |
+| vitest の `retry` で吸収する                                               | 原因を消さず、失敗が隠れる。入れるなら flaky を可視化する reporter とセットで、別途判断する                                                                                                                                                                                                                                        | 却下     |
+| 上流 (Base UI の PR 5537、axe-core の issue 4832) を待つ                   | 時期が未定。PR 5537 が入っても `heading-order` の incomplete は残りうる                                                                                                                                                                                                                                                            | 却下     |
 
-- ブラウザテストは本番と違い animation を待たず、CSS の transition / animation も 0.01ms の条件 (reduced motion を選んだユーザーと同じ) で走る。閉じかけの popup の挙動を守るテストは `await enableAnimations()` を明示し、animation ありの条件で走っていることが本文から読めるようにする
+- ブラウザテストは本番と違い animation を待たず、CSS の transition / animation も 0 秒の条件で走る。閉じかけの popup の挙動を守るテストは `enableAnimations()` を明示し、animation ありの条件で走っていることが本文から読めるようにする
 - `getAnimations()` の完了を待つ helper は置かない。待つ側の形は MDN `Animation.finished` の例そのものだが、観測の前に止める側 (Playwright の screenshot `animations: "disabled"`、Chromatic の最終フレーム停止) が主流で、待つ helper に直接の先行例は無い
 - 二重発火の dedupe のテストは animate-out の窓を踏む必要があるため、animation を戻して走らせる
 
@@ -156,7 +157,6 @@ explanation と how-to が拠る一次情報。
 - Base UI Handbook「Animation」: https://base-ui.com/react/handbook/animation
 - Base UI issue #5519: https://github.com/mui/base-ui/issues/5519
 - Base UI PR #5537: https://github.com/mui/base-ui/pull/5537
-- Chrome DevTools Protocol `Emulation.setEmulatedMedia`: <https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setEmulatedMedia>
 - HTML Standard「clean up after running script」: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
 - HTML Standard「fire a synthetic pointer event」: https://html.spec.whatwg.org/multipage/webappapis.html#fire-a-synthetic-pointer-event
 - MDN `Animation.finished` (待つ側の形): <https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished>
@@ -179,3 +179,4 @@ explanation と how-to が拠る一次情報。
 - vitest「Playwright」(contextOptions): https://vitest.dev/config/browser/playwright
 - vitest「retry」: https://vitest.dev/config/retry
 - vitest「TestCase」(diagnostic): https://vitest.dev/api/advanced/test-case
+- vitest「Visual Regression Testing」の「Disable animations」(停止用 CSS の注入): https://vitest.dev/guide/browser/visual-regression-testing#disable-animations
