@@ -23,7 +23,6 @@
 
 - `-lib/` と `-hooks/` は、`src/lib/` と `src/hooks/` の線引きを route の中で繰り返したものである
 - `-` で始まるディレクトリの中の import は相対パスで書く。ディレクトリごと動かしても import が壊れない
-- 実例は `src/routes/notes/` (`index.tsx`、`-components/notes-page.tsx`、`-lib/note-rows.ts`)
 
 ### route ファイルを組む
 
@@ -52,7 +51,7 @@ ADR-0010 に沿って、次の順で組む。
 ### server function の置き場
 
 - 1 つのドメインに属する server function は `src/features/<domain>/functions.ts` に宣言し、実処理を `handlers.server.ts` に置く
-- 宣言と実処理を 1 ファイルにまとめない。実処理を、server function を経由せずに単体テストできる側に残す (実例は `src/features/notes/handlers.test.ts`)
+- 宣言と実処理を 1 ファイルにまとめない。実処理を、server function を経由せずに単体テストできる側に残す
 - ドメインに属さない横断的な server function は `src/server/` 直下に置く。1 つのドメインに属するかどうかが分かれ目になる
 
 ### `src/components/ui/` に付随ファイルを置く

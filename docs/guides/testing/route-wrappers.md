@@ -6,7 +6,7 @@ Route hooks を使う wrapper を、実 router で描いて検証する手順と
 
 ### route の wrapper をテストする
 
-Route hooks を使う wrapper は、root だけをテスト用に差し替えた route tree に実 `Route` を付け、`createMemoryHistory` の router で描いて、route ファイルのテストが検証する。ページ本体は props で描く。理由は「route の wrapper を実 router で描く理由」にある。実例は `src/routes/notes/index.test.tsx` と `src/routes/notes/-components/notes-page.test.tsx`。
+Route hooks を使う wrapper は、root だけをテスト用に差し替えた route tree に実 `Route` を付け、`createMemoryHistory` の router で描いて、route ファイルのテストが検証する。ページ本体は props で描く。理由は「route の wrapper を実 router で描く理由」にある。
 
 - route ファイルのテストは route ファイル名に `.test` を付ける (`index.test.tsx`)。`route.test.tsx` と名付けない。`route.tsx` はディレクトリのレイアウトルートの予約名 (Router の file-naming-conventions) で、そのテストと読める
 - ページ本体のテストは `-components/` の部品として props で描く。wrapper の往復 (URL → props、操作 → URL、別の遷移で search が変わったときの追随、search の検証失敗を受ける error component) は route ファイルのテストが持つ。同じ経路を 2 つのテストで見ると、片方が古いまま緑になる
@@ -22,7 +22,7 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 テスト用の router には `defaultPendingMinMs: 0` を渡す。pending 表示がいったん出ると、最小表示時間 (既定 500ms) がそのままテストの待ちになる。`defaultPendingMs` は既定のまま置く。0 にすると毎回 pending を踏む。
 
-pending 表示が route の読み込み中に出ることを検証するテストは、対象 route の `pendingMs` を下げる。表示を部品として描くだけなら、`createTestRouter` で `pendingComponent` を直接描く (`src/routes/notes/index.test.tsx` の pending のテスト)。
+pending 表示が route の読み込み中に出ることを検証するテストは、対象 route の `pendingMs` を下げる。表示を部品として描くだけなら、`createTestRouter` で `pendingComponent` を直接描く。
 
 | 手順                                                | 守らないと                                                                                    |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------- |

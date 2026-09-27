@@ -98,9 +98,9 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | (b) サーバー応答   | `onSuccess` の先頭で `handle.close()` を呼び、その後に再取得の Promise を返す (ダイアログが無ければ `mutateAsync` を await して return)                                                    | 再取得の完了まで続くが、閉じた後は見えない                  |
 | (c) 再取得の完了   | `onSuccess` で再取得を await した後に `handle.close()` を呼ぶ                                                                                                                              | 再取得の完了まで続き、ダイアログの pending 表示として見える |
 
-- (a) では Transition が確定の直後に終わるので、close の animate-out の間やダイアログの無い操作では `isPending` の dedupe が効かない。同じ対象の mutation が pending なら action を no-op にする。判定は `queryClient.isMutating` か `useMutationState` で取る。実例は `src/routes/notes/-components/notes-page.tsx` の `confirmDelete`
+- (a) では Transition が確定の直後に終わるので、close の animate-out の間やダイアログの無い操作では `isPending` の dedupe が効かない。同じ対象の mutation が pending なら action を no-op にする。判定は `queryClient.isMutating` か `useMutationState` で取る
 - (b) で handle を複数の対象で共有するときは、閉じる前に、開いている対象がこの mutation の対象と同じかを確かめる。先行する操作の `onSuccess` が、別の対象で開き直したダイアログを閉じてしまう
-- (b) で入力フォームのように対象を比べられないダイアログは、応答が届くまでユーザー起点の close を止める。判定は mutation の pending と一覧の再取得中かどうかから取る。実例は `src/routes/notes/-components/note-create-dialog.tsx`
+- (b) で入力フォームのように対象を比べられないダイアログは、応答が届くまでユーザー起点の close を止める。判定は mutation の pending と一覧の再取得中かどうかから取る
 - 再取得の完了より前に閉じるなら、対象の項目にその pending から busy の表現を付ける。付け忘れると、古い一覧が pending の表示なしで見える
 
 並行実行を許す操作では `mutationKey` を付ける。
@@ -125,9 +125,9 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 - `useOptimistic` の第 1 引数に `useQuery` / `useSuspenseQuery` の `data` と、そこから計算した値を渡さない。query のストアは Transition に乗らないので、楽観値と再取得の結果が揺れる (TanStack/query #9742)
 - `useOptimistic` を使うのは、query を経由しない部品のローカル値だけにする
 
-### メモ画面の実例
+### 操作の型ごとの当て方
 
-`/notes` の削除と追加は、ADR-0017 の軸を次のように当てている。新しい操作を足すときの見本になる。
+一覧の行の削除 (確認ダイアログあり) とダイアログのフォームからの追加には、ADR-0017 の軸を次のように当てる。新しい操作を足すときの見本になる。
 
 | 操作 | 完了点                       | 表現                                                                                                                                                                                                                                               | 理由                                                                                                                 |
 | ---- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -136,7 +136,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 - 半透明は `src/lib/busy-opacity.ts` の `BUSY_OPACITY_CLASS` を使う。値の理由と、当たる対の測り方は同じ定数の docstring が持つ
 - 半透明と `aria-busy` は読み上げに出ない。通知は announcer で出し、行には仮想カーソル用の静的テキスト (「削除中」「保存中」) を置く (ADR-0026)
-- `variables` を行へ絞るスキーマは `src/features/notes/deleting-ids.ts` と `src/features/notes/creating-rows.ts`、filters は `src/features/notes/mutations.ts` が持つ
+- `variables` を行へ絞るスキーマ (削除中の id、保存中の行) と mutation の filters は `src/features/<domain>/` に置く
 
 ### 認可を足す
 
@@ -149,7 +149,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 ### ユーザー入力で部分一致の検索を組む
 
 - 呼び出し側はパターンと `ESCAPE` を手で組まず、`src/server/db/like-pattern.ts` の `likeContains` を使う。エスケープと `ESCAPE` 句を対で渡すことを忘れた検索は、`%` が効き `\` が消えて黙って壊れる
-- 検証は実 SQLite (`:memory:`) で行う。実例は `src/features/notes/handlers.test.ts` で、`%` / `_` / `\` を含む検索語、ASCII の大文字小文字、日本語を見る。エスケープの純粋関数だけを単体で見ると、`ESCAPE` 句との対応が抜けても通る
+- 検証は実 SQLite (`:memory:`) で行い、`%` / `_` / `\` を含む検索語、ASCII の大文字小文字、日本語を見る。エスケープの純粋関数だけを単体で見ると、`ESCAPE` 句との対応が抜けても通る
 
 ### 手動メモ化を書く
 

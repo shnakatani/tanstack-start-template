@@ -263,7 +263,7 @@ describe("NotesPage", () => {
 
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
     // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
-    // (`docs/guides/updates-and-data.md`「メモ画面の実例」)
+    // (`docs/guides/updates-and-data.md`「操作の型ごとの当て方」)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
     const refetch = deferMock(listNotes);
     const create = deferMock(createNote);

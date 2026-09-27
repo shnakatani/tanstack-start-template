@@ -13,16 +13,24 @@
 ### スキーマを書く
 
 - client に送らせないフィールドがあるときは、保存済みスキーマから `v.omit` で入力スキーマを派生させる。派生元が `v.object` なら、未知のキーは reject されず黙って strip される。これは `v.omit` ではなく `v.object` の性質で、`v.strictObject` から派生させると同じ入力が reject される (2026-09-02 実測)。どちらの挙動を意図したかをテストで固定する
-- 入力用と保存用で pipe が分かれる項目 (実例は `src/features/notes/schema.ts` の title) の呼称は、`TInput` を型引数で与えた 1 つの `v.metadata` action を両方の pipe に渡す。型引数も注釈も無い action は `TInput` が `unknown` に推論され、`v.pipe` に入らない
+- 入力用と保存用で pipe が分かれる項目 (入力側だけが `v.trim()` を持つ項目など) の呼称は、`TInput` を型引数で与えた 1 つの `v.metadata` action を両方の pipe に渡す。型引数も注釈も無い action は `TInput` が `unknown` に推論され、`v.pipe` に入らない
 - `@valibot/to-json-schema` を使うときは、`title` / `description` の action も同じ pipe に足せる。呼称の出処はスキーマ 1 つのまま保てる
-- フォームの `onSubmit` では、値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator に渡したスキーマの変換 (`v.trim()` など) を値に反映しない。docs「Submission Handling」の "Transforming data with Standard Schemas" は "The value passed to the `onSubmit` function will always be the input data." と書き、`onSubmit` の中でスキーマに通すよう案内する。変換を手で書き写すと、スキーマに変換を足したときに送信値だけが古くなる。実例は `src/routes/notes/-components/note-create-dialog.tsx`
+- フォームの `onSubmit` では、値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator に渡したスキーマの変換 (`v.trim()` など) を値に反映しない。docs「Submission Handling」の "Transforming data with Standard Schemas" は "The value passed to the `onSubmit` function will always be the input data." と書き、`onSubmit` の中でスキーマに通すよう案内する。変換を手で書き写すと、スキーマに変換を足したときに送信値だけが古くなる
 - 通すのは `v.parse` にする。`onSubmit` は各項目の検証が通ったあとにしか呼ばれないので、ここで失敗するのは項目の validator と入力スキーマがずれたときだけで、throw して気付ける形が合う。`v.is` / `v.assert` は変換を適用しない (valibot docs「Parse data」の "transformations have no effect")。`formApi.parseValuesWithSchema()` は issue だけを返し、変換後の値を返さない (docs「FormApi」)
 
 ### スキーマの型テストを書く
 
 - 導出型と導出元が一致することの型テストは書かない。常に真になり、何も検出しない
-- 別々に書いた 2 つの定義を突き合わせる型テストは書く。テーブル定義と valibot のスキーマは出処が別なので、テーブルごとに `expectTypeOf<typeof notes.$inferSelect>().toEqualTypeOf<Note>()` で読み出しの型を突き合わせる。書き込みの型は、insert に入力スキーマの型の値を渡す箇所の型検査が止めるので、型テストに書かない。実例は `src/server/db/schema.test.ts`、判断は ADR-0034
-- `InferOutput` を選んだ判断を守るテストは、導出型を直接参照して書く (`expectTypeOf<Note["createdAt"]>()`)。スキーマ由来の型どうしを比べる形は、導出元の書き換えを検出せず、default を外す正当な変更で偽のアラームを出す
+- 別々に書いた 2 つの定義を突き合わせる型テストは書く。テーブル定義と valibot のスキーマは出処が別なので、テーブルごとに、テーブル定義の `$inferSelect` とスキーマから導いた保存済みの型を `expectTypeOf<...>().toEqualTypeOf<...>()` で突き合わせる。書き込みの型は、insert に入力スキーマの型の値を渡す箇所の型検査が止めるので、型テストに書かない。判断は ADR-0034
+- `InferOutput` を選んだ判断を守るテストは、導出型の項目を直接参照して書く。スキーマ由来の型どうしを比べる形は、導出元の書き換えを検出せず、default を外す正当な変更で偽のアラームを出す
+
+```ts
+const itemSchema = v.object({ done: v.optional(v.boolean(), false) });
+type Item = v.InferOutput<typeof itemSchema>;
+
+// InferInput へ書き換えると boolean | undefined になり、ここで落ちる
+expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
+```
 
 ### 数値の入力欄を組む
 
@@ -54,7 +62,7 @@
 
 ### 高さのあるダイアログを組む
 
-入力項目が多く、恒常的に viewport の高さを超えるダイアログは、本文を `DialogScrollBody` (`src/components/ui/dialog.tsx`) で包み、本文だけを内部スクロールさせる。見出し・X ボタン・フッターが常に見える。フォームを持つダイアログは、器を `ActionDialogContent` (`src/components/action/dialog.tsx`) にする。実例は `src/routes/notes/-components/note-create-dialog.tsx`、見え方は `src/components/action/dialog.stories.tsx` の `Overflowing` で確かめる。
+入力項目が多く、恒常的に viewport の高さを超えるダイアログは、本文を `DialogScrollBody` (`src/components/ui/dialog.tsx`) で包み、本文だけを内部スクロールさせる。見出し・X ボタン・フッターが常に見える。フォームを持つダイアログは、器を `ActionDialogContent` (`src/components/action/dialog.tsx`) にする。見え方は `src/components/action/dialog.stories.tsx` の `Overflowing` で確かめる。
 
 ```tsx
 <ActionDialogContent submitAction={save}>

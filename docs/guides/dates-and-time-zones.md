@@ -25,7 +25,7 @@
 
 ### 画面に日時を出す
 
-- 日時は `formatDateTime` (`src/lib/format-date-time.ts`) を通して整形する。`APP_TIME_ZONE` を `Intl.DateTimeFormat` の `timeZone` に渡すので、サーバーとブラウザで同じタイムゾーンの壁時計になる。書式は画面の言語 (`<html lang="ja">`) のロケールに任せる。実例は `src/routes/notes/-components/note-cells.tsx`
+- 日時は `formatDateTime` (`src/lib/format-date-time.ts`) を通して整形する。`APP_TIME_ZONE` を `Intl.DateTimeFormat` の `timeZone` に渡すので、サーバーとブラウザで同じタイムゾーンの壁時計になる。書式は画面の言語 (`<html lang="ja">`) のロケールに任せる
 - 別の書式が要るときも `timeZone: APP_TIME_ZONE` を渡した `Intl.DateTimeFormat` で組み、`src/lib/format-date-time.ts` に並べる。並びや区切りはオプション (`dateStyle`、`month: "long"` など) で選び、ロケールを別の言語に替えて並びを得ない (「書式をロケールに任せる理由」)
 - ロケールに無い並びがどうしても要るときは、`formatToParts()` で部品を取り出して組み立てる。MDN「Intl.DateTimeFormat.prototype.formatToParts()」は "useful for building custom strings from the locale-specific tokens" と書く
 - 描画する値を、実行環境のローカル TZ で組み立てない。`Date#toLocaleString` 系、`Date#getHours` 系、`timeZone` を渡さない `Intl.DateTimeFormat` が当たる。`timeZone` の既定は "the runtime's time zone" (MDN「Intl.DateTimeFormat() constructor」の `timeZone`)
@@ -43,7 +43,7 @@
 
 - `Intl.DateTimeFormat` の `format()` の出力を固定の文字列と比べない。MDN「Intl.DateTimeFormat.prototype.format()」の Note は "the output may vary between implementations, even within the same locale" "You should not compare the results of `format()` to hardcoded constants." と書く
 - 壁時計の値は、出力から数字の並び (年・月・日・時・分) を取り出して比べる。実例は `src/lib/format-date-time.test.ts`
-- 画面に描いた文字列を探すテストは、期待値を `formatDateTime` で作る。実例は `src/features/notes/schema.test-helpers.ts` の `NOTE_CREATED_AT_TEXT`
+- 画面に描いた文字列を探すテストは、期待値を `formatDateTime` で作る。fixture の日時から作った期待値を fixture の隣の test helper に置き、各テストはそれを読む
 - date-fns の `format` は Intl を使わず、同梱のロケールのデータで文字列を作る (date-fns 4.4.0 の `format.js` と `locale/ja` に `Intl` の参照が無い、2026-09-27)。その出力は固定の文字列と比べてよい。実例は `src/lib/format-calendar-date-label.test.ts`
 
 ### 日付の入力を扱う
