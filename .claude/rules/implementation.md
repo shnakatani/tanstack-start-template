@@ -10,7 +10,8 @@ paths:
 lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止める。代替のうち lint が案内しないもの:
 
 - 外部ストアへの購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る
-- データ取得は TanStack Query。route loader で `queryClient.query({ ...options, staleTime: "static" })` の取得を待ち (キャッシュがあればすぐ解決する)、`useSuspenseQuery` で読む (`src/routes/notes/index.tsx`)
+- データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })`。副次的な query まで待つと、遷移と SSR の応答がそれを待つ (ADR-0033)
+- 副次的な query は loader で `void queryClient.query(...).catch(noop)` (`noop` は `@tanstack/react-query` の export) として流し、読む側を `<Suspense>` と Error Boundary で囲む。囲まないと、読み込み中と失敗がページ全体の pending 表示とエラー表示に置き換わる (ADR-0033)
 - useEffect が正当なのは DOM 副作用 (focus / scroll / 外部 widget 初期化) と、router へ変化を伝える副作用 (`router.invalidate()` 等) だけ
 - router へ伝える副作用は、mount 中だけ成立すれば足りるなら effect、画面遷移中や `errorComponent` 表示中も要るなら router 層で購読する
 

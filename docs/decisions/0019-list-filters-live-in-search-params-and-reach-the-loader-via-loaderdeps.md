@@ -10,7 +10,7 @@
 
 制約は次のとおり。
 
-- 一覧のデータは Query が所有し、loader は Query の取得を待つだけにする。`useLoaderData` で読むと、`invalidateQueries` で Query を更新しても画面が更新されない。TanStack Router の External Data Loading の例も、loader は "ensure that the data is loaded" に使い、コンポーネントは `useSuspenseQuery` で "Read the data from the cache and subscribe to updates" としている。絞り込み条件が変わっても loader の値を `useLoaderData` で読む形にはしない
+- 一覧のデータは Query が所有し、loader は Query の取得のためだけに呼ぶ (取得を待つかは ADR-0033)。`useLoaderData` で読むと、`invalidateQueries` で Query を更新しても画面が更新されない。TanStack Router の External Data Loading の例も、loader は "ensure that the data is loaded" に使い、コンポーネントは `useSuspenseQuery` で "Read the data from the cache and subscribe to updates" としている。絞り込み条件が変わっても loader の値を `useLoaderData` で読む形にはしない
 - Router は search param を loader へ直接渡さない。loader が読む search は `loaderDeps` で宣言し、deps の組み合わせごとに別のキャッシュになる (Router の data-loading ガイド「Using loaderDeps to access search params」)
 - Router の search-params ガイドは、malformed な search param には fallback を用意して体験を止めないことを勧め、エラー表示は選んだときだけとする
 - URL の値を書き換える契機を打鍵にすると、1 文字ごとに履歴と loader が動く
