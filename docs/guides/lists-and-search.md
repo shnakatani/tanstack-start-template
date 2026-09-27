@@ -30,12 +30,12 @@
 
 ADR-0019 に沿って、次のように組む。実例は `src/routes/notes/index.tsx` と `src/features/notes/`。
 
-| 対象      | 組み方                                                                                                                                                                                                                                               | 守らないと                                                                                                                                                                                                                                                   |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| schema    | 絞り込み条件の schema は 1 つ (`src/features/notes/schema.ts` の `noteListFilterSchema`) にし、server function の `.validator` と route の `validateSearch` が同じものを使う。valibot 1.x は Standard Schema なので adapter は要らない               | URL では通るのにサーバで落ちる (またはその逆の) 組み合わせが生まれる                                                                                                                                                                                         |
-| 既定値    | `search.middlewares` の `stripSearchParams(v.getDefaults(noteListFilterSchema))` で URL から落とす。既定は schema から導く                                                                                                                           | `/notes` と `/notes?q=` が別の場所になり、履歴と link の比較が揺れる。既定を写すと schema と別々に動く                                                                                                                                                       |
-| loader    | loader が読む search は `loaderDeps: ({ search }) => ({ q: search.q })` で宣言し、`loader` は options に直接書いて `notesQueryOptions(deps)` を温める。検証は router 経由 (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) | deps に無い search は loader に届かず、preload が別条件のデータを表示側に残す (Router の data-loading ガイドの page 2 の例)。loader を関数に切り出すと、引数の型を手で書くことになる (`typeof Route` は循環し、`LoaderFnContext` は `AnyRoute` 経由で `any`) |
-| query key | `notesQueryOptions(filter)` の key は `[...NOTES_QUERY_KEY, filter]` にする。mutation の invalidate は `NOTES_QUERY_KEY` の前方一致のまま                                                                                                            | 条件ごとに key を分けないと、条件の違う一覧が同じキャッシュを上書きする。invalidate を条件付きの key にすると、他の条件の一覧が古いまま残る                                                                                                                  |
+| 対象      | 組み方                                                                                                                                                                                                                                                   | 守らないと                                                                                                                                                                                                                                                   |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| schema    | 絞り込み条件の schema は 1 つ (`src/features/notes/schema.ts` の `noteListFilterSchema`) にし、server function の `.validator` と route の `validateSearch` が同じものを使う。valibot 1.x は Standard Schema なので adapter は要らない                   | URL では通るのにサーバで落ちる (またはその逆の) 組み合わせが生まれる                                                                                                                                                                                         |
+| 既定値    | `search.middlewares` の `stripSearchParams(v.getDefaults(noteListFilterSchema))` で URL から落とす。既定は schema から導く                                                                                                                               | `/notes` と `/notes?q=` が別の場所になり、履歴と link の比較が揺れる。既定を写すと schema と別々に動く                                                                                                                                                       |
+| loader    | loader が読む search は `loaderDeps: ({ search }) => ({ q: search.q })` で宣言し、`loader` は options に直接書いて `notesQueryOptions(deps)` の取得を待つ。検証は router 経由 (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) | deps に無い search は loader に届かず、preload が別条件のデータを表示側に残す (Router の data-loading ガイドの page 2 の例)。loader を関数に切り出すと、引数の型を手で書くことになる (`typeof Route` は循環し、`LoaderFnContext` は `AnyRoute` 経由で `any`) |
+| query key | `notesQueryOptions(filter)` の key は `[...NOTES_QUERY_KEY, filter]` にする。mutation の invalidate は `NOTES_QUERY_KEY` の前方一致のまま                                                                                                                | 条件ごとに key を分けないと、条件の違う一覧が同じキャッシュを上書きする。invalidate を条件付きの key にすると、他の条件の一覧が古いまま残る                                                                                                                  |
 
 ### 検索の入力欄を組む
 
@@ -76,7 +76,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 
 ### 入力欄を URL の編集として持つ理由
 
-絞り込み条件は URL が持つ (ADR-0019)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。示したいのは、ページのローディングを route loader の prefetch と `useSuspenseQuery` と `pendingComponent` で行う形を崩さずに打鍵へ追従する形である。制約は次のとおり。
+絞り込み条件は URL が持つ (ADR-0019)。入力欄は URL とは別に打鍵中の値を持ち、打鍵に追従して一覧を描き直す。示したいのは、ページのローディングを route loader での取得の待ち合わせと `useSuspenseQuery` と `pendingComponent` で行う形を崩さずに打鍵へ追従する形である。制約は次のとおり。
 
 - Suspense モードで queryKey を変えると、更新を Transition に包まない限り fallback に置き換わる。打鍵のたびに skeleton へ落ちる一覧は作らない
 - 打鍵ごとに server function を呼ばない
@@ -105,7 +105,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 
 ### 入力欄と URL の関係で起きること
 
-- 確定と戻るの直後は、編集の世代が URL と合わない。debounce の待ちを経ずに、URL の条件 (loader が温めたキャッシュ) を描く
+- 確定と戻るの直後は、編集の世代が URL と合わない。debounce の待ちを経ずに、URL の条件 (loader が取得したキャッシュ) を描く
 - ページは URL の変化をまたいで生き続ける (ADR-0027)。そのため、結果の通知の記憶 (`useRef`) をページに置ける
 - 打鍵中の再描画は少ない。`useDebouncedValue` は selector を渡さない限り store の購読で再描画せず、React Compiler の出力で `v.parse` は入力値ごとに memo され、`DataTable` は打鍵で作り直されない (2026-09-23 に oxc-transform-react で確認)
 - 手で書いた `/notes?q=<101 文字>` を開くと、URL バーも切り詰め後の 100 文字に書き換わる。Router が `validateSearch` の出力で location を組み直す (2026-09-23 に dev server で実測)

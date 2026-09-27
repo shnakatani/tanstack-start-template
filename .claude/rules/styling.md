@@ -104,7 +104,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ## 状態表示
 
-- ページのローディングは route loader の prefetch + `useSuspenseQuery` + route の `pendingComponent` に統一する。タイミングは `src/router.tsx` の既定に任せる
+- ページのローディングは route loader での取得の待ち合わせ + `useSuspenseQuery` + route の `pendingComponent` に統一する。タイミングは `src/router.tsx` の既定に任せる
 - route に `pendingComponent` が無い画面は、router の `defaultPendingComponent` (`PendingContent`) が受ける。消さない。無いと suspend が root まで巻き上がって何も描かれない (ADR-0029)
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が点滅する
 - skeleton はレイアウトを模倣する (`table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付ける
