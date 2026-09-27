@@ -81,7 +81,7 @@ function DialogContent({
             // sticky は作らない (base-ui 公式の outside scroll パターンも X が流れる設計で、
             // sticky 化した独自実装に公式前例がないため)。
             popupOverflowBackstop,
-            "relative flex min-h-0 w-full max-w-full flex-col gap-6 rounded-xl bg-popover p-6 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "relative flex min-h-0 w-full max-w-full flex-col gap-6 rounded-xl bg-popover p-6 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 motion-safe:data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 motion-safe:data-closed:zoom-out-95",
             className,
           )}
           {...props}
