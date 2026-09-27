@@ -24,10 +24,11 @@ export function formatCalendarDate(date: Date): string {
  * 壊れた値が画面から見えなくなる。正規の経路の値は、スキーマの `v.check` が `isExistingCalendarDate` で検証している
  */
 export function parseCalendarDate(value: string): Date {
-  if (!CALENDAR_DATE_PATTERN.test(value) || !isExistingCalendarDate(value)) {
+  const date = CALENDAR_DATE_PATTERN.test(value) ? parseISO(value) : undefined;
+  if (date === undefined || !isValid(date)) {
     throw new Error(`暦の日付ではない: ${value}`);
   }
-  return parseISO(value);
+  return date;
 }
 
 /** `YYYY-MM-DD` の形の文字列が、暦に存在する日付か。2023-02-29 は false。形式はスキーマの `isoDate()` が見る */

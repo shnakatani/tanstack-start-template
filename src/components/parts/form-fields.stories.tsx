@@ -389,9 +389,13 @@ async function openDatePicker(): Promise<void> {
   await screen.findByRole("grid");
 }
 
-/** popup の unmount を待ってから終える。待たないと a11y 検査が animate-out の窓に入る */
 async function closeDatePicker(): Promise<void> {
   await userEvent.keyboard("{Escape}");
+  await waitForDatePickerUnmount();
+}
+
+/** popup の unmount を待ってから終える。待たないと a11y 検査が animate-out の窓に入る */
+async function waitForDatePickerUnmount(): Promise<void> {
   await waitFor(() => expect(screen.queryByRole("grid")).not.toBeInTheDocument());
 }
 
@@ -529,8 +533,7 @@ export const DateValidatesOnOutsideClick: Story = {
     await expect(dueDate).not.toBeInvalid();
 
     await userEvent.click(screen.getByRole("button", { name: "別の操作" }));
-    // popup の unmount を待ってから終える。待たないと a11y 検査が animate-out の窓に入る
-    await waitFor(() => expect(screen.queryByRole("grid")).not.toBeInTheDocument());
+    await waitForDatePickerUnmount();
 
     await waitFor(() => expect(dueDate).toBeInvalid());
     await expect(dueDate).toHaveAccessibleDescription(/期日を選択してください/);
@@ -745,10 +748,7 @@ export const DateWithValue: Story = {
  * 閉じずに終え、a11y 検査を開いた状態に当てる
  */
 export const DateOpen: Story = {
-  // Storybook の vitest 実行は 1 つの React root へ story を描き替える (docs/guides/storybook.md
-  // 「story を書く」)。同じ DateForm のままだと開いた Popover が次の story へ持ち越されるので、
-  // key を変えて入るときと出るときに mount し直す
-  render: (args) => <DateForm key="open" {...args} />,
+  render: (args) => <DateForm {...args} />,
   // 見出しを axe から外す理由は calendar.story-helpers.ts の excludeFromA11y の docstring にある
   parameters: excludeFromA11y(),
   play: async () => {
