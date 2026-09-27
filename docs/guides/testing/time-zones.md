@@ -29,15 +29,15 @@
 
 テストでは、ローカル TZ に依存する実装 (`Date#getHours` 系で壁時計を組む整形など) を検出したい。ところが、ホストの TZ が `APP_TIME_ZONE` (`Asia/Tokyo`) と一致すると、壁時計の値を比べるテストはこの依存を見逃す。開発機が JST なら常に一致する。基準の TZ をホストから切り離して決めれば、壁時計の値を比べるテストだけで依存を検出できる。
 
-2026-09-27 に vitest 4.1.11 と JST のホストで、`formatDateTime` を `Date#getHours` 系で組む実装に置き換えて `src/lib/format-date-time.test.ts` (4 件) を走らせた。
+2026-09-27 に vitest 4.1.11 と JST のホストで、`formatDateTime` を `Date#getHours` 系で組む実装に置き換えて `src/lib/format-date-time.test.ts` (5 件) を走らせた。
 
 | 基準の固定                                          | pool    | 結果                                                      |
 | --------------------------------------------------- | ------- | --------------------------------------------------------- |
-| なし                                                | forks   | 1 failed \| 3 passed。TZ を切り替えるテストだけが検出する |
-| なし                                                | threads | 4 passed。見逃す                                          |
-| `America/New_York`                                  | forks   | 3 failed \| 1 passed                                      |
-| `America/New_York`                                  | threads | 3 failed \| 1 passed                                      |
-| `America/New_York`、ホストで `TZ=Asia/Tokyo` を指定 | threads | 3 failed \| 1 passed                                      |
+| なし                                                | forks   | 1 failed \| 4 passed。TZ を切り替えるテストだけが検出する |
+| なし                                                | threads | 5 passed。見逃す                                          |
+| `America/New_York`                                  | forks   | 4 failed \| 1 passed                                      |
+| `America/New_York`                                  | threads | 4 failed \| 1 passed                                      |
+| `America/New_York`、ホストで `TZ=Asia/Tokyo` を指定 | threads | 4 failed \| 1 passed                                      |
 
 ### 基準を `America/New_York` にする理由
 

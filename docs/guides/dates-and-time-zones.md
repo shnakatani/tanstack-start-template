@@ -53,4 +53,4 @@ TanStack Start「Hydration Errors」は原因の筆頭に `Intl` (locale / time 
 | date-fns の `format` にパターンを渡す                                             | 却下 | 書式を自前で持つ理由が無いうえ、`@date-fns/tz` を直接の依存に足す必要がある                                                         |
 | Temporal                                                                          | 却下 | MDN で "Limited availability" (Baseline ではない)。テンプレートの Node 24 では `Temporal` が未定義だった (2026-09-27、Node 24.21.0) |
 
-ロケールの書式は、サーバー (Node) とブラウザで ICU の版が違うと文字列が変わりうる (MDN の同じ Note)。`ja` の数値の書式で食い違った例は確認していない。
+ロケールの書式は実装ごとに違ってよいので (「整形した日時をテストで確かめる」が引く MDN の Note)、サーバー (Node) とブラウザで文字列が変わる余地がある。`ja` の数値の書式で食い違った例は確認していない。

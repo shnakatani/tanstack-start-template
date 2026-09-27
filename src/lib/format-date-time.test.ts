@@ -33,6 +33,13 @@ describe("formatDateTime", () => {
     ]);
   });
 
+  it("午後の時刻を 24 時間制で返す", () => {
+    // 2026-08-17T06:30Z は Asia/Tokyo の 15:30。12 時間制なら 3 時になる
+    expect(wallClockOf(formatDateTime(new Date("2026-08-17T06:30:00.000Z")))).toEqual([
+      2026, 8, 17, 15, 30,
+    ]);
+  });
+
   it("ホストのローカル TZ を変えても同じ文字列を返す", () => {
     const instant = new Date("2026-08-17T00:30:00.000Z");
 
