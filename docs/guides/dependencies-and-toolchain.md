@@ -55,7 +55,7 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 
 1. 依存の `package.json` の `exports` を読み、個別エントリポイントがあるかと、バレルがどれか (ルートの `.`、`./locale` のようなまとめ) を確かめる。個別エントリポイントが無い依存は対象にできない
 2. バレルから 1 つだけ import するテストと、同じものを個別エントリポイントから import するテストを 1 ファイルずつ `src/lib/` に一時的に置く。Node で読むなら `.test.ts`、ブラウザで読むなら `.test.tsx`
-3. 1 ファイルずつ `vp test run --project <unit か browser> <ファイル> --experimental.importDurations.print --experimental.importDurations.limit=10` を複数回実行し、`Total import time` と `Duration` の `import` を回ごとに控える。browser project は 1 回目に依存の事前バンドルが走りうるので、比較から外す
+3. 1 ファイルずつ `vp test run --project <unit か browser> <ファイル> --experimental.importDurations.print --experimental.importDurations.limit=10` を複数回実行し、`Duration` の `import` と、内訳が出れば `Total import time` の self を回ごとに控える。`Total import time` の total は入れ子の import を二重に数えるので使わない (ADR-0032 の「調査結果」)。browser project は 1 回目に依存の事前バンドルが走りうるので、比較から外す
 4. 比較する回の中央値の差が、両者の最大と最小の差の和を超えるかを見る。超えなければ足さない
 5. 足すなら `RESTRICTED_BARREL_IMPORTS` に `{ name, message }` を 1 つずつ足す。`name` は specifier の完全一致で、サブパス (`date-fns/format`) は止めない。`message` には個別エントリポイントの例と `(ADR-0032)` を書く
 6. `vp lint -f unix src scripts .storybook` で、足した依存のバレルを import している箇所を洗い出し、個別エントリポイントへ直す

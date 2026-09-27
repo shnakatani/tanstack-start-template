@@ -28,9 +28,9 @@
 | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | 個別エントリポイントから引き、名指しした依存のバレルを lint で止める (Vitest の "Use Specific Entry Points") | アプリのコードの import (unit と browser の両方のテスト、dev server) | import の書き方そのものが変わるので、実行環境ごとの設定が要らない。書き誤りは `vp lint` が記述時に止める。依存の中の import には届かない                                                                                                                                                                                                                                                                                                                                                                          | **採用** |
 | 個別エントリポイントから引く規範だけを置き、lint で止めない                                                  | 同上                                                                 | バレルの import は動くので、誤ってもテストが遅くなるだけで何も壊れず、レビューでしか見つからない                                                                                                                                                                                                                                                                                                                                                                                                                  | 却下     |
-| `resolve.alias` でバレルを別のファイルへ向ける (Vitest の "Use `resolve.alias` to Redirect Imports")         | 設定した project のテストだけ                                        | Calendar を描くテストで、import の中央値は手段なしの 63ms に対して 67ms で、差がばらつきを超えなかった (「調査結果」の (b))。アプリのコードの import の主手段にはしない。`vitest.config.ts` は `vite.config.ts` を継承しないのでテストにしか効かず、依存ごとに向け先を探して書く                                                                                                                                                                                                                                  | 却下     |
+| `resolve.alias` でバレルを別のファイルへ向ける (Vitest の "Use `resolve.alias` to Redirect Imports")         | 設定した project のテストだけ                                        | Calendar を描くテストで、import の中央値は手段なしの 63ms に対して 67ms で、手段の方が 4ms 遅く、差がばらつきを超えなかった (「調査結果」の (b))。アプリのコードの import の主手段にはしない。`vitest.config.ts` は `vite.config.ts` を継承しないのでテストにしか効かず、依存ごとに向け先を探して書く                                                                                                                                                                                                             | 却下     |
 | Dependency Optimizer でバレルを事前に束ねる (Vitest の "Use the Dependency Optimizer")                       | 設定した project のテストだけ                                        | Vitest docs の config「deps.optimizer」は `optimizer.client` を "`jsdom` and `happy-dom` environments" に使うと書き、browser mode には触れない。同じ節は "for web Vitest will extend `optimizeDeps`" と書く。browser project で `deps.optimizer.client` と Vite の `optimizeDeps.include` の両方を測り、どちらも差がばらつきを超えなかった (「調査結果」の (b))。`deps.optimizer.client` を入れると毎回 "Re-optimizing dependencies because vite config has changed" が出た。アプリのコードの import は変わらない | 却下     |
-| 何もしない                                                                                                   | —                                                                    | unit project で、バレルの import の時間の中央値は個別エントリポイントより 1807ms 長かった (「調査結果」の (a))                                                                                                                                                                                                                                                                                                                                                                                                    | 却下     |
+| 何もしない                                                                                                   | —                                                                    | unit project で、バレルの import の時間 (`Duration` の `import`) の中央値は個別エントリポイントより 905ms 長かった (「調査結果」の (a))                                                                                                                                                                                                                                                                                                                                                                           | 却下     |
 
 ## Consequences
 
@@ -38,7 +38,7 @@
 - `paths` は specifier の完全一致なので、`react-day-picker/locale` と `react-day-picker/locale/*` は止まらない。どちらも `date-fns/locale` のバレルを読む。Calendar に locale を渡すときは `date-fns/locale/<locale>` から組む
 - `RESTRICTED_BARREL_IMPORTS` をトップレベルか override の片方からだけ外すと、外した側の範囲で無言で効かなくなる。`scripts/checks/integrity/lint-config.test.ts` はルールのオプションの中身を見ないので、この外し方を捕まえない (「調査結果」の壊し方 2)
 - 残った課題:
-  - react-day-picker が date-fns のルートを読む経路は、Calendar を描くテストで import に 63ms (中央値) かかる。`resolve.alias`、`deps.optimizer.client`、`optimizeDeps.include` はどれも差がばらつきを超えなかった (「調査結果」の (b))
+  - react-day-picker が date-fns のルートを読む経路が残っている。Calendar を描くテストの import は 63ms (中央値) で、経路の分は内訳が出ず測れていない。`resolve.alias`、`deps.optimizer.client`、`optimizeDeps.include` はどれも差がばらつきを超えなかった (「調査結果」の (b))
   - 同じ測り方で測る候補: lucide-react など、テンプレートのコードがルートから import している依存。測って重ければ `RESTRICTED_BARREL_IMPORTS` に足す
 - 再評価の条件: react-day-picker が date-fns を個別エントリポイントから引くようになったら、依存の中の経路の扱いを見直す。`react-day-picker/locale/ja` が `date-fns/locale` を読まなくなったら、`CALENDAR_LOCALE` をそれに置き換える
 
@@ -46,7 +46,7 @@
 
 ### (a) date-fns のバレルと個別エントリポイント (2026-09-27、vitest 4.1.11、Node 24.21.0、date-fns 4.4.0、react-day-picker 10.0.1)
 
-probe は `format` と `ja` だけを import して 1 回 `format` を呼ぶテスト 1 ファイル。`vp test run --project <project> <probe> --experimental.importDurations.print --experimental.importDurations.limit=10` で測った。差の判定は、比較する回の中央値の差が、両者の最大と最小の差の和を超えるかで行った。
+probe は `format` と `ja` だけを import して 1 回 `format` を呼ぶテスト 1 ファイル。`vp test run --project <project> <probe> --experimental.importDurations.print --experimental.importDurations.limit=10` で測った。差の判定は、比較する回の中央値の差が、両者の最大と最小の差の和を超えるかで行った。指標は `Duration` の `import` を主にし、内訳の self の和 (`Total import time` の self) を補助にした。Vitest docs は Self を "excluding static imports"、Total を "including static imports" と書く。内訳の total の和は、テストファイルの total が依存の total を含むので入れ子を二重に数え、指標にしない。
 
 unit project (Node、pool forks)、3 回ずつ:
 
@@ -62,7 +62,7 @@ unit project (Node、pool forks)、3 回ずつ:
 | `react-day-picker/locale/ja`                                   | 2   | 4             | 951ms                       | 951ms / 1.90s                    | 957ms              |
 | `react-day-picker/locale/ja`                                   | 3   | 4             | 952ms                       | 952ms / 1.90s                    | 957ms              |
 
-Total import time の total の中央値は、バレル 1.90s、個別エントリポイント 93ms、`react-day-picker/locale/ja` 1.90s。バレルと個別エントリポイントの差は 1807ms で、ばらつき (40ms + 1ms) を超えた。バレルの 1 回目の内訳では、`date-fns/locale.js` が 486ms、`date-fns/index.js` が 447ms だった。
+`Duration` の `import` の中央値は、バレル 958ms、個別エントリポイント 53ms、`react-day-picker/locale/ja` 957ms。バレルと個別エントリポイントの差は 905ms で、ばらつき (20ms + 0ms) を超えた。self の和の中央値でも、バレル 952ms と個別エントリポイント 48ms の差 904ms が、ばらつき (19ms + 1ms) を超えた。バレルの 1 回目では self の和が 3ms + 486ms + 447ms + 2ms = 938ms、total の和が 938ms + 486ms + 447ms + 2ms = 1873ms (表示は 1.87s) で、total の和は date-fns の 2 モジュールを二重に数えている。バレルの 1 回目の内訳では、`date-fns/locale.js` が 486ms、`date-fns/index.js` が 447ms だった。
 
 browser project (chromium)、4 回ずつ (比較は 2-4 回目)。`Import Duration Breakdown` は出なかったので、`Duration` の `import` だけを指標にした:
 
@@ -74,7 +74,7 @@ browser project (chromium)、4 回ずつ (比較は 2-4 回目)。`Import Durati
 
 バレルと個別エントリポイントの差は 57ms で、ばらつき (1ms + 0ms) を超えた。バレルと `react-day-picker/locale/ja` の 1 回目は、Vite の "dependencies optimized" と "optimized dependencies changed. reloading" を出した。
 
-### (b) Calendar を描くテスト (react-day-picker が date-fns のルートを読む経路)
+### (b) Calendar を描くテスト (react-day-picker が date-fns のルートを読む経路) (2026-09-27、vitest 4.1.11、Node 24.21.0、date-fns 4.4.0、react-day-picker 10.0.1)
 
 `src/components/ui/calendar.tsx` の `Calendar` を 1 つ描くテスト 1 ファイルを、browser project で 6 回ずつ測った (比較は 2-6 回目)。`Import Duration Breakdown` は出なかったので、`Duration` の `import` を指標にした。`vitest.browser.config.ts` の `optimizeDeps.include` には、測った時点で `react-day-picker` が入っている。
 
@@ -82,10 +82,10 @@ browser project (chromium)、4 回ずつ (比較は 2-4 回目)。`Import Durati
 | ------------------------------------------------- | ------ | ------ | ------ | ------ | ------ | ------ | ----------------- | ----------- |
 | なし                                              | 64ms   | 63ms   | 62ms   | 63ms   | 64ms   | 64ms   | 63ms              | 2ms         |
 | `resolve.alias` (`date-fns` → `index.cjs`)        | 64ms   | 67ms   | 68ms   | 66ms   | 67ms   | 67ms   | 67ms              | 2ms         |
-| `deps.optimizer.client` (`include: ["date-fns"]`) | 61ms   | 64ms   | 61ms   | 61ms   | 62ms   | 61ms   | 61ms              | 3ms         |
+| `deps.optimizer.client` (`include: ["date-fns"]`) | 61ms   | 64ms   | 61ms   | 61ms   | 61ms   | 62ms   | 61ms              | 3ms         |
 | `optimizeDeps.include` に `date-fns` を足す       | 62ms   | 62ms   | 63ms   | 63ms   | 64ms   | 64ms   | 63ms              | 2ms         |
 
-手段なしとの中央値の差は、`resolve.alias` が −4ms (ばらつき 4ms)、`deps.optimizer.client` が 2ms (ばらつき 5ms)、`optimizeDeps.include` が 0ms (ばらつき 4ms) で、どれもばらつきを超えなかった。`deps.optimizer.client` を入れた回は 6 回とも "Re-optimizing dependencies because vite config has changed" を出し、`Duration` は 996ms から 1.02s だった (手段なしは 755ms から 764ms)。
+手段なしと比べた中央値は、`resolve.alias` が 4ms 遅く (ばらつき 4ms)、`deps.optimizer.client` が 2ms 速く (ばらつき 5ms)、`optimizeDeps.include` が同じ (差 0ms、ばらつき 4ms) で、どれも差がばらつきを超えなかった。`deps.optimizer.client` を入れた回は 6 回とも "Re-optimizing dependencies because vite config has changed" を出し、`Duration` は 996ms から 1.02s だった (手段なしは 755ms から 764ms)。
 
 ### override によるオプションの置き換え (2026-09-27、oxlint 1.82.0)
 
@@ -101,8 +101,9 @@ browser project (chromium)、4 回ずつ (比較は 2-4 回目)。`Import Durati
 
 ## 出典
 
-| 出典                                                                                                           | 使った内容                                                                                                                                                                                                                                                                                                              |
-| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vitest「Profiling Test Performance」 https://vitest.dev/guide/profiling-test-performance                       | import の時間の測り方と 3 つの手段                                                                                                                                                                                                                                                                                      |
-| Vitest config「deps.optimizer」 https://vitest.dev/config/deps#deps-optimizer                                  | "By default, Vitest uses `optimizer.client` for `jsdom` and `happy-dom` environments, and `optimizer.ssr` for `node` and `edge` environments."、"This options also inherits your `optimizeDeps` configuration (for web Vitest will extend `optimizeDeps`, for ssr - `ssr.optimizeDeps`)." browser mode には触れていない |
-| oxlint「no-restricted-imports」 https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html | `paths` は完全一致、`allowTypeImports` の既定は `false`                                                                                                                                                                                                                                                                 |
+| 出典                                                                                                              | 使った内容                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vitest「Profiling Test Performance」 https://vitest.dev/guide/profiling-test-performance                          | import の時間の測り方と 3 つの手段                                                                                                                                                                                                                                                                                      |
+| Vitest config「experimental.importDurations」 https://vitest.dev/config/experimental#experimental-importdurations | "Self: the time it took to import the module, excluding static imports;"、"Total: the time it took to import the module, including static imports."                                                                                                                                                                     |
+| Vitest config「deps.optimizer」 https://vitest.dev/config/deps#deps-optimizer                                     | "By default, Vitest uses `optimizer.client` for `jsdom` and `happy-dom` environments, and `optimizer.ssr` for `node` and `edge` environments."、"This options also inherits your `optimizeDeps` configuration (for web Vitest will extend `optimizeDeps`, for ssr - `ssr.optimizeDeps`)." browser mode には触れていない |
+| oxlint「no-restricted-imports」 https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html    | `paths` は完全一致、`allowTypeImports` の既定は `false`                                                                                                                                                                                                                                                                 |
