@@ -28,12 +28,13 @@ describe("formatDateTime", () => {
   it("ホストのローカル TZ を変えても同じ文字列を返す", () => {
     const instant = new Date("2026-08-17T00:30:00.000Z");
 
+    // 基準 (vitest.global-setup.ts の America/New_York) とも APP_TIME_ZONE とも違う 2 つへ切り替える
     vi.stubEnv("TZ", "UTC");
     const onUtcHost = formatDateTime(instant);
-    vi.stubEnv("TZ", "America/New_York");
-    const onNewYorkHost = formatDateTime(instant);
+    vi.stubEnv("TZ", "Asia/Kolkata");
+    const onKolkataHost = formatDateTime(instant);
 
-    expect(onUtcHost).toBe(onNewYorkHost);
+    expect(onUtcHost).toBe(onKolkataHost);
     expect(onUtcHost).toBe("2026-08-17 09:30");
   });
 
