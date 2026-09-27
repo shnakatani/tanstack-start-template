@@ -14,6 +14,7 @@ paths:
 - 例外はスキーマ由来型どうしを組み合わせる合成ヘルパー型。手書きになる場合は理由をコメントで残す (ADR-0013)
 - 導出型とその導出元が一致することの型テストを書かない。常に真になり変更を検出しない (`docs/guides/forms-and-inputs.md`「スキーマの型テストを書く」)
 - 導出元の選択を守るテストは導出型を直接参照する (`expectTypeOf<Note["createdAt"]>()`)。スキーマ由来型どうしの比較は導出元の書き換えを検出しない (`docs/guides/forms-and-inputs.md`「スキーマの型テストを書く」)
+- フォームの `onSubmit` では値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator のスキーマの変換 (`v.trim()` など) を値に反映せず、手で書き写すと送信値だけが古くなる (`docs/guides/forms-and-inputs.md`「スキーマを書く」)
 - `v.object` から `v.omit` で入力スキーマを派生させたら、未知キーが silent に strip される挙動をテストで固定する。`v.strictObject` 由来なら reject されるので、派生元を確かめてから書く (`docs/guides/forms-and-inputs.md`「スキーマを書く」)
 
 ## 型アサーション (`as`) 全面禁止

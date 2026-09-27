@@ -1,6 +1,7 @@
 import { revalidateLogic } from "@tanstack/react-form";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { useState, type ComponentProps } from "react";
+import * as v from "valibot";
 
 import { ActionDialogContent } from "@/components/action/dialog";
 import { ActionFormSubmit } from "@/components/action/form";
@@ -135,11 +136,11 @@ function NoteCreateForm({
     // 初回 submit までは検証エラーを表示せず、submit 後は変更毎に再検証する
     // (revalidateLogic のデフォルト: mode:"submit", modeAfterSubmission:"change")
     validationLogic: revalidateLogic(),
-    // 必須検証は title の AppField validator が保存前に強制する。ここでは
-    // noteInputSchema の trim と同じ正規化だけ先に済ませ、送信値と保存値を一致させる。
+    // TanStack Form は validator のスキーマの変換 (title の trim) を value に反映しない。
+    // 送信前にスキーマへ通し、送信値と保存値を一致させる。各項目は同じスキーマで検証済みなので、
+    // ここで throw するのは項目の validator とスキーマがずれたときだけ。
     // Promise を返すので form.handleSubmit() の Promise が mutation の決着まで続く
-    onSubmit: ({ value }) =>
-      onSubmit({ title: value.title.trim(), body: value.body, dueDate: value.dueDate }),
+    onSubmit: ({ value }) => onSubmit(v.parse(noteInputSchema, value)),
   });
 
   return (
