@@ -51,6 +51,25 @@ async function renderCells({
   );
 }
 
+describe("NoteDueDateCell", () => {
+  it("期日のある行は短い書式で、無い行は「—」で描く", async () => {
+    const screen = await renderCells();
+
+    // NOTE.dueDate = 2026-08-20、OTHER_NOTE.dueDate = null (schema.test-helpers.ts)
+    await expect.element(noteRow(screen, NOTE).getByText("2026/08/20")).toBeInTheDocument();
+    await expect
+      .element(noteRow(screen, OTHER_NOTE).getByText("—", { exact: true }))
+      .toBeInTheDocument();
+  });
+
+  it("保存中の行は送信した期日を描く", async () => {
+    const screen = await renderCells({ creatingRows: [CREATING_ROW] });
+
+    // CREATING_ROW.variables.dueDate = 2026-08-21
+    await expect.element(noteRow(screen, CREATED_NOTE).getByText("2026/08/21")).toBeInTheDocument();
+  });
+});
+
 describe("NoteCreatedAtCell", () => {
   it("確定行は作成日時を APP_TIME_ZONE の壁時計で描く", async () => {
     const screen = await renderCells();

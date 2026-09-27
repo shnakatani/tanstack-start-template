@@ -3,7 +3,12 @@ import { createColumnHelper } from "@tanstack/react-table";
 import type { DataTableFeatures } from "@/components/parts/data-table-features";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 
-import { NoteActionsCell, NoteBodyCell, NoteCreatedAtCell } from "../-components/note-cells";
+import {
+  NoteActionsCell,
+  NoteBodyCell,
+  NoteCreatedAtCell,
+  NoteDueDateCell,
+} from "../-components/note-cells";
 import type { NoteRow } from "./note-rows";
 import { noteInputOf } from "./note-rows";
 
@@ -23,6 +28,11 @@ export const noteColumns = helper.columns([
     id: "body",
     header: NOTE_FIELD_LABELS.body,
     cell: NoteBodyCell,
+  }),
+  helper.accessor((row) => noteInputOf(row).dueDate, {
+    id: "dueDate",
+    header: NOTE_FIELD_LABELS.dueDate,
+    cell: NoteDueDateCell,
   }),
   helper.display({ id: "createdAt", header: NOTE_FIELD_LABELS.createdAt, cell: NoteCreatedAtCell }),
   helper.display({ id: "actions", header: "操作", cell: NoteActionsCell }),

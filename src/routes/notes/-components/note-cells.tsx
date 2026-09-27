@@ -1,6 +1,7 @@
 import type { DataTableCellContext } from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { formatCalendarDateLabel } from "@/lib/calendar-date";
 import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
@@ -12,6 +13,15 @@ type NoteCellContext = DataTableCellContext<NoteRow>;
 /** 本文の cell。長い本文で列が広がらないよう、1 行に切り詰める */
 export function NoteBodyCell({ row }: NoteCellContext) {
   return <div className="max-w-xs truncate">{noteInputOf(row.original).body}</div>;
+}
+
+/**
+ * 期日の cell。暦の日付は TZ で変換せずに、ロケールの書式で出す (ADR-0031 の分類 2)。保存中の行も
+ * 送信した値を持つのでそのまま描く。未設定は「—」
+ */
+export function NoteDueDateCell({ row }: NoteCellContext) {
+  const { dueDate } = noteInputOf(row.original);
+  return dueDate === null ? "—" : formatCalendarDateLabel(dueDate, "short");
 }
 
 /** 作成日時の cell。保存中の行はまだ日時を持たないので、その位置で保存中を伝える。 */
