@@ -28,15 +28,21 @@
 - 別の書式が要るときも `timeZone: APP_TIME_ZONE` を渡した `Intl.DateTimeFormat` で組み、`src/lib/format-date-time.ts` に並べる。並びや区切りはオプション (`dateStyle`、`month: "long"` など) で選び、ロケールを別の言語に替えて並びを得ない (「書式をロケールに任せる理由」)
 - ロケールに無い並びがどうしても要るときは、`formatToParts()` で部品を取り出して組み立てる。MDN「Intl.DateTimeFormat.prototype.formatToParts()」は "useful for building custom strings from the locale-specific tokens" と書く
 - 描画する値を、実行環境のローカル TZ で組み立てない。`Date#toLocaleString` 系、`Date#getHours` 系、`timeZone` を渡さない `Intl.DateTimeFormat` が当たる。`timeZone` の既定は "the runtime's time zone" (MDN「Intl.DateTimeFormat() constructor」の `timeZone`)
-- date-fns で整形するときは、各関数の `in` オプションに `tz(APP_TIME_ZONE)` を渡すか、値を `TZDate` にする。渡さないと date-fns はシステムの TZ で計算する (date-fns 同梱の `docs/timeZones.md`「Working with time zones」)
+- 瞬間 (ADR-0031 の分類 1) を date-fns で整形するときは、各関数の `in` オプションに `tz(APP_TIME_ZONE)` を渡すか、値を `TZDate` にする。渡さないと date-fns はシステムの TZ で計算する (date-fns 同梱の `docs/timeZones.md`「Working with time zones」)
 - `tz` と `TZDate` は `@date-fns/tz` の export で、テンプレートの直接の依存には入っていない (react-day-picker 経由でだけ入っている)。使うときは `vp add @date-fns/tz` で直接の依存に足す
 - 利用者ごとのタイムゾーンで出したくなったら、`APP_TIME_ZONE` を固定値から「サーバーで一度決めてクライアントへ渡す値」に変える。決め方は TanStack Start「Hydration Errors」の Strategy 1 と 2 (cookie を正とし、無い間は決まった値を使う)
 
+### 画面に暦の日付を出す
+
+- 暦の日付 (ADR-0031 の分類 2) は `formatCalendarDateLabel` (`src/lib/calendar-date.ts`) で出す。`YYYY-MM-DD` をローカルの 0 時の `Date` にしてから、ローカルのまま date-fns で整形するので、TZ に依存せず、SSR と hydration で割れない
+- Calendar との受け渡しは `formatCalendarDate` (`Date` → `YYYY-MM-DD`) と `parseCalendarDate` (`YYYY-MM-DD` → `Date`) を使う
+
 ### 整形した日時をテストで確かめる
 
-- `format()` の出力を固定の文字列と比べない。MDN「Intl.DateTimeFormat.prototype.format()」の Note は "the output may vary between implementations, even within the same locale" "You should not compare the results of `format()` to hardcoded constants." と書く
+- `Intl.DateTimeFormat` の `format()` の出力を固定の文字列と比べない。MDN「Intl.DateTimeFormat.prototype.format()」の Note は "the output may vary between implementations, even within the same locale" "You should not compare the results of `format()` to hardcoded constants." と書く
 - 壁時計の値は、出力から数字の並び (年・月・日・時・分) を取り出して比べる。実例は `src/lib/format-date-time.test.ts`
 - 画面に描いた文字列を探すテストは、期待値を `formatDateTime` で作る。実例は `src/features/notes/schema.test-helpers.ts` の `NOTE_CREATED_AT_TEXT`
+- date-fns の `format` は Intl を使わず、同梱のロケールのデータで文字列を作る (date-fns 4.4.0 の `format.js` と `locale/ja` に `Intl` の参照が無い、2026-09-27)。その出力は固定の文字列と比べてよい。実例は `src/lib/calendar-date.test.ts`
 
 ### 日付の入力を扱う
 
