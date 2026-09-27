@@ -1,9 +1,16 @@
 import { NumberField } from "@base-ui/react/number-field";
+import { format } from "date-fns/format";
+import { ja } from "date-fns/locale/ja";
+import { CalendarIcon } from "lucide-react";
 import { type ComponentProps, useId } from "react";
+import type { DayPickerLocale } from "react-day-picker";
 
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -13,6 +20,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFieldContext } from "@/hooks/form-context";
+import {
+  formatCalendarDate,
+  formatCalendarDateLabel,
+  parseCalendarDate,
+} from "@/lib/calendar-date";
 
 /**
  * フォームの配線部品。
@@ -91,8 +103,8 @@ function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[]
 }
 
 /**
- * Text / Number / Select フィールドが共有する状態導出。id 2 つと invalid の計算を
- * 1 箇所に集め、フィールド種別を増やすときの写し漏れを防ぐ。
+ * Text / Number / Select / Date フィールドが共有する状態導出。
+ * id 2 つと invalid の計算を 1 箇所に集め、フィールド種別を増やすときの写し漏れを防ぐ。
  * (FormCheckboxField は FieldError 非対応の別形なので使わない)
  *
  * invalid は正規化前の件数で決める。表示できない形のエラーでも検証は失敗しており、
@@ -338,6 +350,103 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
         onCheckedChange={field.handleChange}
       />
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    </Field>
+  );
+}
+
+/**
+ * Calendar に渡す日本語の locale。書式は `date-fns/locale/ja` から取り、この Calendar が使う
+ * 4 つのラベル (labelDayButton / labelNext / labelPrevious / labelNav) は react-day-picker の ja
+ * (`react-day-picker/locale/ja`) と同じ文言をここで持つ。
+ * `react-day-picker/locale/ja` を使わないのは、中で `date-fns/locale` のバレルを読み、全ロケールを
+ * 引き込むため (react-day-picker 10.0.1 の `dist/esm/locale/ja.js` の 1 行目)
+ */
+const CALENDAR_LOCALE: Partial<DayPickerLocale> = {
+  ...ja,
+  labels: {
+    labelDayButton: (date, modifiers) => {
+      const label = format(date, "PPPP", { locale: ja });
+      const withToday = modifiers.today ? `今日、${label}` : label;
+      return modifiers.selected ? `${withToday}、選択済み` : withToday;
+    },
+    labelNav: "ナビゲーションバー",
+    labelNext: "次の月へ",
+    labelPrevious: "前の月へ",
+  },
+};
+
+interface FormDateFieldProps
+  extends
+    Pick<ComponentProps<typeof PopoverTrigger>, "disabled">,
+    FieldValueTypeCheckProps<string | null> {
+  label: string;
+  /** 値が無いときにトリガーへ出す文言 (例: 期日なし) */
+  emptyText: string;
+}
+
+/**
+ * 暦の日付 (`YYYY-MM-DD`、ADR-0031 の分類 2) を Calendar で選ぶフィールド。値が無いことを null で持つ。
+ * 組み方は shadcn docs「Date Picker」の Popover + Calendar + Button。`Date` との変換は
+ * `src/lib/calendar-date.ts` が行い、form の値に `Date` を入れない。
+ *
+ * - 選択中の日をもう一度押すと外れる。Calendar に `required` を付けない (react-day-picker docs「Single Mode」)
+ * - Popover の中に解除のボタンも置く。日を選んでも Popover は閉じない (shadcn の例と同じ非制御)
+ * - トリガーの名前はラベルと表示中の値をつないで作る。`htmlFor` だけだと button の名前がラベルに
+ *   なり、選んだ日が読み上げに出ない
+ * - shadcn の例の `p-0` (Popup) と文字色・太さ (トリガー) は付けない。`parts/` からは layout の
+ *   class しか渡せない (ADR-0011)
+ */
+export function FormDateField({ label, emptyText, disabled }: FormDateFieldProps) {
+  const { field, id, errorId, errors, invalid } = useFormFieldState<string | null>();
+  const labelId = useId();
+  const valueId = useId();
+  const value = field.state.value;
+  const selected = value === null ? undefined : parseCalendarDate(value);
+
+  return (
+    <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
+      <FieldLabel id={labelId} htmlFor={id}>
+        {label}
+      </FieldLabel>
+      <Popover>
+        <PopoverTrigger
+          id={id}
+          disabled={disabled}
+          render={<Button variant="outline" className="w-full justify-start" />}
+          onBlur={field.handleBlur}
+          aria-labelledby={`${labelId} ${valueId}`}
+          aria-invalid={invalid}
+          aria-describedby={invalid ? errorId : undefined}
+        >
+          <CalendarIcon aria-hidden />
+          <span id={valueId}>
+            {value === null ? emptyText : formatCalendarDateLabel(value, "long")}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto">
+          <Calendar
+            mode="single"
+            selected={selected}
+            // 開く月は選択中の日の月。無ければ今日の月 (react-day-picker の getInitialMonth)
+            defaultMonth={selected}
+            onSelect={(date) => {
+              field.handleChange(date === undefined ? null : formatCalendarDate(date));
+            }}
+            locale={CALENDAR_LOCALE}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={value === null}
+            onClick={() => {
+              field.handleChange(null);
+            }}
+          >
+            {`${label}をクリア`}
+          </Button>
+        </PopoverContent>
+      </Popover>
+      <FieldError id={errorId} errors={errors} />
     </Field>
   );
 }

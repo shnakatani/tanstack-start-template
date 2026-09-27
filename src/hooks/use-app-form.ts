@@ -2,6 +2,7 @@ import { createFormHook } from "@tanstack/react-form";
 
 import {
   FormCheckboxField,
+  FormDateField,
   FormNumberField,
   FormSelectField,
   FormTextField,
@@ -18,7 +19,13 @@ import { fieldContext, formContext } from "@/hooks/form-context";
  * (受け取り側と同じ createFormHook 由来であることが型互換の条件)。
  */
 export const { useAppForm } = createFormHook({
-  fieldComponents: { FormTextField, FormNumberField, FormSelectField, FormCheckboxField },
+  fieldComponents: {
+    FormTextField,
+    FormNumberField,
+    FormSelectField,
+    FormCheckboxField,
+    FormDateField,
+  },
   formComponents: {},
   fieldContext,
   formContext,
