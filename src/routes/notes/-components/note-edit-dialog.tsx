@@ -23,17 +23,18 @@ export function NoteEditDialog() {
   const updateMutation = useActionMutation({
     ...updateNoteMutation,
     // 開始の通知の置き場 (ADR-0026)。form の検証を通った後だけ走る。ボタンの pending は
-    // 読み上げに出ないので開始を通知する
-    onMutate: () => {
-      announce("メモを更新しています");
+    // 読み上げに出ないので開始を通知する。対象名は保存する入力 (更新後の title) から取る
+    onMutate: (update) => {
+      announce(`『${update.title}』を更新しています`);
     },
     // 完了点 (b): 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
     // 一覧の再取得は queryKey の前方一致に委ねる
-    onSuccess: async () => {
+    onSuccess: async (_data, update) => {
       noteEditDialogHandle.close();
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
-      // 行の値の変化は読み上げに出ないので、完了を通知する (ADR-0026)
-      announce("更新しました");
+      // 行の値の変化は読み上げに出ないので、完了を通知する。更新は再取得を待つ間に別の行でも
+      // 保存でき並行しうるので、どれが終わったかを対象名で区別する (ADR-0026)
+      announce(`『${update.title}』を更新しました`);
     },
     // 失敗時は閉じない (入力を保ったままリトライできる)。server の raw message は
     // 開発者向けの文言なので curate を通した固定文言だけを出す

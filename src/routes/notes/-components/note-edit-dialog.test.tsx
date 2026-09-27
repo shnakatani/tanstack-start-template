@@ -152,24 +152,26 @@ describe("NoteEditDialog", () => {
     await expect.element(titleTextbox(screen)).toHaveValue("変えた見出し");
   });
 
-  it("更新の開始と完了を announcer が通知する", async () => {
-    // ダイアログの close も一覧の行の変化も読み上げに出ないので、両端を polite の region で伝える (ADR-0026)
+  it("更新の開始と完了を、更新後の見出しを対象名にして announcer が通知する", async () => {
+    // ダイアログの close も一覧の行の変化も読み上げに出ないので、両端を polite の region で伝える。
+    // 更新は並行しうるので、完了の文言に対象名を載せる (ADR-0026)。対象名は保存した入力から取る
     const update = deferMock(updateNote);
     const { screen } = await renderDialog();
     await openNoteEditDialog(screen, NOTE);
+    await titleTextbox(screen).fill("変えた見出し");
 
     await saveButton(screen).click();
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("メモを更新しています");
+      expect(readAnnouncements()).toContain("『変えた見出し』を更新しています");
     });
     // 完了は updateNote の決着より前に出さない
-    expect(readAnnouncements()).not.toContain("更新しました");
+    expect(readAnnouncements()).not.toContain("『変えた見出し』を更新しました");
 
     update.resolve(undefined);
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("更新しました");
+      expect(readAnnouncements()).toContain("『変えた見出し』を更新しました");
     });
   });
 
