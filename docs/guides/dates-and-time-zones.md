@@ -1,8 +1,26 @@
 # 日時とタイムゾーン
 
-画面に日時を出すときに、どのタイムゾーンで整形するかを持つ。テストでタイムゾーンを扱う方法は `docs/guides/testing/time-zones.md` が持つ。
+日付や日時の値を足すときの持ち方と、画面に出すときにどのタイムゾーンで整形するかを持つ。テストでタイムゾーンを扱う方法は `docs/guides/testing/time-zones.md` が持つ。
+
+| 決定                                                                            | ADR      |
+| ------------------------------------------------------------------------------- | -------- |
+| 日付と日時の値は意味で分類し、瞬間は UTC で、暦の日付は TZ を持たない日付で持つ | ADR-0031 |
 
 ## how-to
+
+### 日付や日時の値を足す
+
+値の意味を次の順に問い、最初に当てはまった分類にする。分類ごとの保存の形とドメイン型は ADR-0031 の Decision の表に従う。
+
+| 問い                                                                              | 当てはまったら                                        |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 1. 誰から見ても同じ数字の日か (誕生日、期日のラベル)                              | 暦の日付                                              |
+| 2. ある場所の 1 日か、人が壁時計で約束した将来の時刻か (現地の営業日、会議の開始) | 場所に結びつく値                                      |
+| 3. 一点を指す時刻か (既に起きたことの記録、期間から計算した期限)                  | 瞬間。実例は `src/server/db/schema.ts` の `createdAt` |
+
+- 「今日」や期限の判定は、ADR-0031 の分類 4 に従う
+- 迷ったら、「別の場所にいる人が、同じ数字で理解すべきか」を問う。同じ数字で理解すべきなら暦の日付、場所の 1 日として意味を持つなら場所に結びつく値にする
+- ADR-0031 が扱わない値 (時刻だけの値、時間の長さ、繰り返しの予定など) を足すときは、先に ADR-0031 を書き換える
 
 ### 画面に日時を出す
 
@@ -24,6 +42,9 @@
 
 - `Calendar` (`src/components/ui/calendar.tsx`、中身は react-day-picker) は、既定でブラウザのローカル TZ で日付を組む。react-day-picker docs「Setting the Time Zone」は "By default, DayPicker uses the browser's local time zone." と書く
 - `timeZone` prop を渡すと、指定した TZ で日付を読み書きする。その場合、値は素の `Date` ではなく `TZDate` で扱う (同じ docs「Working with time-zoned dates」)。react-day-picker 10.0.1 は `TZDate` を `@date-fns/tz` から再 export している。テンプレートは `timeZone` prop を今は使っていない
+- 暦の日付を `Calendar` で入力するときは、選ばれた `Date` から、ローカル TZ のまま年・月・日だけを取り出して `YYYY-MM-DD` にする。`toISOString()` を使わない。UTC に直すので、UTC より進んだ TZ (JST など) では 1 日前になる (ADR-0031 の Context)
+- 保存した `YYYY-MM-DD` を `new Date("YYYY-MM-DD")` で読まない。日付だけの文字列は UTC の 0 時として解釈され、UTC より遅れた TZ では 1 日前になる (ADR-0031 の Context)
+- `YYYY-MM-DD` の形式を valibot の `isoDate()` で検証しても、存在しない日付は通る。型定義の Hint は "The regex used cannot validate the maximum number of days based on year and month. For example, "2023-06-31" is valid although June has only 30 days." と書く (valibot 1.4.2)。`isoDate()` の後ろに `v.check` を足し、年・月・日が暦に存在するかを見る。valibot の API docs「isoDate」は、存在を検証する組み込みの手段を挙げていない
 
 ## explanation
 

@@ -1,0 +1,91 @@
+# ADR-0031: 日付と日時の値は意味で分類し、瞬間は UTC で、暦の日付は TZ を持たない日付で持つ
+
+- Status: Accepted
+- Date: 2026-09-27
+- 関連: ADR-0013 (ドメイン型の導出。日付と日時の値の型もスキーマから導出する)
+
+## Context
+
+日付や日時の値は、意味によってタイムゾーン (TZ) の扱いが逆になる。
+
+| 値の意味                                        | 例                             | TZ の扱い                                               |
+| ----------------------------------------------- | ------------------------------ | ------------------------------------------------------- |
+| 一点を指す時刻                                  | 作成日時、セッションの有効期限 | 値は TZ を持たない一点。見る場所の壁時計に直して見せる  |
+| 誰から見ても同じ数字の日                        | 誕生日、期日のラベル           | TZ を持たない。変換すると日付がずれる                   |
+| ある場所の 1 日、人が壁時計で約束した将来の時刻 | 現地の営業日、会議の開始時刻   | その場所の TZ で意味を持つ。TZ の定義は後から変わりうる |
+
+JavaScript の `Date` は一点の時刻しか表せない。日付だけの値を `Date` で扱うと、TZ によって日付が前後にずれる。2026-09-27 に Node 24.21.0 で確かめた。
+
+| 経路                                                          | 結果                                                 |
+| ------------------------------------------------------------- | ---------------------------------------------------- |
+| JST で `new Date(2026, 7, 17).toISOString()`                  | `2026-08-16T15:00:00.000Z`。日付部分が 1 日前になる  |
+| America/New_York で `new Date("2026-08-17")` のローカルの日付 | 8/16。日付だけの文字列は UTC の 0 時として解釈される |
+
+TC39 の Temporal は、この区別を型で持つ。一点の時刻は `Instant`、TZ を持たない暦の日付は `PlainDate`、場所に結びつく日時は `ZonedDateTime` である。MDN「Temporal.PlainDate」は `PlainDate` を "a calendar date (a date without a time or time zone); for example, an event on a calendar which happens during the whole day no matter which time zone it's happening in" と説明する。Temporal は MDN で "Limited availability" (Baseline ではない) で、テンプレートの Node 24 では `Temporal` が未定義だった (2026-09-27)。
+
+SQLite には日付専用の型が無い。SQLite「Datatypes In SQLite」は、日付と時刻を "TEXT as ISO8601 strings" "REAL as Julian day numbers" "INTEGER as Unix Time" のどれで持ってもよいとし、日付関数は内部を UTC で扱う (「Date And Time Functions」)。drizzle の `integer` の `timestamp_ms` は、UTC のエポックミリ秒で持つ。SQLite の Unix Time は秒なので、SQLite の日付関数へ渡すときは秒に直す。
+
+notes の `createdAt` は、UTC のエポックミリ秒で持ち (`src/server/db/schema.ts`、`src/features/notes/schema.ts`)、表示は `APP_TIME_ZONE` (`Asia/Tokyo`) で整形する (`src/lib/format-date-time.ts`)。
+
+## Decision
+
+日付や日時の値を足すときは、値の意味で次の 4 つに分け、分類ごとに持ち方を決める。分類は Temporal の型に合わせる。
+
+| 分類                        | 見分け方                                                    | 保存の形                                                                                  | ドメイン型 | 表示                                                 | Temporal の型                                           |
+| --------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------- | ------------------------------------------------------- |
+| 1. 瞬間                     | 一点を指す時刻 (既に起きたことの記録、期間から計算した期限) | UTC のエポックミリ秒 (`integer` の `timestamp_ms`)                                        | `Date`     | 決めた TZ の壁時計に直す。今は `APP_TIME_ZONE`       | `Instant`                                               |
+| 2. 暦の日付                 | 誰から見ても同じ数字の日                                    | `YYYY-MM-DD` の TEXT                                                                      | 文字列     | 変換せずにそのまま出す                               | `PlainDate`                                             |
+| 3. 場所に結びつく日付・日時 | ある場所の 1 日、人が壁時計で約束した将来の時刻             | ローカルの日付や日時 (TEXT) と、IANA の TZ 名 (TEXT) を別の列で持つ。オフセットは持たない | 文字列の組 | その TZ で意味を持つ。他の TZ で見せるときは変換する | 日時は `ZonedDateTime`。日付は `PlainDate` と TZ 名の組 |
+| 4. 「今日」や期限の判定     | 値ではなく判定                                              | —                                                                                         | —          | どの TZ の今日かを明示する。今は `APP_TIME_ZONE`     | `Temporal.Now.plainDateISO(timeZone)`                   |
+
+- 分類 2 と 3 の値は、途中で `Date` や瞬間を経由しない。入力部品が `Date` を返すときは、その場で年・月・日だけを取り出して文字列にする
+- 分類 3 は、TZ が `APP_TIME_ZONE` の 1 つしか無くても TZ 名の列を持つ。値だけで意味が決まり、TZ を足しても列の形は変わらない。夏時間のある TZ を足すときは、重複する時刻を区別する規則が要るので、この ADR を書き換える (下の「扱わない値」)
+- 人が壁時計で約束した将来の時刻 (会議の開始など) は、瞬間 (分類 1) ではなく分類 3 で持つ。保存したあとに TZ の定義が変わっても、約束した壁時計の時刻を保てる。期間から計算した期限 (有効期限など) は壁時計の約束を持たないので、分類 1 で持つ
+- 分類 4 の判定は、実行環境のローカル TZ に任せない。SSR では同じ判定がサーバーとブラウザの両方で走り、TZ が違うと今日が食い違う (サーバーが UTC なら、JST の 0 時から 9 時までは前日になる)
+- 分類 4 の判定は、テストで時計を固定できる形にする (Vitest の `vi.setSystemTime`)
+
+次の値は扱わない。足すときにこの ADR を書き換える。
+
+| 扱わない値                                                     | 公式の型の例                                                                                                                       |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 時刻だけの値 (開店時刻、毎朝のアラーム)                        | Temporal `PlainTime`、java.time `LocalTime`、.NET `TimeOnly`                                                                       |
+| 時間の長さ                                                     | Temporal `Duration`、java.time `Duration` / `Period`                                                                               |
+| 年月だけ、月日だけの値                                         | Temporal `PlainYearMonth` / `PlainMonthDay`                                                                                        |
+| 繰り返しの予定                                                 | iCalendar (RFC 5545) の RRULE                                                                                                      |
+| TZ を持たない日時 (どの TZ でも同じローカル時刻に起きる出来事) | Temporal `PlainDateTime`                                                                                                           |
+| 夏時間で存在しない時刻と重複する時刻の解決規則                 | `Asia/Tokyo` には夏時間が無い。夏時間のある TZ を足すときに決める。Temporal は `disambiguation` と `offset` のオプションで選ばせる |
+
+### 検討した選択肢
+
+| 案                                                         | 評価                                                                                                                                                                                                                                                                                                | 採否     |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 値の意味で分類し、分類ごとに持ち方を変える                 | 主要な言語とライブラリの公式の型の分け方と一致する (「出典」の表)                                                                                                                                                                                                                                   | **採用** |
+| すべてを瞬間 (UTC) で持つ                                  | 暦の日付が TZ でずれる。Martin Fowler「Time Point」は、Outlook の終日の予定が時刻の範囲で持たれ、ボストンからシカゴへ移ると前日に表示された例を挙げる。Stack Overflow の定番の回答 (質問 2532729) は "Timestamping can use UTC, but future time scheduling and date-only values should not." と書く | 却下     |
+| すべてをローカルの日時 (TZ なし) で持つ                    | 瞬間を一意に表せない。PostgreSQL の wiki「Don't Do This」は TZ を持たない `timestamp` を "a picture of a calendar and a clock rather than a point in time" と呼び、瞬間には `timestamptz` を勧める                                                                                                  | 却下     |
+| 分類 3 の TZ をオフセットで持つ                            | オフセットは夏時間や TZ の定義の変更に追従しない。MDN「Temporal.ZonedDateTime」は "Avoid using offset identifiers if there is a named time zone you can use instead." と書く。RFC 9557 も、タイムスタンプの TZ の注記にオフセットを使う形を "strongly discouraged" とする                           | 却下     |
+| 分類 3 の TZ を列に持たず、規約で `APP_TIME_ZONE` とみなす | 列は要らないが、TZ が増えたとき既存の値の TZ を規約からしか復元できない                                                                                                                                                                                                                             | 却下     |
+| 瞬間をオフセット付き (記録時のオフセットを残す形) で持つ   | .NET の `DateTimeOffset` と java.time の `OffsetDateTime` の形。記録した場所の壁時計を後で復元できるが、テンプレートの値 (作成日時) は記録時の場所を使わない。Django と PostgreSQL は UTC で持つ                                                                                                    | 却下     |
+
+## Consequences
+
+- Temporal が使えるようになったとき、保存の形を変えずに読み替えられる。分類 1 は `Instant`、2 は `PlainDate`、3 の日時は `ZonedDateTime`、3 の日付は `PlainDate` と TZ 名の組になる
+- 分類 2 の値は `Date` を経由できないので、`Date` を返す入力部品 (Calendar など) との境界に変換が要る。変換の手順は `docs/guides/dates-and-time-zones.md` が持つ
+- 分類 2 の値を `new Date("YYYY-MM-DD")` で読むと、ブラウザの TZ によって 1 日ずれる。型は文字列なので、`Date` に渡すまでは型検査で気付けない
+- 再評価の条件: Temporal が Baseline になり、テンプレートの Node で使えるようになったら、ドメイン型を Temporal の型へ移すかを見直す。保存の形は変えない
+
+## 出典
+
+| 出典                                                                                                                                                                           | 使った内容                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| MDN「Temporal」 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal                                                                      | 一点の時刻と、TZ を持たない calendar date / wall-clock time の区別                                                                     |
+| MDN「Temporal.PlainDate」 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/PlainDate                                                  | 暦の日付の定義                                                                                                                         |
+| MDN「Temporal.ZonedDateTime」 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/ZonedDateTime                                          | 将来の時刻は、保存後に TZ の定義が変わりうる                                                                                           |
+| TC39 Temporal の提案文書 https://tc39.es/proposal-temporal/docs/                                                                                                               | `ZonedDateTime` の文書は "As the only `Temporal` type that persists a time zone" と書く。`PlainDateTime` の文書に、TZ を別の列に持つ形 |
+| java.time `LocalDate` の Javadoc                                                                                                                                               | "a description of the date, as used for birthdays"                                                                                     |
+| .NET「Choose between DateTime, DateOnly, DateTimeOffset, TimeSpan, TimeOnly, and TimeZoneInfo」 https://learn.microsoft.com/dotnet/standard/datetime/choosing-between-datetime | `DateOnly` は "can't be offset by a time zone"                                                                                         |
+| Django「Time zones」 https://docs.djangoproject.com/en/stable/topics/i18n/timezones/                                                                                           | datetime は UTC で保存する。date は "a **calendaring concept**" で、datetime から date への変換を避ける                                |
+| PostgreSQL wiki「Don't Do This」 https://wiki.postgresql.org/wiki/Don%27t_Do_This                                                                                              | 瞬間には `timestamptz`。TZ を持たない `timestamp` は時計の絵                                                                           |
+| RFC 9557 https://www.rfc-editor.org/rfc/rfc9557                                                                                                                                | タイムスタンプの TZ の注記にオフセットを使う形を強く非推奨とする                                                                       |
+| SQLite「Datatypes In SQLite」 https://www.sqlite.org/datatype3.html                                                                                                            | 日付専用の型は無く、TEXT・REAL・INTEGER で持つ                                                                                         |
+| Google Calendar API「Events」 https://developers.google.com/workspace/calendar/api/v3/reference/events                                                                         | 終日の予定は TZ を持たない `date` (`yyyy-mm-dd`)。繰り返しの予定では IANA の名前の `timeZone` が必須                                   |
+| Martin Fowler「Time Point」 https://martinfowler.com/eaaDev/TimePoint.html                                                                                                     | 終日の予定を時刻の範囲で持ったときのずれの例                                                                                           |
