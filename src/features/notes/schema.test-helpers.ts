@@ -1,3 +1,5 @@
+import { formatDateTime } from "@/lib/format-date-time";
+
 import type { CreatingRow } from "./creating-rows";
 import type { Note } from "./schema";
 
@@ -12,8 +14,12 @@ export const NOTE: Note = {
   createdAt: new Date("2026-08-17T00:30:00.000Z"),
 };
 
-/** NOTE.createdAt を APP_TIME_ZONE の壁時計で描いた期待値。 */
-export const NOTE_CREATED_AT_TEXT = "2026-08-17 09:30";
+/**
+ * NOTE.createdAt を画面に描いた期待値。整形の結果を固定値で持たず、`formatDateTime` から作る。
+ * 区切りや空白はロケールのデータが決め、実装ごとに違ってよい (MDN「Intl.DateTimeFormat.prototype.format()」
+ * の Note)。壁時計の値が正しいことは `src/lib/format-date-time.test.ts` が見る。
+ */
+export const NOTE_CREATED_AT_TEXT = formatDateTime(NOTE.createdAt);
 
 /** 楽観表示と無効化が対象行だけに効くことを見るための 2 件目。 */
 export const OTHER_NOTE: Note = {

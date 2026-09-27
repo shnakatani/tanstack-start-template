@@ -57,6 +57,16 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 - 操作の開始の announce は `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`、ADR-0026)
 - 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない (ADR-0016)
 
+## 日時はタイムゾーンを明示して整形する
+
+lint では見ないのでレビューで見る。
+
+- 画面に出す日時は `formatDateTime` (`src/lib/format-date-time.ts`) で整形する。ローカル TZ で整形すると、サーバーとブラウザの TZ が違う環境でだけ hydration mismatch になる (`docs/guides/dates-and-time-zones.md`「タイムゾーンを明示して整形する理由」)
+- 描画する値に `toLocaleString` 系・`getHours` 系・`timeZone` なしの `Intl.DateTimeFormat` を使わない。どれも実行環境のローカル TZ で組む (`docs/guides/dates-and-time-zones.md`「画面に日時を出す」)
+- 並びや区切りを得るために、画面の言語と違うロケール (`sv-SE` など) を指定しない。表示言語でないロケールのデータに依存し、その並びも保証されない。並びはオプションで選び、無い並びは `formatToParts()` で組む (`docs/guides/dates-and-time-zones.md`「書式をロケールに任せる理由」)
+- date-fns で整形するときは `in: tz(APP_TIME_ZONE)` を渡すか値を `TZDate` にし、`@date-fns/tz` を直接の依存に足す。渡さないとシステムの TZ で計算する (`docs/guides/dates-and-time-zones.md`「画面に日時を出す」)
+- 食い違いを `suppressHydrationWarning` で抑えない。食い違った文字列がそのまま出る (`docs/guides/dates-and-time-zones.md`「タイムゾーンを明示して整形する理由」)
+
 ## 手動メモ化の増減
 
 `useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は `docs/guides/updates-and-data.md`「手動メモ化を外すか判定する」。`src/components/ui/` は ADR-0020 の統制下なので触らない。

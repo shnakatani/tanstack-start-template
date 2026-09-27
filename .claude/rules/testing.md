@@ -43,7 +43,10 @@ paths:
 - ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる
-- テスト中に `process.env.TZ` を切り替えるのは forks / vmForks の project だけ。threads / vmThreads では `Date` に効かず無言で通る。TZ を固定するだけなら globalSetup で決める (Vitest の common-errors「Time Zone Does Not Change in Worker Threads」)
+- テスト全体の TZ は root の globalSetup (`vitest.global-setup.ts`) で決め、`APP_TIME_ZONE` と違う値にする。一致すると、ローカル TZ に依存する実装を壁時計の値のテストが見逃す (`docs/guides/testing/time-zones.md`「基準のタイムゾーンを決める理由」)
+- 整形した日時を固定の文字列と比べない。`Intl.DateTimeFormat` の `format()` の出力は実装ごとに違ってよい。壁時計は数字の並びで比べ、画面の期待値は `formatDateTime` で作る (`docs/guides/dates-and-time-zones.md`「整形した日時をテストで確かめる」)
+- Node で動くテストの TZ の切り替えは `vi.stubEnv("TZ", …)` で行い、forks / vmForks の project に置く。threads / vmThreads では切り替えが `Date` に効かず、基準の TZ のまま無言で通る (`docs/guides/testing/time-zones.md`「Node で動くテストで切り替える」)
+- ブラウザテストの TZ の切り替えは CDP の `Emulation.setTimezoneOverride` で行い、`afterEach` で `timezoneId: ""` を送って戻す。`vi.stubEnv` はブラウザの TZ を変えない (`docs/guides/testing/time-zones.md`「ブラウザテストで切り替える」)
 
 ## a11y の検査は tag で分ける
 
