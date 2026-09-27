@@ -62,7 +62,8 @@ export function NoteEditDialog() {
           <NoteFormContent
             // 行ごとに作り直す。useAppForm は defaultValues を作成時に読み、後から変わった値は
             // 入力に触れていないフォームにしか反映されない。閉じる途中で別の行の payload が
-            // 届くと、前の行の入力が残ったフォームで開く
+            // 届くと、前の行の入力が残ったフォームで開く。対象が変わったら key で作り直すのは
+            // React docs「Resetting all state when a prop changes」の形
             key={`${formKey}-${payload.id}`}
             heading="メモを編集"
             defaultValues={{ title: payload.title, body: payload.body, dueDate: payload.dueDate }}
