@@ -7,4 +7,4 @@
 export const NOTES_PAGE_TITLE = "メモ一覧";
 
 /** 一覧の列数。`TableSkeleton` の列数に使う。`noteColumns` の長さと一致することは型が見る (`note-columns.ts`) */
-export const NOTE_COLUMN_COUNT = 5;
+export const NOTE_COLUMN_COUNT = 6;

@@ -11,15 +11,18 @@ import {
   deleteConfirmDescription,
 } from "@/components/parts/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
-import { createNote, listNotes, removeNote } from "@/features/notes/functions";
+import { createNote, listNotes, removeNote, updateNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
 import {
   CREATED_NOTE,
   NOTE,
   NOTE_CREATED_AT_TEXT,
+  NOTE_UPDATED_AT_TEXT,
   OTHER_NOTE,
+  UPDATED_NOTE,
 } from "@/features/notes/schema.test-helpers";
+import { formatDateTime } from "@/lib/format-date-time";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { createTestRouter } from "@/test/app/create-test-router";
@@ -46,11 +49,12 @@ vi.mock(import("../-lib/note-search"), async (importOriginal) => ({
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
-import { noteRow, rowDeleteButton } from "./note-cells.test-helpers";
+import { noteRow, rowDeleteButton, rowEditButton } from "./note-cells.test-helpers";
 import {
   bodyTextbox,
   NOTE_CREATE_TRIGGER_LABEL,
   openNoteCreateDialog,
+  openNoteEditDialog,
   saveButton,
   titleTextbox,
   expectNoteDialogClosed,
@@ -251,7 +255,7 @@ describe("NotesPage", () => {
     await expectText(screen, "右上の追加ボタンから登録できます");
   });
 
-  it("データありでタイトル・本文・作成日時が行に表示される", async () => {
+  it("データありでタイトル・本文・作成日時・更新日時が行に表示される", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
 
     const screen = await renderPage();
@@ -259,6 +263,59 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await expectText(screen, NOTE.body);
     await expectText(screen, NOTE_CREATED_AT_TEXT);
+    await expectText(screen, NOTE_UPDATED_AT_TEXT);
+  });
+
+  it("行を編集して保存すると、再取得完了までその行だけが編集後の値で busy になる", async () => {
+    // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は行だけが伝える (ADR-0017)
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
+    const refetch = deferMock(listNotes);
+    const update = deferMock(updateNote);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+
+    await openNoteEditDialog(screen, NOTE);
+    await titleTextbox(screen).fill(UPDATED_NOTE.title);
+    await saveButton(screen).click();
+    // 行の編集ボタンに乗った実マウスを、ダイアログが閉じる前に退避する (openDeleteConfirm と同じ理由)
+    await parkMouse();
+
+    // 応答前から、対象の行は編集後の title で busy になる (モーダル表示中は行が aria-hidden なので includeHidden)
+    await expect
+      .element(noteRow(screen, UPDATED_NOTE, { includeHidden: true }))
+      .toHaveAttribute("aria-busy", "true");
+    // 楽観表示の対象は variables の id で選ぶ。isPending だけで塗ると無関係の行まで busy になる
+    await expect
+      .element(noteRow(screen, OTHER_NOTE, { includeHidden: true }))
+      .toHaveAttribute("aria-busy", "false");
+    expect(vi.mocked(updateNote)).toHaveBeenCalledExactlyOnceWith({
+      data: { id: NOTE.id, title: UPDATED_NOTE.title, body: NOTE.body, dueDate: NOTE.dueDate },
+    });
+
+    update.resolve(undefined);
+
+    // 応答でダイアログが閉じ、再取得中も行は busy のまま。止めるのは更新中の行だけ
+    await expectNoteDialogClosed(screen);
+    await expect.element(noteRow(screen, UPDATED_NOTE)).toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, UPDATED_NOTE).getByText("更新中")).toBeInTheDocument();
+    await expect
+      .element(rowEditButton(screen, UPDATED_NOTE.title))
+      .toHaveAttribute("aria-disabled", "true");
+    await expect
+      .element(rowEditButton(screen, OTHER_NOTE.title))
+      .not.toHaveAttribute("aria-disabled", "true");
+    // 閉じたあと Base UI は開いたトリガーへフォーカスを返す。トリガーは無効になっているが、
+    // focusableWhenDisabled なのでフォーカスが body へ落ちない
+    await expect.element(rowEditButton(screen, UPDATED_NOTE.title)).toHaveFocus();
+    // 更新中の行 (半透明、無効のトリガー、「更新中」) にも a11y 違反が無い。削除中の検査と同じ理由で
+    // a11y tag を付けた専用テストへは降ろさない
+    await expectNoA11yViolations(document.body);
+
+    refetch.resolve([UPDATED_NOTE, OTHER_NOTE]);
+
+    // 再取得の反映で実データの行に戻る (busy でない行が 1 つだけ)
+    await expectSettledRow(screen, UPDATED_NOTE);
+    await expectText(screen, formatDateTime(UPDATED_NOTE.updatedAt));
   });
 
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {

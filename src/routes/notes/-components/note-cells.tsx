@@ -1,10 +1,12 @@
 import type { DataTableCellContext } from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
+import { noteEditDialogHandle } from "../-lib/note-edit-dialog-handle";
 import type { NoteRow } from "../-lib/note-rows";
 import { noteInputOf } from "../-lib/note-rows";
 
@@ -37,34 +39,66 @@ export function NoteCreatedAtCell({ row }: NoteCellContext) {
 }
 
 /**
- * 操作の cell。確定行には削除トリガー (detached trigger。Root はページが 1 つ描く) を出し、
- * 保存中の行は id をまだ持たないので何も出さない。
+ * 更新日時の cell。更新中の行は再取得まで新しい日時を持たないので、その位置で更新中を伝える。
+ * 保存中の行は作成日時の cell が「保存中」を出すので、状態を二重に出さないようここは空にする
+ */
+export function NoteUpdatedAtCell({ row }: NoteCellContext) {
+  if (row.original.kind !== "saved") {
+    return null;
+  }
+  if (row.original.pendingUpdate !== null) {
+    // 位置づけは保存中の行の「保存中」と同じ (NoteCreatedAtCell)。通知は announcer (ADR-0026)
+    return "更新中";
+  }
+  return formatDateTime(row.original.note.updatedAt);
+}
+
+/**
+ * 操作の cell。確定行には編集と削除のトリガー (detached trigger。Root はページが 1 つずつ描く) を
+ * 出し、保存中の行は id をまだ持たないので何も出さない。
  */
 export function NoteActionsCell({ row }: NoteCellContext) {
   if (row.original.kind !== "saved") {
     return null;
   }
-  const { note, isDeleting } = row.original;
+  const { note, isDeleting, pendingUpdate } = row.original;
+  // 止めるのは削除中か更新中の行だけ (ADR-0017「ブロック範囲」)。更新と削除を同じ行に並行させない
+  const isBusy = isDeleting || pendingUpdate !== null;
+  // トリガーの名前は行に見えている title から作る。更新中は編集後の値が見えているので、
+  // 再取得前の note.title で読み上げると画面と食い違う
+  const { title } = noteInputOf(row.original);
   return (
-    <>
+    <div className="flex gap-2">
       {/* 削除中は行から可視の手掛かりが半透明しか出ないので、読み上げ用のテキストを足す。
-          位置づけは保存中の行の「保存中」と同じ (ADR-0026) */}
+          位置づけは保存中の行の「保存中」と同じ (ADR-0026)。更新中は更新日時の cell が可視の
+          「更新中」を出すので、ここには足さない */}
       {isDeleting && <span className="sr-only">削除中</span>}
+      <DialogTrigger
+        handle={noteEditDialogHandle}
+        payload={note}
+        // focusableWhenDisabled の理由は削除トリガーと同じ。編集のダイアログは応答で閉じ、
+        // その時点で行は更新中 (無効) なので、戻り先が native disabled だとフォーカスが body へ落ちる
+        render={<Button variant="outline" size="sm" focusableWhenDisabled />}
+        // 可視ラベル「編集」を含めて WCAG 2.5.3 (Label in Name) を満たす
+        aria-label={`${title}を編集`}
+        disabled={isBusy}
+      >
+        編集
+      </DialogTrigger>
       <AlertDialogTrigger
         handle={noteDeleteDialogHandle}
         payload={{ id: note.id, name: note.title }}
         render={<Button variant="destructive" size="sm" focusableWhenDisabled />}
         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
-        aria-label={`${note.title}を削除`}
-        // 止めるのは削除中の行だけ (ADR-0017「ブロック範囲」)。render 側の
-        // focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
+        aria-label={`${title}を削除`}
+        // render 側の focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
         // native disabled でフォーカスが body へ落ちるのを防ぐ
         // (Trigger の props 型は受けず Button primitive が受ける)
-        disabled={isDeleting}
+        disabled={isBusy}
       >
         削除
       </AlertDialogTrigger>
-    </>
+    </div>
   );
 }

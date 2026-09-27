@@ -98,6 +98,8 @@ export function NoteEditDialog() {
  * 待ち、それまでに payload が届いてこの部品が外れたら取り消す。
  */
 function MissingPayloadWarning() {
+  // 依存配列を付けず、描画のたびに予約し直す。この部品は閉じている間から mount したまま
+  // payload 無しの open を迎えるので、mount 時の 1 回 (`[]`) だけでは開いたことを見られない
   useEffect(() => {
     const timer = setTimeout(() => {
       if (noteEditDialogHandle.isOpen) {

@@ -39,7 +39,7 @@ export async function openNoteCreateDialog(screen: Screen) {
 }
 
 /** 編集の trigger の accessible name。一覧の各行に並ぶので、行の見出しで区別する */
-export function noteEditTriggerName(note: Note) {
+export function noteEditTriggerName(note: Pick<Note, "title">) {
   return `${note.title}を編集`;
 }
 
