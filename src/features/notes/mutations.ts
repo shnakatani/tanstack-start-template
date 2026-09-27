@@ -3,8 +3,8 @@ import { mutationOptions } from "@tanstack/react-query";
 
 import type { DeleteTarget } from "@/components/parts/delete-confirm-dialog";
 
-import { createNote, removeNote } from "./functions";
-import type { Note, NoteInput } from "./schema";
+import { createNote, removeNote, updateNote } from "./functions";
+import type { Note, NoteInput, NoteUpdate } from "./schema";
 
 /** 削除 mutation の variables。確認ダイアログの payload と同じ形で、完了の通知に name を使う */
 export type NoteDeleteTarget = DeleteTarget<Note["id"]>;
@@ -23,6 +23,11 @@ export const createNoteMutation = mutationOptions({
   mutationFn: (data: NoteInput) => createNote({ data }),
 });
 
+export const updateNoteMutation = mutationOptions({
+  mutationKey: ["notes", "update"],
+  mutationFn: (data: NoteUpdate) => updateNote({ data }),
+});
+
 export const removeNoteMutation = mutationOptions({
   mutationKey: ["notes", "remove"],
   // variables に name も載せるのは完了の通知で対象を名指しするため (同時削除で 2 件の
@@ -38,5 +43,6 @@ export const removeNoteMutation = mutationOptions({
  */
 export const noteMutationFilters = {
   create: { mutationKey: createNoteMutation.mutationKey, exact: true },
+  update: { mutationKey: updateNoteMutation.mutationKey, exact: true },
   remove: { mutationKey: removeNoteMutation.mutationKey, exact: true },
 } as const satisfies Record<string, MutationFilters>;

@@ -126,6 +126,13 @@ export const noteIdSchema = v.object({
 });
 export type NoteId = v.InferOutput<typeof noteIdSchema>;
 
+/** 1 件の更新。対象の id と、入力の項目の全部 (部分更新はしない)。 */
+export const noteUpdateSchema = v.object({
+  ...noteIdSchema.entries,
+  ...noteInputSchema.entries,
+});
+export type NoteUpdate = v.InferOutput<typeof noteUpdateSchema>;
+
 export const NOTE_QUERY_MAX_LENGTH = 100;
 
 /**

@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { createDb, migrateDb } from "@/server/db";
 
@@ -204,6 +204,44 @@ describe("notes handlers", () => {
       await handlers.create({ title: "期日なし", body: "", dueDate: null });
 
       expect((await handlers.list(NO_FILTER))[0]!.dueDate).toBeNull();
+    });
+  });
+
+  describe("update", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("入力の項目と updatedAt を更新し、createdAt は変えない", async () => {
+      const created = await handlers.create({ title: "前", body: "前の本文", dueDate: null });
+      const [before] = await handlers.list(NO_FILTER);
+      expect.assert(before);
+      // updatedAt は $onUpdate がアプリの時計で入れるので、時計を固定して確かめられる
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2030-01-01T00:00:00.000Z"));
+
+      await handlers.update({
+        id: created.id,
+        title: "後",
+        body: "後の本文",
+        dueDate: "2026-08-20",
+      });
+
+      const [after] = await handlers.list(NO_FILTER);
+      expect(after).toMatchObject({
+        id: created.id,
+        title: "後",
+        body: "後の本文",
+        dueDate: "2026-08-20",
+      });
+      expect(after?.updatedAt).toEqual(new Date("2030-01-01T00:00:00.000Z"));
+      expect(after?.createdAt).toEqual(before.createdAt);
+    });
+
+    it("存在しない id では throw する (更新 0 件を成功として黙らせない)", async () => {
+      await expect(
+        handlers.update({ id: 999, title: "後", body: "", dueDate: null }),
+      ).rejects.toThrow("更新対象のノートが見つかりません: id=999");
     });
   });
 
