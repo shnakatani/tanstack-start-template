@@ -23,10 +23,10 @@ ADR-0015 は mutation を Action 層の Transition で実行し、pending を Tr
 | React Router「Pending UI」/ Remix `useFetcher` | action 完了後、loader の再検証中は `loading` で `idle` ではない。busy 表示は `state !== "idle"` の間、即時性は Optimistic UI で出す                                                                                                                                                                                                                                                                             |
 | NN/g「Response Times: The 3 Important Limits」 | 1 秒を超えると思考の流れが途切れる。10 秒を超えるなら進捗表示と中断手段が要る                                                                                                                                                                                                                                                                                                                                   |
 
-### 再取得の完了まで閉じず全トリガーを止める形の問題 (2026-09-13 のメモ画面)
+### 再取得の完了まで閉じず全トリガーを止める形の問題 (2026-09-13 に観測)
 
 - 再取得が 1 秒を超える環境では、保存は済んでいるのにダイアログが固まって見える。React の Action は再取得を待つことを要求しておらず、待っているのは `useActionMutation` の `runAction` が `mutateAsync` を await し、`onSuccess` が `invalidateQueries` を await する、この 2 つの選択の合成である
-- 削除は対象が 1 件なのに一覧の全トリガーを止める。第一の理由は確認ダイアログの handle を全行で共有しており、閉じた後に別行から開き直すと、先行削除の `onSuccess` が同じ handle を `close()` して後続のダイアログを未確定のまま閉じることにある (91515ee の `src/routes/notes/index.tsx` のコメント)。第二に `useMutation` 1 つで pending を追うため、2 件目を始めると `variables` が移り 1 件目の行の表現が消える。前者は確定時に閉じれば消え、後者は追い方を変えれば済む
+- 削除は対象が 1 件なのに一覧の全トリガーを止める。第一の理由は確認ダイアログの handle を全行で共有しており、閉じた後に別行から開き直すと、先行削除の `onSuccess` が同じ handle を `close()` して後続のダイアログを未確定のまま閉じることにある。第二に `useMutation` 1 つで pending を追うため、2 件目を始めると `variables` が移り 1 件目の行の表現が消える。前者は確定時に閉じれば消え、後者は追い方を変えれば済む
 
 ## Decision
 
@@ -43,7 +43,7 @@ mutation は完了点によらず `onSuccess` で再取得の Promise を返し�
 
 TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で invalidate するが、本 ADR は `onSuccess` を選ぶ (`onMutate` でキャッシュを書き換える方式で並行実行を許すときだけ、後述の `onSettled` + `isMutating` guard を採る)。失敗時は mutation が error へ移って楽観行が消えるため、`onSettled` だと invalidate のタイミングが成功時と揃わない。完了点 (b) はダイアログを開いたまま失敗を迎えるので、`onSettled` に invalidate を置くと入力中のダイアログと消えかけの楽観行 (幽霊行) が同時に見える瞬間が生まれる。`onSuccess` に置けば失敗時は invalidate 自体が走らず、この重なりが起きない。残るリスクは「サーバーは書けたが応答が届かなかった」場合に、`onSuccess` が発火せず一覧が古いまま残ることである。
 
-完了点ごとの Transition の終え方、並行実行を許すときの `mutationKey` と再取得の guard、テンプレートのメモ画面への当て方は `docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」「メモ画面の実例」にある。
+完了点ごとの Transition の終え方、並行実行を許すときの `mutationKey` と再取得の guard、一覧の行の削除とダイアログからの追加への当て方は `docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」「操作の型ごとの当て方」にある。
 
 ### 検討した選択肢
 

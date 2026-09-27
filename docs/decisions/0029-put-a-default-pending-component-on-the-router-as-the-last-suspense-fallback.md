@@ -16,7 +16,7 @@ route の pending 表示 (`pendingComponent`) は、表示のためだけでな�
 
 `defaultPendingComponent` には既定値が無い (`RouterOptionsType`)。`defaultErrorComponent` と違い、未設定のときに安全側へ倒れない。
 
-2026-09-26 時点で、テンプレートで `pendingComponent` を持つのは `/notes/` だけである。
+route の `pendingComponent` は、ページ固有の skeleton を書いた route にしか無い。
 
 ## Decision
 

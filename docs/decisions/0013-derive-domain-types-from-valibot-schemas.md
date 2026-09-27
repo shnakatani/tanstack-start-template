@@ -27,8 +27,8 @@ drizzle の行型は「そう入っているはず」という主張であって
 ドメイン型は `v.InferOutput<typeof xxxSchema>` の型エイリアスで導出する。手書きの `interface` と併存させない。
 
 ```ts
-export const noteInputSchema = v.object({/* ... */});
-export type NoteInput = v.InferOutput<typeof noteInputSchema>;
+export const itemInputSchema = v.object({/* ... */});
+export type ItemInput = v.InferOutput<typeof itemInputSchema>;
 ```
 
 `InferInput` ではなく `InferOutput` を使う。
@@ -39,21 +39,21 @@ export type NoteInput = v.InferOutput<typeof noteInputSchema>;
 入力の形と保存済みの形は、片方をもう片方から組み立てる。
 
 ```ts
-export const noteSchema = v.object({
-  ...noteInputSchema.entries,
-  id: noteIdValueSchema,
+export const itemSchema = v.object({
+  ...itemInputSchema.entries,
+  id: itemIdValueSchema,
   createdAt: v.date(),
 });
 ```
 
-値そのものの制約 (`noteIdValueSchema`) も、それを使う入力スキーマと保存済みスキーマの両方で共有する。
+値そのものの制約 (`itemIdValueSchema`) も、それを使う入力スキーマと保存済みスキーマの両方で共有する。
 別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる。
 
 client に送らせないフィールドがある場合は、保存済みスキーマから `v.omit` で入力スキーマを派生させる。派生元による strip と reject の違いは `docs/guides/forms-and-inputs.md`「スキーマを書く」にある。
 
 ### 3. 読み出し口で検証する
 
-ORM の戻り値は、UI へ流す前に `v.safeParse` で突き合わせる (`src/features/notes/handlers.server.ts` の `list` が適用例)。
+ORM の戻り値は、UI へ流す前に `v.safeParse` で突き合わせる。
 通してしまうと壊れた行が無検査で UI まで届く。
 
 失敗時に投げるメッセージには**値そのものを載せず、位置 (`v.getDotPath`) と件数だけを載せる**。
