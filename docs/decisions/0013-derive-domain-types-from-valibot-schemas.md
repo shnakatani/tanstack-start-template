@@ -39,6 +39,8 @@ export type ItemInput = v.InferOutput<typeof itemInputSchema>;
 入力の形と保存済みの形は、片方をもう片方から組み立てる。
 
 ```ts
+const itemIdValueSchema = v.pipe(v.number(), v.integer(), v.minValue(1));
+
 export const itemSchema = v.object({
   ...itemInputSchema.entries,
   id: itemIdValueSchema,

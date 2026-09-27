@@ -153,7 +153,7 @@ paths:
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない
-- マウス位置を動かすテストは、overlay が閉じる前に `parkMouse()` で戻す。露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる (`src/test/browser/park-mouse.ts`)
+- マウス位置を動かすテストは、overlay が閉じる前に `parkMouse()` で戻す。露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
 - モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、既定が立つ前の状態を読む (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 
 ## ブラウザ操作ツールの使い分け

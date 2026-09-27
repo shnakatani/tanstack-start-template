@@ -71,8 +71,8 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 
 - `@tanstack/react-pacer` 0.23.0 の `useDebouncedValue` は `useState` の setter をそのまま、依存する `@tanstack/pacer` 0.22.0 の `Debouncer` (`setTimeout`) に渡し、`startTransition` を通さない (`react-pacer` の `dist/debouncer/useDebouncedState.js`、`pacer` の `dist/debouncer.js`。どちらにも `startTransition` の参照は無い)
 - そのため debounce 後の値でそのまま `useSuspenseQuery` を呼ぶと、緊急更新の中で Suspend し、Suspense が古い一覧を `display: none` で隠す。Suspense モードで queryKey を変えるなら更新を Transition に包む (TanStack Query の Suspense ガイド「wrap your updates that change the QueryKey into startTransition」)
-- 打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残すことを見るテストは、古い行を `toBeVisible` で見て、この欠落を落とす (`toBeInTheDocument` では隠れた木も通る)
-- `@tanstack/react-pacer` は beta で API が変わりうる (Pacer の overview「TanStack Pacer is currently in beta and its API is still subject to change」)。利用するのは `useDebouncedValue` だけに絞る
+- 打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残すことを見るテストは、古い行を `toBeVisible` で見る。`toBeInTheDocument` では隠れた木も通り、この欠落を落とせない
+- `@tanstack/react-pacer` は beta で API が変わりうる (Pacer の overview「TanStack Pacer is currently in beta and its API is still subject to change」)。使う API は `useDebouncedValue` だけに絞り、呼び出しは検索欄を組むページ本体の 1 箇所に閉じる
 
 ### 入力欄を URL の編集として持つ理由
 
