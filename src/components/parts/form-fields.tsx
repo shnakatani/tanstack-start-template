@@ -2,7 +2,7 @@ import { NumberField } from "@base-ui/react/number-field";
 import { format } from "date-fns/format";
 import { ja } from "date-fns/locale/ja";
 import { CalendarIcon } from "lucide-react";
-import { type ComponentProps, useId } from "react";
+import { type ComponentProps, useId, useRef } from "react";
 import type { DayPickerLocale } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
@@ -391,6 +391,8 @@ interface FormDateFieldProps
  *
  * - 選択中の日をもう一度押すと外れる。Calendar に `required` を付けない (react-day-picker docs「Single Mode」)
  * - Popover の中に解除のボタンも置く。日を選んでも Popover は閉じない (shadcn の例と同じ非制御)
+ * - 検証の blur は、開かずにトリガーを通り過ぎたときと、Popover を閉じたときに起こす。開いて
+ *   フォーカスが popup へ移るときの blur では起こさない。日を選んでいる最中にエラーを出さない
  * - トリガーの名前はラベルと表示中の値をつないで作る。`htmlFor` だけだと button の名前がラベルに
  *   なり、選んだ日が読み上げに出ない
  * - shadcn の例の `p-0` (Popup) と文字色・太さ (トリガー) は付けない。`parts/` からは layout の
@@ -400,6 +402,9 @@ export function FormDateField({ label, emptyText, disabled }: FormDateFieldProps
   const { field, id, errorId, errors, invalid } = useFormFieldState<string | null>();
   const labelId = useId();
   const valueId = useId();
+  // 開いている間の blur (フォーカスが popup へ移るとき) は検証の契機にしない。描画には使わない
+  // ので state ではなく ref で持つ
+  const openRef = useRef(false);
   const value = field.state.value;
   const selected = value === null ? undefined : parseCalendarDate(value);
 
@@ -408,12 +413,23 @@ export function FormDateField({ label, emptyText, disabled }: FormDateFieldProps
       <FieldLabel id={labelId} htmlFor={id}>
         {label}
       </FieldLabel>
-      <Popover>
+      <Popover
+        onOpenChange={(open) => {
+          openRef.current = open;
+          if (!open) {
+            field.handleBlur();
+          }
+        }}
+      >
         <PopoverTrigger
           id={id}
           disabled={disabled}
           render={<Button variant="outline" className="w-full justify-start" />}
-          onBlur={field.handleBlur}
+          onBlur={() => {
+            if (!openRef.current) {
+              field.handleBlur();
+            }
+          }}
           aria-labelledby={`${labelId} ${valueId}`}
           aria-invalid={invalid}
           aria-describedby={invalid ? errorId : undefined}
@@ -438,6 +454,8 @@ export function FormDateField({ label, emptyText, disabled }: FormDateFieldProps
             type="button"
             variant="ghost"
             disabled={value === null}
+            // キーボードで押して無効になっても、フォーカスをこのボタンに残す (Base UI Button docs)
+            focusableWhenDisabled
             onClick={() => {
               field.handleChange(null);
             }}

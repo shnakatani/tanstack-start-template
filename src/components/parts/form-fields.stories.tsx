@@ -493,6 +493,29 @@ export const ValidatesOnBlur: Story = {
   },
 };
 
+/**
+ * blur mode の期日は、Popover を開いてフォーカスが popup へ移っても検証しない。日を選んでいる
+ * 最中に「期日を選択してください」を出さない。閉じたときに検証する。開かずに通り過ぎたときの
+ * 検証は `ValidatesOnBlur` が見る
+ */
+export const DateValidatesOnClose: Story = {
+  tags: ["!dev"],
+  args: { validationMode: "blur" },
+  play: async () => {
+    const dueDate = screen.getByRole("button", { name: DATE_TRIGGER_EMPTY });
+    await userEvent.click(dueDate);
+    await screen.findByRole("grid");
+    // フォーカスが popup へ移り、トリガーの blur が起きた後で見る
+    await waitFor(() => expect(screen.getByRole("button", { name: "前の月へ" })).toHaveFocus());
+    await expect(dueDate).not.toBeInvalid();
+
+    await closeDatePicker();
+
+    await waitFor(() => expect(dueDate).toBeInvalid());
+    await expect(dueDate).toHaveAccessibleDescription(/期日を選択してください/);
+  },
+};
+
 /** 選択肢を選ぶと値が入り、`SelectValue` に選択ラベルが出る */
 export const SelectsOption: Story = {
   tags: ["!dev"],
@@ -724,17 +747,22 @@ export const DateDeselectsOnSecondClick: Story = {
   },
 };
 
-/** クリアボタンで form の値が null になり、値が無い間はクリアボタンを押せない */
+/** クリアボタンで form の値が null になり、値が無い間はクリアボタンを押せない。キーボードで押してもフォーカスは失われない */
 export const DateClears: Story = {
   tags: ["!dev"],
   render: (args) => <DateForm {...args} />,
   play: async ({ args }) => {
     await openDatePicker();
-    await userEvent.click(screen.getByRole("button", { name: "期日をクリア" }));
+    const clear = screen.getByRole("button", { name: "期日をクリア" });
+    clear.focus();
+    await userEvent.keyboard("{Enter}");
 
     await expect(args.onChangeValue).toHaveBeenLastCalledWith(null);
     await expect(screen.getByRole("button", { name: DATE_TRIGGER_EMPTY })).toBeInTheDocument();
-    await expect(screen.getByRole("button", { name: "期日をクリア" })).toBeDisabled();
+    // focusableWhenDisabled なので native の disabled ではなく aria-disabled で無効になり、
+    // 押した直後のフォーカスがクリアボタンに残る
+    await expect(clear).toHaveAttribute("aria-disabled", "true");
+    await expect(clear).toHaveFocus();
     await closeDatePicker();
   },
 };

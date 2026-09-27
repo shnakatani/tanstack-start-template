@@ -124,7 +124,7 @@ describe("FormDateField のキーボード操作", () => {
 
     await userEvent.tab();
     await expect
-      .element(screen.getByRole("button", { name: "期日 2026年8月7日", exact: true }))
+      .element(screen.getByRole("button", { name: `${DATE_LABEL} 2026年8月7日`, exact: true }))
       .toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
@@ -149,13 +149,13 @@ describe("FormDateField のキーボード操作", () => {
       .toHaveFocus();
     await userEvent.keyboard("{Enter}");
     await expect
-      .element(screen.getByRole("button", { name: "期日 2026年8月8日", exact: true }))
+      .element(screen.getByRole("button", { name: `${DATE_LABEL} 2026年8月8日`, exact: true }))
       .toBeInTheDocument();
 
     await userEvent.keyboard("{Escape}");
     await expectRemoved(screen.getByRole("grid"));
     await expect
-      .element(screen.getByRole("button", { name: "期日 2026年8月8日", exact: true }))
+      .element(screen.getByRole("button", { name: `${DATE_LABEL} 2026年8月8日`, exact: true }))
       .toHaveFocus();
   });
 });
@@ -174,10 +174,10 @@ describe("FormDateField のタイムゾーン", () => {
       const onSubmit = vi.fn();
       const screen = await render(<DateHarness onSubmit={onSubmit} />);
 
-      await screen.getByRole("button", { name: "期日 2026年8月7日", exact: true }).click();
+      await screen.getByRole("button", { name: `${DATE_LABEL} 2026年8月7日`, exact: true }).click();
       await screen.getByRole("button", { name: "2026年8月20日木曜日", exact: true }).click();
       await expect
-        .element(screen.getByRole("button", { name: "期日 2026年8月20日", exact: true }))
+        .element(screen.getByRole("button", { name: `${DATE_LABEL} 2026年8月20日`, exact: true }))
         .toBeInTheDocument();
       await userEvent.keyboard("{Escape}");
       await expectRemoved(screen.getByRole("grid"));
