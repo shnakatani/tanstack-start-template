@@ -541,7 +541,7 @@ describe("NotesPage", () => {
     // close の animate-out の窓 (閉じかけのダイアログにボタンが残る間) を踏む検証なので、
     // このテストだけ Base UI の animation を戻す (docs/guides/testing/user-interactions.md「animation を戻すテストを書く」)。無効のままだと 2 発目が
     // unmount 後に届き、guard を外しても通ってしまう
-    await enableAnimations();
+    enableAnimations();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const remove = deferMock(removeNote);
     const screen = await renderPage();

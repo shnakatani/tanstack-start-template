@@ -146,12 +146,12 @@ paths:
 - スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素・期待値側の要素にも当たる `!important` (`*` など) の 4 つだけ (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
-- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を await する (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
+- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を呼ぶ (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない
 - マウス位置を動かすテストは、overlay が閉じる前に `parkMouse()` で戻す。露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる (`src/routes/notes/-components/notes-page.test.tsx`)
-- モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、前ファイルの emulation を読む (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
+- モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、既定が立つ前の状態を読む (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 
 ## ブラウザ操作ツールの使い分け
 

@@ -65,12 +65,12 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 
 `toHaveStyle` で表せない次の 4 つの形は、`getComputedStyle` を `expect.poll` のコールバックの中で読む。
 
-| 形                                               | 例                                                                                                                                                                                                                                                                         |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2 回の観測を比べる                               | `src/components/ui/input-group.test.tsx` で、フォーカスの前に `borderBefore` を読み、フォーカスの後の border 色を poll の中で読んで比べる箇所                                                                                                                              |
-| 数値の大小                                       | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                                                                                                                                                                                               |
-| 擬似要素を読む                                   | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない                                                                                                                                                                                             |
-| 期待値側の要素にも当たる `!important` (`*` など) | `toHaveStyle` は期待値の文字列を同じ document に挿した要素で正規化する (vitest の `toHaveStyle.ts` の `computeCSSStyleDeclaration`)。`*` に当たる `!important` は期待値側にも当たり、何を書いても一致する。`src/test/browser/animations.test.tsx` の reduced motion の検証 |
+| 形                                               | 例                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2 回の観測を比べる                               | `src/components/ui/input-group.test.tsx` で、フォーカスの前に `borderBefore` を読み、フォーカスの後の border 色を poll の中で読んで比べる箇所                                                                                                                         |
+| 数値の大小                                       | `expect.poll(() => Number(getComputedStyle(off).opacity)).toBeLessThan(...)`                                                                                                                                                                                          |
+| 擬似要素を読む                                   | `getComputedStyle(el, "::before").content`。`toHaveStyle` は要素自身しか見ない                                                                                                                                                                                        |
+| 期待値側の要素にも当たる `!important` (`*` など) | `toHaveStyle` は期待値の文字列を同じ document に挿した要素で正規化する (vitest の `toHaveStyle.ts` の `computeCSSStyleDeclaration`)。`*` に当たる `!important` は期待値側にも当たり、何を書いても一致する。`src/test/browser/animations.test.tsx` の停止用 CSS の検証 |
 
 ### assert の予算を宣言する
 
