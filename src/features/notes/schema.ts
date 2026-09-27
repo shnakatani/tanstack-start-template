@@ -102,6 +102,7 @@ export const noteSchema = v.object({
   title: storedTitleSchema,
   id: noteIdValueSchema,
   createdAt: v.pipe(v.date(), v.metadata({ label: "作成日時" })),
+  updatedAt: v.pipe(v.date(), v.metadata({ label: "更新日時" })),
 });
 export type Note = v.InferOutput<typeof noteSchema>;
 
@@ -116,6 +117,7 @@ export const NOTE_FIELD_LABELS = {
   dueDate: v.getMetadata(noteSchema.entries.dueDate).label,
   id: v.getMetadata(noteSchema.entries.id).label,
   createdAt: v.getMetadata(noteSchema.entries.createdAt).label,
+  updatedAt: v.getMetadata(noteSchema.entries.updatedAt).label,
 } satisfies Record<keyof Note, string>;
 
 /** 1 件を指す入力 (削除など)。 */

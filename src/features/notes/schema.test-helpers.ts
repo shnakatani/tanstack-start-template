@@ -13,6 +13,7 @@ export const NOTE: Note = {
   body: "牛乳とパンを買う",
   dueDate: "2026-08-20",
   createdAt: new Date("2026-08-17T00:30:00.000Z"),
+  updatedAt: new Date("2026-08-17T00:30:00.000Z"),
 };
 
 /**
@@ -29,6 +30,7 @@ export const OTHER_NOTE: Note = {
   body: "気になった箇所を書き出す",
   dueDate: null,
   createdAt: new Date("2026-08-18T00:30:00.000Z"),
+  updatedAt: new Date("2026-08-18T00:30:00.000Z"),
 };
 
 /**
@@ -41,6 +43,7 @@ export const CREATED_NOTE: Note = {
   body: "本文",
   dueDate: "2026-08-21",
   createdAt: new Date("2026-08-19T00:30:00.000Z"),
+  updatedAt: new Date("2026-08-19T00:30:00.000Z"),
 };
 
 /** CREATED_NOTE を保存中の楽観行として見た形。id と createdAt をまだ持たない */

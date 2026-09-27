@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { notes } from "@/server/db/schema";
@@ -70,6 +71,26 @@ describe("createDb", () => {
     ]) {
       expect(() => insert.run(rejected), rejected).toThrow(/CHECK constraint failed/);
     }
+  });
+
+  // 作成日時と更新日時は DB の既定値で入る (drizzle docs のガイド「Timestamp as a default value」)。
+  // drizzle を通らない insert でも値が入ることを固定する
+  it("created_at と updated_at を省いた insert に、DB が同じ現在時刻を入れる", () => {
+    const db = createDb(":memory:");
+    migrateDb(db);
+    const before = Date.now();
+    db.$client.prepare("insert into notes (title, body) values ('見出し', '')").run();
+    const after = Date.now();
+
+    const row = db.$client.prepare("select created_at, updated_at from notes").get();
+    expect(row).toEqual({ created_at: expect.any(Number), updated_at: expect.any(Number) });
+    const { created_at: createdAt, updated_at: updatedAt } = v.parse(
+      v.object({ created_at: v.number(), updated_at: v.number() }),
+      row,
+    );
+    expect(createdAt).toBeGreaterThanOrEqual(before);
+    expect(createdAt).toBeLessThanOrEqual(after);
+    expect(updatedAt).toBe(createdAt);
   });
 
   it("接続先ディレクトリが存在しなければ作成する", () => {

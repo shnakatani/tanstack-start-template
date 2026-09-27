@@ -145,6 +145,7 @@ describe("noteSchema", () => {
     dueDate: null,
     id: 1,
     createdAt: new Date("2026-08-17"),
+    updatedAt: new Date("2026-08-17"),
   };
 
   it("accepts valid note", () => {

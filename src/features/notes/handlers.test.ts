@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { createDb, migrateDb } from "@/server/db";
 
@@ -20,16 +20,29 @@ describe("notes handlers", () => {
   let db: ReturnType<typeof createTestDb>;
   let handlers: ReturnType<typeof createNoteHandlers>;
 
+  /**
+   * drizzle を迂回して行を直接入れる。drizzle の型は「そう入っているはず」の主張でしかなく、
+   * 実データがそれを満たす保証にはならない。ずれを実行時に検出できるかを確かめる。
+   */
+  function insertRawRow(row: { id?: number; title: string; body: string; createdAt: number }) {
+    if (row.id === undefined) {
+      db.$client
+        .prepare("insert into notes (title, body, created_at) values (?, ?, ?)")
+        .run(row.title, row.body, row.createdAt);
+      return;
+    }
+    db.$client
+      .prepare("insert into notes (id, title, body, created_at) values (?, ?, ?, ?)")
+      .run(row.id, row.title, row.body, row.createdAt);
+  }
+
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-08-17T09:00:00.000Z"));
     db = createTestDb();
     handlers = createNoteHandlers(() => db);
   });
 
   afterEach(() => {
     db.$client.close();
-    vi.useRealTimers();
   });
 
   describe("list", () => {
@@ -38,9 +51,9 @@ describe("notes handlers", () => {
     });
 
     it("createdAt の新しい順に返す", async () => {
-      await handlers.create({ title: "古い", body: "", dueDate: null });
-      vi.advanceTimersByTime(1000);
-      await handlers.create({ title: "新しい", body: "", dueDate: null });
+      // insert の時刻は DB の時計で入るので、並びは created_at を明示した行で確かめる
+      insertRawRow({ title: "古い", body: "", createdAt: 1_000 });
+      insertRawRow({ title: "新しい", body: "", createdAt: 2_000 });
 
       expect((await handlers.list(NO_FILTER)).map((note) => note.title)).toEqual([
         "新しい",
@@ -50,15 +63,12 @@ describe("notes handlers", () => {
 
     it("createdAt が同一でも id の降順で決定的に並ぶ", async () => {
       // 同一ミリ秒での連続作成。createdAt だけでは順序が決まらない
-      const first = await handlers.create({ title: "先", body: "", dueDate: null });
-      const second = await handlers.create({ title: "後", body: "", dueDate: null });
+      insertRawRow({ title: "先", body: "", createdAt: 1_000 });
+      insertRawRow({ title: "後", body: "", createdAt: 1_000 });
 
       const listed = await handlers.list(NO_FILTER);
-      expect(listed.map((note) => note.createdAt.getTime())).toEqual([
-        listed[0]!.createdAt.getTime(),
-        listed[0]!.createdAt.getTime(),
-      ]);
-      expect(listed.map((note) => note.id)).toEqual([second.id, first.id]);
+      expect(listed.map((note) => note.createdAt.getTime())).toEqual([1_000, 1_000]);
+      expect(listed.map((note) => note.title)).toEqual(["後", "先"]);
     });
 
     it("q が空なら全件を返す", async () => {
@@ -114,22 +124,6 @@ describe("notes handlers", () => {
   });
 
   describe("list の読み出し時検証", () => {
-    /**
-     * drizzle を迂回して行を直接入れる。drizzle の型は「そう入っているはず」の主張でしかなく、
-     * 実データがそれを満たす保証にはならない。ずれを実行時に検出できるかを確かめる。
-     */
-    function insertRawRow(row: { id?: number; title: string; body: string; createdAt: number }) {
-      if (row.id === undefined) {
-        db.$client
-          .prepare("insert into notes (title, body, created_at) values (?, ?, ?)")
-          .run(row.title, row.body, row.createdAt);
-        return;
-      }
-      db.$client
-        .prepare("insert into notes (id, title, body, created_at) values (?, ?, ?, ?)")
-        .run(row.id, row.title, row.body, row.createdAt);
-    }
-
     it("title が maxLength(100) を超える行があれば throw する", async () => {
       insertRawRow({ title: "あ".repeat(101), body: "", createdAt: Date.now() });
 
@@ -179,11 +173,16 @@ describe("notes handlers", () => {
       expect(listed[0]).toMatchObject({ id: created.id, title: "見出し", body: "本文" });
     });
 
-    it("createdAt に作成時刻を入れる", async () => {
+    it("createdAt と updatedAt に作成時刻を入れる", async () => {
+      const before = Date.now();
       await handlers.create({ title: "見出し", body: "", dueDate: null });
+      const after = Date.now();
 
-      const listed = await handlers.list(NO_FILTER);
-      expect(listed[0]!.createdAt).toEqual(new Date("2026-08-17T09:00:00.000Z"));
+      const [note] = await handlers.list(NO_FILTER);
+      expect.assert(note);
+      expect(note.createdAt.getTime()).toBeGreaterThanOrEqual(before);
+      expect(note.createdAt.getTime()).toBeLessThanOrEqual(after);
+      expect(note.updatedAt).toEqual(note.createdAt);
     });
 
     it("空の body をそのまま保存する", async () => {
