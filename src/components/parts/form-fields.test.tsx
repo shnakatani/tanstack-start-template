@@ -119,7 +119,7 @@ function DateHarness({ onSubmit }: { onSubmit: (value: string | null) => void })
 }
 
 describe("FormDateField のキーボード操作", () => {
-  it("Enter で開き、Tab で選択中の日へ移り、矢印と Enter で日を選び、Escape で閉じてトリガーへ戻る", async () => {
+  it("Enter で開くと選択中の日にフォーカスがあり、矢印と Enter で日を選び、Escape で閉じてトリガーへ戻る", async () => {
     const screen = await render(<DateHarness onSubmit={vi.fn()} />);
 
     await userEvent.tab();
@@ -128,17 +128,7 @@ describe("FormDateField のキーボード操作", () => {
       .toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
-    // Base UI の Popover は開いたとき popup の最初の tabbable へフォーカスを移す
-    // (PopoverPopup.d.ts の initialFocus)。react-day-picker は nav を月の表より前に描く
-    // (DayPicker.js の Months の子の順)。月の表の tabbable は選択中の日だけ
-    await expect
-      .element(screen.getByRole("button", { name: "前の月へ", exact: true }))
-      .toHaveFocus();
-    await userEvent.tab();
-    await expect
-      .element(screen.getByRole("button", { name: "次の月へ", exact: true }))
-      .toHaveFocus();
-    await userEvent.tab();
+    // 開くとフォーカスは選択中の日へ移る (Calendar の autoFocus)
     await expect
       .element(screen.getByRole("button", { name: "2026年8月7日金曜日、選択済み", exact: true }))
       .toHaveFocus();

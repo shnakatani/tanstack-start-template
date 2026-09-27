@@ -439,10 +439,16 @@ export function FormDateField({ label, emptyText, disabled }: FormDateFieldProps
             {value === null ? emptyText : formatCalendarDateLabel(value, "long")}
           </span>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto">
+        {/* popup は role="dialog" になる。Popover.Title を置かないので、名前はラベルから取る */}
+        <PopoverContent align="start" className="w-auto" aria-labelledby={labelId}>
           <Calendar
             mode="single"
             selected={selected}
+            // 開いたら選択中の日、無ければ今日へフォーカスを移す (react-day-picker の autoFocus)。
+            // Popover の既定の移し先 (最初の tabbable の「前の月へ」) に上書きされないことは
+            // form-fields.test.tsx のキーボード操作のテストが見る
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- DOM の autofocus ではなく react-day-picker の prop。Calendar は利用者が Popover を開いたときにだけ mount され、react-day-picker の型定義はユーザー操作の後に表示する場合に使うよう勧める
+            autoFocus
             // 開く月は選択中の日の月。無ければ今日の月 (react-day-picker の getInitialMonth)
             defaultMonth={selected}
             onSelect={(date) => {

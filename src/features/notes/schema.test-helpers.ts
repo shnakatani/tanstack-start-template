@@ -32,7 +32,7 @@ export const OTHER_NOTE: Note = {
 };
 
 /**
- * 追加のテストで保存する 1 件。楽観行は title / body だけを描き、id と createdAt は
+ * 追加のテストで保存する 1 件。楽観行は入力項目 (title / body / dueDate) だけを描き、id と createdAt は
  * 再取得後の実データとして使う (保存前のクライアントはこの 2 つを持たない)。
  */
 export const CREATED_NOTE: Note = {

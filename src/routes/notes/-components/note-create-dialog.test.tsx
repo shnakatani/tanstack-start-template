@@ -162,9 +162,10 @@ describe("NoteCreateDialog", () => {
       .toHaveAccessibleName(
         `${NOTE_FIELD_LABELS.dueDate} ${format(target, "PPP", { locale: ja })}`,
       );
-    // トリガーをもう一度押して閉じる。Escape はダイアログまで閉じうるので使わない
-    await dueDateTrigger(screen).click();
+    // Escape は開いている Popover だけを閉じ、外側のダイアログは開いたまま残る
+    await userEvent.keyboard("{Escape}");
     await expectRemoved(screen.getByRole("grid"));
+    await expectDialogOpen(screen, "dialog");
     await saveButton(screen).click();
 
     await vi.waitFor(() => {

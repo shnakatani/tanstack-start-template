@@ -505,11 +505,31 @@ export const DateValidatesOnClose: Story = {
     const dueDate = screen.getByRole("button", { name: DATE_TRIGGER_EMPTY });
     await userEvent.click(dueDate);
     await screen.findByRole("grid");
-    // フォーカスが popup へ移り、トリガーの blur が起きた後で見る
-    await waitFor(() => expect(screen.getByRole("button", { name: "前の月へ" })).toHaveFocus());
+    // フォーカスが popup へ移り、トリガーの blur が起きた後で見る。値が無いので今日の日へ移る
+    await waitFor(() => expect(screen.getByRole("button", { name: /^今日、/ })).toHaveFocus());
     await expect(dueDate).not.toBeInvalid();
 
     await closeDatePicker();
+
+    await waitFor(() => expect(dueDate).toBeInvalid());
+    await expect(dueDate).toHaveAccessibleDescription(/期日を選択してください/);
+  },
+};
+
+/** 外側を押して閉じたときも、`DateValidatesOnClose` の Escape と同じく閉じた時点で検証する */
+export const DateValidatesOnOutsideClick: Story = {
+  tags: ["!dev"],
+  args: { validationMode: "blur" },
+  play: async () => {
+    const dueDate = screen.getByRole("button", { name: DATE_TRIGGER_EMPTY });
+    await userEvent.click(dueDate);
+    await screen.findByRole("grid");
+    await waitFor(() => expect(screen.getByRole("button", { name: /^今日、/ })).toHaveFocus());
+    await expect(dueDate).not.toBeInvalid();
+
+    await userEvent.click(screen.getByRole("button", { name: "別の操作" }));
+    // popup の unmount を待ってから終える。待たないと a11y 検査が animate-out の窓に入る
+    await waitFor(() => expect(screen.queryByRole("grid")).not.toBeInTheDocument());
 
     await waitFor(() => expect(dueDate).toBeInvalid());
     await expect(dueDate).toHaveAccessibleDescription(/期日を選択してください/);
@@ -717,6 +737,28 @@ export const NumberNormalizesInput: Story = {
 /** 期日を持つ状態。トリガーに選んだ日が出る */
 export const DateWithValue: Story = {
   render: (args) => <DateForm {...args} />,
+};
+
+/**
+ * 開いた状態。popup はラベルを名前に持つ dialog で、フォーカスは選択中の日にある。
+ * 閉じずに終え、a11y 検査を開いた状態に当てる
+ */
+export const DateOpen: Story = {
+  // Storybook の vitest 実行は 1 つの React root へ story を描き替える (docs/guides/storybook.md
+  // 「story を書く」)。同じ DateForm のままだと開いた Popover が次の story へ持ち越されるので、
+  // key を変えて入るときと出るときに mount し直す
+  render: (args) => <DateForm key="open" {...args} />,
+  // 見出しを axe から外す理由は calendar.stories.tsx の excludeFromA11y と同じ (registry 素の nav が
+  // 見出しへ重なり、背景を決められない)
+  parameters: { a11y: { context: { exclude: [".rdp-caption_label"] } } },
+  play: async () => {
+    await openDatePicker();
+
+    await expect(screen.getByRole("dialog")).toHaveAccessibleName("期日");
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "2026年8月7日金曜日、選択済み" })).toHaveFocus(),
+    );
+  },
 };
 
 /** 日を押すと、その日が YYYY-MM-DD で form の値に入り、トリガーの表示が変わる */

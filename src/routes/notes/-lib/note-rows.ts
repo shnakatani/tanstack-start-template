@@ -15,7 +15,7 @@ export function isNoteRowBusy(row: NoteRow): boolean {
   return row.kind === "creating" || row.isDeleting;
 }
 
-/** 入力項目 (title / body) がどちらの行にも載っている場所。テキスト列はここから読む */
+/** 入力項目 (NoteInput) がどちらの行にも載っている場所。テキスト列はここから読む */
 export function noteInputOf(row: NoteRow): NoteInput {
   return row.kind === "saved" ? row.note : row.variables;
 }

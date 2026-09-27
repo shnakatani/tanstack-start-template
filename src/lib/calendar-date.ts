@@ -21,7 +21,7 @@ export function formatCalendarDate(date: Date): string {
 /**
  * `YYYY-MM-DD` をローカル TZ の 0 時の `Date` にする。Calendar の `selected` と画面の文字列に使う。
  * 形式違いと暦に無い日付は throw する。Invalid Date を返すと Calendar は何も選ばない表示になり、
- * 壊れた値が画面から見えなくなる。正規の経路の値はスキーマ (`isExistingCalendarDate`) を通っている
+ * 壊れた値が画面から見えなくなる。正規の経路の値は、スキーマの `v.check` が `isExistingCalendarDate` で検証している
  */
 export function parseCalendarDate(value: string): Date {
   if (!CALENDAR_DATE_PATTERN.test(value) || !isExistingCalendarDate(value)) {
