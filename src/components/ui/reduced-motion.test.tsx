@@ -18,7 +18,11 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarProvider,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import { createToastManager, Toaster } from "@/components/ui/toast";
 
@@ -53,6 +57,8 @@ const EXPECTED = {
     sidebarGap: "transition-property: width",
     sidebarContainer: "transition-property: left, right, width",
     sidebarGroupLabel: "transition-property: margin, opacity",
+    sidebarMenuButton: "transition-property: width, height, padding",
+    sidebarRail: "transition-property: all",
     button: "transition-property: all",
     toast: "transition-property: transform, opacity, height",
   },
@@ -64,6 +70,8 @@ const EXPECTED = {
     sidebarGap: "transition-property: none",
     sidebarContainer: "transition-property: none",
     sidebarGroupLabel: "transition-property: opacity",
+    sidebarMenuButton: "transition-property: none",
+    sidebarRail: "transition-property: background-color",
     button:
       "transition-property: color, background-color, border-color, outline-color, opacity, box-shadow",
     toast: "transition-property: opacity",
@@ -131,7 +139,7 @@ describe.each<Motion>(["no-preference", "reduce"])("prefers-reduced-motion: %s",
     await expect.element(page.getBySlot("accordion-content")).toHaveStyle(expected.accordion);
   });
 
-  it("Sidebar は開閉の幅と位置の transition を外し、ラベルのフェードを残す", async () => {
+  it("Sidebar は開閉の幅・位置・大きさの transition を外し、ラベルのフェードと rail の色の変化を残す", async () => {
     await emulateMotion(motion);
     await render(
       <SidebarProvider open>
@@ -139,8 +147,14 @@ describe.each<Motion>(["no-preference", "reduce"])("prefers-reduced-motion: %s",
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupLabel>グループ</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton>項目</SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
+          <SidebarRail />
         </Sidebar>
       </SidebarProvider>,
     );
@@ -152,6 +166,10 @@ describe.each<Motion>(["no-preference", "reduce"])("prefers-reduced-motion: %s",
     await expect
       .element(page.getBySlot("sidebar-group-label"))
       .toHaveStyle(expected.sidebarGroupLabel);
+    await expect
+      .element(page.getBySlot("sidebar-menu-button"))
+      .toHaveStyle(expected.sidebarMenuButton);
+    await expect.element(page.getBySlot("sidebar-rail")).toHaveStyle(expected.sidebarRail);
   });
 
   it("Button は押下のずれを transition させず、色と影の transition を残す", async () => {
