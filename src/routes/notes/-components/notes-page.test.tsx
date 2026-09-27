@@ -320,6 +320,38 @@ describe("NotesPage", () => {
       .toBeInTheDocument();
   });
 
+  it("更新に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解けて元の title に戻る", async () => {
+    const rawMessage = `更新対象のノートが見つかりません: id=${NOTE.id}`;
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    // 即 reject だと busy の窓が観測できない
+    const update = deferMock(updateNote);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openNoteEditDialog(screen, NOTE);
+    await titleTextbox(screen).fill(UPDATED_NOTE.title);
+
+    await saveButton(screen).click();
+
+    // 応答前は編集後の title で busy になる (モーダル表示中は行が aria-hidden なので includeHidden)
+    await expect
+      .element(noteRow(screen, UPDATED_NOTE, { includeHidden: true }))
+      .toHaveAttribute("aria-busy", "true");
+
+    update.reject(new Error(rawMessage));
+
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
+    await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
+    await expectAbsent(screen.getByText(rawMessage));
+    // 失敗では楽観表示を残さない。行は再取得前の値に戻り、busy も解ける。ダイアログは入力を保って
+    // 開いたままなので、行はモーダルの下 (aria-hidden) にある
+    await expect
+      .element(noteRow(screen, NOTE, { includeHidden: true }))
+      .toHaveAttribute("aria-busy", "false");
+    await expectAbsent(noteRow(screen, UPDATED_NOTE, { includeHidden: true }));
+    // raw error は curateMutationErrorMessage が warn に残す (observability)
+    expect(warnSpy).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
+  });
+
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
     // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
     // (`docs/guides/updates-and-data.md`「操作の型ごとの当て方」)
