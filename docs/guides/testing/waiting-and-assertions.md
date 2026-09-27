@@ -102,7 +102,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 - pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
 - announcer の region は `src/test/browser/browser-setup.tsx` が毎テスト描く。文言は `src/test/assert/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
-- 同じ通知の経路を 2 つのテストで見ない。`/notes` では、ページのテスト (`src/routes/notes/-components/notes-page.test.tsx`) が debounce 後と無効化済みキャッシュの決着を、wrapper のテスト (`src/routes/notes/index.test.tsx`) が Enter と戻るを見る
+- 同じ通知の経路を 2 つのテストで見ない。検索欄を持つ一覧では、ページのテストが debounce 後と無効化済みキャッシュの決着を、route の wrapper のテストが Enter と戻るを見る
 
 ## explanation
 
@@ -171,14 +171,14 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 - 既存のテストで緑が割れないことは、差が無いことを意味しない。`expectRemoved` を `{ timeout: 0 }` へ落として移行先 11 箇所を走らせても 43 件すべて緑だった (同日実測)。操作の `await` が React の更新を flush し、animation が毎テスト止まるので、assert の行では unmount が済んでいる。予算が効くのは `enableAnimations()` を呼んだテストと、flush を伴わない経路で消える場合である
 - `@testing-library/dom` の `waitForElementToBeRemoved` は、要素が最初から無いと throw して取り違えをランタイムで止める。この保証は移植できない。公式 API は操作の前に捕まえた要素を受け取る設計で、操作の後に assert を書く形では正当な消滅待ちでも `already removed` で落ちる (2026-09-22 に両方の向きで実測)
 
-| 案                                                                            | 評価                                                                                                                                                                                                                                        | 採否     |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 期待値がリテラルの否定をやめて肯定形へ移し、不在は 2 つの helper で書き分ける | 経路 2-3 は「期待値の綴りで否定が真になる」に還元できる。経路 1 と `toHaveLength` は期待値を取らないので、`expectAbsent` と肯定 anchor が持つ                                                                                               | **採用** |
-| 否定 assert には触れない                                                      | `.not.toBeInTheDocument()` の赤が予算を使い切る。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                                                                    | 却下     |
-| `not.toHaveStyle` だけを止める                                                | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                                                                                    | 却下     |
-| 否定 matcher を全面禁止する                                                   | 観測どうしの比較 10 件が書けなくなる。綴りで潰れない形まで巻き込む                                                                                                                                                                          | 却下     |
-| `waitForElementToBeRemoved` を使う                                            | 捕まえた要素の identity と「論理的に在る」が一致しない。React の再調停でノードが差し替わると、捕まえた側だけが detach して素通りする。`src/routes/notes/-components/notes-page.test.tsx` の楽観行が実データ行へ置き換わる経路がこれに当たる | 却下     |
-| `toHaveStyle` をオブジェクト形式で書く                                        | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない                                                                                                                                | 却下     |
+| 案                                                                            | 評価                                                                                                                                                                                         | 採否     |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 期待値がリテラルの否定をやめて肯定形へ移し、不在は 2 つの helper で書き分ける | 経路 2-3 は「期待値の綴りで否定が真になる」に還元できる。経路 1 と `toHaveLength` は期待値を取らないので、`expectAbsent` と肯定 anchor が持つ                                                | **採用** |
+| 否定 assert には触れない                                                      | `.not.toBeInTheDocument()` の赤が予算を使い切る。`toHaveStyle` の素通りは実測で 2 形あり、レビューでは字面が正しく見える                                                                     | 却下     |
+| `not.toHaveStyle` だけを止める                                                | matcher を替えた同型 (`poll(...).not.toBe("0")`) が残る。失敗の原因は matcher ではなく期待値の綴りである                                                                                     | 却下     |
+| 否定 matcher を全面禁止する                                                   | 観測どうしの比較 10 件が書けなくなる。綴りで潰れない形まで巻き込む                                                                                                                           | 却下     |
+| `waitForElementToBeRemoved` を使う                                            | 捕まえた要素の identity と「論理的に在る」が一致しない。React の再調停でノードが差し替わると、捕まえた側だけが detach して素通りする。一覧の楽観行が実データ行へ置き換わる経路がこれに当たる | 却下     |
+| `toHaveStyle` をオブジェクト形式で書く                                        | 失敗時が `Expected styles could not be parsed by the browser. Did you make a typo?` だけになり、差分が出ない                                                                                 | 却下     |
 
 失敗時の文言は次のとおり (2026-09-22)。
 

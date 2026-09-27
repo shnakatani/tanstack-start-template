@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-27
-- 関連: ADR-0008 (同じ `no-restricted-imports` の override を持つ)、ADR-0031 (最初の適用例の期日は暦の日付として持つ)
+- 関連: ADR-0008 (同じ `no-restricted-imports` の override を持つ)、ADR-0031 (暦の日付と Calendar の扱い)
 
 ## Context
 

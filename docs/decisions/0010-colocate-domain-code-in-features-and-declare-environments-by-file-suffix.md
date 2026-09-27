@@ -60,7 +60,7 @@ user が `files` を指定すると既定を置換する (同 `plugin.js` の `p
 - ドメインに属さないものは分けたまま置く。server 基盤は `src/server/`、汎用ロジックは `src/lib/`、React 依存の hook は `src/hooks/`
 - `src/routes/` は URL の設計であってドメインの区切りではない。ドメインの画面が 1 つの URL サブツリーに収まるとは限らないので、ドメイン固有で複数の画面から使う UI は `src/features/<domain>/` へ置く
 - route ファイルに置くのは `Route` と、export しない wrapper (`Route.useSearch` 等の Route hooks を吸収する component)。ページ本体は `routes/<path>/-components/` に置いて route ファイルからは export しない。loader は `createFileRoute` の options に直接書く (型が推論される。既定では code-split の対象外なので置き場で chunk は変わらない)。ページ本体のテストは `-components/` から import し、loader は router 経由で検証する
-- 理由は TanStack Router の automatic code splitting の規則「Do not export route properties」。route の property (`component` / `loader` 等) とそれが使うものを route ファイルから export すると main bundle に入り、code-split されない。2026-09-23 に `vp build` で確認: ページ本体と loader を named export する形では `/notes` のコードが main chunk に入り、export しない形では `/notes` の chunk へ移る (差は main の約 3 割)。テストから直接呼ぶためにページ本体を route ファイルの named export に残す形は、この分割を壊す
+- 理由は TanStack Router の automatic code splitting の規則「Do not export route properties」。route の property (`component` / `loader` 等) とそれが使うものを route ファイルから export すると main bundle に入り、code-split されない。2026-09-23 に `vp build` で確認: ページ本体と loader を named export する形ではそのページのコードが main chunk に入り、export しない形ではその route の chunk へ移る (差は main の約 3 割)。テストから直接呼ぶためにページ本体を route ファイルの named export に残す形は、この分割を壊す
 - 分割されない property (`pendingComponent` / `loader` / `loaderDeps` / `validateSearch` / `beforeLoad`。既定の `codeSplitGroupings` は `component` / `errorComponent` / `notFoundComponent`) は route ファイルに残る。それらが import する module は eager に読まれるので、遅延側 (ページ本体) と同じ module に置かない。pending 表示はページ本体と別ファイルにし、共有する定数は `-lib/` に置く
 - route の中の置き場 (`-components/` / `-lib/` / `-hooks/`) と、features か route かの決め方は `docs/guides/placement.md`「route の中の置き場」「features か route か」にある
 
@@ -77,7 +77,7 @@ user が `files` を指定すると既定を置換する (同 `plugin.js` の `p
 ## Consequences
 
 - ドメインが増えても `src/lib/` と `src/server/` は平たくならない。増えるのは `src/features/` 直下のディレクトリ 1 つ
-- サンプル機能を消すとき、ドメインの本体が `src/features/notes/` と `src/routes/notes/` の 2 ディレクトリに収まる。`src/server/db/schema.ts` や `drizzle/` のように外に残るものは `grep -rln notes src/ drizzle/` で出る
+- 機能を消すとき、ドメインの本体が `src/features/<domain>/` と、その画面の `src/routes/<path>/` の 2 ディレクトリに収まる。`src/server/db/schema.ts` や `drizzle/` のように外に残るものは `grep -rln <domain> src/ drizzle/` で出る
 - `src/server/` は「ドメインに属さないもの」になり、ディレクトリ名が環境を語らなくなる。そのため `importProtection` が client から import できるファイルを除外として説明する必要も無い
 - client-safe なファイルと `.server.ts` が同居する。安全性は同居しないことではなく接尾辞を必ず付けることに依存する
 - `vite.config.ts` の `importProtection` は user の `files` と `excludeFiles` が既定を置換するので、書き換えると接尾辞の遮断が消えうる (手順は `docs/guides/placement.md`「落とし穴」)

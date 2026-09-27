@@ -12,7 +12,7 @@ drizzle は、テーブル定義から valibot のスキーマを作る関数を
 
 ただし、入力スキーマはフロントでも実行時に使う。フォームの項目ごとの validator、送信値を作る `v.parse` (TanStack Form docs「Submission Handling」)、mutation の値の検証、`v.metadata` から読む項目の呼称 (ADR-0013) はどれも、スキーマの値をブラウザで動かす。型だけの import では済まない。
 
-スキーマをテーブル定義から作ると、テーブル定義と drizzle の本体がクライアントの bundle に入る。2026-09-28 に、テンプレートの 5 列のテーブルで `vp build` を回し、クライアントの出力 (`.output/public/assets/` の js の合計。gzip 後の値は Vite の表示) を比べた。B と C は、テーブル定義の写しをクライアントから import できる場所に一時的に置いてスキーマのモジュールから参照し、C はさらに `drizzle-valibot` 0.4.2 を入れて `createInsertSchema` を呼んだ (drizzle-orm 0.45.2、valibot 1.4.2)。drizzle 1.0 の `drizzle-orm/valibot` では測っていない。
+スキーマをテーブル定義から作ると、テーブル定義と drizzle の本体がクライアントの bundle に入る。2026-09-28 に、5 列 (整数の id、文字列 2 列、日付の文字列、`timestamp_ms` の日時) のテーブル 1 つを持つテンプレートで `vp build` を回し、クライアントの出力 (`.output/public/assets/` の js の合計。gzip 後の値は Vite の表示) を比べた。B と C は、テーブル定義の写しをクライアントから import できる場所に一時的に置いてスキーマのモジュールから参照し、C はさらに `drizzle-valibot` 0.4.2 を入れて `createInsertSchema` を呼んだ (drizzle-orm 0.45.2、valibot 1.4.2)。drizzle 1.0 の `drizzle-orm/valibot` では測っていない。
 
 | 状態                                          | js の合計 | gzip 後   | A との差 (gzip) |
 | --------------------------------------------- | --------- | --------- | --------------- |
@@ -20,7 +20,7 @@ drizzle は、テーブル定義から valibot のスキーマを作る関数を
 | B. A にテーブル定義を足す                     | 900.63 kB | 287.74 kB | +4.67 kB        |
 | C. B に `createInsertSchema` の呼び出しを足す | 910.01 kB | 290.06 kB | +6.99 kB        |
 
-増えたのは、どれもエントリの chunk (`index-*.js`) だった。スキーマのモジュールを route の `validateSearch` が import していて、`validateSearch` は分割されない property なので (ADR-0010)、スキーマのモジュールはエントリの chunk に入る。
+増えたのは、どれもエントリの chunk (`index-*.js`) だった。計測した構成では、スキーマのモジュールを route の `validateSearch` が import していた。`validateSearch` は分割されない property なので (ADR-0010)、スキーマのモジュールを分割されない property から import すると、エントリの chunk に入る。
 
 上流もこの問題を認識しているが、公式の解決策は無い。
 

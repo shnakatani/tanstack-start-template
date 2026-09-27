@@ -64,7 +64,6 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 - debounce のテストは、1 文字ずつ別の `userEvent.keyboard` で打つ。`fill` は 1 回の input、`type("abc")` は 3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)
 - fake timers は使わない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest の issue 10058)。待ちを広げたいときは、定数を `vi.mock(import(...))` の partial mock で広げる
-- 実例は `src/routes/notes/-components/notes-page.test.tsx` と `src/routes/notes/index.test.tsx`
 
 ## explanation
 
@@ -91,7 +90,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 合成イベントを要求する場面は無い (2026-09-22 実測)。理由に挙がる 2 つはどちらも合成イベントを要求しない。
 
-- inert バックドロップが pointer event を横取りする件は再現しない。Dialog / AlertDialog の中のボタンを押す 4 箇所 (`src/routes/notes/index.test.tsx` の `confirmDelete` とキャンセル、`src/routes/notes/-components/note-create-dialog.test.tsx` の `clickSave` とキャンセル) は `locator.click()` で全件通る。registry の AlertDialog の最小構成でも、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通る
+- inert バックドロップが pointer event を横取りする件は再現しない。ダイアログのフォームの保存とキャンセル、削除確認の確定とキャンセルを押す 4 箇所は、`locator.click()` で全件通った。registry の AlertDialog の最小構成でも、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通る
 - `aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトする 2 箇所は、対象に `pointer-events: none` が当たっているかで解が分かれる。`src/components/parts/choice-card.test.tsx` の対象には当たっておらず、`Checkbox` への `disabled` の転送を落とす mutant で測ると `.click()` は false red、`.click({ force: true })` は 41ms で緑になり mutant で赤になる。`src/components/parts/segmented-radio-group.test.tsx` の対象には当たっており、クリックが届かないことを `pointer-events` の assert (`expected 'auto' to be 'none'` を 97ms で捕まえる) と `aria-disabled` の assert で見る
 - `pointer-events: none` の対象を click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った (2026-09-22)。`force` が飛ばすのは actionability の検査で、ブラウザのヒットテストは残るので、`force` のイベントは対象へ届かず下の要素へ落ちる
 
@@ -118,7 +117,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 ブラウザテストは animation を無効にした状態を既定にし、閉じかけの popup が残る窓そのものを検証するテストだけが自分のテストの間だけ animation を戻す。popup を閉じた後の a11y 検査は unmount を待ってから行う。
 
-`src/routes/notes/index.test.tsx` の「削除中は対象の行が busy になる」が CI (GitHub Actions、run 34792768529) でだけ落ちた。axe の incomplete に Base UI の focus guard (`aria-hidden-focus`) と確認ダイアログの見出し (`heading-order`) が出ていた。確定でダイアログを閉じた直後に `document.body` を検査しており、閉じかけの popup が animate-out (`duration-100`) の間だけ mount されたまま残る窓に検査が落ちていた。
+確認ダイアログで一覧の行を削除し、行が busy になることを見るテストが、CI (GitHub Actions) でだけ落ちた (2026-09-14)。axe の incomplete に Base UI の focus guard (`aria-hidden-focus`) と確認ダイアログの見出し (`heading-order`) が出ていた。確定でダイアログを閉じた直後に `document.body` を検査しており、閉じかけの popup が animate-out (`duration-100`) の間だけ mount されたまま残る窓に検査が落ちていた。
 
 この窓は乱数ではない。Base UI は閉じた popup を `element.getAnimations()` の完了まで mount し続ける (Handbook「Animation」)。その間、focus guard は `aria-hidden="true"` + `tabindex="0"` のまま、行は `aria-hidden` 配下のまま、`onOpenChangeComplete` は未発火のままである。検査がこの窓の内側に落ちるか外側に落ちるかは実行環境の速さで決まり、遅い CI ほど内側に落ちる。
 

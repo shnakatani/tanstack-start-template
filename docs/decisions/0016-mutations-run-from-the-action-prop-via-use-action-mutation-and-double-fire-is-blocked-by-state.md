@@ -16,7 +16,7 @@ grep -rn "useTransition\|startTransition\|useDeferredValue\|useOptimistic" src/ 
 grep -rln "useMutation(" src/ --include='*.tsx'                                   # 2026-09-13: 2 ファイル
 ```
 
-mutation を持つのは `src/routes/notes/-components/note-create-dialog.tsx` (追加) と `src/routes/notes/index.tsx` (削除) の 2 箇所だった。
+mutation を持つのは、ダイアログのフォームから項目を追加する経路と、一覧の行を確認ダイアログを挟んで削除する経路の 2 箇所だった。
 どちらも `onSuccess` の中で `invalidateQueries` を `void` した直後にダイアログを `close()` していた。
 削除の二重発火は `src/components/parts/delete-confirm-dialog.tsx` の `deleteConfirmMutationProps` が閉包のフラグで塞いでいた。コード上の理由は「`isPending` は再レンダー後にしか立たず、それより前に届く再クリックを `disabled` では止められない」だったが、この前提は実測されていなかった (2026-09-13 に React の pending 描画は次のユーザーイベントより前に流れると確認した)。
 
@@ -49,7 +49,7 @@ mutation 以外のユーザー操作由来の更新は、`src/components/screens
 ### Action 層 `src/components/action/`
 
 `src/components/ui/` を包み、`action` prop を受ける部品を置く。ファイル名は包む先と同名にする (`button.tsx` → `ActionButton`)。
-最初に置くのは `button.tsx`、`alert-dialog.tsx`、`form.tsx` の 3 つで、メモ画面の 2 経路が使う最小集合である。`form.tsx` だけは `ui/` に対応部品が無く、素の `<form>` を包む。
+最初に置くのは `button.tsx`、`alert-dialog.tsx`、`form.tsx` の 3 つで、Context に挙げた追加と削除の 2 経路が使う最小集合である。`form.tsx` だけは `ui/` に対応部品が無く、素の `<form>` を包む。
 `dialog.tsx` の `ActionDialogContent` は `DialogContent` の中を `display: contents` の `ActionForm` で包み、フォームを持つダイアログの器になる。form の置き場所の比較は `docs/guides/forms-and-inputs.md`「フォームを `DialogContent` の中に置く理由」にある。
 React の `<form action>` + `useFormStatus` を使わないのは、submit の経路を TanStack Form の `handleSubmit` (FormData を経由しない) にするためと、決着前の二重 submit を部品側の dedupe で塞ぐためである。`ActionForm` の context は `useFormStatus` と同じ形で pending を子孫へ渡す。
 
