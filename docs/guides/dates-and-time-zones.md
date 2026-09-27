@@ -48,8 +48,11 @@
 
 ### 日付の入力を扱う
 
-- `Calendar` (`src/components/ui/calendar.tsx`、中身は react-day-picker) は、既定でブラウザのローカル TZ で日付を組む。react-day-picker docs「Setting the Time Zone」は "By default, DayPicker uses the browser's local time zone." と書く
+- `Calendar` (`src/components/ui/calendar.tsx`、中身は react-day-picker) は、既定でブラウザのローカル TZ で日付を組む。react-day-picker docs「Setting the Time Zone」は "By default, DayPicker uses the browser’s local time zone." と書く
 - `timeZone` prop を渡すと、指定した TZ で日付を読み書きする。その場合、値は素の `Date` ではなく `TZDate` で扱う (同じ docs「Working with time-zoned dates」)。react-day-picker 10.0.1 は `TZDate` を `@date-fns/tz` から再 export している。テンプレートは `timeZone` prop を今は使っていない
+- Calendar が強調する今日と、選択が無いときに開く月とフォーカス先 (`autoFocus` を付けたとき) は、ブラウザの TZ で決まる。ADR-0031 はこれを分類 4 の判定に入れず、ブラウザに任せる
+- Calendar はブラウザでだけ描く。初めに閉じていて `keepMounted` を付けない Popover の中に置くなら、そのままでよい。Base UI の `Popover.Portal` は `keepMounted` の既定が `false` で、閉じている間は popup を描かない。実例は `FormDateField` (`src/components/parts/form-fields.tsx`)。画面にじかに置くときは `<ClientOnly>` (`@tanstack/react-router`) で囲む (TanStack Start「Hydration Errors」の Strategy 3)
+- shadcn docs「Calendar」の「Selected Date (With TimeZone)」の例 (`timeZone` を `useEffect` で渡す) は、サーバーで描いた今日の食い違いを直さない (ADR-0031 の Context の実測)
 - 暦の日付を `Calendar` で入力するときは、選ばれた `Date` から、ローカル TZ のまま年・月・日だけを取り出して `YYYY-MM-DD` にする。`toISOString()` を使わない。UTC に直すので、UTC より進んだ TZ (JST など) では 1 日前になる (ADR-0031 の Context)
 - 保存した `YYYY-MM-DD` を `new Date("YYYY-MM-DD")` で読まない。日付だけの文字列は UTC の 0 時として解釈され、UTC より遅れた TZ では 1 日前になる (ADR-0031 の Context)
 - `YYYY-MM-DD` の形式を valibot の `isoDate()` で検証しても、存在しない日付は通る。型定義の Hint は "The regex used cannot validate the maximum number of days based on year and month. For example, "2023-06-31" is valid although June has only 30 days." と書く (valibot 1.4.2)。`isoDate()` の後ろに `v.check` を足し、年・月・日が暦に存在するかを見る。valibot の API docs「isoDate」は、存在を検証する組み込みの手段を挙げていない
