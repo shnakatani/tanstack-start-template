@@ -41,6 +41,9 @@ export type ItemInput = v.InferOutput<typeof itemInputSchema>;
 ```ts
 const itemIdValueSchema = v.pipe(v.number(), v.integer(), v.minValue(1));
 
+// 1 件を指す入力 (削除などで受け取る id)
+export const itemIdSchema = v.object({ id: itemIdValueSchema });
+
 export const itemSchema = v.object({
   ...itemInputSchema.entries,
   id: itemIdValueSchema,
@@ -48,7 +51,7 @@ export const itemSchema = v.object({
 });
 ```
 
-値そのものの制約 (`itemIdValueSchema`) も、それを使う入力スキーマと保存済みスキーマの両方で共有する。
+値そのものの制約 (`itemIdValueSchema`) も、1 件を指す入力 (`itemIdSchema`) と保存済みスキーマ (`itemSchema`) の両方で共有する。
 別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる。
 
 client に送らせないフィールドがある場合は、保存済みスキーマから `v.omit` で入力スキーマを派生させる。派生元による strip と reject の違いは `docs/guides/forms-and-inputs.md`「スキーマを書く」にある。
