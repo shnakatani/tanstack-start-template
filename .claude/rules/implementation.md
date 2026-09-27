@@ -77,6 +77,10 @@ lint では見ないのでレビューで見る。
 - 暦の日付 (ADR-0031 の分類 2) の変換と表示は `src/lib/calendar-date.ts` の関数を通す。`YYYY-MM-DD` とローカルの 0 時の `Date` を往復させるので、TZ に依存しない (`docs/guides/dates-and-time-zones.md`「画面に暦の日付を出す」)
 - 食い違いを `suppressHydrationWarning` で抑えない。食い違った文字列がそのまま出る (`docs/guides/dates-and-time-zones.md`「タイムゾーンを明示して整形する理由」)
 
+## 依存はバレルから引かない
+
+- 依存を import するときは、個別エントリポイント (`exports` のサブパス) があればそちらから引く。バレルは使わない周辺まで読み込み、テストの実行時間を伸ばす。lint が止めるのは `RESTRICTED_BARREL_IMPORTS` に名指しした依存だけ (ADR-0032)
+
 ## 手動メモ化の増減
 
 `useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は `docs/guides/updates-and-data.md`「手動メモ化を外すか判定する」。`src/components/ui/` は ADR-0020 の統制下なので触らない。

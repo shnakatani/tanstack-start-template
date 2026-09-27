@@ -359,7 +359,7 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
  * 4 つのラベル (labelDayButton / labelNext / labelPrevious / labelNav) は react-day-picker の ja
  * (`react-day-picker/locale/ja`) と同じ文言をここで持つ。
  * `react-day-picker/locale/ja` を使わないのは、中で `date-fns/locale` のバレルを読み、全ロケールを
- * 引き込むため (react-day-picker 10.0.1 の `dist/esm/locale/ja.js` の 1 行目)
+ * 引き込むため (react-day-picker 10.0.1 の `dist/esm/locale/ja.js` の 1 行目、ADR-0032)
  */
 const CALENDAR_LOCALE: Partial<DayPickerLocale> = {
   ...ja,
