@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { expectRemoved } from "../assert/absent";
-import { enableAnimations } from "./animations";
+import { disableAnimations, enableAnimations } from "./animations";
 
 /**
  * animate-out を実行時間より長く引き延ばし、「Base UI が animation の完了を待っているか」を
@@ -110,6 +110,26 @@ describe("animation の既定", () => {
     await expect
       .poll(() => readMotionSeconds(screen.getByTestId("motion").element()))
       .toMatchObject({ transitionDuration: 0.15, animationDuration: 0.15 });
+  });
+
+  it("enableAnimations() の後に disableAnimations() を呼ぶと停止用 CSS が入り直す", async () => {
+    // 次のテストの beforeEach が既定へ戻す経路。1 つのテストの中で確かめ、実行順に依存させない
+    enableAnimations();
+    disableAnimations();
+    const screen = await render(
+      <div
+        data-testid="motion"
+        style={{
+          transitionProperty: "opacity",
+          transitionDuration: "150ms",
+          animationDuration: "150ms",
+        }}
+      />,
+    );
+
+    await expect
+      .poll(() => readMotionSeconds(screen.getByTestId("motion").element()))
+      .toMatchObject({ transitionDuration: 0, animationDuration: 0 });
   });
 
   it("enableAnimations() を呼んだテストでは animate-out の完了まで popup が残る", async () => {

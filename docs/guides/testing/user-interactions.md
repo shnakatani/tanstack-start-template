@@ -53,7 +53,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。既定では窓が無いが、animation を戻したテストでも同じ形で書く
 - 閉じた後の行の取得に `includeHidden` を渡さない。既定では確定直後の行が `aria-hidden` の配下に残らない。モーダルが開いている間の取得には引き続き要る
 - transition の後に「変化しないこと」を見るテスト (実例は `src/components/parts/segmented-radio-group.test.tsx` の hover) は、retry では途中値の前に通ってしまう。animation を戻したら、変化する側の値を先に待ってから見る
-- モジュールの最上位で描画や算出値を読まない。`beforeEach` より前に走るので、前のファイルが残した emulation を読む
+- モジュールの最上位で描画や算出値を読まない。`beforeEach` より前に走るので、`beforeEach` が立てる既定より前の状態を読む
 
 ### 入力部品を操作する
 
