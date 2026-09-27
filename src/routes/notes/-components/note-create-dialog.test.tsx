@@ -32,7 +32,7 @@ import {
   openNoteCreateDialog,
   saveButton,
   titleTextbox,
-  expectNoteCreateDialogClosed,
+  expectNoteDialogClosed,
 } from "./note-create-dialog.test-helpers";
 
 /**
@@ -183,7 +183,7 @@ describe("NoteCreateDialog", () => {
 
     await saveButton(screen).click();
 
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
   });
@@ -196,7 +196,7 @@ describe("NoteCreateDialog", () => {
     await bodyTextbox(screen).fill("牛乳とパン");
 
     await saveButton(screen).click();
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
     await openNoteCreateDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
@@ -208,7 +208,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("一時入力");
 
     await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
     await openNoteCreateDialog(screen);
 
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
@@ -251,7 +251,7 @@ describe("NoteCreateDialog", () => {
     create.resolve({ id: 1 });
 
     // 応答で閉じる。invalidateQueries は未決着
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
 
@@ -316,6 +316,6 @@ describe("NoteCreateDialog", () => {
     create.resolve({ id: 1 });
 
     // 応答 (imperative-action) での close は止めない
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
   });
 });

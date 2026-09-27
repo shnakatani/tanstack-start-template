@@ -23,7 +23,7 @@ import { useAppForm } from "@/hooks/use-app-form";
  * フィールドに `autoFocus` は渡さない — base-ui の Popup が既定でポップアップ内の最初の
  * tabbable へフォーカスを移し、タッチ操作のときだけ仮想キーボードを開かないよう Popup
  * 自身を選ぶ。`autoFocus` はこの出し分けを潰す (初期フォーカス位置は
- * `note-create-dialog.test.tsx` が固定している)。
+ * `note-create-dialog.test.tsx` と `note-edit-dialog.test.tsx` が固定している)。
  */
 export function NoteFormContent({
   heading,

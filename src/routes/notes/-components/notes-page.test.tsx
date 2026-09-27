@@ -53,7 +53,7 @@ import {
   openNoteCreateDialog,
   saveButton,
   titleTextbox,
-  expectNoteCreateDialogClosed,
+  expectNoteDialogClosed,
 } from "./note-create-dialog.test-helpers";
 import { noteSearchbox } from "./note-search-field.test-helpers";
 import { NotesPage } from "./notes-page";
@@ -279,7 +279,7 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答でダイアログが閉じ、再取得中も行は busy のまま
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
     await expect.element(noteRow(screen, CREATED_NOTE)).toHaveAttribute("aria-busy", "true");
     // 行は静的テキストで状態を持つ (ADR-0026)。live region にはしないので、仮想カーソルで
     // 行を読んだときにだけ出る。通知は announcer が担う
@@ -313,7 +313,7 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答で閉じる。再取得 (2 回目の listNotes) は未決着なので mutation は pending のまま
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
 
     await openNoteCreateDialog(screen);
 

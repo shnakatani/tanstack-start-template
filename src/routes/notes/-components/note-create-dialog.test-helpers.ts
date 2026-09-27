@@ -1,12 +1,14 @@
 import { expect } from "vite-plus/test";
 
+import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { expectRemoved } from "@/test/assert/absent";
 import type { Screen } from "@/test/assert/screen-assertions";
 
 /**
- * 追加ダイアログのテスト用 locator。部品のテストとページのテストの両方が同じフォームを操作する
- * ので、ラベルの参照をここに 1 つ置く。書き分けるとラベルの変更で片方だけが落ちる。
+ * メモのフォーム (`note-form.tsx`) を操作するテスト用 locator。追加と編集のダイアログは同じフォームを
+ * 描き、部品のテストとページのテストの両方がそれを操作するので、ラベルの参照をここに 1 つ置く。
+ * 書き分けるとラベルの変更で片方だけが落ちる。trigger と開く操作は追加と編集で分けて持つ。
  * 保存の確定は持たない。ページのテストは確定後に実マウスの退避 (`parkMouse`) が要り、部品のテストは要らない。
  */
 
@@ -36,7 +38,18 @@ export async function openNoteCreateDialog(screen: Screen) {
   await expect.element(titleTextbox(screen)).toBeInTheDocument();
 }
 
-/** ダイアログが閉じて消えるのを待つ。閉じた印はタイトル入力の unmount (docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」「否定を肯定で書く」)。 */
-export async function expectNoteCreateDialogClosed(screen: Screen) {
+/** 編集の trigger の accessible name。一覧の各行に並ぶので、行の見出しで区別する */
+export function noteEditTriggerName(note: Note) {
+  return `${note.title}を編集`;
+}
+
+/** 行の編集の trigger を押してダイアログを開く。開いた印はタイトル入力に行の値が入ったこと */
+export async function openNoteEditDialog(screen: Screen, note: Note) {
+  await screen.getByRole("button", { name: noteEditTriggerName(note), exact: true }).click();
+  await expect.element(titleTextbox(screen)).toHaveValue(note.title);
+}
+
+/** 追加か編集のダイアログが閉じて消えるのを待つ。閉じた印はタイトル入力の unmount (docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」「否定を肯定で書く」)。 */
+export async function expectNoteDialogClosed(screen: Screen) {
   await expectRemoved(titleTextbox(screen));
 }
