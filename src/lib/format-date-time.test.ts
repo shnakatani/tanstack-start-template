@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { APP_TIME_ZONE, formatDateTime } from "./format-date-time";
 
@@ -8,17 +8,9 @@ import { APP_TIME_ZONE, formatDateTime } from "./format-date-time";
  * TZ が食い違う環境でだけ hydration mismatch が出る。
  */
 
-const ORIGINAL_TZ = process.env.TZ;
-
-afterEach(() => {
-  if (ORIGINAL_TZ === undefined) {
-    delete process.env.TZ;
-  } else {
-    process.env.TZ = ORIGINAL_TZ;
-  }
-});
-
 describe("formatDateTime", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it("基準タイムゾーンの壁時計を yyyy-MM-dd HH:mm で返す", () => {
     // 2026-08-17T00:30Z は Asia/Tokyo (UTC+9) の 09:30
     expect(formatDateTime(new Date("2026-08-17T00:30:00.000Z"))).toBe("2026-08-17 09:30");
@@ -36,9 +28,9 @@ describe("formatDateTime", () => {
   it("ホストのローカル TZ を変えても同じ文字列を返す", () => {
     const instant = new Date("2026-08-17T00:30:00.000Z");
 
-    process.env.TZ = "UTC";
+    vi.stubEnv("TZ", "UTC");
     const onUtcHost = formatDateTime(instant);
-    process.env.TZ = "America/New_York";
+    vi.stubEnv("TZ", "America/New_York");
     const onNewYorkHost = formatDateTime(instant);
 
     expect(onUtcHost).toBe(onNewYorkHost);
