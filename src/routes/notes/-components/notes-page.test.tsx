@@ -315,7 +315,9 @@ describe("NotesPage", () => {
 
     // 再取得の反映で実データの行に戻る (busy でない行が 1 つだけ)
     await expectSettledRow(screen, UPDATED_NOTE);
-    await expectText(screen, formatDateTime(UPDATED_NOTE.updatedAt));
+    await expect
+      .element(noteRow(screen, UPDATED_NOTE).getByText(formatDateTime(UPDATED_NOTE.updatedAt)))
+      .toBeInTheDocument();
   });
 
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {

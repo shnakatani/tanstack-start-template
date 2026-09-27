@@ -59,7 +59,9 @@ export function toNoteRows({
   return [
     ...creatingRows.map((row): CreatingNoteRow => ({ kind: "creating", ...row })),
     ...notes.map((note): SavedNoteRow => {
-      // useMutationState は mutation cache の順 (古い順) に返すので、後に始まった更新を採る
+      // useMutationState は古い順に返す (TanStack Query の useMutationState のリファレンスが、
+      // 最後の要素を最新の呼び出しとして読む例を載せている)。今の画面は更新中の行の編集を止めるので
+      // 同じ行の更新は重ならないが、重なったときは後に始まった更新を採る
       const update = updatingNotes.findLast((candidate) => candidate.id === note.id);
       return {
         kind: "saved",

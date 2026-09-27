@@ -95,7 +95,9 @@ export function NoteEditDialog() {
  * render function は閉じている間も payload 無しで呼ばれ、Trigger で開くときも payload は開いた後の
  * 描画で届く (Trigger の layout effect が store へ入れる。開いた状態で payload 無しの commit が
  * 挟まる)。描画中や effect の中で判定すると普段の開閉のたびに warn が出るので、次の task まで
- * 待ち、それまでに payload が届いてこの部品が外れたら取り消す。
+ * 待ち、それまでに payload が届いてこの部品が外れたら取り消す。Dialog の `onOpenChange` の
+ * eventDetails と `onOpenChangeComplete` は payload を受け取らないので、そちらでは判定できない
+ * (Base UI の Dialog の API reference)。
  */
 function MissingPayloadWarning() {
   // 依存配列を付けず、描画のたびに予約し直す。この部品は閉じている間から mount したまま

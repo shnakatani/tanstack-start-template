@@ -57,7 +57,7 @@ describe("toNoteRows", () => {
   });
 
   it("同じ行の更新が複数 pending なら、後に始まった更新の値を持つ", () => {
-    // useMutationState は mutation cache の順 (古い順) に返す
+    // useMutationState は古い順に返す (TanStack Query の useMutationState のリファレンスの例)
     const later = { ...NOTE_UPDATE, title: "週末の買い出しリスト" };
     const [row] = toNoteRows({
       notes: [NOTE],
