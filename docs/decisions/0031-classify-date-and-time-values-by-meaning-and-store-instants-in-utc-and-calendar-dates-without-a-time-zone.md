@@ -27,8 +27,6 @@ SQLite には日付専用の型が無い。SQLite「Datatypes In SQLite」は、
 
 SQLite の `date()` は、31 以下の日をその月の日数を超えたら翌月へ繰り越す。SQLite User Forum の「date function is broken」で、SQLite の開発者 Stephan Beal は "Any day number of 31 or less will, for months with fewer days, wrap around to the next month." と書く。値が `date()` の結果と一致するかを比べれば、暦に無い日付と、`date()` が別の値にする形を DB で弾ける。2026-09-28 に better-sqlite3 の SQLite 3.53.4 で確かめた。`2023-02-29` は `2023-03-01`、`2026-8-7` は NULL、`2026-08-07T00:00` は `2026-08-07` になり、一致しない。ただし SQLite「Date And Time Functions」は、日付関数が働く範囲を 0000-01-01 から 9999-12-31 とし、"For dates outside that range, the results of these functions are undefined." と書く。範囲外の負の年 `-0001-01-01` は、`date()` の結果と一致して通った。長さを 10 文字に限ると、`0000-01-01` と `9999-12-31` は通り、`-0001-01-01` は弾かれた。
 
-テンプレートでは、作成日時のような瞬間を UTC のエポックミリ秒で持ち (drizzle の `integer` の `timestamp_ms`)、表示を `APP_TIME_ZONE` (`Asia/Tokyo`) で整形している (`src/lib/format-date-time.ts`)。
-
 日付を選ぶ入力部品の Calendar (中身は react-day-picker) は、今日を強調する。選択が無いときは今日の月を開き、`autoFocus` を付けていれば今日へフォーカスを移す。react-day-picker docs「Setting the Time Zone」は "By default, DayPicker uses the browser’s local time zone." と書き、shadcn docs の Calendar も利用者の TZ で見せる例を載せる。この Calendar をサーバーで描くと、サーバーとブラウザの TZ で日付が違う時間帯に、今日が食い違う。2026-09-27 に、React 19.3.0、react-day-picker 10.0.1、TanStack Start 1.168.49 の dev サーバーで確かめた。サーバーは `Pacific/Kiritimati` で今日が 9/28、ブラウザは `Asia/Tokyo` で今日が 9/27 だった。
 
 | 描き方                                                              | hydration の後に今日として付いていた日 (1 日だけ)               | コンソール                                                                              |
