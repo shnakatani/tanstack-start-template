@@ -22,6 +22,9 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: {
+    // 基準のタイムゾーンを決める。root に置く。project に置くと、その project のテストを含む
+    // 実行でだけ走り、他の project の TZ が選んだファイルで変わる
+    globalSetup: ["./vitest.global-setup.ts"],
     projects: [
       {
         extends: true,
@@ -29,9 +32,9 @@ export default defineConfig({
           name: "unit",
           include: ["src/**/*.test.ts"],
           exclude: sharedExclude,
-          // テスト中に process.env.TZ を切り替える (src/lib/format-date-time.test.ts)。threads と
-          // vmThreads では TZ が Date に効かず、切り替えを検証するテストが無言で通る。既定と同じ値
-          // だが、既定や設定が変わっても forks のままにする
+          // テスト中に vi.stubEnv で TZ を切り替える (src/lib/format-date-time.test.ts)。threads と
+          // vmThreads では切り替えが Date に効かず、基準の TZ のまま走る。既定と同じ値だが、
+          // 既定や設定が変わっても forks のままにする
           // (https://vitest.dev/guide/common-errors#time-zone-does-not-change-in-worker-threads)
           pool: "forks",
         },
