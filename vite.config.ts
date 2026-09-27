@@ -23,6 +23,26 @@ const OXLINT_DEFAULT_PLUGINS = ["typescript", "unicorn", "oxc"] as const;
  */
 const DESIGN_SYSTEM_COMPONENT_LAYERS = ["ui", "action", "parts"] as const;
 
+/**
+ * バレルがテストの import を重くするので、個別エントリポイントから引かせる依存 (ADR-0032)。
+ * 足す手順は docs/guides/dependencies-and-toolchain.md「依存をバレルの禁止の対象に足す」。
+ * `paths` は specifier の完全一致で、`date-fns/format` や `date-fns/locale/ja` は止めない。トップレベルの rules と、テスト専用コードの
+ * import 禁止の override の両方へ渡す。override は同じルールのオプションを丸ごと置き換えるので、
+ * 片方だけだと override の範囲 (src/ と scripts/ のアプリのコード) でバレルが素通りする
+ */
+const RESTRICTED_BARREL_IMPORTS = [
+  {
+    name: "date-fns",
+    message:
+      "date-fns はバレルから引かない。テストの import が重くなる。関数ごとの個別エントリポイント (date-fns/format など) から import する (ADR-0032)",
+  },
+  {
+    name: "date-fns/locale",
+    message:
+      "date-fns/locale はバレルから引かない。テストの import が重くなる。ロケールごとの個別エントリポイント (date-fns/locale/ja など) から import する (ADR-0032)",
+  },
+];
+
 export default defineConfig({
   // Vite の .env 読み込みを切る。秘密を暗号化して .env ごとコミットする方式 (dotenvx 等) は、
   // Vite が .env を native に読むと暗号文をそのまま import.meta.env / process.env へ流し込む。
@@ -92,6 +112,10 @@ export default defineConfig({
     rules: {
       // -- 基準から外れる名指し (ADR-0007) --
       "typescript/consistent-type-assertions": ["error", { assertionStyle: "never" }],
+
+      // 名指しした依存のバレルを止める (ADR-0032)。同じルールを下のテスト専用コードの import 禁止の
+      // override も持つ。override はオプションを置き換えるので、paths は両方に同じ定数で渡す
+      "no-restricted-imports": ["error", { paths: RESTRICTED_BARREL_IMPORTS }],
 
       // -- eslint コア: @eslint/js の recommended (ADR-0007) --
       "no-case-declarations": "error",
@@ -456,6 +480,8 @@ export default defineConfig({
           "no-restricted-imports": [
             "error",
             {
+              // トップレベルの paths をここでも渡す。渡さないと、この override の範囲でバレルの禁止が外れる
+              paths: RESTRICTED_BARREL_IMPORTS,
               patterns: [
                 {
                   // alias (@/test/) と相対 (./test/ ../test/) の両方の specifier を止める

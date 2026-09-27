@@ -10,7 +10,7 @@
 
 制約は次のとおり。
 
-- 一覧のデータは Query が所有し、loader は Query を温めるだけにする。`useLoaderData` で読むと、`invalidateQueries` で Query を更新しても画面が更新されない。TanStack Router の External Data Loading の例も、loader は "ensure that the data is loaded" に使い、コンポーネントは `useSuspenseQuery` で "Read the data from the cache and subscribe to updates" としている。絞り込み条件が変わっても loader の値を `useLoaderData` で読む形にはしない
+- 一覧のデータは Query が所有し、loader は Query の取得のためだけに呼ぶ (取得を待つかは ADR-0033)。`useLoaderData` で読むと、`invalidateQueries` で Query を更新しても画面が更新されない。TanStack Router の External Data Loading の例も、loader は "ensure that the data is loaded" に使い、コンポーネントは `useSuspenseQuery` で "Read the data from the cache and subscribe to updates" としている。絞り込み条件が変わっても loader の値を `useLoaderData` で読む形にはしない
 - Router は search param を loader へ直接渡さない。loader が読む search は `loaderDeps` で宣言し、deps の組み合わせごとに別のキャッシュになる (Router の data-loading ガイド「Using loaderDeps to access search params」)
 - Router の search-params ガイドは、malformed な search param には fallback を用意して体験を止めないことを勧め、エラー表示は選んだときだけとする
 - URL の値を書き換える契機を打鍵にすると、1 文字ごとに履歴と loader が動く
@@ -40,19 +40,19 @@ schema を 1 つにする、既定値を URL から落とす、`loaderDeps` で 
 
 ## 検討した選択肢
 
-| 案                                                    | 評価                                                                                                                                                           | 採否     |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| search param + `loaderDeps`、確定は submit で replace | URL が state なので共有と戻るが効く。Router の公式形 (`loaderDeps`) に乗る                                                                                     | **採用** |
-| 打鍵ごとに URL へ `navigate` する                     | Router の Transition に乗るが、1 文字ごとに loader と履歴が動く。`replace` にしても loader は走る                                                              | 却下     |
-| submit を push にする (2026-09-23 の中間版)           | 明示操作 1 回につき履歴 1 つという理由で採ったが、検索は同じ画面の絞り込みで、戻るが検索を 1 回ずつ巻き戻す。URL state の先行例 (nuqs) は replace を既定にする | 却下     |
-| debounce 後の値を effect で URL へ書く                | effect で navigate する形になり、確定の主体が曖昧になる。URL の変更は利用者の操作 (submit) に対応させる                                                        | 却下     |
-| 上限超えの `q` を schema で reject する               | URL 経路は error component、入力欄経路は別の緩い正規化が要り、厳格と緩和の 2 段になる。Router のガイドは fallback を勧める                                     | 却下     |
-| クライアント側で絞り込む (全件取得して filter)        | 件数が増えると全件取得が重く、URL に条件を持つ意味が薄い。サーバ側の LIKE と `loaderDeps` の実例にもならない                                                   | 却下     |
+| 案                                                    | 評価                                                                                                                                               | 採否     |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| search param + `loaderDeps`、確定は submit で replace | URL が state なので共有と戻るが効く。Router の公式形 (`loaderDeps`) に乗る                                                                         | **採用** |
+| 打鍵ごとに URL へ `navigate` する                     | Router の Transition に乗るが、1 文字ごとに loader と履歴が動く。`replace` にしても loader は走る                                                  | 却下     |
+| submit を push にする                                 | 明示操作 1 回につき履歴 1 つになるが、検索は同じ画面の絞り込みで、戻るが検索を 1 回ずつ巻き戻す。URL state の先行例 (nuqs) は replace を既定にする | 却下     |
+| debounce 後の値を effect で URL へ書く                | effect で navigate する形になり、確定の主体が曖昧になる。URL の変更は利用者の操作 (submit) に対応させる                                            | 却下     |
+| 上限超えの `q` を schema で reject する               | URL 経路は error component、入力欄経路は別の緩い正規化が要り、厳格と緩和の 2 段になる。Router のガイドは fallback を勧める                         | 却下     |
+| クライアント側で絞り込む (全件取得して filter)        | 件数が増えると全件取得が重く、URL に条件を持つ意味が薄い。サーバ側の LIKE と `loaderDeps` の実例にもならない                                       | 却下     |
 
 ## 出典
 
 - TanStack Router の search-params ガイド (Standard Schema、`stripSearchParams`、search middlewares、fallback の推奨): <https://tanstack.com/router/latest/docs/framework/react/guide/search-params>
-- TanStack Router の External Data Loading ガイド (loader は Query を温め、コンポーネントは `useSuspenseQuery` で読む例): <https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading>
+- TanStack Router の External Data Loading ガイド (loader は Query の取得を待ち、コンポーネントは `useSuspenseQuery` で読む例): <https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading>
 - TanStack Router の data-loading ガイド「Using loaderDeps to access search params」: <https://tanstack.com/router/latest/docs/framework/react/guide/data-loading>
 - TanStack/router#4973 (Search Params as Actual State。per-param codec の提案): <https://github.com/TanStack/router/issues/4973>
 - nuqs `history` option (既定 `replace`。push はナビゲーションに相当するときだけ): <https://nuqs.dev/docs/options>

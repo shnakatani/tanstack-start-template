@@ -103,7 +103,8 @@ describe("/notes route", () => {
     const screen = await render(<RouterProvider router={router} />);
 
     await expect.element(screen.getByRole("status", { name: "読み込み中" })).toBeInTheDocument();
-    // skeleton の列数は列定義から採る。ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
+    // skeleton の列数は NOTE_COLUMN_COUNT から採り、列定義から採らない。描いた列数が実テーブルと揃うことをここで見る。
+    // ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
     await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
   });
 
@@ -111,7 +112,7 @@ describe("/notes route", () => {
     const { screen } = await renderRoute("/notes?q=abc");
 
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
-    // loader が温めた key を component が読むので 1 回。loaderDeps が無いと空の deps の取得が先に走る
+    // loader が取得した key を component が読むので 1 回。loaderDeps が無いと空の deps の取得が先に走る
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "abc" } });
     // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
     expect(readAnnouncements()).toEqual([]);

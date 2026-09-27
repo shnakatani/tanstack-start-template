@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "155b944d-db4f-4305-ac27-e6845e06f207",
+  "id": "adf570cc-1d51-47f8-8255-8eda9f341efd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "notes": {
@@ -29,6 +29,13 @@
           "autoincrement": false,
           "default": "''"
         },
+        "due_date": {
+          "name": "due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -41,7 +48,12 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "notes_due_date_is_calendar_date": {
+          "name": "notes_due_date_is_calendar_date",
+          "value": "\"notes\".\"due_date\" IS date(\"notes\".\"due_date\") AND length(\"notes\".\"due_date\") = 10"
+        }
+      }
     }
   },
   "views": {},

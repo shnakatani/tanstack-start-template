@@ -1,5 +1,6 @@
 import * as v from "valibot";
 
+import { isExistingCalendarDate } from "@/lib/calendar-date";
 import { truncateCodeUnits } from "@/lib/truncate-code-units";
 
 /** ドメインの呼称。画面見出し・追加ボタン・削除確認の文言が使う。 */
@@ -8,6 +9,7 @@ export const NOTE_ENTITY_LABEL = "メモ";
 /** 項目の呼称。検証メッセージと各項目の `v.metadata({ label })` が同じ定数を使う (ADR-0013 §4)。 */
 const TITLE_LABEL = "タイトル";
 const BODY_LABEL = "本文";
+const DUE_DATE_LABEL = "期日";
 /**
  * 入力用と保存用で pipe が分かれる title は、同じ action を両方に渡す。pipe の外で作る action は
  * `TInput` を型引数で与える。無いと `unknown` に推論され、`v.pipe` の overload に合わない。
@@ -45,6 +47,20 @@ export const noteInputSchema = v.object({
     v.string(),
     v.maxLength(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
     v.metadata({ label: BODY_LABEL }),
+  ),
+  /**
+   * 暦の日付 (ADR-0031 の分類 2)。期日なしは null。`Date` を経由せず `YYYY-MM-DD` のまま持つ。
+   * `isoDate()` は形式だけを見て 2023-06-31 を通すので、暦に存在するかを `v.check` で足す
+   */
+  dueDate: v.pipe(
+    v.nullable(
+      v.pipe(
+        v.string(),
+        v.isoDate(`${DUE_DATE_LABEL}は YYYY-MM-DD の形式で指定してください`),
+        v.check(isExistingCalendarDate, `${DUE_DATE_LABEL}に存在しない日付が指定されています`),
+      ),
+    ),
+    v.metadata({ label: DUE_DATE_LABEL }),
   ),
 });
 export type NoteInput = v.InferOutput<typeof noteInputSchema>;
@@ -97,6 +113,7 @@ export type Note = v.InferOutput<typeof noteSchema>;
 export const NOTE_FIELD_LABELS = {
   title: v.getMetadata(noteSchema.entries.title).label,
   body: v.getMetadata(noteSchema.entries.body).label,
+  dueDate: v.getMetadata(noteSchema.entries.dueDate).label,
   id: v.getMetadata(noteSchema.entries.id).label,
   createdAt: v.getMetadata(noteSchema.entries.createdAt).label,
 } satisfies Record<keyof Note, string>;

@@ -24,7 +24,7 @@ import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
 import { NOTE_SEARCH_DEBOUNCE_MS, noteSearchResultMessage } from "../-lib/note-search";
-import { NOTES_PAGE_TITLE } from "../-lib/notes-page-title";
+import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 import { NoteSearchField } from "./note-search-field";
 

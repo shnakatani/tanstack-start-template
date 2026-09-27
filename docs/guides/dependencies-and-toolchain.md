@@ -2,11 +2,12 @@
 
 依存を足す・上げる・前倒しするとき、ツールや設定を足すときの手順と落とし穴を持つ。
 
-| 決定                                                                     | ADR      |
-| ------------------------------------------------------------------------ | -------- |
-| 開発環境のツールチェーンは mise と Vite+ に寄せる                        | ADR-0004 |
-| 依存更新は待機 3 日で統一し、pin には出口条件を書く                      | ADR-0005 |
-| GitHub Actions の定義は zizmor で検査し、action は commit SHA で固定する | ADR-0006 |
+| 決定                                                                                        | ADR      |
+| ------------------------------------------------------------------------------------------- | -------- |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                                           | ADR-0004 |
+| 依存更新は待機 3 日で統一し、pin には出口条件を書く                                         | ADR-0005 |
+| GitHub Actions の定義は zizmor で検査し、action は commit SHA で固定する                    | ADR-0006 |
+| テストの import を重くする依存のバレルは使わず、個別エントリポイントから引き、lint で止める | ADR-0032 |
 
 ## how-to
 
@@ -48,6 +49,21 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 
 追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残るので、Vite+ 一族の恒久除外は刈られない。
 
+### 依存をバレルの禁止の対象に足す
+
+対象に足すかは ADR-0032 の基準で決める。手順は次のとおり。実例は `vite.config.ts` の `RESTRICTED_BARREL_IMPORTS` の date-fns の 2 行。
+
+1. 依存の `package.json` の `exports` を読み、個別エントリポイントがあるかと、バレルがどれか (ルートの `.`、`./locale` のようなまとめ) を確かめる。個別エントリポイントが無い依存は対象にできない
+2. バレルから 1 つだけ import するテストと、同じものを個別エントリポイントから import するテストを 1 ファイルずつ `src/lib/` に一時的に置く。Node で読むなら `.test.ts`、ブラウザで読むなら `.test.tsx`
+3. 1 ファイルずつ `vp test run --project <unit か browser> <ファイル> --experimental.importDurations.print --experimental.importDurations.limit=10` を複数回実行し、`Duration` の `import` と、内訳が出れば `Total import time` の self を回ごとに控える。`Total import time` の total は入れ子の import を二重に数えるので使わない (ADR-0032 の「調査結果」)。browser project は 1 回目に依存の事前バンドルが走りうるので、比較から外す
+4. 比較する回の中央値の差が、両者の最大と最小の差の和を超えるかを見る。超えなければ足さない
+5. 足すなら `RESTRICTED_BARREL_IMPORTS` に `{ name, message }` を 1 つずつ足す。`name` は specifier の完全一致で、サブパス (`date-fns/format`) は止めない。`message` には個別エントリポイントの例と `(ADR-0032)` を書く
+6. `vp lint -f unix src scripts .storybook` で、足した依存のバレルを import している箇所を洗い出し、個別エントリポイントへ直す
+7. 一時的に置いたテストを消す
+
+- 依存の中の import (ある依存が別の依存のバレルを読む経路) は lint が届かない。テストを遅くしているかは、その依存を描くテストを同じ手順で測る
+- `RESTRICTED_BARREL_IMPORTS` はトップレベルとテスト専用コードの import 禁止の override の両方へ渡っている。片方だけに書き足さない (`docs/guides/lint/configuration.md`「設定の落とし穴」)
+
 ### catalog にエントリを足す
 
 `vite-plus` と core (`vite` の alias 先) のように同一リリースで exact pin される対は、Dependabot のグループへ束ねてある (ADR-0005 の決定 5)。
@@ -66,14 +82,15 @@ pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏
 
 ### 依存を上げたときに見直すもの
 
-| 上げたもの                        | 見直すもの                                                                                                                                                                                                                                                                                |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vite+                             | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する                                                                                                                               |
-| oxlint (Vite+ 同梱) の minor 以上 | `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」                                                                                                                                                                                                                  |
-| Base UI                           | `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring (自己リセットの条件の表)                                                                                                                                                                                         |
-| axe-core                          | `docs/guides/accessibility.md`「axe を上げたとき」。あわせて `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」)                                                                                             |
-| colorjs.io                        | `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」「測り方の限界」)。版が上がると値が変わりうる                                                                                                              |
-| vitest                            | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている (vitest の issue 9157) |
+| 上げたもの                               | 見直すもの                                                                                                                                                                                                                                                                                |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vite+                                    | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する                                                                                                                               |
+| oxlint (Vite+ 同梱) の minor 以上        | `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」                                                                                                                                                                                                                  |
+| Base UI                                  | `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring (自己リセットの条件の表)                                                                                                                                                                                         |
+| axe-core                                 | `docs/guides/accessibility.md`「axe を上げたとき」。あわせて `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」)                                                                                             |
+| colorjs.io                               | `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」「測り方の限界」)。版が上がると値が変わりうる                                                                                                              |
+| vitest                                   | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている (vitest の issue 9157) |
+| `RESTRICTED_BARREL_IMPORTS` に載せた依存 | `exports` に個別エントリポイントが残っているか。消えていれば lint の `message` が案内する import が解決しなくなる。react-day-picker を上げたときは、内部の date-fns の import と `locale/ja` の import が変わったかも見る (ADR-0032 の Consequences の再評価の条件)                       |
 
 ### 走査対象を持つ config を足す
 

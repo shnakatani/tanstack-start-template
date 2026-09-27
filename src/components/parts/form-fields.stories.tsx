@@ -5,6 +5,7 @@ import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
 import * as v from "valibot";
 
 import { Button } from "@/components/ui/button";
+import { excludeFromA11y } from "@/components/ui/calendar.story-helpers";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-app-form";
 
@@ -12,7 +13,7 @@ import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "./form-fields";
 
 /**
  * `form.AppField` の内側でしか動かない配線部品なので、story も TanStack Form の
- * harness ごと組む。カタログの本体は `FieldsForm` で、4 種のフィールドを 1 つのフォームへ
+ * harness ごと組む。カタログの本体は `FieldsForm` で、5 種のフィールドを 1 つのフォームへ
  * 並べる。
  *
  * ラベルの色 (`fieldLabelClassName` の合成順) は `getComputedStyle` で固定する回帰として
@@ -29,6 +30,10 @@ const statusSchema = v.pipe(
 const canEditSchema = v.pipe(
   v.boolean(),
   v.check((value) => value, "編集可を選択してください"),
+);
+const dueDateSchema = v.pipe(
+  v.nullable(v.string()),
+  v.check((value) => value !== null, "期日を選択してください"),
 );
 
 const STATUS_OPTIONS: readonly { value: string; label: string }[] = [
@@ -54,7 +59,7 @@ function captureConsoleWarn() {
 interface StoryArgs {
   /** 検証の発火モード。`blur` はフォーカスが外れた時点で検証する */
   validationMode: "submit" | "blur";
-  /** `FormTextField` と `FormSelectField` を無効にする */
+  /** `FieldsForm` の全フィールド (text / number / select / date / checkbox) を無効にする */
   disabled: boolean;
   /** `FormSelectField` の候補 */
   options: readonly { value: string; label: string }[];
@@ -70,10 +75,11 @@ interface CatalogValues {
   name: string;
   sortOrder: number | null;
   type: string;
+  dueDate: string | null;
   canEdit: boolean;
 }
 
-/** 4 種のフィールドを 1 つのフォームへ並べたカタログ本体 */
+/** 5 種のフィールドを 1 つのフォームへ並べたカタログ本体 */
 function FieldsForm({
   validationMode,
   disabled,
@@ -86,6 +92,7 @@ function FieldsForm({
     name: "",
     sortOrder: 1,
     type: "inactive",
+    dueDate: null,
     canEdit: false,
   };
   const form = useAppForm({
@@ -134,6 +141,16 @@ function FieldsForm({
               fieldValue={field.state.value}
               options={options}
               placeholder="状態を選択"
+              disabled={disabled}
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="dueDate" validators={{ onDynamic: dueDateSchema }}>
+          {(field) => (
+            <field.FormDateField
+              label="期日"
+              emptyText="期日なし"
+              fieldValue={field.state.value}
               disabled={disabled}
             />
           )}
@@ -320,6 +337,20 @@ function NumberForm({ onSubmit, onChangeValue }: StoryArgs) {
   );
 }
 
+/** 期日フィールド単独のフォーム。2026-08-07 を持ち、Calendar はその月を開く */
+function DateForm({ onChangeValue }: StoryArgs) {
+  const defaultValues: { dueDate: string | null } = { dueDate: "2026-08-07" };
+  const form = useAppForm({ defaultValues });
+
+  return (
+    <form.AppField name="dueDate" listeners={{ onChange: ({ value }) => onChangeValue(value) }}>
+      {(field) => (
+        <field.FormDateField label="期日" emptyText="期日なし" fieldValue={field.state.value} />
+      )}
+    </form.AppField>
+  );
+}
+
 /** NumberField は type="text" なので、locator 相当の入力は追記になる。全選択してから打つ */
 function textbox(name: string): HTMLInputElement {
   const element = screen.getByRole("textbox", { name });
@@ -349,6 +380,25 @@ async function chooseStatus(label: string): Promise<void> {
   );
 }
 
+/** トリガーの名前はラベルと表示中の値をつないだもの (FormDateField の docstring) */
+const DATE_TRIGGER_WITH_VALUE = "期日 2026年8月7日";
+const DATE_TRIGGER_EMPTY = "期日 期日なし";
+
+async function openDatePicker(): Promise<void> {
+  await userEvent.click(screen.getByRole("button", { name: DATE_TRIGGER_WITH_VALUE }));
+  await screen.findByRole("grid");
+}
+
+async function closeDatePicker(): Promise<void> {
+  await userEvent.keyboard("{Escape}");
+  await waitForDatePickerUnmount();
+}
+
+/** popup の unmount を待ってから終える。待たないと a11y 検査が animate-out の窓に入る */
+async function waitForDatePickerUnmount(): Promise<void> {
+  await waitFor(() => expect(screen.queryByRole("grid")).not.toBeInTheDocument());
+}
+
 const meta = {
   // useAppForm は mount 時の validationLogic を握る。key を付けないと control で
   // validationMode を変えても再描画されるだけで効かず、動かない knob が残る
@@ -367,7 +417,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 既定。text / number / select / checkbox の 4 種が並ぶ */
+/** 既定。text / number / select / date / checkbox の 5 種が並ぶ */
 export const Default: Story = {};
 
 /**
@@ -390,10 +440,14 @@ export const Invalid: Story = {
     const status = screen.getByRole("combobox", { name: "状態" });
     await expect(status).toBeInvalid();
     await expect(status).toHaveAccessibleDescription(/状態を選択してください/);
+
+    const dueDate = screen.getByRole("button", { name: DATE_TRIGGER_EMPTY });
+    await expect(dueDate).toBeInvalid();
+    await expect(dueDate).toHaveAccessibleDescription(/期日を選択してください/);
   },
 };
 
-/** 無効表示。4 部品とも正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が付く */
+/** 無効表示。5 部品とも正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が付く */
 export const Disabled: Story = {
   args: { disabled: true },
   play: async () => {
@@ -408,6 +462,10 @@ export const Disabled: Story = {
     const status = screen.getByRole("combobox", { name: "状態" });
     await expect(status).toBeDisabled();
     await expect(status.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
+
+    const dueDate = screen.getByRole("button", { name: DATE_TRIGGER_EMPTY });
+    await expect(dueDate).toBeDisabled();
+    await expect(dueDate.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
 
     // getByRole("checkbox") が返すのは span なので aria で見る。native の disabled は
     // 隣の隠し input が持つが、aria-hidden で accessibility tree に出ない
@@ -433,6 +491,52 @@ export const ValidatesOnBlur: Story = {
     const status = screen.getByRole("combobox", { name: "状態" });
     blurTo(status);
     await waitFor(() => expect(status).toBeInvalid());
+
+    const dueDate = screen.getByRole("button", { name: DATE_TRIGGER_EMPTY });
+    blurTo(dueDate);
+    await waitFor(() => expect(dueDate).toBeInvalid());
+  },
+};
+
+/**
+ * blur mode の期日は、Popover を開いてフォーカスが popup へ移っても検証しない。日を選んでいる
+ * 最中に「期日を選択してください」を出さない。閉じたときに検証する。開かずに通り過ぎたときの
+ * 検証は `ValidatesOnBlur` が見る
+ */
+export const DateValidatesOnClose: Story = {
+  tags: ["!dev"],
+  args: { validationMode: "blur" },
+  play: async () => {
+    const dueDate = screen.getByRole("button", { name: DATE_TRIGGER_EMPTY });
+    await userEvent.click(dueDate);
+    await screen.findByRole("grid");
+    // フォーカスが popup へ移り、トリガーの blur が起きた後で見る。値が無いので今日の日へ移る
+    await waitFor(() => expect(screen.getByRole("button", { name: /^今日、/ })).toHaveFocus());
+    await expect(dueDate).not.toBeInvalid();
+
+    await closeDatePicker();
+
+    await waitFor(() => expect(dueDate).toBeInvalid());
+    await expect(dueDate).toHaveAccessibleDescription(/期日を選択してください/);
+  },
+};
+
+/** 外側を押して閉じたときも、`DateValidatesOnClose` の Escape と同じく閉じた時点で検証する */
+export const DateValidatesOnOutsideClick: Story = {
+  tags: ["!dev"],
+  args: { validationMode: "blur" },
+  play: async () => {
+    const dueDate = screen.getByRole("button", { name: DATE_TRIGGER_EMPTY });
+    await userEvent.click(dueDate);
+    await screen.findByRole("grid");
+    await waitFor(() => expect(screen.getByRole("button", { name: /^今日、/ })).toHaveFocus());
+    await expect(dueDate).not.toBeInvalid();
+
+    await userEvent.click(screen.getByRole("button", { name: "別の操作" }));
+    await waitForDatePickerUnmount();
+
+    await waitFor(() => expect(dueDate).toBeInvalid());
+    await expect(dueDate).toHaveAccessibleDescription(/期日を選択してください/);
   },
 };
 
@@ -631,5 +735,76 @@ export const NumberNormalizesInput: Story = {
 
     await waitFor(() => expect(args.onChangeValue).toHaveBeenLastCalledWith(2));
     await expect(sortOrder).toHaveValue("2");
+  },
+};
+
+/** 期日を持つ状態。トリガーに選んだ日が出る */
+export const DateWithValue: Story = {
+  render: (args) => <DateForm {...args} />,
+};
+
+/**
+ * 開いた状態。popup はラベルを名前に持つ dialog で、フォーカスは選択中の日にある。
+ * 閉じずに終え、a11y 検査を開いた状態に当てる
+ */
+export const DateOpen: Story = {
+  render: (args) => <DateForm {...args} />,
+  // 見出しを axe から外す理由は calendar.story-helpers.ts の excludeFromA11y の docstring にある
+  parameters: excludeFromA11y(),
+  play: async () => {
+    await openDatePicker();
+
+    await expect(screen.getByRole("dialog")).toHaveAccessibleName("期日");
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "2026年8月7日金曜日、選択済み" })).toHaveFocus(),
+    );
+  },
+};
+
+/** 日を押すと、その日が YYYY-MM-DD で form の値に入り、トリガーの表示が変わる */
+export const DateSelectsDay: Story = {
+  tags: ["!dev"],
+  render: (args) => <DateForm {...args} />,
+  play: async ({ args }) => {
+    await openDatePicker();
+    await userEvent.click(screen.getByRole("button", { name: "2026年8月20日木曜日" }));
+
+    await expect(args.onChangeValue).toHaveBeenLastCalledWith("2026-08-20");
+    await expect(screen.getByRole("button", { name: "期日 2026年8月20日" })).toBeInTheDocument();
+    await closeDatePicker();
+  },
+};
+
+/** 選択中の日をもう一度押すと外れ、form の値が null になる */
+export const DateDeselectsOnSecondClick: Story = {
+  tags: ["!dev"],
+  render: (args) => <DateForm {...args} />,
+  play: async ({ args }) => {
+    await openDatePicker();
+    await userEvent.click(screen.getByRole("button", { name: "2026年8月7日金曜日、選択済み" }));
+
+    await expect(args.onChangeValue).toHaveBeenLastCalledWith(null);
+    await expect(screen.getByRole("button", { name: DATE_TRIGGER_EMPTY })).toBeInTheDocument();
+    await closeDatePicker();
+  },
+};
+
+/** クリアボタンで form の値が null になり、値が無い間はクリアボタンを押せない。キーボードで押してもフォーカスは失われない */
+export const DateClears: Story = {
+  tags: ["!dev"],
+  render: (args) => <DateForm {...args} />,
+  play: async ({ args }) => {
+    await openDatePicker();
+    const clear = screen.getByRole("button", { name: "期日をクリア" });
+    clear.focus();
+    await userEvent.keyboard("{Enter}");
+
+    await expect(args.onChangeValue).toHaveBeenLastCalledWith(null);
+    await expect(screen.getByRole("button", { name: DATE_TRIGGER_EMPTY })).toBeInTheDocument();
+    // focusableWhenDisabled なので native の disabled ではなく aria-disabled で無効になり、
+    // 押した直後のフォーカスがクリアボタンに残る
+    await expect(clear).toHaveAttribute("aria-disabled", "true");
+    await expect(clear).toHaveFocus();
+    await closeDatePicker();
   },
 };

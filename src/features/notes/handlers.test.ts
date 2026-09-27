@@ -38,9 +38,9 @@ describe("notes handlers", () => {
     });
 
     it("createdAt の新しい順に返す", async () => {
-      await handlers.create({ title: "古い", body: "" });
+      await handlers.create({ title: "古い", body: "", dueDate: null });
       vi.advanceTimersByTime(1000);
-      await handlers.create({ title: "新しい", body: "" });
+      await handlers.create({ title: "新しい", body: "", dueDate: null });
 
       expect((await handlers.list(NO_FILTER)).map((note) => note.title)).toEqual([
         "新しい",
@@ -50,8 +50,8 @@ describe("notes handlers", () => {
 
     it("createdAt が同一でも id の降順で決定的に並ぶ", async () => {
       // 同一ミリ秒での連続作成。createdAt だけでは順序が決まらない
-      const first = await handlers.create({ title: "先", body: "" });
-      const second = await handlers.create({ title: "後", body: "" });
+      const first = await handlers.create({ title: "先", body: "", dueDate: null });
+      const second = await handlers.create({ title: "後", body: "", dueDate: null });
 
       const listed = await handlers.list(NO_FILTER);
       expect(listed.map((note) => note.createdAt.getTime())).toEqual([
@@ -62,8 +62,8 @@ describe("notes handlers", () => {
     });
 
     it("q が空なら全件を返す", async () => {
-      await handlers.create({ title: "りんご", body: "" });
-      await handlers.create({ title: "みかん", body: "" });
+      await handlers.create({ title: "りんご", body: "", dueDate: null });
+      await handlers.create({ title: "みかん", body: "", dueDate: null });
 
       expect((await handlers.list({ q: "" })).map((note) => note.title)).toEqual([
         "みかん",
@@ -72,9 +72,9 @@ describe("notes handlers", () => {
     });
 
     it("q を title の部分一致で絞る (body は見ない)", async () => {
-      await handlers.create({ title: "買い物リスト", body: "りんご" });
-      await handlers.create({ title: "りんごの育て方", body: "" });
-      await handlers.create({ title: "青りんご", body: "" });
+      await handlers.create({ title: "買い物リスト", body: "りんご", dueDate: null });
+      await handlers.create({ title: "りんごの育て方", body: "", dueDate: null });
+      await handlers.create({ title: "青りんご", body: "", dueDate: null });
 
       expect((await handlers.list({ q: "りんご" })).map((note) => note.title)).toEqual([
         "青りんご",
@@ -83,10 +83,10 @@ describe("notes handlers", () => {
     });
 
     it("% と _ はワイルドカードではなく文字として扱う", async () => {
-      await handlers.create({ title: "100%", body: "" });
-      await handlers.create({ title: "100x", body: "" });
-      await handlers.create({ title: "a_b", body: "" });
-      await handlers.create({ title: "axb", body: "" });
+      await handlers.create({ title: "100%", body: "", dueDate: null });
+      await handlers.create({ title: "100x", body: "", dueDate: null });
+      await handlers.create({ title: "a_b", body: "", dueDate: null });
+      await handlers.create({ title: "axb", body: "", dueDate: null });
 
       expect((await handlers.list({ q: "100%" })).map((note) => note.title)).toEqual(["100%"]);
       expect((await handlers.list({ q: "a_b" })).map((note) => note.title)).toEqual(["a_b"]);
@@ -94,20 +94,20 @@ describe("notes handlers", () => {
 
     // エスケープ文字そのものを含む検索語。漏れると `\` が次の文字のエスケープになり別の行に当たる
     it("\\ はエスケープの解除ではなく文字として扱う", async () => {
-      await handlers.create({ title: "C:\\dir", body: "" });
-      await handlers.create({ title: "C:dir", body: "" });
+      await handlers.create({ title: "C:\\dir", body: "", dueDate: null });
+      await handlers.create({ title: "C:dir", body: "", dueDate: null });
 
       expect((await handlers.list({ q: "C:\\" })).map((note) => note.title)).toEqual(["C:\\dir"]);
     });
 
     it("ASCII の英字は大文字小文字を区別しない (SQLite の LIKE の既定)", async () => {
-      await handlers.create({ title: "React", body: "" });
+      await handlers.create({ title: "React", body: "", dueDate: null });
 
       expect((await handlers.list({ q: "react" })).map((note) => note.title)).toEqual(["React"]);
     });
 
     it("一致しなければ空配列", async () => {
-      await handlers.create({ title: "りんご", body: "" });
+      await handlers.create({ title: "りんご", body: "", dueDate: null });
 
       expect(await handlers.list({ q: "ぶどう" })).toEqual([]);
     });
@@ -115,7 +115,7 @@ describe("notes handlers", () => {
 
   describe("list の読み出し時検証", () => {
     /**
-     * drizzle を迂用して行を直接入れる。drizzle の型は「そう入っているはず」の主張でしかなく、
+     * drizzle を迂回して行を直接入れる。drizzle の型は「そう入っているはず」の主張でしかなく、
      * 実データがそれを満たす保証にはならない。ずれを実行時に検出できるかを確かめる。
      */
     function insertRawRow(row: { id?: number; title: string; body: string; createdAt: number }) {
@@ -171,7 +171,7 @@ describe("notes handlers", () => {
 
   describe("create", () => {
     it("採番した id を返し、入力どおりに保存する", async () => {
-      const created = await handlers.create({ title: "見出し", body: "本文" });
+      const created = await handlers.create({ title: "見出し", body: "本文", dueDate: null });
 
       expect(created.id).toBeGreaterThan(0);
       const listed = await handlers.list(NO_FILTER);
@@ -180,23 +180,37 @@ describe("notes handlers", () => {
     });
 
     it("createdAt に作成時刻を入れる", async () => {
-      await handlers.create({ title: "見出し", body: "" });
+      await handlers.create({ title: "見出し", body: "", dueDate: null });
 
       const listed = await handlers.list(NO_FILTER);
       expect(listed[0]!.createdAt).toEqual(new Date("2026-08-17T09:00:00.000Z"));
     });
 
     it("空の body をそのまま保存する", async () => {
-      await handlers.create({ title: "見出し", body: "" });
+      await handlers.create({ title: "見出し", body: "", dueDate: null });
 
       expect((await handlers.list(NO_FILTER))[0]!.body).toBe("");
     });
   });
 
+  describe("dueDate", () => {
+    it("期日ありで保存すると同じ YYYY-MM-DD で読み出す", async () => {
+      await handlers.create({ title: "期日あり", body: "", dueDate: "2026-08-20" });
+
+      expect((await handlers.list(NO_FILTER))[0]!.dueDate).toBe("2026-08-20");
+    });
+
+    it("期日なしで保存すると null で読み出す", async () => {
+      await handlers.create({ title: "期日なし", body: "", dueDate: null });
+
+      expect((await handlers.list(NO_FILTER))[0]!.dueDate).toBeNull();
+    });
+  });
+
   describe("remove", () => {
     it("指定した 1 件だけを削除する", async () => {
-      const target = await handlers.create({ title: "消す", body: "" });
-      const survivor = await handlers.create({ title: "残す", body: "" });
+      const target = await handlers.create({ title: "消す", body: "", dueDate: null });
+      const survivor = await handlers.create({ title: "残す", body: "", dueDate: null });
 
       await handlers.remove({ id: target.id });
 
@@ -208,7 +222,7 @@ describe("notes handlers", () => {
     });
 
     it("同じ id を 2 度削除すると 2 度目は throw する", async () => {
-      const created = await handlers.create({ title: "消す", body: "" });
+      const created = await handlers.create({ title: "消す", body: "", dueDate: null });
       await handlers.remove({ id: created.id });
 
       await expect(handlers.remove({ id: created.id })).rejects.toThrow(
@@ -221,7 +235,7 @@ describe("notes handlers", () => {
     const otherDb = createTestDb();
     const otherHandlers = createNoteHandlers(() => otherDb);
     try {
-      await handlers.create({ title: "こちらだけ", body: "" });
+      await handlers.create({ title: "こちらだけ", body: "", dueDate: null });
 
       expect(await handlers.list(NO_FILTER)).toHaveLength(1);
       expect(await otherHandlers.list(NO_FILTER)).toHaveLength(0);

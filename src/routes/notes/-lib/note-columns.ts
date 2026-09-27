@@ -3,14 +3,21 @@ import { createColumnHelper } from "@tanstack/react-table";
 import type { DataTableFeatures } from "@/components/parts/data-table-features";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 
-import { NoteActionsCell, NoteBodyCell, NoteCreatedAtCell } from "../-components/note-cells";
+import {
+  NoteActionsCell,
+  NoteBodyCell,
+  NoteCreatedAtCell,
+  NoteDueDateCell,
+} from "../-components/note-cells";
 import type { NoteRow } from "./note-rows";
 import { noteInputOf } from "./note-rows";
+import type { NOTE_COLUMN_COUNT } from "./notes-page-constants";
 
 const helper = createColumnHelper<DataTableFeatures, NoteRow>();
 
 /**
- * メモ一覧の列定義 (ADR-0018)。`TableSkeleton` の列数もここから採る。
+ * メモ一覧の列定義 (ADR-0018)。列数は `NOTE_COLUMN_COUNT` と `satisfies` で突き合わせる。`helper.columns()` は
+ * 配列をタプルのまま返すので、列を足して定数を直し忘れると型エラーになる。
  * 描画を持つ列は `cell` にコンポーネントの参照を渡す (`FlexRender` が cell の context を
  * props にして描く。TanStack Table「Flex Render」)。JSX はこのファイルに書かない
  */
@@ -24,6 +31,11 @@ export const noteColumns = helper.columns([
     header: NOTE_FIELD_LABELS.body,
     cell: NoteBodyCell,
   }),
+  helper.accessor((row) => noteInputOf(row).dueDate, {
+    id: "dueDate",
+    header: NOTE_FIELD_LABELS.dueDate,
+    cell: NoteDueDateCell,
+  }),
   helper.display({ id: "createdAt", header: NOTE_FIELD_LABELS.createdAt, cell: NoteCreatedAtCell }),
   helper.display({ id: "actions", header: "操作", cell: NoteActionsCell }),
-]);
+]) satisfies { length: typeof NOTE_COLUMN_COUNT };

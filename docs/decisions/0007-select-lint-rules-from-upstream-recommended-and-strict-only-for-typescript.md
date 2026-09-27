@@ -97,11 +97,11 @@ oxc 自身の設定と同じく、`correctness` と `perf` に入る分だけを
 
 recommended に無くても、規約や他の決定を機械で守るために足すルールがある。
 
-| ルール                                  | 名指しの理由                                                                                                               |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                     |
-| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)                                         |
-| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる |
+| ルール                                  | 名指しの理由                                                                                                                                  |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                                        |
+| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)。テストの import を重くする依存のバレルを止める (ADR-0032) |
+| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる                    |
 
 テスト専用コードの import を止める範囲と手段の比較は ADR-0008 が持つ。
 
