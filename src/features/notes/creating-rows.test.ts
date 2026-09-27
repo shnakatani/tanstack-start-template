@@ -18,9 +18,9 @@ describe("parseCreatingRows", () => {
   });
 
   it("NoteInput の形の variables を submittedAt 付きで返す", () => {
-    expect(parseCreatingRows([{ variables: { title: "a", body: "b" }, submittedAt: 10 }])).toEqual([
-      { variables: { title: "a", body: "b" }, submittedAt: 10 },
-    ]);
+    expect(
+      parseCreatingRows([{ variables: { title: "a", body: "b", dueDate: null }, submittedAt: 10 }]),
+    ).toEqual([{ variables: { title: "a", body: "b", dueDate: null }, submittedAt: 10 }]);
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
@@ -31,10 +31,10 @@ describe("parseCreatingRows", () => {
 
     expect(
       parseCreatingRows([
-        { variables: { title: "a", body: "b" }, submittedAt: 10 },
+        { variables: { title: "a", body: "b", dueDate: null }, submittedAt: 10 },
         ...invalid.map((variables, index) => ({ variables, submittedAt: 20 + index })),
       ]),
-    ).toEqual([{ variables: { title: "a", body: "b" }, submittedAt: 10 }]);
+    ).toEqual([{ variables: { title: "a", body: "b", dueDate: null }, submittedAt: 10 }]);
 
     expect(warnSpy).toHaveBeenCalledTimes(invalid.length);
     expect(warnSpy).toHaveBeenCalledWith("[parseCreatingRows] variables が NoteInput でない", {

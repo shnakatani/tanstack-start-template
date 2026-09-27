@@ -130,7 +130,7 @@ describe("NoteCreateDialog", () => {
 
     await vi.waitFor(() => {
       expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
-        data: { title: "買い物リスト", body: "牛乳とパン" },
+        data: { title: "買い物リスト", body: "牛乳とパン", dueDate: null },
       });
     });
   });

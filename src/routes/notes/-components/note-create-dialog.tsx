@@ -128,7 +128,7 @@ function NoteCreateForm({
   /** 保存の応答待ちで close を止めている間か。キャンセルも同じ源で無効化して見た目と挙動を揃える */
   blocksClose: boolean;
 }) {
-  const initialValues: NoteInput = { title: "", body: "" };
+  const initialValues: NoteInput = { title: "", body: "", dueDate: null };
 
   const form = useAppForm({
     defaultValues: initialValues,
@@ -138,7 +138,8 @@ function NoteCreateForm({
     // 必須検証は title の AppField validator が保存前に強制する。ここでは
     // noteInputSchema の trim と同じ正規化だけ先に済ませ、送信値と保存値を一致させる。
     // Promise を返すので form.handleSubmit() の Promise が mutation の決着まで続く
-    onSubmit: ({ value }) => onSubmit({ title: value.title.trim(), body: value.body }),
+    onSubmit: ({ value }) =>
+      onSubmit({ title: value.title.trim(), body: value.body, dueDate: value.dueDate }),
   });
 
   return (

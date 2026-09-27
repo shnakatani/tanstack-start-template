@@ -13,7 +13,7 @@ import {
 } from "./schema";
 
 describe("noteInputSchema", () => {
-  const valid = { title: "テスト", body: "本文" };
+  const valid = { title: "テスト", body: "本文", dueDate: null };
 
   it("accepts valid input", () => {
     const result = v.safeParse(noteInputSchema, valid);
@@ -75,6 +75,33 @@ describe("noteInputSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  describe("dueDate", () => {
+    it.each([null, "2026-08-20", "2024-02-29"])("%p を受け付ける", (dueDate) => {
+      const result = v.safeParse(noteInputSchema, { ...valid, dueDate });
+      expect.assert(result.success, "safeParse が失敗した");
+      expect(result.output.dueDate).toBe(dueDate);
+    });
+
+    // 形式違いは isoDate、形式が正しく暦に無い日付は v.check が落とす。isoDate だけでは
+    // 2023-06-31 が通る (valibot 1.4.2 の isoDate の型定義の Hint)
+    it.each([
+      ["2026/08/20", `${NOTE_FIELD_LABELS.dueDate}は YYYY-MM-DD の形式で指定してください`],
+      ["2026-8-20", `${NOTE_FIELD_LABELS.dueDate}は YYYY-MM-DD の形式で指定してください`],
+      ["2023-06-31", `${NOTE_FIELD_LABELS.dueDate}に存在しない日付が指定されています`],
+      ["2023-02-29", `${NOTE_FIELD_LABELS.dueDate}に存在しない日付が指定されています`],
+    ])("%p を日本語の文言で拒否する", (dueDate, message) => {
+      const result = v.safeParse(noteInputSchema, { ...valid, dueDate });
+      expect.assert(!result.success, "safeParse が成功してしまった");
+      expect(result.issues.map((issue) => issue.message)).toContain(message);
+    });
+
+    // 期日なしは null で持つ。キーの欠けを null とみなさない (送信側の書き忘れを通さない)
+    it("dueDate の欠けた入力を拒否する", () => {
+      const result = v.safeParse(noteInputSchema, { title: "テスト", body: "本文" });
+      expect(result.success).toBe(false);
+    });
+  });
+
   /**
    * 検証メッセージはフォームの FieldError にそのまま出る。valibot の既定文言は
    * "Invalid length: Expected >=1 but received 0" のような英語の技術文言なので、
@@ -112,7 +139,13 @@ describe("noteInputSchema", () => {
 });
 
 describe("noteSchema", () => {
-  const valid = { title: "テスト", body: "本文", id: 1, createdAt: new Date("2026-08-17") };
+  const valid = {
+    title: "テスト",
+    body: "本文",
+    dueDate: null,
+    id: 1,
+    createdAt: new Date("2026-08-17"),
+  };
 
   it("accepts valid note", () => {
     const result = v.safeParse(noteSchema, valid);
@@ -164,9 +197,19 @@ describe("noteSchema", () => {
 
   // 入力側の trim は維持する (フォームの前後空白は正規化して保存する)
   it("noteInputSchema 側の trim は残っている", () => {
-    const result = v.safeParse(noteInputSchema, { title: "  見出し  ", body: "" });
+    const result = v.safeParse(noteInputSchema, { title: "  見出し  ", body: "", dueDate: null });
     expect.assert(result.success, "safeParse が失敗した");
     expect(result.output.title).toBe("見出し");
+  });
+
+  // 読み出しゲートも入力側と同じ制約で読む。手書き SQL で入った暦に無い日付を画面へ流さない
+  it("暦に無い dueDate を reject する", () => {
+    const result = v.safeParse(noteSchema, { ...valid, dueDate: "2023-02-29" });
+    expect(result.success).toBe(false);
+  });
+
+  it("期日の呼称を NOTE_FIELD_LABELS に載せる", () => {
+    expect(NOTE_FIELD_LABELS.dueDate).toBe("期日");
   });
 });
 

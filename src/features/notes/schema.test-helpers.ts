@@ -11,6 +11,7 @@ export const NOTE: Note = {
   id: 1,
   title: "買い物リスト",
   body: "牛乳とパンを買う",
+  dueDate: "2026-08-20",
   createdAt: new Date("2026-08-17T00:30:00.000Z"),
 };
 
@@ -26,6 +27,7 @@ export const OTHER_NOTE: Note = {
   id: 2,
   title: "読書メモ",
   body: "気になった箇所を書き出す",
+  dueDate: null,
   createdAt: new Date("2026-08-18T00:30:00.000Z"),
 };
 
@@ -37,11 +39,12 @@ export const CREATED_NOTE: Note = {
   id: 3,
   title: "新しいメモ",
   body: "本文",
+  dueDate: "2026-08-21",
   createdAt: new Date("2026-08-19T00:30:00.000Z"),
 };
 
 /** CREATED_NOTE を保存中の楽観行として見た形。id と createdAt をまだ持たない */
 export const CREATING_ROW: CreatingRow = {
   submittedAt: 1_700_000_000_000,
-  variables: { title: CREATED_NOTE.title, body: CREATED_NOTE.body },
+  variables: { title: CREATED_NOTE.title, body: CREATED_NOTE.body, dueDate: CREATED_NOTE.dueDate },
 };
