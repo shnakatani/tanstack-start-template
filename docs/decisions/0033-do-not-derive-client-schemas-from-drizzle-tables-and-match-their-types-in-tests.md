@@ -18,18 +18,15 @@ drizzle は、テーブル定義から valibot のスキーマを作る関数を
 | `src/features/notes/creating-rows.ts`                 | `v.object({ variables: noteInputSchema, … })` (保存中の行の検証)                         |
 | `src/routes/notes/-lib/note-columns.ts` ほか          | `NOTE_FIELD_LABELS` (`noteSchema.entries` の metadata から呼称を読む)                    |
 
-スキーマをテーブル定義から作ると、テーブル定義と drizzle の本体がクライアントの bundle に入る。2026-09-28 に、プロジェクトの外の一時ディレクトリで測った。条件は次のとおりで、テンプレートの実際のビルド (Vite と Rolldown) と `drizzle-orm/valibot` では測っていない。
+スキーマをテーブル定義から作ると、テーブル定義と drizzle の本体がクライアントの bundle に入る。2026-09-28 に `vp build` で、クライアントの出力 (`.output/public/assets/` の js の合計。gzip 後の値は Vite の表示) を比べた。B と C は、テーブル定義の写しを `src/features/notes/` に一時的に置いて `src/features/notes/schema.ts` から参照し、C はさらに `drizzle-valibot` 0.4.2 を入れて `createInsertSchema` を呼んだ (drizzle-orm 0.45.2、valibot 1.4.2)。drizzle 1.0 の `drizzle-orm/valibot` では測っていない。
 
-- 版: esbuild 0.25.12、drizzle-orm 0.45.2、drizzle-valibot 0.4.2、valibot 1.4.2
-- ディレクトリの `package.json` は `"type": "module"` (テンプレートと同じ)。`"commonjs"` にするとエントリが CJS と判定されて drizzle-orm の tree-shaking が効かず、C の minify 後は 83,915 B になった
-- テーブル定義は `src/server/db/schema.ts` の `notes` と同じ。A と B のスキーマは title・body・dueDate の 3 項目を `v.object` で組み、C は同じ 3 項目を `createInsertSchema` の第 2 引数に渡した
-- コマンドは `esbuild <entry> --bundle --minify --format=esm --platform=browser`、gzip 後の値は `gzip -9 -c | wc -c`
+| 状態                                          | js の合計 | gzip 後   | A との差 (gzip) |
+| --------------------------------------------- | --------- | --------- | --------------- |
+| A. テンプレートのまま                         | 883.80 kB | 283.07 kB | —               |
+| B. A にテーブル定義を足す                     | 900.63 kB | 287.74 kB | +4.67 kB        |
+| C. B に `createInsertSchema` の呼び出しを足す | 910.01 kB | 290.06 kB | +6.99 kB        |
 
-| エントリ                                     | minify 後 | gzip 後  | A との差 (gzip) |
-| -------------------------------------------- | --------- | -------- | --------------- |
-| A. valibot だけでスキーマを組む              | 4,526 B   | 1,725 B  | —               |
-| B. A にテーブル定義を足す                    | 27,307 B  | 7,730 B  | +6,005 B        |
-| C. テーブル定義から `drizzle-valibot` で作る | 37,960 B  | 10,316 B | +8,591 B        |
+増えたのは、どれもエントリの chunk (`index-*.js`) だった。`src/routes/notes/index.tsx` は `validateSearch` に `src/features/notes/schema.ts` のスキーマを渡しており、`validateSearch` は分割されない property なので (ADR-0010)、`src/features/notes/schema.ts` はエントリの chunk に入る。
 
 上流もこの問題を認識しているが、公式の解決策は無い。
 
@@ -52,16 +49,12 @@ ADR-0013 は、手書きの型とスキーマを型テストで突き合わせ�
 
 ### 検討した選択肢
 
-| 案                                                                                                | クライアントの bundle                  | 結び付くもの                               | 採否     |
-| ------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------ | -------- |
-| スキーマは valibot で書き、テーブル定義の型と型テストで突き合わせる                               | 増えない                               | 項目の有無、null を許すか、型              | **採用** |
-| スキーマ全体をテーブル定義から作る (`drizzle-orm/valibot`)                                        | gzip で約 8.6 KB 増える (Context の C) | 出処が 1 つになる                          | 却下     |
-| サーバーの validator だけテーブル定義から作り、フロントは共有の項目スキーマから `v.object` を組む | 増えない                               | 採用案と同じに、サーバーの検証の形が加わる | 却下     |
-| コード生成 (第三者のツールか自作)                                                                 | 増えない                               | 出処が 1 つになる                          | 却下     |
-
-- テーブル定義から作る案は、公式の用法であり出処も 1 つになるが、フロントの 3 か所がスキーマを実行時に使うので、drizzle の本体がクライアントに入る。テーブル定義もクライアントへ出すことになり、issue 941 が挙げる DB のスキーマの漏えいに当たる。ADR-0010 の `importProtection` (`**/src/server/db/**`) も、クライアントからのテーブル定義の import を止めているので、その範囲を狭める必要がある。Context の実測で、テーブル定義を足しただけで gzip の大きさは約 4.5 倍になった
-- サーバーの validator だけテーブル定義から作る案は、server function の validator がクライアント向けのビルドから消えるので bundle は増えない (TanStack/router の `packages/start-plugin-core/tests/createServerFn/` の client 向けの snapshot で、`.validator(...)` が消えている)。ただし項目ごとの制約は DB に無いので、共有の項目スキーマに手で書くことは変わらない。結び付くものは型テストと同じで、スキーマを組む経路と依存だけが増える。drizzle 1.0 で `drizzle-valibot` から `drizzle-orm/valibot` へ移すときに書き直しも要る
-- コード生成は、valibot 向けのツールが無く、zod 向けのツールも型を落とす (Context)。自作すると、生成器という検査の道具を保守することになる
+| 案                                                                                                | 評価                                                                                                                                                                                                                                                                                                                                                        | 採否     |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| スキーマは valibot で書き、テーブル定義の読み出しの型と型テストで突き合わせる                     | クライアントの bundle は増えない。項目の有無、null を許すか、型のずれを `vp check` で止められる                                                                                                                                                                                                                                                             | **採用** |
+| スキーマ全体をテーブル定義から作る (`drizzle-orm/valibot`)                                        | 公式の用法で出処も 1 つになるが、フロントの 3 か所がスキーマを実行時に使うので、エントリの chunk が gzip で約 7 kB 増える (Context の C)。テーブル定義をクライアントへ出すことになり、issue 941 が挙げる DB のスキーマの漏えいに当たる。ADR-0010 の `importProtection` (`**/src/server/db/**`) の範囲も狭める必要がある                                     | 却下     |
+| サーバーの validator だけテーブル定義から作り、フロントは共有の項目スキーマから `v.object` を組む | server function の validator はクライアント向けのビルドから消えるので bundle は増えない (TanStack/router の `packages/start-plugin-core/tests/createServerFn/` の client 向けの snapshot)。ただし項目ごとの制約は DB に無く、共有の項目スキーマに手で書くことは変わらない。結び付くものは採用案と同じで、経路と依存だけが増え、drizzle 1.0 で書き直しも要る | 却下     |
+| コード生成 (第三者のツールか自作)                                                                 | valibot 向けのツールが無く、zod 向けのツールも型を落とす (Context)。自作すると、生成器という検査の道具を保守することになる                                                                                                                                                                                                                                  | 却下     |
 
 ## Consequences
 
