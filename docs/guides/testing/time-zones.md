@@ -2,13 +2,11 @@
 
 テスト全体の基準のタイムゾーンと、テストの中でタイムゾーンを切り替える方法を持つ。画面に日時を出すときの整形は `docs/guides/dates-and-time-zones.md` が持つ。
 
-この主題を決めた ADR は無い。
-
 ## how-to
 
 ### 基準のタイムゾーン
 
-- テスト全体の TZ は `vitest.global-setup.ts` が `America/New_York` に決める。`vitest.config.ts` の root の `test.globalSetup` に登録してあり、メインプロセスの TZ を決めるので、どの project にも効く (unit・scripts・ブラウザで確かめた。「基準を root の globalSetup に置く理由」)
+- テスト全体の TZ は `vitest.global-setup.ts` が `America/New_York` に決める。`vitest.config.ts` の root の `test.globalSetup` に登録してあり、メインプロセスの TZ を決める。確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
 - 基準に依存するテストを書くときは、基準が `America/New_York` であることを前提にしてよい。ホストの TZ や `TZ` 環境変数には左右されない (`vitest.global-setup.ts` が上書きする)
 - 基準の値を変えるときは、`APP_TIME_ZONE` とも UTC とも違う値にする (「基準を `America/New_York` にする理由」)
 
@@ -22,7 +20,7 @@
 
 - `cdp().send("Emulation.setTimezoneOverride", { timezoneId: "<IANA 名>" })` で切り替える (`cdp` は `vite-plus/test/browser/context`)。戻すときは `timezoneId: ""` を送る。CDP の定義は "If empty, disables the override and restores default host system timezone." で、基準の `America/New_York` に戻る
 - 戻す処理は `afterEach` に置く。戻さないと、同じファイルの次のテストに切り替えた TZ が残る
-- `vi.stubEnv("TZ", …)` はブラウザの TZ を変えない。`process.env` の値だけが変わる
+- `vi.stubEnv("TZ", …)` はブラウザの TZ を変えない
 - `cdp()` は playwright provider の chromium でしか使えない (Vitest docs「Context API」の `cdp`)
 
 ## explanation
@@ -53,13 +51,13 @@
 
 Node.js は、メインスレッドで設定した `TZ` だけを反映する。worker thread からの変更は `process.env` には見えるが、`Date` には効かない (Vitest docs「Common Errors」の Time Zone Does Not Change in Worker Threads)。基準は worker が起動する前に、メインプロセスで決める必要がある。
 
-| 置き場所                                            | 効く範囲                                                           | 採否                                                                                                                                    |
-| --------------------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| root の `test.globalSetup`                          | worker の起動前にメインプロセスで走り、全 project と全 pool に効く | 採用。実行前の準備のための hook で、用途が一致する                                                                                      |
-| `vitest.config.ts` の先頭で `process.env.TZ` に代入 | 効く範囲は root の globalSetup と同じ                              | 却下。config の読み込みの副作用になり、後始末も書けない                                                                                 |
-| package.json の script (`TZ=… vitest`)              | script を通した起動だけ                                            | 却下。`vp test run`、`.mise.toml` の verify タスク、CI は script を通らない。エディタの拡張も通らない (vitest の issue 1575 のコメント) |
-| project の `test.globalSetup`                       | その project のテストを含む実行でだけ走る                          | 却下。走ると他の project の TZ も変わるので、ブラウザテストの TZ が選んだファイルで変わる                                               |
-| project の `test.env`                               | forks と vmForks でだけ効く                                        | 却下。pool への依存が残る。Vitest docs「env」は "`TZ` set here does not change the time zone in `threads` and `vmThreads` pools"        |
+| 置き場所                                            | 効く範囲                                                                   | 採否                                                                                                                                    |
+| --------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| root の `test.globalSetup`                          | worker の起動前にメインプロセスで走る。Vitest docs は "work in every pool" | 採用。実行前の準備のための hook で、用途が一致する                                                                                      |
+| `vitest.config.ts` の先頭で `process.env.TZ` に代入 | 効く範囲は root の globalSetup と同じ                                      | 却下。用途の合う hook があるので、config は設定の宣言に留め、読み込みに副作用を持たせない                                               |
+| package.json の script (`TZ=… vitest`)              | script を通した起動だけ                                                    | 却下。`vp test run`、`.mise.toml` の verify タスク、CI は script を通らない。エディタの拡張も通らない (vitest の issue 1575 のコメント) |
+| project の `test.globalSetup`                       | その project のテストを含む実行でだけ走る                                  | 却下。走ると他の project の TZ も変わるので、ブラウザテストの TZ が選んだファイルで変わる                                               |
+| project の `test.env`                               | forks と vmForks でだけ効く                                                | 却下。pool への依存が残る。Vitest docs「env」は "`TZ` set here does not change the time zone in `threads` and `vmThreads` pools"        |
 
 2026-09-27 に vitest 4.1.11 で、各 project に `getHours()` を読むテストを置き、選ぶファイルを変えて測った。
 
@@ -81,4 +79,6 @@ Node.js は、メインスレッドで設定した `TZ` だけを反映する。
 | `vi.stubEnv("TZ", …)`               | ブラウザ (chromium) | 効かない | —                                                                                                     |
 | CDP `Emulation.setTimezoneOverride` | ブラウザ (chromium) | 効く     | `timezoneId: ""` で基準に戻る。戻さないと同じファイルの次のテストに残る。別のファイルには残らなかった |
 
-ブラウザの TZ を project 全体で変える手段には、playwright provider の `contextOptions.timezoneId` もある (vitest の issue 6722)。project ごとに 1 つの TZ に決まるので、テストごとの切り替えには使わない。
+CDP の上書きがファイルをまたがないのは、Vitest がテストファイルごとにブラウザの context を作るためと見られる。Vitest docs「playwright」の `contextOptions` の節は "the context is created for every _test file_, not every _test_" と書く。
+
+ブラウザの TZ を project 全体で変える手段には、playwright provider の `contextOptions.timezoneId` もある (同じ節)。project ごとに 1 つの TZ に決まるので、テストごとの切り替えには使わない。

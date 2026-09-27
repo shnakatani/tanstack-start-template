@@ -2,8 +2,6 @@
 
 画面に日時を出すときに、どのタイムゾーンで整形するかを持つ。テストでタイムゾーンを扱う方法は `docs/guides/testing/time-zones.md` が持つ。
 
-この主題を決めた ADR は無い。
-
 ## how-to
 
 ### 画面に日時を出す
@@ -11,7 +9,8 @@
 - 日時は `formatDateTime` (`src/lib/format-date-time.ts`) を通して整形する。`APP_TIME_ZONE` を `Intl.DateTimeFormat` の `timeZone` に渡すので、サーバーとブラウザで同じ文字列になる。実例は `src/routes/notes/-components/note-cells.tsx`
 - 別の書式が要るときも `timeZone: APP_TIME_ZONE` を渡した `Intl.DateTimeFormat` で組み、`src/lib/format-date-time.ts` に並べる
 - 描画する値を、実行環境のローカル TZ で組み立てない。`Date#toLocaleString` 系、`Date#getHours` 系、`timeZone` を渡さない `Intl.DateTimeFormat` が当たる。`timeZone` の既定は "the runtime's time zone" (MDN「Intl.DateTimeFormat() constructor」の `timeZone`)
-- date-fns で整形するときは、`@date-fns/tz` の `TZDate` か各関数の `in` オプションでタイムゾーンを渡す。渡さないと date-fns はシステムの TZ で計算する (date-fns 同梱の `docs/timeZones.md`「Working with time zones」)
+- date-fns で整形するときは、各関数の `in` オプションに `tz(APP_TIME_ZONE)` を渡すか、値を `TZDate` にする。渡さないと date-fns はシステムの TZ で計算する (date-fns 同梱の `docs/timeZones.md`「Working with time zones」)
+- `tz` と `TZDate` は `@date-fns/tz` の export で、テンプレートの直接の依存には入っていない (react-day-picker 経由でだけ入っている)。使うときは `vp add @date-fns/tz` で直接の依存に足す
 - 利用者ごとのタイムゾーンで出したくなったら、`APP_TIME_ZONE` を固定値から「サーバーで一度決めてクライアントへ渡す値」に変える。決め方は TanStack Start「Hydration Errors」の Strategy 1 と 2 (cookie を正とし、無い間は決まった値を使う)
 
 ### 日付の入力を扱う
