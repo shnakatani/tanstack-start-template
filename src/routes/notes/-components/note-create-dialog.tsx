@@ -1,29 +1,18 @@
-import { revalidateLogic } from "@tanstack/react-form";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { useState, type ComponentProps } from "react";
-import * as v from "valibot";
 
-import { ActionDialogContent } from "@/components/action/dialog";
-import { ActionFormSubmit } from "@/components/action/form";
-import { Button } from "@/components/ui/button";
-import {
-  createDialogHandle,
-  Dialog,
-  DialogClose,
-  DialogFooter,
-  DialogHeader,
-  DialogScrollBody,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { FieldGroup } from "@/components/ui/field";
+import { createDialogHandle, Dialog } from "@/components/ui/dialog";
 import { createNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY } from "@/features/notes/queries";
 import type { NoteInput } from "@/features/notes/schema";
-import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
-import { useAppForm } from "@/hooks/use-app-form";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
+
+import { NoteFormContent } from "./note-form";
+
+/** フォームの初期値 (作成は常に空)。`NoteFormContent` の `defaultValues` に渡す */
+const EMPTY_NOTE_INPUT = { title: "", body: "", dueDate: null } satisfies NoteInput;
 
 /**
  * 追加ボタン (route の PageHeader) と Root (このファイル) を結ぶ detached trigger の handle。
@@ -36,7 +25,7 @@ export const noteCreateDialogHandle = createDialogHandle<undefined>();
  * ヘッダーとフッターを固定したまま入力領域だけをスクロールさせる。
  *
  * mutation はここが持ち、フォームの状態は開くたびに作り直す。フォームの submit は
- * `ActionDialogContent` に渡すので、フォームの状態を持つ `NoteCreateForm` は Portal の外に居続ける。
+ * `ActionDialogContent` に渡すので、フォームの状態を持つ `NoteFormContent` は Portal の外に居続ける。
  * 閉じ終わったら key を替えて作り直し、「前回の入力が残った状態で開く」を起こさない。
  */
 export function NoteCreateDialog() {
@@ -107,87 +96,13 @@ export function NoteCreateDialog() {
       {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで渡すのは表示ではなく
           close の可否で、handleOpenChange と同じ源から取らないと「押せるのに閉じない」ずれが
           出る (ADR-0017 の完了点: サーバーの応答で閉じる) */}
-      <NoteCreateForm key={formKey} onSubmit={createMutation.runAction} blocksClose={blocksClose} />
+      <NoteFormContent
+        key={formKey}
+        heading="メモを追加"
+        defaultValues={EMPTY_NOTE_INPUT}
+        onSubmit={createMutation.runAction}
+        blocksClose={blocksClose}
+      />
     </Dialog>
-  );
-}
-
-/**
- * 入力フォームとそれを包むダイアログの中身。submit にフォームの状態が要るので、見出しを含む
- * `ActionDialogContent` ごとここで描く。
- *
- * フィールドに `autoFocus` は渡さない — base-ui の Popup が既定でポップアップ内の最初の
- * tabbable へフォーカスを移し、タッチ操作のときだけ仮想キーボードを開かないよう Popup
- * 自身を選ぶ。`autoFocus` はこの出し分けを潰す (初期フォーカス位置は
- * `note-create-dialog.test.tsx` が固定している)。
- */
-function NoteCreateForm({
-  onSubmit,
-  blocksClose,
-}: {
-  onSubmit: (note: NoteInput) => Promise<void>;
-  /** 保存の応答待ちで close を止めている間か。キャンセルも同じ源で無効化して見た目と挙動を揃える */
-  blocksClose: boolean;
-}) {
-  const initialValues: NoteInput = { title: "", body: "", dueDate: null };
-
-  const form = useAppForm({
-    defaultValues: initialValues,
-    // 初回 submit までは検証エラーを表示せず、submit 後は変更毎に再検証する
-    // (revalidateLogic のデフォルト: mode:"submit", modeAfterSubmission:"change")
-    validationLogic: revalidateLogic(),
-    // TanStack Form は validator のスキーマの変換 (title の trim) を value に反映しない。
-    // 送信前にスキーマへ通し、送信値と保存値を一致させる。各項目は同じスキーマで検証済みなので、
-    // ここで throw するのは項目の validator とスキーマがずれたときだけ。
-    // Promise を返すので form.handleSubmit() の Promise が mutation の決着まで続く
-    onSubmit: ({ value }) => onSubmit(v.parse(noteInputSchema, value)),
-  });
-
-  return (
-    // 検証に失敗すると handleSubmit は onSubmit を呼ばずに resolve し、Transition もすぐ終わる
-    <ActionDialogContent submitAction={() => form.handleSubmit()}>
-      <DialogHeader>
-        <DialogTitle>メモを追加</DialogTitle>
-      </DialogHeader>
-      <DialogScrollBody>
-        <FieldGroup>
-          {/* validator は server function と同じ noteInputSchema の項目定義を使う。
-              別に書くと「画面は通るが保存で弾かれる」ずれが生まれる */}
-          <form.AppField name="title" validators={{ onDynamic: noteInputSchema.entries.title }}>
-            {(field) => (
-              <field.FormTextField
-                label={NOTE_FIELD_LABELS.title}
-                fieldValue={field.state.value}
-                placeholder="買い物リスト"
-              />
-            )}
-          </form.AppField>
-          <form.AppField name="body" validators={{ onDynamic: noteInputSchema.entries.body }}>
-            {(field) => (
-              <field.FormTextField
-                label={NOTE_FIELD_LABELS.body}
-                fieldValue={field.state.value}
-                placeholder="牛乳とパンを買う"
-              />
-            )}
-          </form.AppField>
-          <form.AppField name="dueDate" validators={{ onDynamic: noteInputSchema.entries.dueDate }}>
-            {(field) => (
-              <field.FormDateField
-                label={NOTE_FIELD_LABELS.dueDate}
-                emptyText={`${NOTE_FIELD_LABELS.dueDate}なし`}
-                fieldValue={field.state.value}
-              />
-            )}
-          </form.AppField>
-        </FieldGroup>
-      </DialogScrollBody>
-      <DialogFooter>
-        <DialogClose disabled={blocksClose} render={<Button type="button" variant="outline" />}>
-          キャンセル
-        </DialogClose>
-        <ActionFormSubmit>保存</ActionFormSubmit>
-      </DialogFooter>
-    </ActionDialogContent>
   );
 }
