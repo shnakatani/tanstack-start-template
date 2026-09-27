@@ -137,15 +137,18 @@ describe("NoteEditDialog", () => {
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
   });
 
-  it("保存に失敗すると固定文言を toast に出し、開いたまま入力を保つ", async () => {
-    vi.mocked(updateNote).mockRejectedValue(new Error("更新できませんでした"));
+  it("保存に失敗すると固定文言を toast に出し、server の raw message は出さず、開いたまま入力を保つ", async () => {
+    const rawMessage = "更新対象のノートが見つかりません: id=1";
+    vi.mocked(updateNote).mockRejectedValue(new Error(rawMessage));
     const { screen } = await renderDialog();
     await openNoteEditDialog(screen, NOTE);
     await titleTextbox(screen).fill("変えた見出し");
 
     await saveButton(screen).click();
 
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
+    await expectAbsent(screen.getByText(rawMessage));
     await expect.element(titleTextbox(screen)).toHaveValue("変えた見出し");
   });
 
@@ -173,7 +176,7 @@ describe("NoteEditDialog", () => {
   it("閉じる途中で別の行の payload が届くと、前の行の入力を残さずその行の値で開く", async () => {
     // 閉じる animate-out の間は Portal が unmount されず、閉じ終わりの作り直しも走らない。
     // その窓を踏むので animation を戻す (docs/guides/testing/user-interactions.md「animation を戻すテストを書く」)。
-    // 窓の間は backdrop が一覧を覆い、別の行の Trigger のクリックは届かない。payload の差し替えを
+    // 窓の間は backdrop が一覧を覆い、別の行の Trigger へのポインタのクリックは backdrop が受ける。payload の差し替えを
     // Root に起こすために handle の imperative open を使う
     enableAnimations();
     const { screen } = await renderDialog([NOTE, OTHER_NOTE]);
