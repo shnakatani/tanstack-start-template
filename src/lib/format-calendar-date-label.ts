@@ -3,7 +3,7 @@ import { ja } from "date-fns/locale/ja";
 
 import { parseCalendarDate } from "./calendar-date";
 
-/*
+/**
  * 暦の日付 (ADR-0031 の分類 2) を画面の文字列にする。`calendar-date.ts` と分けるのは、あちらはスキーマの検証から
  * 読まれて main bundle に入るため。format とロケールのデータを同じ module に置くと、それらも main bundle へ入る
  */
