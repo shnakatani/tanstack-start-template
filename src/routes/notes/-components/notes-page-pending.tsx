@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/parts/page-header";
 import { TableSkeleton } from "@/components/parts/table-skeleton";
 
-import { noteColumns } from "../-lib/note-columns";
+import { NOTE_COLUMN_IDS } from "../-lib/note-column-ids";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-title";
 
 /**
@@ -14,7 +14,7 @@ export function NotesPagePending() {
     <div>
       <PageHeader title={NOTES_PAGE_TITLE} />
       <div className="p-4">
-        <TableSkeleton columns={noteColumns.length} />
+        <TableSkeleton columns={NOTE_COLUMN_IDS.length} />
       </div>
     </div>
   );
