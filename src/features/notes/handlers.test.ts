@@ -238,6 +238,18 @@ describe("notes handlers", () => {
       expect(after?.createdAt).toEqual(before.createdAt);
     });
 
+    it("指定した 1 件だけを更新する", async () => {
+      const target = await handlers.create({ title: "変える", body: "", dueDate: null });
+      const other = await handlers.create({ title: "残す", body: "", dueDate: null });
+      const otherBefore = (await handlers.list(NO_FILTER)).find((note) => note.id === other.id);
+      expect.assert(otherBefore);
+
+      await handlers.update({ id: target.id, title: "変えた", body: "", dueDate: null });
+
+      const otherAfter = (await handlers.list(NO_FILTER)).find((note) => note.id === other.id);
+      expect(otherAfter).toEqual(otherBefore);
+    });
+
     it("存在しない id では throw する (更新 0 件を成功として黙らせない)", async () => {
       await expect(
         handlers.update({ id: 999, title: "後", body: "", dueDate: null }),
