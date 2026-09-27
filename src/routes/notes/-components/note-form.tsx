@@ -36,7 +36,10 @@ export function NoteFormContent({
   /** フォームの初期値。作成は空、編集は今の値 */
   defaultValues: NoteInput;
   onSubmit: (note: NoteInput) => Promise<void>;
-  /** 保存の応答待ちで close を止めている間か。キャンセルも同じ源で無効化して見た目と挙動を揃える */
+  /**
+   * 保存の応答待ちで close を止めている間か。呼び出し側は Dialog の `onOpenChange` で close を
+   * 止める判定と同じ値を渡す。キャンセルをこの値で無効化し、押せるのに閉じないずれを防ぐ
+   */
   blocksClose: boolean;
 }) {
   const form = useAppForm({
