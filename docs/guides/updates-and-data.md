@@ -137,7 +137,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 - 半透明は `src/lib/busy-opacity.ts` の `BUSY_OPACITY_CLASS` を使う。値の理由と、当たる対の測り方は同じ定数の docstring が持つ
 - 半透明と `aria-busy` は読み上げに出ない。通知は announcer で出し、行には仮想カーソル用の静的テキスト (「削除中」「保存中」「更新中」) を置く (ADR-0026)
-- `variables` を行へ絞るスキーマ (削除中の id、保存中の行、更新中の入力項目) と mutation の filters は `src/features/<domain>/` に置く
+- `variables` を行へ絞るスキーマ (削除中の id、保存中の行、更新中の id と入力項目) と mutation の filters は `src/features/<domain>/` に置く
 
 ### 認可を足す
 
