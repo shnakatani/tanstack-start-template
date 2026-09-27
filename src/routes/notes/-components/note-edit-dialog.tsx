@@ -1,5 +1,4 @@
-import { useIsFetching, useQueryClient } from "@tanstack/react-query";
-import { useState, type ComponentProps } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Dialog } from "@/components/ui/dialog";
 import { updateNoteMutation } from "@/features/notes/mutations";
@@ -8,6 +7,7 @@ import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
+import { useSubmitBlockingDialog } from "../-hooks/use-submit-blocking-dialog";
 import { noteEditDialogHandle } from "../-lib/note-edit-dialog-handle";
 import { NoteFormContent } from "./note-form";
 
@@ -41,32 +41,16 @@ export function NoteEditDialog() {
     onError: toastMutationError,
   });
 
-  // close を止める条件は作成のダイアログ (`note-create-dialog.tsx`) と同じ。応答前だけ止め、
-  // 再取得中かどうかで応答済みを判別する (ADR-0017「ブロック範囲」)
-  const isRefetchingNotes = useIsFetching({ queryKey: NOTES_QUERY_KEY }) > 0;
-  const blocksClose = updateMutation.isPending && !isRefetchingNotes;
-
-  // 閉じる animation が終わってから作り直す (作成のダイアログと同じ)
-  const [formKey, setFormKey] = useState(0);
-  function handleOpenChangeComplete(open: boolean) {
-    if (!open) {
-      setFormKey((key) => key + 1);
-    }
-  }
-
-  // 型は転送先の props から導出する (再宣言すると転送先の型変更に追随しない)
-  const handleOpenChange: ComponentProps<typeof Dialog>["onOpenChange"] = (open, details) => {
-    // onSuccess の close は handle 経由なので reason が imperative-action になる。通す
-    if (!open && blocksClose && details.reason !== "imperative-action") {
-      details.cancel();
-    }
-  };
+  const { blocksClose, formKey, onOpenChange, onOpenChangeComplete } = useSubmitBlockingDialog({
+    isPending: updateMutation.isPending,
+    queryKey: NOTES_QUERY_KEY,
+  });
 
   return (
     <Dialog
       handle={noteEditDialogHandle}
-      onOpenChange={handleOpenChange}
-      onOpenChangeComplete={handleOpenChangeComplete}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={onOpenChangeComplete}
     >
       {({ payload }) => {
         // payload は行の編集ボタン (この handle の Trigger) が必ず渡し、payload 無しで開く呼び出しは
