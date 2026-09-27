@@ -9,9 +9,34 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { AlertDialog, AlertDialogContent, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Sidebar,
@@ -25,6 +50,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { createToastManager, Toaster } from "@/components/ui/toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Motion = "no-preference" | "reduce";
 
@@ -53,7 +79,6 @@ async function emulateMotion(value: Motion) {
 const EXPECTED = {
   "no-preference": {
     dialog: "--tw-enter-scale: .95; --tw-enter-opacity: 0",
-    popover: "--tw-enter-scale: .95; --tw-enter-opacity: 0",
     sheet: "translate: 2.5rem; opacity: 0",
     accordion: "animation-name: accordion-down",
     sidebarGap: "transition-property: width",
@@ -66,7 +91,6 @@ const EXPECTED = {
   },
   reduce: {
     dialog: "--tw-enter-scale: 1; --tw-enter-opacity: 0",
-    popover: "--tw-enter-scale: 1; --tw-enter-translate-y: 0; --tw-enter-opacity: 0",
     sheet: "translate: none; opacity: 0",
     accordion: "animation-name: none",
     sidebarGap: "transition-property: none",
@@ -79,6 +103,124 @@ const EXPECTED = {
     toast: "transition-property: opacity",
   },
 } as const satisfies Record<Motion, Record<string, string>>;
+
+/**
+ * popup が開いた side (`data-side`) ごとの、上流の `slide-in-from-*-2` が置く移動の値。
+ * side は Base UI が空きで決めるので、値をテストへ固定せず開いた side から引く。
+ * 見るのは開いた 1 つの side だけで、他の side の variant の付け忘れはレビューで見る
+ */
+const SLIDE_BY_SIDE: Record<string, string> = {
+  bottom: "--tw-enter-translate-y: calc(2*0.25rem*-1)",
+  top: "--tw-enter-translate-y: calc(2*0.25rem)",
+  right: "--tw-enter-translate-x: calc(2*0.25rem*-1)",
+  "inline-end": "--tw-enter-translate-x: calc(2*0.25rem*-1)",
+  left: "--tw-enter-translate-x: calc(2*0.25rem)",
+  "inline-start": "--tw-enter-translate-x: calc(2*0.25rem)",
+};
+
+/** tw-animate-css の拡縮で開く popup。`slides` は side ごとの移動を持つもの */
+const POPUPS = [
+  {
+    slot: "popover-content",
+    element: (
+      <Popover open>
+        <PopoverTrigger render={<Button>開く</Button>} />
+        <PopoverContent>内容</PopoverContent>
+      </Popover>
+    ),
+    slides: true,
+  },
+  {
+    slot: "alert-dialog-content",
+    element: (
+      <AlertDialog open>
+        <AlertDialogContent>
+          <AlertDialogTitle>確認</AlertDialogTitle>
+        </AlertDialogContent>
+      </AlertDialog>
+    ),
+    slides: false,
+  },
+  {
+    slot: "dropdown-menu-content",
+    element: (
+      <DropdownMenu open>
+        <DropdownMenuTrigger render={<Button>開く</Button>} />
+        <DropdownMenuContent>
+          <DropdownMenuGroup>
+            <DropdownMenuItem>項目</DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
+    slides: true,
+  },
+  {
+    slot: "dropdown-menu-sub-content",
+    element: (
+      <DropdownMenu open>
+        <DropdownMenuTrigger render={<Button>開く</Button>} />
+        <DropdownMenuContent>
+          <DropdownMenuGroup>
+            <DropdownMenuSub open>
+              <DropdownMenuSubTrigger>その他</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem>項目</DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
+    slides: true,
+  },
+  {
+    slot: "select-content",
+    element: (
+      <Select items={{ draft: "下書き" }} open>
+        <SelectTrigger aria-label="状態">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="draft">下書き</SelectItem>
+        </SelectContent>
+      </Select>
+    ),
+    slides: true,
+  },
+  {
+    slot: "combobox-content",
+    element: (
+      <Combobox items={["りんご"]} open>
+        <ComboboxInput aria-label="果物" />
+        <ComboboxContent>
+          <ComboboxList>
+            {(item: string) => (
+              <ComboboxItem key={item} value={item}>
+                {item}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    ),
+    slides: true,
+  },
+  {
+    slot: "tooltip-content",
+    element: (
+      <TooltipProvider>
+        <Tooltip open>
+          <TooltipTrigger render={<Button>補足</Button>} />
+          <TooltipContent>説明</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    ),
+    slides: true,
+  },
+];
 
 describe.each<Motion>(["no-preference", "reduce"])("prefers-reduced-motion: %s", (motion) => {
   const expected = EXPECTED[motion];
@@ -96,16 +238,30 @@ describe.each<Motion>(["no-preference", "reduce"])("prefers-reduced-motion: %s",
     await expect.element(screen.getByRole("dialog")).toHaveStyle(expected.dialog);
   });
 
-  it("Popover は移動と拡縮を外し、フェードを残す", async () => {
+  it.each(POPUPS)("$slot は移動と拡縮を外し、フェードを残す", async ({ slot, element, slides }) => {
     await emulateMotion(motion);
-    await render(
-      <Popover open>
-        <PopoverTrigger render={<Button>開く</Button>} />
-        <PopoverContent>内容</PopoverContent>
-      </Popover>,
-    );
+    await render(element);
+    const popup = page.getBySlot(slot);
+    await expect.element(popup).toBeInTheDocument();
 
-    await expect.element(page.getBySlot("popover-content")).toHaveStyle(expected.popover);
+    const scale =
+      motion === "reduce"
+        ? "--tw-enter-scale: 1; --tw-enter-opacity: 0"
+        : "--tw-enter-scale: .95; --tw-enter-opacity: 0";
+    await expect.element(popup).toHaveStyle(scale);
+    if (!slides) {
+      return;
+    }
+    const side = popup.element().getAttribute("data-side") ?? "";
+    const slide = SLIDE_BY_SIDE[side];
+    if (slide === undefined) {
+      throw new Error(`data-side="${side}" の移動の値が SLIDE_BY_SIDE に無い`);
+    }
+    await expect
+      .element(popup)
+      .toHaveStyle(
+        motion === "reduce" ? "--tw-enter-translate-x: 0; --tw-enter-translate-y: 0" : slide,
+      );
   });
 
   it("Sheet は出入りの移動を外し、フェードを残す", async () => {

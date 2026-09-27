@@ -72,7 +72,7 @@ WCAG 2.3.3 (Level AAA) の motion animation は "addition of steps between condi
 ## Consequences
 
 - 新しい部品や新しい動きに variant を付け忘れても、lint も型検査も止めない。手順 (`docs/guides/accessibility.md`「動きを reduced motion に合わせる」) とレビューで見る
-- `reduced-motion.test.tsx` は各部品を `no-preference` と `reduce` の両方で読む。`no-preference` の値は上流のままなので、media query 自体の誤りも落ちる。載せていない部品は見ない
+- `reduced-motion.test.tsx` は各部品を `no-preference` と `reduce` の両方で読む。`no-preference` の値は上流のままなので、media query 自体の誤りも落ちる。載せていない部品と、popup が開かなかった side の移動は見ない
 - 付けた variant は registry の部品への乖離で、`docs/registry-deviations.md` に記録する。`--overwrite` で再生成したら 3-way で付け直す
 - spinner は reduced motion でも回り続ける。skeleton の pulse も続く
 - toast は出入りを移動だけで表し、フェードを持たない。reduced motion では瞬時に出入りする
