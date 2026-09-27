@@ -170,6 +170,15 @@ function NoteCreateForm({
               />
             )}
           </form.AppField>
+          <form.AppField name="dueDate" validators={{ onDynamic: noteInputSchema.entries.dueDate }}>
+            {(field) => (
+              <field.FormDateField
+                label={NOTE_FIELD_LABELS.dueDate}
+                emptyText={`${NOTE_FIELD_LABELS.dueDate}なし`}
+                fieldValue={field.state.value}
+              />
+            )}
+          </form.AppField>
         </FieldGroup>
       </DialogScrollBody>
       <DialogFooter>

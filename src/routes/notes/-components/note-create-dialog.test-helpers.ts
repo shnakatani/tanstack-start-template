@@ -21,6 +21,11 @@ export function bodyTextbox(screen: Screen) {
   return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.body, exact: true });
 }
 
+/** 期日のトリガー。名前はラベルと表示中の値をつないだもの (form-fields.tsx の FormDateField) なので、ラベルと空白の前方一致で取る */
+export function dueDateTrigger(screen: Screen) {
+  return screen.getByRole("button", { name: new RegExp(`^${NOTE_FIELD_LABELS.dueDate} `) });
+}
+
 export function saveButton(screen: Screen) {
   return screen.getByRole("button", { name: "保存", exact: true });
 }

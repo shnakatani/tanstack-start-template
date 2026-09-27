@@ -1,4 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
+import { format } from "date-fns/format";
+import { ja } from "date-fns/locale/ja";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
@@ -11,7 +13,7 @@ import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schem
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
-import { expectAbsent } from "@/test/assert/absent";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { readAnnouncements } from "@/test/assert/live-announcer";
 import {
   expectDialogOpen,
@@ -25,6 +27,7 @@ vi.mock(import("@/features/notes/functions"));
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 import {
   bodyTextbox,
+  dueDateTrigger,
   NOTE_CREATE_TRIGGER_LABEL,
   openNoteCreateDialog,
   saveButton,
@@ -131,6 +134,42 @@ describe("NoteCreateDialog", () => {
     await vi.waitFor(() => {
       expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
         data: { title: "買い物リスト", body: "牛乳とパン", dueDate: null },
+      });
+    });
+  });
+
+  it("期日を選んで保存すると createNote に YYYY-MM-DD の期日が渡る", async () => {
+    vi.mocked(createNote).mockResolvedValue({ id: 1 });
+    // 値が無いとき Calendar は今日の月を開く。その月の 15 日を選ぶ。月末の 0 時をまたぐ
+    // 実行では月がずれるが、その窓は無視できる
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth(), 15);
+    const expectedDueDate = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-15`;
+    const { screen } = await renderDialog();
+    await openNoteCreateDialog(screen);
+    await titleTextbox(screen).fill("買い物リスト");
+
+    await expect
+      .element(dueDateTrigger(screen))
+      .toHaveAccessibleName(`${NOTE_FIELD_LABELS.dueDate} ${NOTE_FIELD_LABELS.dueDate}なし`);
+    await dueDateTrigger(screen).click();
+    // 今日が 15 日なら名前の先頭に「今日、」が付くので、前方一致にしない
+    await screen
+      .getByRole("button", { name: new RegExp(format(target, "PPPP", { locale: ja })) })
+      .click();
+    await expect
+      .element(dueDateTrigger(screen))
+      .toHaveAccessibleName(
+        `${NOTE_FIELD_LABELS.dueDate} ${format(target, "PPP", { locale: ja })}`,
+      );
+    // トリガーをもう一度押して閉じる。Escape はダイアログまで閉じうるので使わない
+    await dueDateTrigger(screen).click();
+    await expectRemoved(screen.getByRole("grid"));
+    await saveButton(screen).click();
+
+    await vi.waitFor(() => {
+      expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
+        data: { title: "買い物リスト", body: "", dueDate: expectedDueDate },
       });
     });
   });
