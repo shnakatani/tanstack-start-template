@@ -63,6 +63,7 @@ lint では見ないのでレビューで見る。
 
 - 日付や日時の値を足すときは、瞬間・暦の日付・場所に結びつく値のどれかに分類し、分類の持ち方にする。取り違えると、日付が TZ で前後にずれる (ADR-0031)
 - 暦の日付は `YYYY-MM-DD` の文字列で持ち、`Date` を経由しない。`toISOString()` も `new Date("YYYY-MM-DD")` も UTC を挟み、1 日ずれる (`docs/guides/dates-and-time-zones.md`「日付の入力を扱う」)
+- 暦の日付の列には `CHECK (<列> IS date(<列>) AND length(<列>) = 10)` を付ける。入力スキーマの検証は、それを通らない書き込み (手書きの SQL など) に効かない (`docs/guides/dates-and-time-zones.md`「日付の入力を扱う」)
 - 場所に結びつく値は、TZ が 1 つでも IANA の TZ 名を列に持ち、オフセットでは持たない。値だけで意味が決まり、TZ の定義の変更に追従する (ADR-0031)
 - 「今日」や期限を判定するときは、どの TZ の今日かを明示する (今は `APP_TIME_ZONE`)。明示しないと、サーバーとブラウザで判定が割れる (ADR-0031)
 - Calendar が見せる今日はブラウザの TZ に任せ、Calendar はサーバーで描かない。初めに閉じていて `keepMounted` を付けない Popover の中に置くか、`<ClientOnly>` で囲む。サーバーで描くと、サーバーの TZ の今日が hydration の後も残る (ADR-0031)

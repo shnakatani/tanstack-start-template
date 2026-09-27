@@ -115,25 +115,19 @@ describe("notes handlers", () => {
 
   describe("list の読み出し時検証", () => {
     /**
-     * drizzle を迂用して行を直接入れる。drizzle の型は「そう入っているはず」の主張でしかなく、
+     * drizzle を迂回して行を直接入れる。drizzle の型は「そう入っているはず」の主張でしかなく、
      * 実データがそれを満たす保証にはならない。ずれを実行時に検出できるかを確かめる。
      */
-    function insertRawRow(row: {
-      id?: number;
-      title: string;
-      body: string;
-      createdAt: number;
-      dueDate?: string;
-    }) {
+    function insertRawRow(row: { id?: number; title: string; body: string; createdAt: number }) {
       if (row.id === undefined) {
         db.$client
-          .prepare("insert into notes (title, body, created_at, due_date) values (?, ?, ?, ?)")
-          .run(row.title, row.body, row.createdAt, row.dueDate ?? null);
+          .prepare("insert into notes (title, body, created_at) values (?, ?, ?)")
+          .run(row.title, row.body, row.createdAt);
         return;
       }
       db.$client
-        .prepare("insert into notes (id, title, body, created_at, due_date) values (?, ?, ?, ?, ?)")
-        .run(row.id, row.title, row.body, row.createdAt, row.dueDate ?? null);
+        .prepare("insert into notes (id, title, body, created_at) values (?, ?, ?, ?)")
+        .run(row.id, row.title, row.body, row.createdAt);
     }
 
     it("title が maxLength(100) を超える行があれば throw する", async () => {
@@ -172,13 +166,6 @@ describe("notes handlers", () => {
       insertRawRow({ title: "見出し", body: "本文", createdAt: Date.now() });
 
       expect(await handlers.list(NO_FILTER)).toHaveLength(1);
-    });
-
-    // 手書き SQL で入った暦に無い日付を、読み出しゲートで顕在化させる
-    it("暦に無い due_date の行があれば throw する", async () => {
-      insertRawRow({ title: "見出し", body: "", createdAt: Date.now(), dueDate: "2023-02-29" });
-
-      await expect(handlers.list(NO_FILTER)).rejects.toThrow(/0\.dueDate/);
     });
   });
 

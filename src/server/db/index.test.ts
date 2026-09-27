@@ -49,6 +49,29 @@ describe("createDb", () => {
     expect(rows[0]?.createdAt).toBeInstanceOf(Date);
   });
 
+  // 暦の日付 (ADR-0031 の分類 2) は、入力スキーマを通らない書き込みでも形と暦の存在を DB が守る
+  it("notes.due_date は暦にある 0000〜9999 年の YYYY-MM-DD か NULL だけを受け入れる", () => {
+    const db = createDb(":memory:");
+    migrateDb(db);
+    const insert = db.$client.prepare(
+      "insert into notes (title, body, created_at, due_date) values ('見出し', '', 0, ?)",
+    );
+
+    for (const accepted of ["2026-08-07", "2024-02-29", null]) {
+      expect(() => insert.run(accepted), String(accepted)).not.toThrow();
+    }
+    for (const rejected of [
+      "2023-02-29",
+      "2023-06-31",
+      "2026-8-7",
+      "2026-08-07T00:00",
+      "-0001-01-01",
+      "",
+    ]) {
+      expect(() => insert.run(rejected), rejected).toThrow(/CHECK constraint failed/);
+    }
+  });
+
   it("接続先ディレクトリが存在しなければ作成する", () => {
     const dir = join(tmpdir(), `db-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     const fileName = join(dir, "nested", "dev.sqlite");

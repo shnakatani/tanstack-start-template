@@ -56,6 +56,7 @@
 - 暦の日付を `Calendar` で入力するときは、選ばれた `Date` から、ローカル TZ のまま年・月・日だけを取り出して `YYYY-MM-DD` にする。`toISOString()` を使わない。UTC に直すので、UTC より進んだ TZ (JST など) では 1 日前になる (ADR-0031 の Context)
 - 保存した `YYYY-MM-DD` を `new Date("YYYY-MM-DD")` で読まない。日付だけの文字列は UTC の 0 時として解釈され、UTC より遅れた TZ では 1 日前になる (ADR-0031 の Context)
 - `YYYY-MM-DD` の形式を valibot の `isoDate()` で検証しても、存在しない日付は通る。型定義の Hint は "The regex used cannot validate the maximum number of days based on year and month. For example, "2023-06-31" is valid although June has only 30 days." と書く (valibot 1.4.2)。`isoDate()` の後ろに `v.check` を足し、年・月・日が暦に存在するかを見る。valibot の API docs「isoDate」は、存在を検証する組み込みの手段を挙げていない
+- DB の列にも `CHECK (<列> IS date(<列>) AND length(<列>) = 10)` を付ける。drizzle では `check()` で書く (drizzle docs「Indexes & Constraints」の Check)。SQLite の `date()` は暦に無い日を翌月へ繰り越し、`YYYY-MM-DD` 以外の形の多くを別の文字列か NULL にするので、一致しない値を DB が弾く。`date()` の結果は 0000〜9999 年の外で未定義で (SQLite「Date And Time Functions」)、負の年 (`-0001-01-01`) も一致して通るので、長さで範囲内に絞る。入力スキーマを通らない書き込み (手書きの SQL、server function を経ない drizzle の insert) でも暦に無い日付が入らない。実例は `src/server/db/schema.ts`
 
 ## explanation
 
