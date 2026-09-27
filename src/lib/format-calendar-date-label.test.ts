@@ -1,0 +1,25 @@
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
+import { TIME_ZONES } from "./calendar-date.test-helpers";
+import { formatCalendarDateLabel } from "./format-calendar-date-label";
+
+/**
+ * date-fns の format はロケールのデータ (date-fns/locale/ja の formatLong) から文字列を組む。
+ * Intl.DateTimeFormat と違い実装ごとの揺れが無いので、固定の文字列と比べる
+ */
+describe("formatCalendarDateLabel", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it.each(TIME_ZONES)("%s でも、short は 2026/08/07、long は 2026年8月7日", (timeZone) => {
+    vi.stubEnv("TZ", timeZone);
+    expect(formatCalendarDateLabel("2026-08-07", "short")).toBe("2026/08/07");
+    expect(formatCalendarDateLabel("2026-08-07", "long")).toBe("2026年8月7日");
+  });
+
+  // 暦に無い日付を Invalid Date のまま整形しない。parseCalendarDate と同じ文言で落ちる
+  it("暦に無い 2023-02-29 は parseCalendarDate と同じエラーで throw する", () => {
+    expect(() => formatCalendarDateLabel("2023-02-29", "short")).toThrow(
+      "暦の日付ではない: 2023-02-29",
+    );
+  });
+});

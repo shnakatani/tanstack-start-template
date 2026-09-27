@@ -1,7 +1,7 @@
 import type { DataTableCellContext } from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { formatCalendarDateLabel } from "@/lib/calendar-date";
+import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";

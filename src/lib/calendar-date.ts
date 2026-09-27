@@ -1,7 +1,5 @@
-import { format } from "date-fns/format";
 import { formatISO } from "date-fns/formatISO";
 import { isValid } from "date-fns/isValid";
-import { ja } from "date-fns/locale/ja";
 import { parseISO } from "date-fns/parseISO";
 
 /**
@@ -34,21 +32,4 @@ export function parseCalendarDate(value: string): Date {
 /** `YYYY-MM-DD` の形の文字列が、暦に存在する日付か。2023-02-29 は false。形式はスキーマの `isoDate()` が見る */
 export function isExistingCalendarDate(value: string): boolean {
   return isValid(parseISO(value));
-}
-
-type CalendarDateLabelLength = "short" | "long";
-
-/** date-fns のロケールの書式。並びと区切りは ja のデータ (formatLong) に任せ、パターンを自前で持たない */
-const LABEL_PATTERNS = { short: "P", long: "PPP" } as const satisfies Record<
-  CalendarDateLabelLength,
-  string
->;
-
-/**
- * `YYYY-MM-DD` を画面に出す文字列にする。short は 2026/08/07、long は 2026年8月7日。
- * ローカルの 0 時を同じローカル TZ で整形するので、サーバーとブラウザの TZ が違っても同じ文字列になる。
- * 瞬間 (分類 1) と違い `in: tz(APP_TIME_ZONE)` を渡さない
- */
-export function formatCalendarDateLabel(value: string, length: CalendarDateLabelLength): string {
-  return format(parseCalendarDate(value), LABEL_PATTERNS[length], { locale: ja });
 }

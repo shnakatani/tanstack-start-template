@@ -1,25 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import {
-  formatCalendarDate,
-  formatCalendarDateLabel,
-  isExistingCalendarDate,
-  parseCalendarDate,
-} from "./calendar-date";
-
-/**
- * 暦の日付 (ADR-0031 の分類 2) と Calendar の `Date` の境界を、UTC より進んだ TZ と遅れた TZ で
- * 固定する。`toISOString()` や `new Date("YYYY-MM-DD")` を挟むと、どちらかの側で 1 日ずれる
- * (ADR-0031 の Context)。基準は vitest.global-setup.ts の America/New_York (UTC-4/-5)。
- * Asia/Tokyo (UTC+9) と Pacific/Kiritimati (UTC+14) は進んだ側、Pacific/Pago_Pago (UTC-11) は遅れた側
- */
-const TIME_ZONES = [
-  "America/New_York",
-  "UTC",
-  "Asia/Tokyo",
-  "Pacific/Kiritimati",
-  "Pacific/Pago_Pago",
-] as const;
+import { formatCalendarDate, isExistingCalendarDate, parseCalendarDate } from "./calendar-date";
+import { TIME_ZONES } from "./calendar-date.test-helpers";
 
 describe("formatCalendarDate", () => {
   afterEach(() => vi.unstubAllEnvs());
@@ -75,26 +57,5 @@ describe("isExistingCalendarDate", () => {
     ["2023-06-31", false],
   ] as const)("%s は %s", (value, expected) => {
     expect(isExistingCalendarDate(value)).toBe(expected);
-  });
-});
-
-/**
- * date-fns の format はロケールのデータ (date-fns/locale/ja の formatLong) から文字列を組む。
- * Intl.DateTimeFormat と違い実装ごとの揺れが無いので、固定の文字列と比べる
- */
-describe("formatCalendarDateLabel", () => {
-  afterEach(() => vi.unstubAllEnvs());
-
-  it.each(TIME_ZONES)("%s でも、short は 2026/08/07、long は 2026年8月7日", (timeZone) => {
-    vi.stubEnv("TZ", timeZone);
-    expect(formatCalendarDateLabel("2026-08-07", "short")).toBe("2026/08/07");
-    expect(formatCalendarDateLabel("2026-08-07", "long")).toBe("2026年8月7日");
-  });
-
-  // 暦に無い日付を Invalid Date のまま整形しない。parseCalendarDate と同じ文言で落ちる
-  it("暦に無い 2023-02-29 は parseCalendarDate と同じエラーで throw する", () => {
-    expect(() => formatCalendarDateLabel("2023-02-29", "short")).toThrow(
-      "暦の日付ではない: 2023-02-29",
-    );
   });
 });

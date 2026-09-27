@@ -20,11 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFieldContext } from "@/hooks/form-context";
-import {
-  formatCalendarDate,
-  formatCalendarDateLabel,
-  parseCalendarDate,
-} from "@/lib/calendar-date";
+import { formatCalendarDate, parseCalendarDate } from "@/lib/calendar-date";
+import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 
 /**
  * フォームの配線部品。

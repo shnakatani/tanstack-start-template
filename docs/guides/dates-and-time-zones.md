@@ -35,7 +35,7 @@
 
 ### 画面に暦の日付を出す
 
-- 暦の日付 (ADR-0031 の分類 2) は `formatCalendarDateLabel` (`src/lib/calendar-date.ts`) で出す。`YYYY-MM-DD` をローカルの 0 時の `Date` にしてから、ローカルのまま date-fns で整形するので、TZ に依存せず、SSR と hydration で割れない
+- 暦の日付 (ADR-0031 の分類 2) は `formatCalendarDateLabel` (`src/lib/format-calendar-date-label.ts`) で出す。変換 (`src/lib/calendar-date.ts`) と別の module に置くのは、変換がスキーマの検証から読まれて main bundle に入るため。同じ module に置くと `format` とロケールのデータも main bundle に入る。`YYYY-MM-DD` をローカルの 0 時の `Date` にしてから、ローカルのまま date-fns で整形するので、TZ に依存せず、SSR と hydration で割れない
 - Calendar との受け渡しは `formatCalendarDate` (`Date` → `YYYY-MM-DD`) と `parseCalendarDate` (`YYYY-MM-DD` → `Date`) を使う
 - date-fns は個別エントリポイント (`date-fns/format`、`date-fns/locale/ja`) から引く (ADR-0032)
 
@@ -44,7 +44,7 @@
 - `Intl.DateTimeFormat` の `format()` の出力を固定の文字列と比べない。MDN「Intl.DateTimeFormat.prototype.format()」の Note は "the output may vary between implementations, even within the same locale" "You should not compare the results of `format()` to hardcoded constants." と書く
 - 壁時計の値は、出力から数字の並び (年・月・日・時・分) を取り出して比べる。実例は `src/lib/format-date-time.test.ts`
 - 画面に描いた文字列を探すテストは、期待値を `formatDateTime` で作る。実例は `src/features/notes/schema.test-helpers.ts` の `NOTE_CREATED_AT_TEXT`
-- date-fns の `format` は Intl を使わず、同梱のロケールのデータで文字列を作る (date-fns 4.4.0 の `format.js` と `locale/ja` に `Intl` の参照が無い、2026-09-27)。その出力は固定の文字列と比べてよい。実例は `src/lib/calendar-date.test.ts`
+- date-fns の `format` は Intl を使わず、同梱のロケールのデータで文字列を作る (date-fns 4.4.0 の `format.js` と `locale/ja` に `Intl` の参照が無い、2026-09-27)。その出力は固定の文字列と比べてよい。実例は `src/lib/format-calendar-date-label.test.ts`
 
 ### 日付の入力を扱う
 
