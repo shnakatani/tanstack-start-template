@@ -147,6 +147,14 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 - 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
 - ナビゲーションは landmark (`nav`、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける
 
+### 動きは reduced motion で外す
+
+lint は付け忘れを止めないのでレビューで見る (ADR-0030)。
+
+- 位置・大きさ・形を動かす animation と transition には `motion-safe:` を付けるか、`motion-reduce:` で外す。全体を `*` で止める CSS を書かない。スピナーとフェードまで止まる (ADR-0030)
+- opacity と色の変化、spinner と skeleton には付けない。2.3.3 の motion に当たらないか、読み込みの表示として残す (ADR-0030)
+- 動きを足したら `src/components/ui/reduced-motion.test.tsx` に `no-preference` と `reduce` の値を足す (`docs/guides/accessibility.md`「動きを reduced motion に合わせる」)
+
 ### 可視テキストを持つ要素に aria-label を足さない
 
 - `span` / `div` (ロール `generic`) に `aria-label` を付けない。name prohibited (WAI-ARIA 1.2 §5.2.8.6)。別要素の可視テキストは `aria-labelledby` で指す

@@ -76,6 +76,7 @@ paths:
 3. コード側の理由コメントは、ADR と台帳だけでは実装者が誤る落とし穴に限る。`oxlint-disable` の `--` には、そのルールを抑制してよい理由を書く (`docs/guides/registry.md`「部品を足す」)
 4. 未使用での先行導入 (vendor preset) は許容する。chore コミットとして記録する (`docs/guides/registry.md`「部品を足す」)
 5. story を書く。消費側からの import が 0 件でも書く。書かないと a11y 検査が一度も当たらない (`docs/guides/storybook.md`「story を置く」)
+6. animation か transition を持つ部品は、reduced motion の variant を付けて `src/components/ui/reduced-motion.test.tsx` に値を足す。lint は付け忘れを止めない (ADR-0030)
 
 ## ルートファイル
 

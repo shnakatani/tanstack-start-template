@@ -1,12 +1,13 @@
 # アクセシビリティ
 
-axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方を持つ。
+axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、動きを reduced motion に合わせる手順を持つ。
 
-| 決定                                                                                                                              | ADR      |
-| --------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 状態の通知は常時 mount の live region に集約し、項目の状態は静的テキストと `aria-busy` で持つ                                     | ADR-0026 |
-| ページは URL の変化で作り直さず、取得結果の入れ替わりはページの effect が取得の決着で通知し、直前に通知した条件と同じなら出さない | ADR-0027 |
-| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす                            | ADR-0028 |
+| 決定                                                                                                                                 | ADR      |
+| ------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 状態の通知は常時 mount の live region に集約し、項目の状態は静的テキストと `aria-busy` で持つ                                        | ADR-0026 |
+| ページは URL の変化で作り直さず、取得結果の入れ替わりはページの effect が取得の決着で通知し、直前に通知した条件と同じなら出さない    | ADR-0027 |
+| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす                               | ADR-0028 |
+| reduced motion の利用者には、部品ごとの `motion-safe:` / `motion-reduce:` で移動と大きさの変化を外し、フェードと読み込みの表示は残す | ADR-0030 |
 
 ## explanation
 
@@ -146,3 +147,26 @@ story で統制できるのは markup までで、フォントは実行環境が
 - 行の状態 (「削除中」「保存中」) は、読み順に入る静的テキストとして置く (必要なら `sr-only`)。`role="status"` / `<output>` は付けない。通知は announcer が担い、静的テキストは仮想カーソルで行を読んだときのためにある
 - 取得結果の文言は、0 件も件数の形で書き、条件が空なら絞り込みの解除を伝える文言にする
 - 取得結果の文言を、空状態の見出しと同じ文字列にしない。テストの `getByText` が live region と見出しの 2 要素に解決する。実例は `src/routes/notes/-lib/note-search.ts` の `noteSearchResultMessage`
+
+### 動きを reduced motion に合わせる
+
+何を外して何を残すかは ADR-0030 が決める。部品に animation か transition を足したら、次を済ませる。
+
+1. 動く class を下の表で分け、外すものに variant を付ける
+2. `src/components/ui/reduced-motion.test.tsx` の `EXPECTED` に、その部品の `no-preference` と `reduce` の値を足す。`no-preference` は上流のままの値にする
+3. `src/components/ui/` の部品なら、付けた variant を `docs/registry-deviations.md` に記録する (ADR-0020)
+4. Storybook で DevTools の Rendering →「Emulate CSS media feature prefers-reduced-motion」を `reduce` にし、動きが消えてフェードが残ることを目で見る
+
+| 動く class                                                       | 扱い                                                                                           |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `zoom-*`、`slide-in-from-*`、`spin-*`、`blur-*` (tw-animate-css) | `motion-safe:` を付ける                                                                        |
+| `fade-*`、色の transition (`transition-colors`)                  | 付けない                                                                                       |
+| `data-starting-style:translate-*` などの開始・終了状態の移動     | `motion-safe:` を付ける                                                                        |
+| 高さ・幅・位置の keyframes (`animate-accordion-*`)               | `motion-safe:` を付ける                                                                        |
+| 幅・位置・大きさだけを運ぶ transition (`transition-[width]`)     | `motion-reduce:transition-none`                                                                |
+| 色と動きを一緒に運ぶ transition (`transition-all`)               | `motion-reduce:transition-[...]` で色・影・opacity だけに絞る。動きは瞬時になる                |
+| spinner、skeleton (`animate-spin`、`animate-pulse`)              | 付けない。読み込みの表示として残す                                                             |
+| 利用者の操作に直接追従する動き (スワイプ、ドラッグ)              | 付けなくてよい。toast のように同じ transition が出入りの移動も運ぶなら、その transition は絞る |
+
+- 実行時に値が変わらない transition (`transition-transform` だけで transform の class が無いもの) は動かないので、付けなくてよい
+- 付け忘れは lint も型検査も止めない (ADR-0030)。レビューでは、差分に `animate-`・`transition`・`zoom-`・`slide-`・`translate-` が増えたかを見る

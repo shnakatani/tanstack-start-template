@@ -44,6 +44,8 @@ async function emulateMotion(value: Motion) {
 }
 
 /**
+ * 部品ごとに付けた reduced motion の variant の値 (ADR-0030)。動きを足したら
+ * docs/guides/accessibility.md「動きを reduced motion に合わせる」の手順でここに足す。
  * 同じ値を no-preference (対照) と reduce で読む。対照が上流の値のまま変わらないことで、
  * reduce の値が media query で切り替わっていることを確かめる。
  * tw-animate-css は変数を `@property` で登録しており、未指定は initial-value (移動 0、拡縮 1) で読める。
