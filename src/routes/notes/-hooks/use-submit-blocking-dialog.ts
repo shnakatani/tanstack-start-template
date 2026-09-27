@@ -23,9 +23,9 @@ export function useSubmitBlockingDialog({
   const isRefetching = useIsFetching({ queryKey }) > 0;
 
   // 止めるのは応答前だけ。閉じて開き直すと onOpenChangeComplete が key を替えてフォームが
-  // 作り直され、先行 save の応答が届いた時点で新しい入力ごと閉じる。handle を複数の対象で
-  // 共有する確認のダイアログと違い、入力フォームは開いている対象を mutation の対象と比べられない
-  // ので、閉じないことで塞ぐ
+  // 作り直され、先行 save の応答が届いた時点で新しい入力ごと閉じる。入力フォームは同じ対象を
+  // 開き直しても別の入力になるので、開いている対象と mutation の対象を比べても、先行 save の
+  // 応答による close を区別できない。閉じないことで塞ぐ
   // (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))。止めるのは
   // このダイアログだけで、一覧の操作は止めない (ADR-0017「ブロック範囲」)。
   //

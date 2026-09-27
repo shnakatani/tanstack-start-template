@@ -54,7 +54,8 @@ export function NoteEditDialog() {
     >
       {({ payload }) => {
         // payload は行の編集ボタン (この handle の Trigger) が必ず渡し、payload 無しで開く呼び出しは
-        // アプリに無い。閉じている間は payload 無しで呼ばれるので、Base UI の docs の例と同じく描かない
+        // アプリに無い。閉じている間も render function は payload 無しで呼ばれる (Base UI 1.8.0 で
+        // 実測、2026-09-28) ので、Base UI の docs の例と同じく payload が無ければ描かない
         if (!payload) {
           return null;
         }
