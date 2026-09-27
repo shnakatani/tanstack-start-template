@@ -5,6 +5,7 @@ import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
 import * as v from "valibot";
 
 import { Button } from "@/components/ui/button";
+import { excludeFromA11y } from "@/components/ui/calendar.story-helpers";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-app-form";
 
@@ -748,9 +749,8 @@ export const DateOpen: Story = {
   // 「story を書く」)。同じ DateForm のままだと開いた Popover が次の story へ持ち越されるので、
   // key を変えて入るときと出るときに mount し直す
   render: (args) => <DateForm key="open" {...args} />,
-  // 見出しを axe から外す理由は calendar.stories.tsx の excludeFromA11y と同じ (registry 素の nav が
-  // 見出しへ重なり、背景を決められない)
-  parameters: { a11y: { context: { exclude: [".rdp-caption_label"] } } },
+  // 見出しを axe から外す理由は calendar.story-helpers.ts の excludeFromA11y の docstring にある
+  parameters: excludeFromA11y(),
   play: async () => {
     await openDatePicker();
 
