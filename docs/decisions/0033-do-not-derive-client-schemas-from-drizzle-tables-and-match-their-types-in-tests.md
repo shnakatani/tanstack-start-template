@@ -6,7 +6,7 @@
 
 ## Context
 
-notes の形は、drizzle のテーブル定義 (`src/server/db/schema.ts`) と valibot のスキーマ (`src/features/notes/schema.ts`) の 2 か所に書かれている。書き込みは、`src/features/notes/handlers.server.ts` の `insert(notes).values(data)` が `NoteInput` を受けるので、DB が値を入れない NOT NULL の列を足すとそこで型エラーになる。読み出しには同じ型検査が無い。テーブルに列を足してもスキーマを変え忘れると、型検査も lint も落ちず、読み出し時の検証か画面で初めて食い違いが出る。
+notes の形は、drizzle のテーブル定義 (`src/server/db/schema.ts`) と valibot のスキーマ (`src/features/notes/schema.ts`) の 2 か所に書かれている。書き込みは、`src/features/notes/handlers.server.ts` の `insert(notes).values(data)` が `NoteInput` を受けるので、DB が値を入れない NOT NULL の列を足すとそこで型エラーになる。読み出しには同じ型検査が無い。テーブルに列を足してもスキーマを変え忘れると、型検査も lint も落ちない。読み出し口の `v.safeParse` (`src/features/notes/handlers.server.ts`) が使う `noteSchema` は `v.object` なので、足した列を黙って捨てて成功し、実行時にも食い違いが表に出ない。
 
 drizzle は、テーブル定義から valibot のスキーマを作る関数を持つ。drizzle docs「valibot」は `createSelectSchema` / `createInsertSchema` / `createUpdateSchema` を示し、第 2 引数で項目ごとに制約を足せる。drizzle-orm 1.0.0-beta.15 から別パッケージの `drizzle-valibot` は非推奨になり、`drizzle-orm/valibot` に統合された。
 
