@@ -21,8 +21,9 @@ describe("notes handlers", () => {
   let handlers: ReturnType<typeof createNoteHandlers>;
 
   /**
-   * drizzle を迂回して行を直接入れる。drizzle の型は「そう入っているはず」の主張でしかなく、
-   * 実データがそれを満たす保証にはならない。ずれを実行時に検出できるかを確かめる。
+   * drizzle を迂回して行を直接入れる。用途は 2 つ。1 つは読み出しの検証で、drizzle の型は
+   * 「そう入っているはず」の主張でしかないので、ずれを実行時に検出できるかを確かめる。もう 1 つは
+   * created_at の明示で、insert の時刻は DB の時計が入れるので、並びのテストはこれで時刻を決める。
    */
   function insertRawRow(row: { id?: number; title: string; body: string; createdAt: number }) {
     if (row.id === undefined) {
@@ -62,13 +63,13 @@ describe("notes handlers", () => {
     });
 
     it("createdAt が同一でも id の降順で決定的に並ぶ", async () => {
-      // 同一ミリ秒での連続作成。createdAt だけでは順序が決まらない
-      insertRawRow({ title: "先", body: "", createdAt: 1_000 });
-      insertRawRow({ title: "後", body: "", createdAt: 1_000 });
+      // createdAt が同じ行は createdAt だけでは順序が決まらない
+      insertRawRow({ id: 1, title: "先", body: "", createdAt: 1_000 });
+      insertRawRow({ id: 2, title: "後", body: "", createdAt: 1_000 });
 
       const listed = await handlers.list(NO_FILTER);
       expect(listed.map((note) => note.createdAt.getTime())).toEqual([1_000, 1_000]);
-      expect(listed.map((note) => note.title)).toEqual(["後", "先"]);
+      expect(listed.map((note) => note.id)).toEqual([2, 1]);
     });
 
     it("q が空なら全件を返す", async () => {

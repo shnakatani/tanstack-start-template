@@ -34,8 +34,8 @@ export const OTHER_NOTE: Note = {
 };
 
 /**
- * 追加のテストで保存する 1 件。楽観行は入力項目 (title / body / dueDate) だけを描き、id と createdAt は
- * 再取得後の実データとして使う (保存前のクライアントはこの 2 つを持たない)。
+ * 追加のテストで保存する 1 件。楽観行は入力項目 (title / body / dueDate) だけを描き、id・createdAt・
+ * updatedAt は再取得後の実データとして使う (保存前のクライアントはこの 3 つを持たない)。
  */
 export const CREATED_NOTE: Note = {
   id: 3,
@@ -46,7 +46,7 @@ export const CREATED_NOTE: Note = {
   updatedAt: new Date("2026-08-19T00:30:00.000Z"),
 };
 
-/** CREATED_NOTE を保存中の楽観行として見た形。id と createdAt をまだ持たない */
+/** CREATED_NOTE を保存中の楽観行として見た形。id・createdAt・updatedAt をまだ持たない */
 export const CREATING_ROW: CreatingRow = {
   submittedAt: 1_700_000_000_000,
   variables: { title: CREATED_NOTE.title, body: CREATED_NOTE.body, dueDate: CREATED_NOTE.dueDate },
