@@ -3,8 +3,8 @@
  *
  * 実時間へ預ける形 (`setTimeout`) は、決着が次の操作より先に届いた回で偽 red になる。
  *
- * Storybook の vitest 実行は 1 つの React root へ story を描き替えるため、決着しない
- * Transition が残ると後続 story と干渉する (docs/guides/storybook.md「story を書く」)。`beforeEach` は開始時と終了時の
+ * React は進行中の Transition を root をまたいでまとめるため、決着しない Transition が
+ * 残ると後続 story と干渉する (docs/guides/storybook.md「story を書く」)。`beforeEach` は開始時と終了時の
  * 両方で全決着させるので、play が `settle()` の手前で落ちても、teardown が走らないまま
  * 再描画されても持ち越さない。
  *

@@ -12,9 +12,9 @@ import { deleteConfirmDescription } from "./delete-confirm-dialog.test-helpers";
 const TARGET: DeleteTarget = { id: "w1", name: "田中太郎" };
 
 /**
- * 決着しない Promise を story に置かない。Storybook の vitest 実行は 1 つの React root へ
- * story を描き替えるため、決着しない Action の Transition が残ると後続 story の
- * useTransition が entangle して pending のまま止まる (2026-09-20 実測)。
+ * 決着しない Promise を story に置かない。React は進行中の Transition を root をまたいで
+ * まとめるので、決着しない Action の Transition が残ると後続 story の useTransition が
+ * pending のまま止まる (docs/guides/storybook.md「story を書く」)。
  *
  * 決着の時点は play が `settling.settle()` で握る。仕組みと理由は
  * `src/test/app/settling-action.ts` が持つ。play は必ず決着させてから終える。
