@@ -14,8 +14,8 @@ const THEMES = ["light", "dark"] as const;
  * 見える。`theme` は `@storybook/addon-themes` の global 名である。
  */
 function storybookProject(theme: (typeof THEMES)[number]) {
-  // vitest.config.ts の inline project なので、root の envDir・plugin (viteReact)・resolve.tsconfigPaths を
-  // 継承する (Vitest 5 の extends の既定)。ここには story の実行に固有のものだけを書く
+  // vitest.config.ts の inline project なので root の設定を継承する (Vitest 5 の extends の既定)。
+  // ここには story の実行に固有のものだけを書く
   return defineProject({
     plugins: [
       tailwindcss(),

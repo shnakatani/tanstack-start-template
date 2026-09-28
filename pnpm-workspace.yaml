@@ -55,9 +55,8 @@ packageExtensions:
 
 # vite を core へ alias すると版が 0.x になり、vite の peer 範囲を満たさなくなる。
 # vp migrate が書く、番号の不一致だけを抑える設定
-# vitest への allowAny は、番号の不一致でない本当の非互換も黙らせる。@storybook/addon-vitest@10.6.0 は
-# vitest の peer が ^3 || ^4 で、Vitest 5 の範囲外であることも表示されない。addon を上げるときは
-# peer の範囲を npm view で読む (下の patchedDependencies の撤去条件と同じ契機)
+# vitest への allowAny は、番号の不一致でない範囲外も許す (@storybook/addon-vitest@10.6.0 の vitest の peer は
+# ^3 || ^4)。確かめる契機は下の patchedDependencies の撤去条件
 peerDependencyRules:
   allowAny:
     - vite
