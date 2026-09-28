@@ -24,16 +24,18 @@
 
 ### 戻り値を決める
 
-| 場面                                                                | 形                                                                                                                                                                             |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 引数ごとに応答を変える (検索語ごとの一覧、対象の id ごとの保存)     | `vi.when(vi.mocked(fn), { onUnmatched: "throw" }).calledWith(引数).thenResolve(値)`。`mockImplementation` に引数の分岐を手書きしない。登録していない引数で呼ばれると例外になる |
-| 同じ引数で、呼ばれる順に応答を変える (初回の取得と、更新後の再取得) | `mockResolvedValueOnce(初回).mockResolvedValue(以降)`                                                                                                                          |
-| 応答の時点をテストで握る                                            | 引数を問わないなら `deferMock(fn)` (`src/test/app/defer-mock.ts`)。引数ごとに握るなら `Promise.withResolvers()` を作り、`vi.when` の `thenReturn(pending.promise)` に渡す      |
+| 場面                                                                | 形                                                                                                                                                                                                          |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 引数ごとに応答を変える (検索語ごとの一覧、対象の id ごとの保存)     | `vi.when(vi.mocked(fn), { onUnmatched: "throw" }).calledWith(引数).thenResolve(値)`。`mockImplementation` に引数の分岐を手書きしない。登録していない引数で呼ばれると例外になる ([Vitest docs「vi.when」][]) |
+| 同じ引数で、呼ばれる順に応答を変える (初回の取得と、更新後の再取得) | `mockResolvedValueOnce(初回).mockResolvedValue(以降)`                                                                                                                                                       |
+| 応答の時点をテストで握る                                            | 引数を問わないなら `deferMock(fn)` (`src/test/app/defer-mock.ts`)。引数ごとに握るなら `Promise.withResolvers()` を作り、`vi.when` の `thenReturn(pending.promise)` に渡す                                   |
 
 - 途中から応答を変えるなら、最初の `vi.when` の戻り値に同じ引数の `calledWith` を積み足す。同じ引数の behavior に後から足した応答 (action) が先に使われ、無期限の応答なら以降は前の応答に戻らない ([Vitest docs のレシピ「Conditional Mocking with vi.when」][] の Stacking actions)
 - `vi.when` は spy の実装を差し替える。あとから `mockImplementation` / `mockResolvedValue` / `deferMock` を呼ぶと `vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなる (2026-09-28、vitest 5.0.1 で実測)
-- 未消費の `mock*Once` は、引数を問わず `vi.when` より先に使われる (2026-09-28、vitest 5.0.1 で実測)。同じ spy で `vi.when` と混ぜない
+- 未消費の `mock*Once` は、引数を問わず `vi.when` より先に使われる (2026-09-28、vitest 5.0.1 で実測)
+- 同じ spy で、`vi.when` と上の 2 つ (あとからの差し替え、`mock*Once`) を混ぜない
 - `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、`vi.mocked(fn).mock.results` を見る。`vi.when: no behavior defined when called with [...]` の例外と渡った引数が読める
+- 例外の文言の形は [Vitest docs のレシピ「Conditional Mocking with vi.when」][] の `onUnmatched` の例にある
 
 ## explanation
 
@@ -64,10 +66,6 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
-
-本文は引かないが、調べたときに読んだもの:
-
-- [Vitest docs「vi.when」][] (`vi.when` の API。`onUnmatched` と `calledWith` の定義)
 
 [Vitest docs「vi.mock」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md#vimock
 [Vitest docs「coverage.exclude」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/coverage.md#coverageexclude
