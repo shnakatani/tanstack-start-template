@@ -83,9 +83,9 @@ describe("createDb", () => {
     const after = Date.now();
 
     const row = db.$client.prepare("select created_at, updated_at from notes").get();
-    expect(row).toEqual({ created_at: expect.any(Number), updated_at: expect.any(Number) });
+    // 形の検査と型の絞り込みを v.parse で兼ねる。strictObject は余分な列も issue にする
     const { created_at: createdAt, updated_at: updatedAt } = v.parse(
-      v.object({ created_at: v.number(), updated_at: v.number() }),
+      v.strictObject({ created_at: v.number(), updated_at: v.number() }),
       row,
     );
     expect(createdAt).toBeGreaterThanOrEqual(before);
