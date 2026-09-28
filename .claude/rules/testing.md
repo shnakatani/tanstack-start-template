@@ -105,6 +105,7 @@ paths:
 
 ## optimistic update は決着を握って観測する
 
+- 引数ごとに応答を変える mock は `vi.when(vi.mocked(fn), { onUnmatched: "throw" })` で書き、`mockImplementation` に引数の分岐を手書きしない。想定外の引数で呼ばれたことを見逃さない (`docs/guides/testing/mocking.md`「戻り値を決める」)
 - optimistic state は `src/test/app/defer-mock.ts` の `deferMock` で決着を握って観測する。`mockRejectedValue` は即 reject して中間状態が見えない
 - assertion の順序は、optimistic state の確認 → `reject()` → ロールバックの確認
 

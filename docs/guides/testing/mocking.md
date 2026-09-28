@@ -22,6 +22,17 @@
 - `__mocks__` の export は元と同じ名前を全部並べ、元に export を足したら mock にも足す。手書きの mock は元の変更に追随しない (Jest docs「Manual Mocks」)。足し忘れると import 側が `does not provide an export named` の SyntaxError で落ちる
 - `__mocks__` は coverage の分母から外す (`vitest.config.ts` の `coverage.exclude`)。`coverage.include` が `src/**` を含み、`coverage.exclude` の既定は空なので、外さないと出荷されないファイルが分母に入る (vitest docs「coverage.exclude」)
 
+### 戻り値を決める
+
+| 場面                                                                | 形                                                                                                                                                                             |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 引数ごとに応答を変える (検索語ごとの一覧、対象の id ごとの保存)     | `vi.when(vi.mocked(fn), { onUnmatched: "throw" }).calledWith(引数).thenResolve(値)`。`mockImplementation` に引数の分岐を手書きしない。登録していない引数で呼ばれると例外になる |
+| 同じ引数で、呼ばれる順に応答を変える (初回の取得と、更新後の再取得) | `mockResolvedValueOnce(初回).mockResolvedValue(以降)`                                                                                                                          |
+| 応答の時点をテストで握る                                            | 引数を問わないなら `deferMock(fn)` (`src/test/app/defer-mock.ts`)。引数ごとに握るなら `Promise.withResolvers()` を作り、`vi.when` の `thenReturn(pending.promise)` に渡す      |
+
+- `vi.when` は同じ引数に後から積んだ振る舞いを先に使う。途中から応答を変えるなら、最初の `vi.when` の戻り値に `calledWith` を積み足す。`vi.when` のあとに `deferMock` を呼ぶと、`vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなる (2026-09-28、vitest 5.0.1 で実測)。混ぜない
+- `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、まず `vi.mocked(fn).mock.calls` で渡った引数を見る
+
 ## explanation
 
 ### `__mocks__` に寄せる理由
@@ -59,3 +70,4 @@ explanation と how-to が拠る一次情報。vitest は 5.0.1 の tag で固�
 - vitest PR #5765: https://github.com/vitest-dev/vitest/pull/5765
 - `@vitest/mocker` `node/resolver.ts`: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/mocker/src/node/resolver.ts
 - Jest docs「Manual Mocks」: https://jestjs.io/docs/manual-mocks
+- vitest docs のレシピ「Conditional Mocking with vi.when」: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/conditional-mocking.md

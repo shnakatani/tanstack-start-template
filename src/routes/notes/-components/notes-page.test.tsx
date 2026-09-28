@@ -176,13 +176,17 @@ describe("NotesPage", () => {
   });
 
   it("検索語を空に戻すと、無効化済みのキャッシュは再取得の決着後に通知する", async () => {
-    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    const listing = vi
+      .when(vi.mocked(listNotes), { onUnmatched: "throw" })
+      .calledWith({ data: { q: "" } })
+      .thenResolve([NOTE])
+      .calledWith({ data: { q: "abc" } })
+      .thenResolve([]);
     const queryClient = createTestQueryClient();
     const screen = await renderPage({ queryClient });
     await expectText(screen, NOTE.title);
     const searchbox = noteSearchbox(screen);
 
-    vi.mocked(listNotes).mockResolvedValue([]);
     await searchbox.fill("abc");
     await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
 
@@ -192,7 +196,9 @@ describe("NotesPage", () => {
       queryKey: notesQueryOptions({ q: "" }).queryKey,
       exact: true,
     });
-    const listed = deferMock(listNotes);
+    // 空に戻したあとの再取得は、応答をテストで握る。同じ引数に後から積んだ振る舞いが先に使われる
+    const listed = Promise.withResolvers<Note[]>();
+    listing.calledWith({ data: { q: "" } }).thenReturn(listed.promise);
     await searchbox.fill("");
     await expect.poll(() => vi.mocked(listNotes).mock.calls.at(-1)).toEqual([{ data: { q: "" } }]);
     await expectText(screen, NOTE.title);
@@ -435,9 +441,20 @@ describe("NotesPage", () => {
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
     const refetch = deferMock(listNotes);
     const secondResponse = Promise.withResolvers<undefined>();
-    vi.mocked(updateNote)
-      .mockResolvedValueOnce(undefined)
-      .mockImplementationOnce(() => secondResponse.promise);
+    vi.when(vi.mocked(updateNote), { onUnmatched: "throw" })
+      .calledWith({
+        data: { id: NOTE.id, title: UPDATED_NOTE.title, body: NOTE.body, dueDate: NOTE.dueDate },
+      })
+      .thenResolve(undefined)
+      .calledWith({
+        data: {
+          id: OTHER_NOTE.id,
+          title: "後続の見出し",
+          body: OTHER_NOTE.body,
+          dueDate: OTHER_NOTE.dueDate,
+        },
+      })
+      .thenReturn(secondResponse.promise);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
 
@@ -613,13 +630,14 @@ describe("NotesPage", () => {
   });
 
   it("削除中でも他の行を削除でき、両方の行が busy になる", async () => {
-    const removes = new Map<number, PromiseWithResolvers<undefined>>();
+    const removingNote = Promise.withResolvers<undefined>();
+    const removingOther = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
-    vi.mocked(removeNote).mockImplementation(({ data }) => {
-      const pending = Promise.withResolvers<undefined>();
-      removes.set(data.id, pending);
-      return pending.promise;
-    });
+    vi.when(vi.mocked(removeNote), { onUnmatched: "throw" })
+      .calledWith({ data: { id: NOTE.id } })
+      .thenReturn(removingNote.promise)
+      .calledWith({ data: { id: OTHER_NOTE.id } })
+      .thenReturn(removingOther.promise);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
 
@@ -634,9 +652,8 @@ describe("NotesPage", () => {
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "true");
 
-    for (const pending of removes.values()) {
-      pending.resolve(undefined);
-    }
+    removingNote.resolve(undefined);
+    removingOther.resolve(undefined);
 
     // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)。
     // このテストは 2 件の完了の順序を固定していないので、並べ替えてから配列ごと比べる
