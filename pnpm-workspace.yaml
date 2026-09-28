@@ -55,10 +55,12 @@ packageExtensions:
 
 # vite を core へ alias すると版が core の番号 (1.x) になり、vite の peer 範囲を満たさなくなる。
 # vp migrate が書く、番号の不一致だけを抑える設定。外しても vp migrate が書き戻す。
-# vitest の行は何も抑えていない。上の overrides の vitest@* が peer の宣言も catalog の版へ置き換えるので、
-# vitest の peer は食い違いとして出ない (Vite+ の docs の upgrade-project「The @* range keeps the override
-# on the semver ranges that transitive and peer declarations use」)。
-# 食い違いは pnpm peers check で数える。install は lockfile が変わらないと検査しない
+# vitest の行は何も抑えていない。上の overrides の vitest@* が peer の宣言も catalog の版 (5.0.1) へ
+# 置き換えるので、vitest の peer は食い違いとして出ない (pnpm の docs の dependency-resolution
+# 「Overriding peer dependencies」)。vite の行は効いている。vite@* の catalog の値は npm: の alias で、
+# vite の peer の宣言は置き換わらず、外すと pnpm peers check が vite の食い違いを報告する (2026-09-28 に実測。
+# alias の扱いは docs に無い)。
+# 食い違いは pnpm peers check で数える (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
 peerDependencyRules:
   allowAny:
     - vite
@@ -71,10 +73,12 @@ peerDependencyRules:
     # 親つきのキーで plugin-react の下だけに効かせ、値は検証した版に絞る (* にすると読み比べの契機が消える)
     "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"
     # @storybook/addon-vitest@10.6.0 の optional peer は @vitest/browser-playwright ^4 で、Vitest 5 に
-    # 追いついていない。撤去条件は下の patchedDependencies と同じ
+    # 追いついていない。撤去条件: addon-vitest の peer が @vitest/browser-playwright 5 を含んだとき
     "@storybook/addon-vitest>@vitest/browser-playwright": "5.0.1"
     # storybook@10.6.0 の optional peer は vite-plus ^0.1.15 || ^0.2.0 で、1.0 に追いついていない。
-    # storybook が読むのは vite-plus/versions (vitest と vite の版の検出) だけで、1.0 も export している。
+    # storybook が読むのは vite-plus/versions (vitest と vite の版の検出) だけで、1.0 も export している
+    # (storybook@10.6.0 の dist で確認)。キーに親の版を付けても pnpm peers check は親の版を見ないので、
+    # storybook を上げたら dist の vite-plus の import を読み直す。
     # 撤去条件: storybook の peer が vite-plus 1.x を含んだとき
     "storybook>vite-plus": "1.0.0"
 
