@@ -54,7 +54,7 @@ export function NoteCreateDialog() {
     onError: toastMutationError,
   });
 
-  const { blocksClose, formKey, onOpenChange, onOpenChangeComplete } = useSubmitBlockingDialog({
+  const { blocksClose, formKeyFor, onOpenChange, onOpenChangeComplete } = useSubmitBlockingDialog({
     isPending: createMutation.isPending,
     queryKey: NOTES_QUERY_KEY,
   });
@@ -69,7 +69,8 @@ export function NoteCreateDialog() {
           close の可否で、onOpenChange と同じ源 (useSubmitBlockingDialog) から取らないと「押せるのに閉じない」ずれが
           出る (ADR-0017 の完了点: サーバーの応答で閉じる) */}
       <NoteFormContent
-        key={formKey}
+        // 作成は対象を持たないので、閉じ終わるたびに作り直すだけ
+        key={formKeyFor(null)}
         heading="メモを追加"
         defaultValues={EMPTY_NOTE_INPUT}
         onSubmit={createMutation.runAction}

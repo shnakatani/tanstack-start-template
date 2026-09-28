@@ -41,7 +41,7 @@ export function NoteEditDialog() {
     onError: toastMutationError,
   });
 
-  const { blocksClose, formKey, onOpenChange, onOpenChangeComplete } = useSubmitBlockingDialog({
+  const { blocksClose, formKeyFor, onOpenChange, onOpenChangeComplete } = useSubmitBlockingDialog({
     isPending: updateMutation.isPending,
     queryKey: NOTES_QUERY_KEY,
   });
@@ -61,11 +61,8 @@ export function NoteEditDialog() {
         }
         return (
           <NoteFormContent
-            // 行ごとに作り直す。useAppForm は defaultValues を作成時に読み、後から変わった値は
-            // 入力に触れていないフォームにしか反映されない。閉じる途中で別の行の payload が
-            // 届くと、前の行の入力が残ったフォームで開く。対象が変わったら key で作り直すのは
-            // React docs「Resetting all state when a prop changes」の形
-            key={`${formKey}-${payload.id}`}
+            // 行ごとに作り直す (理由は useSubmitBlockingDialog の formKeyFor)
+            key={formKeyFor(payload.id)}
             heading="メモを編集"
             defaultValues={{ title: payload.title, body: payload.body, dueDate: payload.dueDate }}
             onSubmit={(input) => updateMutation.runAction({ id: payload.id, ...input })}

@@ -1,12 +1,12 @@
 import { useIsFetching, type QueryKey } from "@tanstack/react-query";
-import { useState, type ComponentProps } from "react";
+import { useState, type ComponentProps, type Key } from "react";
 
 import type { Dialog } from "@/components/ui/dialog";
 
 /**
  * 入力フォームのダイアログの close の制御。保存の応答前は閉じさせず、閉じ終わったらフォームを
  * 作り直す key を進める。返り値の `onOpenChange` と `onOpenChangeComplete` は Dialog の Root へ、
- * `blocksClose` はフォームへ、`formKey` はフォームの key へ渡す。
+ * `blocksClose` はフォームへ、`formKeyFor(<作り直しの対象>)` の結果はフォームの key へ渡す。
  *
  * - isPending: 保存の mutation の pending
  * - queryKey: 保存の応答後に再取得するクエリ。再取得中かどうかで応答済みを判別する
@@ -39,11 +39,23 @@ export function useSubmitBlockingDialog({
   // ダイアログの入力が空になって見える。onOpenChangeComplete(false) は Base UI が Portal を
   // unmount するのと同じ callback で呼ばれる。閉じる途中で開き直すと、Portal も unmount されず
   // 入力は残る
-  const [formKey, setFormKey] = useState(0);
+  const [generation, setGeneration] = useState(0);
   function onOpenChangeComplete(open: boolean) {
     if (!open) {
-      setFormKey((key) => key + 1);
+      setGeneration((current) => current + 1);
     }
+  }
+
+  // 対象 (編集する行など) が変わったときも作り直す。useAppForm は defaultValues を作成時に読み、
+  // 後から変わった値は入力に触れていないフォームにしか反映されない。閉じる途中で別の対象が届くと、
+  // 前の対象の入力が残ったフォームで開く。対象が変わったら key で作り直すのは React docs
+  // 「Resetting all state when a prop changes」の形。
+  // 対象は Base UI の Dialog が Root の children の render function にしか渡さない (payload) ので、
+  // hook の引数では受けられない。render function の中で呼ぶ関数にし、引数を必須にして、対象を
+  // 持つダイアログが渡し忘れないようにする。対象を持たないダイアログ (作成) は null を渡す。
+  // 閉じている間は payload が無く、フォームを描かないので key も要らない
+  function formKeyFor(resetKey: Key | null): string {
+    return resetKey === null ? String(generation) : `${generation}-${resetKey}`;
   }
 
   // 型は転送先の props から導出する (再宣言すると転送先の型変更に追随しない)
@@ -54,5 +66,5 @@ export function useSubmitBlockingDialog({
     }
   };
 
-  return { blocksClose, formKey, onOpenChange, onOpenChangeComplete };
+  return { blocksClose, formKeyFor, onOpenChange, onOpenChangeComplete };
 }
