@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
  *
  * status は name from author のロールなので、可視テキストがあっても `aria-label` で名前を与える。
  * route の pending 表示は、状態を `announce()` で通知する規範の例外 (ADR-0026、ADR-0029)。
- * `aria-busy` は載せない。読み込み中を伝える属性ではなく、JAWS は busy な要素を読み飛ばす。
+ * `aria-busy` は載せない (`docs/guides/accessibility.md`「読み込み中の表示を組む」)。
  */
 export function PendingContent() {
   return (

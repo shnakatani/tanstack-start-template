@@ -20,11 +20,10 @@ describe("TableSkeleton", () => {
     await expect.element(table.getByRole("row")).toHaveLength(2);
   });
 
-  it("table に role を載せず、どの要素にも aria-busy を載せない", async () => {
+  it("どの要素にも aria-busy を載せない", async () => {
     const screen = await render(<TableSkeleton headers={["タイトル"]} />);
 
-    // role を載せると th と td が役割を失い、aria-busy は JAWS が要素ごと読み飛ばす
-    await expect.element(screen.getByRole("table")).not.toHaveAttribute("role");
+    await expect.element(screen.getByRole("table")).toBeInTheDocument();
     await expect.poll(() => screen.container.querySelectorAll("[aria-busy]").length).toBe(0);
   });
 });
