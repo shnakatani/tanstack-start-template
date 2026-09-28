@@ -268,15 +268,15 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("メモを保存しています");
+      expect(readAnnouncements()).toContain("保存しています");
     });
     // 完了は createNote の決着より前に出さない
-    expect(readAnnouncements()).not.toContain("保存しました");
+    expect(readAnnouncements()).not.toContain("『買い物リスト』を保存しました");
 
     create.resolve({ id: 1 });
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("保存しました");
+      expect(readAnnouncements()).toContain("『買い物リスト』を保存しました");
     });
   });
 

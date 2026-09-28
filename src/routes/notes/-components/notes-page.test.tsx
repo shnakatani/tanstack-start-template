@@ -610,7 +610,7 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);
+      expect(readAnnouncements()).toContain("削除しています");
     });
     // 完了は removeNote の決着より前に出さない
     expect(readAnnouncements()).not.toContain(`『${NOTE.title}』を削除しました`);
@@ -651,7 +651,7 @@ describe("NotesPage", () => {
       expect.anything(),
     );
     // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
-    expect(readAnnouncements()).toEqual([`『${NOTE.title}』を削除しています`]);
+    expect(readAnnouncements()).toEqual(["削除しています"]);
     remove.resolve(undefined);
   });
 });

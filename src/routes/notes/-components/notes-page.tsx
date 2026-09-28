@@ -84,9 +84,10 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
     // 開始の通知の置き場 (ADR-0026)。この画面は variables 方式 (ADR-0017) なのでキャッシュは触らない。
-    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する
-    onMutate: (target) => {
-      announce(`『${target.name}』を削除しています`);
+    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する。開始は確定を押した直後なので
+    // 対象名を載せない
+    onMutate: () => {
+      announce("削除しています");
     },
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
     // 再取得を await して pending を再取得完了まで保つ (ADR-0017)。閉じるのは確定時 (完了点 (a))
