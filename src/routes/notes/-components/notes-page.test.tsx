@@ -144,10 +144,15 @@ describe("NotesPage", () => {
   });
 
   it("打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残す", async () => {
-    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    const listed = Promise.withResolvers<Note[]>();
+    const listing = vi
+      .when(vi.mocked(listNotes), { onUnmatched: "throw" })
+      .calledWith({ data: { q: "" } })
+      .thenResolve([NOTE])
+      .calledWith({ data: { q: "abc" } })
+      .thenReturn(listed.promise);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
-    const listed = deferMock(listNotes);
 
     // 1 文字ずつ別の呼び出しで打つ (`fill` は 1 回の input、`type("abc")` は間を置かず 3 文字を
     // 送るので、どちらも打鍵の間に一覧が描き直されない)。debounce が効けば "a" "ab" では取得しない。
@@ -173,6 +178,7 @@ describe("NotesPage", () => {
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
     // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0027)
     await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
+    expect(listing).toHaveBeenExhausted();
   });
 
   it("検索語を空に戻すと、無効化済みのキャッシュは再取得の決着後に通知する", async () => {
@@ -210,6 +216,7 @@ describe("NotesPage", () => {
       "『abc』に一致するメモは 0 件です",
       "絞り込みを解除し、メモを全件表示しています",
     ]);
+    expect(listing).toHaveBeenExhausted();
   });
 
   it("入力欄の値は URL と同じ正規化 (trim) を通して取得し、確定する", async () => {
@@ -448,7 +455,8 @@ describe("NotesPage", () => {
       body: OTHER_NOTE.body,
       dueDate: OTHER_NOTE.dueDate,
     };
-    vi.when(vi.mocked(updateNote), { onUnmatched: "throw" })
+    const updating = vi
+      .when(vi.mocked(updateNote), { onUnmatched: "throw" })
       .calledWith({ data: NOTE_UPDATE })
       .thenResolve(undefined)
       .calledWith({ data: otherUpdate })
@@ -478,6 +486,7 @@ describe("NotesPage", () => {
 
     await expectNoteDialogClosed(screen);
     refetch.resolve([UPDATED_NOTE, OTHER_NOTE]);
+    expect(updating).toHaveBeenExhausted();
   });
 
   it("0 件の一覧に 1 件目を追加すると、応答前に空状態が消えて楽観行が出る", async () => {
@@ -631,7 +640,8 @@ describe("NotesPage", () => {
     const removingNote = Promise.withResolvers<undefined>();
     const removingOther = Promise.withResolvers<undefined>();
     vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
-    vi.when(vi.mocked(removeNote), { onUnmatched: "throw" })
+    const removing = vi
+      .when(vi.mocked(removeNote), { onUnmatched: "throw" })
       .calledWith({ data: { id: NOTE.id } })
       .thenReturn(removingNote.promise)
       .calledWith({ data: { id: OTHER_NOTE.id } })
@@ -646,7 +656,8 @@ describe("NotesPage", () => {
     await openDeleteConfirm(screen, OTHER_NOTE);
     await confirmDeleteButton(screen).click();
 
-    await expect.poll(() => vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
+    // 2 件とも、それぞれの id で削除を呼んだ
+    await expect.poll(() => removing).toHaveBeenExhausted();
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "true");
 
