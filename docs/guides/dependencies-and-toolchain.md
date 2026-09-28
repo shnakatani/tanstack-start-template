@@ -55,9 +55,11 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 pnpm peers check
 ```
 
-- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、AGENTS.md の「pnpm を直接打たない」の理由 (解決が Vite+ の管理から外れる) には当たらない。`vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
+- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、AGENTS.md の「pnpm を直接打たない」の理由 (解決が Vite+ の管理から外れる) には当たらない
+- `vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。許可を外して `vp install --force` を打っても、警告は出なかった (2026-09-28、pnpm 11.25.0)
 - 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
+- Vite+ を上げたら、`@vitest/browser-playwright` と `vite-plus` の許可の版を書き換える。確かめた版まで絞っているので、上げると `pnpm peers check` が再び食い違いを出す。storybook と addon-vitest の peer がまだ新しい版を含まないことを先に確かめる
 - `vite` と `vitest` の `allowAny` / `allowedVersions` は `vp migrate` が書く。外しても書き戻す
 
 ### 依存をバレルの禁止の対象に足す
@@ -93,15 +95,15 @@ pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏
 
 ### 依存を上げたときに見直すもの
 
-| 上げたもの                               | 見直すもの                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vite+                                    | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する。`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` は、`@vitest/browser-playwright` と `vite-plus` を確かめた版まで絞っているので、上げると `pnpm peers check` が再び食い違いを出す。storybook と addon-vitest の peer がまだ新しい版を含まないことを確かめてから、値を新しい版に書き換える (「peer の食い違いを数える」) |
-| oxlint (Vite+ 同梱) の minor 以上        | `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Base UI                                  | `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring (自己リセットの条件の表)                                                                                                                                                                                                                                                                                                                                                                                                  |
-| axe-core                                 | `docs/guides/accessibility.md`「axe を上げたとき」。あわせて `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」)                                                                                                                                                                                                                                                                                                      |
-| colorjs.io                               | `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」「測り方の限界」)。版が上がると値が変わりうる                                                                                                                                                                                                                                                                                                                       |
-| vitest                                   | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている ([vitest の issue 9157][])                                                                                                                                                                                                      |
-| `RESTRICTED_BARREL_IMPORTS` に載せた依存 | `exports` に個別エントリポイントが残っているか。消えていれば lint の `message` が案内する import が解決しなくなる。react-day-picker を上げたときは、内部の date-fns の import と `locale/ja` の import が変わったかも見る (ADR-0032 の Consequences の再評価の条件)                                                                                                                                                                                                                                |
+| 上げたもの                               | 見直すもの                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vite+                                    | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する。peer の許可を新しい版に書き換える (「peer の食い違いを数える」)                                                                  |
+| oxlint (Vite+ 同梱) の minor 以上        | `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」                                                                                                                                                                                                                      |
+| Base UI                                  | `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring (自己リセットの条件の表)                                                                                                                                                                                             |
+| axe-core                                 | `docs/guides/accessibility.md`「axe を上げたとき」。あわせて `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」)                                                                                                 |
+| colorjs.io                               | `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」「測り方の限界」)。版が上がると値が変わりうる                                                                                                                  |
+| vitest                                   | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている ([vitest の issue 9157][]) |
+| `RESTRICTED_BARREL_IMPORTS` に載せた依存 | `exports` に個別エントリポイントが残っているか。消えていれば lint の `message` が案内する import が解決しなくなる。react-day-picker を上げたときは、内部の date-fns の import と `locale/ja` の import が変わったかも見る (ADR-0032 の Consequences の再評価の条件)                           |
 
 ### 走査対象を持つ config を足す
 
@@ -111,7 +113,7 @@ tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (l
 
 ### `typescript` を直接の依存に置かない理由
 
-`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsgolint と TypeScript Go のツールチェーンである ([Vite+ docs「check」][])。
+`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsgolint と TypeScript Go のツールチェーンである ([Vite+ docs「Check」][])。
 `typescript` パッケージは Vite+ 一族の推移依存として入るので、直接の依存から外しても install からは消えない。2026-09-02 に `devDependencies` から外した状態で `vp check` を走らせると、型エラー (`TS2322`) を報告した。
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
@@ -122,4 +124,4 @@ tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (l
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
 [vitest の issue 9157]: https://github.com/vitest-dev/vitest/issues/9157
-[Vite+ docs「check」]: https://viteplus.dev/guide/check
+[Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
