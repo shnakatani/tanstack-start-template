@@ -2,7 +2,6 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -12,7 +11,9 @@ import { createDb, findProjectRoot, migrateDb } from "./index";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
 
-// migration フォルダの解決先を引数で確かめる。本物の migrate を通すので、スキーマも実際に作られる
+// migration フォルダの解決先を引数で確かめる。本物の migrate を通すので、スキーマも実際に作られる。
+// isolate: false では、先に走った別のファイルが `./index` を本物の migrator のまま読み込んでいることがある。
+// 確かめるテストは `vi.resetModules()` の後に読み直す (vitest docs の api/vi「vi.resetModules」)
 vi.mock(import("drizzle-orm/better-sqlite3/migrator"), async (importOriginal) => {
   const original = await importOriginal();
   return { ...original, migrate: vi.fn(original.migrate) };
@@ -144,18 +145,22 @@ describe("createDb", () => {
     }
   });
 
-  it("migration フォルダもプロジェクトルート基準で解決する", () => {
+  it("migration フォルダもプロジェクトルート基準で解決する", async () => {
+    vi.resetModules();
+    const db = await import("./index");
+    const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");
+
     withCwd(join(REPO_ROOT, "src"), () => {
-      const db = createDb(":memory:");
+      const client = db.createDb(":memory:");
       try {
-        migrateDb(db);
-        expect(vi.mocked(migrate)).toHaveBeenCalledExactlyOnceWith(db, {
+        db.migrateDb(client);
+        expect(vi.mocked(migrate)).toHaveBeenCalledExactlyOnceWith(client, {
           migrationsFolder: join(REPO_ROOT, "drizzle"),
         });
-        db.insert(notes).values({ title: "hello", body: "world" }).run();
-        expect(db.select().from(notes).all()).toHaveLength(1);
+        client.insert(notes).values({ title: "hello", body: "world" }).run();
+        expect(client.select().from(notes).all()).toHaveLength(1);
       } finally {
-        db.$client.close();
+        client.$client.close();
       }
     });
   });
