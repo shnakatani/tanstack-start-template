@@ -53,7 +53,7 @@ mutation 以外のユーザー操作由来の更新は、`src/components/screens
 `dialog.tsx` の `ActionDialogContent` は `DialogContent` の中を `display: contents` の `ActionForm` で包み、フォームを持つダイアログの器になる。form の置き場所の比較は `docs/guides/forms-and-inputs.md`「フォームを `DialogContent` の中に置く理由」にある。
 React の `<form action>` + `useFormStatus` を使わないのは、submit の経路を TanStack Form の `handleSubmit` (FormData を経由しない) にするためと、決着前の二重 submit を部品側の dedupe で塞ぐためである。`ActionForm` の context は `useFormStatus` と同じ形で pending を子孫へ渡す。
 
-部品が守る契約 (`action` の型、pending の a11y、二重発火、失敗、基盤への依存) は `docs/guides/updates-and-data.md`「Action 層の部品が守る契約」にある。
+部品が守る契約 (`action` の型、pending の a11y、二重発火、失敗、基盤への依存) は `docs/guides/react/updates.md`「Action 層の部品が守る契約」にある。
 
 ### 二重発火は state だけで塞ぐ
 
@@ -71,11 +71,11 @@ React はユーザー起点のイベントごとに次のイベントより前�
 
 二重発火の検証を実イベントで書く手順は `docs/guides/testing/user-interactions.md`「クリックを発火する」にある。
 
-完了点 (a) (ADR-0017) では Action が close だけを含み Transition が確定直後に終わるため、`isPending` の dedupe が効かない間がある。その間の防ぎ方は `docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」にある。
+完了点 (a) (ADR-0017) では Action が close だけを含み Transition が確定直後に終わるため、`isPending` の dedupe が効かない間がある。その間の防ぎ方は `docs/guides/react/updates.md`「完了点ごとに Transition を終える」にある。
 
 ### mutation の書き方
 
-mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、型で `onError` を必須にし、`mutate` / `mutateAsync` を外して `runAction` を足す。入力・出力・呼び出し・再取得と close・`await` 後の state 更新の書き方は `docs/guides/updates-and-data.md`「mutation の書き方」にある。
+mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、型で `onError` を必須にし、`mutate` / `mutateAsync` を外して `runAction` を足す。入力・出力・呼び出し・再取得と close・`await` 後の state 更新の書き方は `docs/guides/react/updates.md`「mutation の書き方」にある。
 
 ### 検討した選択肢
 

@@ -32,7 +32,7 @@
 
 ### 手動メモ化を残す条件 (決定 4)
 
-React チームは既存コードの手動メモ化を残すよう推奨している。撤去の前後で比べる指標と計測のコードは `docs/guides/updates-and-data.md`「手動メモ化を外すか判定する」にある。
+React チームは既存コードの手動メモ化を残すよう推奨している。撤去の前後で比べる指標と計測のコードは `docs/guides/react/memoization.md`「手動メモ化を外すか判定する」にある。
 
 registry コード (`src/components/ui/`) は ADR-0020 の統制対象なので、この判定の対象にせず改変しない。
 
@@ -60,7 +60,7 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 `react/todo` を `"error"` にすると bail out を修正すべき違反として扱うことになり、決定 5 と矛盾する。原因は Compiler の未実装でありコードの誤りではない。
 `vp lint -D react/todo` が報告するのは registry コードだけで、ADR-0020 により書き換えない (2026-09-02 確認)。件数は上流の追随で動くため、必要なときにこのコマンドで数える。
 
-`vp lint -D react/todo` は `logDiagnostics` の退路としてその場で叩く (2026-09-02 に、ビルドログと同じ bail out を同じ数だけ報告すると確かめた)。使い方は `docs/guides/updates-and-data.md`「React Compiler の診断を読む」にある。
+`vp lint -D react/todo` は `logDiagnostics` の退路としてその場で叩く (2026-09-02 に、ビルドログと同じ bail out を同じ数だけ報告すると確かめた)。使い方は `docs/guides/react/memoization.md`「React Compiler の診断を読む」にある。
 `"warn"` にもできない。`vp check` は warn を exit 0 で通すため、gate に載らないルールは設定してあるだけの状態になる。
 
 `react/unsupported-syntax` は分けて扱い `"error"` で入れる。
@@ -80,7 +80,7 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 
 ## Consequences
 
-- Compiler の適用は experimental な機能に乗る (`@vitejs/plugin-react` の README が明記)。壊れたときの退避は `docs/guides/updates-and-data.md`「React Compiler の診断を読む」にある
+- Compiler の適用は experimental な機能に乗る (`@vitejs/plugin-react` の README が明記)。壊れたときの退避は `docs/guides/react/memoization.md`「React Compiler の診断を読む」にある
 - `package.json` から babel を外しても install からは消えない。`@vitejs/plugin-react` の optional peer として `@rolldown/plugin-babel` と `babel-plugin-react-compiler` と `@babel/core` が lockfile に残る (2026-09-02 実測: `vp why babel-plugin-react-compiler` が plugin-react 経由で解決する)。プロジェクト root からは解決できないので (`require.resolve` が `MODULE_NOT_FOUND`)、`vite.config.ts` から使うことはできない
 - Compiler は client 環境だけで走る。自前コードの SSR 出力にメモ化は入らない (2026-09-02 実測: `grep -c useMemoCache .output/server/_ssr/ssr.mjs` が 0)。`.output/server/_libs/` にはコンパイル済みで配布される base-ui と react-router が入るため、`.output/server` を丸ごと grep すると当たる。単一レンダーの経路なのでメモ化の効きどころが無い
 - `oxc-transform-react` は `@vitejs/plugin-react` の optional peer で、宣言された範囲 (`^0.145.0`) が上流自身の devDependency (`^0.147.0`) より狭い。範囲の是正までは `pnpm-workspace.yaml` の `peerDependencyRules` で受ける
