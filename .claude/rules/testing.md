@@ -1,6 +1,7 @@
 ---
 paths:
   - "src/**/*.test.*"
+  - "src/**/*.test-d.*"
   - "scripts/**/*.test.*"
   - "src/test/**"
   - "**/*.test-helpers.*"
@@ -22,9 +23,12 @@ paths:
 | ---------------------- | ---------------------------- | --------------------------------------------------- | ------------------------------------------ |
 | アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                  | `vp test run --project unit`               |
 | アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                                 | `vp test run --project browser`            |
+| アプリの型テスト       | アプリの型の変更             | `src/**/*.test-d.ts`                                | `vp check` (`vp test run` は集めない)      |
 | スクリプトの単体テスト | スクリプト自身の変更         | `scripts/**/*.test.ts` (`scripts/checks/**` を除く) | `vp test run --project scripts-tools`      |
 | 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity`   |
 | 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp node scripts/checks/runtime/<name>.ts` |
+
+- `expectTypeOf` だけのテストは `*.test-d.ts` に置き、実行するテストと同じファイルに書かない。`*.test.ts(x)` に書くと、型しか確かめないテストが `vp test run` で pass として数えられる (`docs/guides/testing/type-tests.md`「`*.test-d.ts` に分ける理由」)
 
 スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める。
 

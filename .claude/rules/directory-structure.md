@@ -62,7 +62,7 @@ paths:
 | `src/test/app/`            | アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場        |
 
 - `src/test/` の helper は上の表のディレクトリに置き、直下に置かない。直下に並べると prefix だけが分類になり、新しい helper の置き先を名前から決められない (`docs/guides/placement.md`「`src/test/` に helper を置く」)
-- 付随ファイル (`*.test.*` / `*.test-helpers.*` / `*.story-helpers.*` / `*.stories.*`) の種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
+- 付随ファイルの種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
 - helper や `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0008)
 - story (`*.stories.*`) も `no-restricted-imports` の対象から外す。出荷される bundle に入らない
 - helper のテストは helper と同じディレクトリに置く。DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project) にする

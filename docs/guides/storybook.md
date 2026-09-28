@@ -70,7 +70,7 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 1. 移すのは story を書く部品に限り、ファイルごとに移せるかを実測してから進める。一律には移さない
 2. play で書いた検証は、既存のブラウザテストから削る。同じ振る舞いを 2 か所で固定しない
 3. 対象の全 case が移れば、test ファイルごと削る。locator と文言を持つ `*.test-helpers.ts` は残す (`routes/` のテストが同じものを引く)
-4. 移せない case (レイアウトと配色の実測 (`getComputedStyle` / `getBoundingClientRect`)、型契約 (`expectTypeOf`)、CDP 経由の実イベント) はブラウザテストに残し、残す理由と、実イベントの規律をどのテストが持つかを、そのファイルの JSDoc に書く。書かないと、次に読む人が「移し忘れ」と読んで消す。story へ移した結果、実イベントの検証がリポジトリから消えることも防ぐ
+4. 移せない case (レイアウトと配色の実測 (`getComputedStyle` / `getBoundingClientRect`)、CDP 経由の実イベント) はブラウザテストに残し、残す理由と、実イベントの規律をどのテストが持つかを、そのファイルの JSDoc に書く。書かないと、次に読む人が「移し忘れ」と読んで消す。story へ移した結果、実イベントの検証がリポジトリから消えることも防ぐ。型契約 (`expectTypeOf`) は `*.test-d.ts` に置く (`docs/guides/testing/type-tests.md`「型テストを置く」)。
 5. play を書かない部品 (args だけで状態が決まるもの) では、story が描画と axe しか走らせず何も検証しない。構造の契約もブラウザテストに残し、JSDoc には移せない case と役割分担 (「story とブラウザテストの分担」) のどちらの根拠で残したかを書く
 6. story を書かない部品のテストは触らない
 
@@ -129,7 +129,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 | 既存のブラウザテスト | その状態が壊れていないか。寸法と色を固定する回帰の防止 |
 
 - 役割が違うため両方残す。待機・実イベント・animation 無効化の規律 (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」、`docs/guides/testing/user-interactions.md`「クリックを発火する」「animation を無効にして走らせる理由」) は既存のテストが持ち続ける
-- 移せないのはレイアウトと配色の実測、型契約、CDP 経由の実イベントの 3 つである。`src/components/ui/` の既存テスト 26 case のうち 25 case がこれに当たる (2026-09-20 実測)
+- 移せないのはレイアウトと配色の実測、CDP 経由の実イベントの 2 つである。型契約 (`expectTypeOf`) は `*.test-d.ts` に置く (`docs/guides/testing/type-tests.md`「型テストを置く」)
 - 画面のテストは Action 層の guard を代替しない。`confirmDelete` は `close()` のあと `void runAction(...)` と同期に返るので Transition が即終了し、2 発目の時点で `isPending` は false になる。`disabled={isPending}` を外しても browser project は 1 件も落ちない (2026-09-20 実測)。経路が薄いラッパーを通ることは、その guard を通ることを意味しない
 - 検証が一部 CDP の実イベントから合成イベントへ移り、backdrop の遮りを含む pointer の忠実さは下がる。一方イベント間に描画が挟まる点は既存のブラウザテストと同じ性質になる
 
