@@ -25,7 +25,7 @@ describe("ActionForm", () => {
         <ActionFormSubmit>保存</ActionFormSubmit>
       </ActionForm>,
     );
-    const button = screen.getByRole("button", { name: "保存", exact: true });
+    const button = screen.getByRole("button", { name: "保存" });
 
     // 実イベント (CDP 経由) で 2 回発火する
     await button.click();
@@ -44,7 +44,7 @@ describe("ActionForm", () => {
         <Button type="submit">保存</Button>
       </ActionForm>,
     );
-    const button = screen.getByRole("button", { name: "保存", exact: true });
+    const button = screen.getByRole("button", { name: "保存" });
 
     // 素の submit ボタンは aria-disabled にならないので、form 側の isPending が塞ぐ
     await button.click();

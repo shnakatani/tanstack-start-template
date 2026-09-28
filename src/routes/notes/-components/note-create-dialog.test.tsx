@@ -208,7 +208,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("一時入力");
 
-    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await screen.getByRole("button", { name: "キャンセル" }).click();
     await expectNoteDialogClosed(screen);
     await openNoteCreateDialog(screen);
 
@@ -306,9 +306,7 @@ describe("NoteCreateDialog", () => {
     await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
 
     // キャンセルは押せない。Escape は Base UI が閉じようとするのを onOpenChange で止める
-    await expect
-      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
-      .toBeDisabled();
+    await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
     await expectDialogOpen(screen, "dialog");

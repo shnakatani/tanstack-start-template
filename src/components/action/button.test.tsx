@@ -23,7 +23,7 @@ describe("ActionButton", () => {
     const pending = Promise.withResolvers<undefined>();
     const action = vi.fn(() => pending.promise);
     const screen = await render(<ActionButton action={action}>保存</ActionButton>);
-    const button = screen.getByRole("button", { name: "保存", exact: true });
+    const button = screen.getByRole("button", { name: "保存" });
 
     // 実イベント (CDP 経由) で 3 回発火する。2 回目は次のユーザーイベント、
     // 3 回目は aria-disabled を確認した後

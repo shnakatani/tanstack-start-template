@@ -77,7 +77,7 @@ describe("ActionDialogContent", () => {
     const submitAction = vi.fn();
     const dialog = await openFormDialog(submitAction);
 
-    await dialog.getByRole("button", { name: "保存", exact: true }).click();
+    await dialog.getByRole("button", { name: "保存" }).click();
 
     await vi.waitFor(() => expect(submitAction).toHaveBeenCalledOnce());
   });
@@ -86,7 +86,7 @@ describe("ActionDialogContent", () => {
     const submitAction = vi.fn();
     const dialog = await openFormDialog(submitAction);
 
-    await dialog.getByRole("textbox", { name: "項目 1", exact: true }).click();
+    await dialog.getByRole("textbox", { name: "項目 1" }).click();
     await userEvent.keyboard("{Enter}");
 
     await vi.waitFor(() => expect(submitAction).toHaveBeenCalledOnce());

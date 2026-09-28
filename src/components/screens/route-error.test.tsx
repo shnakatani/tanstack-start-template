@@ -34,9 +34,7 @@ describe("RouteErrorContent", () => {
 
     const notice = screen.getByText("エラーが発生しました");
     await expect.element(notice).toBeInTheDocument();
-    await expect
-      .element(screen.getByText("取得に失敗しました", { exact: true }))
-      .toBeInTheDocument();
+    await expect.element(screen.getByText("取得に失敗しました")).toBeInTheDocument();
   });
 
   // error.message は server function の throw 文言 (id や検証失敗の項目パスを含む) をそのまま

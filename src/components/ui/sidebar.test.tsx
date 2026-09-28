@@ -52,15 +52,13 @@ describe("SidebarMenuButton の開状態 (ADR-0020 の乖離)", () => {
         </SidebarMenu>
       </SidebarProvider>,
     );
-    const trigger = screen.getByRole("button", { name: "切替", exact: true });
+    const trigger = screen.getByRole("button", { name: "切替" });
     await expect.element(trigger).toHaveStyle(closedStyle());
 
     await userEvent.tab();
     await expect.element(trigger).toHaveFocus();
     await userEvent.keyboard("{Enter}");
-    await expect
-      .element(screen.getByRole("menuitem", { name: "項目", exact: true }))
-      .toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: "項目" })).toBeInTheDocument();
 
     await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
     await expect.element(trigger).toHaveStyle(accentStyle());
@@ -76,7 +74,7 @@ describe("SidebarMenuButton の開状態 (ADR-0020 の乖離)", () => {
         </SidebarMenu>
       </SidebarProvider>,
     );
-    const trigger = screen.getByRole("button", { name: "切替", exact: true });
+    const trigger = screen.getByRole("button", { name: "切替" });
     await expect.element(trigger).toHaveStyle(closedStyle());
 
     // focus で tooltip が開く
@@ -100,7 +98,7 @@ describe("SidebarMenuButton の開状態 (ADR-0020 の乖離)", () => {
         </SidebarMenu>
       </SidebarProvider>,
     );
-    const trigger = screen.getByRole("button", { name: "切替", exact: true });
+    const trigger = screen.getByRole("button", { name: "切替" });
     await expect.element(trigger).toHaveStyle(closedStyle());
 
     await userEvent.tab();

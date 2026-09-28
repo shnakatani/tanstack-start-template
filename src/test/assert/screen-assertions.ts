@@ -27,9 +27,7 @@ export async function expectText(screen: Screen, text: string) {
 export async function expectEmptyTextboxes(screen: Screen, labels: string[]) {
   await Promise.all(
     labels.map(async (label) => {
-      await expect
-        .element(screen.getByRole("textbox", { name: label, exact: true }))
-        .toHaveValue("");
+      await expect.element(screen.getByRole("textbox", { name: label })).toHaveValue("");
     }),
   );
 }

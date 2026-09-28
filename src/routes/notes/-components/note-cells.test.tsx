@@ -73,9 +73,7 @@ describe("NoteDueDateCell", () => {
 
     // NOTE.dueDate = 2026-08-20、OTHER_NOTE.dueDate = null (schema.test-helpers.ts)
     await expect.element(noteRow(screen, NOTE).getByText("2026/08/20")).toBeInTheDocument();
-    await expect
-      .element(noteRow(screen, OTHER_NOTE).getByText("—", { exact: true }))
-      .toBeInTheDocument();
+    await expect.element(noteRow(screen, OTHER_NOTE).getByText("—")).toBeInTheDocument();
   });
 
   it("保存中の行は送信した期日を描く", async () => {

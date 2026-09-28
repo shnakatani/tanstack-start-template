@@ -79,9 +79,7 @@ describe("NoteEditDialog", () => {
 
     await openNoteEditDialog(screen, NOTE);
 
-    await expect
-      .element(screen.getByRole("heading", { name: "メモを編集", exact: true }))
-      .toBeInTheDocument();
+    await expect.element(screen.getByRole("heading", { name: "メモを編集" })).toBeInTheDocument();
     await expect.element(bodyTextbox(screen)).toHaveValue(NOTE.body);
     expect.assert(NOTE.dueDate !== null);
     await expect
@@ -194,7 +192,7 @@ describe("NoteEditDialog", () => {
     await openNoteEditDialog(screen, NOTE);
     await titleTextbox(screen).fill("書きかけ");
 
-    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await screen.getByRole("button", { name: "キャンセル" }).click();
     await expectNoteDialogClosed(screen);
     await openNoteEditDialog(screen, OTHER_NOTE);
 

@@ -412,7 +412,7 @@ describe("NotesPage", () => {
     await expectNoteDialogClosed(screen);
 
     await openNoteCreateDialog(screen);
-    const cancel = screen.getByRole("button", { name: "キャンセル", exact: true });
+    const cancel = screen.getByRole("button", { name: "キャンセル" });
     await expect.element(cancel).toBeDisabled();
 
     refetch.resolve([CREATED_NOTE, NOTE]);
@@ -444,9 +444,7 @@ describe("NotesPage", () => {
     await saveButton(screen).click();
     await parkMouse();
     // close を止めていることを描画で確かめてから Escape を送る (pending が描画に届く前に送らない)
-    await expect
-      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
-      .toBeDisabled();
+    await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
     // 閉じない。入力が残っている
@@ -504,7 +502,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await screen.getByRole("button", { name: "キャンセル" }).click();
 
     await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).not.toHaveBeenCalled();
