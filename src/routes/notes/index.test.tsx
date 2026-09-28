@@ -153,9 +153,7 @@ describe("/notes route", () => {
     // 検索は同じ画面の絞り込みなので履歴を積まない (replace)。push に変わると 2 になる
     expect(router.history.length).toBe(1);
     // 確定後の結果を通知する (debounce が明ける前の Enter でも落とさない。ADR-0027)
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
-    });
+    await expect.poll(() => readAnnouncements()).toEqual(["『xyz』に一致するメモは 0 件です"]);
     // 入力欄は作り直されず、フォーカスが残る (key={q} でページを作り直すと body へ落ちる)
     await expect.element(noteSearchbox(screen)).toHaveFocus();
   });
@@ -174,12 +172,9 @@ describe("/notes route", () => {
 
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual([
-        "『xyz』に一致するメモは 0 件です",
-        "『abc』に一致するメモは 0 件です",
-      ]);
-    });
+    await expect
+      .poll(() => readAnnouncements())
+      .toEqual(["『xyz』に一致するメモは 0 件です", "『abc』に一致するメモは 0 件です"]);
   });
 
   it("別の遷移で URL の q が変わると、入力欄の途中入力を捨ててその q に揃う", async () => {
@@ -196,12 +191,9 @@ describe("/notes route", () => {
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
     // 遷移で入れ替わった結果も通知する。同じ条件へ戻っても、直前に通知した条件と違えば出す
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual([
-        "『xyz』に一致するメモは 0 件です",
-        "『abc』に一致するメモは 0 件です",
-      ]);
-    });
+    await expect
+      .poll(() => readAnnouncements())
+      .toEqual(["『xyz』に一致するメモは 0 件です", "『abc』に一致するメモは 0 件です"]);
   });
 
   it("空白だけで Enter すると q は URL に残らない", async () => {

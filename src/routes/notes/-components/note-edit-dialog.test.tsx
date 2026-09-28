@@ -107,11 +107,11 @@ describe("NoteEditDialog", () => {
 
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(vi.mocked(updateNote)).toHaveBeenCalledExactlyOnceWith({
+    await expect
+      .poll(() => vi.mocked(updateNote))
+      .toHaveBeenCalledExactlyOnceWith({
         data: { id: NOTE.id, title: "変えた見出し", body: NOTE.body, dueDate: NOTE.dueDate },
       });
-    });
   });
 
   it("updateNote の応答でダイアログが閉じ、notes クエリを invalidate する", async () => {
@@ -158,16 +158,14 @@ describe("NoteEditDialog", () => {
 
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["更新しています"]);
-    });
+    await expect.poll(() => readAnnouncements()).toEqual(["更新しています"]);
     // 完了は updateNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     update.resolve(undefined);
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["更新しています", "『変えた見出し』を更新しました"]);
-    });
+    await expect
+      .poll(() => readAnnouncements())
+      .toEqual(["更新しています", "『変えた見出し』を更新しました"]);
   });
 
   it("閉じる途中で別の行の payload が届くと、前の行の入力を残さずその行の値で開く", async () => {

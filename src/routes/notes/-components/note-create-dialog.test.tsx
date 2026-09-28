@@ -132,11 +132,11 @@ describe("NoteCreateDialog", () => {
 
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
+    await expect
+      .poll(() => vi.mocked(createNote))
+      .toHaveBeenCalledExactlyOnceWith({
         data: { title: "買い物リスト", body: "牛乳とパン", dueDate: null },
       });
-    });
   });
 
   it("期日を選んで保存すると createNote に YYYY-MM-DD の期日が渡る", async () => {
@@ -169,11 +169,11 @@ describe("NoteCreateDialog", () => {
     await expectDialogOpen(screen, "dialog");
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
+    await expect
+      .poll(() => vi.mocked(createNote))
+      .toHaveBeenCalledExactlyOnceWith({
         data: { title: "買い物リスト", body: "", dueDate: expectedDueDate },
       });
-    });
   });
 
   it("保存に成功すると notes クエリを invalidate してダイアログを閉じる", async () => {
@@ -269,16 +269,14 @@ describe("NoteCreateDialog", () => {
 
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["保存しています"]);
-    });
+    await expect.poll(() => readAnnouncements()).toEqual(["保存しています"]);
     // 完了は createNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     create.resolve({ id: 1 });
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["保存しています", "『買い物リスト』を保存しました"]);
-    });
+    await expect
+      .poll(() => readAnnouncements())
+      .toEqual(["保存しています", "『買い物リスト』を保存しました"]);
   });
 
   it("検証に失敗したときは開始の通知を出さない", async () => {

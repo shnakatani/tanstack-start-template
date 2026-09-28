@@ -487,10 +487,10 @@ describe("NotesPage", () => {
 
     await confirmDeleteButton(screen).click();
 
-    await vi.waitFor(() => {
-      // 行の payload の id がそのまま server function へ渡ることを固定する
-      expect(vi.mocked(removeNote)).toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
-    });
+    // 行の payload の id がそのまま server function へ渡ることを固定する
+    await expect
+      .poll(() => vi.mocked(removeNote))
+      .toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
     // invalidate → refetch が働けば 2 回目の listNotes の結果 (0 件) が反映される
     await expectText(screen, "メモが登録されていません");
     expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
@@ -555,9 +555,7 @@ describe("NotesPage", () => {
     remove.resolve(undefined);
 
     // 応答後も、再取得 (2 回目の listNotes) が決着するまで行は busy のまま
-    await vi.waitFor(() => {
-      expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
-    });
+    await expect.poll(() => vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
 
     refetch.resolve([]);
@@ -623,9 +621,7 @@ describe("NotesPage", () => {
     await openDeleteConfirm(screen, OTHER_NOTE);
     await confirmDeleteButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
-    });
+    await expect.poll(() => vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "true");
 
@@ -635,8 +631,9 @@ describe("NotesPage", () => {
 
     // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)。
     // このテストは 2 件の完了の順序を固定していないので、並べ替えてから配列ごと比べる
-    await vi.waitFor(() => {
-      expect(readAnnouncements().toSorted()).toEqual(
+    await expect
+      .poll(() => readAnnouncements().toSorted())
+      .toEqual(
         [
           "削除しています",
           "削除しています",
@@ -644,7 +641,6 @@ describe("NotesPage", () => {
           `『${OTHER_NOTE.title}』を削除しました`,
         ].toSorted(),
       );
-    });
   });
 
   it("削除の開始と完了を announcer が通知し、完了には対象名を載せる", async () => {
@@ -657,16 +653,14 @@ describe("NotesPage", () => {
 
     await confirmDeleteButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["削除しています"]);
-    });
+    await expect.poll(() => readAnnouncements()).toEqual(["削除しています"]);
     // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     remove.resolve(undefined);
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["削除しています", `『${NOTE.title}』を削除しました`]);
-    });
+    await expect
+      .poll(() => readAnnouncements())
+      .toEqual(["削除しています", `『${NOTE.title}』を削除しました`]);
   });
 
   it("確定直後にもう一度 Enter を送っても removeNote は 1 回しか呼ばれない", async () => {

@@ -11,14 +11,15 @@
 
 ### 待つ口を選ぶ
 
-| 場面                                                                                | 使うもの                                                                                                                                                                                    |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (「assert の予算を分ける理由」)                                                                             |
-| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい |
-| 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                        |
-| `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                         |
-| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/assert/absent.ts`)                                                                                                                                      |
-| locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `vi.waitFor`。vitest の wait-for のレシピも、assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける                                       |
+| 場面                                                                                | 使うもの                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (「assert の予算を分ける理由」)                                                                                                                                                                       |
+| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい                                                                                           |
+| 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                                                                                                                  |
+| `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                                                                                                                   |
+| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/assert/absent.ts`)                                                                                                                                                                                                                                |
+| locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `expect.poll(() => 値)` に matcher を当てる (`expect.poll(() => vi.mocked(fn)).toHaveBeenCalledOnce()`、`expect.poll(() => readAnnouncements()).toEqual([...])`)。`vi.waitFor` は assert を待つのに使わない。assert の予算 (`expect.poll.timeout`) を読まず、既定の 1000ms で打ち切る |
+| 処理そのものが throw しなくなるのを待ち、その戻り値を受け取る                       | `vi.waitFor`。vitest の wait-for のレシピが「the wait condition is the work itself succeeding rather than an assertion you write」の場合に割り当てている。timeout は呼び出しごとに渡す                                                                                                |
 
 - `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)
 - `toHaveTextContent` は完全一致で比べる。部分一致と正規表現は `toMatchTextContent` を使う (vitest docs の browser assertions「toMatchTextContent」)
@@ -258,6 +259,8 @@ explanation と how-to が拠る一次情報。
 - Playwright の Test timeouts (assertion timeout を test timeout と分ける): <https://playwright.dev/docs/test-timeouts>
 - vitest browser の assertion API: <https://vitest.dev/guide/browser/assertion-api>
 - vitest browser の locator: <https://vitest.dev/guide/browser/locators>
+- vitest の wait-for のレシピ (assert を待つなら `expect.poll`、処理の成功を待つなら `vi.waitFor`): <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/wait-for.md>
+- `vi.waitFor` の既定 (`timeout` 1000、`interval` 50): <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md>
 - vitest-dev/vitest#6983 / PR #6984 (`actionTimeout` の導入と、`expect.poll.timeout` が `expect.element` の口だというメンテナ回答): <https://github.com/vitest-dev/vitest/issues/6983>
 - vitest-dev/vitest#7871 (action の timeout がテストの残り予算で縮む): <https://github.com/vitest-dev/vitest/issues/7871>
 - vitest-dev/vitest#8308 (OPEN。`expect.poll.timeout` が `expect.element` に効かない): <https://github.com/vitest-dev/vitest/issues/8308>

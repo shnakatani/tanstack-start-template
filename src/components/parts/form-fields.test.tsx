@@ -146,9 +146,7 @@ describe("FormDateField のタイムゾーン", () => {
       await expectRemoved(screen.getByRole("grid"));
       await screen.getByRole("button", { name: "保存" }).click();
 
-      await vi.waitFor(() => {
-        expect(onSubmit).toHaveBeenCalledExactlyOnceWith("2026-08-20");
-      });
+      await expect.poll(() => onSubmit).toHaveBeenCalledExactlyOnceWith("2026-08-20");
     },
   );
 });
