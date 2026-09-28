@@ -11,7 +11,13 @@
  * ここから導出すると入力どうしの比較になり検査が常に通るので、付随ファイルの分を差し引く
  * 用途にだけこの定義を使う。
  */
-export const COMPANION_KINDS = ["test", "test-helpers", "story-helpers", "stories"] as const;
+export const COMPANION_KINDS = [
+  "test",
+  "test-d",
+  "test-helpers",
+  "story-helpers",
+  "stories",
+] as const;
 
 const EXTENSIONS = ["ts", "tsx"] as const;
 

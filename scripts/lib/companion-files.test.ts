@@ -9,8 +9,14 @@ import {
 } from "./companion-files";
 
 describe("COMPANION_KINDS", () => {
-  it("付随ファイルの 4 種別を持つ", () => {
-    expect([...COMPANION_KINDS]).toEqual(["test", "test-helpers", "story-helpers", "stories"]);
+  it("付随ファイルの 5 種別を持つ", () => {
+    expect([...COMPANION_KINDS]).toEqual([
+      "test",
+      "test-d",
+      "test-helpers",
+      "story-helpers",
+      "stories",
+    ]);
   });
 });
 
@@ -19,6 +25,8 @@ describe("companionGlobs", () => {
     expect(companionGlobs("**/")).toEqual([
       "**/*.test.ts",
       "**/*.test.tsx",
+      "**/*.test-d.ts",
+      "**/*.test-d.tsx",
       "**/*.test-helpers.ts",
       "**/*.test-helpers.tsx",
       "**/*.story-helpers.ts",
@@ -58,7 +66,7 @@ describe("storyGlobs", () => {
 });
 
 describe("companionFilePattern", () => {
-  it("4 種別 × ts / tsx に当たり、アプリのコードには当たらない", () => {
+  it("5 種別 × ts / tsx に当たり、アプリのコードには当たらない", () => {
     const pattern = new RegExp(companionFilePattern());
 
     for (const kind of COMPANION_KINDS) {
@@ -72,7 +80,7 @@ describe("companionFilePattern", () => {
 });
 
 describe("isCompanionFile", () => {
-  it("4 種別 × ts / tsx を付随ファイルと判定する", () => {
+  it("5 種別 × ts / tsx を付随ファイルと判定する", () => {
     for (const kind of COMPANION_KINDS) {
       expect(isCompanionFile(`button.${kind}.ts`), `button.${kind}.ts`).toBe(true);
       expect(isCompanionFile(`button.${kind}.tsx`), `button.${kind}.tsx`).toBe(true);
@@ -85,11 +93,13 @@ describe("isCompanionFile", () => {
     expect(isCompanionFile("handlers.server.ts")).toBe(false);
     expect(isCompanionFile("routeTree.gen.ts")).toBe(false);
     expect(isCompanionFile("env.d.ts")).toBe(false);
+    expect(isCompanionFile("vite-env.d.ts")).toBe(false);
   });
 
   it("拡張子の前に種別名が無いファイルは対象外", () => {
     expect(isCompanionFile("test.ts")).toBe(false);
     expect(isCompanionFile("stories.tsx")).toBe(false);
+    expect(isCompanionFile("test-d.ts")).toBe(false);
   });
 
   it("種別名の部分一致では判定しない", () => {
@@ -100,5 +110,6 @@ describe("isCompanionFile", () => {
   it("ts / tsx 以外の拡張子は対象外", () => {
     expect(isCompanionFile("button.test.js")).toBe(false);
     expect(isCompanionFile("button.stories.mdx")).toBe(false);
+    expect(isCompanionFile("button.test-d.js")).toBe(false);
   });
 });
