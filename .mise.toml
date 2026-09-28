@@ -28,6 +28,13 @@ run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open"
 description = "トークンからコントラスト比を測る"
 run = "vp node scripts/contrast/report.ts"
 
+# 合否に入れない注釈 (axe が判定できなかった項目など) を読むときに打つ。default reporter は
+# 通ったテストの注釈を出さないので verbose にする。--tagsFilter a11y では絞らない。挙動テストの
+# 途中で呼ぶ expectNoA11yViolations は a11y の tag を持たず、そこで出た注釈が漏れる
+[tasks."a11y:incomplete"]
+description = "ブラウザテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む"
+run = "vp test run --project browser --reporter=verbose"
+
 [tasks."db:generate"]
 description = "Drizzle スキーマから migration を生成する"
 run = "vp exec drizzle-kit generate"

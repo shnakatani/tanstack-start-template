@@ -39,7 +39,7 @@ export const expectNoA11yViolations = vi.defineHelper(
     // 単一部品の側 (story) で落とす (ADR-0028)。ただし黙って捨てると、緑のときに
     // 何が測れていないのかを誰も読めない。warning の注釈で残す。PR では github-actions reporter が
     // 画面に出す。手元では default reporter が通ったテストの注釈を出さないので、見るときは
-    // --reporter=verbose で走らせる (vitest docs の guide/test-annotations)
+    // mise run a11y:incomplete で走らせる (vitest docs の guide/test-annotations)
     if (result.incomplete.length > 0) {
       await annotate(describeA11yIncomplete(result.incomplete), "warning");
     }
