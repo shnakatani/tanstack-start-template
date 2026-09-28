@@ -44,7 +44,7 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 | `vi.importActual("@/...")` (alias)        | 同じ `Cannot resolve` で落ちる                                                                                                                                  |
 | `vi.importActual("/src/...")` (root 起点) | 解決される。ただし ESM では元の export を展開して並べられず、名前で 1 つずつ並べ直すことになり、直す場所が増える                                                |
 
-- `importActual` に渡る importer は、テストファイルからは絶対パス、`__mocks__` からはブラウザ側の URL (`/src/...`) だった (2026-09-27 実測)
+- `importActual` に渡る importer は、テストファイルからは絶対パス、`__mocks__` からはブラウザ側の URL (`/src/...`) だった (2026-09-27、vitest 4.1.11 で実測)
 - `@vitest/mocker` の `node/resolver.ts` の `resolveId` は importer を加工せずに解決へ渡し、同じファイルの `resolveMockId` は root と join する。相対パスが落ちる原因はこの差と推定している
 - 一部だけ変えるなら、partial mock を各テストの factory で書く。factory の `importOriginal` はテストファイルを起点に解決されるので、この問題に当たらない
 
