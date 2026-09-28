@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { DataTable } from "@/components/parts/data-table";
+import { cellInColumn } from "@/components/parts/data-table.test-helpers";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
 import {
   confirmDeleteButton,
@@ -9,20 +10,20 @@ import {
 } from "@/components/parts/delete-confirm-dialog.test-helpers";
 import type { CreatingRow } from "@/features/notes/creating-rows";
 import type { NoteDeleteTarget } from "@/features/notes/mutations";
-import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
-import type { NoteUpdate } from "@/features/notes/schema";
+import { NOTE_ENTITY_LABEL, NOTE_FIELD_LABELS } from "@/features/notes/schema";
+import type { Note, NoteUpdate } from "@/features/notes/schema";
 import {
   CREATED_NOTE,
   CREATING_ROW,
   NOTE,
   NOTE_CREATED_AT_TEXT,
   NOTE_UPDATE,
-  NOTE_UPDATED_AT_TEXT,
   OTHER_NOTE,
   UPDATED_NOTE,
 } from "@/features/notes/schema.test-helpers";
 import { formatDateTime } from "@/lib/format-date-time";
 import { expectAbsent } from "@/test/assert/absent";
+import type { Screen } from "@/test/assert/screen-assertions";
 
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
@@ -40,17 +41,19 @@ import {
  * 同じ handle で同居させる (Root は 1 handle につき 1 つ)。
  */
 async function renderCells({
+  notes = [NOTE, OTHER_NOTE],
   deletingIds = [],
   creatingRows = [],
   updatingNotes = [],
   onConfirm = vi.fn(),
 }: {
+  notes?: Note[];
   deletingIds?: number[];
   creatingRows?: CreatingRow[];
   updatingNotes?: NoteUpdate[];
   onConfirm?: (target: NoteDeleteTarget) => void;
 } = {}) {
-  const rows = toNoteRows({ notes: [NOTE, OTHER_NOTE], creatingRows, deletingIds, updatingNotes });
+  const rows = toNoteRows({ notes, creatingRows, deletingIds, updatingNotes });
   return await render(
     <>
       <DataTable tableKey="notes" columns={noteColumns} data={rows} getRowId={getNoteRowId} />
@@ -82,11 +85,23 @@ describe("NoteDueDateCell", () => {
   });
 });
 
+/** 行の作成日時と更新日時の cell。日時は同じ種類の文字列なので、列を指定して取り違えを検出する */
+function createdAtCell(screen: Screen, note: Pick<Note, "title">) {
+  return cellInColumn(screen, noteRow(screen, note), NOTE_FIELD_LABELS.createdAt);
+}
+
+function updatedAtCell(screen: Screen, note: Pick<Note, "title">) {
+  return cellInColumn(screen, noteRow(screen, note), NOTE_FIELD_LABELS.updatedAt);
+}
+
 describe("NoteCreatedAtCell", () => {
   it("確定行は作成日時を APP_TIME_ZONE の壁時計で描く", async () => {
-    const screen = await renderCells();
+    // 作成日時と更新日時が違う行で、作成日時の列に作成日時が出ることを見る
+    const screen = await renderCells({ notes: [UPDATED_NOTE] });
 
-    await expect.element(noteRow(screen, NOTE).getByText(NOTE_CREATED_AT_TEXT)).toBeInTheDocument();
+    await expect
+      .element(createdAtCell(screen, UPDATED_NOTE))
+      .toHaveTextContent(NOTE_CREATED_AT_TEXT);
   });
 
   it("保存中の行は日時の位置に「保存中」を描く", async () => {
@@ -99,20 +114,26 @@ describe("NoteCreatedAtCell", () => {
 
 describe("NoteUpdatedAtCell", () => {
   it("確定行は更新日時を APP_TIME_ZONE の壁時計で描く", async () => {
-    const screen = await renderCells();
+    // 作成日時と更新日時が違う行で、更新日時の列に更新日時が出ることを見る
+    const screen = await renderCells({ notes: [UPDATED_NOTE] });
 
-    await expect.element(noteRow(screen, NOTE).getByText(NOTE_UPDATED_AT_TEXT)).toBeInTheDocument();
+    await expect
+      .element(updatedAtCell(screen, UPDATED_NOTE))
+      .toHaveTextContent(formatDateTime(UPDATED_NOTE.updatedAt));
   });
 
   it("更新中の行は日時の位置に「更新中」を描き、他の行は日時のまま", async () => {
     const screen = await renderCells({ updatingNotes: [NOTE_UPDATE] });
 
-    // 更新中の行は編集後の title で描く (noteInputOf)
-    await expect.element(noteRow(screen, UPDATED_NOTE).getByText("更新中")).toBeInTheDocument();
-    await expectAbsent(noteRow(screen, UPDATED_NOTE).getByText(NOTE_UPDATED_AT_TEXT));
+    // 更新中の行は編集後の title で描く (noteInputOf)。作成日時は変わらない
+    // 日時を並べて出さないことも見るので、cell の文字列全体と比べる
+    await expect.element(updatedAtCell(screen, UPDATED_NOTE)).toHaveTextContent(/^更新中$/);
     await expect
-      .element(noteRow(screen, OTHER_NOTE).getByText(formatDateTime(OTHER_NOTE.updatedAt)))
-      .toBeInTheDocument();
+      .element(createdAtCell(screen, UPDATED_NOTE))
+      .toHaveTextContent(NOTE_CREATED_AT_TEXT);
+    await expect
+      .element(updatedAtCell(screen, OTHER_NOTE))
+      .toHaveTextContent(formatDateTime(OTHER_NOTE.updatedAt));
   });
 
   it("保存中の行は更新日時の位置に何も描かない (状態は作成日時の「保存中」が 1 つだけ伝える)", async () => {

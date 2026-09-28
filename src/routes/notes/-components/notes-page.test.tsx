@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { cellInColumn } from "@/components/parts/data-table.test-helpers";
 import {
   confirmDeleteButton,
   deleteConfirmDescription,
@@ -14,11 +15,11 @@ import { Toaster } from "@/components/ui/toast";
 import { createNote, listNotes, removeNote, updateNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
+import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import {
   CREATED_NOTE,
   NOTE,
   NOTE_CREATED_AT_TEXT,
-  NOTE_UPDATED_AT_TEXT,
   OTHER_NOTE,
   UPDATED_NOTE,
 } from "@/features/notes/schema.test-helpers";
@@ -255,14 +256,20 @@ describe("NotesPage", () => {
   });
 
   it("データありでタイトル・本文・作成日時・更新日時が行に表示される", async () => {
-    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    // 作成日時と更新日時が違う行で、それぞれの列に出ることを見る
+    vi.mocked(listNotes).mockResolvedValue([UPDATED_NOTE]);
 
     const screen = await renderPage();
 
-    await expectText(screen, NOTE.title);
-    await expectText(screen, NOTE.body);
-    await expectText(screen, NOTE_CREATED_AT_TEXT);
-    await expectText(screen, NOTE_UPDATED_AT_TEXT);
+    await expectText(screen, UPDATED_NOTE.title);
+    await expectText(screen, UPDATED_NOTE.body);
+    const row = noteRow(screen, UPDATED_NOTE);
+    await expect
+      .element(cellInColumn(screen, row, NOTE_FIELD_LABELS.createdAt))
+      .toHaveTextContent(NOTE_CREATED_AT_TEXT);
+    await expect
+      .element(cellInColumn(screen, row, NOTE_FIELD_LABELS.updatedAt))
+      .toHaveTextContent(formatDateTime(UPDATED_NOTE.updatedAt));
   });
 
   it("行を編集して保存すると、再取得完了までその行だけが編集後の値で busy になる", async () => {
@@ -315,8 +322,8 @@ describe("NotesPage", () => {
     // 再取得の反映で実データの行に戻る (busy でない行が 1 つだけ)
     await expectSettledRow(screen, UPDATED_NOTE);
     await expect
-      .element(noteRow(screen, UPDATED_NOTE).getByText(formatDateTime(UPDATED_NOTE.updatedAt)))
-      .toBeInTheDocument();
+      .element(cellInColumn(screen, noteRow(screen, UPDATED_NOTE), NOTE_FIELD_LABELS.updatedAt))
+      .toHaveTextContent(formatDateTime(UPDATED_NOTE.updatedAt));
   });
 
   it("更新に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解けて元の title に戻る", async () => {

@@ -6,8 +6,7 @@ import type { Note, NoteUpdate } from "./schema";
 /**
  * テスト用の確定済みメモ。createdAt は絶対時刻 (UTC) で固定し、期待値が実行環境のローカル TZ で
  * 動かないようにする (2026-08-17T00:30Z = JST 09:30、画面は APP_TIME_ZONE の壁時計で描く)。
- * updatedAt は createdAt と違う値にする。同じだと、一覧の行で 2 つの日時の cell が同じ文字列になり、
- * 文字列で cell を取れない。
+ * updatedAt は作成直後の形で createdAt と同じ。2 つの日時を見分けるテストは UPDATED_NOTE を使う。
  */
 export const NOTE: Note = {
   id: 1,
@@ -15,7 +14,7 @@ export const NOTE: Note = {
   body: "牛乳とパンを買う",
   dueDate: "2026-08-20",
   createdAt: new Date("2026-08-17T00:30:00.000Z"),
-  updatedAt: new Date("2026-08-17T02:00:00.000Z"),
+  updatedAt: new Date("2026-08-17T00:30:00.000Z"),
 };
 
 /**
@@ -24,9 +23,6 @@ export const NOTE: Note = {
  * の Note)。壁時計の値が正しいことは `src/lib/format-date-time.test.ts` が見る。
  */
 export const NOTE_CREATED_AT_TEXT = formatDateTime(NOTE.createdAt);
-
-/** NOTE.updatedAt を画面に描いた期待値。作り方は NOTE_CREATED_AT_TEXT と同じ */
-export const NOTE_UPDATED_AT_TEXT = formatDateTime(NOTE.updatedAt);
 
 /**
  * NOTE を編集して保存した後の姿。id と createdAt は NOTE のまま、title と updatedAt だけが変わる。
@@ -53,8 +49,7 @@ export const OTHER_NOTE: Note = {
   body: "気になった箇所を書き出す",
   dueDate: null,
   createdAt: new Date("2026-08-18T00:30:00.000Z"),
-  // NOTE と同じく createdAt と違う値にする
-  updatedAt: new Date("2026-08-18T02:00:00.000Z"),
+  updatedAt: new Date("2026-08-18T00:30:00.000Z"),
 };
 
 /**
