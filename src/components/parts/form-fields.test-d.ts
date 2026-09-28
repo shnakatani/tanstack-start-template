@@ -10,7 +10,7 @@ import type {
 } from "@/components/parts/form-fields";
 
 // 部品が期待するフィールド値型を固定する (docs/guides/forms-and-inputs.md「`fieldComponents` の部品を書く」)。
-// 落とすのは `vp check` の type-aware lint で、`vp test run` はこのファイルを集めない
+// 検査のされ方は (docs/guides/testing/type-tests.md「型テストを置く」)
 describe("fieldValue の型契約", () => {
   it("5 部品の期待するフィールド値型を固定する", () => {
     expectTypeOf<ComponentProps<typeof FormTextField>["fieldValue"]>().toEqualTypeOf<string>();

@@ -56,7 +56,7 @@ ADR-0010 に沿って、次の順で組む。
 
 ### `src/components/ui/` に付随ファイルを置く
 
-registry 由来でない付随ファイル (`*.test.*` / `*.test-d.*` / `*.stories.*` / `*.test-helpers.*` / `*.story-helpers.*`) は `src/components/ui/` に置いてよい。`shadcn add` の出力に含まれないので baseline を持たず、registry の網羅検査の対象にならない。付随ファイルの種別は `scripts/lib/companion-files.ts` が定義する。
+registry 由来でない付随ファイル (テスト・story とその helper) は `src/components/ui/` に置いてよい。`shadcn add` の出力に含まれないので baseline を持たず、registry の網羅検査の対象にならない。付随ファイルの種別は `scripts/lib/companion-files.ts` が定義する。
 
 ### `src/test/` に helper を置く
 

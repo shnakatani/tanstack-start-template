@@ -44,7 +44,7 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 - 部品は `FieldValueTypeCheckProps<T>` を extends する。守らないと、値型の違うフィールドへ差しても型検査が通り、実行時に値の型が崩れる
 - 消費側は部品を使うたびに `fieldValue={field.state.value}` を書く。必須 prop なので、書き忘れは型検査が止める
 - prop の名前は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる
-- `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する型テストを、部品の隣の `*.test-d.ts` に書く。prop が外れても誰も気付かないためで、この型テストを落とすのは `vp check` の type-aware lint である。`vp test run` はこのファイルを集めない
+- `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する型テストを、部品の隣の `*.test-d.ts` に書く。prop が外れても誰も気付かないためである。検査のされ方は `docs/guides/testing/type-tests.md`「型テストを置く」にある
 
 ### Select の値を解決する
 
