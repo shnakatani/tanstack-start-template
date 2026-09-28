@@ -592,10 +592,17 @@ describe("NotesPage", () => {
       pending.resolve(undefined);
     }
 
-    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)
+    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)。
+    // このテストは 2 件の完了の順序を固定していないので、並べ替えてから配列ごと比べる
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しました`);
-      expect(readAnnouncements()).toContain(`『${OTHER_NOTE.title}』を削除しました`);
+      expect(readAnnouncements().toSorted()).toEqual(
+        [
+          "削除しています",
+          "削除しています",
+          `『${NOTE.title}』を削除しました`,
+          `『${OTHER_NOTE.title}』を削除しました`,
+        ].toSorted(),
+      );
     });
   });
 
