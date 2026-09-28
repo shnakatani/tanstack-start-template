@@ -21,18 +21,18 @@
 
 ## Decision
 
-| 項目               | 決定                                                                                                                                                                                                                                   |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 伝え方             | 見出しへの focus 移動と、title の読み上げを併用する                                                                                                                                                                                    |
-| focus の移し先     | ページの `<h1>`。`tabindex="-1"` を付けて `focus({ preventScroll: true, focusVisible: false })` を呼ぶ。`<h1>` が無ければ `<body>`                                                                                                     |
-| focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                                             |
-| 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移も同じに扱う                                                                                                                            |
-| 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                                      |
-| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                                        |
-| 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                                  |
-| title              | 各ルートの `head()` で `pageTitle(ctx, <ページ名>)` (`src/lib/page-title.ts`) を通して持つ。形は `<ページ名> — <APP_NAME>`、ページ名が無ければ `<APP_NAME>`                                                                            |
-| not found の title | `head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら `ページが見つかりません — <APP_NAME>`                                                                                                                              |
-| 実装の置き場       | `createRouter` の `InnerWrap` に渡す `RouterInnerWrap` (`src/components/router-inner-wrap.tsx`) の中に、購読だけを持つ部品 (`src/components/route-announcer.tsx`) を置く。部品は effect で `router.subscribe` を購読し、DOM を描かない |
+| 項目               | 決定                                                                                                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 伝え方             | 見出しへの focus 移動と、title の読み上げを併用する                                                                                                                                                                      |
+| focus の移し先     | ページの `<h1>`。`tabindex="-1"` を付けて `focus({ preventScroll: true, focusVisible: false })` を呼ぶ。`<h1>` が無ければ `<body>`                                                                                       |
+| focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                               |
+| 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移も同じに扱う                                                                                                              |
+| 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                        |
+| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                          |
+| 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                    |
+| title              | 各ルートの `head()` で `pageTitle(ctx, <ページ名>)` (`src/lib/page-title.ts`) を通して持つ。形は `<ページ名> — <APP_NAME>`、ページ名が無ければ `<APP_NAME>`                                                              |
+| not found の title | `head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら `ページが見つかりません — <APP_NAME>`                                                                                                                |
+| 実装の置き場       | `createRouter` の `InnerWrap` に渡す部品 (`src/components/router-inner-wrap.tsx`) の中に、購読だけを持つ部品 (`src/components/route-announcer.tsx`) を置く。部品は effect で `router.subscribe` を購読し、DOM を描かない |
 
 ### focus を移す目的と、枠を出さない理由
 
@@ -119,6 +119,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 
 - 各ルートは `head()` で `pageTitle` を通した title を持つ必要がある。持たないと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない。title を直接書くと、not found の画面でもそのページの名前になる
 - 各ページは `<h1>` を持つ必要がある。無いと focus は `<body>` に落ち、`focusPageHeading` (`src/lib/focus-page-heading.ts`) が `console.warn` を出す
+- 各ページの見出しを含む本体は、loader が待った query で描く必要がある (欠かせない query を loader で待つのは ADR-0033)。`onRendered` の契機は route の Suspense 境界の外側の layout effect で、route の Suspense 境界 (`pendingComponent` を fallback に持つ) はその内側にある。本体が loader の後に suspend すると、focus は pending 表示の `<h1>` へ移り、本体に置き換わると `<body>` へ落ちる (@tanstack/react-router 1.170.32 の `src/Matches.tsx` 97〜101 行と `src/Match.tsx` 106〜112 行・128 行を読んだ推論、未実測)
 - 遷移の直後は、Tab を押すまで focus の位置が目では見えない。Gatsby 2019 の拡大鏡の被験者は枠が位置をつかむのに役立つと答えており、この利用者には手がかりが減る。枠の有無を比べたテストは見つかっていない
 - 入れない改善: 戻った先で、前に focus していた要素へ focus を戻す。MPA で bfcache から戻ったときと揃う形で (whatwg/html の PR 6696、2021-10-14 マージ。"the focused element stays the same/not reset")、Navigation API の explainer も traverse の例に挙げる。ただし explainer 自身が "the notion of \"the same element\" is not generally stable" とし、要素を識別子で覚える仕組みが要る。ブラウザの実装も揃っていない (下の「調査結果」)
 - 見出しの focus と title の読み上げが二重に聞こえるかは一次資料で決着していない。VoiceOver での聞こえ方は手動で確かめる。エラー画面へ移ったときは、失敗したルートの title と、focus の移った見出し「エラーが発生しました」の組み合わせで伝わるかも確かめる。聞こえ方が悪ければ文言と強さを見直す
