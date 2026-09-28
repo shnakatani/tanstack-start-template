@@ -84,7 +84,7 @@ Node.js は、メインスレッドで設定した `TZ` だけを `Date` に反�
 | TZ ごとの project に `test.env` の `TZ`                           | forks と vmForks だけ | 却下。同じ依存が残る。[Vitest docs「env」][] は `threads` と `vmThreads` では TZ が変わらないと書く |
 | TZ ごとにプロセスを起動し、globalSetup が `TEST_TIME_ZONE` を読む | なし                  | 採用。[Vitest docs「Common Errors」][] が挙げる、worker の起動前にメインプロセスで決める方法の 1 つ |
 
-TZ ごとにプロセスを起動する形は、日付ライブラリにも先行例がある。date-fns は [date-fns の `tz.sh`][] で `env TZ=<IANA 名> node <テスト>` を並べ、react-day-picker は [react-day-picker の `package.json`][] の `test:tz` の script で `TZ=Australia/Adelaide jest` を起動する。
+TZ ごとにプロセスを起動する形は、日付ライブラリにも先行例がある。date-fns は [date-fns の `tz.sh`][] で `env TZ=<IANA 名> node <テスト>` を並べ、react-day-picker は [react-day-picker の `package.json`][] の `test:tz` の script で `TZ=Australia/Adelaide jest` を起動する (どちらも 2026-09-29 に main で確認)。
 
 2026-09-28 に vitest 5.0.1 で、`parseCalendarDate` を `new Date(value)` (UTC の 0 時になる) に置き換え、`--pool threads` を付けて `*.tz.test.ts` を走らせた。
 
@@ -110,7 +110,7 @@ TZ ごとにプロセスを起動する形は、日付ライブラリにも先�
 
 CDP の上書きがファイルをまたがないのは、Vitest がテストファイルごとにブラウザの context を作るためと見られる。[Vitest docs「Configuring Playwright」][] の `contextOptions` の節は "the context is created for every _test file_, not every _test_" と書く。
 
-ブラウザの TZ を project 全体で変える手段には、playwright provider の `contextOptions.timezoneId` もある ([Vitest docs「Configuring Playwright」][] の同じ節)。project ごとに 1 つの TZ に決まるので、テストごとの切り替えには使わない。
+ブラウザの TZ を project 全体で変える手段には、playwright provider の `contextOptions.timezoneId` もある ([Vitest docs「Configuring Playwright」][] の `contextOptions` は [Playwright docs「browser.newContext」][] の引数を渡す。`timezoneId` はその 1 つ)。project ごとに 1 つの TZ に決まるので、テストごとの切り替えには使わない。
 
 ## 出典
 
@@ -124,3 +124,4 @@ CDP の上書きがファイルをまたがないのは、Vitest がテストフ
 [CDP「Emulation.setTimezoneOverride」]: https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setTimezoneOverride
 [date-fns の `tz.sh`]: https://github.com/date-fns/date-fns/blob/main/pkgs/core/scripts/test/tz.sh
 [react-day-picker の `package.json`]: https://github.com/gpbl/react-day-picker/blob/main/package.json
+[Playwright docs「browser.newContext」]: https://playwright.dev/docs/api/class-browser#browser-new-context
