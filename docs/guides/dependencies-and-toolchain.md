@@ -49,6 +49,17 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 
 追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残るので、Vite+ 一族の恒久除外は刈られない。
 
+### peer の食い違いを数える
+
+```bash
+pnpm peers check
+```
+
+- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、AGENTS.md の「pnpm を直接打たない」の理由 (解決が Vite+ の管理から外れる) には当たらない。`vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
+- `vp install` は lockfile が変わらないと peer を検査しないので、install の出力が静かでも食い違いが無いとは限らない
+- 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
+- `vite` と `vitest` の `allowAny` / `allowedVersions` は `vp migrate` が書く。外しても書き戻す
+
 ### 依存をバレルの禁止の対象に足す
 
 対象に足すかは ADR-0032 の基準で決める。手順は次のとおり。実例は `vite.config.ts` の `RESTRICTED_BARREL_IMPORTS` の date-fns の 2 行。
