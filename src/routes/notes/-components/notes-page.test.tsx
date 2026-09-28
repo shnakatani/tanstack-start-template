@@ -656,8 +656,9 @@ describe("NotesPage", () => {
     await openDeleteConfirm(screen, OTHER_NOTE);
     await confirmDeleteButton(screen).click();
 
-    // 2 件とも、それぞれの id で削除を呼んだ
+    // 2 件とも、それぞれの id で 1 回ずつ削除を呼んだ (exhausted は「少なくとも 1 回」までしか見ない)
     await expect.poll(() => removing).toHaveBeenExhausted();
+    expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "true");
 
