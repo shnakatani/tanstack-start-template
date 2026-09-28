@@ -1,8 +1,8 @@
 import type { Screen } from "@/test/assert/screen-assertions";
 
-/** 確認ダイアログの確定ボタン。行のトリガー (「<名前>を削除」) と区別するため exact で取る。 */
+/** 確認ダイアログの確定ボタン。locator の既定は完全一致なので、行のトリガー (「<名前>を削除」) には一致しない。 */
 export function confirmDeleteButton(screen: Screen) {
-  return screen.getByRole("button", { name: "削除", exact: true });
+  return screen.getByRole("button", { name: "削除" });
 }
 
 /** `description` を渡さないときの本文。利用者に見える文言なので、ここで 1 箇所に固定する。 */

@@ -173,8 +173,12 @@ describe("NoteActionsCell", () => {
     const screen = await renderCells({ creatingRows: [CREATING_ROW] });
 
     await expect.element(noteRow(screen, CREATED_NOTE)).toBeInTheDocument();
-    await expectAbsent(rowDeleteButton(screen, CREATED_NOTE.title));
-    await expectAbsent(rowEditButton(screen, CREATED_NOTE.title));
+    await expectAbsent(
+      screen.getByRole("button", { name: noteDeleteTriggerName(CREATED_NOTE), exact: false }),
+    );
+    await expectAbsent(
+      screen.getByRole("button", { name: noteEditTriggerName(CREATED_NOTE), exact: false }),
+    );
     await expect.element(rowDeleteButton(screen, NOTE.title)).toBeInTheDocument();
   });
 

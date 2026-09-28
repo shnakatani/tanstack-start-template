@@ -137,7 +137,7 @@ paths:
 - assert の予算は `src/test/browser/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を宣言する」)
 - `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を宣言する」)
 - 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
-- `expectAbsent` に文字列で引く locator を渡すなら `exact: false` を付ける。既定の完全一致では、その文字列を含む長い文が出ていても不在として通る。完全一致を選ぶなら `exact: true` を明示し、同じ locator の肯定 assert で名前の形を確かめる (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
+- `expectAbsent` に文字列で引く locator を渡すなら `exact: false` を付ける。既定の完全一致では、その文字列を含む長い文が出ていても不在として通る (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/assert/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えない。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)

@@ -47,16 +47,16 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 
 否定 assert は、期待値がリテラルなら書かない。肯定で書く。例外は、要素が在る状態から消えるのを待つ `expectRemoved(locator)` と、期待値が別の観測である比較の 2 つに限る。理由は「否定 assert が素通りする経路」「不在を 2 つの名前で書き分ける理由」、lint で止める範囲は ADR-0009 にある。
 
-| 書き方                                                                                                                                                                                                      | 守らないと                                                                                                 |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 「最初から出ないこと」は `src/test/assert/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く                                                                        | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
-| 要素が在る状態から消えるのを待つときは `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は書かない                                                                         | 2 つは同じ matcher を呼ぶので、名前が無いとどちらのつもりかが字面で読めない                                |
-| `expectAbsent` に文字列で引く locator (`getByText` や `getByRole` の `name`) を渡すなら `exact: false` を付ける。完全一致を選ぶなら `exact: true` を明示し、同じ locator の肯定 assert で名前の形を確かめる | locator の既定は完全一致なので、その文字列を含む長い文が出ていても一致せず、不在として通る                 |
-| `.not.toBeInTheDocument()` 以外の否定 matcher には、肯定 assert を添えなくてよい                                                                                                                            | 要素が引けない間 retry するので、不在のまま通ることがない                                                  |
-| 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                                                                                              | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
-| スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                                                                                                        | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
-| `toHaveStyle` は文字列形式で書き、複数のプロパティは `;` で 1 つにまとめる                                                                                                                                  | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
-| `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                                                                                              | jest-dom は宣言を後勝ちで畳むので、先に書いたほうが黙って消える                                            |
+| 書き方                                                                                                                               | 守らないと                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| 「最初から出ないこと」は `src/test/assert/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
+| 要素が在る状態から消えるのを待つときは `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は書かない  | 2 つは同じ matcher を呼ぶので、名前が無いとどちらのつもりかが字面で読めない                                |
+| `expectAbsent` に文字列で引く locator (`getByText` や `getByRole` の `name`) を渡すなら `exact: false` を付ける                      | locator の既定は完全一致なので、その文字列を含む長い文が出ていても一致せず、不在として通る                 |
+| `.not.toBeInTheDocument()` 以外の否定 matcher には、肯定 assert を添えなくてよい                                                     | 要素が引けない間 retry するので、不在のまま通ることがない                                                  |
+| 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                       | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
+| スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                                 | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
+| `toHaveStyle` は文字列形式で書き、複数のプロパティは `;` で 1 つにまとめる                                                           | オブジェクト形式は失敗しても差分が出ない。分けて書くと assert ごとに予算を使い、同時に成立しない状態も通る |
+| `toHaveStyle` の 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない                                       | jest-dom は宣言を後勝ちで畳むので、先に書いたほうが黙って消える                                            |
 
 肯定形の書き方は主張で決まる。
 
@@ -259,6 +259,7 @@ explanation と how-to が拠る一次情報。
 - Playwright の Test timeouts (assertion timeout を test timeout と分ける): <https://playwright.dev/docs/test-timeouts>
 - vitest browser の assertion API: <https://vitest.dev/guide/browser/assertion-api>
 - vitest browser の locator: <https://vitest.dev/guide/browser/locators>
+- `browser.locators.exact` (locator の既定は完全一致で、個々の locator の `exact` で上書きする): <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/locators.md>
 - vitest の wait-for のレシピ (assert を待つなら `expect.poll`、処理の成功を待つなら `vi.waitFor`): <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/wait-for.md>
 - `vi.waitFor` の既定 (`timeout` 1000、`interval` 50): <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md>
 - vitest-dev/vitest#6983 / PR #6984 (`actionTimeout` の導入と、`expect.poll.timeout` が `expect.element` の口だというメンテナ回答): <https://github.com/vitest-dev/vitest/issues/6983>

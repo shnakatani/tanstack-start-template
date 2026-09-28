@@ -10,7 +10,7 @@ import type { Screen } from "@/test/assert/screen-assertions";
  */
 
 export function titleTextbox(screen: Screen) {
-  return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true });
+  return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title });
 }
 
 export function bodyTextbox(screen: Screen) {
