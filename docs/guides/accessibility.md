@@ -90,7 +90,50 @@ a11y の検査は、ブラウザテストの中に 2 種類が混ざっている
 - 専用のテストファイルへ分けない。テストの置き場所は壊れる原因で分けており、a11y の検査は挙動テストと同じ原因で壊れる
 - 何もしない形も採らない。どれが a11y の問いかが読めず、a11y だけを単独で走らせられない
 
+### 読み込み中の表示の見せ方を選んだ理由
+
+route の pending 表示 (ページ全体を置き換える skeleton と `PendingContent`) を支援技術にどう見せるかは、W3C に推奨の形が無い。APG に読み込み中のパターンは無く、skeleton 専用の role の提案は、ARIA WG のメンバーが「`aria-live` / `aria-busy` と visually hidden text で足りる」として閉じた (w3c/aria の issue 1317)。そこで次の 3 種の情報から形を決めた (2026-09-28 に調査)。
+
+| 情報                   | 分かったこと                                                                                                                                                                                                                                          | 出典                                                                    |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 仕様                   | `<table>` に別の role を載せると、`<th>` / `<td>` は対応する role を失う。status は `aria-atomic="true"` の live region                                                                                                                               | ARIA in HTML の `th` / `td` の行、WAI-ARIA 1.2 の `status`              |
+| 支援技術の対応         | JAWS は `aria-busy="true"` の要素を読み飛ばし、NVDA・VoiceOver・TalkBack・Narrator は中身をそのまま読む (a11ysupport.io、2020〜2021 年の測定)。2026-03-12 の ARIA WG でも「JAWS treats it like aria-hidden」と報告された                              | a11ysupport.io の `aria-busy.json`、w3c/aria の issue 2737              |
+| デザインシステムの実装 | 表の読み込み中を持つ系統 (Carbon、Primer、AWS Cloudscape、Twilio Paste、PatternFly、Ant Design、Salesforce Lightning、Atlassian、React Spectrum) はどれも本物の table と列見出しを残す。告知は区画ごとに 1 回にする (Primer、PatternFly、Fluent、EUI) | Cloudscape の `src/table/skeleton-rows.tsx`、Primer の Loading パターン |
+
+| 案                                                                                                                     | 評価                                                                                                                                            | 採否     |
+| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 本物の列見出しを持つ table を見せ、skeleton の行を `aria-hidden` にし、「読み込み中」の行を 1 つ置く (Cloudscape の形) | 表の読み込み中を持つ系統の多数派と同じく table のまま見せる。読み込み中は 1 回だけ読まれる                                                      | **採用** |
+| table 全体を `aria-hidden` にし、外側に「読み込み中」を置く (Adrian Roselli「More Accessible Skeletons」の形)          | 読み込み中は 1 回で済むが、table を隠す系統は調べた範囲に無い                                                                                   | 却下     |
+| 外側を status にして列見出し付きの table を見せ、本文は空のセルのまま                                                  | 空のセルが並んで読まれる。`aria-busy` を付けると JAWS で table ごと消える                                                                       | 却下     |
+| `<table role="status" aria-busy="true">`                                                                               | th と td が role を失い、columnheader が a11y tree に出ない。見出しが空なので axe の `empty-table-header` が出る。JAWS は status ごと読み飛ばす | 却下     |
+
+- 「読み込み中」の行を画面に出さないのは、skeleton の見た目を読み込み後の表に近づけるためである。registry の `TableRow` / `TableCell` は下線と余白を持ち込むので、この行だけ素の `<tr>` / `<td>` で置く
+- pending 表示は条件付きで mount されるので、表示した時点で読み上げられる保証は無い。支援技術は通常、live region の変化だけを伝え、最初から入っている中身は伝えない (WAI-ARIA 1.3 Editor's Draft の live region の節「Typically, assistive technology will only convey changes to a live region」)。読み込みの開始と完了の告知は扱っていない
+
+出典:
+
+- ARIA in HTML: <https://www.w3.org/TR/html-aria/>
+- WAI-ARIA 1.2 (`status`、`aria-busy`): <https://www.w3.org/TR/wai-aria-1.2/>
+- WAI-ARIA 1.3 Editor's Draft: <https://w3c.github.io/aria/>
+- w3c/aria の issue 1317 (skeleton role の提案) と issue 2737 (`aria-busy` の中の構造): <https://github.com/w3c/aria/issues/1317> / <https://github.com/w3c/aria/issues/2737>
+- a11ysupport.io の `aria-busy` の測定データ: <https://github.com/accessibilitysupported/a11ysupport.io/blob/main/data/tests/tech/aria/aria-busy.json>
+- AWS Cloudscape の Table の skeleton: <https://github.com/cloudscape-design/components/blob/main/src/table/skeleton-rows.tsx>
+- Primer の Loading パターン: <https://primer.style/product/ui-patterns/loading/>
+- Adrian Roselli「More Accessible Skeletons」: <https://adrianroselli.com/2020/11/more-accessible-skeletons.html>
+
 ## how-to
+
+### 読み込み中の表示を組む
+
+対象は route の pending 表示 (ページ全体を置き換える skeleton と `PendingContent`) である。理由と却下した案は「読み込み中の表示の見せ方を選んだ理由」にある。
+
+| 対象                    | 組み方                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| 表の skeleton           | `TableSkeleton` に本物の列見出しを渡す。列見出しは実テーブルの列定義と同じ定数から採る  |
+| skeleton の図形         | `aria-hidden` で隠す。図形は情報を持たず、読ませると空の要素が並ぶ                      |
+| 「読み込み中」の文言    | 区画ごとに 1 つだけ置く。図形ごとに置くと、同じ文言が図形の数だけ読まれる               |
+| `aria-busy`             | pending 表示に付けない。読み込み中を伝える属性ではなく、JAWS は付けた要素ごと読み飛ばす |
+| `<table>` に載せる role | 載せない。`th` / `td` が role を失い、列見出しが支援技術に出ない                        |
 
 ### a11y の tag を付ける
 
@@ -113,10 +156,10 @@ a11y の検査は、ブラウザテストの中に 2 種類が混ざっている
 
 粒度は 2 つあり、要素で外せるならそちらを選ぶ。ルールごと切ると、その story ではその規則が 1 つも働かなくなる。
 
-| 粒度   | 書き方                            | 使う場面                                                 | 実例                                                                                                |
-| ------ | --------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| ルール | `parameters.a11y.config.rules`    | その story のどの要素でも、同じ理由で出る                | `combobox.stories.tsx` の `aria-hidden-focus`、`table-skeleton.stories.tsx` の `empty-table-header` |
-| 要素   | `parameters.a11y.context.exclude` | 特定の要素だけが判定できず、同じ規則を他の要素では見たい | `calendar.stories.tsx` の見出しの除外                                                               |
+| 粒度   | 書き方                            | 使う場面                                                 | 実例                                          |
+| ------ | --------------------------------- | -------------------------------------------------------- | --------------------------------------------- |
+| ルール | `parameters.a11y.config.rules`    | その story のどの要素でも、同じ理由で出る                | `combobox.stories.tsx` の `aria-hidden-focus` |
+| 要素   | `parameters.a11y.context.exclude` | 特定の要素だけが判定できず、同じ規則を他の要素では見たい | `calendar.stories.tsx` の見出しの除外         |
 
 `src/test/a11y/a11y-story.ts` の `IGNORED_INCOMPLETE` とは守備範囲が違う。あちらは `incomplete` だけを合否から外し、`config.rules` はルールごと止めるので `violations` も消える。同じルール名が両方に現れても重複ではない。片方を消せるかは、消して落ちるかで決める (次節の数え直し)。
 

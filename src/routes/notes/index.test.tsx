@@ -102,10 +102,17 @@ describe("/notes route", () => {
     const router = createTestRouter("/notes", () => <Pending />);
     const screen = await render(<RouterProvider router={router} />);
 
-    await expect.element(screen.getByRole("status", { name: "読み込み中" })).toBeInTheDocument();
-    // skeleton の列数は NOTE_COLUMN_COUNT から採り、列定義から採らない。描いた列数が実テーブルと揃うことをここで見る。
+    await expect.element(screen.getByRole("cell", { name: "読み込み中" })).toBeInTheDocument();
+    // skeleton は NOTE_COLUMN_HEADERS の見出しを全部描く。列定義がそれと過不足なく同じ順に並ぶことをここで見る。
     // ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
-    await expect.element(screen.getByRole("columnheader")).toHaveLength(noteColumns.length);
+    await expect
+      .poll(() =>
+        screen
+          .getByRole("columnheader")
+          .elements()
+          .map((header) => header.textContent),
+      )
+      .toEqual(noteColumns.map((column) => column.header));
   });
 
   it("URL の q が loader と入力欄に届く", async () => {
