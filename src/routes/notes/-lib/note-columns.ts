@@ -1,3 +1,4 @@
+import type { IdIdentifier } from "@tanstack/react-table";
 import { createColumnHelper } from "@tanstack/react-table";
 
 import type { DataTableFeatures } from "@/components/parts/data-table-features";
@@ -18,7 +19,7 @@ const helper = createColumnHelper<DataTableFeatures, NoteRow>();
 
 /** 列の id と見出し。id の typo は型が止め、見出しは `NOTE_COLUMN_HEADERS` から引く */
 function base(id: NoteColumnId) {
-  return { id, header: NOTE_COLUMN_HEADERS[id] };
+  return { id, header: NOTE_COLUMN_HEADERS[id] } satisfies IdIdentifier<DataTableFeatures, NoteRow>;
 }
 
 /**
