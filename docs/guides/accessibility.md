@@ -93,9 +93,14 @@ a11y の検査は、ブラウザテストの中に 2 種類が混ざっている
 
 ### クライアント遷移を伝える仕組み
 
-クライアント遷移では文書が読み込み直されず、スクリーンリーダーは新しいページを読み始めない。`src/components/route-announcer.tsx` の `RouteAnnouncer` が router の遷移を購読し、新しいページの `<h1>` へ focus を移して `document.title` を `announce()` で読み上げる。focus で見出しが読まれ、キーボードの次の Tab は新しいページの先頭から始まる。読み上げは focus の届かない場面の補いになる (ADR-0035)。
+クライアント遷移では文書が読み込み直されず、スクリーンリーダーは新しいページを読み始めない。`src/components/route-announcer.tsx` の `RouteAnnouncer` が router の遷移を購読し、次の 2 つを行う (ADR-0035)。
 
-`RouteAnnouncer` は `createRouter` の `InnerWrap` に置く。root route の error boundary の外にあるので、root のエラー画面に置き換わっても購読が続く (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)。
+| 行うこと                                      | 利用者に起きること                                                                    |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 新しいページの `<h1>` へ focus を移す         | スクリーンリーダーは見出しを読み、キーボードの次の Tab は新しいページの先頭から始まる |
+| `document.title` を `announce()` で読み上げる | focus の届かない場面の補いになる                                                      |
+
+`RouteAnnouncer` は DOM を描かず購読だけを持つ部品で、`createRouter` の `InnerWrap` に渡す `RouterInnerWrap` (`src/components/router-inner-wrap.tsx`) の中に置く。root route の error boundary の外にあるので、root のエラー画面に置き換わっても購読が続く (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)。
 
 伝える遷移と伝えない遷移は次のとおり。判定は `src/lib/route-announcement.ts` の `shouldAnnounceNavigation` が持つ。
 
@@ -107,17 +112,19 @@ a11y の検査は、ブラウザテストの中に 2 種類が混ざっている
 | 戻る・進む                            | 伝える   | path の変化として通常の遷移と同じに扱う                                                     |
 | ルートのエラー画面、root のエラー画面 | 伝える   | エラー画面の `<h1>` へ移る。ルートのエラー画面では、読み上げは失敗したルートの title になる |
 
-focus は奪わない。`src/lib/focus-page-heading.ts` の `focusPageHeading` は、遷移の直前 (`onBeforeNavigate`) の `document.activeElement` を受け取り、描画の後 (`onRendered`) の focus が次のどちらかのときだけ移す。
+focus は奪わない。`src/lib/focus-page-heading.ts` の `focusPageHeading` は、遷移の直前 (`onBeforeNavigate`) の `document.activeElement` を受け取り、描画の後 (`onRendered`) の focus で移すかを決める。
 
-| 描画の後の focus     | 移すか   | 起きる場面                                          |
-| -------------------- | -------- | --------------------------------------------------- |
-| `<body>`             | 移す     | 押したリンクが新しいページで消えた                  |
-| 遷移の直前と同じ要素 | 移す     | 押したリンクが残るレイアウトにある、戻る・進む      |
-| それ以外の要素       | 移さない | 遷移中にアプリか利用者が別の要素へ focus を動かした |
+| 描画の後の focus                          | 移すか   | 起きる場面                                                      |
+| ----------------------------------------- | -------- | --------------------------------------------------------------- |
+| `<body>`                                  | 移す     | 押したリンクが新しいページで消えた                              |
+| 無い (`document.activeElement` が `null`) | 移す     | focus を失った状態。`focusPageHeading` は `<body>` と同じに扱う |
+| 遷移の直前と同じ要素                      | 移す     | 押したリンクが残るレイアウトにある、戻る・進む                  |
+| それ以外の要素                            | 移さない | 遷移中にアプリか利用者が別の要素へ focus を動かした             |
 
-`<h1>` が無いと focus は `<body>` に落ち、`console.warn` が出る。見出しに focus の枠は出さない (`focusVisible: false`)。見出しは操作できる要素ではない (ADR-0035)。
+- `<h1>` が無いと focus は `<body>` に落ち、`console.warn` が出る
+- 見出しに focus の枠は出さない (`focusVisible: false`)。理由は ADR-0035 にある
 
-not found の画面の title は `src/lib/page-title.ts` の `pageTitle` が決める。`head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら「ページが見つかりません」の title を返す。`head()` は not found を受け持つ route まで走り、深い route の title が勝つので、全 route の `head()` が `pageTitle` を通していれば、どの route が受け持っても同じ title になる。どこにも当たらない URL (手で打った URL など) はアプリ名の title のままになる (ADR-0035)。
+not found の画面の title は `src/lib/page-title.ts` の `pageTitle` が決める。全 route の `head()` が `pageTitle` を通していれば、どの route が not found を受け持っても同じ title になる。判定の仕方と、扱わない URL は ADR-0035 にある。
 
 ### 読み込み中の表示の見せ方を選んだ理由
 
@@ -230,4 +237,4 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 - title を文字列で直接書かない。not found の判定を通らず、not found の画面でもそのページの名前が title になる
 - `head()` を省かない。省くと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない
-- 画面を切り替えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
+- ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
