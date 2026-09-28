@@ -36,7 +36,7 @@ mise run storybook                                # 部品とデザイントー�
 | ------------------------------ | --------------------------------------------------------------------------------- |
 | `mise run serve`               | dev server を起動する                                                             |
 | `mise run verify`              | `vp check` → `vp test run` → `vp build` → ヘッダ検査 を順に実行する               |
-| `mise run a11y:incomplete`     | ブラウザテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む         |
+| `mise run a11y:incomplete`     | axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む       |
 | `mise run db:generate`         | `src/server/db/schema.ts` から `drizzle/` へ migration を生成する                 |
 | `mise run db:migrate`          | `drizzle/` の migration を `DB_FILE_NAME` の DB へ適用する                        |
 | `vp test run --project <名前>` | project 単位で実行する。`unit` / `browser` / `checks-integrity` / `scripts-tools` |

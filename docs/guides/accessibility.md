@@ -176,12 +176,15 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 1. axe で「アクセシブルか」を問うテストに `it(名前, { tags: ["a11y"] }, fn)` を付ける。tag の定義は `vitest.browser.config.ts` の `test.tags` にある
 2. 単独で走らせるときは `vp test run --tagsFilter a11y`、外すときは `--tagsFilter '!a11y'`
-3. 挙動テストの途中の状態を測る `expectNoA11yViolations` には tag を付けない。その状態は操作の途中にしか無く、専用のテストへ降ろすと操作の再現が重複する。assert の近くに、tag を付けない理由を書く
+3. 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。その状態は操作の途中にしか無く、専用のテストへ降ろすと操作の再現が重複する。assert の近くに、`a11y` の tag を付けない理由を書く
+4. `expectNoA11yViolations` を呼ぶテストには、専用のテストか挙動テストかを問わず `axe` の tag を付ける。`mise run a11y:incomplete` がこの tag で絞る。付け忘れると helper が落ちる
 
 - `--tagsFilter '!a11y'` で外しても、挙動テストに相乗りした assert は走る。a11y を完全に外した実行はできない
 - tag の定義は browser project にしかない。他の project で使うなら、その project の `test.tags` へ足す
 - story の a11y は `addon-a11y` が全 story へ一律に当てるので、tag の対象外である
 - 相乗りの assert を後から降ろすと決めたら、共通の setup を helper へ切り出して、操作の再現の重複を避ける
+- tag で絞った実行でも、verbose reporter は外れたテストを 1 行ずつ並べる。`--hide-skipped-tests` で止める (Vitest docs の config「hideSkippedTests」)
+- helper が tag を読むのは `TestRunner.getCurrentTest()` の `tags` である。Vitest の移行ガイドが `vitest/suite` の代わりに案内する API で、`tags` は公開の型定義にだけ載る (2026-09-29 に Vitest 5.0.1 で、継承した tag も入ることを実測)
 
 ### story で出た違反を抑制する
 

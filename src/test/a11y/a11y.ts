@@ -1,5 +1,5 @@
 import axe from "axe-core";
-import { expect, type TestContext, vi } from "vite-plus/test";
+import { expect, type TestContext, TestRunner, vi } from "vite-plus/test";
 
 import { describeA11yIncomplete, describeA11yResults } from "./a11y-message";
 
@@ -20,9 +20,16 @@ import { describeA11yIncomplete, describeA11yResults } from "./a11y-message";
  * `expect*` のパターンだから (ADR-0007)。
  *
  * `annotate` はテストの文脈から渡す (`it("…", async ({ annotate }) => …)`)。
+ *
+ * 呼ぶテストには `{ tags: ["axe"] }` を付ける。`mise run a11y:incomplete` はこの tag で絞るので、
+ * 付け忘れたテストはそこから黙って漏れる。付いていなければ落とす。今のテストは
+ * `TestRunner.getCurrentTest()` で取る (Vitest の移行ガイドが `vitest/suite` の代わりに案内する)
  */
 export const expectNoA11yViolations = vi.defineHelper(
   async (container: Element, annotate: TestContext["annotate"]): Promise<void> => {
+    if (!TestRunner.getCurrentTest()?.tags?.includes("axe")) {
+      throw new Error('expectNoA11yViolations を呼ぶテストには { tags: ["axe"] } を付ける');
+    }
     const result = await axe.run(container, {
       rules: {
         // region は「ページ本体が landmark の中にあるか」を見る文書レベルの規則で、
