@@ -88,7 +88,7 @@ paths:
 - assert を含むヘルパー (操作のあとに待つものを含む) は `vi.defineHelper` で包む。包まないと失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない。包んだ helper を包まない helper から呼んでも同じになる (vitest docs の api/vi「vi.defineHelper」)
 - 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
-- テストの中で残す注意 (合否に入れないが読ませたいもの) は、テストの文脈の `annotate(message, "warning")` と `console.warn` の両方で残す。端末の default reporter は通ったテストの注釈を出さず、`console.warn` は GitHub Actions の画面の注釈にならない (vitest docs の guide/test-annotations)
+- テストの中で残す注意 (合否に入れないが読ませたいもの) は、テストの文脈の `annotate(message, "warning")` で残し、`console.warn` に出さない。通ったテストの注釈は `vitest.annotation-reporter.ts` が端末に、`github-actions` reporter が GitHub Actions の画面に出す。`console.warn` にも出すと二重になる (vitest docs の guide/test-annotations)
 - Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (vitest docs の guide/test-context の annotate)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)
 - announcer の通知は、届くのを待つなら `expectAnnouncements(expected, politeness)`、届いた後に読むなら `readAnnouncements(politeness)` を使う (`src/test/assert/live-announcer.ts`)。region は `browser-setup.tsx` が毎テスト描く (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)

@@ -1,7 +1,8 @@
 import viteReact from "@vitejs/plugin-react";
-import { defineConfig } from "vite-plus";
+import { configDefaults, defineConfig } from "vite-plus";
 
 import { companionGlobs } from "./scripts/lib/companion-files";
+import { PassedTestAnnotationReporter } from "./vitest.annotation-reporter";
 import { storybookProjects } from "./vitest.storybook.config";
 
 const sharedExclude = [
@@ -25,6 +26,9 @@ export default defineConfig({
     // 基準のタイムゾーンを決める。root に置く。project に置くと、その project のテストを含む
     // 実行でだけ走り、他の project の TZ が選んだファイルで変わる
     globalSetup: ["./vitest.global-setup.ts"],
+    // 既定の reporter (端末の default、AI エージェントの minimal、GitHub Actions の github-actions) を
+    // 残したまま足す。reporters を書くと既定の組が置き換わる (vitest docs の guide/reporters「Default Configuration」)
+    reporters: [...configDefaults.reporters, new PassedTestAnnotationReporter()],
     projects: [
       {
         test: {

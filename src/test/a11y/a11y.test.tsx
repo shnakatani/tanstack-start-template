@@ -6,7 +6,7 @@ import { expectNoA11yViolations } from "./a11y";
 describe("expectNoA11yViolations", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("axe が判定できなかった項目を、warning の注釈と console.warn の両方で残す", async () => {
+  it("axe が判定できなかった項目を warning の注釈で残し、console.warn には出さない", async () => {
     // グラデーションの上の文字は背景色を 1 つに決められず、color-contrast が incomplete になる
     const screen = await render(
       <main style={{ backgroundImage: "linear-gradient(white, black)" }}>
@@ -22,10 +22,8 @@ describe("expectNoA11yViolations", () => {
       expect.stringContaining("color-contrast"),
       "warning",
     );
-    expect(warn).toHaveBeenCalledExactlyOnceWith(
-      "[a11y]",
-      expect.stringContaining("color-contrast"),
-    );
+    // 通ったテストの注釈は vitest.annotation-reporter.ts が端末に出す。console.warn にも出すと二重になる
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it("判定できなかった項目が無ければ注釈を残さない", async () => {
@@ -35,11 +33,9 @@ describe("expectNoA11yViolations", () => {
       </main>,
     );
     const annotate = vi.fn();
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     await expectNoA11yViolations(screen.container, annotate);
 
     expect(annotate).not.toHaveBeenCalled();
-    expect(warn).not.toHaveBeenCalled();
   });
 });
