@@ -15,7 +15,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 1 行ぶん。`table-skeleton.tsx` の見出しセルと同じ寸法 */
+/** 文字 1 行ぶん */
 export const Line: Story = {
   args: { className: "h-4 w-16" },
 };
