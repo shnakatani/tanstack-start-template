@@ -43,7 +43,6 @@ export function NoteEditDialog() {
 
   const { blocksClose, formKeyFor, onOpenChange, onOpenChangeComplete } = useSubmitBlockingDialog({
     isPending: updateMutation.isPending,
-    queryKey: NOTES_QUERY_KEY,
   });
 
   return (

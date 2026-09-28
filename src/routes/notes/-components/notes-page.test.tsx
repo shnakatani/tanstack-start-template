@@ -395,10 +395,10 @@ describe("NotesPage", () => {
     await expectSettledRow(screen, CREATED_NOTE);
   });
 
-  it("応答後の再取得中に開き直した追加ダイアログはキャンセルできる", async () => {
-    // close を止める窓は「応答前」だけで、mutation の pending 全体ではない。応答で閉じた後は
-    // 再取得の完了まで pending が続くが、その間に開き直したダイアログは先行 save の応答を
-    // 待っていないので閉じられる (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))
+  it("応答後の再取得中に開き直した追加ダイアログは、再取得の完了までキャンセルできない", async () => {
+    // close を止める条件は mutation の pending。pending は応答後も再取得の完了まで続くので、その間に
+    // 開き直したダイアログも閉じられない。応答済みかを再取得中かどうかから推定すると、先行する保存の
+    // 再取得と重なったときに応答前でも閉じられ、後から開いたダイアログを先行の応答が閉じる
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
     const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
@@ -412,12 +412,49 @@ describe("NotesPage", () => {
     await expectNoteDialogClosed(screen);
 
     await openNoteCreateDialog(screen);
-
-    await expect
-      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
-      .not.toBeDisabled();
+    const cancel = screen.getByRole("button", { name: "キャンセル", exact: true });
+    await expect.element(cancel).toBeDisabled();
 
     refetch.resolve([CREATED_NOTE, NOTE]);
+
+    await expect.element(cancel).not.toBeDisabled();
+  });
+
+  it("先行する保存の再取得中に保存したダイアログは、その応答が届くまで Escape で閉じない", async () => {
+    // 先行の再取得が走っている間に後続の保存を閉じられると、後から開いた別のダイアログを
+    // 後続の応答の onSuccess が閉じ、その入力が消える
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
+    const refetch = deferMock(listNotes);
+    const secondResponse = Promise.withResolvers<undefined>();
+    vi.mocked(updateNote)
+      .mockResolvedValueOnce(undefined)
+      .mockImplementationOnce(() => secondResponse.promise);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+
+    await openNoteEditDialog(screen, NOTE);
+    await titleTextbox(screen).fill(UPDATED_NOTE.title);
+    await saveButton(screen).click();
+    await parkMouse();
+    // 先行の応答で閉じる。再取得は未決着のまま
+    await expectNoteDialogClosed(screen);
+
+    await openNoteEditDialog(screen, OTHER_NOTE);
+    await titleTextbox(screen).fill("後続の見出し");
+    await saveButton(screen).click();
+    await parkMouse();
+    await vi.waitFor(() => {
+      expect(vi.mocked(updateNote)).toHaveBeenCalledTimes(2);
+    });
+    await userEvent.keyboard("{Escape}");
+
+    // 閉じない。入力が残っている
+    await expect.element(titleTextbox(screen)).toHaveValue("後続の見出し");
+
+    secondResponse.resolve(undefined);
+
+    await expectNoteDialogClosed(screen);
+    refetch.resolve([UPDATED_NOTE, OTHER_NOTE]);
   });
 
   it("0 件の一覧に 1 件目を追加すると、応答前に空状態が消えて楽観行が出る", async () => {
