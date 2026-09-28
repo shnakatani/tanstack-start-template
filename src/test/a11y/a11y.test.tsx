@@ -22,7 +22,7 @@ describe("expectNoA11yViolations", () => {
       expect.stringContaining("color-contrast"),
       "warning",
     );
-    // 通ったテストの注釈は vitest.annotation-reporter.ts が端末に出す。console.warn にも出すと二重になる
+    // 注釈を見るのは github-actions と verbose の reporter。console.warn にも出すと二重になる
     expect(warn).not.toHaveBeenCalled();
   });
 
