@@ -76,7 +76,7 @@ peerDependencyRules:
     # storybook@10.6.0 の optional peer は vite-plus ^0.1.15 || ^0.2.0 で、1.0 に追いついていない。
     # storybook が読むのは vite-plus/versions (vitest と vite の版の検出) だけで、1.0 も export している
     # (storybook@10.6.0 の dist で確認)。storybook を上げたら dist の vite-plus の import を読み直す
-    # (キーに親の版を付けても pnpm peers check は親の版を見ないので、契機にならない)。
+    # (pnpm 11 の pnpm peers check はキーの親の版を見ないので、キーに版を付けても契機にならない)。
     # 撤去条件: storybook の peer が vite-plus 1.x を含んだとき
     "storybook>vite-plus": "1"
 
