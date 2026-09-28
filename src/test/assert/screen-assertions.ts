@@ -1,4 +1,4 @@
-import { expect } from "vite-plus/test";
+import { expect, vi } from "vite-plus/test";
 import type { render } from "vitest-browser-react";
 
 /** `render()` の戻り値。locator を取るヘルパーの引数型に使う。 */
@@ -12,22 +12,24 @@ export type Screen = Awaited<ReturnType<typeof render>>;
  * 「close 済みだがまだ DOM にある」を「開いたまま」と誤判定するので、`data-open` を見る。
  * Popup は `aria-hidden` 配下に入ることがあるため `includeHidden` で取る。
  */
-export async function expectDialogOpen(screen: Screen, role: "dialog" | "alertdialog") {
-  await expect
-    .element(screen.getByRole(role, { includeHidden: true }))
-    .toHaveAttribute("data-open");
-}
+export const expectDialogOpen = vi.defineHelper(
+  async (screen: Screen, role: "dialog" | "alertdialog") => {
+    await expect
+      .element(screen.getByRole(role, { includeHidden: true }))
+      .toHaveAttribute("data-open");
+  },
+);
 
 /** 指定テキストが表示されるまで待って検証する。 */
-export async function expectText(screen: Screen, text: string) {
+export const expectText = vi.defineHelper(async (screen: Screen, text: string) => {
   await expect.element(screen.getByText(text)).toBeInTheDocument();
-}
+});
 
 /** 指定ラベルの textbox がすべて空であることを検証する。値は locator の matcher で見る (docs/guides/testing/waiting-and-assertions.md「同期読みを書き換える」) */
-export async function expectEmptyTextboxes(screen: Screen, labels: string[]) {
+export const expectEmptyTextboxes = vi.defineHelper(async (screen: Screen, labels: string[]) => {
   await Promise.all(
     labels.map(async (label) => {
       await expect.element(screen.getByRole("textbox", { name: label })).toHaveValue("");
     }),
   );
-}
+});

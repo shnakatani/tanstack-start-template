@@ -334,6 +334,14 @@ export default defineConfig({
       "vitest/no-mocks-import": "error",
       "vitest/no-unneeded-async-expect-function": "error",
       "vitest/prefer-called-exactly-once-with": "error",
+      // assert の helper は vi.defineHelper で包み、失敗の位置を呼び出し側に出す。
+      // @vitest/eslint-plugin は包んだ関数の中の expect を既定で許す (その PR 894) が、oxlint の
+      // 移植はまだ許さないので、同じ扱いを option で与える。
+      // 撤去条件: oxlint の no-standalone-expect が vi.defineHelper を既定で許したとき
+      "vitest/no-standalone-expect": [
+        "error",
+        { additionalTestBlockFunctions: ["vi.defineHelper"] },
+      ],
       // Vitest は expect(value, message) を正式に受け付ける。第 2 引数が変数の場合も許可する
       // ため、リテラルだけを例外扱いするルール既定値ではなく引数の上限を指定する
       "vitest/valid-expect": ["error", { maxArgs: 2 }],

@@ -1,4 +1,4 @@
-import { expect } from "vite-plus/test";
+import { expect, vi } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
 import type { Locator } from "vite-plus/test/browser/context";
 
@@ -42,7 +42,7 @@ export async function restoreDefaultViewport(): Promise<void> {
  * `{ ratio: 0.99 }` に緩める回避策も採らない。「全体が収まる」の主張を失い、閾値の根拠を popup の
  * 高さごとに持つことになる。
  */
-export async function expectWithinViewport(target: Locator): Promise<void> {
+export const expectWithinViewport = vi.defineHelper(async (target: Locator): Promise<void> => {
   await expect
     .poll(() =>
       viewportOverflows(target.element().getBoundingClientRect(), {
@@ -51,4 +51,4 @@ export async function expectWithinViewport(target: Locator): Promise<void> {
       }),
     )
     .toEqual([]);
-}
+});

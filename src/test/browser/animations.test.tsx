@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished } from "vite-plus/test";
+import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ function readMotionSeconds(element: Element) {
   };
 }
 
-async function renderOpenDialog() {
+const renderOpenDialog = vi.defineHelper(async () => {
   const screen = await render(
     <Dialog>
       <DialogTrigger render={<Button>開く</Button>} />
@@ -55,7 +55,7 @@ async function renderOpenDialog() {
   // mount は builtin の matcher で待つ。`findElement()` は呼ばない (docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」「assert の予算を宣言する」)
   await expect.element(screen.getByRole("dialog")).toBeInTheDocument();
   return screen;
-}
+});
 
 // 既定値は browser-setup.tsx の beforeEach が立てる (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)
 describe("animation の既定", () => {

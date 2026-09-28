@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import {
   NOTE_BODY_MAX_LENGTH,
@@ -109,11 +109,11 @@ describe("noteInputSchema", () => {
    * 日本語 UI に出さないことを回帰として固定する。
    */
   describe("検証メッセージ", () => {
-    function messagesOf(input: Record<string, unknown>): string[] {
+    const messagesOf = vi.defineHelper((input: Record<string, unknown>): string[] => {
       const result = v.safeParse(noteInputSchema, input);
       expect.assert(!result.success, "safeParse が成功してしまった");
       return result.issues.map((issue) => issue.message);
-    }
+    });
 
     it("空 title は必須入力の日本語メッセージを返す", () => {
       expect(messagesOf({ ...valid, title: "" })).toContain(
