@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { NOTE, OTHER_NOTE, UPDATED_NOTE } from "./schema.test-helpers";
+import { NOTE_UPDATE, OTHER_NOTE } from "./schema.test-helpers";
 import { parseUpdatingNotes } from "./updating-rows";
 
 /**
@@ -20,7 +20,7 @@ describe("parseUpdatingNotes", () => {
 
   it("更新の形の値を並べて返す", () => {
     const updates = [
-      { id: NOTE.id, title: UPDATED_NOTE.title, body: NOTE.body, dueDate: NOTE.dueDate },
+      NOTE_UPDATE,
       { id: OTHER_NOTE.id, title: OTHER_NOTE.title, body: "", dueDate: null },
     ];
 
@@ -29,19 +29,14 @@ describe("parseUpdatingNotes", () => {
   });
 
   it("更新の形を満たさない値は warn を残して除外する", () => {
-    const valid = { id: NOTE.id, title: NOTE.title, body: NOTE.body, dueDate: NOTE.dueDate };
+    const { id: _id, ...withoutId } = NOTE_UPDATE;
+    const { title: _title, ...withoutTitle } = NOTE_UPDATE;
     // id の 0 は noteIdSchema の境界 (autoincrement rowid は 1 始まりの整数)。id 欠落は作成の
     // variables (NoteInput) の形、title 欠落は入力項目の欠け。素の number と undefined は、
     // `variables` が `unknown` で届く経路
-    const invalid = [
-      { ...valid, id: 0 },
-      { title: NOTE.title, body: NOTE.body, dueDate: NOTE.dueDate },
-      { id: NOTE.id, body: NOTE.body, dueDate: NOTE.dueDate },
-      1,
-      undefined,
-    ];
+    const invalid = [{ ...NOTE_UPDATE, id: 0 }, withoutId, withoutTitle, 1, undefined];
 
-    expect(parseUpdatingNotes([valid, ...invalid])).toEqual([valid]);
+    expect(parseUpdatingNotes([NOTE_UPDATE, ...invalid])).toEqual([NOTE_UPDATE]);
 
     expect(warnSpy).toHaveBeenCalledTimes(invalid.length);
     expect(warnSpy).toHaveBeenCalledWith("[parseUpdatingNotes] variables が更新の形でない", {

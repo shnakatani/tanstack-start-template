@@ -29,6 +29,7 @@ import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { getNoteRowId, toNoteRows } from "../-lib/note-rows";
 import {
+  noteDeleteTriggerName,
   noteEditTriggerName,
   noteRow,
   rowDeleteButton,
@@ -193,7 +194,7 @@ describe("NoteActionsCell", () => {
           .elements()
           .map((button) => button.getAttribute("aria-label")),
       )
-      .toEqual([noteEditTriggerName(NOTE), `${NOTE.title}を削除`]);
+      .toEqual([noteEditTriggerName(NOTE), noteDeleteTriggerName(NOTE)]);
   });
 
   it("削除中の行は編集トリガーも無効にする", async () => {

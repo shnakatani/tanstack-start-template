@@ -20,6 +20,7 @@ import {
   CREATED_NOTE,
   NOTE,
   NOTE_CREATED_AT_TEXT,
+  NOTE_UPDATE,
   OTHER_NOTE,
   UPDATED_NOTE,
 } from "@/features/notes/schema.test-helpers";
@@ -294,9 +295,7 @@ describe("NotesPage", () => {
     await expect
       .element(noteRow(screen, OTHER_NOTE, { includeHidden: true }))
       .toHaveAttribute("aria-busy", "false");
-    expect(vi.mocked(updateNote)).toHaveBeenCalledExactlyOnceWith({
-      data: { id: NOTE.id, title: UPDATED_NOTE.title, body: NOTE.body, dueDate: NOTE.dueDate },
-    });
+    expect(vi.mocked(updateNote)).toHaveBeenCalledExactlyOnceWith({ data: NOTE_UPDATE });
 
     update.resolve(undefined);
 
