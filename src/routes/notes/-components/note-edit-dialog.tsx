@@ -1,0 +1,74 @@
+import { useQueryClient } from "@tanstack/react-query";
+
+import { Dialog } from "@/components/ui/dialog";
+import { updateNoteMutation } from "@/features/notes/mutations";
+import { NOTES_QUERY_KEY } from "@/features/notes/queries";
+import { useActionMutation } from "@/hooks/use-action-mutation";
+import { announce } from "@/lib/live-announcer";
+import { toastMutationError } from "@/lib/mutation-error";
+
+import { useSubmitBlockingDialog } from "../-hooks/use-submit-blocking-dialog";
+import { noteEditDialogHandle } from "../-lib/note-edit-dialog-handle";
+import { NoteFormContent } from "./note-form";
+
+/**
+ * メモの編集ダイアログ。フォームは作成のダイアログと同じ `NoteFormContent` で、初期値に handle の
+ * payload (編集する行の `Note`) の今の値を入れる。
+ *
+ * mutation はここが持ち、フォームの状態は開くたびに作り直す (作成のダイアログと同じ)。
+ */
+export function NoteEditDialog() {
+  const queryClient = useQueryClient();
+
+  const updateMutation = useActionMutation({
+    ...updateNoteMutation,
+    // 開始の通知の置き場 (ADR-0026)。form の検証を通った後だけ走る。ボタンの pending は
+    // 読み上げに出ないので開始を通知する。開始は押した直後なので対象名を載せない
+    onMutate: () => {
+      announce("更新しています");
+    },
+    // 完了点 (b): 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
+    // 一覧の再取得は queryKey の前方一致に委ねる
+    onSuccess: async (_data, update) => {
+      noteEditDialogHandle.close();
+      await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+      // 行の値の変化は読み上げに出ないので、完了を通知する。更新は再取得を待つ間に別の行でも
+      // 保存でき並行しうるので、どれが終わったかを対象名 (更新後の title) で区別する (ADR-0026)
+      announce(`『${update.title}』を更新しました`);
+    },
+    // 失敗時は閉じない (入力を保ったままリトライできる)。server の raw message は
+    // 開発者向けの文言なので curate を通した固定文言だけを出す
+    onError: toastMutationError,
+  });
+
+  const { blocksClose, formKeyFor, onOpenChange, onOpenChangeComplete } = useSubmitBlockingDialog({
+    isPending: updateMutation.isPending,
+  });
+
+  return (
+    <Dialog
+      handle={noteEditDialogHandle}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={onOpenChangeComplete}
+    >
+      {({ payload }) => {
+        // payload は行の編集ボタン (この handle の Trigger) が必ず渡し、payload 無しで開く呼び出しは
+        // アプリに無い。閉じている間も render function は payload 無しで呼ばれる (Base UI 1.8.0 で
+        // 実測、2026-09-28) ので、Base UI の docs の例と同じく payload が無ければ描かない
+        if (!payload) {
+          return null;
+        }
+        return (
+          <NoteFormContent
+            // 行ごとに作り直す (理由は useSubmitBlockingDialog の formKeyFor)
+            key={formKeyFor(payload.id)}
+            heading="メモを編集"
+            defaultValues={{ title: payload.title, body: payload.body, dueDate: payload.dueDate }}
+            onSubmit={(input) => updateMutation.runAction({ id: payload.id, ...input })}
+            blocksClose={blocksClose}
+          />
+        );
+      }}
+    </Dialog>
+  );
+}

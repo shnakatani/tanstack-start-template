@@ -25,9 +25,9 @@ describe("announce", () => {
     expect(region?.getAttribute("aria-relevant")).toBe("additions");
     expect(readAnnouncements()).toEqual([]);
 
-    announce("『買い物リスト』を削除しています");
+    announce("『買い物リスト』を削除しました");
 
-    expect(readAnnouncements()).toEqual(["『買い物リスト』を削除しています"]);
+    expect(readAnnouncements()).toEqual(["『買い物リスト』を削除しました"]);
 
     // 削除は 7000ms ちょうど (React Aria の LiveAnnouncer と同値)。6999 でまだ在ることを
     // 見ないと、寿命を短くする変更 (3000 等) がこのテストを通り抜ける
@@ -45,10 +45,10 @@ describe("announce", () => {
   });
 
   it("同じ文言を続けて announce しても別ノードとして残る", () => {
-    announce("削除しました");
-    announce("削除しました");
+    announce("削除しています");
+    announce("削除しています");
 
-    expect(readAnnouncements()).toEqual(["削除しました", "削除しました"]);
+    expect(readAnnouncements()).toEqual(["削除しています", "削除しています"]);
   });
 
   it("region が無いときは warn して何もしない", () => {

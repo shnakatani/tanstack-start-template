@@ -9,9 +9,16 @@ export const notes = sqliteTable(
     body: text("body").notNull().default(""),
     // 暦の日付 (ADR-0031 の分類 2) を YYYY-MM-DD の TEXT で持つ。期日なしは NULL
     dueDate: text("due_date"),
+    // 作成日時と更新日時は瞬間 (ADR-0031 の分類 1) を UTC のエポックミリ秒で持つ。値は DB の
+    // 既定値で入れる (drizzle docs のガイド「Timestamp as a default value」)。更新日時は
+    // drizzle の update のたびに $onUpdate がアプリの時計で入れる
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
-      .$defaultFn(() => new Date()),
+      .default(sql`(unixepoch('subsecond') * 1000)`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch('subsecond') * 1000)`)
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     // SQLite の date() は暦に無い日を翌月へ繰り越し、YYYY-MM-DD 以外の形は別の文字列か NULL にする。

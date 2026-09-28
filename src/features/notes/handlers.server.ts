@@ -6,7 +6,7 @@ import { likeContains } from "@/server/db/like-pattern";
 import { notes } from "@/server/db/schema";
 
 import { noteSchema } from "./schema";
-import type { Note, NoteId, NoteInput, NoteListFilter } from "./schema";
+import type { Note, NoteId, NoteInput, NoteListFilter, NoteUpdate } from "./schema";
 
 export type NotesDb = ReturnType<typeof createDb>;
 
@@ -57,6 +57,18 @@ export function createNoteHandlers(getDb: () => NotesDb) {
       return created;
     },
 
+    update: async ({ id, ...input }: NoteUpdate): Promise<void> => {
+      const updated = await getDb()
+        .update(notes)
+        .set(input)
+        .where(eq(notes.id, id))
+        .returning({ id: notes.id });
+      if (updated.length === 0) {
+        // 0 件更新を成功として返すと、既に消えている行への更新が画面上は成功に見える
+        throw new Error(`更新対象のノートが見つかりません: id=${id}`);
+      }
+    },
+
     remove: async ({ id }: NoteId): Promise<void> => {
       const deleted = await getDb().delete(notes).where(eq(notes.id, id)).returning({
         id: notes.id,
@@ -86,4 +98,5 @@ const handlers = createNoteHandlers(appDbConnection);
 
 export const listNotesHandler = handlers.list;
 export const createNoteHandler = handlers.create;
+export const updateNoteHandler = handlers.update;
 export const removeNoteHandler = handlers.remove;

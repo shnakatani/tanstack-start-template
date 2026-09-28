@@ -102,6 +102,7 @@ export const noteSchema = v.object({
   title: storedTitleSchema,
   id: noteIdValueSchema,
   createdAt: v.pipe(v.date(), v.metadata({ label: "作成日時" })),
+  updatedAt: v.pipe(v.date(), v.metadata({ label: "更新日時" })),
 });
 export type Note = v.InferOutput<typeof noteSchema>;
 
@@ -116,6 +117,7 @@ export const NOTE_FIELD_LABELS = {
   dueDate: v.getMetadata(noteSchema.entries.dueDate).label,
   id: v.getMetadata(noteSchema.entries.id).label,
   createdAt: v.getMetadata(noteSchema.entries.createdAt).label,
+  updatedAt: v.getMetadata(noteSchema.entries.updatedAt).label,
 } satisfies Record<keyof Note, string>;
 
 /** 1 件を指す入力 (削除など)。 */
@@ -123,6 +125,13 @@ export const noteIdSchema = v.object({
   id: noteIdValueSchema,
 });
 export type NoteId = v.InferOutput<typeof noteIdSchema>;
+
+/** 1 件の更新。対象の id と、入力の項目の全部 (部分更新はしない)。 */
+export const noteUpdateSchema = v.object({
+  ...noteIdSchema.entries,
+  ...noteInputSchema.entries,
+});
+export type NoteUpdate = v.InferOutput<typeof noteUpdateSchema>;
 
 export const NOTE_QUERY_MAX_LENGTH = 100;
 

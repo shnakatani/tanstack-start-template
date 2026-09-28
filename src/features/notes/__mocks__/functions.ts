@@ -6,4 +6,5 @@ import { vi } from "vite-plus/test";
 // 呼び出しの形 (引数と戻り値) だけを検証対象にする
 export const listNotes = vi.fn();
 export const createNote = vi.fn();
+export const updateNote = vi.fn();
 export const removeNote = vi.fn();

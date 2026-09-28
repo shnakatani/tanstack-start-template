@@ -16,6 +16,7 @@ import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY, notesQueryOptions } from "@/features/notes/queries";
 import { NOTE_ENTITY_LABEL, noteListFilterSchema } from "@/features/notes/schema";
+import { parseUpdatingNotes } from "@/features/notes/updating-rows";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
@@ -26,6 +27,7 @@ import { getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
 import { NOTE_SEARCH_DEBOUNCE_MS, noteSearchResultMessage } from "../-lib/note-search";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
+import { NoteEditDialog } from "./note-edit-dialog";
 import { NoteSearchField } from "./note-search-field";
 
 /** URL / server function と同じ schema で正規化する (trim / 上限)。 */
@@ -82,9 +84,10 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
     // 開始の通知の置き場 (ADR-0026)。この画面は variables 方式 (ADR-0017) なのでキャッシュは触らない。
-    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する
-    onMutate: (target) => {
-      announce(`『${target.name}』を削除しています`);
+    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する。開始は確定を押した直後なので
+    // 対象名を載せない
+    onMutate: () => {
+      announce("削除しています");
     },
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
     // 再取得を await して pending を再取得完了まで保つ (ADR-0017)。閉じるのは確定時 (完了点 (a))
@@ -116,10 +119,19 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     }),
   });
 
+  // 更新も完了点 (b) で応答でダイアログが閉じるので、再取得完了までの pending は行が伝える
+  // (ADR-0017)。mutation は編集のダイアログ側にあるため mutationKey 経由で読む。variables に
+  // 対象の id と編集後の値が載るので、対象の行だけを busy にして編集後の値で描ける
+  const pendingUpdateVariables = useMutationState({
+    filters: { ...noteMutationFilters.update, status: "pending" },
+    select: (mutation) => mutation.state.variables,
+  });
+
   // 派生値は hook より後ろで作る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」の data の組み立て行。oxc-transform-react の出力で実測)
   const deletingIds = parseDeletingIds(pendingDeleteVariables);
   const creatingRows = parseCreatingRows(pendingCreateStates);
-  const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds });
+  const updatingNotes = parseUpdatingNotes(pendingUpdateVariables);
+  const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds, updatingNotes });
 
   function handleSubmit() {
     // 正規化で値が変わるときだけ入力欄を揃える (trim と切り詰めが見える)
@@ -203,6 +215,8 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
       </div>
 
       <NoteCreateDialog />
+
+      <NoteEditDialog />
 
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}

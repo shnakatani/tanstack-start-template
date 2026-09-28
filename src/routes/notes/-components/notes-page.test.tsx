@@ -6,20 +6,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { cellInColumn } from "@/components/parts/data-table.test-helpers";
 import {
   confirmDeleteButton,
   deleteConfirmDescription,
 } from "@/components/parts/delete-confirm-dialog.test-helpers";
 import { Toaster } from "@/components/ui/toast";
-import { createNote, listNotes, removeNote } from "@/features/notes/functions";
+import { createNote, listNotes, removeNote, updateNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
+import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import {
   CREATED_NOTE,
   NOTE,
   NOTE_CREATED_AT_TEXT,
+  NOTE_UPDATE,
   OTHER_NOTE,
+  UPDATED_NOTE,
 } from "@/features/notes/schema.test-helpers";
+import { formatDateTime } from "@/lib/format-date-time";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { createTestRouter } from "@/test/app/create-test-router";
@@ -46,15 +51,15 @@ vi.mock(import("../-lib/note-search"), async (importOriginal) => ({
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
-import { noteRow, rowDeleteButton } from "./note-cells.test-helpers";
+import { noteRow, rowDeleteButton, rowEditButton } from "./note-cells.test-helpers";
+import { NOTE_CREATE_TRIGGER_LABEL, openNoteCreateDialog } from "./note-create-dialog.test-helpers";
+import { openNoteEditDialog } from "./note-edit-dialog.test-helpers";
 import {
   bodyTextbox,
-  NOTE_CREATE_TRIGGER_LABEL,
-  openNoteCreateDialog,
+  expectNoteDialogClosed,
   saveButton,
   titleTextbox,
-  expectNoteCreateDialogClosed,
-} from "./note-create-dialog.test-helpers";
+} from "./note-form.test-helpers";
 import { noteSearchbox } from "./note-search-field.test-helpers";
 import { NotesPage } from "./notes-page";
 
@@ -251,14 +256,105 @@ describe("NotesPage", () => {
     await expectText(screen, "右上の追加ボタンから登録できます");
   });
 
-  it("データありでタイトル・本文・作成日時が行に表示される", async () => {
-    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+  it("データありでタイトル・本文・作成日時・更新日時が行に表示される", async () => {
+    // 作成日時と更新日時が違う行で、それぞれの列に出ることを見る
+    vi.mocked(listNotes).mockResolvedValue([UPDATED_NOTE]);
 
     const screen = await renderPage();
 
+    await expectText(screen, UPDATED_NOTE.title);
+    await expectText(screen, UPDATED_NOTE.body);
+    const row = noteRow(screen, UPDATED_NOTE);
+    await expect
+      .element(cellInColumn(screen, row, NOTE_FIELD_LABELS.createdAt))
+      .toHaveTextContent(NOTE_CREATED_AT_TEXT);
+    await expect
+      .element(cellInColumn(screen, row, NOTE_FIELD_LABELS.updatedAt))
+      .toHaveTextContent(formatDateTime(UPDATED_NOTE.updatedAt));
+  });
+
+  it("行を編集して保存すると、再取得完了までその行だけが編集後の値で busy になる", async () => {
+    // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は行だけが伝える (ADR-0017)
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
+    const refetch = deferMock(listNotes);
+    const update = deferMock(updateNote);
+    const screen = await renderPage();
     await expectText(screen, NOTE.title);
-    await expectText(screen, NOTE.body);
-    await expectText(screen, NOTE_CREATED_AT_TEXT);
+
+    await openNoteEditDialog(screen, NOTE);
+    await titleTextbox(screen).fill(UPDATED_NOTE.title);
+    await saveButton(screen).click();
+    // 行の編集ボタンに乗った実マウスを、ダイアログが閉じる前に退避する (openDeleteConfirm と同じ理由)
+    await parkMouse();
+
+    // 応答前から、対象の行は編集後の title で busy になる (モーダル表示中は行が aria-hidden なので includeHidden)
+    await expect
+      .element(noteRow(screen, UPDATED_NOTE, { includeHidden: true }))
+      .toHaveAttribute("aria-busy", "true");
+    // 楽観表示の対象は variables の id で選ぶ。isPending だけで塗ると無関係の行まで busy になる
+    await expect
+      .element(noteRow(screen, OTHER_NOTE, { includeHidden: true }))
+      .toHaveAttribute("aria-busy", "false");
+    expect(vi.mocked(updateNote)).toHaveBeenCalledExactlyOnceWith({ data: NOTE_UPDATE });
+
+    update.resolve(undefined);
+
+    // 応答でダイアログが閉じ、再取得中も行は busy のまま。止めるのは更新中の行だけ
+    await expectNoteDialogClosed(screen);
+    await expect.element(noteRow(screen, UPDATED_NOTE)).toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, UPDATED_NOTE).getByText("更新中")).toBeInTheDocument();
+    await expect
+      .element(rowEditButton(screen, UPDATED_NOTE.title))
+      .toHaveAttribute("aria-disabled", "true");
+    await expect
+      .element(rowEditButton(screen, OTHER_NOTE.title))
+      .not.toHaveAttribute("aria-disabled", "true");
+    // 閉じたあと Base UI は開いたトリガーへフォーカスを返す。トリガーは無効になっているが、
+    // focusableWhenDisabled なのでフォーカスが body へ落ちない
+    await expect.element(rowEditButton(screen, UPDATED_NOTE.title)).toHaveFocus();
+    // 更新中の行 (半透明、無効のトリガー、「更新中」) にも a11y 違反が無い。削除中の検査と同じ理由で
+    // a11y tag を付けた専用テストへは降ろさない
+    await expectNoA11yViolations(document.body);
+
+    refetch.resolve([UPDATED_NOTE, OTHER_NOTE]);
+
+    // 再取得の反映で実データの行に戻る (busy でない行が 1 つだけ)
+    await expectSettledRow(screen, UPDATED_NOTE);
+    await expect
+      .element(cellInColumn(screen, noteRow(screen, UPDATED_NOTE), NOTE_FIELD_LABELS.updatedAt))
+      .toHaveTextContent(formatDateTime(UPDATED_NOTE.updatedAt));
+  });
+
+  it("更新に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解けて元の title に戻る", async () => {
+    const rawMessage = `更新対象のノートが見つかりません: id=${NOTE.id}`;
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    // 即 reject だと busy の窓が観測できない
+    const update = deferMock(updateNote);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openNoteEditDialog(screen, NOTE);
+    await titleTextbox(screen).fill(UPDATED_NOTE.title);
+
+    await saveButton(screen).click();
+
+    // 応答前は編集後の title で busy になる (モーダル表示中は行が aria-hidden なので includeHidden)
+    await expect
+      .element(noteRow(screen, UPDATED_NOTE, { includeHidden: true }))
+      .toHaveAttribute("aria-busy", "true");
+
+    update.reject(new Error(rawMessage));
+
+    // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
+    await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
+    await expectAbsent(screen.getByText(rawMessage));
+    // 失敗では楽観表示を残さない。行は再取得前の値に戻り、busy も解ける。ダイアログは入力を保って
+    // 開いたままなので、行はモーダルの下 (aria-hidden) にある
+    await expect
+      .element(noteRow(screen, NOTE, { includeHidden: true }))
+      .toHaveAttribute("aria-busy", "false");
+    await expectAbsent(noteRow(screen, UPDATED_NOTE, { includeHidden: true }));
+    // raw error は curateMutationErrorMessage が warn に残す (observability)
+    expect(warnSpy).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
   });
 
   it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
@@ -279,7 +375,7 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答でダイアログが閉じ、再取得中も行は busy のまま
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
     await expect.element(noteRow(screen, CREATED_NOTE)).toHaveAttribute("aria-busy", "true");
     // 行は静的テキストで状態を持つ (ADR-0026)。live region にはしないので、仮想カーソルで
     // 行を読んだときにだけ出る。通知は announcer が担う
@@ -299,10 +395,10 @@ describe("NotesPage", () => {
     await expectSettledRow(screen, CREATED_NOTE);
   });
 
-  it("応答後の再取得中に開き直した追加ダイアログはキャンセルできる", async () => {
-    // close を止める窓は「応答前」だけで、mutation の pending 全体ではない。応答で閉じた後は
-    // 再取得の完了まで pending が続くが、その間に開き直したダイアログは先行 save の応答を
-    // 待っていないので閉じられる (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」の (b))
+  it("応答後の再取得中に開き直した追加ダイアログは、再取得の完了までキャンセルできない", async () => {
+    // close を止める条件は mutation の pending。pending は応答後も再取得の完了まで続くので、その間に
+    // 開き直したダイアログも閉じられない。応答済みかを再取得中かどうかから推定すると、先行する保存の
+    // 再取得と重なったときに応答前でも閉じられ、後から開いたダイアログを先行の応答が閉じる
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
     const refetch = deferMock(listNotes);
     const create = deferMock(createNote);
@@ -313,15 +409,53 @@ describe("NotesPage", () => {
     create.resolve({ id: CREATED_NOTE.id });
 
     // 応答で閉じる。再取得 (2 回目の listNotes) は未決着なので mutation は pending のまま
-    await expectNoteCreateDialogClosed(screen);
+    await expectNoteDialogClosed(screen);
 
     await openNoteCreateDialog(screen);
-
-    await expect
-      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
-      .not.toBeDisabled();
+    const cancel = screen.getByRole("button", { name: "キャンセル", exact: true });
+    await expect.element(cancel).toBeDisabled();
 
     refetch.resolve([CREATED_NOTE, NOTE]);
+
+    await expect.element(cancel).not.toBeDisabled();
+  });
+
+  it("先行する保存の再取得中に保存したダイアログは、その応答が届くまで Escape で閉じない", async () => {
+    // 先行の再取得が走っている間に後続の保存を閉じられると、後から開いた別のダイアログを
+    // 後続の応答の onSuccess が閉じ、その入力が消える
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
+    const refetch = deferMock(listNotes);
+    const secondResponse = Promise.withResolvers<undefined>();
+    vi.mocked(updateNote)
+      .mockResolvedValueOnce(undefined)
+      .mockImplementationOnce(() => secondResponse.promise);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+
+    await openNoteEditDialog(screen, NOTE);
+    await titleTextbox(screen).fill(UPDATED_NOTE.title);
+    await saveButton(screen).click();
+    await parkMouse();
+    // 先行の応答で閉じる。再取得は未決着のまま
+    await expectNoteDialogClosed(screen);
+
+    await openNoteEditDialog(screen, OTHER_NOTE);
+    await titleTextbox(screen).fill("後続の見出し");
+    await saveButton(screen).click();
+    await parkMouse();
+    // close を止めていることを描画で確かめてから Escape を送る (pending が描画に届く前に送らない)
+    await expect
+      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
+      .toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+
+    // 閉じない。入力が残っている
+    await expect.element(titleTextbox(screen)).toHaveValue("後続の見出し");
+
+    secondResponse.resolve(undefined);
+
+    await expectNoteDialogClosed(screen);
+    refetch.resolve([UPDATED_NOTE, OTHER_NOTE]);
   });
 
   it("0 件の一覧に 1 件目を追加すると、応答前に空状態が消えて楽観行が出る", async () => {
@@ -501,14 +635,21 @@ describe("NotesPage", () => {
       pending.resolve(undefined);
     }
 
-    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)
+    // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)。
+    // このテストは 2 件の完了の順序を固定していないので、並べ替えてから配列ごと比べる
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しました`);
-      expect(readAnnouncements()).toContain(`『${OTHER_NOTE.title}』を削除しました`);
+      expect(readAnnouncements().toSorted()).toEqual(
+        [
+          "削除しています",
+          "削除しています",
+          `『${NOTE.title}』を削除しました`,
+          `『${OTHER_NOTE.title}』を削除しました`,
+        ].toSorted(),
+      );
     });
   });
 
-  it("削除の開始と完了を announcer が通知する", async () => {
+  it("削除の開始と完了を announcer が通知し、完了には対象名を載せる", async () => {
     // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0026)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
     const remove = deferMock(removeNote);
@@ -519,15 +660,14 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しています`);
+      expect(readAnnouncements()).toEqual(["削除しています"]);
     });
-    // 完了は removeNote の決着より前に出さない
-    expect(readAnnouncements()).not.toContain(`『${NOTE.title}』を削除しました`);
+    // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     remove.resolve(undefined);
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しました`);
+      expect(readAnnouncements()).toEqual(["削除しています", `『${NOTE.title}』を削除しました`]);
     });
   });
 
@@ -560,7 +700,7 @@ describe("NotesPage", () => {
       expect.anything(),
     );
     // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
-    expect(readAnnouncements()).toEqual([`『${NOTE.title}』を削除しています`]);
+    expect(readAnnouncements()).toEqual(["削除しています"]);
     remove.resolve(undefined);
   });
 });

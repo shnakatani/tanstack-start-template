@@ -1,11 +1,12 @@
 import { formatDateTime } from "@/lib/format-date-time";
 
 import type { CreatingRow } from "./creating-rows";
-import type { Note } from "./schema";
+import type { Note, NoteUpdate } from "./schema";
 
 /**
  * テスト用の確定済みメモ。createdAt は絶対時刻 (UTC) で固定し、期待値が実行環境のローカル TZ で
  * 動かないようにする (2026-08-17T00:30Z = JST 09:30、画面は APP_TIME_ZONE の壁時計で描く)。
+ * updatedAt は作成直後の形で createdAt と同じ。2 つの日時を見分けるテストは UPDATED_NOTE を使う。
  */
 export const NOTE: Note = {
   id: 1,
@@ -13,6 +14,7 @@ export const NOTE: Note = {
   body: "牛乳とパンを買う",
   dueDate: "2026-08-20",
   createdAt: new Date("2026-08-17T00:30:00.000Z"),
+  updatedAt: new Date("2026-08-17T00:30:00.000Z"),
 };
 
 /**
@@ -22,6 +24,24 @@ export const NOTE: Note = {
  */
 export const NOTE_CREATED_AT_TEXT = formatDateTime(NOTE.createdAt);
 
+/**
+ * NOTE を編集して保存した後の姿。id と createdAt は NOTE のまま、title と updatedAt だけが変わる。
+ * 更新中の行は入力項目 (title / body / dueDate) を描き、updatedAt は再取得後の実データとして使う。
+ */
+export const UPDATED_NOTE: Note = {
+  ...NOTE,
+  title: "買い出しリスト",
+  updatedAt: new Date("2026-08-19T03:00:00.000Z"),
+};
+
+/** NOTE を UPDATED_NOTE へ書き換える更新。pending な更新 mutation の variables の形 */
+export const NOTE_UPDATE: NoteUpdate = {
+  id: UPDATED_NOTE.id,
+  title: UPDATED_NOTE.title,
+  body: UPDATED_NOTE.body,
+  dueDate: UPDATED_NOTE.dueDate,
+};
+
 /** 楽観表示と無効化が対象行だけに効くことを見るための 2 件目。 */
 export const OTHER_NOTE: Note = {
   id: 2,
@@ -29,11 +49,12 @@ export const OTHER_NOTE: Note = {
   body: "気になった箇所を書き出す",
   dueDate: null,
   createdAt: new Date("2026-08-18T00:30:00.000Z"),
+  updatedAt: new Date("2026-08-18T00:30:00.000Z"),
 };
 
 /**
- * 追加のテストで保存する 1 件。楽観行は入力項目 (title / body / dueDate) だけを描き、id と createdAt は
- * 再取得後の実データとして使う (保存前のクライアントはこの 2 つを持たない)。
+ * 追加のテストで保存する 1 件。楽観行は入力項目 (title / body / dueDate) だけを描き、id・createdAt・
+ * updatedAt は再取得後の実データとして使う (保存前のクライアントはこの 3 つを持たない)。
  */
 export const CREATED_NOTE: Note = {
   id: 3,
@@ -41,9 +62,10 @@ export const CREATED_NOTE: Note = {
   body: "本文",
   dueDate: "2026-08-21",
   createdAt: new Date("2026-08-19T00:30:00.000Z"),
+  updatedAt: new Date("2026-08-19T00:30:00.000Z"),
 };
 
-/** CREATED_NOTE を保存中の楽観行として見た形。id と createdAt をまだ持たない */
+/** CREATED_NOTE を保存中の楽観行として見た形。id・createdAt・updatedAt をまだ持たない */
 export const CREATING_ROW: CreatingRow = {
   submittedAt: 1_700_000_000_000,
   variables: { title: CREATED_NOTE.title, body: CREATED_NOTE.body, dueDate: CREATED_NOTE.dueDate },

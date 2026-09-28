@@ -8,6 +8,7 @@ import {
   NoteBodyCell,
   NoteCreatedAtCell,
   NoteDueDateCell,
+  NoteUpdatedAtCell,
 } from "../-components/note-cells";
 import type { NoteRow } from "./note-rows";
 import { noteInputOf } from "./note-rows";
@@ -37,5 +38,6 @@ export const noteColumns = helper.columns([
     cell: NoteDueDateCell,
   }),
   helper.display({ id: "createdAt", header: NOTE_FIELD_LABELS.createdAt, cell: NoteCreatedAtCell }),
+  helper.display({ id: "updatedAt", header: NOTE_FIELD_LABELS.updatedAt, cell: NoteUpdatedAtCell }),
   helper.display({ id: "actions", header: "操作", cell: NoteActionsCell }),
 ]) satisfies { length: typeof NOTE_COLUMN_COUNT };

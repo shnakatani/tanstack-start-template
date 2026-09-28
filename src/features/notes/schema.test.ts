@@ -10,6 +10,7 @@ import {
   noteInputSchema,
   noteListFilterSchema,
   noteSchema,
+  noteUpdateSchema,
 } from "./schema";
 
 describe("noteInputSchema", () => {
@@ -145,6 +146,7 @@ describe("noteSchema", () => {
     dueDate: null,
     id: 1,
     createdAt: new Date("2026-08-17"),
+    updatedAt: new Date("2026-08-17"),
   };
 
   it("accepts valid note", () => {
@@ -235,6 +237,27 @@ describe("noteIdSchema", () => {
   it("rejects a missing id", () => {
     const result = v.safeParse(noteIdSchema, {});
     expect(result.success).toBe(false);
+  });
+});
+
+describe("noteUpdateSchema", () => {
+  const valid = { id: 1, title: "見出し", body: "", dueDate: null };
+
+  it("accepts valid input", () => {
+    const result = v.safeParse(noteUpdateSchema, valid);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a missing id", () => {
+    const { id: _id, ...withoutId } = valid;
+    const result = v.safeParse(noteUpdateSchema, withoutId);
+    expect(result.success).toBe(false);
+  });
+
+  it("trims surrounding whitespace from title", () => {
+    const result = v.safeParse(noteUpdateSchema, { ...valid, title: "  見出し  " });
+    expect.assert(result.success, "safeParse が失敗した");
+    expect(result.output.title).toBe("見出し");
   });
 });
 

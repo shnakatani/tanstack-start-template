@@ -43,7 +43,7 @@ mutation は完了点によらず `onSuccess` で再取得の Promise を返し�
 
 TanStack Query「Optimistic Updates」の Via the UI の例は `onSettled` で invalidate するが、本 ADR は `onSuccess` を選ぶ (`onMutate` でキャッシュを書き換える方式で並行実行を許すときだけ、後述の `onSettled` + `isMutating` guard を採る)。失敗時は mutation が error へ移って楽観行が消えるため、`onSettled` だと invalidate のタイミングが成功時と揃わない。完了点 (b) はダイアログを開いたまま失敗を迎えるので、`onSettled` に invalidate を置くと入力中のダイアログと消えかけの楽観行 (幽霊行) が同時に見える瞬間が生まれる。`onSuccess` に置けば失敗時は invalidate 自体が走らず、この重なりが起きない。残るリスクは「サーバーは書けたが応答が届かなかった」場合に、`onSuccess` が発火せず一覧が古いまま残ることである。
 
-完了点ごとの Transition の終え方、並行実行を許すときの `mutationKey` と再取得の guard、一覧の行の削除とダイアログからの追加への当て方は `docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」「操作の型ごとの当て方」にある。
+完了点ごとの Transition の終え方、並行実行を許すときの `mutationKey` と再取得の guard、一覧の行の削除・ダイアログからの追加・ダイアログからの更新への当て方は `docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」「操作の型ごとの当て方」にある。
 
 ### 検討した選択肢
 
