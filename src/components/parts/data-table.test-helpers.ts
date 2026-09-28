@@ -10,14 +10,18 @@ import type { Screen } from "@/test/assert/screen-assertions";
  * - 見出しは同期に読む。見出しは data に依らず `render()` の時点で描かれている (`render()` が act で
  *   flush する。docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」)
  * - 見出しは `columnheader` で取る。`scope="col"` が無いと解決されない (ADR-0018)
- * - 画面に `DataTable` が 1 つで、見出しの文言が重ならない前提。見つからない・重なるときは throw する。
- *   空の locator を返すと、不在の assert が素通りする
+ * - 画面に `DataTable` が 1 つで、見出しが 1 段で、見出しの文言が重ならない前提。見出しが 2 段 (列の
+ *   グループ) だとグループの見出しが並びに混ざって位置がずれるので、2 段以上なら throw する。
+ *   見つからない・重なるときも throw する。空の locator を返すと、不在の assert が素通りする
+ * - モーダルが開いている間は見出しが aria-hidden の配下に入り、見つからずに throw する。閉じてから呼ぶ
  */
 export function cellInColumn(screen: Screen, row: Locator, header: string): Locator {
-  const headers = screen
-    .getByRole("columnheader")
-    .elements()
-    .map((element) => element.textContent);
+  const headerElements = screen.getByRole("columnheader").elements();
+  const headerRows = new Set(headerElements.map((element) => element.parentElement));
+  if (headerRows.size > 1) {
+    throw new Error(`列見出しが ${headerRows.size} 段あります。1 段の表でだけ使えます`);
+  }
+  const headers = headerElements.map((element) => element.textContent);
   const indexes = headers.flatMap((text, index) => (text === header ? [index] : []));
   const [index, ...rest] = indexes;
   if (index === undefined || rest.length > 0) {
