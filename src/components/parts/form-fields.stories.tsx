@@ -17,7 +17,7 @@ import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "./form-fields";
  * 並べる。
  *
  * ラベルの色 (`fieldLabelClassName` の合成順) は `getComputedStyle` で固定する回帰として
- * `form-fields.test.tsx` に残る。`fieldValue` の型契約も `expectTypeOf` のまま残る
+ * `form-fields.test.tsx` に残る。`fieldValue` の型契約は `form-fields.test-d.ts` が持つ
  * (docs/guides/storybook.md「story とブラウザテストの分担」)。
  */
 

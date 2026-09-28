@@ -1,46 +1,21 @@
-import type { ComponentProps } from "react";
-import { afterEach, describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { cdp } from "vite-plus/test/browser/context";
 import { render } from "vitest-browser-react";
 
-import {
-  FormCheckboxField,
-  FormDateField,
-  FormNumberField,
-  FormSelectField,
-  FormTextField,
-} from "@/components/parts/form-fields";
 import { Button } from "@/components/ui/button";
 import { useAppForm } from "@/hooks/use-app-form";
 import { expectRemoved } from "@/test/assert/absent";
-
-// この describe は型のみの検証で、vp test run では評価されず常に pass する。
-// 実際に落とすのは vp check の type-aware lint (2026-08-09 実測)。
-describe("fieldValue の型契約", () => {
-  it("5 部品の期待するフィールド値型を固定する", () => {
-    expectTypeOf<ComponentProps<typeof FormTextField>["fieldValue"]>().toEqualTypeOf<string>();
-    // 数値フィールドは「空」を表せる必要があるため null を含む (Number("") の 0 に潰さない)
-    expectTypeOf<ComponentProps<typeof FormNumberField>["fieldValue"]>().toEqualTypeOf<
-      number | null
-    >();
-    expectTypeOf<ComponentProps<typeof FormSelectField>["fieldValue"]>().toEqualTypeOf<string>();
-    expectTypeOf<ComponentProps<typeof FormCheckboxField>["fieldValue"]>().toEqualTypeOf<boolean>();
-    // 期日なしを null で持つ。空文字や undefined に潰さない (ADR-0031 の分類 2 は YYYY-MM-DD か null)
-    expectTypeOf<ComponentProps<typeof FormDateField>["fieldValue"]>().toEqualTypeOf<
-      string | null
-    >();
-  });
-});
 
 /**
  * 5 部品の配線 (正典ペア、aria-describedby ⇄ FieldError、sanitize、検証エラーの正規化、
  * Select の候補入れ替え、blur 検証、期日の選択・解除・クリア) は `form-fields.stories.tsx` の play が持つ (docs/guides/storybook.md「カタログと play の範囲」)。
  * 検証エラーでラベルが destructive 色になるのは registry の Field が `data-[invalid=true]` で
  * 当てる継承で、`Invalid` story が正典ペアの付与を play で固定する。色は測らない。
- * ここに残すのは、型テストと、play へ移せないもの (レイアウトの実測、CDP の実イベントで
+ * ここに残すのは、play へ移せないもの (レイアウトの実測、CDP の実イベントで
  * 確かめるキーボード操作、CDP で切り替える TZ) だけ
  * (docs/guides/storybook.md「ブラウザテストから play へ移す」「story とブラウザテストの分担」)。
+ * `fieldValue` の型契約は `form-fields.test-d.ts` が持つ。
  */
 
 const CHECKBOX_LABEL = "編集者として割り当て可能";
