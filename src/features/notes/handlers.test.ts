@@ -26,15 +26,11 @@ describe("notes handlers", () => {
    * created_at の明示で、insert の時刻は DB の時計が入れるので、並びのテストはこれで時刻を決める。
    */
   function insertRawRow(row: { id?: number; title: string; body: string; createdAt: number }) {
-    if (row.id === undefined) {
-      db.$client
-        .prepare("insert into notes (title, body, created_at) values (?, ?, ?)")
-        .run(row.title, row.body, row.createdAt);
-      return;
-    }
+    // id を省いた行は NULL を入れる。INTEGER PRIMARY KEY に NULL を入れると SQLite が rowid を
+    // 振る (SQLite「CREATE TABLE」の「ROWIDs and the INTEGER PRIMARY KEY」)
     db.$client
       .prepare("insert into notes (id, title, body, created_at) values (?, ?, ?, ?)")
-      .run(row.id, row.title, row.body, row.createdAt);
+      .run(row.id ?? null, row.title, row.body, row.createdAt);
   }
 
   beforeEach(() => {
