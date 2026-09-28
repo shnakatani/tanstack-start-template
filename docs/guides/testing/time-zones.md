@@ -6,7 +6,8 @@
 
 ### 基準のタイムゾーン
 
-- テスト全体の TZ は `vitest.global-setup.ts` が `America/New_York` に決める。`vitest.config.ts` の root の `test.globalSetup` に登録してあり、メインプロセスの TZ を決める。確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
+- テスト全体の TZ は `vitest.global-setup.ts` が `America/New_York` に決める。`vitest.config.ts` の root の `test.globalSetup` に登録してあり、メインプロセスの TZ を決める
+- 効くことを確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
 - 基準に依存するテストを書くときは、基準が `America/New_York` であることを前提にしてよい。ホストの TZ や `TZ` 環境変数には左右されない (`vitest.global-setup.ts` が上書きする)
 - 環境変数 `TEST_TIME_ZONE` があれば、`vitest.global-setup.ts` は基準の代わりにその値を使う。TZ を変えて走らせるときだけに使う (次節)
 - 基準の値を変えるときは、`APP_TIME_ZONE` とも UTC とも違う値にする (「基準を `America/New_York` にする理由」)
@@ -22,10 +23,11 @@
 
 ### ブラウザテストで切り替える
 
-- `cdp().send("Emulation.setTimezoneOverride", { timezoneId: "<IANA 名>" })` で切り替える (`cdp` は `vite-plus/test/browser/context`)。戻すときは `timezoneId: ""` を送る。CDP の定義は "If empty, disables the override and restores default host system timezone." で、基準の `America/New_York` に戻る
+- `cdp().send("Emulation.setTimezoneOverride", { timezoneId: "<IANA 名>" })` で切り替える (`cdp` は `vite-plus/test/browser/context`)
+- 戻すときは `timezoneId: ""` を送り、基準の `America/New_York` に戻る。[CDP「Emulation.setTimezoneOverride」][] の定義は "If empty, disables the override and restores default host system timezone."
 - 戻す処理は `afterEach` に置く。戻さないと、同じファイルの次のテストに切り替えた TZ が残る
 - `vi.stubEnv("TZ", …)` はブラウザの TZ を変えない
-- `cdp()` は playwright provider の chromium でしか使えない (Vitest docs「Context API」の `cdp`)
+- `cdp()` は playwright provider の chromium でしか使えない ([Vitest docs「Context API」][] の `cdp`)
 
 ## explanation
 
@@ -53,15 +55,15 @@
 
 ### 基準を root の globalSetup に置く理由
 
-Node.js は、メインスレッドで設定した `TZ` だけを反映する。worker thread からの変更は `process.env` には見えるが、`Date` には効かない (Vitest docs「Common Errors」の Time Zone Does Not Change in Worker Threads)。基準は worker が起動する前に、メインプロセスで決める必要がある。
+Node.js は、メインスレッドで設定した `TZ` だけを反映する。worker thread からの変更は `process.env` には見えるが、`Date` には効かない ([Vitest docs「Common Errors」][] の Time Zone Does Not Change in Worker Threads)。基準は worker が起動する前に、メインプロセスで決める必要がある。
 
-| 置き場所                                            | 効く範囲                                                                   | 採否                                                                                                                                    |
-| --------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| root の `test.globalSetup`                          | worker の起動前にメインプロセスで走る。Vitest docs は "work in every pool" | 採用。実行前の準備のための hook で、用途が一致する                                                                                      |
-| `vitest.config.ts` の先頭で `process.env.TZ` に代入 | 効く範囲は root の globalSetup と同じ                                      | 却下。用途の合う hook があるので、config は設定の宣言に留め、読み込みに副作用を持たせない                                               |
-| package.json の script (`TZ=… vitest`)              | script を通した起動だけ                                                    | 却下。`vp test run`、`.mise.toml` の verify タスク、CI は script を通らない。エディタの拡張も通らない (vitest の issue 1575 のコメント) |
-| project の `test.globalSetup`                       | その project のテストを含む実行でだけ走る                                  | 却下。走ると他の project の TZ も変わるので、ブラウザテストの TZ が選んだファイルで変わる                                               |
-| project の `test.env`                               | forks と vmForks でだけ効く                                                | 却下。pool への依存が残る。Vitest docs「env」は "`TZ` set here does not change the time zone in `threads` and `vmThreads` pools"        |
+| 置き場所                                            | 効く範囲                                                                                        | 採否                                                                                                                                        |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| root の `test.globalSetup`                          | worker の起動前にメインプロセスで走る。[Vitest docs「Common Errors」][] は "work in every pool" | 採用。実行前の準備のための hook で、用途が一致する                                                                                          |
+| `vitest.config.ts` の先頭で `process.env.TZ` に代入 | 効く範囲は root の globalSetup と同じ                                                           | 却下。用途の合う hook があるので、config は設定の宣言に留め、読み込みに副作用を持たせない                                                   |
+| package.json の script (`TZ=… vitest`)              | script を通した起動だけ                                                                         | 却下。`vp test run`、`.mise.toml` の verify タスク、CI は script を通らない。エディタの拡張も通らない ([vitest の issue 1575][] のコメント) |
+| project の `test.globalSetup`                       | その project のテストを含む実行でだけ走る                                                       | 却下。走ると他の project の TZ も変わるので、ブラウザテストの TZ が選んだファイルで変わる                                                   |
+| project の `test.env`                               | forks と vmForks でだけ効く                                                                     | 却下。pool への依存が残る。[Vitest docs「env」][] は "`TZ` set here does not change the time zone in `threads` and `vmThreads` pools"       |
 
 2026-09-27 に vitest 4.1.11 で、各 project に `getHours()` を読むテストを置き、選ぶファイルを変えて測った。
 
@@ -74,15 +76,15 @@ Node.js は、メインスレッドで設定した `TZ` だけを反映する。
 
 ### TZ ごとにプロセスを分ける理由
 
-Node.js は、メインスレッドで設定した `TZ` だけを `Date` に反映する。テストの中で `TZ` を変える手段は pool に依存し、threads と vmThreads では効かないまま通る。Vitest のメンテナは、テストの中で動的に変える方法は無く `TZ=` を付けて起動するよう答えている (vitest の issue 1575)。
+Node.js は、メインスレッドで設定した `TZ` だけを `Date` に反映する。テストの中で `TZ` を変える手段は pool に依存し、threads と vmThreads では効かないまま通る。Vitest のメンテナは、テストの中で動的に変える方法は無く `TZ=` を付けて起動するよう答えている ([vitest の issue 1575][])。
 
-| 手段                                                              | pool への依存         | 採否                                                                                           |
-| ----------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------- |
-| テストの中で `vi.stubEnv("TZ", …)`                                | forks と vmForks だけ | 却下。project に `pool: "forks"` を固定しても、CLI の `--pool threads` が上書きし、無言で通る  |
-| TZ ごとの project に `test.env` の `TZ`                           | forks と vmForks だけ | 却下。同じ依存が残る。Vitest docs「env」は `threads` と `vmThreads` では TZ が変わらないと書く |
-| TZ ごとにプロセスを起動し、globalSetup が `TEST_TIME_ZONE` を読む | なし                  | 採用。Vitest docs「Common Errors」が挙げる、worker の起動前にメインプロセスで決める方法の 1 つ |
+| 手段                                                              | pool への依存         | 採否                                                                                                |
+| ----------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------- |
+| テストの中で `vi.stubEnv("TZ", …)`                                | forks と vmForks だけ | 却下。project に `pool: "forks"` を固定しても、CLI の `--pool threads` が上書きし、無言で通る       |
+| TZ ごとの project に `test.env` の `TZ`                           | forks と vmForks だけ | 却下。同じ依存が残る。[Vitest docs「env」][] は `threads` と `vmThreads` では TZ が変わらないと書く |
+| TZ ごとにプロセスを起動し、globalSetup が `TEST_TIME_ZONE` を読む | なし                  | 採用。[Vitest docs「Common Errors」][] が挙げる、worker の起動前にメインプロセスで決める方法の 1 つ |
 
-TZ ごとにプロセスを起動する形は、日付ライブラリにも先行例がある。date-fns は `pkgs/core/scripts/test/tz.sh` で `env TZ=<IANA 名> node <テスト>` を並べ、react-day-picker は `test:tz` の script で `TZ=Australia/Adelaide jest` を起動する。
+TZ ごとにプロセスを起動する形は、日付ライブラリにも先行例がある。date-fns は [date-fns の `tz.sh`][] で `env TZ=<IANA 名> node <テスト>` を並べ、react-day-picker は [react-day-picker の `package.json`][] の `test:tz` の script で `TZ=Australia/Adelaide jest` を起動する。
 
 2026-09-28 に vitest 5.0.1 で、`parseCalendarDate` を `new Date(value)` (UTC の 0 時になる) に置き換え、`--pool threads` を付けて `*.tz.test.ts` を走らせた。
 
@@ -106,6 +108,19 @@ TZ ごとにプロセスを起動する形は、日付ライブラリにも先�
 | `vi.stubEnv("TZ", …)`               | ブラウザ (chromium) | 効かない | —                                                                                                     |
 | CDP `Emulation.setTimezoneOverride` | ブラウザ (chromium) | 効く     | `timezoneId: ""` で基準に戻る。戻さないと同じファイルの次のテストに残る。別のファイルには残らなかった |
 
-CDP の上書きがファイルをまたがないのは、Vitest がテストファイルごとにブラウザの context を作るためと見られる。Vitest docs「playwright」の `contextOptions` の節は "the context is created for every _test file_, not every _test_" と書く。
+CDP の上書きがファイルをまたがないのは、Vitest がテストファイルごとにブラウザの context を作るためと見られる。[Vitest docs「Configuring Playwright」][] の `contextOptions` の節は "the context is created for every _test file_, not every _test_" と書く。
 
-ブラウザの TZ を project 全体で変える手段には、playwright provider の `contextOptions.timezoneId` もある (同じ節)。project ごとに 1 つの TZ に決まるので、テストごとの切り替えには使わない。
+ブラウザの TZ を project 全体で変える手段には、playwright provider の `contextOptions.timezoneId` もある ([Vitest docs「Configuring Playwright」][] の同じ節)。project ごとに 1 つの TZ に決まるので、テストごとの切り替えには使わない。
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
+
+[Vitest docs「Common Errors」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/common-errors.md
+[Vitest docs「env」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/env.md
+[Vitest docs「Context API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/context.md
+[Vitest docs「Configuring Playwright」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/playwright.md
+[vitest の issue 1575]: https://github.com/vitest-dev/vitest/issues/1575
+[CDP「Emulation.setTimezoneOverride」]: https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setTimezoneOverride
+[date-fns の `tz.sh`]: https://github.com/date-fns/date-fns/blob/main/pkgs/core/scripts/test/tz.sh
+[react-day-picker の `package.json`]: https://github.com/gpbl/react-day-picker/blob/main/package.json
