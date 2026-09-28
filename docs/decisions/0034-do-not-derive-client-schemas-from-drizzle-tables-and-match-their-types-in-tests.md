@@ -36,7 +36,7 @@ drizzle は、テーブル定義から valibot のスキーマを作る関数を
 
 - 型テストはテーブルごとに `expectTypeOf<typeof <テーブル>.$inferSelect>().toEqualTypeOf<<読み出しのスキーマの型>>()` の 1 行にする。TypeScript の型の上で、項目の有無、null を許すか、型のどれがずれても落ちる
 - 書き込みの型 (`$inferInsert`) は突き合わせない。insert の呼び出し箇所の型検査が止める (Context)
-- 型テストはテーブル定義のファイルの隣に置く。テーブル定義を import できるのはサーバー側とテストだけで (ADR-0010)、落とすのは `vp check` の type-aware lint である
+- 型テストはテーブル定義のファイルの隣に `schema.test-d.ts` として置く。テーブル定義を import できるのはサーバー側とテストだけで (ADR-0010)、落とすのは `vp check` の type-aware lint である
 - 項目ごとの制約 (長さ、trim、メッセージ、呼称) は valibot のスキーマだけが持つ。DB の CHECK 制約と、同じ TypeScript の型になる保存の形の違い (`integer` の `timestamp` と `timestamp_ms` はどちらも `Date`) は、推論される型に現れないので、この突き合わせの対象外である
 
 ADR-0013 は、手書きの型とスキーマを型テストで突き合わせる案を却下し、型をスキーマから導出して出処を 1 つにした。テーブル定義とスキーマについては、出処を 1 つにする手段 (テーブル定義からスキーマを作る) がバンドルの理由で取れないので、突き合わせる形を採る。

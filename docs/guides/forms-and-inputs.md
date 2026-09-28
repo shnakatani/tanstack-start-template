@@ -21,7 +21,7 @@
 ### スキーマの型テストを書く
 
 - 導出型と導出元が一致することの型テストは書かない。常に真になり、何も検出しない
-- 別々に書いた 2 つの定義を突き合わせる型テストは書く。テーブル定義と valibot のスキーマは出処が別なので、テーブルごとに、`expectTypeOf<typeof <テーブル>.$inferSelect>().toEqualTypeOf<<読み出しのスキーマの型>>()` で読み出しの型を突き合わせる。書き込みの型は、insert に入力スキーマの型の値を渡す箇所の型検査が止めるので、型テストに書かない。判断は ADR-0034
+- 別々に書いた 2 つの定義を突き合わせる型テストは書く。テーブル定義と valibot のスキーマは出処が別なので、テーブルごとに、`expectTypeOf<typeof <テーブル>.$inferSelect>().toEqualTypeOf<<読み出しのスキーマの型>>()` で読み出しの型を突き合わせる。書き込みの型は、insert に入力スキーマの型の値を渡す箇所の型検査が止めるので、型テストに書かない。型テストはテーブル定義の隣の `schema.test-d.ts` に置く。判断は ADR-0034
 - `InferOutput` を選んだ判断を守るテストは、導出型の項目を直接参照して書く。スキーマ由来の型どうしを比べる形は、導出元の書き換えを検出せず、default を外す正当な変更で偽のアラームを出す
 
 ```ts
@@ -44,7 +44,7 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 - 部品は `FieldValueTypeCheckProps<T>` を extends する。守らないと、値型の違うフィールドへ差しても型検査が通り、実行時に値の型が崩れる
 - 消費側は部品を使うたびに `fieldValue={field.state.value}` を書く。必須 prop なので、書き忘れは型検査が止める
 - prop の名前は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる
-- `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する。prop が外れても誰も気付かないためで、この型テストを落とすのは `vp check` の type-aware lint である。`vp test run` は型検査をしない
+- `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する型テストを、部品の隣の `*.test-d.ts` に書く。prop が外れても誰も気付かないためで、この型テストを落とすのは `vp check` の type-aware lint である。`vp test run` はこのファイルを集めない
 
 ### Select の値を解決する
 
