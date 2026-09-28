@@ -3,9 +3,11 @@ import * as v from "valibot";
 
 import { notesQueryOptions } from "@/features/notes/queries";
 import { noteListFilterSchema } from "@/features/notes/schema";
+import { formatPageTitle } from "@/lib/page-title";
 
 import { NotesPage } from "./-components/notes-page";
 import { NotesPagePending } from "./-components/notes-page-pending";
+import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 
 export const Route = createFileRoute("/notes/")({
   // URL の search を schema で検証する。valibot 1.x は Standard Schema なので adapter 不要
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/notes/")({
   // queryOptions 側に書くと observer の再取得まで止まる
   loader: ({ context, deps }) =>
     context.queryClient.query({ ...notesQueryOptions(deps), staleTime: "static" }),
+  head: () => ({ meta: [{ title: formatPageTitle(NOTES_PAGE_TITLE) }] }),
   pendingComponent: NotesPagePending,
   component: NotesRoute,
 });
