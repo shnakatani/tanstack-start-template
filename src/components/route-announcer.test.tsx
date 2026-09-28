@@ -141,7 +141,8 @@ it("検索条件だけの変化では focus を動かさず、読み上げない
   await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
   const searchButton = screen.getByRole("button", { name: "検索" });
   await userEvent.click(searchButton);
-  await expect.poll(() => router.state.location.searchStr).toBe("?q=x");
+  // location は load の開始時に変わる。onRendered は resolvedLocation を設定する batch の中で出るので、そちらを待つ
+  await expect.poll(() => router.state.resolvedLocation?.searchStr).toBe("?q=x");
   await expect.element(searchButton).toHaveFocus();
   expect(readAnnouncements()).toEqual([`B — ${APP_NAME}`]);
 });
@@ -186,6 +187,7 @@ it("子 route が受け持つ notFound へ移っても、not found の title を
 
 it("RouteAnnouncer が外れた後の遷移では、focus を動かさず読み上げない", async () => {
   // InnerWrap は router と同じ寿命なので、RouteAnnouncer だけを外せる InnerWrap を組む
+  // SSR を通らないテスト専用なので、InnerWrap の中に DOM (button) を描いてよい
   function DetachableInnerWrap({ children }: { children: ReactNode }) {
     const [attached, setAttached] = useState(true);
     return (

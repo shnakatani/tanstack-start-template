@@ -11,7 +11,7 @@ it("route が pending 表示を持たないときの受け皿として PendingCo
   expect(getRouter().options.defaultPendingComponent).toBe(PendingContent);
 });
 
-// 遷移を見出しへの focus と title の読み上げで伝える。InnerWrap は root route の error boundary の外にある
+// root route の error boundary の外で router を購読する部品 (遷移の読み上げなど) と Provider を置く 1 か所を渡す
 it("InnerWrap に RouterInnerWrap を渡す", () => {
   expect(getRouter().options.InnerWrap).toBe(RouterInnerWrap);
 });
