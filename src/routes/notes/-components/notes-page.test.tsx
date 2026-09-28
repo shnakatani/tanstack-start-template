@@ -112,14 +112,14 @@ const openDeleteConfirm = vi.defineHelper(async (screen: Screen, note: Note) => 
 });
 
 /** 追加ダイアログを開いて 1 件分を入力し、保存を確定する (応答の決着は呼び出し側が握る)。 */
-async function submitCreate(screen: Screen, note: Note) {
+const submitCreate = vi.defineHelper(async (screen: Screen, note: Note) => {
   await openNoteCreateDialog(screen);
   await titleTextbox(screen).fill(note.title);
   await bodyTextbox(screen).fill(note.body);
   await saveButton(screen).click();
   // 追加ボタンに乗った実マウスを、ダイアログが閉じる前に退避する (openDeleteConfirm と同じ理由)
   await parkMouse();
-}
+});
 
 /**
  * 実イベントの規律のうち、画面側の 2 つをこのファイルが持つ (docs/guides/storybook.md「story とブラウザテストの分担」)。play は合成イベントで
