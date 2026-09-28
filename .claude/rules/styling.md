@@ -107,8 +107,8 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - ページのローディングは、欠かせない query を route loader での取得の待ち合わせ + `useSuspenseQuery` + route の `pendingComponent` で、副次的な query をページの中の `<Suspense>` で出す (ADR-0033)。タイミングは `src/router.tsx` の既定に任せる
 - route に `pendingComponent` が無い画面は、router の `defaultPendingComponent` (`PendingContent`) が受ける。消さない。無いと suspend が root まで巻き上がって何も描かれない (ADR-0029)
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が点滅する
-- skeleton はレイアウトを模倣する (`table-skeleton.tsx`)。図形は `aria-hidden` で隠し、「読み込み中」の文言を区画に 1 つだけ置く。図形ごとに置くと同じ文言が数だけ読まれる (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
-- 表の skeleton は本物の列見出しを持つ table として見せる。`<table>` に `role="status"` などの role を載せない。`th` と `td` が role を失う (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
+- skeleton はレイアウトを模倣し (`table-skeleton.tsx`)、図形を `aria-hidden` にして「読み込み中」の文言を区画に 1 つだけ置く。図形ごとに置くと同じ文言が数だけ読まれる (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
+- 表の skeleton は本物の列見出しを持つ table として見せ、`<table>` に role を載せない。載せると `th` と `td` が role を失う (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - route の pending 表示 (skeleton と `PendingContent`) に `aria-busy` を付けない。JAWS が要素ごと読み飛ばす (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - 列見出しなど実テーブルと合わせる値は、両方が参照する定数に置く。別々に持つとロード完了時にレイアウトがずれる
 - ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0026)
@@ -141,7 +141,7 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 | テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                  |
 | ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026) |
 
-- 状態表示の例外は route の pending 表示 (`TableSkeleton`、`PendingContent`) (ADR-0026、ADR-0029)
+- 状態表示の例外は route の pending 表示の `PendingContent` (ADR-0026、ADR-0029)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0026)
 - pending の検証は `aria-busy` と live region の文言で行う。`getByRole("status")` で項目を掴まない (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 - 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0027)
