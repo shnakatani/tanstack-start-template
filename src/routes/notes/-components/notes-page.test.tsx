@@ -232,22 +232,22 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE_CREATE_TRIGGER_LABEL);
   });
 
-  it("空状態の描画に a11y 違反が無い", { tags: ["a11y"] }, async () => {
+  it("空状態の描画に a11y 違反が無い", { tags: ["a11y"] }, async ({ annotate }) => {
     // 実ブラウザで走るため color-contrast (WCAG 1.4.3) を含む。静的 lint (jsx-a11y) と
     // 役割・名前のアサーションでは届かない、算出後の色と ARIA の実値を見る
     const screen = await renderPage();
     await expectText(screen, "メモが登録されていません");
 
-    await expectNoA11yViolations(document.body);
+    await expectNoA11yViolations(document.body, annotate);
   });
 
-  it("一覧の描画に a11y 違反が無い", { tags: ["a11y"] }, async () => {
+  it("一覧の描画に a11y 違反が無い", { tags: ["a11y"] }, async ({ annotate }) => {
     // 空状態だけだと Table と行の操作ボタンが検査されない。件数のある状態も通す
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
 
-    await expectNoA11yViolations(document.body);
+    await expectNoA11yViolations(document.body, annotate);
   });
 
   it("0 件のときは空状態の案内が表示される", async () => {
@@ -274,7 +274,9 @@ describe("NotesPage", () => {
       .toHaveTextContent(formatDateTime(UPDATED_NOTE.updatedAt));
   });
 
-  it("行を編集して保存すると、再取得完了までその行だけが編集後の値で busy になる", async () => {
+  it("行を編集して保存すると、再取得完了までその行だけが編集後の値で busy になる", async ({
+    annotate,
+  }) => {
     // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は行だけが伝える (ADR-0017)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
     const refetch = deferMock(listNotes);
@@ -315,7 +317,7 @@ describe("NotesPage", () => {
     await expect.element(rowEditButton(screen, UPDATED_NOTE.title)).toHaveFocus();
     // 更新中の行 (半透明、無効のトリガー、「更新中」) にも a11y 違反が無い。削除中の検査と同じ理由で
     // a11y tag を付けた専用テストへは降ろさない
-    await expectNoA11yViolations(document.body);
+    await expectNoA11yViolations(document.body, annotate);
 
     refetch.resolve([UPDATED_NOTE, OTHER_NOTE]);
 
@@ -358,7 +360,9 @@ describe("NotesPage", () => {
     expect(warnSpy).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
   });
 
-  it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async () => {
+  it("追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる", async ({
+    annotate,
+  }) => {
     // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
     // (`docs/guides/react/updates.md`「操作の型ごとの当て方」)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
@@ -388,7 +392,7 @@ describe("NotesPage", () => {
     // axe が見るのは一覧だけ (開いている間は行が aria-hidden 配下に入る)。
     // この assert の問いは a11y だが、a11y tag を付けた専用テストへは降ろさない。
     // この状態は操作の途中にしか無く、降ろすと操作の再現ぶんが重複する
-    await expectNoA11yViolations(document.body);
+    await expectNoA11yViolations(document.body, annotate);
 
     refetch.resolve([CREATED_NOTE, NOTE]);
 
@@ -564,7 +568,7 @@ describe("NotesPage", () => {
     await expectText(screen, "メモが登録されていません");
   });
 
-  it("削除中は対象の行が busy になる", async () => {
+  it("削除中は対象の行が busy になる", async ({ annotate }) => {
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]).mockResolvedValue([OTHER_NOTE]);
     const remove = deferMock(removeNote);
     const screen = await renderPage();
@@ -594,7 +598,7 @@ describe("NotesPage", () => {
     // 楽観行の検査と同じ理由で、a11y tag を付けた専用テストへは降ろさない。
     // popup を閉じた後の axe は unmount を待ってから (docs/guides/testing/user-interactions.md「animation を戻すテストを書く」)
     await expectDeleteConfirmClosed(screen);
-    await expectNoA11yViolations(document.body);
+    await expectNoA11yViolations(document.body, annotate);
 
     remove.resolve(undefined);
 
