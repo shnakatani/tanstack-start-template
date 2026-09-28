@@ -50,8 +50,10 @@ describe("RouteErrorContent", () => {
 
     // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, ROUTE_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText("削除対象のノートが見つかりません: id=42"));
-    await expectAbsent(screen.getByRole("button", { name: "スタックトレース" }));
+    await expectAbsent(
+      screen.getByText("削除対象のノートが見つかりません: id=42", { exact: false }),
+    );
+    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
   });
 
   it("再試行で reset と router.invalidate の両方が呼ばれる", async () => {

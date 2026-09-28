@@ -346,7 +346,7 @@ describe("NotesPage", () => {
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText(rawMessage));
+    await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗では楽観表示を残さない。行は再取得前の値に戻り、busy も解ける。ダイアログは入力を保って
     // 開いたままなので、行はモーダルの下 (aria-hidden) にある
     await expect
@@ -529,7 +529,7 @@ describe("NotesPage", () => {
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText(rawMessage));
+    await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "false");
     await expect

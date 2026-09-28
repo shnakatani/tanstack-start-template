@@ -146,7 +146,7 @@ describe("NoteEditDialog", () => {
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText(rawMessage));
+    await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     await expect.element(titleTextbox(screen)).toHaveValue("変えた見出し");
   });
 

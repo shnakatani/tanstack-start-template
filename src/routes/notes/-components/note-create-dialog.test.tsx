@@ -118,7 +118,9 @@ describe("NoteCreateDialog", () => {
 
     // 肯定 anchor。入力が空になった状態を固定してからエラーの不在を見る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expect.element(titleTextbox(screen)).toHaveValue("");
-    await expectAbsent(screen.getByText(`${NOTE_FIELD_LABELS.title}を入力してください`));
+    await expectAbsent(
+      screen.getByText(`${NOTE_FIELD_LABELS.title}を入力してください`, { exact: false }),
+    );
   });
 
   it("入力して保存すると createNote が前後空白を除いた値で呼ばれる", async () => {
@@ -224,7 +226,7 @@ describe("NoteCreateDialog", () => {
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText(rawMessage));
+    await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする
     await expect.element(titleTextbox(screen)).toBeInTheDocument();
   });

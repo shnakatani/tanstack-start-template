@@ -109,7 +109,7 @@ describe("NoteCreatedAtCell", () => {
     const screen = await renderCells({ creatingRows: [CREATING_ROW] });
 
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
-    await expectAbsent(noteRow(screen, NOTE).getByText("保存中"));
+    await expectAbsent(noteRow(screen, NOTE).getByText("保存中", { exact: false }));
   });
 });
 
@@ -142,7 +142,7 @@ describe("NoteUpdatedAtCell", () => {
 
     // getByText は複数一致で throw するので、「保存中」が行に 1 つだけであることもここで見る
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
-    await expectAbsent(noteRow(screen, CREATED_NOTE).getByText("更新中"));
+    await expectAbsent(noteRow(screen, CREATED_NOTE).getByText("更新中", { exact: false }));
   });
 });
 
@@ -154,7 +154,7 @@ describe("NoteActionsCell", () => {
       .element(rowDeleteButton(screen, NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
     await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toBeInTheDocument();
-    await expectAbsent(noteRow(screen, NOTE).getByText("削除中"));
+    await expectAbsent(noteRow(screen, NOTE).getByText("削除中", { exact: false }));
   });
 
   it("削除中の行だけトリガーを無効にし、読み上げ用の「削除中」を足す", async () => {
@@ -168,7 +168,7 @@ describe("NoteActionsCell", () => {
     await expect
       .element(rowDeleteButton(screen, OTHER_NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
-    await expectAbsent(noteRow(screen, OTHER_NOTE).getByText("削除中"));
+    await expectAbsent(noteRow(screen, OTHER_NOTE).getByText("削除中", { exact: false }));
   });
 
   it("保存中の行には削除と編集のトリガーを出さない (id をまだ持たない)", async () => {
@@ -224,7 +224,7 @@ describe("NoteActionsCell", () => {
       .element(rowEditButton(screen, OTHER_NOTE.title))
       .not.toHaveAttribute("aria-disabled", "true");
     // 状態のテキストは更新日時の cell の「更新中」が持つ。削除中の sr-only は出さない
-    await expectAbsent(noteRow(screen, UPDATED_NOTE).getByText("削除中"));
+    await expectAbsent(noteRow(screen, UPDATED_NOTE).getByText("削除中", { exact: false }));
   });
 
   it("トリガーを押すと同じ handle の確認ダイアログが開き、確定で行の id と title が渡る", async () => {
