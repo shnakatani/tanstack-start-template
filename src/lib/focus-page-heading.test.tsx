@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { focusPageHeading } from "./focus-page-heading";
@@ -62,6 +63,26 @@ describe("focusPageHeading", () => {
     expect(document.activeElement).toBe(document.body);
     expect(document.body.hasAttribute("tabindex")).toBe(false);
     expect(warn).toHaveBeenCalledWith("[focusPageHeading] h1 が無い", expect.anything());
+  });
+
+  it("キーボード操作の後に呼んでも、見出しは :focus-visible にならない", async () => {
+    await render(
+      <>
+        <button type="button">前の要素</button>
+        <h1>ページ</h1>
+      </>,
+    );
+    const button = document.querySelector("button");
+    // Tab を押してブラウザに「直前の操作はキーボード」と判定させる。この状態のまま
+    // 素の .focus() を呼ぶとブラウザの既定判定で :focus-visible になる。
+    // 遷移前と同じ要素 (button) に focus が残っているケースを再現するため、
+    // focusedBeforeNavigation にも同じ要素を渡す (早期 return させない)
+    await userEvent.keyboard("{Tab}");
+    expect(document.activeElement).toBe(button);
+    const heading = document.querySelector("h1");
+    focusPageHeading(button);
+    expect(document.activeElement).toBe(heading);
+    expect(heading?.matches(":focus-visible")).toBe(false);
   });
 
   it("focus でスクロールしない", async () => {
