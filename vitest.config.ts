@@ -31,11 +31,6 @@ export default defineConfig({
           name: "unit",
           include: ["src/**/*.test.ts"],
           exclude: sharedExclude,
-          // テスト中に vi.stubEnv で TZ を切り替える (src/lib/format-date-time.test.ts)。threads と
-          // vmThreads では切り替えが Date に効かず、基準の TZ のまま走る。既定と同じ値だが、
-          // 既定や設定が変わっても forks のままにする
-          // (https://vitest.dev/guide/common-errors#time-zone-does-not-change-in-worker-threads)
-          pool: "forks",
         },
       },
       {

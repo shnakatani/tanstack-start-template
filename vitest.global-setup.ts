@@ -1,10 +1,12 @@
 /**
- * テスト全体の基準のタイムゾーンを決める。worker の起動前にメインプロセスで走るので、pool を
- * 問わず全 project の `Date` に効く。ホストの `TZ` に関わらず上書きする。
+ * テスト全体のタイムゾーンを決める。worker の起動前にメインプロセスで走るので、pool を
+ * 問わず全 project の `Date` に効く。ホストの `TZ` に関わらず上書きする
+ * (https://vitest.dev/guide/common-errors#time-zone-does-not-change-in-worker-threads)。
  *
- * 値は `APP_TIME_ZONE` とも UTC とも違う TZ にする。理由と、テストの中で切り替える方法は
+ * 既定は基準の TZ。`TEST_TIME_ZONE` があればそちらにする。`scripts/time-zones/run-tests.ts` が
+ * TZ を変えて `*.tz.test.ts` を走らせるときに使う。値の選び方は
  * `docs/guides/testing/time-zones.md` にある。
  */
 export default function setup() {
-  process.env.TZ = "America/New_York";
+  process.env.TZ = process.env.TEST_TIME_ZONE || "America/New_York";
 }
