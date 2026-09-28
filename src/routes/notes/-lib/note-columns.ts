@@ -1,6 +1,6 @@
-import type { IdIdentifier } from "@tanstack/react-table";
 import { createColumnHelper } from "@tanstack/react-table";
 
+import { columnBaseFrom } from "@/components/parts/data-table-columns";
 import type { DataTableFeatures } from "@/components/parts/data-table-features";
 
 import {
@@ -12,15 +12,12 @@ import {
 } from "../-components/note-cells";
 import type { NoteRow } from "./note-rows";
 import { noteInputOf } from "./note-rows";
-import type { NoteColumnId } from "./notes-page-constants";
 import { NOTE_COLUMN_HEADERS } from "./notes-page-constants";
 
 const helper = createColumnHelper<DataTableFeatures, NoteRow>();
 
 /** 列の id と見出し。id の typo は型が止め、見出しは `NOTE_COLUMN_HEADERS` から引く */
-function base(id: NoteColumnId) {
-  return { id, header: NOTE_COLUMN_HEADERS[id] } satisfies IdIdentifier<DataTableFeatures, NoteRow>;
-}
+const base = columnBaseFrom(NOTE_COLUMN_HEADERS);
 
 /**
  * メモ一覧の列定義 (ADR-0018)。列の順・id・見出しは pending 表示と共有する `NOTE_COLUMN_HEADERS` が持ち、

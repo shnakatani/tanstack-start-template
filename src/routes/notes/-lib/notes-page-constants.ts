@@ -18,5 +18,3 @@ export const NOTE_COLUMN_HEADERS = {
   updatedAt: NOTE_FIELD_LABELS.updatedAt,
   actions: "操作",
 } as const satisfies Partial<Record<keyof Note, string>> & { actions: string };
-
-export type NoteColumnId = keyof typeof NOTE_COLUMN_HEADERS;
