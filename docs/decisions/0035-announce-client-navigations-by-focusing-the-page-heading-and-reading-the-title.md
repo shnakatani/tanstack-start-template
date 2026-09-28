@@ -17,7 +17,7 @@
 | 見出しへ移す前提             | Kitty Giraudel (2020-12-07) は、ローディング中やエラーでも関係する `<h1>` が必ずあると保証できるなら、隠した要素を置かずに `<h1>` へ `tabindex="-1"` で focus してよいとする                     |
 | テンプレートが保証できること | ページの見出しは `PageHeader` (`src/components/parts/page-header.tsx`) が `<h1>` で描き、エラー画面と not found の画面も `<h1>` を持つ。本文は root の `<main>` (`src/routes/__root.tsx`) に入る |
 
-この ADR が決めるのは、path の変わる遷移の後に新しいページを伝えることだけである。route の pending 表示 (読み込み中) の見せ方と通知は決めない。pending 表示は `announce()` で通知しない (ADR-0029)。その見せ方は `docs/guides/accessibility.md`「読み込み中の表示の見せ方を選んだ理由」にある。
+この ADR が決めるのは、path の変わる遷移の後に新しいページを伝えることだけである。route の pending 表示 (読み込み中) の見せ方と通知は決めない。pending 表示は `announce()` で通知しない (ADR-0029)。その見せ方は `docs/guides/accessibility.md`「読み込み中の表示の見せ方を選んだ理由」にある。遷移の後の title の読み上げは、ページが変わったことを伝えるもので、読み込みの完了の告知ではない。
 
 ## Decision
 
@@ -52,17 +52,18 @@ Gatsby 2019 のテストの枠についての証言は両方向にある。
 
 ### 検討した案: 伝え方と focus の移し先
 
-| 候補                                                     | 採用例                                                                                                                               | スクリーンリーダー                                                                                                                                   | キーボード                                     | 目で見る利用者 (拡大鏡を含む)                                                            | 採否     |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
-| 見出しへ focus (枠なし) + 読み上げ                       | Angular の docs ("You should avoid situations where focus returns to the `body` element after a route change")                       | 新しいページの見出しから読み始める                                                                                                                   | 次の Tab が新しいページの先頭から始まる        | 次の Tab を押すまで focus の位置が見えない                                               | **採用** |
-| 見出しへ focus、アプリ標準の枠をキーボードのときだけ出す | —                                                                                                                                    | 採用案と同じ                                                                                                                                         | 採用案と同じ                                   | キーボードで遷移したときは位置が見える。操作できない見出しが操作できる要素と同じ枠を持つ | 却下     |
-| 見出しへ focus、枠を常に出す                             | —                                                                                                                                    | 採用案と同じ                                                                                                                                         | 採用案と同じ                                   | 位置が常に見える。ポインターで遷移しても、操作できない見出しに枠が出る                   | 却下     |
-| skip link へ focus                                       | —                                                                                                                                    | 使い方が割れる (WebAIM の調査 9、下の表)                                                                                                             | 次の Tab で本文へ飛べる                        | skip link が見える                                                                       | 却下     |
-| `<body>` へ戻す + 読み上げ                               | SvelteKit (issue 307 "matches the behaviour of server-rendered apps")、Navigation API の既定、Next.js 16.3.0-preview.7 の app router | ページの先頭から探し直す。Gatsby 2019 は "resetting focus to the top of the app would be very overwhelming, especially in large applications" とする | 次の Tab がページの先頭から始まる              | focus の位置が見えない                                                                   | 却下     |
-| 変わった部分の wrapper へ focus                          | Gatsby、Reach Router                                                                                                                 | Gatsby 2019 で "very subtle compared to focusing on a heading"                                                                                       | 次の Tab が wrapper の中から始まる             | wrapper の範囲による                                                                     | 却下     |
-| focus を移さず読み上げだけ                               | Nuxt の `<NuxtRouteAnnouncer>` (title を読み上げる部品)                                                                              | 読み上げで届く                                                                                                                                       | focus が押したリンクに残るか `<body>` に落ちる | 届かない (Gatsby 2019 "quite useless")                                                   | 却下     |
+| 候補                                                     | 採用例                                                                                                         | スクリーンリーダー                                                                                                                                   | キーボード                                     | 目で見る利用者 (拡大鏡を含む)                                                            | 採否     |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
+| 見出しへ focus (枠なし) + 読み上げ                       | Angular の docs ("You should avoid situations where focus returns to the `body` element after a route change") | 新しいページの見出しから読み始める                                                                                                                   | 次の Tab が新しいページの先頭から始まる        | 次の Tab を押すまで focus の位置が見えない                                               | **採用** |
+| 見出しへ focus、アプリ標準の枠をキーボードのときだけ出す | —                                                                                                              | 採用案と同じ                                                                                                                                         | 採用案と同じ                                   | キーボードで遷移したときは位置が見える。操作できない見出しが操作できる要素と同じ枠を持つ | 却下     |
+| 見出しへ focus、枠を常に出す                             | —                                                                                                              | 採用案と同じ                                                                                                                                         | 採用案と同じ                                   | 位置が常に見える。ポインターで遷移しても、操作できない見出しに枠が出る                   | 却下     |
+| skip link へ focus                                       | —                                                                                                              | 使い方が割れる (WebAIM の調査 9、下の表)                                                                                                             | 次の Tab で本文へ飛べる                        | skip link が見える                                                                       | 却下     |
+| `<body>` へ戻す + 読み上げ                               | SvelteKit (issue 307 "matches the behaviour of server-rendered apps")、Navigation API の既定                   | ページの先頭から探し直す。Gatsby 2019 は "resetting focus to the top of the app would be very overwhelming, especially in large applications" とする | 次の Tab がページの先頭から始まる              | focus の位置が見えない                                                                   | 却下     |
+| 変わった部分の wrapper へ focus                          | Gatsby、Reach Router                                                                                           | Gatsby 2019 で "very subtle compared to focusing on a heading"                                                                                       | 次の Tab が wrapper の中から始まる             | wrapper の範囲による                                                                     | 却下     |
+| focus を移さず読み上げだけ                               | Next.js 16.3.0 の app router、Nuxt の `<NuxtRouteAnnouncer>` (title を読み上げる部品)                          | 読み上げで届く                                                                                                                                       | focus が押したリンクに残るか `<body>` に落ちる | 届かない (Gatsby 2019 "quite useless")                                                   | 却下     |
 
-- `<body>` へ戻す案には、Navigation API の explainer も "screen reader users generally prefer focus to be reset to a heading or wrapper element, instead of the `<body>`" とする。Next.js の app router は 16.3.0-preview.7 で、遷移のたびに focus している要素を blur する ("Trying to match hard navigations"、`layout-router.tsx` の `InnerScrollHandlerNew`、2026-09-28 に確認)
+- `<body>` へ戻す案には、Navigation API の explainer も "screen reader users generally prefer focus to be reset to a heading or wrapper element, instead of the `<body>`" とする
+- Next.js の app router は、16.3.0 の stable と 2026-09-28 時点の canary で focus に触れない。`layout-router.tsx` のコメントは "This handler intentionally leaves focus untouched; resetting focus on navigation is deferred." とし、title の読み上げは `app-router-announcer.tsx` が持つ
 - skip link を採らないのは、テンプレートにページごとに繰り返すブロック (navigation など) が無く、飛ばす先が無いからである。WCAG 2.4.1 の Understanding は Sufficient Techniques に skip link (G1) のほか、landmark (ARIA11) と見出し (H69) を挙げる。テンプレートは root の `<main>` と各ページの `<h1>` を持つ
 
 WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件) の、skip link があるときに使う頻度:
@@ -75,7 +76,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 | Seldom    | 21.6% |
 | Never     | 14.4% |
 
-focus を移す実装では、検索条件だけの変化で入力欄の focus が外れる不具合が起きうる。Next.js の issue 96050 ("query-string-only router.push/replace blurs the focused input"、2026-07-22 起票) は、16.3.0-preview.7 の app router で、検索条件だけの `router.push` でも入力欄が blur されると報告した。issue は 2026-08-03 に COMPLETED で閉じ、メンテナは "This is fixed both in canary and 16.3" と書いている。「伝えない遷移」に検索条件だけの変化を入れたので、この ADR の形では起きない。
+遷移で focus を動かす実装では、検索条件だけの変化で入力欄の focus が外れる不具合が起きうる。Next.js の issue 96050 ("query-string-only router.push/replace blurs the focused input"、2026-07-22 起票) は、16.3.0-preview.7 の app router が遷移のたびに focus している要素を blur し (`layout-router.tsx` の `InnerScrollHandlerNew`、コメント "Trying to match hard navigations")、検索条件だけの `router.push` でも入力欄が blur されると報告した。issue は 2026-08-03 に COMPLETED で閉じ、メンテナは "This is fixed both in canary and 16.3" と書いている。16.3.0 の stable では blur を外し、focus に触れない。「伝えない遷移」に検索条件だけの変化を入れたので、この ADR の形では起きない。
 
 ### 検討した案: 実装の置き場
 
@@ -141,7 +142,7 @@ focus を移す実装では、検索条件だけの変化で入力欄の focus �
 | root の `errorComponent` への置き換え | —                           | `InnerWrap` の effect は後始末されない                             |
 
 - `onRendered` の時点で title と `<h1>` が新しい値なので、先行例の遅延は入れない。Astro は title を 60ms 後に入れ (`packages/astro/src/transitions/router.ts`、main の 7661f48)、Gatsby は `requestAnimationFrame` で待つ (`packages/gatsby/cache-dir/navigation.js`、master の 1fd967b)
-- SSR の最初のページでは、hydration で `onResolved` が出ず、`onRendered` が `getLocationChangeInfo(resolvedLocation, resolvedLocation)` で出るので `pathChanged` は false になる (@tanstack/react-router 1.170.32 の `src/Transitioner.tsx` 76〜88 行を読んだ推論、未実測)。どちらにしても伝えない遷移に当たる
+- SSR の最初のページでは、hydration で `onResolved` が出ない。`onRendered` は `InnerWrap` の effect より先に出るので、購読が間に合わない。間に合ったとしても `getLocationChangeInfo(resolvedLocation, resolvedLocation)` で出るので `pathChanged` は false になり、伝えない遷移に当たる (@tanstack/react-router 1.170.32 の `src/Transitioner.tsx` 76〜88 行を読んだ推論、未実測)
 
 ### bfcache から戻ったときの focus
 
@@ -157,6 +158,7 @@ focus を移す実装では、検索条件だけの変化で入力欄の focus �
 
 - WCAG Understanding 2.4.2: https://www.w3.org/WAI/WCAG22/Understanding/page-titled.html
 - WCAG Understanding 2.4.1: https://www.w3.org/WAI/WCAG22/Understanding/bypass-blocks.html
+- WCAG Understanding 2.4.7: https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html
 - WebAIM Screen Reader User Survey #9 (「"Skip" Links」の節): https://webaim.org/projects/screenreadersurvey9/
 - Gatsby と Fable Tech Labs のユーザーテスト (2019-07-11): https://www.gatsbyjs.com/blog/2019-07-11-user-testing-accessible-client-routing/
 - Kitty Giraudel「A11y Advent Day 7: Page Title in SPA」(2020-12-07): https://kittygiraudel.com/2020/12/07/a11y-advent-page-title-in-spa/
@@ -176,8 +178,11 @@ focus を移す実装では、検索条件だけの変化で入力欄の focus �
 - Reach Router の `history.js`: https://github.com/reach/router/blob/master/src/lib/history.js
 - Next.js の issue 96050: https://github.com/vercel/next.js/issues/96050
 - Next.js 16.3.0-preview.7 の `layout-router.tsx`: https://github.com/vercel/next.js/blob/v16.3.0-preview.7/packages/next/src/client/components/layout-router.tsx
+- Next.js 16.3.0 の `layout-router.tsx`: https://github.com/vercel/next.js/blob/v16.3.0/packages/next/src/client/components/layout-router.tsx
 - Next.js の `app-router-announcer.tsx` (canary): https://github.com/vercel/next.js/blob/canary/packages/next/src/client/components/app-router-announcer.tsx
 - Nuxt の `<NuxtRouteAnnouncer>`: https://nuxt.com/docs/api/components/nuxt-route-announcer
 - Astro の `router.ts`: https://github.com/withastro/astro/blob/main/packages/astro/src/transitions/router.ts
 - Gatsby の `navigation.js`: https://github.com/gatsbyjs/gatsby/blob/master/packages/gatsby/cache-dir/navigation.js
 - MDN `HTMLElement.focus()`: https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus
+- MDN browser-compat-data (`api/HTMLElement.json` の `focus` の `options_focusVisible_parameter`): https://github.com/mdn/browser-compat-data/blob/main/api/HTMLElement.json
+- wpt.fyi の `back-forward-cache/focus.html`: https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/focus.html
