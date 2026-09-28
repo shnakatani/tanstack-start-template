@@ -1,6 +1,7 @@
 ---
 paths:
   - "src/**/*.test.*"
+  - "src/**/*.test-d.*"
   - "scripts/**/*.test.*"
   - "src/test/**"
   - "**/*.test-helpers.*"
@@ -22,9 +23,12 @@ paths:
 | ---------------------- | ---------------------------- | --------------------------------------------------- | ------------------------------------------ |
 | アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                  | `vp test run --project unit`               |
 | アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                                 | `vp test run --project browser`            |
+| アプリの型テスト       | アプリの型の変更             | `src/**/*.test-d.ts`                                | `vp check` (`vp test run` は集めない)      |
 | スクリプトの単体テスト | スクリプト自身の変更         | `scripts/**/*.test.ts` (`scripts/checks/**` を除く) | `vp test run --project scripts-tools`      |
 | 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity`   |
 | 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp node scripts/checks/runtime/<name>.ts` |
+
+- `expectTypeOf` だけのテストは `*.test-d.ts` に置き、実行するテストと同じファイルに書かない。`*.test.ts(x)` に書くと、型しか確かめないテストが `vp test run` で pass として数えられる (`docs/guides/testing/type-tests.md`「`*.test-d.ts` に分ける理由」)
 
 スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める。
 
@@ -38,7 +42,7 @@ paths:
 - 検査は `scripts/checks/` の下へ置く。外へ置くと `scripts-tools` へ合流し、落ちたときに直す対象が読めなくなる
 - project を足したら `vitest.config.ts` の `projects` に追加する。include に一致しないテストは無言で 1 度も走らない
 - `src/` 全体へ当てるソース検査は、先に lint (必要なら `jsPlugins`) で表せないかを見る。字面走査より対象の実体に近い (ADR-0023)
-- ソース検査を作るなら `scripts/checks/source/` と `checks-source` project を対で作り、判定は `scripts/lib/` に置いて単体テストを別に持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを分けて置く理由」)
+- ソース検査を作るなら `scripts/checks/source/` と `checks-source` project を対で作り、判定は `scripts/lib/` に置いて単体テストを別に持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 落ちたときに判断が要らない検査は作らない。期待値の書き換えしか選択肢が無い検査は上流更新のたびに鳴り、判断を鈍らせる (`docs/guides/testing/check-scripts.md`「検査スクリプトを分けて置く理由」)
 - ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
