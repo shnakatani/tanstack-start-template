@@ -59,7 +59,8 @@ pnpm peers check
 - `vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm の PR 14114][])
 - 許可を外すだけでは lockfile が変わらないので、`--force` を付けても `strictPeerDependencies: true` にしても install は通る (2026-09-29、pnpm 11.28.0)。`pnpm peers check` だけが食い違いを出す
-- 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版の major>"`) で書き、理由と撤去条件をコメントに残す (pin の出口条件と同じ扱い。ADR-0005 の決定 6)。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
+- 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版の major>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
+- 撤去条件は、pin の出口条件と同じ扱いにする (ADR-0005 の決定 6)
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側の major を上げると、許可の範囲を外れて `pnpm peers check` に再び食い違いとして出る。新しい major で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
@@ -100,13 +101,13 @@ pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏
 
 | 上げたもの                               | 見直すもの                                                                                                                                                                                                                                                                                    |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vite+                                    | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する。major が上がったら peer の許可の値を書き換える (「peer の食い違いを数える」)                                                     |
+| Vite+                                    | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する。許可した側の major が上がったら、peer の許可の値を書き換える (「peer の食い違いを数える」)                                       |
 | oxlint (Vite+ 同梱) の minor 以上        | `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」                                                                                                                                                                                                                      |
 | Base UI                                  | `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring (自己リセットの条件の表)                                                                                                                                                                                             |
 | axe-core                                 | `docs/guides/accessibility.md`「axe を上げたとき」。あわせて `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」)                                                                                                 |
 | colorjs.io                               | `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」「測り方の限界」)。版が上がると値が変わりうる                                                                                                                  |
 | vitest                                   | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている ([vitest の issue 9157][]) |
-| storybook / @storybook/addon-vitest      | `pnpm-workspace.yaml` の `peerDependencyRules` と `patchedDependencies` の撤去条件 (「peer の食い違いを数える」)                                                                                                                                                                              |
+| storybook / @storybook/addon-vitest      | `pnpm-workspace.yaml` の `peerDependencyRules` と `patchedDependencies` の撤去条件と、コメントに書いた上げたときの確認 (「peer の食い違いを数える」)                                                                                                                                          |
 | `RESTRICTED_BARREL_IMPORTS` に載せた依存 | `exports` に個別エントリポイントが残っているか。消えていれば lint の `message` が案内する import が解決しなくなる。react-day-picker を上げたときは、内部の date-fns の import と `locale/ja` の import が変わったかも見る (ADR-0032 の Consequences の再評価の条件)                           |
 
 ### 走査対象を持つ config を足す
