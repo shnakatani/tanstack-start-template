@@ -102,7 +102,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 - 行単位の抑制は領域を問わず使ってよい。registry コードの中の抑制は、台帳 `docs/registry-deviations.md` の「行単位の lint 抑制」にも記録する。要るのは記録であって、抑制の可否そのものではない (ADR-0020)
 - `perf` の `no-await-in-loop` は順序に依存するループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く
 
-## 設定の落とし穴
+### 設定の落とし穴
 
 どれも「設定したつもりで効いていない」状態を、診断なしで作る。
 

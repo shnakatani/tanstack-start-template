@@ -1,6 +1,6 @@
 # 配置と境界
 
-新しいファイルをどのディレクトリに置くか、route ファイルをどう組むかの手順と落とし穴を持つ。
+新しいファイルをどのディレクトリに置くか、route ファイルをどう組むかの手順と落とし穴と、その理由を持つ。
 
 | 決定                                                                                         | ADR      |
 | -------------------------------------------------------------------------------------------- | -------- |
@@ -24,6 +24,8 @@
 - `-lib/` と `-hooks/` は、`src/lib/` と `src/hooks/` の線引きを route の中で繰り返したものである
 - `-` で始まるディレクトリの中の import は相対パスで書く。ディレクトリごと動かしても import が壊れない
 
+`-` で始める理由は「route の中の置き場を `-` で始める理由」。
+
 ### route ファイルを組む
 
 ADR-0010 に沿って、次の順で組む。
@@ -31,8 +33,10 @@ ADR-0010 に沿って、次の順で組む。
 1. ページ本体を `-components/` に書き、Route hooks を使わずに props で値を受ける。Route hooks を混ぜると、ページのテストが router 無しで描けなくなる
 2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは `docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」 の形で書く
 3. loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる
-4. pending 表示は、ページ本体と別のファイルに置く。`pendingComponent` は分割されない property で、それが import する module は eager に読まれる
-5. loader と `validateSearch` とページ本体が共有する定数は `-lib/` に置き、ページ本体の module に置かない (理由は 4 と同じ)
+4. pending 表示は、ページ本体と別のファイルに置く
+5. loader と `validateSearch` とページ本体が共有する定数は `-lib/` に置き、ページ本体の module に置かない
+
+2・4・5 の理由は「route ファイルの組み方と code splitting」。
 
 ### features か route か
 
@@ -60,7 +64,7 @@ registry 由来でない付随ファイル (テスト・story とその helper) 
 
 ### `src/test/` に helper を置く
 
-ドメインを跨ぐテストの helper は、そのファイルが何を作るかで `src/test/` の下のディレクトリを選ぶ。誰が呼ぶかでは選ばない。1 つの helper を setup とテスト本文の両方が呼ぶことがあり (`park-mouse.ts`)、呼び出し元では置き先が 1 つに決まらない。ファイル名の prefix (`a11y-*`、`viewport-*`) も分類の代わりにしない。prefix を持たない helper の置き先が決まらない。
+ドメインを跨ぐテストの helper は、そのファイルが何を作るかで `src/test/` の下のディレクトリを選ぶ。誰が呼ぶかと、ファイル名の prefix (`a11y-*`、`viewport-*`) では選ばない。理由は「`src/test/` の helper を何を作るかで分ける理由」。
 
 | 何を作るか                                                            | ディレクトリ        | 例                                                                |
 | --------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------- |
@@ -75,10 +79,37 @@ registry 由来でない付随ファイル (テスト・story とその helper) 
 - ディレクトリ名と重なる prefix (`a11y/a11y-story.ts` の `a11y-`) は外さない。文書はファイル名だけで helper を指すことが多く、`story.ts` や `setup.tsx` のような名前はファイル名だけで引いたときに 1 つに決まらない
 - `helpers`・`utils` のような中身を表さない名前にしない。役割が混ざった受け皿になり、上の「ファイルを分ける」が働かなくなる
 
-## 落とし穴
+### 落とし穴
 
 | 落とし穴                                                         | 起きること                                                                                                 | 避け方                                                                                                            |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `vite.config.ts` の `importProtection.client.files` を書き換える | user が `files` を書くと既定を置換する。`"**/*.server.*"` を落とすと既定は戻らず、接尾辞による遮断が消える | 書き換えるときは `"**/*.server.*"` を残す (ADR-0010)                                                              |
 | `importProtection` に `excludeFiles` を書く                      | 書いた時点で既定の `**/node_modules/**` が消える                                                           | 既定の値も自分で書き足す                                                                                          |
 | `src` の外のファイルに Tailwind の utility を書く                | scan の対象が `src` に絞られているので、その utility の CSS は生成されない。気付くのは効かないときだけ     | utility を書くファイルは `src` の中に置く (`docs/guides/styling-and-tokens.md`「scan と `theme(static)` の範囲」) |
+
+## explanation
+
+### route の中の置き場を `-` で始める理由
+
+TanStack Router の file-based routing は、`-` で始まるファイルとディレクトリを route tree から外す。"Files and folders with the `-` prefix are excluded from the route tree. They will not be added to the `routeTree.gen.ts` file and can be used to colocate logic in route folders." (https://tanstack.com/router/latest/docs/framework/react/routing/file-naming-conventions、2026-09-28 に確認)。
+この接頭辞は `@tanstack/router-plugin` の `routeFileIgnorePrefix` の既定値 `'-'` である (同梱の intent skill `router-plugin`、`library_version` 1.168.23)。`-components/` などに置くと、その URL の近くに置いたまま route として生成されない。
+
+### route ファイルの組み方と code splitting
+
+TanStack Router の automatic code splitting は、route ファイルの property を種類ごとに別の chunk へ分ける。組み方の 2・4・5 は、この分割を壊さないためにある (ADR-0010)。
+
+| 手順                                                        | 分割の規則                                                                                                                           | 守らないと起きること                                                                              |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| 2 (route ファイルから wrapper もページ本体も export しない) | "Route properties like `component`, `loader`, etc., should not be exported from the route file."                                     | export した property とそれが使うものが main bundle に入り、分割されない                          |
+| 4 (pending 表示を別ファイルに置く)                          | 既定で分けるのは `component` / `errorComponent` / `notFoundComponent` だけで、`pendingComponent` と `loader` は route ファイルに残る | 分割されない property が import する module は eager に読まれ、同じ module のページ本体も巻き込む |
+| 5 (共有する定数を `-lib/` に置く)                           | 同上。`loader` と `validateSearch` も分割されない                                                                                    | 定数を置いたページ本体の module が、分割されない側から eager に読まれる                           |
+
+- 出典: TanStack Router docs「Automatic Code Splitting」(https://tanstack.com/router/latest/docs/framework/react/guide/automatic-code-splitting、2026-09-28 に確認)。ページ本体を export したときに main chunk へ入ることを `vp build` で確かめた実測は ADR-0010 が持つ。`pendingComponent` と `validateSearch` が既定の groupings に入らない根拠 (`@tanstack/router-plugin` の `defaultCodeSplitGroupings` と、TanStack/router の PR 4047) も ADR-0010 が持つ。intent skill `router-core/code-splitting` は `pendingComponent` を分割される側に挙げるが、docs と実装では分割されない
+
+### `src/test/` の helper を何を作るかで分ける理由
+
+| 分類の軸                                     | 採否     | 理由                                                                                                          |
+| -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| 何を作るか (実行環境、assert、axe、足場)     | **採用** | 1 つのファイルは 1 つのものを作るので、置き先が 1 つに決まる                                                  |
+| 誰が呼ぶか (setup、テスト本文)               | 却下     | 1 つの helper を setup とテスト本文の両方が呼ぶことがあり (`park-mouse.ts`)、呼び出し元では置き先が決まらない |
+| ファイル名の prefix (`a11y-*`、`viewport-*`) | 却下     | prefix を持たない helper の置き先が決まらない                                                                 |
