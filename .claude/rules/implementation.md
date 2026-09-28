@@ -12,8 +12,15 @@ lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止
 - 外部ストアへの購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る
 - データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })`。副次的な query まで待つと、遷移と SSR の応答がそれを待つ (ADR-0033)
 - 副次的な query は loader で `void queryClient.query(...).catch(noop)` (`noop` は `@tanstack/react-query` の export) として流し、読む側を `<Suspense>` と Error Boundary で囲む。囲まないと、読み込み中と失敗がページ全体の pending 表示とエラー表示に置き換わる (ADR-0033)
+
+## effect かイベントハンドラかを原因で決める
+
+lint では見ないのでレビューで見る。
+
 - 原因が特定の操作 (保存、送信、操作の開始と完了の通知) なら、effect ではなくイベントハンドラか mutation の callback に書く。effect に置くと、同じ表示に戻っただけで走る (`docs/guides/react/effects.md`「effect に書くかを判定する」)
-- useEffect は、表示された結果を React の外の系 (DOM、ブラウザ API、外部 widget、イベントの購読、router、announcer) に合わせるときだけ使う。開発時の二重実行で利用者に見える結果が変わるなら、原因は操作なので上の項目に当たる (`docs/guides/react/effects.md`「effect とイベントハンドラを分ける理由」)
+- effect は、表示された結果を React の外の系 (DOM、ブラウザ API、外部 widget、イベントの購読、router、announcer) に合わせるときだけ使う。外の系が無ければ描画中に計算する (`docs/guides/react/effects.md`「effect とイベントハンドラを分ける理由」)
+- 開発時の二重実行で見える結果が変わったら、まず後始末を書く。後始末を書いても変わるときだけ、原因を操作と見てイベントハンドラへ移す (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
+- effect を 1 回しか走らせないための ref を書かない。再 mount の後も同じ結果になる形にする (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
 - router へ伝える副作用は、mount 中だけ成立すれば足りるなら effect、画面遷移中や `errorComponent` 表示中も要るなら router 層で購読する
 
 ## Effect が読む最新値は useEffectEvent へ切り出す
