@@ -28,7 +28,7 @@ paths:
 | 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity`   |
 | 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp node scripts/checks/runtime/<name>.ts` |
 
-- `expectTypeOf` だけのテストは `*.test-d.ts` に置き、実行するテストと同じファイルに書かない。`*.test.ts(x)` に書くと、型しか確かめないテストが `vp test run` で pass として数えられる (`docs/guides/testing/type-tests.md`「型テストを置く」)
+- `expectTypeOf` だけのテストは `*.test-d.ts` に置き、実行するテストと同じファイルに書かない。`*.test.ts(x)` に書くと、型しか確かめないテストが `vp test run` で pass として数えられる (`docs/guides/testing/type-tests.md`「`*.test-d.ts` に分ける理由」)
 
 スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める。
 
