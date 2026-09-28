@@ -17,6 +17,21 @@ describe("focusPageHeading", () => {
     expect(heading?.getAttribute("tabindex")).toBe("-1");
   });
 
+  it("activeElement が null (focus を持つ要素が無い) のとき、h1 へ移す", async () => {
+    await render(
+      <>
+        <button type="button">遷移前に押したボタン</button>
+        <h1>ページ</h1>
+      </>,
+    );
+    // 遷移前の要素を渡し、null が「遷移前の要素に残っている」扱いで通らないようにする
+    const button = document.querySelector("button");
+    const activeElement = vi.spyOn(document, "activeElement", "get").mockReturnValue(null);
+    focusPageHeading(button);
+    activeElement.mockRestore();
+    expect(document.activeElement).toBe(document.querySelector("h1"));
+  });
+
   it("遷移前と同じ要素に focus が残っているとき (押したリンクが残る)、h1 へ移す", async () => {
     await render(
       <>
@@ -63,6 +78,26 @@ describe("focusPageHeading", () => {
     expect(document.activeElement).toBe(document.body);
     expect(document.body.hasAttribute("tabindex")).toBe(false);
     expect(warn).toHaveBeenCalledWith("[focusPageHeading] h1 が無い", expect.anything());
+  });
+
+  it("h1 が無いとき、キーボード操作の後に呼んでも body は :focus-visible にならない", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    await render(<button type="button">前の要素</button>);
+    const button = document.querySelector("button");
+    // Tab でブラウザに「直前の操作はキーボード」と判定させる (下の見出しのケースと同じ)
+    await userEvent.keyboard("{Tab}");
+    expect(document.activeElement).toBe(button);
+    // focusBody は focus の直後に tabindex を外すので、呼んだ後の body は :focus-visible の判定に
+    // かからない。focus を受けた時点 (tabindex がある間) の判定を focus イベントで読む
+    const focusVisibleAtFocus: boolean[] = [];
+    document.body.addEventListener(
+      "focus",
+      () => focusVisibleAtFocus.push(document.body.matches(":focus-visible")),
+      { once: true },
+    );
+    focusPageHeading(button);
+    expect(document.activeElement).toBe(document.body);
+    expect(focusVisibleAtFocus).toEqual([false]);
   });
 
   it("キーボード操作の後に呼んでも、見出しは :focus-visible にならない", async () => {

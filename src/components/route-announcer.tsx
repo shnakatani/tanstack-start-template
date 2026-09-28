@@ -19,10 +19,13 @@ export function RouteAnnouncer() {
       focusedBeforeNavigation = document.activeElement;
     });
     const unsubscribeRendered = router.subscribe("onRendered", (event) => {
+      // 外れた要素を次の遷移まで持たない。伝えない遷移 (検索条件だけの変化) でも手放す
+      const focusedBefore = focusedBeforeNavigation;
+      focusedBeforeNavigation = null;
       if (!shouldAnnounceNavigation(event)) {
         return;
       }
-      focusPageHeading(focusedBeforeNavigation);
+      focusPageHeading(focusedBefore);
       announce(document.title);
     });
     return () => {

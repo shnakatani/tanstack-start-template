@@ -8,7 +8,9 @@
  */
 export function focusPageHeading(focusedBeforeNavigation: Element | null): void {
   const active = document.activeElement;
-  if (active !== null && active !== document.body && active !== focusedBeforeNavigation) {
+  // null (focus を持つ要素が無い) と body は、focus していた要素が消えた状態なので移してよい
+  const focusLost = active === null || active === document.body;
+  if (!focusLost && active !== focusedBeforeNavigation) {
     return;
   }
   const heading = document.querySelector("h1");

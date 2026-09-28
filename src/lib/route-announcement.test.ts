@@ -18,4 +18,8 @@ describe("shouldAnnounceNavigation", () => {
   it("最初のページ (fromLocation が無い) は伝えない", () => {
     expect(shouldAnnounceNavigation({ fromLocation: undefined, pathChanged: true })).toBe(false);
   });
+
+  it("fromLocation が無く path も変わらないときは伝えない", () => {
+    expect(shouldAnnounceNavigation({ fromLocation: undefined, pathChanged: false })).toBe(false);
+  });
 });

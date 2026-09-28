@@ -11,6 +11,7 @@ import {
   useLocation,
   useRouter,
 } from "@tanstack/react-router";
+import { useState, type ReactNode } from "react";
 import { expect, it } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
@@ -19,11 +20,17 @@ import { APP_NAME } from "@/lib/app-name";
 import { pageTitle } from "@/lib/page-title";
 import { readAnnouncements } from "@/test/assert/live-announcer";
 
+import { RouteAnnouncer } from "./route-announcer";
 import { RouterInnerWrap } from "./router-inner-wrap";
 
 // 遷移は history の API で起こす。history は path の型を持たないので、アプリの route tree に依存しない。
 // 確かめる対象は遷移の伝え方で、遷移の引き金ではない
-function createAnnouncedRouter(options: { rootThrowsAt?: string } = {}) {
+function createAnnouncedRouter(
+  options: {
+    rootThrowsAt?: string;
+    innerWrap?: typeof RouterInnerWrap;
+  } = {},
+) {
   // root の描画が遷移先の pathname で throw するので、root の errorComponent に置き換わる
   function RootComponent() {
     const { pathname } = useLocation();
@@ -73,9 +80,8 @@ function createAnnouncedRouter(options: { rootThrowsAt?: string } = {}) {
     head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "Err") }] }),
     errorComponent: () => <h1>エラーが発生しました</h1>,
   });
-  // notFound({ routeId: rootRouteId }) で root を境界に指定する。root は独自の
-  // head を持たない子 route を挟んでも matches に error を持つので、pageTitle(ctx) だけで
-  // not found の title になることを読み上げのテストで確かめる
+  // notFound({ routeId: rootRouteId }) で root を境界に指定する。/missing は head を持たないので、
+  // title は root の pageTitle(ctx) からしか来ない。not found の判定を通らなければ APP_NAME になる
   const missing = createRoute({
     getParentRoute: () => rootRoute,
     path: "/missing",
@@ -83,11 +89,23 @@ function createAnnouncedRouter(options: { rootThrowsAt?: string } = {}) {
       throw notFound({ routeId: rootRouteId });
     },
   });
+  // 自分の notFoundComponent を持つ子 route が境界になる。/gone の head は自分のページ名を渡すので、
+  // 判定を通らなければ「Gone — アプリ名」になる
+  const gone = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/gone",
+    loader: () => {
+      throw notFound();
+    },
+    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "Gone") }] }),
+    component: () => <h1>Gone</h1>,
+    notFoundComponent: () => <h1>項目が見つかりません</h1>,
+  });
   return createRouter({
-    routeTree: rootRoute.addChildren([a, b, err, missing]),
+    routeTree: rootRoute.addChildren([a, b, err, missing, gone]),
     history: createMemoryHistory({ initialEntries: ["/a"] }),
     // 本番 (src/router.tsx) と同じ配線を通す
-    InnerWrap: RouterInnerWrap,
+    InnerWrap: options.innerWrap ?? RouterInnerWrap,
     defaultPendingMinMs: 0,
   });
 }
@@ -128,7 +146,7 @@ it("検索条件だけの変化では focus を動かさず、読み上げない
   expect(readAnnouncements()).toEqual([`B — ${APP_NAME}`]);
 });
 
-it("ルートのエラー画面へ移ると、エラー画面の h1 へ移す", async () => {
+it("子 route のエラー画面へ移ると、エラー画面の h1 へ移す", async () => {
   const router = createAnnouncedRouter();
   const screen = await render(<RouterProvider router={router} />);
   await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
@@ -141,6 +159,7 @@ it("root のエラー画面に置き換わっても購読は外れず、root の
   const screen = await render(
     <RouterProvider router={createAnnouncedRouter({ rootThrowsAt: "/b" })} />,
   );
+  // focus だけを見る。テストの root の errorComponent は HeadContent を持たず、title が変わらない
   await userEvent.click(screen.getByRole("button", { name: "B へ" }));
   await expect.element(screen.getByRole("heading", { name: "root のエラー" })).toHaveFocus();
 });
@@ -154,4 +173,38 @@ it("root が受け持つ notFound へ移ると、not found の title を読み�
     .element(screen.getByRole("heading", { name: "ページが見つかりません" }))
     .toHaveFocus();
   expect(readAnnouncements()).toEqual([`ページが見つかりません — ${APP_NAME}`]);
+});
+
+it("子 route が受け持つ notFound へ移っても、not found の title を読み上げる", async () => {
+  const router = createAnnouncedRouter();
+  const screen = await render(<RouterProvider router={router} />);
+  await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+  router.history.push("/gone");
+  await expect.element(screen.getByRole("heading", { name: "項目が見つかりません" })).toHaveFocus();
+  expect(readAnnouncements()).toEqual([`ページが見つかりません — ${APP_NAME}`]);
+});
+
+it("RouteAnnouncer が外れた後の遷移では、focus を動かさず読み上げない", async () => {
+  // InnerWrap は router と同じ寿命なので、RouteAnnouncer だけを外せる InnerWrap を組む
+  function DetachableInnerWrap({ children }: { children: ReactNode }) {
+    const [attached, setAttached] = useState(true);
+    return (
+      <>
+        {attached && <RouteAnnouncer />}
+        <button type="button" onClick={() => setAttached(false)}>
+          読み上げを外す
+        </button>
+        {children}
+      </>
+    );
+  }
+  const router = createAnnouncedRouter({ innerWrap: DetachableInnerWrap });
+  const screen = await render(<RouterProvider router={router} />);
+  await userEvent.click(screen.getByRole("button", { name: "読み上げを外す" }));
+  const button = screen.getByRole("button", { name: "B へ" });
+  await userEvent.click(button);
+  await expect.element(screen.getByRole("heading", { name: "B" })).toBeInTheDocument();
+  await expect.poll(() => router.state.status).toBe("idle");
+  await expect.element(button).toHaveFocus();
+  expect(readAnnouncements()).toEqual([]);
 });
