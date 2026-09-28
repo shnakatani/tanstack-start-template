@@ -73,22 +73,7 @@ helper の中から実行中のテストを扱う手段は、引数で受けた�
 
 ## 出典
 
-本文は出典を名前のリンクで挙げる。URL は下のリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
-
-本文が引くもの:
-
-- [Vitest docs「Test Annotations」][]
-- [Vitest docs「Test Context」][]
-- [Vitest docs「Reporters」][]
-- [Vitest docs「Test Artifacts」][]
-- [Vitest docs「vi.defineHelper」][]
-- [Vitest の `github-actions.ts`][]
-- [Vitest の `collect.ts`][]
-- [Vitest の `ViewEditor.vue`][]
-- [Vitest の `ViewTestReport.vue`][]
-- [vitest の PR 11047][]
-- [GitHub docs「Workflow commands」][]
-- [GitHub docs「REST API endpoints for check runs」][]
+本文は出典を名前のリンクで挙げ、URL は下のリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
 本文は引かないが、調べたときに読んだもの:
 
