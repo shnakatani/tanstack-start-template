@@ -78,12 +78,12 @@ axe の `incomplete` は「判定できなかった」だけを意味しない�
 
 a11y の検査は、ブラウザテストの中に 2 種類が混ざっている。a11y だけを問う専用のテストと、挙動テストの途中に置いた assert (楽観更新中の行、削除中の行のように、操作の途中にしか無い状態を測るもの) である。分けたいものを分解すると、プロセスを分ける必要があるのは 1 行だけになる。
 
-| 分けたいもの                    | 手段           | 追加の描画 |
-| ------------------------------- | -------------- | ---------- |
-| 関心 (アクセシブルか / 動くか)  | テスト名と tag | 無し       |
-| 実行 (a11y だけ走らせる)        | `--tagsFilter` | 無し       |
-| runner の設定 (timeout / retry) | tag の定義     | 無し       |
-| プロセス                        | project        | 増える     |
+| 分けたいもの                    | 手段            | 追加の描画 |
+| ------------------------------- | --------------- | ---------- |
+| 関心 (アクセシブルか / 動くか)  | テスト名と tag  | 無し       |
+| 実行 (a11y だけ走らせる)        | `--tags-filter` | 無し       |
+| runner の設定 (timeout / retry) | tag の定義      | 無し       |
+| プロセス                        | project         | 増える     |
 
 - vitest の Test Tags のページ ("When to reach for tags") は、tags を多数のファイルに散る横断カテゴリとカテゴリ単位の `timeout` / `retry` に、Test Projects をファイルごとに runner の設定 (isolation / pool / environment) が違うときに割り当てる。a11y の検査は runner の設定が挙動テストと同じで、横断カテゴリに当たる
 - 専用の project は足さない。足すとそのぶん描画が増える。tag の定義は `timeout` / `retry` を持てる (`vitest` の `TestTagDefinition`) ので、project を選ぶ理由 (runner の設定と単独実行) は tag 側で満たせる
@@ -175,16 +175,16 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 ### a11y の tag を付ける
 
 1. axe で「アクセシブルか」を問うテストに `it(名前, { tags: ["a11y"] }, fn)` を付ける。tag の定義は `vitest.browser.config.ts` の `test.tags` にある
-2. 単独で走らせるときは `vp test run --tagsFilter a11y`、外すときは `--tagsFilter '!a11y'`
+2. 単独で走らせるときは `vp test run --tags-filter a11y`、外すときは `--tags-filter '!a11y'`
 3. 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。その状態は操作の途中にしか無く、専用のテストへ降ろすと操作の再現が重複する。assert の近くに、`a11y` の tag を付けない理由を書く
 4. `expectNoA11yViolations` を呼ぶテストには、専用のテストか挙動テストかを問わず `axe` の tag を付ける。`mise run a11y:incomplete` がこの tag で絞る。付け忘れると helper が落ちる
 
-- `--tagsFilter '!a11y'` で外しても、挙動テストに相乗りした assert は走る。a11y を完全に外した実行はできない
+- `--tags-filter '!a11y'` で外しても、挙動テストに相乗りした axe の検査は走る。`'!axe'` なら axe の検査は全部外れるが、その挙動テストも一緒に外れる
 - tag の定義は browser project にしかない。他の project で使うなら、その project の `test.tags` へ足す
 - story の a11y は `addon-a11y` が全 story へ一律に当てるので、tag の対象外である
 - 相乗りの assert を後から降ろすと決めたら、共通の setup を helper へ切り出して、操作の再現の重複を避ける
 - tag で絞った実行でも、verbose reporter は外れたテストを 1 行ずつ並べる。`--hide-skipped-tests` で止める (Vitest docs の config「hideSkippedTests」)
-- helper が tag を読むのは `TestRunner.getCurrentTest()` の `tags` である。Vitest の移行ガイドが `vitest/suite` の代わりに案内する API で、`tags` は公開の型定義にだけ載る (2026-09-29 に Vitest 5.0.1 で、継承した tag も入ることを実測)
+- helper は tag をテストの文脈の `task.tags` から読む。`describe` から継承した tag も入る (2026-09-29 に Vitest 5.0.1 で実測)。グローバルから読まない理由は `docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」
 
 ### story で出た違反を抑制する
 

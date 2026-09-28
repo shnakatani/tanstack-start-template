@@ -7,8 +7,8 @@
 ### 注釈を残す
 
 - テストの文脈の `annotate(message, "warning")` で残す。`console.warn` に出さない。`console.warn` は PR の画面に出ない (「`console.warn` ではなく注釈で残す理由」)
-- helper から残すときは、テストの文脈 (`it("…", async ({ annotate }) => …)`) から `annotate` を引数で受ける (`src/test/a11y/a11y.ts` の `expectNoA11yViolations`)。`recordArtifact` は使わない (「helper に `annotate` を引数で渡す理由」)
-- type は `notice` / `warning` / `error` のどれかにする。ほかの文字列は `github-actions` reporter が `notice` として出し、文字列は注釈の題になる (Vitest docs の Test Annotations「github-actions」: <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-annotations.md>。題の扱いは docs に無く、Vitest 5.0.1 の実装の `getTitle`: <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/node/reporters/github-actions.ts>)
+- helper から残すときは、テストの文脈 (`it("…", async (context) => …)`) を引数で受け、文脈の `annotate` で残す (`src/test/a11y/a11y.ts` の `expectNoA11yViolations`)。理由は「helper にテストの文脈を渡す理由」
+- type は `notice` / `warning` / `error` のどれかにする。ほかの文字列は `github-actions` reporter が `notice` として出し、文字列は注釈の題になる (Test Annotations「github-actions」: <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-annotations.md>。題は docs に無く実装の `getTitle`: <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/node/reporters/github-actions.ts>)
 - Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` で残す (Vitest docs の Test Context「annotate」: <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-context.md>)
 
 ### 注釈を読む
@@ -38,7 +38,8 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 
 - 4 行とも Vitest 5.0.1 で 2026-09-29 に実測した。docs は位置の決まり方を書いていない。`vi.defineHelper` の docs も assertion の失敗の stack trace にしか触れない (<https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md>)
 - `vi.defineHelper` で包んだ helper の行が stack から外れるのは、vitest-dev/vitest の PR 11047 (Vitest 5.0.1 に含まれる。<https://github.com/vitest-dev/vitest/pull/11047>) からである
-- テストファイルの行が stack に 1 つも無いと、注釈は位置を持たず、`github-actions` reporter は PR に出さない (<https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/node/reporters/github-actions.ts> の `onTestCaseAnnotate`)。UI と HTML reporter では、位置を持たない注釈はソースの表示に出ず、テストの Report にだけ出る。docs の Test Annotations「html」はソースの表示にしか触れないので、Vitest 5.0.1 の UI の実装で確かめた (ソースの表示: <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/ui/client/components/views/ViewEditor.vue> の `createAnnotationElement`、Report: <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/ui/client/components/views/ViewTestReport.vue>)
+- テストファイルの行が stack に 1 つも無いと、注釈は位置を持たず、`github-actions` reporter は PR に出さない (<https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/node/reporters/github-actions.ts> の `onTestCaseAnnotate`)
+- UI と HTML reporter では、位置を持たない注釈はソースの表示に出ず、Report にだけ出る。docs の Test Annotations「html」は UI で見えないと書くが、5.0.1 の実装は Report に全部並べる (ソースの表示: <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/ui/client/components/views/ViewEditor.vue> の `createAnnotationElement`、Report: <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/ui/client/components/views/ViewTestReport.vue>)
 - Vitest を上げたら位置を確かめ直す。上の 4 通りで `annotate` を呼ぶ使い捨てのテストを置き、`GITHUB_ACTIONS=true vp test run <path>` の `::warning` 行の `line` を見る
 
 ## explanation
@@ -49,9 +50,16 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 - 注釈は、PR では `github-actions` reporter が該当テストの行に付け、手元では失敗時と verbose のときに reporter が出す。読む経路が reporter にまとまる
 - 両方に出すと、verbose で読んだときに同じ注意が 2 回並ぶ
 
-### helper に `annotate` を引数で渡す理由
+### helper にテストの文脈を渡す理由
 
-helper の中から実行中のテストに注釈を付ける手段は、引数で受けた `annotate` のほかに `recordArtifact` がある。`recordArtifact` は使わない。
+helper の中から実行中のテストを扱う手段は、引数で受けたテストの文脈のほかに `recordArtifact` と `TestRunner.getCurrentTest()` がある。どちらも使わない。
+
+`TestRunner.getCurrentTest()` を使わない理由:
+
+- 実行中のテストを 1 つのグローバルで持つので、並行で走るテストでは別のテストを指す。2026-09-29 に Vitest 5.0.1 で、`describe.concurrent` の中で隣のテストの tag を読むことを実測した (`src/test/a11y/a11y.test.tsx` の「並行で走るテスト」)
+- docs も、グローバルな `expect` は並行テストを追えないので文脈の `expect` を使うよう書く (Vitest docs の Test Context「expect」: <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-context.md>)
+
+`recordArtifact` を使わない理由:
 
 - experimental の API で、SemVer に沿わない変更がありうる (Vitest docs の Test Artifacts: "`recordArtifact` is an experimental API. Breaking changes might not follow SemVer"。<https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/advanced/artifacts.md>)
 - 同じ docs は、テストに注意を足すだけなら注釈を使うよう案内する ("Use annotations if you just want to add notes to your tests. Use artifacts if you need custom data.")

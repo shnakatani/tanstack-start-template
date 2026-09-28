@@ -1,5 +1,5 @@
 import axe from "axe-core";
-import { expect, type TestContext, TestRunner, vi } from "vite-plus/test";
+import { expect, type TestContext, vi } from "vite-plus/test";
 
 import { describeA11yIncomplete, describeA11yResults } from "./a11y-message";
 
@@ -19,15 +19,18 @@ import { describeA11yIncomplete, describeA11yResults } from "./a11y-message";
  * ヘルパー名を `expect` で始めるのは、`vitest/expect-expect` が assertion と認めるのが
  * `expect*` のパターンだから (ADR-0007)。
  *
- * `annotate` はテストの文脈から渡す (`it("…", async ({ annotate }) => …)`)。
+ * 第 2 引数にはテストの文脈を渡す (`it("…", async (context) => …)`)。注釈は文脈の `annotate` で残す。
  *
- * 呼ぶテストには `{ tags: ["axe"] }` を付ける。`mise run a11y:incomplete` はこの tag で絞るので、
- * 付け忘れたテストはそこから黙って漏れる。付いていなければ落とす。今のテストは
- * `TestRunner.getCurrentTest()` で取る (Vitest の移行ガイドが `vitest/suite` の代わりに案内する)
+ * 呼ぶテストには `{ tags: ["axe"] }` を付ける。tag で絞った実行から、付け忘れたテストが黙って
+ * 漏れないよう、付いていなければ落とす。tag は文脈の `task` から読む。実行中のテストを 1 つだけ
+ * 持つグローバル (`TestRunner.getCurrentTest()`) は、並行で走る別のテストを指すことがある
  */
 export const expectNoA11yViolations = vi.defineHelper(
-  async (container: Element, annotate: TestContext["annotate"]): Promise<void> => {
-    if (!TestRunner.getCurrentTest()?.tags?.includes("axe")) {
+  async (
+    container: Element,
+    { annotate, task }: Pick<TestContext, "annotate" | "task">,
+  ): Promise<void> => {
+    if (!task.tags?.includes("axe")) {
       throw new Error('expectNoA11yViolations を呼ぶテストには { tags: ["axe"] } を付ける');
     }
     const result = await axe.run(container, {

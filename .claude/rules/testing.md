@@ -54,8 +54,8 @@ paths:
 
 ## a11y の検査は tag で分ける
 
-- `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tagsFilter a11y`。`--tagsFilter '!a11y'` で外しても、挙動テストに相乗りした assert は走る (vitest の Test Tags)
-- tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tagsFilter a11y` は story を走らせない (vitest の Test Tags)
+- `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tags-filter a11y`。`--tags-filter '!a11y'` で外しても、挙動テストに相乗りした assert は走る (vitest の Test Tags)
+- tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tags-filter a11y` は story を走らせない (vitest の Test Tags)
 - tag の定義は `vitest.browser.config.ts` の `test.tags`。定義に無い tag はエラーで落ちる (vitest の Test Tags の `strictTags`)
 - 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。専用テストへ降ろすと操作の再現が重複する (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 - `expectNoA11yViolations` を呼ぶテストには `{ tags: ["axe"] }` を付ける。`mise run a11y:incomplete` がこの tag で絞り、付け忘れると helper が落ちる (`docs/guides/accessibility.md`「a11y の tag を付ける」)
@@ -90,7 +90,7 @@ paths:
 - 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
 - テストの中で残す注意 (合否に入れないが読ませたいもの) は、テストの文脈の `annotate(message, "warning")` で残し、`console.warn` に出さない。`console.warn` は PR の画面に出ない (`docs/guides/testing/annotations.md`「`console.warn` ではなく注釈で残す理由」)
-- 注釈を残す helper は `annotate` をテストの文脈から引数で受け、`recordArtifact` を使わない。experimental で SemVer に沿わない (`docs/guides/testing/annotations.md`「helper に `annotate` を引数で渡す理由」)
+- 注釈を残す helper はテストの文脈を引数で受ける。`TestRunner.getCurrentTest()` は並行するテストで別のテストを指し、`recordArtifact` は experimental (`docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」)
 - 手元の default reporter は通ったテストの注釈を出さない。a11y の注釈は `mise run a11y:incomplete` で読み、ほかは `--reporter=verbose` を付けて走らせる (`docs/guides/testing/annotations.md`「注釈を読む」)
 - Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (vitest docs の guide/test-context の annotate)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)

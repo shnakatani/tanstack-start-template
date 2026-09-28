@@ -77,8 +77,7 @@ export default defineProject({
       },
       {
         name: "axe",
-        description:
-          "expectNoA11yViolations を呼ぶテスト。挙動テストの途中で呼ぶものも含む。mise run a11y:incomplete がこれで絞る",
+        description: "描画した DOM を axe で検査し、アクセシビリティの違反を見つけるテスト",
       },
     ],
     setupFiles: ["src/test/browser/browser-setup.tsx"],
