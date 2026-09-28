@@ -196,7 +196,8 @@ describe("NotesPage", () => {
       queryKey: notesQueryOptions({ q: "" }).queryKey,
       exact: true,
     });
-    // 空に戻したあとの再取得は、応答をテストで握る。同じ引数に後から積んだ振る舞いが先に使われる
+    // 空に戻したあとの再取得は、応答をテストで握る。同じ引数の behavior に後から足した応答 (action) が
+    // 先に使われ、無期限の応答なので以降は前の応答に戻らない
     const listed = Promise.withResolvers<Note[]>();
     listing.calledWith({ data: { q: "" } }).thenReturn(listed.promise);
     await searchbox.fill("");
@@ -442,9 +443,7 @@ describe("NotesPage", () => {
     const refetch = deferMock(listNotes);
     const secondResponse = Promise.withResolvers<undefined>();
     vi.when(vi.mocked(updateNote), { onUnmatched: "throw" })
-      .calledWith({
-        data: { id: NOTE.id, title: UPDATED_NOTE.title, body: NOTE.body, dueDate: NOTE.dueDate },
-      })
+      .calledWith({ data: NOTE_UPDATE })
       .thenResolve(undefined)
       .calledWith({
         data: {

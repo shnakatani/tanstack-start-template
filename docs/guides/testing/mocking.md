@@ -30,8 +30,9 @@
 | 同じ引数で、呼ばれる順に応答を変える (初回の取得と、更新後の再取得) | `mockResolvedValueOnce(初回).mockResolvedValue(以降)`                                                                                                                          |
 | 応答の時点をテストで握る                                            | 引数を問わないなら `deferMock(fn)` (`src/test/app/defer-mock.ts`)。引数ごとに握るなら `Promise.withResolvers()` を作り、`vi.when` の `thenReturn(pending.promise)` に渡す      |
 
-- `vi.when` は同じ引数に後から積んだ振る舞いを先に使う。途中から応答を変えるなら、最初の `vi.when` の戻り値に `calledWith` を積み足す。`vi.when` のあとに `deferMock` を呼ぶと、`vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなる (2026-09-28、vitest 5.0.1 で実測)。混ぜない
-- `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、まず `vi.mocked(fn).mock.calls` で渡った引数を見る
+- 途中から応答を変えるなら、最初の `vi.when` の戻り値に同じ引数の `calledWith` を積み足す。同じ引数の behavior に後から足した応答 (action) が先に使われ、無期限の応答なら以降は前の応答に戻らない (vitest docs のレシピ「Conditional Mocking with vi.when」の Stacking actions)
+- `vi.when` は spy の実装を差し替える。あとから `mockImplementation` / `mockResolvedValue` / `deferMock` を呼ぶと `vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなる。未消費の `mock*Once` は引数を問わず `vi.when` より先に使われる (2026-09-28、vitest 5.0.1 で実測)。同じ spy で混ぜない
+- `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、`vi.mocked(fn).mock.results` を見る。`vi.when: no behavior defined when called with [...]` の例外と渡った引数が読める
 
 ## explanation
 
@@ -71,3 +72,4 @@ explanation と how-to が拠る一次情報。vitest は 5.0.1 の tag で固�
 - `@vitest/mocker` `node/resolver.ts`: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/mocker/src/node/resolver.ts
 - Jest docs「Manual Mocks」: https://jestjs.io/docs/manual-mocks
 - vitest docs のレシピ「Conditional Mocking with vi.when」: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/conditional-mocking.md
+- vitest docs「vi.when」: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md
