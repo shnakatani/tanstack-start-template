@@ -8,7 +8,7 @@ import { formatDateTime } from "@/lib/format-date-time";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { noteEditDialogHandle } from "../-lib/note-edit-dialog-handle";
 import type { NoteRow } from "../-lib/note-rows";
-import { noteInputOf } from "../-lib/note-rows";
+import { isNoteRowBusy, noteInputOf } from "../-lib/note-rows";
 
 type NoteCellContext = DataTableCellContext<NoteRow>;
 
@@ -61,9 +61,11 @@ export function NoteActionsCell({ row }: NoteCellContext) {
   if (row.original.kind !== "saved") {
     return null;
   }
-  const { note, isDeleting, pendingUpdate } = row.original;
-  // 止めるのは削除中か更新中の行だけ (ADR-0017「ブロック範囲」)。更新と削除を同じ行に並行させない
-  const isBusy = isDeleting || pendingUpdate !== null;
+  const { note, isDeleting } = row.original;
+  // 止めるのは削除中か更新中の行だけ (ADR-0017「ブロック範囲」)。更新と削除を同じ行に並行させない。
+  // 判定は行の aria-busy (半透明) と同じ isNoteRowBusy から取る。別々に書くと、条件を足したときに
+  // 行の見た目とトリガーの無効化がずれる
+  const isBusy = isNoteRowBusy(row.original);
   // トリガーの名前は行に見えている title から作る。更新中は編集後の値が見えているので、
   // 再取得前の note.title で読み上げると画面と食い違う
   const { title } = noteInputOf(row.original);
