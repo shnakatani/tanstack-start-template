@@ -38,13 +38,13 @@ export const expectNoA11yViolations = vi.defineHelper(
     // incomplete は合否へ入れない。組み上げて操作した結果に出るものは、部品の問題ではなく
     // 合成とタイミングの産物で、実行環境の速さで結果が変わる (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」の事故)。統制できる
     // 単一部品の側 (story) で落とす (ADR-0028)。ただし黙って捨てると、緑のときに
-    // 何が測れていないのかを誰も読めない。注釈にすると reporter がテストに結び付けて出す
-    // (GitHub Actions では該当テストの warning になる)
+    // 何が測れていないのかを誰も読めない。注釈と console.warn の両方で残す。注釈は GitHub Actions
+    // では該当テストの warning になるが、端末の default reporter は通ったテストの注釈を出さない。
+    // console.warn はそちらに出る (vitest docs の guide/test-annotations)
     if (result.incomplete.length > 0) {
-      await annotate(
-        `axe が判定できなかった項目\n${describeA11yResults(result.incomplete).join("\n")}`,
-        "warning",
-      );
+      const described = describeA11yResults(result.incomplete);
+      console.warn("[a11y] axe が判定できなかった項目", described);
+      await annotate(`axe が判定できなかった項目\n${described.join("\n")}`, "warning");
     }
 
     // 1 つもルールが走らなかった (container が空だった) 場合を通さない
