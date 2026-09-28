@@ -8,17 +8,19 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// focusPageHeading は遷移前の要素を Element で受け取り同一性で比べるので、渡す要素は querySelector で掴む。
+// focus の移り先は locator の toHaveFocus で見る。body は role で引けないので document.activeElement と比べる
 describe("focusPageHeading", () => {
   it("focus していた要素が消えて body にあるとき、h1 へ移し tabindex=-1 を付ける", async () => {
-    await render(<h1>ページ</h1>);
-    const heading = document.querySelector("h1");
+    const screen = await render(<h1>ページ</h1>);
     focusPageHeading(null);
-    expect(document.activeElement).toBe(heading);
-    expect(heading?.getAttribute("tabindex")).toBe("-1");
+    const heading = screen.getByRole("heading", { name: "ページ" });
+    await expect.element(heading).toHaveFocus();
+    await expect.element(heading).toHaveAttribute("tabindex", "-1");
   });
 
   it("activeElement が null (focus を持つ要素が無い) のとき、h1 へ移す", async () => {
-    await render(
+    const screen = await render(
       <>
         <button type="button">遷移前に押したボタン</button>
         <h1>ページ</h1>
@@ -29,11 +31,11 @@ describe("focusPageHeading", () => {
     const activeElement = vi.spyOn(document, "activeElement", "get").mockReturnValue(null);
     focusPageHeading(button);
     activeElement.mockRestore();
-    expect(document.activeElement).toBe(document.querySelector("h1"));
+    await expect.element(screen.getByRole("heading", { name: "ページ" })).toHaveFocus();
   });
 
   it("遷移前と同じ要素に focus が残っているとき (押したリンクが残る)、h1 へ移す", async () => {
-    await render(
+    const screen = await render(
       <>
         <a href="/x">リンク</a>
         <h1>ページ</h1>
@@ -42,11 +44,11 @@ describe("focusPageHeading", () => {
     const link = document.querySelector("a");
     link?.focus();
     focusPageHeading(link);
-    expect(document.activeElement).toBe(document.querySelector("h1"));
+    await expect.element(screen.getByRole("heading", { name: "ページ" })).toHaveFocus();
   });
 
   it("遷移中に別の要素へ focus が移っていたら奪わない", async () => {
-    await render(
+    const screen = await render(
       <>
         <a href="/x">リンク</a>
         <input aria-label="入力" />
@@ -54,19 +56,20 @@ describe("focusPageHeading", () => {
       </>,
     );
     const link = document.querySelector("a");
-    const input = document.querySelector("input");
-    input?.focus();
+    const input = screen.getByRole("textbox", { name: "入力" });
+    input.element().focus();
     focusPageHeading(link);
-    expect(document.activeElement).toBe(input);
+    await expect.element(input).toHaveFocus();
   });
 
   it("既に tabindex を持つ h1 の値を書き換えない", async () => {
     // JSX の tabIndex={0} は jsx-a11y/no-noninteractive-tabindex に引っかかるため、
     // 描画後に属性を直接付与して「既存の値を持つ h1」を作る
-    await render(<h1>ページ</h1>);
-    document.querySelector("h1")?.setAttribute("tabindex", "0");
+    const screen = await render(<h1>ページ</h1>);
+    const heading = screen.getByRole("heading", { name: "ページ" });
+    heading.element().setAttribute("tabindex", "0");
     focusPageHeading(null);
-    expect(document.querySelector("h1")?.getAttribute("tabindex")).toBe("0");
+    await expect.element(heading).toHaveAttribute("tabindex", "0");
   });
 
   it("h1 が無いときは body へ移し、警告を残す", async () => {
@@ -101,7 +104,7 @@ describe("focusPageHeading", () => {
   });
 
   it("キーボード操作の後に呼んでも、見出しは :focus-visible にならない", async () => {
-    await render(
+    const screen = await render(
       <>
         <button type="button">前の要素</button>
         <h1>ページ</h1>
@@ -113,11 +116,11 @@ describe("focusPageHeading", () => {
     // 遷移前と同じ要素 (button) に focus が残っているケースを再現するため、
     // focusedBeforeNavigation にも同じ要素を渡す (早期 return させない)
     await userEvent.keyboard("{Tab}");
-    expect(document.activeElement).toBe(button);
-    const heading = document.querySelector("h1");
+    await expect.element(screen.getByRole("button", { name: "前の要素" })).toHaveFocus();
+    const heading = screen.getByRole("heading", { name: "ページ" });
     focusPageHeading(button);
-    expect(document.activeElement).toBe(heading);
-    expect(heading?.matches(":focus-visible")).toBe(false);
+    await expect.element(heading).toHaveFocus();
+    await expect.poll(() => heading.element().matches(":focus-visible")).toBe(false);
   });
 
   it("focus でスクロールしない", async () => {
