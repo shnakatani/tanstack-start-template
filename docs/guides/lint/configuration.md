@@ -82,7 +82,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 | 上流 recommended に無く `correctness` 経由で入る              | `vitest/require-mock-type-parameters`                                                 |
 | 基準の variant が off にするが `correctness` 経由で有効になる | `jsdoc/require-property-type` (カテゴリ側の有効化が勝つため `rules` で明示的に落とす) |
 
-基準がより緩いオプションを持つ場合も同様に、指定と理由を残す (`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames`)。
+基準がより緩いオプションを持つ場合も同様に、指定と理由を残す (`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames`、`vitest/no-standalone-expect` の `additionalTestBlockFunctions`)。
 `assertFunctionNames` は既定を置換するため、既定値を覆う指定にする。
 
 ### テストファイルの緩和

@@ -1,5 +1,5 @@
 import axe from "axe-core";
-import { expect } from "vite-plus/test";
+import { expect, vi } from "vite-plus/test";
 
 import { describeA11yResults } from "./a11y-message";
 
@@ -19,7 +19,7 @@ import { describeA11yResults } from "./a11y-message";
  * ヘルパー名を `expect` で始めるのは、`vitest/expect-expect` が assertion と認めるのが
  * `expect*` のパターンだから (ADR-0007)。
  */
-export async function expectNoA11yViolations(container: Element): Promise<void> {
+export const expectNoA11yViolations = vi.defineHelper(async (container: Element): Promise<void> => {
   const result = await axe.run(container, {
     rules: {
       // region は「ページ本体が landmark の中にあるか」を見る文書レベルの規則で、
@@ -41,4 +41,4 @@ export async function expectNoA11yViolations(container: Element): Promise<void> 
 
   // 1 つもルールが走らなかった (container が空だった) 場合を通さない
   expect(result.passes.length, "適用されたルールがゼロ").toBeGreaterThan(0);
-}
+});

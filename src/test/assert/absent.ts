@@ -1,4 +1,4 @@
-import { expect } from "vite-plus/test";
+import { expect, vi } from "vite-plus/test";
 import type { Locator } from "vite-plus/test/browser/context";
 
 /**
@@ -15,10 +15,10 @@ import type { Locator } from "vite-plus/test/browser/context";
  * 同じ操作の効果を表す肯定 assert を先に置く。retry を持たない assert が flake を招くのは
  * Playwright が公式に警告している形で、その肯定 assert が緩和にあたる (docs/guides/testing/waiting-and-assertions.md「不在を 2 つの名前で書き分ける理由」)。
  */
-export async function expectAbsent(target: Locator): Promise<void> {
+export const expectAbsent = vi.defineHelper(async (target: Locator): Promise<void> => {
   // oxlint-disable-next-line browser-test/no-bare-absence-assertion -- 不在確認の実体はここ
   await expect.element(target, { timeout: 0 }).not.toBeInTheDocument();
-}
+});
 
 /**
  * 要素が在る状態から消えるのを待つ。**assert の予算ぶん待つ** (docs/guides/testing/waiting-and-assertions.md「assert の予算を宣言する」)。
@@ -29,7 +29,7 @@ export async function expectAbsent(target: Locator): Promise<void> {
  * 要素が最初から無くても通る。前段の操作がその要素を消すものであることは呼び出し側が
  * 担保する。ランタイムでは止められない理由は docs/guides/testing/waiting-and-assertions.md「不在を 2 つの名前で書き分ける理由」が持つ。
  */
-export async function expectRemoved(target: Locator): Promise<void> {
+export const expectRemoved = vi.defineHelper(async (target: Locator): Promise<void> => {
   // oxlint-disable-next-line browser-test/no-bare-absence-assertion -- 消滅待ちの実体はここ
   await expect.element(target).not.toBeInTheDocument();
-}
+});

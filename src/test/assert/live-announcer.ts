@@ -1,4 +1,4 @@
-import { expect } from "vite-plus/test";
+import { expect, vi } from "vite-plus/test";
 
 import { findLiveRegion, LIVE_REGION_IDS, type Politeness } from "@/lib/live-announcer";
 
@@ -32,9 +32,8 @@ export function readAnnouncements(politeness: Politeness = "polite"): string[] {
  * (`expect.poll.timeout`) を読む。`vi.waitFor` は予算を読まず 1000ms で打ち切る
  * (docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」)。
  */
-export async function expectAnnouncements(
-  expected: string[],
-  politeness: Politeness = "polite",
-): Promise<void> {
-  await expect.poll(() => readAnnouncements(politeness)).toEqual(expected);
-}
+export const expectAnnouncements = vi.defineHelper(
+  async (expected: string[], politeness: Politeness = "polite"): Promise<void> => {
+    await expect.poll(() => readAnnouncements(politeness)).toEqual(expected);
+  },
+);
