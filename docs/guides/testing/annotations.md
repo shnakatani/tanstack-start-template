@@ -14,7 +14,9 @@
 
 ### 注釈を読む
 
-reporter が注釈を出すかは、テストの成否で決まる。type では変わらない (Vitest docs「Test Annotations」: "The `default` reporter prints annotations only if the test has failed"、"The `verbose` reporter is the only terminal reporter that reports annotations when the test doesn't fail")。
+reporter が注釈を出すかは、テストの成否で決まる。type では変わらない。
+
+根拠は Vitest docs「Test Annotations」の "The `default` reporter prints annotations only if the test has failed" と "The `verbose` reporter is the only terminal reporter that reports annotations when the test doesn't fail" である。
 
 | 場面                         | 出るか                                       | 読み方                                                                         |
 | ---------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
@@ -25,8 +27,8 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 - `github-actions` reporter は、`reporters` を設定していなければ、CI (`GITHUB_ACTIONS` が `true`) で Vitest が自動で足す (Vitest docs「Reporters」の Default Configuration)
 - `reporters` を書くと既定の組が置き換わり、PR に注釈が出なくなる。足すときは `configDefaults.reporters` を展開する (Vitest docs「Reporters」の Default Configuration: "the configured list replaces the default list")
 - `github-actions` reporter に `displayAnnotations: false` を渡すと、注釈を PR に出さなくなる (Vitest docs「Reporters」の GitHub Actions Reporter)
-- PR に出る注釈は、1 step あたり warning と error がそれぞれ 10 件までである (GitHub docs「REST API endpoints for check runs」の Update a check run の `annotations`。2026-09-29 に確認)
-- 超えた分は PR の画面に出ない。超えていそうなら手元の verbose で読む
+- PR に出る注釈は、1 step あたり warning と error がそれぞれ 10 件までである (GitHub docs「REST API endpoints for check runs」の Update a check run: "limited to 10 warning annotations and 10 error annotations per step"。2026-09-29 に確認)
+- 上限を超えた分の扱いは GitHub docs に書かれていない。超えていそうなら手元の verbose で読む
 
 ### 注釈の位置を読む
 
@@ -90,7 +92,7 @@ helper の中から実行中のテストを扱う手段は、引数で受けた�
 
 本文は引かないが、調べたときに読んだもの:
 
-- Vitest の `context.ts` (`annotate` の実装。`recordArtifact` を通して位置を決める): <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/runtime/runner/context.ts>
+- Vitest の `context.ts` (`annotate` の実装。`recordArtifact` を通し、位置が `findTestFileStackTrace` で決まる経路): <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/runtime/runner/context.ts>
 - vitest の PR 7953 (注釈の API の導入と、reporter ごとの出方の設計): <https://github.com/vitest-dev/vitest/pull/7953>
 - vitest の PR 9594 (`vi.defineHelper` の導入。stack の切り詰めを `__VITEST_HELPER__` の目印で行う): <https://github.com/vitest-dev/vitest/pull/9594>
 - GitHub community の Discussion 26680 (注釈の件数の上限の報告): <https://github.com/orgs/community/discussions/26680>

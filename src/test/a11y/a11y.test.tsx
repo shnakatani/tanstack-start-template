@@ -59,8 +59,9 @@ describe("expectNoA11yViolations", () => {
   // tag は呼んだテスト自身の文脈から読む。実行中のテストを 1 つだけ持つグローバルから読むと、
   // 並行で走る別のテストの tag を読む (vitest docs の guide/test-context の expect)
   describe.concurrent("並行で走るテスト", () => {
-    // tag の無いテストは、axe の tag を持つテストの検査が終わるまで走り続ける。並行するテストは
-    // 本体より前にすべて始まるので、検査の時点でグローバルは tag の無いテストを指す
+    // tag の無いテストは、axe の tag を持つテストの検査が終わるまで走り続ける。maxConcurrency (既定 5)
+    // 以下の並行するテストは本体より前にすべて始まるので、検査の時点でグローバルは tag の無いテストを指す。
+    // tag で絞った実行では片方が外れるので、この確かめは絞らない実行でだけ効く
     const checked = Promise.withResolvers<undefined>();
 
     it(
