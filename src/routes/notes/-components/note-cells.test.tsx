@@ -16,6 +16,7 @@ import {
   CREATING_ROW,
   NOTE,
   NOTE_CREATED_AT_TEXT,
+  NOTE_UPDATE,
   NOTE_UPDATED_AT_TEXT,
   OTHER_NOTE,
   UPDATED_NOTE,
@@ -90,14 +91,6 @@ describe("NoteCreatedAtCell", () => {
     await expectAbsent(noteRow(screen, NOTE).getByText("保存中"));
   });
 });
-
-/** NOTE を UPDATED_NOTE へ書き換える更新 (pending な更新 mutation の variables を絞った形) */
-const NOTE_UPDATE: NoteUpdate = {
-  id: UPDATED_NOTE.id,
-  title: UPDATED_NOTE.title,
-  body: UPDATED_NOTE.body,
-  dueDate: UPDATED_NOTE.dueDate,
-};
 
 describe("NoteUpdatedAtCell", () => {
   it("確定行は更新日時を APP_TIME_ZONE の壁時計で描く", async () => {

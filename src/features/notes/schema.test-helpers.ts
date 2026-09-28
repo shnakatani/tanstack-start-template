@@ -1,7 +1,7 @@
 import { formatDateTime } from "@/lib/format-date-time";
 
 import type { CreatingRow } from "./creating-rows";
-import type { Note } from "./schema";
+import type { Note, NoteUpdate } from "./schema";
 
 /**
  * テスト用の確定済みメモ。createdAt は絶対時刻 (UTC) で固定し、期待値が実行環境のローカル TZ で
@@ -36,6 +36,14 @@ export const UPDATED_NOTE: Note = {
   ...NOTE,
   title: "買い出しリスト",
   updatedAt: new Date("2026-08-19T03:00:00.000Z"),
+};
+
+/** NOTE を UPDATED_NOTE へ書き換える更新。pending な更新 mutation の variables の形 */
+export const NOTE_UPDATE: NoteUpdate = {
+  id: UPDATED_NOTE.id,
+  title: UPDATED_NOTE.title,
+  body: UPDATED_NOTE.body,
+  dueDate: UPDATED_NOTE.dueDate,
 };
 
 /** 楽観表示と無効化が対象行だけに効くことを見るための 2 件目。 */

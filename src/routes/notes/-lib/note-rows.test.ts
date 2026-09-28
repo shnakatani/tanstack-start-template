@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { CREATING_ROW, NOTE, OTHER_NOTE, UPDATED_NOTE } from "@/features/notes/schema.test-helpers";
+import { CREATING_ROW, NOTE, NOTE_UPDATE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 
+import type { NoteRow } from "./note-rows";
 import { getNoteRowId, isNoteRowBusy, noteInputOf, toNoteRows } from "./note-rows";
 
-/** NOTE を UPDATED_NOTE へ書き換える更新 (pending な更新 mutation の variables を絞った形) */
-const { title, body, dueDate } = UPDATED_NOTE;
-const NOTE_UPDATE_INPUT = { title, body, dueDate };
-const NOTE_UPDATE = { id: UPDATED_NOTE.id, ...NOTE_UPDATE_INPUT };
+type SavedNoteRow = Extract<NoteRow, { kind: "saved" }>;
+
+/** 確定行。既定は NOTE の、削除中でも更新中でもない行で、見たい項目だけを上書きする */
+function savedRow(overrides: Partial<Omit<SavedNoteRow, "kind">> = {}): SavedNoteRow {
+  return { kind: "saved", note: NOTE, isDeleting: false, pendingUpdate: null, ...overrides };
+}
 
 describe("toNoteRows", () => {
   it("入力が全て空なら空配列", () => {
@@ -36,13 +39,10 @@ describe("toNoteRows", () => {
       updatingNotes: [],
     });
 
-    expect(rows).toEqual([
-      { kind: "saved", note: NOTE, isDeleting: false, pendingUpdate: null },
-      { kind: "saved", note: OTHER_NOTE, isDeleting: true, pendingUpdate: null },
-    ]);
+    expect(rows).toEqual([savedRow(), savedRow({ note: OTHER_NOTE, isDeleting: true })]);
   });
 
-  it("updatingNotes に含まれる確定行だけ、id を除いた入力項目を pendingUpdate に持つ", () => {
+  it("updatingNotes に含まれる確定行だけ、その更新を pendingUpdate に持つ", () => {
     const rows = toNoteRows({
       notes: [NOTE, OTHER_NOTE],
       creatingRows: [],
@@ -51,8 +51,8 @@ describe("toNoteRows", () => {
     });
 
     expect(rows).toEqual([
-      { kind: "saved", note: NOTE, isDeleting: false, pendingUpdate: NOTE_UPDATE_INPUT },
-      { kind: "saved", note: OTHER_NOTE, isDeleting: false, pendingUpdate: null },
+      savedRow({ pendingUpdate: NOTE_UPDATE }),
+      savedRow({ note: OTHER_NOTE }),
     ]);
   });
 
@@ -72,52 +72,27 @@ describe("toNoteRows", () => {
 
 describe("noteInputOf", () => {
   it("確定行は note を、保存中の行は variables を返す", () => {
-    expect(noteInputOf({ kind: "saved", note: NOTE, isDeleting: false, pendingUpdate: null })).toBe(
-      NOTE,
-    );
+    expect(noteInputOf(savedRow())).toBe(NOTE);
     expect(noteInputOf({ kind: "creating", ...CREATING_ROW })).toBe(CREATING_ROW.variables);
   });
 
   it("更新中の確定行は、再取得前の note ではなく編集後の値を返す", () => {
-    expect(
-      noteInputOf({
-        kind: "saved",
-        note: NOTE,
-        isDeleting: false,
-        pendingUpdate: NOTE_UPDATE_INPUT,
-      }),
-    ).toBe(NOTE_UPDATE_INPUT);
+    expect(noteInputOf(savedRow({ pendingUpdate: NOTE_UPDATE }))).toBe(NOTE_UPDATE);
   });
 });
 
 describe("isNoteRowBusy", () => {
   it("保存中の行と、削除中か更新中の確定行だけが busy", () => {
     expect(isNoteRowBusy({ kind: "creating", ...CREATING_ROW })).toBe(true);
-    expect(
-      isNoteRowBusy({ kind: "saved", note: NOTE, isDeleting: true, pendingUpdate: null }),
-    ).toBe(true);
-    expect(
-      isNoteRowBusy({
-        kind: "saved",
-        note: NOTE,
-        isDeleting: false,
-        pendingUpdate: NOTE_UPDATE_INPUT,
-      }),
-    ).toBe(true);
-    expect(
-      isNoteRowBusy({ kind: "saved", note: NOTE, isDeleting: false, pendingUpdate: null }),
-    ).toBe(false);
+    expect(isNoteRowBusy(savedRow({ isDeleting: true }))).toBe(true);
+    expect(isNoteRowBusy(savedRow({ pendingUpdate: NOTE_UPDATE }))).toBe(true);
+    expect(isNoteRowBusy(savedRow())).toBe(false);
   });
 });
 
 describe("getNoteRowId", () => {
   it("確定行と保存中の行で接頭辞が違い、同じ数値でも衝突しない", () => {
-    const saved = getNoteRowId({
-      kind: "saved",
-      note: NOTE,
-      isDeleting: false,
-      pendingUpdate: null,
-    });
+    const saved = getNoteRowId(savedRow());
     const creating = getNoteRowId({ kind: "creating", submittedAt: NOTE.id, variables: NOTE });
 
     expect(saved).toBe("saved-1");

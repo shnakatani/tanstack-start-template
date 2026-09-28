@@ -9,8 +9,8 @@ type SavedNoteRow = {
   kind: "saved";
   note: Note;
   isDeleting: boolean;
-  /** 更新中なら編集後の入力項目 (pending な更新 mutation の variables)。再取得完了で null に戻る */
-  pendingUpdate: NoteInput | null;
+  /** 更新中なら編集後の値 (pending な更新 mutation の variables)。再取得完了で null に戻る */
+  pendingUpdate: NoteUpdate | null;
 };
 
 /** 保存中の行 (pending な追加 mutation の variables)。id と createdAt をまだ持たない */
@@ -67,12 +67,7 @@ export function toNoteRows({
         kind: "saved",
         note,
         isDeleting: deletingIds.includes(note.id),
-        // id は note と同じ値なので落とし、入力項目だけを持つ。NoteInput の項目が増えたら
-        // この literal が型エラーになる
-        pendingUpdate:
-          update === undefined
-            ? null
-            : { title: update.title, body: update.body, dueDate: update.dueDate },
+        pendingUpdate: update ?? null,
       };
     }),
   ];
