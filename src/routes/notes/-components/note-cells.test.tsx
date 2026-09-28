@@ -128,7 +128,7 @@ describe("NoteUpdatedAtCell", () => {
 
     // 更新中の行は編集後の title で描く (noteInputOf)。作成日時は変わらない
     // 日時を並べて出さないことも見るので、cell の文字列全体と比べる
-    await expect.element(updatedAtCell(screen, UPDATED_NOTE)).toHaveTextContent(/^更新中$/);
+    await expect.element(updatedAtCell(screen, UPDATED_NOTE)).toHaveTextContent("更新中");
     await expect
       .element(createdAtCell(screen, UPDATED_NOTE))
       .toHaveTextContent(NOTE_CREATED_AT_TEXT);

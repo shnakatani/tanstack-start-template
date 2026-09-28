@@ -23,4 +23,5 @@ __screenshots__
 logs/
 .playwright-cli/
 after-*.yaml
+.vitest/
 __pycache__/

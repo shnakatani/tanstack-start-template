@@ -382,7 +382,7 @@ describe("NotesPage", () => {
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
     // rows[0] はヘッダ行
-    await expect.element(screen.getByRole("row").nth(1)).toHaveTextContent(CREATED_NOTE.title);
+    await expect.element(screen.getByRole("row").nth(1)).toMatchTextContent(CREATED_NOTE.title);
     // 楽観行が出ている状態そのものを検査する。ダイアログが閉じたあとなので、
     // axe が見るのは一覧だけ (開いている間は行が aria-hidden 配下に入る)。
     // この assert の問いは a11y だが、a11y tag を付けた専用テストへは降ろさない。
