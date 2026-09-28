@@ -79,7 +79,7 @@ peerDependencyRules:
     # (pnpm 11 の pnpm peers check はキーの親の版を見ないので、キーに版を付けても契機にならない)。
     # 撤去条件: storybook の peer が vite-plus 1.x を含んだとき
     # 値を major にしたので、Vite+ の 1.x の minor で vite-plus/versions の export が消えても、ここは鳴らない。
-    # 気付く契機は mise run verify の Storybook のテストになる
+    # Vite+ を上げたら、vite-plus/versions の export が残っているかを確かめる
     "storybook>vite-plus": "1"
 
 # @storybook/addon-vitest@10.6.0 は story の viewport を `import("@vitest/browser/context")` の page で当てる。

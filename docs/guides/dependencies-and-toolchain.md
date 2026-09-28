@@ -60,7 +60,8 @@ pnpm peers check
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm の PR 14114][])
 - 許可を外すだけでは lockfile が変わらないので、`--force` を付けても `strictPeerDependencies: true` にしても install は通る (2026-09-29、pnpm 11.28.0)。`pnpm peers check` だけが食い違いを出す
 - 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版の major>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
-- 撤去条件は、pin の出口条件と同じ扱いにする (ADR-0005 の決定 6)
+- 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005 の決定 6)
+- Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。`storybook>vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側の major を上げると、許可の範囲を外れて `pnpm peers check` に再び食い違いとして出る。新しい major で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
