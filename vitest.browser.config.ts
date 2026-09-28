@@ -65,8 +65,8 @@ export default defineProject({
     expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
     // project を足すとそのぶん描画が増えるため。挙動テストの途中の状態を測る assert には
-    // a11y の tag を付けない。専用テストへ降ろすと操作の再現が重複する。axe の tag は、
-    // expectNoA11yViolations を呼ぶテストのすべてに付ける (付け忘れは helper が落とす)。
+    // a11y の tag を付けない。専用テストへ降ろすと操作の再現が重複する。axe の tag の付け方は
+    // docs/guides/accessibility.md「a11y の tag を付ける」。
     //
     // `strictTags` は既定で有効なので、ここに無い tag を書いたテストはエラーで落ちる。
     tags: [

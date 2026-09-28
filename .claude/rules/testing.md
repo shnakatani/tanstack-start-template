@@ -90,7 +90,7 @@ paths:
 - 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
 - テストの中で残す注意 (合否に入れないが読ませたいもの) は、テストの文脈の `annotate(message, "warning")` で残し、`console.warn` に出さない。`console.warn` は PR の画面に出ない (`docs/guides/testing/annotations.md`「`console.warn` ではなく注釈で残す理由」)
-- 注釈を残す helper はテストの文脈を引数で受ける。`TestRunner.getCurrentTest()` は並行するテストで別のテストを指し、`recordArtifact` は experimental (`docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」)
+- 注釈を残す helper はテストの文脈を引数で受ける。`TestRunner.getCurrentTest()` は並行するテストで別のテストを指す (`docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」)
 - 手元の default reporter は通ったテストの注釈を出さない。a11y の注釈は `mise run a11y:incomplete` で読み、ほかは `--reporter=verbose` を付けて走らせる (`docs/guides/testing/annotations.md`「注釈を読む」)
 - Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (vitest docs の guide/test-context の annotate)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)

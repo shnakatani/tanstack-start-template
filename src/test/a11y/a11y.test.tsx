@@ -59,12 +59,14 @@ describe("expectNoA11yViolations", () => {
   // tag は呼んだテスト自身の文脈から読む。実行中のテストを 1 つだけ持つグローバルから読むと、
   // 並行で走る別のテストの tag を読む (vitest docs の guide/test-context の expect)
   describe.concurrent("並行で走るテスト", () => {
+    // tag の無いテストは、axe の tag を持つテストの検査が終わるまで走り続ける。並行するテストは
+    // 本体より前にすべて始まるので、検査の時点でグローバルは tag の無いテストを指す
+    const checked = Promise.withResolvers<undefined>();
+
     it(
       "axe の tag を持つテストは、tag の無いテストと並行しても落ちない",
       { tags: ["axe"] },
       async ({ task }) => {
-        // 隣の tag の無いテストが始まるのを待つ
-        await new Promise((resolve) => setTimeout(resolve, 50));
         // 並行するテストは同じ iframe で動き、隣の beforeEach の cleanup が render した DOM を消す。
         // React を通さずに置く
         const main = document.createElement("main");
@@ -74,13 +76,15 @@ describe("expectNoA11yViolations", () => {
           await expectNoA11yViolations(main, { annotate: vi.fn(), task });
         } finally {
           main.remove();
+          checked.resolve(undefined);
         }
       },
     );
 
     it("tag の無いテスト", async ({ task }) => {
       expect(task.tags).not.toContain("axe");
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // 隣が tag で外れた実行 (--tags-filter '!axe' など) では知らせが来ないので、上限で抜ける
+      await Promise.race([checked.promise, new Promise((resolve) => setTimeout(resolve, 2000))]);
     });
   });
 });

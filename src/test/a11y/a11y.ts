@@ -21,9 +21,8 @@ import { describeA11yIncomplete, describeA11yResults } from "./a11y-message";
  *
  * 第 2 引数にはテストの文脈を渡す (`it("…", async (context) => …)`)。注釈は文脈の `annotate` で残す。
  *
- * 呼ぶテストには `{ tags: ["axe"] }` を付ける。tag で絞った実行から、付け忘れたテストが黙って
- * 漏れないよう、付いていなければ落とす。tag は文脈の `task` から読む。実行中のテストを 1 つだけ
- * 持つグローバル (`TestRunner.getCurrentTest()`) は、並行で走る別のテストを指すことがある
+ * 呼ぶテストには `{ tags: ["axe"] }` を付ける。付いていなければ落とす。tag を文脈の `task` から読む理由は
+ * `docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」
  */
 export const expectNoA11yViolations = vi.defineHelper(
   async (
