@@ -1,3 +1,4 @@
+import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 
 /**
@@ -16,6 +17,6 @@ export const NOTE_COLUMN_HEADERS = {
   createdAt: NOTE_FIELD_LABELS.createdAt,
   updatedAt: NOTE_FIELD_LABELS.updatedAt,
   actions: "操作",
-} as const;
+} as const satisfies Partial<Record<keyof Note, string>> & { actions: string };
 
 export type NoteColumnId = keyof typeof NOTE_COLUMN_HEADERS;
