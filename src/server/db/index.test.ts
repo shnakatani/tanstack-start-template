@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -11,10 +12,18 @@ import { createDb, findProjectRoot, migrateDb } from "./index";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
 
+// migration フォルダの解決先を引数で確かめる。本物の migrate を通すので、スキーマも実際に作られる
+vi.mock(import("drizzle-orm/better-sqlite3/migrator"), async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, migrate: vi.fn(original.migrate) };
+});
+
 /**
  * `process.cwd()` が `dir` を返す状態で関数を実行する。本物の cwd は動かさない。
  * `process.chdir()` は pool が threads のとき worker で使えない (vitest docs の config/pool)。
- * 検査したいのは「cwd を起点にプロジェクトルートを探す」ことなので、cwd を読む側に見せる値だけを変える
+ * 検査したいのは「cwd を起点にプロジェクトルートを探す」ことなので、cwd を読む側に見せる値だけを変える。
+ * `fs` に渡した相対パスは本物の cwd (テスト中はリポジトリのルート) で解決されるので、相対パスのまま
+ * 渡されていないことは、ファイルの有無ではなく渡したパスで確かめる
  */
 function withCwd<T>(dir: string, run: () => T): T {
   const cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
@@ -140,6 +149,9 @@ describe("createDb", () => {
       const db = createDb(":memory:");
       try {
         migrateDb(db);
+        expect(vi.mocked(migrate)).toHaveBeenCalledExactlyOnceWith(db, {
+          migrationsFolder: join(REPO_ROOT, "drizzle"),
+        });
         db.insert(notes).values({ title: "hello", body: "world" }).run();
         expect(db.select().from(notes).all()).toHaveLength(1);
       } finally {

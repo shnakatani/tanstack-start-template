@@ -31,7 +31,10 @@ for (const timeZone of TIME_ZONES) {
   });
   if (result.error) throw result.error;
   if (result.status !== 0) {
-    console.error(`[time-zones] ${timeZone} で失敗した`);
+    console.error(`[time-zones] ${timeZone} で失敗した`, {
+      status: result.status,
+      signal: result.signal,
+    });
     process.exit(result.status ?? 1);
   }
 }

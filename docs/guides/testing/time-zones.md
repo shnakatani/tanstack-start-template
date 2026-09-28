@@ -18,7 +18,7 @@
 - 1 つの TZ だけで走らせるときは `TEST_TIME_ZONE=<IANA 名> vp test run --project unit .tz.test.ts` を打つ
 - 走らせる TZ は `scripts/time-zones/run-tests.ts` の `TIME_ZONES` が持つ。UTC より進んだ側と遅れた側の両方を入れる
 - テストの中で `vi.stubEnv("TZ", …)` や `process.env.TZ` への代入で切り替えない。threads と vmThreads の pool では `Date` に効かず、基準の TZ のまま無言で通る (「TZ ごとにプロセスを分ける理由」)
-- `src/lib/test-time-zone.tz.test.ts` は、指定した TZ が `Date` と `Intl` に効いていることを確かめる。効かないまま走ると、どの TZ の実行も基準と同じ結果で通るため
+- `src/lib/test-time-zone.tz.test.ts` は、指定した TZ が `Intl` の既定と `Date` のローカルの時刻に効いていることを確かめる。効かないまま走ると、どの TZ の実行も基準と同じ結果で通るため
 
 ### ブラウザテストで切り替える
 
@@ -88,12 +88,12 @@ TZ ごとにプロセスを起動する形は、日付ライブラリにも先�
 
 | `TEST_TIME_ZONE`    | 結果                 |
 | ------------------- | -------------------- |
-| なし (基準)         | 3 failed \| 5 passed |
-| `UTC`               | 8 passed。見逃す     |
-| `Asia/Tokyo`        | 1 failed \| 7 passed |
-| `Pacific/Pago_Pago` | 3 failed \| 5 passed |
+| なし (基準)         | 3 failed \| 6 passed |
+| `UTC`               | 9 passed。見逃す     |
+| `Asia/Tokyo`        | 1 failed \| 8 passed |
+| `Pacific/Pago_Pago` | 3 failed \| 6 passed |
 
-`vitest.global-setup.ts` を `TEST_TIME_ZONE` を読まない形に戻して `TEST_TIME_ZONE=Asia/Tokyo` で走らせると、`src/lib/test-time-zone.tz.test.ts` だけが落ちた (1 failed \| 7 passed)。
+`vitest.global-setup.ts` を `TEST_TIME_ZONE` を読まない形に戻して `TEST_TIME_ZONE=Asia/Tokyo` で走らせると、`src/lib/test-time-zone.tz.test.ts` の 2 件だけが落ちた (2 failed \| 7 passed)。
 
 ### テストの中の切り替えが効く範囲
 
