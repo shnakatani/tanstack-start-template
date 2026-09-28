@@ -88,7 +88,7 @@ paths:
 - 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)
-- announcer の文言は `src/test/assert/live-announcer.ts` の `readAnnouncements(politeness)` で読む。region は `browser-setup.tsx` が毎テスト描く (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
+- announcer の通知は、届くのを待つなら `expectAnnouncements(expected, politeness)`、届いた後に読むなら `readAnnouncements(politeness)` を使う (`src/test/assert/live-announcer.ts`)。region は `browser-setup.tsx` が毎テスト描く (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 
 ## mock の注意点
 

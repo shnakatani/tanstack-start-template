@@ -14,7 +14,7 @@ import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
-import { readAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import {
   expectDialogOpen,
   expectEmptyTextboxes,
@@ -269,14 +269,12 @@ describe("NoteCreateDialog", () => {
 
     await saveButton(screen).click();
 
-    await expect.poll(() => readAnnouncements()).toEqual(["保存しています"]);
+    await expectAnnouncements(["保存しています"]);
     // 完了は createNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     create.resolve({ id: 1 });
 
-    await expect
-      .poll(() => readAnnouncements())
-      .toEqual(["保存しています", "『買い物リスト』を保存しました"]);
+    await expectAnnouncements(["保存しています", "『買い物リスト』を保存しました"]);
   });
 
   it("検証に失敗したときは開始の通知を出さない", async () => {

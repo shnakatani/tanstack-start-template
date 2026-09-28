@@ -15,7 +15,7 @@ import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent } from "@/test/assert/absent";
-import { readAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 
@@ -158,14 +158,12 @@ describe("NoteEditDialog", () => {
 
     await saveButton(screen).click();
 
-    await expect.poll(() => readAnnouncements()).toEqual(["更新しています"]);
+    await expectAnnouncements(["更新しています"]);
     // 完了は updateNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     update.resolve(undefined);
 
-    await expect
-      .poll(() => readAnnouncements())
-      .toEqual(["更新しています", "『変えた見出し』を更新しました"]);
+    await expectAnnouncements(["更新しています", "『変えた見出し』を更新しました"]);
   });
 
   it("閉じる途中で別の行の payload が届くと、前の行の入力を残さずその行の値で開く", async () => {

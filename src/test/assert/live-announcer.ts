@@ -1,3 +1,5 @@
+import { expect } from "vite-plus/test";
+
 import { findLiveRegion, LIVE_REGION_IDS, type Politeness } from "@/lib/live-announcer";
 
 /**
@@ -22,4 +24,17 @@ export function readAnnouncements(politeness: Politeness = "polite"): string[] {
   }
   // `announce()` は 1 件につき div を 1 つ足すので、子要素の単位が通知の単位になる
   return Array.from(region.children, (node) => node.textContent);
+}
+
+/**
+ * live region の通知が `expected` になるまで待つ。通知は操作の完了 (mutation の callback など) で
+ * 後から届くので、1 回読んで比べると届く前に落ちる。待つのは `expect.poll` で、assert の予算
+ * (`expect.poll.timeout`) を読む。`vi.waitFor` は予算を読まず 1000ms で打ち切る
+ * (docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」)。
+ */
+export async function expectAnnouncements(
+  expected: string[],
+  politeness: Politeness = "polite",
+): Promise<void> {
+  await expect.poll(() => readAnnouncements(politeness)).toEqual(expected);
 }

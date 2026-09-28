@@ -11,15 +11,15 @@
 
 ### 待つ口を選ぶ
 
-| 場面                                                                                | 使うもの                                                                                                                                                                                                                                                                              |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (「assert の予算を分ける理由」)                                                                                                                                                                       |
-| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい                                                                                           |
-| 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                                                                                                                  |
-| `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                                                                                                                   |
-| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/assert/absent.ts`)                                                                                                                                                                                                                                |
-| locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `expect.poll(() => 値)` に matcher を当てる (`expect.poll(() => vi.mocked(fn)).toHaveBeenCalledOnce()`、`expect.poll(() => readAnnouncements()).toEqual([...])`)。`vi.waitFor` は assert を待つのに使わない。assert の予算 (`expect.poll.timeout`) を読まず、既定の 1000ms で打ち切る |
-| 処理そのものが throw しなくなるのを待ち、その戻り値を受け取る                       | `vi.waitFor`。vitest の wait-for のレシピが「the wait condition is the work itself succeeding rather than an assertion you write」の場合に割り当てている。timeout は呼び出しごとに渡す                                                                                                |
+| 場面                                                                                | 使うもの                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (「assert の予算を分ける理由」)                                                                                |
+| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい    |
+| 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                           |
+| `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                            |
+| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/assert/absent.ts`)                                                                                                                                         |
+| locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `expect.poll(() => 値)` に matcher を当てる (`expect.poll(() => vi.mocked(fn)).toHaveBeenCalledOnce()`)。announcer の通知は `expectAnnouncements([...])` (`src/test/assert/live-announcer.ts`) |
+| 処理そのものが throw しなくなるのを待ち、その戻り値を受け取る                       | `vi.waitFor`。assert を待つのには使わない。assert の予算 (`expect.poll.timeout`) を読まず、既定の 1000ms で打ち切る。timeout は呼び出しごとに渡す (vitest の wait-for のレシピ)                |
 
 - `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)
 - `toHaveTextContent` は完全一致で比べる。部分一致と正規表現は `toMatchTextContent` を使う (vitest docs の browser assertions「toMatchTextContent」)
@@ -103,7 +103,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 ### 状態と通知を検証する
 
 - pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
-- announcer の region は `src/test/browser/browser-setup.tsx` が毎テスト描く。文言は `src/test/assert/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
+- announcer の region は `src/test/browser/browser-setup.tsx` が毎テスト描く。通知が届くのを待つなら `src/test/assert/live-announcer.ts` の `expectAnnouncements(expected, politeness)`、届いた後の 1 回読みなら `readAnnouncements(politeness)` を使い、どちらも配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
 - 同じ通知の経路を 2 つのテストで見ない。検索欄を持つ一覧では、ページのテストが debounce 後と無効化済みキャッシュの決着を、route の wrapper のテストが Enter と戻るを見る
 
 ## explanation

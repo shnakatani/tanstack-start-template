@@ -31,7 +31,7 @@ import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
-import { readAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import { expectText, type Screen } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
@@ -172,7 +172,7 @@ describe("NotesPage", () => {
     await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
     // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0027)
-    await expect.poll(() => readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
+    await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
   });
 
   it("検索語を空に戻すと、無効化済みのキャッシュは再取得の決着後に通知する", async () => {
@@ -184,7 +184,7 @@ describe("NotesPage", () => {
 
     vi.mocked(listNotes).mockResolvedValue([]);
     await searchbox.fill("abc");
-    await expect.poll(() => readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
+    await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
 
     // 全件の一覧 (inactive) が mutation で無効化された状態を作る。空に戻すと古い 1 件を表示したまま
     // 再取得が走るので、決着 (0 件) までは通知しない
@@ -199,9 +199,10 @@ describe("NotesPage", () => {
     expect(readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
 
     listed.resolve([]);
-    await expect
-      .poll(() => readAnnouncements())
-      .toEqual(["『abc』に一致するメモは 0 件です", "絞り込みを解除し、メモを全件表示しています"]);
+    await expectAnnouncements([
+      "『abc』に一致するメモは 0 件です",
+      "絞り込みを解除し、メモを全件表示しています",
+    ]);
   });
 
   it("入力欄の値は URL と同じ正規化 (trim) を通して取得し、確定する", async () => {
@@ -653,14 +654,12 @@ describe("NotesPage", () => {
 
     await confirmDeleteButton(screen).click();
 
-    await expect.poll(() => readAnnouncements()).toEqual(["削除しています"]);
+    await expectAnnouncements(["削除しています"]);
     // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     remove.resolve(undefined);
 
-    await expect
-      .poll(() => readAnnouncements())
-      .toEqual(["削除しています", `『${NOTE.title}』を削除しました`]);
+    await expectAnnouncements(["削除しています", `『${NOTE.title}』を削除しました`]);
   });
 
   it("確定直後にもう一度 Enter を送っても removeNote は 1 回しか呼ばれない", async () => {
