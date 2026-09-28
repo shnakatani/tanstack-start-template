@@ -1,7 +1,7 @@
 import type { A11yTypes } from "@storybook/addon-a11y";
 import type axe from "axe-core";
 
-import { describeA11yResults } from "./a11y-message";
+import { describeA11yIncomplete } from "./a11y-message";
 
 // story の a11y 合否判定。消費者は `.storybook/a11y-incomplete/preview.ts` だけで、
 // ブラウザテストからは呼ばない。
@@ -61,7 +61,7 @@ export function checkA11yIncomplete(context: {
 
   const unexpected = collectUnexpectedIncomplete(report.result.incomplete);
   if (unexpected.length === 0) return null;
-  return `axe が判定できなかった項目\n${describeA11yResults(unexpected).join("\n")}`;
+  return describeA11yIncomplete(unexpected);
 }
 
 /**

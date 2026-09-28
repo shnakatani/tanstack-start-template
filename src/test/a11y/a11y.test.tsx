@@ -18,15 +18,13 @@ describe("expectNoA11yViolations", () => {
 
     await expectNoA11yViolations(screen.container, annotate);
 
-    // 注釈は GitHub Actions の画面に出るが、端末の default reporter は通ったテストの注釈を出さない。
-    // console.warn は端末に出る
     expect(annotate).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining("color-contrast"),
       "warning",
     );
     expect(warn).toHaveBeenCalledExactlyOnceWith(
-      "[a11y] axe が判定できなかった項目",
-      expect.arrayContaining([expect.stringContaining("color-contrast")]),
+      "[a11y]",
+      expect.stringContaining("color-contrast"),
     );
   });
 

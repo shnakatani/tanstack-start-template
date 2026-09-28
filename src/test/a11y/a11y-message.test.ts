@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { describeA11yNodes, describeA11yResults } from "./a11y-message";
+import { describeA11yIncomplete, describeA11yNodes, describeA11yResults } from "./a11y-message";
 import { a11yNode, a11yRule } from "./a11y.test-helpers";
 
 describe("describeA11yNodes", () => {
@@ -58,5 +58,18 @@ describe("describeA11yResults", () => {
 
     expect(line).toContain("color-contrast:");
     expect(line).not.toContain("null");
+  });
+});
+
+describe("describeA11yIncomplete", () => {
+  test("見出しの下に判定できなかったルールを 1 つずつ並べる", () => {
+    const rules = [
+      a11yRule("color-contrast", [a11yNode({ target: ["#a"] })]),
+      a11yRule("link-in-text-block", [a11yNode({ target: ["#b"] })]),
+    ];
+
+    expect(describeA11yIncomplete(rules)).toBe(
+      ["axe が判定できなかった項目", ...describeA11yResults(rules)].join("\n"),
+    );
   });
 });
