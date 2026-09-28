@@ -103,12 +103,15 @@ describe("/notes route", () => {
     const screen = await render(<RouterProvider router={router} />);
 
     await expect.element(screen.getByRole("cell", { name: "読み込み中" })).toBeInTheDocument();
-    // skeleton の列見出しは NOTE_COLUMN_HEADERS から採り、列定義から採らない。描いた見出しが実テーブルと順序まで揃うことをここで見る。
+    // skeleton は NOTE_COLUMN_HEADERS の見出しを全部描く。列定義がそれと過不足なく同じ順に並ぶことをここで見る。
     // ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
-    const headers = screen.getByRole("columnheader");
-    await expect.element(headers).toHaveLength(noteColumns.length);
     await expect
-      .poll(() => headers.elements().map((header) => header.textContent))
+      .poll(() =>
+        screen
+          .getByRole("columnheader")
+          .elements()
+          .map((header) => header.textContent),
+      )
       .toEqual(noteColumns.map((column) => column.header));
   });
 

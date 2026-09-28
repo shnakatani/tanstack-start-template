@@ -11,35 +11,27 @@ import {
 } from "../-components/note-cells";
 import type { NoteRow } from "./note-rows";
 import { noteInputOf } from "./note-rows";
+import type { NoteColumnId } from "./notes-page-constants";
 import { NOTE_COLUMN_HEADERS } from "./notes-page-constants";
 
 const helper = createColumnHelper<DataTableFeatures, NoteRow>();
 
-const [titleHeader, bodyHeader, dueDateHeader, createdAtHeader, updatedAtHeader, actionsHeader] =
-  NOTE_COLUMN_HEADERS;
+/** 列の id と見出し。id の typo は型が止め、見出しは `NOTE_COLUMN_HEADERS` から引く */
+function base(id: NoteColumnId) {
+  return { id, header: NOTE_COLUMN_HEADERS[id] };
+}
 
 /**
- * メモ一覧の列定義 (ADR-0018)。見出しは pending 表示と共有する `NOTE_COLUMN_HEADERS` から採り、長さを `satisfies` で
- * 突き合わせる。`helper.columns()` は配列をタプルのまま返すので、列を足して定数を直し忘れると型エラーになる。
+ * メモ一覧の列定義 (ADR-0018)。列の順・id・見出しは pending 表示と共有する `NOTE_COLUMN_HEADERS` が持ち、
+ * ここと過不足なく並ぶことは `index.test.tsx` の pending のテストが見る。
  * 描画を持つ列は `cell` にコンポーネントの参照を渡す (`FlexRender` が cell の context を
  * props にして描く。TanStack Table「Flex Render」)。JSX はこのファイルに書かない
  */
 export const noteColumns = helper.columns([
-  helper.accessor((row) => noteInputOf(row).title, {
-    id: "title",
-    header: titleHeader,
-  }),
-  helper.accessor((row) => noteInputOf(row).body, {
-    id: "body",
-    header: bodyHeader,
-    cell: NoteBodyCell,
-  }),
-  helper.accessor((row) => noteInputOf(row).dueDate, {
-    id: "dueDate",
-    header: dueDateHeader,
-    cell: NoteDueDateCell,
-  }),
-  helper.display({ id: "createdAt", header: createdAtHeader, cell: NoteCreatedAtCell }),
-  helper.display({ id: "updatedAt", header: updatedAtHeader, cell: NoteUpdatedAtCell }),
-  helper.display({ id: "actions", header: actionsHeader, cell: NoteActionsCell }),
-]) satisfies { length: (typeof NOTE_COLUMN_HEADERS)["length"] };
+  helper.accessor((row) => noteInputOf(row).title, base("title")),
+  helper.accessor((row) => noteInputOf(row).body, { ...base("body"), cell: NoteBodyCell }),
+  helper.accessor((row) => noteInputOf(row).dueDate, { ...base("dueDate"), cell: NoteDueDateCell }),
+  helper.display({ ...base("createdAt"), cell: NoteCreatedAtCell }),
+  helper.display({ ...base("updatedAt"), cell: NoteUpdatedAtCell }),
+  helper.display({ ...base("actions"), cell: NoteActionsCell }),
+]);
