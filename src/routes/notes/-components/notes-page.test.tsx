@@ -443,9 +443,10 @@ describe("NotesPage", () => {
     await titleTextbox(screen).fill("後続の見出し");
     await saveButton(screen).click();
     await parkMouse();
-    await vi.waitFor(() => {
-      expect(vi.mocked(updateNote)).toHaveBeenCalledTimes(2);
-    });
+    // close を止めていることを描画で確かめてから Escape を送る (pending が描画に届く前に送らない)
+    await expect
+      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
+      .toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
     // 閉じない。入力が残っている

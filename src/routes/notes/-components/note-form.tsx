@@ -37,7 +37,7 @@ export function NoteFormContent({
   defaultValues: NoteInput;
   onSubmit: (note: NoteInput) => Promise<void>;
   /**
-   * 保存の応答待ちで close を止めている間か。呼び出し側は Dialog の `onOpenChange` で close を
+   * 保存の mutation が pending の間 (応答後の再取得の完了まで) close を止めているか。呼び出し側は Dialog の `onOpenChange` で close を
    * 止める判定と同じ値を渡す。キャンセルをこの値で無効化し、押せるのに閉じないずれを防ぐ
    */
   blocksClose: boolean;
