@@ -4,6 +4,7 @@ import {
   createMemoryHistory,
   createRootRouteWithContext,
   createRouter,
+  HeadContent,
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
@@ -14,6 +15,7 @@ import { render } from "vitest-browser-react";
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { listNotes } from "@/features/notes/functions";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
+import { APP_NAME } from "@/lib/app-name";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { readAnnouncements } from "@/test/assert/live-announcer";
@@ -38,15 +40,22 @@ vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
 
 import { noteSearchbox } from "./-components/note-search-field.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
+import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route } from "./index";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
  * `<html>` を描くので browser test では使えない (docs/guides/testing/route-wrappers.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
  * `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
+ * `HeadContent` は本番の root と同じく、route の `head()` の title を `document.title` へ反映させるために置く。
  */
 const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  component: () => <Outlet />,
+  component: () => (
+    <>
+      <HeadContent />
+      <Outlet />
+    </>
+  ),
 });
 
 // `update` の公開型は id / path / getParentRoute を持たない (生成コードは `as any` で渡す)。
@@ -113,6 +122,14 @@ describe("/notes route", () => {
           .map((header) => header.textContent),
       )
       .toEqual(noteColumns.map((column) => column.header));
+  });
+
+  it("title をページ名とアプリ名で組む", async () => {
+    // 前のテストが反映した title で通らないよう、描く前に空へ戻す
+    document.title = "";
+    await renderRoute("/notes");
+
+    await expect.poll(() => document.title).toBe(`${NOTES_PAGE_TITLE} — ${APP_NAME}`);
   });
 
   it("URL の q が loader と入力欄に届く", async () => {

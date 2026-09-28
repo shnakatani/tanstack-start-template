@@ -68,6 +68,14 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 - 操作の開始の announce は `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`、ADR-0026)
 - 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない (ADR-0016)
 
+## ページは title と見出しを持つ
+
+lint では見ないのでレビューで見る。
+
+- ルートを足したら `head()` で `pageTitle(ctx, <ページ名>)` の title を持たせる。無いと親の title になり、遷移の読み上げでページを区別できない (ADR-0035)
+- title は `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
+- ページの見出しは `PageHeader` の `h1` で持つ。遷移の後の focus は h1 へ移り、無いと body に落ちて利用者がページの先頭から探し直す (ADR-0035)
+
 ## 日付と日時の値は意味で分類して持つ
 
 lint では見ないのでレビューで見る。

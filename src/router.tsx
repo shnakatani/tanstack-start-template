@@ -2,6 +2,7 @@ import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
+import { RouterInnerWrap } from "@/components/router-inner-wrap";
 import { NotFoundContent } from "@/components/screens/not-found";
 import { PendingContent } from "@/components/screens/pending";
 import { RouteErrorContent } from "@/components/screens/route-error";
@@ -40,6 +41,8 @@ export function getRouter() {
     // route の pendingComponent が無いときの Suspense の受け皿。未設定だと境界が張られず、
     // suspend が root の Outlet まで巻き上がって何も描かれない (ADR-0029)
     defaultPendingComponent: PendingContent,
+    // root route の error boundary の外で router を購読する部品 (遷移の読み上げなど) と Provider を置く 1 か所
+    InnerWrap: RouterInnerWrap,
   });
 
   setupRouterSsrQueryIntegration({ router, queryClient });

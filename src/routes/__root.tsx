@@ -11,16 +11,16 @@ import type { ReactNode } from "react";
 import { LiveRegions } from "@/components/live-regions";
 import { FullScreenRouteError } from "@/components/screens/route-error";
 import { Toaster } from "@/components/ui/toast";
-import { APP_NAME } from "@/lib/app-name";
+import { pageTitle } from "@/lib/page-title";
 
 import appCss from "@/styles.css?url";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
+  head: (ctx) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: APP_NAME },
+      { title: pageTitle(ctx) },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
