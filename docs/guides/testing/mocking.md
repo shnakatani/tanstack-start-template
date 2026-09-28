@@ -33,8 +33,8 @@
 - 途中から応答を変えるなら、最初の `vi.when` の戻り値に同じ引数の `calledWith` を積み足す。同じ引数の behavior に後から足した応答 (action) が先に使われ、無期限の応答なら以降は前の応答に戻らない ([Vitest docs のレシピ「Conditional Mocking with vi.when」][] の Stacking actions)
 - 登録した引数が全部呼ばれたことを、`vi.when` の戻り値に `expect(戻り値).toHaveBeenExhausted()` を当てて閉じる。呼び出しを待つ途中なら `await expect.poll(() => 戻り値).toHaveBeenExhausted()` で待つ
 - `onUnmatched: "throw"` は登録していない引数での呼び出しを、`toHaveBeenExhausted` は登録した引数で呼ばれなかったことを捕まえる。呼ばれなかった `calledWith` と応答が失敗の文言に並ぶ
-- 期限の無い応答 (`thenResolve` / `thenReturn`) は、1 回使われれば消費済みに数える ([Vitest docs のレシピ「Conditional Mocking with vi.when」][] の Asserting that all behaviors were called、2026-09-29 に vitest 5.0.1 で実測)
-- 同じ引数で何回呼ばれたかまで確かめるなら、`toHaveBeenExhausted` に `toHaveBeenCalledTimes` を並べる。重複した呼び出しは消費済みの判定に出ない
+- 期限の無い応答 (`thenResolve` / `thenReturn`) は 1 回使えば消費済みに数える ([Vitest docs のレシピ「Conditional Mocking with vi.when」][] の Asserting that all behaviors were called、2026-09-29 に vitest 5.0.1 の browser mode で実測)
+- 期限の無い応答は 2 回目以降も応答し続け、消費済みの判定は増えた呼び出しを数えない。同じ引数での回数まで確かめるなら `toHaveBeenCalledTimes` を並べる ([Vitest docs のレシピ「Conditional Mocking with vi.when」][] の Asserting that all behaviors were called)
 - 同じ spy で、`vi.when` と、あとからの差し替え (`mockImplementation` / `mockResolvedValue` / `deferMock`) や `mock*Once` を混ぜない
 - `vi.when` は spy の実装を差し替える。あとから差し替えると `vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなる (2026-09-28、vitest 5.0.1 で実測)
 - 未消費の `mock*Once` は、引数を問わず `vi.when` より先に使われる (2026-09-28、vitest 5.0.1 で実測)

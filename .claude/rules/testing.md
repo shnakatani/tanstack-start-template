@@ -103,7 +103,7 @@ paths:
 - 同じモジュールを複数のテストで丸ごと差し替えるなら、隣の `__mocks__/<同名>` に置き、factory なしの `vi.mock(import(...))` で読む。無いと元を読んで automock し、ブラウザで読めないものは落ちる (`docs/guides/testing/mocking.md`「`__mocks__` に寄せる理由」)
 - 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
 - 引数ごとに応答を変える mock は `vi.when(vi.mocked(fn), { onUnmatched: "throw" })` で書き、`mockImplementation` に引数の分岐を手書きしない。想定外の引数で呼ばれたことを見逃さない (`docs/guides/testing/mocking.md`「戻り値を決める」)
-- `vi.when` で登録した引数が全部呼ばれたことを、戻り値の `toHaveBeenExhausted()` で閉じる。`onUnmatched: "throw"` は登録していない引数しか捕まえず、登録した呼び出しが来ないことは見逃す (`docs/guides/testing/mocking.md`「戻り値を決める」)
+- `vi.when` で登録した引数が全部呼ばれたことを、戻り値の `toHaveBeenExhausted()` で閉じる。`onUnmatched: "throw"` は、登録した呼び出しが来なかったことを捕まえない (`docs/guides/testing/mocking.md`「戻り値を決める」)
 
 ## optimistic update は決着を握って観測する
 
