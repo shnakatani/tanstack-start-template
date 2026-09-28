@@ -11,15 +11,15 @@ describe("readAnnouncements", () => {
   });
 
   it("polite の通知を 1 件 1 要素で追記順に返す", () => {
-    announce("『買い物リスト』を削除しています");
-    announce("削除しました");
+    announce("削除しています");
+    announce("『買い物リスト』を削除しました");
 
-    expect(readAnnouncements()).toEqual(["『買い物リスト』を削除しています", "削除しました"]);
+    expect(readAnnouncements()).toEqual(["削除しています", "『買い物リスト』を削除しました"]);
   });
 
   it("件ごとに分かれるので部分一致で他の通知を拾わない", () => {
-    // 連結した 1 本の文字列だと「削除しました」が「削除しています」の途中に一致しうる
-    announce("『買い物リスト』を削除しています");
+    // 1 本の文字列で返すと、toContain が部分一致になり通知の一部に一致する
+    announce("『買い物リスト』を削除しました");
 
     expect(readAnnouncements()).not.toContain("『買い物リスト』を削除");
   });

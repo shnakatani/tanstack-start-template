@@ -161,15 +161,14 @@ describe("NoteEditDialog", () => {
     await saveButton(screen).click();
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("更新しています");
+      expect(readAnnouncements()).toEqual(["更新しています"]);
     });
-    // 完了は updateNote の決着より前に出さない
-    expect(readAnnouncements()).not.toContain("『変えた見出し』を更新しました");
+    // 完了は updateNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     update.resolve(undefined);
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("『変えた見出し』を更新しました");
+      expect(readAnnouncements()).toEqual(["更新しています", "『変えた見出し』を更新しました"]);
     });
   });
 

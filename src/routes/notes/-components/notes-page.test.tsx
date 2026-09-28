@@ -599,7 +599,7 @@ describe("NotesPage", () => {
     });
   });
 
-  it("削除の開始と完了を announcer が通知する", async () => {
+  it("削除の開始と完了を announcer が通知し、完了には対象名を載せる", async () => {
     // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0026)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
     const remove = deferMock(removeNote);
@@ -610,15 +610,14 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("削除しています");
+      expect(readAnnouncements()).toEqual(["削除しています"]);
     });
-    // 完了は removeNote の決着より前に出さない
-    expect(readAnnouncements()).not.toContain(`『${NOTE.title}』を削除しました`);
+    // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     remove.resolve(undefined);
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain(`『${NOTE.title}』を削除しました`);
+      expect(readAnnouncements()).toEqual(["削除しています", `『${NOTE.title}』を削除しました`]);
     });
   });
 

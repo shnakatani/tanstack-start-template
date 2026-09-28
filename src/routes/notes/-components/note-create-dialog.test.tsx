@@ -258,8 +258,9 @@ describe("NoteCreateDialog", () => {
     invalidate.resolve(undefined);
   });
 
-  it("保存の開始と完了を announcer が通知する", async () => {
-    // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える (ADR-0026)
+  it("保存の開始と完了を announcer が通知し、完了には保存した見出しを対象名に載せる", async () => {
+    // ダイアログの close も一覧の行の増加も読み上げに出ないので、両端を polite の region で伝える。
+    // 追加は再取得を待つ間に開き直して保存でき並行しうるので、完了の文言に対象名を載せる (ADR-0026)
     const create = deferMock(createNote);
     const { screen } = await renderDialog();
     await openNoteCreateDialog(screen);
@@ -268,15 +269,14 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("保存しています");
+      expect(readAnnouncements()).toEqual(["保存しています"]);
     });
-    // 完了は createNote の決着より前に出さない
-    expect(readAnnouncements()).not.toContain("『買い物リスト』を保存しました");
+    // 完了は createNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     create.resolve({ id: 1 });
 
     await vi.waitFor(() => {
-      expect(readAnnouncements()).toContain("『買い物リスト』を保存しました");
+      expect(readAnnouncements()).toEqual(["保存しています", "『買い物リスト』を保存しました"]);
     });
   });
 
