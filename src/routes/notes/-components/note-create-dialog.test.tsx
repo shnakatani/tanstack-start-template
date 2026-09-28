@@ -25,15 +25,14 @@ import {
 vi.mock(import("@/features/notes/functions"));
 
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
+import { NOTE_CREATE_TRIGGER_LABEL, openNoteCreateDialog } from "./note-create-dialog.test-helpers";
 import {
   bodyTextbox,
   dueDateTrigger,
-  NOTE_CREATE_TRIGGER_LABEL,
-  openNoteCreateDialog,
+  expectNoteDialogClosed,
   saveButton,
   titleTextbox,
-  expectNoteDialogClosed,
-} from "./note-create-dialog.test-helpers";
+} from "./note-form.test-helpers";
 
 /**
  * Root (NoteCreateDialog) と detached trigger を handle で結ぶ本番と同じ配線で描画する。

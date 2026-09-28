@@ -27,7 +27,12 @@ import { expectAbsent } from "@/test/assert/absent";
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { getNoteRowId, toNoteRows } from "../-lib/note-rows";
-import { noteRow, rowDeleteButton, rowEditButton } from "./note-cells.test-helpers";
+import {
+  noteEditTriggerName,
+  noteRow,
+  rowDeleteButton,
+  rowEditButton,
+} from "./note-cells.test-helpers";
 
 /**
  * ページを載せず、列定義 (`noteColumns`) と行の組み立て (`toNoteRows`) を実配線のまま
@@ -167,7 +172,7 @@ describe("NoteActionsCell", () => {
           .elements()
           .map((button) => button.getAttribute("aria-label")),
       )
-      .toEqual([`${NOTE.title}を編集`, `${NOTE.title}を削除`]);
+      .toEqual([noteEditTriggerName(NOTE), `${NOTE.title}を削除`]);
   });
 
   it("削除中の行は編集トリガーも無効にする", async () => {

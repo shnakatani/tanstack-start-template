@@ -23,16 +23,16 @@ import { enableAnimations } from "@/test/browser/animations";
 vi.mock(import("@/features/notes/functions"));
 
 import { noteEditDialogHandle } from "../-lib/note-edit-dialog-handle";
+import { noteEditTriggerName } from "./note-cells.test-helpers";
+import { NoteEditDialog } from "./note-edit-dialog";
+import { openNoteEditDialog } from "./note-edit-dialog.test-helpers";
 import {
   bodyTextbox,
   dueDateTrigger,
   expectNoteDialogClosed,
-  noteEditTriggerName,
-  openNoteEditDialog,
   saveButton,
   titleTextbox,
-} from "./note-create-dialog.test-helpers";
-import { NoteEditDialog } from "./note-edit-dialog";
+} from "./note-form.test-helpers";
 
 /**
  * Root (NoteEditDialog) と detached trigger を handle で結ぶ本番と同じ配線で描画する。

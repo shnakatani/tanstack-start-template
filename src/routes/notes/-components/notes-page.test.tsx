@@ -50,15 +50,14 @@ vi.mock(import("../-lib/note-search"), async (importOriginal) => ({
 }));
 
 import { noteRow, rowDeleteButton, rowEditButton } from "./note-cells.test-helpers";
+import { NOTE_CREATE_TRIGGER_LABEL, openNoteCreateDialog } from "./note-create-dialog.test-helpers";
+import { openNoteEditDialog } from "./note-edit-dialog.test-helpers";
 import {
   bodyTextbox,
-  NOTE_CREATE_TRIGGER_LABEL,
-  openNoteCreateDialog,
-  openNoteEditDialog,
+  expectNoteDialogClosed,
   saveButton,
   titleTextbox,
-  expectNoteDialogClosed,
-} from "./note-create-dialog.test-helpers";
+} from "./note-form.test-helpers";
 import { noteSearchbox } from "./note-search-field.test-helpers";
 import { NotesPage } from "./notes-page";
 
