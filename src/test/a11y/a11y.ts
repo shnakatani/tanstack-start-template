@@ -1,7 +1,7 @@
 import axe from "axe-core";
-import { expect, vi } from "vite-plus/test";
+import { expect, type TestContext, vi } from "vite-plus/test";
 
-import { describeA11yResults } from "./a11y-message";
+import { describeA11yIncomplete, describeA11yResults } from "./a11y-message";
 
 /**
  * ブラウザテスト用の a11y アサーション。
@@ -18,27 +18,41 @@ import { describeA11yResults } from "./a11y-message";
  *
  * ヘルパー名を `expect` で始めるのは、`vitest/expect-expect` が assertion と認めるのが
  * `expect*` のパターンだから (ADR-0007)。
+ *
+ * 第 2 引数にはテストの文脈を渡す (`it("…", async (context) => …)`)。注釈は文脈の `annotate` で残す。
+ *
+ * 呼ぶテストには `{ tags: ["axe"] }` を付ける。付いていなければ落とす。tag を文脈の `task` から読む理由は
+ * `docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」
  */
-export const expectNoA11yViolations = vi.defineHelper(async (container: Element): Promise<void> => {
-  const result = await axe.run(container, {
-    rules: {
-      // region は「ページ本体が landmark の中にあるか」を見る文書レベルの規則で、
-      // コンポーネントや 1 ページを単体 render するテストは __root.tsx を通らないため
-      // 必ず違反になる。文書側の landmark (<main>) は root-document.test.ts が押さえる
-      region: { enabled: false },
-    },
-  });
+export const expectNoA11yViolations = vi.defineHelper(
+  async (
+    container: Element,
+    { annotate, task }: Pick<TestContext, "annotate" | "task">,
+  ): Promise<void> => {
+    if (!task.tags?.includes("axe")) {
+      throw new Error('expectNoA11yViolations を呼ぶテストには { tags: ["axe"] } を付ける');
+    }
+    const result = await axe.run(container, {
+      rules: {
+        // region は「ページ本体が landmark の中にあるか」を見る文書レベルの規則で、
+        // コンポーネントや 1 ページを単体 render するテストは __root.tsx を通らないため
+        // 必ず違反になる。文書側の landmark (<main>) は root-document.test.ts が押さえる
+        region: { enabled: false },
+      },
+    });
 
-  expect(describeA11yResults(result.violations), "a11y 違反").toEqual([]);
+    expect(describeA11yResults(result.violations), "a11y 違反").toEqual([]);
 
-  // incomplete は合否へ入れない。組み上げて操作した結果に出るものは、部品の問題ではなく
-  // 合成とタイミングの産物で、実行環境の速さで結果が変わる (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」の事故)。統制できる
-  // 単一部品の側 (story) で落とす (ADR-0028)。ただし黙って捨てると、緑のときに
-  // 何が測れていないのかを誰も読めない
-  if (result.incomplete.length > 0) {
-    console.warn("[a11y] axe が判定できなかった項目", describeA11yResults(result.incomplete));
-  }
+    // incomplete は合否へ入れない。組み上げて操作した結果に出るものは、部品の問題ではなく
+    // 合成とタイミングの産物で、実行環境の速さで結果が変わる (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」の事故)。統制できる
+    // 単一部品の側 (story) で落とす (ADR-0028)。ただし黙って捨てると、緑のときに
+    // 何が測れていないのかを誰も読めない。warning の注釈で残す。読み方は
+    // docs/guides/accessibility.md「ブラウザテストの `incomplete` を読む」
+    if (result.incomplete.length > 0) {
+      await annotate(describeA11yIncomplete(result.incomplete), "warning");
+    }
 
-  // 1 つもルールが走らなかった (container が空だった) 場合を通さない
-  expect(result.passes.length, "適用されたルールがゼロ").toBeGreaterThan(0);
-});
+    // 1 つもルールが走らなかった (container が空だった) 場合を通さない
+    expect(result.passes.length, "適用されたルールがゼロ").toBeGreaterThan(0);
+  },
+);

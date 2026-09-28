@@ -28,6 +28,13 @@ run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open"
 description = "トークンからコントラスト比を測る"
 run = "vp node scripts/contrast/report.ts"
 
+# 読み方と verbose にする理由は docs/guides/testing/annotations.md「注釈を読む」。a11y の tag では
+# 絞らない (挙動テストの途中で axe を回すテストは a11y の tag を持たない)。--hide-skipped-tests は、
+# 絞って外れたテストを verbose が 1 行ずつ並べるのを止める
+[tasks."a11y:incomplete"]
+description = "axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む"
+run = "vp test run --project browser --tags-filter axe --reporter=verbose --hide-skipped-tests"
+
 [tasks."db:generate"]
 description = "Drizzle スキーマから migration を生成する"
 run = "vp exec drizzle-kit generate"

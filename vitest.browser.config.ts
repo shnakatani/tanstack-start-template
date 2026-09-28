@@ -65,14 +65,19 @@ export default defineProject({
     expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
     // a11y の検査は project ではなく tag で分ける。runner の設定が挙動テストと同じで、
     // project を足すとそのぶん描画が増えるため。挙動テストの途中の状態を測る assert には
-    // tag を付けない。専用テストへ降ろすと操作の再現が重複する。
+    // a11y の tag を付けない。専用テストへ降ろすと操作の再現が重複する。axe の tag の付け方は
+    // docs/guides/accessibility.md「a11y の tag を付ける」。
     //
     // `strictTags` は既定で有効なので、ここに無い tag を書いたテストはエラーで落ちる。
     tags: [
       {
         name: "a11y",
         description:
-          "この project で axe を回すテスト。story 側の a11y は addon が別に当てるので含まない",
+          "この project で axe に「アクセシブルか」を問うテスト。story 側の a11y は addon が別に当てるので含まない",
+      },
+      {
+        name: "axe",
+        description: "描画した DOM を axe で検査し、アクセシビリティの違反を見つけるテスト",
       },
     ],
     setupFiles: ["src/test/browser/browser-setup.tsx"],

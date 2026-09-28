@@ -16,6 +16,11 @@ export function describeA11yResults(results: readonly axe.Result[]): string[] {
   );
 }
 
+/** axe が判定できなかった項目 (`incomplete`) を、見出し付きの 1 つの文言にする */
+export function describeA11yIncomplete(results: readonly axe.Result[]): string {
+  return ["axe が判定できなかった項目", ...describeA11yResults(results)].join("\n");
+}
+
 /** 失敗メッセージのうち、node を並べる部分 */
 export function describeA11yNodes(nodes: readonly axe.NodeResult[]): string {
   return nodes
