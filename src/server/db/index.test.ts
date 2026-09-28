@@ -11,14 +11,17 @@ import { createDb, findProjectRoot, migrateDb } from "./index";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
 
-/** cwd を一時的に移して関数を実行する。cwd はプロセス全体の状態なので必ず戻す */
+/**
+ * `process.cwd()` が `dir` を返す状態で関数を実行する。本物の cwd は動かさない。
+ * `process.chdir()` は pool が threads のとき worker で使えない (vitest docs の config/pool)。
+ * 検査したいのは「cwd を起点にプロジェクトルートを探す」ことなので、cwd を読む側に見せる値だけを変える
+ */
 function withCwd<T>(dir: string, run: () => T): T {
-  const original = process.cwd();
+  const cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
   try {
-    process.chdir(dir);
     return run();
   } finally {
-    process.chdir(original);
+    cwd.mockRestore();
   }
 }
 
