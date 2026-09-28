@@ -6,7 +6,7 @@
 
 ## Context
 
-Transition・緊急更新・Action・mutation の用語は `docs/guides/updates-and-data.md`「用語」が持つ。
+Transition・緊急更新・Action・mutation の用語は `docs/guides/react/updates.md`「用語」が持つ。
 
 ### React 側の方針
 
@@ -75,7 +75,7 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 | query を経由しない部品のローカル値 | `useOptimistic` を Action の中で set する                                                                                                                                                                                  | React の想定どおりの経路。React Aria #9894 が同じ設計を採る                                                                                                                                |
 | Router の state                    | Router に任せる                                                                                                                                                                                                            | 自前の acknowledgement で整合を取っている (「TanStack Query と Router のストアは Transition に参加しない」)                                                                                |
 
-`useOptimistic` へ渡してよい値の見分け方は `docs/guides/updates-and-data.md`「楽観表示を出す」にある。
+`useOptimistic` へ渡してよい値の見分け方は `docs/guides/react/updates.md`「楽観表示を出す」にある。
 
 ### 検討した選択肢
 
@@ -87,9 +87,9 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 
 ### 他の文書との関係
 
-| 文書                                                              | この ADR に従う箇所            |
-| ----------------------------------------------------------------- | ------------------------------ |
-| `docs/guides/updates-and-data.md`「ハンドラを同期関数にする理由」 | `startTransition` に関する項目 |
+| 文書                                                           | この ADR に従う箇所            |
+| -------------------------------------------------------------- | ------------------------------ |
+| `docs/guides/react/updates.md`「ハンドラを同期関数にする理由」 | `startTransition` に関する項目 |
 
 ## Consequences
 

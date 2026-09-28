@@ -15,7 +15,7 @@ export type CreatingRow = v.InferOutput<typeof creatingRowSchema>;
 
 /**
  * pending な追加 mutation の状態を一覧の楽観行へ変換する
- * (`docs/guides/updates-and-data.md`「操作の型ごとの当て方」)。
+ * (`docs/guides/react/updates.md`「操作の型ごとの当て方」)。
  *
  * `mutation.state.variables` の型は `unknown` なので、行に描く前に schema で型へ絞る。
  * NoteInput の形でない値は描けないので `parseEach` が warn を残して除外する。

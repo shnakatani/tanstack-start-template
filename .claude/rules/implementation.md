@@ -12,8 +12,8 @@ lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止
 - 外部ストアへの購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る
 - データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })`。副次的な query まで待つと、遷移と SSR の応答がそれを待つ (ADR-0033)
 - 副次的な query は loader で `void queryClient.query(...).catch(noop)` (`noop` は `@tanstack/react-query` の export) として流し、読む側を `<Suspense>` と Error Boundary で囲む。囲まないと、読み込み中と失敗がページ全体の pending 表示とエラー表示に置き換わる (ADR-0033)
-- 原因が特定の操作 (保存、送信、操作の開始と完了の通知) なら、effect ではなくイベントハンドラか mutation の callback に書く。effect に置くと、同じ表示に戻っただけで走る (`docs/guides/updates-and-data.md`「effect に書くかを判定する」)
-- useEffect は、表示された結果を React の外の系 (DOM、ブラウザ API、外部 widget、イベントの購読、router、announcer) に合わせるときだけ使う。開発時の二重実行で利用者に見える結果が変わるなら、原因は操作なので上の項目に当たる (`docs/guides/updates-and-data.md`「effect とイベントハンドラを分ける理由」)
+- 原因が特定の操作 (保存、送信、操作の開始と完了の通知) なら、effect ではなくイベントハンドラか mutation の callback に書く。effect に置くと、同じ表示に戻っただけで走る (`docs/guides/react/effects.md`「effect に書くかを判定する」)
+- useEffect は、表示された結果を React の外の系 (DOM、ブラウザ API、外部 widget、イベントの購読、router、announcer) に合わせるときだけ使う。開発時の二重実行で利用者に見える結果が変わるなら、原因は操作なので上の項目に当たる (`docs/guides/react/effects.md`「effect とイベントハンドラを分ける理由」)
 - router へ伝える副作用は、mount 中だけ成立すれば足りるなら effect、画面遷移中や `errorComponent` 表示中も要るなら router 層で購読する
 
 ## Effect が読む最新値は useEffectEvent へ切り出す
@@ -26,7 +26,7 @@ lint では見ないのでレビューで見る。
 
 ## イベントハンドラは同期に保つ
 
-lint (`typescript/no-misused-promises`) が止める。直し方 (`docs/guides/updates-and-data.md`「イベントハンドラを書く」):
+lint (`typescript/no-misused-promises`) が止める。直し方 (`docs/guides/react/updates.md`「イベントハンドラを書く」):
 
 - ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `void` やインラインの `async` を書かない
 - 待たない判断は内側で 1 回だけ表明する。呼び先が失敗を自分で処理するなら `void`、呼び出し側で通知や後始末をするなら `.catch()`
@@ -47,15 +47,15 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 | 検索条件の変更                    | URL の `navigate`。打鍵中は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にする (`docs/guides/lists-and-search.md`「検索の入力欄を組む」) |
 
 - pending 表示は Action 層の `isPending` から取る。例外は項目の busy・楽観表示・close 阻止で、mutation の pending から取る (ADR-0017)
-- mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` は型で必須。`runAction` が reject を吸収するので、無いと失敗が無通知になる (`docs/guides/updates-and-data.md`「mutation の書き方」)
+- mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`onError` は型で必須。`runAction` が reject を吸収するので、無いと失敗が無通知になる (`docs/guides/react/updates.md`「mutation の書き方」)
 - Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る (ADR-0016)
-- `onSuccess` は再取得の Promise を返す。再取得完了前に close するなら、対象の項目にその pending から busy 表現を付ける (`docs/guides/updates-and-data.md`「完了点ごとに Transition を終える」)
+- `onSuccess` は再取得の Promise を返す。再取得完了前に close するなら、対象の項目にその pending から busy 表現を付ける (`docs/guides/react/updates.md`「完了点ごとに Transition を終える」)
 - 止めるのは対象の項目だけにする。並行操作が整合を壊すときだけ全体を止め、理由を実装近傍に書く (ADR-0017)
-- Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる (`docs/guides/updates-and-data.md`「mutation の書き方」)
-- `useOptimistic` に query の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (`docs/guides/updates-and-data.md`「楽観表示を出す」)
-- mutation の pending は、1 件ずつなら `isPending && variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState` で読む (`docs/guides/updates-and-data.md`「mutation の pending を読む」)
-- `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける。`variables` は `parseEach` (`src/lib/parse-each.ts`) で絞る (`docs/guides/updates-and-data.md`「mutation の pending を読む」)
-- `useMutationState` の `select` の中で throw しない。描画中に走るので一覧ごと Error Boundary へ落ちる (`docs/guides/updates-and-data.md`「mutation の pending を読む」)
+- Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる (`docs/guides/react/updates.md`「mutation の書き方」)
+- `useOptimistic` に query の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (`docs/guides/react/updates.md`「楽観表示を出す」)
+- mutation の pending は、1 件ずつなら `isPending && variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState` で読む (`docs/guides/react/updates.md`「mutation の pending を読む」)
+- `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける。`variables` は `parseEach` (`src/lib/parse-each.ts`) で絞る (`docs/guides/react/updates.md`「mutation の pending を読む」)
+- `useMutationState` の `select` の中で throw しない。描画中に走るので一覧ごと Error Boundary へ落ちる (`docs/guides/react/updates.md`「mutation の pending を読む」)
 - 操作の開始の announce は `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`、ADR-0026)
 - 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない (ADR-0016)
 
@@ -87,7 +87,7 @@ lint では見ないのでレビューで見る。
 
 ## 手動メモ化の増減
 
-`useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は `docs/guides/updates-and-data.md`「手動メモ化を外すか判定する」。`src/components/ui/` は ADR-0020 の統制下なので触らない。
+`useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は `docs/guides/react/memoization.md`「手動メモ化を外すか判定する」。`src/components/ui/` は ADR-0020 の統制下なので触らない。
 
 ## コンポーネントは function 宣言で定義する
 
