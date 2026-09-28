@@ -72,13 +72,13 @@ peerDependencyRules:
     "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"
     # @storybook/addon-vitest@10.6.0 の optional peer は @vitest/browser-playwright ^4 で、Vitest 5 に
     # 追いついていない。撤去条件: storybookjs/storybook#36270 (peer に ^5.0.0 を足す) を含む安定版へ上げたとき
-    "@storybook/addon-vitest>@vitest/browser-playwright": "5.0.1"
+    "@storybook/addon-vitest>@vitest/browser-playwright": "5"
     # storybook@10.6.0 の optional peer は vite-plus ^0.1.15 || ^0.2.0 で、1.0 に追いついていない。
     # storybook が読むのは vite-plus/versions (vitest と vite の版の検出) だけで、1.0 も export している
     # (storybook@10.6.0 の dist で確認)。storybook を上げたら dist の vite-plus の import を読み直す
     # (キーに親の版を付けても pnpm peers check は親の版を見ないので、契機にならない)。
     # 撤去条件: storybook の peer が vite-plus 1.x を含んだとき
-    "storybook>vite-plus": "1.0.0"
+    "storybook>vite-plus": "1"
 
 # @storybook/addon-vitest@10.6.0 は story の viewport を `import("@vitest/browser/context")` の page で当てる。
 # Vitest 5 ではこの import が throw し、addon が catch して何も言わずに return するので、全 story が

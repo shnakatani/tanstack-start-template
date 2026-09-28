@@ -58,8 +58,8 @@ pnpm peers check
 - lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、AGENTS.md の「pnpm を直接打たない」の理由 (解決が Vite+ の管理から外れる) には当たらない
 - `vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。許可を外して `vp install --force` を打っても、警告は出なかった (2026-09-28、pnpm 11.25.0)
-- 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版>"`) で書き、理由と撤去条件をコメントに残す (pin の出口条件と同じ扱い。ADR-0005 の決定 6)。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
-- 許可した側を上げると、版まで絞った許可が `pnpm peers check` に再び食い違いとして出る。新しい版で動くことを確かめ直してから、版を書き換える
+- 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版の major>"`) で書き、理由と撤去条件をコメントに残す (pin の出口条件と同じ扱い。ADR-0005 の決定 6)。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
+- 許可した側の major を上げると、許可の範囲を外れて `pnpm peers check` に再び食い違いとして出る。新しい major で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
 - `vite` と `vitest` の許可は例外で、`vp migrate` が管理する (理由は `pnpm-workspace.yaml` のコメント)
 
@@ -98,7 +98,7 @@ pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏
 
 | 上げたもの                               | 見直すもの                                                                                                                                                                                                                                                                                    |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vite+                                    | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する。peer の許可の版を書き換える (「peer の食い違いを数える」)                                                                        |
+| Vite+                                    | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する。major が上がったら peer の許可の値を書き換える (「peer の食い違いを数える」)                                                     |
 | oxlint (Vite+ 同梱) の minor 以上        | `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」                                                                                                                                                                                                                      |
 | Base UI                                  | `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring (自己リセットの条件の表)                                                                                                                                                                                             |
 | axe-core                                 | `docs/guides/accessibility.md`「axe を上げたとき」。あわせて `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」)                                                                                                 |
