@@ -21,15 +21,17 @@ lint では見ないのでレビューで見る。
 - effect は、表示された結果を React の外の系 (DOM、ブラウザ API、外部 widget、イベントに応じて動く購読、router、announcer) に合わせるときだけ使う。要らない effect はコードを追いにくく、誤りやすくする (`docs/guides/react/effects.md`「effect とイベントハンドラを分ける理由」)
 - 開発時の二重実行で見える結果が変わったら、まず後始末を書く。多くは後始末の欠けで、effect が正しい置き場のまま直る。後始末を書いても変わるときは、操作ならイベントハンドラへ、アプリの読み込みならコンポーネントの外へ移す (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
 - effect を 1 回しか走らせないための ref を書かない。1 回に抑えても、離れて戻ったときの後始末の欠けは残る。直前に反映した値を ref に持ち、同じなら何もしない形は、何度走っても同じ結果になるのでよい (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
-- router へ伝える副作用は、mount 中だけ成立すれば足りるなら effect、画面遷移中や `errorComponent` 表示中も要るなら router 層で購読する
+- router の外の変化 (認証など) の購読は router の `InnerWrap` の effect に置き、変化時に `router.invalidate()` を呼ぶ。ルートとページの effect は `errorComponent` の表示中に外れる (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
+- 遷移を契機にする副作用 (analytics、外部キャッシュの消去、描画後の DOM 操作) は `InnerWrap` のコンポーネントで `router.subscribe` に置く。ページの effect は他のページの間の遷移を見ない (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
+- `router.subscribe` を張る effect の中で、今のページにも 1 回その処理を行う。SSR で描いた最初のページでは `onResolved` が出ず、`onRendered` は購読より先に出る (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
+- そのページが出ている間だけ要る router との連携は、ページの effect で購読し、後始末で解除する。上の 2 つはページを離れても途切れてはいけない副作用に限る (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 
 ## Effect が読む最新値は useEffectEvent へ切り出す
 
-lint では見ないのでレビューで見る。
+Effect Event を呼ぶ場所と依存配列への混入は lint (`react/rules-of-hooks`、`react/exhaustive-deps`) が止める。次の 2 点はレビューで見る。
 
-- 購読を張り直さずに最新の props / state を読む箇所は `useEffectEvent` へ切り出し、依存から外す (`src/components/ui/sidebar.tsx` の keydown 購読)
-- 依存配列を埋める逃げ道に使わない。再実行の契機そのものである値を隠すとバグが見えなくなる (`calendar.tsx` の `modifiers.focused`)
-- Effect Event は Effect か他の Effect Event の中からしか呼ばない。ハンドラ・レンダー中・他コンポーネントへの受け渡し・依存配列は不可
+- 走ったときに最新の props / state を読めば足りる処理は `useEffectEvent` へ切り出し、依存から外す。依存に置くと、値が変わるたびに購読を外して張り直す (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)
+- 変わったら外の系に合わせ直す契機になる値は依存に置き、Effect Event に隠さない。隠すと、その値が変わっても effect が走らず、依存の漏れを lint も報告しない (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)
 
 ## イベントハンドラは同期に保つ
 

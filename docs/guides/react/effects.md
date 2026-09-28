@@ -38,12 +38,49 @@ Strict Mode は開発時に、mount の直後に 1 回だけ unmount と mount �
 - effect を 1 回しか走らせないための ref は書かない。再 mount の後にも正しく動く必要があり、1 回に抑えても直らない (Pitfall「Don't use refs to prevent Effects from firing」の "To fix the bug, it is not enough to just make the Effect run once.")
 - ref で直前に反映した値を持ち、外の系がその値をすでに反映していれば何もしない形は、これと別物である。effect は何度走っても同じ結果になる (ADR-0027 の件数の通知)
 
+### 依存に置く値と Effect Event で読む値
+
+effect が読む値は、変わったら外の系に合わせ直す契機になる値と、走ったときに最新の値を読めば足りる値に分かれる。後者を読む処理は Effect Event (`useEffectEvent`) に切り出す。React docs「Extracting non-reactive logic out of Effects」は、Effect Event の中の処理を "not reactive, and it always "sees" the latest values of your props and state." とする。
+
+| 値の役割                               | 置き場                  | React docs の出典                                                                                                                                                                                                        |
+| -------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 変わったら外の系に合わせ直す契機になる | 依存配列                | `useEffectEvent` の Pitfall「Don't use Effect Events to skip dependencies」の "If a value should cause your Effect to re-run, keep it as a dependency."                                                                  |
+| 走ったときに最新の値を読めば足りる     | Effect Event の中で読む | `useEffectEvent`「Using an event listener with latest values」の "Without `useEffectEvent`, you would need to include the values in your dependencies, causing the listener to be removed and re-added on every change." |
+
+- 契機になる値を Effect Event に隠すと、その値が変わっても effect が走らず、外の系が古い値のまま残る。依存の漏れは lint (`react/exhaustive-deps`) も報告しない (2026-09-28、oxlint 1.82.0 で確認)。React docs の例では、`pageUrl` を Effect Event に隠すと、ページが変わってもログが出ない ("Missing pageUrl means you miss logs")。Caveats も "Do not use `useEffectEvent` to avoid specifying dependencies in your Effect's dependency array. This hides bugs and makes your code harder to understand." とする
+- 例: `src/components/ui/sidebar.tsx` の keydown の購読は、ショートカットで呼ぶ `toggleSidebar` を Effect Event の中で読み、listener を張り直さない。`src/components/ui/calendar.tsx` の日付ボタンの effect は、`modifiers.focused` が focus を移す契機なので依存に置く
+- Effect Event を Effect と Effect Event の外で呼ぶことと、依存配列に入れることは、lint (`react/rules-of-hooks`、`react/exhaustive-deps`) が止める (2026-09-28、oxlint 1.82.0 で確認)。React docs が強制を保証するのは eslint-plugin-react-hooks で、Caveats の "Effect Events can only be called from inside Effects or other Effect Events." に当たる
+
+### router との間の副作用の置き場所
+
+router との間の副作用は、契機が router の外の変化か、router の遷移かで置き場所が分かれる。
+
+| 契機                                                               | 置き場                                                                                                                           | TanStack Router docs の出典                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| router の外の変化 (認証の状態など)                                 | `createRouter` の `InnerWrap` に渡すコンポーネントの effect で外の系を購読し、変化の callback で `router.invalidate()` を呼ぶ    | 「Router Context」の「Invalidating the Router Context」の例は、購読の effect と `router.invalidate()` を `useAuth` という hook にまとめる。その hook を呼べる場所は `RouterOptions` の `InnerWrap` の "useful for providing a context to the inner contents of the router where you also need access to the router context and hooks" |
+| 利用者の操作 (Error Boundary からの再試行)                         | イベントハンドラの中で `router.invalidate()` を呼ぶ (「effect に書くかを判定する」の「特定の操作が原因」の行)                    | 「Data Loading」の「Handling Errors with `routeOptions.errorComponent`」の "If the error was the result of a route load, you should instead call `router.invalidate()`, which will coordinate both a router reload and an error boundary reset"                                                                                       |
+| router の遷移 (analytics、外部キャッシュの消去、描画後の DOM 操作) | `InnerWrap` のコンポーネントで `router.subscribe` のイベントに置く。完了後の処理は `onResolved`、DOM に触れる処理は `onRendered` | 「Router Events」の "`router.subscribe` is best for imperative integrations that need to observe navigation without driving rendering" と "Use `onResolved` for analytics and cleanup after navigation finishes"                                                                                                                      |
+
+- `InnerWrap` は root route の error boundary の外側にある。root の `errorComponent` に置き換わっても `InnerWrap` の effect は後始末されず、root route のコンポーネントの effect は後始末される (2026-09-28、@tanstack/react-router 1.170.32 のブラウザテストで確認)。TanStack Start では `RouterProvider` を描くのはフレームワークで、client entry を書いても `<StartClient />` を包むだけになり、router の hooks が使えない (「Client Entry Point」の "If not provided, TanStack Start will automatically handle the client entry point for you")。router の hooks が使え、root route の外にある置き場は `InnerWrap` になる。`InnerWrap` は DOM を描かないコンポーネントにする ("Only non-DOM-rendering components like providers should be used, anything else will cause a hydration error.")
+- ページのコンポーネントの effect に置くと、購読はそのページが描画されている間しか続かない。`errorComponent` が出ている間は境界より下が描画されず (React docs `Component`「Catching rendering errors with an Error Boundary」の "display some fallback UI instead of the part that crashed")、別のページへ移れば unmount される。ページの effect は mount と依存の変化で走るだけで、他のページの間の遷移は見ない
+- そのページが出ている間だけ要る連携は、ページの effect で購読してよい。表の「router の外の変化」の行と「router の遷移」の行は、ページの外でも途切れてはいけない副作用の置き場である
+- SSR で描いた最初のページでは、`onResolved` を待っても来ない。hydration では読み込みが走らないためで、上流のメンテナも "there is no load happening upon hydration" と答えている (TanStack/router の issue 3810)。`onRendered` は最初のページでも出るが、`InnerWrap` の effect より先に出るので購読が間に合わない (2026-09-28、@tanstack/react-router 1.170.32 の `Transitioner` のソースで確認。実行はしていない)。最初のページも数える処理は、購読を張る effect の中で今のページに対して 1 回行う。この effect は最初のページが DOM に入った後に走る
+- 遷移の状態を画面に出すなら、購読ではなく `useRouterState` などの hook で読む ("If you need reactive UI updates, prefer framework hooks like `useRouterState`, `useSearch`, and `useParams` instead of subscribing manually.")
+- `router.subscribe` をコンポーネントの effect の中で呼ぶなら、返り値の解除関数を後始末で返す ("always return the unsubscribe function from your cleanup so the listener is removed when the component unmounts.")
+
 出典:
 
-- React docs「Separating Events from Effects」: <https://react.dev/learn/separating-events-from-effects>
+- TanStack Router docs「Router Events」: <https://tanstack.com/router/latest/docs/framework/react/guide/router-events>
+- TanStack Router docs「Router Context」(「Invalidating the Router Context」): <https://tanstack.com/router/latest/docs/framework/react/guide/router-context>
+- TanStack Router issue 3810「hydrate doesn't emit events initially」: <https://github.com/TanStack/router/issues/3810>
+- TanStack Router docs `RouterOptions` (「`InnerWrap` property」): <https://tanstack.com/router/latest/docs/api/router/RouterOptionsType>
+- TanStack Start docs「Client Entry Point」: <https://tanstack.com/start/latest/docs/framework/react/guide/client-entry-point>
+- TanStack Router docs「Data Loading」(「Handling Errors with `routeOptions.errorComponent`」): <https://tanstack.com/router/latest/docs/framework/react/guide/data-loading>
+- React docs `Component` (「Catching rendering errors with an Error Boundary」): <https://react.dev/reference/react/Component>
+- React docs「Separating Events from Effects」(「Extracting non-reactive logic out of Effects」): <https://react.dev/learn/separating-events-from-effects>
 - React docs「Synchronizing with Effects」(「How to handle the Effect firing twice in development?」「Sending analytics」「Not an Effect: Initializing the application」「Not an Effect: Buying a product」「Development-only behaviors」): <https://react.dev/learn/synchronizing-with-effects>
 - React docs「You Might Not Need an Effect」: <https://react.dev/learn/you-might-not-need-an-effect>
-- React docs `useEffectEvent`: <https://react.dev/reference/react/useEffectEvent>
+- React docs `useEffectEvent` (「Caveats」「Using an event listener with latest values」、Pitfall「Don't use Effect Events to skip dependencies」): <https://react.dev/reference/react/useEffectEvent>
 
 ## how-to
 
@@ -58,7 +95,7 @@ Strict Mode は開発時に、mount の直後に 1 回だけ unmount と mount �
 | 3   | アプリの読み込みごとに 1 回だけ走る処理                                 | コンポーネントの外、アプリのエントリかルートのモジュールの最上位で走らせる。サーバーでも読まれるモジュールなら、ブラウザでだけ走らせる条件を付ける。effect の中に書くなら、モジュールの変数を見て読み込みごとに 1 回に抑える (React docs「Initializing the application」)                                                                                                                                                                                           |
 | 4   | 外部ストアの値を読む                                                    | `useSyncExternalStore`                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | 5   | データ取得                                                              | TanStack Query (ADR-0033)                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| 6   | 表示された結果を React の外の系に合わせる                               | effect。止めるか戻すものがあれば後始末を返す。購読を張り直さずに最新の props や state を読むなら `useEffectEvent` へ出す                                                                                                                                                                                                                                                                                                                                            |
+| 6   | 表示された結果を React の外の系に合わせる                               | effect。止めるか戻すものがあれば後始末を返す。購読を張り直さずに最新の props や state を読むなら `useEffectEvent` へ出す (「依存に置く値と Effect Event で読む値」)                                                                                                                                                                                                                                                                                                 |
 
 - 「表示された結果を React の外の系に合わせる」の行の effect は、開発時の二重実行で利用者に見える結果が変わらないことを確かめる。変わったときの読み方は「開発時の二重実行が示すもの」
 - その行に当たる例: `src/components/ui/calendar.tsx` の focus、`src/components/ui/sidebar.tsx` の keydown の購読、取得の決着後の件数の通知 (ADR-0027)
