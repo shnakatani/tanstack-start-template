@@ -14,7 +14,8 @@ import { APP_NAME } from "@/lib/app-name";
 import { Route } from "./index";
 
 /**
- * root だけ差し替えた route tree (理由は notes/index.test.tsx の同じ testRootRoute)。
+ * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と `<html>` を描くので
+ * browser test では使えない (docs/guides/testing/route-wrappers.md「route の wrapper をテストする」)。
  * root に `head()` を持たせないので、`document.title` に出るのはホームの route の `head()` の値だけになる。
  */
 const testRootRoute = createRootRoute({
@@ -26,7 +27,8 @@ const testRootRoute = createRootRoute({
   ),
 });
 
-// `update` の公開型は id / path / getParentRoute を持たない (理由は notes/index.test.tsx の同じ変数)
+// `update` の公開型は id / path / getParentRoute を持たない (生成コードは `as any` で渡す)。
+// 型アサーションを書かずに済むよう、交差型で注釈した変数を渡す
 const attachment: Parameters<typeof Route.update>[0] & {
   id: string;
   path: string;
