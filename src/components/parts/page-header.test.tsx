@@ -38,7 +38,7 @@ describe("PageHeader", () => {
 
     // 肯定 anchor。描画が済んでいることを先に固定してから不在を見る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expect.element(screen.getByRole("heading", { name: "メモ一覧" })).toBeInTheDocument();
-    await expectAbsent(screen.getByText("追加"));
+    await expectAbsent(screen.getByText("追加", { exact: false }));
   });
 
   it("actions の有無にかかわらず 60px の最小高と 12px の縦 padding になる", async () => {

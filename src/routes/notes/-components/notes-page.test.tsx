@@ -31,7 +31,7 @@ import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
-import { readAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import { expectText, type Screen } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
@@ -172,7 +172,7 @@ describe("NotesPage", () => {
     await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
     // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0027)
-    await expect.poll(() => readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
+    await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
   });
 
   it("検索語を空に戻すと、無効化済みのキャッシュは再取得の決着後に通知する", async () => {
@@ -184,7 +184,7 @@ describe("NotesPage", () => {
 
     vi.mocked(listNotes).mockResolvedValue([]);
     await searchbox.fill("abc");
-    await expect.poll(() => readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
+    await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
 
     // 全件の一覧 (inactive) が mutation で無効化された状態を作る。空に戻すと古い 1 件を表示したまま
     // 再取得が走るので、決着 (0 件) までは通知しない
@@ -199,9 +199,10 @@ describe("NotesPage", () => {
     expect(readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
 
     listed.resolve([]);
-    await expect
-      .poll(() => readAnnouncements())
-      .toEqual(["『abc』に一致するメモは 0 件です", "絞り込みを解除し、メモを全件表示しています"]);
+    await expectAnnouncements([
+      "『abc』に一致するメモは 0 件です",
+      "絞り込みを解除し、メモを全件表示しています",
+    ]);
   });
 
   it("入力欄の値は URL と同じ正規化 (trim) を通して取得し、確定する", async () => {
@@ -346,7 +347,7 @@ describe("NotesPage", () => {
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText(rawMessage));
+    await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗では楽観表示を残さない。行は再取得前の値に戻り、busy も解ける。ダイアログは入力を保って
     // 開いたままなので、行はモーダルの下 (aria-hidden) にある
     await expect
@@ -382,7 +383,7 @@ describe("NotesPage", () => {
     await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
     // 一覧は createdAt の降順なので、楽観行は既存行より前に出す
     // rows[0] はヘッダ行
-    await expect.element(screen.getByRole("row").nth(1)).toHaveTextContent(CREATED_NOTE.title);
+    await expect.element(screen.getByRole("row").nth(1)).toMatchTextContent(CREATED_NOTE.title);
     // 楽観行が出ている状態そのものを検査する。ダイアログが閉じたあとなので、
     // axe が見るのは一覧だけ (開いている間は行が aria-hidden 配下に入る)。
     // この assert の問いは a11y だが、a11y tag を付けた専用テストへは降ろさない。
@@ -412,7 +413,7 @@ describe("NotesPage", () => {
     await expectNoteDialogClosed(screen);
 
     await openNoteCreateDialog(screen);
-    const cancel = screen.getByRole("button", { name: "キャンセル", exact: true });
+    const cancel = screen.getByRole("button", { name: "キャンセル" });
     await expect.element(cancel).toBeDisabled();
 
     refetch.resolve([CREATED_NOTE, NOTE]);
@@ -444,9 +445,7 @@ describe("NotesPage", () => {
     await saveButton(screen).click();
     await parkMouse();
     // close を止めていることを描画で確かめてから Escape を送る (pending が描画に届く前に送らない)
-    await expect
-      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
-      .toBeDisabled();
+    await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
     // 閉じない。入力が残っている
@@ -489,10 +488,10 @@ describe("NotesPage", () => {
 
     await confirmDeleteButton(screen).click();
 
-    await vi.waitFor(() => {
-      // 行の payload の id がそのまま server function へ渡ることを固定する
-      expect(vi.mocked(removeNote)).toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
-    });
+    // 行の payload の id がそのまま server function へ渡ることを固定する
+    await expect
+      .poll(() => vi.mocked(removeNote))
+      .toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
     // invalidate → refetch が働けば 2 回目の listNotes の結果 (0 件) が反映される
     await expectText(screen, "メモが登録されていません");
     expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
@@ -504,7 +503,7 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
-    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await screen.getByRole("button", { name: "キャンセル" }).click();
 
     await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).not.toHaveBeenCalled();
@@ -529,7 +528,7 @@ describe("NotesPage", () => {
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText(rawMessage));
+    await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "false");
     await expect
@@ -557,9 +556,7 @@ describe("NotesPage", () => {
     remove.resolve(undefined);
 
     // 応答後も、再取得 (2 回目の listNotes) が決着するまで行は busy のまま
-    await vi.waitFor(() => {
-      expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
-    });
+    await expect.poll(() => vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
 
     refetch.resolve([]);
@@ -625,9 +622,7 @@ describe("NotesPage", () => {
     await openDeleteConfirm(screen, OTHER_NOTE);
     await confirmDeleteButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
-    });
+    await expect.poll(() => vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "true");
 
@@ -637,8 +632,9 @@ describe("NotesPage", () => {
 
     // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)。
     // このテストは 2 件の完了の順序を固定していないので、並べ替えてから配列ごと比べる
-    await vi.waitFor(() => {
-      expect(readAnnouncements().toSorted()).toEqual(
+    await expect
+      .poll(() => readAnnouncements().toSorted())
+      .toEqual(
         [
           "削除しています",
           "削除しています",
@@ -646,7 +642,6 @@ describe("NotesPage", () => {
           `『${OTHER_NOTE.title}』を削除しました`,
         ].toSorted(),
       );
-    });
   });
 
   it("削除の開始と完了を announcer が通知し、完了には対象名を載せる", async () => {
@@ -659,16 +654,12 @@ describe("NotesPage", () => {
 
     await confirmDeleteButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["削除しています"]);
-    });
+    await expectAnnouncements(["削除しています"]);
     // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     remove.resolve(undefined);
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["削除しています", `『${NOTE.title}』を削除しました`]);
-    });
+    await expectAnnouncements(["削除しています", `『${NOTE.title}』を削除しました`]);
   });
 
   it("確定直後にもう一度 Enter を送っても removeNote は 1 回しか呼ばれない", async () => {

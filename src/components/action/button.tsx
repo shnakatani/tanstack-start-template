@@ -22,7 +22,7 @@ type ActionButtonShellProps = Omit<
  *   (ADR-0016「二重発火は state だけで塞ぐ」、検証方法は docs/guides/testing/user-interactions.md「クリックを発火する」)
  * - accessible name は `aria-labelledby` で children に固定する。pending の文言を子に置くと
  *   name from content で「処理中保存」のように名前が変わり、AT の読み上げとテストの
- *   `exact: true` が揺れる。`aria-label` を渡した部品はそちらが名前になる
+ *   完全一致の locator が揺れる。`aria-label` を渡した部品はそちらが名前になる
  * - 名前の与え方は children か `aria-label` に限る。`aria-labelledby` は内部で使うため prop から
  *   外してある (受け付けたまま `{...props}` の後で上書きすると、渡した側から見て黙って消える)
  * - 状態は要素自身の `aria-busy` + `aria-disabled` で持つ。`Spinner` は視覚専用 (`aria-hidden`)。

@@ -54,7 +54,7 @@ describe("SegmentedRadioGroup", () => {
   it("選択済みの項目に hover しても文字色が奪われない", async () => {
     const screen = await render(<Filter />);
 
-    const selected = screen.getByRole("radio", { name: "全", exact: true });
+    const selected = screen.getByRole("radio", { name: "全" });
     const foreground = resolveColorToken("--foreground");
     await expect.element(selected).toHaveStyle(`color: ${foreground}`);
 
@@ -72,7 +72,7 @@ describe("SegmentedRadioGroup", () => {
 
     // radiogroup では Tab が選択中の項目に乗る
     await userEvent.tab();
-    const focused = screen.getByRole("radio", { name: "全", exact: true });
+    const focused = screen.getByRole("radio", { name: "全" });
     await expect.element(focused).toHaveFocus();
 
     // ring は box-shadow なので forced-colors / ハイコントラストでは描画されない。outline が

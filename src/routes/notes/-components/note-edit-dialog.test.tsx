@@ -15,7 +15,7 @@ import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent } from "@/test/assert/absent";
-import { readAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 
@@ -79,9 +79,7 @@ describe("NoteEditDialog", () => {
 
     await openNoteEditDialog(screen, NOTE);
 
-    await expect
-      .element(screen.getByRole("heading", { name: "メモを編集", exact: true }))
-      .toBeInTheDocument();
+    await expect.element(screen.getByRole("heading", { name: "メモを編集" })).toBeInTheDocument();
     await expect.element(bodyTextbox(screen)).toHaveValue(NOTE.body);
     expect.assert(NOTE.dueDate !== null);
     await expect
@@ -109,11 +107,11 @@ describe("NoteEditDialog", () => {
 
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(vi.mocked(updateNote)).toHaveBeenCalledExactlyOnceWith({
+    await expect
+      .poll(() => vi.mocked(updateNote))
+      .toHaveBeenCalledExactlyOnceWith({
         data: { id: NOTE.id, title: "変えた見出し", body: NOTE.body, dueDate: NOTE.dueDate },
       });
-    });
   });
 
   it("updateNote の応答でダイアログが閉じ、notes クエリを invalidate する", async () => {
@@ -146,7 +144,7 @@ describe("NoteEditDialog", () => {
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText(rawMessage));
+    await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     await expect.element(titleTextbox(screen)).toHaveValue("変えた見出し");
   });
 
@@ -160,16 +158,12 @@ describe("NoteEditDialog", () => {
 
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["更新しています"]);
-    });
+    await expectAnnouncements(["更新しています"]);
     // 完了は updateNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     update.resolve(undefined);
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["更新しています", "『変えた見出し』を更新しました"]);
-    });
+    await expectAnnouncements(["更新しています", "『変えた見出し』を更新しました"]);
   });
 
   it("閉じる途中で別の行の payload が届くと、前の行の入力を残さずその行の値で開く", async () => {
@@ -194,7 +188,7 @@ describe("NoteEditDialog", () => {
     await openNoteEditDialog(screen, NOTE);
     await titleTextbox(screen).fill("書きかけ");
 
-    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await screen.getByRole("button", { name: "キャンセル" }).click();
     await expectNoteDialogClosed(screen);
     await openNoteEditDialog(screen, OTHER_NOTE);
 

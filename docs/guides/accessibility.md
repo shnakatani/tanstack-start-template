@@ -86,7 +86,7 @@ a11y の検査は、ブラウザテストの中に 2 種類が混ざっている
 | プロセス                        | project        | 増える     |
 
 - vitest の Test Tags のページ ("When to reach for tags") は、tags を多数のファイルに散る横断カテゴリとカテゴリ単位の `timeout` / `retry` に、Test Projects をファイルごとに runner の設定 (isolation / pool / environment) が違うときに割り当てる。a11y の検査は runner の設定が挙動テストと同じで、横断カテゴリに当たる
-- 専用の project は足さない。足すとそのぶん描画が増える。tag の定義は `timeout` / `retry` を持てる (`@vitest/runner` の `TestTagDefinition`) ので、project を選ぶ理由 (runner の設定と単独実行) は tag 側で満たせる
+- 専用の project は足さない。足すとそのぶん描画が増える。tag の定義は `timeout` / `retry` を持てる (`vitest` の `TestTagDefinition`) ので、project を選ぶ理由 (runner の設定と単独実行) は tag 側で満たせる
 - tag は `it` 単位で付ける。a11y の `it` は挙動テストと同じ `describe` の中に混ざっているので、`describe` の単位では分けられない
 - 専用のテストファイルへ分けない。テストの置き場所は壊れる原因で分けており、a11y の検査は挙動テストと同じ原因で壊れる
 - 何もしない形も採らない。どれが a11y の問いかが読めず、a11y だけを単独で走らせられない

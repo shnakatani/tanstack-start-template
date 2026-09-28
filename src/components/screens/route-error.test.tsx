@@ -34,9 +34,7 @@ describe("RouteErrorContent", () => {
 
     const notice = screen.getByText("エラーが発生しました");
     await expect.element(notice).toBeInTheDocument();
-    await expect
-      .element(screen.getByText("取得に失敗しました", { exact: true }))
-      .toBeInTheDocument();
+    await expect.element(screen.getByText("取得に失敗しました")).toBeInTheDocument();
   });
 
   // error.message は server function の throw 文言 (id や検証失敗の項目パスを含む) をそのまま
@@ -50,8 +48,10 @@ describe("RouteErrorContent", () => {
 
     // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, ROUTE_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText("削除対象のノートが見つかりません: id=42"));
-    await expectAbsent(screen.getByRole("button", { name: "スタックトレース" }));
+    await expectAbsent(
+      screen.getByText("削除対象のノートが見つかりません: id=42", { exact: false }),
+    );
+    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
   });
 
   it("再試行で reset と router.invalidate の両方が呼ばれる", async () => {

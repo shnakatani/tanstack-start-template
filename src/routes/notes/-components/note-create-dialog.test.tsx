@@ -14,7 +14,7 @@ import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
-import { readAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import {
   expectDialogOpen,
   expectEmptyTextboxes,
@@ -118,7 +118,9 @@ describe("NoteCreateDialog", () => {
 
     // 肯定 anchor。入力が空になった状態を固定してからエラーの不在を見る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expect.element(titleTextbox(screen)).toHaveValue("");
-    await expectAbsent(screen.getByText(`${NOTE_FIELD_LABELS.title}を入力してください`));
+    await expectAbsent(
+      screen.getByText(`${NOTE_FIELD_LABELS.title}を入力してください`, { exact: false }),
+    );
   });
 
   it("入力して保存すると createNote が前後空白を除いた値で呼ばれる", async () => {
@@ -130,11 +132,11 @@ describe("NoteCreateDialog", () => {
 
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
+    await expect
+      .poll(() => vi.mocked(createNote))
+      .toHaveBeenCalledExactlyOnceWith({
         data: { title: "買い物リスト", body: "牛乳とパン", dueDate: null },
       });
-    });
   });
 
   it("期日を選んで保存すると createNote に YYYY-MM-DD の期日が渡る", async () => {
@@ -167,11 +169,11 @@ describe("NoteCreateDialog", () => {
     await expectDialogOpen(screen, "dialog");
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(vi.mocked(createNote)).toHaveBeenCalledExactlyOnceWith({
+    await expect
+      .poll(() => vi.mocked(createNote))
+      .toHaveBeenCalledExactlyOnceWith({
         data: { title: "買い物リスト", body: "", dueDate: expectedDueDate },
       });
-    });
   });
 
   it("保存に成功すると notes クエリを invalidate してダイアログを閉じる", async () => {
@@ -206,7 +208,7 @@ describe("NoteCreateDialog", () => {
     await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("一時入力");
 
-    await screen.getByRole("button", { name: "キャンセル", exact: true }).click();
+    await screen.getByRole("button", { name: "キャンセル" }).click();
     await expectNoteDialogClosed(screen);
     await openNoteCreateDialog(screen);
 
@@ -224,7 +226,7 @@ describe("NoteCreateDialog", () => {
 
     // 直前の expectText が肯定 anchor。無いと expectAbsent は無条件に通る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
-    await expectAbsent(screen.getByText(rawMessage));
+    await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする
     await expect.element(titleTextbox(screen)).toBeInTheDocument();
   });
@@ -267,16 +269,12 @@ describe("NoteCreateDialog", () => {
 
     await saveButton(screen).click();
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["保存しています"]);
-    });
+    await expectAnnouncements(["保存しています"]);
     // 完了は createNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     create.resolve({ id: 1 });
 
-    await vi.waitFor(() => {
-      expect(readAnnouncements()).toEqual(["保存しています", "『買い物リスト』を保存しました"]);
-    });
+    await expectAnnouncements(["保存しています", "『買い物リスト』を保存しました"]);
   });
 
   it("検証に失敗したときは開始の通知を出さない", async () => {
@@ -304,9 +302,7 @@ describe("NoteCreateDialog", () => {
     await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
 
     // キャンセルは押せない。Escape は Base UI が閉じようとするのを onOpenChange で止める
-    await expect
-      .element(screen.getByRole("button", { name: "キャンセル", exact: true }))
-      .toBeDisabled();
+    await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
     await expectDialogOpen(screen, "dialog");

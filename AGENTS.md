@@ -20,7 +20,7 @@ mise run verify   # マージ前に通す: vp check → vp test run → vp build
 
 - テストは TDD で書く。failing test を書き、`vp test run <path>` で落ちることを確かめてから最小の実装で通す
 - テストの置き場所は壊れる原因で分ける。アプリの単体は `src/**/*.test.ts`、ブラウザは `src/**/*.test.tsx`、型だけのテストは `src/**/*.test-d.ts` (`vp check` が検査し、`vp test run` は集めない)、スクリプトは `scripts/**/*.test.ts` (`scripts/checks/**` を除く)、設定と文書の整合検査は `scripts/checks/integrity/`、ビルド成果物の検査は `scripts/checks/runtime/` (vitest の project ではなく `vp build` の後に走らせる)。新しいテストファイルを書くだけでは `paths` の rules は読み込まれない (ADR-0003)
-- `vp test run <path>` で 1 回実行する (`vp test` は watch モード)
+- `vp test run <path>` で 1 回実行する。watch は `vp test watch`
 - `vp test` を複数並行で走らせない。orphan の runner が残ると後続が collection エラーで巻き添えになる。kill 後は `ps` で残存を確かめる
 - background で走らせるときはパイプを付けない。buffering で完了まで出力が見えず、ハングと実行中を区別できない
 - full run が普段の所要を大きく超えたら止めて切り分ける。`ps -o pid,etime,time -p <pid>` で CPU 時間が伸びていなければ待っても終わらない

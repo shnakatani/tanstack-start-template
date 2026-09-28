@@ -15,12 +15,11 @@ dist-ssr
 .data/
 __unconfig*
 coverage
-.vitest-attachments
 playwright-report
 test-results
 test-output.txt
-__screenshots__
 logs/
 .playwright-cli/
 after-*.yaml
 __pycache__/
+.vitest/

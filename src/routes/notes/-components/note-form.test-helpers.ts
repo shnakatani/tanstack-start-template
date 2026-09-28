@@ -10,11 +10,11 @@ import type { Screen } from "@/test/assert/screen-assertions";
  */
 
 export function titleTextbox(screen: Screen) {
-  return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title, exact: true });
+  return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.title });
 }
 
 export function bodyTextbox(screen: Screen) {
-  return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.body, exact: true });
+  return screen.getByRole("textbox", { name: NOTE_FIELD_LABELS.body });
 }
 
 /** 期日のトリガー。名前はラベルと表示中の値をつないだもの (form-fields.tsx の FormDateField) なので、ラベルと空白の前方一致で取る */
@@ -23,7 +23,7 @@ export function dueDateTrigger(screen: Screen) {
 }
 
 export function saveButton(screen: Screen) {
-  return screen.getByRole("button", { name: "保存", exact: true });
+  return screen.getByRole("button", { name: "保存" });
 }
 
 /** 追加か編集のダイアログが閉じて消えるのを待つ。閉じた印はタイトル入力の unmount (docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」「否定を肯定で書く」)。 */

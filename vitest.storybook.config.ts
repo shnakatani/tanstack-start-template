@@ -1,6 +1,5 @@
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import tailwindcss from "@tailwindcss/vite";
-import viteReact from "@vitejs/plugin-react";
 import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
@@ -15,11 +14,10 @@ const THEMES = ["light", "dark"] as const;
  * 見える。`theme` は `@storybook/addon-themes` の global 名である。
  */
 function storybookProject(theme: (typeof THEMES)[number]) {
+  // vitest.config.ts の inline project なので root の設定を継承する (Vitest 5 の extends の既定)。
+  // ここには story の実行に固有のものだけを書く
   return defineProject({
-    // vite.config.ts と同じく .env を読まない (ADR-0004)
-    envDir: false,
     plugins: [
-      viteReact(),
       tailwindcss(),
       storybookTest({ configDir: ".storybook", initialGlobals: { theme } }),
       // deps キャッシュを project ごとに分ける。storybookTest() は configDir のハッシュから
@@ -38,7 +36,6 @@ function storybookProject(theme: (typeof THEMES)[number]) {
       },
     ],
     resolve: {
-      tsconfigPaths: true,
       // registry combobox の @base-ui/react barrel import が React を二重解決するのを防ぐ
       dedupe: ["react", "react-dom"],
     },

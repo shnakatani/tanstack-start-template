@@ -87,8 +87,8 @@ paths:
 - assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と名指しした関数だけ (ADR-0007)
 - 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
-- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest-dev/vitest#8695)
-- announcer の文言は `src/test/assert/live-announcer.ts` の `readAnnouncements(politeness)` で読む。region は `browser-setup.tsx` が毎テスト描く (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
+- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)
+- announcer の通知は、届くのを待つなら `expectAnnouncements(expected, politeness)`、届いた後に読むなら `readAnnouncements(politeness)` を使う (`src/test/assert/live-announcer.ts`)。region は `browser-setup.tsx` が毎テスト描く (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 
 ## mock の注意点
 
@@ -131,11 +131,13 @@ paths:
 同期読みを `expect()` へ渡す形、`findElement()`、素の不在 assert、リテラルとの否定スタイル比較は lint (`browser-test/*`) が止める。
 
 - matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` の中で読む。基準値を 1 回だけ読むときは先に `expect.element` で mount を待つ (`docs/guides/testing/waiting-and-assertions.md`「同期読みを書き換える」)
-- 待つ口は 3 つ。locator の状態は `expect.element`、値を作って比べるなら `expect.poll`、matcher で表せない条件は `vi.waitFor` (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
+- 待つ口は 3 つ。locator の状態は `expect.element`、値や mock を比べるなら `expect.poll`、処理そのものが throw しなくなるのを待って戻り値を受け取るなら `vi.waitFor` (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
+- assert は `vi.waitFor` で待たず `expect.poll` で待つ。`vi.waitFor` は assert の予算を読まず 1000ms で打ち切る (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 - 件数は `expect.element(locator).toHaveLength(n)`、フォーカスは `expect.element(locator).toHaveFocus()` で見る (`docs/guides/testing/waiting-and-assertions.md`「同期読みを書き換える」)
 - assert の予算は `src/test/browser/assert-budget.ts` の `ASSERT_TIMEOUT_MS` で変える。config へ直接書くと helper 側が追随しない (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を宣言する」)
 - `testTimeout` は動かさない。締めるのは assert の予算で、テストの予算を縮めると遅い環境で緑のテストが落ちる (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を宣言する」)
 - 「最初から出ないこと」は `expectAbsent(locator)` の前に、同じ操作の効果を表す肯定 assert を置く。単独では何も検証しない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
+- `expectAbsent` に文字列で引く locator を渡すなら `exact: false` を付ける。既定の完全一致では、その文字列を含む長い文が出ていても不在として通る (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/assert/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えない。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)

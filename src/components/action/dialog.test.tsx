@@ -77,19 +77,19 @@ describe("ActionDialogContent", () => {
     const submitAction = vi.fn();
     const dialog = await openFormDialog(submitAction);
 
-    await dialog.getByRole("button", { name: "保存", exact: true }).click();
+    await dialog.getByRole("button", { name: "保存" }).click();
 
-    await vi.waitFor(() => expect(submitAction).toHaveBeenCalledOnce());
+    await expect.poll(() => submitAction).toHaveBeenCalledOnce();
   });
 
   it("入力欄で Enter を押すと submitAction が呼ばれる", async () => {
     const submitAction = vi.fn();
     const dialog = await openFormDialog(submitAction);
 
-    await dialog.getByRole("textbox", { name: "項目 1", exact: true }).click();
+    await dialog.getByRole("textbox", { name: "項目 1" }).click();
     await userEvent.keyboard("{Enter}");
 
-    await vi.waitFor(() => expect(submitAction).toHaveBeenCalledOnce());
+    await expect.poll(() => submitAction).toHaveBeenCalledOnce();
   });
 
   // form の box を消し、見出し・本文・フッターを Popup の flex の子にする。本文の前後の間隔は

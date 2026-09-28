@@ -11,17 +11,18 @@
 
 ### 待つ口を選ぶ
 
-| 場面                                                                                | 使うもの                                                                                                                                                                                    |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (「assert の予算を分ける理由」)                                                                             |
-| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい |
-| 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                        |
-| `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                         |
-| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/assert/absent.ts`)                                                                                                                                      |
-| locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `vi.waitFor`。vitest の wait-for のレシピも、assertion を待つなら `expect.poll` 系、処理そのものが throw しなくなるのを待つなら `vi.waitFor` と分ける                                       |
+| 場面                                                                                | 使うもの                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 操作の結果として現れる要素の mount                                                  | `await expect.element(locator).toBeInTheDocument()`。`findElement()` は呼ばない (「assert の予算を分ける理由」)                                                                                |
+| 操作後の要素の実測 (rect / computed style)                                          | 先に `expect.element` で mount を待ち、実測は `expect.poll` のコールバックの中で `locator.element()` を読む。比較の基準値を 1 回だけ読むときは、mount を待った後に `element()` で読んでよい    |
+| 操作後の属性・テキストの検証                                                        | `await expect.element(locator).toHaveAttribute(...)`                                                                                                                                           |
+| `render()` の直後、操作前の要素の生 DOM                                             | `locator.element()`                                                                                                                                                                            |
+| close 後に要素が消えたことの確認                                                    | `expectRemoved(locator)` (`src/test/assert/absent.ts`)                                                                                                                                         |
+| locator の matcher で表せない条件 (mock の呼び出し回数、announcer が積んだ配列など) | `expect.poll(() => 値)` に matcher を当てる (`expect.poll(() => vi.mocked(fn)).toHaveBeenCalledOnce()`)。announcer の通知は `expectAnnouncements([...])` (`src/test/assert/live-announcer.ts`) |
+| 処理そのものが throw しなくなるのを待ち、その戻り値を受け取る                       | `vi.waitFor`。assert を待つのには使わない。assert の予算 (`expect.poll.timeout`) を読まず、既定の 1000ms で打ち切る。timeout は呼び出しごとに渡す (vitest の wait-for のレシピ)                |
 
 - `getAnimations()` の完了を待つ helper は置かない。animation は既定で止まる (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)
-- `toHaveTextContent` は文字列を渡すと部分一致になる。完全一致が要るなら正規表現を渡す
+- `toHaveTextContent` は完全一致で比べる。部分一致と正規表現は `toMatchTextContent` を使う (vitest docs の browser assertions「toMatchTextContent」)
 - `toHaveTextContent` は受け取った側のテキストの NBSP (U+00A0) を空白に置き換えてから比べ、期待値は置き換えない。`normalizeWhitespace: false` でも置き換わる。期待値に NBSP を書くと、肯定は必ず落ち、`.not.toHaveTextContent` は必ず通る。空白を書いた期待値は NBSP が失われても通る。NBSP そのものを確かめるなら `element().textContent` を読む (vitest の `toHaveTextContent.ts`)
 - 変化しないことの検証 (disabled な行がトグルしない等) は retry では強くならない。`expect.element` は条件を満たした時点で返るので、更新の前に成功しうる。待つ対象がある検証へ言い換えられないかを先に考える
 - 生 DOM を読む箇所が「操作を挟んだか」で待ち方を誤っても、テストは大半の実行で通る。lint が止めるのは同期読みを assert へ流す形だけなので (ADR-0009)、残りはレビューで見る
@@ -37,7 +38,7 @@
 | `expect(x.element().getAttribute(a)).toBe(v)`      | `expect.element(x).toHaveAttribute(a, v)`                   |
 | `expect(document.activeElement).toBe(x.element())` | `expect.element(x).toHaveFocus()`                           |
 | `expect(x.all()).toHaveLength(n)`                  | `expect.element(x).toHaveLength(n)`                         |
-| `expect(x.element().textContent).toContain(t)`     | `expect.element(x).toHaveTextContent(t)`                    |
+| `expect(x.element().textContent).toContain(t)`     | `expect.element(x).toMatchTextContent(t)`                   |
 | 要素を受け取る helper へ渡す                       | helper の引数を locator にする                              |
 
 matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` のコールバックの中で読む。単一のプロパティを文字列のリテラルと比べる形は `toHaveStyle` で書く。
@@ -50,6 +51,7 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | 「最初から出ないこと」は `src/test/assert/absent.ts` の `expectAbsent(locator)` で確かめ、同じ操作の効果を表す肯定 assert を先に置く | この matcher は要素が無ければ 1 回目で通る。肯定 assert が無いと、検証しているつもりで何も検証していない   |
 | 要素が在る状態から消えるのを待つときは `expectRemoved(locator)` を使う。素の `expect.element(x).not.toBeInTheDocument()` は書かない  | 2 つは同じ matcher を呼ぶので、名前が無いとどちらのつもりかが字面で読めない                                |
+| `expectAbsent` に文字列で引く locator (`getByText` や `getByRole` の `name`) を渡すなら `exact: false` を付ける                      | locator の既定は完全一致なので、その文字列を含む長い文が出ていても一致せず、不在として通る                 |
 | `.not.toBeInTheDocument()` 以外の否定 matcher には、肯定 assert を添えなくてよい                                                     | 要素が引けない間 retry するので、不在のまま通ることがない                                                  |
 | 件数は `expect.element(locator).toHaveLength(n)` で見る。`n` が 0 でなくても、描画を待つ肯定 assert を先に置く                       | 一致ゼロの locator でも `toHaveLength(0)` は通る。まだ描かれていない状態が 0 件として成立する              |
 | スタイルをリテラルとの否定で確かめない。1 回の観測から数値を出すか、期待する値そのものと肯定で比べる                                 | 綴りや単位が 1 つ外れると、潰れた状態のまま通る                                                            |
@@ -74,7 +76,7 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 
 ### assert の予算を宣言する
 
-assert の予算をテストの予算と分けて宣言する。`vitest.browser.config.ts` に `expect.poll.timeout` と `browser.providerOptions.actionTimeout` を対で置き、値は 5000ms にする。理由は「assert の予算を分ける理由」にある。
+assert の予算をテストの予算と分けて宣言する。`vitest.browser.config.ts` に `expect.poll.timeout` と `playwright()` provider の `actionTimeout` を対で置き、値は 5000ms にする。理由は「assert の予算を分ける理由」にある。
 
 | 規範                                                                                                                             | 守らないと何が壊れるか                                                                                                       |
 | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -101,7 +103,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 ### 状態と通知を検証する
 
 - pending の検証は `aria-busy` と announcer の region のテキストで行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
-- announcer の region は `src/test/browser/browser-setup.tsx` が毎テスト描く。文言は `src/test/assert/live-announcer.ts` の `readAnnouncements(politeness)` で読み、配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
+- announcer の region は `src/test/browser/browser-setup.tsx` が毎テスト描く。通知が届くのを待つなら `src/test/assert/live-announcer.ts` の `expectAnnouncements(expected, politeness)`、届いた後の 1 回読みなら `readAnnouncements(politeness)` を使い、どちらも配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
 - 同じ通知の経路を 2 つのテストで見ない。検索欄を持つ一覧では、ページのテストが debounce 後と無効化済みキャッシュの決着を、route の wrapper のテストが Enter と戻るを見る
 
 ## explanation
@@ -219,7 +221,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 - `actionTimeout` を置かないと `expect.element` が `expect.poll.timeout` を読まず、1 ページ目の記述と食い違う。置くと記述どおりになる。回避策で挙動を曲げているのではなく、文書化された既定へ戻している
 - この対はメンテナが提示した形そのものである。issue 9157 で `actionTimeout` を 5000 にしても効かないという報告に対し、メンテナは「`actionTimeout` is not applied to assertions. They are controlled by `expect.poll.timeout`」と答え、`expect.poll.timeout: 5_000` と `playwright({ actionTimeout: 5_000 })` を両方足す diff を示している (2026-09-22 に `gh issue view 9157 --repo vitest-dev/vitest` で確認)
-- 同じ回答は第 3 のノブ `browser.expect` にも触れているが、4.1.11 のこれは `toMatchScreenshot` しか持たず `poll` を持たない (`BrowserConfigOptions` を 2026-09-22 に確認)
+- 同じ回答は第 3 のノブ `browser.expect` にも触れているが、5.0.1 のこれは `toMatchScreenshot` しか持たず `poll` を持たない (vitest docs `config/browser/expect.md` を 2026-09-28 に確認)
 - `expect.poll.timeout` は、`actionTimeout` を作った issue 6983 でメンテナが `expect.element()` について「which can be already configured by `expect.poll.timeout`」と書いた口である。`actionTimeout` は同 issue で「CI is quite often slower and locators take more than the default」を動機に要望され、PR 6984 が足した
 - `actionTimeout` を置くと Playwright の操作にも上限が付く。残り予算からの計算は action の timeout がテストを跨いで持ち越されるのを止めるために入り (issue 7871 のメンテナ回答)、その代わりテストの後半ほど予算が縮んで `Timeout 581ms exceeded` のような説明のつかない失敗が出る。固定値を置くとこの縮みが消える
 
@@ -248,7 +250,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 explanation と how-to が拠る一次情報。
 
-- 同梱の `@vitest/browser` 4.1.11 の `context.d.ts` (同期読み 4 メソッドと `findElement` の docstring) と `matchers.d.ts` (`expect.element` が受ける型の docstring)
+- 同梱の `@vitest/browser` 5.0.1 の `context.d.ts` (同期読み 4 メソッドと `findElement` の docstring) と `matchers.d.ts` (`expect.element` が受ける型の docstring)
 - `@testing-library/dom` の `waitForElementToBeRemoved` (要素が最初から無いと throw する): <https://testing-library.com/docs/dom-testing-library/api-async/>
 - Cypress の Assertions「Negative assertions」("Negative assertions may pass for reasons you weren't expecting."): <https://docs.cypress.io/app/references/assertions>
 - Cypress の retry-ability (`cy.get(..., { timeout: 0 }).should('not.exist')` を「check synchronously that the element does not exist (no retry)」の形として載せる。`expectAbsent` と同じ形): <https://docs.cypress.io/app/core-concepts/retry-ability>
@@ -257,10 +259,14 @@ explanation と how-to が拠る一次情報。
 - Playwright の Test timeouts (assertion timeout を test timeout と分ける): <https://playwright.dev/docs/test-timeouts>
 - vitest browser の assertion API: <https://vitest.dev/guide/browser/assertion-api>
 - vitest browser の locator: <https://vitest.dev/guide/browser/locators>
+- `browser.locators.exact` (locator の既定は完全一致で、個々の locator の `exact` で上書きする): <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/locators.md>
+- vitest の wait-for のレシピ (assert を待つなら `expect.poll`、処理の成功を待つなら `vi.waitFor`): <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/wait-for.md>
+- `vi.waitFor` の既定 (`timeout` 1000、`interval` 50): <https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md>
 - vitest-dev/vitest#6983 / PR #6984 (`actionTimeout` の導入と、`expect.poll.timeout` が `expect.element` の口だというメンテナ回答): <https://github.com/vitest-dev/vitest/issues/6983>
 - vitest-dev/vitest#7871 (action の timeout がテストの残り予算で縮む): <https://github.com/vitest-dev/vitest/issues/7871>
 - vitest-dev/vitest#8308 (OPEN。`expect.poll.timeout` が `expect.element` に効かない): <https://github.com/vitest-dev/vitest/issues/8308>
 - vitest-dev/vitest#9157 (`testTimeout` の既定が docs と食い違う可能性): <https://github.com/vitest-dev/vitest/issues/9157>
 - vitest-dev/vitest#9751 (OPEN。timeout 設定の集約): <https://github.com/vitest-dev/vitest/issues/9751>
-- Vitest の `toHaveStyle` の実装 (期待値の正規化): <https://github.com/vitest-dev/vitest/blob/v4.1.11/packages/browser/src/client/tester/expect/toHaveStyle.ts>
-- Vitest の `toHaveTextContent` の実装 (NBSP の置き換え): <https://github.com/vitest-dev/vitest/blob/v4.1.11/packages/browser/src/client/tester/expect/toHaveTextContent.ts>
+- Vitest の `toHaveStyle` の実装 (期待値の正規化): <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser/src/client/tester/expect/toHaveStyle.ts>
+- Vitest の `toHaveTextContent` の実装 (NBSP の置き換えと完全一致): <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser/src/client/tester/expect/toHaveTextContent.ts>
+- Vitest の `toMatchTextContent` の実装 (部分一致と正規表現): <https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser/src/client/tester/expect/toMatchTextContent.ts>

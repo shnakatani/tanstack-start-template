@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { announce, LIVE_REGION_IDS } from "@/lib/live-announcer";
 
-import { readAnnouncements } from "./live-announcer";
+import { expectAnnouncements, readAnnouncements } from "./live-announcer";
 
 // region は browser-setup.tsx の beforeEach が描く (`readAnnouncements` の JSDoc)
 describe("readAnnouncements", () => {
@@ -35,5 +35,28 @@ describe("readAnnouncements", () => {
 
   it("region 不在のテストの後でも次のテストで region が描き直される", () => {
     expect(document.getElementById(LIVE_REGION_IDS.polite)).not.toBeNull();
+  });
+});
+
+describe("expectAnnouncements", () => {
+  it("後から届く通知を待って通る", async () => {
+    // 操作の完了で通知が届く形をなぞる。呼んだ時点ではまだ region に無い
+    setTimeout(() => announce("『買い物リスト』を保存しました"), 100);
+
+    await expectAnnouncements(["『買い物リスト』を保存しました"]);
+  });
+
+  it("通知が期待と違えば落ちる", async () => {
+    announce("保存しています");
+
+    await expect(expectAnnouncements(["『買い物リスト』を保存しました"])).rejects.toThrow(
+      /to deeply equal/,
+    );
+  });
+
+  it("assertive の通知は politeness を渡して待つ", async () => {
+    announce("保存できません", "assertive");
+
+    await expectAnnouncements(["保存できません"], "assertive");
   });
 });

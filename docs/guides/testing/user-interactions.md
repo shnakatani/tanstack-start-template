@@ -99,7 +99,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 | `.click({ force: true })`        | 0 回           | 1 回              |
 | 合成 click を対象へ直接 dispatch | 1 回           | 1 回 (バブリング) |
 
-- vitest の `Locator` (`@vitest/browser` 4.1.11) に `dispatchEvent` は無い。Playwright の `locator.dispatchEvent()` を届かせる公式経路はカスタムコマンド (`BrowserCommand`) だけである。vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)
+- vitest の `Locator` (`@vitest/browser` 5.0.1) に `dispatchEvent` は無い。Playwright の `locator.dispatchEvent()` を届かせる公式経路はカスタムコマンド (`BrowserCommand`) だけである。vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)
 
 合成 click の helper を `src/test/` に置くと、テンプレートを複製した利用者全員へ配られる。使いうる消費者は 2 つとも sample の部品で、sample を消すと消費者ゼロの helper だけが残る。
 

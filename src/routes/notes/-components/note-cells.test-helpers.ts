@@ -16,7 +16,7 @@ export function noteDeleteTriggerName(note: Pick<Note, "title">) {
 
 /** 行の削除トリガー (`NoteActionsCell`)。アクセシブルネームで行を特定する (確認ダイアログの「削除」と衝突させない)。 */
 export function rowDeleteButton(screen: Screen, title: string) {
-  return screen.getByRole("button", { name: noteDeleteTriggerName({ title }), exact: true });
+  return screen.getByRole("button", { name: noteDeleteTriggerName({ title }) });
 }
 
 /** 編集の trigger の accessible name。一覧の各行に並ぶので、行の見出しで区別する */
@@ -26,5 +26,5 @@ export function noteEditTriggerName(note: Pick<Note, "title">) {
 
 /** 行の編集トリガー (`NoteActionsCell`)。名前は `noteEditTriggerName` から作る */
 export function rowEditButton(screen: Screen, title: string) {
-  return screen.getByRole("button", { name: noteEditTriggerName({ title }), exact: true });
+  return screen.getByRole("button", { name: noteEditTriggerName({ title }) });
 }

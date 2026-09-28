@@ -27,7 +27,6 @@ export default defineConfig({
     globalSetup: ["./vitest.global-setup.ts"],
     projects: [
       {
-        extends: true,
         test: {
           name: "unit",
           include: ["src/**/*.test.ts"],
@@ -40,7 +39,6 @@ export default defineConfig({
         },
       },
       {
-        extends: true,
         test: {
           name: "scripts-tools",
           // 許可リストにすると、ツールを足すたびにここへ 1 行足すまでテストが無言で
@@ -59,7 +57,6 @@ export default defineConfig({
         },
       },
       {
-        extends: true,
         test: {
           name: "checks-integrity",
           include: ["scripts/checks/integrity/**/*.test.ts"],

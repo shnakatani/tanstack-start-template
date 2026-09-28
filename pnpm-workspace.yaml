@@ -22,26 +22,24 @@ minimumReleaseAgeExcludePrune: true
 # - 下の一覧は vp migrate が書く Vite+ 一族の恒久除外。編集しない
 # - 足すときは必ず版まで書く (`@scope/pkg@x.y.z`)。版を省くと全版が恒久に除外される
 minimumReleaseAgeExclude:
-  [
-    vite-plus,
-    "@voidzero-dev/*",
-    oxlint,
-    "@oxlint/*",
-    oxlint-tsgolint,
-    "@oxlint-tsgolint/*",
-    oxfmt,
-    "@oxfmt/*",
-    vitest,
-    "@vitest/*",
-  ]
+  - vite-plus
+  - "@voidzero-dev/*"
+  - oxlint
+  - "@oxlint/*"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/*"
+  - oxfmt
+  - "@oxfmt/*"
+  - vitest
+  - "@vitest/*"
 # vite-plus と core は同じリリースで揃えて上げる (voidzero-dev/vite-plus#2356)。
 # dependabot.yml の vite-plus グループが束ねる
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
-  vitest: 4.1.11
-  vite-plus: 0.3.2
-  "@vitest/browser-playwright": 4.1.11
-  "@vitest/coverage-v8": 4.1.11
+  vite: npm:@voidzero-dev/vite-plus-core@1.0.0
+  vitest: 5.0.1
+  vite-plus: 1.0.0
+  "@vitest/browser-playwright": 5.0.1
+  "@vitest/coverage-v8": 5.0.1
 # @shadcn/lint が依存に持つ @typescript-eslint/parser は、oxlint 経由では読まれないのに eslint を必須 peer に持つ。
 # optional にして、parser だけが理由で ESLint 一式が入らないようにする。
 # いま ESLint が入るのは、eslint-plugin-testing-library と @tanstack/eslint-plugin-* が @typescript-eslint/utils
@@ -57,6 +55,8 @@ packageExtensions:
 
 # vite を core へ alias すると版が 0.x になり、vite の peer 範囲を満たさなくなる。
 # vp migrate が書く、番号の不一致だけを抑える設定
+# vitest への allowAny は、番号の不一致でない範囲外も許す (@storybook/addon-vitest@10.6.0 の vitest の peer は
+# ^3 || ^4)。確かめる契機は下の patchedDependencies の撤去条件
 peerDependencyRules:
   allowAny:
     - vite
@@ -68,3 +68,13 @@ peerDependencyRules:
     # 満たさない (ADR-0014)。plugin-react を上げるたびに両者を読み比べる。
     # 親つきのキーで plugin-react の下だけに効かせ、値は検証した版に絞る (* にすると読み比べの契機が消える)
     "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"
+
+# @storybook/addon-vitest@10.6.0 は story の viewport を `import("@vitest/browser/context")` の page で当てる。
+# Vitest 5 ではこの import が throw し、addon が catch して何も言わずに return するので、全 story が
+# Vitest 既定の 414x896 で走り、parameters / globals の viewport も効かない。patch は import 先を上流の
+# next と同じ `vitest/browser` へ替える (storybookjs/storybook#36164)。
+# キーを版まで固定する。addon を上げると patch が当たらず install が落ち (allowUnusedPatches の既定は false)、
+# 出口条件を確かめる契機になる (ADR-0005)。
+# 撤去条件: addon-vitest の安定版が peer に vitest 5 を含み、viewport の import を vitest/browser にしたとき
+patchedDependencies:
+  "@storybook/addon-vitest@10.6.0": patches/@storybook__addon-vitest@10.6.0.patch

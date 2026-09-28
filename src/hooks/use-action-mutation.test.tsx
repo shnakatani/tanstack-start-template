@@ -22,9 +22,7 @@ describe("useActionMutation", () => {
     await result.current.runAction(7);
 
     expect(mutationFn).toHaveBeenCalledExactlyOnceWith(7, expect.anything());
-    await vi.waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+    await expect.poll(() => result.current.isSuccess).toBe(true);
   });
 
   it("mutationFn が reject しても runAction は reject せず、onError が呼ばれる", async () => {
@@ -65,9 +63,7 @@ describe("useActionMutation", () => {
     });
     // mutationFn の決着後に onSuccess が呼ばれた時点で、その Promise が未決着のあいだは戻らない
     // (壁時計の sleep で待つと、遅い環境で誤って通る)
-    await vi.waitFor(() => {
-      expect(onSuccess).toHaveBeenCalledOnce();
-    });
+    await expect.poll(() => onSuccess).toHaveBeenCalledOnce();
     expect(settled).toBe(false);
 
     afterSuccess.resolve(undefined);
