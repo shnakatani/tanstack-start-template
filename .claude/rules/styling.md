@@ -107,8 +107,10 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 - ページのローディングは、欠かせない query を route loader での取得の待ち合わせ + `useSuspenseQuery` + route の `pendingComponent` で、副次的な query をページの中の `<Suspense>` で出す (ADR-0033)。タイミングは `src/router.tsx` の既定に任せる
 - route に `pendingComponent` が無い画面は、router の `defaultPendingComponent` (`PendingContent`) が受ける。消さない。無いと suspend が root まで巻き上がって何も描かれない (ADR-0029)
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が点滅する
-- skeleton はレイアウトを模倣する (`table-skeleton.tsx`)。コンテナに `role="status"` + `aria-label="読み込み中"` + `aria-busy` を付ける
-- 列数など実テーブルと合わせる値は、実テーブル側の定義を SSOT にして両方から参照する。別々に持つとロード完了時にレイアウトがずれる
+- skeleton はレイアウトを模倣する (`table-skeleton.tsx`)。図形は `aria-hidden` で隠し、「読み込み中」の文言を区画に 1 つだけ置く。図形ごとに置くと同じ文言が数だけ読まれる (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
+- 表の skeleton は本物の列見出しを持つ table として見せる。`<table>` に `role="status"` などの role を載せない。`th` と `td` が role を失う (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
+- route の pending 表示 (skeleton と `PendingContent`) に `aria-busy` を付けない。JAWS が要素ごと読み飛ばす (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
+- 列見出しなど実テーブルと合わせる値は、両方が参照する定数に置く。別々に持つとロード完了時にレイアウトがずれる
 - ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0026)
 - データなしは `Empty` 系で、メッセージと次のアクションへの導線をセットで示す
 - 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項でよい
