@@ -31,11 +31,8 @@
 | 応答の時点をテストで握る                                            | 引数を問わないなら `deferMock(fn)` (`src/test/app/defer-mock.ts`)。引数ごとに握るなら `Promise.withResolvers()` を作り、`vi.when` の `thenReturn(pending.promise)` に渡す                                   |
 
 - 途中から応答を変えるなら、最初の `vi.when` の戻り値に同じ引数の `calledWith` を積み足す。同じ引数の behavior に後から足した応答 (action) が先に使われ、無期限の応答なら以降は前の応答に戻らない ([Vitest docs のレシピ「Conditional Mocking with vi.when」][] の Stacking actions)
-- `vi.when` は spy の実装を差し替える。あとから `mockImplementation` / `mockResolvedValue` / `deferMock` を呼ぶと `vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなる (2026-09-28、vitest 5.0.1 で実測)
-- 未消費の `mock*Once` は、引数を問わず `vi.when` より先に使われる (2026-09-28、vitest 5.0.1 で実測)
-- 同じ spy で、`vi.when` と上の 2 つ (あとからの差し替え、`mock*Once`) を混ぜない
-- `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、`vi.mocked(fn).mock.results` を見る。`vi.when: no behavior defined when called with [...]` の例外と渡った引数が読める
-- 例外の文言の形は [Vitest docs のレシピ「Conditional Mocking with vi.when」][] の `onUnmatched` の例にある
+- 同じ spy で、`vi.when` と、あとからの差し替え (`mockImplementation` / `mockResolvedValue` / `deferMock`) や `mock*Once` を混ぜない。`vi.when` は spy の実装を差し替えるので、あとから差し替えると `vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなる。未消費の `mock*Once` は、引数を問わず `vi.when` より先に使われる (どちらも 2026-09-28、vitest 5.0.1 で実測)
+- `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、`vi.mocked(fn).mock.results` を見る。`vi.when: no behavior defined when called with [...]` の例外と渡った引数が読める (文言の形は [Vitest docs のレシピ「Conditional Mocking with vi.when」][] の `onUnmatched` の例)
 
 ## explanation
 
@@ -75,4 +72,4 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 [vitest の issue 8343]: https://github.com/vitest-dev/vitest/issues/8343
 [vitest の PR 5765]: https://github.com/vitest-dev/vitest/pull/5765
 [`@vitest/mocker` の `node/resolver.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/mocker/src/node/resolver.ts
-[Vitest docs「vi.when」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md
+[Vitest docs「vi.when」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md#viwhen-500-vi-when

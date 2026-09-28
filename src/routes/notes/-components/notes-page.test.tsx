@@ -196,8 +196,8 @@ describe("NotesPage", () => {
       queryKey: notesQueryOptions({ q: "" }).queryKey,
       exact: true,
     });
-    // 空に戻したあとの再取得は、応答をテストで握る。同じ引数の behavior に後から足した応答 (action) が
-    // 先に使われ、無期限の応答なので以降は前の応答に戻らない
+    // 空に戻したあとの再取得は、応答をテストで握る。積み足した応答が使われる順序は
+    // docs/guides/testing/mocking.md「戻り値を決める」
     const listed = Promise.withResolvers<Note[]>();
     listing.calledWith({ data: { q: "" } }).thenReturn(listed.promise);
     await searchbox.fill("");
@@ -442,17 +442,16 @@ describe("NotesPage", () => {
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
     const refetch = deferMock(listNotes);
     const secondResponse = Promise.withResolvers<undefined>();
+    const otherUpdate = {
+      id: OTHER_NOTE.id,
+      title: "後続の見出し",
+      body: OTHER_NOTE.body,
+      dueDate: OTHER_NOTE.dueDate,
+    };
     vi.when(vi.mocked(updateNote), { onUnmatched: "throw" })
       .calledWith({ data: NOTE_UPDATE })
       .thenResolve(undefined)
-      .calledWith({
-        data: {
-          id: OTHER_NOTE.id,
-          title: "後続の見出し",
-          body: OTHER_NOTE.body,
-          dueDate: OTHER_NOTE.dueDate,
-        },
-      })
+      .calledWith({ data: otherUpdate })
       .thenReturn(secondResponse.promise);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
@@ -465,7 +464,7 @@ describe("NotesPage", () => {
     await expectNoteDialogClosed(screen);
 
     await openNoteEditDialog(screen, OTHER_NOTE);
-    await titleTextbox(screen).fill("後続の見出し");
+    await titleTextbox(screen).fill(otherUpdate.title);
     await saveButton(screen).click();
     await parkMouse();
     // close を止めていることを描画で確かめてから Escape を送る (pending が描画に届く前に送らない)
@@ -473,7 +472,7 @@ describe("NotesPage", () => {
     await userEvent.keyboard("{Escape}");
 
     // 閉じない。入力が残っている
-    await expect.element(titleTextbox(screen)).toHaveValue("後続の見出し");
+    await expect.element(titleTextbox(screen)).toHaveValue(otherUpdate.title);
 
     secondResponse.resolve(undefined);
 
