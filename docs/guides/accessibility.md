@@ -238,5 +238,5 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 - title を文字列で直接書かない。not found の判定を通らず、not found の画面でもそのページの名前が title になる
 - `head()` を省かない。省くと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない
-- ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は pending 表示の `<h1>` へ移ってから `<body>` へ落ちる (ADR-0033、ADR-0035)
+- ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
