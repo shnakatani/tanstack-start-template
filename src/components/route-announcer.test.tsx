@@ -19,7 +19,7 @@ import { APP_NAME } from "@/lib/app-name";
 import { pageTitle } from "@/lib/page-title";
 import { readAnnouncements } from "@/test/assert/live-announcer";
 
-import { RouteAnnouncer } from "./route-announcer";
+import { RouterInnerWrap } from "./router-inner-wrap";
 
 // 遷移は history の API で起こす。history は path の型を持たないので、アプリの route tree に依存しない。
 // 確かめる対象は遷移の伝え方で、遷移の引き金ではない
@@ -86,7 +86,8 @@ function createAnnouncedRouter(options: { rootThrowsAt?: string } = {}) {
   return createRouter({
     routeTree: rootRoute.addChildren([a, b, err, missing]),
     history: createMemoryHistory({ initialEntries: ["/a"] }),
-    InnerWrap: RouteAnnouncer,
+    // 本番 (src/router.tsx) と同じ配線を通す
+    InnerWrap: RouterInnerWrap,
     defaultPendingMinMs: 0,
   });
 }

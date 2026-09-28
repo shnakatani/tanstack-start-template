@@ -1,6 +1,6 @@
 import { expect, it } from "vite-plus/test";
 
-import { RouteAnnouncer } from "@/components/route-announcer";
+import { RouterInnerWrap } from "@/components/router-inner-wrap";
 import { PendingContent } from "@/components/screens/pending";
 
 import { getRouter } from "./router";
@@ -12,6 +12,6 @@ it("route が pending 表示を持たないときの受け皿として PendingCo
 });
 
 // 遷移を見出しへの focus と title の読み上げで伝える。InnerWrap は root route の error boundary の外にある
-it("InnerWrap に RouteAnnouncer を渡す", () => {
-  expect(getRouter().options.InnerWrap).toBe(RouteAnnouncer);
+it("InnerWrap に RouterInnerWrap を渡す", () => {
+  expect(getRouter().options.InnerWrap).toBe(RouterInnerWrap);
 });
