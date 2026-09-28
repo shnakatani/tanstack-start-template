@@ -72,7 +72,7 @@ export default defineProject({
       {
         name: "a11y",
         description:
-          "この project で axe を回すテスト。story 側の a11y は addon が別に当てるので含まない",
+          "この project で axe に「アクセシブルか」を問うテスト。story 側の a11y は addon が別に当てるので含まない",
       },
     ],
     setupFiles: ["src/test/browser/browser-setup.tsx"],
