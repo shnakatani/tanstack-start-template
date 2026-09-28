@@ -203,7 +203,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 ### ブラウザテストの `incomplete` を読む
 
 - `expectNoA11yViolations` (`src/test/a11y/a11y.ts`) は `incomplete` を合否に入れず、warning の注釈で残す。どの層で落とすかは ADR-0028 が決める
-- 手元では `mise run a11y:incomplete` で読む。default reporter は通ったテストの注釈を出さない。PR では該当テストの行に warning の注釈が付く。件数の上限は `docs/guides/testing/annotations.md`「注釈を読む」、位置の決まり方は同じガイドの「注釈の位置を読む」
+- 手元では `mise run a11y:incomplete` で読む。default reporter は通ったテストの注釈を出さない。PR では該当テストの行に warning の注釈が付く。件数の上限は `docs/guides/testing/annotations.md`「注釈を読む」、位置の決まり方は `docs/guides/testing/annotations.md`「注釈の位置を読む」
 - 注釈の位置は `expectNoA11yViolations` を呼んだテストの行で、どの要素がなぜ判定できなかったかは本文で見る。本文の形は `src/test/a11y/a11y-message.ts` の `describeA11yIncomplete`
 
 ### `incomplete` を数え直す
