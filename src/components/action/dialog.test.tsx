@@ -62,13 +62,13 @@ function renderFormDialog(submitAction: () => void) {
   );
 }
 
-async function openFormDialog(submitAction: () => void = vi.fn()) {
+const openFormDialog = vi.defineHelper(async (submitAction: () => void = vi.fn()) => {
   const screen = await renderFormDialog(submitAction);
   await screen.getByText("開く").first().click();
   const dialog = screen.getByRole("dialog");
   await expect.element(dialog).toBeInTheDocument();
   return dialog;
-}
+});
 
 describe("ActionDialogContent", () => {
   afterEach(restoreDefaultViewport);

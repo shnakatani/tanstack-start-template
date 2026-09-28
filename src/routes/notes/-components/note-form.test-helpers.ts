@@ -1,3 +1,5 @@
+import { vi } from "vite-plus/test";
+
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { expectRemoved } from "@/test/assert/absent";
 import type { Screen } from "@/test/assert/screen-assertions";
@@ -27,6 +29,6 @@ export function saveButton(screen: Screen) {
 }
 
 /** 追加か編集のダイアログが閉じて消えるのを待つ。閉じた印はタイトル入力の unmount (docs/guides/testing/waiting-and-assertions.md「待つ口を選ぶ」「否定を肯定で書く」)。 */
-export async function expectNoteDialogClosed(screen: Screen) {
+export const expectNoteDialogClosed = vi.defineHelper(async (screen: Screen) => {
   await expectRemoved(titleTextbox(screen));
-}
+});

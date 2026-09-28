@@ -85,7 +85,7 @@ paths:
 ## assertion helper と型ナローイング
 
 - assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と名指しした関数だけ (ADR-0007)
-- assertion を実行するヘルパーは `vi.defineHelper` で包む。包まないと失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない (vitest docs の api/vi「vi.defineHelper」)
+- assert を含むヘルパー (操作のあとに待つものを含む) は `vi.defineHelper` で包む。包まないと失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない。包んだ helper を包まない helper から呼んでも同じになる (vitest docs の api/vi「vi.defineHelper」)
 - 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)

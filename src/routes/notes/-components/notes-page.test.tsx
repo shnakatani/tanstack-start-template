@@ -84,9 +84,9 @@ async function renderPage({
   return render(<RouterProvider router={router} />);
 }
 
-async function expectDeleteConfirmClosed(screen: Screen) {
+const expectDeleteConfirmClosed = vi.defineHelper(async (screen: Screen) => {
   await expectRemoved(confirmDeleteButton(screen));
-}
+});
 
 /**
  * 再取得の反映で楽観行が実データの行に置き換わった状態 (busy でない行が 1 つだけ)。
@@ -97,19 +97,19 @@ async function expectDeleteConfirmClosed(screen: Screen) {
  * 2 件ある間は通らない。前段の `toHaveLength` は失敗時の文言を読めるようにするために置く
  * (strict 違反より「1 件のはずが 2 件」のほうが原因に近い)。消すと診断だけが落ちる。
  */
-async function expectSettledRow(screen: Screen, note: Note) {
+const expectSettledRow = vi.defineHelper(async (screen: Screen, note: Note) => {
   const row = noteRow(screen, note);
   await expect.element(row).toHaveLength(1);
   await expect.element(row).toHaveAttribute("aria-busy", "false");
-}
+});
 
-async function openDeleteConfirm(screen: Screen, note: Note) {
+const openDeleteConfirm = vi.defineHelper(async (screen: Screen, note: Note) => {
   await rowDeleteButton(screen, note.title).click();
   await expectText(screen, deleteConfirmDescription(note.title));
   // click で動いた実マウスは、ダイアログが閉じて下の要素が露出する前に退避する。乗ったままだと
   // 露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
   await parkMouse();
-}
+});
 
 /** 追加ダイアログを開いて 1 件分を入力し、保存を確定する (応答の決着は呼び出し側が握る)。 */
 async function submitCreate(screen: Screen, note: Note) {
