@@ -67,12 +67,7 @@ interface FormTextFieldProps
  */
 export const UNRENDERABLE_FIELD_ERROR_MESSAGE = "入力内容を確認してください";
 
-/**
- * 検証エラー 1 件から表示できる文言を取り出す。validator は任意の値を返せる (Standard Schema の issue、
- * 文字列、独自の値) ので、TanStack Form の custom-errors ガイド「Type Safety of `errors` and `errorMap`」と
- * 同じく文字列とそれ以外を振り分ける。部品は `useFieldContext` 越しに errors を読むので型は `any[]` になり、
- * 決まった型では受けられない
- */
+/** 検証エラー 1 件から表示できる文言を取り出す (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」) */
 function fieldErrorMessage(error: unknown): string | undefined {
   if (typeof error === "string") {
     return error;
@@ -88,15 +83,8 @@ function fieldErrorMessage(error: unknown): string | undefined {
   return undefined;
 }
 
-/**
- * 検証エラーを FieldError が描ける `{ message }` 形へ揃える。
- * standard schema (valibot 等) は `{ message }` を返すが、関数 validator は素の文字列や
- * 任意の値を返せる。揃えずに渡すと FieldError は何も描かず、エラーの内容だけが黙って消える。
- */
+/** 検証エラーを FieldError が描ける `{ message }` 形へ揃える (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」) */
 function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[] {
-  // どの field でも 1 段平らにする。`disableErrorFlat` の field では `field.errors` の `flat(1)` が行われず、
-  // validator が返した issue の配列が 1 要素として入る (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)。
-  // 既定の field では、validator が入れ子の配列を返したときに中の文言を描く。
   // 平らにすると空になる (`[]` を返した validator) なら、form は invalid と数えるので、元の errors を 1 件として丸める
   const flatErrors = errors.flat(1);
   const targets = flatErrors.length === 0 && errors.length > 0 ? [errors] : flatErrors;
@@ -113,10 +101,8 @@ function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[]
 /**
  * Text / Number / Select / Date フィールドが共有する状態導出。
  * id 2 つと invalid の計算を 1 箇所に集め、フィールド種別を増やすときの写し漏れを防ぐ。
- * (FormCheckboxField は FieldError 非対応の別形なので使わない)
- *
- * invalid は TanStack Form が数える field の妥当性をそのまま読む。表示できない形のエラーでも検証は失敗して
- * いるので、aria-invalid を落とすと submit が止まる理由が支援技術から読めなくなる。
+ * (FormCheckboxField は FieldError 非対応の別形なので使わない)。errors と invalid の取り方は
+ * `docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」
  */
 function useFormFieldState<T>() {
   const field = useFieldContext<T>();
