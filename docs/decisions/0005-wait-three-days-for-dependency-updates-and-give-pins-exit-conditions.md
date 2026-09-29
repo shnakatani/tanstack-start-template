@@ -77,7 +77,7 @@ Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃
 
 そのため、グループの PR はどれも、そのブランチで `vp migrate` を打って同梱の版へ揃えてから取り込む。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
 
-`vitest` 系を `ignore` して `vite-plus` だけを PR にする形は採らない。上流の設定例から外れるうえ、`vite-plus` の PR が来るかを公式の情報で確かめられない。`vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告する (2026-09-29、pnpm 11.28.0 で実測)。Dependabot の docs は peer の扱いを書いていない。グループ内の peer を判定から外す仕組みを入れた dependabot-core の PR 7561 は、対象を「the peer is also in the group」としており、peer の側を `ignore` した形はこれに当たらない。
+`vitest` 系を `ignore` して `vite-plus` だけを PR にする形は採らない。上流の設定例から外れるうえ、`vite-plus` の PR が来るかを公式の情報で確かめられない。`vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告する (2026-09-29、pnpm 11.28.0 で実測)。Dependabot の docs は peer の扱いを書いていない (2026-09-29 時点)。グループ内の peer を判定から外す仕組みを入れた dependabot-core の PR 7561 は、対象を「the peer is also in the group」としており、peer の側を `ignore` した形はこれに当たらない。
 
 core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert は、`vite-plus` の名前で届いたものだけが頼りになる。依存グラフは core を `@voidzero-dev/vite-plus-core` として記録し、`vite` の名前を持たないので、`vite` 宛ての advisory は照合先が無い。core が同梱する 3 つの版も記録されない。rolldown は別の依存から入った版だけが載る (2026-09-29 に依存グラフの SBOM で確認)。VoidZero は `vite` の advisory に `vite-plus` を足すことがあるが (GHSA-fx2h-pf6j-xcff)、足していない advisory もある (GHSA-v2wj-q39q-566r)。
 
@@ -151,5 +151,4 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 - GitHub Docs: `ignore` が version updates と security updates の両方に効く: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/controlling-dependencies-updated
 - Vite+ が docs に載せる予定の Dependabot の設定例: https://github.com/voidzero-dev/vite-plus/pull/2463
 - グループ内の peer を判定から外す仕組みを入れた dependabot-core の PR: https://github.com/dependabot/dependabot-core/pull/7561
-- patterns を持たないグループが他のグループの依存も抱え込む件: https://github.com/dependabot/dependabot-core/issues/14576
 - TanStack Start の hosting ガイド (nitro/vite の plugin): https://tanstack.com/start/latest/docs/framework/react/guide/hosting

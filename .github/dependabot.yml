@@ -47,9 +47,9 @@ updates:
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
       # 上の 2 グループの patterns を exclude-patterns に写す。patterns を持たないグループは、
-      # 他のグループに入った依存も抱え込み、同じ更新が 2 本の PR に載る (docs の「最初に一致した
-      # グループに入る」と挙動が食い違う。dependabot/dependabot-core#14576)。上のグループの patterns を
-      # 変えたらここも変える
+      # 他のグループに入った依存も抱え込む (docs の「最初に一致したグループに入る」と挙動が食い違う。
+      # dependabot/dependabot-core#14576)。2026-09-28 には vitest が vite-plus と minor-and-patch の
+      # 両方の PR に載った。上のグループの patterns を変えたらここも変える
       minor-and-patch:
         update-types:
           - "minor"
