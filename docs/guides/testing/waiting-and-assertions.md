@@ -106,7 +106,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 - 配列を丸ごと比べる。`toContain` だと重複や余計な通知が通る
 - 通知が出なかったことは、テストの流れで後に出る通知までの履歴を丸ごと比べて示す。後に出る通知が無いときと、出る時点を確かめるとき (決着の前に出ないなど。早く出ても並びは同じになる) は、その時点の効果を表す肯定 assert を待ってから `readAnnouncements` を 1 回読む。直前に待った `expectAnnouncements` の一致は、その肯定 assert と 1 回読みを兼ねる。1 回読みは、読んだ後に遅れて出る通知を見逃す
-- 後の通知を得るために操作を足さない。足した操作の通知は別のテストが見ている経路で、壊れると 2 本とも落ちて原因を切り分けにくい (同じ通知の経路を 2 つのテストで見ない)
+- 後の通知を得るために操作を足さない。足した操作の通知は別のテストが見ている経路で、壊れると 2 本とも落ちて原因を切り分けにくい
 - 履歴は `src/test/browser/browser-setup.tsx` が取り、vitest の `clearMocks` (既定で有効) が毎テストの前に消す。書き込み先の region が無ければ `readAnnouncements` が throw するので、届いていない通知では通らない
 - pending の検証は `aria-busy` と announcer の通知で行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
 - 同じ通知の経路を 2 つのテストで見ない。検索欄を持つ一覧では、ページのテストが debounce 後と無効化済みキャッシュの決着を、route の wrapper のテストが Enter と戻るを見る
