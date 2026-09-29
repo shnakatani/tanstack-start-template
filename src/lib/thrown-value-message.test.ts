@@ -29,6 +29,17 @@ describe("thrownValueMessage", () => {
     );
   });
 
+  // 文字列にしても空になる値は、画面が空にならないよう固定の文言を返す
+  it("文字列にすると空になる値は固定の文言を返し、元の値を warn に残す", () => {
+    const value = Object.assign(new Error(), { name: "" });
+
+    expect(thrownValueMessage("")).toBe(THROWN_VALUE_UNPRINTABLE);
+    expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
+    expect(warnSpy).toHaveBeenCalledWith("[thrownValueMessage] 文字列にすると空になる値", {
+      value,
+    });
+  });
+
   // Error でない値は、message を持っていても読まずに文字列にする (Router の data-loading ガイドの例と同じ)
   it("Error でない値は文字列にして返す", () => {
     expect(thrownValueMessage("中断されました")).toBe("中断されました");
@@ -92,7 +103,7 @@ describe("thrownValueStack", () => {
 
   it("Error でない値と、stack が文字列でない Error は undefined を返す", () => {
     expect(thrownValueStack({ stack: "at x" })).toBeUndefined();
-    expect(thrownValueStack(Object.assign(new Error(), { stack: undefined }))).toBeUndefined();
+    expect(thrownValueStack(Object.assign(new Error(), { stack: 1 }))).toBeUndefined();
   });
 
   it("stack の読み取りが throw する Error は undefined を返し、元の値を warn に残す", () => {

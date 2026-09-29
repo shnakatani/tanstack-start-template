@@ -28,7 +28,10 @@ async function renderError(error: unknown, reset: () => void) {
  * (ADR-0011 が捕まえた実在の欠陥)。
  */
 describe("RouteErrorContent", () => {
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
 
   it("エラーメッセージが表示される", async () => {
     const { screen } = await renderError(new Error("取得に失敗しました"), vi.fn());
@@ -48,7 +51,7 @@ describe("RouteErrorContent", () => {
 
   // instanceof の判定が throw する値でも、エラーの画面ごと壊れずに固定の文言を出す
   it("instanceof の判定が throw する値でも、画面を保って固定の文言を出す", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const error = new Proxy(
       {},
       {
@@ -62,7 +65,6 @@ describe("RouteErrorContent", () => {
 
     await expectText(screen, THROWN_VALUE_UNPRINTABLE);
     await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
-    warnSpy.mockRestore();
   });
 
   // error.message は server function の throw 文言 (id や検証失敗の項目パスを含む) をそのまま
