@@ -121,7 +121,6 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 | 待機を 7 日に統一                                                      | weekly の更新サイクルに対して過剰で、バグ修正への追従が遅れる                                 | 却下     |
 | Dependabot PR の auto-merge                                            | マージ判断はローカルの検証が前提のため成立しない                                              | 却下     |
 | 定期的に pin を見直す                                                  | advisory が無い間は確認コストを払うだけで利得が無い                                           | 却下     |
-| pin せず更新のたびに手動レビュー                                       | `patchedDependencies` はバージョン束縛で、exact pin が技術的前提                              | 却下     |
 | `vite-plus`・core・`vitest`・`@vitest/*` を 1 つのグループへ束ねる     | `vitest` だけが先に出た週は、同梱の版より先へ上げる PR になる。`vite` の alias 先も上がらない | 却下     |
 | `vite-plus` も含めてすべて `ignore` する                               | Vite+ の新版に気付く経路が無くなる                                                            | 却下     |
 | `vite-plus` だけを PR にし、残りは `ignore` して `vp migrate` で揃える | Vite+ docs の推奨手順どおりで、新版の通知も残る                                               | **採用** |
