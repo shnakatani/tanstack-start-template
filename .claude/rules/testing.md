@@ -96,7 +96,7 @@ paths:
 - 手元の default reporter は通ったテストの注釈を出さない。a11y の注釈は `mise run a11y:incomplete` で読み、ほかは `--reporter=verbose` を付けて走らせる (`docs/guides/testing/annotations.md`「注釈を読む」)
 - Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (vitest docs の guide/test-context の annotate)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)
-- announcer の通知は、region に届いたことを見るなら `expectAnnouncements` / `readAnnouncements`、出なかったことと並びの全体を見るなら `expectAnnouncementHistory` で、後の通知までを丸ごと比べる。region の通知は寿命で消え、後から出た同じ文言の通知と取り違える (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
+- announcer の通知は、region に届いたことを見るなら `expectAnnouncements` / `readAnnouncements`、複数の操作をまたぐ並びの全体と、途中で出なかったことを後の通知までの並びで示すなら `expectAnnouncementHistory` を使う。region の通知は寿命で消え、先頭が消えて落ちるか、後から出た同じ文言の通知と取り違える (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 
 ## mock の注意点
 
