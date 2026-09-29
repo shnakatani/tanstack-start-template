@@ -1,10 +1,6 @@
 # ===== Vite+ が管理 (vp migrate だけが書き、Vite+ を上げるたびに書き直す。手で編集しない) =====
 # 各キーの意味は Vite+ docs の guide/upgrade-project.md と guide/migrate-rules.md が持つ
 
-overrides:
-  vite@*: "catalog:"
-  vitest@*: "catalog:"
-
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0
   vitest: 5.0.1
@@ -13,6 +9,12 @@ catalog:
   "@vitest/coverage-v8": 5.0.1
 
 # ===== 両方が書く (1 つのキーに vp migrate の行と手で足す行が同居する) =====
+
+# vite@* と vitest@* は vp migrate が書く。vp pm audit --fix は修正版へ上げる行をここへ足すので、
+# 足された行には撤去条件を書く (ADR-0005)
+overrides:
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
 
 # 待機の除外 (ADR-0005)
 # - 版の無い行は vp migrate が書く恒久除外。編集しない
