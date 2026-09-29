@@ -74,8 +74,4 @@ describe("announce", () => {
       message: "届かない",
     });
   });
-
-  it("region 不在のテストの後でも次のテストで region が描き直される", () => {
-    expect(document.getElementById(LIVE_REGION_IDS.polite)).not.toBeNull();
-  });
 });

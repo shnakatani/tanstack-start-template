@@ -1,6 +1,11 @@
 import { expect, vi } from "vite-plus/test";
 
-import { announce, DEFAULT_POLITENESS, type Politeness } from "@/lib/live-announcer";
+import {
+  announce,
+  DEFAULT_POLITENESS,
+  LIVE_REGION_IDS,
+  type Politeness,
+} from "@/lib/live-announcer";
 
 /**
  * そのテストで `announce()` (ADR-0026) が呼ばれた通知を、politeness ごとに呼ばれた順で返す。
@@ -8,14 +13,21 @@ import { announce, DEFAULT_POLITENESS, type Politeness } from "@/lib/live-announ
  * 取り違えずに比べられる (docs/guides/testing/waiting-and-assertions.md「状態と通知を検証する」)。
  * 1 件 1 要素にするのは、連結した 1 本の文字列だと `toContain` が件をまたいだ部分一致で通るため。
  *
- * 履歴は `src/test/browser/browser-setup.tsx` が取る。spy になっていなければテスト基盤の配線漏れなので
- * throw する。空配列を返すと「通知が無い」と区別できず、`toEqual([])` の検証が配線ごと外れても通る。
+ * 履歴は `src/test/browser/browser-setup.tsx` が取る。spy になっていないときと、書き込み先の region が無い
+ * ときはテスト基盤の配線漏れなので throw する。region が無いと `announce` は warn して書かないが、
+ * 呼び出しは履歴に残るので、確かめないと届いていない通知で通る。空配列を返すと「通知が無い」と
+ * 区別できず、`toEqual([])` の検証が配線ごと外れても通る。
  * assertion ではなく値を得るヘルパーなので `expect*` 命名にしない
  * (`vitest/expect-expect` は `expect*` の呼び出しを assertion と数える)。
  */
 export function readAnnouncements(politeness: Politeness = DEFAULT_POLITENESS): string[] {
   if (!vi.isMockFunction(announce)) {
     throw new Error("announce が spy になっていない: browser-setup.tsx の vi.mock が外れている");
+  }
+  if (document.getElementById(LIVE_REGION_IDS[politeness]) === null) {
+    throw new Error(
+      `live region (${LIVE_REGION_IDS[politeness]}) が無い: browser-setup.tsx が <LiveRegions /> を描いていない`,
+    );
   }
   return vi
     .mocked(announce)

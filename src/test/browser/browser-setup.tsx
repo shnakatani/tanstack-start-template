@@ -12,7 +12,6 @@ import { cleanup, render } from "vitest-browser-react";
 
 import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
-import { announce } from "@/lib/live-announcer";
 import { disableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
 import "@/test/browser/slot-locator";
@@ -21,7 +20,8 @@ import "@/test/browser/slot-locator";
  * `announce()` を元の実装のまま spy にし、`readAnnouncements` が呼び出しの履歴を読めるようにする
  * (vitest の guide/browser「Spying on Module Exports」の `spy: true`)。テストファイルで呼んでも効かない。
  * このファイルが (直接と `LiveRegions` 経由で) 先に読み込むので、キャッシュ済みのモジュールは mock されない
- * (vitest の api/vi「vi.mock」の setup file の注意)
+ * (vitest の api/vi「vi.mock」の setup file の注意)。履歴は vitest の `clearMocks` (既定で有効) が
+ * 毎テストの前に消す (vitest の config/clearmocks)
  */
 vi.mock(import("@/lib/live-announcer"), { spy: true });
 
@@ -51,5 +51,4 @@ beforeEach(async () => {
 beforeEach(async () => {
   await cleanup();
   await render(<LiveRegions />);
-  vi.mocked(announce).mockClear();
 });

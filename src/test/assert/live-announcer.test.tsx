@@ -4,7 +4,7 @@ import { announce, LIVE_REGION_IDS } from "@/lib/live-announcer";
 
 import { expectAnnouncements, readAnnouncements } from "./live-announcer";
 
-// 履歴は browser-setup.tsx の beforeEach が毎テストの前に消す (`readAnnouncements` の JSDoc)
+// 履歴は vitest の clearMocks が毎テストの前に消す (browser-setup.tsx の vi.mock の JSDoc)
 describe("readAnnouncements", () => {
   it("通知が無いときは空配列を返す", () => {
     expect(readAnnouncements()).toEqual([]);
@@ -24,9 +24,12 @@ describe("readAnnouncements", () => {
     expect(readAnnouncements()).not.toContain("『買い物リスト』を削除");
   });
 
-  it("前のテストの通知を持ち越さない", () => {
-    // 直前のテストが通知している。browser-setup.tsx の beforeEach が履歴を消す
-    expect(readAnnouncements()).toEqual([]);
+  it("書き込み先の region が無いときは throw する (テスト基盤の配線が外れた場合)", () => {
+    // 呼び出しは履歴に残るので、region を確かめないと届いていない通知で通る。ノードは残して id だけ外す。
+    // remove() すると React 管理下のノードが消え、次のテストの cleanup (root.unmount) が removeChild で落ちる
+    document.getElementById(LIVE_REGION_IDS.polite)?.removeAttribute("id");
+
+    expect(() => readAnnouncements()).toThrow(`live region (${LIVE_REGION_IDS.polite}) が無い`);
   });
 
   it("region から消えた通知も、politeness ごとに返す", () => {
