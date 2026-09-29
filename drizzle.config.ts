@@ -12,11 +12,11 @@ const dbFileName = requireEnv(
   "Configure it in .mise.toml [env] or the shell.",
 );
 
-// drizzle-kit は dbCredentials.url から自前で sqlite を開くため、src/server/db.ts の
+// drizzle-kit は dbCredentials.url から自前で sqlite を開くため、src/server/db/index.ts の
 // createDb を通らない。置き場所 (.data/) が gitignore 対象で新規クローンには存在しないため、
 // ここで作らないと `mise run db:migrate` が
 // "Cannot open database because the directory does not exist" で落ちる。
-// db.ts 側と同じ fail-safe を CLI 経路にも与える (:memory: はディレクトリを持たない)
+// createDb と同じ fail-safe を CLI 経路にも与える (:memory: はディレクトリを持たない)
 if (dbFileName !== ":memory:") {
   mkdirSync(dirname(dbFileName), { recursive: true });
 }
