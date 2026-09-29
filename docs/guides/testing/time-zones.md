@@ -15,13 +15,12 @@
 
 - Node で動くテスト (unit project) のうち、`Date` のローカルの getter や TZ を指定しない date-fns を直接呼ぶモジュールと、ローカルの TZ に依存しないことを保証するモジュールのテストは、ファイルごと `src/**/*.tz.test.ts` にする。1 件ずつ TZ に依存するかで分けると、分け損ねたテストが基準の TZ でしか走らない
 - 基準の TZ では `vp test run` (unit project) が、基準以外の TZ では `vp node scripts/time-zones/run-tests.ts` が走らせる。`.mise.toml` の verify タスクと CI は、この順に両方を呼ぶ
-- スクリプトは TZ ごとに `TEST_TIME_ZONE` を渡して `vp test run --project unit .tz.test.ts` を起動する。同時に走らせる数は `availableParallelism()` と TZ の数の小さいほうで、各プロセスの worker は `VITEST_MAX_WORKERS=1` で 1 本にする (「TZ ごとの実行を並列にする理由」)
-- 終わった TZ から `OK` / `FAIL` を 1 行ずつ出す。1 つの TZ で落ちても残りを走らせ、最後に失敗した TZ の出力と、その TZ だけを走らせ直すコマンドを並べて非ゼロで終える
+- スクリプトは TZ ごとに `TEST_TIME_ZONE` を渡したプロセスを並列に走らせる (「TZ ごとの実行を並列にする理由」)。落ちた TZ があれば、その TZ だけを走らせ直すコマンドを出して非ゼロで終える
 - 1 つの TZ だけを走らせるときは、そのコマンド (`TEST_TIME_ZONE=<IANA 名> vp test run --project unit .tz.test.ts`) を打つ。`TEST_TIME_ZONE` はスクリプトとこのコマンドでだけ使う
-- 止めるときは Ctrl-C を使う。親のプロセスだけを kill すると子が残る (「TZ ごとの実行を並列にする理由」)
+- 止めるときは Ctrl-C を使う。親のプロセスだけを kill すると子が残る
 - 走らせる TZ は `scripts/time-zones/run-tests.ts` の `TIME_ZONES` が持つ。UTC より進んだ側と遅れた側の両方を入れる
 - テストの中で `vi.stubEnv("TZ", …)` や `process.env.TZ` への代入で切り替えない。threads と vmThreads の pool では `Date` に効かず、基準の TZ のまま無言で通る (「TZ ごとにプロセスを分ける理由」)
-- `src/test/test-time-zone.tz.test.ts` は、`TEST_TIME_ZONE` (無ければ基準) が `Intl` の既定と `Date` のローカルの時刻に効いていることを確かめる。効かないまま走ると、どの TZ の実行も基準と同じ結果で通る。IANA の名前として効かない値 (`Asia/Tokio`、`asia/tokyo`、`JST-9`) を渡したときも、このテストが落ちる (「効かない TZ の名前を確認のテストで見つける理由」)
+- `src/test/test-time-zone.tz.test.ts` は、`TEST_TIME_ZONE` (無ければ基準) が `Intl` の既定と `Date` のローカルの時刻に効いていることを確かめる。効かないまま走ると、どの TZ の実行も基準と同じ結果で通る
 
 ### ブラウザテストで切り替える
 
@@ -83,59 +82,20 @@ worker からの `TZ` の変更は `Date` に効かない (「基準を root の
 | 手段                                                              | 公式か自前か                                                                                           | 採否                                                                                    |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | forks か vmForks の pool で、テストの中で `TZ` を変える           | 公式 (Common Errors が挙げる)                                                                          | 却下。threads と vmThreads では効かないまま通る。この形は threads でも通ることを目指す  |
-| TZ ごとの project に `test.env` の `TZ` と `pool: "forks"` を置く | 公式の設定の組み合わせ                                                                                 | 却下。CLI の `--pool threads` が project の pool を上書きし、TZ が効かない (下の実測)   |
+| TZ ごとの project に `test.env` の `TZ` と `pool: "forks"` を置く | 公式の設定の組み合わせ                                                                                 | 却下。CLI の `--pool threads` が project の pool を上書きし、TZ が効かない              |
 | `Intl.DateTimeFormat` に `timeZone` を渡す                        | 公式 (Common Errors が挙げる)                                                                          | 実装の側で採る (`formatDateTime`)。ローカルの TZ に依存しないことを確かめるテストは残る |
-| TZ ごとにプロセスを起動し、globalSetup が `TEST_TIME_ZONE` を読む | globalSetup で決めるのは公式 (Common Errors の "work in every pool")。プロセスを束ねるスクリプトは自前 | 採用                                                                                    |
+| TZ ごとにプロセスを起動し、globalSetup が `TEST_TIME_ZONE` を読む | globalSetup で決めるのは公式 (Common Errors の "work in every pool")。プロセスを束ねるスクリプトは自前 | 採用。[date-fns の `tz.ts`][] も TZ ごとに `vitest run` を起動する                      |
 
-CLI の `--pool` が project の `pool` を上書きすることは、Vitest docs に記述が見つからず、下の実測だけに拠る。
-
-TZ ごとにプロセスを起動するスクリプトは、日付ライブラリにも先行例がある (どれも 2026-09-29 に main で確認)。
-
-- date-fns の主な TZ のテストは、[date-fns の `tz.ts`][] が TZ ごとに `TZ=<IANA 名> vitest run` を起動する。失敗した TZ を集めて最後に並べる。走らせる範囲は [date-fns の `mise.toml`][] の `date-fns-test-tz ./src/` で `src` 全体
-- date-fns は、個別の端のケースを [date-fns の `tz.sh`][] で `env TZ=<IANA 名> node <テスト>` と並べて走らせる
-- react-day-picker は [react-day-picker の `package.json`][] の `test:tz` の script で、`--selectProjects examples/timezone` で選んだテストを `TZ=Australia/Adelaide jest` で走らせる
-
-2026-09-29 に vitest 5.0.1 で、TZ ごとの project (`test.env` の `TZ` と `pool: "forks"`) を試した。config の root に `pool: "threads"` を書いても project の forks が勝つが、CLI で `--pool threads` を付けると project の pool も threads になり、5 つの TZ の project で `src/test/test-time-zone.tz.test.ts` の 2 件ずつが落ちた (TZ が `Date` に効かなかった)。
-
-2026-09-29 に vitest 5.0.1 で、`parseCalendarDate` を `new Date(value)` (UTC の 0 時になる) に置き換え、`--pool threads` を付けて `*.tz.test.ts` (22 件) を走らせた。3 件は暦に無い日付を throw しなくなるので、どの TZ でも落ちる。それより多く落ちた分が、TZ によって見つかる失敗である。
-
-| `TEST_TIME_ZONE`    | 結果                                         |
-| ------------------- | -------------------------------------------- |
-| なし (基準)         | 7 failed \| 15 passed                        |
-| `UTC`               | 3 failed \| 19 passed。TZ による失敗は見逃す |
-| `Asia/Tokyo`        | 4 failed \| 18 passed                        |
-| `Pacific/Pago_Pago` | 7 failed \| 15 passed                        |
-
-同じ日に、`vitest.global-setup.ts` を `TEST_TIME_ZONE` を読まない形に変えて `TEST_TIME_ZONE=Asia/Tokyo` で走らせると、`src/test/test-time-zone.tz.test.ts` の 2 件だけが落ちた (2 failed \| 20 passed)。
+- CLI の `--pool` が project の `pool` を上書きすることは、Vitest docs には無い。[Vitest の `resolveProjects.ts`][] の `PROJECT_CLI_OVERRIDES` が `pool` を含む。2026-09-29 に vitest 5.0.1 で、TZ ごとの project を `--pool threads` で走らせると、`src/test/test-time-zone.tz.test.ts` の 2 件が各 project で落ちた
+- 2026-09-29 に `parseCalendarDate` を `new Date(value)` (UTC の 0 時になる) に置き換えて `*.tz.test.ts` (22 件) を走らせると、基準で 7 件、`Asia/Tokyo` で 4 件、`Pacific/Pago_Pago` で 7 件、`UTC` で 3 件が落ちた。3 件は暦に無い日付を throw しなくなるのでどの TZ でも落ち、残りは TZ によって見つかる
+- `vitest.global-setup.ts` では `TEST_TIME_ZONE` の名前を検査しない。IANA の名前として効かない値 (`Asia/Tokio`、`asia/tokyo`、`JST-9`) を `TZ` に入れると `Intl` の既定の TZ が決まらず、`src/test/test-time-zone.tz.test.ts` が落ちる (2026-09-29、Node 24.21.0 で実測)
 
 ### TZ ごとの実行を並列にする理由
 
-1 回の実行の大半は、テストではなく `vp` と Vitest の起動に使われる。直列では TZ を足すたびに 1 回ぶんずつ伸びる。
+1 回の実行の大半は、テストではなく `vp` と Vitest の起動に使われる。TZ 5 つを 8 コアで走らせると、直列で 5.05 秒、並列で 2.03 秒だった (2026-09-29、vitest 5.0.1 / vp 1.0.0)。
 
-| 実行の仕方 (TZ 5 つ、8 コア)                                       | 時間    |
-| ------------------------------------------------------------------ | ------- |
-| TZ ごとに直列                                                      | 5.05 秒 |
-| TZ ごとのプロセスを同時に走らせ、各プロセスの worker を 1 本にする | 2.03 秒 |
-
-2026-09-29 に vitest 5.0.1 / vp 1.0.0 で実測した。
-
-- 既定の `maxWorkers` は利用できる並列数を全部使う ([Vitest docs「maxWorkers」][])。絞らずに同時に走らせると、プロセスの数と掛け算で worker が増える
-- 複数の `vitest run` を同時に走らせるときに、各プロセスの worker を `VITEST_MAX_WORKERS` で絞る形は、[Vitest docs「Improving Performance」][] の shard の例に倣う
-- [date-fns の `tz.ts`][] も、TZ ごとのプロセスを `availableParallelism()` の数まで同時に走らせ、各プロセスに `VITEST_MAX_WORKERS=1` を渡す
-- 端末の Ctrl-C はプロセスグループ全体に届くので、子も止まる。プロセスグループに SIGINT を送ると、子は残らなかった (vp 1.0.0、2026-09-29 に実測)
-- 親のプロセスにだけ signal を送ると (`kill <pid>`)、子は残る。直列に走らせる形でも同じで、[date-fns の `tz.ts`][] も扱っていない
-
-### 効かない TZ の名前を確認のテストで見つける理由
-
-IANA の名前として効かない値を `TZ` に入れても、Node はエラーを出さない。`Intl` の既定の TZ が決まらなくなり、`Date` は名前によって UTC か、その名前が表すオフセットで動く。
-
-| `TZ`         | `Intl` の既定 | 2026-01-15T12:00Z の `getHours()` |
-| ------------ | ------------- | --------------------------------- |
-| `Asia/Tokio` | 無し          | 12 (UTC)                          |
-| `asia/tokyo` | 無し          | 21                                |
-| `JST-9`      | 無し          | 21                                |
-
-2026-09-29 に Node 24.21.0 (macOS) で実測した。どれも `Intl` の既定が決まらないので、`src/test/test-time-zone.tz.test.ts` の `Intl` の既定を比べるテストが落ちる。`vitest.global-setup.ts` では名前を検査しない。`TEST_TIME_ZONE` を使うのはスクリプトと、スクリプトが出す再実行のコマンドだけで、どちらも unit project の `*.tz.test.ts` を走らせるので、このテストが走る。
+- 既定の `maxWorkers` は利用できる並列数を全部使う ([Vitest docs「maxWorkers」][])。各プロセスに `VITEST_MAX_WORKERS=1` を渡して、プロセスの数と掛け算で worker が増えないようにする。[Vitest docs「Improving Performance」][] の shard の例と、[date-fns の `tz.ts`][] も同じ形
+- 端末の Ctrl-C はプロセスグループ全体に届くので、子も止まる (vp 1.0.0、2026-09-29 に実測)。親のプロセスだけに signal を送ると子が残る
 
 ### テストの中の切り替えが効く範囲
 
@@ -165,7 +125,5 @@ CDP の上書きがファイルをまたがないのは、Vitest がテストフ
 [vitest の issue 1575]: https://github.com/vitest-dev/vitest/issues/1575
 [CDP「Emulation.setTimezoneOverride」]: https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setTimezoneOverride
 [date-fns の `tz.ts`]: https://github.com/date-fns/date-fns/blob/main/pkgs/dev/src/test/tz.ts
-[date-fns の `mise.toml`]: https://github.com/date-fns/date-fns/blob/main/pkgs/core/mise.toml
-[date-fns の `tz.sh`]: https://github.com/date-fns/date-fns/blob/main/pkgs/core/scripts/test/tz.sh
-[react-day-picker の `package.json`]: https://github.com/gpbl/react-day-picker/blob/main/package.json
+[Vitest の `resolveProjects.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/node/projects/resolveProjects.ts
 [Playwright docs「browser.newContext」]: https://playwright.dev/docs/api/class-browser#browser-new-context
