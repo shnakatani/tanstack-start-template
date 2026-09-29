@@ -19,8 +19,8 @@
 
 - TZ を変えても結果が変わらないことを確かめるテストは `src/**/*.tz.test.ts` に置く。unit project が集めるので、`vp test run` は基準の TZ で走らせる
 - 基準以外の TZ では `vp node scripts/time-zones/run-tests.ts` が走らせる。TZ ごとに `TEST_TIME_ZONE` を渡して `vp test run --project unit .tz.test.ts` を起動する。`.mise.toml` の verify タスクと CI が `vp test run` の後に呼ぶ
-- スクリプトは 1 つの TZ で落ちても残りを走らせ、最後に失敗した TZ と、1 つずつ走らせ直すコマンドを並べて非ゼロで終える
-- 1 つの TZ だけで走らせるときは `TEST_TIME_ZONE=<IANA 名> vp test run --project unit .tz.test.ts` を打つ
+- スクリプトは TZ ごとのプロセスを同時に走らせる。並列の数は `availableParallelism()` と TZ の数の小さいほうで、各プロセスの worker は `VITEST_MAX_WORKERS=1` で 1 本にする (「TZ ごとの実行を並列にする理由」)
+- 終わった TZ から `OK` / `FAIL` を 1 行ずつ出す。1 つの TZ で落ちても残りを走らせ、最後に失敗した TZ の出力と、1 つずつ走らせ直すコマンドを並べて非ゼロで終える
 - 走らせる TZ は `scripts/time-zones/run-tests.ts` の `TIME_ZONES` が持つ。UTC より進んだ側と遅れた側の両方を入れる
 - テストの中で `vi.stubEnv("TZ", …)` や `process.env.TZ` への代入で切り替えない。threads と vmThreads の pool では `Date` に効かず、基準の TZ のまま無言で通る (「TZ ごとにプロセスを分ける理由」)
 - `src/lib/test-time-zone.tz.test.ts` は、指定した TZ が `Intl` の既定と `Date` のローカルの時刻に効いていることを確かめる。効かないまま走ると、どの TZ の実行も基準と同じ結果で通るため
@@ -107,6 +107,21 @@ TZ ごとにプロセスを起動する形は、日付ライブラリにも先�
 
 `vitest.global-setup.ts` を `TEST_TIME_ZONE` を読まない形に戻して `TEST_TIME_ZONE=Asia/Tokyo` で走らせると、`src/lib/test-time-zone.tz.test.ts` の 2 件だけが落ちた (2 failed \| 7 passed)。
 
+### TZ ごとの実行を並列にする理由
+
+1 回の実行の大半は、テストではなく `vp` と Vitest の起動に使われる。直列では TZ を足すたびに 1 回ぶんずつ伸びる。
+
+| 実行の仕方 (TZ 5 つ、8 コア)                                       | 時間    |
+| ------------------------------------------------------------------ | ------- |
+| TZ ごとに直列                                                      | 5.05 秒 |
+| TZ ごとのプロセスを同時に走らせ、各プロセスの worker を 1 本にする | 2.03 秒 |
+
+2026-09-29 に vitest 5.0.1 / vp 1.0.0 で実測した。
+
+- 既定の `maxWorkers` は利用できる並列数を全部使う ([Vitest docs「maxWorkers」][])。絞らずに同時に走らせると、プロセスの数と掛け算で worker が増える
+- 複数の `vitest run` を同時に走らせるときに、各プロセスの worker を `VITEST_MAX_WORKERS` で絞る形は、[Vitest docs「Improving Performance」][] の shard の例に倣う
+- スクリプトが子として起動し、全部の終わりを待つので、手で別々に起動した実行のように runner が残らない。プロセスグループに SIGINT を送ると (端末の Ctrl-C と同じ)、子は残らなかった (2026-09-29 に実測)
+
 ### テストの中の切り替えが効く範囲
 
 「TZ ごとにプロセスを分ける理由」の比較の根拠にした実測である。2026-09-27 に vitest 4.1.11 で、基準を固定した状態から切り替えて `getHours()` と `Intl.DateTimeFormat().resolvedOptions().timeZone` を読んだ。
@@ -127,6 +142,8 @@ CDP の上書きがファイルをまたがないのは、Vitest がテストフ
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
 [Vitest docs「Common Errors」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/common-errors.md
+[Vitest docs「maxWorkers」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/maxworkers.md
+[Vitest docs「Improving Performance」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/improving-performance.md
 [Vitest docs「env」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/env.md
 [Vitest docs「Context API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/context.md
 [Vitest docs「Configuring Playwright」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/playwright.md
