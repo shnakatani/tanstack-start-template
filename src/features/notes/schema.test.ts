@@ -310,6 +310,15 @@ describe("noteListFilterSchema", () => {
     });
   });
 
+  // "a" × (cap - 1) + " b" は cap + 1 文字。cap で切ると末尾が空白になるので落とし、cap - 1 文字の "a" にする。
+  // 残すと、切った値をもう一度通したときに trim で値が変わる
+  it("切った末尾に空白を残さず、切った値をもう一度通しても変わらない", () => {
+    const cap = NOTE_QUERY_MAX_LENGTH;
+    const once = v.parse(noteListFilterSchema, { q: `${"a".repeat(cap - 1)} b` });
+    expect(once).toEqual({ q: "a".repeat(cap - 1) });
+    expect(v.parse(noteListFilterSchema, once)).toEqual(once);
+  });
+
   it("trim してから切り詰める (前後の空白は上限に含めない)", () => {
     expect(v.parse(noteListFilterSchema, { q: ` ${"a".repeat(NOTE_QUERY_MAX_LENGTH)} ` })).toEqual({
       q: "a".repeat(NOTE_QUERY_MAX_LENGTH),
@@ -318,13 +327,12 @@ describe("noteListFilterSchema", () => {
 
   // 数える単位は code point (ADR-0036。詳細は truncate-code-points.test.ts)
   it("切り詰めはサロゲートペアの文字を 1 文字と数える", () => {
+    // 𠮷 は 2 code unit・1 code point。cap - 1 / cap 文字は保ち、cap + 1 文字は cap 文字にする
     const cap = NOTE_QUERY_MAX_LENGTH;
-    expect(v.parse(noteListFilterSchema, { q: `${"あ".repeat(cap - 1)}😀` })).toEqual({
-      q: `${"あ".repeat(cap - 1)}😀`,
-    });
-    expect(v.parse(noteListFilterSchema, { q: "𠮷".repeat(cap + 1) })).toEqual({
-      q: "𠮷".repeat(cap),
-    });
+    const parseQ = (length: number) => v.parse(noteListFilterSchema, { q: "𠮷".repeat(length) }).q;
+    expect(parseQ(cap - 1)).toBe("𠮷".repeat(cap - 1));
+    expect(parseQ(cap)).toBe("𠮷".repeat(cap));
+    expect(parseQ(cap + 1)).toBe("𠮷".repeat(cap));
   });
 
   // URL の `?q=123` は Router の JSON パースで number になる (ADR-0019)。既定の英語文言を出さない

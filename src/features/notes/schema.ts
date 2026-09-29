@@ -150,7 +150,15 @@ export const noteListFilterSchema = v.object({
     v.pipe(
       v.string("検索語は文字列で指定してください"),
       v.trim(),
-      v.transform((text) => truncateCodePoints(text, NOTE_QUERY_MAX_LENGTH)),
+      // 上限を超えたかは valibot の maxCodePoints が判定し、超えたときだけ code point の境界で切る。
+      // 切った末尾の空白は落とす。残すと、切った値をもう一度通したときに trim で値が変わる
+      v.fallback(v.pipe(v.string(), v.maxCodePoints(NOTE_QUERY_MAX_LENGTH)), (dataset) => {
+        // 外側の v.string と v.trim を通った後なので、値は文字列のはず
+        if (typeof dataset?.value !== "string") {
+          throw new Error("検索語の切り詰めに文字列でない値が届いた");
+        }
+        return truncateCodePoints(dataset.value, NOTE_QUERY_MAX_LENGTH).trimEnd();
+      }),
     ),
     "",
   ),

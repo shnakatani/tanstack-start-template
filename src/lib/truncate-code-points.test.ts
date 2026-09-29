@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 
 import { truncateCodePoints } from "./truncate-code-points";
@@ -10,10 +11,25 @@ describe("truncateCodePoints", () => {
     expect(truncateCodePoints("abcdef", 5)).toBe("abcde");
   });
 
+  // 𠮷 は 2 code unit・1 code point。上限 cap = 3 で、cap - 1 / cap 文字は保ち、cap + 1 文字は cap 文字にする
   it("サロゲートペアの文字を 1 と数える", () => {
-    // 𠮷 と 😀 は UTF-16 で 2 unit だが 1 code point。3 文字は上限 3 に収まる
-    expect(truncateCodePoints("𠮷😀a", 3)).toBe("𠮷😀a");
-    expect(truncateCodePoints("𠮷😀ab", 3)).toBe("𠮷😀a");
+    expect(truncateCodePoints("𠮷𠮷", 3)).toBe("𠮷𠮷");
+    expect(truncateCodePoints("𠮷𠮷𠮷", 3)).toBe("𠮷𠮷𠮷");
+    expect(truncateCodePoints("𠮷𠮷𠮷𠮷", 3)).toBe("𠮷𠮷𠮷");
+  });
+
+  // スキーマは切った値を valibot の maxCodePoints で検証し直さない (v.fallback の値は検証されない)。
+  // 切った結果が同じ上限の判定を必ず通ることを、ここで保証する
+  it.each([
+    ["abcdef", 3],
+    ["𠮷😀ab", 3],
+    ["👨‍👩‍👧x", 2],
+    ["a\uD83Db", 2],
+    ["\uDE00\uD83Dxy", 3],
+  ])("切った %j は maxCodePoints(%i) を通る", (text, cap) => {
+    expect(v.is(v.pipe(v.string(), v.maxCodePoints(cap)), truncateCodePoints(text, cap))).toBe(
+      true,
+    );
   });
 
   it("切った結果にサロゲートの片割れを残さない", () => {
