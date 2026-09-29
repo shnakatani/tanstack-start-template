@@ -13,10 +13,16 @@ describe("thrownValueMessage", () => {
     warnSpy.mockRestore();
   });
 
-  // message が空でもそのまま返す (Router の data-loading ガイドの例と同じ形)
   it("Error はその message を返す", () => {
     expect(thrownValueMessage(new Error("取得に失敗しました"))).toBe("取得に失敗しました");
-    expect(thrownValueMessage(new Error(""))).toBe("");
+  });
+
+  // 空の message や文字列でない message をそのまま返すと、画面が空になるか React の描画が落ちる
+  it("message が空か文字列でない Error は、値を文字列にして返す", () => {
+    expect(thrownValueMessage(new Error(""))).toBe("Error");
+    expect(thrownValueMessage(Object.assign(new Error(), { message: { code: 1 } }))).toBe(
+      "Error: [object Object]",
+    );
   });
 
   // Error でない値は、message を持っていても読まずに文字列にする (Router の data-loading ガイドの例と同じ)

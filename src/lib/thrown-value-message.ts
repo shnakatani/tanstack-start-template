@@ -7,13 +7,18 @@ export const THROWN_VALUE_UNPRINTABLE = "表示できない値が投げられま
  * 「Handling Errors with routeOptions.errorComponent」の例と同じ形)。server function と SSR の loader の
  * エラーは、TanStack Start の直列化で message だけを持つ Error としてクライアントに届く。
  *
- * `instanceof` の判定、message の読み取り、`String()` のどれかが throw する値は固定の文言で返す。エラー表示の部品がここで落ちると、エラーの画面ごと壊れる
- * (TanStack Router の PR 8209 の方針「If property access or string conversion throws, keep the error notice
- * visible without details」)。
+ * ガイドの例に足したのは次の 2 つ。どちらも、エラー表示の部品がここで落ちるとエラーの画面ごと壊れるためである。
+ * - message が空か文字列でない Error は、値を文字列にする (`Error` や `Error: [object Object]`)。空だと画面に
+ *   何も出ず、文字列でないと React の描画が落ちる
+ * - `instanceof` の判定、message の読み取り、`String()` のどれかが throw する値は、固定の文言で返す。Router の
+ *   組み込みの ErrorComponent は、この保護を持たない
  */
 export function thrownValueMessage(value: unknown): string {
   try {
-    return value instanceof Error ? value.message : String(value);
+    if (value instanceof Error && typeof value.message === "string" && value.message !== "") {
+      return value.message;
+    }
+    return String(value);
   } catch {
     console.warn("[thrownValueMessage] 文字列にできない値", { value });
     return THROWN_VALUE_UNPRINTABLE;
