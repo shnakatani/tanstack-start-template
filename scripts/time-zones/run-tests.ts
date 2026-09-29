@@ -23,6 +23,8 @@ const TIME_ZONES = [
   "Pacific/Pago_Pago",
 ] as const;
 
+// 1 つの TZ で落ちても残りを走らせる。どの TZ で落ちたかの組み合わせ (進んだ側だけ、など) が原因の手がかりになる
+const failed: string[] = [];
 for (const timeZone of TIME_ZONES) {
   console.log(`\n[time-zones] TEST_TIME_ZONE=${timeZone}`);
   const result = spawnSync("vp", ["test", "run", "--project", "unit", ".tz.test.ts"], {
@@ -35,6 +37,14 @@ for (const timeZone of TIME_ZONES) {
       status: result.status,
       signal: result.signal,
     });
-    process.exit(result.status ?? 1);
+    failed.push(timeZone);
   }
+}
+
+if (failed.length > 0) {
+  console.error(`\n[time-zones] ${failed.length} 個の TZ で失敗した。1 つずつ走らせ直すには:`);
+  for (const timeZone of failed) {
+    console.error(`  TEST_TIME_ZONE=${timeZone} vp test run --project unit .tz.test.ts`);
+  }
+  process.exit(1);
 }

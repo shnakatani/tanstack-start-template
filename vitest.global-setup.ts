@@ -7,6 +7,15 @@
  * TZ を変えて `*.tz.test.ts` を走らせるときに使う。値の選び方は
  * `docs/guides/testing/time-zones.md` にある。
  */
+const BASE_TIME_ZONE = "America/New_York";
+
 export default function setup() {
-  process.env.TZ = process.env.TEST_TIME_ZONE || "America/New_York";
+  const requested = process.env.TEST_TIME_ZONE;
+  // `TZ=Asia/Tokyo vp test run` のように TZ を渡しても、基準に上書きされて効かない。黙って上書きしない
+  if (!requested && process.env.TZ && process.env.TZ !== BASE_TIME_ZONE) {
+    console.warn(
+      `[time-zones] TZ=${process.env.TZ} を基準の ${BASE_TIME_ZONE} に上書きする。TZ を変えて走らせるなら TEST_TIME_ZONE を使う`,
+    );
+  }
+  process.env.TZ = requested || BASE_TIME_ZONE;
 }

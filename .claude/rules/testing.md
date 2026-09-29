@@ -50,7 +50,8 @@ paths:
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる
 - テスト全体の TZ は root の globalSetup (`vitest.global-setup.ts`) で決め、`APP_TIME_ZONE` と違う値にする。一致すると、ローカル TZ に依存する実装を壁時計の値のテストが見逃す (`docs/guides/testing/time-zones.md`「基準のタイムゾーンを決める理由」)
 - `Intl.DateTimeFormat` で整形した日時を固定の文字列と比べない。`format()` の出力は実装ごとに違ってよい。壁時計は数字の並びで比べ、画面の期待値は `formatDateTime` で作る。date-fns の `format` は Intl を使わないので、固定の文字列と比べてよい (`docs/guides/dates-and-time-zones.md`「整形した日時をテストで確かめる」)
-- Node で動くテストで TZ を変えるなら、テストを `src/**/*.tz.test.ts` に置き、`scripts/time-zones/run-tests.ts` にプロセスごとに走らせる。テストの中で `vi.stubEnv("TZ", …)` を使わない。threads / vmThreads の pool では `Date` に効かず、基準の TZ のまま無言で通る (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
+- Node で動くテストで TZ を変えるなら、テストを `src/**/*.tz.test.ts` に置き、`scripts/time-zones/run-tests.ts` にプロセスごとに走らせる。起動時に決めた TZ は pool に依らず効く (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
+- テストの中で `vi.stubEnv("TZ", …)` で TZ を切り替えない。threads / vmThreads の pool では `Date` に効かず、基準の TZ のまま無言で通る (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
 - ブラウザテストの TZ の切り替えは CDP の `Emulation.setTimezoneOverride` で行い、`afterEach` で `timezoneId: ""` を送って戻す。`vi.stubEnv` はブラウザの TZ を変えない (`docs/guides/testing/time-zones.md`「ブラウザテストで切り替える」)
 
 ## a11y の検査は tag で分ける
