@@ -43,6 +43,7 @@ server function の例外の文言は、本番でも client に直列化され�
 ### 例外を server のログに残す
 
 - server function の例外は、`src/start.ts` の `logServerFnErrors` (global の `functionMiddleware`) が `console.error` で残して投げ直す。redirect と notFound は残さない。理由は「例外を global の function middleware で残す理由」
+- ログの 1 行目は `[server fn] <関数名>` で、関数名は middleware の引数の `serverFnMeta.name` から取る。`serverFnMeta` は docs のガイドに無く、公開の型 (`ServerFnMeta`) と [TanStack/router の PR 6213][] で入った
 - 個々の server function の中で catch してログを書かない。global の middleware と二重に残る
 - server function から別の server function を呼ぶと、内側と外側の両方で middleware が走り、同じ例外が 2 回残る (@tanstack/react-start 1.168.49、2026-09-29 に実測)
 - 例外の文言に、パスや内部の値を入れない。文言は client に返る。調べるための値は `console.error` で server のログに残す
@@ -60,3 +61,4 @@ server function の例外の文言は、本番でも client に直列化され�
 [TanStack Start docs「Observability」]: https://tanstack.com/start/latest/docs/framework/react/guide/observability
 [TanStack Start docs「Middleware」]: https://tanstack.com/start/latest/docs/framework/react/guide/middleware
 [TanStack Start docs「Server Functions」]: https://tanstack.com/start/latest/docs/framework/react/guide/server-functions
+[TanStack/router の PR 6213]: https://github.com/TanStack/router/pull/6213
