@@ -76,13 +76,11 @@ Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃
 - `vite-plus` を上げた PR に `vite` の alias 先は含まれなかった (2026-09-16、09-21 の 2 本)
 - グループの PR は閉じても版を ignore しないので、同じ PR が次の実行で作り直される (2026-09-29 に Dependabot が PR に書いた案内)。止めるには `@dependabot ignore <依存>` のコメントか設定ファイルの `ignore` が要る (GitHub Docs「Dependabot pull request comment commands」)
 
-そのため `vitest` と `@vitest/*` は、全ての `update-types` を `ignore` に入れ、グループの `patterns` には残す。`vite-plus` の PR は、そのブランチで `vp migrate` を打って core・`vitest`・`@vitest/*` を同梱の版へ揃えてから取り込む。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
+そのため `vitest` と `@vitest/*` は、全ての `update-types` を `ignore` に入れ、グループの `patterns` には残す (実測した構成を保ち、`minor-and-patch` の `exclude-patterns` と対にするため)。`vite-plus` の PR は、そのブランチで `vp migrate` を打って core・`vitest`・`@vitest/*` を同梱の版へ揃えてから取り込む。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
 
 `vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告する (2026-09-29、pnpm 11.28.0 で実測)。Dependabot の docs は peer の扱いを書いていない (2026-09-29 時点)。そこで、ignore した peer と食い違う `vite-plus` の版に PR が作られるかを実測した。`vite-plus` 0.2.9・`@vitest/browser-playwright` 4.1.10 の構成で上の `ignore` とグループを置くと、Dependabot の `pnpm --filter . peers check` は exit 1 だったが、`vite-plus` を 0.3.3 へ上げる PR が作られた (2026-09-29、pnpm 11.28.0、実験用の private リポジトリで 1 回観測)。この食い違いは exact な peer の patch の差 (4.1.10 と 4.1.11) で、major の差では確かめていない。
 
-`vitest` と `@vitest/*` をグループの `patterns` に残すのは、実測した構成を保つためと、`minor-and-patch` の `exclude-patterns` と対にするためである。
-
-`update-types` で書いた `ignore` が security updates に効くかは、Dependabot の docs に記述がない (2026-09-29 時点)。`vitest` の security update の PR が来たら、同梱の版より先へ進む更新なので、そのまま取り込まず、修正を含む `vite-plus` が出ているかを先に見る。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
+`update-types` で書いた `ignore` が security updates に効くかは、Dependabot の docs に記述がない (2026-09-29 時点)。「`update-types` only affects _version_ updates」という NOTE は `allow` の節にあり、`ignore` の節には無い。security update の PR が来ることもある前提で、ガイドの手順で扱う。
 
 core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert は、`vite-plus` の名前で届いたものだけが頼りになる。依存グラフは core を `@voidzero-dev/vite-plus-core` として記録し、`vite` の名前を持たないので、`vite` 宛ての advisory は照合先が無い。core が同梱する 3 つの版も記録されない。rolldown は別の依存から入った版だけが載る (2026-09-29 に依存グラフの SBOM で確認)。VoidZero は `vite` の advisory に `vite-plus` を足すことがあるが (GHSA-fx2h-pf6j-xcff)、足していない advisory もある (GHSA-v2wj-q39q-566r)。
 
@@ -98,7 +96,7 @@ core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert �
 | A      | pin 対象への Dependabot alert | 修正版への追随か pin 撤去の前倒しをその場で判断する             |
 | B      | Dependabot PR の処理時        | pin の出口条件 (上流 issue の状態) を確認し、成立していたら外す |
 
-トリガ A が成立するのは、**alerts は `ignore` と独立に発火する**ためである。`ignore` は version updates と security updates の PR をどちらも止める (GitHub Docs「Controlling which dependencies are updated」)。ただし `update-types` で書いた ignore が security updates に効くかは docs に記述がない (2026-09-29 時点)。pin 中の修正は alert を見て手で当てる。pin 中でも「既知脆弱性が出たことを知る」経路は生きている。
+トリガ A が成立するのは、**alerts は `ignore` と独立に発火する**ためである。`ignore` は version updates と security updates の PR をどちらも止める (GitHub Docs「Controlling which dependencies are updated」)。`update-types` で書いた ignore については決定 5 を参照。pin 中の修正は alert を見て手で当てる。pin 中でも「既知脆弱性が出たことを知る」経路は生きている。
 
 独立した定期チェックは設けない。忘れられる運用を作らない。
 
