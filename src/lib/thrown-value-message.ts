@@ -7,16 +7,13 @@ export const THROWN_VALUE_UNPRINTABLE = "表示できない値が投げられま
  * 「Handling Errors with routeOptions.errorComponent」の例と同じ形)。server function と SSR の loader の
  * エラーは、TanStack Start の直列化で message だけを持つ Error としてクライアントに届く。
  *
- * `String()` が throw する値は固定の文言で返す。エラー表示の部品がここで落ちると、エラーの画面ごと壊れる
+ * `instanceof` の判定、message の読み取り、`String()` のどれかが throw する値は固定の文言で返す。エラー表示の部品がここで落ちると、エラーの画面ごと壊れる
  * (TanStack Router の PR 8209 の方針「If property access or string conversion throws, keep the error notice
  * visible without details」)。
  */
 export function thrownValueMessage(value: unknown): string {
-  if (value instanceof Error) {
-    return value.message;
-  }
   try {
-    return String(value);
+    return value instanceof Error ? value.message : String(value);
   } catch {
     console.warn("[thrownValueMessage] 文字列にできない値", { value });
     return THROWN_VALUE_UNPRINTABLE;

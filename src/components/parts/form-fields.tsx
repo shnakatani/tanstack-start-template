@@ -94,8 +94,9 @@ function fieldErrorMessage(error: unknown): string | undefined {
  * 任意の値を返せる。揃えずに渡すと FieldError は何も描かず、エラーの内容だけが黙って消える。
  */
 function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[] {
-  // `disableErrorFlat` の field では `field.errors` の `flat(1)` が行われず、validator が返した issue の配列が
-  // 1 要素として入る (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)。既定と同じく 1 段平らにする。
+  // どの field でも 1 段平らにする。`disableErrorFlat` の field では `field.errors` の `flat(1)` が行われず、
+  // validator が返した issue の配列が 1 要素として入る (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)。
+  // 既定の field では、validator が入れ子の配列を返したときに中の文言を描く。
   // 平らにすると空になる (`[]` を返した validator) なら、form は invalid と数えるので、元の errors を 1 件として丸める
   const flatErrors = errors.flat(1);
   const targets = flatErrors.length === 0 && errors.length > 0 ? [errors] : flatErrors;

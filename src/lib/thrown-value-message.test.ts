@@ -13,8 +13,10 @@ describe("thrownValueMessage", () => {
     warnSpy.mockRestore();
   });
 
+  // message が空でもそのまま返す (Router の data-loading ガイドの例と同じ形)
   it("Error はその message を返す", () => {
     expect(thrownValueMessage(new Error("取得に失敗しました"))).toBe("取得に失敗しました");
+    expect(thrownValueMessage(new Error(""))).toBe("");
   });
 
   // Error でない値は、message を持っていても読まずに文字列にする (Router の data-loading ガイドの例と同じ)
@@ -31,5 +33,32 @@ describe("thrownValueMessage", () => {
 
     expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
     expect(warnSpy).toHaveBeenCalledWith("[thrownValueMessage] 文字列にできない値", { value });
+  });
+
+  it("message の読み取りが throw する Error も固定の文言を返す", () => {
+    class UnreadableError extends Error {
+      override get message(): string {
+        throw new Error("読み取れない");
+      }
+    }
+    const value = new UnreadableError();
+
+    expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
+    expect(warnSpy).toHaveBeenCalledWith("[thrownValueMessage] 文字列にできない値", { value });
+  });
+
+  it("instanceof の判定が throw する値も固定の文言を返す", () => {
+    const value = new Proxy(
+      {},
+      {
+        getPrototypeOf() {
+          throw new Error("参照できない");
+        },
+      },
+    );
+
+    expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
+    // 引数の比較は vitest の等価判定が prototype を参照して落ちるので、呼ばれたことだけを見る
+    expect(warnSpy).toHaveBeenCalledOnce();
   });
 });
