@@ -165,6 +165,9 @@ describe("/notes route", () => {
     await noteSearchbox(screen).fill("xyz");
     await userEvent.keyboard("{Enter}");
     await expect.poll(() => router.state.location.href).toBe("/notes?q=xyz");
+    // xyz の結果の通知を待ってから戻る。待たずに戻ると、遅い環境では xyz の結果が決着する前に abc へ
+    // 戻り、abc は直前に通知した条件 (初期表示) と同じなので、どちらの通知も出ない (ADR-0027)
+    await expectAnnouncements(["『xyz』に一致するメモは 0 件です"]);
 
     // 途中入力を挟まずに、別の遷移 (Link や他画面からの戻る) で同じ値へ。編集を URL の値で紐付けると、
     // 同じ値に戻った瞬間に確定済みの編集が復活する
