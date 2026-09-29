@@ -31,11 +31,7 @@ import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
-import {
-  expectAnnouncementHistory,
-  expectAnnouncements,
-  readAnnouncementHistory,
-} from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import { expectText, type Screen } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
@@ -214,10 +210,10 @@ describe("NotesPage", () => {
     await expect.poll(() => vi.mocked(listNotes).mock.calls.at(-1)).toEqual([{ data: { q: "" } }]);
     await expectText(screen, NOTE.title);
     // 決着の前に出ないことは時点で読む。早く出ても、最後の並びは同じになる
-    expect(readAnnouncementHistory()).toEqual(["『abc』に一致するメモは 0 件です"]);
+    expect(readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
 
     listed.resolve([]);
-    await expectAnnouncementHistory([
+    await expectAnnouncements([
       "『abc』に一致するメモは 0 件です",
       "絞り込みを解除し、メモを全件表示しています",
     ]);
@@ -259,10 +255,11 @@ describe("NotesPage", () => {
     await expectText(screen, NOTE.title);
     refetched.resolve([]);
 
-    // 次の検索の通知までの履歴を丸ごと比べる。その間に abc の件数が通知されていれば並ぶ。region の
-    // 通知は寿命で消え、後から出た同じ文言の通知と取り違えるので、履歴で見る
+    // 次の検索の通知までを丸ごと比べる。その間に abc の件数が通知されていれば並ぶ。abc の再取得の
+    // 決着は画面に出ない (abc を見ている要素が無い) ので、肯定 assert を置ける時点が無く、後の通知を得る
+    // 検索を足している
     await searchbox.fill("xyz");
-    await expectAnnouncementHistory([
+    await expectAnnouncements([
       "絞り込みを解除し、メモを全件表示しています",
       "『xyz』に一致するメモは 0 件です",
     ]);
@@ -718,7 +715,7 @@ describe("NotesPage", () => {
     // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)。
     // このテストは 2 件の完了の順序を固定していないので、並べ替えてから配列ごと比べる
     await expect
-      .poll(() => readAnnouncementHistory().toSorted())
+      .poll(() => readAnnouncements().toSorted())
       .toEqual(
         [
           "削除しています",
@@ -740,8 +737,7 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     await expectAnnouncements(["削除しています"]);
-    // 完了は removeNote の決着より前に出さない。出る時点の主張なので、開始が届いた時点で履歴を 1 回読む
-    expect(readAnnouncementHistory()).toEqual(["削除しています"]);
+    // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     remove.resolve(undefined);
 
@@ -779,6 +775,6 @@ describe("NotesPage", () => {
     // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回。2 発目の開始の通知は
     // 完了の通知の前に並ぶので、完了までの履歴を丸ごと比べる
     remove.resolve(undefined);
-    await expectAnnouncementHistory(["削除しています", `『${NOTE.title}』を削除しました`]);
+    await expectAnnouncements(["削除しています", `『${NOTE.title}』を削除しました`]);
   });
 });

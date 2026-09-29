@@ -18,7 +18,7 @@ import { parkMouse } from "@/test/browser/park-mouse";
 import "@/test/browser/slot-locator";
 
 /**
- * `announce()` を元の実装のまま spy にし、`readAnnouncementHistory` が呼び出しの履歴を読めるようにする
+ * `announce()` を元の実装のまま spy にし、`readAnnouncements` が呼び出しの履歴を読めるようにする
  * (vitest の guide/browser「Spying on Module Exports」の `spy: true`)。テストファイルで呼んでも効かない。
  * このファイルが (直接と `LiveRegions` 経由で) 先に読み込むので、キャッシュ済みのモジュールは mock されない
  * (vitest の api/vi「vi.mock」の setup file の注意)

@@ -18,11 +18,7 @@ import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import { APP_NAME } from "@/lib/app-name";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { createTestQueryClient } from "@/test/app/query-client";
-import {
-  expectAnnouncementHistory,
-  expectAnnouncements,
-  readAnnouncementHistory,
-} from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
@@ -143,7 +139,7 @@ describe("/notes route", () => {
     // loader が取得した key を component が読むので 1 回。loaderDeps が無いと空の deps の取得が先に走る
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "abc" } });
     // 初期表示は結果の入れ替わりではないので通知しない (spy が無ければ throw する helper)
-    expect(readAnnouncementHistory()).toEqual([]);
+    expect(readAnnouncements()).toEqual([]);
   });
 
   it("入力して Enter すると URL の q が確定する", async () => {
@@ -179,8 +175,7 @@ describe("/notes route", () => {
 
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
-    // 並びの全体は履歴で比べる。region の通知は 7000ms で消え、遅い環境では xyz が先に消えて落ちる
-    await expectAnnouncementHistory([
+    await expectAnnouncements([
       "『xyz』に一致するメモは 0 件です",
       "『abc』に一致するメモは 0 件です",
     ]);
@@ -203,8 +198,7 @@ describe("/notes route", () => {
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
     // 遷移で入れ替わった結果も通知する。同じ条件へ戻っても、直前に通知した条件と違えば出す
-    // 並びの全体は履歴で比べる。region の通知は 7000ms で消え、遅い環境では xyz が先に消えて落ちる
-    await expectAnnouncementHistory([
+    await expectAnnouncements([
       "『xyz』に一致するメモは 0 件です",
       "『abc』に一致するメモは 0 件です",
     ]);

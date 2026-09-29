@@ -18,12 +18,15 @@ export const LIVE_REGION_IDS = {
 
 export type Politeness = keyof typeof LIVE_REGION_IDS;
 
+/** `announce()` が politeness を省いたときの値。テストの履歴も省いた呼び出しをこの値として読む */
+export const DEFAULT_POLITENESS: Politeness = "polite";
+
 /** React Aria の LiveAnnouncer と同じ値 */
 const MESSAGE_LIFETIME_MS = 7000;
 
 /**
  * politeness に対応する region。無いときの扱い (warn / throw) は呼び出し側が決める
- * (`announce` は warn、テストの `readAnnouncements` は throw)。
+ * (`announce` は warn、region を読む `live-announcer.test.tsx` は throw)。
  */
 export function findLiveRegion(politeness: Politeness): HTMLElement | null {
   return document.getElementById(LIVE_REGION_IDS[politeness]);
@@ -33,7 +36,7 @@ export function findLiveRegion(politeness: Politeness): HTMLElement | null {
  * 通知を 1 件足す。呼び出せるのは client の経路だけで、SSR ガードは持たない。
  * server から呼ぶのは配線の誤りなので、`document` の `ReferenceError` で表に出す。
  */
-export function announce(message: string, politeness: Politeness = "polite"): void {
+export function announce(message: string, politeness: Politeness = DEFAULT_POLITENESS): void {
   const region = findLiveRegion(politeness);
   if (region === null) {
     console.warn("[announce] live region が無い", { id: LIVE_REGION_IDS[politeness], message });

@@ -14,7 +14,7 @@ import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
-import { expectAnnouncements, readAnnouncementHistory } from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import {
   expectDialogOpen,
   expectEmptyTextboxes,
@@ -270,8 +270,7 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     await expectAnnouncements(["保存しています"]);
-    // 完了は createNote の決着より前に出さない。出る時点の主張なので、開始が届いた時点で履歴を 1 回読む
-    expect(readAnnouncementHistory()).toEqual(["保存しています"]);
+    // 完了は createNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
 
     create.resolve({ id: 1 });
 
@@ -286,7 +285,7 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
-    expect(readAnnouncementHistory()).toEqual([]);
+    expect(readAnnouncements()).toEqual([]);
   });
 
   it("保存の応答前はキャンセルできず Escape でも閉じない", async () => {
