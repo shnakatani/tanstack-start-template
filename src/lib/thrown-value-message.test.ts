@@ -53,4 +53,16 @@ describe("thrownValueMessage", () => {
     expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
     expect(warnSpy).toHaveBeenCalledWith("[thrownValueMessage] 文字列にできない値", { value });
   });
+
+  it("検証の失敗を記録するときに prototype の参照が throw する値も固定の文言を返す", () => {
+    const value = new Proxy(() => {}, {
+      getPrototypeOf() {
+        throw new Error("参照できない");
+      },
+    });
+
+    expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
+    // 引数の比較は vitest の等価判定が prototype を参照して落ちるので、呼ばれたことだけを見る
+    expect(warnSpy).toHaveBeenCalledOnce();
+  });
 });
