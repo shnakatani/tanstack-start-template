@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { defineConfig } from "drizzle-kit";
 
 import { requireEnv } from "./src/lib/require-env";
+import { MIGRATIONS_FOLDER } from "./src/server/db/migrations-folder";
 
 // fail-closed: 未設定のまま migration を生成/適用すると意図しないパスに接続しかねない
 const dbFileName = requireEnv(
@@ -22,7 +23,7 @@ if (dbFileName !== ":memory:") {
 export default defineConfig({
   dialect: "sqlite",
   schema: "./src/server/db/schema.ts",
-  out: "./drizzle",
+  out: MIGRATIONS_FOLDER,
   dbCredentials: {
     url: dbFileName,
   },

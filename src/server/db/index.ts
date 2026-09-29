@@ -8,8 +8,7 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { requireEnv } from "@/lib/require-env";
 import * as schema from "@/server/db/schema";
 
-// 相対パスは cwd を基準に解決される。drizzle.config.ts の `out` と同じ場所を指す
-const MIGRATIONS_FOLDER = "./drizzle";
+import { MIGRATIONS_FOLDER } from "./migrations-folder";
 
 function requireDbFileName(): string {
   // fail-closed: 未設定のまま better-sqlite3 に渡すと既定のカレントディレクトリ相対パスへ
