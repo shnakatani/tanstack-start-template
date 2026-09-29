@@ -10,7 +10,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# 既定の GITHUB_TOKEN 権限を絞る。この job は checkout しか要らない
+# 既定の GITHUB_TOKEN 権限を絞る。どの job も checkout しか要らない
 permissions:
   contents: read
 
@@ -51,8 +51,8 @@ jobs:
   # peer の食い違いを数える (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)。
   # Dependabot の vite-plus の PR をそのまま取り込むと、vite-plus が exact な peer に持つ
   # @vitest/browser-playwright と食い違い、ここで落ちる (ADR-0005)。
-  # 依存の構造は lockfile から、許可は pnpm-workspace.yaml の peerDependencyRules から読むので、
-  # どちらかが変わったときだけ走らせる。workflow の paths で絞らずジョブの中で判定するのは、
+  # 依存の構造は lockfile から、許可は pnpm-workspace.yaml の peerDependencyRules から読み、判定は
+  # package.json の packageManager (pnpm の版) でも変わる。これらかこのファイルが変わったときだけ走らせる。workflow の paths で絞らずジョブの中で判定するのは、
   # 条件で飛ばした step のジョブは Success を返し、必須チェックにしても Pending で残らないため
   # (GitHub Docs「Troubleshooting required status checks」)
   peers:
@@ -74,7 +74,7 @@ jobs:
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then base="HEAD^1"; else base="$PUSH_BEFORE"; fi
           # 差分を取れないとき (比べる先が無いなど) も exit 0 以外になり、検査を走らせる側に倒れる
-          if git diff --quiet "$base" HEAD -- pnpm-lock.yaml pnpm-workspace.yaml; then
+          if git diff --quiet "$base" HEAD -- pnpm-lock.yaml pnpm-workspace.yaml package.json .github/workflows/ci.yml; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"

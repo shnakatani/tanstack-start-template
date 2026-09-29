@@ -24,7 +24,7 @@
 
 クローン後の手順は `mise trust && mise install` と `vp install` の 2 段で閉じる。
 起動と検証は `mise run serve` と `mise run verify` を入口にする。
-CI は mise を要さない。`.mise.toml` の `[tasks.verify]` と同じ順序を workflow へ並べる。
+CI は mise を要さない。`.mise.toml` の `[tasks.verify]` と同じ順序を workflow へ並べる。例外は `pnpm peers check` で、install が要らず、依存の定義 (`pnpm-lock.yaml`・`pnpm-workspace.yaml`・`package.json`) が変わったときだけ走らせるので、別のジョブに置く。
 `vp run` のタスクへまとめて 1 箇所にする案は採らない。Vite Task は親の環境変数を素通しせず (`env` / `untrackedEnv` への明示が要る)、既定で結果をキャッシュするため、マージ前の gate がリプレイで済まされる。3 行の重複より、gate が必ず走ることを採る。
 
 ### 値の置き場所を 3 つに分ける
