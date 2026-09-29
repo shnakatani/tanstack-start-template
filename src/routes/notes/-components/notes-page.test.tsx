@@ -34,6 +34,7 @@ import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import {
   expectAnnouncementHistory,
   expectAnnouncements,
+  readAnnouncementHistory,
   readAnnouncements,
 } from "@/test/assert/live-announcer";
 import { expectText, type Screen } from "@/test/assert/screen-assertions";
@@ -216,7 +217,7 @@ describe("NotesPage", () => {
     expect(readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
 
     listed.resolve([]);
-    await expectAnnouncements([
+    await expectAnnouncementHistory([
       "『abc』に一致するメモは 0 件です",
       "絞り込みを解除し、メモを全件表示しています",
     ]);
@@ -717,7 +718,7 @@ describe("NotesPage", () => {
     // 完了の文言は対象名を持つ。持たないと同時削除でどちらが終わったのか分からない (ADR-0026)。
     // このテストは 2 件の完了の順序を固定していないので、並べ替えてから配列ごと比べる
     await expect
-      .poll(() => readAnnouncements().toSorted())
+      .poll(() => readAnnouncementHistory().toSorted())
       .toEqual(
         [
           "削除しています",
