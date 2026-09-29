@@ -32,16 +32,16 @@ mise run storybook                                # 部品とデザイントー�
 
 ## コマンド一覧
 
-| コマンド                       | 内容                                                                              |
-| ------------------------------ | --------------------------------------------------------------------------------- |
-| `mise run serve`               | dev server を起動する                                                             |
-| `mise run verify`              | `vp check` → `vp test run` → `vp build` → ヘッダ検査 を順に実行する               |
-| `mise run a11y:incomplete`     | axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む       |
-| `mise run db:generate`         | `src/server/db/schema.ts` から `drizzle/` へ migration を生成する                 |
-| `mise run db:migrate`          | `drizzle/` の migration を `DB_FILE_NAME` の DB へ適用する                        |
-| `vp test run --project <名前>` | project 単位で実行する。`unit` / `browser` / `checks-integrity` / `scripts-tools` |
-| `vp check --fix`               | コミット前に format・lint・型検査を通す                                           |
-| `vp build`                     | 本番ビルド。出力は `.output/`、起動は `vp run start`                              |
+| コマンド                       | 内容                                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| `mise run serve`               | dev server を起動する                                                                    |
+| `mise run verify`              | `pnpm peers check` → `vp check` → `vp test run` → `vp build` → ヘッダ検査 を順に実行する |
+| `mise run a11y:incomplete`     | axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む              |
+| `mise run db:generate`         | `src/server/db/schema.ts` から `drizzle/` へ migration を生成する                        |
+| `mise run db:migrate`          | `drizzle/` の migration を `DB_FILE_NAME` の DB へ適用する                               |
+| `vp test run --project <名前>` | project 単位で実行する。`unit` / `browser` / `checks-integrity` / `scripts-tools`        |
+| `vp check --fix`               | コミット前に format・lint・型検査を通す                                                  |
+| `vp build`                     | 本番ビルド。出力は `.output/`、起動は `vp run start`                                     |
 
 `vp <name>` は組み込みコマンド (一覧は `vp help`)、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクで、同名でも別物になる (ADR-0004)。
 

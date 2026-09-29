@@ -10,7 +10,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# 既定の GITHUB_TOKEN 権限を絞る。この job は checkout しか要らない
+# 既定の GITHUB_TOKEN 権限を絞る。どの job も checkout しか要らない
 permissions:
   contents: read
 
@@ -36,7 +36,7 @@ jobs:
       # 未取得のまま browser project を走らせると実行ファイル不在で落ちる
       - run: vp exec playwright install chromium --only-shell
 
-      # .mise.toml の [tasks.verify] と同じ順序を並べる。`vp run` のタスクにまとめない:
+      # .mise.toml の [tasks.verify] と同じ順序を並べる (pnpm peers check は下の peers ジョブ)。`vp run` のタスクにまとめない:
       # Vite Task は親の環境変数を素通しせず (env / untrackedEnv への明示が要る)、既定で
       # 結果をキャッシュする。マージ前の gate がリプレイで済まされるのを避ける
       - run: vp check
@@ -47,3 +47,24 @@ jobs:
 
       # ビルド成果物を起動して、セキュリティヘッダが実レスポンスに乗ることを確かめる
       - run: vp node scripts/checks/runtime/security-headers.ts
+
+  # peer の食い違いを数える (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)。
+  # Dependabot の vite-plus の PR をそのまま取り込むと、vite-plus が exact な peer に持つ
+  # @vitest/browser-playwright と食い違い、ここで落ちる (ADR-0005)。
+  # install が要らないので verify と別のジョブに置き、並列に走らせる。変更の有無で飛ばさない。
+  # 課金はジョブごとに分単位で切り上げるので、飛ばしても 1 分として数えられる
+  # (GitHub Docs「Actions runner pricing」)
+  peers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 依存の構造は lockfile から読み、node_modules は使わないので install しない
+      - uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
+        with:
+          run-install: false
+
+      - run: pnpm peers check
