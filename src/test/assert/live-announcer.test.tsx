@@ -2,7 +2,12 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { announce, LIVE_REGION_IDS } from "@/lib/live-announcer";
 
-import { expectAnnouncements, readAnnouncements } from "./live-announcer";
+import {
+  expectAnnouncementHistory,
+  expectAnnouncements,
+  readAnnouncementHistory,
+  readAnnouncements,
+} from "./live-announcer";
 
 // region は browser-setup.tsx の beforeEach が描く (`readAnnouncements` の JSDoc)
 describe("readAnnouncements", () => {
@@ -58,5 +63,41 @@ describe("expectAnnouncements", () => {
     announce("保存できません", "assertive");
 
     await expectAnnouncements(["保存できません"], "assertive");
+  });
+});
+
+describe("readAnnouncementHistory", () => {
+  it("テストの始めは空で、前のテストの通知を持ち越さない", () => {
+    // 直前の describe のテストが通知している。browser-setup.tsx の beforeEach が履歴を消す
+    expect(readAnnouncementHistory()).toEqual([]);
+  });
+
+  it("region から消えた通知も、politeness ごとに追記順で返す", () => {
+    announce("削除しています");
+    announce("保存できません", "assertive");
+    announce("『買い物リスト』を削除しました");
+    // region の通知は寿命で消える。履歴は消えない
+    document.getElementById(LIVE_REGION_IDS.polite)?.replaceChildren();
+
+    expect(readAnnouncements()).toEqual([]);
+    expect(readAnnouncementHistory()).toEqual(["削除しています", "『買い物リスト』を削除しました"]);
+    expect(readAnnouncementHistory("assertive")).toEqual(["保存できません"]);
+  });
+});
+
+describe("expectAnnouncementHistory", () => {
+  it("後から届く通知を待って通る", async () => {
+    setTimeout(() => announce("『買い物リスト』を保存しました"), 100);
+
+    await expectAnnouncementHistory(["『買い物リスト』を保存しました"]);
+  });
+
+  it("期待に無い通知が挟まれば落ちる", async () => {
+    announce("保存しています");
+    announce("『買い物リスト』を保存しました");
+
+    await expect(expectAnnouncementHistory(["『買い物リスト』を保存しました"])).rejects.toThrow(
+      /to deeply equal/,
+    );
   });
 });

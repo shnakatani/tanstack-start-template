@@ -1,6 +1,6 @@
 import { expect, vi } from "vite-plus/test";
 
-import { findLiveRegion, LIVE_REGION_IDS, type Politeness } from "@/lib/live-announcer";
+import { announce, findLiveRegion, LIVE_REGION_IDS, type Politeness } from "@/lib/live-announcer";
 
 /**
  * `announce()` (ADR-0026) が live region に書き込んだ通知を読む。ノードは 7000ms 残るので、
@@ -35,5 +35,33 @@ export function readAnnouncements(politeness: Politeness = "polite"): string[] {
 export const expectAnnouncements = vi.defineHelper(
   async (expected: string[], politeness: Politeness = "polite"): Promise<void> => {
     await expect.poll(() => readAnnouncements(politeness)).toEqual(expected);
+  },
+);
+
+/**
+ * そのテストで `announce()` が呼ばれた通知を、politeness ごとに追記順で返す。region の通知は寿命
+ * (7000ms) で消えるが、こちらは消えない。通知が出なかったことを確かめるときに、消えた通知と後から
+ * 出た同じ文言の通知を取り違えない。
+ *
+ * `announce` は `src/test/browser/browser-setup.tsx` が `vi.mock(..., { spy: true })` で元の実装のまま spy にし、
+ * 毎テストの前に履歴を消す。spy になっていなければテスト基盤の配線漏れなので throw する。
+ */
+export function readAnnouncementHistory(politeness: Politeness = "polite"): string[] {
+  if (!vi.isMockFunction(announce)) {
+    throw new Error("announce が spy になっていない: browser-setup.tsx の vi.mock が外れている");
+  }
+  return vi
+    .mocked(announce)
+    .mock.calls.filter(([, called = "polite"]) => called === politeness)
+    .map(([message]) => message);
+}
+
+/**
+ * `announce()` の呼び出しの履歴が `expected` になるまで待つ。`expectAnnouncements` と違い寿命で
+ * 消えた通知も並ぶので、通知が出なかったことは、後の通知までの履歴を丸ごと比べて確かめる。
+ */
+export const expectAnnouncementHistory = vi.defineHelper(
+  async (expected: string[], politeness: Politeness = "polite"): Promise<void> => {
+    await expect.poll(() => readAnnouncementHistory(politeness)).toEqual(expected);
   },
 );

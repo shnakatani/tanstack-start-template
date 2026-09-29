@@ -7,14 +7,23 @@
  * 実 CSS へ解決させることで、getBoundingClientRect / getComputedStyle による
  * レイアウト挙動の検証を可能にする。
  */
-import { beforeEach } from "vite-plus/test";
+import { beforeEach, vi } from "vite-plus/test";
 import { cleanup, render } from "vitest-browser-react";
 
 import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
+import { announce } from "@/lib/live-announcer";
 import { disableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
 import "@/test/browser/slot-locator";
+
+/**
+ * `announce()` を元の実装のまま spy にし、`readAnnouncementHistory` が呼び出しの履歴を読めるようにする
+ * (vitest の guide/browser「Spying on Module Exports」の `spy: true`)。テストファイルで呼んでも効かない。
+ * このファイルが `LiveRegions` 経由で先に読み込むので、キャッシュ済みのモジュールは mock されない
+ * (vitest の api/vi「vi.mock」の setup file の注意)
+ */
+vi.mock(import("@/lib/live-announcer"), { spy: true });
 
 /**
  * page スコープに残る状態を毎テスト前に既定へ戻す。1 つの session が複数ファイルを順に走らせ、
@@ -42,4 +51,5 @@ beforeEach(async () => {
 beforeEach(async () => {
   await cleanup();
   await render(<LiveRegions />);
+  vi.mocked(announce).mockClear();
 });
