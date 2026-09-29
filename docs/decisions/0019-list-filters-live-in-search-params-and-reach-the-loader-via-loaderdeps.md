@@ -30,7 +30,7 @@ schema を 1 つにする、既定値を URL から落とす、`loaderDeps` で 
 ## Consequences
 
 - 検索欄を持つ一覧の route ファイルは、`Route` と、export しない wrapper だけを持つ (ADR-0010)。入力欄と一覧の描画は `docs/guides/lists-and-search.md`「検索の入力欄を組む」にある。テストは `docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」、サーバ側の LIKE は `src/server/db/like-pattern.ts`
-- valibot 1.5.0 に文字列を切り詰める action は無い (`toMaxValue` は辞書順の置換、長さ系は検証のみ。2026-09-29 に同梱の型定義で確認)。Zod・Effect Schema・ArkType・TypeBox にも無く、組み込みで持つ Joi の `string.truncate()` は UTF-16 の code unit で切る (2026-09-29 に各 docs とソースで確認)。上限の判定は valibot の `maxCodePoints` に任せ、切るのは `truncateCodePoints` だけにする。`v.fallback` の値は valibot が検証しないので、切った値が同じ判定を通ることは `truncateCodePoints` のテストが確かめる
+- valibot 1.5.0 に文字列を切り詰める action は無い (`toMaxValue` は辞書順の置換、長さ系は検証のみ。2026-09-29 に同梱の型定義で確認)。Zod 4.6.5・Effect 3.22.2 の Schema・ArkType 2.2.5・TypeBox 1.3.34 の string の API にも無く、組み込みで持つ Joi 18.2.9 の `string.truncate()` は UTF-16 の code unit で切る (2026-09-29 に各 docs と Joi のソースで確認)。上限の判定は valibot の `maxCodePoints` に任せ、切るのは `truncateCodePoints` だけにする。`v.fallback` の値は valibot が検証しないので、切った値が同じ判定を通ることは `truncateCodePoints` のテストが確かめる
 - 切り詰めは warn しない。入力欄は上限で止めないので、上限を超えて打つのは通常の入力で、warn にすると誤検知になる
 - `?q=123` のような文字列以外はその route の境界に落ち、`RouteErrorContent` (見出し「エラーが発生しました」、DEV では Standard Schema の issues の JSON を持つ `error.message`) が描かれる。root の全画面エラーにはならない (2026-09-23 に SSR で実測)。coerce やパーサの差し替えはしない: 他の route の search にも波及し、数値を検索したい利用者が URL を手で書く経路のためだけに既定を外す理由が無い
 
@@ -57,3 +57,8 @@ schema を 1 つにする、既定値を URL から落とす、`loaderDeps` で 
 - TanStack Router の data-loading ガイド「Using loaderDeps to access search params」: <https://tanstack.com/router/latest/docs/framework/react/guide/data-loading>
 - TanStack/router#4973 (Search Params as Actual State。per-param codec の提案): <https://github.com/TanStack/router/issues/4973>
 - nuqs `history` option (既定 `replace`。push はナビゲーションに相当するときだけ): <https://nuqs.dev/docs/options>
+- Joi の `string.truncate()` (API docs と、`value.slice(0, limit)` で切る実装): <https://github.com/hapijs/joi/blob/master/API.md#stringtruncateenabled> / <https://github.com/hapijs/joi/blob/master/lib/types/string.js>
+- Zod の string の API: <https://zod.dev/api#strings>
+- Effect Schema の string のフィルタ: <https://effect.website/docs/schema/filters/#string-filters>
+- ArkType の string: <https://arktype.io/docs/primitives#string>
+- TypeBox の String: <https://github.com/sinclairzx81/typebox#types>
