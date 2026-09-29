@@ -36,11 +36,14 @@ type Run = {
 
 /**
  * 1 つの TZ を走らせ、出力をためて返す。並列に走らせるので、出力を流すと TZ の間で行が混ざる。
- * 各プロセスの worker は 1 本にする。既定の maxWorkers は利用できる並列数を全部使うので、
- * プロセスの数と掛け算になる (vitest docs の guide/improving-performance の VITEST_MAX_WORKERS)
+ * stdout と stderr は届いた順にためるので、2 つの間の前後は保たない。
+ * 各プロセスの worker は 1 本にする。絞らないとプロセスの数と掛け算で増える
+ * (`docs/guides/testing/time-zones.md`「TZ ごとの実行を並列にする理由」)。
+ * 起動に失敗しても reject せず、失敗した TZ として返す。reject すると、走っている他の TZ の子を
+ * 残したまま親だけが終わる
  */
 function runTimeZone(timeZone: string): Promise<Run> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const child = spawn("vp", VP_ARGS, {
       cwd: REPO_ROOT,
       env: { ...process.env, TEST_TIME_ZONE: timeZone, VITEST_MAX_WORKERS: "1" },
@@ -48,7 +51,9 @@ function runTimeZone(timeZone: string): Promise<Run> {
     const chunks: Buffer[] = [];
     child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
-    child.on("error", reject);
+    child.on("error", (error) => {
+      chunks.push(Buffer.from(`${error.stack ?? String(error)}\n`));
+    });
     child.on("close", (status, signal) => {
       resolve({ timeZone, status, signal, output: Buffer.concat(chunks).toString() });
     });

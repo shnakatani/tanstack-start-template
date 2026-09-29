@@ -11,7 +11,7 @@
 - 効くことを確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
 - 基準に依存するテストを書くときは、基準が `America/New_York` であることを前提にしてよい。ホストの TZ には左右されない
 - 環境変数 `TEST_TIME_ZONE` があれば、`vitest.global-setup.ts` は基準の代わりにその値を使う。TZ を変えて走らせるとき (次節) と、ホストの TZ の警告を止めるときに使う
-- `TEST_TIME_ZONE` が IANA のタイムゾーン名でなければ、`vitest.global-setup.ts` が値を示して落とす。不正な名前を `TZ` に入れると、Node は何も言わずに UTC で動く (Node 24.21.0、2026-09-29 に実測)
+- `TEST_TIME_ZONE` に IANA の名前として効かない値 (`Asia/Tokio`、`asia/tokyo`、`JST-9`) を渡すと、`src/test/test-time-zone.tz.test.ts` が落ちる。不正な名前を `TZ` に入れると、Node は何も言わずに UTC で動くため (Node 24.21.0、2026-09-29 に実測)
 - `TZ=<IANA 名> vp test run` のように `TZ` を渡しても、基準に上書きされて効かない。`vitest.global-setup.ts` が、ホストの TZ を使わないことを警告する
 - ホストが自分の都合で `TZ` を持つ環境 (コンテナなど) では、この警告が毎回出る。止めるには `TZ` を外すか `TEST_TIME_ZONE=America/New_York` を渡す
 - 基準の値を変えるときは、`APP_TIME_ZONE` とも UTC とも違う値にする (「基準を `America/New_York` にする理由」)
@@ -123,7 +123,8 @@ TZ ごとにプロセスを起動する形は、日付ライブラリにも先�
 
 - 既定の `maxWorkers` は利用できる並列数を全部使う ([Vitest docs「maxWorkers」][])。絞らずに同時に走らせると、プロセスの数と掛け算で worker が増える
 - 複数の `vitest run` を同時に走らせるときに、各プロセスの worker を `VITEST_MAX_WORKERS` で絞る形は、[Vitest docs「Improving Performance」][] の shard の例に倣う
-- スクリプトが子として起動し、全部の終わりを待つので、手で別々に起動した実行のように runner が残らない。プロセスグループに SIGINT を送ると (端末の Ctrl-C と同じ)、子は残らなかった (2026-09-29 に実測)
+- 端末の Ctrl-C はプロセスグループ全体に届くので、子も止まる。プロセスグループに SIGINT を送ると、子は残らなかった (vp 1.0.0、2026-09-29 に実測)
+- 親のプロセスにだけ signal を送ると (`kill <pid>`)、子は残る。直列に走らせていたときも同じで、[date-fns の `tz.ts`][] も扱っていない
 
 ### テストの中の切り替えが効く範囲
 

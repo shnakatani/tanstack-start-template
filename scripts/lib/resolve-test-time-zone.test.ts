@@ -3,22 +3,12 @@ import { describe, expect, test } from "vite-plus/test";
 import { resolveTestTimeZone } from "./resolve-test-time-zone";
 
 describe("resolveTestTimeZone", () => {
-  test("TZ も TEST_TIME_ZONE も無ければ、基準の TZ にして警告しない", () => {
-    expect(resolveTestTimeZone({})).toStrictEqual({
-      timeZone: "America/New_York",
-      warning: undefined,
-    });
-  });
-
-  test("空文字は無いのと同じに扱う", () => {
-    expect(resolveTestTimeZone({ TZ: "", TEST_TIME_ZONE: "" })).toStrictEqual({
-      timeZone: "America/New_York",
-      warning: undefined,
-    });
-  });
-
-  test("ホストの TZ が基準と同じなら警告しない", () => {
-    expect(resolveTestTimeZone({ TZ: "America/New_York" })).toStrictEqual({
+  test.each([
+    { name: "TZ も TEST_TIME_ZONE も無い", env: {} },
+    { name: "空文字は無いのと同じに扱う", env: { TZ: "", TEST_TIME_ZONE: "" } },
+    { name: "ホストの TZ が基準と同じ", env: { TZ: "America/New_York" } },
+  ])("$name なら、基準の TZ にして警告しない", ({ env }) => {
+    expect(resolveTestTimeZone(env)).toStrictEqual({
       timeZone: "America/New_York",
       warning: undefined,
     });
