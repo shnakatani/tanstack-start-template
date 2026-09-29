@@ -1,7 +1,7 @@
 import * as v from "valibot";
 
 import { isExistingCalendarDate } from "@/lib/calendar-date";
-import { truncateCodeUnits } from "@/lib/truncate-code-units";
+import { truncateCodePoints } from "@/lib/truncate-code-points";
 
 /** ドメインの呼称。画面見出し・追加ボタン・削除確認の文言が使う。 */
 export const NOTE_ENTITY_LABEL = "メモ";
@@ -40,12 +40,12 @@ export const noteInputSchema = v.object({
     v.string(),
     v.trim(),
     v.minLength(1, requiredMessage(TITLE_LABEL)),
-    v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
+    v.maxCodePoints(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
     titleLabel,
   ),
   body: v.pipe(
     v.string(),
-    v.maxLength(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
+    v.maxCodePoints(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
     v.metadata({ label: BODY_LABEL }),
   ),
   /**
@@ -90,7 +90,7 @@ const noteIdValueSchema = v.pipe(
 const storedTitleSchema = v.pipe(
   v.string(),
   v.minLength(1, requiredMessage(TITLE_LABEL)),
-  v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
+  v.maxCodePoints(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
   v.check((value) => value === value.trim(), `${TITLE_LABEL}の前後に空白が残っています`),
   titleLabel,
 );
@@ -150,7 +150,7 @@ export const noteListFilterSchema = v.object({
     v.pipe(
       v.string("検索語は文字列で指定してください"),
       v.trim(),
-      v.transform((text) => truncateCodeUnits(text, NOTE_QUERY_MAX_LENGTH)),
+      v.transform((text) => truncateCodePoints(text, NOTE_QUERY_MAX_LENGTH)),
     ),
     "",
   ),
