@@ -1,3 +1,13 @@
+# このファイルは 3 区画に分かれる。
+# - 「Vite+ が管理」: vp migrate だけが書き、Vite+ を上げるたびに書き直すキー。手で編集しない
+# - 「両方が書く」: 1 つのキーに vp migrate の行と手で足す行が同居する
+# - 「このテンプレートが追加」: vp migrate が書かないキー
+# 区画の境界は、vite・vitest・@vitest/coverage-v8・@vitest/browser-playwright だけを依存に持つ
+# プロジェクトに vp migrate を打った出力で決めた (2026-09-29、vite-plus 1.0.0)。catalog の @vitest/* の行は、
+# 依存にあるものだけを vp migrate が vitest の版へ揃える
+
+# ===== Vite+ が管理 =====
+
 overrides:
   # vite-plus と core (vite の alias) を同じリリースに揃える。版は catalog が持つ。
   # キーを範囲つき (@*) にする。範囲なしだと catalog: 参照まで置き換わり、package.json に解決済みの
@@ -5,22 +15,20 @@ overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
 
-allowBuilds:
-  esbuild: true
-  lightningcss: true
-  better-sqlite3: true
+# vite-plus・core・vitest の版は Vite+ のリリースが決める。vite-plus を上げたら vp migrate で揃える
+# (.github/dependabot.yml が vite-plus 以外を ignore する理由)
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@1.0.0
+  vitest: 5.0.1
+  vite-plus: 1.0.0
+  "@vitest/browser-playwright": 5.0.1
+  "@vitest/coverage-v8": 5.0.1
 
-# 公開後 3 日 (4320 分) 未満の版を解決しない。.github/dependabot.yml の cooldown と
-# .github/zizmor.yml の下限を同じ値に揃える (ADR-0005)
-minimumReleaseAge: 4320
-
-# lockfile が解決しなくなった除外を vp add / update / remove が自動で消す。
-# 下の bare name (vite-plus など) も対象なので、Vite+ がそれを解決しなくなると恒久除外も消える
-minimumReleaseAgeExcludePrune: true
+# ===== 両方が書く =====
 
 # 待機の除外 (ADR-0005)
-# - 下の一覧は vp migrate が書く Vite+ 一族の恒久除外。編集しない
-# - 足すときは必ず版まで書く (`@scope/pkg@x.y.z`)。版を省くと全版が恒久に除外される
+# - 版の無い行は vp migrate が書く Vite+ 一族の恒久除外。編集しない
+# - 手で足す行と `vp pm audit --fix` が足す行は必ず版まで書く (`@scope/pkg@x.y.z`)。版を省くと全版が恒久に除外される
 minimumReleaseAgeExclude:
   - vite-plus
   - "@voidzero-dev/*"
@@ -32,27 +40,8 @@ minimumReleaseAgeExclude:
   - "@oxfmt/*"
   - vitest
   - "@vitest/*"
-# vite-plus と core は同じリリースで揃えて上げる (voidzero-dev/vite-plus#2356)。
-# dependabot.yml の vite-plus グループが束ねる
-catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@1.0.0
-  vitest: 5.0.1
-  vite-plus: 1.0.0
-  "@vitest/browser-playwright": 5.0.1
-  "@vitest/coverage-v8": 5.0.1
-# @shadcn/lint が依存に持つ @typescript-eslint/parser は、oxlint 経由では読まれないのに eslint を必須 peer に持つ。
-# optional にして、parser だけが理由で ESLint 一式が入らないようにする。
-# いま ESLint が入るのは、eslint-plugin-testing-library と @tanstack/eslint-plugin-* が @typescript-eslint/utils
-# 経由で必須にしているため (`vp why eslint`)。それらが外れれば ESLint も外れる。
-# utils 側には当てない。utils は実行時に eslint を読むので、外すと plugin が落ちる (docs/guides/lint/configuration.md)。
-# このキーはグラフ全体の parser に効く。ESLint を実際に使う依存を足すときは、その peer が外れていないかを確かめる。
-# 撤去条件: 上流が parser の eslint を optional peer にしたとき (shadcn-ui/lint#1)
-packageExtensions:
-  "@typescript-eslint/parser@^8":
-    peerDependenciesMeta:
-      eslint:
-        optional: true
 
+# allowAny と allowedVersions の vite・vitest は vp migrate が書く。
 # vite を core へ alias すると版が core の番号 (1.x) になり、vite の peer 範囲を満たさなくなる。
 # vp migrate が書く、番号の不一致だけを抑える設定。外しても vp migrate が書き戻す。
 # 撤去条件: vite-plus が alias のまま strict な peer の検査を通せるようになったとき (voidzero-dev/vite-plus#2806)
@@ -67,6 +56,7 @@ peerDependencyRules:
   allowedVersions:
     vite: "*"
     vitest: "*"
+    # --- ここから下はこのテンプレートが追加 ---
     # @vitejs/plugin-react の optional peer (oxc-transform-react ^0.145.0) が、上流自身の使う ^0.147.0 を
     # 満たさない (ADR-0014)。plugin-react を上げるたびに両者を読み比べる。
     "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"
@@ -81,6 +71,34 @@ peerDependencyRules:
     # 値を major にしたので、Vite+ の 1.x の minor で vite-plus/versions の export が消えても、ここは鳴らない。
     # Vite+ を上げたら、vite-plus/versions の export が残っているかを確かめる
     "storybook>vite-plus": "1"
+
+# ===== このテンプレートが追加 =====
+
+allowBuilds:
+  esbuild: true
+  lightningcss: true
+  better-sqlite3: true
+
+# 公開後 3 日 (4320 分) 未満の版を解決しない。.github/dependabot.yml の cooldown と
+# .github/zizmor.yml の下限を同じ値に揃える (ADR-0005)
+minimumReleaseAge: 4320
+
+# lockfile が解決しなくなった除外を vp add / update / remove が自動で消す。
+# minimumReleaseAgeExclude の bare name (vite-plus など) も対象なので、Vite+ がそれを解決しなくなると恒久除外も消える
+minimumReleaseAgeExcludePrune: true
+
+# @shadcn/lint が依存に持つ @typescript-eslint/parser は、oxlint 経由では読まれないのに eslint を必須 peer に持つ。
+# optional にして、parser だけが理由で ESLint 一式が入らないようにする。
+# いま ESLint が入るのは、eslint-plugin-testing-library と @tanstack/eslint-plugin-* が @typescript-eslint/utils
+# 経由で必須にしているため (`vp why eslint`)。それらが外れれば ESLint も外れる。
+# utils 側には当てない。utils は実行時に eslint を読むので、外すと plugin が落ちる (docs/guides/lint/configuration.md)。
+# このキーはグラフ全体の parser に効く。ESLint を実際に使う依存を足すときは、その peer が外れていないかを確かめる。
+# 撤去条件: 上流が parser の eslint を optional peer にしたとき (shadcn-ui/lint#1)
+packageExtensions:
+  "@typescript-eslint/parser@^8":
+    peerDependenciesMeta:
+      eslint:
+        optional: true
 
 # @storybook/addon-vitest@10.6.0 は story の viewport を `import("@vitest/browser/context")` の page で当てる。
 # Vitest 5 ではこの import が throw し、addon が catch して何も言わずに return するので、全 story が
