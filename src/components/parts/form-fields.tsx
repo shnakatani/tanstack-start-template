@@ -22,6 +22,7 @@ import {
 import { useFieldContext } from "@/hooks/form-context";
 import { formatCalendarDate, parseCalendarDate } from "@/lib/calendar-date";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
+import { messageOf } from "@/lib/message-of";
 
 /**
  * フォームの配線部品。
@@ -67,20 +68,16 @@ interface FormTextFieldProps
  */
 export const UNRENDERABLE_FIELD_ERROR_MESSAGE = "入力内容を確認してください";
 
-/** 検証エラー 1 件から表示できる文言を取り出す。取り出せない形なら null を返す。 */
+/**
+ * 検証エラー 1 件から表示できる文言を取り出す。取り出せない形なら null を返す。
+ * validator は任意の値を返せるので、文字列とそれ以外を振り分ける (TanStack Form の custom-errors ガイド
+ * 「Type Safety of `errors` and `errorMap`」の形)。
+ */
 function fieldErrorMessage(error: unknown): string | null {
   if (typeof error === "string") {
-    return error;
+    return error === "" ? null : error;
   }
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string"
-  ) {
-    return error.message;
-  }
-  return null;
+  return messageOf(error) ?? null;
 }
 
 /**
@@ -89,9 +86,11 @@ function fieldErrorMessage(error: unknown): string | null {
  * 任意の値を返せる。揃えずに渡すと FieldError は何も描かず、エラーの内容だけが黙って消える。
  */
 function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[] {
-  return errors.map((error) => {
+  // `disableErrorFlat` の field では、validator が返した issue の配列が平らにならずに 1 要素として入る
+  // (TanStack Form の custom-errors ガイド「The `disableErrorFlat` Prop on Fields」)。既定と同じく 1 段平らにする
+  return errors.flat(1).map((error) => {
     const message = fieldErrorMessage(error);
-    if (message === null || message === "") {
+    if (message === null) {
       console.warn("[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました", { error });
       return { message: UNRENDERABLE_FIELD_ERROR_MESSAGE };
     }

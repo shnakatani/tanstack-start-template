@@ -218,7 +218,13 @@ function SanitizedTextForm({ onSubmit }: StoryArgs) {
  * 素の文字列や任意の値を返せるため、FieldError が描ける形へ揃わないと
  * 「aria-invalid は立つが読み上げる内容が無い」状態になる。
  */
-function CustomErrorForm({ error }: { error: unknown }) {
+function CustomErrorForm({
+  error,
+  disableErrorFlat,
+}: {
+  error: unknown;
+  disableErrorFlat?: boolean;
+}) {
   const form = useAppForm({
     defaultValues: { name: "" },
     validationLogic: revalidateLogic(),
@@ -232,7 +238,11 @@ function CustomErrorForm({ error }: { error: unknown }) {
       }}
     >
       <FieldGroup>
-        <form.AppField name="name" validators={{ onDynamic: () => error }}>
+        <form.AppField
+          name="name"
+          disableErrorFlat={disableErrorFlat}
+          validators={{ onDynamic: () => error }}
+        >
           {(field) => <field.FormTextField label="名前" fieldValue={field.state.value} />}
         </form.AppField>
         <Field orientation="horizontal">
@@ -662,6 +672,25 @@ export const SanitizesInput: Story = {
 export const StringErrorRendered: Story = {
   tags: ["!dev"],
   render: () => <CustomErrorForm error="名前を入力してください" />,
+  play: async () => {
+    await userEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    const name = textbox("名前");
+    await waitFor(() => expect(name).toBeInvalid());
+    await expect(name).toHaveAccessibleDescription(/名前を入力してください/);
+  },
+};
+
+/**
+ * `disableErrorFlat` を付けると、TanStack Form は validator が返した issue の配列を平らにせず、errors の
+ * 1 要素として入れる (TanStack Form の custom-errors ガイド「The `disableErrorFlat` Prop on Fields」)。
+ * 1 段平らにしてから揃え、配列の中の文言を描く
+ */
+export const IssueArrayWithoutFlatRendered: Story = {
+  tags: ["!dev"],
+  render: () => (
+    <CustomErrorForm error={[{ message: "名前を入力してください" }]} disableErrorFlat />
+  ),
   play: async () => {
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
