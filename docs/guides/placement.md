@@ -66,13 +66,12 @@ registry 由来でない付随ファイル (テスト・story とその helper) 
 
 ドメインを跨ぐテストの helper は、そのファイルが何を作るかで `src/test/` の下のディレクトリを選ぶ。誰が呼ぶかと、ファイル名の prefix (`a11y-*`、`viewport-*`) では選ばない。理由は「`src/test/` の helper を何を作るかで分ける理由」。
 
-| 何を作るか                                                                                        | ディレクトリ            | 例                                                                |
-| ------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------- |
-| browser project の実行環境 (setup、config が読む定数)                                             | `src/test/browser/`     | `browser-setup.tsx`、`park-mouse.ts`、`viewport-sizes.ts`         |
-| テスト本文が呼ぶ assert と実測、その引数の型                                                      | `src/test/assert/`      | `absent.ts`、`viewport.ts`、`screen-assertions.ts`                |
-| axe の実行と結果の整形                                                                            | `src/test/a11y/`        | `a11y.ts`、`a11y-story.ts`                                        |
-| アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場                             | `src/test/app/`         | `create-test-router.tsx`、`query-client.ts`、`settling-action.ts` |
-| 全 project に効く実行環境 (root の globalSetup が決める TZ など) が効いていることを確かめるテスト | `src/test/environment/` | `test-time-zone.tz.test.ts`                                       |
+| 何を作るか                                                            | ディレクトリ        | 例                                                                |
+| --------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------- |
+| browser project の実行環境 (setup、config が読む定数)                 | `src/test/browser/` | `browser-setup.tsx`、`park-mouse.ts`、`viewport-sizes.ts`         |
+| テスト本文が呼ぶ assert と実測、その引数の型                          | `src/test/assert/`  | `absent.ts`、`viewport.ts`、`screen-assertions.ts`                |
+| axe の実行と結果の整形                                                | `src/test/a11y/`    | `a11y.ts`、`a11y-story.ts`                                        |
+| アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場 | `src/test/app/`     | `create-test-router.tsx`、`query-client.ts`、`settling-action.ts` |
 
 - config が読む定数は、テスト本文が使うものでも `browser/` に置く。assert の helper と同じファイルにすると、config が browser mode の import (`vite-plus/test/browser`) を引いて落ちる (`viewport-sizes.ts` の docstring)
 - 1 つのファイルに役割が 2 つ混ざったら、ファイルを分けてそれぞれのディレクトリへ置く。混ざったファイルが残ると、次の helper を置くときの手本が 2 通りになる

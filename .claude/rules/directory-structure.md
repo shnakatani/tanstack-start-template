@@ -54,13 +54,12 @@ paths:
 | 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` では対象と同じ `-components/` か `-lib/`、route ファイル自身の分はその隣 |
 | story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` に置くと出荷されうる (`docs/guides/storybook.md`「story を置く」)    |
 
-| `src/test/` のディレクトリ | 入れるもの                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------- |
-| `src/test/browser/`        | browser project の実行環境を組むもの。config と setup が読む定数もここに置く                      |
-| `src/test/assert/`         | テスト本文が呼ぶ assert と実測、その引数の型                                                      |
-| `src/test/a11y/`           | axe の実行と結果の整形                                                                            |
-| `src/test/app/`            | アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場                             |
-| `src/test/environment/`    | 全 project に効く実行環境 (root の globalSetup が決める TZ など) が効いていることを確かめるテスト |
+| `src/test/` のディレクトリ | 入れるもの                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `src/test/browser/`        | browser project の実行環境を組むもの。config と setup が読む定数もここに置く |
+| `src/test/assert/`         | テスト本文が呼ぶ assert と実測、その引数の型                                 |
+| `src/test/a11y/`           | axe の実行と結果の整形                                                       |
+| `src/test/app/`            | アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場        |
 
 - `src/test/` の helper は上の表のディレクトリに置き、直下に置かない。直下に並べると prefix だけが分類になり、新しい helper の置き先を名前から決められない (`docs/guides/placement.md`「`src/test/` の helper を何を作るかで分ける理由」)
 - 付随ファイルの種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
