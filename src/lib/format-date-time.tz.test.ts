@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 
 import { APP_TIME_ZONE, formatDateTime } from "./format-date-time";
 
@@ -17,7 +17,9 @@ function wallClockOf(text: string): number[] {
 }
 
 describe("formatDateTime", () => {
-  afterEach(() => vi.unstubAllEnvs());
+  it("基準タイムゾーンを定数として公開する (消費側が壁時計の出所を辿れる)", () => {
+    expect(APP_TIME_ZONE).toBe("Asia/Tokyo");
+  });
 
   it("基準タイムゾーンの壁時計を年・月・日・時・分で返す", () => {
     // 2026-08-17T00:30Z は Asia/Tokyo (UTC+9) の 09:30
@@ -38,22 +40,5 @@ describe("formatDateTime", () => {
     expect(wallClockOf(formatDateTime(new Date("2026-08-17T06:30:00.000Z")))).toEqual([
       2026, 8, 17, 15, 30,
     ]);
-  });
-
-  it("ホストのローカル TZ を変えても同じ文字列を返す", () => {
-    const instant = new Date("2026-08-17T00:30:00.000Z");
-
-    // 基準 (vitest.global-setup.ts の America/New_York) とも APP_TIME_ZONE とも違う 2 つへ切り替える
-    vi.stubEnv("TZ", "UTC");
-    const onUtcHost = formatDateTime(instant);
-    vi.stubEnv("TZ", "Asia/Kolkata");
-    const onKolkataHost = formatDateTime(instant);
-
-    expect(onUtcHost).toBe(onKolkataHost);
-    expect(wallClockOf(onUtcHost)).toEqual([2026, 8, 17, 9, 30]);
-  });
-
-  it("基準タイムゾーンを定数として公開する (消費側が壁時計の出所を辿れる)", () => {
-    expect(APP_TIME_ZONE).toBe("Asia/Tokyo");
   });
 });

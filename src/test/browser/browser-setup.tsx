@@ -8,7 +8,7 @@
  * レイアウト挙動の検証を可能にする。
  */
 import { beforeEach } from "vite-plus/test";
-import { render } from "vitest-browser-react";
+import { cleanup, render } from "vitest-browser-react";
 
 import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
@@ -32,9 +32,14 @@ beforeEach(async () => {
  * `announce()` (ADR-0026) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
  * 持つが、部品やページ単体の描画はそこを通らない。テストごとに置くと置き忘れが
  * `readAnnouncements` の throw まで出てこないので、setup で 1 回描く。
- * vitest-browser-react の cleanup は次のテストの `beforeEach` で走り (この setup より先に登録される)、
- * この描画の前に前テストの region を外す。
+ *
+ * 描く前に前テストの描画 (region を含む) を外す。vitest-browser-react も後始末の `beforeEach` を持つが、
+ * モジュールの読み込み時に登録するので、`--no-isolate` (`isolate: false`) で走らせるとモジュールが使い回され、最初のファイルにしか
+ * 付かない。setup ファイルはファイルごとに走り直すので、ここで呼ぶ (vitest docs の config/setupfiles
+ * 「If isolation is disabled, imported modules are cached, but the setup file itself is executed again
+ * before each test file」)
  */
 beforeEach(async () => {
+  await cleanup();
   await render(<LiveRegions />);
 });

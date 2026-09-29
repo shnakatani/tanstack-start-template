@@ -42,9 +42,9 @@
 ### 整形した日時をテストで確かめる
 
 - `Intl.DateTimeFormat` の `format()` の出力を固定の文字列と比べない。MDN「Intl.DateTimeFormat.prototype.format()」の Note は "the output may vary between implementations, even within the same locale" "You should not compare the results of `format()` to hardcoded constants." と書く
-- 壁時計の値は、出力から数字の並び (年・月・日・時・分) を取り出して比べる。実例は `src/lib/format-date-time.test.ts`
+- 壁時計の値は、出力から数字の並び (年・月・日・時・分) を取り出して比べる。実例は `src/lib/format-date-time.tz.test.ts`
 - 画面に描いた文字列を探すテストは、期待値を `formatDateTime` で作る。fixture の日時から作った期待値を fixture の隣の test helper に置き、各テストはそれを読む
-- date-fns の `format` は Intl を使わず、同梱のロケールのデータで文字列を作る (date-fns 4.4.0 の `format.js` と `locale/ja` に `Intl` の参照が無い、2026-09-27)。その出力は固定の文字列と比べてよい。実例は `src/lib/format-calendar-date-label.test.ts`
+- date-fns の `format` は Intl を使わず、同梱のロケールのデータで文字列を作る (date-fns 4.4.0 の `format.js` と `locale/ja` に `Intl` の参照が無い、2026-09-27)。その出力は固定の文字列と比べてよい。実例は `src/lib/format-calendar-date-label.tz.test.ts`
 
 ### 日付の入力を扱う
 

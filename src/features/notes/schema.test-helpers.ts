@@ -20,7 +20,7 @@ export const NOTE: Note = {
 /**
  * NOTE.createdAt を画面に描いた期待値。整形の結果を固定値で持たず、`formatDateTime` から作る。
  * 区切りや空白はロケールのデータが決め、実装ごとに違ってよい (MDN「Intl.DateTimeFormat.prototype.format()」
- * の Note)。壁時計の値が正しいことは `src/lib/format-date-time.test.ts` が見る。
+ * の Note)。壁時計の値が正しいことは `src/lib/format-date-time.tz.test.ts` が見る。
  */
 export const NOTE_CREATED_AT_TEXT = formatDateTime(NOTE.createdAt);
 
