@@ -11,14 +11,6 @@ import { createDb, findProjectRoot, migrateDb } from "./index";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
 
-// migration フォルダの解決先を引数で確かめる。本物の migrate を通すので、スキーマも実際に作られる。
-// isolate: false では、先に走った別のファイルが `./index` を本物の migrator のまま読み込んでいることがある。
-// 確かめるテストは `vi.resetModules()` の後に読み直す (vitest docs の api/vi「vi.resetModules」)
-vi.mock(import("drizzle-orm/better-sqlite3/migrator"), async (importOriginal) => {
-  const original = await importOriginal();
-  return { ...original, migrate: vi.fn(original.migrate) };
-});
-
 /**
  * `process.cwd()` が `dir` を返す状態で関数を実行する。本物の cwd は動かさない。
  * `process.chdir()` は pool が threads のとき worker で使えない (vitest docs の config/pool)。
@@ -146,7 +138,13 @@ describe("createDb", () => {
   });
 
   it("migration フォルダもプロジェクトルート基準で解決する", async () => {
+    // migration フォルダの解決先を、migrate に渡した引数で確かめる。spy: true は元の実装を保つので、
+    // スキーマも実際に作られる。doMock は using で受けるとテストを抜けるときに外れ、ほかのテストと
+    // isolate: false で後に走るファイルに mock が残らない (vitest docs の api/vi「vi.doMock」)。
+    // 先に走ったファイルが `./index` を本物の migrator のまま読み込んでいることがあるので、読み直す前に
+    // モジュールのキャッシュを消す (同じく「vi.resetModules」)
     vi.resetModules();
+    using _migrator = vi.doMock(import("drizzle-orm/better-sqlite3/migrator"), { spy: true });
     const db = await import("./index");
     const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");
 
