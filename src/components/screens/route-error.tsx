@@ -44,8 +44,8 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
       </CardHeader>
       <CardContent>
         {/* error.message は server function の throw 文言をそのまま運ぶ開発者向けの情報なので、
-              スタックトレースと同じく DEV でだけ出す。production で raw error を追う経路は
-              React の error boundary が console へ残すログが担う */}
+              スタックトレースと同じく DEV でだけ出す。production で server function の raw error を追う経路は
+              server のログ (`src/start.ts` の `logServerFnErrors`) が担う */}
         <p className="text-muted-foreground">
           {import.meta.env.DEV ? error.message : ROUTE_ERROR_FALLBACK_MESSAGE}
         </p>

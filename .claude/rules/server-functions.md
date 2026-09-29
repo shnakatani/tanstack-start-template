@@ -13,11 +13,11 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 
 ## 関心事の置き場所
 
-| 関心事                                         | 置き場所                                                     |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| 全 server function に必ず要るもの (認証・CSRF) | `src/start.ts` の `functionMiddleware` / `requestMiddleware` |
-| fn ごとに要否が変わるもの (認可)               | `createServerFn` を包む base builder                         |
-| 未ログインを login へ送る画面遷移              | route の `beforeLoad`                                        |
+| 関心事                                                     | 置き場所                                                     |
+| ---------------------------------------------------------- | ------------------------------------------------------------ |
+| 全 server function に必ず要るもの (認証・CSRF・例外のログ) | `src/start.ts` の `functionMiddleware` / `requestMiddleware` |
+| fn ごとに要否が変わるもの (認可)                           | `createServerFn` を包む base builder                         |
+| 未ログインを login へ送る画面遷移                          | route の `beforeLoad`                                        |
 
 認証は global へ載せれば付け忘れる場所が無い。認可の付け忘れに機械強制は無く、規範として守りレビューで見る (ADR-0012)。
 
@@ -25,6 +25,7 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 - 認証 middleware を個々の `createServerFn` へ書かない。`createMiddleware({ type: "function" })` で作り `src/start.ts` の `functionMiddleware` へ渡す。1 件の付け忘れが無認証の endpoint になる (ADR-0012)
 - 型付きの context を得る目的で個々の `createServerFn` へ `.middleware()` を足さない。global の値は `.middleware()` なしでも型付きで読め、global の方が先に走る (ADR-0012)
 - 認可の base builder は、ロールによる出し分けが要るようになった時点で足す。先に置くと守る対象の無い装置になる (ADR-0012)
+- server function の例外を、個々の fn の中で catch して console へ書かない。global の `logServerFnErrors` (`src/start.ts`) が残して投げ直すので、二重に残る (`docs/guides/server-functions.md`「例外を server のログに残す」)
 
 ## ファイルの置き場所と名前
 
