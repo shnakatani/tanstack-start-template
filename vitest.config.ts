@@ -4,18 +4,6 @@ import { defineConfig } from "vite-plus";
 import { companionGlobs } from "./scripts/lib/companion-files";
 import { storybookProjects } from "./vitest.storybook.config";
 
-/**
- * `*.tz.test.ts` を基準の TZ のほかに走らせる TZ。UTC より進んだ側と遅れた側、時単位でない
- * オフセットと日付変更線の際を並べる (docs/guides/testing/time-zones.md「TZ ごとに project を分ける理由」)
- */
-const TEST_TIME_ZONES = [
-  "UTC",
-  "Asia/Tokyo",
-  "Asia/Kolkata",
-  "Pacific/Kiritimati",
-  "Pacific/Pago_Pago",
-] as const;
-
 const sharedExclude = [
   "**/node_modules/**",
   "**/dist/**",
@@ -45,17 +33,6 @@ export default defineConfig({
           exclude: sharedExclude,
         },
       },
-      // TZ ごとの project。test.env の TZ は forks と vmForks でだけ Date に効くので、pool を固定する
-      // (https://vitest.dev/guide/common-errors#time-zone-does-not-change-in-worker-threads)
-      ...TEST_TIME_ZONES.map((timeZone) => ({
-        test: {
-          name: `tz:${timeZone}`,
-          include: ["src/**/*.tz.test.ts"],
-          exclude: sharedExclude,
-          env: { TZ: timeZone },
-          pool: "forks" as const,
-        },
-      })),
       {
         test: {
           name: "scripts-tools",

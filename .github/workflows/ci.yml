@@ -41,6 +41,7 @@ jobs:
       # 結果をキャッシュする。マージ前の gate がリプレイで済まされるのを避ける
       - run: vp check
       - run: vp test run
+      - run: vp node scripts/time-zones/run-tests.ts
       # vp check は oxlint へ --format=default を強制するため PR diff 上のインライン注釈は
       # 出ない (voidzero-dev/vite-plus#925)。注釈が要るなら vp lint -f github を別ステップに足す
       - run: vp build
