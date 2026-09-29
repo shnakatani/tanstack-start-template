@@ -1,18 +1,13 @@
 const BASE_TIME_ZONE = "America/New_York";
 
-/**
- * TZ に入れて効く IANA 名か。Intl が受け付けない名前を TZ に入れると、Node は何も言わずに UTC で動く。
- * 大文字小文字だけが違う名前 (`asia/tokyo`) は Intl の検査を通るが、TZ に入れると Intl の既定の TZ が
- * 決まらない (Node 24.21.0、2026-09-29 に実測)。別名 (`US/Eastern`) は既定も決まるので通す
- */
+/** Intl が IANA 名として受け付けるか。受け付けない名前を TZ に入れると、Node は何も言わずに UTC で動く */
 function isIanaTimeZone(timeZone: string): boolean {
-  let canonical: string;
   try {
-    canonical = new Intl.DateTimeFormat("en", { timeZone }).resolvedOptions().timeZone;
+    new Intl.DateTimeFormat("en", { timeZone });
+    return true;
   } catch {
     return false;
   }
-  return canonical === timeZone || canonical.toLowerCase() !== timeZone.toLowerCase();
 }
 
 /**

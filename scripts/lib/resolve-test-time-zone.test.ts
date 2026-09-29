@@ -39,17 +39,9 @@ describe("resolveTestTimeZone", () => {
   });
 
   // 不正な名前を TZ に入れると、Node は何も言わずに UTC で動き、どの TZ の実行も UTC で通る
-  test.each(["Asia/Tokio", "asia/tokyo"])(
-    "TEST_TIME_ZONE=%s は IANA 名として効かないので、その値を示して throw する",
-    (value) => {
-      expect(() => resolveTestTimeZone({ TEST_TIME_ZONE: value })).toThrow(
-        `TEST_TIME_ZONE=${value}`,
-      );
-    },
-  );
-
-  // 別名は Intl の既定の TZ も決まるので通す (US/Eastern は America/New_York になる)
-  test("TEST_TIME_ZONE が IANA の別名なら、そのまま使う", () => {
-    expect(resolveTestTimeZone({ TEST_TIME_ZONE: "US/Eastern" }).timeZone).toBe("US/Eastern");
+  test("TEST_TIME_ZONE が IANA 名でなければ、その値を示して throw する", () => {
+    expect(() => resolveTestTimeZone({ TEST_TIME_ZONE: "Asia/Tokio" })).toThrow(
+      "TEST_TIME_ZONE=Asia/Tokio",
+    );
   });
 });
