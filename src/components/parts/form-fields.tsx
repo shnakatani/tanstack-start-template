@@ -22,7 +22,6 @@ import {
 import { useFieldContext } from "@/hooks/form-context";
 import { formatCalendarDate, parseCalendarDate } from "@/lib/calendar-date";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
-import { messageOf } from "@/lib/message-of";
 
 /**
  * フォームの配線部品。
@@ -68,9 +67,25 @@ interface FormTextFieldProps
  */
 export const UNRENDERABLE_FIELD_ERROR_MESSAGE = "入力内容を確認してください";
 
-/** 検証エラー 1 件から表示できる文言を取り出す。validator は任意の値を返せるので、文字列とそれ以外を振り分ける */
+/**
+ * 検証エラー 1 件から表示できる文言を取り出す。validator は任意の値を返せる (Standard Schema の issue、
+ * 文字列、独自の値) ので、TanStack Form の custom-errors ガイド「Type Safety of `errors` and `errorMap`」と
+ * 同じく文字列とそれ以外を振り分ける。部品は `useFieldContext` 越しに errors を読むので型は `any[]` になり、
+ * 決まった型では受けられない
+ */
 function fieldErrorMessage(error: unknown): string | undefined {
-  return typeof error === "string" ? error : messageOf(error);
+  if (typeof error === "string") {
+    return error;
+  }
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return undefined;
 }
 
 /**
