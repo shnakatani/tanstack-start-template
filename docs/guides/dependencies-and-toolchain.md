@@ -47,7 +47,7 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 2. attestation の `subject` が対象の package と version に一致し、`workflow.repository` が公式のリポジトリで、`workflow.ref` が既定のブランチかリリースタグであることまで見る
 3. `pnpm-workspace.yaml` の `minimumReleaseAgeExclude` へ、バージョンまで固定して (`@scope/pkg@x.y.z`) 追記する
 
-追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残るので、vp migrate が書いた恒久除外は刈られない。
+追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残る。`vite-plus` のような名前だけの行は、lockfile が解決しなくなれば消える。
 
 ### peer の食い違いを数える
 
@@ -84,7 +84,7 @@ pnpm peers check
 
 ### Vite+ を上げる
 
-Dependabot は `vite-plus` だけを PR にし、core (`vite` の alias 先)・`vitest`・`@vitest/*` は `ignore` してある (ADR-0005 の決定 5)。`vite-plus` の PR が来たら、そのブランチで次を打つ。
+Dependabot は `vite-plus`・core (`vite` の alias 先)・`vitest`・`@vitest/*` を `vite-plus` グループの 1 本の PR にまとめる (ADR-0005)。このグループの PR が来たら、どれもそのブランチで次を打つ。
 
 ```bash
 gh pr checkout <PR 番号>
@@ -92,15 +92,18 @@ vp install
 vp exec vp migrate --no-interactive
 pnpm peers check
 mise run verify
-git commit -am "vp migrate で core と vitest を vite-plus の同梱の版へ揃える"
+git add -A
+git commit -m "vp migrate で core と vitest を vite-plus の同梱の版へ揃える"
 git push
 ```
 
 - `vp migrate` は、打った CLI が同梱する版へ core と `vitest` を揃える ([Vite+ docs「Update Vite+」][])。直接の依存にある `@vitest/*` も `vitest` の版へ揃える ([Vite+ docs「Migration Rules」][])。先に `vp install` で PR の版の `vite-plus` を `node_modules` へ入れ、`vp exec` でその CLI を打つ
-- 作業ツリーが clean なら `vp migrate` は変えたファイルを `vp fmt` で整える。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
+- `vp migrate` は変えたファイルを `vp fmt` で整える。migrate の前から変更のあったファイルは整えない ([Vite+ docs「Migration Rules」][])。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
 - `pnpm peers check` の食い違いと、`storybook>vite-plus` の許可が頼る `vite-plus/versions` の export は「peer の食い違いを数える」で確かめる
 - push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
-- `vp migrate` が catalog に書いた依存は、`.github/dependabot.yml` の `ignore` にも足す。足さないと bot が同梱の版と別に上げる
+- `vitest` や `@vitest/*` だけを上げた PR では、`vp migrate` が同梱の版へ戻す。`pnpm-workspace.yaml` の catalog が `main` と同じ版に戻ったら、commit せず PR を閉じる (2026-09-29、vitest を 5.0.2 に上げた状態から 5.0.1 へ戻ることを確認)
+- `minor-and-patch` の PR に `vitest` や `@vitest/*` が入ることもある (2026-09-28 に観測、原因は未解明)。その PR でも `vp migrate` を打って同梱の版へ戻す
+- `pnpm-workspace.yaml` の catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` にも足す。`ignore` には入れない。`vite-plus` の exact な peer がグループの外に出ると、Dependabot は `vite-plus` の新しい版の PR を作らない
 
 ### pin を足す
 
