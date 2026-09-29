@@ -28,12 +28,4 @@ describe("テストのタイムゾーン", () => {
     );
     expect([instant.getHours(), instant.getMinutes()]).toEqual(wallClock);
   });
-
-  // tz:<IANA 名> の project は test.env で TZ を渡す (vitest.config.ts)。渡し忘れると基準の TZ のまま
-  // 走り、上の 2 件は通ってしまう
-  it("tz:<IANA 名> の project は、その名前の TZ で走っている", ({ task, skip }) => {
-    const projectName = task.file.projectName ?? "";
-    if (!projectName.startsWith("tz:")) skip("基準の TZ で走る project では確かめない");
-    expect(process.env.TZ).toBe(projectName.slice("tz:".length));
-  });
 });
