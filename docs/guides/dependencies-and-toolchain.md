@@ -82,12 +82,24 @@ pnpm peers check
 - 依存の中の import (ある依存が別の依存のバレルを読む経路) は lint が届かない。テストを遅くしているかは、その依存を描くテストを同じ手順で測る
 - `RESTRICTED_BARREL_IMPORTS` はトップレベルとテスト専用コードの import 禁止の override の両方へ渡っている。片方だけに書き足さない (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 
-### catalog にエントリを足す
+### Vite+ を上げる
 
-`vite-plus` と core (`vite` の alias 先) のように同一リリースで exact pin される対は、Dependabot のグループへ束ねてある (ADR-0005 の決定 5)。
+Dependabot は `vite-plus` だけを PR にし、core (`vite` の alias 先)・`vitest`・`@vitest/*` は `ignore` してある (ADR-0005 の決定 5)。`vite-plus` の PR が来たら、そのブランチで次を打つ。
 
-- `pnpm-workspace.yaml` の `catalog:` へエントリを足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` にも足す。逆は成り立たない (`patterns` は catalog に現れない推移依存もグロブで拾う)
-- グループは `minor-and-patch` より前に置く。Dependabot は先に一致したグループを採るので、後ろに置くと major の更新だけが別の PR に落ちる
+```bash
+gh pr checkout <PR 番号>
+vp install
+./node_modules/.bin/vp migrate --no-interactive
+vp fmt pnpm-workspace.yaml
+mise run verify
+git commit -am "vp migrate で Vite+ の一族を同梱の版へ揃える"
+git push
+```
+
+- `vp migrate` は、打った CLI が同梱する版へ core と `vitest` を揃える ([Vite+ docs「Update Vite+」][])。直接の依存にある `@vitest/*` も `vitest` の版へ揃える ([Vite+ docs「Migration Rules」][])。先に `vp install` で PR の版の `vite-plus` を `node_modules` へ入れ、その CLI で打つ
+- `vp migrate` はクォートを一重にするので `vp fmt` で戻す。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
+- push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
+- `vp migrate` が catalog に書いた依存は、`.github/dependabot.yml` の `ignore` にも足す。足さないと bot が同梱の版と別に上げる
 
 ### pin を足す
 
@@ -132,3 +144,6 @@ tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (l
 [vitest の issue 9157]: https://github.com/vitest-dev/vitest/issues/9157
 [pnpm の PR 14114]: https://github.com/pnpm/pnpm/pull/14114
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
+[Vite+ docs「Update Vite+」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/upgrade-project.md
+[Vite+ docs「Migration Rules」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/migrate-rules.md
+[GitHub Docs「Managing pull requests for dependency updates」]: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/managing-pull-requests-for-dependency-updates
