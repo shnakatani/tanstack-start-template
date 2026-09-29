@@ -2,7 +2,7 @@ import { NumberField } from "@base-ui/react/number-field";
 import { format } from "date-fns/format";
 import { ja } from "date-fns/locale/ja";
 import { CalendarIcon } from "lucide-react";
-import { type ComponentProps, useId, useRef } from "react";
+import { type ComponentProps, useEffect, useEffectEvent, useId, useRef } from "react";
 import type { DayPickerLocale } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
@@ -71,11 +71,22 @@ function useFormFieldState<T>() {
   const field = useFieldContext<T>();
   const id = useId();
   const errorId = useId();
+  const rawErrors = field.state.meta.errors;
+  // warn は描画のたびではなく、描画できない検証エラーが表示されたときに出す。form-core は errorMap が
+  // 変わらない限り同じ errors の配列を返すので、focus の出入りなどの描き直しでは走らない
+  useEffect(() => {
+    const { unrenderable } = normalizeFieldErrors(rawErrors);
+    if (unrenderable.length > 0) {
+      console.warn("[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました", {
+        errors: unrenderable,
+      });
+    }
+  }, [rawErrors]);
   return {
     field,
     id,
     errorId,
-    errors: normalizeFieldErrors(field.state.meta.errors),
+    errors: normalizeFieldErrors(rawErrors).errors,
     invalid: !field.state.meta.isValid,
   };
 }
@@ -285,12 +296,18 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
   // horizontal variant の FieldLabel 幅は direct child selector に依存する。FieldError のために
   // FieldLabel を FieldContent で包むと layout が変わるので、検証つき checkbox が必要になったら
   // この direct child 制約の解決から始める。
-  if (errors.length > 0) {
+  // warn を出す契機は errors の変化だけで、label は出したときの値を読めば足りる (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)
+  const warnUnrenderable = useEffectEvent((unrenderable: readonly unknown[]) => {
     console.warn("[FormCheckboxField] 検証エラーを表示できません (FieldError 非対応)", {
       label,
-      errors,
+      errors: unrenderable,
     });
-  }
+  });
+  useEffect(() => {
+    if (errors.length > 0) {
+      warnUnrenderable(errors);
+    }
+  }, [errors]);
 
   // registry の horizontal Field は子の FieldLabel を flex-auto で伸ばし、Field 自身は w-full なので、
   // フォームの幅いっぱいまでラベルが伸びて右の余白でもトグルする。shadcn の単独チェックボックスの例は

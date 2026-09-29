@@ -21,17 +21,25 @@ function fieldErrorMessage(error: unknown): string | undefined {
   return undefined;
 }
 
-/** 検証エラーを FieldError が描ける `{ message }` 形へ揃える (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」) */
-export function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[] {
+/**
+ * 検証エラーを FieldError が描ける `{ message }` 形へ揃える (`docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」)。
+ * 代替文言へ丸めた元のエラーは `unrenderable` で返す。warn は呼び出し側が検証エラーの変わったときに出す
+ */
+export function normalizeFieldErrors(errors: readonly unknown[]): {
+  errors: { message: string }[];
+  unrenderable: unknown[];
+} {
   // 平らにすると空になる (`[]` を返した validator) なら、form は invalid と数えるので、元の errors を 1 件として丸める
   const flatErrors = errors.flat(1);
   const targets = flatErrors.length === 0 && errors.length > 0 ? [errors] : flatErrors;
-  return targets.map((error) => {
+  const unrenderable: unknown[] = [];
+  const messages = targets.map((error) => {
     const message = fieldErrorMessage(error);
     if (!message) {
-      console.warn("[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました", { error });
+      unrenderable.push(error);
       return { message: UNRENDERABLE_FIELD_ERROR_MESSAGE };
     }
     return { message };
   });
+  return { errors: messages, unrenderable };
 }

@@ -651,6 +651,7 @@ export const CheckboxValidatorsWarn: Story = {
         },
       ),
     );
+    await expect(consoleWarn).toHaveBeenCalledOnce();
   },
 };
 
@@ -706,9 +707,11 @@ export const EmptyIssueArrayFallback: Story = {
     const name = textbox("名前");
     await waitFor(() => expect(name).toBeInvalid());
     await expect(name).toHaveAccessibleDescription(new RegExp(UNRENDERABLE_FIELD_ERROR_MESSAGE));
+    // warn は描画のたびではなく、検証エラーが変わったときに 1 回だけ出す
+    await expect(consoleWarn).toHaveBeenCalledOnce();
     await expect(consoleWarn).toHaveBeenCalledWith(
       "[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました",
-      { error: [[]] },
+      { errors: [[[]]] },
     );
   },
 };
@@ -724,9 +727,13 @@ export const UnrenderableErrorFallback: Story = {
     const name = textbox("名前");
     await waitFor(() => expect(name).toBeInvalid());
     await expect(name).toHaveAccessibleDescription(new RegExp(UNRENDERABLE_FIELD_ERROR_MESSAGE));
+    // focus を外すと field の meta だけが変わって描き直される。検証エラーは変わらないので warn は増えない
+    await userEvent.click(name);
+    await userEvent.tab();
+    await expect(consoleWarn).toHaveBeenCalledOnce();
     await expect(consoleWarn).toHaveBeenCalledWith(
       "[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました",
-      { error: RAW_ERROR },
+      { errors: [RAW_ERROR] },
     );
   },
 };
