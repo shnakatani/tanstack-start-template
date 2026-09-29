@@ -17,7 +17,7 @@
 
 ## Decision
 
-**文字数の上限は code point で数える。スキーマは `v.maxCodePoints` で判定し、切り詰めるときも code point の境界で切る (`src/lib/truncate-code-points.ts`)。入力欄には `maxlength` を付けず、上限を超えた入力はスキーマが文言を出すか切り詰める。**
+**文字数の上限は code point で数える。スキーマは `v.maxCodePoints` で判定し、切り詰めるときも判定は `v.maxCodePoints` に任せ、超えたときだけ code point の境界で切る (`src/lib/truncate-code-points.ts`)。入力欄には `maxlength` を付けず、上限を超えた入力はスキーマが文言を出すか切り詰める。**
 
 ### 数える単位
 

@@ -19,18 +19,18 @@
 
 **絞り込み条件は URL の search param `q` が持つ。route が schema で検証し、`loaderDeps` で loader へ渡す。URL への確定は submit (Enter / 検索ボタン) だけが行い、履歴は積まない。**
 
-| 規範                                                                                                                                                                                                      | 守らないと何が壊れるか                                                                                                                                                                                                                                |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| URL への確定は form の submit だけで、`navigate` は `replace: true` (履歴を積まない)。debounce 後の値を effect で URL へ書かない                                                                          | 検索は同じ画面の絞り込みで新しい目的地ではない。push にすると戻るが検索を 1 回ずつ巻き戻す (nuqs は `history` の既定を `replace` にし、push はタブやモーダルのようにナビゲーションに相当するときだけと限定する)。打鍵ごとに書くと履歴と loader が動く |
-| `q` の上限は schema が reject せず切り詰める (`v.trim()` → `v.transform(truncateCodePoints)`。`src/lib/truncate-code-points.ts`)。入力欄は `maxLength` で止めず、打ち込んだ値も schema に通して切り詰める | search param は malformed でも体験を止めない (Router のガイド)。reject すると、入力欄の経路にだけ別の緩い正規化が要り、厳格と緩和の 2 段になる。trim しないと `" abc"` と `"abc"` が別のキャッシュになる                                              |
-| 文字列以外の `q` は schema が日本語の文言で弾く。route の error component に落ちる                                                                                                                        | URL の `q` は Router の既定の search パーサが JSON として先に読むので、手で書いた `?q=123` `?q=true` は number / boolean になる。既定の英語文言が UI に出る                                                                                           |
+| 規範                                                                                                                                                                                                                                                                                                                | 守らないと何が壊れるか                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| URL への確定は form の submit だけで、`navigate` は `replace: true` (履歴を積まない)。debounce 後の値を effect で URL へ書かない                                                                                                                                                                                    | 検索は同じ画面の絞り込みで新しい目的地ではない。push にすると戻るが検索を 1 回ずつ巻き戻す (nuqs は `history` の既定を `replace` にし、push はタブやモーダルのようにナビゲーションに相当するときだけと限定する)。打鍵ごとに書くと履歴と loader が動く |
+| `q` の上限は schema が reject せず切り詰める (`v.trim()` → `v.fallback(v.pipe(v.string(), v.maxCodePoints(N)), 切り詰め)`。上限を超えたかは valibot が判定し、超えたときだけ `src/lib/truncate-code-points.ts` で切って末尾の空白を落とす)。入力欄は `maxLength` で止めず、打ち込んだ値も schema に通して切り詰める | search param は malformed でも体験を止めない (Router のガイド)。reject すると、入力欄の経路にだけ別の緩い正規化が要り、厳格と緩和の 2 段になる。trim しないと `" abc"` と `"abc"` が別のキャッシュになる                                              |
+| 文字列以外の `q` は schema が日本語の文言で弾く。route の error component に落ちる                                                                                                                                                                                                                                  | URL の `q` は Router の既定の search パーサが JSON として先に読むので、手で書いた `?q=123` `?q=true` は number / boolean になる。既定の英語文言が UI に出る                                                                                           |
 
 schema を 1 つにする、既定値を URL から落とす、`loaderDeps` で loader に渡す、query key を条件ごとに分ける、の組み方は `docs/guides/lists-and-search.md`「絞り込み条件を URL に置く」にある。
 
 ## Consequences
 
 - 検索欄を持つ一覧の route ファイルは、`Route` と、export しない wrapper だけを持つ (ADR-0010)。入力欄と一覧の描画は `docs/guides/lists-and-search.md`「検索の入力欄を組む」にある。テストは `docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」、サーバ側の LIKE は `src/server/db/like-pattern.ts`
-- valibot 1.5.0 に文字列を切り詰める action は無い (`toMaxValue` は辞書順の置換、長さ系は検証のみ。2026-09-29 に同梱の型定義で確認)。切り詰めは `truncateCodePoints` が持ち、code point で数える (ADR-0036)。code point の境界で切るので、URL で U+FFFD に化けるサロゲートの片割れは残らない
+- valibot 1.5.0 に文字列を切り詰める action は無い (`toMaxValue` は辞書順の置換、長さ系は検証のみ。2026-09-29 に同梱の型定義で確認)。Zod・Effect Schema・ArkType・TypeBox にも無く、組み込みで持つ Joi の `string.truncate()` は UTF-16 の code unit で切る (2026-09-29 に各 docs とソースで確認)。上限の判定は valibot の `maxCodePoints` に任せ、切るのは `truncateCodePoints` だけにする。`v.fallback` の値は valibot が検証しないので、切った値が同じ判定を通ることは `truncateCodePoints` のテストが確かめる
 - 切り詰めは warn しない。入力欄は上限で止めないので、上限を超えて打つのは通常の入力で、warn にすると誤検知になる
 - `?q=123` のような文字列以外はその route の境界に落ち、`RouteErrorContent` (見出し「エラーが発生しました」、DEV では Standard Schema の issues の JSON を持つ `error.message`) が描かれる。root の全画面エラーにはならない (2026-09-23 に SSR で実測)。coerce やパーサの差し替えはしない: 他の route の search にも波及し、数値を検索したい利用者が URL を手で書く経路のためだけに既定を外す理由が無い
 
@@ -40,14 +40,15 @@ schema を 1 つにする、既定値を URL から落とす、`loaderDeps` で 
 
 ## 検討した選択肢
 
-| 案                                                    | 評価                                                                                                                                               | 採否     |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| search param + `loaderDeps`、確定は submit で replace | URL が state なので共有と戻るが効く。Router の公式形 (`loaderDeps`) に乗る                                                                         | **採用** |
-| 打鍵ごとに URL へ `navigate` する                     | Router の Transition に乗るが、1 文字ごとに loader と履歴が動く。`replace` にしても loader は走る                                                  | 却下     |
-| submit を push にする                                 | 明示操作 1 回につき履歴 1 つになるが、検索は同じ画面の絞り込みで、戻るが検索を 1 回ずつ巻き戻す。URL state の先行例 (nuqs) は replace を既定にする | 却下     |
-| debounce 後の値を effect で URL へ書く                | effect で navigate する形になり、確定の主体が曖昧になる。URL の変更は利用者の操作 (submit) に対応させる                                            | 却下     |
-| 上限超えの `q` を schema で reject する               | URL 経路は error component、入力欄経路は別の緩い正規化が要り、厳格と緩和の 2 段になる。Router のガイドは fallback を勧める                         | 却下     |
-| クライアント側で絞り込む (全件取得して filter)        | 件数が増えると全件取得が重く、URL に条件を持つ意味が薄い。サーバ側の LIKE と `loaderDeps` の実例にもならない                                       | 却下     |
+| 案                                                    | 評価                                                                                                                                                                              | 採否     |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| search param + `loaderDeps`、確定は submit で replace | URL が state なので共有と戻るが効く。Router の公式形 (`loaderDeps`) に乗る                                                                                                        | **採用** |
+| 打鍵ごとに URL へ `navigate` する                     | Router の Transition に乗るが、1 文字ごとに loader と履歴が動く。`replace` にしても loader は走る                                                                                 | 却下     |
+| submit を push にする                                 | 明示操作 1 回につき履歴 1 つになるが、検索は同じ画面の絞り込みで、戻るが検索を 1 回ずつ巻き戻す。URL state の先行例 (nuqs) は replace を既定にする                                | 却下     |
+| debounce 後の値を effect で URL へ書く                | effect で navigate する形になり、確定の主体が曖昧になる。URL の変更は利用者の操作 (submit) に対応させる                                                                           | 却下     |
+| 上限超えの `q` を schema で reject する               | URL 経路は error component、入力欄経路は別の緩い正規化が要り、厳格と緩和の 2 段になる。Router のガイドは fallback を勧める                                                        | 却下     |
+| 上限超えの `q` を `v.fallback` で既定値 (空) に戻す   | TanStack Router の search-params ガイドが Valibot で示す形 (不正なら既定値)。長すぎる検索語を打つと、確定した時点で絞り込みが外れて全件が出るので、検索が効かなかったように見える | 却下     |
+| クライアント側で絞り込む (全件取得して filter)        | 件数が増えると全件取得が重く、URL に条件を持つ意味が薄い。サーバ側の LIKE と `loaderDeps` の実例にもならない                                                                      | 却下     |
 
 ## 出典
 
