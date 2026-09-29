@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
+import { thrownValueMessage } from "@/lib/thrown-value-message";
 
 /**
  * production の本文に出す固定文言。原因ではなく次に取れる行動だけを伝える
@@ -47,9 +48,10 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
               スタックトレースと同じく DEV でだけ出す。production で server function の raw error を追う経路は
               server のログ (`src/start.ts` の `logServerFnErrors`) が担う */}
         <p className="text-muted-foreground">
-          {import.meta.env.DEV ? error.message : ROUTE_ERROR_FALLBACK_MESSAGE}
+          {import.meta.env.DEV ? thrownValueMessage(error) : ROUTE_ERROR_FALLBACK_MESSAGE}
         </p>
-        {import.meta.env.DEV && error.stack && (
+        {/* stack は TanStack Router の PR 8209 の案内どおり instanceof Error で絞る。message を絞らない理由は thrownValueMessage の JSDoc */}
+        {import.meta.env.DEV && error instanceof Error && error.stack && (
           <Accordion>
             <AccordionItem value="stack-trace">
               <AccordionTrigger>スタックトレース</AccordionTrigger>

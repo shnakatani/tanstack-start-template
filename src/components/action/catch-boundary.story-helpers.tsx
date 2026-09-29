@@ -2,6 +2,8 @@ import { CatchBoundary } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { spyOn } from "storybook/test";
 
+import { thrownValueMessage } from "@/lib/thrown-value-message";
+
 /**
  * `CaughtHere` の fallback が出す接頭辞。story はこの文言で境界到達を検証するので、
  * 描く側と検証する側で同じ定数を使う。
@@ -19,7 +21,7 @@ export function CaughtHere({ children }: { children: ReactNode }) {
       errorComponent={({ error }) => (
         <p>
           {CAUGHT_PREFIX}
-          {error.message}
+          {thrownValueMessage(error)}
         </p>
       )}
     >

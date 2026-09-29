@@ -20,7 +20,8 @@ updates:
       default-days: 3
     ignore:
       # @types/node は Node runtime (package.json の devEngines.runtime) と major を揃える。
-      # runtime を上げるときに一緒に上げる (minor / patch は通常どおり更新する)
+      # runtime を上げるときに一緒に上げる (minor / patch は通常どおり更新する)。minor を上げたら
+      # package.json の engines.node の下限もその minor まで上げる (ADR-0004)
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
       # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない。理由と、vite-plus

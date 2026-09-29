@@ -9,7 +9,7 @@ import { expectText } from "@/test/assert/screen-assertions";
 
 import { ROUTE_ERROR_FALLBACK_MESSAGE, RouteErrorContent } from "./route-error";
 
-async function renderError(error: Error, reset: () => void) {
+async function renderError(error: unknown, reset: () => void) {
   const router = createTestRouter("/", () => <RouteErrorContent error={error} reset={reset} />);
   const invalidateSpy = vi.spyOn(router, "invalidate");
   const screen = await render(<RouterProvider router={router} />);
@@ -35,6 +35,14 @@ describe("RouteErrorContent", () => {
     const notice = screen.getByText("エラーが発生しました");
     await expect.element(notice).toBeInTheDocument();
     await expect.element(screen.getByText("取得に失敗しました")).toBeInTheDocument();
+  });
+
+  // route は Error 以外も throw でき、Router はエラー境界の error を unknown で渡す
+  it("Error でない値が投げられたら、その値を文字列にして出し、スタックトレースは出さない", async () => {
+    const { screen } = await renderError("取得の途中で中断されました", vi.fn());
+
+    await expectText(screen, "取得の途中で中断されました");
+    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
   });
 
   // error.message は server function の throw 文言 (id や検証失敗の項目パスを含む) をそのまま

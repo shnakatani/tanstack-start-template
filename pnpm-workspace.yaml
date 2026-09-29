@@ -95,5 +95,14 @@ packageExtensions:
 # 当たらず addon だけが PR から外れ、storybook の各パッケージの版が割れる。上流が import を直すと patch が当たらず
 # install が落ちる (pnpm 11 は patch の失敗を常にエラーにする)。それが撤去条件を確かめる契機になる (ADR-0005)。
 # 撤去条件: addon-vitest の安定版が peer に vitest 5 を含み、viewport の import を vitest/browser にしたとき
+#
+# @storybook/tanstack-react@10.6.0 は TanStack Router の interpolatePath を { path, params } の形で呼ぶ。
+# router-core 1.171.30 (react-router 1.170.36) からこの関数は位置引数の形になり、全 story が
+# 「path.endsWith is not a function」で落ちる (storybookjs/storybook#36330)。patch は上流の next の修正
+# (storybookjs/storybook#36333) と同じく、関数の引数の数を見て 2 つの形を呼び分ける。キーの範囲は addon-vitest と同じ理由。
+# patch は `$name` と `$` だけを展開し、`{-$name}` や `{$id}.json` のような波括弧の segment は展開しない
+# (上流の本文は `{-$optional}` を未対応と書く。波括弧の segment 全般は patch のコードから読んだ)。
+# 撤去条件: tanstack-react の安定版が storybookjs/storybook#36333 を含んだとき
 patchedDependencies:
   "@storybook/addon-vitest@^10.6.0": patches/@storybook__addon-vitest@10.6.0.patch
+  "@storybook/tanstack-react@^10.6.0": patches/@storybook__tanstack-react@10.6.0.patch
