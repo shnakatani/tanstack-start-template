@@ -75,6 +75,7 @@ registry 由来でない付随ファイル (テスト・story とその helper) 
 
 - config が読む定数は、テスト本文が使うものでも `browser/` に置く。assert の helper と同じファイルにすると、config が browser mode の import (`vite-plus/test/browser`) を引いて落ちる (`viewport-sizes.ts` の docstring)
 - 1 つのファイルに役割が 2 つ混ざったら、ファイルを分けてそれぞれのディレクトリへ置く。混ざったファイルが残ると、次の helper を置くときの手本が 2 通りになる
+- helper を持たず、全 project に効く実行環境 (root の globalSetup が決める TZ など) が効いていることだけを確かめるテストは、`src/test/` の直下に置く (`test-time-zone.tz.test.ts`)。上の表は helper が何を作るかで分けていて、テストだけのディレクトリは軸から外れる
 - helper のテストは helper と同じディレクトリに置く
 - ディレクトリ名と重なる prefix (`a11y/a11y-story.ts` の `a11y-`) は外さない。文書はファイル名だけで helper を指すことが多く、`story.ts` や `setup.tsx` のような名前はファイル名だけで引いたときに 1 つに決まらない
 - `helpers`・`utils` のような中身を表さない名前にしない。役割が混ざった受け皿になり、上の「ファイルを分ける」が働かなくなる
