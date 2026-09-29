@@ -10,6 +10,9 @@ import { notes } from "@/server/db/schema";
 
 import { createDb, migrateDb } from "./index";
 
+const MISSING_DB_MESSAGE =
+  /^\[db\] DB のファイルが無い。mise run db:migrate で作るか、DB_FILE_NAME を確かめる$/;
+
 describe("createDb", () => {
   const originalDbFileName = process.env.DB_FILE_NAME;
 
@@ -89,8 +92,8 @@ describe("createDb", () => {
     using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      expect(() => createDb(fileName)).toThrow("mise run db:migrate");
-      expect(() => createDb(fileName)).not.toThrow(dir);
+      // 文言を完全一致で固定し、throw することとパスを含まないことを 1 本で確かめる
+      expect(() => createDb(fileName)).toThrow(MISSING_DB_MESSAGE);
       expect(error).toHaveBeenCalledWith("[db] DB のファイルが無い", { path: fileName });
       expect(existsSync(fileName)).toBe(false);
     } finally {
@@ -103,7 +106,7 @@ describe("createDb", () => {
     using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      expect(() => createDb(dir)).toThrow("mise run db:migrate");
+      expect(() => createDb(dir)).toThrow(MISSING_DB_MESSAGE);
       expect(error).toHaveBeenCalledWith("[db] DB のファイルが無い", { path: dir });
     } finally {
       rmSync(dir, { recursive: true, force: true });
