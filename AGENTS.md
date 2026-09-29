@@ -6,7 +6,7 @@
 
 ```bash
 mise run serve    # dev server を起動する
-mise run verify   # マージ前に通す: vp check → vp test run → TZ ごとの実行 → vp build → ビルド成果物のヘッダ検査
+mise run verify   # マージ前に通す: vp check → vp test run → vp build → ビルド成果物のヘッダ検査
 ```
 
 ## 開発上の注意

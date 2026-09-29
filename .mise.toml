@@ -48,8 +48,6 @@ description = "マージ前検証をまとめて実行する"
 run = [
   "vp check",
   "vp test run",
-  # TZ に依存するテストを TZ ごとに別のプロセスで走らせる (docs/guides/testing/time-zones.md)
-  "vp node scripts/time-zones/run-tests.ts",
   "vp build",
   # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
   "vp node scripts/checks/runtime/security-headers.ts",

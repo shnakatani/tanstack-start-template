@@ -7,7 +7,7 @@ import { formatDateTime } from "./format-date-time";
  * 依存すると SSR (サーバーの TZ) と hydration (ブラウザの TZ) で別の文字列になり、
  * TZ が食い違う環境でだけ hydration mismatch が出る。
  *
- * このファイルは TZ ごとに走らせ (`scripts/time-zones/run-tests.ts`)、どの TZ でも同じ壁時計を返すことを確かめる。
+ * このファイルは TZ ごとの project (`vitest.config.ts`) でも走り、どの TZ でも同じ壁時計を返すことを確かめる。
  *
  * 出力の文字列そのものは固定値と比べない。区切りや空白はロケールのデータが決め、実装ごとに
  * 違ってよい (MDN「Intl.DateTimeFormat.prototype.format()」の Note)。比べるのは数字の並びだけ。

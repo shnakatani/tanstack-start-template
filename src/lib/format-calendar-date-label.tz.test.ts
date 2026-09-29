@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { formatCalendarDateLabel } from "./format-calendar-date-label";
 
 /**
- * このファイルは TZ ごとに走らせ (`scripts/time-zones/run-tests.ts`)、どの TZ でも同じ表記になることを確かめる。
+ * このファイルは TZ ごとの project (`vitest.config.ts`) でも走り、どの TZ でも同じ表記になることを確かめる。
  *
  * date-fns の format はロケールのデータ (date-fns/locale/ja の formatLong) から文字列を組む。
  * Intl.DateTimeFormat と違い実装ごとの揺れが無いので、固定の文字列と比べる
