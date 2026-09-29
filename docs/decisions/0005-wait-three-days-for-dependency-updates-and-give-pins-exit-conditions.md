@@ -70,16 +70,16 @@ bot 側の待機は外さない。`cooldown: default-days: 3` は全パッケー
 core (`vite` の alias 先)・`vitest`・`@vitest/*` の版は、`vite-plus` のリリースが同梱する版で決まる。
 Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃える手順を推奨する (Vite+ docs「Update Vite+」)。
 
-`.github/dependabot.yml` の `vite-plus` グループは、`vite-plus`・`vite`・`@voidzero-dev/vite-plus-*`・`vitest`・`@vitest/*` を束ねる。Vite+ が docs に載せる予定の Dependabot の設定例 (vite-plus の PR 2463、2026-09-29 に draft) と同じ形である。グループへ束ねても版は揃わない。
+`.github/dependabot.yml` の `vite-plus` グループは、`vite-plus`・`vite`・`@voidzero-dev/vite-plus-*`・`vitest`・`@vitest/*` を束ねる。Vite+ が docs に載せる予定の Dependabot の設定例 (vite-plus の PR 2463、2026-09-29 に draft) に、alias の `vite` を足した形である。グループへ束ねても版は揃わない。
 
 - `vitest` が `vite-plus` と別の日に出ると、`vitest` を同梱の版より先へ上げる PR ができる (vite-plus の issue 2356)。2026-09-09 から 09-28 に 6 本来た
 - `vite-plus` を上げた PR に `vite` の alias 先は含まれなかった (2026-09-16、09-21 の 2 本)
 
 そのため、グループの PR はどれも、そのブランチで `vp migrate` を打って同梱の版へ揃えてから取り込む。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
 
-`vitest` 系を `ignore` して `vite-plus` だけを PR にする形は採らない。`vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告する (2026-09-29、pnpm 11.28.0 で実測)。Dependabot は、グループの外の依存との peer の食い違いが新しく出る版を解決不能とみなし、PR を作らない (dependabot-core の `version_resolver.rb` と、同じ症状の issue 4917)。
+`vitest` 系を `ignore` して `vite-plus` だけを PR にする形は採らない。上流の設定例から外れるうえ、`vite-plus` の PR が来るかを公式の情報で確かめられない。`vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告する (2026-09-29、pnpm 11.28.0 で実測)。Dependabot の docs は peer の扱いを書いていない。グループ内の peer を判定から外す仕組みを入れた dependabot-core の PR 7561 は、対象を「the peer is also in the group」としており、peer の側を `ignore` した形はこれに当たらない。
 
-core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert は、`vite-plus` の名前で届いたものだけが頼りになる。依存グラフは core を `@voidzero-dev/vite-plus-core` として記録し、`vite` の名前も同梱の 3 つも持たないので、`vite` 宛ての advisory は照合先が無い (2026-09-29 に依存グラフの SBOM で確認)。VoidZero は `vite` の advisory に `vite-plus` を足すことがあるが (GHSA-fx2h-pf6j-xcff)、足していない advisory もある (GHSA-v2wj-q39q-566r)。
+core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert は、`vite-plus` の名前で届いたものだけが頼りになる。依存グラフは core を `@voidzero-dev/vite-plus-core` として記録し、`vite` の名前を持たないので、`vite` 宛ての advisory は照合先が無い。core が同梱する 3 つの版も記録されない。rolldown は別の依存から入った版だけが載る (2026-09-29 に依存グラフの SBOM で確認)。VoidZero は `vite` の advisory に `vite-plus` を足すことがあるが (GHSA-fx2h-pf6j-xcff)、足していない advisory もある (GHSA-v2wj-q39q-566r)。
 
 ### 6. pin には出口条件を書く
 
@@ -116,17 +116,17 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 
 ### 検討した選択肢
 
-| 案                                                                                            | 評価                                                                                              | 採否     |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------- |
-| 待機を 3 日に統一                                                                             | 緩和効果と更新追従の遅延のバランスが取れ、bot の既定とも一致                                      | **採用** |
-| 待機を 1 日に統一                                                                             | bot 側の待機を短縮する方向で、緩和窓が縮む                                                        | 却下     |
-| 待機を 7 日に統一                                                                             | weekly の更新サイクルに対して過剰で、バグ修正への追従が遅れる                                     | 却下     |
-| Dependabot PR の auto-merge                                                                   | マージ判断はローカルの検証が前提のため成立しない                                                  | 却下     |
-| 定期的に pin を見直す                                                                         | advisory が無い間は確認コストを払うだけで利得が無い                                               | 却下     |
-| `vite-plus`・core・`vitest`・`@vitest/*` を 1 つのグループへ束ね、PR は `vp migrate` で揃える | Vite+ の設定例 (PR 2463) と同じ形。`vitest` だけが先へ進む PR は来るが、`vp migrate` で揃え直せる | **採用** |
-| `vite-plus` も含めてすべて `ignore` する                                                      | Vite+ の新版に気付く経路が無くなる                                                                | 却下     |
-| `vite-plus` だけを PR にし、残りは `ignore` する                                              | exact な peer の食い違いで、Dependabot が `vite-plus` の PR を作らなくなる                        | 却下     |
-| 上の形に `peerDependencyRules` で `vite-plus>@vitest/browser-playwright` を許す               | Dependabot の内部の判定に頼る回避で、手元の peer の食い違いも黙らせる                             | 却下     |
+| 案                                                                                            | 評価                                                                                                          | 採否     |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
+| 待機を 3 日に統一                                                                             | 緩和効果と更新追従の遅延のバランスが取れ、bot の既定とも一致                                                  | **採用** |
+| 待機を 1 日に統一                                                                             | bot 側の待機を短縮する方向で、緩和窓が縮む                                                                    | 却下     |
+| 待機を 7 日に統一                                                                             | weekly の更新サイクルに対して過剰で、バグ修正への追従が遅れる                                                 | 却下     |
+| Dependabot PR の auto-merge                                                                   | マージ判断はローカルの検証が前提のため成立しない                                                              | 却下     |
+| 定期的に pin を見直す                                                                         | advisory が無い間は確認コストを払うだけで利得が無い                                                           | 却下     |
+| `vite-plus`・core・`vitest`・`@vitest/*` を 1 つのグループへ束ね、PR は `vp migrate` で揃える | Vite+ の設定例 (PR 2463) に `vite` を足した形。`vitest` だけが先へ進む PR は来るが、`vp migrate` で揃え直せる | **採用** |
+| `vite-plus` も含めてすべて `ignore` する                                                      | Vite+ の新版に気付く経路が無くなる                                                                            | 却下     |
+| `vite-plus` だけを PR にし、残りは `ignore` する                                              | 上流の設定例から外れ、`vite-plus` の PR が peer の食い違いで止まらないかを公式の情報で確かめられない          | 却下     |
+| 上の形に `peerDependencyRules` で `vite-plus>@vitest/browser-playwright` を許す               | 止まるかどうかが定まらないまま、手元の peer の食い違いも黙らせる                                              | 却下     |
 
 ## Consequences
 
@@ -150,6 +150,6 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 - Vite+ docs「Update Vite+」(`vite-plus` を上げたあと `vp migrate` で揃える): https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/upgrade-project.md
 - GitHub Docs: `ignore` が version updates と security updates の両方に効く: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/controlling-dependencies-updated
 - Vite+ が docs に載せる予定の Dependabot の設定例: https://github.com/voidzero-dev/vite-plus/pull/2463
-- Dependabot が peer の食い違いで PR を作らない判定 (`version_resolver.rb`): https://github.com/dependabot/dependabot-core/blob/369a53993d1c533005b122c98dc419df75fe61bd/npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/version_resolver.rb
-- 同じ症状の報告: https://github.com/dependabot/dependabot-core/issues/4917
+- グループ内の peer を判定から外す仕組みを入れた dependabot-core の PR: https://github.com/dependabot/dependabot-core/pull/7561
+- patterns を持たないグループが他のグループの依存も抱え込む件: https://github.com/dependabot/dependabot-core/issues/14576
 - TanStack Start の hosting ガイド (nitro/vite の plugin): https://tanstack.com/start/latest/docs/framework/react/guide/hosting

@@ -28,9 +28,8 @@ updates:
       # どの PR も、そのブランチで vp migrate を打って同梱の版へ揃えてから取り込む
       # (docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)。vitest だけが先に出た週は、
       # 同梱の版より先へ上げる PR になる (voidzero-dev/vite-plus#2356)。
-      # vitest 系を ignore にしない。vite-plus の exact な peer の @vitest/browser-playwright がグループの
-      # 外に出ると、Dependabot は vite-plus の新しい版を解決不能として PR を作らない。
-      # major も含めるため minor-and-patch より前に置く (Dependabot は先に一致したグループを採る)。
+      # vitest 系を ignore にしない。上流の設定例から外れ、vite-plus の exact な peer の
+      # @vitest/browser-playwright がグループの外に出たときに PR が来るかを公式の情報で確かめられない (ADR-0005)。
       # vite はワイルドカード無しの完全一致なので vite-plus のパターンでは拾えない
       vite-plus:
         patterns:
@@ -47,7 +46,20 @@ updates:
           - "@vitejs/plugin-react"
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
+      # 上の 2 グループの patterns を exclude-patterns に写す。patterns を持たないグループは、
+      # 他のグループに入った依存も抱え込み、同じ更新が 2 本の PR に載る (docs の「最初に一致した
+      # グループに入る」と挙動が食い違う。dependabot/dependabot-core#14576)。上のグループの patterns を
+      # 変えたらここも変える
       minor-and-patch:
         update-types:
           - "minor"
           - "patch"
+        exclude-patterns:
+          - "vite"
+          - "vite-plus"
+          - "@voidzero-dev/vite-plus-*"
+          - "vitest"
+          - "@vitest/*"
+          - "@vitejs/plugin-react"
+          - "oxc-transform-react"
+          - "@oxc-transform-react/*"

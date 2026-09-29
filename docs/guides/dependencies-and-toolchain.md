@@ -90,6 +90,8 @@ Dependabot は `vite-plus`・core (`vite` の alias 先)・`vitest`・`@vitest/*
 gh pr checkout <PR 番号>
 vp install
 vp exec vp migrate --no-interactive
+git fetch origin main
+git diff --quiet origin/main -- pnpm-workspace.yaml && echo "catalog は main と同じ。commit せず PR を閉じる"
 pnpm peers check
 mise run verify
 git add -A
@@ -101,9 +103,9 @@ git push
 - `vp migrate` は変えたファイルを `vp fmt` で整える。migrate の前から変更のあったファイルは整えない ([Vite+ docs「Migration Rules」][])。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
 - `pnpm peers check` の食い違いと、`storybook>vite-plus` の許可が頼る `vite-plus/versions` の export は「peer の食い違いを数える」で確かめる
 - push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
-- `vitest` や `@vitest/*` だけを上げた PR では、`vp migrate` が同梱の版へ戻す。`pnpm-workspace.yaml` の catalog が `main` と同じ版に戻ったら、commit せず PR を閉じる (2026-09-29、vitest を 5.0.2 に上げた状態から 5.0.1 へ戻ることを確認)
-- `minor-and-patch` の PR に `vitest` や `@vitest/*` が入ることもある (2026-09-28 に観測、原因は未解明)。その PR でも `vp migrate` を打って同梱の版へ戻す
-- `pnpm-workspace.yaml` の catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` にも足す。`ignore` には入れない。`vite-plus` の exact な peer がグループの外に出ると、Dependabot は `vite-plus` の新しい版の PR を作らない
+- `vitest` や `@vitest/*` だけを上げた PR では、`vp migrate` が同梱の版へ戻す。判定は catalog で行い、lockfile の差分は見ない。lockfile には無関係な揺れが残る (2026-09-29、vitest を 5.0.2 に上げた状態から 5.0.1 へ戻ることを確認)
+- `minor-and-patch` は `exclude-patterns` で `vite-plus` と `react-compiler` のグループの依存を除く。patterns を持たないグループは、他のグループに入った依存も抱え込む ([dependabot-core の issue 14576][])。2026-09-28 には `vitest` が両方のグループの PR に載った
+- `pnpm-workspace.yaml` の catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と、`minor-and-patch` の `exclude-patterns` にも足す。`ignore` には入れない (ADR-0005)
 
 ### pin を足す
 
@@ -149,5 +151,6 @@ tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (l
 [pnpm の PR 14114]: https://github.com/pnpm/pnpm/pull/14114
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
 [Vite+ docs「Update Vite+」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/upgrade-project.md
+[dependabot-core の issue 14576]: https://github.com/dependabot/dependabot-core/issues/14576
 [Vite+ docs「Migration Rules」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/migrate-rules.md
 [GitHub Docs「Managing pull requests for dependency updates」]: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/managing-pull-requests-for-dependency-updates
