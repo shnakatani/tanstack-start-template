@@ -7,10 +7,12 @@
 ### 基準のタイムゾーン
 
 - テスト全体の TZ は `vitest.global-setup.ts` が `America/New_York` に決める。`vitest.config.ts` の root の `test.globalSetup` に登録してあり、メインプロセスの TZ を決める
+- どの TZ にするかは `scripts/lib/resolve-test-time-zone.ts` の `resolveTestTimeZone` が決め、基準の値は同じファイルの `BASE_TIME_ZONE` が持つ
 - 効くことを確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
 - 基準に依存するテストを書くときは、基準が `America/New_York` であることを前提にしてよい。ホストの TZ や `TZ` 環境変数には左右されない (`vitest.global-setup.ts` が上書きする)
 - 環境変数 `TEST_TIME_ZONE` があれば、`vitest.global-setup.ts` は基準の代わりにその値を使う。TZ を変えて走らせるときだけに使う (次節)
 - `TZ=<IANA 名> vp test run` のように `TZ` を渡しても、基準に上書きされて効かない。`vitest.global-setup.ts` が上書きしたことを警告する
+- ホストが自分の都合で `TZ` を持つ環境 (コンテナなど) では、この警告が毎回出る。止めるには `TZ` を外すか `TEST_TIME_ZONE=America/New_York` を渡す
 - 基準の値を変えるときは、`APP_TIME_ZONE` とも UTC とも違う値にする (「基準を `America/New_York` にする理由」)
 
 ### Node で動くテストを TZ ごとに走らせる
