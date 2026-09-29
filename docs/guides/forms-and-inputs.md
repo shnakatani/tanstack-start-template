@@ -47,7 +47,7 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 - `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する型テストを、部品の隣の `*.test-d.ts` に書く。prop が外れても誰も気付かないためである。検査のされ方は `docs/guides/testing/type-tests.md`「型テストを置く」にある
 - 検証エラーは `form-fields.tsx` の `useFormFieldState` が返す `errors` を `FieldError` に渡し、`field.state.meta.errors` をそのまま渡さない。validator は Standard Schema の issue のほかに文字列や任意の値を返せ (TanStack Form の custom-errors ガイド)、部品は `useFieldContext` 越しに読むので errors は `any[]` になる。`FieldError` は `{ message }` の形しか描かないので、揃えないと文字列のエラーが黙って消える
 - errors はどの field でも 1 段平らにしてから揃える。`disableErrorFlat` の field では `flat(1)` が行われず、issue の配列が 1 要素として入る (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)
-- `aria-invalid` と `data-invalid` は `field.state.meta.isValid` から取る。TanStack Form が submit を止める判定と同じ値で、自前で件数を数えると、平らにして空になるエラーなどで判定がずれ、submit が止まる理由が支援技術から読めなくなる
+- `aria-invalid` と `data-invalid` は `field.state.meta.isValid` から取る。TanStack Form が submit を止める判定と同じ値である。揃えた後の `errors` の件数で決めると、平らにして空になるエラーで invalid が落ち、submit が止まる理由が支援技術から読めなくなる
 
 ### Select の値を解決する
 
