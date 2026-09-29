@@ -1,8 +1,16 @@
 diff --git a/dist/_browser-chunks/chunk-HRV4LMK3.js b/dist/_browser-chunks/chunk-HRV4LMK3.js
-index df55fae85a0b051842ca579c29c6f91a31a76f0d..48866f4fb741117cf908eedf4aeb78ce705d69d1 100644
+index df55fae85a0b051842ca579c29c6f91a31a76f0d..972e51a6d439fb339f3f42e2b3eeb68462c34fda 100644
 --- a/dist/_browser-chunks/chunk-HRV4LMK3.js
 +++ b/dist/_browser-chunks/chunk-HRV4LMK3.js
-@@ -36,6 +36,16 @@ import {
+@@ -23,7 +23,6 @@ import {
+   createRoute as createRoute2,
+   createRouter,
+   defaultStringifySearch,
+-  interpolatePath as interpolatePath2,
+   RouterProvider
+ } from "@tanstack/react-router";
+ import React from "react";
+@@ -36,6 +35,16 @@ import {
    interpolatePath,
    joinPaths
  } from "@tanstack/react-router";
@@ -19,7 +27,7 @@ index df55fae85a0b051842ca579c29c6f91a31a76f0d..48866f4fb741117cf908eedf4aeb78ce
  var MAX_PARENT_WALK = 50;
  function findRootRoute(route) {
    let current = route;
-@@ -122,7 +132,7 @@ function resolveStoryLeaf(tree, {
+@@ -122,7 +131,7 @@ function resolveStoryLeaf(tree, {
    if (path) {
      let bound = boundRouteId ? byId.get(boundRouteId) : void 0;
      if (bound) {
@@ -28,7 +36,7 @@ index df55fae85a0b051842ca579c29c6f91a31a76f0d..48866f4fb741117cf908eedf4aeb78ce
        if (boundCandidate === path || boundInterpolated === path)
          return bound;
      }
-@@ -130,7 +140,7 @@ function resolveStoryLeaf(tree, {
+@@ -130,7 +139,7 @@ function resolveStoryLeaf(tree, {
      for (let route of byId.values()) {
        if (route === root)
          continue;
@@ -37,7 +45,7 @@ index df55fae85a0b051842ca579c29c6f91a31a76f0d..48866f4fb741117cf908eedf4aeb78ce
        if (!isLiteral && interpolated !== path)
          continue;
        (isLiteral === bestLiteral ? candidate.length > bestMatchLength : isLiteral) && (bestMatch = route, bestLiteral = isLiteral, bestMatchLength = candidate.length);
-@@ -178,10 +188,7 @@ function createStoryRouter({
+@@ -178,10 +187,7 @@ function createStoryRouter({
    context,
    routerContext
  }) {
