@@ -220,7 +220,7 @@ describe("NotesPage", () => {
     expect(listing).toHaveBeenExhausted();
   });
 
-  it("無効化済みのキャッシュを再取得している間に直前に通知した条件へ戻ると、再取得中の検索語の件数は通知しない", async () => {
+  it("無効化済みのキャッシュを再取得している間に直前に通知した条件へ戻ると、途中で見えた一覧の件数は通知しない", async () => {
     const listing = vi
       .when(vi.mocked(listNotes), { onUnmatched: "throw" })
       .calledWith({ data: { q: "abc" } })
@@ -742,7 +742,8 @@ describe("NotesPage", () => {
     enableAnimations();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const remove = deferMock(removeNote);
-    const screen = await renderPage();
+    const queryClient = createTestQueryClient();
+    const screen = await renderPage({ queryClient });
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
@@ -766,5 +767,7 @@ describe("NotesPage", () => {
     // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
     expect(readAnnouncements()).toEqual(["削除しています"]);
     remove.resolve(undefined);
+    // 完了の通知が次のテストの履歴に入らないよう、onSuccess の決着まで待って終える
+    await expect.poll(() => queryClient.isMutating()).toBe(0);
   });
 });
