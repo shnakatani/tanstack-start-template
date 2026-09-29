@@ -15,6 +15,10 @@ catalog:
 overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
+  # drizzle-kit は @esbuild-kit/esm-loader を依存に宣言するが、配布物は import しない。この依存が持ち込む
+  # esbuild@0.18.20 が GHSA-67mh-4wv8-2f99 に当たるので、pnpm の "-" で依存ごと外す (drizzle-team/drizzle-orm#5481)。
+  # 撤去条件: drizzle-kit の安定版が @esbuild-kit/esm-loader を依存から外したとき (1.0 の beta は外している)
+  "drizzle-kit>@esbuild-kit/esm-loader": "-"
 
 # 待機の除外 (ADR-0005)
 # - 版の無い行は vp migrate が書く恒久除外。編集しない
