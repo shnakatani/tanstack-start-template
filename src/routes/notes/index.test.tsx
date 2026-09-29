@@ -21,7 +21,7 @@ import { createTestQueryClient } from "@/test/app/query-client";
 import {
   expectAnnouncementHistory,
   expectAnnouncements,
-  readAnnouncements,
+  readAnnouncementHistory,
 } from "@/test/assert/live-announcer";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -142,8 +142,8 @@ describe("/notes route", () => {
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
     // loader が取得した key を component が読むので 1 回。loaderDeps が無いと空の deps の取得が先に走る
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "abc" } });
-    // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
-    expect(readAnnouncements()).toEqual([]);
+    // 初期表示は結果の入れ替わりではないので通知しない (spy が無ければ throw する helper)
+    expect(readAnnouncementHistory()).toEqual([]);
   });
 
   it("入力して Enter すると URL の q が確定する", async () => {

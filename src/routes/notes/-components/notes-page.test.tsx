@@ -35,7 +35,6 @@ import {
   expectAnnouncementHistory,
   expectAnnouncements,
   readAnnouncementHistory,
-  readAnnouncements,
 } from "@/test/assert/live-announcer";
 import { expectText, type Screen } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
@@ -214,7 +213,8 @@ describe("NotesPage", () => {
     await searchbox.fill("");
     await expect.poll(() => vi.mocked(listNotes).mock.calls.at(-1)).toEqual([{ data: { q: "" } }]);
     await expectText(screen, NOTE.title);
-    expect(readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
+    // 決着の前に出ないことは時点で読む。早く出ても、最後の並びは同じになる
+    expect(readAnnouncementHistory()).toEqual(["『abc』に一致するメモは 0 件です"]);
 
     listed.resolve([]);
     await expectAnnouncementHistory([
@@ -775,8 +775,9 @@ describe("NotesPage", () => {
       expect.stringContaining("[DeleteConfirmDialog]"),
       expect.anything(),
     );
-    // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
-    expect(readAnnouncements()).toEqual(["削除しています"]);
+    // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回。2 発目の開始の通知は
+    // 完了の通知の前に並ぶので、完了までの履歴を丸ごと比べる
     remove.resolve(undefined);
+    await expectAnnouncementHistory(["削除しています", `『${NOTE.title}』を削除しました`]);
   });
 });

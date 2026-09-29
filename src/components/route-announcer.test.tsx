@@ -18,7 +18,11 @@ import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
 import { pageTitle } from "@/lib/page-title";
-import { readAnnouncements } from "@/test/assert/live-announcer";
+import {
+  expectAnnouncementHistory,
+  readAnnouncementHistory,
+  readAnnouncements,
+} from "@/test/assert/live-announcer";
 
 import { RouteAnnouncer } from "./route-announcer";
 import { RouterInnerWrap } from "./router-inner-wrap";
@@ -114,7 +118,9 @@ it("最初のページでは focus を動かさず、読み上げない", async 
   const screen = await render(<RouterProvider router={createAnnouncedRouter()} />);
   await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
   expect(document.activeElement).toBe(document.body);
-  expect(readAnnouncements()).toEqual([]);
+  // 最初のページの通知は、次の遷移の通知の前に並ぶので、そこまでの履歴を丸ごと比べる
+  await userEvent.click(screen.getByRole("button", { name: "B へ" }));
+  await expectAnnouncementHistory([`B — ${APP_NAME}`]);
 });
 
 it("残るボタンで遷移すると、新しいページの h1 へ focus を移し、title を読み上げる", async () => {
@@ -144,7 +150,7 @@ it("検索条件だけの変化では focus を動かさず、読み上げない
   // location は load の開始時に変わる。onRendered は resolvedLocation を設定する batch の中で出るので、そちらを待つ
   await expect.poll(() => router.state.resolvedLocation?.searchStr).toBe("?q=x");
   await expect.element(searchButton).toHaveFocus();
-  expect(readAnnouncements()).toEqual([`B — ${APP_NAME}`]);
+  expect(readAnnouncementHistory()).toEqual([`B — ${APP_NAME}`]);
 });
 
 it("子 route のエラー画面へ移ると、エラー画面の h1 へ移す", async () => {
@@ -208,5 +214,5 @@ it("RouteAnnouncer が外れた後の遷移では、focus を動かさず読み�
   await expect.element(screen.getByRole("heading", { name: "B" })).toBeInTheDocument();
   await expect.poll(() => router.state.status).toBe("idle");
   await expect.element(button).toHaveFocus();
-  expect(readAnnouncements()).toEqual([]);
+  expect(readAnnouncementHistory()).toEqual([]);
 });

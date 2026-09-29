@@ -14,7 +14,7 @@ import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
-import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncementHistory } from "@/test/assert/live-announcer";
 import {
   expectDialogOpen,
   expectEmptyTextboxes,
@@ -285,7 +285,7 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     await expectText(screen, `${NOTE_FIELD_LABELS.title}を入力してください`);
-    expect(readAnnouncements()).toEqual([]);
+    expect(readAnnouncementHistory()).toEqual([]);
   });
 
   it("保存の応答前はキャンセルできず Escape でも閉じない", async () => {
