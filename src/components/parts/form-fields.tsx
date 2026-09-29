@@ -52,7 +52,7 @@ interface FormTextFieldProps
   extends
     Pick<
       ComponentProps<typeof Input>,
-      "type" | "inputMode" | "autoFocus" | "disabled" | "maxLength" | "placeholder"
+      "type" | "inputMode" | "autoFocus" | "disabled" | "placeholder"
     >,
     FieldValueTypeCheckProps<string> {
   label: string;
@@ -128,7 +128,6 @@ export function FormTextField({
   inputMode,
   autoFocus,
   disabled,
-  maxLength,
   sanitize,
 }: FormTextFieldProps) {
   const { field, id, errorId, errors, invalid } = useFormFieldState<string>();
@@ -148,7 +147,6 @@ export function FormTextField({
         // oxlint-disable-next-line jsx-a11y/no-autofocus -- 既定は無効で、消費側が明示的に渡したときだけ転送する。ダイアログ内の先頭フィールドのように妥当な場面があるかは消費側でしか判定できない
         autoFocus={autoFocus}
         disabled={disabled}
-        maxLength={maxLength}
         placeholder={placeholder}
         value={field.state.value}
         onChange={(event) =>

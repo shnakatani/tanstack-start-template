@@ -121,7 +121,7 @@ describe("notes handlers", () => {
   });
 
   describe("list の読み出し時検証", () => {
-    it("title が maxLength(100) を超える行があれば throw する", async () => {
+    it("title が上限 (100 文字) を超える行があれば throw する", async () => {
       insertRawRow({ title: "あ".repeat(101), body: "", createdAt: Date.now() });
 
       await expect(handlers.list(NO_FILTER)).rejects.toThrow(/スキーマ検証に失敗/);

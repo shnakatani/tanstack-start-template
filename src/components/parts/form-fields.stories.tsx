@@ -178,7 +178,7 @@ function FieldsForm({
   );
 }
 
-/** sanitize と maxLength を見るための単独フォーム。他フィールドの検証で submit が止まらない */
+/** sanitize を見るための単独フォーム。他フィールドの検証で submit が止まらない */
 function SanitizedTextForm({ onSubmit }: StoryArgs) {
   const form = useAppForm({
     defaultValues: { name: "" },
@@ -202,7 +202,6 @@ function SanitizedTextForm({ onSubmit }: StoryArgs) {
               label="名前"
               fieldValue={field.state.value}
               sanitize={(raw) => raw.replace(/\D/g, "").slice(0, 3)}
-              maxLength={8}
             />
           )}
         </form.AppField>
@@ -652,7 +651,6 @@ export const SanitizesInput: Story = {
   render: (args) => <SanitizedTextForm {...args} />,
   play: async ({ args }) => {
     const name = textbox("名前");
-    await expect(name).toHaveAttribute("maxlength", "8");
     await userEvent.type(name, "a1b2c3d4");
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
 

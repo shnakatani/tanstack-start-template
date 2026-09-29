@@ -37,21 +37,9 @@ describe("noteInputSchema", () => {
     expect(result.output.title).toBe("見出し");
   });
 
-  // title の長さ境界: 1 / 上限-1 / 上限 accept、上限 +1 reject
-  it.each([1, NOTE_TITLE_MAX_LENGTH - 1, NOTE_TITLE_MAX_LENGTH])(
-    "accepts title of %i chars (境界内)",
-    (length) => {
-      const result = v.safeParse(noteInputSchema, { ...valid, title: "あ".repeat(length) });
-      expect(result.success).toBe(true);
-    },
-  );
-
-  it("rejects title over the max length", () => {
-    const result = v.safeParse(noteInputSchema, {
-      ...valid,
-      title: "あ".repeat(NOTE_TITLE_MAX_LENGTH + 1),
-    });
-    expect(result.success).toBe(false);
+  it("accepts title of 1 char (下限)", () => {
+    const result = v.safeParse(noteInputSchema, { ...valid, title: "あ" });
+    expect(result.success).toBe(true);
   });
 
   it("accepts empty body (body に minLength 制約はない)", () => {
@@ -59,21 +47,19 @@ describe("noteInputSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  // body の長さ境界: 0 / 上限-1 / 上限 accept、上限 +1 reject
-  it.each([0, NOTE_BODY_MAX_LENGTH - 1, NOTE_BODY_MAX_LENGTH])(
-    "accepts body of %i chars (境界内)",
-    (length) => {
-      const result = v.safeParse(noteInputSchema, { ...valid, body: "い".repeat(length) });
-      expect(result.success).toBe(true);
-    },
-  );
-
-  it("rejects body over the max length", () => {
-    const result = v.safeParse(noteInputSchema, {
-      ...valid,
-      body: "い".repeat(NOTE_BODY_MAX_LENGTH + 1),
-    });
-    expect(result.success).toBe(false);
+  // 上限の境界: cap - 1 / cap は受け付け、cap + 1 は落とす。数える単位は code point (ADR-0036) で、
+  // 𠮷 は 2 code unit・1 code point。code unit で数えると cap / 2 + 1 文字で落ちる
+  it.each([
+    ["title", NOTE_TITLE_MAX_LENGTH, "あ"],
+    ["title", NOTE_TITLE_MAX_LENGTH, "𠮷"],
+    ["body", NOTE_BODY_MAX_LENGTH, "い"],
+    ["body", NOTE_BODY_MAX_LENGTH, "𠮷"],
+  ] as const)("%s は上限 %i 文字まで受け付ける (%s)", (field, cap, char) => {
+    const at = (length: number) =>
+      v.safeParse(noteInputSchema, { ...valid, [field]: char.repeat(length) }).success;
+    expect(at(cap - 1)).toBe(true);
+    expect(at(cap)).toBe(true);
+    expect(at(cap + 1)).toBe(false);
   });
 
   describe("dueDate", () => {
@@ -169,6 +155,15 @@ describe("noteSchema", () => {
   it("rejects non-Date createdAt", () => {
     const result = v.safeParse(noteSchema, { ...valid, createdAt: "2026-08-17" });
     expect(result.success).toBe(false);
+  });
+
+  // 読み出し時の検証も入力と同じく code point で数える。cap - 1 / cap は通し、cap + 1 は落とす
+  it("保存済みの title はサロゲートペアの文字を 1 文字と数える", () => {
+    const at = (length: number) =>
+      v.safeParse(noteSchema, { ...valid, title: "𠮷".repeat(length) }).success;
+    expect(at(NOTE_TITLE_MAX_LENGTH - 1)).toBe(true);
+    expect(at(NOTE_TITLE_MAX_LENGTH)).toBe(true);
+    expect(at(NOTE_TITLE_MAX_LENGTH + 1)).toBe(false);
   });
 
   it("noteInputSchema の制約 (title 空) を継承して reject する", () => {
@@ -275,29 +270,28 @@ describe("noteListFilterSchema", () => {
     expect(v.parse(noteListFilterSchema, { q: "   " })).toEqual({ q: "" });
   });
 
-  // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は保ち、cap+1 は cap で切る (reject しない)
-  it("上限を超えた分は切り詰め、エラーにしない", () => {
+  // 上限の境界: cap - 1 / cap 文字は保ち、cap + 1 文字は cap 文字に切る (reject しない)。数える単位は
+  // code point (ADR-0036) で、𠮷 は 2 code unit・1 code point
+  it.each(["a", "𠮷"])("上限を超えた分は切り詰め、エラーにしない (%s)", (char) => {
     const cap = NOTE_QUERY_MAX_LENGTH;
-    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap - 1) })).toEqual({
-      q: "a".repeat(cap - 1),
-    });
-    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap) })).toEqual({ q: "a".repeat(cap) });
-    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap + 1) })).toEqual({
-      q: "a".repeat(cap),
-    });
+    const parseQ = (length: number) => v.parse(noteListFilterSchema, { q: char.repeat(length) }).q;
+    expect(parseQ(cap - 1)).toBe(char.repeat(cap - 1));
+    expect(parseQ(cap)).toBe(char.repeat(cap));
+    expect(parseQ(cap + 1)).toBe(char.repeat(cap));
+  });
+
+  // "a" × (cap - 1) + " b" は cap + 1 文字。cap で切ると末尾が空白になるので落とし、cap - 1 文字の "a" にする。
+  // 残すと、切った値をもう一度通したときに trim で値が変わる
+  it("切った末尾に空白を残さず、切った値をもう一度通しても変わらない", () => {
+    const cap = NOTE_QUERY_MAX_LENGTH;
+    const once = v.parse(noteListFilterSchema, { q: `${"a".repeat(cap - 1)} b` });
+    expect(once).toEqual({ q: "a".repeat(cap - 1) });
+    expect(v.parse(noteListFilterSchema, once)).toEqual(once);
   });
 
   it("trim してから切り詰める (前後の空白は上限に含めない)", () => {
     expect(v.parse(noteListFilterSchema, { q: ` ${"a".repeat(NOTE_QUERY_MAX_LENGTH)} ` })).toEqual({
       q: "a".repeat(NOTE_QUERY_MAX_LENGTH),
-    });
-  });
-
-  it("切り詰めは code unit で数え、割れたサロゲートを残さない (詳細は truncate-code-units.test.ts)", () => {
-    expect(
-      v.parse(noteListFilterSchema, { q: `${"あ".repeat(NOTE_QUERY_MAX_LENGTH - 1)}😀` }),
-    ).toEqual({
-      q: "あ".repeat(NOTE_QUERY_MAX_LENGTH - 1),
     });
   });
 

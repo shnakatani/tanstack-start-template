@@ -18,6 +18,11 @@ paths:
 - フォームの `onSubmit` では値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator のスキーマの変換 (`v.trim()` など) を値に反映せず、手で書き写すと送信値だけが古くなる (`docs/guides/forms-and-inputs.md`「スキーマを書く」)
 - `v.object` から `v.omit` で入力スキーマを派生させたら、未知キーが silent に strip される挙動をテストで固定する。`v.strictObject` 由来なら reject されるので、派生元を確かめてから書く (`docs/guides/forms-and-inputs.md`「スキーマを書く」)
 
+## 文字数の上限はスキーマが code point で持つ
+
+- 文字数の上限は `v.maxCodePoints` で書き、`v.maxLength` を使わない。`maxLength` は 𠮷 や絵文字を 2 と数え、「N 文字以内」の文言と SQLite の `length()` の両方とずれる (ADR-0036)
+- 入力欄に `maxLength` を付けず、上限はスキーマに任せる。`maxlength` は code unit で数えてスキーマとずれ、変換中に上限へ達すると入力できず、貼り付けた文字列を黙って切る (ADR-0036)
+
 ## 型アサーション (`as`) 全面禁止
 
 lint (`typescript/consistent-type-assertions`) が止める。`as const` は可。直し方 (ADR-0007):

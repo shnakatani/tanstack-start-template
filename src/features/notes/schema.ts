@@ -1,7 +1,7 @@
 import * as v from "valibot";
 
 import { isExistingCalendarDate } from "@/lib/calendar-date";
-import { truncateCodeUnits } from "@/lib/truncate-code-units";
+import { truncateCodePoints } from "@/lib/truncate-code-points";
 
 /** ドメインの呼称。画面見出し・追加ボタン・削除確認の文言が使う。 */
 export const NOTE_ENTITY_LABEL = "メモ";
@@ -40,12 +40,12 @@ export const noteInputSchema = v.object({
     v.string(),
     v.trim(),
     v.minLength(1, requiredMessage(TITLE_LABEL)),
-    v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
+    v.maxCodePoints(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
     titleLabel,
   ),
   body: v.pipe(
     v.string(),
-    v.maxLength(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
+    v.maxCodePoints(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
     v.metadata({ label: BODY_LABEL }),
   ),
   /**
@@ -90,7 +90,7 @@ const noteIdValueSchema = v.pipe(
 const storedTitleSchema = v.pipe(
   v.string(),
   v.minLength(1, requiredMessage(TITLE_LABEL)),
-  v.maxLength(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
+  v.maxCodePoints(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
   v.check((value) => value === value.trim(), `${TITLE_LABEL}の前後に空白が残っています`),
   titleLabel,
 );
@@ -141,8 +141,8 @@ export const NOTE_QUERY_MAX_LENGTH = 100;
  * `q` の既定は空文字 = 絞り込みなし。URL 上では `stripSearchParams` が既定値を落とす。
  *
  * 上限は reject せず切り詰める。search param は malformed でも体験を止めない (Router の search-params
- * ガイド)。入力欄の maxLength と同じ規則で、IME の変換中など maxLength が効かない経路 (facebook/react#8683、
- * Chromium 40520211) でも同じ値に収束する。文字列以外 (`?q=123` は Router の JSON パースで number) は
+ * ガイド)。入力欄は maxLength で打ち止めにしないので、打ち込んだ値も URL の値もこの切り詰めで同じ値に
+ * 収束する (ADR-0019、ADR-0036)。文字列以外 (`?q=123` は Router の JSON パースで number) は
  * 弾き、既定の英語文言を UI に出さない。
  */
 export const noteListFilterSchema = v.object({
@@ -150,7 +150,15 @@ export const noteListFilterSchema = v.object({
     v.pipe(
       v.string("検索語は文字列で指定してください"),
       v.trim(),
-      v.transform((text) => truncateCodeUnits(text, NOTE_QUERY_MAX_LENGTH)),
+      // 上限を超えたかは valibot の maxCodePoints が判定し、超えたときだけ code point の境界で切る。
+      // 切った末尾の空白は落とす。残すと、切った値をもう一度通したときに trim で値が変わる
+      v.fallback(v.pipe(v.string(), v.maxCodePoints(NOTE_QUERY_MAX_LENGTH)), (dataset) => {
+        // 外側の v.string と v.trim を通った後なので、値は文字列のはず
+        if (typeof dataset?.value !== "string") {
+          throw new Error("検索語の切り詰めに文字列でない値が届いた");
+        }
+        return truncateCodePoints(dataset.value, NOTE_QUERY_MAX_LENGTH).trimEnd();
+      }),
     ),
     "",
   ),
