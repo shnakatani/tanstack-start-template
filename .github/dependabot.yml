@@ -26,8 +26,9 @@ updates:
       # vitest と @vitest/* の版は vite-plus の同梱の版で決まり、vite-plus の PR で vp migrate が揃える
       # (ADR-0005)。bot に上げさせると、vitest が vite-plus より先に出た週ごとに同梱の版より先へ進む PR が
       # 作られ、閉じても次の実行で作り直される (グループの PR は閉じても版を ignore しない)。
-      # vite-plus グループの patterns には残す。
-      # 撤去条件: Vite+ が bot に vitest を同梱の版で揃えさせる手段を出したとき (voidzero-dev/vite-plus#2356)
+      # vite-plus グループの patterns には残す (実測した構成を保ち、minor-and-patch の exclude-patterns と対にする)。
+      # 撤去条件: Vite+ の docs が bot の設定例で vitest を上げさせる形を示し、単独で先へ進む vitest の PR を
+      # 扱う手順を持ったとき (voidzero-dev/vite-plus#2356)。vite-plus の PR が来なくなったら外して見直す
       - dependency-name: "vitest"
         update-types:
           [
