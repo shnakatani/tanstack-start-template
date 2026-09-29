@@ -23,13 +23,15 @@ updates:
       # runtime を上げるときに一緒に上げる (minor / patch は通常どおり更新する)
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない。理由と、vite-plus
+      # グループの patterns に残す理由は ADR-0005。
+      # 撤去条件: Vite+ の docs が、単独で先へ進む vitest の PR を作らせない bot の設定例を示したとき
+      # (voidzero-dev/vite-plus#2356)
+      - dependency-name: "vitest"
+      - dependency-name: "@vitest/*"
     groups:
-      # vite-plus と、その同梱の版で決まる core・vitest・@vitest/* を 1 本の PR に束ねる (ADR-0005)。
-      # どの PR も、そのブランチで vp migrate を打って同梱の版へ揃えてから取り込む
-      # (docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)。vitest だけが先に出た週は、
-      # 同梱の版より先へ上げる PR になる (voidzero-dev/vite-plus#2356)。
-      # vitest 系を ignore にしない。上流の設定例から外れ、vite-plus の exact な peer の
-      # @vitest/browser-playwright がグループの外に出たときに PR が来るかを公式の情報で確かめられない (ADR-0005)。
+      # vite-plus と core を 1 本の PR に束ねる (ADR-0005)。PR の扱いは
+      # docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」
       # vite はワイルドカード無しの完全一致なので vite-plus のパターンでは拾えない
       vite-plus:
         patterns:

@@ -165,6 +165,9 @@ describe("/notes route", () => {
     await noteSearchbox(screen).fill("xyz");
     await userEvent.keyboard("{Enter}");
     await expect.poll(() => router.state.location.href).toBe("/notes?q=xyz");
+    // xyz の結果の通知を待ってから戻る。待たずに戻ると、遅い環境では xyz の結果が決着する前に abc へ
+    // 戻り、abc は通知済みとして扱う条件 (ref の初期値の URL の q) と同じなので、どちらの通知も出ない (ADR-0027)
+    await expectAnnouncements(["『xyz』に一致するメモは 0 件です"]);
 
     // 途中入力を挟まずに、別の遷移 (Link や他画面からの戻る) で同じ値へ。編集を URL の値で紐付けると、
     // 同じ値に戻った瞬間に確定済みの編集が復活する
@@ -185,6 +188,9 @@ describe("/notes route", () => {
     await noteSearchbox(screen).fill("xyz");
     await userEvent.keyboard("{Enter}");
     await expect.poll(() => router.state.location.href).toBe("/notes?q=xyz");
+    // xyz の結果の通知を待ってから途中入力を打つ (理由は上のテスト)。待たないと、途中入力が xyz の
+    // 世代に届く前の編集になり、「途中入力を捨てる」の前提も揃わない
+    await expectAnnouncements(["『xyz』に一致するメモは 0 件です"]);
     await noteSearchbox(screen).fill("typed");
 
     await router.navigate({ to: "/notes", search: { q: "abc" } });
