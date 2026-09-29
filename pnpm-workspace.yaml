@@ -100,7 +100,8 @@ packageExtensions:
 # router-core 1.171.30 (react-router 1.170.36) からこの関数は位置引数の形になり、全 story が
 # 「path.endsWith is not a function」で落ちる (storybookjs/storybook#36330)。patch は上流の next の修正
 # (storybookjs/storybook#36333) と同じく、関数の引数の数を見て 2 つの形を呼び分ける。キーの範囲は addon-vitest と同じ理由。
-# 上流の修正と同じく、`{-$name}` の optional param は展開しない (storybookjs/storybook#36333 の本文)。
+# 上流の修正と同じく、`$name` と `$` だけを展開し、`{-$name}` や `{$id}.json` のような波括弧の segment は
+# 展開しない (storybookjs/storybook#36333 の本文の compound segment syntax)。
 # 撤去条件: tanstack-react の安定版が storybookjs/storybook#36333 を含んだとき
 patchedDependencies:
   "@storybook/addon-vitest@^10.6.0": patches/@storybook__addon-vitest@10.6.0.patch
