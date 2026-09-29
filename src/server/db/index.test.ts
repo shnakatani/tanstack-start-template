@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import * as v from "valibot";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 
 import { notes } from "@/server/db/schema";
 
@@ -139,11 +139,15 @@ describe("createDb", () => {
 
   it("migration フォルダもプロジェクトルート基準で解決する", async () => {
     // migration フォルダの解決先を、migrate に渡した引数で確かめる。spy: true は元の実装を保つので、
-    // スキーマも実際に作られる。doMock は using で受けるとテストを抜けるときに外れ、ほかのテストと
-    // isolate: false で後に走るファイルに mock が残らない (vitest docs の api/vi「vi.doMock」)。
-    // 先に走ったファイルが `./index` を本物の migrator のまま読み込んでいることがあるので、読み直す前に
-    // モジュールのキャッシュを消す (同じく「vi.resetModules」)
+    // スキーマも実際に作られる。先に走ったファイルが `./index` を本物の migrator のまま読み込んでいる
+    // ことがあるので、読み直す前にモジュールのキャッシュを消す (vitest docs の api/vi「vi.resetModules」)。
+    // doMock は using で受けるとテストを抜けるときに外れるが、外れるのは登録だけで、読み直した `./index`
+    // は spy をつかんだままキャッシュに残る (同じく「vi.doUnmock」)。isolate: false で後に走るファイルに
+    // 渡さないよう、テストの終わりにもう一度キャッシュを消す
     vi.resetModules();
+    onTestFinished(() => {
+      vi.resetModules();
+    });
     using _migrator = vi.doMock(import("drizzle-orm/better-sqlite3/migrator"), { spy: true });
     const db = await import("./index");
     const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");
