@@ -29,9 +29,7 @@ minimumReleaseAgeExclude:
   - vitest
   - "@vitest/*"
 
-# vite を core へ alias すると版が core の番号 (1.x) になり、vite の peer 範囲を満たさなくなる。
-# vp migrate が書く、番号の不一致だけを抑える設定。外しても vp migrate が書き戻す。
-# 撤去条件: vite-plus が alias のまま strict な peer の検査を通せるようになったとき (voidzero-dev/vite-plus#2806)
+# allowAny と allowedVersions の vite・vitest の行は vp migrate が書き、外しても書き戻す (2026-09-28 に実測)。
 # vitest の行は効いていない。overrides の vitest@* が peer の宣言も置き換える (pnpm の docs の
 # dependency-resolution「Overriding peer dependencies」)。vite の行は効いている。npm: の alias では
 # peer の宣言が置き換わらない (2026-09-28 に pnpm peers check で実測。docs に記載なし)。
