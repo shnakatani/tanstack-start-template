@@ -23,13 +23,30 @@ updates:
       # runtime を上げるときに一緒に上げる (minor / patch は通常どおり更新する)
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # vitest と @vitest/* の版は vite-plus の同梱の版で決まり、vite-plus の PR で vp migrate が揃える
+      # (ADR-0005)。bot に上げさせると、vitest が vite-plus より先に出た週ごとに同梱の版より先へ進む PR が
+      # 作られ、閉じても次の実行で作り直される (グループの PR は閉じても版を ignore しない)。
+      # vite-plus グループの patterns には残す。
+      # 撤去条件: Vite+ が bot に vitest を同梱の版で揃えさせる手段を出したとき (voidzero-dev/vite-plus#2356)
+      - dependency-name: "vitest"
+        update-types:
+          [
+            "version-update:semver-major",
+            "version-update:semver-minor",
+            "version-update:semver-patch",
+          ]
+      - dependency-name: "@vitest/*"
+        update-types:
+          [
+            "version-update:semver-major",
+            "version-update:semver-minor",
+            "version-update:semver-patch",
+          ]
     groups:
       # vite-plus と、その同梱の版で決まる core・vitest・@vitest/* を 1 本の PR に束ねる (ADR-0005)。
       # どの PR も、そのブランチで vp migrate を打って同梱の版へ揃えてから取り込む
-      # (docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)。vitest だけが先に出た週は、
-      # 同梱の版より先へ上げる PR になる (voidzero-dev/vite-plus#2356)。
-      # vitest 系を ignore にしない。上流の設定例から外れ、vite-plus の exact な peer の
-      # @vitest/browser-playwright がグループの外に出たときに PR が来るかを公式の情報で確かめられない (ADR-0005)。
+      # (docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)。vitest と @vitest/* は上の ignore で
+      # bot には上げさせない。
       # vite はワイルドカード無しの完全一致なので vite-plus のパターンでは拾えない
       vite-plus:
         patterns:
