@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { excludeFromA11y } from "@/components/ui/calendar.story-helpers";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-app-form";
-
-import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "./form-fields";
+import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "@/lib/field-errors";
 
 /**
  * `form.AppField` の内側でしか動かない配線部品なので、story も TanStack Form の
