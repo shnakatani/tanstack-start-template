@@ -31,7 +31,11 @@ import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
-import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
+import {
+  expectAnnouncementHistory,
+  expectAnnouncements,
+  readAnnouncements,
+} from "@/test/assert/live-announcer";
 import { expectText, type Screen } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
@@ -215,6 +219,51 @@ describe("NotesPage", () => {
     await expectAnnouncements([
       "『abc』に一致するメモは 0 件です",
       "絞り込みを解除し、メモを全件表示しています",
+    ]);
+    expect(listing).toHaveBeenExhausted();
+  });
+
+  it("無効化済みのキャッシュを再取得している間に直前に通知した条件へ戻ると、再取得中の検索語の件数は通知しない", async () => {
+    const listing = vi
+      .when(vi.mocked(listNotes), { onUnmatched: "throw" })
+      .calledWith({ data: { q: "abc" } })
+      .thenResolve([])
+      .calledWith({ data: { q: "" } })
+      .thenResolve([NOTE])
+      .calledWith({ data: { q: "xyz" } })
+      .thenResolve([]);
+    const queryClient = createTestQueryClient();
+    // 初期表示の abc は通知しない (ADR-0027)。abc のキャッシュを持った状態から入る
+    const screen = await renderPage({ q: "abc", queryClient });
+    await expectText(screen, "『abc』に一致するメモはありません");
+    const searchbox = noteSearchbox(screen);
+    await searchbox.fill("");
+    await expectText(screen, NOTE.title);
+
+    // abc の一覧 (inactive) が mutation で無効化された状態を作り、abc に戻したときの再取得を握る
+    const abcQueryKey = notesQueryOptions({ q: "abc" }).queryKey;
+    await queryClient.invalidateQueries({ queryKey: abcQueryKey, exact: true });
+    const refetched = Promise.withResolvers<Note[]>();
+    listing.calledWith({ data: { q: "abc" } }).thenReturnOnce(refetched.promise);
+    await searchbox.fill("abc");
+    await expect
+      .poll(() => vi.mocked(listNotes).mock.calls.at(-1))
+      .toEqual([{ data: { q: "abc" } }]);
+    // 古いキャッシュの abc の一覧が出る。取得中なので通知しない
+    await expectText(screen, "『abc』に一致するメモはありません");
+
+    // 決着の前に、直前に通知した条件 (空) へ戻る。一覧は通知済みの全件に戻るので、abc の一覧は
+    // 通知しないまま消える (ADR-0027)
+    await searchbox.fill("");
+    await expectText(screen, NOTE.title);
+    refetched.resolve([]);
+
+    // 次の検索の通知までの履歴を丸ごと比べる。その間に abc の件数が通知されていれば並ぶ。region の
+    // 通知は寿命で消え、後から出た同じ文言の通知と取り違えるので、履歴で見る
+    await searchbox.fill("xyz");
+    await expectAnnouncementHistory([
+      "絞り込みを解除し、メモを全件表示しています",
+      "『xyz』に一致するメモは 0 件です",
     ]);
     expect(listing).toHaveBeenExhausted();
   });
