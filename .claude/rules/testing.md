@@ -96,7 +96,8 @@ paths:
 - 手元の default reporter は通ったテストの注釈を出さない。a11y の注釈は `mise run a11y:incomplete` で読み、ほかは `--reporter=verbose` を付けて走らせる (`docs/guides/testing/annotations.md`「注釈を読む」)
 - Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (vitest docs の guide/test-context の annotate)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)
-- announcer の通知は、届くのを待つなら `expectAnnouncements(expected, politeness)`、届いた後に読むなら `readAnnouncements(politeness)` を使う (`src/test/assert/live-announcer.ts`)。region は `browser-setup.tsx` が毎テスト描く (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
+- announcer の通知は `expectAnnouncements` / `readAnnouncements` で呼び出しの履歴を読み、配列を丸ごと比べる。live region のノードは寿命で消え、region を読むと後から出た同じ文言の通知と取り違える (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
+- 通知が出なかったことは後に出る通知までの並びで示し、後の通知が無いか出る時点を確かめるときだけ、肯定 assert を待ってから 1 回読む。肯定 assert を待たない 1 回読みは、まだ出ていないだけの状態で通る (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 
 ## mock の注意点
 

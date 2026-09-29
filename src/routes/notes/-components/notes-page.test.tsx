@@ -209,6 +209,7 @@ describe("NotesPage", () => {
     await searchbox.fill("");
     await expect.poll(() => vi.mocked(listNotes).mock.calls.at(-1)).toEqual([{ data: { q: "" } }]);
     await expectText(screen, NOTE.title);
+    // 決着の前に出ないことは時点で読む。早く出ても、最後の並びは同じになる
     expect(readAnnouncements()).toEqual(["『abc』に一致するメモは 0 件です"]);
 
     listed.resolve([]);
@@ -216,6 +217,43 @@ describe("NotesPage", () => {
       "『abc』に一致するメモは 0 件です",
       "絞り込みを解除し、メモを全件表示しています",
     ]);
+    expect(listing).toHaveBeenExhausted();
+  });
+
+  it("無効化済みのキャッシュを再取得している間に直前に通知した条件へ戻ると、途中で見えた一覧の件数は通知しない", async () => {
+    const listing = vi
+      .when(vi.mocked(listNotes), { onUnmatched: "throw" })
+      .calledWith({ data: { q: "abc" } })
+      .thenResolve([])
+      .calledWith({ data: { q: "" } })
+      .thenResolve([NOTE]);
+    const queryClient = createTestQueryClient();
+    // 初期表示の abc は通知しない (ADR-0027)。abc のキャッシュを持った状態から入る
+    const screen = await renderPage({ q: "abc", queryClient });
+    await expectText(screen, "『abc』に一致するメモはありません");
+    const searchbox = noteSearchbox(screen);
+    await searchbox.fill("");
+    await expectText(screen, NOTE.title);
+
+    // abc の一覧 (inactive) が mutation で無効化された状態を作り、abc に戻したときの再取得を握る
+    const abcQueryKey = notesQueryOptions({ q: "abc" }).queryKey;
+    await queryClient.invalidateQueries({ queryKey: abcQueryKey, exact: true });
+    const refetched = Promise.withResolvers<Note[]>();
+    listing.calledWith({ data: { q: "abc" } }).thenReturnOnce(refetched.promise);
+    await searchbox.fill("abc");
+    await expect
+      .poll(() => vi.mocked(listNotes).mock.calls.at(-1))
+      .toEqual([{ data: { q: "abc" } }]);
+    // 古いキャッシュの abc の一覧が出る。取得中なので通知しない
+    await expectText(screen, "『abc』に一致するメモはありません");
+
+    // 決着の前に、直前に通知した条件 (空) へ戻る。一覧は通知済みの全件に戻るので、abc の一覧は
+    // 通知しないまま消える (ADR-0027)
+    await searchbox.fill("");
+    await expectText(screen, NOTE.title);
+    // 取得中に abc の件数を通知していれば、全件に戻った時点で並んでいる
+    expect(readAnnouncements()).toEqual(["絞り込みを解除し、メモを全件表示しています"]);
+    refetched.resolve([]);
     expect(listing).toHaveBeenExhausted();
   });
 
@@ -690,7 +728,7 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     await expectAnnouncements(["削除しています"]);
-    // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
+    // 完了は removeNote の決着より前に出さない。上の expectAnnouncements が開始だけに一致した時点で見ている
 
     remove.resolve(undefined);
 
@@ -704,7 +742,8 @@ describe("NotesPage", () => {
     enableAnimations();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const remove = deferMock(removeNote);
-    const screen = await renderPage();
+    const queryClient = createTestQueryClient();
+    const screen = await renderPage({ queryClient });
     await expectText(screen, NOTE.title);
     await openDeleteConfirm(screen, NOTE);
 
@@ -728,5 +767,7 @@ describe("NotesPage", () => {
     // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
     expect(readAnnouncements()).toEqual(["削除しています"]);
     remove.resolve(undefined);
+    // 完了の通知が次のテストの履歴に入らないよう、onSuccess の決着まで待って終える
+    await expect.poll(() => queryClient.isMutating()).toBe(0);
   });
 });

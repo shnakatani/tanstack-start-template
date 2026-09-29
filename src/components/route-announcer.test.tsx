@@ -114,6 +114,7 @@ it("最初のページでは focus を動かさず、読み上げない", async 
   const screen = await render(<RouterProvider router={createAnnouncedRouter()} />);
   await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
   expect(document.activeElement).toBe(document.body);
+  // 後に出る通知が無いので、見出しが描かれた後に 1 回読む
   expect(readAnnouncements()).toEqual([]);
 });
 

@@ -51,7 +51,7 @@ async function renderDialog() {
       <Toaster />
     </QueryClientProvider>,
   );
-  return { screen, invalidateSpy };
+  return { screen, invalidateSpy, queryClient };
 }
 
 describe("NoteCreateDialog", () => {
@@ -236,7 +236,7 @@ describe("NoteCreateDialog", () => {
     // 即 resolve だと応答前の窓が観測できない
     const invalidate = Promise.withResolvers<undefined>();
     const create = deferMock(createNote);
-    const { screen, invalidateSpy } = await renderDialog();
+    const { screen, invalidateSpy, queryClient } = await renderDialog();
     // renderDialog が spy を張った queryClient と同じインスタンスを Provider が持つので、
     // onSuccess の invalidateQueries にこの差し替えが効く
     invalidateSpy.mockImplementation(() => invalidate.promise);
@@ -257,6 +257,9 @@ describe("NoteCreateDialog", () => {
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
 
     invalidate.resolve(undefined);
+    // 完了の通知は onSuccess の中で出る。mutation は onSuccess の決着まで進行中に数えられるので、
+    // 0 になるまで待ってから終える。待たないと、通知が次のテストの履歴に入りうる
+    await expect.poll(() => queryClient.isMutating()).toBe(0);
   });
 
   it("保存の開始と完了を announcer が通知し、完了には保存した見出しを対象名に載せる", async () => {
@@ -270,7 +273,7 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     await expectAnnouncements(["保存しています"]);
-    // 完了は createNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
+    // 完了は createNote の決着より前に出さない。上の expectAnnouncements が開始だけに一致した時点で見ている
 
     create.resolve({ id: 1 });
 

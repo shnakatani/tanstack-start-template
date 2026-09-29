@@ -138,7 +138,7 @@ describe("/notes route", () => {
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
     // loader が取得した key を component が読むので 1 回。loaderDeps が無いと空の deps の取得が先に走る
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "abc" } });
-    // 初期表示は結果の入れ替わりではないので通知しない (region が無ければ throw する helper)
+    // 初期表示は結果の入れ替わりではないので通知しない (spy が無ければ throw する helper)
     expect(readAnnouncements()).toEqual([]);
   });
 
