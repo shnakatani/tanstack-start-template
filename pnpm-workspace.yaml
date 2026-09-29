@@ -1,13 +1,10 @@
 # ===== Vite+ が管理 (vp migrate だけが書き、Vite+ を上げるたびに書き直す。手で編集しない) =====
+# 各キーの意味は Vite+ docs の guide/upgrade-project.md と guide/migrate-rules.md が持つ
 
 overrides:
-  # vite-plus と core (vite の alias) を同じリリースに揃える。版は catalog が持つ。
-  # キーを範囲つき (@*) にする。範囲なしだと catalog: 参照まで置き換わり、package.json に解決済みの
-  # alias が書き戻る (voidzero-dev/vite-plus#2309)
   vite@*: "catalog:"
   vitest@*: "catalog:"
 
-# 版は vite-plus の同梱の版で決まるので、.github/dependabot.yml は vite-plus 以外を ignore する
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0
   vitest: 5.0.1
