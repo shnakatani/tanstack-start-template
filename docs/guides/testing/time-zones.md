@@ -11,6 +11,7 @@
 - 効くことを確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
 - 基準に依存するテストを書くときは、基準が `America/New_York` であることを前提にしてよい。ホストの TZ には左右されない
 - 環境変数 `TEST_TIME_ZONE` があれば、`vitest.global-setup.ts` は基準の代わりにその値を使う。TZ を変えて走らせるとき (次節) と、ホストの TZ の警告を止めるときに使う
+- `TEST_TIME_ZONE` が IANA のタイムゾーン名でなければ、`vitest.global-setup.ts` が値を示して落とす。不正な名前を `TZ` に入れると、Node は何も言わずに UTC で動く (Node 24.21.0、2026-09-29 に実測)
 - `TZ=<IANA 名> vp test run` のように `TZ` を渡しても、基準に上書きされて効かない。`vitest.global-setup.ts` が、ホストの TZ を使わないことを警告する
 - ホストが自分の都合で `TZ` を持つ環境 (コンテナなど) では、この警告が毎回出る。止めるには `TZ` を外すか `TEST_TIME_ZONE=America/New_York` を渡す
 - 基準の値を変えるときは、`APP_TIME_ZONE` とも UTC とも違う値にする (「基準を `America/New_York` にする理由」)
@@ -80,13 +81,15 @@ Node.js は、メインスレッドで設定した `TZ` だけを反映する。
 
 ### TZ ごとにプロセスを分ける理由
 
-Node.js は、メインスレッドで設定した `TZ` だけを `Date` に反映する。テストの中で `TZ` を変える手段は pool に依存し、threads と vmThreads では効かないまま通る。Vitest のメンテナは、テストの中で動的に変える方法は無く `TZ=` を付けて起動するよう答えている ([vitest の issue 1575][])。
+前提は「基準を root の globalSetup に置く理由」のとおり、worker からの `TZ` の変更は `Date` に効かない。テストの中で `TZ` を変える手段は pool に依存し、threads と vmThreads では効かないまま通る。Vitest のメンテナは、テストの中で動的に変える方法は無く `TZ=` を付けて起動するよう答えている ([vitest の issue 1575][])。
 
-| 手段                                                              | pool への依存         | 採否                                                                                                                                                                                                    |
-| ----------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| テストの中で `vi.stubEnv("TZ", …)`                                | forks と vmForks だけ | 却下。project に `pool: "forks"` を固定しても、CLI の `--pool threads` が上書きし、無言で通る                                                                                                           |
-| TZ ごとの project に `test.env` の `TZ` と `pool: "forks"`        | forks と vmForks だけ | 却下。1 回の `vp test run` で完結するが、CLI の `--pool threads` が project の pool を上書きし、TZ が効かない (下の実測)。[Vitest docs「env」][] も `threads` と `vmThreads` では TZ が変わらないと書く |
-| TZ ごとにプロセスを起動し、globalSetup が `TEST_TIME_ZONE` を読む | なし                  | 採用。[Vitest docs「Common Errors」][] が挙げる、worker の起動前にメインプロセスで決める方法の 1 つ                                                                                                     |
+| 手段                                                              | pool への依存         | 採否                                                                                                                                             |
+| ----------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| テストの中で `vi.stubEnv("TZ", …)`                                | forks と vmForks だけ | 却下。pool に依存する (表の下)                                                                                                                   |
+| TZ ごとの project に `test.env` の `TZ` と `pool: "forks"`        | forks と vmForks だけ | 却下。1 回の `vp test run` で完結するが、pool に依存する (表の下)。[Vitest docs「env」][] も `threads` と `vmThreads` では TZ が変わらないと書く |
+| TZ ごとにプロセスを起動し、globalSetup が `TEST_TIME_ZONE` を読む | なし                  | 採用。[Vitest docs「Common Errors」][] が挙げる、worker の起動前にメインプロセスで決める方法の 1 つ                                              |
+
+pool に依存する 2 案は、project に `pool: "forks"` を固定しても、CLI の `--pool threads` が project の pool を上書きし、TZ が効かないまま通る (下の実測)。
 
 TZ ごとにプロセスを起動する形は、日付ライブラリにも先行例がある (どれも 2026-09-29 に main で確認)。
 

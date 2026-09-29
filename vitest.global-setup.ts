@@ -2,8 +2,7 @@ import { resolveTestTimeZone } from "./scripts/lib/resolve-test-time-zone";
 
 /**
  * テスト全体のタイムゾーンを決める。worker の起動前にメインプロセスで走るので、pool を
- * 問わず全 project の `Date` に効く
- * (https://vitest.dev/guide/common-errors#time-zone-does-not-change-in-worker-threads)。
+ * 問わず全 project の `Date` に効く (`docs/guides/testing/time-zones.md`「基準を root の globalSetup に置く理由」)。
  * どの TZ にするかは `resolveTestTimeZone` が決める。
  */
 export default function setup() {

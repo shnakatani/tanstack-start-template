@@ -2,8 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 /**
  * `*.tz.test.ts` が、指定した TZ で実際に走っていることを確かめる。TZ が `Date` に効かないまま
- * 走ると、どの TZ の実行も基準の TZ と同じ結果になり、無言で通る
- * (https://vitest.dev/guide/common-errors#time-zone-does-not-change-in-worker-threads)
+ * 走ると、どの TZ の実行も基準の TZ と同じ結果になり、無言で通る (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
  */
 describe("テストのタイムゾーン", () => {
   const expected = process.env.TEST_TIME_ZONE || process.env.TZ;
