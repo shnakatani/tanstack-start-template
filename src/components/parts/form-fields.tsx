@@ -68,16 +68,9 @@ interface FormTextFieldProps
  */
 export const UNRENDERABLE_FIELD_ERROR_MESSAGE = "入力内容を確認してください";
 
-/**
- * 検証エラー 1 件から表示できる文言を取り出す。取り出せない形なら null を返す。
- * validator は任意の値を返せるので、文字列とそれ以外を振り分ける (TanStack Form の custom-errors ガイド
- * 「Type Safety of `errors` and `errorMap`」の形)。
- */
-function fieldErrorMessage(error: unknown): string | null {
-  if (typeof error === "string") {
-    return error === "" ? null : error;
-  }
-  return messageOf(error) ?? null;
+/** 検証エラー 1 件から表示できる文言を取り出す。validator は任意の値を返せるので、文字列とそれ以外を振り分ける */
+function fieldErrorMessage(error: unknown): string | undefined {
+  return typeof error === "string" ? error : messageOf(error);
 }
 
 /**
@@ -87,18 +80,13 @@ function fieldErrorMessage(error: unknown): string | null {
  */
 function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[] {
   // `disableErrorFlat` の field では `field.errors` の `flat(1)` が行われず、validator が返した issue の配列が
-  // 1 要素として入る (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)。既定と同じく 1 段平らにする
+  // 1 要素として入る (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)。既定と同じく 1 段平らにする。
+  // 平らにすると空になる (`[]` を返した validator) なら、form は invalid と数えるので、元の errors を 1 件として丸める
   const flatErrors = errors.flat(1);
-  if (flatErrors.length === 0 && errors.length > 0) {
-    // 平らにすると空になる (`[]` を返した validator)。form は invalid と数えるので、文言を 1 つ出す
-    console.warn("[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました", {
-      error: errors,
-    });
-    return [{ message: UNRENDERABLE_FIELD_ERROR_MESSAGE }];
-  }
-  return flatErrors.map((error) => {
+  const targets = flatErrors.length === 0 && errors.length > 0 ? [errors] : flatErrors;
+  return targets.map((error) => {
     const message = fieldErrorMessage(error);
-    if (message === null) {
+    if (!message) {
       console.warn("[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました", { error });
       return { message: UNRENDERABLE_FIELD_ERROR_MESSAGE };
     }
@@ -111,20 +99,19 @@ function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[]
  * id 2 つと invalid の計算を 1 箇所に集め、フィールド種別を増やすときの写し漏れを防ぐ。
  * (FormCheckboxField は FieldError 非対応の別形なので使わない)
  *
- * invalid は正規化前の件数で決める。表示できない形のエラーでも検証は失敗しており、
- * aria-invalid を落とすと submit が止まる理由が支援技術から読めなくなる。
+ * invalid は TanStack Form が数える field の妥当性をそのまま読む。表示できない形のエラーでも検証は失敗して
+ * いるので、aria-invalid を落とすと submit が止まる理由が支援技術から読めなくなる。
  */
 function useFormFieldState<T>() {
   const field = useFieldContext<T>();
   const id = useId();
   const errorId = useId();
-  const rawErrors: readonly unknown[] = field.state.meta.errors;
   return {
     field,
     id,
     errorId,
-    errors: normalizeFieldErrors(rawErrors),
-    invalid: rawErrors.length > 0,
+    errors: normalizeFieldErrors(field.state.meta.errors),
+    invalid: !field.state.meta.isValid,
   };
 }
 

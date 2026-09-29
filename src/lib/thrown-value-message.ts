@@ -5,8 +5,7 @@ export const THROWN_VALUE_UNPRINTABLE = "表示できない値が投げられま
 
 /**
  * 投げられた値を画面に出す文言にする。Router はエラー境界に error を unknown で渡す
- * (route は Error 以外も throw できる)。空でない文字列の message を持つ値 (Error を含む) はその
- * message を、それ以外は値を文字列にする。
+ * (route は Error 以外も throw できる)。`messageOf` が message を返せばそれを、返さなければ値を文字列にする。
  *
  * Router の data-loading ガイドの例は `instanceof Error` で絞るが、それだと message を持つ object が
  * `[object Object]` になる。ここは組み込みの ErrorComponent (`error?.message` を読む) に寄せた。

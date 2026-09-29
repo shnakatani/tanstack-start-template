@@ -681,11 +681,7 @@ export const StringErrorRendered: Story = {
   },
 };
 
-/**
- * `disableErrorFlat` を付けると、TanStack Form は `field.errors` の `flat(1)` を行わず、validator が返した
- * issue の配列を errors の 1 要素として入れる (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)。
- * 1 段平らにしてから揃え、配列の中の文言を描く
- */
+/** `disableErrorFlat` の field で validator が返した issue の配列も、中の文言を描く */
 export const IssueArrayWithoutFlatRendered: Story = {
   tags: ["!dev"],
   render: () => (
