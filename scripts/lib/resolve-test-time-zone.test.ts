@@ -5,7 +5,7 @@ import { resolveTestTimeZone } from "./resolve-test-time-zone";
 describe("resolveTestTimeZone", () => {
   test.each([
     { name: "TZ も TEST_TIME_ZONE も無い", env: {} },
-    { name: "空文字は無いのと同じに扱う", env: { TZ: "", TEST_TIME_ZONE: "" } },
+    { name: "TZ と TEST_TIME_ZONE が空文字", env: { TZ: "", TEST_TIME_ZONE: "" } },
     { name: "ホストの TZ が基準と同じ", env: { TZ: "America/New_York" } },
   ])("$name なら、基準の TZ にして警告しない", ({ env }) => {
     expect(resolveTestTimeZone(env)).toStrictEqual({
@@ -14,13 +14,18 @@ describe("resolveTestTimeZone", () => {
     });
   });
 
-  test("ホストの TZ が基準と違えば基準にし、その TZ で走らせるコマンドを警告に載せる", () => {
-    const { timeZone, warning } = resolveTestTimeZone({ TZ: "Asia/Tokyo" });
+  // ホストの TZ は POSIX 形式 (JST-9) のこともあり、そのまま TEST_TIME_ZONE に渡すと効かない。値は勧めない
+  test.each(["Asia/Tokyo", "JST-9"])(
+    "ホストの TZ=%s が基準と違えば基準にし、TEST_TIME_ZONE に IANA 名を渡すよう警告する",
+    (hostTimeZone) => {
+      const { timeZone, warning } = resolveTestTimeZone({ TZ: hostTimeZone });
 
-    expect(timeZone).toBe("America/New_York");
-    expect(warning).toContain("TZ=Asia/Tokyo");
-    expect(warning).toContain("TEST_TIME_ZONE=Asia/Tokyo");
-  });
+      expect(timeZone).toBe("America/New_York");
+      expect(warning).toContain(`TZ=${hostTimeZone}`);
+      expect(warning).toContain("TEST_TIME_ZONE に IANA のタイムゾーン名を渡す");
+      expect(warning).not.toContain(`TEST_TIME_ZONE=${hostTimeZone}`);
+    },
+  );
 
   test("TEST_TIME_ZONE があればその TZ にし、ホストの TZ が違っても警告しない", () => {
     expect(resolveTestTimeZone({ TZ: "Asia/Tokyo", TEST_TIME_ZONE: "UTC" })).toStrictEqual({

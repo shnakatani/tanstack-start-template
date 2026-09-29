@@ -25,10 +25,12 @@ const TIME_ZONES = [
   "Pacific/Pago_Pago",
 ] as const;
 
+type TimeZone = (typeof TIME_ZONES)[number];
+
 const VP_ARGS = ["test", "run", "--project", "unit", ".tz.test.ts"];
 
 type Run = {
-  timeZone: string;
+  timeZone: TimeZone;
   status: number | null;
   signal: NodeJS.Signals | null;
   output: string;
@@ -40,15 +42,22 @@ type Run = {
  * 各プロセスの worker は 1 本にする。絞らないとプロセスの数と掛け算で増える
  * (`docs/guides/testing/time-zones.md`「TZ ごとの実行を並列にする理由」)。
  * 起動に失敗しても reject せず、失敗した TZ として返す。reject すると、走っている他の TZ の子を
- * 残したまま親だけが終わる
+ * 残したまま親だけが終わる。起動の失敗は error イベントで届くものと、spawn が同期に投げるもの
+ * (ENOEXEC など) があるので、両方を受ける
  */
-function runTimeZone(timeZone: string): Promise<Run> {
+function runTimeZone(timeZone: TimeZone): Promise<Run> {
   return new Promise((resolve) => {
-    const child = spawn("vp", VP_ARGS, {
-      cwd: REPO_ROOT,
-      env: { ...process.env, TEST_TIME_ZONE: timeZone, VITEST_MAX_WORKERS: "1" },
-    });
     const chunks: Buffer[] = [];
+    let child;
+    try {
+      child = spawn("vp", VP_ARGS, {
+        cwd: REPO_ROOT,
+        env: { ...process.env, TEST_TIME_ZONE: timeZone, VITEST_MAX_WORKERS: "1" },
+      });
+    } catch (error) {
+      resolve({ timeZone, status: null, signal: null, output: String(error) });
+      return;
+    }
     child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
     child.on("error", (error) => {
@@ -61,7 +70,7 @@ function runTimeZone(timeZone: string): Promise<Run> {
 }
 
 // 1 つの TZ で落ちても残りを走らせる。どの TZ で落ちたかの組み合わせ (進んだ側だけ、など) が原因の手がかりになる
-const queue: string[] = [...TIME_ZONES];
+const queue: TimeZone[] = [...TIME_ZONES];
 const failed: Run[] = [];
 await Promise.all(
   Array.from({ length: Math.min(availableParallelism(), queue.length) }, async () => {
@@ -82,6 +91,8 @@ await Promise.all(
 );
 
 if (failed.length > 0) {
+  // 終わった順ではなく TIME_ZONES の順に並べ、実行ごとにログの並びが変わらないようにする
+  failed.sort((a, b) => TIME_ZONES.indexOf(a.timeZone) - TIME_ZONES.indexOf(b.timeZone));
   for (const run of failed) {
     console.error(`\n[time-zones] TEST_TIME_ZONE=${run.timeZone} の出力:\n${run.output}`);
   }

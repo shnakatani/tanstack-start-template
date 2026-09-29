@@ -11,7 +11,7 @@
 - 効くことを確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
 - 基準に依存するテストを書くときは、基準が `America/New_York` であることを前提にしてよい。ホストの TZ には左右されない
 - 環境変数 `TEST_TIME_ZONE` があれば、`vitest.global-setup.ts` は基準の代わりにその値を使う。TZ を変えて走らせるとき (次節) と、ホストの TZ の警告を止めるときに使う
-- `TEST_TIME_ZONE` に IANA の名前として効かない値 (`Asia/Tokio`、`asia/tokyo`、`JST-9`) を渡すと、`src/test/test-time-zone.tz.test.ts` が落ちる。不正な名前を `TZ` に入れると、Node は何も言わずに UTC で動くため (Node 24.21.0、2026-09-29 に実測)
+- `TEST_TIME_ZONE` に IANA の名前として効かない値 (`Asia/Tokio`、`asia/tokyo`、`JST-9`) を渡すと、`src/test/test-time-zone.tz.test.ts` が落ちる (「効かない TZ の名前を確認のテストで見つける理由」)
 - `TZ=<IANA 名> vp test run` のように `TZ` を渡しても、基準に上書きされて効かない。`vitest.global-setup.ts` が、ホストの TZ を使わないことを警告する
 - ホストが自分の都合で `TZ` を持つ環境 (コンテナなど) では、この警告が毎回出る。止めるには `TZ` を外すか `TEST_TIME_ZONE=America/New_York` を渡す
 - 基準の値を変えるときは、`APP_TIME_ZONE` とも UTC とも違う値にする (「基準を `America/New_York` にする理由」)
@@ -22,6 +22,7 @@
 - 基準以外の TZ では `vp node scripts/time-zones/run-tests.ts` が走らせる。TZ ごとに `TEST_TIME_ZONE` を渡して `vp test run --project unit .tz.test.ts` を起動する。`.mise.toml` の verify タスクと CI が `vp test run` の後に呼ぶ
 - スクリプトは TZ ごとのプロセスを同時に走らせる。並列の数は `availableParallelism()` と TZ の数の小さいほうで、各プロセスの worker は `VITEST_MAX_WORKERS=1` で 1 本にする (「TZ ごとの実行を並列にする理由」)
 - 終わった TZ から `OK` / `FAIL` を 1 行ずつ出す。1 つの TZ で落ちても残りを走らせ、最後に失敗した TZ の出力と、1 つずつ走らせ直すコマンドを並べて非ゼロで終える
+- 止めるときは Ctrl-C を使う。親のプロセスだけを kill すると子が残る (「TZ ごとの実行を並列にする理由」)
 - 走らせる TZ は `scripts/time-zones/run-tests.ts` の `TIME_ZONES` が持つ。UTC より進んだ側と遅れた側の両方を入れる
 - テストの中で `vi.stubEnv("TZ", …)` や `process.env.TZ` への代入で切り替えない。threads と vmThreads の pool では `Date` に効かず、基準の TZ のまま無言で通る (「TZ ごとにプロセスを分ける理由」)
 - `src/test/test-time-zone.tz.test.ts` は、指定した TZ が `Intl` の既定と `Date` のローカルの時刻に効いていることを確かめる。効かないまま走ると、どの TZ の実行も基準と同じ結果で通るため
@@ -108,7 +109,7 @@ TZ ごとにプロセスを起動する形は、日付ライブラリにも先�
 | `Asia/Tokyo`        | 1 failed \| 8 passed |
 | `Pacific/Pago_Pago` | 3 failed \| 6 passed |
 
-`vitest.global-setup.ts` を `TEST_TIME_ZONE` を読まない形に戻して `TEST_TIME_ZONE=Asia/Tokyo` で走らせると、`src/test/test-time-zone.tz.test.ts` の 2 件だけが落ちた (2 failed \| 7 passed)。
+`vitest.global-setup.ts` を `TEST_TIME_ZONE` を読まない形に変えて `TEST_TIME_ZONE=Asia/Tokyo` で走らせると、`src/test/test-time-zone.tz.test.ts` の 2 件だけが落ちた (2 failed \| 7 passed)。
 
 ### TZ ごとの実行を並列にする理由
 
@@ -123,8 +124,21 @@ TZ ごとにプロセスを起動する形は、日付ライブラリにも先�
 
 - 既定の `maxWorkers` は利用できる並列数を全部使う ([Vitest docs「maxWorkers」][])。絞らずに同時に走らせると、プロセスの数と掛け算で worker が増える
 - 複数の `vitest run` を同時に走らせるときに、各プロセスの worker を `VITEST_MAX_WORKERS` で絞る形は、[Vitest docs「Improving Performance」][] の shard の例に倣う
+- [date-fns の `tz.ts`][] も、TZ ごとのプロセスを `availableParallelism()` の数まで同時に走らせ、各プロセスに `VITEST_MAX_WORKERS=1` を渡す
 - 端末の Ctrl-C はプロセスグループ全体に届くので、子も止まる。プロセスグループに SIGINT を送ると、子は残らなかった (vp 1.0.0、2026-09-29 に実測)
-- 親のプロセスにだけ signal を送ると (`kill <pid>`)、子は残る。直列に走らせていたときも同じで、[date-fns の `tz.ts`][] も扱っていない
+- 親のプロセスにだけ signal を送ると (`kill <pid>`)、子は残る。直列に走らせる形でも同じで、[date-fns の `tz.ts`][] も扱っていない
+
+### 効かない TZ の名前を確認のテストで見つける理由
+
+IANA の名前として効かない値を `TZ` に入れても、Node はエラーを出さない。`Intl` の既定の TZ が決まらなくなり、`Date` は名前によって UTC か、その名前が表すオフセットで動く。
+
+| `TZ`         | `Intl` の既定 | 2026-01-15T12:00Z の `getHours()` |
+| ------------ | ------------- | --------------------------------- |
+| `Asia/Tokio` | 無し          | 12 (UTC)                          |
+| `asia/tokyo` | 無し          | 21                                |
+| `JST-9`      | 無し          | 21                                |
+
+2026-09-29 に Node 24.21.0 (macOS) で実測した。どれも `Intl` の既定が決まらないので、`src/test/test-time-zone.tz.test.ts` の `Intl` の既定を比べるテストが落ちる。`vitest.global-setup.ts` では名前を検査しない。`TEST_TIME_ZONE` を読むのは TZ ごとの実行の unit project だけで、そこでこのテストが走る。
 
 ### テストの中の切り替えが効く範囲
 
