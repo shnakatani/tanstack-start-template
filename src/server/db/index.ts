@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { statSync } from "node:fs";
 import { resolve } from "node:path";
 
 import Database from "better-sqlite3";
@@ -28,7 +28,8 @@ function requireDbFileName(): string {
 export function createDb(fileName: string = requireDbFileName()) {
   // アプリは migration を当てないので、無い DB を作ると最初のクエリが no such table で落ちるだけになる。
   // fileMustExist が作らずに落とすが、その文言は開こうとしたパスを含まないので、先にパスと作り方を示す
-  if (fileName !== ":memory:" && !existsSync(fileName)) {
+  // ディレクトリを指していても existsSync は真を返し、fileMustExist の文言はパスを含まない。ファイルかで見る
+  if (fileName !== ":memory:" && !statSync(fileName, { throwIfNoEntry: false })?.isFile()) {
     throw new Error(
       `[db] DB のファイルが無い: ${resolve(fileName)}。mise run db:migrate で作るか、DB_FILE_NAME を確かめる`,
     );

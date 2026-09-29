@@ -95,6 +95,16 @@ describe("createDb", () => {
     }
   });
 
+  it("DB_FILE_NAME がディレクトリを指していても、開こうとしたパスを示して throw する", () => {
+    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
+
+    try {
+      expect(() => createDb(dir)).toThrow(dir);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("既にある DB のファイルを開く", () => {
     const dir = mkdtempSync(join(tmpdir(), "db-test-"));
     const fileName = join(dir, "dev.sqlite");

@@ -22,17 +22,20 @@ SQLite のファイルへ drizzle で接続し、migration を適用する手順
 - `src/server/db/schema.ts` を変えたら、`mise run db:generate` の後に `mise run db:migrate` を打つ。各タスクのコマンドは `.mise.toml` にある
 - アプリは起動時に migration を適用せず、`migrateDb()` もアプリの経路から呼ばない。デプロイの手順に `mise run db:migrate` を入れる (「migration を起動時に適用しない理由」)
 - `mise run db:migrate` は drizzle-kit (devDependencies)、`drizzle.config.ts`、`drizzle/` を使う。ビルド成果物の `.output/` はどれも持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
+- migration のフォルダは `src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` を `drizzle.config.ts` の `out` と `migrateDb()` の両方が読む。片方だけ変えると、テストが古い migration を当てたまま通る
 - テーブルを足したら、テーブル定義とフロントのスキーマの型を突き合わせる型テストを書く (ADR-0034)
 
 ### 起動時に migration を適用する形に変える
 
-drizzle docs の Option 4 に当たる (「migration を起動時に適用しない理由」)。次の 3 つを揃える。
+drizzle docs の Option 4 に当たる (「migration を起動時に適用しない理由」)。次の 5 つを揃える。
 
-| 変えるもの                                                                                                    | 理由                                                                             |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 起動の経路で `migrateDb()` を呼ぶ                                                                             | 今はテストだけが呼ぶ                                                             |
-| `createDb()` の `fileMustExist` と、無いときの throw を外す                                                   | 初回の起動では DB のファイルがまだ無い。作らないと起動の時点で落ちる             |
-| `drizzle/` をサーバーに置き、`src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` をその絶対パスにする | `.output/` は `drizzle/` を持たない。相対パスのままだと起動した cwd を基準に探す |
+| 変えるもの                                                                                                    | 理由                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 起動の経路で `migrateDb()` を呼ぶ                                                                             | 今はテストだけが呼ぶ                                                                                               |
+| `createDb()` の `fileMustExist` と、無いときの throw を外す                                                   | 初回の起動では DB のファイルがまだ無い。作らないと起動の時点で落ちる                                               |
+| `drizzle/` をサーバーに置き、`src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` をその絶対パスにする | `.output/` は `drizzle/` を持たない。相対パスのままだと起動した cwd を基準に探す                                   |
+| 開く前に DB のディレクトリを作る (`mkdirSync(dirname(<DB のパス>), { recursive: true })`)                     | better-sqlite3 はディレクトリを作らず、無いと `Cannot open database because the directory does not exist` で落ちる |
+| デプロイの手順から `mise run db:migrate` を外す                                                               | 適用の経路が 2 か所に分かれる                                                                                      |
 
 ### テストで使う
 
@@ -69,7 +72,7 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 
 `DB_FILE_NAME` の既定は相対パスにせず、`.mise.toml` で `config_root` から組む。[mise docs「Templates」][] は "`config_root` stays at the project root when you run mise from a subdirectory" と書き、プロジェクトからの相対パスにはこちらを使うよう勧める。worktree はそれぞれ `.mise.toml` を持つので、worktree ごとに別の DB になる。
 
-相対パスが残るのは `MIGRATIONS_FOLDER` と drizzle-kit の設定の探索である。これらを使う入口がルートで走ることの根拠は次のとおり。
+相対パスが残るのは `MIGRATIONS_FOLDER` と、drizzle-kit の設定の探索と設定の中の `schema` である。これらを使う入口がルートで走ることの根拠は次のとおり。
 
 | 入口                            | 根拠                                                                                                                                                                                                                                                 |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
