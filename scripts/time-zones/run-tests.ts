@@ -10,8 +10,7 @@ import { REPO_ROOT } from "../lib/repo-root.ts";
  * テストの中で `TZ` を変えても、threads と vmThreads の pool では `Date` に効かない。
  * プロセスごとに決めれば pool を問わず効く (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)。
  *
- * 暦の日付は、`toISOString()` や `new Date("YYYY-MM-DD")` を挟むと、UTC より進んだ TZ か
- * 遅れた TZ のどちらかで 1 日ずれる (ADR-0031 の Context)。両側と日付変更線の際を並べる。
+ * UTC より進んだ側と遅れた側、日付変更線の際を並べる (ADR-0031 の Context)。
  */
 const TIME_ZONES = [
   "UTC",
@@ -48,24 +47,24 @@ type Run = {
 function runTimeZone(timeZone: TimeZone): Promise<Run> {
   return new Promise((resolve) => {
     const chunks: Buffer[] = [];
-    let child;
+    const fail = (error: Error) => {
+      chunks.push(Buffer.from(`${error.stack ?? String(error)}\n`));
+    };
     try {
-      child = spawn("vp", VP_ARGS, {
+      const child = spawn("vp", VP_ARGS, {
         cwd: REPO_ROOT,
         env: { ...process.env, TEST_TIME_ZONE: timeZone, VITEST_MAX_WORKERS: "1" },
       });
+      child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
+      child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
+      child.on("error", fail);
+      child.on("close", (status, signal) => {
+        resolve({ timeZone, status, signal, output: Buffer.concat(chunks).toString() });
+      });
     } catch (error) {
-      resolve({ timeZone, status: null, signal: null, output: String(error) });
-      return;
+      fail(error instanceof Error ? error : new Error(String(error)));
+      resolve({ timeZone, status: null, signal: null, output: Buffer.concat(chunks).toString() });
     }
-    child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
-    child.on("error", (error) => {
-      chunks.push(Buffer.from(`${error.stack ?? String(error)}\n`));
-    });
-    child.on("close", (status, signal) => {
-      resolve({ timeZone, status, signal, output: Buffer.concat(chunks).toString() });
-    });
   });
 }
 

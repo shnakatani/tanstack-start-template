@@ -5,16 +5,18 @@ import { describe, expect, it } from "vite-plus/test";
  * 走ると、どの TZ の実行も基準の TZ と同じ結果になり、無言で通る (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
  */
 describe("テストのタイムゾーン", () => {
-  const expected = process.env.TEST_TIME_ZONE || process.env.TZ;
+  // 期待値は globalSetup が入れた process.env.TZ から取らない。取ると、globalSetup が TZ を入れなくなっても
+  // ホストの TZ どうしを比べて通る。基準は vitest.global-setup.ts が決める値と同じものを独立に書く
+  const expected = process.env.TEST_TIME_ZONE || "America/New_York";
 
-  it("Intl の既定のタイムゾーンが TEST_TIME_ZONE (無ければ TZ) になっている", () => {
+  it("Intl の既定のタイムゾーンが TEST_TIME_ZONE (無ければ基準の America/New_York) になっている", () => {
     // 別名 (Asia/Kolkata と Asia/Calcutta) を同じ名前へそろえてから比べる
     const canonical = new Intl.DateTimeFormat("en", { timeZone: expected }).resolvedOptions()
       .timeZone;
     expect(new Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(canonical);
   });
 
-  it("Date のローカルの時と分が、TEST_TIME_ZONE (無ければ TZ) の壁時計と一致する", () => {
+  it("Date のローカルの時と分が、TEST_TIME_ZONE (無ければ基準の America/New_York) の壁時計と一致する", () => {
     const instant = new Date("2026-01-15T12:00:00.000Z");
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: expected,

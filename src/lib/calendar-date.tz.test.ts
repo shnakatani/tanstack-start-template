@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { formatCalendarDate, parseCalendarDate } from "./calendar-date";
+import { formatCalendarDate, isExistingCalendarDate, parseCalendarDate } from "./calendar-date";
 
 /**
  * 暦の日付 (ADR-0031 の分類 2) と Calendar の `Date` の境界を、このプロセスの TZ で確かめる。
@@ -12,6 +12,10 @@ describe("formatCalendarDate", () => {
     // Calendar は選んだ日をローカル TZ の 0 時の Date で返す (react-day-picker docs「Setting the Time Zone」)
     expect(formatCalendarDate(new Date(2026, 7, 17))).toBe("2026-08-17");
   });
+
+  it("Invalid Date は RangeError で落ちる (壊れた値を文字列にしない)", () => {
+    expect(() => formatCalendarDate(new Date(Number.NaN))).toThrow(RangeError);
+  });
 });
 
 describe("parseCalendarDate", () => {
@@ -22,7 +26,29 @@ describe("parseCalendarDate", () => {
     ]);
   });
 
-  it("formatCalendarDate との往復で値が変わらない", () => {
-    expect(formatCalendarDate(parseCalendarDate("2026-08-17"))).toBe("2026-08-17");
+  it.each(["2026-08-17", "2024-02-29"])(
+    "%s は formatCalendarDate との往復で変わらない",
+    (value) => {
+      expect(formatCalendarDate(parseCalendarDate(value))).toBe(value);
+    },
+  );
+
+  // 2023 年は平年、6 月は 30 日まで。形式違いと時刻つきも暦の日付ではない
+  it.each(["2023-02-29", "2023-06-31", "2026-8-7", "2026-08-17T10:00", ""])(
+    "%p は throw する",
+    (value) => {
+      expect(() => parseCalendarDate(value)).toThrow(`暦の日付ではない: ${value}`);
+    },
+  );
+});
+
+describe("isExistingCalendarDate", () => {
+  it.each([
+    ["2026-08-17", true],
+    ["2024-02-29", true],
+    ["2023-02-29", false],
+    ["2023-06-31", false],
+  ] as const)("%s は %s", (value, expected) => {
+    expect(isExistingCalendarDate(value)).toBe(expected);
   });
 });

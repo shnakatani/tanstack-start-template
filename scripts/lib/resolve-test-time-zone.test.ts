@@ -14,15 +14,14 @@ describe("resolveTestTimeZone", () => {
     });
   });
 
-  // ホストの TZ は POSIX 形式 (JST-9) のこともあり、そのまま TEST_TIME_ZONE に渡すと効かない。値は勧めない
   test.each(["Asia/Tokyo", "JST-9"])(
-    "ホストの TZ=%s が基準と違えば基準にし、TEST_TIME_ZONE に IANA 名を渡すよう警告する",
+    "ホストの TZ=%s が基準と違えば基準にし、TZ ごとに走らせるスクリプトを警告で案内する",
     (hostTimeZone) => {
       const { timeZone, warning } = resolveTestTimeZone({ TZ: hostTimeZone });
 
       expect(timeZone).toBe("America/New_York");
       expect(warning).toContain(`TZ=${hostTimeZone}`);
-      expect(warning).toContain("TEST_TIME_ZONE に IANA のタイムゾーン名を渡す");
+      expect(warning).toContain("vp node scripts/time-zones/run-tests.ts");
       expect(warning).not.toContain(`TEST_TIME_ZONE=${hostTimeZone}`);
     },
   );
