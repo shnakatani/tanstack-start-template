@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { THROWN_VALUE_UNPRINTABLE } from "@/lib/thrown-value-message";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectText } from "@/test/assert/screen-assertions";
@@ -43,6 +44,25 @@ describe("RouteErrorContent", () => {
 
     await expectText(screen, "取得の途中で中断されました");
     await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
+  });
+
+  // instanceof の判定が throw する値でも、エラーの画面ごと壊れずに固定の文言を出す
+  it("instanceof の判定が throw する値でも、画面を保って固定の文言を出す", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = new Proxy(
+      {},
+      {
+        getPrototypeOf() {
+          throw new Error("参照できない");
+        },
+      },
+    );
+
+    const { screen } = await renderError(error, vi.fn());
+
+    await expectText(screen, THROWN_VALUE_UNPRINTABLE);
+    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
+    warnSpy.mockRestore();
   });
 
   // error.message は server function の throw 文言 (id や検証失敗の項目パスを含む) をそのまま
