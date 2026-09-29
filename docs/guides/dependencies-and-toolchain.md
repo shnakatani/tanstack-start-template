@@ -47,7 +47,7 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 2. attestation の `subject` が対象の package と version に一致し、`workflow.repository` が公式のリポジトリで、`workflow.ref` が既定のブランチかリリースタグであることまで見る
 3. `pnpm-workspace.yaml` の `minimumReleaseAgeExclude` へ、バージョンまで固定して (`@scope/pkg@x.y.z`) 追記する
 
-追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残るので、Vite+ 一族の恒久除外は刈られない。
+追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残る。`vite-plus` のような名前だけの行は、lockfile が解決しなくなれば消える。
 
 ### peer の食い違いを数える
 
@@ -82,12 +82,35 @@ pnpm peers check
 - 依存の中の import (ある依存が別の依存のバレルを読む経路) は lint が届かない。テストを遅くしているかは、その依存を描くテストを同じ手順で測る
 - `RESTRICTED_BARREL_IMPORTS` はトップレベルとテスト専用コードの import 禁止の override の両方へ渡っている。片方だけに書き足さない (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 
-### catalog にエントリを足す
+### Vite+ を上げる
 
-`vite-plus` と core (`vite` の alias 先) のように同一リリースで exact pin される対は、Dependabot のグループへ束ねてある (ADR-0005 の決定 5)。
+Dependabot は `vite-plus`・core (`vite` の alias 先)・`vitest`・`@vitest/*` を `vite-plus` グループの 1 本の PR にまとめる (ADR-0005)。このグループの PR が来たら、どれもそのブランチで次を打つ。
 
-- `pnpm-workspace.yaml` の `catalog:` へエントリを足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` にも足す。逆は成り立たない (`patterns` は catalog に現れない推移依存もグロブで拾う)
-- グループは `minor-and-patch` より前に置く。Dependabot は先に一致したグループを採るので、後ろに置くと major の更新だけが別の PR に落ちる
+```bash
+gh pr checkout <PR 番号>
+vp install
+vp exec vp migrate --no-interactive
+git fetch origin main
+git diff --quiet origin/main -- pnpm-workspace.yaml && echo "pnpm-workspace.yaml は main と同じ"
+```
+
+「pnpm-workspace.yaml は main と同じ」と出たら、PR が上げた版は同梱の版へ戻っている。以降を打たず `gh pr close <PR 番号>` で閉じる。出なければ続ける。
+
+```bash
+pnpm peers check
+mise run verify
+git add -A
+git commit -m "vp migrate で core と vitest を vite-plus の同梱の版へ揃える"
+git push
+```
+
+- `vp migrate` は、打った CLI が同梱する版へ core と `vitest` を揃える ([Vite+ docs「Update Vite+」][])。直接の依存にある `@vitest/*` も `vitest` の版へ揃える ([Vite+ docs「Migration Rules」][])。先に `vp install` で PR の版の `vite-plus` を `node_modules` へ入れ、`vp exec` でその CLI を打つ
+- `vp migrate` は変えたファイルを `vp fmt` で整える。migrate の前から変更のあったファイルは整えない ([Vite+ docs「Migration Rules」][])。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
+- `pnpm peers check` の食い違いと、`storybook>vite-plus` の許可が頼る `vite-plus/versions` の export は「peer の食い違いを数える」で確かめる
+- push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
+- `vitest` や `@vitest/*` だけを上げた PR では、`vp migrate` が同梱の版へ戻す。判定は `pnpm-workspace.yaml` で行い、lockfile の差分は見ない。lockfile には無関係な揺れが残る (2026-09-29、vitest を 5.0.2 に上げた状態から 5.0.1 へ戻ることを確認)。PR が作られたあとに main で `pnpm-workspace.yaml` が変わっていたら、判定の前に `git merge origin/main` を打つ
+- `minor-and-patch` は `exclude-patterns` で `vite-plus` と `react-compiler` のグループの依存を除く。patterns を持たないグループは、他のグループに入った依存も抱え込む (2026-09-29 時点、[dependabot-core の issue 14576][])。2026-09-28 には `vitest` が両方のグループの PR に載った
+- `pnpm-workspace.yaml` の catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と、`minor-and-patch` の `exclude-patterns` にも足す。`ignore` には入れない (ADR-0005)
 
 ### pin を足す
 
@@ -120,7 +143,7 @@ tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (l
 ### `typescript` を直接の依存に置かない理由
 
 `vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsgolint と TypeScript Go のツールチェーンである ([Vite+ docs「Check」][])。
-`typescript` パッケージは Vite+ 一族の推移依存として入るので、直接の依存から外しても install からは消えない。2026-09-02 に `devDependencies` から外した状態で `vp check` を走らせると、型エラー (`TS2322`) を報告した。
+`typescript` パッケージは `@voidzero-dev/vite-plus-core` と `oxlint` の推移依存として入るので、直接の依存から外しても install からは消えない。2026-09-02 に `devDependencies` から外した状態で `vp check` を走らせると、型エラー (`TS2322`) を報告した。
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
 型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsgolint が黙って動かない場合は捕まえられない。
@@ -132,3 +155,7 @@ tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (l
 [vitest の issue 9157]: https://github.com/vitest-dev/vitest/issues/9157
 [pnpm の PR 14114]: https://github.com/pnpm/pnpm/pull/14114
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
+[Vite+ docs「Update Vite+」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/upgrade-project.md
+[dependabot-core の issue 14576]: https://github.com/dependabot/dependabot-core/issues/14576
+[Vite+ docs「Migration Rules」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/migrate-rules.md
+[GitHub Docs「Managing pull requests for dependency updates」]: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/managing-pull-requests-for-dependency-updates
