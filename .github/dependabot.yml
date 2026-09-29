@@ -22,10 +22,10 @@ updates:
       # runtime を上げるときに一緒に上げる (minor / patch は通常どおり更新する)
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
-      # Vite+ が版を決める一族は bot に上げさせず、vite-plus の PR で vp migrate を打って揃える
+      # core (vite の alias 先)・vitest・@vitest/* は版を vite-plus が決めるので bot に上げさせず、vite-plus の PR で vp migrate を打って揃える
       # (ADR-0005 の決定 5、手順は docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)。
-      # ignore は security updates の PR も止めるので、一族の脆弱性は alerts で知る。
-      # 撤去条件: bot が一族を vite-plus の同梱の版で揃えて上げられるようになったとき (voidzero-dev/vite-plus#2356)
+      # ignore は security updates の PR も止めるので、これらの脆弱性は alerts で知る。
+      # 撤去条件: bot がこれらを vite-plus の同梱の版に揃えて上げられるようになったとき (voidzero-dev/vite-plus#2356)
       - dependency-name: "vite"
       - dependency-name: "@voidzero-dev/*"
       - dependency-name: "vitest"

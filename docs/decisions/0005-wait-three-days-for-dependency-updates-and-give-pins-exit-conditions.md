@@ -51,7 +51,7 @@ Dependabot security updates は cooldown の対象外で、手元では `vp pm a
 **追記は必ずバージョンまで固定する** (`@scope/pkg@x.y.z`)。
 パッケージ名だけを書くと、そのパッケージの全バージョンが恒久的に待機の対象外になる。バージョンを固定しておけば次のリリースで待機が自動的に復活し、エントリの消し忘れが穴として残らない。
 
-### 4. Vite+ 一族の恒久除外は上流の出力を受け入れる
+### 4. Vite+ が書く恒久除外は上流の出力を受け入れる
 
 `vp migrate` は `minimumReleaseAge` を持つリポジトリに対し、Vite+ が版を管理するパッケージ群を `minimumReleaseAgeExclude` へ書き込む。抑止する手段はない。
 
@@ -59,25 +59,25 @@ Dependabot security updates は cooldown の対象外で、手元では `vp pm a
 
 受け入れるのは、逆らうと `vp install` が壊れるからである。Vite+ は自身が抱えるパッケージを exact pin し、公開直後の版を指すことがある。
 
-失うものを明記する。この一族は名前とグロブで書かれるため、前節の「バージョンまで固定する」を満たさない。待機は将来のバージョンにも復活せず、`vp install` が新版を公開直後に取り込みうる。残る防御は alerts と security updates で、これは待機とは独立に働く。
+失うものを明記する。この除外は名前とグロブで書かれるため、前節の「バージョンまで固定する」を満たさない。待機は将来のバージョンにも復活せず、`vp install` が新版を公開直後に取り込みうる。残る防御は alerts と security updates で、これは待機とは独立に働く。
 
 bot 側の待機は外さない。`cooldown: default-days: 3` は全パッケージに掛け続ける。version updates は新版の通知経路であって、`vp install` の成否とは無関係だからである。
 
 `vp install` が待機で止まったら、こちらで一覧へ足すのではなく上流へ報告する。
 
-### 5. Vite+ が版を決める一族は vp migrate で上げ、bot には vite-plus だけを通知させる
+### 5. vite-plus が版を決める依存は vp migrate で上げ、bot には vite-plus だけを通知させる
 
 core (`vite` の alias 先)・`vitest`・`@vitest/*` の版は、`vite-plus` のリリースが同梱する版で決まる。
 Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃える手順を推奨する (Vite+ docs「Update Vite+」)。
 
-bot からは一族が無関係な別パッケージに見えるので、グループへ束ねても揃わない。
+bot からはこれらと `vite-plus` が無関係な別パッケージに見えるので、グループへ束ねても揃わない。
 
 - `vitest` が `vite-plus` と別の日に出ると、`vitest` を同梱の版より先へ上げる PR ができる (vite-plus の issue 2356)。2026-09-09 から 09-28 に 6 本来た
 - `vite-plus` を上げた PR に `vite` の alias 先は含まれなかった (2026-09-16、09-21 の 2 本)
 
-`.github/dependabot.yml` は `vite-plus` だけを単独のグループで PR にし、一族の残りを `ignore` する。`vite-plus` の PR は新しい版の通知として使い、そのブランチで `vp migrate` を打って仕上げる。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
+`.github/dependabot.yml` は `vite-plus` だけを単独のグループで PR にし、core・`vitest`・`@vitest/*` を `ignore` する。`vite-plus` の PR は新しい版の通知として使い、そのブランチで `vp migrate` を打って仕上げる。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
 
-`ignore` は security updates の PR も止める (GitHub Docs「Controlling which dependencies are updated」)。一族の脆弱性は alerts で知り、修正を含む `vite-plus` へ上げて直す (決定 6 のトリガ A)。
+`ignore` は security updates の PR も止める (GitHub Docs「Controlling which dependencies are updated」)。これらの脆弱性は alerts で知り、修正を含む `vite-plus` へ上げて直す (決定 6 のトリガ A)。
 
 ### 6. pin には出口条件を書く
 
@@ -122,8 +122,8 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 | Dependabot PR の auto-merge                                            | マージ判断はローカルの検証が前提のため成立しない                                              | 却下     |
 | 定期的に pin を見直す                                                  | advisory が無い間は確認コストを払うだけで利得が無い                                           | 却下     |
 | pin せず更新のたびに手動レビュー                                       | `patchedDependencies` はバージョン束縛で、exact pin が技術的前提                              | 却下     |
-| Vite+ 一族を 1 つのグループへ束ねる                                    | `vitest` だけが先に出た週は、同梱の版より先へ上げる PR になる。`vite` の alias 先も上がらない | 却下     |
-| Vite+ 一族をすべて `ignore` する                                       | 一族の新版に気付く経路が無くなる                                                              | 却下     |
+| `vite-plus`・core・`vitest`・`@vitest/*` を 1 つのグループへ束ねる     | `vitest` だけが先に出た週は、同梱の版より先へ上げる PR になる。`vite` の alias 先も上がらない | 却下     |
+| `vite-plus` も含めてすべて `ignore` する                               | Vite+ の新版に気付く経路が無くなる                                                            | 却下     |
 | `vite-plus` だけを PR にし、残りは `ignore` して `vp migrate` で揃える | Vite+ docs の推奨手順どおりで、新版の通知も残る                                               | **採用** |
 
 ## Consequences
@@ -133,7 +133,7 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 - Dependabot の version updates PR は weekly スケジュールと 3 日 cooldown の合成で、リリースから最長 1 週間強遅れて届く
 - pin のリスクは「advisory が出てから対応するまでの遅延」に限定される。検知は自動のまま残るので、無検知の放置は起きない
 - Dependabot PR の処理が「依存更新の取り込み」と「pin の出口確認」を兼ねる。手順が 1 段増えるが、独立した定期タスクを管理するより忘れにくい
-- 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき、bot が Vite+ の一族を同梱の版で揃えて上げられるようになったとき (vite-plus の issue 2356)。core の版のずれを検知する vite-plus の PR 2462 (2026-09-29 に draft) は `vitest` のずれを扱わないので、merge されても `vitest` と `@vitest/*` の `ignore` は外せない
+- 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき、bot が core・`vitest`・`@vitest/*` を `vite-plus` の同梱の版に揃えて上げられるようになったとき (vite-plus の issue 2356)。core の版のずれを検知する vite-plus の PR 2462 (2026-09-29 に draft) は `vitest` のずれを扱わないので、merge されても `vitest` と `@vitest/*` の `ignore` は外せない
 - `package.json` の `playwright` は caret で持つ。`*` にして版追随を `@vitest/browser-playwright` へ委任する形は成り立たない。その peer 自身が `playwright: "*"` (`optional: false`) で何も制約しておらず、委任先が存在しない (2026-09-02 実測)。実際に版を決めているのは lockfile と待機ゲートで、そこは caret でも変わらない。caret にすると major が Dependabot の別 PR になり判断が挟まる。exact pin ではないため出口条件は無い
 - `package.json` の `nitro` は nitro 3 の beta 版に exact pin する。TanStack Start の hosting ガイドが使う `nitro/vite` の plugin は nitro 3 にしかなく、nitro 3 は使える stable 版が出ていない (2026-09-27 に `npm view nitro dist-tags` の `latest` は `3.0.260903-beta`。`3.0.0` は公開されているが非推奨)。出口条件は nitro 3 の stable 版が `latest` に載ること。そのとき範囲指定か `catalog:` へ移せるかを見直す
 

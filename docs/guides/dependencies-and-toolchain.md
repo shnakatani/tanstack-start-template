@@ -47,7 +47,7 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 2. attestation の `subject` が対象の package と version に一致し、`workflow.repository` が公式のリポジトリで、`workflow.ref` が既定のブランチかリリースタグであることまで見る
 3. `pnpm-workspace.yaml` の `minimumReleaseAgeExclude` へ、バージョンまで固定して (`@scope/pkg@x.y.z`) 追記する
 
-追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残るので、Vite+ 一族の恒久除外は刈られない。
+追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残るので、vp migrate が書いた恒久除外は刈られない。
 
 ### peer の食い違いを数える
 
@@ -92,7 +92,7 @@ vp install
 vp exec vp migrate --no-interactive
 pnpm peers check
 mise run verify
-git commit -am "vp migrate で Vite+ の一族を同梱の版へ揃える"
+git commit -am "vp migrate で core と vitest を vite-plus の同梱の版へ揃える"
 git push
 ```
 
@@ -133,7 +133,7 @@ tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (l
 ### `typescript` を直接の依存に置かない理由
 
 `vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsgolint と TypeScript Go のツールチェーンである ([Vite+ docs「Check」][])。
-`typescript` パッケージは Vite+ 一族の推移依存として入るので、直接の依存から外しても install からは消えない。2026-09-02 に `devDependencies` から外した状態で `vp check` を走らせると、型エラー (`TS2322`) を報告した。
+`typescript` パッケージは `@voidzero-dev/vite-plus-core` と `oxlint` の推移依存として入るので、直接の依存から外しても install からは消えない。2026-09-02 に `devDependencies` から外した状態で `vp check` を走らせると、型エラー (`TS2322`) を報告した。
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
 型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsgolint が黙って動かない場合は捕まえられない。
