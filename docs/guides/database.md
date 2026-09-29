@@ -11,42 +11,65 @@ SQLite のファイルへ drizzle で接続し、migration を適用する手順
 
 ### 接続先を決める
 
-- 接続先は環境変数 `DB_FILE_NAME` で決まる。値は `.mise.toml` の `[env]` が持つ。アプリは `src/server/db/index.ts` の `createDb()` で開き、未設定なら throw する
-- 相対パスは cwd を基準に解決する。アプリも drizzle-kit も、起動したディレクトリから `DB_FILE_NAME` と `drizzle/` を引く (「パスを cwd 基準にする理由」)
-- `mise run` のタスクか `vp run` の script から起動する。どのディレクトリから打ってもリポジトリのルートで走る (「パスを cwd 基準にする理由」)
-- 本番で `.output/server/index.mjs` を `node` で直接起動するときは、cwd を `DB_FILE_NAME` の基準にしたいディレクトリにする。違う場所で起動すると空の DB ができ、ページは 500 の汎用のエラー画面になる。server のログには出ない (SQLite の段では `no such table`)
-- cwd に依らない場所に置きたいときは、`DB_FILE_NAME` を絶対パスで渡す。コードでルートを探して補わない
+- 接続先は環境変数 `DB_FILE_NAME` で決まる。既定は `.mise.toml` の `[env]` が `config_root` から組む絶対パスで、どのディレクトリから起動しても同じ DB を指す (ADR-0004)
+- アプリは `src/server/db/index.ts` の `createDb()` で開く。`DB_FILE_NAME` が未設定なら throw する
+- `createDb()` は DB のファイルを作らない。無ければ開こうとした絶対パスを示して throw する。作るのは `mise run db:migrate` (「DB のファイルをアプリで作らない理由」)
+- mise の `[env]` が読まれない環境 (本番の起動など) では、`DB_FILE_NAME` を絶対パスで渡す。相対パスは起動した cwd を基準に解決される (「パスを cwd 基準にする理由」)
+- 相対パスをコードでルートを探して補わない。drizzle-kit は cwd 基準のままなので、アプリだけが別の場所を指す
 
 ### スキーマを変える
 
-- `src/server/db/schema.ts` を変えたら、`mise run db:generate` の後に `mise run db:migrate` を打つ。各タスクが何をするかは README のコマンド一覧にある
+- `src/server/db/schema.ts` を変えたら、`mise run db:generate` の後に `mise run db:migrate` を打つ。各タスクのコマンドは `.mise.toml` にある
 - アプリは起動時に migration を適用せず、`migrateDb()` もアプリの経路から呼ばない。デプロイの手順に `mise run db:migrate` を入れる (「migration を起動時に適用しない理由」)
 - `mise run db:migrate` は drizzle-kit (devDependencies)、`drizzle.config.ts`、`drizzle/` を使う。ビルド成果物の `.output/` はどれも持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
-- 起動時に適用する形に変えるなら、`migrateDb()` を起動の経路から呼び、デプロイの手順から `mise run db:migrate` を外す
 - テーブルを足したら、テーブル定義とフロントのスキーマの型を突き合わせる型テストを書く (ADR-0034)
+
+### 起動時に migration を適用する形に変える
+
+drizzle docs の Option 4 に当たる (「migration を起動時に適用しない理由」)。次の 3 つを揃える。
+
+| 変えるもの                                                                                                    | 理由                                                                             |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 起動の経路で `migrateDb()` を呼ぶ                                                                             | 今はテストだけが呼ぶ                                                             |
+| `createDb()` の `fileMustExist` と、無いときの throw を外す                                                   | 初回の起動では DB のファイルがまだ無い。作らないと起動の時点で落ちる             |
+| `drizzle/` をサーバーに置き、`src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` をその絶対パスにする | `.output/` は `drizzle/` を持たない。相対パスのままだと起動した cwd を基準に探す |
 
 ### テストで使う
 
 - テストでは `createDb(":memory:")` で開き、`migrateDb()` で `drizzle/` の migration を当てる。ファイルを作らず、テストの間で状態が残らない
+- `migrateDb()` が読む `MIGRATIONS_FOLDER` は `./drizzle` で、cwd を基準に解決される。`vp test run` はリポジトリのルートで走るので、テストからはこのまま読める
 
 ## explanation
 
+### DB のファイルをアプリで作らない理由
+
+アプリは migration を当てない。アプリが無い DB を作ると、テーブルの無い空の DB を開くことになる。
+
+| 案                                               | 評価                                                                                                                                                              | 採否     |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 無ければ作らずに、開こうとしたパスを示して落とす | 接続した時点で、どの DB が無いかが分かる。作らないことは better-sqlite3 の `fileMustExist` が保証する ([better-sqlite3 docs「API」][] の `new Database()`)        | **採用** |
+| 無ければ作る (better-sqlite3 の既定)             | 最初のクエリが `no such table` で落ちる。ページは 500 の汎用のエラー画面になり、server のログには出ない (2026-09-29 に `.output/server/index.mjs` を起動して実測) | 却下     |
+
+`fileMustExist` の失敗の文言は `unable to open database file` で、開こうとしたパスを含まない (better-sqlite3 13.0.3、2026-09-29 に実測)。そのため `createDb()` は開く前にファイルの有無を確かめ、絶対パスと作り方を示す。
+
 ### パスを cwd 基準にする理由
 
-drizzle まわりはどれも相対パスを cwd 基準で扱う。
+drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に確認)。
 
 | 対象                    | 相対パスの扱い                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | drizzle の docs         | migration のフォルダを相対パスのまま渡す (`migrate(db, { migrationsFolder: "./migrations" })`、[drizzle docs「Node.js + Railway」][]) |
-| drizzle-orm の migrator | 受け取ったパスを解決せずに `fs` へ渡す (0.45.2)                                                                                       |
+| drizzle-orm の migrator | 受け取ったパスを解決せずに `fs` へ渡す (0.45.2 の `migrator.js`)                                                                      |
 | drizzle-kit             | `drizzle.config.ts` を cwd から探し、`out` と `dbCredentials.url` を cwd 基準で使う (0.31.10)                                         |
 
 | 案                                                   | 評価                                                                                                                                                                                 | 採否     |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| 相対パスを cwd 基準で解決する                        | drizzle と drizzle-kit と同じ基準になる。入口はどれもルートで走る                                                                                                                    | **採用** |
+| 相対パスを cwd 基準で解決する                        | drizzle と drizzle-kit と同じ基準になる。相対パスが残る入口はどれもルートで走る                                                                                                      | **採用** |
 | cwd から上へ `package.json` を探し、そこを基準にする | アプリだけが別の基準になり、サブディレクトリから起動すると drizzle-kit とずれる。ビルド成果物の `.output/server/` にも `package.json` があり、その中で起動するとそこをルートとみなす | 却下     |
 
-入口がルートで走ることの根拠は次のとおり。
+`DB_FILE_NAME` の既定は相対パスにせず、`.mise.toml` で `config_root` から組む。[mise docs「Templates」][] は "`config_root` stays at the project root when you run mise from a subdirectory" と書き、プロジェクトからの相対パスにはこちらを使うよう勧める。worktree はそれぞれ `.mise.toml` を持つので、worktree ごとに別の DB になる。
+
+相対パスが残るのは `MIGRATIONS_FOLDER` と drizzle-kit の設定の探索である。これらを使う入口がルートで走ることの根拠は次のとおり。
 
 | 入口                            | 根拠                                                                                                                                                                                                                                                 |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -58,7 +81,7 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う。
 
 ### migration を起動時に適用しない理由
 
-[drizzle docs「Migrations」][] は migration の扱いを 6 つの選択肢に分ける。このテンプレートは Option 3 (`drizzle-kit generate` で SQL を作り、`drizzle-kit migrate` で適用する) を採る。
+[drizzle docs「Migrations」][] は migration の扱いを 6 つの選択肢に分ける (2026-09-29 に確認)。このテンプレートは Option 3 (`drizzle-kit generate` で SQL を作り、`drizzle-kit migrate` で適用する) を採る。
 
 | 案                                                | 評価                                                                                                      | 採否     |
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------- |
@@ -71,6 +94,8 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う。
 
 [drizzle docs「Migrations」]: https://orm.drizzle.team/docs/migrations
 [drizzle docs「Node.js + Railway」]: https://orm.drizzle.team/docs/tutorials/node-railway-pg
+[better-sqlite3 docs「API」]: https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
+[mise docs「Templates」]: https://mise.jdx.dev/templates.html
 [mise docs「Task Configuration」]: https://mise.jdx.dev/tasks/task-configuration.html
 [Vite+ docs「Vitest v5」]: https://viteplus.dev/guide/vitest-v5
 [TanStack Start docs「Hosting」]: https://tanstack.com/start/latest/docs/framework/react/guide/hosting

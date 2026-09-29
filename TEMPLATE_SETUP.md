@@ -32,11 +32,11 @@ grep に出ない `src/lib/app-name.ts` の `APP_NAME` も替える。
 
 ## 置き換える箇所
 
-| 対象     | 場所                                                                       |
-| -------- | -------------------------------------------------------------------------- |
-| DB       | `src/server/db/`、`drizzle.config.ts`                                      |
-| 認証     | `src/start.ts` の `createStart`、保護する route の `beforeLoad` (ADR-0012) |
-| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                  |
+| 対象     | 場所                                                                                                                          |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| DB       | `src/server/db/`、`drizzle.config.ts`、`.mise.toml` の `DB_FILE_NAME`、`docs/guides/database.md`、`.claude/rules/database.md` |
+| 認証     | `src/start.ts` の `createStart`、保護する route の `beforeLoad` (ADR-0012)                                                    |
+| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                                                                     |
 
 サンプル機能 (`/notes`) は `src/features/notes/` と `src/routes/notes/` にある。
 
