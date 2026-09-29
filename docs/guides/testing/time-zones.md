@@ -139,7 +139,7 @@ IANA の名前として効かない値を `TZ` に入れても、Node はエラ�
 | `asia/tokyo` | 無し          | 21                                |
 | `JST-9`      | 無し          | 21                                |
 
-2026-09-29 に Node 24.21.0 (macOS) で実測した。どれも `Intl` の既定が決まらないので、`src/test/test-time-zone.tz.test.ts` の `Intl` の既定を比べるテストが落ちる。`vitest.global-setup.ts` では名前を検査しない。`TEST_TIME_ZONE` を読むのは TZ ごとの実行の unit project だけで、そこでこのテストが走る。
+2026-09-29 に Node 24.21.0 (macOS) で実測した。どれも `Intl` の既定が決まらないので、`src/test/test-time-zone.tz.test.ts` の `Intl` の既定を比べるテストが落ちる。`vitest.global-setup.ts` では名前を検査しない。`TEST_TIME_ZONE` を渡すのは TZ ごとの実行のスクリプトだけで、スクリプトは unit project の `*.tz.test.ts` を走らせるので、そこでこのテストが走る。
 
 ### テストの中の切り替えが効く範囲
 

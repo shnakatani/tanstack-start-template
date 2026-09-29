@@ -5,7 +5,7 @@ const BASE_TIME_ZONE = "America/New_York";
  *
  * 既定は基準の TZ。`TEST_TIME_ZONE` があればそちらにする。`scripts/time-zones/run-tests.ts` が
  * TZ を変えて `*.tz.test.ts` を走らせるときに使う。ホストの `TZ` は使わない。基準の値の選び方は
- * `docs/guides/testing/time-zones.md` にある。
+ * `docs/guides/testing/time-zones.md`「基準を `America/New_York` にする理由」にある。
  */
 export function resolveTestTimeZone(env: { TZ?: string; TEST_TIME_ZONE?: string }): {
   timeZone: string;
