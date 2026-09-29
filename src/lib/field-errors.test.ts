@@ -44,6 +44,13 @@ describe("normalizeFieldErrors", () => {
     });
   });
 
+  it("描ける文言と描けない値が混ざっていたら、描けない値だけを返す", () => {
+    expect(normalizeFieldErrors(["必須です", 42])).toEqual({
+      errors: [{ message: "必須です" }, fallback],
+      unrenderable: [42],
+    });
+  });
+
   // 平らにするのは 1 段だけ (TanStack Form の flat(1) と同じ深さ)
   it("2 段以上入れ子の配列は代替文言へ丸める", () => {
     expect(normalizeFieldErrors([[[{ message: "必須です" }]]])).toEqual({
