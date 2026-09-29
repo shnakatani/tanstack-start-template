@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-09-20
+- Date: 2026-09-29
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -68,11 +68,11 @@ package manager の版は `packageManager` が決める。`vp env pin` が書き
 | 宣言                 | 決めるもの                      | 形                       |
 | -------------------- | ------------------------------- | ------------------------ |
 | `devEngines.runtime` | 開発時に使う Node.js            | major まで (`24`)        |
-| `engines.node`       | 利用者に要求する Node.js の範囲 | `^24.11.0 \|\| >=26.0.0` |
+| `engines.node`       | 利用者に要求する Node.js の範囲 | `^24.19.0 \|\| >=26.0.0` |
 | `packageManager`     | pnpm の版                       | exact                    |
 
 Node.js を major までにするのは、minor 差が解決結果を変えないためである。
-`engines.node` は、`devEngines.runtime` の major (24) のうち Vite+ の CLI が動く範囲と、26 以降に絞る。範囲は `vite-plus` の `engines` から取る (vite-plus 1.0.0 で `^22.18.0 || ^24.11.0 || >=26.0.0`、2026-09-28 に確認)。広く書くと、Vite+ が動かない版 (24.10 以前と 25) を利用者に許すことになる。
+`engines.node` は、`devEngines.runtime` の major (24) のうち Vite+ の CLI が動き、`@types/node` が型を持つ API がある範囲と、26 以降に絞る。下限は、`vite-plus` の `engines` の下限 (vite-plus 1.0.0 で `^22.18.0 || ^24.11.0 || >=26.0.0`、2026-09-28 に確認) と `@types/node` の minor の高いほうにする。Vite+ の下限より広く書くと、Vite+ が動かない版 (24.10 以前と 25) を利用者に許す。`@types/node` の minor より下に書くと、型検査を通ったコードが下限の Node に無い API を呼ぶ。
 pnpm を exact にするのは、minor で解決挙動そのものが変わり、`minimumReleaseAge` や `peerDependencyRules` の扱いが動くと lockfile が手元ごとに割れるためである (ADR-0005)。
 
 `devEngines.runtime.onFail` は `error` にする。pnpm も同じフィールドを読み、`download` だと宣言した runtime を自前で解決して lockfile へ記録するためで、runtime は Vite+ が同じ宣言から解決して持っているので 2 つ目の実体は要らない。`vp env pin` の後に戻す手順と実測は `docs/guides/dependencies-and-toolchain.md`「Node.js の版を打ち直す」にある。
