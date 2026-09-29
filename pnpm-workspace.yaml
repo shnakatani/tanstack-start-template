@@ -104,8 +104,10 @@ packageExtensions:
 # Vitest 5 ではこの import が throw し、addon が catch して何も言わずに return するので、全 story が
 # Vitest 既定の 414x896 で走り、parameters / globals の viewport も効かない。patch は import 先を上流の
 # next と同じ `vitest/browser` へ替える (storybookjs/storybook#36164)。
-# キーを版まで固定する。addon を上げると patch が当たらず install が落ち (allowUnusedPatches の既定は false)、
-# 出口条件を確かめる契機になる (ADR-0005)。
+# キーを範囲にして、addon の 10.x の後続版にも当て続ける。版まで固定すると、Dependabot の更新で patch が
+# 当たらず addon だけが PR から外れ、storybook 一族の版が割れる。10.6.1 の準備ブランチでも import は
+# `@vitest/browser/context` のまま (2026-09-29 確認)。上流が import を直すと patch が当たらず install が
+# 落ちる (pnpm 11 は patch の失敗を常にエラーにする)。それが撤去条件を確かめる契機になる (ADR-0005)。
 # 撤去条件: addon-vitest の安定版が peer に vitest 5 を含み、viewport の import を vitest/browser にしたとき
 patchedDependencies:
-  "@storybook/addon-vitest@10.6.0": patches/@storybook__addon-vitest@10.6.0.patch
+  "@storybook/addon-vitest@^10.6.0": patches/@storybook__addon-vitest@10.6.0.patch
