@@ -1,8 +1,18 @@
-import { describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { THROWN_VALUE_UNPRINTABLE, thrownValueMessage } from "./thrown-value-message";
 
 describe("thrownValueMessage", () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
+  });
+
   it("Error はその message を返す", () => {
     expect(thrownValueMessage(new Error("取得に失敗しました"))).toBe("取得に失敗しました");
   });
@@ -15,11 +25,9 @@ describe("thrownValueMessage", () => {
   });
 
   it("文字列にできない値は固定の文言を返し、元の値を warn に残す", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const value: unknown = Object.create(null);
 
     expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
-    expect(warn).toHaveBeenCalledWith("[thrownValueMessage] 文字列にできない値", { value });
-    warn.mockRestore();
+    expect(warnSpy).toHaveBeenCalledWith("[thrownValueMessage] 文字列にできない値", { value });
   });
 });

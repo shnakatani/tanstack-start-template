@@ -7,7 +7,7 @@ export const THROWN_VALUE_UNPRINTABLE = "表示できない値が投げられま
  * (TanStack Router の data-loading ガイドの例と同じ形)。
  *
  * `String()` が throw する値も固定の文言で返す。エラー表示の部品がここで落ちると、
- * エラーの画面ごと壊れる (Router の組み込みの ErrorComponent も同じ場合に表示を保つ)。
+ * エラーの画面ごと壊れる。
  */
 export function thrownValueMessage(value: unknown): string {
   if (value instanceof Error) {

@@ -37,8 +37,7 @@ describe("RouteErrorContent", () => {
     await expect.element(screen.getByText("取得に失敗しました")).toBeInTheDocument();
   });
 
-  // route は Error 以外も throw できる。Router はエラー境界の error を unknown で渡すので、
-  // Error でない値は文字列にして出す (TanStack Router の data-loading ガイドの例と同じ形)
+  // route は Error 以外も throw でき、Router はエラー境界の error を unknown で渡す
   it("Error でない値が投げられたら、その値を文字列にして出し、スタックトレースは出さない", async () => {
     const { screen } = await renderError("取得の途中で中断されました", vi.fn());
 
