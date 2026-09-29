@@ -62,6 +62,7 @@ paths:
 | `src/test/app/`            | アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場        |
 
 - `src/test/` の helper は上の表のディレクトリに置き、直下に置かない。直下に並べると prefix だけが分類になり、新しい helper の置き先を名前から決められない (`docs/guides/placement.md`「`src/test/` の helper を何を作るかで分ける理由」)
+- helper を持たず、全 project に効く実行環境が効いていることだけを確かめるテストは、`src/test/` の直下に置く (`test-time-zone.tz.test.ts`)。表の役割は helper が何を作るかで分けていて、テストだけのディレクトリは作らない
 - 付随ファイルの種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
 - helper や `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0008)
 - story (`*.stories.*`) も `no-restricted-imports` の対象から外す。出荷される bundle に入らない
