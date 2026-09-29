@@ -79,7 +79,7 @@ Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃
 
 `vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告する (2026-09-29、pnpm 11.28.0 で実測)。Dependabot の docs は peer の扱いを書いていない (2026-09-29 時点) ので、ignore した peer と食い違う `vite-plus` の版に PR が作られるかを実測した。`vite-plus` 0.2.9・`@vitest/browser-playwright` 4.1.10 の構成に上のグループを置き、`ignore` を `update-types` の 3 つを並べる形と `dependency-name` だけの形で 1 回ずつ試した。どちらも Dependabot の `pnpm --filter . peers check` は exit 1 だったが、`vite-plus` を 0.3.3 へ上げる PR が作られた (2026-09-29、pnpm 11.28.0、実験用の private リポジトリで観測)。この食い違いは exact な peer の patch の差 (4.1.10 と 4.1.11) で、major の差では確かめていない。
 
-`dependency-name` だけの `ignore` は security updates の PR も止める (GitHub Docs「Controlling which dependencies are updated」)。`vitest` の脆弱性は alert で知り、下の「pin には出口条件を書く」のトリガ A で扱う。
+`vitest` の脆弱性は security updates の PR ではなく alert で知り、下の「pin には出口条件を書く」のトリガ A で扱う。
 
 core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert は、`vite-plus` の名前で届いたものだけが頼りになる。依存グラフは core を `@voidzero-dev/vite-plus-core` として記録し、`vite` の名前を持たないので、`vite` 宛ての advisory は照合先が無い。core が同梱する 3 つの版も記録されない。rolldown は別の依存から入った版だけが載る (2026-09-29 に依存グラフの SBOM で確認)。VoidZero は `vite` の advisory に `vite-plus` を足すことがあるが (GHSA-fx2h-pf6j-xcff)、足していない advisory もある (GHSA-v2wj-q39q-566r)。
 
@@ -95,7 +95,7 @@ core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert �
 | A      | pin 対象への Dependabot alert | 修正版への追随か pin 撤去の前倒しをその場で判断する             |
 | B      | Dependabot PR の処理時        | pin の出口条件 (上流 issue の状態) を確認し、成立していたら外す |
 
-トリガ A が成立するのは、**alerts は `ignore` と独立に発火する**ためである。`dependency-name` だけで書いた `ignore` は version updates と security updates の PR をどちらも止める (GitHub Docs「Controlling which dependencies are updated」)。pin 中の修正は alert を見て手で当てる。pin 中でも「既知脆弱性が出たことを知る」経路は生きている。
+トリガ A が成立するのは、**alerts は `ignore` と独立に発火する**ためである。`dependency-name` だけで書いた `ignore` は version updates と security updates の PR をどちらも止める (GitHub Docs「Controlling which dependencies are updated」)。`update-types` を付けた `ignore` が security updates に効くかは docs に記述が無い (2026-09-29 時点)。pin 中の修正は alert を見て手で当てる。pin 中でも「既知脆弱性が出たことを知る」経路は生きている。
 
 独立した定期チェックは設けない。忘れられる運用を作らない。
 
@@ -138,7 +138,7 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 - Dependabot の version updates PR は weekly スケジュールと 3 日 cooldown の合成で、リリースから最長 1 週間強遅れて届く
 - pin のリスクは「advisory が出てから対応するまでの遅延」に限定される。検知は自動のまま残るので、無検知の放置は起きない
 - Dependabot PR の処理が「依存更新の取り込み」と「pin の出口確認」を兼ねる。手順が 1 段増えるが、独立した定期タスクを管理するより忘れにくい
-- 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき、Vite+ が bot 向けの設定例を docs に載せたとき (vite-plus の PR 2463)、core の版のずれを検知して `vp` を止めるようになったとき (vite-plus の PR 2462)。`vitest` 系の `ignore` は、`vite-plus` の新しい版が npm の latest に載って cooldown を過ぎても `vite-plus` の PR が来ないときにも見直す。Dependabot の PR を処理するとき (トリガ B) に、`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」の手順で確かめる
+- 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき、Vite+ が bot 向けの設定例を docs に載せたとき (vite-plus の PR 2463)、core の版のずれを検知して `vp` を止めるようになったとき (vite-plus の PR 2462)。`vitest` 系の `ignore` は、`vite-plus` の新しい版が npm の latest に載り、cooldown を過ぎたあとの Dependabot の実行でも `vite-plus` の PR ができないときにも見直す。Dependabot の PR を処理するとき (トリガ B) に、`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」の手順で確かめる
 - `package.json` の `playwright` は caret で持つ。`*` にして版追随を `@vitest/browser-playwright` へ委任する形は成り立たない。その peer 自身が `playwright: "*"` (`optional: false`) で何も制約しておらず、委任先が存在しない (2026-09-02 実測)。実際に版を決めているのは lockfile と待機ゲートで、そこは caret でも変わらない。caret にすると major が Dependabot の別 PR になり判断が挟まる。exact pin ではないため出口条件は無い
 - `package.json` の `nitro` は nitro 3 の beta 版に exact pin する。TanStack Start の hosting ガイドが使う `nitro/vite` の plugin は nitro 3 にしかなく、nitro 3 は使える stable 版が出ていない (2026-09-27 に `npm view nitro dist-tags` の `latest` は `3.0.260903-beta`。`3.0.0` は公開されているが非推奨)。出口条件は nitro 3 の stable 版が `latest` に載ること。そのとき範囲指定か `catalog:` へ移せるかを見直す
 

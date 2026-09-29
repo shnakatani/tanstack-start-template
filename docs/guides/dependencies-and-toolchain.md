@@ -101,7 +101,7 @@ git push
 - `vp migrate` は変えたファイルを `vp fmt` で整える。migrate の前から変更のあったファイルは整えない ([Vite+ docs「Migration Rules」][])。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
 - `pnpm peers check` の食い違いと、`storybook>vite-plus` の許可が頼る `vite-plus/versions` の export は「peer の食い違いを数える」で確かめる
 - push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
-- Dependabot の PR を処理するときは、`npm view vite-plus version` と `pnpm-workspace.yaml` の catalog の `vite-plus` を比べる。latest が 3 日 (cooldown) を過ぎても `vite-plus` の PR が来ていなければ、Dependabot のジョブログで `vite-plus` の判定 (「No update needed」か「Creating a pull request」か) を見る (ADR-0005)
+- Dependabot の PR を処理するときは、`vite-plus` の PR が止まっていないかを確かめる (ADR-0005)。`npm view vite-plus time --json` で latest の公開日時を見て、cooldown (`.github/dependabot.yml`) を過ぎたあとの Dependabot の実行 (`gh run list --workflow 'Dependabot Updates'`) で `vite-plus` の PR ができていなければ、その実行のログで判定を見る。`gh run view <run の ID> --log | grep -E "Updating vite-plus from|No update needed for vite-plus"`
 - `minor-and-patch` は `exclude-patterns` で `vite-plus` と `react-compiler` のグループの依存を除く。patterns を持たないグループは、他のグループに入った依存も抱え込む (2026-09-29 時点、[dependabot-core の issue 14576][])。2026-09-28 には `vitest` が両方のグループの PR に載った
 - `pnpm-workspace.yaml` の catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と、`minor-and-patch` の `exclude-patterns` にも足す。`vitest` のように `vite-plus` と別の日に公開される依存なら、`ignore` にも `dependency-name` だけで足す (ADR-0005)。撤去条件の書き方は「pin を足す」
 
