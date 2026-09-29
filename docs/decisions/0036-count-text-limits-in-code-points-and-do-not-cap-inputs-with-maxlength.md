@@ -8,16 +8,16 @@
 
 入力の文字数に上限を設けるとき、何を 1 文字と数えるかが単位によって違う。日本語の UI では、サロゲートペアの漢字 (𠮷) と単体の絵文字 (😀) の数え方が「N 文字以内」の文言と利用者の感覚に直に効く。
 
-| 前提                       | 中身                                                                                                                                                                                                           |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 上限の判定はスキーマが持つ | server function の validator とフォームのフィールド検証が同じスキーマを使う (ADR-0013)                                                                                                                         |
-| DB は SQLite               | `length()` と `substr` は code point で数える (sqlite.org の lang_corefunc)                                                                                                                                    |
-| HTML の `maxlength`        | Infra の length (「the number of code units」) で数える。超えないように止めるかはブラウザの任意 (「User agents may prevent」)                                                                                  |
-| valibot の長さの action    | `maxLength` は `.length` と同じ UTF-16 の code unit、`maxCodePoints` は code point、`maxGraphemes` は `Intl.Segmenter` の grapheme で数える。切り詰めの action は無い (1.5.0、2026-09-29 に同梱の型定義で確認) |
+| 前提                       | 中身                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 上限の判定はスキーマが持つ | server function の validator とフォームのフィールド検証が同じスキーマを使う (ADR-0013)                                                                                                                                                                                                                                                                                                                               |
+| DB は SQLite               | `length()` と `substr` は code point で数える (sqlite.org の lang_corefunc)                                                                                                                                                                                                                                                                                                                                          |
+| HTML の `maxlength`        | Infra の length (「the number of code units」) で数える。超えないように止めるかはブラウザの任意 (「User agents may prevent」)                                                                                                                                                                                                                                                                                        |
+| valibot の長さの action    | `maxLength` は `.length` と同じ UTF-16 の code unit、`maxCodePoints` は code point、`maxGraphemes` は `Intl.Segmenter` の grapheme で数える。切り詰めの action は無く、Zod 4.6.5・Effect 3.22.2 の Schema・ArkType 2.2.5・TypeBox 1.3.34 の string の API にも無い。組み込みで持つ Joi 18.2.9 の `string.truncate()` は code unit で切る (valibot は 1.5.0。2026-09-29 に各 docs と同梱の型定義、Joi のソースで確認) |
 
 ## Decision
 
-**文字数の上限は code point で数える。スキーマは `v.maxCodePoints` で判定し、切り詰めるときも判定は `v.maxCodePoints` に任せ、超えたときだけ code point の境界で切る (`src/lib/truncate-code-points.ts`)。入力欄には `maxlength` を付けず、上限を超えた入力はスキーマが文言を出すか切り詰める。**
+**文字数の上限は code point で数える。スキーマは `v.maxCodePoints` で判定し、切り詰めるときも code point の境界で切る (`src/lib/truncate-code-points.ts`)。入力欄には `maxlength` を付けず、上限を超えた入力はスキーマが文言を出すか切り詰める。**
 
 ### 数える単位
 
@@ -76,3 +76,8 @@
 - デジタル庁デザインシステム input-text のアクセシビリティ (maxlength を使わない): <https://design.digital.go.jp/dads/components/input-text/accessibility/>
 - GOV.UK Design System の Character count: <https://design-system.service.gov.uk/components/character-count/>
 - govuk-frontend の Character count のソース (`removeAttribute('maxlength')` と `text.length`) と issue 1104: <https://github.com/alphagov/govuk-frontend/blob/main/packages/govuk-frontend/src/govuk/components/character-count/character-count.mjs> / <https://github.com/alphagov/govuk-frontend/issues/1104>
+- Joi の `string.truncate()` (API docs と、`value.slice(0, limit)` で切る実装): <https://github.com/hapijs/joi/blob/master/API.md#stringtruncateenabled> / <https://github.com/hapijs/joi/blob/master/lib/types/string.js>
+- Zod の string の API: <https://zod.dev/api#strings>
+- Effect Schema の string のフィルタ: <https://effect.website/docs/schema/filters/#string-filters>
+- ArkType の string: <https://arktype.io/docs/primitives#string>
+- TypeBox の String: <https://github.com/sinclairzx81/typebox#types>
