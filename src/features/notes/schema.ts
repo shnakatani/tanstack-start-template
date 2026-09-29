@@ -141,8 +141,8 @@ export const NOTE_QUERY_MAX_LENGTH = 100;
  * `q` の既定は空文字 = 絞り込みなし。URL 上では `stripSearchParams` が既定値を落とす。
  *
  * 上限は reject せず切り詰める。search param は malformed でも体験を止めない (Router の search-params
- * ガイド)。入力欄の maxLength と同じ規則で、IME の変換中など maxLength が効かない経路 (facebook/react#8683、
- * Chromium 40520211) でも同じ値に収束する。文字列以外 (`?q=123` は Router の JSON パースで number) は
+ * ガイド)。入力欄は maxLength で打ち止めにしないので、打ち込んだ値も URL の値もこの切り詰めで同じ値に
+ * 収束する (ADR-0019、ADR-0036)。文字列以外 (`?q=123` は Router の JSON パースで number) は
  * 弾き、既定の英語文言を UI に出さない。
  */
 export const noteListFilterSchema = v.object({
