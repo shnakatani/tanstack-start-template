@@ -26,6 +26,8 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 - 型付きの context を得る目的で個々の `createServerFn` へ `.middleware()` を足さない。global の値は `.middleware()` なしでも型付きで読め、global の方が先に走る (ADR-0012)
 - 認可の base builder は、ロールによる出し分けが要るようになった時点で足す。先に置くと守る対象の無い装置になる (ADR-0012)
 - server function の例外を、個々の fn の中で catch して console へ書かない。global の `logServerFnErrors` (`src/start.ts`) が残して投げ直すので、二重に残る (`docs/guides/server-functions.md`「例外を server のログに残す」)
+- server function の中から別の server function を呼ばず、`handlers.server.ts` の関数を直接呼ぶ。入れ子にすると global の middleware が 2 回走り、同じ例外が 2 回残る (`docs/guides/server-functions.md`「例外を server のログに残す」)
+- 例外の文言にパスや内部の値を入れない。文言は本番でも client に返る。調べるための値は `console.error` で server のログに残す (`docs/guides/server-functions.md`「例外を global の function middleware で残す理由」)
 
 ## ファイルの置き場所と名前
 

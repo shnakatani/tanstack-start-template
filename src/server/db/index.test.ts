@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import Database from "better-sqlite3";
 import * as v from "valibot";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { notes } from "@/server/db/schema";
 
@@ -82,24 +82,29 @@ describe("createDb", () => {
   });
 
   // アプリは migration を当てないので、作った空の DB は最初のクエリで落ちるだけになる。作らずに落とす
-  it("DB のファイルが無ければ作らずに throw し、開こうとしたパスと作り方を示す", () => {
+  // server function の例外の文言は client に直列化されて返るので、パスは文言に入れず server のログにだけ残す
+  it("DB のファイルが無ければ作らずに throw し、開こうとしたパスは server のログにだけ残す", () => {
     const dir = mkdtempSync(join(tmpdir(), "db-test-"));
     const fileName = join(dir, "missing.sqlite");
+    using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      expect(() => createDb(fileName)).toThrow(fileName);
       expect(() => createDb(fileName)).toThrow("mise run db:migrate");
+      expect(() => createDb(fileName)).not.toThrow(dir);
+      expect(error).toHaveBeenCalledWith("[db] DB のファイルが無い", { path: fileName });
       expect(existsSync(fileName)).toBe(false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it("DB_FILE_NAME がディレクトリを指していても、開こうとしたパスを示して throw する", () => {
+  it("ディレクトリを渡しても、開こうとしたパスをログに残して throw する", () => {
     const dir = mkdtempSync(join(tmpdir(), "db-test-"));
+    using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      expect(() => createDb(dir)).toThrow(dir);
+      expect(() => createDb(dir)).toThrow("mise run db:migrate");
+      expect(error).toHaveBeenCalledWith("[db] DB のファイルが無い", { path: dir });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

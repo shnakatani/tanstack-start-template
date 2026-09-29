@@ -27,11 +27,13 @@ function requireDbFileName(): string {
  */
 export function createDb(fileName: string = requireDbFileName()) {
   // アプリは migration を当てないので、無い DB を作ると最初のクエリが no such table で落ちるだけになる。
-  // fileMustExist が作らずに落とすが、その文言は開こうとしたパスを含まないので、先にパスと作り方を示す
-  // ディレクトリを指していても existsSync は真を返し、fileMustExist の文言はパスを含まない。ファイルかで見る
+  // fileMustExist が作らずに落とすが、その文言は開こうとしたパスを含まず、ディレクトリを指しても
+  // existsSync は真を返す。先にファイルかを見て、パスを server のログに残して落とす。
+  // server function の例外の文言は client に直列化されて返るので、パスは文言に入れない
   if (fileName !== ":memory:" && !statSync(fileName, { throwIfNoEntry: false })?.isFile()) {
+    console.error("[db] DB のファイルが無い", { path: resolve(fileName) });
     throw new Error(
-      `[db] DB のファイルが無い: ${resolve(fileName)}。mise run db:migrate で作るか、DB_FILE_NAME を確かめる`,
+      "[db] DB のファイルが無い。mise run db:migrate で作るか、DB_FILE_NAME を確かめる",
     );
   }
   const sqlite = new Database(fileName, { fileMustExist: true });
