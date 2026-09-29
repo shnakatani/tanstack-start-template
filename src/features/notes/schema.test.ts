@@ -55,11 +55,17 @@ describe("noteInputSchema", () => {
   });
 
   // 数える単位は code point (ADR-0036)。𠮷 は UTF-16 で 2 unit だが 1 と数える
-  it("サロゲートペアの文字を 1 文字と数え、上限ちょうどは受け付け、上限 +1 は落とす", () => {
+  // 𠮷 は 2 code unit・1 code point。cap - 1 / cap は受け付け、cap + 1 は落とす
+  // (code unit で数えると cap / 2 + 1 文字で落ちる)
+  it.each([
+    ["title", NOTE_TITLE_MAX_LENGTH],
+    ["body", NOTE_BODY_MAX_LENGTH],
+  ] as const)("%s はサロゲートペアの文字を 1 文字と数える", (field, cap) => {
     const at = (length: number) =>
-      v.safeParse(noteInputSchema, { ...valid, title: "𠮷".repeat(length) }).success;
-    expect(at(NOTE_TITLE_MAX_LENGTH)).toBe(true);
-    expect(at(NOTE_TITLE_MAX_LENGTH + 1)).toBe(false);
+      v.safeParse(noteInputSchema, { ...valid, [field]: "𠮷".repeat(length) }).success;
+    expect(at(cap - 1)).toBe(true);
+    expect(at(cap)).toBe(true);
+    expect(at(cap + 1)).toBe(false);
   });
 
   it("accepts empty body (body に minLength 制約はない)", () => {
@@ -177,6 +183,15 @@ describe("noteSchema", () => {
   it("rejects non-Date createdAt", () => {
     const result = v.safeParse(noteSchema, { ...valid, createdAt: "2026-08-17" });
     expect(result.success).toBe(false);
+  });
+
+  // 読み出し時の検証も入力と同じく code point で数える。cap - 1 / cap は通し、cap + 1 は落とす
+  it("保存済みの title はサロゲートペアの文字を 1 文字と数える", () => {
+    const at = (length: number) =>
+      v.safeParse(noteSchema, { ...valid, title: "𠮷".repeat(length) }).success;
+    expect(at(NOTE_TITLE_MAX_LENGTH - 1)).toBe(true);
+    expect(at(NOTE_TITLE_MAX_LENGTH)).toBe(true);
+    expect(at(NOTE_TITLE_MAX_LENGTH + 1)).toBe(false);
   });
 
   it("noteInputSchema の制約 (title 空) を継承して reject する", () => {
