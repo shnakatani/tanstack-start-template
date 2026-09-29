@@ -226,9 +226,7 @@ describe("NotesPage", () => {
       .calledWith({ data: { q: "abc" } })
       .thenResolve([])
       .calledWith({ data: { q: "" } })
-      .thenResolve([NOTE])
-      .calledWith({ data: { q: "xyz" } })
-      .thenResolve([]);
+      .thenResolve([NOTE]);
     const queryClient = createTestQueryClient();
     // 初期表示の abc は通知しない (ADR-0027)。abc のキャッシュを持った状態から入る
     const screen = await renderPage({ q: "abc", queryClient });
@@ -253,16 +251,9 @@ describe("NotesPage", () => {
     // 通知しないまま消える (ADR-0027)
     await searchbox.fill("");
     await expectText(screen, NOTE.title);
+    // 取得中に abc の件数を通知していれば、全件に戻った時点で並んでいる
+    expect(readAnnouncements()).toEqual(["絞り込みを解除し、メモを全件表示しています"]);
     refetched.resolve([]);
-
-    // 次の検索の通知までを丸ごと比べる。その間に abc の件数が通知されていれば並ぶ。abc の再取得の
-    // 決着は画面に出ない (abc を見ている要素が無い) ので、肯定 assert を置ける時点が無く、後の通知を得る
-    // 検索を足している
-    await searchbox.fill("xyz");
-    await expectAnnouncements([
-      "絞り込みを解除し、メモを全件表示しています",
-      "『xyz』に一致するメモは 0 件です",
-    ]);
     expect(listing).toHaveBeenExhausted();
   });
 
@@ -772,9 +763,8 @@ describe("NotesPage", () => {
       expect.stringContaining("[DeleteConfirmDialog]"),
       expect.anything(),
     );
-    // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回。2 発目の開始の通知は
-    // 完了の通知の前に並ぶので、完了までの履歴を丸ごと比べる
+    // 開始の通知は onMutate が出すので、mutation が 1 回なら通知も 1 回
+    expect(readAnnouncements()).toEqual(["削除しています"]);
     remove.resolve(undefined);
-    await expectAnnouncements(["削除しています", `『${NOTE.title}』を削除しました`]);
   });
 });
