@@ -20,7 +20,7 @@ describe("resolveTestTimeZone", () => {
     expect(timeZone).toBe("America/New_York");
     expect(warning).toContain("TZ=Asia/Tokyo");
     expect(warning).toContain("vp node scripts/time-zones/run-tests.ts");
-    // TEST_TIME_ZONE はスクリプトの中でだけ使う。警告では勧めない
+    // TEST_TIME_ZONE は警告では勧めない。TZ を変えて走らせる口はスクリプトに寄せる
     expect(warning).not.toContain("TEST_TIME_ZONE");
   });
 

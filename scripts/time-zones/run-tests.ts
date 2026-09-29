@@ -3,16 +3,13 @@ import { availableParallelism } from "node:os";
 
 import { REPO_ROOT } from "../lib/repo-root.ts";
 
-/**
- * `*.tz.test.ts` を TZ ごとに別のプロセスで走らせる。基準の TZ (`vitest.global-setup.ts`) では
- * `vp test run` が走らせるので、ここでは残りを走らせる。
- *
- * テストの中で `TZ` を変えても、threads と vmThreads の pool では `Date` に効かない。
- * プロセスごとに決めれば pool を問わず効く (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)。
- *
- * 選び方の理由は ADR-0031 の Context にある。
- */
+// `*.tz.test.ts` を、基準 (`scripts/lib/resolve-test-time-zone.ts` の `BASE_TIME_ZONE`) 以外の TZ ごとに
+// 別のプロセスで走らせる。基準の TZ では `vp test run` が走らせる。テストの中で `TZ` を変えても、
+// threads と vmThreads の pool では `Date` に効かない (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
+
+/** UTC より進んだ側と遅れた側を入れる。どちらか一方でしか日付がずれない実装がある (ADR-0031 の Context) */
 const TIME_ZONES = [
+  // サーバーが UTC で動く場合 (ADR-0031 の Decision が例に挙げる)
   "UTC",
   // UTC+9
   "Asia/Tokyo",
@@ -37,7 +34,7 @@ type Run = {
 
 /**
  * 1 つの TZ を走らせ、出力をためて返す。並列に走らせるので、出力を流すと TZ の間で行が混ざる。
- * stdout と stderr は届いた順にためるので、2 つの間の前後は保たない。
+ * stdout と stderr は別の pipe で届くので、2 つの間の前後は子が書いた順と一致しないことがある。
  * 各プロセスの worker は 1 本にする。絞らないとプロセスの数と掛け算で増える
  * (`docs/guides/testing/time-zones.md`「TZ ごとの実行を並列にする理由」)。
  * 起動に失敗しても reject せず、失敗した TZ として返す。reject すると、走っている他の TZ の子を

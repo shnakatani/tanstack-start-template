@@ -22,7 +22,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: {
-    // 基準のタイムゾーンを決める。root に置く。project に置くと、その project のテストを含む
+    // テスト全体のタイムゾーンを決める。root に置く。project に置くと、その project のテストを含む
     // 実行でだけ走り、他の project の TZ が選んだファイルで変わる
     globalSetup: ["./vitest.global-setup.ts"],
     projects: [

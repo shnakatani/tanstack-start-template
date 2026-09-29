@@ -34,7 +34,7 @@ beforeEach(async () => {
  * `readAnnouncements` の throw まで出てこないので、setup で 1 回描く。
  *
  * 描く前に前テストの描画 (region を含む) を外す。vitest-browser-react も後始末の `beforeEach` を持つが、
- * モジュールの読み込み時に登録するので、`isolate: false` ではモジュールが使い回され、最初のファイルにしか
+ * モジュールの読み込み時に登録するので、`--no-isolate` (`isolate: false`) で走らせるとモジュールが使い回され、最初のファイルにしか
  * 付かない。setup ファイルはファイルごとに走り直すので、ここで呼ぶ (vitest docs の config/setupfiles
  * 「If isolation is disabled, imported modules are cached, but the setup file itself is executed again
  * before each test file」)
