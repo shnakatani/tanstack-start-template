@@ -34,24 +34,41 @@ type Run = {
   output: string;
 };
 
+// 止めるときに、走っている子へ SIGTERM を送る (spawn の signal と killSignal の既定)
+const abort = new AbortController();
+
 /**
  * 1 つの TZ を走らせ、出力をためて返す。並列に走らせるので、出力を流すと TZ の間で行が混ざる。
- * 各プロセスの worker は 1 本にする。既定の maxWorkers は利用できる並列数を全部使うので、
- * プロセスの数と掛け算になる (vitest docs の guide/improving-performance の VITEST_MAX_WORKERS)
+ * stdout と stderr は届いた順にためるので、2 つの間の前後は保たない。
+ * 各プロセスの worker は 1 本にする。絞らないとプロセスの数と掛け算で増える
+ * (`docs/guides/testing/time-zones.md`「TZ ごとの実行を並列にする理由」)。
+ * 起動に失敗しても reject せず、失敗した TZ として返す。reject すると、走っている他の TZ の子を
+ * 残したまま親だけが終わる
  */
 function runTimeZone(timeZone: string): Promise<Run> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const child = spawn("vp", VP_ARGS, {
       cwd: REPO_ROOT,
       env: { ...process.env, TEST_TIME_ZONE: timeZone, VITEST_MAX_WORKERS: "1" },
+      signal: abort.signal,
     });
     const chunks: Buffer[] = [];
     child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
-    child.on("error", reject);
+    child.on("error", (error) => {
+      chunks.push(Buffer.from(`${error.stack ?? String(error)}\n`));
+    });
     child.on("close", (status, signal) => {
       resolve({ timeZone, status, signal, output: Buffer.concat(chunks).toString() });
     });
+  });
+}
+
+// 親だけに届いた signal (kill <pid> など) では子が残る。子を止め、全部の終わりを待ってから失敗で終える。
+// 端末の Ctrl-C はプロセスグループ全体に届くので、子には SIGINT と SIGTERM が届くが、終わり方は変わらない
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    abort.abort();
   });
 }
 
@@ -60,11 +77,17 @@ const queue: string[] = [...TIME_ZONES];
 const failed: Run[] = [];
 await Promise.all(
   Array.from({ length: Math.min(availableParallelism(), queue.length) }, async () => {
-    for (let timeZone = queue.shift(); timeZone; timeZone = queue.shift()) {
+    for (
+      let timeZone = queue.shift();
+      timeZone && !abort.signal.aborted;
+      timeZone = queue.shift()
+    ) {
       // oxlint-disable-next-line eslint/no-await-in-loop -- 並列の数を抑えるための逐次。この列が終わってから次の TZ を取る
       const run = await runTimeZone(timeZone);
       if (run.status === 0) {
-        console.log(`[time-zones] OK   TEST_TIME_ZONE=${timeZone}`);
+        // 全部通ったときも件数を残す。0 件で通っていても気づける
+        const summary = /^\s*Tests\s+.*$/m.exec(run.output)?.[0].trim() ?? "";
+        console.log(`[time-zones] OK   TEST_TIME_ZONE=${timeZone}  ${summary}`);
       } else {
         console.error(`[time-zones] FAIL TEST_TIME_ZONE=${timeZone}`, {
           status: run.status,
@@ -75,6 +98,12 @@ await Promise.all(
     }
   }),
 );
+
+if (abort.signal.aborted) {
+  const skipped = queue.length > 0 ? `。走らせていない TZ: ${queue.join(", ")}` : "";
+  console.error(`\n[time-zones] signal を受けて止めた${skipped}`);
+  process.exitCode = 1;
+}
 
 if (failed.length > 0) {
   for (const run of failed) {
