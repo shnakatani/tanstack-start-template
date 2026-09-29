@@ -24,6 +24,11 @@ describe("thrownValueMessage", () => {
     expect(thrownValueMessage({ message: 404 })).toBe("[object Object]");
   });
 
+  it("message が空の値は、値を文字列にして返す", () => {
+    expect(thrownValueMessage(new Error(""))).toBe("Error");
+    expect(thrownValueMessage({ message: "" })).toBe("[object Object]");
+  });
+
   it("Error でない値は文字列にして返す", () => {
     expect(thrownValueMessage("中断されました")).toBe("中断されました");
     expect(thrownValueMessage(404)).toBe("404");
@@ -46,5 +51,6 @@ describe("thrownValueMessage", () => {
     };
 
     expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
+    expect(warnSpy).toHaveBeenCalledWith("[thrownValueMessage] 文字列にできない値", { value });
   });
 });

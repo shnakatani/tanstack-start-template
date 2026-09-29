@@ -50,6 +50,7 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
         <p className="text-muted-foreground">
           {import.meta.env.DEV ? thrownValueMessage(error) : ROUTE_ERROR_FALLBACK_MESSAGE}
         </p>
+        {/* message は Error でない値からも読むが、stack は Error だけから読む (TanStack Router の PR 8209 の案内) */}
         {import.meta.env.DEV && error instanceof Error && error.stack && (
           <Accordion>
             <AccordionItem value="stack-trace">
