@@ -86,9 +86,17 @@ function fieldErrorMessage(error: unknown): string | null {
  * 任意の値を返せる。揃えずに渡すと FieldError は何も描かず、エラーの内容だけが黙って消える。
  */
 function normalizeFieldErrors(errors: readonly unknown[]): { message: string }[] {
-  // `disableErrorFlat` の field では、validator が返した issue の配列が平らにならずに 1 要素として入る
-  // (TanStack Form の custom-errors ガイド「The `disableErrorFlat` Prop on Fields」)。既定と同じく 1 段平らにする
-  return errors.flat(1).map((error) => {
+  // `disableErrorFlat` の field では `field.errors` の `flat(1)` が行われず、validator が返した issue の配列が
+  // 1 要素として入る (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)。既定と同じく 1 段平らにする
+  const flatErrors = errors.flat(1);
+  if (flatErrors.length === 0 && errors.length > 0) {
+    // 平らにすると空になる (`[]` を返した validator)。form は invalid と数えるので、文言を 1 つ出す
+    console.warn("[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました", {
+      error: errors,
+    });
+    return [{ message: UNRENDERABLE_FIELD_ERROR_MESSAGE }];
+  }
+  return flatErrors.map((error) => {
     const message = fieldErrorMessage(error);
     if (message === null) {
       console.warn("[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました", { error });

@@ -682,8 +682,8 @@ export const StringErrorRendered: Story = {
 };
 
 /**
- * `disableErrorFlat` を付けると、TanStack Form は validator が返した issue の配列を平らにせず、errors の
- * 1 要素として入れる (TanStack Form の custom-errors ガイド「The `disableErrorFlat` Prop on Fields」)。
+ * `disableErrorFlat` を付けると、TanStack Form は `field.errors` の `flat(1)` を行わず、validator が返した
+ * issue の配列を errors の 1 要素として入れる (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)。
  * 1 段平らにしてから揃え、配列の中の文言を描く
  */
 export const IssueArrayWithoutFlatRendered: Story = {
@@ -697,6 +697,24 @@ export const IssueArrayWithoutFlatRendered: Story = {
     const name = textbox("名前");
     await waitFor(() => expect(name).toBeInvalid());
     await expect(name).toHaveAccessibleDescription(/名前を入力してください/);
+  },
+};
+
+/** 平らにすると空になる検証エラー (`disableErrorFlat` で `[]`) も、invalid なので代替文言を出す */
+export const EmptyIssueArrayFallback: Story = {
+  tags: ["!dev"],
+  render: () => <CustomErrorForm error={[]} disableErrorFlat />,
+  beforeEach: captureConsoleWarn,
+  play: async () => {
+    await userEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    const name = textbox("名前");
+    await waitFor(() => expect(name).toBeInvalid());
+    await expect(name).toHaveAccessibleDescription(new RegExp(UNRENDERABLE_FIELD_ERROR_MESSAGE));
+    await expect(consoleWarn).toHaveBeenCalledWith(
+      "[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました",
+      { error: [[]] },
+    );
   },
 };
 
