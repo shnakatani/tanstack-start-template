@@ -6,8 +6,9 @@ import { describe, expect, it } from "vite-plus/test";
  * (https://vitest.dev/guide/common-errors#time-zone-does-not-change-in-worker-threads)
  */
 describe("テストのタイムゾーン", () => {
+  const expected = process.env.TEST_TIME_ZONE || process.env.TZ;
+
   it("Intl の既定のタイムゾーンが TEST_TIME_ZONE (無ければ TZ) になっている", () => {
-    const expected = process.env.TEST_TIME_ZONE || process.env.TZ;
     // 別名 (Asia/Kolkata と Asia/Calcutta) を同じ名前へそろえてから比べる
     const canonical = new Intl.DateTimeFormat("en", { timeZone: expected }).resolvedOptions()
       .timeZone;
@@ -15,7 +16,6 @@ describe("テストのタイムゾーン", () => {
   });
 
   it("Date のローカルの時と分が、TEST_TIME_ZONE (無ければ TZ) の壁時計と一致する", () => {
-    const expected = process.env.TEST_TIME_ZONE || process.env.TZ;
     const instant = new Date("2026-01-15T12:00:00.000Z");
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: expected,

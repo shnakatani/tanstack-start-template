@@ -19,12 +19,8 @@ const REPO_ROOT = resolve(__dirname, "..", "..", "..");
  * 渡されていないことは、ファイルの有無ではなく渡したパスで確かめる
  */
 function withCwd<T>(dir: string, run: () => T): T {
-  const cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
-  try {
-    return run();
-  } finally {
-    cwd.mockRestore();
-  }
+  using _cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
+  return run();
 }
 
 describe("createDb", () => {

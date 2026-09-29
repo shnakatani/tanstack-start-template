@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
 
+import { REPO_ROOT } from "../lib/repo-root.ts";
+
 /**
  * `*.tz.test.ts` を TZ ごとに別のプロセスで走らせる。基準の TZ (`vitest.global-setup.ts`) では
  * `vp test run` が走らせるので、ここでは残りを走らせる。
@@ -23,11 +25,14 @@ const TIME_ZONES = [
   "Pacific/Pago_Pago",
 ] as const;
 
+const VP_ARGS = ["test", "run", "--project", "unit", ".tz.test.ts"];
+
 // 1 つの TZ で落ちても残りを走らせる。どの TZ で落ちたかの組み合わせ (進んだ側だけ、など) が原因の手がかりになる
 const failed: string[] = [];
 for (const timeZone of TIME_ZONES) {
   console.log(`\n[time-zones] TEST_TIME_ZONE=${timeZone}`);
-  const result = spawnSync("vp", ["test", "run", "--project", "unit", ".tz.test.ts"], {
+  const result = spawnSync("vp", VP_ARGS, {
+    cwd: REPO_ROOT,
     stdio: "inherit",
     env: { ...process.env, TEST_TIME_ZONE: timeZone },
   });
@@ -44,7 +49,9 @@ for (const timeZone of TIME_ZONES) {
 if (failed.length > 0) {
   console.error(`\n[time-zones] ${failed.length} 個の TZ で失敗した。1 つずつ走らせ直すには:`);
   for (const timeZone of failed) {
-    console.error(`  TEST_TIME_ZONE=${timeZone} vp test run --project unit .tz.test.ts`);
+    console.error(`  TEST_TIME_ZONE=${timeZone} vp ${VP_ARGS.join(" ")}`);
   }
-  process.exit(1);
+  // `process.exit` は使わない。stderr が pipe のとき書き込みは非同期で、exit が待たずに落とすと
+  // 上の再現コマンドが切れる。終了コードだけ立てて自然に終わらせる
+  process.exitCode = 1;
 }
