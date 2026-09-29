@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
-import { thrownValueMessage } from "@/lib/thrown-value-message";
+import { thrownValueMessage, thrownValueStack } from "@/lib/thrown-value-message";
 
 /**
  * production の本文に出す固定文言。原因ではなく次に取れる行動だけを伝える
@@ -28,6 +28,7 @@ export const ROUTE_ERROR_FALLBACK_MESSAGE =
  */
 export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
+  const stack = import.meta.env.DEV ? thrownValueStack(error) : undefined;
 
   // 再実行の結果は loader と error boundary が受けるため待たない
   function handleRetry() {
@@ -50,13 +51,12 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
         <p className="text-muted-foreground">
           {import.meta.env.DEV ? thrownValueMessage(error) : ROUTE_ERROR_FALLBACK_MESSAGE}
         </p>
-        {/* stack は TanStack Router の PR 8209 の案内どおり instanceof Error で絞る。message を絞らない理由は thrownValueMessage の JSDoc */}
-        {import.meta.env.DEV && error instanceof Error && error.stack && (
+        {stack && (
           <Accordion>
             <AccordionItem value="stack-trace">
               <AccordionTrigger>スタックトレース</AccordionTrigger>
               <AccordionContent>
-                <CodeBlock>{error.stack}</CodeBlock>
+                <CodeBlock>{stack}</CodeBlock>
               </AccordionContent>
             </AccordionItem>
           </Accordion>

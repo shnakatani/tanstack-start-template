@@ -1,29 +1,45 @@
-import * as v from "valibot";
-
-/** 文字列にできない値 (`Object.create(null)` など) が投げられたときに出す文言 */
+/** 文字列にできない値 (`Object.create(null)` など) か、文字列にすると空になる値が投げられたときに出す文言 */
 export const THROWN_VALUE_UNPRINTABLE = "表示できない値が投げられました";
 
-/** 空でない文字列の message を持つ値 (Error を含む) */
-const withMessageSchema = v.object({ message: v.pipe(v.string(), v.nonEmpty()) });
-
 /**
- * 投げられた値を画面に出す文言にする。Router はエラー境界に error を unknown で渡す
- * (route は Error 以外も throw できる)。空でない文字列の message を持つ値 (Error を含む) はその
- * message を、それ以外は値を文字列にする。
+ * 投げられた値を画面に出す文言にする。Router はエラー境界に error を unknown で渡す (route は Error 以外も
+ * throw できる)。Error ならその message を、それ以外は値を文字列にする (TanStack Router の data-loading ガイド
+ * 「Handling Errors with routeOptions.errorComponent」の例と同じ形)。server function と SSR の loader の
+ * エラーは、TanStack Start の直列化で message だけを持つ Error としてクライアントに届く。
  *
- * Router の data-loading ガイドの例は `instanceof Error` で絞るが、それだと message を持つ object が
- * `[object Object]` になる。ここは組み込みの ErrorComponent (`error?.message` を読む) に寄せた。
- * message が空なら組み込みは何も出さないが、ここは値を文字列にして空の表示を避ける。
- *
- * message の読み取り、`String()`、valibot が検証の失敗を記録するときの値の参照 (prototype の
- * `constructor.name`) のどれかが throw する値は固定の文言で返す。エラー表示の部品がここで落ちると、
- * エラーの画面ごと壊れる。
+ * ガイドの例には次の 2 つを足した。Router の組み込みの ErrorComponent も、どちらの保護も持たない。
+ * - message が空か文字列でない Error は、値を文字列にする (`Error` や `Error: [object Object]`)。空だと本文に
+ *   何も出ず、文字列でないと React の描画が落ちてエラーの画面ごと壊れる
+ * - `instanceof` の判定、message の読み取り、`String()` のどれかが throw する値と、文字列にすると空になる値
+ *   (`""` や name も message も空の Error) は、固定の文言で返す。前者はエラーの画面ごと壊れ、後者は本文が空になる
  */
 export function thrownValueMessage(value: unknown): string {
   try {
-    return v.is(withMessageSchema, value) ? value.message : String(value);
+    if (value instanceof Error && typeof value.message === "string" && value.message !== "") {
+      return value.message;
+    }
+    const text = String(value);
+    if (text === "") {
+      console.warn("[thrownValueMessage] 文字列にすると空になる値", { value });
+      return THROWN_VALUE_UNPRINTABLE;
+    }
+    return text;
   } catch {
     console.warn("[thrownValueMessage] 文字列にできない値", { value });
     return THROWN_VALUE_UNPRINTABLE;
+  }
+}
+
+/**
+ * 投げられた値のスタックトレースを取り出す。Error でない値と、stack が文字列でない Error は undefined を返す
+ * (TanStack Router の PR 8209 の案内どおり instanceof Error で絞る)。`instanceof` の判定か stack の読み取りが
+ * throw する値も undefined を返す。理由は thrownValueMessage と同じく、エラーの画面ごと壊さないためである
+ */
+export function thrownValueStack(value: unknown): string | undefined {
+  try {
+    return value instanceof Error && typeof value.stack === "string" ? value.stack : undefined;
+  } catch {
+    console.warn("[thrownValueStack] stack を読めない値", { value });
+    return undefined;
   }
 }

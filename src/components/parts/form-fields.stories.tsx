@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { excludeFromA11y } from "@/components/ui/calendar.story-helpers";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-app-form";
-
-import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "./form-fields";
+import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "@/lib/field-errors";
 
 /**
  * `form.AppField` の内側でしか動かない配線部品なので、story も TanStack Form の
@@ -218,7 +217,13 @@ function SanitizedTextForm({ onSubmit }: StoryArgs) {
  * 素の文字列や任意の値を返せるため、FieldError が描ける形へ揃わないと
  * 「aria-invalid は立つが読み上げる内容が無い」状態になる。
  */
-function CustomErrorForm({ error }: { error: unknown }) {
+function CustomErrorForm({
+  error,
+  disableErrorFlat,
+}: {
+  error: unknown;
+  disableErrorFlat?: boolean;
+}) {
   const form = useAppForm({
     defaultValues: { name: "" },
     validationLogic: revalidateLogic(),
@@ -232,7 +237,11 @@ function CustomErrorForm({ error }: { error: unknown }) {
       }}
     >
       <FieldGroup>
-        <form.AppField name="name" validators={{ onDynamic: () => error }}>
+        <form.AppField
+          name="name"
+          disableErrorFlat={disableErrorFlat}
+          validators={{ onDynamic: () => error }}
+        >
           {(field) => <field.FormTextField label="名前" fieldValue={field.state.value} />}
         </form.AppField>
         <Field orientation="horizontal">
@@ -642,6 +651,7 @@ export const CheckboxValidatorsWarn: Story = {
         },
       ),
     );
+    await expect(consoleWarn).toHaveBeenCalledOnce();
   },
 };
 
@@ -671,6 +681,43 @@ export const StringErrorRendered: Story = {
   },
 };
 
+/** `disableErrorFlat` の field で validator が返した issue の配列も、中の文言を描く */
+export const IssueArrayWithoutFlatRendered: Story = {
+  tags: ["!dev"],
+  render: () => (
+    <CustomErrorForm error={[{ message: "名前を入力してください" }]} disableErrorFlat />
+  ),
+  play: async () => {
+    await userEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    const name = textbox("名前");
+    await waitFor(() => expect(name).toBeInvalid());
+    await expect(name).toHaveAccessibleDescription(/名前を入力してください/);
+  },
+};
+
+/** 平らにすると空になる検証エラー (`disableErrorFlat` で `[]`) も、invalid なので代替文言を出す */
+export const EmptyIssueArrayFallback: Story = {
+  tags: ["!dev"],
+  render: () => <CustomErrorForm error={[]} disableErrorFlat />,
+  beforeEach: captureConsoleWarn,
+  play: async () => {
+    await userEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    const name = textbox("名前");
+    await waitFor(() => expect(name).toBeInvalid());
+    await expect(name).toHaveAccessibleDescription(new RegExp(UNRENDERABLE_FIELD_ERROR_MESSAGE));
+    // focus を外すと field の meta だけが変わって描き直される。検証エラーは変わらないので warn は増えない
+    await userEvent.click(name);
+    await userEvent.tab();
+    await expect(consoleWarn).toHaveBeenCalledOnce();
+    await expect(consoleWarn).toHaveBeenCalledWith(
+      "[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました",
+      { errors: [[[]]] },
+    );
+  },
+};
+
 /** message を持たない検証エラーは代替文言へ丸め、raw 値を warn に残す */
 export const UnrenderableErrorFallback: Story = {
   tags: ["!dev"],
@@ -682,9 +729,13 @@ export const UnrenderableErrorFallback: Story = {
     const name = textbox("名前");
     await waitFor(() => expect(name).toBeInvalid());
     await expect(name).toHaveAccessibleDescription(new RegExp(UNRENDERABLE_FIELD_ERROR_MESSAGE));
+    // focus を外すと field の meta だけが変わって描き直される。検証エラーは変わらないので warn は増えない
+    await userEvent.click(name);
+    await userEvent.tab();
+    await expect(consoleWarn).toHaveBeenCalledOnce();
     await expect(consoleWarn).toHaveBeenCalledWith(
       "[form-fields] 描画できない形式の検証エラーを代替文言へ丸めました",
-      { error: RAW_ERROR },
+      { errors: [RAW_ERROR] },
     );
   },
 };

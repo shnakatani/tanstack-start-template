@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { THROWN_VALUE_UNPRINTABLE } from "@/lib/thrown-value-message";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectText } from "@/test/assert/screen-assertions";
@@ -27,7 +28,10 @@ async function renderError(error: unknown, reset: () => void) {
  * (ADR-0011 が捕まえた実在の欠陥)。
  */
 describe("RouteErrorContent", () => {
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
 
   it("エラーメッセージが表示される", async () => {
     const { screen } = await renderError(new Error("取得に失敗しました"), vi.fn());
@@ -42,6 +46,24 @@ describe("RouteErrorContent", () => {
     const { screen } = await renderError("取得の途中で中断されました", vi.fn());
 
     await expectText(screen, "取得の途中で中断されました");
+    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
+  });
+
+  // instanceof の判定が throw する値でも、エラーの画面ごと壊れずに固定の文言を出す
+  it("instanceof の判定が throw する値でも、画面を保って固定の文言を出す", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = new Proxy(
+      {},
+      {
+        getPrototypeOf() {
+          throw new Error("参照できない");
+        },
+      },
+    );
+
+    const { screen } = await renderError(error, vi.fn());
+
+    await expectText(screen, THROWN_VALUE_UNPRINTABLE);
     await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
   });
 
