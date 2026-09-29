@@ -6,19 +6,19 @@
 
 ### 基準のタイムゾーン
 
-- テスト全体の TZ は `America/New_York` にする。`vitest.config.ts` の root の `test.globalSetup` に登録した `vitest.global-setup.ts` が、メインプロセスの `TZ` に入れる
+- テスト全体の TZ は `America/New_York` にする。`vitest.config.ts` の root の `test.globalSetup` に登録した `vitest.global-setup.ts` が、メインプロセスの `TZ` に入れる。基準に依存するテストは、これを前提にしてよい
 - どの TZ にするかは `scripts/lib/resolve-test-time-zone.ts` の `resolveTestTimeZone` が決め、基準の値は同じファイルの `BASE_TIME_ZONE` が持つ
 - 効くことを確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
-- 基準に依存するテストを書くときは、基準が `America/New_York` であることを前提にしてよい
 - 環境変数 `TEST_TIME_ZONE` があれば、`vitest.global-setup.ts` は基準の代わりにその値を使う。TZ を変えて走らせるとき (次節) にだけ使う
 - `TEST_TIME_ZONE` に IANA の名前として効かない値 (`Asia/Tokio`、`asia/tokyo`、`JST-9`) を渡すと、`src/test/test-time-zone.tz.test.ts` が落ちる (「効かない TZ の名前を確認のテストで見つける理由」)
 - `TZ=<IANA 名> vp test run` のように `TZ` を渡しても、基準に上書きされて効かない。`vitest.global-setup.ts` が、ホストの TZ を使わないことを警告する
 - ホストが自分の都合で `TZ` を持つ環境 (コンテナなど) では、この警告が毎回出る。止めるには `TZ` を外す (`TZ= vp test run`)
 - 基準の値を変えるときは、`APP_TIME_ZONE` とも UTC とも違う値にする (「基準を `America/New_York` にする理由」)
+- 基準の値は `BASE_TIME_ZONE` と、`src/test/test-time-zone.tz.test.ts` の期待値の 2 か所にある。期待値は実装から独立させるために書き写しているので、両方を変える
 
 ### Node で動くテストを TZ ごとに走らせる
 
-- ローカルの TZ に触れうるモジュールのテストは、ファイルごと `src/**/*.tz.test.ts` にする。テストを 1 件ずつ TZ に依存するかで分けない。分け損ねたテストが基準の TZ でしか走らなくなる
+- ローカルの TZ に触れうるモジュールのテストは、ファイルごと `src/**/*.tz.test.ts` にする。対象は、`Date` のローカルの getter や TZ を指定しない date-fns を直接呼ぶモジュールと、ローカルの TZ に依存しないことを保証するモジュール。テストを 1 件ずつ TZ に依存するかで分けない。分け損ねたテストが基準の TZ でしか走らなくなる
 - `*.tz.test.ts` は unit project が集めるので、`vp test run` は基準の TZ で走らせる
 - 基準以外の TZ では `vp node scripts/time-zones/run-tests.ts` が走らせる。TZ ごとに `TEST_TIME_ZONE` を渡して `vp test run --project unit .tz.test.ts` を起動する。`.mise.toml` の verify タスクと CI が `vp test run` の後に呼ぶ
 - スクリプトは TZ ごとのプロセスを同時に走らせる。並列の数は `availableParallelism()` と TZ の数の小さいほうで、各プロセスの worker は `VITEST_MAX_WORKERS=1` で 1 本にする (「TZ ごとの実行を並列にする理由」)
@@ -42,7 +42,7 @@
 
 テストでは、ローカル TZ に依存する実装 (`Date#getHours` 系で壁時計を組む整形など) を検出したい。ところが、ホストの TZ が `APP_TIME_ZONE` (`Asia/Tokyo`) と一致すると、壁時計の値を比べるテストはこの依存を見逃す。開発機が JST なら常に一致する。基準の TZ をホストから切り離して決めれば、壁時計の値を比べるテストだけで依存を検出できる。
 
-2026-09-27 に vitest 4.1.11 と JST のホストで、`formatDateTime` を `Date#getHours` 系で組む実装に置き換えて `formatDateTime` のテスト (5 件) を走らせた。
+2026-09-27 に vitest 4.1.11 と JST のホストで、`formatDateTime` を `Date#getHours` 系で組む実装に置き換えて、その日の `formatDateTime` のテスト 5 件 (基準の TZ で走る 4 件と、`vi.stubEnv("TZ")` で切り替える 1 件) を走らせた。
 
 | 基準の固定                                          | pool    | 結果                                                      |
 | --------------------------------------------------- | ------- | --------------------------------------------------------- |
@@ -95,13 +95,13 @@ pool に依存する 2 案は、project に `pool: "forks"` を固定しても�
 
 TZ ごとにプロセスを起動する形は、日付ライブラリにも先行例がある (どれも 2026-09-29 に main で確認)。
 
-- date-fns の主な TZ のテストは、[date-fns の `tz.ts`][] が TZ ごとに `TZ=<IANA 名> vitest run` を起動する。失敗した TZ を集めて最後に並べる。走らせる範囲はテスト単位ではなく `src` 全体
+- date-fns の主な TZ のテストは、[date-fns の `tz.ts`][] が TZ ごとに `TZ=<IANA 名> vitest run` を起動する。失敗した TZ を集めて最後に並べる。走らせる範囲は [date-fns の `mise.toml`][] の `date-fns-test-tz ./src/` で `src` 全体
 - date-fns は、個別の端のケースを [date-fns の `tz.sh`][] で `env TZ=<IANA 名> node <テスト>` と並べて走らせる
-- react-day-picker は [react-day-picker の `package.json`][] の `test:tz` の script で `TZ=Australia/Adelaide jest` を起動する
+- react-day-picker は [react-day-picker の `package.json`][] の `test:tz` の script で、`--selectProjects examples/timezone` で選んだテストを `TZ=Australia/Adelaide jest` で走らせる
 
 2026-09-29 に vitest 5.0.1 で、TZ ごとの project (`test.env` の `TZ` と `pool: "forks"`) を試した。config の root に `pool: "threads"` を書いても project の forks が勝つが、CLI で `--pool threads` を付けると project の pool も threads になり、5 つの TZ の project でガードの 2 件ずつが落ちた (TZ が `Date` に効かなかった)。
 
-2026-09-28 に vitest 5.0.1 で、`parseCalendarDate` を `new Date(value)` (UTC の 0 時になる) に置き換え、`--pool threads` を付けて `*.tz.test.ts` を走らせた。
+2026-09-28 に vitest 5.0.1 で、`parseCalendarDate` を `new Date(value)` (UTC の 0 時になる) に置き換え、`--pool threads` を付けて、その日の `*.tz.test.ts` 9 件を走らせた。
 
 | `TEST_TIME_ZONE`    | 結果                 |
 | ------------------- | -------------------- |
@@ -110,7 +110,7 @@ TZ ごとにプロセスを起動する形は、日付ライブラリにも先�
 | `Asia/Tokyo`        | 1 failed \| 8 passed |
 | `Pacific/Pago_Pago` | 3 failed \| 6 passed |
 
-`vitest.global-setup.ts` を `TEST_TIME_ZONE` を読まない形に変えて `TEST_TIME_ZONE=Asia/Tokyo` で走らせると、`src/test/test-time-zone.tz.test.ts` の 2 件だけが落ちた (2 failed \| 7 passed)。
+`vitest.global-setup.ts` を `TEST_TIME_ZONE` を読まない形に変えて `TEST_TIME_ZONE=Asia/Tokyo` で走らせると、同じ 9 件のうち `src/test/test-time-zone.tz.test.ts` の 2 件だけが落ちた (2 failed \| 7 passed)。
 
 ### TZ ごとの実行を並列にする理由
 
@@ -169,6 +169,7 @@ CDP の上書きがファイルをまたがないのは、Vitest がテストフ
 [vitest の issue 1575]: https://github.com/vitest-dev/vitest/issues/1575
 [CDP「Emulation.setTimezoneOverride」]: https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setTimezoneOverride
 [date-fns の `tz.ts`]: https://github.com/date-fns/date-fns/blob/main/pkgs/dev/src/test/tz.ts
+[date-fns の `mise.toml`]: https://github.com/date-fns/date-fns/blob/main/pkgs/core/mise.toml
 [date-fns の `tz.sh`]: https://github.com/date-fns/date-fns/blob/main/pkgs/core/scripts/test/tz.sh
 [react-day-picker の `package.json`]: https://github.com/gpbl/react-day-picker/blob/main/package.json
 [Playwright docs「browser.newContext」]: https://playwright.dev/docs/api/class-browser#browser-new-context

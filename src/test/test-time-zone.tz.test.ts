@@ -6,17 +6,17 @@ import { describe, expect, it } from "vite-plus/test";
  */
 describe("テストのタイムゾーン", () => {
   // 期待値は globalSetup が入れた process.env.TZ から取らない。取ると、globalSetup が TZ を入れなくなっても
-  // ホストの TZ どうしを比べて通る。基準は vitest.global-setup.ts が決める値と同じものを独立に書く
+  // ホストの TZ どうしを比べて通る。基準は scripts/lib/resolve-test-time-zone.ts の BASE_TIME_ZONE と同じ値を独立に書く
   const expected = process.env.TEST_TIME_ZONE || "America/New_York";
 
-  it("Intl の既定のタイムゾーンが TEST_TIME_ZONE (無ければ基準の America/New_York) になっている", () => {
+  it("Intl の既定のタイムゾーンが TEST_TIME_ZONE (無ければ基準) になっている", () => {
     // 別名 (Asia/Kolkata と Asia/Calcutta) を同じ名前へそろえてから比べる
     const canonical = new Intl.DateTimeFormat("en", { timeZone: expected }).resolvedOptions()
       .timeZone;
     expect(new Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(canonical);
   });
 
-  it("Date のローカルの時と分が、TEST_TIME_ZONE (無ければ基準の America/New_York) の壁時計と一致する", () => {
+  it("Date のローカルの時と分が、TEST_TIME_ZONE (無ければ基準) の壁時計と一致する", () => {
     const instant = new Date("2026-01-15T12:00:00.000Z");
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: expected,

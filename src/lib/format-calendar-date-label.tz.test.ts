@@ -14,7 +14,7 @@ describe("formatCalendarDateLabel", () => {
     expect(formatCalendarDateLabel("2026-08-07", "long")).toBe("2026年8月7日");
   });
 
-  // 暦に無い日付を Invalid Date のまま整形しない。parseCalendarDate と同じ文言で落ちる
+  // 暦に無い日付を Invalid Date のまま整形しない
   it("暦に無い 2023-02-29 は parseCalendarDate と同じエラーで throw する", () => {
     expect(() => formatCalendarDateLabel("2023-02-29", "short")).toThrow(
       "暦の日付ではない: 2023-02-29",

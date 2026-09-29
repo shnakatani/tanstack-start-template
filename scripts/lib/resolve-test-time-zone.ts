@@ -13,8 +13,7 @@ export function resolveTestTimeZone(env: { TZ?: string; TEST_TIME_ZONE?: string 
 } {
   if (env.TEST_TIME_ZONE) return { timeZone: env.TEST_TIME_ZONE, warning: undefined };
   // `TZ=Asia/Tokyo vp test run` のように TZ を渡しても効かない。黙って捨てない。
-  // ホストが自分の都合で TZ を持つこともあるので、渡した意図は決めつけない。ホストの値は POSIX 形式
-  // (JST-9) のこともあり、そのままでは効かない。TZ を変えて走らせる口はスクリプトに寄せる
+  // ホストが自分の都合で TZ を持つこともあるので、渡した意図は決めつけない
   const warning =
     env.TZ && env.TZ !== BASE_TIME_ZONE
       ? `[time-zones] ホストの TZ=${env.TZ} は使わず、基準の ${BASE_TIME_ZONE} で走らせる。TZ を変えて走らせるなら vp node scripts/time-zones/run-tests.ts を使う`

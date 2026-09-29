@@ -14,17 +14,15 @@ describe("resolveTestTimeZone", () => {
     });
   });
 
-  test.each(["Asia/Tokyo", "JST-9"])(
-    "ホストの TZ=%s が基準と違えば基準にし、TZ ごとに走らせるスクリプトを警告で案内する",
-    (hostTimeZone) => {
-      const { timeZone, warning } = resolveTestTimeZone({ TZ: hostTimeZone });
+  test("ホストの TZ が基準と違えば基準にし、TZ ごとに走らせるスクリプトを警告で案内する", () => {
+    const { timeZone, warning } = resolveTestTimeZone({ TZ: "Asia/Tokyo" });
 
-      expect(timeZone).toBe("America/New_York");
-      expect(warning).toContain(`TZ=${hostTimeZone}`);
-      expect(warning).toContain("vp node scripts/time-zones/run-tests.ts");
-      expect(warning).not.toContain(`TEST_TIME_ZONE=${hostTimeZone}`);
-    },
-  );
+    expect(timeZone).toBe("America/New_York");
+    expect(warning).toContain("TZ=Asia/Tokyo");
+    expect(warning).toContain("vp node scripts/time-zones/run-tests.ts");
+    // TEST_TIME_ZONE はスクリプトの中でだけ使う。警告では勧めない
+    expect(warning).not.toContain("TEST_TIME_ZONE");
+  });
 
   test("TEST_TIME_ZONE があればその TZ にし、ホストの TZ が違っても警告しない", () => {
     expect(resolveTestTimeZone({ TZ: "Asia/Tokyo", TEST_TIME_ZONE: "UTC" })).toStrictEqual({

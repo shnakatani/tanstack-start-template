@@ -10,7 +10,7 @@ import { REPO_ROOT } from "../lib/repo-root.ts";
  * テストの中で `TZ` を変えても、threads と vmThreads の pool では `Date` に効かない。
  * プロセスごとに決めれば pool を問わず効く (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)。
  *
- * UTC より進んだ側と遅れた側、日付変更線の際を並べる (ADR-0031 の Context)。
+ * 選び方の理由は ADR-0031 の Context にある。
  */
 const TIME_ZONES = [
   "UTC",
@@ -47,8 +47,11 @@ type Run = {
 function runTimeZone(timeZone: TimeZone): Promise<Run> {
   return new Promise((resolve) => {
     const chunks: Buffer[] = [];
-    const fail = (error: Error) => {
+    const recordError = (error: Error) => {
       chunks.push(Buffer.from(`${error.stack ?? String(error)}\n`));
+    };
+    const finish = (status: number | null, signal: NodeJS.Signals | null) => {
+      resolve({ timeZone, status, signal, output: Buffer.concat(chunks).toString() });
     };
     try {
       const child = spawn("vp", VP_ARGS, {
@@ -57,13 +60,11 @@ function runTimeZone(timeZone: TimeZone): Promise<Run> {
       });
       child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
       child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
-      child.on("error", fail);
-      child.on("close", (status, signal) => {
-        resolve({ timeZone, status, signal, output: Buffer.concat(chunks).toString() });
-      });
+      child.on("error", recordError);
+      child.on("close", finish);
     } catch (error) {
-      fail(error instanceof Error ? error : new Error(String(error)));
-      resolve({ timeZone, status: null, signal: null, output: Buffer.concat(chunks).toString() });
+      recordError(error instanceof Error ? error : new Error(String(error)));
+      finish(null, null);
     }
   });
 }
