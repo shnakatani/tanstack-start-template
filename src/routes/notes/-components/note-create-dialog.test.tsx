@@ -270,7 +270,8 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     await expectAnnouncements(["保存しています"]);
-    // 完了は createNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
+    // 完了は createNote の決着より前に出さない。出る時点の主張なので、開始が届いた時点で履歴を 1 回読む
+    expect(readAnnouncementHistory()).toEqual(["保存しています"]);
 
     create.resolve({ id: 1 });
 

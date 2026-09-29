@@ -740,7 +740,8 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     await expectAnnouncements(["削除しています"]);
-    // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
+    // 完了は removeNote の決着より前に出さない。出る時点の主張なので、開始が届いた時点で履歴を 1 回読む
+    expect(readAnnouncementHistory()).toEqual(["削除しています"]);
 
     remove.resolve(undefined);
 

@@ -18,11 +18,7 @@ import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
 import { pageTitle } from "@/lib/page-title";
-import {
-  expectAnnouncementHistory,
-  readAnnouncementHistory,
-  readAnnouncements,
-} from "@/test/assert/live-announcer";
+import { readAnnouncementHistory, readAnnouncements } from "@/test/assert/live-announcer";
 
 import { RouteAnnouncer } from "./route-announcer";
 import { RouterInnerWrap } from "./router-inner-wrap";
@@ -118,9 +114,8 @@ it("最初のページでは focus を動かさず、読み上げない", async 
   const screen = await render(<RouterProvider router={createAnnouncedRouter()} />);
   await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
   expect(document.activeElement).toBe(document.body);
-  // 最初のページの通知は、次の遷移の通知の前に並ぶので、そこまでの履歴を丸ごと比べる
-  await userEvent.click(screen.getByRole("button", { name: "B へ" }));
-  await expectAnnouncementHistory([`B — ${APP_NAME}`]);
+  // 後に出る通知が無いので、見出しが描かれた後に履歴を 1 回読む
+  expect(readAnnouncementHistory()).toEqual([]);
 });
 
 it("残るボタンで遷移すると、新しいページの h1 へ focus を移し、title を読み上げる", async () => {

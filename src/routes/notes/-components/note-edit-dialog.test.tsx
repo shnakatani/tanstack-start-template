@@ -15,7 +15,7 @@ import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent } from "@/test/assert/absent";
-import { expectAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncementHistory } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 
@@ -159,7 +159,8 @@ describe("NoteEditDialog", () => {
     await saveButton(screen).click();
 
     await expectAnnouncements(["更新しています"]);
-    // 完了は updateNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
+    // 完了は updateNote の決着より前に出さない。出る時点の主張なので、開始が届いた時点で履歴を 1 回読む
+    expect(readAnnouncementHistory()).toEqual(["更新しています"]);
 
     update.resolve(undefined);
 
