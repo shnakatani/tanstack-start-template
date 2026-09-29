@@ -9,8 +9,6 @@ paths:
 
 - ドメイン型は `src/features/<domain>/schema.ts` のスキーマから `InferOutput<typeof xxxSchema>` で導出し、手書きのフィールド宣言を新設しない。二重管理するとスキーマへのフィールド追加が型に伝わらず、実行時の `v.parse` まで気付けない (ADR-0013)
 - サーバーが付与するフィールド (id / 生成日時等) は、入力スキーマとは別に保存済みスキーマを `entries` の spread で組み立ててそこから導出する。別々に書くと「書き込みでは弾かれるのに読み出しでは通る」非対称が生まれる (ADR-0013)
-- 文字数の上限は `v.maxCodePoints` で書き、`v.maxLength` を使わない。`maxLength` は 𠮷 や絵文字を 2 と数え、「N 文字以内」の文言と SQLite の `length()` の両方とずれる (ADR-0036)
-- 入力欄に `maxLength` を付けず、上限はスキーマに任せる。`maxlength` は code unit で数えてスキーマとずれ、変換中と貼り付けで黙って切る (ADR-0036)
 - 導出には `InferOutput` を使う。`InferInput` は default 付きフィールド (`v.optional(v.boolean(), false)`) を optional にし、読み出し後の形と食い違う (ADR-0013)
 - 項目の呼称は `v.metadata({ label })` でスキーマの各項目に載せ、消費側は `v.getMetadata(entries.x).label` から `satisfies Record<keyof T, string>` 付きの object に写して読む。素の定数 object を別に持たない。持つと項目追加で呼称が漏れても型で落ちない (ADR-0013)
 - 例外はスキーマ由来型どうしを組み合わせる合成ヘルパー型。手書きになる場合は理由をコメントで残す (ADR-0013)
@@ -19,6 +17,11 @@ paths:
 - 導出元の選択を守るテストは、導出型の項目を直接参照する。スキーマ由来型どうしの比較は導出元の書き換えを検出しない (`docs/guides/forms-and-inputs.md`「スキーマの型テストを書く」)
 - フォームの `onSubmit` では値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator のスキーマの変換 (`v.trim()` など) を値に反映せず、手で書き写すと送信値だけが古くなる (`docs/guides/forms-and-inputs.md`「スキーマを書く」)
 - `v.object` から `v.omit` で入力スキーマを派生させたら、未知キーが silent に strip される挙動をテストで固定する。`v.strictObject` 由来なら reject されるので、派生元を確かめてから書く (`docs/guides/forms-and-inputs.md`「スキーマを書く」)
+
+## 文字数の上限はスキーマが code point で持つ
+
+- 文字数の上限は `v.maxCodePoints` で書き、`v.maxLength` を使わない。`maxLength` は 𠮷 や絵文字を 2 と数え、「N 文字以内」の文言と SQLite の `length()` の両方とずれる (ADR-0036)
+- 入力欄に `maxLength` を付けず、上限はスキーマに任せる。`maxlength` は code unit で数えてスキーマとずれ、変換中に上限へ達すると入力できず、貼り付けた文字列を黙って切る (ADR-0036)
 
 ## 型アサーション (`as`) 全面禁止
 

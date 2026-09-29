@@ -31,7 +31,7 @@ schema を 1 つにする、既定値を URL から落とす、`loaderDeps` で 
 
 - 検索欄を持つ一覧の route ファイルは、`Route` と、export しない wrapper だけを持つ (ADR-0010)。入力欄と一覧の描画は `docs/guides/lists-and-search.md`「検索の入力欄を組む」にある。テストは `docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」、サーバ側の LIKE は `src/server/db/like-pattern.ts`
 - valibot 1.5.0 に文字列を切り詰める action は無い (`toMaxValue` は辞書順の置換、長さ系は検証のみ。2026-09-29 に同梱の型定義で確認)。切り詰めは `truncateCodePoints` が持ち、code point で数える (ADR-0036)。code point の境界で切るので、URL で U+FFFD に化けるサロゲートの片割れは残らない
-- 切り詰めは warn しない。IME の変換中に上限を超えるのは通常の入力で、warn にすると日本語入力のたびに鳴る誤検知になる
+- 切り詰めは warn しない。入力欄は上限で止めないので、上限を超えて打つのは通常の入力で、warn にすると誤検知になる
 - `?q=123` のような文字列以外はその route の境界に落ち、`RouteErrorContent` (見出し「エラーが発生しました」、DEV では Standard Schema の issues の JSON を持つ `error.message`) が描かれる。root の全画面エラーにはならない (2026-09-23 に SSR で実測)。coerce やパーサの差し替えはしない: 他の route の search にも波及し、数値を検索したい利用者が URL を手で書く経路のためだけに既定を外す理由が無い
 
 ### 再評価の条件
