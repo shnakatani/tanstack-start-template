@@ -22,17 +22,16 @@ updates:
       # runtime を上げるときに一緒に上げる (minor / patch は通常どおり更新する)
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
-      # Vite+ が版を決める一族は bot に上げさせない。vite-plus の PR のブランチで vp migrate を打ち、
-      # core (vite の alias 先)・vitest・@vitest/* を同梱の版へ揃える (ADR-0005 の決定 5)。
-      # bot は vitest を vite-plus と別に上げ、同梱の版より先へ進める (voidzero-dev/vite-plus#2356)。
-      # ignore は security updates の PR も止める。脆弱性は alerts で知り、vite-plus を上げて直す
+      # Vite+ が版を決める一族は bot に上げさせず、vite-plus の PR で vp migrate を打って揃える
+      # (ADR-0005 の決定 5、手順は docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)。
+      # ignore は security updates の PR も止めるので、一族の脆弱性は alerts で知る。
+      # 撤去条件: bot が一族を vite-plus の同梱の版で揃えて上げられるようになったとき (voidzero-dev/vite-plus#2356)
       - dependency-name: "vite"
       - dependency-name: "@voidzero-dev/*"
       - dependency-name: "vitest"
       - dependency-name: "@vitest/*"
     groups:
-      # vite-plus を他の依存と混ぜず 1 本の PR にする。PR は新しい版の通知として使い、
-      # そのブランチで vp migrate を打って仕上げる。major も含めるため minor-and-patch より前に置く
+      # vite-plus を他の依存と混ぜず 1 本の PR にする。major も含めるため minor-and-patch より前に置く
       # (Dependabot は先に一致したグループを採る)
       vite-plus:
         patterns:

@@ -1,12 +1,4 @@
-# このファイルは 3 区画に分かれる。
-# - 「Vite+ が管理」: vp migrate だけが書き、Vite+ を上げるたびに書き直すキー。手で編集しない
-# - 「両方が書く」: 1 つのキーに vp migrate の行と手で足す行が同居する
-# - 「このテンプレートが追加」: vp migrate が書かないキー
-# 区画の境界は、vite・vitest・@vitest/coverage-v8・@vitest/browser-playwright だけを依存に持つ
-# プロジェクトに vp migrate を打った出力で決めた (2026-09-29、vite-plus 1.0.0)。catalog の @vitest/* の行は、
-# 依存にあるものだけを vp migrate が vitest の版へ揃える
-
-# ===== Vite+ が管理 =====
+# ===== Vite+ が管理 (vp migrate だけが書き、Vite+ を上げるたびに書き直す。手で編集しない) =====
 
 overrides:
   # vite-plus と core (vite の alias) を同じリリースに揃える。版は catalog が持つ。
@@ -15,8 +7,7 @@ overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
 
-# vite-plus・core・vitest の版は Vite+ のリリースが決める。vite-plus を上げたら vp migrate で揃える
-# (.github/dependabot.yml が vite-plus 以外を ignore する理由)
+# 版は vite-plus の同梱の版で決まるので、.github/dependabot.yml は vite-plus 以外を ignore する
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0
   vitest: 5.0.1
@@ -24,7 +15,7 @@ catalog:
   "@vitest/browser-playwright": 5.0.1
   "@vitest/coverage-v8": 5.0.1
 
-# ===== 両方が書く =====
+# ===== 両方が書く (1 つのキーに vp migrate の行と手で足す行が同居する) =====
 
 # 待機の除外 (ADR-0005)
 # - 版の無い行は vp migrate が書く Vite+ 一族の恒久除外。編集しない
@@ -41,7 +32,6 @@ minimumReleaseAgeExclude:
   - vitest
   - "@vitest/*"
 
-# allowAny と allowedVersions の vite・vitest は vp migrate が書く。
 # vite を core へ alias すると版が core の番号 (1.x) になり、vite の peer 範囲を満たさなくなる。
 # vp migrate が書く、番号の不一致だけを抑える設定。外しても vp migrate が書き戻す。
 # 撤去条件: vite-plus が alias のまま strict な peer の検査を通せるようになったとき (voidzero-dev/vite-plus#2806)
@@ -72,7 +62,7 @@ peerDependencyRules:
     # Vite+ を上げたら、vite-plus/versions の export が残っているかを確かめる
     "storybook>vite-plus": "1"
 
-# ===== このテンプレートが追加 =====
+# ===== このテンプレートが追加 (vp migrate が書かない) =====
 
 allowBuilds:
   esbuild: true
@@ -105,9 +95,8 @@ packageExtensions:
 # Vitest 既定の 414x896 で走り、parameters / globals の viewport も効かない。patch は import 先を上流の
 # next と同じ `vitest/browser` へ替える (storybookjs/storybook#36164)。
 # キーを範囲にして、addon の 10.x の後続版にも当て続ける。版まで固定すると、Dependabot の更新で patch が
-# 当たらず addon だけが PR から外れ、storybook 一族の版が割れる。10.6.1 の準備ブランチでも import は
-# `@vitest/browser/context` のまま (2026-09-29 確認)。上流が import を直すと patch が当たらず install が
-# 落ちる (pnpm 11 は patch の失敗を常にエラーにする)。それが撤去条件を確かめる契機になる (ADR-0005)。
+# 当たらず addon だけが PR から外れ、storybook 一族の版が割れる。上流が import を直すと patch が当たらず
+# install が落ちる (pnpm 11 は patch の失敗を常にエラーにする)。それが撤去条件を確かめる契機になる (ADR-0005)。
 # 撤去条件: addon-vitest の安定版が peer に vitest 5 を含み、viewport の import を vitest/browser にしたとき
 patchedDependencies:
   "@storybook/addon-vitest@^10.6.0": patches/@storybook__addon-vitest@10.6.0.patch

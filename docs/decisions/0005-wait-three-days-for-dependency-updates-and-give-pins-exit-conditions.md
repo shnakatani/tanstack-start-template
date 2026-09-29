@@ -75,12 +75,7 @@ bot からは一族が無関係な別パッケージに見えるので、グル�
 - `vitest` が `vite-plus` と別の日に出ると、`vitest` を同梱の版より先へ上げる PR ができる (vite-plus の issue 2356)。2026-09-09 から 09-28 に 6 本来た
 - `vite-plus` を上げた PR に `vite` の alias 先は含まれなかった (2026-09-16、09-21 の 2 本)
 
-| 対象                                             | `.github/dependabot.yml` の扱い         |
-| ------------------------------------------------ | --------------------------------------- |
-| `vite-plus`                                      | 単独の `vite-plus` グループで PR にする |
-| `vite`、`@voidzero-dev/*`、`vitest`、`@vitest/*` | `ignore` に入れ、PR を作らせない        |
-
-`vite-plus` の PR は新しい版の通知として使い、そのブランチで `vp migrate` を打って仕上げる。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
+`.github/dependabot.yml` は `vite-plus` だけを単独のグループで PR にし、一族の残りを `ignore` する。`vite-plus` の PR は新しい版の通知として使い、そのブランチで `vp migrate` を打って仕上げる。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
 
 `ignore` は security updates の PR も止める (GitHub Docs「Controlling which dependencies are updated」)。一族の脆弱性は alerts で知り、修正を含む `vite-plus` へ上げて直す (決定 6 のトリガ A)。
 
@@ -138,8 +133,7 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 - Dependabot の version updates PR は weekly スケジュールと 3 日 cooldown の合成で、リリースから最長 1 週間強遅れて届く
 - pin のリスクは「advisory が出てから対応するまでの遅延」に限定される。検知は自動のまま残るので、無検知の放置は起きない
 - Dependabot PR の処理が「依存更新の取り込み」と「pin の出口確認」を兼ねる。手順が 1 段増えるが、独立した定期タスクを管理するより忘れにくい
-- 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき
-- Vite+ の更新は `vite-plus` の PR に `vp migrate` の commit を足して仕上げる。再評価の条件は、Vite+ が bot 向けの設定か版のずれの検知を出したとき (vite-plus の issue 2356)
+- 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき、bot が Vite+ の一族を同梱の版で揃えて上げられるようになったとき (vite-plus の issue 2356)。core の版のずれを検知する vite-plus の PR 2462 (2026-09-29 に draft) は `vitest` のずれを扱わないので、merge されても `vitest` と `@vitest/*` の `ignore` は外せない
 - `package.json` の `playwright` は caret で持つ。`*` にして版追随を `@vitest/browser-playwright` へ委任する形は成り立たない。その peer 自身が `playwright: "*"` (`optional: false`) で何も制約しておらず、委任先が存在しない (2026-09-02 実測)。実際に版を決めているのは lockfile と待機ゲートで、そこは caret でも変わらない。caret にすると major が Dependabot の別 PR になり判断が挟まる。exact pin ではないため出口条件は無い
 - `package.json` の `nitro` は nitro 3 の beta 版に exact pin する。TanStack Start の hosting ガイドが使う `nitro/vite` の plugin は nitro 3 にしかなく、nitro 3 は使える stable 版が出ていない (2026-09-27 に `npm view nitro dist-tags` の `latest` は `3.0.260903-beta`。`3.0.0` は公開されているが非推奨)。出口条件は nitro 3 の stable 版が `latest` に載ること。そのとき範囲指定か `catalog:` へ移せるかを見直す
 

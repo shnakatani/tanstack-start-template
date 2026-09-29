@@ -89,15 +89,16 @@ Dependabot は `vite-plus` だけを PR にし、core (`vite` の alias 先)・`
 ```bash
 gh pr checkout <PR 番号>
 vp install
-./node_modules/.bin/vp migrate --no-interactive
-vp fmt pnpm-workspace.yaml
+vp exec vp migrate --no-interactive
+pnpm peers check
 mise run verify
 git commit -am "vp migrate で Vite+ の一族を同梱の版へ揃える"
 git push
 ```
 
-- `vp migrate` は、打った CLI が同梱する版へ core と `vitest` を揃える ([Vite+ docs「Update Vite+」][])。直接の依存にある `@vitest/*` も `vitest` の版へ揃える ([Vite+ docs「Migration Rules」][])。先に `vp install` で PR の版の `vite-plus` を `node_modules` へ入れ、その CLI で打つ
-- `vp migrate` はクォートを一重にするので `vp fmt` で戻す。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
+- `vp migrate` は、打った CLI が同梱する版へ core と `vitest` を揃える ([Vite+ docs「Update Vite+」][])。直接の依存にある `@vitest/*` も `vitest` の版へ揃える ([Vite+ docs「Migration Rules」][])。先に `vp install` で PR の版の `vite-plus` を `node_modules` へ入れ、`vp exec` でその CLI を打つ
+- 作業ツリーが clean なら `vp migrate` は変えたファイルを `vp fmt` で整える。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
+- `pnpm peers check` の食い違いと、`storybook>vite-plus` の許可が頼る `vite-plus/versions` の export は「peer の食い違いを数える」で確かめる
 - push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
 - `vp migrate` が catalog に書いた依存は、`.github/dependabot.yml` の `ignore` にも足す。足さないと bot が同梱の版と別に上げる
 
