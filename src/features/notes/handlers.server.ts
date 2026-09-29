@@ -87,7 +87,7 @@ let appDb: NotesDb | undefined;
 /**
  * アプリ本体が使う接続。import 時ではなく初回呼び出し時に開くことで、
  * DB_FILE_NAME を必要としない経路 (テストや client build のモジュール解決) を巻き込まない。
- * migration の適用は `mise run db:migrate` が担い、接続時には行わない。
+ * migration は接続時に適用しない。理由は `docs/guides/database.md`「migration を起動時に適用しない理由」。
  */
 function appDbConnection(): NotesDb {
   appDb ??= createDb();

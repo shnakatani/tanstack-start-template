@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { statSync } from "node:fs";
+import { resolve } from "node:path";
 
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
@@ -8,41 +8,7 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { requireEnv } from "@/lib/require-env";
 import * as schema from "@/server/db/schema";
 
-const MIGRATIONS_FOLDER = "drizzle";
-
-/**
- * 相対パスの基準にするプロジェクトルートを、起点から上へ package.json を探して決める。
- * 見つからなければ起点をそのまま返す (fail-safe) が、基準がずれた原因を追えるよう warn を残す。
- *
- * @param from 探索の起点ディレクトリ
- */
-export function findProjectRoot(from: string): string {
-  let dir = from;
-  for (;;) {
-    if (existsSync(resolve(dir, "package.json"))) {
-      return dir;
-    }
-    const parent = dirname(dir);
-    if (parent === dir) {
-      console.warn("[db] package.json が見つからず、相対パスを起点ディレクトリ基準で解決します", {
-        from,
-      });
-      return from;
-    }
-    dir = parent;
-  }
-}
-
-/**
- * 相対パスをプロジェクトルート基準へ揃える。
- * cwd 基準のままだと、サブディレクトリから起動したときに DB_FILE_NAME と migration フォルダが
- * 別の場所を指す。DB 側は「migration 未適用の空 DB を黙って作る」形で、migration 側は
- * "Can't find meta/_journal.json file" で現れる (前者は失敗とすら見えない)。
- * 基準は drizzle.config.ts と同じくリポジトリルート。
- */
-function resolveFromProjectRoot(path: string): string {
-  return isAbsolute(path) ? path : resolve(findProjectRoot(process.cwd()), path);
-}
+import { MIGRATIONS_FOLDER } from "./migrations-folder";
 
 function requireDbFileName(): string {
   // fail-closed: 未設定のまま better-sqlite3 に渡すと既定のカレントディレクトリ相対パスへ
@@ -54,25 +20,27 @@ function requireDbFileName(): string {
   );
 }
 
-function ensureDirectoryExists(fileName: string): void {
-  if (fileName === ":memory:") {
-    return;
-  }
-  mkdirSync(dirname(fileName), { recursive: true });
-}
-
 /**
  * DB へ接続する。fileName を省略すると DB_FILE_NAME 環境変数を使う (未設定は throw)。
- * 相対パスはプロジェクトルート基準で解決する。テストからは ":memory:" を引数で渡す。
+ * 相対パスは drizzle-kit と同じく cwd を基準に解決する。DB のファイルは作らない (`mise run db:migrate` が作る)。
+ * テストからは ":memory:" を引数で渡す。
  */
 export function createDb(fileName: string = requireDbFileName()) {
-  const resolved = fileName === ":memory:" ? fileName : resolveFromProjectRoot(fileName);
-  ensureDirectoryExists(resolved);
-  const sqlite = new Database(resolved);
+  // アプリは migration を当てないので、無い DB を作ると最初のクエリが no such table で落ちるだけになる。
+  // fileMustExist が作らずに落とすが、その文言は開こうとしたパスを含まず、ディレクトリを指しても
+  // existsSync は真を返す。先にファイルかを見て、パスを server のログに残して落とす。
+  // server function の例外の文言は client に直列化されて返るので、パスは文言に入れない
+  if (fileName !== ":memory:" && !statSync(fileName, { throwIfNoEntry: false })?.isFile()) {
+    console.error("[db] DB のファイルが無い", { path: resolve(fileName) });
+    throw new Error(
+      "[db] DB のファイルが無い。mise run db:migrate で作るか、DB_FILE_NAME を確かめる",
+    );
+  }
+  const sqlite = new Database(fileName, { fileMustExist: true });
   return drizzle(sqlite, { schema });
 }
 
 /** migration を適用する (drizzle/ 配下の生成 SQL を対象に実行)。 */
 export function migrateDb(db: ReturnType<typeof createDb>): void {
-  migrate(db, { migrationsFolder: resolveFromProjectRoot(MIGRATIONS_FOLDER) });
+  migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
 }

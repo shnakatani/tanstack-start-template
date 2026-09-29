@@ -1,27 +1,17 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
+import Database from "better-sqlite3";
 import * as v from "valibot";
-import { afterEach, describe, expect, it, onTestFinished, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { notes } from "@/server/db/schema";
 
-import { createDb, findProjectRoot, migrateDb } from "./index";
+import { createDb, migrateDb } from "./index";
 
-const REPO_ROOT = resolve(__dirname, "..", "..", "..");
-
-/**
- * `process.cwd()` が `dir` を返す状態で関数を実行する。本物の cwd は動かさない。
- * `process.chdir()` は pool が threads のとき worker で使えない (vitest docs の config/pool)。
- * 検査したいのは「cwd を起点にプロジェクトルートを探す」ことなので、cwd を読む側に見せる値だけを変える。
- * `fs` に渡した相対パスは本物の cwd (テスト中はリポジトリのルート) で解決されるので、相対パスのまま
- * 渡されていないことは、ファイルの有無ではなく渡したパスで確かめる
- */
-function withCwd<T>(dir: string, run: () => T): T {
-  using _cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
-  return run();
-}
+const MISSING_DB_MESSAGE =
+  /^\[db\] DB のファイルが無い。mise run db:migrate で作るか、DB_FILE_NAME を確かめる$/;
 
 describe("createDb", () => {
   const originalDbFileName = process.env.DB_FILE_NAME;
@@ -94,108 +84,49 @@ describe("createDb", () => {
     expect(updatedAt).toBe(createdAt);
   });
 
-  it("接続先ディレクトリが存在しなければ作成する", () => {
-    const dir = join(tmpdir(), `db-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    const fileName = join(dir, "nested", "dev.sqlite");
-    expect(existsSync(join(dir, "nested"))).toBe(false);
+  // アプリは migration を当てないので、作った空の DB は最初のクエリで落ちるだけになる。作らずに落とす
+  // server function の例外の文言は client に直列化されて返るので、パスは文言に入れず server のログにだけ残す
+  it("DB のファイルが無ければ作らずに throw し、開こうとしたパスは server のログにだけ残す", () => {
+    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
+    const fileName = join(dir, "missing.sqlite");
+    using error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      // 文言を完全一致で固定し、throw することとパスを含まないことを 1 本で確かめる
+      expect(() => createDb(fileName)).toThrow(MISSING_DB_MESSAGE);
+      expect(error).toHaveBeenCalledWith("[db] DB のファイルが無い", { path: fileName });
+      expect(existsSync(fileName)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("ディレクトリを渡しても、開こうとしたパスをログに残して throw する", () => {
+    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
+    using error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      expect(() => createDb(dir)).toThrow(MISSING_DB_MESSAGE);
+      expect(error).toHaveBeenCalledWith("[db] DB のファイルが無い", { path: dir });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("既にある DB のファイルを開く", () => {
+    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
+    const fileName = join(dir, "dev.sqlite");
+    new Database(fileName).close();
 
     let db: ReturnType<typeof createDb> | undefined;
     try {
       db = createDb(fileName);
-      expect(existsSync(join(dir, "nested"))).toBe(true);
       // native binding での接続自体が有効であることも確認する (migration 未適用でも通る素の疎通)
       expect(db.$client.prepare("select 1 as one").get()).toEqual({ one: 1 });
     } finally {
       // 開いたままの handle を残して削除すると、WAL/journal の後始末が走らず削除も取りこぼす
       db?.$client.close();
       rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  // cwd 相対のままだと、サブディレクトリから起動したときに DB_FILE_NAME が別の場所を指し、
-  // migration 未適用の空 DB が黙って作られる (「データが消えた」に見える)
-  it("相対パスの接続先をプロジェクトルート基準で解決する", () => {
-    const root = mkdtempSync(join(tmpdir(), "db-root-"));
-    const sub = join(root, "src", "server");
-    mkdirSync(sub, { recursive: true });
-    writeFileSync(join(root, "package.json"), "{}\n");
-
-    try {
-      withCwd(sub, () => {
-        const db = createDb(join(".data", "dev.sqlite"));
-        db.$client.close();
-      });
-
-      expect(existsSync(join(root, ".data", "dev.sqlite"))).toBe(true);
-      expect(existsSync(join(sub, ".data", "dev.sqlite"))).toBe(false);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("migration フォルダもプロジェクトルート基準で解決する", async () => {
-    // migration フォルダの解決先を、migrate に渡した引数で確かめる。spy: true は元の実装を保つので、
-    // スキーマも実際に作られる。先に走ったファイルが `./index` を本物の migrator のまま読み込んでいる
-    // ことがあるので、読み直す前にモジュールのキャッシュを消す (vitest docs の api/vi「vi.resetModules」)。
-    // doMock は using で受けるとテストを抜けるときに外れるが、外れるのは登録だけで、読み直した `./index`
-    // は spy をつかんだままキャッシュに残る (同じく「vi.doUnmock」)。isolate: false で後に走るファイルに
-    // 渡さないよう、テストの終わりにもう一度キャッシュを消す
-    vi.resetModules();
-    onTestFinished(() => {
-      vi.resetModules();
-    });
-    using _migrator = vi.doMock(import("drizzle-orm/better-sqlite3/migrator"), { spy: true });
-    const db = await import("./index");
-    const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");
-
-    withCwd(join(REPO_ROOT, "src"), () => {
-      const client = db.createDb(":memory:");
-      try {
-        db.migrateDb(client);
-        expect(vi.mocked(migrate)).toHaveBeenCalledExactlyOnceWith(client, {
-          migrationsFolder: join(REPO_ROOT, "drizzle"),
-        });
-        client.insert(notes).values({ title: "hello", body: "world" }).run();
-        expect(client.select().from(notes).all()).toHaveLength(1);
-      } finally {
-        client.$client.close();
-      }
-    });
-  });
-});
-
-describe("findProjectRoot", () => {
-  it("最も近い package.json を持つ祖先ディレクトリを返す", () => {
-    const root = mkdtempSync(join(tmpdir(), "db-root-"));
-    const nested = join(root, "a", "b", "c");
-    mkdirSync(nested, { recursive: true });
-    writeFileSync(join(root, "package.json"), "{}\n");
-
-    try {
-      expect(findProjectRoot(nested)).toBe(root);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("自分自身が package.json を持つならそこを返す", () => {
-    expect(findProjectRoot(REPO_ROOT)).toBe(REPO_ROOT);
-  });
-
-  // 見つからないまま黙って cwd 基準へ戻ると、接続先のずれが起点不明のまま残る
-  it("package.json が見つからなければ起点をそのまま返し warn を残す", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const orphan = mkdtempSync(join(tmpdir(), "db-orphan-"));
-
-    try {
-      expect(findProjectRoot(orphan)).toBe(orphan);
-      expect(warn).toHaveBeenCalledWith(
-        "[db] package.json が見つからず、相対パスを起点ディレクトリ基準で解決します",
-        { from: orphan },
-      );
-    } finally {
-      warn.mockRestore();
-      rmSync(orphan, { recursive: true, force: true });
     }
   });
 });
