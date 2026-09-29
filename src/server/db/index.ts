@@ -1,5 +1,5 @@
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
@@ -21,20 +21,20 @@ function requireDbFileName(): string {
   );
 }
 
-function ensureDirectoryExists(fileName: string): void {
-  if (fileName === ":memory:") {
-    return;
-  }
-  mkdirSync(dirname(fileName), { recursive: true });
-}
-
 /**
  * DB へ接続する。fileName を省略すると DB_FILE_NAME 環境変数を使う (未設定は throw)。
- * 相対パスは drizzle-kit と同じく cwd を基準に解決する。テストからは ":memory:" を引数で渡す。
+ * 相対パスは drizzle-kit と同じく cwd を基準に解決する。DB のファイルは作らない (`mise run db:migrate` が作る)。
+ * テストからは ":memory:" を引数で渡す。
  */
 export function createDb(fileName: string = requireDbFileName()) {
-  ensureDirectoryExists(fileName);
-  const sqlite = new Database(fileName);
+  // アプリは migration を当てないので、無い DB を作ると最初のクエリが no such table で落ちるだけになる。
+  // fileMustExist が作らずに落とすが、その文言は開こうとしたパスを含まないので、先にパスと作り方を示す
+  if (fileName !== ":memory:" && !existsSync(fileName)) {
+    throw new Error(
+      `[db] DB のファイルが無い: ${resolve(fileName)}。mise run db:migrate で作るか、DB_FILE_NAME を確かめる`,
+    );
+  }
+  const sqlite = new Database(fileName, { fileMustExist: true });
   return drizzle(sqlite, { schema });
 }
 

@@ -1,7 +1,8 @@
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import Database from "better-sqlite3";
 import * as v from "valibot";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
@@ -80,15 +81,28 @@ describe("createDb", () => {
     expect(updatedAt).toBe(createdAt);
   });
 
-  it("接続先ディレクトリが存在しなければ作成する", () => {
-    const dir = join(tmpdir(), `db-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    const fileName = join(dir, "nested", "dev.sqlite");
-    expect(existsSync(join(dir, "nested"))).toBe(false);
+  // アプリは migration を当てないので、作った空の DB は最初のクエリで落ちるだけになる。作らずに落とす
+  it("DB のファイルが無ければ作らずに throw し、開こうとしたパスと作り方を示す", () => {
+    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
+    const fileName = join(dir, "missing.sqlite");
+
+    try {
+      expect(() => createDb(fileName)).toThrow(fileName);
+      expect(() => createDb(fileName)).toThrow("mise run db:migrate");
+      expect(existsSync(fileName)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("既にある DB のファイルを開く", () => {
+    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
+    const fileName = join(dir, "dev.sqlite");
+    new Database(fileName).close();
 
     let db: ReturnType<typeof createDb> | undefined;
     try {
       db = createDb(fileName);
-      expect(existsSync(join(dir, "nested"))).toBe(true);
       // native binding での接続自体が有効であることも確認する (migration 未適用でも通る素の疎通)
       expect(db.$client.prepare("select 1 as one").get()).toEqual({ one: 1 });
     } finally {
