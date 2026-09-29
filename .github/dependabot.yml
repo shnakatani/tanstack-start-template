@@ -25,21 +25,13 @@ updates:
         update-types: ["version-update:semver-major"]
       # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない。理由と、vite-plus
       # グループの patterns に残す理由は ADR-0005。
-      # 撤去条件: Vite+ の docs が bot の設定例で vitest を上げさせる形を示し、単独で先へ進む vitest の PR を
-      # 扱う手順を持ったとき (voidzero-dev/vite-plus#2356)。vite-plus の PR が来なくなったら外して見直す
+      # 撤去条件: Vite+ の docs が、単独で先へ進む vitest の PR を作らせない bot の設定例を示したとき
+      # (voidzero-dev/vite-plus#2356)
       - dependency-name: "vitest"
-        update-types:
-          - "version-update:semver-major"
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
       - dependency-name: "@vitest/*"
-        update-types:
-          - "version-update:semver-major"
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
     groups:
-      # vite-plus と core を 1 本の PR に束ねる (ADR-0005)。PR はそのブランチで vp migrate を打って
-      # 同梱の版へ揃えてから取り込む (docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)。
+      # vite-plus と core を 1 本の PR に束ねる (ADR-0005)。PR の扱いは
+      # docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」
       # vite はワイルドカード無しの完全一致なので vite-plus のパターンでは拾えない
       vite-plus:
         patterns:
