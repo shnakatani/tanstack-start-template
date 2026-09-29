@@ -5,7 +5,10 @@
 disable_tools = ["node", "pnpm"]
 
 [env]
-DB_FILE_NAME = ".data/dev.sqlite"
+# config_root から組んで絶対パスにする。アプリも drizzle-kit も相対パスを cwd 基準で解決するので、
+# 相対パスのままだとルート以外で起動したときに別の場所を指す。config_root はサブディレクトリから
+# 打ってもこのファイルのディレクトリを指し、worktree ごとに別の DB になる (mise docs の templates)
+DB_FILE_NAME = "{{ [config_root, '.data/dev.sqlite'] | join_path }}"
 
 # port は worktree ごとに分ける。固定すると 2 つ目の worktree が bind に失敗する。
 # 導出はタスクの env に置く。要るのはこの 2 つのタスクだけなのに、トップレベルの [env] へ

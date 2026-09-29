@@ -54,11 +54,11 @@ console.log(context.probeUser.uid);
 
 関心事は「全 fn に要るか」で置き場所を分ける。
 
-| 関心事                                         | 置き場所                                                     | 付け忘れたとき                                                                                  |
-| ---------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| 全 server function に必ず要るもの (認証・CSRF) | `src/start.ts` の `functionMiddleware` / `requestMiddleware` | 付け忘れる場所が無い                                                                            |
-| fn ごとに要否が変わるもの (認可)               | `createServerFn` を包む base builder を選ぶ                  | base builder を選ばずに `createServerFn` を直に書ける。止め方は base builder を置く時点で決める |
-| 未ログインを login へ送る画面遷移              | route の `beforeLoad`                                        | 画面が出るだけ。データは server function 側が守る                                               |
+| 関心事                                                     | 置き場所                                                     | 付け忘れたとき                                                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| 全 server function に必ず要るもの (認証・CSRF・例外のログ) | `src/start.ts` の `functionMiddleware` / `requestMiddleware` | 付け忘れる場所が無い                                                                            |
+| fn ごとに要否が変わるもの (認可)                           | `createServerFn` を包む base builder を選ぶ                  | base builder を選ばずに `createServerFn` を直に書ける。止め方は base builder を置く時点で決める |
+| 未ログインを login へ送る画面遷移                          | route の `beforeLoad`                                        | 画面が出るだけ。データは server function 側が守る                                               |
 
 - 認証は `createMiddleware({ type: "function" })` で作り、`src/start.ts` の `functionMiddleware` へ渡す。個々の `createServerFn` には書かない
 - 認可の base builder は、ロールによる出し分けが必要になった時点で足す。`createServerFn` の直接 import を lint で禁じるかも、その時点で ADR-0007 の選定基準に当てて判断する。禁じられること自体は oxlint の `no-restricted-imports` で確認した (下記「出典」)
