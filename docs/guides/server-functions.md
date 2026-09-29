@@ -26,15 +26,6 @@ redirect と notFound は、画面の遷移や 404 のための制御の throw �
 
 server function の例外の文言は、本番でも client に直列化されて返る ([TanStack Start docs「Server Functions」][] の Error Handling & Redirects: "Errors are serialized to the client")。返さない設定は docs と upstream の issue に見つからなかった (@tanstack/react-start 1.168.49、2026-09-29 に確認)。
 
-### server function から別の server function を呼ばない理由
-
-公式は入れ子の呼び出しを認めている。[TanStack Start docs「Server Functions」][] は呼び出し元に "loaders, components, hooks, or other server functions" を挙げる。
-
-| 案                                                                        | 評価                                                                                                                                            | 採否     |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 処理を共有するときは、実処理の関数 (`.server.` を含むファイル) を直接呼ぶ | global の function middleware は外側の 1 回だけ走る。宣言と実処理を分ける置き方 (`docs/guides/placement.md`「server function の置き場」) に沿う | **採用** |
-| server function から別の server function を呼ぶ                           | 内側でも global の function middleware が走り、同じ例外が 2 回ログに残る (@tanstack/react-start 1.168.49、2026-09-29 に実測)                    | 却下     |
-
 ### 部分一致の検索を実 SQLite で確かめる理由
 
 エスケープの純粋関数だけを単体で確かめると、SQL に `ESCAPE` 句を付け忘れても通る。エスケープと `ESCAPE` 句の対応は、実際に SQL を走らせないと確かめられない。
@@ -53,7 +44,7 @@ server function の例外の文言は、本番でも client に直列化され�
 
 - server function の例外は、`src/start.ts` の `logServerFnErrors` (global の `functionMiddleware`) が `console.error` で残して投げ直す。redirect と notFound は残さない。理由は「例外を global の function middleware で残す理由」
 - 個々の server function の中で catch してログを書かない。global の middleware と二重に残る
-- server function の中から別の server function を呼ばない。処理を共有するなら、実処理の関数 (`.server.` を含むファイル) を直接呼ぶ。理由は「server function から別の server function を呼ばない理由」
+- server function から別の server function を呼ぶと、内側と外側の両方で middleware が走り、同じ例外が 2 回残る (@tanstack/react-start 1.168.49、2026-09-29 に実測)
 - 例外の文言に、パスや内部の値を入れない。文言は client に返る。調べるための値は `console.error` で server のログに残す
 - server function の外 (描画の途中など) で起きた例外は、この middleware を通らない。function middleware の範囲は server function だけである ([TanStack Start docs「Middleware」][])
 
