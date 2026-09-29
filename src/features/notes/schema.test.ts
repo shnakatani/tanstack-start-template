@@ -37,35 +37,9 @@ describe("noteInputSchema", () => {
     expect(result.output.title).toBe("見出し");
   });
 
-  // title の長さ境界: 1 / 上限-1 / 上限 accept、上限 +1 reject
-  it.each([1, NOTE_TITLE_MAX_LENGTH - 1, NOTE_TITLE_MAX_LENGTH])(
-    "accepts title of %i chars (境界内)",
-    (length) => {
-      const result = v.safeParse(noteInputSchema, { ...valid, title: "あ".repeat(length) });
-      expect(result.success).toBe(true);
-    },
-  );
-
-  it("rejects title over the max length", () => {
-    const result = v.safeParse(noteInputSchema, {
-      ...valid,
-      title: "あ".repeat(NOTE_TITLE_MAX_LENGTH + 1),
-    });
-    expect(result.success).toBe(false);
-  });
-
-  // 数える単位は code point (ADR-0036)。𠮷 は UTF-16 で 2 unit だが 1 と数える
-  // 𠮷 は 2 code unit・1 code point。cap - 1 / cap は受け付け、cap + 1 は落とす
-  // (code unit で数えると cap / 2 + 1 文字で落ちる)
-  it.each([
-    ["title", NOTE_TITLE_MAX_LENGTH],
-    ["body", NOTE_BODY_MAX_LENGTH],
-  ] as const)("%s はサロゲートペアの文字を 1 文字と数える", (field, cap) => {
-    const at = (length: number) =>
-      v.safeParse(noteInputSchema, { ...valid, [field]: "𠮷".repeat(length) }).success;
-    expect(at(cap - 1)).toBe(true);
-    expect(at(cap)).toBe(true);
-    expect(at(cap + 1)).toBe(false);
+  it("accepts title of 1 char (下限)", () => {
+    const result = v.safeParse(noteInputSchema, { ...valid, title: "あ" });
+    expect(result.success).toBe(true);
   });
 
   it("accepts empty body (body に minLength 制約はない)", () => {
@@ -73,21 +47,19 @@ describe("noteInputSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  // body の長さ境界: 0 / 上限-1 / 上限 accept、上限 +1 reject
-  it.each([0, NOTE_BODY_MAX_LENGTH - 1, NOTE_BODY_MAX_LENGTH])(
-    "accepts body of %i chars (境界内)",
-    (length) => {
-      const result = v.safeParse(noteInputSchema, { ...valid, body: "い".repeat(length) });
-      expect(result.success).toBe(true);
-    },
-  );
-
-  it("rejects body over the max length", () => {
-    const result = v.safeParse(noteInputSchema, {
-      ...valid,
-      body: "い".repeat(NOTE_BODY_MAX_LENGTH + 1),
-    });
-    expect(result.success).toBe(false);
+  // 上限の境界: cap - 1 / cap は受け付け、cap + 1 は落とす。数える単位は code point (ADR-0036) で、
+  // 𠮷 は 2 code unit・1 code point。code unit で数えると cap / 2 + 1 文字で落ちる
+  it.each([
+    ["title", NOTE_TITLE_MAX_LENGTH, "あ"],
+    ["title", NOTE_TITLE_MAX_LENGTH, "𠮷"],
+    ["body", NOTE_BODY_MAX_LENGTH, "い"],
+    ["body", NOTE_BODY_MAX_LENGTH, "𠮷"],
+  ] as const)("%s は上限 %i 文字まで受け付ける (%s)", (field, cap, char) => {
+    const at = (length: number) =>
+      v.safeParse(noteInputSchema, { ...valid, [field]: char.repeat(length) }).success;
+    expect(at(cap - 1)).toBe(true);
+    expect(at(cap)).toBe(true);
+    expect(at(cap + 1)).toBe(false);
   });
 
   describe("dueDate", () => {
@@ -298,16 +270,14 @@ describe("noteListFilterSchema", () => {
     expect(v.parse(noteListFilterSchema, { q: "   " })).toEqual({ q: "" });
   });
 
-  // 上限 cap = NOTE_QUERY_MAX_LENGTH。cap-1 / cap は保ち、cap+1 は cap で切る (reject しない)
-  it("上限を超えた分は切り詰め、エラーにしない", () => {
+  // 上限の境界: cap - 1 / cap 文字は保ち、cap + 1 文字は cap 文字に切る (reject しない)。数える単位は
+  // code point (ADR-0036) で、𠮷 は 2 code unit・1 code point
+  it.each(["a", "𠮷"])("上限を超えた分は切り詰め、エラーにしない (%s)", (char) => {
     const cap = NOTE_QUERY_MAX_LENGTH;
-    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap - 1) })).toEqual({
-      q: "a".repeat(cap - 1),
-    });
-    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap) })).toEqual({ q: "a".repeat(cap) });
-    expect(v.parse(noteListFilterSchema, { q: "a".repeat(cap + 1) })).toEqual({
-      q: "a".repeat(cap),
-    });
+    const parseQ = (length: number) => v.parse(noteListFilterSchema, { q: char.repeat(length) }).q;
+    expect(parseQ(cap - 1)).toBe(char.repeat(cap - 1));
+    expect(parseQ(cap)).toBe(char.repeat(cap));
+    expect(parseQ(cap + 1)).toBe(char.repeat(cap));
   });
 
   // "a" × (cap - 1) + " b" は cap + 1 文字。cap で切ると末尾が空白になるので落とし、cap - 1 文字の "a" にする。
@@ -323,16 +293,6 @@ describe("noteListFilterSchema", () => {
     expect(v.parse(noteListFilterSchema, { q: ` ${"a".repeat(NOTE_QUERY_MAX_LENGTH)} ` })).toEqual({
       q: "a".repeat(NOTE_QUERY_MAX_LENGTH),
     });
-  });
-
-  // 数える単位は code point (ADR-0036。詳細は truncate-code-points.test.ts)
-  it("切り詰めはサロゲートペアの文字を 1 文字と数える", () => {
-    // 𠮷 は 2 code unit・1 code point。cap - 1 / cap 文字は保ち、cap + 1 文字は cap 文字にする
-    const cap = NOTE_QUERY_MAX_LENGTH;
-    const parseQ = (length: number) => v.parse(noteListFilterSchema, { q: "𠮷".repeat(length) }).q;
-    expect(parseQ(cap - 1)).toBe("𠮷".repeat(cap - 1));
-    expect(parseQ(cap)).toBe("𠮷".repeat(cap));
-    expect(parseQ(cap + 1)).toBe("𠮷".repeat(cap));
   });
 
   // URL の `?q=123` は Router の JSON パースで number になる (ADR-0019)。既定の英語文言を出さない
