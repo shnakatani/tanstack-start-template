@@ -29,7 +29,7 @@ overrides:
 packageExtensionsChecksum: sha256-ttdFC/5hpXZP+Ocsv+u7pWl9gzxONh3zAFJp9hbCbPE=
 
 patchedDependencies:
-  '@storybook/addon-vitest@10.6.0': d6679df296630352f07da3f7fdf652eaa51476c7d9983c2e84cb6314b30afdc8
+  '@storybook/addon-vitest@^10.6.0': d6679df296630352f07da3f7fdf652eaa51476c7d9983c2e84cb6314b30afdc8
 
 importers:
 
