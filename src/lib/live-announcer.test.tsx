@@ -1,12 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import {
-  announce,
-  DEFAULT_POLITENESS,
-  findLiveRegion,
-  LIVE_REGION_IDS,
-  type Politeness,
-} from "./live-announcer";
+import { announce, DEFAULT_POLITENESS, LIVE_REGION_IDS, type Politeness } from "./live-announcer";
 
 /**
  * region に残っている通知を読む。ほかのテストは announce の呼び出しの履歴を読むが
@@ -14,7 +8,7 @@ import {
  * region は browser-setup.tsx の beforeEach が描く。無いのは配線漏れなので throw する
  */
 function readRegion(politeness: Politeness = DEFAULT_POLITENESS): string[] {
-  const region = findLiveRegion(politeness);
+  const region = document.getElementById(LIVE_REGION_IDS[politeness]);
   if (region === null) {
     throw new Error(`live region (${LIVE_REGION_IDS[politeness]}) が無い`);
   }

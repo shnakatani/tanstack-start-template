@@ -737,7 +737,7 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     await expectAnnouncements(["削除しています"]);
-    // 完了は removeNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
+    // 完了は removeNote の決着より前に出さない。上の expectAnnouncements が開始だけに一致した時点で見ている
 
     remove.resolve(undefined);
 

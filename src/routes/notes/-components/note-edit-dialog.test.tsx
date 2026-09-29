@@ -159,7 +159,7 @@ describe("NoteEditDialog", () => {
     await saveButton(screen).click();
 
     await expectAnnouncements(["更新しています"]);
-    // 完了は updateNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
+    // 完了は updateNote の決着より前に出さない。上の expectAnnouncements が開始だけに一致した時点で見ている
 
     update.resolve(undefined);
 

@@ -25,10 +25,9 @@ export const DEFAULT_POLITENESS: Politeness = "polite";
 const MESSAGE_LIFETIME_MS = 7000;
 
 /**
- * politeness に対応する region。無いときの扱い (warn / throw) は呼び出し側が決める
- * (`announce` は warn、region を読む `live-announcer.test.tsx` は throw)。
+ * politeness に対応する region。無いときは `announce` が warn する。
  */
-export function findLiveRegion(politeness: Politeness): HTMLElement | null {
+function findLiveRegion(politeness: Politeness): HTMLElement | null {
   return document.getElementById(LIVE_REGION_IDS[politeness]);
 }
 

@@ -270,7 +270,7 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     await expectAnnouncements(["保存しています"]);
-    // 完了は createNote の決着より前に出さない (上の toEqual が完了の不在も見ている)
+    // 完了は createNote の決着より前に出さない。上の expectAnnouncements が開始だけに一致した時点で見ている
 
     create.resolve({ id: 1 });
 

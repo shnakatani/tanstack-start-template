@@ -39,8 +39,8 @@ beforeEach(async () => {
 
 /**
  * `announce()` (ADR-0026) の書き込み先を全ブラウザテストに用意する。本番は `RootDocument` が
- * 持つが、部品やページ単体の描画はそこを通らない。テストごとに置くと置き忘れが
- * `readAnnouncements` の throw まで出てこないので、setup で 1 回描く。
+ * 持つが、部品やページ単体の描画はそこを通らない。無いと `announce()` が region を見つけられずに warn を
+ * 出し、region へ書くことを確かめる `src/lib/live-announcer.test.tsx` も読む先を失うので、setup で 1 回描く。
  *
  * 描く前に前テストの描画 (region を含む) を外す。vitest-browser-react も後始末の `beforeEach` を持つが、
  * モジュールの読み込み時に登録するので、`--no-isolate` (`isolate: false`) で走らせるとモジュールが使い回され、最初のファイルにしか
