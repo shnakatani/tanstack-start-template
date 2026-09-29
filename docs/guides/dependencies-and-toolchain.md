@@ -90,7 +90,6 @@ Dependabot は `vite-plus` の更新を `vite-plus` グループの PR にする
 gh pr checkout <PR 番号>
 vp install
 vp exec vp migrate --no-interactive
-pnpm peers check
 mise run verify
 git add -A
 git commit -m "vp migrate で core と vitest を vite-plus の同梱の版へ揃える"

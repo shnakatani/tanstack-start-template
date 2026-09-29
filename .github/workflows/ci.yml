@@ -36,7 +36,7 @@ jobs:
       # 未取得のまま browser project を走らせると実行ファイル不在で落ちる
       - run: vp exec playwright install chromium --only-shell
 
-      # .mise.toml の [tasks.verify] と同じ順序を並べる。`vp run` のタスクにまとめない:
+      # .mise.toml の [tasks.verify] と同じ順序を並べる (pnpm peers check は下の peers ジョブ)。`vp run` のタスクにまとめない:
       # Vite Task は親の環境変数を素通しせず (env / untrackedEnv への明示が要る)、既定で
       # 結果をキャッシュする。マージ前の gate がリプレイで済まされるのを避ける
       - run: vp check
@@ -47,3 +47,44 @@ jobs:
 
       # ビルド成果物を起動して、セキュリティヘッダが実レスポンスに乗ることを確かめる
       - run: vp node scripts/checks/runtime/security-headers.ts
+
+  # peer の食い違いを数える (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)。
+  # Dependabot の vite-plus の PR をそのまま取り込むと、vite-plus が exact な peer に持つ
+  # @vitest/browser-playwright と食い違い、ここで落ちる (ADR-0005)。
+  # 依存の構造は lockfile から、許可は pnpm-workspace.yaml の peerDependencyRules から読むので、
+  # どちらかが変わったときだけ走らせる。workflow の paths で絞らずジョブの中で判定するのは、
+  # 条件で飛ばした step のジョブは Success を返し、必須チェックにしても Pending で残らないため
+  # (GitHub Docs「Troubleshooting required status checks」)
+  peers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # push は直前の tip と比べるので履歴が要る
+          fetch-depth: 0
+
+      # pull_request の HEAD は base との merge commit で、1 つ目の親が base の tip。
+      # push は push 前の tip (event の before) と比べる
+      - id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then base="HEAD^1"; else base="$PUSH_BEFORE"; fi
+          # 差分を取れないとき (比べる先が無いなど) も exit 0 以外になり、検査を走らせる側に倒れる
+          if git diff --quiet "$base" HEAD -- pnpm-lock.yaml pnpm-workspace.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 依存の構造は lockfile から読み、node_modules は使わないので install しない
+      - if: steps.changes.outputs.changed == 'true'
+        uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
+        with:
+          run-install: false
+
+      - if: steps.changes.outputs.changed == 'true'
+        run: pnpm peers check

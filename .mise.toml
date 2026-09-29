@@ -49,6 +49,9 @@ run = "vp exec drizzle-kit migrate"
 [tasks.verify]
 description = "マージ前検証をまとめて実行する"
 run = [
+  # peer の食い違いを lockfile と peerDependencyRules から数える。lockfile を書き換えないので、
+  # pnpm を直接打たない理由 (AGENTS.md) には当たらない (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
+  "pnpm peers check",
   "vp check",
   "vp test run",
   "vp build",
