@@ -17,6 +17,13 @@ describe("thrownValueMessage", () => {
     expect(thrownValueMessage(new Error("取得に失敗しました"))).toBe("取得に失敗しました");
   });
 
+  it("Error でなくても文字列の message を持つ値は、その message を返す", () => {
+    expect(thrownValueMessage({ message: "取得に失敗しました", code: 404 })).toBe(
+      "取得に失敗しました",
+    );
+    expect(thrownValueMessage({ message: 404 })).toBe("[object Object]");
+  });
+
   it("Error でない値は文字列にして返す", () => {
     expect(thrownValueMessage("中断されました")).toBe("中断されました");
     expect(thrownValueMessage(404)).toBe("404");
@@ -29,5 +36,15 @@ describe("thrownValueMessage", () => {
 
     expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
     expect(warnSpy).toHaveBeenCalledWith("[thrownValueMessage] 文字列にできない値", { value });
+  });
+
+  it("message の読み取りが throw する値も固定の文言を返す", () => {
+    const value = {
+      get message(): string {
+        throw new Error("読み取れない");
+      },
+    };
+
+    expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
   });
 });
