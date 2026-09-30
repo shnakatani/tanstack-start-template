@@ -14,7 +14,8 @@
 ### 手元の環境を用意する
 
 - mise のシェル hook を入れる。hook を入れていない手元では `.mise.toml` の `[env]` が読まれず、`DB_FILE_NAME` が未設定のまま走る。port の導出はタスクの `env` に置いてあるので、hook が無くても `mise run serve` / `mise run storybook` は port を決められる
-- 素の `pnpm` が要るなら `corepack enable` を一度実行する。Vite+ が既定で作る shim は `node` / `npm` / `npx` / `corepack` で、`pnpm` を含まない。Vite+ の corepack shim は `--install-directory` を Vite+ の bin へ向けるので、作られた launcher は PATH に載り、`packageManager` の版に従う
+- 素の `pnpm` が要るなら `corepack enable` を一度実行する。Vite+ が既定で作る shim は `node` / `npm` / `npx` / `corepack` で、`pnpm` を含まない
+- `corepack enable` が作る `pnpm` の launcher は PATH に載り、`packageManager` の版に従う。Vite+ の corepack shim が `--install-directory` を Vite+ の bin へ向けるため
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
 
 ### Node.js の版を打ち直す
