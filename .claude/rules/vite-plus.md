@@ -5,6 +5,8 @@ paths:
   - ".mise.toml"
   - ".github/workflows/**"
   - "tooling/**"
+  - "pnpm-workspace.yaml"
+  - "patches/**"
 ---
 
 # Vite+ ツールチェーン設定
@@ -46,3 +48,9 @@ paths:
 - アプリの分岐の `viteReact({ compiler: { logDiagnostics: true } })` の `logDiagnostics` と `compiler` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0014)
 - bail out のログは `vp build` では `[plugin vite:react-compiler]` だけで `error` / `warn` を含まない。ビルドログは `react-compiler` で grep する (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 - babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0014)
+
+## 依存の patch (`pnpm-workspace.yaml` の `patchedDependencies`)
+
+- patch には理由と撤去条件をコメントで付ける。撤去条件の違う変更を 1 つの patch に持つなら、変えるファイルごとに書く。書かないと、上流が直したあとも patch が残る (ADR-0005「pin には出口条件を書く」)
+- キーは系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
+- 既にある patch へ変更を足すときは、`vp pm patch` と `vp pm patch-commit` の結果をそのまま使わず、ガイドの手順で作り直す。範囲のキーの patch は編集用のディレクトリに当たらず、元の変更が黙って消える (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
