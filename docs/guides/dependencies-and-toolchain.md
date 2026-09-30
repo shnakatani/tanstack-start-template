@@ -96,6 +96,7 @@ gh pr checkout <PR 番号>
 vp install
 vp exec vp migrate --no-interactive
 mise run verify
+git diff pnpm-workspace.yaml  # catalog に依存が増えていたら .github/dependabot.yml にも足す (この節の catalog の項目)
 git add -A
 git commit -m "vp migrate で core と vitest を vite-plus の同梱の版へ揃える"
 git push
@@ -107,7 +108,7 @@ git push
 - push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
 - Dependabot の PR を処理するときは、`vite-plus` の PR が止まっていないかを確かめる (ADR-0005)。`npm view vite-plus time --json` で latest の公開日時を見て、cooldown (`.github/dependabot.yml`) を過ぎたあとの Dependabot の実行 (`gh run list --workflow 'Dependabot Updates'`) で `vite-plus` の PR ができていなければ、その実行のログで判定を見る。`gh run view <run の ID> --log | grep -E "Updating vite-plus from|No update needed for vite-plus"`
 - `minor-and-patch` は `exclude-patterns` で `vite-plus` と `react-compiler` のグループの依存を除く。patterns を持たないグループは、他のグループに入った依存も抱え込む (2026-09-29 時点、[dependabot/dependabot-core#14576][])。2026-09-28 には `vitest` が両方のグループの PR に載った
-- `pnpm-workspace.yaml` の catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と、`minor-and-patch` の `exclude-patterns` にも足す。`vitest` のように `vite-plus` と別の日に公開される依存なら、`ignore` にも `dependency-name` だけで足す (ADR-0005)。撤去条件の書き方は「pin を足す」
+- `vp migrate` が `pnpm-workspace.yaml` の catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と、`minor-and-patch` の `exclude-patterns` にも足す。`vitest` のように `vite-plus` と別の日に公開される依存なら、`ignore` にも `dependency-name` だけで足す (ADR-0005)。撤去条件の書き方は「pin を足す」
 
 ### pin を足す
 
@@ -174,5 +175,5 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
 [pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
-[dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
 [git docs「git-apply」]: https://git-scm.com/docs/git-apply
+[dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
