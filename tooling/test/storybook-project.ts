@@ -5,17 +5,11 @@ import { chromiumProjectBase } from "./chromium-project";
 export const STORYBOOK_THEMES = ["light", "dark"] as const;
 
 /**
- * テーマごとに 1 つの project を作る。`initialGlobals` で toolbar の global を固定すると、
- * 同じ story が両方のテーマで走る (addon-vitest の公式パターン)。light だけで回すと、
- * `parameters.a11y.test: "error"` が dark の contrast を検査していないのに検査しているように
- * 見える。`theme` は `@storybook/addon-themes` の global 名である。
+ * テーマごとに 1 つの project を作る (ADR-0028)。`theme` は `@storybook/addon-themes` の global 名
  */
 export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number]) {
-  // `tooling/test/config.ts` が inline の project として並べるので、root の `vite.config.ts` の
-  // 設定を継承する (Vitest 5 の extends の既定)。ブラウザで走る project に共通する設定は
-  // chromiumProjectBase が持ち、ここには story の実行に固有のものだけを書く。
-  // addon-vitest の plugin と playwright の provider は関数の中で読み込む
-  // (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
+  // root の `vite.config.ts` を継承し、共通の設定は chromiumProjectBase から重ねるので、story の実行に
+  // 固有のものだけを書き、重い依存は関数の中で読み込む (`docs/guides/testing/configuration.md`「project を足す」)
   const [{ storybookTest }, { playwright }] = await Promise.all([
     import("@storybook/addon-vitest/vitest-plugin"),
     import("vite-plus/test/browser-playwright"),
@@ -25,13 +19,8 @@ export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number])
     defineProject({
       plugins: [
         storybookTest({ configDir: ".storybook", initialGlobals: { theme } }),
-        // deps キャッシュを project ごとに分ける。storybookTest() は configDir のハッシュから
-        // cacheDir を導く (addon-vitest の vitest-plugin が oneWayHash(configDir) を projectId に
-        // する) ため、テーマ違いの 2 project が同じ configDir を渡す限り 1 つのキャッシュを
-        // 共有し、実行中に別々の依存を見つけて互いに無効化し合う。config フックの post 順は
-        // storybookTest() の返り値より後に merge されるので、ここで上書きできる。
-        // 相対ではなく固定値で組み立てる。browser mode は config を再ロードするため、
-        // 既存の cacheDir から相対で作ると light/light のように入れ子になる
+        // 事前バンドルのキャッシュをテーマごとに分ける。相対ではなく固定値で組み立てる
+        // (docs/guides/testing/configuration.md「story の project の `cacheDir` をテーマで分ける理由」)
         {
           name: "storybook-theme-cache-dir",
           config: {
@@ -41,33 +30,18 @@ export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number])
         },
       ],
       optimizeDeps: {
-        // 事前バンドルから漏れた依存を実行中に見つけると Vite が再最適化を挟み、
-        // "Vite unexpectedly reloaded a test" と React 二重解決
-        // ("Cannot read properties of null") が出る。
-        //
-        // 書くのは静的な走査で見つからない依存だけでよい。story から辿れる依存は
-        // Storybook 10.6 が story と preview annotation を optimizeDeps.entries へ積む
-        // (storybookjs/storybook#33875)。cacheDir を project ごとに分けたので、走査の結果が
-        // 2 つの project で違っても互いのキャッシュを壊さない。
-        //
-        // axe-core は addon-a11y の preview が import("axe-core") で読む
-        // (dist/_browser-chunks/chunk-P5J2FJ2Z.js)。動的 import なので静的な走査に出ない
+        // 静的な走査で見つからない依存だけを書く (story と preview annotation は Storybook が entries に積む。
+        // storybookjs/storybook#33875)。axe-core は addon-a11y が動的 import で読む
+        // (docs/guides/testing/configuration.md「project に `optimizeDeps` を書く理由」)
         include: ["axe-core"],
-        // @tanstack/react-start 系は exclude しない: @storybook/tanstack-react の framework
-        // preset (viteFinal) が moduleInterceptionPlugin で @tanstack/react-start /
-        // react-start/server / react-start-server / start-server-core への import を
-        // resolveId でモック (export-mocks/start.js) へ差し替え、同じ 4 モジュールを自らの
-        // optimizeDeps.exclude にも登録している。storybookTest() はこの viteFinal を経由して
-        // 読み込むため (addon-vitest の vitest-plugin が presets.apply("viteFinal", ...) を
-        // 呼ぶ)、この project では実パッケージへ到達せず二重に書く必要がない
+        // @tanstack/react-start 系は exclude しない。@storybook/tanstack-react の preset がモックへ差し替え、除外もする
+        // (docs/guides/testing/configuration.md「project に `optimizeDeps` を書く理由」)
       },
       test: {
         name: `storybook-${theme}`,
         browser: {
           provider: playwright(),
-          // viewport はここで指定できない。@storybook/addon-vitest の setViewport が story ごとに
-          // page.viewport() を呼び、parameters.viewport を持たない story は同 addon の既定
-          // (1200x900) へ固定する。browser project (1280x720) とは別の baseline になる
+          // viewport はここで指定できない (docs/guides/storybook.md「vitest 経由の story の viewport が決まる仕組み」)
         },
       },
     }),
