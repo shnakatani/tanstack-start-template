@@ -37,7 +37,7 @@ gh api -X PUT /repos/<owner>/<repo>/automated-security-fixes
 
 ### 待機を前倒しする
 
-公開後 3 日を待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものかを確かめる (ADR-0005 の決定 3)。
+公開後 3 日を待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものかを確かめる (ADR-0005「前倒しは provenance を確認してから」)。
 
 ```bash
 curl -s https://registry.npmjs.org/<pkg>/<version> | jq '{_npmUser, repository, attestations: .dist.attestations}'
@@ -56,17 +56,21 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 pnpm peers check
 ```
 
-- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、AGENTS.md の「pnpm を直接打たない」の理由 (解決が Vite+ の管理から外れる) には当たらない
+- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、`pnpm peers check` は直接打っても解決が Vite+ の管理から外れない
 - `vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm/pnpm#14114][])
 - 許可を外すだけでは lockfile が変わらないので、`--force` を付けても `strictPeerDependencies: true` にしても install は通る (2026-09-29、pnpm 11.28.0)。`pnpm peers check` だけが食い違いを出す
 - 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版の major>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
-- 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005 の決定 6)
+- 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005「pin には出口条件を書く」)
 - Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。`storybook>vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
+- storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (`storybook@10.6.0` の dist で確認)
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側の major を上げると、許可の範囲を外れて `pnpm peers check` に再び食い違いとして出る。新しい major で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
-- `vite` と `vitest` の許可は例外で、`vp migrate` が管理する (理由は `pnpm-workspace.yaml` のコメント)
+- `@vitejs/plugin-react` と `oxc-transform-react` は、`.github/dependabot.yml` の `react-compiler` グループで 1 本の PR にする。plugin-react は optional peer の oxc-transform-react を呼び出す。その peer の範囲は `pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` の `"@vitejs/plugin-react>oxc-transform-react"` で許しているので、install は食い違いを止めない。別々の PR に割れると、上流が試していない組み合わせが片方ずつ入る
+- `vite` と `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-09-28、vite-plus 1.0.0 で実測)
+- `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
+- `vite` の行は効いている。`vite@*` の catalog の値は `npm:` の alias で、このとき peer の宣言は置き換わらず、行を消すと `pnpm peers check` が食い違いを出す (2026-09-28、pnpm 11.28.0 で実測。pnpm の docs はこの場合を書いていない)
 
 ### 依存をバレルの禁止の対象に足す
 
@@ -107,7 +111,14 @@ git push
 
 ### pin を足す
 
-pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏内へ入るパッケージを見つけたら `ignore` へ足し、同じ出口条件を参照させる。出口条件の文字列を grep すれば、pin の全構成要素が見つかる状態を保つ。
+pin を足すときは、ADR-0005「pin には出口条件を書く」に従って出口条件を書く。間接的に pin の圏内へ入るパッケージを見つけたら `ignore` へ足し、同じ出口条件を参照させる。出口条件の文字列を grep すれば、pin の全構成要素が見つかる状態を保つ。
+
+### patch を当てる
+
+依存の配布物に patch を当てるときは、`pnpm-workspace.yaml` の `patchedDependencies` へ足し、patch ごとに理由と撤去条件をコメントに書く (ADR-0005「pin には出口条件を書く」)。
+
+- キーは patch を作った版ではなく、その系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。Dependabot の更新ではその依存だけが PR から外れ、storybook の各パッケージのように揃えて上げる依存の版が割れる (2026-09-29 の commit 8c19c9ec の記述による。Dependabot の実行では観測していない)
+- 上流が同じ箇所を直した版へ上がると、範囲のキーの patch は当たらなくなり、install が落ちる。pnpm 11 は patch の失敗を常にエラーにする ([pnpm docs「pnpm patch」][])。落ちた Dependabot の PR を処理するとき (ADR-0005「pin には出口条件を書く」の、Dependabot の PR を処理するときの確認) に、その patch の撤去条件を確かめる
 
 ### workflow に action を足す
 
@@ -125,8 +136,8 @@ pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏
 | colorjs.io                                                      | `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」「測り方の限界」)。版が上がると値が変わりうる                                                                                                                    |
 | vitest                                                          | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている ([vitest-dev/vitest#9157][]) |
 | `@types/node` の minor                                          | `package.json` の `engines.node` の下限を、その minor まで上げる (ADR-0004)                                                                                                                                                                                                                     |
-| drizzle-kit                                                     | `pnpm-workspace.yaml` の `overrides` の `drizzle-kit>@esbuild-kit/esm-loader` の撤去条件。キーに版が無いので、条件が成り立っても何も言わずに効かない行として残る                                                                                                                                |
-| storybook / @storybook/addon-vitest / @storybook/tanstack-react | `pnpm-workspace.yaml` の `peerDependencyRules` と `patchedDependencies` の撤去条件と、コメントに書いた上げたときの確認 (「peer の食い違いを数える」)                                                                                                                                            |
+| drizzle-kit                                                     | `pnpm-workspace.yaml` の `overrides` の `drizzle-kit>@esbuild-kit/esm-loader` の撤去条件。キーに版が無いので、条件が成り立っても何も言わずに効かない行として残る。beta の `1.0.0-beta.22` と rc の `1.0.0-rc.4` は依存から外している (2026-09-30 に npm registry で確認)                        |
+| storybook / @storybook/addon-vitest / @storybook/tanstack-react | `pnpm-workspace.yaml` の `peerDependencyRules` と `patchedDependencies` の撤去条件。storybook では、dist が `vite-plus` から import しているものも読み直す (「peer の食い違いを数える」「patch を当てる」)                                                                                      |
 | `RESTRICTED_BARREL_IMPORTS` に載せた依存                        | `exports` に個別エントリポイントが残っているか。消えていれば lint の `message` が案内する import が解決しなくなる。react-day-picker を上げたときは、内部の date-fns の import と `locale/ja` の import が変わったかも見る (ADR-0032 の Consequences の再評価の条件)                             |
 
 ### 走査対象を持つ config を足す
@@ -154,3 +165,5 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [dependabot/dependabot-core#14576]: https://github.com/dependabot/dependabot-core/issues/14576
 [vitest-dev/vitest#9157]: https://github.com/vitest-dev/vitest/issues/9157
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
+[pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
+[pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
