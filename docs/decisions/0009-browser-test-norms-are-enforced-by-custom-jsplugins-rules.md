@@ -80,7 +80,7 @@
 | `no-negated-style-literal`  | 実コードへ `.not.toHaveStyle("max-height: none")` を戻すと 1 件報告 | override の `rules` を残したまま適用先から外すと 0 件になり、`lint-config.test.ts` が落ちる               |
 | `no-bare-absence-assertion` | 実コードへ素の形を戻すと 1 件報告                                   | override の `rules` を残したまま `src/test/assert/absent.ts` の行単位抑制を外すと helper 自身が報告される |
 
-- 変数束縛を 1 段追うのは、束縛を挟む形が多いためである。`grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test.tsx' src/` で 64 行 / 17 ファイルあった (2026-09-22)。追跡が外れても直接の形は報告され続けるので、設定は有効に見える。`no-negated-style-literal` の上の 1 件も束縛を挟む形で、追跡が無いと違反が 0 件に見えてルールが効いているように読める
+- 変数束縛を 1 段追うのは、束縛を挟む形が多いためである。`grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test.tsx' src/` で 64 行 / 17 ファイルあった (2026-09-22)。追跡が外れても直接の形は報告され続けるので、設定は有効に見える。`no-negated-style-literal` を有効にした時点の 1 件 (`dialog-scroll-body.test.tsx`) も束縛を挟む形で、追跡が無いと違反が 0 件に見えてルールが効いているように読める
 
 - 判定は 1 ファイルの構文だけで行う。同期読み由来の値は、関数の引数・演算・テンプレート・`await`・`new`・1 段の束縛を通っても `expect()` / `assert` の引数に届けば報告する。`expect.poll` と `vi.waitFor` に直に渡したコールバックは retry されるので、その中の同期読みは報告しない (`scripts/lint/browser-test.ts` の `RETRYING_CALLBACK_CALLEES`)。`expect.element` の引数は呼び出し時に 1 度だけ評価されるので報告する
 - 次の形は報告しない。件数をこのルールで数えるときは、数えた結果がこの範囲を出ない

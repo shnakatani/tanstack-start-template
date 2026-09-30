@@ -225,7 +225,7 @@ describe("contrastRatio", () => {
 
   it("閾値の帯に入る色でも axe-core の getContrast と一致する", () => {
     // 成分が (0.03928, 0.04045] に入る色。2021-05 より前の閾値 0.03928 を使うと
-    // 比が 2e-4 ずれてこのテストだけが落ちる。上の 1 件は帯に入らない色なので、
+    // 比が 2e-4 ずれてこのテストだけが落ちる。「axe-core の getContrast と一致する」の色は帯に入らないので、
     // 閾値を戻しても通ってしまう (2026-09-22 実測)
     //   const { Color, getContrast } = axe.commons.color;
     //   const parse = (s) => { const c = new Color(); c.parseString(s); return c; };

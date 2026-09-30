@@ -40,7 +40,7 @@ import type { ReactNode } from "react";
  * ```
  *
  * 出力のうち `bg-black/10` は dialog / alert-dialog / sheet の scrim で、`fixed inset-0` の面に
- * 文字が載らないため行を持たない。それ以外は下の 2 つの story がすべて描く。
+ * 文字が載らないため行を持たない。それ以外は `OnBackground` と `OnCard` の story がすべて描く。
  */
 /**
  * 1 行 = 面と文字色の 1 対。`className` は呼び出し側がリテラルで渡す。

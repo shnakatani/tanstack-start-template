@@ -224,7 +224,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 | `actionTimeout` ([Vitest docs「Configuring Playwright」][]) | Playwright の操作についてのみ。他 2 つへの影響に言及が無い   |
 | `testTimeout` ([Vitest docs「testTimeout」][])              | 既定値のみ。browser で 15000                                 |
 
-- `actionTimeout` を置かないと `expect.element` が `expect.poll.timeout` を読まず、[Vitest docs「Assertion API」][] の記述と食い違う。置くと記述どおりになる。ただし `actionTimeout` が `expect.element` の timeout に効くことは docs に書かれておらず、メンテナも `actionTimeout` を actions 用と説明している (下の 3 項目)
+- `actionTimeout` を置かないと `expect.element` が `expect.poll.timeout` を読まず、[Vitest docs「Assertion API」][] の記述と食い違う。置くと記述どおりになる。ただし `actionTimeout` が `expect.element` の timeout に効くことは docs に書かれておらず、メンテナも `actionTimeout` を actions 用と説明している (出典は [vitest-dev/vitest#9157][] のメンテナのコメント)
 - 対の 2 つの値は、どちらも [vitest-dev/vitest#9157][] のメンテナのコメントにある。先のコメントは locator の timeout を「set a static value via `actionTimeout`」で固定できると答え、`playwright({ actionTimeout: 5_000 })` を示した。後のコメントは「`actionTimeout` is not applied to assertions. They are controlled by `expect.poll.timeout`」と答え、`actionTimeout` を残した設定へ `expect.poll.timeout: 5_000` を足す diff を示し、再現で動いたと書く (「I tested the reproduction and it seems to work now」)。報告者もこの形で動くと確認している
 - 後のコメントは `actionTimeout` を「affects only actions」と説明する。一方で報告者は、2026-01-06 に vitest 4.0.16 の再現リポジトリで、`actionTimeout: 5000` を置くと timeout が約 2 秒になり (「despite I added `actionTimeout: 5000` the timeout seems to be 2 seconds.」)、外すと 15 秒になった (「Without `actionTimeout` then I get 15 seconds now.」) と報告している
 - `expect.element` に `expect.poll.timeout` を読ませるために `actionTimeout` を対で置くのは、このリポジトリの判断である。5.0.1 での挙動はこの節の実測が支え、上の報告は 4.0.16 での同じ向きの観測である (2026-09-30 に `gh issue view 9157 --repo vitest-dev/vitest --comments` で確認)
