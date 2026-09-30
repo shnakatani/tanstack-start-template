@@ -92,9 +92,9 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | サーバー応答   | `onSuccess` の先頭で `handle.close()` を呼び、その後に再取得の Promise を返す (ダイアログが無ければ `mutateAsync` を await して return)                                                    | 再取得の完了まで続くが、閉じた後は見えない                  |
 | 再取得完了     | `onSuccess` で再取得を await した後に `handle.close()` を呼ぶ                                                                                                                              | 再取得の完了まで続き、ダイアログの pending 表示として見える |
 
-- 確定操作の直後では Transition が確定の直後に終わるので、close の animate-out の間やダイアログの無い操作では `isPending` の dedupe が効かない。同じ対象の mutation が pending なら action を no-op にする。判定は `queryClient.isMutating` か `useMutationState` で取る
-- サーバー応答で handle を複数の対象で共有するときは、閉じる前に、開いている対象がこの mutation の対象と同じかを確かめる。先行する操作の `onSuccess` が、別の対象で開き直したダイアログを閉じてしまう
-- サーバー応答で、入力フォームのように対象を比べられないダイアログは、mutation の pending の間、ユーザー起点の close を止める。pending は再取得の完了まで続くので、その間に開き直したダイアログも閉じられない。応答済みかを再取得中かどうかから推定しない。先行する操作の再取得と重なると応答前でも通り、後から開いたダイアログを先行の `onSuccess` が閉じる (TanStack Query は「応答は届いたが `onSuccess` の途中」を公開の状態で持たない)
+- 完了点「確定操作の直後」では Transition が確定の直後に終わるので、close の animate-out の間やダイアログの無い操作では `isPending` の dedupe が効かない。同じ対象の mutation が pending なら action を no-op にする。判定は `queryClient.isMutating` か `useMutationState` で取る
+- 完了点「サーバー応答」で handle を複数の対象で共有するときは、閉じる前に、開いている対象がこの mutation の対象と同じかを確かめる。先行する操作の `onSuccess` が、別の対象で開き直したダイアログを閉じてしまう
+- 完了点「サーバー応答」で、入力フォームのように対象を比べられないダイアログは、mutation の pending の間、ユーザー起点の close を止める。pending は再取得の完了まで続くので、その間に開き直したダイアログも閉じられない。応答済みかを再取得中かどうかから推定しない。先行する操作の再取得と重なると応答前でも通り、後から開いたダイアログを先行の `onSuccess` が閉じる (TanStack Query は「応答は届いたが `onSuccess` の途中」を公開の状態で持たない)
 - 再取得の完了より前に閉じるなら、対象の項目にその pending から busy の表現を付ける。付け忘れると、古い一覧が pending の表示なしで見える
 
 並行実行を許す操作では `mutationKey` を付ける。
