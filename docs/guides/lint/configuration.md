@@ -109,7 +109,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 | 落とし穴                                                                                          | 起きること                                                                                                                                                                       | 避け方                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | トップレベルの `plugins` は既定集合を置換する                                                     | 「plugins は既定集合を置換する」                                                                                                                                                 | `OXLINT_DEFAULT_PLUGINS` を spread して積む (「プラグインを足す」)                                                                                                                                                                                                      |
-| `overrides` の中の `plugins` はトップレベルと逆で、継承した集合への追加になる                     | override に 1 つだけ書いても、ベースのプラグインは無効にならない。絞ったつもりで絞れていない                                                                                     | override でプラグインを絞ろうとしない。`overrides` は `categories` も持てない ([Oxlint docs「Config file reference」][] の overrides が受け付けるキー。2026-09-24 に確認)                                                                                               |
+| `overrides` の中の `plugins` はトップレベルと逆で、継承した集合への追加になる                     | override に 1 つだけ書いても、ベースのプラグインは無効にならない。絞ったつもりで絞れていない                                                                                     | override でプラグインを絞ろうとしない。`overrides` は `categories` も持てない ([Oxlint docs「overrides」][] が受け付けるキー。2026-09-24 に確認)                                                                                                                        |
 | サブディレクトリに置いた `.oxlintrc.json` は `vp lint` に読まれない                               | `"error"` にしても診断は出ず、`"off"` にしても CLI の指定が通る。丸ごと no-op になる                                                                                             | 設定は `vite.config.ts` の `lint` にまとめる。[Vite+ docs「Lint」][] の Configuration も `.oxlintrc.json` の併用を推奨しない ("We do not recommend using `oxlint.config.ts` or `.oxlintrc.json` with Vite+."。2026-09-24 に確認)                                        |
 | CLI の `-D` は未知のルール名を無視する (exit 0、診断なし)                                         | 打ち間違いが「違反 0 件」に見える                                                                                                                                                | 0 件を結論にする前に `--print-config` にそのルール名があるかを確かめる                                                                                                                                                                                                  |
 | `-D` にプラグイン名を付けずにルール名を渡すと、同じ名前のルールを持つプラグインがすべて有効になる | 2026-09-23 に oxlint 1.82.0 で、`-D prefer-spread` が eslint と unicorn の両方の `prefer-spread` を報告した                                                                      | `-D eslint/prefer-spread` のようにプラグイン名を付ける。件数は診断の `plugin(rule)` 別に数える                                                                                                                                                                          |
@@ -122,7 +122,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 
 ### plugins は既定集合を置換する
 
-`lint.plugins` は既定集合 (`typescript` / `unicorn` / `oxc`) へ追加する設定ではなく、**置換する** ([Oxlint docs「Config file reference」][] の plugins: "Setting the `plugins` field will overwrite the base set of plugins."。2026-09-24 に確認)。
+`lint.plugins` は既定集合 (`typescript` / `unicorn` / `oxc`) へ追加する設定ではなく、**置換する** ([Oxlint docs「plugins」][]: "Setting the `plugins` field will overwrite the base set of plugins."。2026-09-24 に確認)。
 `plugins: ["react"]` と書くと `typescript` が無効になり、`rules` に書いた `typescript/*` の設定は 1 件も検出しなくなる。
 
 **有効でないプラグインのルール設定は、ルール名が検証されるにもかかわらず無診断で捨てられる。**
@@ -216,6 +216,7 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
-[Oxlint docs「Config file reference」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#plugins
+[Oxlint docs「overrides」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#overrides
+[Oxlint docs「plugins」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#plugins
 [Vite+ docs「Lint」]: https://viteplus.dev/guide/lint
 [Storybook の `storybook-story-instructions.md`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/cli/skills/content/instructions/storybook-story-instructions.md

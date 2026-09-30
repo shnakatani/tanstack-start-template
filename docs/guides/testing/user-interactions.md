@@ -21,7 +21,7 @@
 | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせて、ライブラリ内部のガードまで見に行かない                                                                        |
 | 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                                                                                          |
 
-`.click()` が弾く条件は、Playwright の Actionability が定める Visible / Stable / Receives Events / Enabled である ([Playwright docs「Auto-waiting」][])。このリポジトリで弾かれる典型は次のとおり。
+`.click()` が弾く条件は、[Playwright docs「Auto-waiting」][] が定める Visible / Stable / Receives Events / Enabled である。このリポジトリで弾かれる典型は次のとおり。
 
 | 条件               | 落ちる例                                                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
@@ -81,7 +81,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 | Playwright `locator.dispatchEvent()`                | 「Events are `composed`, `cancelable` and bubble by default」([Playwright docs「locator.dispatchEvent」][])。[Playwright docs「Actions」][] の Programmatic click は `HTMLElement.click()` の挙動を起こす手段と位置づける |
 | testing-library `fireEvent.click`                   | [testing-library の `event-map.js`][] の click は `bubbles` / `cancelable` / `composed` が true、`button` は 0                                                                                                            |
 
-同期に 2 回 dispatch すると、1 回目のハンドラが積んだ state 更新は 2 回目より前に描画されない。実イベントでは 1 回ごとに描画が済むので ([reactwg/react-18#21][] の Note)、この形を固定したテストは実装に無用の防御 (ref のフラグ) を要求する。根拠と実測は ADR-0016「二重発火は state だけで塞ぐ」が持つ。ライブラリ自身のテストも同期 2 連射を書かない。
+同期に 2 回 dispatch すると、1 回目のハンドラが積んだ state 更新は 2 回目より前に描画されない。実イベントでは 1 回ごとに描画が済むので ([reactwg/react-18#21][] の Note「for each user-initiated event like a click or a keypress, the DOM is fully updated before the next event」)、この形を固定したテストは実装に無用の防御 (ref のフラグ) を要求する。根拠と実測は ADR-0016「二重発火は state だけで塞ぐ」が持つ。ライブラリ自身のテストも同期 2 連射を書かない。
 
 | ライブラリ | 二重発火・disabled のテストの書き方                                                                                                                                                                                           |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

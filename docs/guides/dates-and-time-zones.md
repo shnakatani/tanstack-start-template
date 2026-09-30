@@ -98,7 +98,7 @@ SSR する画面では、同じ値をサーバーとブラウザの両方で整�
 [TanStack Start docs「Hydration Errors」]: https://tanstack.com/start/latest/docs/framework/react/guide/hydration-errors
 [MDN「Intl.DateTimeFormat.prototype.format()」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/format
 [react-day-picker docs「Setting the Time Zone」]: https://daypicker.dev/localization/setting-time-zone
-[shadcn docs「Calendar」]: https://ui.shadcn.com/docs/components/calendar
+[shadcn docs「Calendar」]: https://ui.shadcn.com/docs/components/base/calendar
 [valibot の `isoDate.ts`]: https://github.com/open-circle/valibot/blob/v1.4.2/library/src/actions/isoDate/isoDate.ts
 [valibot docs「isoDate」]: https://valibot.dev/api/isoDate/
 [drizzle docs「Indexes & Constraints」]: https://orm.drizzle.team/docs/indexes-constraints

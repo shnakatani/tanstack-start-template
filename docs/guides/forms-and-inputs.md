@@ -128,7 +128,7 @@ form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 | 案                                                                                                                                                                                    | 評価                                                                                                                                                                                                             | 採否     |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | form を `DialogContent` の外に置き、見出し・本文・フッターを `DialogContent` の直下に並べる ([shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx`][] の「With Form」) | `DialogContent` は Portal で body の下へ出るので、DOM の上で送信ボタンが form の外になり、送信が起きない。ブラウザテストで送信ボタンの `form` が `null`、`onSubmit` が 0 回だった (form を中に置いた対照は 1 回) | 却下     |
-| Popup を `render` で form として描く                                                                                                                                                  | Popup は描いた要素に `role="dialog"` を付ける。[ARIA in HTML][] が form 要素に許す役割は none / presentation / search で、dialog を含まない                                                                      | 却下     |
+| Popup を `render` で form として描く                                                                                                                                                  | Popup は描いた要素に `role="dialog"` を付ける。[ARIA in HTML「form」][] が form 要素に許す役割は none / presentation / search で、dialog を含まない                                                              | 却下     |
 | `DialogContent` の中を `display: contents` の form で包む (`ActionDialogContent`)                                                                                                     | form が入力欄と送信ボタンの祖先になり、Enter とクリックで送信が起きる。form は box を作らないので、並びは [Base UI docs「Dialog」][] の Inside scroll と同じになる                                               | **採用** |
 
 - [React docs「createPortal」][] は「A portal only changes the physical placement of the DOM node」と書く。[HTML Standard「Association of controls and forms」][] の form owner は「nearest ancestor form element」で、React の木の上の親子関係を見ない
@@ -170,7 +170,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [Base UI docs「Dialog」]: https://base-ui.com/react/components/dialog
 [shadcn docs「Dialog」]: https://ui.shadcn.com/docs/components/base/dialog
 [shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/df1752dfe092957f84aa467d2270436139e3ecc7/apps/v4/registry/bases/base/examples/dialog-example.tsx
-[ARIA in HTML]: https://www.w3.org/TR/html-aria/#el-form
+[ARIA in HTML「form」]: https://www.w3.org/TR/html-aria/#el-form
 [React docs「createPortal」]: https://react.dev/reference/react-dom/createPortal
 [HTML Standard「Association of controls and forms」]: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#association-of-controls-and-forms
 [shadcn-ui/ui#2918]: https://github.com/shadcn-ui/ui/discussions/2918
