@@ -1,14 +1,15 @@
 ---
 paths:
   - "vite.config.*"
+  - "tooling/lint/**"
   - "scripts/lint/**"
 ---
 
 # Oxlint 設定
 
-lint は Oxlint が担い、設定は Vite+ を通して `vite.config.ts` の `lint` に書く。
+lint は Oxlint が担い、設定は `tooling/lint/config.ts` に書いて `vite.config.ts` の `lint` から読ませる。
 
-## lint 設定 (`vite.config.ts` の `lint` ブロック)
+## lint 設定 (`tooling/lint/config.ts`)
 
 プラグインの足し方は `docs/guides/lint/configuration.md`「プラグインを足す」、ルールの選定基準は ADR-0007。
 
@@ -21,7 +22,7 @@ lint は Oxlint が担い、設定は Vite+ を通して `vite.config.ts` の `l
 
 - `overrides` は `categories` を持てない。`plugins` はトップレベルと違い、継承した既定集合への追加になる (置換ではない) (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 - 有効でないプラグインのルールを `rules` に書くと無言で無視される。設定してあることは、その検査が動いていることを意味しない (`docs/guides/lint/configuration.md`「plugins は既定集合を置換する」)
-- lint 設定は `vite.config.ts` の `lint` に集約する。サブディレクトリの `.oxlintrc.json` は `vp lint` が読まず no-op になる (`docs/guides/lint/configuration.md`「設定の落とし穴」)
+- lint 設定は `tooling/lint/config.ts` に集約し、`vite.config.ts` の `lint` から読ませる。サブディレクトリの `.oxlintrc.json` は `vp lint` が読まず no-op になる (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 - CLI の `-D` は未知のルール名を exit 0 で無視する。0 件を結論にする前に `--print-config` でルール名の実在を確かめる (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 - `-D` は同名ルールを持つプラグインをすべて有効にする。件数は診断の `plugin(rule)` 別に数える (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 - 基準が off にするルールでも `correctness` に入っていればカテゴリ側が勝つ。`rules` で明示的に off にしないと有効なまま残る (ADR-0007)

@@ -13,11 +13,11 @@
 
 Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vite.config.ts` に集める (「1 つの `vite.config.ts` に集める理由」)。block を切り出すときは `tooling/<block>/` に置き、`vite.config.ts` はそれを import して組み立てる (「別のファイルから組み立てる理由」)。
 
-| block                                           | 置き場所                                                                                            |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `test`                                          | `tooling/test/config.ts` の `testConfig`。project の組み方は `docs/guides/testing/configuration.md` |
-| `lint`                                          | `vite.config.ts`                                                                                    |
-| `fmt`、`staged`、`resolve`、`envDir`、`plugins` | `vite.config.ts`                                                                                    |
+| block                                           | 置き場所                                                                                                   |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `test`                                          | `tooling/test/config.ts` の `testConfig`。project の組み方は `docs/guides/testing/configuration.md`        |
+| `lint`                                          | `tooling/lint/config.ts` の `lintConfig`。ルールとプラグインの足し方は `docs/guides/lint/configuration.md` |
+| `fmt`、`staged`、`resolve`、`envDir`、`plugins` | `vite.config.ts`                                                                                           |
 
 ### block を別のファイルへ切り出す
 

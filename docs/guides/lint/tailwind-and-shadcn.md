@@ -11,13 +11,13 @@
 
 ### `require-static-classes` を層の境界で有効にする
 
-`shadcn/require-static-classes` は `vite.config.ts` の `overrides` で、`no-restyle` と同じ `files` / `excludeFiles` の組に相乗りさせる (ADR-0022)。境界そのものは ADR-0011 が決める。理由は「`require-static-classes` を層の境界に限る理由」にある。
+`shadcn/require-static-classes` は `tooling/lint/config.ts` の `overrides` で、`no-restyle` と同じ `files` / `excludeFiles` の組に相乗りさせる (ADR-0022)。境界そのものは ADR-0011 が決める。理由は「`require-static-classes` を層の境界に限る理由」にある。
 
 - 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定する
 
 ### variant 関数を宣言する
 
-`cva` で作った variant 関数を消費側から呼ぶ形を採ったら、`vite.config.ts` の `settings.shadcn.variantFunctions` へ宣言する。宣言しないと、[shadcn docs「Button」][] が「As Link」で推奨する `className={buttonVariants(...)}` の形が `require-static-classes` で落ちる。テンプレートの利用者が公式どおり書いて lint が止まるのは不備になる。
+`cva` で作った variant 関数を消費側から呼ぶ形を採ったら、`tooling/lint/config.ts` の `settings.shadcn.variantFunctions` へ宣言する。宣言しないと、[shadcn docs「Button」][] が「As Link」で推奨する `className={buttonVariants(...)}` の形が `require-static-classes` で落ちる。テンプレートの利用者が公式どおり書いて lint が止まるのは不備になる。
 
 - 宣言は違反を黙らせる例外ではなく、variant 関数が何かを linter へ伝える設定である。`componentImports` と同じ恒久設定として扱う
 - 宣言するのは `ui/` が定義し、消費側から呼ぶ variant 関数に限る。`ui/` の内側でしか呼ばない関数は規則に当たらない

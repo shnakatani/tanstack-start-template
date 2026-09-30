@@ -15,7 +15,7 @@
 ## Decision
 
 - 依存を import するときは、個別エントリポイントがあればそちらから引き、バレルを使わない
-- 実測でバレルがテストの import を重くする依存を、`vite.config.ts` の `RESTRICTED_BARREL_IMPORTS` に名指しで足し、`no-restricted-imports` の `paths` で止める。メッセージで個別エントリポイントを案内する。足す手順は `docs/guides/dependencies-and-toolchain.md`「依存をバレルの禁止の対象に足す」にある
+- 実測でバレルがテストの import を重くする依存を、`tooling/lint/config.ts` の `RESTRICTED_BARREL_IMPORTS` に名指しで足し、`no-restricted-imports` の `paths` で止める。メッセージで個別エントリポイントを案内する。足す手順は `docs/guides/dependencies-and-toolchain.md`「依存をバレルの禁止の対象に足す」にある
 - 最初の対象は date-fns の `date-fns` と `date-fns/locale` である
 - `RESTRICTED_BARREL_IMPORTS` はトップレベルの `rules` と、テスト専用コードの import 禁止の override (ADR-0008) の両方へ渡す。override は同じルールのオプションを置き換える (「調査結果」)
 - 依存の中の経路 (react-day-picker が date-fns のルートを読む経路) は、手段を入れず、残った課題にする

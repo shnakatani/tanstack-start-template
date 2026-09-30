@@ -17,7 +17,7 @@ import { REPO_ROOT } from "../../lib/repo-root";
 
 const VP = resolve(REPO_ROOT, "node_modules", ".bin", "vp");
 
-/** 有効にするプラグイン。`vite.config.ts` の `OXLINT_DEFAULT_PLUGINS` + 追加分と対で持つ */
+/** 有効にするプラグイン。`tooling/lint/config.ts` の `OXLINT_DEFAULT_PLUGINS` + 追加分と対で持つ */
 const EXPECTED_PLUGINS = [
   "typescript",
   "unicorn",
@@ -104,8 +104,8 @@ const EXPECTED_OVERRIDES = [
   },
   {
     // ブラウザテストの assert を守る自前ルール (ADR-0009)。
-    // 適用先と除外の理由は vite.config.ts の同じ override が持つ。
-    // 期待値は手書きで持つ。`testHelperGlobs()` を spread すると vite.config.ts と同じ
+    // 適用先と除外の理由は tooling/lint/config.ts の同じ override が持つ。
+    // 期待値は手書きで持つ。`testHelperGlobs()` を spread すると tooling/lint/config.ts と同じ
     // 入力どうしの比較になり、種別が増えても検査が通ってしまう
     // (`companion-files.ts` の docstring が禁じている)
     files: ["src/**/*.test.tsx", "src/test/**", "**/*.test-helpers.ts", "**/*.test-helpers.tsx"],
@@ -223,7 +223,7 @@ describe("書いた設定が解決後も残っている", () => {
 
   it("override の適用先とルールを全件固定している", () => {
     // 落ちたら: printedConfig.overrides を見て、増減した override を EXPECTED_OVERRIDES へ
-    // 反映するか、意図しない変更なら vite.config.ts を直す。severity まで見るのは、ルールを
+    // 反映するか、意図しない変更なら tooling/lint/config.ts を直す。severity まで見るのは、ルールを
     // 残したまま "off" へ差し替える壊し方をキー集合だけでは拾えないため (2026-09-19 に実測)。
     //
     // excludeFiles からは companionGlobs の分を差し引いてから比べる。付随ファイルの種別は
