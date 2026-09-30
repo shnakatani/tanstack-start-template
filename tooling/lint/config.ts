@@ -52,7 +52,8 @@ export const lintConfig = {
     // testing-library をネイティブに持たないため ESLint plugin として載せる (`docs/guides/lint/configuration.md`「testing-library を当てる範囲」)
     { name: "testing-library", specifier: "eslint-plugin-testing-library" },
     // ブラウザテストの assert に locator を渡させる自前ルール。上流の
-    // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0009)
+    // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0009)。
+    // specifier はこのファイルではなく vite.config.ts から解決される
     { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
     // TanStack Query / Router の契約の検査。oxlint はネイティブに持たず、ネイティブ化を求めた
     // oxc-project/oxc#11648 は discussion へ移され、実装は入っていない (ADR-0007)。name は他の
