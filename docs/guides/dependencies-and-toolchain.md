@@ -116,17 +116,18 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 ### patch を当てる
 
-依存の配布物に patch を当てるときは、`pnpm-workspace.yaml` の `patchedDependencies` へ足し、patch ごとに理由と撤去条件と、外したときの確かめ方をコメントに書く (ADR-0005「pin には出口条件を書く」)。`mise run verify` が捕まえない patch もあるので (`@storybook/addon-vitest` の patch は、外れても viewport が黙って当たらなくなるだけ)、確かめ方が無いと外したあと壊れても気づけない。
+依存の配布物に patch を当てるときは、`pnpm-workspace.yaml` の `patchedDependencies` へ足し、patch ごとに理由と撤去条件 (ADR-0005「pin には出口条件を書く」) と、外したときの確かめ方を、そのキーの直前のコメントに書く。`mise run verify` が捕まえない patch もあるので (`@storybook/addon-vitest` の patch は、外れても viewport が黙って当たらなくなるだけ)、確かめ方が無いと外したあと壊れても気づけない。
 
-- キーは patch を作った版ではなく、その系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。Dependabot の更新ではその依存だけが PR から外れ、同じグループで揃えて上がる依存 (storybook の各パッケージは `minor-and-patch` で上がる) の版が割れる ([dependabot-core「group_update_creation.rb」][] の `compile_all_dependency_changes_for` は、グループの依存ごとに `compile_updates_for` と `create_change_for` を呼ぶ。どちらかが失敗すると空の配列か `false` が返り、その依存を飛ばして残りの依存で PR を作る。2026-09-30 にコードで確かめた。Dependabot の実行では観測していない)
-- 上流が同じ箇所を直した版へ上がると、範囲のキーの patch は当たらなくなり、install が落ちる。pnpm 11 は patch の失敗を常にエラーにする ([pnpm docs「pnpm patch」][])。Dependabot は install が落ちた依存を飛ばして PR を作るので、揃えて上がるはずの依存が Dependabot の PR から抜けていたら、その patch の撤去条件を確かめる (ADR-0005「pin には出口条件を書く」)
+- キーは patch を作った版ではなく、その系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、次の版で patch が使われず install が落ち、Dependabot はその依存を同じグループの PR から黙って外す (「patch のキーを範囲にする理由」)
+- 上流が同じ箇所を直した版へ上がると、範囲のキーの patch は当たらなくなり、install が落ちる。pnpm 11 は patch の失敗を常にエラーにする ([pnpm docs「pnpm patch」][])。Dependabot はその依存を PR から外すので (「patch のキーを範囲にする理由」)、揃えて上がるはずの依存が Dependabot の PR から抜けていたら、その patch の撤去条件を確かめる (ADR-0005「pin には出口条件を書く」)
 - 既にある patch へ変更を足すときは、`vp pm patch` と `vp pm patch-commit` の結果をそのまま使わない。範囲のキーの patch は編集用のディレクトリに当たらず、`patch-commit` は新しい変更だけで patch を書き出して、版を固定したキーを足す。そのまま使うと元の変更が黙って消える (2026-09-30 に pnpm 11.28.0 で観測。`vp pm patch` に版・範囲・名前のどれを渡しても元の patch は当たらなかった)。`git status --short pnpm-lock.yaml` が空の状態から、次の順で作り直す
   1. `vp pm patch <pkg>@<入っている版> -- --edit-dir <dir>` で編集用のディレクトリを作る。`<dir>` はリポジトリの外 (`mktemp -d` の下) に置く。リポジトリの中のディレクトリでは、`git apply` がパスを飛ばして何も当てずに exit 0 で終わる ([git docs「git-apply」][]: "When running from a subdirectory in a repository, patched paths outside the directory are ignored.")
   2. `<dir>` の中で `git apply -v <元の patch の絶対パス>` を打ち、ファイルごとに `Applied patch <path> cleanly.` が出ることを確かめてから、新しい変更を加える
-  3. `vp pm patch-commit <dir>` で patch を書き出す。書き出されたファイルが範囲のキーの指すファイルと違ったら、範囲のキーの値を書き出されたファイルへ向け、古いファイルを消す
-  4. `pnpm-workspace.yaml` に足された版を固定したキーを消す。残すと版を固定したキーが優先され ([pnpm docs「pnpm patch」][])、範囲のキーの patch が使われずに install が `ERR_PNPM_UNUSED_PATCH` で落ちる (2026-09-30 に pnpm 11.28.0 で観測)。`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-09-30 に pnpm 11.28.0 で 2 回観測)
-  5. `git diff pnpm-lock.yaml` が patch のハッシュの行だけであることと、`node_modules/<pkg>/` の配布物に元の変更と新しい変更の両方があることを grep で確かめる
-  6. `mise run verify` を通し、`pnpm-workspace.yaml` のその patch のコメントにある確かめ方も通す
+  3. `vp pm patch-commit <dir>` で patch を書き出す。patch を書き出し、版を固定したキーを足したあとの install が `ERR_PNPM_UNUSED_PATCH` で落ちる (2026-09-30 に pnpm 11.28.0 で観測)。エラーの案内 (`patchedDependencies` から消す) に従って範囲のキーを消さず、次の手順で版を固定したキーの方を消す。書き出されたファイルが範囲のキーの指すファイルと違ったら、範囲のキーの値を書き出されたファイルへ向け、古いファイルを消す
+  4. `pnpm-workspace.yaml` に足された版を固定したキーを消す。版を固定したキーは範囲のキーより優先されるので ([pnpm docs「pnpm patch」][])、残すと範囲のキーの patch が使われない。`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-09-30 に pnpm 11.28.0 で 2 回観測)
+  5. 新しい変更の理由・撤去条件・確かめ方を、そのキーの直前のコメントに足す
+  6. `git diff pnpm-workspace.yaml` が足したコメントだけであること、`git diff pnpm-lock.yaml` が patch のハッシュの行だけであること、`node_modules/<pkg>/` の配布物に元の変更と新しい変更の両方があることを確かめる
+  7. `mise run verify` を通し、そのキーのコメントにある確かめ方も通す。終わったら `<dir>` を消す
 
 ### workflow に action を足す
 
@@ -161,6 +162,12 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
 型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsgolint が黙って動かない場合は捕まえられない。
+
+### patch のキーを範囲にする理由
+
+`patchedDependencies` のキーを版まで固定すると、次の版では patch が使われず、install が落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。Dependabot は install が落ちた依存を飛ばして PR を作るので、その依存だけが黙って PR から外れ、同じグループで揃えて上がる依存 (storybook の各パッケージは `minor-and-patch` で上がる) の版が割れる。[dependabot-core「group_update_creation.rb」][] の `compile_all_dependency_changes_for` は、グループの依存ごとに `compile_updates_for` と `create_change_for` を呼び、どちらかが失敗すると空の配列か `false` が返って、その依存を飛ばして残りの依存で PR を作る (2026-09-30 にコードで確かめた。Dependabot の実行では観測していない)。
+
+範囲のキーなら後続の版にも当たり続け、install が落ちるのは上流が同じ箇所を直したときだけになる。
 
 ## 出典
 
