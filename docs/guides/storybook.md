@@ -159,7 +159,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 
 ### 狭幅を story で見る理由
 
-狭い幅での見え方 (`CenteredCard` のカードが画面端に接しないか、など) は、story の `narrow` viewport で目で見る。その story では寸法を機械で測らない。
+狭い幅での見え方は、story の `narrow` viewport で目で見る。その story では寸法を機械で測らない。
 
 - registry の部品の寸法は上流が決め、消費側が size を変えるのも正当な使い方である。story で測ると、上流の変更でも消費側の変更でも落ち、そのたびに消される
 - `narrow` の寸法は `.storybook/preview.tsx` が `src/test/browser/viewport-sizes.ts` の `NARROW_VIEWPORT` から引き、ブラウザテストと同じ値を使う。写すとどちらかが古くなる
