@@ -25,7 +25,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 2. block 全体は `vite.config.ts` で import して渡す (`test: testConfig`、`lint: lintConfig`)。override の一部を切り出したときは、override を組み立てる側 (`tooling/lint/config.ts`) で import し、`overrides` の要素へ spread で組み込む ([Vite+ docs「Monorepo」][] の「Composing Configuration Files」の例)
 3. 設定の中の文字列のパスは、切り出したモジュールの位置から書かない。Vitest の `include`、`globalSetup`、`setupFiles` は root から解決され ([Vitest docs「include」][]、[Vitest docs「globalSetup」][]、[Vitest docs「setupFiles」][])、Oxlint の `jsPlugins` の specifier、`overrides` の `files` / `excludeFiles`、`ignorePatterns` は、`vite.config.ts` (Oxlint から見た config ファイル) のあるディレクトリから解決される ([Oxlint docs「JS Plugins」][]、[oxlint 1.85.0 の configuration_schema.json][] の `GlobSet` と `ignorePatterns` の説明。2026-10-01 に確認)
 4. 切り出したモジュールに、読み込むだけで起きる副作用 (警告の出力、環境変数の書き換え) を持たせない (「読み込むだけで起きる副作用を持たせない理由」)。条件つきの警告は、その block を使う経路でだけ呼ばれる関数の中で出す。`tooling/test/config.ts` の `storybookProjects` が返す project の関数が、Storybook 経由の縮退を知らせる警告をこの形で出す
-5. `vp check` と、その block を使うコマンド (`vp test list --filesOnly`、`vp lint --print-config`) の出力が切り出す前と変わらないことを確かめる
+5. `vp check` と、その block を使うコマンド (`vp test list --filesOnly`、`vp lint --print-config`) の出力が切り出す前と変わらないことを確かめる。`vp lint --print-config` の `jsPlugins` の並びは、内容が同じでもチェックアウトした場所で変わる (2026-10-01 に oxlint 1.85.0 で観測)。`vp lint --print-config | jq '.jsPlugins |= sort_by(.name)'` の出力どうしを比べる
 
 ### 重い依存を遅らせて読み込む
 
