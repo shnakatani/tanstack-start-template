@@ -11,7 +11,7 @@ TanStack Start と Vite+ で組んだ Web アプリケーションの template r
 - Drizzle ORM + SQLite
 - Vite+ (`vp`) + mise
 
-## 環境を用意する
+## セットアップ
 
 `vp` CLI だけは mise の外に入れる。
 
