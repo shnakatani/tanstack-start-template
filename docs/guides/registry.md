@@ -55,7 +55,7 @@ add radio-group popover  → radio-group: 除去 / popover: 残存
 ```
 
 - baseline はローカルと同じ整形規則に揃える (`vp fmt`)。意図的な乖離は `git diff` で見るので、揃えないと整形のノイズで埋まる。整形差分を畳むのは CLI の `--diff` だけで、`git diff` は畳まない
-- baseline は lint と型検査の対象から外してある (`vite.config.ts` の `lint.ignorePatterns` と `tsconfig.json` の `exclude`)。上流のコードをそのまま保存する記録だからである
+- baseline は lint と型検査の対象から外してある (`tooling/lint/config.ts` の `ignorePatterns` と `tsconfig.json` の `exclude`)。上流のコードをそのまま保存する記録だからである
 - baseline の取得漏れは `scripts/checks/integrity/registry-baseline.test.ts` が双方向で見つける
 
 ### baseline と突き合わせる

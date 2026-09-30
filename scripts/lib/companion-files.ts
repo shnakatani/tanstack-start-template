@@ -2,7 +2,7 @@
  * アプリのコードと同じディレクトリに置くが、アプリのコードではないファイルの種別。
  * `<名前>.<種別>.ts` / `.tsx` の形で置く。
  *
- * この一覧が唯一の定義で、lint の適用外と story への適用範囲 (`vite.config.ts`)、coverage の
+ * この一覧が唯一の定義で、lint の適用外と story への適用範囲 (`tooling/lint/config.ts`)、coverage の
  * 除外 (`tooling/test/config.ts`)、registry baseline の突き合わせ (`registry-baseline.test.ts`)、
  * route ファイル判定のパターン (`companionFilePattern`) が ここから導出される。種別を足すときにどれか 1 つを書き忘れる事故が起きないようにするのが
  * 目的なので、導出先で改めて字面を並べ直さない。
@@ -88,7 +88,7 @@ export function companionFilePattern(): string {
 }
 
 /**
- * ブラウザテストの glob。`tooling/test/browser-project.ts` の `include` と、`vite.config.ts` の
+ * ブラウザテストの glob。`tooling/test/browser-project.ts` の `include` と、`tooling/lint/config.ts` の
  * browser-test ルールの適用先が同じ集合を指す (ADR-0009)。片方だけ変えると lint の適用先が
  * 黙って browser project から外れる
  */

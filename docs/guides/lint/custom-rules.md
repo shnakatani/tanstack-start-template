@@ -11,7 +11,7 @@
 
 ### 自前のルールを書く
 
-`scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む (ADR-0009)。実例は `scripts/lint/browser-test.ts` とそのテスト `scripts/lint/browser-test.test.ts`。
+`scripts/lint/` に置き、`tooling/lint/config.ts` の `jsPlugins` から読む (ADR-0009)。specifier は `tooling/lint/` からではなく `vite.config.ts` のあるディレクトリからの相対で書く (`docs/guides/vite-configuration.md`「block を別のファイルへ切り出す」)。実例は `scripts/lint/browser-test.ts` とそのテスト `scripts/lint/browser-test.test.ts`。
 
 - API は [Vite+ docs「Lint」][] の Writing Your Own Rules に従う。型は `vite-plus/lint/plugins` の `definePlugin` / `defineRule` / `SourceCode`、テストは `vite-plus/lint/plugins-dev` の `RuleTester` から取る
 - `@oxlint/plugins` と `oxlint` を直接の依存に足さない。理由は「`@oxlint/plugins` を直接の依存にしない理由」
@@ -22,10 +22,10 @@
 
 ルールや検査を足したら、効かなくなる壊し方を 2 つ決め、どちらでも赤になることを確かめる。
 
-| 壊し方 | 例 (`browser-test/prefer-locator-methods` の場合)        | 確かめること                     |
-| ------ | -------------------------------------------------------- | -------------------------------- |
-| 直接   | `vite.config.ts` の `lint.rules` でルールを `off` にする | 違反が 1 件も報告されなくなる    |
-| 間接   | 設定は残したまま、判定の一部 (変数束縛の追跡) を止める   | 束縛を挟んだ違反だけが無言で通る |
+| 壊し方 | 例 (`browser-test/prefer-locator-methods` の場合)                                           | 確かめること                     |
+| ------ | ------------------------------------------------------------------------------------------- | -------------------------------- |
+| 直接   | `tooling/lint/config.ts` の、そのルールを有効にしている override の `rules` で `off` にする | 違反が 1 件も報告されなくなる    |
+| 間接   | 設定は残したまま、判定の一部 (変数束縛の追跡) を止める                                      | 束縛を挟んだ違反だけが無言で通る |
 
 壊した形はルールのテストの invalid に置いておく。間接の側も要る理由は「2 通りに壊す理由」。
 

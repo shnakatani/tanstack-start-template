@@ -53,7 +53,7 @@ silent failure の源として扱っている書き方を検出するルール�
 どちらも `strict-type-checked` には入り、`recommended-type-checked` には入らない。
 
 名指しするルールは、基準がオプションを指定していればそのオプションも写す。
-基準と違うオプションを置くときは、理由を `vite.config.ts` のそのルールのコメントに残す。
+基準と違うオプションを置くときは、理由を `tooling/lint/config.ts` のそのルールのコメントに残す。
 
 `restrict-template-expressions` は基準のオプションから `allowNumber` だけを true に戻して名指しする。
 oxlint の既定はルール自身の既定 (`allow*` の 5 つが true) で、名指ししないと基準から外れる。

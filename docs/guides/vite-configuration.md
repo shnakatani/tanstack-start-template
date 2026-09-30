@@ -13,19 +13,19 @@
 
 Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vite.config.ts` に集める (「1 つの `vite.config.ts` に集める理由」)。block を切り出すときは `tooling/<block>/` に置き、`vite.config.ts` はそれを import して組み立てる (「別のファイルから組み立てる理由」)。
 
-| block                                           | 置き場所                                                                                            |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `test`                                          | `tooling/test/config.ts` の `testConfig`。project の組み方は `docs/guides/testing/configuration.md` |
-| `lint`                                          | `vite.config.ts`                                                                                    |
-| `fmt`、`staged`、`resolve`、`envDir`、`plugins` | `vite.config.ts`                                                                                    |
+| block                                           | 置き場所                                                                                                   |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `test`                                          | `tooling/test/config.ts` の `testConfig`。project の組み方は `docs/guides/testing/configuration.md`        |
+| `lint`                                          | `tooling/lint/config.ts` の `lintConfig`。ルールとプラグインの足し方は `docs/guides/lint/configuration.md` |
+| `fmt`、`staged`、`resolve`、`envDir`、`plugins` | `vite.config.ts`                                                                                           |
 
 ### block を別のファイルへ切り出す
 
-1. `tooling/<block>/` にモジュールを作り、block の中身をオブジェクトで export する。型は `satisfies` で付ける。`test` は `vite-plus/test/config` の `TestUserConfig`、`lint` は `vite-plus/lint` の `OxlintConfig` を使う。override の一部だけを切り出すなら `Omit<OxlintOverride, 'files'>` にし、`files` は `vite.config.ts` に残す (`OxlintOverride` の `files` は省けない)
-2. `vite.config.ts` で import し、block に渡す (`test: testConfig`)。override のように一部だけを切り出すときは spread で組み込む ([Vite+ docs「Monorepo」][] の「Composing Configuration Files」の例)
-3. 設定の中の文字列のパスは、切り出したモジュールの位置から書かない。Vitest の `include`、`globalSetup`、`setupFiles` は root から解決され ([Vitest docs「include」][]、[Vitest docs「globalSetup」][]、[Vitest docs「setupFiles」][])、Oxlint の `jsPlugins` は config ファイルから解決される ([Oxlint docs「JS Plugins」][]。2026-09-30 に確認)
+1. `tooling/<block>/` にモジュールを作り、block の中身をオブジェクトで export する。型は `satisfies` で付ける。`test` は `vite-plus/test/config` の `TestUserConfig`、`lint` は `vite-plus/lint` の `OxlintConfig` を使う。override の一部だけを切り出すなら `Omit<OxlintOverride, 'files'>` にし、`files` は override を組み立てる側 (`tooling/lint/config.ts` の `overrides`) に残す (`OxlintOverride` の `files` は省けない)
+2. block 全体は `vite.config.ts` で import して渡す (`test: testConfig`、`lint: lintConfig`)。override の一部を切り出したときは、override を組み立てる側 (`tooling/lint/config.ts`) で import し、`overrides` の要素へ spread で組み込む ([Vite+ docs「Monorepo」][] の「Composing Configuration Files」の例)
+3. 設定の中の文字列のパスは、切り出したモジュールの位置から書かない。Vitest の `include`、`globalSetup`、`setupFiles` は root から解決され ([Vitest docs「include」][]、[Vitest docs「globalSetup」][]、[Vitest docs「setupFiles」][])、Oxlint の `jsPlugins` の specifier、`overrides` の `files` / `excludeFiles`、`ignorePatterns` は、`vite.config.ts` (Oxlint から見た config ファイル) のあるディレクトリから解決される ([Oxlint docs「JS Plugins」][]、[oxlint 1.85.0 の configuration_schema.json][] の `GlobSet` と `ignorePatterns` の説明。2026-10-01 に確認)
 4. 切り出したモジュールに、読み込むだけで起きる副作用 (警告の出力、環境変数の書き換え) を持たせない (「読み込むだけで起きる副作用を持たせない理由」)。条件つきの警告は、その block を使う経路でだけ呼ばれる関数の中で出す。`tooling/test/config.ts` の `storybookProjects` が返す project の関数が、Storybook 経由の縮退を知らせる警告をこの形で出す
-5. `vp check` と、その block を使うコマンド (`vp test list --filesOnly`、`vp lint --print-config`) の出力が切り出す前と変わらないことを確かめる
+5. `vp check` と、その block を使うコマンド (`vp test list --filesOnly`、`vp lint --print-config`) の出力が切り出す前と変わらないことを確かめる。`vp lint --print-config` の `jsPlugins` の並びは、内容が同じでもチェックアウトした場所で変わる (2026-10-01 に oxlint 1.85.0 で観測)。`vp lint --print-config | jq '.jsPlugins |= sort_by(.name)'` の出力どうしを比べる
 
 ### 重い依存を遅らせて読み込む
 
@@ -81,4 +81,5 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 [Vitest docs「globalSetup」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/globalsetup.md
 [Vitest docs「setupFiles」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/setupfiles.md
 [Oxlint docs「JS Plugins」]: https://oxc.rs/docs/guide/usage/linter/js-plugins.html
+[oxlint 1.85.0 の configuration_schema.json]: https://github.com/oxc-project/oxc/blob/oxlint_v1.85.0/npm/oxlint/configuration_schema.json
 [voidzero-dev/vite-plus#1769]: https://github.com/voidzero-dev/vite-plus/issues/1769

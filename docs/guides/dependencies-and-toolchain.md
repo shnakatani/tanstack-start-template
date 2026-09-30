@@ -70,7 +70,7 @@ pnpm peers check
 
 ### 依存をバレルの禁止の対象に足す
 
-対象に足すかは ADR-0032 の基準で決める。手順は次のとおり。実例は `vite.config.ts` の `RESTRICTED_BARREL_IMPORTS` の date-fns の 2 行。
+対象に足すかは ADR-0032 の基準で決める。手順は次のとおり。実例は `tooling/lint/config.ts` の `RESTRICTED_BARREL_IMPORTS` の date-fns の 2 行。
 
 1. 依存の `package.json` の `exports` を読み、個別エントリポイントがあるかと、バレルがどれか (ルートの `.`、`./locale` のようなまとめ) を確かめる。個別エントリポイントが無い依存は対象にできない
 2. バレルから 1 つだけ import するテストと、同じものを個別エントリポイントから import するテストを 1 ファイルずつ `src/lib/` に一時的に置く。Node で読むなら `.test.ts`、ブラウザで読むなら `.test.tsx`
@@ -131,7 +131,7 @@ pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏
 
 ### 走査対象を持つ config を足す
 
-tsconfig / `tooling/test/config.ts` (test。project はここから継承する) / `vite.config.ts` (lint・fmt) は、それぞれ `.claude/worktrees/**` を除外している。走査対象を持つ config を新しく足したら、同じ除外をその場で書く。除外の経路は config ごとに別で共通化できず、1 つ落とすと worktree のコードがその走査へ黙って混ざる。
+tsconfig / `tooling/test/config.ts` (test。project はここから継承する) / `tooling/lint/config.ts` (lint) / `vite.config.ts` (fmt) は、それぞれ `.claude/worktrees/**` を除外している。走査対象を持つ config を新しく足したら、同じ除外をその場で書く。除外の経路は config ごとに別で共通化できず、1 つ落とすと worktree のコードがその走査へ黙って混ざる。
 
 ## explanation
 

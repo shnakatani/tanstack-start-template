@@ -6,9 +6,9 @@ import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plu
  * `no-negated-style-literal` は docs/guides/testing/waiting-and-assertions.md の節、`no-find-element` は ADR-0009、
  * `no-bare-absence-assertion` は ADR-0009 と `src/test/assert/absent.ts` を指す。一覧は下の `definePlugin`。
  *
- * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
- * 適用先 glob の決め方は ADR-0009 が全ルールぶん持つ。対象の限定は `vite.config.ts` の
- * `lint.overrides` にあり、`scripts/checks/integrity/lint-config.test.ts` が固定する。
+ * plugin の置き方 (`tooling/lint/config.ts` の `jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
+ * 適用先 glob の決め方は ADR-0009 が全ルールぶん持つ。対象の限定は `tooling/lint/config.ts` の
+ * `overrides` にあり、`scripts/checks/integrity/lint-config.test.ts` が固定する。
  */
 
 /** retry を持たない同期読み。DOM の確定前に評価されると、実装が正しくてもテストが落ちる */
@@ -86,7 +86,7 @@ function isArgumentOf(call: ESTree.CallExpression, node: Node): boolean {
  */
 function isAssertionCall(call: ESTree.CallExpression): boolean {
   for (let current: Node = call.callee; ;) {
-    // `assert.equal(...)` (vite-plus/test の `assert`。vite.config.ts の expect-expect が公認) も同じ扱い
+    // `assert.equal(...)` (vite-plus/test の `assert`。tooling/lint/config.ts の expect-expect が公認) も同じ扱い
     if (nameOf(current) === "expect" || nameOf(current) === "assert") return true;
     if (current.type === "MemberExpression") {
       if (nameOf(current.object) === "expect") {
