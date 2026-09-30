@@ -144,6 +144,18 @@ getContrast(parse(toHex(measured.backdrop)), parse(toHex(measured.foreground)));
 
 `src/styles.css` の `source()` を外した場合と比べるときは、`source()` を外して `vp build` を 2 回回し、CSS の出力を比べる。scan を絞る理由は「scan と `theme(static)` の範囲」にある。
 
+### Storybook のカタログに混ざるトークンを数える
+
+カタログの Radius と Typography に並ぶトークンのうち、`src/styles.css` が定義していない既定 theme のトークンは、`node_modules/tailwindcss/theme.css` の宣言から `src/styles.css` の宣言を引き、カタログが並べる接頭辞で絞って数える。
+
+```bash
+comm -23 <(grep -oE -- '--[a-z0-9-]+:' node_modules/tailwindcss/theme.css | sort -u) <(grep -oE -- '--[a-z0-9-]+:' src/styles.css | sort -u) | grep -E '^--(radius|font)'
+```
+
+- 絞る接頭辞は、`src/components/tokens.stories.tsx` の `byPrefix` が並べるものに合わせる。カタログに区分を足したら、ここにも足す
+- utility が参照している既定のトークン (`font-mono` など) は `theme(static)` が無くても並ぶので、出力は `theme(static)` で増えた分より多い
+- `comm` の出力には既定の `--color-*` も残るが、カタログには出ないので数えない (出ない理由は「scan と `theme(static)` の範囲」)
+
 ## explanation
 
 ### 兄弟の間隔を親の gap に置く理由
@@ -270,7 +282,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 - Tailwind は既定で、utility から参照されている変数だけを出力する ([Tailwind CSS docs「Theme variables」][] の Generating all CSS variables)。`inline` は utility へ値を直接埋め込むため、`rounded-*` の utility を書いても対応する変数を読む rule が生まれない。実際に使っているトークンでも、CSSOM から読む一覧からは消える
 - どの変数が出力に残るかは Tailwind の source scan の結果で決まる。scan は既定でリポジトリ全体を読み、Markdown も対象にする ([Tailwind CSS docs「Detecting classes in source files」][] の Which files are scanned) ため、ADR や rules に書いた名前が「使用中」と判定されて出力に残っていた
 - `.storybook/preview.css` は `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す ([Tailwind CSS docs「Preflight」][] の Disabling Preflight、[tailwindlabs/tailwindcss#16514][])。`theme()` は import 単位で効くため、本番の CSS は `static` の分を持たない ([tailwindlabs/tailwindcss#16514][]、[Tailwind CSS の `index.ts`][] の `@media theme(…)` の処理)
-- 代償は、Tailwind 既定 theme の未定義トークンがカタログに混ざることである。2026-09-20 の実測では Radius に 2 件、Typography に 6 件で、Colors は `--color-*: initial` が効いていて増えない
+- 代償は、`src/styles.css` が定義しておらず utility も参照していない既定 theme のトークンまで、カタログの Radius と Typography に並ぶことである。Colors は `--color-*: initial` が既定の色を消しているので増えない。混ざるトークンの数え方は「Storybook のカタログに混ざるトークンを数える」にある
 
 | 案                                                                     | 評価                                                                                                                                                                  | 採否     |
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
