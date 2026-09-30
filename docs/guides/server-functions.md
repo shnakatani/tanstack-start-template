@@ -59,6 +59,6 @@ server function の例外の文言は、本番でも client に直列化され�
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
 [TanStack Start docs「Observability」]: https://tanstack.com/start/latest/docs/framework/react/guide/observability
-[TanStack Start docs「Middleware」]: https://tanstack.com/start/latest/docs/framework/react/guide/middleware
 [TanStack Start docs「Server Functions」]: https://tanstack.com/start/latest/docs/framework/react/guide/server-functions
 [TanStack/router#6213]: https://github.com/TanStack/router/pull/6213
+[TanStack Start docs「Middleware」]: https://tanstack.com/start/latest/docs/framework/react/guide/middleware

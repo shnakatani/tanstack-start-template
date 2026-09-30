@@ -117,14 +117,14 @@ CDP の上書きがファイルをまたがないのは、Vitest がテストフ
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
+[CDP「Emulation.setTimezoneOverride」]: https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setTimezoneOverride
+[Vitest docs「Context API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/context.md
 [Vitest docs「Common Errors」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/common-errors.md
+[vitest-dev/vitest#1575]: https://github.com/vitest-dev/vitest/issues/1575
+[Vitest docs「env」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/env.md
+[date-fns の `tz.ts`]: https://github.com/date-fns/date-fns/blob/main/pkgs/dev/src/test/tz.ts
+[Vitest docs「Advanced API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/advanced/index.md#project-configuration-resolution
 [Vitest docs「maxWorkers」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/maxworkers.md
 [Vitest docs「Improving Performance」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/improving-performance.md
-[Vitest docs「Advanced API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/advanced/index.md#project-configuration-resolution
-[Vitest docs「env」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/env.md
-[Vitest docs「Context API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/context.md
 [Vitest docs「Configuring Playwright」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/playwright.md
-[vitest-dev/vitest#1575]: https://github.com/vitest-dev/vitest/issues/1575
-[CDP「Emulation.setTimezoneOverride」]: https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setTimezoneOverride
-[date-fns の `tz.ts`]: https://github.com/date-fns/date-fns/blob/main/pkgs/dev/src/test/tz.ts
 [Playwright docs「browser.newContext」]: https://playwright.dev/docs/api/class-browser#browser-new-context

@@ -96,9 +96,9 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
 [drizzle docs「Migrations」]: https://orm.drizzle.team/docs/migrations
+[better-sqlite3 docs「API」]: https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
 [drizzle docs「Node.js + Railway」]: https://orm.drizzle.team/docs/tutorials/node-railway-pg
 [drizzle-orm の `migrator.ts`]: https://github.com/drizzle-team/drizzle-orm/blob/0.45.2/drizzle-orm/src/migrator.ts
-[better-sqlite3 docs「API」]: https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
 [mise docs「Templates」]: https://mise.jdx.dev/templates.html
 [mise docs「Task Configuration」]: https://mise.jdx.dev/tasks/task-configuration.html
 [Vite+ docs「Vitest v5」]: https://viteplus.dev/guide/vitest-v5

@@ -72,11 +72,11 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
 [Vitest docs「vi.mock」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md#vimock
-[Vitest docs「coverage.exclude」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/coverage.md#coverageexclude
-[Vitest docs のレシピ「Conditional Mocking with vi.when」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/conditional-mocking.md
 [Jest docs「Manual Mocks」]: https://jestjs.io/docs/manual-mocks
-[vitest-dev/vitest#7733]: https://github.com/vitest-dev/vitest/issues/7733
-[vitest-dev/vitest#8343]: https://github.com/vitest-dev/vitest/issues/8343
-[vitest-dev/vitest#5765]: https://github.com/vitest-dev/vitest/pull/5765
-[`@vitest/mocker` の `node/resolver.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/mocker/src/node/resolver.ts
+[Vitest docs「coverage.exclude」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/coverage.md#coverageexclude
 [Vitest docs「vi.when」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md#viwhen-500-vi-when
+[Vitest docs のレシピ「Conditional Mocking with vi.when」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/conditional-mocking.md
+[vitest-dev/vitest#7733]: https://github.com/vitest-dev/vitest/issues/7733
+[vitest-dev/vitest#5765]: https://github.com/vitest-dev/vitest/pull/5765
+[vitest-dev/vitest#8343]: https://github.com/vitest-dev/vitest/issues/8343
+[`@vitest/mocker` の `node/resolver.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/mocker/src/node/resolver.ts
