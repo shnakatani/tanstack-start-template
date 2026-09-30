@@ -18,10 +18,6 @@ export function chromiumProjectBase() {
     // src/styles.css を import し、この plugin がユーティリティクラスを生成する。Node の project には
     // 要らないので、テスト時の root の plugins には置かない (docs/guides/testing/configuration.md「テストでだけ plugin を変える」)
     plugins: [tailwindcss()],
-    resolve: {
-      // registry combobox の @base-ui/react barrel import が React を二重解決し invalid hook call になるのを防ぐ
-      dedupe: ["react", "react-dom"],
-    },
     test: {
       browser: {
         enabled: true,
