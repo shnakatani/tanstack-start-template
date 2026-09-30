@@ -11,13 +11,14 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 
 ### 設定の置き場所
 
-| 置くもの                                                | 置き場所                                                                          |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `test` の中身 (project の一覧、`globalSetup`、coverage) | `tooling/test/config.ts` の `testConfig`。`vite.config.ts` の `test` がこれを読む |
-| ブラウザテストの project                                | `tooling/test/browser-project.ts`                                                 |
-| story の project                                        | `tooling/test/storybook-project.ts`                                               |
-| project が共有する設定 (`envDir`、`resolve`)            | `vite.config.ts` のトップレベル。project はこれを継承する                         |
-| テストでだけ外す plugin                                 | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)           |
+| 置くもの                                                                                                           | 置き場所                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `test` の中身 (project の一覧、`globalSetup`、coverage)                                                            | `tooling/test/config.ts` の `testConfig`。`vite.config.ts` の `test` がこれを読む                                          |
+| ブラウザテストの project                                                                                           | `tooling/test/browser-project.ts`                                                                                          |
+| story の project                                                                                                   | `tooling/test/storybook-project.ts`                                                                                        |
+| ブラウザで走る project に共通する設定 (`tailwindcss()`、`resolve.dedupe`、chromium を headless で動かす `browser`) | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる |
+| project が共有する設定 (`envDir`、`resolve`)                                                                       | `vite.config.ts` のトップレベル。project はこれを継承する                                                                  |
+| テストでだけ外す plugin                                                                                            | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                    |
 
 `vitest.config.ts` は作らない (ADR-0037。仕組みは「`vitest.config.ts` を置かない理由」)。
 
@@ -27,13 +28,14 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 2. `test.name` を付ける。名前が重なると Vitest がエラーで止まる ([Vitest docs「Test Projects」][]: "All projects must have unique names; otherwise, Vitest will throw an error.")
 3. root の `plugins` にある plugin を project に書き直さない。inline の project は root の plugin を継承する ([Vitest docs「sharedViteServer」][]: "If every project repeats the same `plugins` entry, move it to the declaring config.")。project にだけ要る plugin は、その project の `plugins` に足す
 4. playwright の provider や `@storybook/addon-vitest` の plugin のような重い依存を使う project は、project を返す関数にし、依存を関数の中で `import()` する。`browserProject` と `storybookProject` がこの形 (`docs/guides/vite-configuration.md`「重い依存を遅らせて読み込む」)
-5. `vp test list --filesOnly` で、足した project に集まるファイルを見る。`include` に一致しないテストは、落ちることもなく 1 度も走らない
+5. ブラウザで走る project は、`mergeConfig(chromiumProjectBase(), defineProject({ ... }))` で共通の設定に重ねる。`tailwindcss()`・`resolve.dedupe`・`browser` の共通部分を写さない (「project を inline に並べる理由」)
+6. `vp test list --filesOnly` で、足した project に集まるファイルを見る。`include` に一致しないテストは、落ちることもなく 1 度も走らない
 
 ### テストでだけ plugin を変える
 
 - root の plugin をテストで外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST === "true"` の分岐から外す。config を分けない (「判定を `process.env.VITEST` で書く理由」)
 - テストの分岐は `viteReact()` だけを返す。外す plugin ごとの理由は「テストの分岐で plugin を外す理由」
-- `tailwindcss()` はテストの分岐に入れない。ブラウザと story の project が自分の `plugins` に足す。Node の project には要らない
+- `tailwindcss()` はテストの分岐に入れない。ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す。Node の project には要らない
 
 ### 設定の落とし穴
 
@@ -59,6 +61,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 - Vitest 5 では、inline の project だけが root の設定を継承する ([Vitest docs「Test Projects」][]: "Projects referenced as config files or directories do not inherit any options from the root config.")
 - ファイルで参照する project でも、共有の設定ファイルを作って `mergeConfig` で合わせれば写さずに済む (同じページの "You can create a shared config file and merge it with the project config yourself")。ただし project ごとに merge を書き、root とは別の共有ファイルを持つことになる。inline なら何も書かずに root を継承する
 - 関数で渡した project も inline の project として扱われる。docs に関数の例は無いが、`DEBUG=vitest:projects vp test list --filesOnly` が `inline project "browser" resolves its own Vite config` と出す (2026-09-30、vitest 5.0.1)。自前の Vite config を作りつつ、root の config ファイルを extends する
+- ブラウザで走る project (ブラウザテストと story) だけが共有する設定 (`tailwindcss()`、`resolve.dedupe`、`browser` の共通部分) は root に置けない。置くと Node の project まで `tailwindcss()` と `browser.enabled` を継承する。`extends` は root か 1 つの config ファイルしか指せず ([Vitest docs「Test Projects」][]: "The `extends` option also accepts a path to another config file")、inline の project は入れ子の project を持てない (同じページの "The `projects` option inside an inline configuration is not supported.")。そこで `tooling/test/chromium-project.ts` の `chromiumProjectBase` に置き、各 project が `mergeConfig` で重ねる。同じページがファイルで参照する project 向けに示す、共有の設定を merge する形 ("You can create a shared config file and merge it with the project config yourself") を、inline の project の一部に当てたもの
 
 ### 判定を `process.env.VITEST` で書く理由
 
@@ -83,7 +86,7 @@ Vitest は、`vite.config.ts` の中でテストだけ設定を変える形と�
 | ----------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tanstackStart()`       | 外す                        | test 環境にも `optimizeDeps` を無条件に注入して React を事前バンドルさせ、React が二重に読み込まれうる。hooks が壊れる ([TanStack/router#6246][]。仕組みの説明は修正の PR の [TanStack/router#6074][]。どちらも 2026-09-30 時点で open) |
 | `devtools()`、`nitro()` | 外す                        | テストの経路で使わない                                                                                                                                                                                                                  |
-| `tailwindcss()`         | 外す                        | Node の project には要らない。ブラウザと story の project が自分の `plugins` に足す                                                                                                                                                     |
+| `tailwindcss()`         | 外す                        | Node の project には要らない。ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す                                                                                                                                          |
 | `viteReact()`           | 残す。`compiler` は渡さない | テストは React Compiler を通らない。アプリの分岐とは別に置いた `viteReact()` なので、`compiler` を付けてもアプリの最適化には関係しない。付けるときは、テストで Compiler を通すかを先に決める                                            |
 
 `tanstackStart()` を外している間は、`createIsomorphicFn` などの Start の変換がテストで効かない ([TanStack/router#6246][] のコメント)。[TanStack/router#6246][] が直ったら、テストの分岐に `tanstackStart()` を戻すかを決め直す。
