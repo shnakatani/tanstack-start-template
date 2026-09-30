@@ -32,7 +32,7 @@ paths:
 - Vitest の設定は `tooling/test/` に書き、`vite.config.ts` の `test` から読ませる。全 project が共有する設定を root の 1 か所に持ち、project が継承する (ADR-0037)
 - project は `test.projects` に inline で並べる。ファイルのパスで並べた project は `vite.config.ts` の設定 (`envDir`、`resolve`、テスト時の `plugins`) を継承しない (`docs/guides/testing/configuration.md`「project を inline に並べる理由」)
 - テストでだけ root の plugin を外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST` の分岐で外す。config を分けない (`docs/guides/testing/configuration.md`「判定を `process.env.VITEST` で書く理由」)
-- project が使う重い依存 (playwright の provider、`@storybook/addon-vitest` の plugin) は、project を作る関数の中で動的 import する。先頭で import すると `vp lint` / `vp fmt` のたびに評価される (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
+- project が使う重い依存 (playwright の provider、`@storybook/addon-vitest` の plugin) は、project を作る関数の中で動的 import する。先頭で import すると `vp lint` / `vp fmt` のたびに評価される。root の `plugins` と同じパッケージ (`chromiumProjectBase` の `tailwindcss`) は、root が先頭で import しているので先頭で import する (`docs/guides/vite-configuration.md`「重い依存を遅らせて読み込む」)
 
 ## `vite.config.ts` の組み立て
 

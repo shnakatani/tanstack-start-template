@@ -53,7 +53,7 @@ story は部品が取りうる状態を並べるカタログで、振る舞い�
 
 ### 自動構成の外を手で置く
 
-TanStack 専用の framework は、router を memory-backed で自動ラップし、server function を自動で stub する (「framework を TanStack 専用にし、telemetry を切る理由」)。次の 3 つは自動構成が届かない。
+TanStack 専用の framework は、router を memory-backed で自動ラップし、server function を自動で stub する (「framework を TanStack 専用にし、telemetry を切る理由」)。次のものは自動構成が届かない。
 
 - TanStack Query は対象外。Query を使う部品の story を書くようになったら、QueryClient を `.storybook/preview.tsx` の構成へ手で置く
 - server-only の依存を引く部品の story を書くようになったら、その依存を `__mocks__` で遮断する
@@ -105,7 +105,7 @@ telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既�
 | TanStack 専用 framework を使う   | router を memory-backed で自動ラップし、server function を自動 stub する                            | **採用** |
 | telemetry を既定のまま有効にする | このテンプレートから作られる全プロジェクトへ配られる設定なので、明示で潰す                          | 却下     |
 
-- Storybook の静的ビルド (`vp exec storybook build`) は、`mise run verify` と CI では走らせていない。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外すので build は通る (2026-09-30、`@storybook/tanstack-react` 10.6.0)。`lazyPlugins` に async の関数を渡すと外せなくなる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
+- Storybook の静的ビルド (`vp exec storybook build`) は、`mise run verify` と CI では走らせていない。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は 2026-09-30 時点で未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外すので build は通る (2026-09-30、`@storybook/tanstack-react` 10.6.0)。`lazyPlugins` に async の関数を渡すと外せなくなる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 
 ### story を状態のカタログにする理由
 
