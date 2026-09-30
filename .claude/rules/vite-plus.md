@@ -32,7 +32,6 @@ paths:
 - Vitest の設定は `tooling/test/` に書き、`vite.config.ts` の `test` から読ませる。全 project が共有する設定を root の 1 か所に持ち、project が継承する (ADR-0037)
 - project は `test.projects` に inline で並べる。ファイルのパスで並べた project は `vite.config.ts` の設定 (`envDir`、`resolve`、テスト時の `plugins`) を継承しない (`docs/guides/testing/configuration.md`「project を inline に並べる理由」)
 - テストでだけ root の plugin を外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST` の分岐で外す。config を分けない (`docs/guides/testing/configuration.md`「判定を `process.env.VITEST` で書く理由」)
-- project が使う重い依存 (playwright の provider、`@storybook/addon-vitest` の plugin) は、project を作る関数の中で動的 import する。先頭で import すると `vp lint` / `vp fmt` のたびに評価される。root の `plugins` と同じパッケージ (`chromiumProjectBase` の `tailwindcss`) は、root が先頭で import しているので先頭で import する (`docs/guides/vite-configuration.md`「重い依存を遅らせて読み込む」)
 
 ## `vite.config.ts` の組み立て
 
@@ -40,6 +39,8 @@ paths:
 - ツールごとの設定ファイル (`vitest.config.ts`、`oxlint.config.ts`、`.oxlintrc.json`) に分けない。併用するとどちらが効くかがツールごとに違い、`vitest.config.ts` があると `vite.config.ts` が丸ごと黙って無視される (`docs/guides/vite-configuration.md`「1 つの `vite.config.ts` に集める理由」)
 - 切り出したモジュールに、読み込むだけで起きる副作用 (警告の出力、環境変数の書き換え) を持たせない。`vite.config.ts` は `vp lint` / `vp fmt` / `vp build` のたびに読まれる (`docs/guides/vite-configuration.md`「読み込むだけで起きる副作用を持たせない理由」)
 - `lazyPlugins` には同期の関数を渡し、plugin は先頭で import する。async にすると `@storybook/tanstack-react` が TanStack Start の plugin を外せず `storybook build` が落ち、`mise run verify` はそれを捕まえない (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
+- project が使う重い依存 (playwright の provider、`@storybook/addon-vitest` の plugin) は、project を作る関数の中で動的 import する。先頭で import すると `vp lint` / `vp fmt` のたびに評価される (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
+- root の `plugins` と同じパッケージ (`chromiumProjectBase` の `tailwindcss`) は、project でも先頭で import する。root が先頭で import している間は、遅らせても同じ module が読まれる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 - 動的 import で遅らせるのは外部のパッケージそのものにする。`tooling/` のモジュールを動的 import しても、Vite が config を 1 ファイルへ bundle するので遅れない (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
 
 ## React Compiler (`vite.config.ts` の `plugins`)
