@@ -119,6 +119,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 - キーは patch を作った版ではなく、その系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。Dependabot の更新ではその依存だけが PR から外れ、storybook の各パッケージのように揃えて上げる依存の版が割れる ([dependabot-core「group_update_creation.rb」][] の `compile_all_dependency_changes_for` は、グループの依存ごとに `compile_updates_for` と `create_change_for` を呼ぶ。どちらかが失敗すると空の配列か `false` が返り、その依存を飛ばして残りの依存で PR を作る。2026-09-30 にコードで確かめた。Dependabot の実行では観測していない)
 - 上流が同じ箇所を直した版へ上がると、範囲のキーの patch は当たらなくなり、install が落ちる。pnpm 11 は patch の失敗を常にエラーにする ([pnpm docs「pnpm patch」][])。落ちた Dependabot の PR を処理するとき (ADR-0005「pin には出口条件を書く」の、Dependabot の PR を処理するときの確認) に、その patch の撤去条件を確かめる
+- 既にある patch へ変更を足すときは、`vp pm patch` と `vp pm patch-commit` の結果をそのまま使わない。範囲のキーの patch は編集用のディレクトリに当たらず、`patch-commit` は新しい変更だけで patch を作り直して、版を固定したキーを足す (2026-09-30 に pnpm 11.28.0 で観測。`vp pm patch` に版・範囲・名前のどれを渡しても当たらなかった)。作り直された patch の差分を元の patch の後ろへつなぎ、足されたキーを消してから `vp install` し、`node_modules` に入った配布物で元の変更と新しい変更の両方を grep する
 
 ### workflow に action を足す
 
