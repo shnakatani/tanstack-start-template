@@ -52,4 +52,4 @@ paths:
 ## 依存の patch (`pnpm-workspace.yaml` の `patchedDependencies`)
 
 - patch のコメントには、理由と撤去条件と、効いていることの確かめ方を書く。`mise run verify` が捕まえない patch は、確かめ方が無いと壊れても気づけない (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
-- キーは系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、次の版で patch が使われず install が落ち、Dependabot はその依存を同じグループの PR から黙って外す (`docs/guides/dependencies-and-toolchain.md`「patch のキーを範囲にする理由」)
+- キーはパッケージ名だけ (`"<pkg>"`) にする。版や範囲を付けたキーは外れた版で使われず、Dependabot の lockfile の更新が落ちて、その依存だけが同じグループの PR から黙って外れる (`docs/guides/dependencies-and-toolchain.md`「patch のキーをパッケージ名だけにする理由」)

@@ -117,10 +117,10 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 ### patch を当てる
 
-依存の配布物に patch を当てるときは、`pnpm-workspace.yaml` の `patchedDependencies` に範囲のキー (`"<pkg>@^<版>"`) で足し、そのキーの直前のコメントに、理由と撤去条件 (ADR-0005「pin には出口条件を書く」) と、効いていることの確かめ方を書く。版まで固定したキーは、上げた版で Dependabot の PR から黙って抜ける (「patch のキーを範囲にする理由」)。`mise run verify` が捕まえない patch もあるので、確かめ方が無いと壊れても気づけない。
+依存の配布物に patch を当てるときは、`vp pm patch <pkg>` を版を付けずに打つ。`pnpm-workspace.yaml` の `patchedDependencies` にパッケージ名だけのキー (`"<pkg>"`) で足され、どの版にも当たる (「patch のキーをパッケージ名だけにする理由」)。そのキーの直前のコメントに、理由と撤去条件 (ADR-0005「pin には出口条件を書く」) と、効いていることの確かめ方を書く。`mise run verify` が捕まえない patch もあるので、確かめ方が無いと壊れても気づけない。
 
-- 既にある patch を作り直すときは、`vp pm patch` の編集用のディレクトリで元の patch を当て直してから変更を加える。`vp pm patch` は範囲のキーの patch を当てないので、そのまま `vp pm patch-commit` すると元の変更が黙って消える (2026-09-30 に pnpm 11.28.0 で観測)。ディレクトリは `vp pm patch <pkg>@<入っている版> -- --edit-dir <dir>` でリポジトリの外 (`mktemp -d` の下) に作り、`git apply -v <元の patch の絶対パス>` の `Applied patch <path> cleanly.` で当たったことを確かめる。リポジトリの中のディレクトリでは、`git apply` が何も当てずに exit 0 で終わる ([git docs「git-apply」][]: "When running from a subdirectory in a repository, patched paths outside the directory are ignored.")
-- 作り直して `vp pm patch-commit` したあとは、足された版を固定したキーを消し、`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` の install は `ERR_PNPM_UNUSED_PATCH` で落ち、エラーの案内は範囲のキーを消す方向を指すが、消すのは版を固定したキーの方にする。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-09-30 に pnpm 11.28.0 で観測)
+- 作り直すときも版を付けずに打つ。既にある patch を当てた編集用のディレクトリができ、`vp pm patch-commit` は同じキーと同じファイルへ書き戻す。版を付けると既にある patch が当たらず、`patch-commit` は版を固定したキーを足して `ERR_PNPM_UNUSED_PATCH` で落ちる。その案内どおりにパッケージ名だけのキーを消すと、元の変更が黙って消える (2026-10-01 に pnpm 11.28.0 で観測)
+- 作り直して `vp pm patch-commit` したあとは、`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-10-01 に pnpm 11.28.0 で観測)
 
 ### workflow に action を足す
 
@@ -156,11 +156,13 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 
 型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsgolint が黙って動かない場合は捕まえられない。
 
-### patch のキーを範囲にする理由
+### patch のキーをパッケージ名だけにする理由
 
-版まで固定したキーは、上げた版には使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。この失敗は、lockfile だけを更新するとき (`install --lockfile-only`) にも起きる。Dependabot は pnpm を `--lockfile-only` で走らせ ([dependabot-core「pnpm_lockfile_updater.rb」][])、失敗した依存を飛ばして残りで PR を作る ([dependabot-core「group_update_creation.rb」][]) ので、その依存だけが黙って PR から抜け、揃えて上がる依存の版が割れる。
+版まで固定したキーは、上げた版には使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。この失敗は、lockfile だけを更新するとき (`install --lockfile-only`) にも起きる。Dependabot は pnpm を `--lockfile-only` で走らせ ([dependabot-core「pnpm_lockfile_updater.rb」][])、失敗した依存を飛ばして残りで PR を作る ([dependabot-core「group_update_creation.rb」][]) ので、その依存だけが黙って PR から抜け、揃えて上がる依存の版が割れる。範囲のキー (`"<pkg>@^<版>"`) も、範囲の外へ上げた版には使われないので同じことになる。
 
-範囲のキーなら、上げた版にも patch を当てようとし、当たらなければ通常の install が `ERR_PNPM_PATCH_FAILED` で落ちる (`--lockfile-only` では落ちない)。2026-10-01 に pnpm 11.28.0 で 2 つの状態を作って確かめた。Dependabot の振る舞いはコードで確かめ、実行では観測していない。
+パッケージ名だけのキーは、どの版にも当てる ([pnpm docs「pnpm patch」][])。当たらなければ通常の install が `ERR_PNPM_PATCH_FAILED` で落ち、`--lockfile-only` では落ちないので、Dependabot の PR は作られ、その PR の CI で気づける。同じ docs には、名前だけのキーは当たらない失敗を無視すると読める記述もあるが、v11 では当たらない失敗は常にエラーになる (同じ docs の `allowUnusedPatches` の注記)。
+
+作り直しの手順も短くなる。`vp pm patch` を版を付けずに打つと、パッケージ名だけのキーの patch を編集用のディレクトリに当て、`patch-commit` は同じキーと同じファイルへ書き戻す。範囲のキーの patch は `vp pm patch` が当てず、`patch-commit` は版を固定したキーと版付きのファイルを足すので、作り直すたびにキーとファイルを手で直すことになる。2026-10-01 に pnpm 11.28.0 で、両方のキーについて確かめた。Dependabot の振る舞いはコードで確かめ、実行では観測していない。
 
 ## 出典
 
@@ -175,6 +177,5 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
 [pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
-[git docs「git-apply」]: https://git-scm.com/docs/git-apply
 [dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
 [dependabot-core「pnpm_lockfile_updater.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L285-L295

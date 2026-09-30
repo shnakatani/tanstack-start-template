@@ -74,16 +74,16 @@ packageExtensions:
       eslint:
         optional: true
 
-# キーを範囲にする理由は docs/guides/dependencies-and-toolchain.md「patch のキーを範囲にする理由」
+# キーをパッケージ名だけにする理由は docs/guides/dependencies-and-toolchain.md「patch のキーをパッケージ名だけにする理由」
 patchedDependencies:
   # addon-vitest@10.6.0 の viewport の import (@vitest/browser/context) は Vitest 5 で失敗し、何も言わずに viewport を当てない。
   # import 先を vitest/browser へ替える (storybookjs/storybook#36164)
   # 撤去条件: addon-vitest の安定版が peer に vitest 5 を含み、viewport の import を vitest/browser にしたとき
   # 確かめ方: mise run verify は外れても落ちない。viewport を選ばない story に一時的な play を足し、window.innerWidth が addon の既定の 1200 になる (patch が外れていると Vitest の既定の 414) ことを確かめてから消す
   # (docs/guides/storybook.md「vitest 経由の story の viewport が決まる仕組み」)
-  "@storybook/addon-vitest@^10.6.0": patches/@storybook__addon-vitest@10.6.0.patch
+  "@storybook/addon-vitest": patches/@storybook__addon-vitest.patch
   # tanstack-react@10.6.0 は router-core 1.171.30 以降の interpolatePath を古い形で呼び、全 story が落ちる (storybookjs/storybook#36330)。
   # 引数の数で呼び分け、波括弧の segment は展開しない (docs/guides/storybook.md「自動構成の外を手で置く」)
   # 撤去条件: tanstack-react の安定版が storybookjs/storybook#36333 を含んだとき
   # 確かめ方: mise run verify で story の project が通ること
-  "@storybook/tanstack-react@^10.6.0": patches/@storybook__tanstack-react@10.6.0.patch
+  "@storybook/tanstack-react": patches/@storybook__tanstack-react.patch
