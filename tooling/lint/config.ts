@@ -38,9 +38,9 @@ const RESTRICTED_BARREL_IMPORTS = [
 ];
 
 /**
- * `vite.config.ts` の `lint`。切り出し方は `docs/guides/vite-configuration.md`「block を別のファイルへ切り出す」。
- * このファイルの中の文字列のパス (`jsPlugins` の specifier、`overrides` の `files` / `excludeFiles`、`ignorePatterns`) は、
- * このファイルではなく `vite.config.ts` のあるディレクトリから解決される (同じ節)
+ * `vite.config.ts` の `lint`。`lintConfig` の中の文字列のパス (`jsPlugins` の specifier、`overrides` の `files` /
+ * `excludeFiles`、`ignorePatterns`) は、このファイルではなく `vite.config.ts` のあるディレクトリから解決される。
+ * 切り出し方とパスの解決元は `docs/guides/vite-configuration.md`「block を別のファイルへ切り出す」
  */
 export const lintConfig = {
   // plugins は既定集合を追加ではなく置換する。明示しないと無効になり、rules に書いた

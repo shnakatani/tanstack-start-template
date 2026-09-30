@@ -373,7 +373,7 @@ tester.run("no-bare-absence-assertion", noBareAbsenceAssertion, {
 });
 
 describe("プラグインの形", () => {
-  // `tooling/lint/config.ts` の `jsPlugins` の name と `rules` のキーは、この 2 つの組で決まる。
+  // `tooling/lint/config.ts` の `jsPlugins` の name と、`overrides` の `rules` のキーは、この 2 つの組で決まる。
   // どちらかを変えると設定側の名前が無言で解決されなくなる
   it("meta の name とルール名が oxlint の rules 設定と一致する", () => {
     const plugin = browserTestPlugin;

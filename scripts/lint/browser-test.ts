@@ -6,7 +6,7 @@ import { definePlugin, defineRule, type ESTree, type SourceCode } from "vite-plu
  * `no-negated-style-literal` は docs/guides/testing/waiting-and-assertions.md の節、`no-find-element` は ADR-0009、
  * `no-bare-absence-assertion` は ADR-0009 と `src/test/assert/absent.ts` を指す。一覧は下の `definePlugin`。
  *
- * plugin の置き方 (`lint.jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
+ * plugin の置き方 (`tooling/lint/config.ts` の `jsPlugins` から読み、`vp lint` / `vp check` で走らせる) と、
  * 適用先 glob の決め方は ADR-0009 が全ルールぶん持つ。対象の限定は `tooling/lint/config.ts` の
  * `overrides` にあり、`scripts/checks/integrity/lint-config.test.ts` が固定する。
  */
