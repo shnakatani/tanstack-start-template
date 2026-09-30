@@ -78,13 +78,9 @@ packageExtensions:
 # addon-vitest@10.6.0 の viewport の import (@vitest/browser/context) は Vitest 5 で失敗し、何も言わずに viewport を当てない。
 # import 先を vitest/browser へ替える (storybookjs/storybook#36164)
 # 撤去条件: addon-vitest の安定版が peer に vitest 5 を含み、viewport の import を vitest/browser にしたとき
-# tanstack-react の patch は、撤去条件の違う 2 つのファイルへの変更を持つ。条件が成り立ったファイルの diff だけを外し、両方外せたら patch とキーを消す
-# dist/_browser-chunks/chunk-HRV4LMK3.js への変更: tanstack-react@10.6.0 は router-core 1.171.30 以降の interpolatePath を古い形で呼び、全 story が落ちる (storybookjs/storybook#36330)。
+# tanstack-react@10.6.0 は router-core 1.171.30 以降の interpolatePath を古い形で呼び、全 story が落ちる (storybookjs/storybook#36330)。
 # 引数の数で呼び分け、波括弧の segment は展開しない (docs/guides/storybook.md「自動構成の外を手で置く」)
 # 撤去条件: tanstack-react の安定版が storybookjs/storybook#36333 を含んだとき。外したら、mise run verify の vp test run の story の project が通ることで確かめる
-# dist/preset.js への変更: tanstack-react@10.6.0 は plugin を絞るとき Promise の中を見ない。vite.config.ts の lazyPlugins に渡す関数は async なので、
-# TanStack Start の plugin が残って storybook build が落ちる。Promise を解決し、関数が同期のときと同じ並びにしてから絞る (docs/guides/vite-configuration.md「重い依存を遅らせて読み込む」)
-# 撤去条件: tanstack-react の安定版が、Promise の plugin を解決してから絞るようになったとき。外したら、mise run verify の vp exec storybook build が通ることで確かめる
 patchedDependencies:
   "@storybook/addon-vitest@^10.6.0": patches/@storybook__addon-vitest@10.6.0.patch
   "@storybook/tanstack-react@^10.6.0": patches/@storybook__tanstack-react@10.6.0.patch

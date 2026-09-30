@@ -29,14 +29,12 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 
 ### 重い依存を遅らせて読み込む
 
-| 依存の種類                                                             | 遅らせ方                                                                                                                                                                                                                                                                                                                                                      |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `plugins` に並べる plugin                                              | `lazyPlugins` に渡す関数の中で呼ぶ ([Vite+ docs「Troubleshooting」][])。足した plugin は、「重い依存を遅らせる理由」の plugin の計測と同じく `vp lint` と `vp fmt --check` を 11 回ずつ走らせ、先頭で import した形と関数の中で `import()` した形を比べる。両方のコマンドで、初回を除いた `real` の範囲が重ならずに縮むものだけを、関数の中で `import()` する |
-| `plugins` 以外で使う依存 (Vitest の project が使う provider や plugin) | その依存を使う設定を関数にし、関数の中で外部のパッケージを `import()` する。project の例は `tooling/test/browser-project.ts`                                                                                                                                                                                                                                  |
+| 依存の種類                                                             | 遅らせ方                                                                                                                                                                          |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plugins` に並べる plugin                                              | `lazyPlugins` に同期の関数を渡し、その中で呼ぶ ([Vite+ docs「Troubleshooting」][])。plugin は先頭で import し、関数の中で `import()` しない (「plugin を先頭で import する理由」) |
+| `plugins` 以外で使う依存 (Vitest の project が使う provider や plugin) | その依存を使う設定を関数にし、関数の中で外部のパッケージを `import()` する。project の例は `tooling/test/browser-project.ts`                                                      |
 
 `import()` するのは外部のパッケージそのものにする。`tooling/` のモジュールを `import()` しても遅れない (「重い依存を遅らせる理由」)。
-
-`lazyPlugins` に渡す関数を async にすると、plugin は全部まとめて 1 つの Promise に包まれて Vite へ渡る ([voidzero-dev/vite-plus#1215][]: "Async callbacks have their Promise wrapped in an array internally for Vite's `asyncFlatten`"。vite-plus 1.0.0 の `lazyPlugins` で 2026-09-30 に確認)。Promise の中を見ずに plugin を絞る側は、絞りそこねる。`@storybook/tanstack-react` 10.6.0 がそうで、TanStack Start の plugin が残って `storybook build` が `[plugin tanstack-start:start-manifest-capture-client-build] Error: multiple entries detected` で落ちる (2026-09-30 に観測) のを、`pnpm-workspace.yaml` の `patchedDependencies` の patch で補っている。patch を外してこの失敗が戻ると、`mise run verify` と CI の `vp exec storybook build` が落ちる。patch が当たらなくなったときは、それより先に install が落ちる (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)。
 
 ## explanation
 
@@ -70,7 +68,15 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 | `tooling/test/` のモジュールを `import()`         | 0.99-1.01s | 0.60s            |
 | project の関数の中で外部の依存を `import()`       | 0.81-0.82s | 0.43-0.44s       |
 
-2026-09-30 に、`plugins` の plugin を読み込む形ごとに `/usr/bin/time -p vp lint src/lib/app-name.ts` と `/usr/bin/time -p vp fmt --check src/lib/app-name.ts` を 11 回ずつ走らせ、初回を除いた `real` の範囲 (vite-plus 1.0.0、Node 24.21.0、`@tanstack/react-start` 1.168.58、`nitro` 3.0.260610-beta、`@tanstack/devtools-vite` 0.8.5、`@tailwindcss/vite` 4.3.3、`@vitejs/plugin-react` 6.1.1)。「全部の plugin を先頭で import」は、テストの設定の計測の「project の関数の中で外部の依存を `import()`」と同じ形である。`@vitejs/plugin-react` は遅らせても範囲が重なったので、先頭で import する:
+### plugin を先頭で import する理由
+
+Vite+ は、重い plugin を `lazyPlugins` に渡す async の関数の中で `import()` する形を示している ([Vite+ docs「Troubleshooting」][]: "For heavy plugins that should be lazily imported, combine with dynamic `import()`")。この形では、plugin が全部まとめて 1 つの Promise に包まれて Vite へ渡る ([voidzero-dev/vite-plus#1215][]: "Async callbacks have their Promise wrapped in an array internally for Vite's `asyncFlatten`"。vite-plus 1.0.0 の `lazyPlugins` で 2026-09-30 に確認)。
+
+`@storybook/tanstack-react` 10.6.0 は、Storybook と衝突する TanStack Start の plugin を外すときに Promise の中を見ない。async の関数にすると plugin が残り、`storybook build` が `[plugin tanstack-start:start-manifest-capture-client-build] Error: multiple entries detected` で落ちる (2026-09-30 に観測)。`mise run verify` は Storybook を build しないので、この失敗を捕まえない。そのため関数は同期のままにし、plugin は先頭で import する。
+
+先頭で import すると、`vp lint` と `vp fmt` が config を読むたびに plugin が評価される。遅らせれば縮む時間は次のとおり。
+
+2026-09-30 に、`plugins` の plugin を読み込む形ごとに `/usr/bin/time -p vp lint src/lib/app-name.ts` と `/usr/bin/time -p vp fmt --check src/lib/app-name.ts` を 11 回ずつ走らせ、初回を除いた `real` の範囲 (vite-plus 1.0.0、Node 24.21.0、`@tanstack/react-start` 1.168.58、`nitro` 3.0.260610-beta、`@tanstack/devtools-vite` 0.8.5、`@tailwindcss/vite` 4.3.3、`@vitejs/plugin-react` 6.1.1)。「全部の plugin を先頭で import」は、テストの設定の計測の「project の関数の中で外部の依存を `import()`」と同じ形である:
 
 | 形                                                                                    | `vp lint`  | `vp fmt --check` |
 | ------------------------------------------------------------------------------------- | ---------- | ---------------- |
@@ -78,6 +84,8 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 | `tanstackStart`・`nitro`・`devtools` を関数の中で `import()`                          | 0.61-0.63s | 0.23-0.24s       |
 | さらに `tailwindcss` を `import()` (`vite.config.ts` と `chromiumProjectBase` の両方) | 0.58-0.60s | 0.21s            |
 | さらに `@vitejs/plugin-react` を `import()`                                           | 0.58-0.61s | 0.20-0.21s       |
+
+`@storybook/tanstack-react` が Promise の plugin を解決してから外すようになったら、関数を async にし、表で縮んだ plugin を関数の中で `import()` する。`tailwindcss` は `tooling/test/chromium-project.ts` の `chromiumProjectBase` でも `import()` しないと縮まない (config が 1 つのファイルへ bundle されるため。「重い依存を遅らせる理由」)。ほかの plugin を遅らせるかは、同じ測り方で初回を除いた `real` の範囲が両方のコマンドで重ならずに縮むかで決める。移したら `vp exec storybook build` が通ることを確かめる。
 
 ## 出典
 

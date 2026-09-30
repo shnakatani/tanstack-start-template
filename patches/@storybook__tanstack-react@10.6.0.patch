@@ -57,34 +57,3 @@ index df55fae85a0b051842ca579c29c6f91a31a76f0d..972e51a6d439fb339f3f42e2b3eeb684
    search && (resolvedPath += search);
    let history = createMemoryHistory({
      initialEntries: [resolvedPath]
-diff --git a/dist/preset.js b/dist/preset.js
-index 7fa1010808c072ee5a4f49c0b86c7079c5045e6f..2b1f2e54713ca30b67362f2b53b157ccd87f27a2 100644
---- a/dist/preset.js
-+++ b/dist/preset.js
-@@ -315,6 +315,17 @@ var matchesPluginName = (p, matches) => {
-   (name) => name === "vite-plugin-cloudflare" || name.startsWith("vite-plugin-cloudflare:")
- );
- 
-+// Patched: plugin の Promise (async の関数を渡した lazyPlugins が包む) を解決し、中身をその位置へ展開してから絞る。展開した中の Promise も同じく解決する
-+// (関数が同期のときと同じ並びにする。入れ子の配列は平らにしない。平らにすると tanstackStart() の配列にある tanstack-react-start:config などが判定を抜けて残る)
-+var resolveAsyncPlugins = async (plugins) => {
-+  let result = [];
-+  for (let plugin of plugins) {
-+    let resolved = await plugin;
-+    resolved !== plugin && Array.isArray(resolved) ? result.push(...await resolveAsyncPlugins(resolved)) : result.push(resolved);
-+  }
-+  return result;
-+};
-+
- // src/plugins/module-interception.ts
- var INTERCEPTED_PATTERNS = ["virtual:cloudflare", "server-entry", "worker-entry"], START_SERVER_MODULES = [
-   "@tanstack/react-start",
-@@ -703,7 +714,7 @@ var core = async (config, options) => {
-     import.meta.resolve("@storybook/tanstack-react/react-router")
-   ), plugins = [
-     // Drop user plugins that are incompatible with Storybook — see ./plugins/incompatible-plugins.ts
--    ...(reactConfig.plugins ?? []).filter((p) => !isTanStackStartPlugin(p) && !isCloudflareVitePlugin(p)),
-+    ...(await resolveAsyncPlugins(reactConfig.plugins ?? [])).filter((p) => !isTanStackStartPlugin(p) && !isCloudflareVitePlugin(p)),
-     serverCodeEliminationPlugin({ excludeFiles: [dirname(startMockPath)] }),
-     serverOnlyStubPlugin(),
-     moduleInterceptionPlugin({ startMockPath, startStorageContextMockPath, routerMockPath })

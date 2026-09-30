@@ -1,4 +1,8 @@
+import tailwindcss from "@tailwindcss/vite";
+import { devtools } from "@tanstack/devtools-vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
+import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
 import { companionFilePattern } from "./scripts/lib/companion-files";
@@ -30,20 +34,13 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: testConfig,
-  // config をメタデータとしてだけ読む経路で plugin を評価しない。重い plugin は関数の中で読み込む
-  // (docs/guides/vite-configuration.md「重い依存を遅らせて読み込む」)
-  plugins: lazyPlugins(async () => {
+  // config をメタデータとしてだけ読む経路で plugin を評価しない。関数は同期のままにし、plugin は先頭で import する
+  // (docs/guides/vite-configuration.md「plugin を先頭で import する理由」)
+  plugins: lazyPlugins(() => {
     // Vitest の中では React の変換だけにする (tanstackStart() は TanStack/router#6246 の回避で外す)。
     // 外す plugin ごとの理由と、判定を process.env.VITEST で書く理由は
     // docs/guides/testing/configuration.md「テストの分岐で plugin を外す理由」「判定を `process.env.VITEST` で書く理由」
     if (process.env.VITEST === "true") return [viteReact()];
-    const [{ default: tailwindcss }, { devtools }, { tanstackStart }, { nitro }] =
-      await Promise.all([
-        import("@tailwindcss/vite"),
-        import("@tanstack/devtools-vite"),
-        import("@tanstack/react-start/plugin/vite"),
-        import("nitro/vite"),
-      ]);
     return [
       devtools(),
       tailwindcss(),

@@ -13,7 +13,7 @@ import { chromiumProjectBase } from "./chromium-project";
 export async function browserProject() {
   const { playwright } = await import("vite-plus/test/browser-playwright");
   return mergeConfig(
-    await chromiumProjectBase(),
+    chromiumProjectBase(),
     defineProject({
       optimizeDeps: {
         // テストの実行中に初めて到達した依存は、再バンドルと reload をまたいだ React の二重解決で落ちる。
