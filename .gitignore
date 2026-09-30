@@ -6,7 +6,6 @@ storybook-static
 *.local
 .claude/settings.local.json
 .claude/worktrees/
-.claude/plans/
 .superpowers/
 .pnpm-store
 .env
