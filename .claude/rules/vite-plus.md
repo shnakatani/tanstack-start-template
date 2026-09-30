@@ -50,6 +50,5 @@ paths:
 
 ## 依存の patch (`pnpm-workspace.yaml` の `patchedDependencies`)
 
-- patch には理由と撤去条件をコメントで付ける。書かないと、上流が直したときや patch が当たらなくなったときに、外してよいかを判断できない (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
-- 撤去条件の違う変更を 1 つの patch に持つなら、patch が変えるファイルごとに撤去条件を書き、条件が成り立ったファイルの diff だけを外す。まとめて書くと、片方の条件で patch ごと消し、もう片方の変更まで失う (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
+- patch のコメントには、理由と撤去条件と、外したときの確かめ方を書く。`mise run verify` が捕まえない patch もあり、確かめ方が無いと外したあと壊れても気づけない (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
 - キーは系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
