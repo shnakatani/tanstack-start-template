@@ -36,6 +36,8 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 
 `import()` するのは外部のパッケージそのものにする。`tooling/` のモジュールを `import()` しても遅れない (「重い依存を遅らせる理由」)。
 
+`lazyPlugins` に渡す関数を async にすると、plugin は全部まとめて 1 つの Promise に包まれて Vite へ渡る ([voidzero-dev/vite-plus#1215][]: "Async callbacks have their Promise wrapped in an array internally for Vite's `asyncFlatten`")。Promise の中を見ずに plugin を絞る側は、絞りそこねる。`@storybook/tanstack-react` 10.6.0 がそうで、TanStack Start の plugin が残って `storybook build` が落ちるのを、`pnpm-workspace.yaml` の `patchedDependencies` の patch で補っている。`mise run verify` は Storybook を build しないので、`lazyPlugins` に渡す関数の形 (同期か async か) か、`@storybook/tanstack-react` の patch を変えたら、`vp exec storybook build` が通ることを確かめる。
+
 ## explanation
 
 ### 1 つの `vite.config.ts` に集める理由
@@ -91,4 +93,5 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 [Vitest docs「setupFiles」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/setupfiles.md
 [Oxlint docs「JS Plugins」]: https://oxc.rs/docs/guide/usage/linter/js-plugins.html
 [oxlint 1.85.0 の configuration_schema.json]: https://github.com/oxc-project/oxc/blob/oxlint_v1.85.0/npm/oxlint/configuration_schema.json
+[voidzero-dev/vite-plus#1215]: https://github.com/voidzero-dev/vite-plus/pull/1215
 [voidzero-dev/vite-plus#1769]: https://github.com/voidzero-dev/vite-plus/issues/1769
