@@ -115,7 +115,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 ### patch を当てる
 
-依存の配布物に patch を当てるときは、`pnpm-workspace.yaml` の `patchedDependencies` へ足し、patch ごとに理由と撤去条件をコメントに書く (ADR-0005「pin には出口条件を書く」)。撤去条件の違う変更を 1 つの patch に持つなら、撤去条件を変えるファイルごとに書き、条件が成り立ったファイルの diff だけを外す。
+依存の配布物に patch を当てるときは、`pnpm-workspace.yaml` の `patchedDependencies` へ足し、patch ごとに理由と撤去条件をコメントに書く (ADR-0005「pin には出口条件を書く」)。撤去条件の違う変更を 1 つの patch に持つなら、patch が変えるファイルごとに撤去条件を書き、条件が成り立ったファイルの diff だけを外す。
 
 - キーは patch を作った版ではなく、その系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。Dependabot の更新ではその依存だけが PR から外れ、storybook の各パッケージのように揃えて上げる依存の版が割れる ([dependabot-core「group_update_creation.rb」][] の `compile_all_dependency_changes_for` は、グループの依存ごとに `compile_updates_for` と `create_change_for` を呼ぶ。どちらかが失敗すると空の配列か `false` が返り、その依存を飛ばして残りの依存で PR を作る。2026-09-30 にコードで確かめた。Dependabot の実行では観測していない)
 - 上流が同じ箇所を直した版へ上がると、範囲のキーの patch は当たらなくなり、install が落ちる。pnpm 11 は patch の失敗を常にエラーにする ([pnpm docs「pnpm patch」][])。落ちた Dependabot の PR を処理するとき (ADR-0005「pin には出口条件を書く」の、Dependabot の PR を処理するときの確認) に、その patch の撤去条件を確かめる
@@ -123,9 +123,9 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
   1. `vp pm patch <pkg>@<版> -- --edit-dir <dir>` で編集用のディレクトリを作る。`<dir>` はリポジトリの外 (`mktemp -d` の下) に置く。リポジトリの中では、`git apply` が何も当てずに exit 0 で終わる (git 2.55.0)
   2. `<dir>` の中で `git apply -v <元の patch>` を打ち、ファイルごとに `Applied patch <path> cleanly.` が出ることを確かめてから、新しい変更を加える
   3. `vp pm patch-commit <dir>` で patch を書き出す。書き出されたファイルが、範囲のキーの指すファイルと同じであることを `git status` で確かめる
-  4. `pnpm-workspace.yaml` に足された版を固定したキーを消す。`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-09-30 に pnpm 11.28.0 で 2 回観測)
+  4. `pnpm-workspace.yaml` に足された版を固定したキーを消す。残すと版を固定したキーが優先され、範囲のキーの patch が使われずに install が `ERR_PNPM_UNUSED_PATCH` で落ちる。`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-09-30 に pnpm 11.28.0 で 2 回観測)
   5. `git diff pnpm-lock.yaml` が patch のハッシュの行だけであることと、`node_modules/<pkg>/` の配布物に元の変更と新しい変更の両方があることを grep で確かめる
-  6. `mise run verify` を通す。patch を当てた依存を使う検査も入っている (`@storybook/tanstack-react` なら `vp exec storybook build`)
+  6. `mise run verify` を通す。`@storybook/tanstack-react` の `dist/preset.js` への変更は、verify の `vp exec storybook build` が確かめる。`@storybook/addon-vitest` の patch は外れても verify が落ちないので (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」)、配布物への grep で確かめる
 
 ### workflow に action を足す
 
