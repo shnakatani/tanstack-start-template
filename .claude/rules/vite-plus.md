@@ -48,6 +48,10 @@ paths:
 - bail out のログは `vp build` では `[plugin vite:react-compiler]` だけで `error` / `warn` を含まない。ビルドログは `react-compiler` で grep する (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 - babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0014)
 
+## catalog (`pnpm-workspace.yaml` の `catalog`)
+
+- catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と、`minor-and-patch` の `exclude-patterns` にも足す。足さないと、Dependabot がその依存を両方のグループの PR に載せる (`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」)
+
 ## 依存の patch (`pnpm-workspace.yaml` の `patchedDependencies`)
 
 - patch には理由と撤去条件をコメントで付ける。書かないと、上流が直したときや patch が当たらなくなったときに、外してよいかを判断できない (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
