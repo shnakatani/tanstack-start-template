@@ -16,7 +16,7 @@ mise run verify   # マージ前に通す。手順は .mise.toml の [tasks.veri
 - **worktree のパスに `+` を含めない**。vitest browser が URL 上の `+` をスペースと解釈し、browser mode が無言でハングする。`EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
 - 既にある patch へ変更を足すときは、`vp pm patch` の編集用のディレクトリで元の patch を当て直し、当たったことを確かめてから変更を加える。`vp pm patch` は範囲のキーの patch を当てないので、そのまま `vp pm patch-commit` すると元の変更が黙って消える (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
-- `vp migrate` が `pnpm-workspace.yaml` の catalog に依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と `minor-and-patch` の `exclude-patterns` の両方に足す。`patterns` にだけ足すと両方のグループの PR に載り、どちらにも足さないと `vite-plus` と別の PR で上がる (`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」)
+- `vp migrate` が `pnpm-workspace.yaml` の catalog に、`.github/dependabot.yml` の `vite-plus` グループの `patterns` に当たらない依存を足したら、その `patterns` と `minor-and-patch` の `exclude-patterns` の両方に足す。`patterns` にだけ足すと両方のグループの PR に載り、どちらにも足さないと `vite-plus` と別の PR で上がる (`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」)
 - `vp migrate` が catalog に足した依存が `vitest` のように `vite-plus` と別の日に公開されるなら、`.github/dependabot.yml` の `ignore` にも `dependency-name` だけで足し、撤去条件を書く。足さないと、同梱の版より先へ上げる PR ができる (ADR-0005)
 
 ## テストの実行
