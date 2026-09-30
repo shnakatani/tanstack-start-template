@@ -269,7 +269,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 - Tailwind は既定で、utility から参照されている変数だけを出力する ([Tailwind CSS docs「Theme variables」][] の Generating all CSS variables)。`inline` は utility へ値を直接埋め込むため、`rounded-*` の utility を書いても対応する変数を読む rule が生まれない。実際に使っているトークンでも、CSSOM から読む一覧からは消える
 - どの変数が出力に残るかは Tailwind の source scan の結果で決まる。scan は既定でリポジトリ全体を読み、Markdown も対象にする ([Tailwind CSS docs「Detecting classes in source files」][] の Which files are scanned) ため、ADR や rules に書いた名前が「使用中」と判定されて出力に残っていた
-- `.storybook/preview.css` は `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す。`theme()` は import 単位で効くため、本番の CSS は `static` の分を持たない
+- `.storybook/preview.css` は `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す ([Tailwind CSS docs「Preflight」][] の Disabling Preflight、[tailwindlabs/tailwindcss#16514][])。`theme()` は import 単位で効くため、本番の CSS は `static` の分を持たない ([tailwindlabs/tailwindcss#16514][]、[Tailwind CSS の `index.ts`][] の `@media theme(…)` の処理)
 - 代償は、Tailwind 既定 theme の未定義トークンがカタログに混ざることである。2026-09-20 の実測では Radius に 2 件、Typography に 6 件で、Colors は `--color-*: initial` が効いていて増えない
 
 | 案                                                                     | 評価                                                                                                                                                                  | 採否     |
@@ -312,4 +312,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 [dequelabs/axe-core#4269]: https://github.com/dequelabs/axe-core/issues/4269
 [dequelabs/axe-core#4908]: https://github.com/dequelabs/axe-core/pull/4908
 [Tailwind CSS docs「Detecting classes in source files」]: https://tailwindcss.com/docs/detecting-classes-in-source-files
+[Tailwind CSS docs「Preflight」]: https://tailwindcss.com/docs/preflight
+[tailwindlabs/tailwindcss#16514]: https://github.com/tailwindlabs/tailwindcss/pull/16514
+[Tailwind CSS の `index.ts`]: https://github.com/tailwindlabs/tailwindcss/blob/v4.3.3/packages/tailwindcss/src/index.ts
 [CSS Color 4「Resolving `<color>` Values」]: https://www.w3.org/TR/css-color-4/#resolving-color-values
