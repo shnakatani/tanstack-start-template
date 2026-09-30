@@ -33,7 +33,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 可視ラベルの代わりに placeholder を使わない。書式・構成・必須条件の説明も置かない。それらは可視ラベルと `FieldDescription` (`src/components/ui/field.tsx`) が持ち、`--foreground` / `--muted-foreground` で 4.5:1 を満たす。
 
-**「何を置くか」と「その色が適合するか」は別の問いで、軸も違う。** 置くものは Carbon (#7515) の分類に従い、例示か指示かで分ける。色が免除されるかは w3c/wcag#4343 の軸で、ラベルが名指していない情報を足すかで分かれる。2 つは一致しない。例示でも書式を伝えるもの (`placeholder="Mary Smith"`) は、置いてよいが免除には入らない。その場合この色は不適合になる。どこが不適合かは Consequences が持つ。
+**「何を置くか」と「その色が適合するか」は別の問いで、軸も違う。** 置くものは Carbon (carbon-design-system/carbon#7515) の分類に従い、例示か指示かで分ける。色が免除されるかは w3c/wcag#4343 の軸で、ラベルが名指していない情報を足すかで分かれる。2 つは一致しない。例示でも書式を伝えるもの (`placeholder="Mary Smith"`) は、置いてよいが免除には入らない。その場合この色は不適合になる。どこが不適合かは Consequences が持つ。
 
 トークンを切る形そのものは ADR-0024「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」が持つ。
 
@@ -64,7 +64,7 @@ W3C 自身の推奨値も面に依存する。WAI Forms Tutorial の `::placehol
 dark は帯に入る段が無い。`mist-400` は入力値との 3:1 を割る側 (2.35) で外れ、`mist-500` は 4.5:1 を割る側で外れる。
 **割る側を選んだ。** 入力値との区別が消えると、飛ばされるフィールドができるためである。**この選択は SC 1.4.3 への不適合を承知で採ったもので、正当化ではない。**
 
-Carbon が `$text-placeholder` を 2.55 (light の `--background` 相当) のまま置き、carbon#19553 で「placeholder はコントラスト要件の対象ではない」と述べて閉じているのは承知しているが、**これは Understanding 1.4.3 の Intent と正面から食い違うので根拠に使わない。** 参照するのは 3 分類の枠組みだけである。
+Carbon が `$text-placeholder` を 2.55 (light の `--background` 相当) のまま置き、carbon-design-system/carbon#19553 で「placeholder はコントラスト要件の対象ではない」と述べて閉じているのは承知しているが、**これは Understanding 1.4.3 の Intent と正面から食い違うので根拠に使わない。** 参照するのは 3 分類の枠組みだけである。
 `--muted-foreground` と兼ねていた `mist-400` も dark では帯の外だったので、この決定は外れる側を入れ替えたものである。
 
 light と dark で同じ `mist-500` になる。
@@ -109,4 +109,4 @@ light と dark で同じ `mist-500` になる。
 - WCAG 2.2 1.4.3 Contrast (Minimum): https://www.w3.org/TR/WCAG22/#contrast-minimum
 - Understanding SC 1.4.3 (Intent が placeholder を名指しで含める。丸めるなの note もここ): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
 - WCAG 2.2 勧告本体 `contrast ratio` の Note 3 / 4 / 6 (測る背景の定義と color pairs): https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio
-- axe が placeholder を誤った前景色で評価する件 (open): https://github.com/dequelabs/axe-core/issues/4260
+- axe が placeholder を誤った前景色で評価する件 (2026-09-23 に close。閉じた dequelabs/axe-core#5359 も placeholder の色では評価しない): https://github.com/dequelabs/axe-core/issues/4260

@@ -92,20 +92,20 @@ registry 由来でない付随ファイル (テスト・story とその helper) 
 
 ### route の中の置き場を `-` で始める理由
 
-TanStack Router の file-based routing は、`-` で始まるファイルとディレクトリを route tree から外す。"Files and folders with the `-` prefix are excluded from the route tree. They will not be added to the `routeTree.gen.ts` file and can be used to colocate logic in route folders." (https://tanstack.com/router/latest/docs/framework/react/routing/file-naming-conventions、2026-09-28 に確認)。
-この接頭辞は `@tanstack/router-plugin` の `routeFileIgnorePrefix` の既定値 `'-'` である (同梱の intent skill `router-plugin`、`library_version` 1.168.23)。`-components/` などに置くと、その URL の近くに置いたまま route として生成されない。
+TanStack Router の file-based routing は、`-` で始まるファイルとディレクトリを route tree から外す。"Files and folders with the `-` prefix are excluded from the route tree. They will not be added to the `routeTree.gen.ts` file and can be used to colocate logic in route folders." ([TanStack Router docs「File Naming Conventions」][]、2026-09-28 に確認)。
+この接頭辞は `@tanstack/router-plugin` の `routeFileIgnorePrefix` の既定値 `'-'` である (同梱の intent skill [`@tanstack/router-plugin` の `router-plugin/SKILL.md`][]、`library_version` 1.168.23)。`-components/` などに置くと、その URL の近くに置いたまま route として生成されない。
 
 ### route ファイルの組み方と code splitting
 
-TanStack Router の automatic code splitting は、route ファイルの property を種類ごとに別の chunk へ分ける。組み方の 2・4・5 は、この分割を壊さないためにある (ADR-0010)。
+TanStack Router の automatic code splitting は、route ファイルの property を種類ごとに別の chunk へ分ける ([TanStack Router docs「Automatic Code Splitting」][]、2026-09-28 に確認)。組み方の 2・4・5 は、この分割を壊さないためにある (ADR-0010)。
 
-| 手順                                                        | 分割の規則                                                                                                                           | 守らないと起きること                                                                              |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| 2 (route ファイルから wrapper もページ本体も export しない) | "Route properties like `component`, `loader`, etc., should not be exported from the route file."                                     | export した property とそれが使うものが main bundle に入り、分割されない                          |
-| 4 (pending 表示を別ファイルに置く)                          | 既定で分けるのは `component` / `errorComponent` / `notFoundComponent` だけで、`pendingComponent` と `loader` は route ファイルに残る | 分割されない property が import する module は eager に読まれ、同じ module のページ本体も巻き込む |
-| 5 (共有する定数を `-lib/` に置く)                           | 同上。`loader` と `validateSearch` も分割されない                                                                                    | 定数を置いたページ本体の module が、分割されない側から eager に読まれる                           |
+| 手順                                                        | 分割の規則                                                                                                                                                                                                           | 守らないと起きること                                                                              |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 2 (route ファイルから wrapper もページ本体も export しない) | "Route properties like `component`, `loader`, etc., should not be exported from the route file." ([TanStack Router docs「Automatic Code Splitting」][] の Rules of Splitting)                                        | export した property とそれが使うものが main bundle に入り、分割されない                          |
+| 4 (pending 表示を別ファイルに置く)                          | 既定で分けるのは `component` / `errorComponent` / `notFoundComponent` だけで、`pendingComponent` と `loader` は route ファイルに残る ([TanStack Router docs「Automatic Code Splitting」][] の What gets code split?) | 分割されない property が import する module は eager に読まれ、同じ module のページ本体も巻き込む |
+| 5 (共有する定数を `-lib/` に置く)                           | 同上。`loader` と `validateSearch` も分割されない                                                                                                                                                                    | 定数を置いたページ本体の module が、分割されない側から eager に読まれる                           |
 
-- 出典: TanStack Router docs「Automatic Code Splitting」(https://tanstack.com/router/latest/docs/framework/react/guide/automatic-code-splitting、2026-09-28 に確認)。ページ本体を export したときに main chunk へ入ることを `vp build` で確かめた実測は ADR-0010 が持つ。`pendingComponent` と `validateSearch` が既定の groupings に入らない根拠 (`@tanstack/router-plugin` の `defaultCodeSplitGroupings` と、TanStack/router の PR 4047) も ADR-0010 が持つ。intent skill `router-core/code-splitting` は `pendingComponent` を分割される側に挙げるが、docs と実装では分割されない
+- ページ本体を export したときに main chunk へ入ることを `vp build` で確かめた実測は ADR-0010 が持つ。`pendingComponent` と `validateSearch` が既定の groupings に入らない根拠 ([`@tanstack/router-plugin` の `core/constants.ts`][] の `defaultCodeSplitGroupings` と、[TanStack/router#4047][]) も ADR-0010 が持つ。intent skill [`@tanstack/router-core` の `router-core/code-splitting/SKILL.md`][] は `pendingComponent` を分割される側に挙げるが、[TanStack Router docs「Automatic Code Splitting」][] と実装では分割されない
 
 ### `src/test/` の helper を何を作るかで分ける理由
 
@@ -114,3 +114,14 @@ TanStack Router の automatic code splitting は、route ファイルの propert
 | 何を作るか (実行環境、assert、axe、足場)     | **採用** | 1 つのファイルは 1 つのものを作るので、置き先が 1 つに決まる                                                  |
 | 誰が呼ぶか (setup、テスト本文)               | 却下     | 1 つの helper を setup とテスト本文の両方が呼ぶことがあり (`park-mouse.ts`)、呼び出し元では置き先が決まらない |
 | ファイル名の prefix (`a11y-*`、`viewport-*`) | 却下     | prefix を持たない helper の置き先が決まらない                                                                 |
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+[TanStack Router docs「File Naming Conventions」]: https://tanstack.com/router/latest/docs/routing/file-naming-conventions
+[`@tanstack/router-plugin` の `router-plugin/SKILL.md`]: https://github.com/TanStack/router/blob/@tanstack/router-plugin@1.168.40/packages/router-plugin/skills/router-plugin/SKILL.md
+[TanStack Router docs「Automatic Code Splitting」]: https://tanstack.com/router/latest/docs/guide/automatic-code-splitting
+[`@tanstack/router-plugin` の `core/constants.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-plugin@1.168.40/packages/router-plugin/src/core/constants.ts
+[TanStack/router#4047]: https://github.com/TanStack/router/pull/4047
+[`@tanstack/router-core` の `router-core/code-splitting/SKILL.md`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/skills/router-core/code-splitting/SKILL.md

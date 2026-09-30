@@ -25,11 +25,11 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 
 - variant の網羅を story の数で表さない。代表値を story にし、残りは `argTypes` の control で切り替える。直積で増やすと、カタログが読み通せない長さになる
 - `argTypes` の `options` は `readonly any[]` で、`satisfies Meta<typeof X>` を書いても中身を検査しない。`cva` の variant をリテラルで写すと、variant を足したときに story だけ古くなり、lint も型検査も鳴らない (2026-09-20 実測)。`satisfies Record<Variant, null>` のオブジェクトを出処にして `Object.keys` で渡すと、足した側が型エラーになる
-- 検証専用の story (終了状態が他の story と同じ見た目になるもの) には `tags: ["!dev"]` を付ける。サイドバーの一覧から消えるが、vitest の project 実行では対象に残る (`index.json` の `tags` が `dev` を含まなくなる。2026-09-20 実測)。付け忘れはレビューで見る。ただし同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くので、その部品の状態が 1 つも並ばない事態を避ける。実例は `ActionButtonShell` の `Idle` (`ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)
+- 検証専用の story (終了状態が他の story と同じ見た目になるもの) には `tags: ["!dev"]` を付ける。サイドバーの一覧から消えるが、vitest の project 実行では対象に残る ([Storybook docs「Tags」][] の Built-in tags。`index.json` の `tags` が `dev` を含まなくなる。2026-09-20 実測)。付け忘れはレビューで見る。ただし同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くので、その部品の状態が 1 つも並ばない事態を避ける。実例は `ActionButtonShell` の `Idle` (`ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)
 - story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。外見を上書きする class は部品側の variant にする (ADR-0022)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない
 - `ui/` の story は `no-restyle` / `require-static-classes` の適用外で、lint は鳴らない (ADR-0011)。鳴らないぶんはレビューで見る。`parts/` や `action/` など `ui/` の外の story は、消費側と同じく lint が止める
 - pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く (`src/test/app/settling-action.ts`)。決着しない Transition が残ると、後続 story が pending のまま止まる
-- Storybook の vitest 実行は story ごとに描き先の要素と root を作り直し、前の story を unmount する。それでも、React が進行中の Transition を root をまたいでまとめるので (react.dev「useTransition」の Caveats の "If there are multiple ongoing Transitions, React currently batches them together.")、後続 story の Transition が残った Transition と一緒に待たされる。2026-09-28 に React 19.3.0・Storybook 10.6.0 で、決着しない action を押した story の後ろでは 50ms で決着する action の story が 1.5 秒たっても pending のままで、単独では 78ms で解けた
+- Storybook の vitest 実行は story ごとに描き先の要素と root を作り直し、前の story を unmount する。それでも、React が進行中の Transition を root をまたいでまとめるので ([React docs「useTransition」][] の Caveats の "If there are multiple ongoing Transitions, React currently batches them together.")、後続 story の Transition が残った Transition と一緒に待たされる。2026-09-28 に React 19.3.0・Storybook 10.6.0 で、決着しない action を押した story の後ろでは 50ms で決着する action の story が 1.5 秒たっても pending のままで、単独では 78ms で解けた
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。vitest から走らせた story には Storybook の `layout: "padded"` が効かず、その差は `.storybook/preview.css` が埋める (「vitest 経由の story に padding を当てる理由」)
 
 ### カタログと play の範囲
@@ -47,7 +47,7 @@ story は部品が取りうる状態を並べるカタログで、振る舞い�
 
 ### 上流の `write-story` skill との違い
 
-`vp exec storybook skills` が出す `write-story` skill は上流の規約で、このリポジトリの決定と食い違う箇所がある。play を書く範囲は skill の「Simulate key user flows」ではなく「カタログと play の範囲」に従い、操作で状態が変わる部品にだけ書く。このガイドに書かれていない項目は skill の既定に従う。
+`vp exec storybook skills` が出す `write-story` skill ([Storybook の `storybook-story-instructions.md`][]) は上流の規約で、このリポジトリの決定と食い違う箇所がある。play を書く範囲は [Storybook の `storybook-story-instructions.md`][] の「Simulate key user flows」ではなく「カタログと play の範囲」に従い、操作で状態が変わる部品にだけ書く。このガイドに書かれていない項目は [Storybook の `storybook-story-instructions.md`][] の既定に従う。
 
 ### 自動構成の外を手で置く
 
@@ -84,15 +84,15 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 | `stories preview` / `review create`                        | 必要     | preview の URL と review の発行    |
 | `stories find-by-component`                                | 実質必要 | 起動なしでも走るが、結果が空で返る |
 
-`stories find-by-component` の逆依存グラフは dev server が持つ。未起動だと `no stories found` が返り、story が無いのと区別が付かない。tool の help 自身が「If a component has no matches here, it has no stories yet (say so, don't fabricate)」と書くので、読んだ側は「story が無い」と報告してしまう。起動して `--port` で指すと、距離つきで返る。
+`stories find-by-component` の逆依存グラフは dev server が持つ。未起動だと `no stories found` が返り、story が無いのと区別が付かない。tool の help 自身 ([Storybook の `stories/definition.ts`][] の `findByComponent`) が「If a component has no matches here, it has no stories yet (say so, don't fabricate)」と書くので、読んだ側は「story が無い」と報告してしまう。起動して `--port` で指すと、距離つきで返る。
 
 ## explanation
 
 ### framework を TanStack 専用にし、telemetry を切る理由
 
-framework の選定は `tanstackStart()` plugin と Storybook の Vite builder の衝突 (storybookjs/storybook の issue 33747) が決める。標準の Vite builder はこの衝突を自分で回避する必要があり、server function を呼ぶ部品の story を組めない。TanStack 専用 framework (`@storybook/tanstack-react`) は router を memory-backed で自動ラップし、server function を自動 stub する。
+framework の選定は `tanstackStart()` plugin と Storybook の Vite builder の衝突 ([storybookjs/storybook#33747][]) が決める。標準の Vite builder はこの衝突を自分で回避する必要があり、server function を呼ぶ部品の story を組めない。TanStack 専用 framework (`@storybook/tanstack-react`) は router を memory-backed で自動ラップし、server function を自動 stub する ([Storybook docs「Storybook for TanStack React」][])。
 
-telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` (ADR-0004) と同じく明示で潰す側に揃える。
+telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る ([Storybook docs「Telemetry」][])。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` (ADR-0004) と同じく明示で潰す側に揃える。
 
 | 案                               | 評価                                                                                                | 採否     |
 | -------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
@@ -100,24 +100,21 @@ telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既�
 | TanStack 専用 framework を使う   | router を memory-backed で自動ラップし、server function を自動 stub する                            | **採用** |
 | telemetry を既定のまま有効にする | このテンプレートから作られる全プロジェクトへ配られる設定なので、明示で潰す                          | 却下     |
 
-- Storybook の静的ビルドは検証していない。issue 33747 が未解決のため
-- 出典: Storybook: TanStack framework (https://storybook.js.org/docs/get-started/frameworks/tanstack-react)、Telemetry (https://storybook.js.org/docs/configure/telemetry)
+- Storybook の静的ビルドは検証していない。[storybookjs/storybook#33747][] が未解決のため
 
 ### story を状態のカタログにする理由
 
 story は部品の状態 (variant / tone / disabled) を、アプリの画面を開かずに並べて見る場所である。振る舞いの検証は play を書く部品に限る。
 
-| 案                                                       | 評価                                                                                                      | 採否     |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------- |
-| play function を全部品に一律書く                         | 公式 (Interaction testing) が一律適用の保守費用を警告しており、`args` で決まる状態の検証とも二重になる    | 却下     |
-| 「初期状態では中身が見えない部品」を play の対象軸にする | 公式が「複雑で対話的な部品ならさらに踏み込める」と述べる後段を落とし、公式にない軸を独自に作ってしまう    | 却下     |
-| 検証専用 story をサイドバーへ出したまま置く              | 同じ見た目の story が並び、カタログとして読めなくなる (2026-09-20 に 1 部品で実測、9 story 中 4 つが重複) | 却下     |
-| 検証専用 story を別ファイルへ分ける                      | story glob と「部品の隣へ置く」規約の両方を変えることになる                                               | 却下     |
-| pending の見た目を決着しない action で作る               | 後続 story の Transition を止める (「story を書く」の実測)                                                | 却下     |
-| `action/` を対象外にする                                 | pending 表現に server function の stub が要るという理由は、実測で成り立たない (2026-09-20)                | 却下     |
-| 状態のカタログに徹し、対話的な部品にだけ play を書く     | 外見確認という目的を満たし、検証の二重化も保守費用の増大も避けられる                                      | **採用** |
-
-- 出典: Storybook: Interaction testing (https://storybook.js.org/docs/writing-tests/interaction-testing)、Tags (https://storybook.js.org/docs/writing-stories/tags)
+| 案                                                       | 評価                                                                                                                                       | 採否     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| play function を全部品に一律書く                         | [Storybook docs「Interaction tests」][] が一律適用の保守費用を警告しており、`args` で決まる状態の検証とも二重になる                        | 却下     |
+| 「初期状態では中身が見えない部品」を play の対象軸にする | [Storybook docs「Interaction tests」][] が「複雑で対話的な部品ならさらに踏み込める」と述べる後段を落とし、公式にない軸を独自に作ってしまう | 却下     |
+| 検証専用 story をサイドバーへ出したまま置く              | 同じ見た目の story が並び、カタログとして読めなくなる (2026-09-20 に 1 部品で実測、9 story 中 4 つが重複)                                  | 却下     |
+| 検証専用 story を別ファイルへ分ける                      | story glob と「部品の隣へ置く」規約の両方を変えることになる                                                                                | 却下     |
+| pending の見た目を決着しない action で作る               | 後続 story の Transition を止める (「story を書く」の実測)                                                                                 | 却下     |
+| `action/` を対象外にする                                 | pending 表現に server function の stub が要るという理由は、実測で成り立たない (2026-09-20)                                                 | 却下     |
+| 状態のカタログに徹し、対話的な部品にだけ play を書く     | 外見確認という目的を満たし、検証の二重化も保守費用の増大も避けられる                                                                       | **採用** |
 
 ### story とブラウザテストの分担
 
@@ -146,11 +143,11 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 - 基準が推移的に閉じない。`sheet` / `tooltip` は `sidebar` からのみ、`textarea` / `input-group` は `combobox` からのみ参照され、その参照元自体に消費者がいない。`ui/` の外で数えると 0 件になるが、素朴に数えると 1 件以上になる。同じ状態の部品が数え方だけで両側へ分かれる
 - 検査の穴が残る。story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる
 
-上流の `write-story` skill は「ALWAYS write a Storybook story for any component written」と書いており、この方針はその既定値に沿う。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
+上流の `write-story` skill ([Storybook の `storybook-story-instructions.md`][]) は「ALWAYS write a Storybook story for any component written」と書いており、この方針はその既定値に沿う。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
 
 ### vitest 経由の story に padding を当てる理由
 
-`layout` パラメータを当てるのは `WebView.prepareForStory` で (`storybook/dist/preview/runtime.js` の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
+`layout` パラメータを当てるのは `WebView.prepareForStory` で ([Storybook の `WebView.ts`][] の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
 
 - この差は `.storybook/preview.css` の `body:not(.sb-show-main)` が埋める。Storybook の UI では body へ `sb-show-main` が付くので、付いていないときだけ同じ `1rem` を当てる。`sb-main-*` で見ないのは、`layout: "none"` の story が UI 側でも `sb-main-*` を持たないため (理由は同ファイルのコメント)
 - 埋めないと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、そのはみ出しが背景を持つ唯一の箱 (body) の外へ出て axe が色を測れなくなる。`html` は背景を持たないので受け止められない
@@ -169,3 +166,17 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 決め手は配布である。MCP の登録はエージェント側の設定に URL を 1 つ持つが、このリポジトリの Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスクが `derive-dev-port.sh` で導出する)。同じ登録を collaborator へ配れない。CLI は `--cwd` / `-c` でプロジェクトを指すので、port の影響を受けない。
 
 MCP が優るのは、ツールの説明がエージェントに常に見える点である。CLI は AGENTS.md に書いても読み飛ばされれば使われない。AGENTS.md の「Storybook の skill と tools」節を消さないのはこのためである。MCP へ移るなら、port を固定するか、worktree ごとに登録し直す運用が要る。
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+[Storybook docs「Tags」]: https://storybook.js.org/docs/writing-stories/tags
+[React docs「useTransition」]: https://react.dev/reference/react/useTransition
+[Storybook の `storybook-story-instructions.md`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/cli/skills/content/instructions/storybook-story-instructions.md
+[Storybook の `stories/definition.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/shared/open-service/toolsets/stories/definition.ts
+[storybookjs/storybook#33747]: https://github.com/storybookjs/storybook/issues/33747
+[Storybook docs「Storybook for TanStack React」]: https://storybook.js.org/docs/get-started/frameworks/tanstack-react
+[Storybook docs「Telemetry」]: https://storybook.js.org/docs/configure/telemetry
+[Storybook docs「Interaction tests」]: https://storybook.js.org/docs/writing-tests/interaction-testing
+[Storybook の `WebView.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/preview-api/modules/preview-web/WebView.ts

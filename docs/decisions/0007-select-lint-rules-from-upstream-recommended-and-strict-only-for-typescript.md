@@ -57,7 +57,7 @@ silent failure の源として扱っている書き方を検出するルール�
 
 `restrict-template-expressions` は基準のオプションから `allowNumber` だけを true に戻して名指しする。
 oxlint の既定はルール自身の既定 (`allow*` の 5 つが true) で、名指ししないと基準から外れる。
-基準の `allowNumber: false` は浮動小数の表示 (`${0.1 + 0.2}`) を狙ったもので、整数の埋め込みにも鳴る (typescript-eslint の issue 9311)。利用者に見せる浮動小数の表示は、このルールに頼らず `toFixed()` などで書く。テストの診断文のように値そのものを見せたいものは丸めない。
+基準の `allowNumber: false` は浮動小数の表示 (`${0.1 + 0.2}`) を狙ったもので、整数の埋め込みにも鳴る (typescript-eslint/typescript-eslint#9311)。利用者に見せる浮動小数の表示は、このルールに頼らず `toFixed()` などで書く。テストの診断文のように値そのものを見せたいものは丸めない。
 `allowBoolean` は基準どおり false にする。`` `btn ${active && "active"}` `` は `active` が false のとき `"false"` を埋め込み、型が `false | "active"` なので `allowBoolean: true` では通る (2026-09-27 に oxlint 1.82.0 で実測)。typescript-eslint 本体の `eslint.config.mjs` はこのルールの `allow*` を 5 つとも true に戻しているが (2026-09-27 に確認)、`allowBoolean` の誤りを止めるため採らない。
 なお `correctness` に入るルールも `rules` へ名指しすればオプションを上書きできる。名指ししないルールだけがカテゴリ既定で動く。
 
@@ -125,7 +125,7 @@ recommended に無くても、規約や他の決定を機械で守るために�
 - 名指ししたルールは `rules` に並ぶため、上流 recommended の改訂には自動追随しない。追随の手順は `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」にある
 - 名指ししたルールが oxlint 側で改名・廃止されると `vp lint` が設定のパースで落ちる (`Rule 'react-compiler' not found in plugin 'react'`)。取りこぼしは起きないが、更新の PR は lint が動かない状態から始まる
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは `rules` に名指ししないので、書いたルールとの突き合わせでは脱落を拾えない
-- TanStack の 2 plugin は JS plugin で載せる。oxlint にネイティブの実装は無く、ネイティブ化を求めた oxc の issue 11648 は discussion へ移され、実装は入っていない (2026-09-26 に oxc の issue と PR を検索)。JS plugin は型情報を受け取れないので、型情報を使う `no-void-query-fn` は入れず、`no-rest-destructuring` は型情報を使うケースを見逃す
+- TanStack の 2 plugin は JS plugin で載せる。oxlint にネイティブの実装は無く、ネイティブ化を求めた oxc-project/oxc#11648 は discussion へ移され、実装は入っていない (2026-09-26 に oxc の issue と PR を検索)。JS plugin は型情報を受け取れないので、型情報を使う `no-void-query-fn` は入れず、`no-rest-destructuring` は型情報を使うケースを見逃す
 - `prefer-query-options` は `QueryClient` のメソッド呼び出しを、client の出どころを同じファイルの `useQueryClient()` か `new QueryClient()` まで辿れたときだけ検査する。引数や router の context で受け取った client の呼び出しと、定数で渡した `queryKey` は検査されない (`@tanstack/eslint-plugin-query` 5.103.2 のルールの実装と、2026-09-26 の probe で確認)
 - 上流が warn にしているルールは error で入れる。`vp check` は警告では落ちない
 

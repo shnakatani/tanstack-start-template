@@ -93,7 +93,7 @@ export default defineProject({
       // CI の遅さに備えて操作の上限を config で置くための option (vitest-dev/vitest#6983)。
       // あわせて `expect.poll.timeout` を `expect.element` へ届かせる役も持つ。vitest は
       // actionTimeout が未設定のときだけ assert の timeout をタスクの残り予算から計算する
-      // (#8308 が OPEN)。固定値にするとテスト後半ほど予算が縮む問題も消える (#7871)
+      // (vitest-dev/vitest#8308 が OPEN)。固定値にするとテスト後半ほど予算が縮む問題も消える (vitest-dev/vitest#7871)
       provider: playwright({ actionTimeout: ASSERT_TIMEOUT_MS }),
       headless: true,
       // 既定 viewport は src/test/browser/viewport-sizes.ts が持つ。写すとどちらかが古くなるので import する

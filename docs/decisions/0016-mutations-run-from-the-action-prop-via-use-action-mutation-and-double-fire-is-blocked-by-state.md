@@ -31,11 +31,11 @@ mutation 以外のユーザー操作由来の更新は、`src/components/screens
 `src/components/ui/button.tsx` は shadcn registry の出力で、改変は ADR-0020 の許容リストに限る。
 包んでいる `@base-ui/react` 1.8.0 の Button の props は `NativeButtonProps` と `focusableWhenDisabled` だけで、`action` / pending 相当の prop は無い (`node_modules/@base-ui/react/button/Button.d.ts`)。
 
-| ライブラリ | 状況 (2026-09-13)                                                                                                                                                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Base UI    | mui/base-ui #5133 (2026-06-27) が `action` / `on*ChangeAction` を提案。ラベル「waiting for 👍」、メンテナ返信なし                                                        |
-| React Aria | adobe/react-spectrum #9894 (2026-04-08) が `action` / `changeAction` / `isPending` / `actionError` の RFC。2026-07-17 に実装を別 PR へ分割すると表明、merge 済み実装なし |
-| shadcn/ui  | issue なし。Button のドキュメントは disabled + Spinner の例だけ                                                                                                          |
+| ライブラリ | 状況 (2026-09-13)                                                                                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base UI    | mui/base-ui#5133 (2026-06-27) が `action` / `on*ChangeAction` を提案。ラベル「waiting for 👍」、メンテナ返信なし                                                        |
+| React Aria | adobe/react-spectrum#9894 (2026-04-08) が `action` / `changeAction` / `isPending` / `actionError` の RFC。2026-07-17 に実装を別 PR へ分割すると表明、merge 済み実装なし |
+| shadcn/ui  | issue なし。Button のドキュメントは disabled + Spinner の例だけ                                                                                                         |
 
 ### 制約: Action の reject は Error Boundary へ届く
 
@@ -58,14 +58,14 @@ React の `<form action>` + `useFormStatus` を使わないのは、submit の�
 ### 二重発火は state だけで塞ぐ
 
 react.dev が示す形は `useTransition` の `disabled={isPending}` と `useFormStatus` の `disabled={pending}` で、どちらも state だけで決着前の再操作を止める。`useActionState` は再操作を queue に積み、拒否しない。
-React はユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終える (reactwg/react-18 #21) ので、2 回目の実イベントは `aria-disabled` の部品に届き、Base UI が click を止める。
+React はユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終える (reactwg/react-18#21) ので、2 回目の実イベントは `aria-disabled` の部品に届き、Base UI が click を止める。
 
 「同期に 2 回 dispatch すると `isPending` の描画前に 2 回目が届く」ことを理由に ref のフラグを併せ持つ形は採らない。この事象は実イベントでは起きず、フラグはその検証を通すためだけのものになる。
 
 | 論点                       | 根拠                                                                                                                                                                                                                                                                         |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流す (react-dom 19.3.0 `scheduleImmediateRootScheduleTask`)                                  |
-| React の保証               | reactwg/react-18 #21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                                                     |
+| React の保証               | reactwg/react-18#21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                                                      |
 | 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する |
 | 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (Action 層の button / form と削除確認ダイアログの 2 連射テストで実測)                                                                                |
 
@@ -79,31 +79,31 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ### 検討した選択肢
 
-| 案                                                            | 評価                                                                                                                                                                | 採否     |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| app 層に `src/components/action/` を置き `action` prop で包む | React Conf 2025 デモと同じ構造。registry を触らず (ADR-0020)、基盤にも依存しない。dedupe と pending の実装が 1 箇所に集まる                                         | **採用** |
-| ref や閉包のフラグで同一タスク内の 2 連射も塞ぐ               | 実イベントでは起きない事象への防御で、その検証を書くためだけにフラグが要る (上の表)。react.dev の形 (`disabled={pending}`) から外れる                               | 却下     |
-| 呼び出し側ごとに `useTransition` を書く                       | 決着前の dedupe と a11y の状態伝達を毎回書き直す。`deleteConfirmMutationProps` の閉包と同じ形が箇所ごとに散る                                                       | 却下     |
-| Base UI #5133 か React Aria #9894 の出荷を待つ                | どちらも 2026-09-13 時点で merge 済み実装が無く、時期も未定                                                                                                         | 却下     |
-| 基盤を React Aria へ替えて action prop を待つ                 | shadcn CLI は `--base aria` を持つが、shadcn-ui/ui #11724 (2026-09-01) の実測で API parity が無く porting になる。Action 層は基盤非依存なので、この判断と切り離せる | 別 ADR   |
+| 案                                                                                | 評価                                                                                                                                                               | 採否     |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| app 層に `src/components/action/` を置き `action` prop で包む                     | React Conf 2025 デモと同じ構造。registry を触らず (ADR-0020)、基盤にも依存しない。dedupe と pending の実装が 1 箇所に集まる                                        | **採用** |
+| ref や閉包のフラグで同一タスク内の 2 連射も塞ぐ                                   | 実イベントでは起きない事象への防御で、その検証を書くためだけにフラグが要る (上の表)。react.dev の形 (`disabled={pending}`) から外れる                              | 却下     |
+| 呼び出し側ごとに `useTransition` を書く                                           | 決着前の dedupe と a11y の状態伝達を毎回書き直す。`deleteConfirmMutationProps` の閉包と同じ形が箇所ごとに散る                                                      | 却下     |
+| Base UI (mui/base-ui#5133) か React Aria (adobe/react-spectrum#9894) の出荷を待つ | どちらも 2026-09-13 時点で merge 済み実装が無く、時期も未定                                                                                                        | 却下     |
+| 基盤を React Aria へ替えて action prop を待つ                                     | shadcn CLI は `--base aria` を持つが、shadcn-ui/ui#11724 (2026-09-01) の実測で API parity が無く porting になる。Action 層は基盤非依存なので、この判断と切り離せる | 別 ADR   |
 
 ## Consequences
 
 - `useActionMutation` を通さない Action の reject は Error Boundary へ届く (「Action の reject は Error Boundary へ届く」)。lint で検出できないため、レビューで見る
 - 後続作業
   - 値を持つ部品の `changeAction` 版 (`checkbox` / `select` / `toggle` / `toggle-group` / `radio-group` / `combobox`)。`useOptimistic` で表示を先に進める設計が要り、Button 系とは別に扱う
-  - React Aria への基盤変更の ADR。発火条件は「React Aria #9894 の実装が出荷した」か「a11y 要件で Base UI に不足が出た」のどちらか
+  - React Aria への基盤変更の ADR。発火条件は「React Aria (adobe/react-spectrum#9894) の実装が出荷した」か「a11y 要件で Base UI に不足が出た」のどちらか
 - 再評価条件
-  - Base UI #5133 か React Aria #9894 が出荷したら、Action 層の内部実装をライブラリの `action` prop へ寄せる
+  - Base UI (mui/base-ui#5133) か React Aria (adobe/react-spectrum#9894) が出荷したら、Action 層の内部実装をライブラリの `action` prop へ寄せる
 
 ## 出典
 
 - React Conf 2025 Async React デモ: https://github.com/rickhanlonii/async-react
 - `useTransition` リファレンス: https://react.dev/reference/react/useTransition
 - `<form>` / `useFormStatus` リファレンス: https://react.dev/reference/react-dom/components/form / https://react.dev/reference/react-dom/hooks/useFormStatus
-- reactwg/react-18 #21 Automatic batching for fewer renders in React 18: https://github.com/reactwg/react-18/discussions/21
+- reactwg/react-18#21 Automatic batching for fewer renders in React 18: https://github.com/reactwg/react-18/discussions/21
 - HTML Standard「clean up after running script」: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
 - TanStack Query「Invalidations from Mutations」: https://tanstack.com/query/latest/docs/framework/react/guides/invalidations-from-mutations
-- mui/base-ui #5133 First class support for async react primitives: https://github.com/mui/base-ui/issues/5133
-- adobe/react-spectrum #9894 RFC: Adopting Async React in React Aria Components: https://github.com/adobe/react-spectrum/pull/9894
-- shadcn-ui/ui #11724 Bundle size audit across base / aria / radix: https://github.com/shadcn-ui/ui/issues/11724
+- mui/base-ui#5133 First class support for async react primitives: https://github.com/mui/base-ui/issues/5133
+- adobe/react-spectrum#9894 RFC: Adopting Async React in React Aria Components: https://github.com/adobe/react-spectrum/pull/9894
+- shadcn-ui/ui#11724 Bundle size audit across base / aria / radix: https://github.com/shadcn-ui/ui/issues/11724

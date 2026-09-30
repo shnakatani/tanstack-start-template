@@ -17,7 +17,7 @@
 
 ### variant 関数を宣言する
 
-`cva` で作った variant 関数を消費側から呼ぶ形を採ったら、`vite.config.ts` の `settings.shadcn.variantFunctions` へ宣言する。宣言しないと、shadcn/ui の Button docs が「As Link」で推奨する `className={buttonVariants(...)}` の形が `require-static-classes` で落ちる。テンプレートの利用者が公式どおり書いて lint が止まるのは不備になる。
+`cva` で作った variant 関数を消費側から呼ぶ形を採ったら、`vite.config.ts` の `settings.shadcn.variantFunctions` へ宣言する。宣言しないと、[shadcn docs「Button」][] が「As Link」で推奨する `className={buttonVariants(...)}` の形が `require-static-classes` で落ちる。テンプレートの利用者が公式どおり書いて lint が止まるのは不備になる。
 
 - 宣言は違反を黙らせる例外ではなく、variant 関数が何かを linter へ伝える設定である。`componentImports` と同じ恒久設定として扱う
 - 宣言するのは `ui/` が定義し、消費側から呼ぶ variant 関数に限る。`ui/` の内側でしか呼ばない関数は規則に当たらない
@@ -57,4 +57,10 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 
 - 同じ文字列 (`flex min-h-0 flex-col gap-6`) を 2 通りで渡すと差が出る。同一ファイルの `const` として渡すと含まれる `gap-6` に `no-restyle` が出るが、import した `const` として渡すと `require-static-classes` だけが出て中身の診断は消える
 - ファイルを跨いだ定数が解決されないのは実装上の制約である。`node_modules/@shadcn/lint/dist/index.js` の `resolveIdentifier` は、変数の定義が `Variable` 型でなければ解決を打ち切る (`def.type !== "Variable"`)。import 束縛はこの型を持たない
-- 規則を採用しない案の比較は ADR-0022 にある。`variantFunctions` を宣言しない案は、shadcn/ui が推奨する形が書けず、テンプレートの利用者が公式どおり書くと lint が止まるので却下した (shadcn/ui「Button」: https://ui.shadcn.com/docs/components/button)
+- 規則を採用しない案の比較は ADR-0022 にある。`variantFunctions` を宣言しない案は、shadcn/ui が推奨する形が書けず、テンプレートの利用者が公式どおり書くと lint が止まるので却下した ([shadcn docs「Button」][])
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+[shadcn docs「Button」]: https://ui.shadcn.com/docs/components/base/button

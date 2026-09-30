@@ -89,7 +89,7 @@ export const NoItems: Story = {
         // (`aria-required-children` の `reviewEmpty`)。この story では増えない。
         // 「候補なし」は ComboboxEmpty と base-ui の live region が伝える。
         // 上流へは未起票。2026-09-21 に mui/base-ui を "aria-required-children" で検索し、
-        // #5443 (Empty が listbox の直下に居る violation) は別件だった。投げるなら mui/base-ui。
+        // mui/base-ui#5443 (Empty が listbox の直下に居る violation) は別件だった。投げるなら mui/base-ui。
         // 外せるのは base-ui が空のリストで role を落とすようになったとき
         exclude: ['[data-slot="combobox-list"]'],
       },

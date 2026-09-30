@@ -46,7 +46,7 @@ vp fmt docs/registry-baseline --write
 
 旧 baseline は `git show HEAD:docs/registry-baseline/<name>.tsx` で取る。
 
-- `components.json` の `rsc: false` に基づく CLI の出力を基準にし、registry の生 JSON にある `"use client"` は戻さない。ただし CLI は複数の部品を 1 回で add すると `"use client"` を消し損ねることがある (shadcn-ui/ui#8991。2026-09-02 に 36 件を 1 回で add したとき 11 件に残った)。rsc の変換が `g` フラグ付きの正規表現を `.test()` で使い、`lastIndex` が呼び出しをまたいで持ち越されるためで、残る部品は add の順で入れ替わる
+- `components.json` の `rsc: false` に基づく CLI の出力を基準にし、registry の生 JSON にある `"use client"` は戻さない。ただし CLI は複数の部品を 1 回で add すると `"use client"` を消し損ねることがある ([shadcn-ui/ui#8991][]。2026-09-02 に 36 件を 1 回で add したとき 11 件に残った)。rsc の変換が `g` フラグ付きの正規表現を `.test()` で使い、`lastIndex` が呼び出しをまたいで持ち越されるためで、残る部品は add の順で入れ替わる
 
 ```
 add popover              → popover: 除去される
@@ -89,9 +89,16 @@ registry の見た目を変えたいときは、打ち消しの class を積む�
 
 ### 生成コードを直接変えてよい理由
 
-shadcn の docs は「The top layer of your component code is open for modification」とし (https://ui.shadcn.com/docs の Open Code)、生成コードを直接変えること自体を公式の想定にしている。
+[shadcn docs「Introduction」][] の Open Code は「The top layer of your component code is open for modification」とし、生成コードを直接変えること自体を公式の想定にしている。
 統制するのは「してはいけない改変」ではなく、再生成と上流の追随を安全に回すために「何を変えたか」を残すことである。そのための記録が baseline と台帳で、変える前にまず公式の推奨に合わせ、実機で見てから判断する (ADR-0020「追加と削除の基準」)。
 
 ### 公式のノブを書き留める理由
 
 shadcn の skill (`.claude/skills/shadcn/customization.md`「Customizing Components」) は、手段を built-in の variant → `className` → 新しい variant → wrapper の順で挙げ、CSS 変数のノブに触れない。skill だけを読むと打ち消しの class を積む方向へ進むので、確かめたノブを書き留めておく。
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+[shadcn-ui/ui#8991]: https://github.com/shadcn-ui/ui/issues/8991
+[shadcn docs「Introduction」]: https://ui.shadcn.com/docs

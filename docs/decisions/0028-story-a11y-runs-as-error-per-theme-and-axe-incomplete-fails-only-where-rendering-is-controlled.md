@@ -78,7 +78,7 @@ axe-core 自身が `incomplete` を人の判断へ回す設計だと書いてい
 
 a11y を light と dark の両方へ当てるため、`vitest.storybook.config.ts` の `storybookProject()` を `initialGlobals` のテーマ違いで 2 つ作る。これは `@storybook/addon-vitest` の型が名指しで勧める形で、「define one Vitest project per theme, each with a different value」と書いてある。
 
-その形のまま Storybook 経由で走らせると、project 名が衝突して起動しない (storybookjs/storybook の issue 32427、2025-09-07 から open)。`VITEST_STORYBOOK` が真のときだけ light の 1 つに絞る。判定の正本は `mise run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。衝突の仕組みと真偽の読み方は `scripts/lib/storybook-env.ts` の docstring にある。
+その形のまま Storybook 経由で走らせると、project 名が衝突して起動しない (storybookjs/storybook#32427、2025-09-07 から open)。`VITEST_STORYBOOK` が真のときだけ light の 1 つに絞る。判定の正本は `mise run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。衝突の仕組みと真偽の読み方は `scripts/lib/storybook-env.ts` の docstring にある。
 
 | 経路                                       | テーマ        |
 | ------------------------------------------ | ------------- |
@@ -107,7 +107,7 @@ story で落とすのは逆の理由による。描くものを自分で決め�
 | `aria-hidden-focus` (ルールごと)                | ダイアログが可視な間、配下の tabbable 要素がまとめて判定不能になる。story 側で描き方を変えても消せない |
 | `aria-valid-attr-value` / `controlsWithinPopup` | 同じく popup の状態。`aria-haspopup` と `aria-controls` を併せ持つ trigger で必ず出る                  |
 
-上流のバグ (mui/base-ui#5528、axe-core#4418 の設計と #4861) は補強であって、外す主たる理由ではない。上流が直っても popup が統制の外に出ることは変わらない。
+上流のバグ (mui/base-ui#5528、dequelabs/axe-core#4418 の設計と dequelabs/axe-core#4861) は補強であって、外す主たる理由ではない。上流が直っても popup が統制の外に出ることは変わらない。
 
 `aria-valid-attr-value` をルールごと外さないのは、同じルールの `noId` (参照先が DOM に無い) が部品側の信号だからである。キーで外せばそちらは落ち続ける。
 
@@ -175,7 +175,7 @@ axe を回し直す形には 2 つの穴がある (2026-09-21 に実装して実
 - `expectNoA11yViolations` は `incomplete` を見ない。ブラウザテストの animation 無効化 (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」) は、`incomplete` を落とす基準の下で要る回避策である。`incomplete` を見ない基準の下で、その回避策が他の理由 (待機と実イベントの規律) でも要るかは別に確かめる
 - story 側で `color-contrast` の `incomplete` が落ちる。部品側の信号として調べる。落ちる story とその理由は実装の PR が持ち、本 ADR には写さない
 - story で統制できるのは markup までで、フォントは実行環境が持つ。CI でだけ赤になったときの扱いは `docs/guides/accessibility.md`「story が CI でだけ赤になったら」にある
-- `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (axe-core#4861 / #3486) 見直す
+- `aria-hidden-focus` と `aria-valid-attr-value` は合否に入らない。上流が直したら (dequelabs/axe-core#4861 / dequelabs/axe-core#3486) 見直す
 - レポートが無いことを落とす条件は、addon が走る条件に `test: "todo"` を足したものである (todo は addon が走って warning へ降ろす形なので、合否へ入れない側で揃える)。公式は「走ったか」を知る API を持たない (`storybook.js.org/docs/writing-tests/accessibility-testing` に記載なし)。addon が条件を足すと、こちらが偽陽性を出して知らせる
 - `a11y-incomplete` の annotation は `.storybook/main.ts` の `addons` で `@storybook/addon-a11y` より前に置く。並びが変わると addon の結果を読めなくなり、「レポートが無い」で落ちる
 - 名指しのリストは axe の出荷物と突き合わせられない。版が上がって `color-contrast` の分岐が変わっても音が鳴らないので、更新時に読み直す (手順は `docs/guides/accessibility.md`「axe を上げたとき」)

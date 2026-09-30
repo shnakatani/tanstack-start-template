@@ -13,8 +13,8 @@ const config: StorybookConfig = {
     "@storybook/addon-vitest",
   ],
   // tanstackStart() plugin と標準の Vite builder が衝突するので TanStack 専用の framework を
-  // 使う。router を memory-backed で包み、server function を stub する。衝突 (storybookjs/storybook
-  // の issue 33747) が未解決なので、静的ビルドは検証していない
+  // 使う。router を memory-backed で包み、server function を stub する。衝突 (storybookjs/storybook#33747) が
+  // 未解決なので、静的ビルドは検証していない
   // (docs/guides/storybook.md「framework を TanStack 専用にし、telemetry を切る理由」)
   framework: "@storybook/tanstack-react",
   // telemetry は既定で有効で、実行したコマンド・バージョン・addon 一覧・story と
