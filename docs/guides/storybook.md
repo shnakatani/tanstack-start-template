@@ -105,7 +105,7 @@ telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既�
 | TanStack 専用 framework を使う   | router を memory-backed で自動ラップし、server function を自動 stub する                            | **採用** |
 | telemetry を既定のまま有効にする | このテンプレートから作られる全プロジェクトへ配られる設定なので、明示で潰す                          | 却下     |
 
-- Storybook の静的ビルド (`vp exec storybook build`) は `mise run verify` と CI で走らせる。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外すので build は通る。`vite.config.ts` の `lazyPlugins` には async の関数を渡しているので、10.6.0 では外しそこねる分を `pnpm-workspace.yaml` の patch が補っている (`docs/guides/vite-configuration.md`「重い依存を遅らせて読み込む」。2026-09-30 に、patch を当てた `@storybook/tanstack-react` 10.6.0 で観測)
+- Storybook の静的ビルド (`vp exec storybook build`) は `mise run verify` と CI で走らせる。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外すので build は通る。`vite.config.ts` の `lazyPlugins` には async の関数を渡していて、`@storybook/tanstack-react` 10.6.0 は Promise の中の plugin を外せないので、`pnpm-workspace.yaml` の patch が補っている (`docs/guides/vite-configuration.md`「重い依存を遅らせて読み込む」。2026-09-30 に、patch を当てた `@storybook/tanstack-react` 10.6.0 で観測)
 
 ### story を状態のカタログにする理由
 

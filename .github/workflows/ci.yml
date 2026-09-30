@@ -42,7 +42,7 @@ jobs:
       # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
       - run: vp node scripts/checks/runtime/security-headers.ts
 
-      # Storybook の静的ビルドが通ることを確かめる (docs/guides/vite-configuration.md「重い依存を遅らせて読み込む」)
+      # async の lazyPlugins で TanStack Start の plugin が Storybook に残る退行を止める (docs/guides/storybook.md「framework を TanStack 専用にし、telemetry を切る理由」)
       - run: vp exec storybook build --quiet
 
   # peer の食い違いを数え、install が要らないので verify と並列に走らせる (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」、ADR-0004)
