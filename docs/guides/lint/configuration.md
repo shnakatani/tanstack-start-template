@@ -21,6 +21,7 @@ oxlint は「設定したつもりで効いていない」状態を診断なし�
 - 突き合わせでは 2 つのキーの形をまたぐ。eslint コアのルールは接頭辞なしで出力され、`typescript/` 接頭辞で書いた extension rule はコアのルール名へ解決される (2026-09-02 時点で `no-array-constructor` と `no-useless-constructor` の 2 件)。解決先が `correctness` なら名指しは no-op なので、`--print-config` で実効を比べる
 - React Compiler 由来のルールは `--print-config` の `rules` を `react/` で絞り、eslint-plugin-react-hooks のルール一覧と比べる
 - jsx-a11y は `--print-config` の `rules` を `jsx_a11y/` で絞り、上流 recommended の一覧と `comm` で両方向の差を取る。`rules` は「カテゴリで有効になったもの」と「名指ししたもの」の和なので、名前が出れば有効と読んでよい
+- `overrides` で足したプラグインとそのルールは、`--print-config` ではなく、当たるファイルへの実際の診断で確かめる。`--print-config` は `overrides` を書いたとおりの形で出し、ファイルを渡しても出力は変わらない (2026-09-30 に oxlint 1.85.0 で実測)。override のプラグインでカテゴリから有効になるルールも展開しない ([oxc-project/oxc#24878][])
 
 `--print-config` から有効と読めるのは、名前が出ている場合だけである。JS plugin 由来のルールは出力に出ないので、無いことは無効の証拠にならない (`docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」)。
 
@@ -216,6 +217,7 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
+[oxc-project/oxc#24878]: https://github.com/oxc-project/oxc/issues/24878
 [oxc-project/oxc#7379]: https://github.com/oxc-project/oxc/pull/7379
 [Oxlint docs「overrides」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#overrides
 [Vite+ docs「Lint」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/lint.md
