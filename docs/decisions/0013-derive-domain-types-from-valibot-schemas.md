@@ -70,7 +70,7 @@ client まで届くエラーに DB の中身を混ぜないためで、位置と
 
 素の定数 object (`{ title: "タイトル" } as const`) を別に持つ形は、キーの typo も項目追加時の欠落も型で捕まらない。入力用と保存用で pipe が分かれる項目の書き方は `docs/guides/forms-and-inputs.md`「スキーマを書く」にある。
 
-TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリの `src/components/parts/form-fields.tsx` の `label` prop (TanStack Form 自体に呼称を受ける口は無い) はどちらも文字列を受け取る口で、schema と結ぶ仕組みを持たない。TanStack Form の Discussion #2111 (参加者の回答、メンテナ回答なし) も schema の制約を field へ出す経路は無いとしている。Standard Schema の validate 契約に metadata は無く、Standard JSON Schema (spec 1.1.0 の `~standard.jsonSchema`) は valibot 1.4.2 が未実装で、載るのも JSON Schema 語彙 (title / description) に限る。独自の `label` を運ぶ層はアプリ側 (valibot の metadata) に置く。
+TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリの `src/components/parts/form-fields.tsx` の `label` prop (TanStack Form 自体に呼称を受ける口は無い) はどちらも文字列を受け取る口で、schema と結ぶ仕組みを持たない。TanStack/form#2111 (参加者の回答、メンテナ回答なし) も schema の制約を field へ出す経路は無いとしている。Standard Schema の validate 契約に metadata は無く、Standard JSON Schema (spec 1.1.0 の `~standard.jsonSchema`) は valibot 1.4.2 が未実装で、載るのも JSON Schema 語彙 (title / description) に限る。独自の `label` を運ぶ層はアプリ側 (valibot の metadata) に置く。
 
 ### 検討した選択肢
 
@@ -100,8 +100,8 @@ TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリ
 
 - Valibot Quick start (スキーマを型の単一の出処とする記述): https://valibot.dev/guides/quick-start/
 - Valibot `metadata` / `getMetadata`: https://valibot.dev/api/metadata/ / https://valibot.dev/api/getMetadata/
-- TanStack Form Discussion #2111 (参加者の回答: schema の制約を field へ出す経路は無い): https://github.com/TanStack/form/discussions/2111
+- TanStack/form#2111 (参加者の回答: schema の制約を field へ出す経路は無い): https://github.com/TanStack/form/discussions/2111
 - Standard Schema spec 1.1.0 (`StandardJSONSchemaV1`): https://standardschema.dev/
 - Valibot Infer types (`InferOutput` を既定とする指針): https://valibot.dev/guides/infer-types/
-- Valibot discussion #377 (メンテナ fabian-hiller による `satisfies v.GenericSchema<T>` の案内。curried factory は参加者 alvechy が投稿したもので、メンテナは「今は対応する時間が無い」と述べるに留まる): https://github.com/open-circle/valibot/discussions/377
-- zod discussion #1863 (`interface X extends z.infer<…>` で型名を保つ案。提案者自身が不完全と結論): https://github.com/colinhacks/zod/discussions/1863
+- open-circle/valibot#377 (メンテナ fabian-hiller による `satisfies v.GenericSchema<T>` の案内。curried factory は参加者 alvechy が投稿したもので、メンテナは「今は対応する時間が無い」と述べるに留まる): https://github.com/open-circle/valibot/discussions/377
+- colinhacks/zod#1863 (`interface X extends z.infer<…>` で型名を保つ案。提案者自身が不完全と結論): https://github.com/colinhacks/zod/discussions/1863

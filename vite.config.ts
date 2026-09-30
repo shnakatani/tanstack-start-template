@@ -82,7 +82,7 @@ export default defineConfig({
       // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0009)
       { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
       // TanStack Query / Router の契約の検査。oxlint はネイティブに持たず、ネイティブ化を求めた
-      // oxc の issue 11648 は discussion へ移され、実装は入っていない (ADR-0007)。name は他の
+      // oxc-project/oxc#11648 は discussion へ移され、実装は入っていない (ADR-0007)。name は他の
       // jsPlugins (shadcn / testing-library / browser-test) と同じく、短い名前を診断・rules の
       // キー・抑制 directive で共有する
       { name: "tanstack-query", specifier: "@tanstack/eslint-plugin-query" },
@@ -335,7 +335,7 @@ export default defineConfig({
       "vitest/no-unneeded-async-expect-function": "error",
       "vitest/prefer-called-exactly-once-with": "error",
       // assert の helper は vi.defineHelper で包み、失敗の位置を呼び出し側に出す。
-      // @vitest/eslint-plugin は包んだ関数の中の expect を既定で許す (その PR 894) が、oxlint の
+      // @vitest/eslint-plugin は包んだ関数の中の expect を既定で許す (vitest-dev/eslint-plugin-vitest#894) が、oxlint の
       // 移植はまだ許さないので、同じ扱いを option で与える。
       // 撤去条件: oxlint の no-standalone-expect が vi.defineHelper を既定で許したとき
       "vitest/no-standalone-expect": [

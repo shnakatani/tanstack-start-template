@@ -37,7 +37,7 @@
 
 ## Consequences
 
-- ZWJ で結んだ絵文字 (👨‍👩‍👧 は 5 code point) や結合文字 (か + 結合濁点は 2) は、見た目の 1 文字より多く数える。「N 文字以内」の文言とずれるのはこの場合だけである。GOV.UK の Character count は `text.length` (code unit) で数え、単体の絵文字も 2 と数えることを既知の問題として残している (govuk-frontend の issue 1104、2026-09-29 に open)
+- ZWJ で結んだ絵文字 (👨‍👩‍👧 は 5 code point) や結合文字 (か + 結合濁点は 2) は、見た目の 1 文字より多く数える。「N 文字以内」の文言とずれるのはこの場合だけである。GOV.UK の Character count は `text.length` (code unit) で数え、単体の絵文字も 2 と数えることを既知の問題として残している (alphagov/govuk-frontend#1104、2026-09-29 に open)
 - 切り詰めは code point の境界で切るので、サロゲートペアの片割れは残らない。ZWJ で結んだ絵文字は途中で切れうる
 - 上限を目で見て分かるようにするなら、入力欄の近くに説明を置く (デジタル庁デザインシステムの案内)。検索語のように稀にしか超えない長さなら置かなくてよい
 
@@ -75,7 +75,7 @@
 - SQLite の core functions (`length()` と `substr` は code point): <https://sqlite.org/lang_corefunc.html>
 - デジタル庁デザインシステム input-text のアクセシビリティ (maxlength を使わない): <https://design.digital.go.jp/dads/components/input-text/accessibility/>
 - GOV.UK Design System の Character count: <https://design-system.service.gov.uk/components/character-count/>
-- govuk-frontend の Character count のソース (`removeAttribute('maxlength')` と `text.length`) と issue 1104: <https://github.com/alphagov/govuk-frontend/blob/main/packages/govuk-frontend/src/govuk/components/character-count/character-count.mjs> / <https://github.com/alphagov/govuk-frontend/issues/1104>
+- govuk-frontend の Character count のソース (`removeAttribute('maxlength')` と `text.length`) と alphagov/govuk-frontend#1104: <https://github.com/alphagov/govuk-frontend/blob/main/packages/govuk-frontend/src/govuk/components/character-count/character-count.mjs> / <https://github.com/alphagov/govuk-frontend/issues/1104>
 - Joi の `string.truncate()` (API docs と、`value.slice(0, limit)` で切る実装): <https://github.com/hapijs/joi/blob/master/API.md#stringtruncateenabled> / <https://github.com/hapijs/joi/blob/master/lib/types/string.js>
 - Zod の string の API: <https://zod.dev/api#strings>
 - Effect Schema の string のフィルタ: <https://effect.website/docs/schema/filters/#string-filters>

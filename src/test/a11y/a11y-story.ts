@@ -22,7 +22,7 @@ const IGNORED_INCOMPLETE: readonly { readonly rule: string; readonly messageKey?
   // 描き方を変えても消せない。補強として mui/base-ui#5528 が open
   { rule: "aria-hidden-focus" },
   // 同じく popup の状態。aria-haspopup と aria-controls を併せ持つ trigger で必ず出る。
-  // 補強として axe-core#4418 の設計と、参照先が実在しても出る #4861 (open)。
+  // 補強として dequelabs/axe-core#4418 の設計と、参照先が実在しても出る dequelabs/axe-core#4861 (open)。
   // 同じルールの noId は部品側の信号なので外さない
   { rule: "aria-valid-attr-value", messageKey: "controlsWithinPopup" },
 ];

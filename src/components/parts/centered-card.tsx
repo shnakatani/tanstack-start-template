@@ -47,7 +47,7 @@ export function CenteredCard({ fill, children }: { fill?: CenteredCardFill; chil
  * 認証エラーや 404 のように、遷移先を失ったユーザーへ状況と次の一手だけを示す画面で使う。
  *
  * 見出しは `CardTitle` の中に h1 を入れて組む。shadcn は CardTitle を h3 から div へ変えて
- * 見出し階層を利用側の裁量にしており (shadcn-ui/ui #8440 / #10301 は 2026-08-07 時点で
+ * 見出し階層を利用側の裁量にしており (shadcn-ui/ui#8440 / shadcn-ui/ui#10301 は 2026-08-07 時点で
  * いずれも open、asChild / render は未提供)、この合成が registry を触らずに済む唯一の手段。
  * Tailwind preflight が h1 の font-size / weight を inherit へ落とすため見た目は div のときと同一
  * (実測: 18px / 600 / lh 28px / margin 0 / 高さ 28px で一致)。data-slot も CardTitle 側に残る。

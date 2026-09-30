@@ -12,15 +12,15 @@ Transition・緊急更新・Action・mutation の用語は `docs/guides/react/up
 
 React チームは React 18 の設計時点から、大半の更新を Transition として扱う前提を置いている。
 
-| 出典                                                 | 発言                                                                                                                                                                                           |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| reactwg/react-18 #41 (Rick Hanlon、2021)             | "In a typical React app, most updates are conceptually transition updates. But for backwards compatibility reasons, transitions are opt-in."                                                   |
-| reactwg/react-18 #63 (Sebastian Markbåge、2021)      | "Ideally almost every update should be wrapped in a transition somehow." 同時に、段階的移行と衝突するので全面適用はまだ推さない、と留保                                                        |
-| reactwg/react-18 #100 (Dan Abramov、2021)            | `startTransition` は長期的には router やデータ取得ライブラリが主に使い、ローカルの非緊急化には `useDeferredValue` を使う                                                                       |
-| reactwg/async-react #5 (Rick Hanlon、2025-11)        | "sync transitions: navigations, GET in render / async transitions: mutations, POST in action"                                                                                                  |
-| React Conf 2025 デモ (rickhanlonii/async-react)      | shadcn の `components/ui/button.tsx` をそのまま置き、`src/design/Button.jsx` が `action` prop を受けて `useTransition` で包む。Router は Transition を既定、データ取得は Suspense を既定にする |
-| React 19.3 リリース (2026-09-09、react/react #37290) | 複数の Transition を独立して描画する。それまでは 1 つの描画に entangle していた (`useTransition` リファレンスの Caveats は 2026-09-13 閲覧時点でも batch すると書いたまま)                     |
-| `useTransition` リファレンス (2026-09-13 閲覧)       | "If you're building a React framework or a router, we recommend marking page navigations as Transitions."                                                                                      |
+| 出典                                                | 発言                                                                                                                                                                                           |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| reactwg/react-18#41 (Rick Hanlon、2021)             | "In a typical React app, most updates are conceptually transition updates. But for backwards compatibility reasons, transitions are opt-in."                                                   |
+| reactwg/react-18#63 (Sebastian Markbåge、2021)      | "Ideally almost every update should be wrapped in a transition somehow." 同時に、段階的移行と衝突するので全面適用はまだ推さない、と留保                                                        |
+| reactwg/react-18#100 (Dan Abramov、2021)            | `startTransition` は長期的には router やデータ取得ライブラリが主に使い、ローカルの非緊急化には `useDeferredValue` を使う                                                                       |
+| reactwg/async-react#5 (Rick Hanlon、2025-11)        | "sync transitions: navigations, GET in render / async transitions: mutations, POST in action"                                                                                                  |
+| React Conf 2025 デモ (rickhanlonii/async-react)     | shadcn の `components/ui/button.tsx` をそのまま置き、`src/design/Button.jsx` が `action` prop を受けて `useTransition` で包む。Router は Transition を既定、データ取得は Suspense を既定にする |
+| React 19.3 リリース (2026-09-09、react/react#37290) | 複数の Transition を独立して描画する。それまでは 1 つの描画に entangle していた (`useTransition` リファレンスの Caveats は 2026-09-13 閲覧時点でも batch すると書いたまま)                     |
+| `useTransition` リファレンス (2026-09-13 閲覧)      | "If you're building a React framework or a router, we recommend marking page navigations as Transitions."                                                                                      |
 
 ### 制約: TanStack Query と Router のストアは Transition に参加しない
 
@@ -33,11 +33,11 @@ React の `useSyncExternalStore` リファレンスは次を明記する。
 > It's not recommended to suspend a render based on a store value returned by `useSyncExternalStore`. The reason is that mutations to the external store cannot be marked as non-blocking Transition updates.
 
 この制約が `useOptimistic` と衝突する。
-TanStack/query #9742 (2025-10-09) は「楽観値 2 → refetch 完了で 3 → Action 完了で 2」と揺れる再現を示し、メンテナ (TkDodo) は 2026-08-17 に "nothing we can do here without concurrent stores" と書いて close した。
-concurrent stores は react/react #35449 (2026-01-05、`useStore` / `createStore` の RFC、PoC) の段階で、19.3 には入っていない。
+TanStack/query#9742 (2025-10-09) は「楽観値 2 → refetch 完了で 3 → Action 完了で 2」と揺れる再現を示し、メンテナ (TkDodo) は 2026-08-17 に "nothing we can do here without concurrent stores" と書いて close した。
+concurrent stores は react/react#35449 (2026-01-05、`useStore` / `createStore` の RFC、PoC) の段階で、19.3 には入っていない。
 
 ```bash
-gh search issues "concurrent stores" --repo TanStack/query     # 2026-09-13: #9742 と無関係の 1 件のみ
+gh search issues "concurrent stores" --repo TanStack/query     # 2026-09-13: TanStack/query#9742 と無関係の 1 件のみ
 gh search issues "useStore createStore concurrent" --repo TanStack/router   # 2026-09-13: 0 件
 ```
 
@@ -72,7 +72,7 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 | 表示したい値                       | 方式                                                                                                                                                                                                                       | 理由                                                                                                                                                                                       |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | query が持つデータとその派生値     | TanStack Query の `mutation.isPending && mutation.variables === id` (複数コンポーネントからは `useMutationState`)。複数の表示箇所を同時に更新するなら `onMutate` でキャッシュを書き換え、失敗時に rollback する (ADR-0017) | query と同じストアで更新され、Transition との rebase が起きない (「TanStack Query と Router のストアは Transition に参加しない」)。`variables` は決着後も残るため `isPending` でゲートする |
-| query を経由しない部品のローカル値 | `useOptimistic` を Action の中で set する                                                                                                                                                                                  | React の想定どおりの経路。React Aria #9894 が同じ設計を採る                                                                                                                                |
+| query を経由しない部品のローカル値 | `useOptimistic` を Action の中で set する                                                                                                                                                                                  | React の想定どおりの経路。adobe/react-spectrum#9894 が同じ設計を採る                                                                                                                       |
 | Router の state                    | Router に任せる                                                                                                                                                                                                            | 自前の acknowledgement で整合を取っている (「TanStack Query と Router のストアは Transition に参加しない」)                                                                                |
 
 `useOptimistic` へ渡してよい値の見分け方は `docs/guides/react/updates.md`「楽観表示を出す」にある。
@@ -82,7 +82,7 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 | 案                                                                             | 評価                                                                                                                                                              | 採否     |
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | 現状維持 (mutation の `isPending`)                                             | Transition の意味論 (割り込み、Action の順序保証) を持たず、pending の切り替えが `<ViewTransition>` の対象にならない。React チームの区分 (Context) から外れ続ける | 却下     |
-| `useOptimistic` を一覧の行にも使う                                             | TanStack/query #9742 の揺れが起きる。concurrent stores (react/react #35449) が出荷するまで成立しない                                                              | 却下     |
+| `useOptimistic` を一覧の行にも使う                                             | TanStack/query#9742 の揺れが起きる。concurrent stores (react/react#35449) が出荷するまで成立しない                                                                | 却下     |
 | ユーザー操作による更新を Transition の中で行い、pending を Transition から取る | React チームの前提 (「React 側の方針」) に沿い、pending の切り替えが `<ViewTransition>` の対象になる                                                              | **採用** |
 
 ### 他の文書との関係
@@ -100,20 +100,20 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
   - TanStack Router は `document.startViewTransition` を直接呼び (router-core `router.js`)、React の `<ViewTransition>` には未対応
   - 2026-09-13 の `gh search prs "ViewTransition" --repo TanStack/router` は browser API 由来の PR のみ
 - 再評価条件
-  - concurrent stores (react/react #35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する
+  - concurrent stores (react/react#35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する
 
 ## 出典
 
 - Reactの設計論 (uhyo、フロントエンドカンファレンス福岡 2026、2026-09-12): https://speakerdeck.com/uhyo/react-no-sekkeiron
-- reactwg/react-18 #41 New feature: startTransition: https://github.com/reactwg/react-18/discussions/41
-- reactwg/react-18 #63 Integrating transitions into design systems: https://github.com/reactwg/react-18/discussions/63#discussioncomment-917187
-- reactwg/react-18 #100 Patterns for startTransition: https://github.com/reactwg/react-18/discussions/100#discussioncomment-1382060
-- reactwg/async-react #5 Routers and Transitions: https://github.com/reactwg/async-react/discussions/5
+- reactwg/react-18#41 New feature: startTransition: https://github.com/reactwg/react-18/discussions/41
+- reactwg/react-18#63 Integrating transitions into design systems: https://github.com/reactwg/react-18/discussions/63#discussioncomment-917187
+- reactwg/react-18#100 Patterns for startTransition: https://github.com/reactwg/react-18/discussions/100#discussioncomment-1382060
+- reactwg/async-react#5 Routers and Transitions: https://github.com/reactwg/async-react/discussions/5
 - React Conf 2025 Async React デモ: https://github.com/rickhanlonii/async-react
 - React 19.3 リリース記事: https://react.dev/blog/2026/09/09/react-19-3
-- react/react #35392 (`enableParallelTransitions` の追加) / #37290 (既定で有効化): https://github.com/react/react/pull/35392 / https://github.com/react/react/pull/37290
+- react/react#35392 (`enableParallelTransitions` の追加) / react/react#37290 (既定で有効化): https://github.com/react/react/pull/35392 / https://github.com/react/react/pull/37290
 - `useTransition` リファレンス: https://react.dev/reference/react/useTransition
 - `useSyncExternalStore` リファレンス (Caveats): https://react.dev/reference/react/useSyncExternalStore
 - `useOptimistic` リファレンス: https://react.dev/reference/react/useOptimistic
-- TanStack/query #9742 Is React Query incompatible with React Actions/Transitions/useOptimistic?: https://github.com/TanStack/query/issues/9742
-- react/react #35449 [RFC] useStore/createStore APIs: https://github.com/react/react/pull/35449
+- TanStack/query#9742 Is React Query incompatible with React Actions/Transitions/useOptimistic?: https://github.com/TanStack/query/issues/9742
+- react/react#35449 [RFC] useStore/createStore APIs: https://github.com/react/react/pull/35449

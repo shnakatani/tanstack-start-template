@@ -36,7 +36,7 @@ import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 /**
  * fieldValue は部品内部では使わず、消費側の field.state.value を受けて値型を突き合わせる
  * ためだけに存在する。useFieldContext のジェネリクスは実フィールドと型で結びつかないため、
- * これが唯一の突き合わせ経路となる (TanStack/form discussion #1240 のメンテナ回答)。
+ * これが唯一の突き合わせ経路となる (TanStack/form#1240 のメンテナ回答)。
  * 比較した案は docs/guides/forms-and-inputs.md「`fieldValue` で値型を突き合わせる理由」。
  */
 interface FieldValueTypeCheckProps<T> {
@@ -204,13 +204,13 @@ interface FormSelectFieldProps<T extends string>
  *
  * 通知が来ない条件がある。項目の登録の変化を拾う `CompositeList` は件数に加えて要素の同一性も
  * 比べ、件数が変わらないときに何もしない分岐は 1.8.0 で撤去された (CHANGELOG v1.8.0、
- * mui/base-ui の PR 5469)。版ごとに経路が変わるので、自己リセットに任せる案は採らない。
+ * mui/base-ui#5469)。版ごとに経路が変わるので、自己リセットに任せる案は採らない。
  * 項目がいつ登録されるか (トリガーを一度もフォーカスしていない間は登録されないか) は未確認。
  * この部品を包まずに `Select` を使うときの書き方は
  * docs/guides/forms-and-inputs.md「Select の値を解決する」。
  *
  * 出典: Base UI Select (https://base-ui.com/react/components/select)、CHANGELOG
- * (https://github.com/mui/base-ui/blob/master/CHANGELOG.md)、PR 5469
+ * (https://github.com/mui/base-ui/blob/master/CHANGELOG.md)、mui/base-ui#5469
  * (https://github.com/mui/base-ui/pull/5469)、`SelectPositioner` の実装
  * (https://github.com/mui/base-ui/blob/master/packages/react/src/select/positioner/SelectPositioner.tsx)
  */

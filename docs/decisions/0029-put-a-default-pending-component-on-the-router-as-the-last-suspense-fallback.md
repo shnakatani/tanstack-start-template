@@ -11,7 +11,7 @@ route の pending 表示 (`pendingComponent`) は、表示のためだけでな�
 | 状況                                                            | 起きること                                                                                                           | 出典                                                                                    |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | route に `pendingComponent` も `defaultPendingComponent` も無い | その route には Suspense 境界が張られない。配下の suspend は上位へ巻き上がる                                         | `@tanstack/react-router` 1.170.32 の `Match.tsx` (`ResolvedSuspenseBoundary`)           |
-| 巻き上がった先が root の `Outlet`                               | root の `Outlet` は子を `<Suspense fallback={renderPending(router)}>` で包み、既定が無いと fallback は `null` になる | 同 `Match.tsx`、router の issue 2026                                                    |
+| 巻き上がった先が root の `Outlet`                               | root の `Outlet` は子を `<Suspense fallback={renderPending(router)}>` で包み、既定が無いと fallback は `null` になる | 同 `Match.tsx`、TanStack/router#2026                                                    |
 | `ssr: false` / `data-only` の route                             | サーバーは pending 表示を fallback として描く。どちらも無いと何も描かない                                            | Start の Selective SSR ガイド "If neither is configured, no fallback will be rendered." |
 
 `defaultPendingComponent` には既定値が無い (`RouterOptionsType`)。`defaultErrorComponent` と違い、未設定のときに安全側へ倒れない。
@@ -40,7 +40,7 @@ ADR-0026 の例外 (状態を `announce()` で通知しない) を `PendingConte
 ## Consequences
 
 - 全 route が「pending 表示を持つ route」になり、読み込みが `defaultPendingMs` を超えると pending 表示が出る
-- route ごとに既定を外す手段は無い (router の issue 7773、PR 8093 が open)
+- route ごとに既定を外す手段は無い (TanStack/router#7773、TanStack/router#8093 (PR) が open)
 - 既定の表示はレイアウトを模倣しないため、読み込みの完了時にレイアウトがずれる。ずれが問題になるページは、その route に `pendingComponent` を足す
 - 既定に `PendingContent` が置かれていることは `src/router.test.ts` が見る。suspend したときに描かれることは `@tanstack/react-router` の `Match.tsx` の実装に拠る
 

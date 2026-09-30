@@ -17,7 +17,7 @@
 | docs「React Compiler」                                                               | compiler があれば `useMemo` は不要。data と columns の参照が変わると row / column model を作り直すので、columns は module スコープに置き、data は query の参照をそのまま使う                                                                               |
 | docs「Table and Column Meta」                                                        | cell に関数や状態を渡す経路は `table.options.meta` (editable の `updateData` が例)                                                                                                                                                                         |
 | skill `with-tanstack-query`                                                          | query の結果を `data` に直接渡す。query の行を state に写すのは誤り (キャッシュに遅れる同期経路が増える)                                                                                                                                                   |
-| TanStack/table Discussion #5670 (2024-07)                                            | 「削除後に UI が更新されない」への回答は「React Query の optimistic updates の例に従え」。楽観表示は Table ではなく Query 側の関心事                                                                                                                       |
+| TanStack/table#5670 (2024-07)                                                        | 「削除後に UI が更新されない」への回答は「React Query の optimistic updates の例に従え」。楽観表示は Table ではなく Query 側の関心事                                                                                                                       |
 | docs (auto reset)                                                                    | v9 は sorting を既定で保持し、`autoResetPageIndex` は data が変わるとページを戻す (無効化可)。選択状態は行が消えても自動では掃除されない                                                                                                                   |
 | TanStack DB                                                                          | Query の collection に楽観状態を overlay し、失敗で自動 rollback、`useLiveQuery` で読む層。楽観的更新を前提にした TanStack 側の答え                                                                                                                        |
 | vitest browser の locator (`@vitest/browser` 4.1.11) / WAI「Tables with one header」 | `<th>` は `scope="col"` があるときだけ `columnheader` に解決される (暗黙の role は見ない)。WAI のチュートリアルも見出しセルに `scope` を勧める                                                                                                             |
@@ -58,6 +58,6 @@
 - TanStack Table「React Compiler」: https://tanstack.com/table/latest/docs/framework/react/guide/react-compiler
 - TanStack Table「Table and Column Meta」: https://tanstack.com/table/latest/docs/guide/table-and-column-meta
 - TanStack Table「Agent Skills」: https://tanstack.com/table/latest/docs/agent-skills
-- TanStack/table Discussion #5670: https://github.com/TanStack/table/discussions/5670
+- TanStack/table#5670: https://github.com/TanStack/table/discussions/5670
 - TanStack DB「Overview」: https://tanstack.com/db/latest/docs/overview
 - WAI「Tables with one header」: https://www.w3.org/WAI/tutorials/tables/one-header/
