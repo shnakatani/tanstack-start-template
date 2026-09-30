@@ -47,14 +47,14 @@ axe の結果が緑でも、「測った」ことも「WCAG を満たした」�
 | `resultTypes`                                        | 含まれない group の `nodes` を先頭 1 件へ切り詰める。`incomplete` の件数が黙って過少になる |
 | `contrastRatio.normal.minThreshold` / `maxThreshold` | 比が範囲外のとき合格になる (`axe.js` の evaluate の冒頭)                                   |
 
-- axe が担当するのは WCAG の一部だけである。2026-09-21 に `axe-core@4.13.0` で数えると 105 ルール / 28 SC で、README は「平均 57% を自動検出」と書く。色に関わる範囲は特に狭い
+- axe が担当するのは WCAG の一部だけである。2026-09-21 に `axe-core@4.13.0` で数えると 105 ルール / 28 SC で、[axe-core の `README.md`][] は「平均 57% を自動検出」と書く。色に関わる範囲は特に狭い
 
-| SC                      | axe のルール                                                                                                         | 代わりに押さえるもの              |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| 1.4.3 (文字 4.5:1)      | `color-contrast` 1 つ                                                                                                | —                                 |
-| 1.4.11 (非テキスト 3:1) | 0 ルール                                                                                                             | トークンの値を人が測る (ADR-0024) |
-| 1.4.1 (色の使用)        | `link-in-text-block` だけ                                                                                            | 本文中のリンク以外は見ない        |
-| `::placeholder`         | 誤った前景色で評価する (dequelabs/axe-core の issue 4260 が open。https://github.com/dequelabs/axe-core/issues/4260) | 人が見比べる (ADR-0025)           |
+| SC                      | axe のルール                                                 | 代わりに押さえるもの              |
+| ----------------------- | ------------------------------------------------------------ | --------------------------------- |
+| 1.4.3 (文字 4.5:1)      | `color-contrast` 1 つ                                        | —                                 |
+| 1.4.11 (非テキスト 3:1) | 0 ルール                                                     | トークンの値を人が測る (ADR-0024) |
+| 1.4.1 (色の使用)        | `link-in-text-block` だけ                                    | 本文中のリンク以外は見ない        |
+| `::placeholder`         | 誤った前景色で評価する ([dequelabs/axe-core#4260][] が open) | 人が見比べる (ADR-0025)           |
 
 ### `incomplete` は混成のバケツ
 
@@ -62,7 +62,7 @@ axe の `incomplete` は「判定できなかった」だけを意味しない�
 
 ### 比は実際に載る面ごとに測る
 
-同じ文字色でも、載る面によって比が変わる (ページ直下、ダイアログの中、`bg-input/30` の入力欄の中)。WCAG の `contrast ratio` の note は、背景を「そのテキストが通常の利用で実際に載る背景」とし、評価の対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。テーマやダイアログの面は typical presentation に入るので、面ごとに測る。導き方の詳細は ADR-0025 が持つ。
+同じ文字色でも、載る面によって比が変わる (ページ直下、ダイアログの中、`bg-input/30` の入力欄の中)。[WCAG 2.2「contrast ratio」][] の note は、背景を「そのテキストが通常の利用で実際に載る背景」とし、評価の対象を "color pairs ... an author would expect to appear adjacent in typical presentation" と複数形で書く。テーマやダイアログの面は typical presentation に入るので、面ごとに測る。導き方の詳細は ADR-0025 が持つ。
 
 ### 抑制を出た story に置く理由
 
@@ -85,8 +85,8 @@ a11y の検査は、ブラウザテストの中に 2 種類が混ざっている
 | runner の設定 (timeout / retry) | tag の定義      | 無し       |
 | プロセス                        | project         | 増える     |
 
-- vitest の Test Tags のページ ("When to reach for tags") は、tags を多数のファイルに散る横断カテゴリとカテゴリ単位の `timeout` / `retry` に、Test Projects をファイルごとに runner の設定 (isolation / pool / environment) が違うときに割り当てる。a11y の検査は runner の設定が挙動テストと同じで、横断カテゴリに当たる
-- 専用の project は足さない。足すとそのぶん描画が増える。tag の定義は `timeout` / `retry` を持てる (`vitest` の `TestTagDefinition`) ので、project を選ぶ理由 (runner の設定と単独実行) は tag 側で満たせる
+- [Vitest docs「Test Tags」][] の When to reach for tags は、tags を多数のファイルに散る横断カテゴリとカテゴリ単位の `timeout` / `retry` に、Test Projects をファイルごとに runner の設定 (isolation / pool / environment) が違うときに割り当てる。a11y の検査は runner の設定が挙動テストと同じで、横断カテゴリに当たる
+- 専用の project は足さない。足すとそのぶん描画が増える。tag の定義は `timeout` / `retry` を持てる ([Vitest docs「tags」][] の `TestTagDefinition`) ので、project を選ぶ理由 (runner の設定と単独実行) は tag 側で満たせる
 - tag は `it` 単位で付ける。a11y の `it` は挙動テストと同じ `describe` の中に混ざっているので、`describe` の単位では分けられない
 - 専用のテストファイルへ分けない。テストの置き場所は壊れる原因で分けており、a11y の検査は挙動テストと同じ原因で壊れる
 - 何もしない形も採らない。どれが a11y の問いかが読めず、a11y だけを単独で走らせられない
@@ -129,34 +129,23 @@ not found の画面の title は `src/lib/page-title.ts` の `pageTitle` が決�
 
 ### 読み込み中の表示の見せ方を選んだ理由
 
-route の pending 表示 (ページ全体を置き換える skeleton と `PendingContent`) を支援技術にどう見せるかは、W3C に推奨の形が無い。APG に読み込み中のパターンは無く、skeleton 専用の role の提案は、ARIA WG のメンバーが「`aria-live` / `aria-busy` と visually hidden text で足りる」として閉じた (w3c/aria の issue 1317)。そこで次の 3 種の情報から形を決めた (2026-09-28 に調査)。
+route の pending 表示 (ページ全体を置き換える skeleton と `PendingContent`) を支援技術にどう見せるかは、W3C に推奨の形が無い。[APG「Patterns」][] に読み込み中のパターンは無く、skeleton 専用の role の提案は、ARIA WG のメンバーが「`aria-live` / `aria-busy` と visually hidden text で足りる」として閉じた ([w3c/aria#1317][])。そこで次の 3 種の情報から形を決めた (2026-09-28 に調査)。
 
-| 情報                   | 分かったこと                                                                                                                                                                                                                                          | 出典                                                                    |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 仕様                   | `<table>` に別の role を載せると、`<th>` / `<td>` は対応する role を失う。status は `aria-atomic="true"` の live region                                                                                                                               | ARIA in HTML の `th` / `td` の行、WAI-ARIA 1.2 の `status`              |
-| 支援技術の対応         | JAWS は `aria-busy="true"` の要素を読み飛ばし、NVDA・VoiceOver・TalkBack・Narrator は中身をそのまま読む (a11ysupport.io、2020〜2021 年の測定)。2026-03-12 の ARIA WG でも「JAWS treats it like aria-hidden」と報告された                              | a11ysupport.io の `aria-busy.json`、w3c/aria の issue 2737              |
-| デザインシステムの実装 | 表の読み込み中を持つ系統 (Carbon、Primer、AWS Cloudscape、Twilio Paste、PatternFly、Ant Design、Salesforce Lightning、Atlassian、React Spectrum) はどれも本物の table と列見出しを残す。告知は区画ごとに 1 回にする (Primer、PatternFly、Fluent、EUI) | Cloudscape の `src/table/skeleton-rows.tsx`、Primer の Loading パターン |
+| 情報                   | 分かったこと                                                                                                                                                                                                                                          | 出典                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 仕様                   | `<table>` に別の role を載せると、`<th>` / `<td>` は対応する role を失う。status は `aria-atomic="true"` の live region                                                                                                                               | [ARIA in HTML][] の `th` / `td` の行、[WAI-ARIA 1.2][] の `status`                 |
+| 支援技術の対応         | JAWS は `aria-busy="true"` の要素を読み飛ばし、NVDA・VoiceOver・TalkBack・Narrator は中身をそのまま読む ([a11ysupport.io の `aria-busy.json`][]、2020〜2021 年の測定)。2026-03-12 の ARIA WG でも「JAWS treats it like aria-hidden」と報告された      | [a11ysupport.io の `aria-busy.json`][]、[w3c/aria#2737][] (`aria-busy` の中の構造) |
+| デザインシステムの実装 | 表の読み込み中を持つ系統 (Carbon、Primer、AWS Cloudscape、Twilio Paste、PatternFly、Ant Design、Salesforce Lightning、Atlassian、React Spectrum) はどれも本物の table と列見出しを残す。告知は区画ごとに 1 回にする (Primer、PatternFly、Fluent、EUI) | [Cloudscape の `src/table/skeleton-rows.tsx`][]、[Primer docs「Loading」][]        |
 
-| 案                                                                                                                     | 評価                                                                                                                                            | 採否     |
-| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 本物の列見出しを持つ table を見せ、skeleton の行を `aria-hidden` にし、「読み込み中」の行を 1 つ置く (Cloudscape の形) | 表の読み込み中を持つ系統の多数派と同じく table のまま見せる。読み込み中は 1 回だけ読まれる                                                      | **採用** |
-| table 全体を `aria-hidden` にし、外側に「読み込み中」を置く (Adrian Roselli「More Accessible Skeletons」の形)          | 読み込み中は 1 回で済むが、table を隠す系統は調べた範囲に無い                                                                                   | 却下     |
-| 外側を status にして列見出し付きの table を見せ、本文は空のセルのまま                                                  | 空のセルが並んで読まれる。`aria-busy` を付けると JAWS で table ごと消える                                                                       | 却下     |
-| `<table role="status" aria-busy="true">`                                                                               | th と td が role を失い、columnheader が a11y tree に出ない。見出しが空なので axe の `empty-table-header` が出る。JAWS は status ごと読み飛ばす | 却下     |
+| 案                                                                                                                                                          | 評価                                                                                                                                            | 採否     |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 本物の列見出しを持つ table を見せ、skeleton の行を `aria-hidden` にし、「読み込み中」の行を 1 つ置く ([Cloudscape の `src/table/skeleton-rows.tsx`][] の形) | 表の読み込み中を持つ系統の多数派と同じく table のまま見せる。読み込み中は 1 回だけ読まれる                                                      | **採用** |
+| table 全体を `aria-hidden` にし、外側に「読み込み中」を置く ([Adrian Roselli「More Accessible Skeletons」][] の形)                                          | 読み込み中は 1 回で済むが、table を隠す系統は調べた範囲に無い                                                                                   | 却下     |
+| 外側を status にして列見出し付きの table を見せ、本文は空のセルのまま                                                                                       | 空のセルが並んで読まれる。`aria-busy` を付けると JAWS で table ごと消える                                                                       | 却下     |
+| `<table role="status" aria-busy="true">`                                                                                                                    | th と td が role を失い、columnheader が a11y tree に出ない。見出しが空なので axe の `empty-table-header` が出る。JAWS は status ごと読み飛ばす | 却下     |
 
 - 「読み込み中」の行を画面に出さないのは、skeleton の見た目を読み込み後の表に近づけるためである。registry の `TableRow` / `TableCell` は下線と余白を持ち込むので、この行だけ素の `<tr>` / `<td>` で置く
-- pending 表示は条件付きで mount されるので、表示した時点で読み上げられる保証は無い。支援技術は通常、live region の変化だけを伝え、最初から入っている中身は伝えない (WAI-ARIA 1.3 Editor's Draft の live region の節「Typically, assistive technology will only convey changes to a live region」)。読み込みの開始と完了の告知は扱っていない
-
-出典:
-
-- ARIA in HTML: <https://www.w3.org/TR/html-aria/>
-- WAI-ARIA 1.2 (`status`、`aria-busy`): <https://www.w3.org/TR/wai-aria-1.2/>
-- WAI-ARIA 1.3 Editor's Draft: <https://w3c.github.io/aria/>
-- w3c/aria の issue 1317 (skeleton role の提案) と issue 2737 (`aria-busy` の中の構造): <https://github.com/w3c/aria/issues/1317> / <https://github.com/w3c/aria/issues/2737>
-- a11ysupport.io の `aria-busy` の測定データ: <https://github.com/accessibilitysupported/a11ysupport.io/blob/main/data/tests/tech/aria/aria-busy.json>
-- AWS Cloudscape の Table の skeleton: <https://github.com/cloudscape-design/components/blob/main/src/table/skeleton-rows.tsx>
-- Primer の Loading パターン: <https://primer.style/product/ui-patterns/loading/>
-- Adrian Roselli「More Accessible Skeletons」: <https://adrianroselli.com/2020/11/more-accessible-skeletons.html>
+- pending 表示は条件付きで mount されるので、表示した時点で読み上げられる保証は無い。支援技術は通常、live region の変化だけを伝え、最初から入っている中身は伝えない ([WAI-ARIA 1.3 Editor's Draft][] の live region の節「Typically, assistive technology will only convey changes to a live region」)。読み込みの開始と完了の告知は扱っていない
 
 ## how-to
 
@@ -164,13 +153,13 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 対象は route の pending 表示 (ページ全体を置き換える skeleton と `PendingContent`) である。理由と却下した案は「読み込み中の表示の見せ方を選んだ理由」にある。
 
-| 対象                    | 組み方                                                                                  |
-| ----------------------- | --------------------------------------------------------------------------------------- |
-| 表の skeleton           | `TableSkeleton` に本物の列見出しを渡す。列見出しは実テーブルの列定義と同じ定数から採る  |
-| skeleton の図形         | `aria-hidden` で隠す。図形は情報を持たず、読ませると空の要素が並ぶ                      |
-| 「読み込み中」の文言    | 区画ごとに 1 つだけ置く。図形ごとに置くと、同じ文言が図形の数だけ読まれる               |
-| `aria-busy`             | pending 表示に付けない。読み込み中を伝える属性ではなく、JAWS は付けた要素ごと読み飛ばす |
-| `<table>` に載せる role | 載せない。`th` / `td` が role を失い、列見出しが支援技術に出ない                        |
+| 対象                    | 組み方                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 表の skeleton           | `TableSkeleton` に本物の列見出しを渡す。列見出しは実テーブルの列定義と同じ定数から採る                                    |
+| skeleton の図形         | `aria-hidden` で隠す。図形は情報を持たず、読ませると空の要素が並ぶ                                                        |
+| 「読み込み中」の文言    | 区画ごとに 1 つだけ置く。図形ごとに置くと、同じ文言が図形の数だけ読まれる                                                 |
+| `aria-busy`             | pending 表示に付けない。読み込み中を伝える属性ではなく ([WAI-ARIA 1.2][] の `aria-busy`)、JAWS は付けた要素ごと読み飛ばす |
+| `<table>` に載せる role | 載せない。`th` / `td` が role を失い、列見出しが支援技術に出ない                                                          |
 
 ### a11y の tag を付ける
 
@@ -183,7 +172,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - tag の定義は browser project にしかない。他の project で使うなら、その project の `test.tags` へ足す
 - story の a11y は `addon-a11y` が全 story へ一律に当てるので、tag の対象外である
 - 相乗りの assert を後から降ろすと決めたら、共通の setup を helper へ切り出して、操作の再現の重複を避ける
-- tag で絞った実行でも、verbose reporter は外れたテストを 1 行ずつ並べる。`--hide-skipped-tests` で止める (Vitest docs の config「hideSkippedTests」)
+- tag で絞った実行でも、verbose reporter は外れたテストを 1 行ずつ並べる。`--hide-skipped-tests` で止める ([Vitest docs「hideSkippedTests」][])
 - helper は tag をテストの文脈の `task.tags` から読む。`describe` から継承した tag も入る (2026-09-29 に Vitest 5.0.1 で実測)。グローバルから読まない理由は `docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」
 
 ### story で出た違反を抑制する
@@ -249,3 +238,24 @@ story で統制できるのは markup までで、フォントは実行環境が
 - `head()` を省かない。省くと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
+
+[axe-core の `README.md`]: https://github.com/dequelabs/axe-core/blob/v4.13.0/README.md
+[dequelabs/axe-core#4260]: https://github.com/dequelabs/axe-core/issues/4260
+[WCAG 2.2「contrast ratio」]: https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio
+[Vitest docs「Test Tags」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-tags.md
+[Vitest docs「tags」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/tags.md
+[APG「Patterns」]: https://www.w3.org/WAI/ARIA/apg/patterns/
+[w3c/aria#1317]: https://github.com/w3c/aria/issues/1317
+[ARIA in HTML]: https://www.w3.org/TR/html-aria/
+[WAI-ARIA 1.2]: https://www.w3.org/TR/wai-aria-1.2/
+[a11ysupport.io の `aria-busy.json`]: https://github.com/accessibilitysupported/a11ysupport.io/blob/main/data/tests/tech/aria/aria-busy.json
+[w3c/aria#2737]: https://github.com/w3c/aria/issues/2737
+[Cloudscape の `src/table/skeleton-rows.tsx`]: https://github.com/cloudscape-design/components/blob/main/src/table/skeleton-rows.tsx
+[Primer docs「Loading」]: https://primer.style/product/ui-patterns/loading/
+[Adrian Roselli「More Accessible Skeletons」]: https://adrianroselli.com/2020/11/more-accessible-skeletons.html
+[WAI-ARIA 1.3 Editor's Draft]: https://w3c.github.io/aria/
+[Vitest docs「hideSkippedTests」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/hideskippedtests.md
