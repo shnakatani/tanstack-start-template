@@ -73,12 +73,12 @@
 - 4 ルールの override は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定で固定する。適用先か severity を動かすとそこが落ちる
 - 効いていることは壊し方 2 つで確かめた (2026-09-22)
 
-| ルール                      | 直接                                                                | 間接                                                                                                     |
-| --------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `prefer-locator-methods`    | `lint.rules` で `off` にすると 2 件 → 0 件                          | 変数束縛の追跡 (`context.sourceCode.getDeclaredVariables`) を止めると 2 件 → 1 件 (束縛の形が無言で通る) |
-| `no-find-element`           | `off` にすると 1 件 → 0 件                                          | メソッド名の判定を壊すと 1 件 → 0 件                                                                     |
-| `no-negated-style-literal`  | 実コードへ `.not.toHaveStyle("max-height: none")` を戻すと 1 件報告 | `lint.rules` を残したまま override の適用先から外すと 0 件になり、`lint-config.test.ts` が落ちる         |
-| `no-bare-absence-assertion` | 実コードへ素の形を戻すと 1 件報告                                   | `lint.rules` を残したまま `src/test/assert/absent.ts` の行単位抑制を外すと helper 自身が報告される       |
+| ルール                      | 直接                                                                | 間接                                                                                                      |
+| --------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `prefer-locator-methods`    | override の `rules` で `off` にすると 2 件 → 0 件                   | 変数束縛の追跡 (`context.sourceCode.getDeclaredVariables`) を止めると 2 件 → 1 件 (束縛の形が無言で通る)  |
+| `no-find-element`           | `off` にすると 1 件 → 0 件                                          | メソッド名の判定を壊すと 1 件 → 0 件                                                                      |
+| `no-negated-style-literal`  | 実コードへ `.not.toHaveStyle("max-height: none")` を戻すと 1 件報告 | override の `rules` を残したまま適用先から外すと 0 件になり、`lint-config.test.ts` が落ちる               |
+| `no-bare-absence-assertion` | 実コードへ素の形を戻すと 1 件報告                                   | override の `rules` を残したまま `src/test/assert/absent.ts` の行単位抑制を外すと helper 自身が報告される |
 
 - 変数束縛を 1 段追うのは、束縛を挟む形が多いためである。`grep -rE 'const \w+ = [^;]*\.(element|query|all|elements)\(\)' --include='*.test.tsx' src/` で 64 行 / 17 ファイルあった (2026-09-22)。追跡が外れても直接の形は報告され続けるので、設定は有効に見える。`no-negated-style-literal` の上の 1 件も束縛を挟む形で、追跡が無いと違反が 0 件に見えてルールが効いているように読める
 
