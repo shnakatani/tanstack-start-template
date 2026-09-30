@@ -39,7 +39,7 @@ export function NoteCreateDialog() {
     onMutate: () => {
       announce("保存しています");
     },
-    // 完了点 (b): 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
+    // 完了点「サーバー応答」: 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
     // 一覧側は useMutationState でこの pending を読み、新しい行を先に出す。
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる
     onSuccess: async (_data, input) => {

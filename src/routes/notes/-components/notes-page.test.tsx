@@ -330,7 +330,7 @@ describe("NotesPage", () => {
     "行を編集して保存すると、再取得完了までその行だけが編集後の値で busy になる",
     { tags: ["axe"] },
     async (context) => {
-      // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は行だけが伝える (ADR-0017)
+      // 完了点「サーバー応答」: 応答でダイアログが閉じるので、再取得完了までの pending は行だけが伝える (ADR-0017)
       vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
       const refetch = deferMock(listNotes);
       const update = deferMock(updateNote);
@@ -418,7 +418,7 @@ describe("NotesPage", () => {
     "追加中は新しい行が先頭に半透明で出て、再取得完了で実データに置き換わる",
     { tags: ["axe"] },
     async (context) => {
-      // 完了点 (b): 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
+      // 完了点「サーバー応答」: 応答でダイアログが閉じるので、再取得完了までの pending は楽観行だけが伝える
       // (`docs/guides/react/updates.md`「操作の型ごとの当て方」)
       vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
       const refetch = deferMock(listNotes);
@@ -591,7 +591,7 @@ describe("NotesPage", () => {
 
     await confirmDeleteButton(screen).click();
 
-    // 完了点 (a) でダイアログは閉じるので、決着までの pending は行の busy だけが伝える
+    // 完了点「確定操作の直後」でダイアログは閉じるので、決着までの pending は行の busy だけが伝える
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
 
     remove.reject(new Error(rawMessage));

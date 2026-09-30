@@ -115,7 +115,7 @@ describe("NoteEditDialog", () => {
   });
 
   it("updateNote の応答でダイアログが閉じ、notes クエリを invalidate する", async () => {
-    // 完了点 (b): 応答前は開いたまま、応答で閉じる (ADR-0017)。即 resolve だと応答前の窓が観測できない
+    // 完了点「サーバー応答」: 応答前は開いたまま、応答で閉じる (ADR-0017)。即 resolve だと応答前の窓が観測できない
     const update = deferMock(updateNote);
     const { screen, invalidateSpy } = await renderDialog();
     await openNoteEditDialog(screen, NOTE);

@@ -90,7 +90,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
       announce("削除しています");
     },
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと削除後の一覧が古いままになる。
-    // 再取得を await して pending を再取得完了まで保つ (ADR-0017)。閉じるのは確定時 (完了点 (a))
+    // 再取得を await して pending を再取得完了まで保つ (ADR-0017)。閉じるのは確定時 (完了点「確定操作の直後」)
     onSuccess: async (_data, target) => {
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
       // 行の消失は読み上げに出ないので、完了を通知する (ADR-0026)
@@ -108,7 +108,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     select: (mutation) => mutation.state.variables,
   });
 
-  // 完了点 (b) の追加は応答でダイアログが閉じるので、再取得完了までの pending は
+  // 完了点「サーバー応答」の追加は応答でダイアログが閉じるので、再取得完了までの pending は
   // 一覧の先頭に出すこの行だけが伝える (ADR-0017)。mutation はダイアログ側にあるため
   // mutationKey 経由で読む。submittedAt は同時に走る追加を React の key で区別するのに使う
   const pendingCreateStates = useMutationState({
@@ -119,7 +119,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     }),
   });
 
-  // 更新も完了点 (b) で応答でダイアログが閉じるので、再取得完了までの pending は行が伝える
+  // 更新も完了点「サーバー応答」で、応答でダイアログが閉じるので、再取得完了までの pending は行が伝える
   // (ADR-0017)。mutation は編集のダイアログ側にあるため mutationKey 経由で読む。variables に
   // 対象の id と編集後の値が載るので、対象の行だけを busy にして編集後の値で描ける
   const pendingUpdateVariables = useMutationState({
@@ -141,7 +141,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     onQueryChange(draftQ);
   }
 
-  // 完了点 (a): Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0017)。
+  // 完了点「確定操作の直後」: Action は close だけを含み、mutation は Transition の外で走らせる (ADR-0017)。
   // close の animate-out の間は isPending の dedupe が効かないので、同じ対象が pending なら no-op
   function confirmDelete(target: NoteDeleteTarget) {
     const alreadyDeleting =
