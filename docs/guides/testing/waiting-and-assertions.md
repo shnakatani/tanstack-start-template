@@ -253,7 +253,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -261,7 +261,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 [Vitest docs「Vi」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md
 [Vitest docs のレシピ「Waiting for Async Conditions」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/wait-for.md
-[Vitest docs「Assertion API」]: https://vitest.dev/guide/browser/assertion-api
+[Vitest docs「Assertion API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/assertions.md
 [Vitest の `toHaveTextContent.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser/src/client/tester/expect/toHaveTextContent.ts
 [Vitest の `toMatchTextContent.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser/src/client/tester/expect/toMatchTextContent.ts
 [Vitest docs「browser.locators」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/locators.md
@@ -270,7 +270,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 [CSS Cascade 5「Shorthand Properties」]: https://www.w3.org/TR/css-cascade-5/#shorthand
 [IntersectionObserver 仕様「Run the Update Intersection Observations Steps」]: https://w3c.github.io/IntersectionObserver/#update-intersection-observations-algo
 [`@vitest/browser` の `context.d.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser/context.d.ts
-[Vitest docs「Locators」]: https://vitest.dev/guide/browser/locators
+[Vitest docs「Locators」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/locators.md
 [Testing Library docs「Async Methods」]: https://testing-library.com/docs/dom-testing-library/api-async/
 [Playwright docs「Assertions」]: https://playwright.dev/docs/test-assertions
 [Cypress docs「Retry-ability」]: https://docs.cypress.io/app/core-concepts/retry-ability

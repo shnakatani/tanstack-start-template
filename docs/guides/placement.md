@@ -119,9 +119,9 @@ TanStack Router の automatic code splitting は、route ファイルの propert
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
-[TanStack Router docs「File Naming Conventions」]: https://tanstack.com/router/latest/docs/framework/react/routing/file-naming-conventions
+[TanStack Router docs「File Naming Conventions」]: https://tanstack.com/router/latest/docs/routing/file-naming-conventions
 [`@tanstack/router-plugin` の `router-plugin/SKILL.md`]: https://github.com/TanStack/router/blob/@tanstack/router-plugin@1.168.40/packages/router-plugin/skills/router-plugin/SKILL.md
-[TanStack Router docs「Automatic Code Splitting」]: https://tanstack.com/router/latest/docs/framework/react/guide/automatic-code-splitting
+[TanStack Router docs「Automatic Code Splitting」]: https://tanstack.com/router/latest/docs/guide/automatic-code-splitting
 [`@tanstack/router-plugin` の `core/constants.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-plugin@1.168.40/packages/router-plugin/src/core/constants.ts
 [TanStack/router#4047]: https://github.com/TanStack/router/pull/4047
 [`@tanstack/router-core` の `router-core/code-splitting/SKILL.md`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/skills/router-core/code-splitting/SKILL.md

@@ -48,7 +48,7 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
-[TanStack Router docs「File Naming Conventions」]: https://tanstack.com/router/latest/docs/framework/react/routing/file-naming-conventions
-[TanStack Router docs「How to Set Up Testing with Code-Based Routing」]: https://tanstack.com/router/latest/docs/framework/react/how-to/setup-testing
+[TanStack Router docs「File Naming Conventions」]: https://tanstack.com/router/latest/docs/routing/file-naming-conventions
+[TanStack Router docs「How to Set Up Testing with Code-Based Routing」]: https://tanstack.com/router/latest/docs/how-to/setup-testing
 [TanStack/router#4569]: https://github.com/TanStack/router/issues/4569
-[TanStack Router docs「How to Test Router with File-Based Routing」]: https://tanstack.com/router/latest/docs/framework/react/how-to/test-file-based-routing
+[TanStack Router docs「How to Test Router with File-Based Routing」]: https://tanstack.com/router/latest/docs/how-to/test-file-based-routing

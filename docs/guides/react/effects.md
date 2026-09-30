@@ -94,10 +94,10 @@ router との間の副作用は、契機が router の外の変化か、router �
 [React docs「You Might Not Need an Effect」]: https://react.dev/learn/you-might-not-need-an-effect
 [React docs「Synchronizing with Effects」]: https://react.dev/learn/synchronizing-with-effects
 [React docs「useEffectEvent」]: https://react.dev/reference/react/useEffectEvent
-[TanStack Router docs「Router Context」]: https://tanstack.com/router/latest/docs/framework/react/guide/router-context
+[TanStack Router docs「Router Context」]: https://tanstack.com/router/latest/docs/guide/router-context
 [TanStack Router docs「RouterOptions」]: https://tanstack.com/router/latest/docs/api/router/RouterOptionsType
-[TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/framework/react/guide/data-loading
-[TanStack Router docs「Router Events」]: https://tanstack.com/router/latest/docs/framework/react/guide/router-events
+[TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/guide/data-loading
+[TanStack Router docs「Router Events」]: https://tanstack.com/router/latest/docs/guide/router-events
 [TanStack Start docs「Client Entry Point」]: https://tanstack.com/start/latest/docs/framework/react/guide/client-entry-point
 [React docs「Component」]: https://react.dev/reference/react/Component
 [TanStack/router#3810]: https://github.com/TanStack/router/issues/3810

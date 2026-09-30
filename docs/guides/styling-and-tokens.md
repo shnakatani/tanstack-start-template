@@ -290,7 +290,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 - [CSS Color 4「Resolving `<color>` Values」][] (oklch の computed value は oklch のまま)
 
 [shadcn skill「Customization & Theming」]: https://github.com/shadcn-ui/ui/blob/main/skills/shadcn/customization.md
-[shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/data-table
+[shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/base/data-table
 [shadcn-ui/lint docs「no-restyle」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md
 [shadcn-ui/lint docs「Configuring your design system」]: https://github.com/shadcn-ui/lint/blob/main/docs/design-systems.md
 [shadcn-ui/lint#4]: https://github.com/shadcn-ui/lint/issues/4

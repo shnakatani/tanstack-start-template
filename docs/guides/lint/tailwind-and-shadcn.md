@@ -63,4 +63,4 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
-[shadcn docs「Button」]: https://ui.shadcn.com/docs/components/button
+[shadcn docs「Button」]: https://ui.shadcn.com/docs/components/base/button

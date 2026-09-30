@@ -74,13 +74,13 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 
 相対パスが残るのは `MIGRATIONS_FOLDER` と、drizzle-kit の設定の探索と設定の中の `schema` である。これらを使う入口がルートで走ることの根拠は次のとおり。
 
-| 入口                            | 根拠                                                                                                                                                                                                                                                 |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mise run <タスク>`             | タスクの `dir` の既定は `{{ config_root }}` ([mise docs「Task Configuration」][] の `dir`)                                                                                                                                                           |
-| `vp run <script>`               | サブディレクトリから打ってもパッケージのルートで走る (2026-09-29 に vp 1.0.0 で実測)                                                                                                                                                                 |
-| `vp test run`                   | Vitest 5 は親のディレクトリの設定を探さない ([Vite+ docs「Vitest v5」][])。サブディレクトリで打つと設定が読まれず、`@/` の import が解決できない。`--config` で渡しても project の設定のパスが解決できず、起動しない (2026-09-29 に vp 1.0.0 で実測) |
-| `node .output/server/index.mjs` | 起動した cwd がそのまま基準になる。[TanStack Start docs「Hosting」][] は `start` script から起動する形を示す                                                                                                                                         |
-| (参考) Nitro の SQLite の既定   | 本番は cwd を基準に `.data/db.sqlite` を組む。[Nitro の `database.ts`][] は開発時だけ `cwd: rootDir` を渡し、[db0 の `node-sqlite.ts`][] は `resolve(opts.cwd \|\| ".", ...)` で組む ([Nitro docs「Database」][])                                    |
+| 入口                            | 根拠                                                                                                                                                                                                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mise run <タスク>`             | タスクの `dir` の既定は `{{ config_root }}` ([mise docs「Task Configuration」][] の `dir`)                                                                                                                                                                     |
+| `vp run <script>`               | サブディレクトリから打ってもパッケージのルートで走る (2026-09-29 に vp 1.0.0 で実測)                                                                                                                                                                           |
+| `vp test run`                   | Vitest 5 は親のディレクトリの設定を探さない ([Vite+ docs「Upgrade to Vitest 5」][])。サブディレクトリで打つと設定が読まれず、`@/` の import が解決できない。`--config` で渡しても project の設定のパスが解決できず、起動しない (2026-09-29 に vp 1.0.0 で実測) |
+| `node .output/server/index.mjs` | 起動した cwd がそのまま基準になる。[TanStack Start docs「Hosting」][] は `start` script から起動する形を示す                                                                                                                                                   |
+| (参考) Nitro の SQLite の既定   | 本番は cwd を基準に `.data/db.sqlite` を組む。[Nitro の `database.ts`][] は開発時だけ `cwd: rootDir` を渡し、[db0 の `node-sqlite.ts`][] は `resolve(opts.cwd \|\| ".", ...)` で組む ([Nitro docs「Database」][])                                              |
 
 ### migration を起動時に適用しない理由
 
@@ -101,7 +101,7 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 [drizzle-orm の `migrator.ts`]: https://github.com/drizzle-team/drizzle-orm/blob/0.45.2/drizzle-orm/src/migrator.ts
 [mise docs「Templates」]: https://mise.jdx.dev/templates.html
 [mise docs「Task Configuration」]: https://mise.jdx.dev/tasks/task-configuration.html
-[Vite+ docs「Vitest v5」]: https://viteplus.dev/guide/vitest-v5
+[Vite+ docs「Upgrade to Vitest 5」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/vitest-v5.md
 [TanStack Start docs「Hosting」]: https://tanstack.com/start/latest/docs/framework/react/guide/hosting
 [Nitro docs「Database」]: https://nitro.build/docs/database
 [Nitro の `database.ts`]: https://github.com/nitrojs/nitro/blob/main/src/config/resolvers/database.ts

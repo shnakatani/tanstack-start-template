@@ -110,7 +110,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 [TanStack Table docs「FlexRender」]: https://tanstack.com/table/latest/docs/framework/react/guide/flex-render
 [shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/base/data-table
 [`@tanstack/table-core` の `skills/typescript/SKILL.md`]: https://github.com/TanStack/table/blob/@tanstack/table-core@9.2.4/packages/table-core/skills/typescript/SKILL.md
-[TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/framework/react/guide/data-loading
+[TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/guide/data-loading
 [React docs「Adjusting some state when a prop changes」]: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
 [TanStack Query の `transition.test.tsx`]: https://github.com/TanStack/query/blob/main/packages/react-query/src/__tests__/transition.test.tsx
 [React docs「useDeferredValue」]: https://react.dev/reference/react/useDeferredValue

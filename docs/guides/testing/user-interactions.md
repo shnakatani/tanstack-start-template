@@ -149,7 +149,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -157,10 +157,10 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 [Playwright docs「Auto-waiting」]: https://playwright.dev/docs/actionability
 [`playwright-core` の `server/dom.ts`]: https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/src/server/dom.ts
-[Vitest docs「userEvent.wheel」]: https://vitest.dev/api/browser/interactivity#userevent-wheel
+[Vitest docs「userEvent.wheel」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/interactivity.md#usereventwheel-410-userevent-wheel
 [Playwright docs「mouse.wheel」]: https://playwright.dev/docs/api/class-mouse#mouse-wheel
 [vitest-dev/vitest#10058]: https://github.com/vitest-dev/vitest/issues/10058
-[Vitest docs「Interactivity API」]: https://vitest.dev/guide/browser/interactivity-api
+[Vitest docs「Interactivity API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/interactivity.md
 [vitest-dev/vitest#5770]: https://github.com/vitest-dev/vitest/issues/5770
 [MDN「Event: cancelable property」]: https://developer.mozilla.org/en-US/docs/Web/API/Event/cancelable
 [HTML Standard「fire a synthetic pointer event」]: https://html.spec.whatwg.org/multipage/webappapis.html#fire-a-synthetic-pointer-event
@@ -170,8 +170,8 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 [reactwg/react-18#21]: https://github.com/reactwg/react-18/discussions/21
 [Base UI の `Button.test.tsx`]: https://github.com/mui/base-ui/blob/master/packages/react/src/button/Button.test.tsx
 [React Aria の `Button.test.js`]: https://github.com/adobe/react-spectrum/blob/main/packages/react-aria-components/test/Button.test.js
-[Vitest docs「Locators」]: https://vitest.dev/api/browser/locators
-[Vitest docs「Commands」]: https://vitest.dev/guide/browser/commands
+[Vitest docs「Locators」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/locators.md
+[Vitest docs「Commands」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/commands.md
 [HTML Standard「clean up after running script」]: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
 [React docs「useFormStatus」]: https://react.dev/reference/react-dom/hooks/useFormStatus
 [Base UI docs「Animation」]: https://base-ui.com/react/handbook/animation
@@ -182,13 +182,13 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 [Base UI の `internals/useAnimationsFinished.ts`]: https://github.com/mui/base-ui/blob/v1.8.0/packages/react/src/internals/useAnimationsFinished.ts
 [Base UI の `test/setupVitest.ts`]: https://github.com/mui/base-ui/blob/master/test/setupVitest.ts
 [Base UI の `ComboboxRoot.test.tsx`]: https://github.com/mui/base-ui/blob/v1.8.0/packages/react/src/combobox/root/ComboboxRoot.test.tsx
-[Vitest docs「Configuring Playwright」]: https://vitest.dev/config/browser/playwright
+[Vitest docs「Configuring Playwright」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/playwright.md
 [`@vitest/browser-playwright` の `playwright.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser-playwright/src/playwright.ts
 [Vitest の `pools/browser.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/node/pools/browser.ts
 [Playwright docs「browser.newContext」]: https://playwright.dev/docs/api/class-browser#browser-new-context
-[Vitest docs「retry」]: https://vitest.dev/config/retry
-[Vitest docs「TestCase」]: https://vitest.dev/api/advanced/test-case
-[Vitest docs「Visual Regression Testing」]: https://vitest.dev/guide/browser/visual-regression-testing#disable-animations
+[Vitest docs「retry」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/retry.md
+[Vitest docs「TestCase」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/advanced/test-case.md
+[Vitest docs「Visual Regression Testing」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/browser/visual-regression-testing.md#disable-animations
 [MDN「Animation: finished property」]: https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished
 [Playwright docs「page.screenshot」]: https://playwright.dev/docs/api/class-page#page-screenshot
 [scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」]: https://github.com/scirexs/svseeds-ui/blob/main/.ws/knowledge/vitest-browser-userevent-skips-aria-disabled.md
