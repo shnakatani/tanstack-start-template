@@ -36,7 +36,7 @@
 
 - 依存を足すか使い始めたときに、バレルしか使っていなければ測って判断する手間が増える。測り方はガイドにある
 - `paths` は specifier の完全一致なので、`react-day-picker/locale` と `react-day-picker/locale/*` は止まらない。どちらも `date-fns/locale` のバレルを読む。Calendar に locale を渡すときは `date-fns/locale/<locale>` から組む
-- `RESTRICTED_BARREL_IMPORTS` をトップレベルか override の片方からだけ外すと、外した側の範囲で無言で効かなくなる。`scripts/checks/integrity/lint-config.test.ts` はルールのオプションの中身を見ないので、この外し方を捕まえない (「調査結果」の、トップレベルだけに `paths` を置いた行)
+- `RESTRICTED_BARREL_IMPORTS` をトップレベルか override の片方からだけ外すと、外した側の範囲で無言で効かなくなる。`scripts/checks/integrity/lint-config.test.ts` はルールのオプションの中身を見ないので、この外し方を捕まえない (「調査結果」の、トップレベルだけに `paths` を置いた設定)
 - 残った課題:
   - react-day-picker が date-fns のルートを読む経路が残っている。Calendar を描くテストの import は 63ms (中央値) で、経路の分は内訳が出ず測れていない。`resolve.alias`、`deps.optimizer.client`、`optimizeDeps.include` はどれも差がばらつきを超えなかった (「調査結果」の (b))
   - 同じ測り方で測る候補: lucide-react など、テンプレートのコードがルートから import している依存。測って重ければ `RESTRICTED_BARREL_IMPORTS` に足す
