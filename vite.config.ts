@@ -34,8 +34,8 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: testConfig,
-  // config をメタデータとしてだけ読む経路で plugin を評価しない。関数は同期のままにし、plugin は先頭で import する
-  // (docs/guides/vite-configuration.md「plugin を先頭で import する理由」)
+  // config をメタデータとしてだけ読む経路で plugin の factory を呼ばない (先頭の import は遅れない)。
+  // 関数は同期のままにする (docs/guides/vite-configuration.md「plugin を先頭で import する理由」)
   plugins: lazyPlugins(() => {
     // Vitest の中では React の変換だけにする (tanstackStart() は TanStack/router#6246 の回避で外す)。
     // 外す plugin ごとの理由と、判定を process.env.VITEST で書く理由は
