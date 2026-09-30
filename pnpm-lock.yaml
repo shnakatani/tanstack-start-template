@@ -30,8 +30,8 @@ overrides:
 packageExtensionsChecksum: sha256-ttdFC/5hpXZP+Ocsv+u7pWl9gzxONh3zAFJp9hbCbPE=
 
 patchedDependencies:
-  '@storybook/addon-vitest@^10.6.0': d6679df296630352f07da3f7fdf652eaa51476c7d9983c2e84cb6314b30afdc8
-  '@storybook/tanstack-react@^10.6.0': d88c614155094b8e078394d02118da1187de5e81cc7edcf182fc9a1e87070913
+  '@storybook/addon-vitest': d6679df296630352f07da3f7fdf652eaa51476c7d9983c2e84cb6314b30afdc8
+  '@storybook/tanstack-react': d88c614155094b8e078394d02118da1187de5e81cc7edcf182fc9a1e87070913
 
 importers:
 

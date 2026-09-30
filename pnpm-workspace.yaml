@@ -1,5 +1,4 @@
-# ===== Vite+ が管理 (vp migrate だけが書き、Vite+ を上げるたびに書き直す。手で編集しない) =====
-# 各キーの意味は Vite+ docs の guide/upgrade-project.md と guide/migrate-rules.md が持つ
+# ===== Vite+ が管理 (vp migrate が書く。手で編集しない) =====
 
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0
@@ -10,19 +9,16 @@ catalog:
 
 # ===== 両方が書く (1 つのキーに vp migrate の行と手で足す行が同居する) =====
 
-# vite@* と vitest@* は vp migrate が書く。vp pm audit --fix は修正版へ上げる行をここへ足すので、
-# 足された行には撤去条件を書く (ADR-0005)
+# vite@* / vitest@* は vp migrate が書く。vp pm audit --fix が足す行には撤去条件を書く (ADR-0005)
 overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
-  # drizzle-kit は @esbuild-kit/esm-loader を依存に宣言するが、配布物は import しない。この依存が持ち込む
-  # esbuild@0.18.20 が GHSA-67mh-4wv8-2f99 に当たるので、pnpm の "-" で依存ごと外す (drizzle-team/drizzle-orm#5481)。
-  # 撤去条件: drizzle-kit の安定版が @esbuild-kit/esm-loader を依存から外したとき (2026-09-29 時点の 1.0.0-beta.22 と 1.0.0-rc.4 は外している)
+  # drizzle-kit が宣言だけして import しない依存を外す。持ち込む esbuild@0.18.20 が GHSA-67mh-4wv8-2f99 に当たる (drizzle-team/drizzle-orm#5481)
+  # 撤去条件: drizzle-kit の安定版が @esbuild-kit/esm-loader を依存から外したとき
   "drizzle-kit>@esbuild-kit/esm-loader": "-"
 
-# 待機の除外 (ADR-0005)
-# - 版の無い行は vp migrate が書く恒久除外。編集しない
-# - 手で足す行と `vp pm audit --fix` が足す行は必ず版まで書く (`@scope/pkg@x.y.z`)。版を省くと全版が恒久に除外される
+# 待機の除外 (ADR-0005)。版の無い行は vp migrate が書く恒久除外で、編集しない。
+# 手で足す行と vp pm audit --fix が足す行は版まで書く (@scope/pkg@x.y.z)
 minimumReleaseAgeExclude:
   - vite-plus
   - "@voidzero-dev/*"
@@ -35,11 +31,7 @@ minimumReleaseAgeExclude:
   - vitest
   - "@vitest/*"
 
-# allowAny と allowedVersions の vite・vitest の行は vp migrate が書き、外しても書き戻す (2026-09-28 に実測)。
-# vitest の行は効いていない。overrides の vitest@* が peer の宣言も置き換える (pnpm の docs の
-# dependency-resolution「Overriding peer dependencies」)。vite の行は効いている。npm: の alias では
-# peer の宣言が置き換わらない (2026-09-28 に pnpm peers check で実測。docs に記載なし)。
-# 食い違いは pnpm peers check で数える (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
+# vite / vitest の行は vp migrate が書き、消しても書き戻す (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
 peerDependencyRules:
   allowAny:
     - vite
@@ -48,19 +40,15 @@ peerDependencyRules:
     vite: "*"
     vitest: "*"
     # --- ここから下はこのテンプレートが追加 ---
-    # @vitejs/plugin-react の optional peer (oxc-transform-react ^0.145.0) が、上流自身の使う ^0.147.0 を
-    # 満たさない (ADR-0014)。plugin-react を上げるたびに両者を読み比べる。
+    # @vitejs/plugin-react の optional peer (oxc-transform-react ^0.145.0) が上流自身の使う ^0.147.0 を満たさない (ADR-0014)
+    # 撤去条件: plugin-react の peer の範囲が、上流自身の使う oxc-transform-react の版を含んだとき
     "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"
     # @storybook/addon-vitest@10.6.0 の optional peer は @vitest/browser-playwright ^4 で、Vitest 5 に
     # 追いついていない。撤去条件: storybookjs/storybook#36270 (peer に ^5.0.0 を足す) を含む安定版へ上げたとき
     "@storybook/addon-vitest>@vitest/browser-playwright": "5"
-    # storybook@10.6.0 の optional peer は vite-plus ^0.1.15 || ^0.2.0 で、1.0 に追いついていない。
-    # storybook が読むのは vite-plus/versions (vitest と vite の版の検出) だけで、1.0 も export している
-    # (storybook@10.6.0 の dist で確認)。storybook を上げたら dist の vite-plus の import を読み直す
-    # (pnpm 11 の pnpm peers check はキーの親の版を見ないので、キーに版を付けても契機にならない)。
-    # 撤去条件: storybook の peer が vite-plus 1.x を含んだとき
-    # 値を major にしたので、Vite+ の 1.x の minor で vite-plus/versions の export が消えても、ここは鳴らない。
-    # Vite+ を上げたら、vite-plus/versions の export が残っているかを確かめる
+    # storybook@10.6.0 の optional peer (vite-plus ^0.1.15 || ^0.2.0) が 1.0 に追いついていない。読むのは 1.0 も
+    # export する vite-plus/versions だけ (storybook@10.6.0 の dist で確認)。撤去条件: storybook の peer が vite-plus 1.x を含んだとき
+    # 値が major なので export が消えても鳴らない。上げたときの確認は docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」
     "storybook>vite-plus": "1"
 
 # ===== このテンプレートが追加 (vp migrate が書かない) =====
@@ -74,16 +62,11 @@ allowBuilds:
 # .github/zizmor.yml の下限を同じ値に揃える (ADR-0005)
 minimumReleaseAge: 4320
 
-# lockfile が解決しなくなった除外を vp add / update / remove が自動で消す。
-# minimumReleaseAgeExclude の bare name (vite-plus など) も対象なので、Vite+ がそれを解決しなくなると恒久除外も消える
+# lockfile が解決しなくなった除外を vp add / update / remove が消す (docs/guides/dependencies-and-toolchain.md「待機を前倒しする」)
 minimumReleaseAgeExcludePrune: true
 
-# @shadcn/lint が依存に持つ @typescript-eslint/parser は、oxlint 経由では読まれないのに eslint を必須 peer に持つ。
-# optional にして、parser だけが理由で ESLint 一式が入らないようにする。
-# いま ESLint が入るのは、eslint-plugin-testing-library と @tanstack/eslint-plugin-* が @typescript-eslint/utils
-# 経由で必須にしているため (`vp why eslint`)。それらが外れれば ESLint も外れる。
-# utils 側には当てない。utils は実行時に eslint を読むので、外すと plugin が落ちる (docs/guides/lint/configuration.md)。
-# このキーはグラフ全体の parser に効く。ESLint を実際に使う依存を足すときは、その peer が外れていないかを確かめる。
+# @shadcn/lint が引く @typescript-eslint/parser は、oxlint 経由では読まれないのに eslint を必須 peer に持つ。optional にする (ADR-0023)
+# utils には当てない。実行時に eslint を読む (docs/guides/lint/configuration.md「testing-library を story に限る理由」)
 # 撤去条件: 上流が parser の eslint を optional peer にしたとき (shadcn-ui/lint#1)
 packageExtensions:
   "@typescript-eslint/parser@^8":
@@ -91,22 +74,16 @@ packageExtensions:
       eslint:
         optional: true
 
-# @storybook/addon-vitest@10.6.0 は story の viewport を `import("@vitest/browser/context")` の page で当てる。
-# Vitest 5 ではこの import が throw し、addon が catch して何も言わずに return するので、全 story が
-# Vitest 既定の 414x896 で走り、parameters / globals の viewport も効かない。patch は import 先を上流の
-# next と同じ `vitest/browser` へ替える (storybookjs/storybook#36164)。
-# キーを範囲にして、addon の 10.x の後続版にも当て続ける。版まで固定すると、Dependabot の更新で patch が
-# 当たらず addon だけが PR から外れ、storybook の各パッケージの版が割れる。上流が import を直すと patch が当たらず
-# install が落ちる (pnpm 11 は patch の失敗を常にエラーにする)。それが撤去条件を確かめる契機になる (ADR-0005)。
-# 撤去条件: addon-vitest の安定版が peer に vitest 5 を含み、viewport の import を vitest/browser にしたとき
-#
-# @storybook/tanstack-react@10.6.0 は TanStack Router の interpolatePath を { path, params } の形で呼ぶ。
-# router-core 1.171.30 (react-router 1.170.36) からこの関数は位置引数の形になり、全 story が
-# 「path.endsWith is not a function」で落ちる (storybookjs/storybook#36330)。patch は上流の next の修正
-# (storybookjs/storybook#36333) と同じく、関数の引数の数を見て 2 つの形を呼び分ける。キーの範囲は addon-vitest と同じ理由。
-# patch は `$name` と `$` だけを展開し、`{-$name}` や `{$id}.json` のような波括弧の segment は展開しない
-# (上流の本文は `{-$optional}` を未対応と書く。波括弧の segment 全般は patch のコードから読んだ)。
-# 撤去条件: tanstack-react の安定版が storybookjs/storybook#36333 を含んだとき
+# キーをパッケージ名だけにする理由は docs/guides/dependencies-and-toolchain.md「patch のキーをパッケージ名だけにする理由」
 patchedDependencies:
-  "@storybook/addon-vitest@^10.6.0": patches/@storybook__addon-vitest@10.6.0.patch
-  "@storybook/tanstack-react@^10.6.0": patches/@storybook__tanstack-react@10.6.0.patch
+  # addon-vitest@10.6.0 の viewport の import (@vitest/browser/context) は Vitest 5 で失敗し、何も言わずに viewport を当てない。
+  # import 先を vitest/browser へ替える (storybookjs/storybook#36164)
+  # 撤去条件: addon-vitest の安定版が peer に vitest 5 を含み、viewport の import を vitest/browser にしたとき
+  # 確かめ方: mise run verify は外れても落ちない。viewport を選ばない story に一時的な play を足し、window.innerWidth が addon の既定の 1200 になる (patch が外れていると Vitest の既定の 414) ことを確かめてから消す
+  # (docs/guides/storybook.md「vitest 経由の story の viewport が決まる仕組み」)
+  "@storybook/addon-vitest": patches/@storybook__addon-vitest.patch
+  # tanstack-react@10.6.0 は router-core 1.171.30 以降の interpolatePath を古い形で呼び、全 story が落ちる (storybookjs/storybook#36330)。
+  # 引数の数で呼び分け、波括弧の segment は展開しない (docs/guides/storybook.md「自動構成の外を手で置く」)
+  # 撤去条件: tanstack-react の安定版が storybookjs/storybook#36333 を含んだとき
+  # 確かめ方: mise run verify で story の project が通ること
+  "@storybook/tanstack-react": patches/@storybook__tanstack-react.patch

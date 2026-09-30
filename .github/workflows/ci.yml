@@ -5,7 +5,6 @@ on:
     branches: [main]
   pull_request:
 
-# 同じ ref への連続 push で古い実行を打ち切る
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -17,44 +16,34 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    # browser mode は特定の条件で無言でハングする (AGENTS.md)。既定の 6 時間を待たずに切る
+    # browser mode は無言でハングしうる。既定の 6 時間を待たずに切る
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # 後続の step は push しない。credential を $RUNNER_TEMP に残さない
+          # credential を残さない (ADR-0006)
           persist-credentials: false
 
-      # Vite+ 公式が案内する 1 ステップ。Node.js・パッケージマネージャ・依存キャッシュを
-      # まとめて用意し、`vp install` まで走らせる (run-install の既定が true)。
-      # setup-node と pnpm のセットアップ、`vp install` の step は要らない
+      # Node.js・pnpm・依存キャッシュを用意し、vp install まで走らせる (run-install の既定が true)
       - uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
         with:
           cache: true
 
-      # playwright は install スクリプトを持たないため chromium は vp install では入らない。
-      # 未取得のまま browser project を走らせると実行ファイル不在で落ちる
+      # chromium は vp install では入らない (playwright が install スクリプトを持たない)
       - run: vp exec playwright install chromium --only-shell
 
-      # .mise.toml の [tasks.verify] と同じ順序を並べる (pnpm peers check は下の peers ジョブ)。`vp run` のタスクにまとめない:
-      # Vite Task は親の環境変数を素通しせず (env / untrackedEnv への明示が要る)、既定で
-      # 結果をキャッシュする。マージ前の gate がリプレイで済まされるのを避ける
+      # .mise.toml の [tasks.verify] と同じ順序で並べ、vp run のタスクにまとめない (ADR-0004)
+      # PR の差分に lint の注釈は出ない (voidzero-dev/vite-plus#925、docs/guides/lint/configuration.md「PR の差分に lint の注釈を出す」)
       - run: vp check
       - run: vp test run
       - run: vp node scripts/time-zones/run-tests.ts
-      # vp check は oxlint へ --format=default を強制するため PR diff 上のインライン注釈は
-      # 出ない (voidzero-dev/vite-plus#925)。注釈が要るなら vp lint -f github を別ステップに足す
       - run: vp build
 
-      # ビルド成果物を起動して、セキュリティヘッダが実レスポンスに乗ることを確かめる
+      # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
       - run: vp node scripts/checks/runtime/security-headers.ts
 
-  # peer の食い違いを数える (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)。
-  # Dependabot の vite-plus の PR をそのまま取り込むと、vite-plus が exact な peer に持つ
-  # @vitest/browser-playwright と食い違い、ここで落ちる (ADR-0005)。
-  # install が要らないので verify と別のジョブに置き、並列に走らせる。変更の有無で飛ばさない。
-  # 課金はジョブごとに分単位で切り上げるので、飛ばしても 1 分として数えられる
-  # (GitHub Docs「Actions runner pricing」)
+  # peer の食い違いを数え、install が要らないので verify と並列に走らせる (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」、ADR-0004)
+  # 変更の有無で飛ばさない。課金はジョブごとに分単位で切り上がり、飛ばしても 1 分として数えられる (GitHub Docs「Actions runner pricing」)
   peers:
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -13,9 +13,8 @@ const dbFileName = requireEnv(
   "Configure it in .mise.toml [env] or the shell.",
 );
 
-// DB のファイルを作るのは `mise run db:migrate` (drizzle-kit) だけで、アプリの createDb は作らない。
-// 置き場所 (.data/) は gitignore 対象で新規クローンには存在しないため、ここで作らないと
-// "Cannot open database because the directory does not exist" で落ちる (:memory: はディレクトリを持たない)
+// DB のファイルを作るのは drizzle-kit だけ (docs/guides/database.md「DB のファイルをアプリで作らない理由」)。
+// 置き場所の .data/ は新規クローンに無いので、ここでディレクトリを作る (:memory: はディレクトリを持たない)
 if (dbFileName !== ":memory:") {
   mkdirSync(dirname(dbFileName), { recursive: true });
 }

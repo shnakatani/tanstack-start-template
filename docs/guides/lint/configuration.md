@@ -19,6 +19,8 @@ oxlint は「設定したつもりで効いていない」状態を診断なし�
 - `scripts/checks/integrity/lint-config.test.ts` は解決後の設定の `plugins` を期待値と突き合わせる。トップレベルの `plugins` にプラグインを足したら、そのテストの `EXPECTED_PLUGINS` にも足す
 - 同じテストは、`tooling/lint/config.ts` の `rules` に書いたキーが `--print-config` の `rules` に残るかも見る。プラグインの脱落で捨てられたルールを、名指し単位で見つけられる
 - 突き合わせでは 2 つのキーの形をまたぐ。eslint コアのルールは接頭辞なしで出力され、`typescript/` 接頭辞で書いた extension rule はコアのルール名へ解決される (2026-09-02 時点で `no-array-constructor` と `no-useless-constructor` の 2 件)。解決先が `correctness` なら名指しは no-op なので、`--print-config` で実効を比べる
+- `typescript/no-unused-vars` と `typescript/no-unused-expressions` は名指ししない。解決先のコアのルールが `correctness` で有効なので、書いても no-op になる (2026-09-30 に oxlint 1.85.0 の `--print-config` で確認)
+- `rules` に接頭辞なしで書いたキーは eslint コアへ解決される。`prefer-spread` と書いても、同名の `unicorn/prefer-spread` は有効にならない (2026-09-30 に oxlint 1.85.0 の `--print-config` で確認)。CLI の `-D` は逆に、同名のルールをすべて有効にする (「設定の落とし穴」)
 - React Compiler 由来のルールは `--print-config` の `rules` を `react/` で絞り、eslint-plugin-react-hooks のルール一覧と比べる
 - jsx-a11y は `--print-config` の `rules` を `jsx_a11y/` で絞り、上流 recommended の一覧と `comm` で両方向の差を取る。`rules` は「カテゴリで有効になったもの」と「名指ししたもの」の和なので、名前が出れば有効と読んでよい
 - `overrides` で足したプラグインとそのルールは、`--print-config` ではなく、当たるファイルへの実際の診断で確かめる。`--print-config` は `overrides` を書いたとおりの形で出し、ファイルを渡しても出力は変わらない (2026-09-30 に oxlint 1.85.0 で実測)。override のプラグインでカテゴリから有効になるルールも展開しない ([oxc-project/oxc#24878][]。2026-09-30 時点で open で、1.85.0 でも再現した)
@@ -84,7 +86,10 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 | 基準の variant が off にするが `correctness` 経由で有効になる | `jsdoc/require-property-type` (カテゴリ側の有効化が勝つため `rules` で明示的に落とす) |
 
 基準がより緩いオプションを持つ場合も同様に、指定と理由を残す (`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames`、`vitest/no-standalone-expect` の `additionalTestBlockFunctions`)。
-`assertFunctionNames` は既定を置換するため、既定値を覆う指定にする。
+
+- `assertFunctionNames` は既定 (`expect` / `expectTypeOf` / `assert` / `assertType`) へ足すのではなく置換する。既定値を覆う指定にしないと、既定の名前の呼び出しが assertion と数えられなくなる。既定の一覧は [Oxlint docs「vitest/expect-expect」][] による (2026-09-30 に確認)
+- `expect*` は `expect.assert` のようなメンバ呼び出しにも一致する (2026-09-06 に oxlint 1.79.0 で実測)
+- 名指しの `assert` と `assertType` は、既定のうち `expect*` が覆わない 2 つなので、直接の利用者が無くなっても残す
 
 ### テストファイルの緩和
 
@@ -102,6 +107,14 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 - 抑制の directive に書くプラグイン名は、`jsPlugins` のエントリの `name` と揃える (`docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」)
 - 行単位の抑制は領域を問わず使ってよい。registry コードの中の抑制は、台帳 `docs/registry-deviations.md` の「行単位の lint 抑制」にも記録する。要るのは記録であって、抑制の可否そのものではない (ADR-0020)
 - `perf` の `no-await-in-loop` は順序に依存するループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く
+
+### PR の差分に lint の注釈を出す
+
+`vp check` は GitHub Actions の上でも、PR の差分に載る注釈 (`::error` の行) を出さない。`vp check` は oxlint の出力の要約を読んで成否を決めるので、oxlint に `--format=default` を渡している ([voidzero-dev/vite-plus#925][]。2026-09-30 時点で open)。
+
+- 注釈が要るなら、workflow に `vp lint -f github` のステップを足す
+- 2026-09-30 に vite-plus 1.0.0 (oxlint 1.85.0) で確かめた。違反を 1 つ置いた probe を `GITHUB_ACTIONS=true` で渡すと、`vp check` は既定の形式で出し、`vp lint -f github` は `::error file=...` の行を出した
+- [voidzero-dev/vite-plus#925][] が close されたとき、または `--format=default` を強制した [voidzero-dev/vite-plus#914][] が revert されたときは、同じ probe で `vp check` が注釈を出すかを確かめ直す。oxlint 側の前提 (GitHub 形式に `vp check` が読む要約の行を足す [oxc-project/oxc#20404][]) は 2026-03-16 に merge 済み
 
 ### 設定の落とし穴
 
@@ -211,6 +224,12 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 | `invariant` / `rule-suppression` / `syntax` / `todo`                                   | `restriction`     | off。`todo` は Compiler の未実装による bail out で、欠陥として扱わない (ADR-0014) |
 | `capitalized-calls` / `exhaustive-effect-dependencies` / `hooks` / `memo-dependencies` | `suspicious`      | off。上流が既定から外している                                                     |
 
+分割後のルールは `rules-of-hooks` の代わりにならない。
+
+- React Compiler は既定の `compilationMode` (`'infer'`) では、名前がコンポーネント (PascalCase) か hook (`use` で始まる) の形をしていない関数を、`"use memo"` を書かない限り対象にしない ([React docs「compilationMode」][])。そうした関数から hook を呼ぶコードは、分割後のルールでは拾えない
+- 2026-09-30 に oxlint 1.85.0 で確かめた。`helper` という名前の関数で `useState` を呼ぶ probe を、`react/rules-of-hooks` は報告し、`react/hooks` は報告しなかった
+- `rules-of-hooks` は oxlint では `pedantic` にあり、既定では off になる
+
 どれを名指しして引き上げるかは ADR-0007「React Compiler のルールは eslint-plugin-react-hooks を基準にする」が決める。
 
 ## 出典
@@ -218,8 +237,13 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
 [oxc-project/oxc#24878]: https://github.com/oxc-project/oxc/issues/24878
+[Oxlint docs「vitest/expect-expect」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/expect-expect.html
+[voidzero-dev/vite-plus#925]: https://github.com/voidzero-dev/vite-plus/issues/925
+[voidzero-dev/vite-plus#914]: https://github.com/voidzero-dev/vite-plus/pull/914
+[oxc-project/oxc#20404]: https://github.com/oxc-project/oxc/pull/20404
 [oxc-project/oxc#7379]: https://github.com/oxc-project/oxc/pull/7379
 [Oxlint docs「overrides」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#overrides
 [Vite+ docs「Lint」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/lint.md
 [Oxlint docs「plugins」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#plugins
 [Storybook の `storybook-story-instructions.md`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/cli/skills/content/instructions/storybook-story-instructions.md
+[React docs「compilationMode」]: https://react.dev/reference/react-compiler/compilationMode

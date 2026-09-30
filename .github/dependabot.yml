@@ -11,29 +11,20 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    # pnpm-workspace.yaml の minimumReleaseAge (4320 分 = 3 日) と揃えた明示設定。変更時は両方と
-    # .github/zizmor.yml の下限を更新する。
-    # GitHub デフォルト (3 日) と同値だが、ポリシーの対をここに固定する。security updates は cooldown 対象外。
-    # Vite+ 管理下のパッケージは pnpm 側だけ待機を外している (ADR-0005)。bot 側は 3 日を維持し、
-    # グループ内の全メンバーが同じ日に eligible になる状態を保つ
+    # pnpm-workspace.yaml の minimumReleaseAge と .github/zizmor.yml の下限と対で持つ (ADR-0005)
     cooldown:
       default-days: 3
     ignore:
-      # @types/node は Node runtime (package.json の devEngines.runtime) と major を揃える。
-      # runtime を上げるときに一緒に上げる (minor / patch は通常どおり更新する)。minor を上げたら
-      # package.json の engines.node の下限もその minor まで上げる (ADR-0004)
+      # @types/node の major は Node の runtime (package.json の devEngines.runtime) と揃え、runtime と一緒に上げる。
+      # minor を上げたら package.json の engines.node の下限もその minor まで上げる (ADR-0004)
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
-      # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない。理由と、vite-plus
-      # グループの patterns に残す理由は ADR-0005。
-      # 撤去条件: Vite+ の docs が、単独で先へ進む vitest の PR を作らせない bot の設定例を示したとき
-      # (voidzero-dev/vite-plus#2356)
+      # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない (ADR-0005)
+      # 撤去条件: Vite+ の docs が、単独で先へ進む vitest の PR を作らせない bot の設定例を示したとき (voidzero-dev/vite-plus#2356)
       - dependency-name: "vitest"
       - dependency-name: "@vitest/*"
     groups:
-      # vite-plus と core を 1 本の PR に束ねる (ADR-0005)。PR の扱いは
-      # docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」
-      # vite はワイルドカード無しの完全一致なので vite-plus のパターンでは拾えない
+      # vite-plus と core を 1 本の PR に束ねる。PR の扱いは docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」 (ADR-0005)
       vite-plus:
         patterns:
           - "vite"
@@ -41,18 +32,14 @@ updates:
           - "@voidzero-dev/vite-plus-*"
           - "vitest"
           - "@vitest/*"
-      # @vitejs/plugin-react は optional peer の oxc-transform-react を呼び出す。
-      # 別々の PR に割れると、上流がテストしていない組み合わせが片方ずつマージされる。
-      # peer 範囲は緩和してあるため (pnpm-workspace.yaml)、不整合を install が止めない
+      # plugin-react と、それが呼ぶ optional peer を 1 本の PR にする (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
       react-compiler:
         patterns:
           - "@vitejs/plugin-react"
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
-      # 上の 2 グループの patterns を exclude-patterns に写す。patterns を持たないグループは、
-      # 他のグループに入った依存も抱え込む (docs の「最初に一致したグループに入る」と挙動が食い違う。
-      # dependabot/dependabot-core#14576)。2026-09-28 には vitest が vite-plus と minor-and-patch の
-      # 両方の PR に載った。上のグループの patterns を変えたらここも変える
+      # 上の 2 グループの patterns を写し、変えたらここも変える (dependabot/dependabot-core#14576。
+      # docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)
       minor-and-patch:
         update-types:
           - "minor"

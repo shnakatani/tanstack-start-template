@@ -37,7 +37,7 @@ gh api -X PUT /repos/<owner>/<repo>/automated-security-fixes
 
 ### 待機を前倒しする
 
-公開後 3 日を待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものかを確かめる (ADR-0005 の決定 3)。
+公開後 3 日を待たずに取り込みたいときは、そのバージョンが公式のリリースパイプラインから出たものかを確かめる (ADR-0005「前倒しは provenance を確認してから」)。
 
 ```bash
 curl -s https://registry.npmjs.org/<pkg>/<version> | jq '{_npmUser, repository, attestations: .dist.attestations}'
@@ -56,17 +56,21 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 pnpm peers check
 ```
 
-- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、AGENTS.md の「pnpm を直接打たない」の理由 (解決が Vite+ の管理から外れる) には当たらない
+- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、`pnpm peers check` は直接打っても解決が Vite+ の管理から外れない
 - `vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm/pnpm#14114][])
 - 許可を外すだけでは lockfile が変わらないので、`--force` を付けても `strictPeerDependencies: true` にしても install は通る (2026-09-29、pnpm 11.28.0)。`pnpm peers check` だけが食い違いを出す
 - 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版の major>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
-- 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005 の決定 6)
+- 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005「pin には出口条件を書く」)
 - Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。`storybook>vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
+- storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (`storybook@10.6.0` の dist で確認)
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側の major を上げると、許可の範囲を外れて `pnpm peers check` に再び食い違いとして出る。新しい major で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
-- `vite` と `vitest` の許可は例外で、`vp migrate` が管理する (理由は `pnpm-workspace.yaml` のコメント)
+- `@vitejs/plugin-react` と `oxc-transform-react` は、`.github/dependabot.yml` の `react-compiler` グループで 1 本の PR にする。plugin-react は optional peer の oxc-transform-react を呼び出す。その peer の範囲は `pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` の `"@vitejs/plugin-react>oxc-transform-react"` で許しているので、install は食い違いを止めない。別々の PR に割れると、上流が試していない組み合わせが片方ずつ入る
+- `vite` と `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-09-28、vite-plus 1.0.0 で実測)
+- `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
+- `vite` の行は効いている。`vite@*` の catalog の値は `npm:` の alias で、このとき peer の宣言は置き換わらず、行を消すと `pnpm peers check` が食い違いを出す (2026-09-28、pnpm 11.28.0 で実測。pnpm の docs はこの場合を書いていない)
 
 ### 依存をバレルの禁止の対象に足す
 
@@ -92,6 +96,7 @@ gh pr checkout <PR 番号>
 vp install
 vp exec vp migrate --no-interactive
 mise run verify
+git diff pnpm-workspace.yaml  # catalog に依存が増えていたら、この節の catalog の項目で .github/dependabot.yml を見直す
 git add -A
 git commit -m "vp migrate で core と vitest を vite-plus の同梱の版へ揃える"
 git push
@@ -103,11 +108,19 @@ git push
 - push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
 - Dependabot の PR を処理するときは、`vite-plus` の PR が止まっていないかを確かめる (ADR-0005)。`npm view vite-plus time --json` で latest の公開日時を見て、cooldown (`.github/dependabot.yml`) を過ぎたあとの Dependabot の実行 (`gh run list --workflow 'Dependabot Updates'`) で `vite-plus` の PR ができていなければ、その実行のログで判定を見る。`gh run view <run の ID> --log | grep -E "Updating vite-plus from|No update needed for vite-plus"`
 - `minor-and-patch` は `exclude-patterns` で `vite-plus` と `react-compiler` のグループの依存を除く。patterns を持たないグループは、他のグループに入った依存も抱え込む (2026-09-29 時点、[dependabot/dependabot-core#14576][])。2026-09-28 には `vitest` が両方のグループの PR に載った
-- `pnpm-workspace.yaml` の catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と、`minor-and-patch` の `exclude-patterns` にも足す。`vitest` のように `vite-plus` と別の日に公開される依存なら、`ignore` にも `dependency-name` だけで足す (ADR-0005)。撤去条件の書き方は「pin を足す」
+- `vp migrate` が `pnpm-workspace.yaml` の catalog に、`.github/dependabot.yml` の `vite-plus` グループの `patterns` に当たらない依存を足したら、その `patterns` と `minor-and-patch` の `exclude-patterns` にも足す
+- `vp migrate` が catalog に足した依存が、`vitest` のように `vite-plus` と別の日に公開され、既存の `ignore` に当たらないなら、`ignore` にも `dependency-name` だけで足す (ADR-0005)。撤去条件の書き方は「pin を足す」
 
 ### pin を足す
 
-pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏内へ入るパッケージを見つけたら `ignore` へ足し、同じ出口条件を参照させる。出口条件の文字列を grep すれば、pin の全構成要素が見つかる状態を保つ。
+pin を足すときは、ADR-0005「pin には出口条件を書く」に従って出口条件を書く。間接的に pin の圏内へ入るパッケージを見つけたら `ignore` へ足し、同じ出口条件を参照させる。出口条件の文字列を grep すれば、pin の全構成要素が見つかる状態を保つ。
+
+### patch を当てる
+
+依存の配布物に patch を当てるときは、`vp pm patch <pkg>` を版を付けずに打つ。`pnpm-workspace.yaml` の `patchedDependencies` にパッケージ名だけのキー (`"<pkg>"`) で足され、どの版にも当たる (「patch のキーをパッケージ名だけにする理由」)。そのキーの直前のコメントに、理由と撤去条件 (ADR-0005「pin には出口条件を書く」) と、効いていることの確かめ方を書く。`mise run verify` が捕まえない patch もあるので、確かめ方が無いと壊れても気づけない。
+
+- 作り直すときも版を付けずに打つ。既にある patch を当てた編集用のディレクトリができ、`vp pm patch-commit` は同じキーと同じファイルへ書き戻す。版を付けると既にある patch が当たらず、`patch-commit` は版を固定したキーを足して `ERR_PNPM_UNUSED_PATCH` で落ちる。その案内どおりにパッケージ名だけのキーを消すと、元の変更が黙って消える (2026-10-01 に pnpm 11.28.0 で観測)
+- `vp pm patch-commit` したあとは、初めて作ったときも作り直したときも、`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-10-01 に pnpm 11.28.0 で観測)
 
 ### workflow に action を足す
 
@@ -116,18 +129,18 @@ pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏
 
 ### 依存を上げたときに見直すもの
 
-| 上げたもの                                                      | 見直すもの                                                                                                                                                                                                                                                                                      |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vite+                                                           | 同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する。許可した側の major が上がったら、peer の許可の値を書き換える (「peer の食い違いを数える」)                                         |
-| oxlint (Vite+ 同梱) の minor 以上                               | `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」                                                                                                                                                                                                                        |
-| Base UI                                                         | `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring (自己リセットの条件の表)                                                                                                                                                                                               |
-| axe-core                                                        | `docs/guides/accessibility.md`「axe を上げたとき」。あわせて `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」)                                                                                                   |
-| colorjs.io                                                      | `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」「測り方の限界」)。版が上がると値が変わりうる                                                                                                                    |
-| vitest                                                          | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている ([vitest-dev/vitest#9157][]) |
-| `@types/node` の minor                                          | `package.json` の `engines.node` の下限を、その minor まで上げる (ADR-0004)                                                                                                                                                                                                                     |
-| drizzle-kit                                                     | `pnpm-workspace.yaml` の `overrides` の `drizzle-kit>@esbuild-kit/esm-loader` の撤去条件。キーに版が無いので、条件が成り立っても何も言わずに効かない行として残る                                                                                                                                |
-| storybook / @storybook/addon-vitest / @storybook/tanstack-react | `pnpm-workspace.yaml` の `peerDependencyRules` と `patchedDependencies` の撤去条件と、コメントに書いた上げたときの確認 (「peer の食い違いを数える」)                                                                                                                                            |
-| `RESTRICTED_BARREL_IMPORTS` に載せた依存                        | `exports` に個別エントリポイントが残っているか。消えていれば lint の `message` が案内する import が解決しなくなる。react-day-picker を上げたときは、内部の date-fns の import と `locale/ja` の import が変わったかも見る (ADR-0032 の Consequences の再評価の条件)                             |
+| 上げたもの                                                      | 見直すもの                                                                                                                                                                                                                                                                                            |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vite+                                                           | 「Vite+ を上げる」の手順で上げる。同梱ツールがまとめて更新される。lint ルールの追加や formatter の整形規則の変更が同じ更新で入りうるので、更新 PR は `mise run verify` の結果まで見て判断する。許可した側の major が上がったら、peer の許可の値を書き換える (「peer の食い違いを数える」)             |
+| oxlint (Vite+ 同梱) の minor 以上                               | `docs/guides/lint/configuration.md`「上流 recommended の改訂に追随する」                                                                                                                                                                                                                              |
+| Base UI                                                         | `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring (自己リセットの条件の表)                                                                                                                                                                                                     |
+| axe-core                                                        | `docs/guides/accessibility.md`「axe を上げたとき」。あわせて `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」)                                                                                                         |
+| colorjs.io                                                      | `mise run contrast` の比を axe の `getContrast` と突き合わせ直す (`docs/guides/styling-and-tokens.md`「axe の比と突き合わせる」「測り方の限界」)。版が上がると値が変わりうる                                                                                                                          |
+| vitest                                                          | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている ([vitest-dev/vitest#9157][])       |
+| `@types/node` の minor                                          | `package.json` の `engines.node` の下限を、その minor まで上げる (ADR-0004)                                                                                                                                                                                                                           |
+| drizzle-kit                                                     | `pnpm-workspace.yaml` の `overrides` の `drizzle-kit>@esbuild-kit/esm-loader` の撤去条件。キーに版が無いので、条件が成り立っても何も言わずに効かない行として残る。beta の `1.0.0-beta.22` と rc の `1.0.0-rc.4` は `@esbuild-kit/esm-loader` を依存から外している (2026-09-30 に npm registry で確認) |
+| storybook / @storybook/addon-vitest / @storybook/tanstack-react | `pnpm-workspace.yaml` の `peerDependencyRules` と `patchedDependencies` の撤去条件。patch はコメントの確かめ方を通す。storybook では、dist が `vite-plus` から import しているものも読み直す (「peer の食い違いを数える」「patch を当てる」)                                                          |
+| `RESTRICTED_BARREL_IMPORTS` に載せた依存                        | `exports` に個別エントリポイントが残っているか。消えていれば lint の `message` が案内する import が解決しなくなる。react-day-picker を上げたときは、内部の date-fns の import と `locale/ja` の import が変わったかも見る (ADR-0032 の Consequences の再評価の条件)                                   |
 
 ### 走査対象を持つ config を足す
 
@@ -143,6 +156,14 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 
 型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsgolint が黙って動かない場合は捕まえられない。
 
+### patch のキーをパッケージ名だけにする理由
+
+版まで固定したキーは、上げた版には使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。この失敗は、lockfile だけを更新するとき (`install --lockfile-only`) にも起きる (2026-10-01 に pnpm 11.28.0 で観測)。Dependabot は pnpm を `--lockfile-only` で走らせ ([dependabot-core「pnpm_lockfile_updater.rb」][])、失敗した依存を飛ばして残りで PR を作る ([dependabot-core「group_update_creation.rb」][]) ので、その依存だけが黙って PR から抜け、揃えて上がる依存の版が割れる。範囲のキー (`"<pkg>@^<版>"`) も、範囲の外へ上げた版には使われないので同じことになる。
+
+パッケージ名だけのキーは、どの版にも当てる ([pnpm docs「pnpm patch」][])。当たらなければ通常の install が `ERR_PNPM_PATCH_FAILED` で落ち、`--lockfile-only` では落ちない (2026-10-01 に pnpm 11.28.0 で観測) ので、Dependabot の PR は作られ、その PR の CI で気づける。Dependabot の振る舞いはコードで確かめ、実行では観測していない。同じ docs には、名前だけのキーは当たらない失敗を無視すると読める記述もあるが、v11 では当たらない失敗は常にエラーになる (同じ docs の `allowUnusedPatches` の注記)。
+
+作り直しの手順も短くなる。`vp pm patch` を版を付けずに打つと、パッケージ名だけのキーの patch を編集用のディレクトリに当て、`patch-commit` は同じキーと同じファイルへ書き戻す。範囲のキーの patch は `vp pm patch` が当てず、`patch-commit` は範囲のキーとは別のキーとファイルを足すので、作り直すたびに元の patch を当て直し、キーとファイルを手で直すことになる (2026-10-01 に pnpm 11.28.0 で、両方のキーについて観測)。
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
@@ -154,3 +175,7 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [dependabot/dependabot-core#14576]: https://github.com/dependabot/dependabot-core/issues/14576
 [vitest-dev/vitest#9157]: https://github.com/vitest-dev/vitest/issues/9157
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
+[pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
+[pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
+[dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
+[dependabot-core「pnpm_lockfile_updater.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L285-L295

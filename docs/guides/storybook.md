@@ -31,6 +31,8 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 - pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く (`src/test/app/settling-action.ts`)。決着しない Transition が残ると、後続 story が pending のまま止まる
 - Storybook の vitest 実行は story ごとに描き先の要素と root を作り直し、前の story を unmount する。それでも、React が進行中の Transition を root をまたいでまとめるので ([React docs「useTransition」][] の Caveats の "If there are multiple ongoing Transitions, React currently batches them together.")、後続 story の Transition が残った Transition と一緒に待たされる。2026-09-28 に React 19.3.0・Storybook 10.6.0 で、決着しない action を押した story の後ろでは 50ms で決着する action の story が 1.5 秒たっても pending のままで、単独では 78ms で解けた
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。vitest から走らせた story には Storybook の `layout: "padded"` が効かず、その差は `.storybook/preview.css` が埋める (「vitest 経由の story に padding を当てる理由」)
+- 狭い幅での見え方は、story に `globals: { viewport: { value: "narrow" } }` を付けて目で見る。その story に寸法を測る play は書かない (「狭幅を story で見る理由」)。実例は `src/components/parts/centered-card.stories.tsx` の `Narrow`
+- viewport を選ばない story は、vitest から走らせるとブラウザテストの既定と別の寸法で描かれる。story とブラウザテストで幅に依る見え方が食い違ったら、まずこの差を疑う (「vitest 経由の story の viewport が決まる仕組み」)
 
 ### カタログと play の範囲
 
@@ -51,10 +53,11 @@ story は部品が取りうる状態を並べるカタログで、振る舞い�
 
 ### 自動構成の外を手で置く
 
-TanStack 専用の framework は、router を memory-backed で自動ラップし、server function を自動で stub する (「framework を TanStack 専用にし、telemetry を切る理由」)。次の 2 つは自動構成が届かない。
+TanStack 専用の framework は、router を memory-backed で自動ラップし、server function を自動で stub する (「framework を TanStack 専用にし、telemetry を切る理由」)。次のものは自動構成が届かない。
 
 - TanStack Query は対象外。Query を使う部品の story を書くようになったら、QueryClient を `.storybook/preview.tsx` の構成へ手で置く
 - server-only の依存を引く部品の story を書くようになったら、その依存を `__mocks__` で遮断する
+- story の URL を組むとき、path の `$name` と `$` の segment だけが展開され、`{-$name}` や `{$id}.json` のような波括弧の segment は展開されない。tanstack-react の path の展開の制限で (`pnpm-workspace.yaml` の patch も上流の修正も同じ)、上流の修正 ([storybookjs/storybook#36333][]) の本文も `{-$optional}` を未対応と書く。波括弧の segment を持つ route の story を書くようになったら、URL が組めるかをその時点で確かめる
 
 ### play を書く
 
@@ -94,13 +97,15 @@ framework の選定は `tanstackStart()` plugin と Storybook の Vite builder �
 
 telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既定で有効で、実行したコマンド・バージョン・addon 一覧・story とコンポーネントの件数を送る ([Storybook docs「Telemetry」][])。このテンプレートから作られる全プロジェクトへ配られる設定なので、`envDir: false` や `disable_tools` (ADR-0004) と同じく明示で潰す側に揃える。
 
+`boot` イベントだけはこの設定で止まらない。`main.ts` を読む前に送られるためで、中身はメタデータを持たない。止めるには環境変数 `STORYBOOK_DISABLE_TELEMETRY` が要る ([Storybook docs「Telemetry」][])。
+
 | 案                               | 評価                                                                                                | 採否     |
 | -------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
 | 標準の Vite builder を使う       | `tanstackStart()` との衝突を自分で回避することになり、server function を呼ぶ部品の story が組めない | 却下     |
 | TanStack 専用 framework を使う   | router を memory-backed で自動ラップし、server function を自動 stub する                            | **採用** |
 | telemetry を既定のまま有効にする | このテンプレートから作られる全プロジェクトへ配られる設定なので、明示で潰す                          | 却下     |
 
-- Storybook の静的ビルドは検証していない。[storybookjs/storybook#33747][] が未解決のため
+- Storybook の静的ビルド (`vp exec storybook build`) は、`mise run verify` と CI では走らせていない。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は 2026-09-30 時点で未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外すので build は通る (2026-09-30、`@storybook/tanstack-react` 10.6.0)。`lazyPlugins` に async の関数を渡すと外せなくなる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 
 ### story を状態のカタログにする理由
 
@@ -152,6 +157,26 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 - この差は `.storybook/preview.css` の `body:not(.sb-show-main)` が埋める。Storybook の UI では body へ `sb-show-main` が付くので、付いていないときだけ同じ `1rem` を当てる。`sb-main-*` で見ないのは、`layout: "none"` の story が UI 側でも `sb-main-*` を持たないため (理由は同ファイルのコメント)
 - 埋めないと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、そのはみ出しが背景を持つ唯一の箱 (body) の外へ出て axe が色を測れなくなる。`html` は背景を持たないので受け止められない
 
+### 狭幅を story で見る理由
+
+狭い幅での見え方は、story の `narrow` viewport で目で見る。その story では寸法を機械で測らない。
+
+- registry の部品の寸法は上流が決め、消費側が size を変えるのも正当な使い方である。story で測ると、上流の変更でも消費側の変更でも落ち、そのたびに消される
+- `narrow` の寸法は `.storybook/preview.tsx` が `src/test/browser/viewport-sizes.ts` の `NARROW_VIEWPORT` から引き、ブラウザテストと同じ値を使う。写すとどちらかが古くなる
+
+### vitest 経由の story の viewport が決まる仕組み
+
+vitest から走らせた story の viewport は、`@storybook/addon-vitest` の `setViewport` が story ごとに `page.viewport()` を呼んで決める ([Storybook の `viewports.ts`][])。story ごとに上書きされるので、`tooling/test/storybook-project.ts` の `browser.viewport` に書いても story には効かない。
+
+| story の状態                                                                              | 描く寸法                                                                         |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| viewport を選んでいる (`globals.viewport.value` か `parameters.viewport.defaultViewport`) | 選んだ option の `styles` の幅と高さ                                             |
+| viewport を選んでいない                                                                   | addon の既定の 1200x900                                                          |
+| `patchedDependencies` の addon-vitest の patch が当たっていない                           | どの story も project の `browser.viewport` (未設定なら Vitest の既定の 414x896) |
+
+- 1200x900 は `@storybook/addon-vitest` 10.6.0 の `DEFAULT_VIEWPORT_DIMENSIONS` である (2026-09-30 に確認)。ブラウザテストの既定 (`src/test/browser/viewport-sizes.ts` の `DEFAULT_VIEWPORT`) とは別の値で、同じ部品でも story とブラウザテストで描く寸法が違う
+- addon-vitest 10.6.0 は `page` を `@vitest/browser/context` から読むが、Vitest 5 ではこの import が失敗する。addon は失敗を握りつぶして何もせずに戻るので、viewport の指定が効かないまま story が走り、何も言わない。project が `browser.viewport` を書いていなければ、描く寸法は Vitest の既定の 414x896 になる ([Vitest docs「browser.viewport」][]、Vitest 5.0.1)。patch は import 先を `vitest/browser` へ替える (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
+
 ### CLI を使い、MCP を入れない理由
 
 `storybook@10.6.0` は agent 向けの機構を 2 経路で配っている。本体同梱の CLI (`storybook skills` / `storybook tools`) と、別パッケージの `@storybook/addon-mcp` である。どちらも同じツール群を公開する。公式 docs に載っているのは MCP だけで、CLI は記載が無く、`storybook --help` のコマンド一覧にも出ない。
@@ -180,3 +205,6 @@ MCP が優るのは、ツールの説明がエージェントに常に見える�
 [Storybook docs「Telemetry」]: https://storybook.js.org/docs/configure/telemetry
 [Storybook docs「Interaction tests」]: https://storybook.js.org/docs/writing-tests/interaction-testing
 [Storybook の `WebView.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/preview-api/modules/preview-web/WebView.ts
+[storybookjs/storybook#36333]: https://github.com/storybookjs/storybook/pull/36333
+[Storybook の `viewports.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/addons/vitest/src/vitest-plugin/viewports.ts
+[Vitest docs「browser.viewport」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/viewport.md

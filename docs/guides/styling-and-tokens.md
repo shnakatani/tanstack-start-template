@@ -190,7 +190,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 | ファイル読みと終了コード                       | `scripts/contrast/report.ts`                |
 | 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]`          |
 
-- テストは `scripts-tools` project が拾う。include は `scripts/**/*.test.ts` から `scripts/checks/**` を除く拒否リストにする。ディレクトリを並べる許可リストにすると、ツールを足すたびに 1 行足す必要があり、足し忘れたツールのテストは無言で走らない
+- テストは `scripts-tools` project が拾う。`include` を拒否リストにしている理由は `docs/guides/testing/check-scripts.md`「検査スクリプトを分けて置く理由」にある
 - 検査は作らない。トークンを動かしても何も落ちない。a11y の合否は `src/components/contrast.stories.tsx` の axe が持つ (ADR-0024「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。この変換器は story ではなく合否も持たないので、その決定と両立する。単体テストが落ちるのは変換器が壊れたときで、配色の可否を判定しているのではない。測るのは文書へ書く値を人が選ぶためである
 
 先行例 (2026-09-22 調査)。デザインシステム 20 件 (うち 2 件は対象リポジトリを特定できず未確認) と、ブラウザで色を解決する手法、文書の数値をテストで固定する手法を調べた。

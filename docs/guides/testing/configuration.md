@@ -1,24 +1,25 @@
 # テストの設定
 
-Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
+Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・ブラウザと story の project に事前バンドルする依存を足す手順、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
 
-| 決定                                                                                              | ADR      |
-| ------------------------------------------------------------------------------------------------- | -------- |
-| 開発環境のツールチェーンは mise と Vite+ に寄せる                                                 | ADR-0004 |
-| Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる | ADR-0037 |
+| 決定                                                                                                   | ADR      |
+| ------------------------------------------------------------------------------------------------------ | -------- |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                                                      | ADR-0004 |
+| Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる      | ADR-0037 |
+| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0028 |
 
 ## how-to
 
 ### 設定の置き場所
 
-| 置くもの                                                                                                           | 置き場所                                                                                                                   |
-| ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `test` の中身 (project の一覧、`globalSetup`、coverage)                                                            | `tooling/test/config.ts` の `testConfig`。`vite.config.ts` の `test` がこれを読む                                          |
-| ブラウザテストの project                                                                                           | `tooling/test/browser-project.ts`                                                                                          |
-| story の project                                                                                                   | `tooling/test/storybook-project.ts`                                                                                        |
-| ブラウザで走る project に共通する設定 (`tailwindcss()`、`resolve.dedupe`、chromium を headless で動かす `browser`) | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる |
-| project が共有する設定 (`envDir`、`resolve`)                                                                       | `vite.config.ts` のトップレベル。project はこれを継承する                                                                  |
-| テストでだけ外す plugin                                                                                            | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                    |
+| 置くもの                                                                                                           | 置き場所                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test` の中身 (project の一覧、全 project が共有する `exclude`、`globalSetup`、coverage)                           | `tooling/test/config.ts` の `testConfig`。`vite.config.ts` の `test` がこれを読む。project は `exclude` を継承する。`globalSetup` は継承されず root で 1 回だけ走り、coverage は root だけが持つ (「project を inline に並べる理由」) |
+| ブラウザテストの project                                                                                           | `tooling/test/browser-project.ts`                                                                                                                                                                                                     |
+| story の project                                                                                                   | `tooling/test/storybook-project.ts`                                                                                                                                                                                                   |
+| ブラウザで走る project に共通する設定 (`tailwindcss()`、`resolve.dedupe`、chromium を headless で動かす `browser`) | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる                                                                                                            |
+| project が共有する Vite の設定 (`envDir`、`resolve`)                                                               | `vite.config.ts` のトップレベル。project はこれを継承する                                                                                                                                                                             |
+| テストでだけ外す plugin                                                                                            | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                                                                                                                               |
 
 `vitest.config.ts` は作らない (ADR-0037。仕組みは「`vitest.config.ts` を置かない理由」)。
 
@@ -37,12 +38,31 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 - テストの分岐は `viteReact()` だけを返す。外す plugin ごとの理由は「テストの分岐で plugin を外す理由」
 - `tailwindcss()` はテストの分岐に入れない。ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す。Node の project には要らない
 
+### ブラウザと story の project に事前バンドルする依存を足す
+
+テストの実行中に次のどれかが出たら、その依存が事前バンドルから漏れている。仕組みは「project に `optimizeDeps` を書く理由」にある。
+
+- `dependency optimized: <依存>` か `dependencies optimized` のあとに page が reload する
+- `Vite unexpectedly reloaded a test` が出る
+- React の hook が `Cannot read properties of null (reading 'useContext')` のように落ちる
+- Vitest が `please add mentioned dependencies to your config's optimizeDeps.include field` と警告する
+
+| 出た project                         | 足す先                                                        | 足すもの                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `browser`                            | `tooling/test/browser-project.ts` の `optimizeDeps.include`   | テストで初めて到達した依存                                                                                |
+| `storybook-light` / `storybook-dark` | `tooling/test/storybook-project.ts` の `optimizeDeps.include` | 静的な走査で見つからない依存 (`import()` で読まれるもの) だけ。story から静的に辿れる依存は走査で見つかる |
+
+- story の project の `optimizeDeps.exclude` に `@tanstack/react-start` 系を書かない。書かなくても実パッケージへ届かない
+- `browser` の `include` を外せるかは、出口条件の issue が動いたときに見直す。`include` を外して `browser` project を回し、上の症状が出ないことで判定する。issue が閉じたことだけを根拠に外さない
+
 ### 設定の落とし穴
 
-| 対象                                            | 起きること                                                                                                                 | 対処                                    |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| `vitest.config.ts` を足す                       | Vitest がそちらを優先し、`vite.config.ts` の設定を丸ごと黙って無視する (`test`、`envDir`、テストの分岐の plugin を含む)    | 足さない。中身は `tooling/test/` に書く |
-| Vitest の `createVitest()` を直接呼んで起動する | config を読む時点で `process.env.VITEST` が立たず、テストに `tanstackStart()` などが入る (2026-09-30、vitest 5.0.1 で確認) | `VITEST=true` を渡して起動する          |
+| 対象                                                                                                         | 起きること                                                                                                                                                          | 対処                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vitest.config.ts` を足す                                                                                    | Vitest がそちらを優先し、`vite.config.ts` の設定を丸ごと黙って無視する (`test`、`envDir`、テストの分岐の plugin を含む)                                             | 足さない。中身は `tooling/test/` に書く                                                                                                               |
+| Vitest の `createVitest()` を直接呼んで起動する                                                              | config を読む時点で `process.env.VITEST` が立たず、テストに `tanstackStart()` などが入る (2026-09-30、vitest 5.0.1 で確認)                                          | `VITEST=true` を渡して起動する                                                                                                                        |
+| `@base-ui/react` の barrel から import する部品 (`src/components/ui/combobox.tsx`) をブラウザや story で描く | React が二重に解決され、invalid hook call で落ちる (commit fb3433af に記録がある。観測日と版は残っていない)                                                         | `resolve.dedupe` に `react` と `react-dom` を置く (`tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project が重ねる) |
+| story の project に `browser.viewport` を書く                                                                | `@storybook/addon-vitest` が story ごとに viewport を決め直すので効かない。viewport を選ばない story は、ブラウザテストの `DEFAULT_VIEWPORT` とは別の寸法で描かれる | 寸法を前提にする story は story の側で viewport を選ぶ (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」)                 |
 
 ## explanation
 
@@ -59,6 +79,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 決定は ADR-0037 が持つ。この節は、継承の仕組みと、関数で渡す project の扱いを持つ。
 
 - Vitest 5 では、inline の project だけが root の設定を継承する ([Vitest docs「Test Projects」][]: "Projects referenced as config files or directories do not inherit any options from the root config.")
+- root の `globalSetup` は、inline の project にも継承されない。実行ごとに root で 1 回だけ走る ([Vitest docs「Test Projects」][]: "`globalSetup` is not inherited from the root config: the root-level `globalSetup` already runs once per test run")。coverage は project の設定に書けず、root が全体で 1 回取る (同じページの "`coverage`: coverage is done for the whole process")
 - ファイルで参照する project でも、共有の設定ファイルを作って `mergeConfig` で合わせれば写さずに済む (同じページの "You can create a shared config file and merge it with the project config yourself")。ただし project ごとに merge を書き、root とは別の共有ファイルを持つことになる。inline なら何も書かずに root を継承する
 - 関数で渡した project も inline の project として扱われる。docs に関数の例は無いが、`DEBUG=vitest:projects vp test list --filesOnly` が `inline project "browser" resolves its own Vite config` と出す (2026-09-30、vitest 5.0.1)。自前の Vite config を作りつつ、root の config ファイルを extends する
 - ブラウザで走る project (ブラウザテストと story) だけが共有する設定 (`tailwindcss()`、`resolve.dedupe`、`browser` の共通部分) は root に置けない。置くと Node の project まで `tailwindcss()` と `browser.enabled` を継承する。`extends` は root か 1 つの config ファイルしか指せず ([Vitest docs「Test Projects」][]: "The `extends` option also accepts a path to another config file")、inline の project は入れ子の project を持てない (同じページの "The `projects` option inside an inline configuration is not supported.")。そこで `tooling/test/chromium-project.ts` の `chromiumProjectBase` に置き、各 project が `mergeConfig` で重ねる。同じページがファイルで参照する project 向けに示す、共有の設定を merge する形 ("You can create a shared config file and merge it with the project config yourself") を、inline の project の一部に当てたもの
@@ -91,6 +112,46 @@ Vitest は、`vite.config.ts` の中でテストだけ設定を変える形と�
 
 `tanstackStart()` を外している間は、`createIsomorphicFn` などの Start の変換がテストで効かない ([TanStack/router#6246][] のコメント)。[TanStack/router#6246][] が直ったら、テストの分岐に `tanstackStart()` を戻すかを決め直す。
 
+### project に `optimizeDeps` を書く理由
+
+事前バンドルから漏れた依存に、テストの実行中に初めて到達すると、Vite が依存を最適化し直して page を reload する。reload をまたいで React が二重に解決され、hook が `Cannot read properties of null` で落ちる。`optimizeDeps.include` に挙げた依存は、テストを始める前にまとめて事前バンドルされる。
+
+`browser` project での観測は次のとおり。
+
+| 観測日     | 走らせたテスト                                                     | 症状                                                                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-08-17 | notes 画面のテスト                                                 | 2 回起きた。1 回は 9 case が全滅し、もう 1 回は `dependency optimized: date-fns` と Vitest の `please add mentioned dependencies to your config's optimizeDeps.include field` の警告が出た |
+| 2026-09-27 | `src/components/parts/form-fields.tsx` の `FormDateField` のテスト | `@base-ui/react/popover` と `react-day-picker` に初めて到達したところで `dependencies optimized` と reload が出た                                                                          |
+
+`include` に `@base-ui/react/popover` と `react-day-picker` があるのは、2026-09-27 の観測のとおり、`FormDateField` のテストが実行中に初めて到達する依存だからである。
+
+`browser` の `include` は対症療法である。アプリの分岐では `tanstackStart()` が Vite に事前バンドルの設定を渡すが ([TanStack/router#6246][])、テストの分岐では外している (「テストの分岐で plugin を外す理由」)。出口条件は次の 2 つで、状態は 2026-09-30 に確かめた。
+
+| issue                       | 中身                                                                                             | 状態                | 出口にするか                                                                                                                                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [TanStack/router#6246][]    | `tanstackStart()` が test 環境にも `optimizeDeps` を無条件に注入し、React が二重に読み込まれうる | open                | する。直ったら、テストの分岐に `tanstackStart()` を戻すかと合わせて、`include` を外せるかを見る                                                                                                           |
+| [vitest-dev/vitest#10775][] | Browser Mode で、テストファイルを読んでいる間に Vite が依存を最適化すると、その suite を失う     | closed (2026-07-14) | close は出口にしない。報告者が自分で閉じ、ただ 1 つのコメントは報告者が自分のテストの mock していない HTTP 呼び出しを mock して直したという報告で、close のイベントに commit が無い (`commit_id` が null) |
+
+issue の状態ではなく症状で判定するのは、[vitest-dev/vitest#10775][] のように、上流の修正を経ずに閉じる issue があるためである。判定の手順は「ブラウザと story の project に事前バンドルする依存を足す」にある。
+
+`browser` の `optimizeDeps.exclude` に Start のパッケージ (`@tanstack/react-start`、`@tanstack/react-start-server`、`@tanstack/start-server-core`) を置くのは、`tanstackStart()` の無いテストでは、それらが import する `#tanstack-*-entry` の仮想モジュールを解決できないためである。
+
+story の project の `optimizeDeps` は、次の 2 点で `browser` と違う。どちらも各パッケージの 10.6.0 の `dist` で 2026-09-30 に確かめた。
+
+| 設定      | 中身                                                 | 理由                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `include` | 静的な走査で見つからない依存 (`axe-core`) だけを持つ | `@storybook/builder-vite` は story と preview annotation を `optimizeDeps.entries` に積むので ([storybookjs/storybook#33875][])、story から静的に辿れる依存は走査で見つかる。`axe-core` は `@storybook/addon-a11y` の preview が使う `run` が `import("axe-core")` で読むので、静的な走査に出ない                                                                                                                                                                                                            |
+| `exclude` | Start のパッケージを書かない                         | `@storybook/tanstack-react` の preset (`viteFinal`) の `moduleInterceptionPlugin` が、`@tanstack/react-start`、`@tanstack/react-start/server`、`@tanstack/react-start-server`、`@tanstack/start-server-core` への import を `resolveId` でモック (`export-mocks/start.js`) へ差し替え、同じ 4 つを自分の `optimizeDeps.exclude` にも入れる。`storybookTest()` はこの `viteFinal` を通るので (`@storybook/addon-vitest` の vitest-plugin が `presets.apply("viteFinal", ...)` を呼ぶ)、実パッケージへ届かない |
+
+### story の project の `cacheDir` をテーマで分ける理由
+
+`storybookTest()` は `configDir` のハッシュから `cacheDir` を導く (`@storybook/addon-vitest` の vitest-plugin が `oneWayHash(configDir)` を projectId にする。10.6.0 の `dist` で 2026-09-30 に確かめた)。テーマ違いの 2 つの project は同じ `configDir` を渡すので、分けないと事前バンドルのキャッシュを 1 つ共有し、実行中に別々の依存を見つけて互いのキャッシュを無効化し合う (2026-09-20 に `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測。story 53 件、`include` を `axe-core` だけにした状態で、共有のままでは 106 ファイル中 62 が失敗して reload が 8 回、分けると全て通り reload は 0 回)。分けておけば、走査の結果が 2 つの project で違っても互いのキャッシュを壊さない。
+
+| 組み方                                                                   | 理由                                                                                                                                                                                    |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `order: "post"` の config フックを持つ plugin で `cacheDir` を上書きする | addon は `cacheDir` を順序指定の無い config フックで入れるので、post 順のフックが後から上書きできる。同じ手で project 名は戻せない (ADR-0028)                                           |
+| 固定のパス (`node_modules/.cache/storybook-vitest/<theme>`) で組み立てる | browser mode は config を読み直すので、既存の `cacheDir` から相対で作ると `light/light` のように入れ子になる (2026-09-21 までに `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測) |
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。
@@ -101,3 +162,5 @@ Vitest は、`vite.config.ts` の中でテストだけ設定を変える形と�
 [Vitest docs「sharedViteServer」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/sharedviteserver.md
 [TanStack/router#6246]: https://github.com/TanStack/router/issues/6246
 [TanStack/router#6074]: https://github.com/TanStack/router/pull/6074
+[vitest-dev/vitest#10775]: https://github.com/vitest-dev/vitest/issues/10775
+[storybookjs/storybook#33875]: https://github.com/storybookjs/storybook/pull/33875

@@ -7,7 +7,7 @@
  * `Project name ... is not unique` で止まる。上流は storybookjs/storybook#32427 で、
  * 同じ light / dark 構成の報告が付いている。真のときは light の 1 つに絞る (ADR-0028)。
  *
- * config フックで名前を戻す手が効かないことは `tooling/test/config.ts` の `storybookProjects` の docstring にある。
+ * config フックで名前を戻す手が効かないことは ADR-0028 にある。
  */
 export function isStorybookRun(value: string | undefined): boolean {
   // 読み方を addon へ揃える。addon は `optionalEnvToBoolean` で読み、`"false"` と `"0"` と
