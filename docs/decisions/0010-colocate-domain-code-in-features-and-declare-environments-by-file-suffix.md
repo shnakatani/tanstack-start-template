@@ -26,7 +26,7 @@
 接尾辞を落としたときに何が残るかは、`vite.config.ts` の `importProtection` 次第である。
 user が `files` を指定すると既定を置換する (同 `plugin.js` の `pick`)。マージされるのは `client.specifiers` だけで、`server.specifiers` と `excludeFiles` は置換になる。
 このリポジトリは `files: ["**/src/server/db/**", "**/*.server.*"]` を指定しているので、`src/server/db/` を引く実処理は接尾辞を外しても前者が止める (2026-09-06 に改名して実測、`Denied by file pattern: **/src/server/db/**`)。
-`src/server/db/` をパスで止めるのは、`src/server/db/schema.ts` のように native binding を引かないファイルは `specifiers` の `better-sqlite3` では止まらず、client の部品が直接 import してもビルドが壊れないまま永続化層が client へ漏れるためである。
+`src/server/db/` をパスで止めるのは、テーブルの定義のように native binding を引かないファイルは `specifiers` の `better-sqlite3` では止まらず、client の部品が直接 import してもビルドが壊れないまま永続化層が client へ漏れるためである。
 接尾辞が唯一の防壁になるのは、外部 API や secret だけを扱って `src/server/db/` を引かない実処理を足したときである。
 
 ### 公式の指針とその限界
