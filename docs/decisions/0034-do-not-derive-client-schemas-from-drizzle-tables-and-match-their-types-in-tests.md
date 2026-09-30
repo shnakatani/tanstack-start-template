@@ -26,7 +26,7 @@ drizzle は、テーブル定義から valibot のスキーマを作る関数を
 
 - drizzle-team/drizzle-orm#941「Codegen for zod schemas」(2023-07-26 から open) は、生成したスキーマをクライアントで使うと "`drizzle-zod` and `drizzle-orm` being in the client bundle. That's more than 20 KB gzipped" になると指摘し、コード生成を提案した。メンテナは同じ日に "a non-target for us for the moment. Feel free to implement it as a 3rd party package" と答えている。同じ issue には、DB のスキーマがクライアントに漏れるという懸念 (2024-04-19) もある
 - 同じ issue のコメントに、スキーマを手で書き、テーブル定義から作った形と `satisfies` で型を突き合わせる回避策がある (2023-11-12)
-- drizzle-team/drizzle-orm#5773 (2026-05-17 から open) は、テーブル定義を JSON にできるデータとして取り出す `getTableMetadata` を足してコード生成の土台にする提案で、実際の Vite のアプリで "~56 KB gzipped on first load" と計測している
+- drizzle-team/drizzle-orm#5773 (PR、2026-05-17 から open) は、テーブル定義を JSON にできるデータとして取り出す `getTableMetadata` を足してコード生成の土台にする提案で、実際の Vite のアプリで "~56 KB gzipped on first load" と計測している
 - 第三者のコード生成ツール (`drizzle-zod-to-code`、`vite-plugin-zod-decoupling`) は zod 向けで、`$type<…>()` や `default()` の型を落とすと同じ issue で報告されている。valibot 向けのツールは、issue にも npm にも見当たらない (2026-09-28 に `npm search` で「drizzle valibot generate」「drizzle codegen zod schema file」を検索)
 - valibot のスキーマは関数を持つ値なので (valibot docs「Parse data」の "Each schema has a `~run` method")、JSON のように書き出せない。ビルド時に埋め込むには、スキーマを組み立て直すコードを生成する仕組みが要り、コード生成の案と同じになる
 
