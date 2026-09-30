@@ -58,15 +58,15 @@ index df55fae85a0b051842ca579c29c6f91a31a76f0d..972e51a6d439fb339f3f42e2b3eeb684
    let history = createMemoryHistory({
      initialEntries: [resolvedPath]
 diff --git a/dist/preset.js b/dist/preset.js
-index 7fa1010808c072ee5a4f49c0b86c7079c5045e6f..0b1e1a6f2f299a1777691e19a2767578ba838ac8 100644
+index 7fa1010808c072ee5a4f49c0b86c7079c5045e6f..2b1f2e54713ca30b67362f2b53b157ccd87f27a2 100644
 --- a/dist/preset.js
 +++ b/dist/preset.js
 @@ -315,6 +315,17 @@ var matchesPluginName = (p, matches) => {
    (name) => name === "vite-plugin-cloudflare" || name.startsWith("vite-plugin-cloudflare:")
  );
  
-+// Patched: plugin の Promise (async の関数を渡した lazyPlugins が包む) を解決し、中身をその位置へ展開してから絞る
-+// (関数が同期のときと同じ並びにする。tanstackStart() の入れ子の配列はまとまりのまま残し、配列ごと落とす)
++// Patched: plugin の Promise (async の関数を渡した lazyPlugins が包む) を解決し、中身をその位置へ展開してから絞る。展開した中の Promise も同じく解決する
++// (関数が同期のときと同じ並びにする。入れ子の配列は平らにしない。平らにすると tanstackStart() の配列にある tanstack-react-start:config などが判定を抜けて残る)
 +var resolveAsyncPlugins = async (plugins) => {
 +  let result = [];
 +  for (let plugin of plugins) {
