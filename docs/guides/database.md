@@ -27,7 +27,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用する手順
 
 ### 起動時に migration を適用する形に変える
 
-drizzle docs の Option 4 に当たる (「migration を起動時に適用しない理由」)。次の表のものを揃える。
+[drizzle docs「Migrations」][] の Option 4 に当たる (「migration を起動時に適用しない理由」)。次の表のものを揃える。
 
 | 変えるもの                                                                                                    | 理由                                                                                                                                                          |
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -62,7 +62,7 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 | 対象                    | 相対パスの扱い                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | drizzle の docs         | migration のフォルダを相対パスのまま渡す (`migrate(db, { migrationsFolder: "./migrations" })`、[drizzle docs「Node.js + Railway」][]) |
-| drizzle-orm の migrator | 受け取ったパスを解決せずに `fs` へ渡す (0.45.2 の `migrator.js`)                                                                      |
+| drizzle-orm の migrator | 受け取ったパスを解決せずに `fs` へ渡す (0.45.2 の [drizzle-orm の `migrator.ts`][])                                                   |
 | drizzle-kit             | `drizzle.config.ts` を cwd から探し、`out` と `dbCredentials.url` を cwd 基準で使う (0.31.10)                                         |
 
 | 案                                                   | 評価                                                                                                                                                                                 | 採否     |
@@ -97,6 +97,7 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 
 [drizzle docs「Migrations」]: https://orm.drizzle.team/docs/migrations
 [drizzle docs「Node.js + Railway」]: https://orm.drizzle.team/docs/tutorials/node-railway-pg
+[drizzle-orm の `migrator.ts`]: https://github.com/drizzle-team/drizzle-orm/blob/0.45.2/drizzle-orm/src/migrator.ts
 [better-sqlite3 docs「API」]: https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
 [mise docs「Templates」]: https://mise.jdx.dev/templates.html
 [mise docs「Task Configuration」]: https://mise.jdx.dev/tasks/task-configuration.html
