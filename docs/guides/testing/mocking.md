@@ -47,10 +47,10 @@
 
 同じ factory を複数のテストに書くと、差し替え先のモジュールに export を足すたびに全部を同時に直すことになる。`__mocks__` に置けば直す場所は 1 つになる。
 
-- factory も `__mocks__` も無い `vi.mock(path)` は、元のモジュールを読んで export を自動で mock する ([Vitest docs「vi.mock」][]、[vitest の issue 7733][] のメンテナの回答)。元を読むので、元が引く依存も読まれる
+- factory も `__mocks__` も無い `vi.mock(path)` は、元のモジュールを読んで export を自動で mock する ([Vitest docs「vi.mock」][]、[vitest-dev/vitest#7733][] のメンテナの回答)。元を読むので、元が引く依存も読まれる
 - server function のファイルは Start の server runtime を引く。ブラウザで読むと `node:async_hooks` の読み込みで落ちる (2026-09-28、vitest 5.0.1 で `__mocks__` を外して実測)。factory か `__mocks__` で、元を読まずに差し替える必要がある
-- browser mode でも、factory なしの `vi.mock` は `__mocks__` を使う ([vitest の PR 5765][] が browser mode に module mocking を入れた)
-- `__mocks__` が無視されるという未解決の報告がある ([vitest の issue 8343][]。alias でも相対 import でも起きるとされる)。このリポジトリの構成では、`@/` の alias で指す形で `__mocks__` が解決される (2026-09-28、vitest 5.0.1 で実測)。相対 import の形は測っていない
+- browser mode でも、factory なしの `vi.mock` は `__mocks__` を使う ([vitest-dev/vitest#5765][] が browser mode に module mocking を入れた)
+- `__mocks__` が無視されるという未解決の報告がある ([vitest-dev/vitest#8343][]。alias でも相対 import でも起きるとされる)。このリポジトリの構成では、`@/` の alias で指す形で `__mocks__` が解決される (2026-09-28、vitest 5.0.1 で実測)。相対 import の形は測っていない
 
 ### `__mocks__` で元を展開して一部だけ差し替えない理由
 
@@ -75,8 +75,8 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 [Vitest docs「coverage.exclude」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/coverage.md#coverageexclude
 [Vitest docs のレシピ「Conditional Mocking with vi.when」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/conditional-mocking.md
 [Jest docs「Manual Mocks」]: https://jestjs.io/docs/manual-mocks
-[vitest の issue 7733]: https://github.com/vitest-dev/vitest/issues/7733
-[vitest の issue 8343]: https://github.com/vitest-dev/vitest/issues/8343
-[vitest の PR 5765]: https://github.com/vitest-dev/vitest/pull/5765
+[vitest-dev/vitest#7733]: https://github.com/vitest-dev/vitest/issues/7733
+[vitest-dev/vitest#8343]: https://github.com/vitest-dev/vitest/issues/8343
+[vitest-dev/vitest#5765]: https://github.com/vitest-dev/vitest/pull/5765
 [`@vitest/mocker` の `node/resolver.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/mocker/src/node/resolver.ts
 [Vitest docs「vi.when」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md#viwhen-500-vi-when

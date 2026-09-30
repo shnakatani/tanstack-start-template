@@ -42,7 +42,7 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 | テストファイルの中の helper を包まない                  | helper の中で `annotate` を呼んだ行 |
 
 - 4 行とも Vitest 5.0.1 で 2026-09-29 に実測した。docs は位置の決まり方を書いていない。[Vitest docs「vi.defineHelper」][]も assertion の失敗の stack trace にしか触れない
-- `vi.defineHelper` で包んだ helper の行が stack から外れるのは、[vitest の PR 11047][] (Vitest 5.0.1 に含まれる) からである
+- `vi.defineHelper` で包んだ helper の行が stack から外れるのは、[vitest-dev/vitest#11047][] (Vitest 5.0.1 に含まれる) からである
 - テストファイルの行が stack に 1 つも無いと、注釈は位置を持たず、`github-actions` reporter は PR に出さない ([Vitest の `github-actions.ts`][] の `onTestCaseAnnotate`)
 - UI と HTML reporter では、位置を持たない注釈はソースの表示に出ず、Report にだけ出る ([Vitest の `ViewEditor.vue`][] の `createAnnotationElement`、[Vitest の `ViewTestReport.vue`][])
 - [Vitest docs「Test Annotations」][]の html は、テストファイルの外で呼んだ注釈は UI で見えないと書く。5.0.1 の実装は Report に全部並べるので、docs が実装より古い
@@ -78,9 +78,9 @@ helper の中から実行中のテストを扱う手段は、引数で受けた�
 本文は引かないが、調べたときに読んだもの:
 
 - [Vitest の `context.ts`][] (`annotate` の実装。`recordArtifact` を通し、位置が `findTestFileStackTrace` で決まる経路)
-- [vitest の PR 7953][] (注釈の API の導入と、reporter ごとの出方の設計)
-- [vitest の PR 9594][] (`vi.defineHelper` の導入。stack の切り詰めを `__VITEST_HELPER__` の目印で行う)
-- [GitHub community の Discussion 26680][] (注釈の件数の上限の報告)
+- [vitest-dev/vitest#7953][] (注釈の API の導入と、reporter ごとの出方の設計)
+- [vitest-dev/vitest#9594][] (`vi.defineHelper` の導入。stack の切り詰めを `__VITEST_HELPER__` の目印で行う)
+- [community/community#26680][] (注釈の件数の上限の報告)
 
 [Vitest docs「Test Annotations」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-annotations.md
 [Vitest docs「Test Context」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-context.md
@@ -91,10 +91,10 @@ helper の中から実行中のテストを扱う手段は、引数で受けた�
 [Vitest の `collect.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/runtime/runner/utils/collect.ts
 [Vitest の `ViewEditor.vue`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/ui/client/components/views/ViewEditor.vue
 [Vitest の `ViewTestReport.vue`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/ui/client/components/views/ViewTestReport.vue
-[vitest の PR 11047]: https://github.com/vitest-dev/vitest/pull/11047
+[vitest-dev/vitest#11047]: https://github.com/vitest-dev/vitest/pull/11047
 [GitHub docs「Workflow commands」]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands
 [GitHub docs「REST API endpoints for check runs」]: https://docs.github.com/en/rest/checks/runs
 [Vitest の `context.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/runtime/runner/context.ts
-[vitest の PR 7953]: https://github.com/vitest-dev/vitest/pull/7953
-[vitest の PR 9594]: https://github.com/vitest-dev/vitest/pull/9594
-[GitHub community の Discussion 26680]: https://github.com/orgs/community/discussions/26680
+[vitest-dev/vitest#7953]: https://github.com/vitest-dev/vitest/pull/7953
+[vitest-dev/vitest#9594]: https://github.com/vitest-dev/vitest/pull/9594
+[community/community#26680]: https://github.com/orgs/community/discussions/26680
