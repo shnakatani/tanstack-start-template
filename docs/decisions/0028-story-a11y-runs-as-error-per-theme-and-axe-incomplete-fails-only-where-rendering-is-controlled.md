@@ -2,7 +2,6 @@
 
 - Status: Accepted
 - Date: 2026-09-24
-- Revised: 2026-09-30 (config フックで project 名を戻す案を却下として検討した選択肢に足した)
 
 ## Context
 
