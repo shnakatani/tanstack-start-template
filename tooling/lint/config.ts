@@ -43,23 +43,17 @@ const RESTRICTED_BARREL_IMPORTS = [
  * 切り出し方とパスの解決元は `docs/guides/vite-configuration.md`「block を別のファイルへ切り出す」
  */
 export const lintConfig = {
-  // plugins は既定集合を追加ではなく置換する。明示しないと無効になり、rules に書いた
-  // 設定が無言で無視される。eslint のコアルールだけは plugins の指定によらず常時有効
+  // 既定集合を置換する (docs/guides/lint/configuration.md「plugins は既定集合を置換する」)
   plugins: [...OXLINT_DEFAULT_PLUGINS, "react", "import", "promise", "jsdoc", "vitest", "jsx-a11y"],
-  // oxlint はネイティブに Tailwind と shadcn/ui 領域のルールを持たない。JS plugin として載せる
-  // (ADR-0023)。name は診断コード・rules のキー・抑制 directive で共有される名前になる
+  // name は診断・rules のキー・抑制 directive で共有する (docs/guides/lint/custom-rules.md「JS plugin の落とし穴」)
   jsPlugins: [
+    // Tailwind と shadcn/ui の領域のルール (ADR-0023)
     { name: "shadcn", specifier: "@shadcn/lint" },
-    // story は `storybook/test` 経由で testing-library の API をそのまま使う。oxlint は
-    // testing-library をネイティブに持たないため ESLint plugin として載せる (`docs/guides/lint/configuration.md`「testing-library を当てる範囲」)
+    // story が storybook/test 経由で使う testing-library の検査 (docs/guides/lint/configuration.md「testing-library を当てる範囲」)
     { name: "testing-library", specifier: "eslint-plugin-testing-library" },
-    // ブラウザテストの assert に locator を渡させる自前ルール。上流の
-    // @vitest/eslint-plugin は browser mode の locator を対象にしたルールを持たない (ADR-0009)
+    // ブラウザテストの assert を見る自前ルール (ADR-0009)
     { name: "browser-test", specifier: "./scripts/lint/browser-test.ts" },
-    // TanStack Query / Router の契約の検査。oxlint はネイティブに持たず、ネイティブ化を求めた
-    // oxc-project/oxc#11648 は discussion へ移され、実装は入っていない (ADR-0007)。name は他の
-    // jsPlugins (shadcn / testing-library / browser-test) と同じく、短い名前を診断・rules の
-    // キー・抑制 directive で共有する
+    // TanStack Query / Router の契約の検査 (ADR-0007、oxc-project/oxc#11648)
     { name: "tanstack-query", specifier: "@tanstack/eslint-plugin-query" },
     { name: "tanstack-router", specifier: "@tanstack/eslint-plugin-router" },
   ],
@@ -68,28 +62,20 @@ export const lintConfig = {
       componentImports: DESIGN_SYSTEM_COMPONENT_LAYERS.map(
         (layer) => `^@/components/${layer}(/|$)`,
       ),
-      // cva で作った variant 関数を宣言する。宣言しないと消費側の buttonVariants({...}) が
-      // require-static-classes で落ちる。shadcn 公式の Button docs は「As Link」でこの形を
-      // 推奨しており、テンプレート利用者がそのまま書けるようにする (docs/guides/lint/tailwind-and-shadcn.md「variant 関数を宣言する」)。
-      // 宣言するのは ui/ が定義した variant 関数だけにする。宣言した関数の呼び出しは cva の
-      // 定義の中の class が no-restyle に検査されずに通るため、ui/ の外の cva を宣言すると
-      // 見た目の上書きの抜け道になる (ADR-0023)。
-      // mergeFunctions は使わない。オブジェクトを渡す関数に当てるとキー名を class と誤読する
+      // ui/ が定義した variant 関数だけを宣言する。mergeFunctions は使わない
+      // (docs/guides/lint/tailwind-and-shadcn.md「variant 関数を宣言する」、ADR-0023)
       variantFunctions: ["buttonVariants", "cardTitleVariants"],
     },
   },
-  // カテゴリ丸ごとの有効化は correctness と perf に限る。他はプラグインごとの上流
-  // recommended を基準に rules へ名指しする (ADR-0007)。
-  // vp check は --deny-warnings 相当を持たず既定の warn では exit 0 で通るため error で入れる
-  // (scripts/checks/integrity/lint-config.test.ts が解決後設定の値で機械強制)
+  // カテゴリで有効にするのは correctness と perf だけ (ADR-0007)。
+  // warn は exit code に出ないので error。lint-config.test.ts が固定する
   categories: { correctness: "error", perf: "error" },
   options: { typeAware: true, typeCheck: true },
   rules: {
     // -- 基準から外れる名指し (ADR-0007) --
     "typescript/consistent-type-assertions": ["error", { assertionStyle: "never" }],
 
-    // 名指しした依存のバレルを止める (ADR-0032)。同じルールを下のテスト専用コードの import 禁止の
-    // override も持つ。override はオプションを置き換えるので、paths は両方に同じ定数で渡す
+    // バレルの禁止 (ADR-0032)。下の import 禁止の override にも同じ paths を渡す
     "no-restricted-imports": ["error", { paths: RESTRICTED_BARREL_IMPORTS }],
 
     // -- eslint コア: @eslint/js の recommended (ADR-0007) --
@@ -97,21 +83,18 @@ export const lintConfig = {
     "no-empty": "error",
     "no-fallthrough": "error",
     "no-prototype-builtins": "error",
-    // ESM では重複宣言がパースエラー、TypeScript では型検査の TS2451 になる。関数
-    // オーバーロードや宣言マージでも鳴らないため、報告する場面が残っていない
+    // ESM ではパースエラー、TS では TS2451 になる。報告する場面が残っていない
     "no-redeclare": "off",
     "no-regex-spaces": "error",
-    // oxlint は実行環境ごとの globals 定義を持たず、console / process の参照を全て未定義と
-    // 見なす。未定義の識別子は型検査が TS2304 で報告する
+    // oxlint は環境の globals を持たない。未定義の識別子は TS2304 が報告する
     "no-undef": "off",
     "no-unexpected-multiline": "error",
     "no-useless-assignment": "error",
     "preserve-caught-error": "error",
 
     // -- eslint コア: typescript-eslint の eslint-recommended が error にする分 (ADR-0007) --
-    // TypeScript が var と apply を過去のものにし、const と rest 引数がより良い型を与える
-    // ことが根拠で、@eslint/js の recommended には入らない。接頭辞なしで書くと eslint コアへ
-    // 解決されるため、同名の unicorn/prefer-spread は有効にならない (CLI の -D では両方が鳴る)
+    // 接頭辞なしは eslint コアへ解決され、unicorn/prefer-spread は有効にならない
+    // (docs/guides/lint/configuration.md「設定を書き換えたら解決後の設定で確かめる」)
     "no-var": "error",
     "prefer-const": "error",
     "prefer-rest-params": "error",
@@ -119,15 +102,12 @@ export const lintConfig = {
 
     // -- typescript: typescript-eslint の strict / strict-type-checked のうち、oxlint の
     // correctness に入っていない分 (ADR-0007)。オプションも基準に揃える --
-    // 上流が eslint コアルールを拡張したもの (extension rule) は、oxlint がプラグイン接頭辞を
-    // 落としてコアルールへ解決する。ここに書けるが診断は eslint(...) 名で出る。同じ理由で
-    // no-unused-expressions と no-unused-vars は書かない (コアルールが correctness にあり既に有効)。
+    // extension rule はコアへ解決される。no-unused-* はコアが correctness で有効なので書かない
+    // (docs/guides/lint/configuration.md「設定を書き換えたら解決後の設定で確かめる」)
     "typescript/ban-ts-comment": ["error", { minimumDescriptionLength: 10 }],
     "typescript/no-array-constructor": "error",
-    // ignoreVoidReturningFunctions は基準から外す。素の設定は戻り値型が void の
-    // prop へ渡すアロー省略記法 (onClick={() => close()}) にも鳴り、void を値として
-    // 使う本来の誤りと区別できない。typescript-eslint 本体も strictTypeChecked の上で
-    // 同じオプションを置いている (eslint.config.mjs)
+    // 素の設定は void を返す prop へのアロー省略記法 (onClick={() => close()}) にも鳴る。
+    // typescript-eslint 本体も同じ指定 (ADR-0007 の出典)
     "typescript/no-confusing-void-expression": ["error", { ignoreVoidReturningFunctions: true }],
     "typescript/no-deprecated": "error",
     "typescript/no-dynamic-delete": "error",
@@ -157,8 +137,7 @@ export const lintConfig = {
     "typescript/no-unsafe-member-access": "error",
     "typescript/no-unsafe-return": "error",
     "typescript/no-useless-constructor": "error",
-    // throw redirect() と throw notFound() は TanStack Router の制御フロー。公式が
-    // only-throw-error との衝突を認め、この 2 つを allow するよう案内している (docs の eslint-plugin-router)
+    // throw redirect() / notFound() は Router の制御フロー。公式の案内どおり allow する
     "typescript/only-throw-error": [
       "error",
       {
@@ -184,9 +163,8 @@ export const lintConfig = {
         allowRegExp: false,
       },
     ],
-    // strict-type-checked の値から allowNumber だけを true に戻す。整数の埋め込みにまで鳴り、
-    // String() を書き足すだけになる。allowBoolean は false のまま: `${a && "x"}` が "false" を
-    // 埋め込む誤りを止める (ADR-0007)
+    // 整数の埋め込みにも鳴るので allowNumber だけを true に戻す。allowBoolean は "false" の埋め込みを止めるため
+    // false のまま (ADR-0007)
     "typescript/restrict-template-expressions": [
       "error",
       {
@@ -210,24 +188,16 @@ export const lintConfig = {
     "react/no-unknown-property": "error",
     "react/require-render-return": "error",
 
-    // -- react-hooks: eslint-plugin-react-hooks の recommended-latest (ADR-0007)。
-    // React Compiler の診断は oxlint 1.79 で 22 の per-category ルールへ分割され、
-    // 束ねていた react/react-compiler は廃止された (oxc-project/oxc#25500)。上流の 17 の
-    // うち 13 は oxlint の correctness に入りカテゴリ経由で error、config と gating は
-    // oxlint に実装が無い。名指しが要るのは残る 2 つで、必要な理由は別々 --
-    // Compiler が「対応する予定がない」構文 (this / with / インライン class 宣言)。
-    // 未実装による bail out (react/todo) とは別で、書き換えれば消えるためコード側の
-    // 欠陥として扱う (ADR-0014)。oxlint では restriction のため既定 off
+    // -- react-hooks: eslint-plugin-react-hooks の recommended-latest。名指しはカテゴリ外の 2 つ
+    // (ADR-0007、oxc-project/oxc#25500) --
+    // Compiler が対応しない構文。restriction で既定 off なので名指しする (ADR-0014)
     "react/unsupported-syntax": "error",
-    // 分割されたルール群とは別系統の、従来からある Rules of Hooks 検査。Compiler は
-    // コンポーネントまたは hook として認識した関数しか解析しないため、通常の関数から
-    // hook を呼ぶコードを検出できない。その穴を埋める。oxlint では pedantic のため既定 off
+    // Compiler が解析しない通常の関数からの hook 呼び出しを拾う。pedantic で既定 off (ADR-0007)
     "react/rules-of-hooks": "error",
 
     // -- import: eslint-plugin-import の recommended (ADR-0007) --
     "import/export": "error",
-    // TypeScript ファイルでは存在しない named import に対して何も報告しない。同じ誤りは
-    // 型検査が TS2305 で報告するため、鳴らないルールを有効に見せかけない
+    // TS ファイルでは鳴らない。同じ誤りは TS2305 が報告する
     "import/named": "off",
     "import/no-duplicates": "error",
     "import/no-named-as-default": "error",
@@ -237,8 +207,7 @@ export const lintConfig = {
     // ignoreLastCallback: void で捨てる終端 callback は戻り値の行き先が無く、return を
     // 足しても実行時の意味が変わらない。連鎖の途中で値を落とす誤りの検出は残る
     "promise/always-return": ["error", { ignoreLastCallback: true }],
-    // 引数名が next / done / cb のいずれかであることだけで発火する。node 形式の callback を
-    // 持たないコードベースでは、状態機械の遷移値を next と名付けただけで鳴る (ADR-0007)
+    // 引数名 (next / done / cb) だけで発火する (docs/guides/lint/configuration.md「ルールを off にする」)
     "promise/no-callback-in-promise": "off",
     "promise/catch-or-return": "error",
     "promise/no-nesting": "error",
@@ -251,8 +220,7 @@ export const lintConfig = {
     "jsdoc/check-access": "error",
     "jsdoc/check-tag-names": ["error", { typed: true }],
     "jsdoc/empty-tags": "error",
-    // JSDoc は挙動と判断の理由を散文で書くために使い、引数と戻り値はシグネチャが持つ。
-    // @param / @returns を必須にすると説明だけの JSDoc が書けなくなる
+    // 説明だけの JSDoc を書けるようにする。引数と戻り値はシグネチャが持つ
     "jsdoc/require-param": "off",
     "jsdoc/require-returns": "off",
     "jsdoc/require-param-description": "error",
@@ -260,44 +228,36 @@ export const lintConfig = {
     "jsdoc/require-returns-description": "error",
     "jsdoc/require-throws-type": "error",
     "jsdoc/require-yields-type": "error",
-    // recommended-typescript が off にする 3 ルール。型はシグネチャが持つため、JSDoc に
-    // {type} を書くと同じ情報が 2 箇所になる。require-property-type は correctness 由来で
-    // 有効になっているため、ここで明示的に落とす
+    // recommended-typescript が off にする 3 つ。require-property-type は correctness から入る
     "jsdoc/require-param-type": "off",
     "jsdoc/require-property-type": "off",
     "jsdoc/require-returns-type": "off",
 
     // -- oxc: 上流に対応する設定がない。correctness と perf で拾う (ADR-0007) --
-    // 公式が示す修正は元オブジェクトの破壊的更新で、確保を 1 回に減らすもの。読み出し
-    // 結果や fixture を壊せない箇所では新規オブジェクトを作るしかなく、確保回数が
-    // spread と同じになって効果が消える (ADR-0007)
+    // 公式の修正は元オブジェクトの破壊的更新。壊せない箇所では確保が減らない
     "oxc/no-map-spread": "off",
 
     // -- tanstack-query: @tanstack/eslint-plugin-query の recommended と prefer-query-options (ADR-0007) --
     "tanstack-query/exhaustive-deps": "error",
-    // 上流は warn。vp check は警告では落ちないので error で入れる。型情報を使う一部のケースは
-    // oxlint の JS plugin では見えない (ADR-0007)
+    // 上流は warn。型情報を使うケースは JS plugin では見えない (ADR-0007)
     "tanstack-query/no-rest-destructuring": "error",
     "tanstack-query/stable-query-client": "error",
     "tanstack-query/no-unstable-deps": "error",
     "tanstack-query/infinite-query-property-order": "error",
     "tanstack-query/mutation-property-order": "error",
-    // recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、
-    // queryOptions の 1 か所で定義させる (ADR-0007)
+    // recommended-strict から足す (ADR-0007)
     "tanstack-query/prefer-query-options": "error",
     // no-void-query-fn は登録しない。型情報が要り、oxlint の JS plugin では常に無診断になる (ADR-0007)
 
     // -- tanstack-router: @tanstack/eslint-plugin-router の recommended (ADR-0007) --
     "tanstack-router/route-param-names": "error",
-    // 上流は warn。上と同じ理由で error で入れる
+    // 上流は warn (ADR-0007)
     "tanstack-router/create-route-property-order": "error",
 
     // -- vitest: @vitest/eslint-plugin の recommended (ADR-0007) --
-    // assertFunctionNames は既定 (expect / expectTypeOf / assert / assertType) へ足すのでは
-    // なく置換する。expect* が既定の 2 つとテスト側のアサーションヘルパーを覆い、残りは
-    // 名指しする。assert* まで広げると本体コードの引数検証関数まで assertion と見なす。
-    // `expect*` は `expect.assert` のようなメンバ呼び出しにも一致する (oxlint 1.79.0 で実測、
-    // 2026-09-06)。名指しの `assert` / `assertType` は直接の利用者が無くなっても残す
+    // 既定を置換する。expect* が既定の 2 つと helper を覆い、assert* には広げない
+    // (広げると本体の引数検証まで assertion になる)。名指しの assert / assertType は利用者が無くても残す
+    // (docs/guides/lint/configuration.md「ルールを off にする」)
     "vitest/expect-expect": ["error", { assertFunctionNames: ["expect*", "assert", "assertType"] }],
     "vitest/no-commented-out-tests": "error",
     "vitest/no-identical-title": "error",
@@ -306,49 +266,27 @@ export const lintConfig = {
     "vitest/no-mocks-import": "error",
     "vitest/no-unneeded-async-expect-function": "error",
     "vitest/prefer-called-exactly-once-with": "error",
-    // assert の helper は vi.defineHelper で包み、失敗の位置を呼び出し側に出す。
-    // @vitest/eslint-plugin は包んだ関数の中の expect を既定で許す (vitest-dev/eslint-plugin-vitest#894) が、oxlint の
-    // 移植はまだ許さないので、同じ扱いを option で与える。
+    // @vitest/eslint-plugin は vi.defineHelper の中の expect を許す (vitest-dev/eslint-plugin-vitest#894)。oxlint の移植は許さない
     // 撤去条件: oxlint の no-standalone-expect が vi.defineHelper を既定で許したとき
     "vitest/no-standalone-expect": ["error", { additionalTestBlockFunctions: ["vi.defineHelper"] }],
-    // Vitest は expect(value, message) を正式に受け付ける。第 2 引数が変数の場合も許可する
-    // ため、リテラルだけを例外扱いするルール既定値ではなく引数の上限を指定する
+    // expect(value, message) は Vitest の正式な形。第 2 引数が変数でも許す
     "vitest/valid-expect": ["error", { maxArgs: 2 }],
-    // 上流 recommended には含まれず correctness から有効になる。mock の型引数を必須に
-    // しない oxc 自身の設定に合わせ、カテゴリ由来の有効化を明示的に取り消す
+    // 上流 recommended に無く correctness から入る。mock の型引数を必須にしない
     "vitest/require-mock-type-parameters": "off",
 
-    // -- jsx-a11y: eslint-plugin-jsx-a11y の recommended (ADR-0007) --
-    // 名指しは 1 つも無い。recommended のルールは全て oxlint に実装があり correctness から
-    // error で有効になるため、足す先が残らない (確認は vp lint --print-config)。correctness は
-    // recommended 外の control-has-associated-label / lang / no-aria-hidden-on-focusable /
-    // prefer-tag-over-role も併せて有効にする。実装があるルールは rules へ書けば足せるが
-    // (例: anchor-ambiguous-text)、基準を recommended に置いているので広げない
+    // -- jsx-a11y: eslint-plugin-jsx-a11y の recommended (ADR-0007)。名指しはゼロ
+    // (docs/guides/lint/configuration.md「jsx-a11y は名指しがゼロになる」) --
 
-    // -- shadcn: ルールは設計判断と対にして 1 つずつ名指しする (ADR-0023)。ここに置くのは
-    // semantic color と theme に存在する class の統制に要る 3 つで、全層に効く。層の境界を
-    // 持つ no-restyle と require-static-classes は下の overrides 側にある。inline style の
-    // 統制は対になる設計判断が無いので採らない --
+    // -- shadcn: 設計判断と対にして名指しする (ADR-0023)。層の境界を持つ 2 つは overrides --
     "shadcn/no-unknown-classes": "error",
-    // palette class、未定義の semantic color token、SVG の raw color を塞ぐ。arbitrary color は
-    // このルールの対象外なので no-arbitrary-values と対で使う
     "shadcn/no-raw-colors": "error",
-    // color だけを deny すると、min-h-[50vh] など色以外の arbitrary value は許可したまま、
-    // bg-[#333] や bg-[rgb(...)] の経路を塞げる
+    // color だけを deny する。色以外の arbitrary value (min-h-[50vh] など) は許す (ADR-0023)
     "shadcn/no-arbitrary-values": ["error", { deny: ["color"] }],
   },
   overrides: [
     {
-      // testing-library のルールは story にだけ当てる。`*.test.tsx` は
-      // `vitest-browser-react` の locator API (`screen.container`、`getByText().query()`) を
-      // 使い、testing-library の同名 API と意味が違うため、当てると誤検出が出る。
-      // story 側は `storybook/test` が testing-library をそのまま re-export しており、
-      // Aggressive Reporting が追加設定なしで解決する。
-      // upstream recommended (flat/react) は `vitest-browser-react` も Storybook も前提に
-      // しておらず、基準をそのまま写せない唯一のプラグインになる。基準から外すのが
-      // `prefer-screen-queries` と `no-node-access`、severity を上げるのが `no-debugging-utils`
-      // である。件数は下の rules と `docs/guides/lint/configuration.md`「testing-library を story に限る理由」 の表が持つ
-      // 拡張子は companion-files.ts が唯一の定義。`.stories.ts` を置いても外れない
+      // testing-library は story と story 専用の helper に限る。glob は companion-files.ts が唯一の定義
+      // (docs/guides/lint/configuration.md「testing-library を story に限る理由」)
       files: storyGlobs("**/"),
       rules: {
         // eslint-plugin-testing-library の flat/react (`docs/guides/lint/configuration.md`「testing-library を当てる範囲」)
@@ -358,18 +296,12 @@ export const lintConfig = {
         "testing-library/no-await-sync-events": ["error", { eventModules: ["fire-event"] }],
         "testing-library/no-await-sync-queries": "error",
         "testing-library/no-container": "error",
-        // 上流は warn。`vp check` は warn で落ちないため、warn のままだと commit された
-        // screen.debug() が素通りする。この config の方針 (categories の直前のコメント) に
-        // 合わせて error で入れる (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
+        // 上流は warn (docs/guides/lint/configuration.md「testing-library を story に限る理由」)
         "testing-library/no-debugging-utils": "error",
         "testing-library/no-dom-import": ["error", "react"],
         "testing-library/no-global-regexp-flag-in-query": "error",
         "testing-library/no-manual-cleanup": "error",
-        // 基準から外す。flat/react の中でこれだけが strict 判定 (`isTestingLibraryImported(true)`)
-        // で、Aggressive Reporting を迂回するため `storybook/test` 経由の story では一度も
-        // 発火しない。`settings` に utils-module を足せば発火するが、その形は
-        // querySelector を条件付きで許しているテストの規範と両立しない
-        // (掴む理由を実装近傍に書く運用を lint 抑制へ置き換えることになる。`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
+        // storybook/test 経由の story では発火しない (docs/guides/lint/configuration.md「testing-library を story に限る理由」)
         "testing-library/no-node-access": "off",
         "testing-library/no-promise-in-fire-event": "error",
         "testing-library/no-render-in-lifecycle": "error",
@@ -381,16 +313,12 @@ export const lintConfig = {
         "testing-library/prefer-presence-queries": "error",
         "testing-library/prefer-query-by-disappearance": "error",
         "testing-library/render-result-naming-convention": "error",
-        // 基準から外す 1 ルール。play の `canvas` を render 結果の分割代入と誤読する。
-        // `canvas` は Storybook が play へ渡す query 済みオブジェクトで、上流の write-story
-        // skill が「✅ Correct: Use canvas directly」と指定している形
+        // play の canvas を render の結果と誤読する (docs/guides/lint/configuration.md「testing-library を story に限る理由」)
         "testing-library/prefer-screen-queries": "off",
       },
     },
     {
-      // 緩和はテストの 1 経路に限る (ADR-0007)。
-      // モックは意図的に型を外した値を扱い、assertion は要素の存在を前提に書く。
-      // typescript-eslint 本体が自身のテストディレクトリで off にしている 5 ルールと同一
+      // 緩和はこの 1 経路に限る (docs/guides/lint/configuration.md「テストファイルの緩和」)
       files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
       rules: {
         "typescript/no-non-null-assertion": "off",
@@ -401,16 +329,11 @@ export const lintConfig = {
       },
     },
     {
-      // no-restyle と require-static-classes は「design system component へ何を渡しているか」を
-      // 見る規則で、部品ディレクトリ (ui/) の内部には意味を持たない (ADR-0011)。緩和ではなく
-      // 適用範囲の確定なので excludeFiles で外す。parts/ と action/ は外さない。見た目の差は
-      // ui/ の variant で持ち、action/ が ui に見た目を足さないこともここで見張る。require-static-classes は他の shadcn ルールの門番で、ここで落ちる
-      // className は no-raw-colors / no-unknown-classes も中身を読めない (ADR-0022)
+      // design system の内部 (ui/) だけを適用範囲から外す (ADR-0011 / ADR-0022)
       files: ["src/**", ".storybook/**"],
       excludeFiles: ["src/components/ui/**"],
       rules: {
-        // ScrollArea の Viewport は Root の角丸を受け継いで中身と focus ring を切り抜くので、layout に
-        // 加えて、置かれた器に合わせる角丸 (class グループ rounded) だけを呼び出し側に許す (ADR-0011)
+        // ScrollArea は器に合わせる角丸だけを呼び出し側に許す (ADR-0011)
         "shadcn/no-restyle": [
           "error",
           {
@@ -422,13 +345,8 @@ export const lintConfig = {
       },
     },
     {
-      // ブラウザテストと、そこへ locator を配る helper が対象 (ADR-0009)。テスト本文だけに
-      // 当てると、helper へ切り出した同期読みがルールから外れる (testing-library の override と
-      // 同じ穴の塞ぎ方)。`src/test/` には browser の helper と unit のテストが同居するので、
-      // 後者を `excludeFiles` で外す。unit は locator を持たず、drizzle の
-      // `db.select().from(x).all()` が同名メソッドで誤検出になる。付随ファイルの glob
-      // (`**/*.test.ts`) では書かない。その綴りは import 禁止の override が持つ印で、
-      // `lint-config.test.ts` の「付随ファイルの除外は…」がそちらの専有を検査している
+      // ブラウザテストと locator を配る helper に当て、unit のテストは外す (ADR-0009)。
+      // 除外を **/*.test.ts で書かない。その綴りは import 禁止の override の印 (lint-config.test.ts が検査する)
       files: [BROWSER_TEST_GLOB, "src/test/**", ...testHelperGlobs("**/")],
       excludeFiles: ["src/test/**/*.test.ts"],
       rules: {
@@ -442,15 +360,8 @@ export const lintConfig = {
       },
     },
     {
-      // テストと story だけが使うコード (*.test-helpers.ts / *.story-helpers.ts /
-      // *.stories.tsx / src/test/) をアプリのコードから import させない
-      // (ADR-0008)。story 自身も止める。story を import すると
-      // それが引く helper と fixture が bundle に入る。緩和ではなく
-      // 範囲を絞った有効化なので、テスト側は off にせず excludeFiles で対象から外す
-      // (files の否定 glob は oxlint 1.79 では効かない)。story 自身も出荷される bundle に
-      // 入らない (アプリのどこからも import されず、.storybook/main.ts の glob だけが拾う)。
-      // `.storybook/**` は対象外。Storybook は story をテストとして走らせるテスト基盤で
-      // (docs/guides/storybook.md「カタログと play の範囲」)、`preview.tsx` が `src/test/browser/viewport-sizes.ts` を読む
+      // テストと story だけが使うコードをアプリから import させない。範囲を絞った有効化なので
+      // テスト側は off にせず excludeFiles で外す。.storybook/** は対象外 (ADR-0008)
       files: ["src/**", "scripts/**"],
       excludeFiles: [...companionGlobs("**/"), "src/test/**"],
       rules: {
@@ -477,8 +388,7 @@ export const lintConfig = {
     ".claude/worktrees/**",
     ".agents/**",
     ".claude/skills/**",
-    // registry の生成時 baseline (ADR-0020)。上流のコードをそのまま保存する記録なので
-    // lint / 型検査の対象にしない。整形だけは合わせるため `vite.config.ts` の `fmt` では除外しない
+    // registry の生成時 baseline (ADR-0020)。`vite.config.ts` の `fmt` では除外しない
     "docs/registry-baseline/**",
   ],
 } satisfies OxlintConfig;
