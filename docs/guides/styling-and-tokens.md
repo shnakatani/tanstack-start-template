@@ -46,16 +46,16 @@
 
 ui 部品の見た目を変えたいときは、上の行から順に当てはめ、最初に当てはまった行の直し方を採る。
 
-| 順  | 当てはまる場面                                                                                  | 直し方                                                                                                                                                                                                                           | 出典                                                                                                                                                                                                                                                                      |
-| --- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | 公式の例が既定のまま使っている場面か、公式のノブ (data 属性・CSS 変数・prop) で同じ見た目になる | 上書きをやめて既定かノブに寄せる                                                                                                                                                                                                 | shadcn skill `customization.md`「Customizing Components」の順 (既存の variant → className → 新しい variant → 包み)。2 番目の className は `no-restyle` が止めるので、このテンプレートでは飛ばす: https://github.com/shadcn-ui/ui/blob/main/skills/shadcn/customization.md |
-| 1   | 汎用の概念で、再利用する見た目                                                                  | `ui/` の `cva` に variant を足し、台帳 `docs/registry-deviations.md` に行を足す                                                                                                                                                  | ADR-0020「追加と削除の基準」                                                                                                                                                                                                                                              |
-| 2   | 1 つの部品だけの装飾                                                                            | ui 部品の外側を素の要素で包み、そこに class を書く。素の要素は `no-restyle` の対象外                                                                                                                                             | shadcn「Data Table」の Cell Formatting (https://ui.shadcn.com/docs/components/data-table)、shadcn-ui/lint `docs/rules/no-restyle.md` の Limits                                                                                                                            |
-| 3   | 画面ごとに値が変わるのが正しい変更                                                              | `no-restyle` の `contracts` で、その部品のその範囲だけを許す。粒度は class グループか個別の class にする。実例は `ScrollArea` に layout に加えて角丸 (class グループ `rounded`) だけを許す contract (`vite.config.ts`、ADR-0011) | shadcn-ui/lint `docs/design-systems.md`: https://github.com/shadcn-ui/lint/blob/main/docs/design-systems.md                                                                                                                                                               |
-| 4   | `@utility` で定義した class                                                                     | 個別の `allow` で通るかを実測し、通らなければ行単位で抑制して上流 issue を理由に書く                                                                                                                                             | https://github.com/shadcn-ui/lint/issues/4 、https://github.com/shadcn-ui/lint/issues/18 (2026-09-25 時点で open)                                                                                                                                                         |
+| 順  | 当てはまる場面                                                                                  | 直し方                                                                                                                                                                                                                           | 出典                                                                                                                                                                                                         |
+| --- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0   | 公式の例が既定のまま使っている場面か、公式のノブ (data 属性・CSS 変数・prop) で同じ見た目になる | 上書きをやめて既定かノブに寄せる                                                                                                                                                                                                 | [shadcn skill「Customization & Theming」][] の Customizing Components の順 (既存の variant → className → 新しい variant → 包み)。2 番目の className は `no-restyle` が止めるので、このテンプレートでは飛ばす |
+| 1   | 汎用の概念で、再利用する見た目                                                                  | `ui/` の `cva` に variant を足し、台帳 `docs/registry-deviations.md` に行を足す                                                                                                                                                  | ADR-0020「追加と削除の基準」                                                                                                                                                                                 |
+| 2   | 1 つの部品だけの装飾                                                                            | ui 部品の外側を素の要素で包み、そこに class を書く。素の要素は `no-restyle` の対象外                                                                                                                                             | [shadcn docs「Data Table」][] の Cell Formatting、[shadcn-ui/lint docs「no-restyle」][] の Limits                                                                                                            |
+| 3   | 画面ごとに値が変わるのが正しい変更                                                              | `no-restyle` の `contracts` で、その部品のその範囲だけを許す。粒度は class グループか個別の class にする。実例は `ScrollArea` に layout に加えて角丸 (class グループ `rounded`) だけを許す contract (`vite.config.ts`、ADR-0011) | [shadcn-ui/lint docs「Configuring your design system」][]                                                                                                                                                    |
+| 4   | `@utility` で定義した class                                                                     | 個別の `allow` で通るかを実測し、通らなければ行単位で抑制して上流 issue を理由に書く                                                                                                                                             | [shadcn-ui/lint#4][]、[shadcn-ui/lint#18][] (2026-09-25 時点で open)                                                                                                                                         |
 
-- contract は部品の名前で決まり、置き場所では決まらない。許すと検査が走る全ファイルでその部品に同じ自由が生まれるので、値を画面ごとにそろえたい見た目を contract にしない (shadcn-ui/lint `docs/rules.md`「Contracts」: https://github.com/shadcn-ui/lint/blob/main/docs/rules.md)
-- contract に `allow` を書くと、トップレベルの `allow` を置き換える。contract 側にも `layout` を書き直す (同「Contracts」)
+- contract は部品の名前で決まり、置き場所では決まらない。許すと検査が走る全ファイルでその部品に同じ自由が生まれるので、値を画面ごとにそろえたい見た目を contract にしない ([shadcn-ui/lint docs「Rules」][] の Contracts)
+- contract に `allow` を書くと、トップレベルの `allow` を置き換える。contract 側にも `layout` を書き直す ([shadcn-ui/lint docs「Rules」][] の Contracts)
 
 `ui/` の外では、`ScrollArea` の見た目を次の 3 か所に分けて持たせる。Viewport は Root の角丸を受け継いで中身と focus ring を切り抜くので、角丸だけは Root に当てる (ADR-0011)。
 
@@ -94,7 +94,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 ```
 
 - `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である
-- 比を書いた箇所を触るときは測り直す。Understanding SC 1.4.3 / 1.4.11 は計算値を丸めるなと書いており、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない
+- 比を書いた箇所を触るときは測り直す。[Understanding SC 1.4.3][] と [Understanding SC 1.4.11][] は計算値を丸めるなと地の文に書いており (WCAG 2.2 本体に記述は無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない
 - 表示は切り捨てなので、2 桁の値が実際の比を上回ることはない。`4.59` と出た値が 4.6 を満たすことはない
 - `--primary` の hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置き、`mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。4.6 を下回る hue は light を `<hue>-900` にする (ADR-0024 の決定 2)
 - placeholder の帯の上端 (入力値との 3:1) は `mise run contrast` では出せない。入力値 (`--foreground`) と 3:1 になる輝度を解いてから、背景との比へ直す。light は例示が入力値より明るいので `Lp = 3 * (L入力値 + 0.05) - 0.05`、dark は暗いので `Lp = (L入力値 + 0.05) / 3 - 0.05` を解き、`Lp` と背景の輝度で比を取る。輝度の式は `scripts/contrast/lib/contrast.ts` にある
@@ -133,7 +133,7 @@ getContrast(parse(toHex(measured.backdrop)), parse(toHex(measured.foreground)));
 
 ### placeholder の色を当てる
 
-- `--placeholder` は `@theme inline` へ通さず、`:root` に置いて `@utility example-placeholder` で当てる。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準である
+- `--placeholder` は `@theme inline` へ通さず、`:root` に置いて `@utility example-placeholder` で当てる。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準である ([Tailwind CSS docs「Theme variables」][] の Why `@theme` instead of `:root`?)
 - 消費側からの上書きは決定的でない。`cn` は生成済み utility の表で衝突を判定するので、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方の class を載せたまま出荷され、詳細度が同じ (0,1,1) なので、どちらが勝つかは CSS のソース順で決まる
 
 ### 列幅の決まる部品を測る
@@ -183,46 +183,46 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 先行例 (2026-09-22 調査)。デザインシステム 20 件 (うち 2 件は対象リポジトリを特定できず未確認) と、ブラウザで色を解決する手法、文書の数値をテストで固定する手法を調べた。
 
-| 観点                                 | 結果                                                                                 |
-| ------------------------------------ | ------------------------------------------------------------------------------------ |
-| トークンの対を CI で検算する         | `primer/primitives` のみ。手書きの配列を workflow が回す                             |
-| 対の列挙漏れを機械で検出する         | ゼロ。Primer を含め全てレビューに依存する                                            |
-| ブラウザで実描画して測る             | ゼロ。`carbon` と `baseweb` は axe の `color-contrast` を切っている (理由の記述なし) |
-| 文書の数値をトークンと同期させる     | Primer のみ。Storybook が表示時に計算関数を呼び、数値を文書へ書き写さない            |
-| 文書の地の文の数値をテストで固定する | 見つからない。doctest 系は文書内の実行例の出力を見るもので、地の文は対象外           |
+| 観点                                 | 結果                                                                                                           |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| トークンの対を CI で検算する         | `primer/primitives` のみ。手書きの配列 ([Primer Primitives の `colorContrast.config.ts`][]) を workflow が回す |
+| 対の列挙漏れを機械で検出する         | ゼロ。Primer を含め全てレビューに依存する                                                                      |
+| ブラウザで実描画して測る             | ゼロ。`carbon` と `baseweb` は axe の `color-contrast` を切っている (理由の記述なし)                           |
+| 文書の数値をトークンと同期させる     | Primer のみ。Storybook が表示時に計算関数を呼び、数値を文書へ書き写さない                                      |
+| 文書の地の文の数値をテストで固定する | 見つからない。doctest 系は文書内の実行例の出力を見るもので、地の文は対象外                                     |
 
 比べた案は次のとおり。
 
-| 案                                   | 内容                                                 | 採否     | 理由                                                                                                                          |
-| ------------------------------------ | ---------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 測り方を置き、動く数値を落とす       |                                                      | 採用     | 維持する一覧を持たない。既存規範 (ADR-0001「数値の階層」) の適用で済む                                                        |
-| 台帳型                               | 対と期待値と記載ファイルを持ち、再計算と突き合わせる | 却下     | 数値の写しが 3 箇所へ増える。台帳が描画のモデルになり、`text-foreground/60` を `/70` に変えても緑で通る                       |
-| マーカー型                           | 数値の隣に対の定義を置き、文書を走査して突き合わせる | 却下     | 台帳より軽いがモデルの乖離は同じく残る。先行例も無い                                                                          |
-| 重複削除のみ                         | 装置を足さず写しを 1 つにする                        | 部分採用 | 比の主張を 1 箇所に持つ規範 (「残す数値と落とす数値」) として取り込む。単独では測り方の欠落が残る                             |
-| ブラウザの canvas で測る             | 1x1 canvas へ塗って `getImageData` で読む            | 却下     | 先行例ゼロ。Brave と Firefox が読み取り結果へノイズを混ぜるため chromium 固定に依存する                                       |
-| トークン定義に要求比を持たせ段を解く | Material 型                                          | 却下     | 生成の仕組みごと持つことになり、上流生成物を土台とする ADR-0024「土台は空ファイルへの生成物とし、自作分を載せ直す」と衝突する |
-| 現状維持                             |                                                      | 却下     | 書き写した比の陳腐化が 4 件あった (2026-09-21)                                                                                |
-| axe の算法へ寄せる                   | `axe.commons.color` を使うか、その算法を再現する     | 部分採用 | 8bit へ落とす点は定義どおりなので採る。層ごとの丸め・ブレンドモード・影・DOM のスタックは採らない                             |
+| 案                                   | 内容                                                 | 採否     | 理由                                                                                                                                    |
+| ------------------------------------ | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 測り方を置き、動く数値を落とす       |                                                      | 採用     | 維持する一覧を持たない。既存規範 (ADR-0001「数値の階層」) の適用で済む                                                                  |
+| 台帳型                               | 対と期待値と記載ファイルを持ち、再計算と突き合わせる | 却下     | 数値の写しが 3 箇所へ増える。台帳が描画のモデルになり、`text-foreground/60` を `/70` に変えても緑で通る                                 |
+| マーカー型                           | 数値の隣に対の定義を置き、文書を走査して突き合わせる | 却下     | 台帳より軽いがモデルの乖離は同じく残る。先行例も無い                                                                                    |
+| 重複削除のみ                         | 装置を足さず写しを 1 つにする                        | 部分採用 | 比の主張を 1 箇所に持つ規範 (「残す数値と落とす数値」) として取り込む。単独では測り方の欠落が残る                                       |
+| ブラウザの canvas で測る             | 1x1 canvas へ塗って `getImageData` で読む            | 却下     | 先行例ゼロ。Brave ([brave/brave-browser#10000][]) と Firefox が読み取り結果へノイズを混ぜるため chromium 固定に依存する                 |
+| トークン定義に要求比を持たせ段を解く | Material 型                                          | 却下     | 生成の仕組みごと持つことになり、上流生成物を土台とする ADR-0024「土台は空ファイルへの生成物とし、自作分を載せ直す」と衝突する           |
+| 現状維持                             |                                                      | 却下     | 書き写した比の陳腐化が 4 件あった (2026-09-21)                                                                                          |
+| axe の算法へ寄せる                   | `axe.commons.color` を使うか、その算法を再現する     | 部分採用 | 8bit へ落とす点は [WCAG 2.2「relative luminance」][] の定義どおりなので採る。層ごとの丸め・ブレンドモード・影・DOM のスタックは採らない |
 
 ### 色の解決に colorjs.io を使う理由
 
-色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリを `axe.commons.color` 経由で呼ぶ形は、次の 3 点で採らない。
+色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリ ([axe-core の `LICENSE-3RD-PARTY.txt`][]) を `axe.commons.color` 経由で呼ぶ形は、次の 3 点で採らない。
 
-| 採らない理由                                                                                                                                           | 出典                             |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| `axe.commons` は `axe.run` の外で呼ぶ前提の名前空間ではない。外で安全なものは `axe.utils` 側だとメンテナが定義している                                 | dequelabs/axe-core の issue 2731 |
-| colorjs は `axe.js` へインライン展開されており、パッケージマネージャで差し替える手段が無い。axe 自身が版を上げたいが Prototype.js との衝突で戻している | 同 issue 5313 と PR 4429・4464   |
-| その版差が `none` の扱いに出る。同梱の 0.4.3 は `rgb(0 0 0 / none)` を alpha 1 で通す (2026-09-22 実測)。CSS Color 4 は欠けた成分を 0 と定める         | 同 issue 5309 と 4269            |
+| 採らない理由                                                                                                                                                                                                                                            | 出典                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `axe.commons` は `axe.run` の外で呼ぶ前提の名前空間ではない。外で安全なものは `axe.utils` 側だとメンテナが定義している                                                                                                                                  | [dequelabs/axe-core#2731][]                                                             |
+| colorjs は `axe.js` へインライン展開されており、パッケージマネージャで差し替える手段が無い。axe 自身が版を上げたいが Prototype.js との衝突で戻している                                                                                                  | [dequelabs/axe-core#5313][] と [dequelabs/axe-core#4429][]・[dequelabs/axe-core#4464][] |
+| その版差が `none` の扱いに出る。同梱の 0.4.3 は `rgb(0 0 0 / none)` を alpha 1 で通す (2026-09-22 実測)。[CSS Color 4「“Missing” Color Components and the none Keyword」][] は欠けた成分を 0 と定める (「a missing component behaves as a zero value」) | [dequelabs/axe-core#5309][] と [dequelabs/axe-core#4269][]                              |
 
-- 3 点目はこのリポジトリに効く。issue 5309 は Tailwind が無彩色へ吐く `none` で color-contrast が無言で飛ぶ報告で、このリポジトリのトークンも oklch で書かれている
+- 3 点目はこのリポジトリに効く。[dequelabs/axe-core#5309][] は Tailwind が無彩色へ吐く `none` で color-contrast が無言で飛ぶ報告で、このリポジトリのトークンも oklch で書かれている
 - 0.7.1 は同じ入力を解決する。`oklch(0.5 none 180)` は灰色になり、null が残るのは sRGB のまま渡された `rgb(none 0 0)` と alpha の `/ none` だけである (2026-09-22 実測)。axe が飛ばす綴りをこの変換器は測れる
 - `@asamuzakjp/css-color` も候補に挙がった。不透明色では Chrome と完全に一致するが、`color-mix` を含む値では canvas の読み取りと一致しない。合成を自前で持つ点は `colorjs.io` と変わらず、`axe-core` が採用している側を選んだ
 
 ### 8bit へ丸める位置
 
-- 比を出す前に、重ね終わった色を 8bit へ落とす。WCAG 2.2 の relative luminance は `RsRGB = R8bit/255` と定義しており、輝度の式へ入れるのは 8bit で表された色である。丸めずに測ると定義から外れる
+- 比を出す前に、重ね終わった色を 8bit へ落とす。[WCAG 2.2「relative luminance」][] は `RsRGB = R8bit/255` と定義しており (Note 2 は 0.03928 からの差し替えを説明する)、輝度の式へ入れるのは 8bit で表された色である。丸めずに測ると定義から外れる
 - 丸めるのは重ね終わった後の 1 回だけにする。ブラウザは面を float で重ねてから 1 回ラスタライズするので、画面に出るのはその 1 回ぶんの色である。axe は `Color` が内部で 8bit を持つため層ごとに丸まるが、これは実装の都合で、定義が要求する形ではない
-- Understanding SC 1.4.3 の「the computed values should not be rounded」は比の丸めを禁じる文で、色には掛からない。出た比は丸めない
+- [Understanding SC 1.4.3][] の「the computed values should not be rounded」は比の丸めを禁じる文で、色には掛からない。出た比は丸めない
 
 ### 残す数値と落とす数値
 
@@ -255,25 +255,11 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 - トークンを動かしたときに鳴るものは無い。残した数値の陳腐化は機械では検出しない。代わりに再測が 1 コマンドになる
 - 測る対は人が渡す。「この対を測り忘れた」は検出できない。先行例も解いていない
 - 同じ色を渡せば axe の `getContrast` と比が一致する。2026-09-22 に axe-core 4.13.0 と実トークン 5,000 対で突き合わせ、差はゼロだった。手順は「axe の比と突き合わせる」
-- `colorjs.io` の版が上がると値が変わりうる。`toGamut` の `method: "clip"` は axe-core 4.13.0 の `Color.parseString` に合わせたものである
+- `colorjs.io` の版が上がると値が変わりうる。`toGamut` の `method: "clip"` は axe-core 4.13.0 の `Color.parseString` に合わせたものである ([dequelabs/axe-core#4908][] がガマット外の oklch をブラウザに合わせた)
 - 残る違いは丸める位置である。axe は層ごとに丸め、この変換器は重ね終わった後の 1 回だけ丸める。半透明を重ねた対では SC の判定が割れうる
 - 画面の比と一致するとは限らない。axe はブラウザで `mix-blend-mode`・`text-shadow`・祖先の `opacity`・要素の重なりまで畳むが、この変換器は `--bg` で渡された面だけを重ねる
 - 単体テストが固定するのは axe の `getContrast` との一致で、要素のスタックを畳んだ後の報告値は node では再現できない
 - 計算が寄りかかっている前提は `scripts/contrast/lib/contrast.ts` の docstring が持つ
-
-出典:
-
-- WCAG 2.2 relative luminance の定義 (Note 2 が 0.03928 からの差し替えを説明): https://www.w3.org/TR/WCAG22/#dfn-relative-luminance
-- Understanding SC 1.4.3 (計算値を丸めるなと書いている地の文。WCAG 2.2 本体に記述は無い): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
-- CSS Color 4 の欠けた成分 (「a missing component behaves as a zero value」): https://www.w3.org/TR/css-color-4/#missing
-- CSS Color 4 の色の解決 (oklch の computed value は oklch のまま): https://www.w3.org/TR/css-color-4/#resolving-color-values
-- axe.commons と axe.utils の線引き: https://github.com/dequelabs/axe-core/issues/2731
-- axe-core が同梱する colorjs の版を上げられずにいること: https://github.com/dequelabs/axe-core/issues/5313
-- 同梱版で `none` を含む色の color-contrast が無言で飛ぶ報告: https://github.com/dequelabs/axe-core/issues/5309
-- axe-core がガマット外の oklch をブラウザに合わせた PR: https://github.com/dequelabs/axe-core/pull/4908
-- axe-core が colorjs.io を同梱すること: `node_modules/axe-core/LICENSE-3RD-PARTY.txt`
-- トークンの対を CI で検算する先行例: https://github.com/primer/primitives/blob/main/scripts/colorContrast.config.ts
-- canvas の読み取りへノイズを混ぜる実装: https://github.com/brave/brave-browser/issues/10000
 
 ### scan と `theme(static)` の範囲
 
@@ -281,8 +267,8 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 デザイントークンは `src/styles.css` の `@theme` と `:root` が SSOT で、Storybook のトークンの story (`src/components/tokens.stories.tsx`) は値を書き写さず、CSSOM から読んで一覧する。公式の `ColorPalette` は色値を MDX へ書き写し、専用 addon は `styles.css` へ注釈コメントを要するので、どちらも SSOT と二重管理になる。
 
-- Tailwind は既定で、utility から参照されている変数だけを出力する。`inline` は utility へ値を直接埋め込むため、`rounded-*` の utility を書いても対応する変数を読む rule が生まれない。実際に使っているトークンでも、CSSOM から読む一覧からは消える
-- どの変数が出力に残るかは Tailwind の source scan の結果で決まる。scan は既定でリポジトリ全体を読み、Markdown も対象にするため、ADR や rules に書いた名前が「使用中」と判定されて出力に残っていた
+- Tailwind は既定で、utility から参照されている変数だけを出力する ([Tailwind CSS docs「Theme variables」][] の Generating all CSS variables)。`inline` は utility へ値を直接埋め込むため、`rounded-*` の utility を書いても対応する変数を読む rule が生まれない。実際に使っているトークンでも、CSSOM から読む一覧からは消える
+- どの変数が出力に残るかは Tailwind の source scan の結果で決まる。scan は既定でリポジトリ全体を読み、Markdown も対象にする ([Tailwind CSS docs「Detecting classes in source files」][] の Which files are scanned) ため、ADR や rules に書いた名前が「使用中」と判定されて出力に残っていた
 - `.storybook/preview.css` は `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す。`theme()` は import 単位で効くため、本番の CSS は `static` の分を持たない
 - 代償は、Tailwind 既定 theme の未定義トークンがカタログに混ざることである。2026-09-20 の実測では Radius に 2 件、Typography に 6 件で、Colors は `--color-*: initial` が効いていて増えない
 
@@ -295,7 +281,35 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 | `__unstable__loadDesignSystem` でビルド時に列挙し、`static` を使わない | `@tailwindcss/node` が export するが、名前のとおり安定 API ではないと明示されている                                                                                   | 却下     |
 | scan を `src` に絞り、`static` を Storybook の CSS だけに掛ける        | 本番 CSS は Markdown 由来の変数と `static` の分を持たず、Storybook のカタログには全トークンが出る                                                                     | **採用** |
 
-出典:
+## 出典
 
-- Tailwind CSS: Theme variables (Generating all CSS variables) — https://tailwindcss.com/docs/theme
-- Tailwind CSS: Detecting classes in source files — https://tailwindcss.com/docs/detecting-classes-in-source-files
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+本文は引かないが、調べたときに読んだもの:
+
+- [CSS Color 4「Resolving `<color>` Values」][] (oklch の computed value は oklch のまま)
+
+[shadcn skill「Customization & Theming」]: https://github.com/shadcn-ui/ui/blob/main/skills/shadcn/customization.md
+[shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/data-table
+[shadcn-ui/lint docs「no-restyle」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md
+[shadcn-ui/lint docs「Configuring your design system」]: https://github.com/shadcn-ui/lint/blob/main/docs/design-systems.md
+[shadcn-ui/lint#4]: https://github.com/shadcn-ui/lint/issues/4
+[shadcn-ui/lint#18]: https://github.com/shadcn-ui/lint/issues/18
+[shadcn-ui/lint docs「Rules」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules.md
+[Understanding SC 1.4.3]: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+[Understanding SC 1.4.11]: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
+[Tailwind CSS docs「Theme variables」]: https://tailwindcss.com/docs/theme
+[Primer Primitives の `colorContrast.config.ts`]: https://github.com/primer/primitives/blob/main/scripts/colorContrast.config.ts
+[brave/brave-browser#10000]: https://github.com/brave/brave-browser/issues/10000
+[WCAG 2.2「relative luminance」]: https://www.w3.org/TR/WCAG22/#dfn-relative-luminance
+[axe-core の `LICENSE-3RD-PARTY.txt`]: https://github.com/dequelabs/axe-core/blob/v4.13.0/LICENSE-3RD-PARTY.txt
+[dequelabs/axe-core#2731]: https://github.com/dequelabs/axe-core/issues/2731
+[dequelabs/axe-core#5313]: https://github.com/dequelabs/axe-core/issues/5313
+[dequelabs/axe-core#4429]: https://github.com/dequelabs/axe-core/pull/4429
+[dequelabs/axe-core#4464]: https://github.com/dequelabs/axe-core/pull/4464
+[CSS Color 4「“Missing” Color Components and the none Keyword」]: https://www.w3.org/TR/css-color-4/#missing
+[dequelabs/axe-core#5309]: https://github.com/dequelabs/axe-core/issues/5309
+[dequelabs/axe-core#4269]: https://github.com/dequelabs/axe-core/issues/4269
+[dequelabs/axe-core#4908]: https://github.com/dequelabs/axe-core/pull/4908
+[Tailwind CSS docs「Detecting classes in source files」]: https://tailwindcss.com/docs/detecting-classes-in-source-files
+[CSS Color 4「Resolving `<color>` Values」]: https://www.w3.org/TR/css-color-4/#resolving-color-values
