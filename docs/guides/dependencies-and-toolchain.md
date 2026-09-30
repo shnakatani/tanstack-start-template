@@ -158,11 +158,11 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 
 ### patch のキーをパッケージ名だけにする理由
 
-版まで固定したキーは、上げた版には使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。この失敗は、lockfile だけを更新するとき (`install --lockfile-only`) にも起きる。Dependabot は pnpm を `--lockfile-only` で走らせ ([dependabot-core「pnpm_lockfile_updater.rb」][])、失敗した依存を飛ばして残りで PR を作る ([dependabot-core「group_update_creation.rb」][]) ので、その依存だけが黙って PR から抜け、揃えて上がる依存の版が割れる。範囲のキー (`"<pkg>@^<版>"`) も、範囲の外へ上げた版には使われないので同じことになる。
+版まで固定したキーは、上げた版には使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。この失敗は、lockfile だけを更新するとき (`install --lockfile-only`) にも起きる (2026-10-01 に pnpm 11.28.0 で観測)。Dependabot は pnpm を `--lockfile-only` で走らせ ([dependabot-core「pnpm_lockfile_updater.rb」][])、失敗した依存を飛ばして残りで PR を作る ([dependabot-core「group_update_creation.rb」][]) ので、その依存だけが黙って PR から抜け、揃えて上がる依存の版が割れる。範囲のキー (`"<pkg>@^<版>"`) も、範囲の外へ上げた版には使われないので同じことになる。
 
-パッケージ名だけのキーは、どの版にも当てる ([pnpm docs「pnpm patch」][])。当たらなければ通常の install が `ERR_PNPM_PATCH_FAILED` で落ち、`--lockfile-only` では落ちないので、Dependabot の PR は作られ、その PR の CI で気づける。同じ docs には、名前だけのキーは当たらない失敗を無視すると読める記述もあるが、v11 では当たらない失敗は常にエラーになる (同じ docs の `allowUnusedPatches` の注記)。
+パッケージ名だけのキーは、どの版にも当てる ([pnpm docs「pnpm patch」][])。当たらなければ通常の install が `ERR_PNPM_PATCH_FAILED` で落ち、`--lockfile-only` では落ちない (2026-10-01 に pnpm 11.28.0 で観測) ので、Dependabot の PR は作られ、その PR の CI で気づける。Dependabot の振る舞いはコードで確かめ、実行では観測していない。同じ docs には、名前だけのキーは当たらない失敗を無視すると読める記述もあるが、v11 では当たらない失敗は常にエラーになる (同じ docs の `allowUnusedPatches` の注記)。
 
-作り直しの手順も短くなる。`vp pm patch` を版を付けずに打つと、パッケージ名だけのキーの patch を編集用のディレクトリに当て、`patch-commit` は同じキーと同じファイルへ書き戻す。範囲のキーの patch は `vp pm patch` が当てず、`patch-commit` は版を固定したキーと版付きのファイルを足すので、作り直すたびにキーとファイルを手で直すことになる。2026-10-01 に pnpm 11.28.0 で、両方のキーについて確かめた。Dependabot の振る舞いはコードで確かめ、実行では観測していない。
+作り直しの手順も短くなる。`vp pm patch` を版を付けずに打つと、パッケージ名だけのキーの patch を編集用のディレクトリに当て、`patch-commit` は同じキーと同じファイルへ書き戻す。範囲のキーの patch は `vp pm patch` が当てず、`patch-commit` は範囲のキーとは別のキーとファイルを足すので、作り直すたびに元の patch を当て直し、キーとファイルを手で直すことになる (2026-10-01 に pnpm 11.28.0 で、両方のキーについて観測)。
 
 ## 出典
 
