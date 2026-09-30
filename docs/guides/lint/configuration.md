@@ -109,8 +109,8 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 | 落とし穴                                                                                          | 起きること                                                                                                                                                                       | 避け方                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | トップレベルの `plugins` は既定集合を置換する                                                     | 「plugins は既定集合を置換する」                                                                                                                                                 | `OXLINT_DEFAULT_PLUGINS` を spread して積む (「プラグインを足す」)                                                                                                                                                                                                      |
-| `overrides` の中の `plugins` はトップレベルと逆で、継承した集合への追加になる                     | override に 1 つだけ書いても、ベースのプラグインは無効にならない。絞ったつもりで絞れていない                                                                                     | override でプラグインを絞ろうとしない。`overrides` は `categories` も持てない                                                                                                                                                                                           |
-| サブディレクトリに置いた `.oxlintrc.json` は `vp lint` に読まれない                               | `"error"` にしても診断は出ず、`"off"` にしても CLI の指定が通る。丸ごと no-op になる                                                                                             | 設定は `vite.config.ts` の `lint` にまとめる。Vite+ の lint の docs も `.oxlintrc.json` の併用を推奨しない                                                                                                                                                              |
+| `overrides` の中の `plugins` はトップレベルと逆で、継承した集合への追加になる                     | override に 1 つだけ書いても、ベースのプラグインは無効にならない。絞ったつもりで絞れていない                                                                                     | override でプラグインを絞ろうとしない。`overrides` は `categories` も持てない ([Oxlint docs「Config file reference」][] の overrides が受け付けるキー。2026-09-24 に確認)                                                                                               |
+| サブディレクトリに置いた `.oxlintrc.json` は `vp lint` に読まれない                               | `"error"` にしても診断は出ず、`"off"` にしても CLI の指定が通る。丸ごと no-op になる                                                                                             | 設定は `vite.config.ts` の `lint` にまとめる。[Vite+ docs「Lint」][] の Configuration も `.oxlintrc.json` の併用を推奨しない ("We do not recommend using `oxlint.config.ts` or `.oxlintrc.json` with Vite+."。2026-09-24 に確認)                                        |
 | CLI の `-D` は未知のルール名を無視する (exit 0、診断なし)                                         | 打ち間違いが「違反 0 件」に見える                                                                                                                                                | 0 件を結論にする前に `--print-config` にそのルール名があるかを確かめる                                                                                                                                                                                                  |
 | `-D` にプラグイン名を付けずにルール名を渡すと、同じ名前のルールを持つプラグインがすべて有効になる | 2026-09-23 に oxlint 1.82.0 で、`-D prefer-spread` が eslint と unicorn の両方の `prefer-spread` を報告した                                                                      | `-D eslint/prefer-spread` のようにプラグイン名を付ける。件数は診断の `plugin(rule)` 別に数える                                                                                                                                                                          |
 | `overrides` の `files` の否定 glob (`!**/*.test.ts`) は除外として効かない                         | oxlint 1.79.0 で、最小構成で除外されなかった (2026-09-14)                                                                                                                        | `excludeFiles` を使う (ADR-0008)                                                                                                                                                                                                                                        |
@@ -122,7 +122,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 
 ### plugins は既定集合を置換する
 
-`lint.plugins` は既定集合 (`typescript` / `unicorn` / `oxc`) へ追加する設定ではなく、**置換する**。
+`lint.plugins` は既定集合 (`typescript` / `unicorn` / `oxc`) へ追加する設定ではなく、**置換する** ([Oxlint docs「Config file reference」][] の plugins: "Setting the `plugins` field will overwrite the base set of plugins."。2026-09-24 に確認)。
 `plugins: ["react"]` と書くと `typescript` が無効になり、`rules` に書いた `typescript/*` の設定は 1 件も検出しなくなる。
 
 **有効でないプラグインのルール設定は、ルール名が検証されるにもかかわらず無診断で捨てられる。**
@@ -150,9 +150,6 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 | `eslint` も `plugins` に列挙する         | 置換対象ではなく常時有効で、書いても解決後の `plugins` から落ちる           | 却下     |
 | registry コードを lint 対象から除外する  | ADR-0020 の既定は改変して許容リストへ記録する運用で、除外はそれを反転させる | 却下     |
 
-- 出典: oxlint の configuration file reference (「Setting the `plugins` field will overwrite the base set of plugins.」、`overrides` が受け付けるキー、2026-09-24 に確認): https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#plugins
-- 出典: Vite+ の lint (「We do not recommend using `oxlint.config.ts` or `.oxlintrc.json` with Vite+.」、2026-09-24 に確認): https://viteplus.dev/guide/lint
-
 ### jsx-a11y は名指しがゼロになる
 
 上流 recommended のルールは全て `correctness` 経由で `error` になっており、`rules` へ足す先が 1 つも残らない。
@@ -173,7 +170,7 @@ off にする判断は違反が出たときに個別に行う (registry コー�
 
 | ルール                  | 外す理由                                                                                                                                                                                                                                                                                                                                               |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `prefer-screen-queries` | play が受け取る `canvas` を render 結果の分割代入と誤読する。`canvas` は Storybook が渡す query 済みオブジェクトで、上流の `write-story` skill が「✅ Correct: Use canvas directly」と指定している形                                                                                                                                                   |
+| `prefer-screen-queries` | play が受け取る `canvas` を render 結果の分割代入と誤読する。`canvas` は Storybook が渡す query 済みオブジェクトで、上流の `write-story` skill ([Storybook の `storybook-story-instructions.md`][]) が「✅ Correct: Use canvas directly」と指定している形                                                                                              |
 | `no-node-access`        | `flat/react` の中でこれだけが strict 判定 (`isTestingLibraryImported(true)`) で Aggressive Reporting を迂回し、`storybook/test` 経由の story では一度も発火しない。`settings` の `testing-library/utils-module` を足せば発火するが、その形は、accessibility tree に差が出ない対象に限って `querySelector` で掴み、理由を実装近傍に書く運用と両立しない |
 
 - `no-debugging-utils` を `error` へ上げるのは、`vp check` が warn で exit 1 にならず、`warn` のままだと commit された `screen.debug()` が素通りするためである
@@ -214,3 +211,11 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 | `capitalized-calls` / `exhaustive-effect-dependencies` / `hooks` / `memo-dependencies` | `suspicious`      | off。上流が既定から外している                                                     |
 
 どれを名指しして引き上げるかは ADR-0007「React Compiler のルールは eslint-plugin-react-hooks を基準にする」が決める。
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+[Oxlint docs「Config file reference」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#plugins
+[Vite+ docs「Lint」]: https://viteplus.dev/guide/lint
+[Storybook の `storybook-story-instructions.md`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/cli/skills/content/instructions/storybook-story-instructions.md

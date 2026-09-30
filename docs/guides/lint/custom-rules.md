@@ -13,10 +13,10 @@
 
 `scripts/lint/` に置き、`vite.config.ts` の `lint.jsPlugins` から読む (ADR-0009)。実例は `scripts/lint/browser-test.ts` とそのテスト `scripts/lint/browser-test.test.ts`。
 
-- API は同梱の `node_modules/vite-plus/docs/guide/lint.md`「Writing Your Own Rules」に従う。型は `vite-plus/lint/plugins` の `definePlugin` / `defineRule` / `SourceCode`、テストは `vite-plus/lint/plugins-dev` の `RuleTester` から取る
+- API は [Vite+ docs「Lint」][] の Writing Your Own Rules に従う。型は `vite-plus/lint/plugins` の `definePlugin` / `defineRule` / `SourceCode`、テストは `vite-plus/lint/plugins-dev` の `RuleTester` から取る
 - `@oxlint/plugins` と `oxlint` を直接の依存に足さない。理由は「`@oxlint/plugins` を直接の依存にしない理由」
 - 木は親だけを辿る。oxlint の node は `parent` を持つので、`Object.values` で部分木を降りる走査は木を登り直して無限再帰する (2026-09-22 に `RangeError: Maximum call stack size exceeded` で観測)。判定は、値の使われ方を上へ辿る形で書く
-- oxlint の JS plugin は型情報を持たない (公式の JS plugin ガイドが「Lint rules that rely on TypeScript type-awareness」を未対応に挙げる)。名前だけで判定するなら、`overrides` の適用範囲で誤検出を補う
+- oxlint の JS plugin は型情報を持たない ([Oxlint docs「JS Plugins」][] が「Lint rules that rely on TypeScript type-awareness」を未対応に挙げる)。名前だけで判定するなら、`overrides` の適用範囲で誤検出を補う
 
 ### 検査を作ったら 2 通りに壊して確かめる
 
@@ -37,7 +37,7 @@ JS plugin を足す前に、oxlint ネイティブのルールで代替できな
 | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 抑制 directive に登録していない名前を書いてもエラーにならない                                                       | ルールは有効なまま、抑制だけが無言で外れる (2026-09-19 に Oxlint 1.82.0 で実測)                                                                                                            | `jsPlugins` のエントリを `{ name, specifier }` で書き、directive はその `name` で書く。`@shadcn/lint` は `{ name: "shadcn", specifier: "@shadcn/lint" }`      |
 | `rules` のキーに別名 (`@shadcn/lint/no-raw-colors`) を書く                                                          | 設定のパースが `Plugin '@shadcn/lint' not found` で落ちる                                                                                                                                  | plugin の `meta.name`、診断コード、rule key、抑制 directive が同じ名前 (`shadcn`) を共有する                                                                  |
-| `--print-config` は JS plugin を読み込む前に短絡し、plugin 由来のルール名を捨てる (oxc-project/oxc#22117)           | `jsPlugins` の宣言は出力に出るが、`shadcn/*` のルールは出ず、無効に見える                                                                                                                  | `--print-config` を JS plugin のルールが効いている根拠にしない                                                                                                |
+| `--print-config` は JS plugin を読み込む前に短絡し、plugin 由来のルール名を捨てる ([oxc-project/oxc#22117][])       | `jsPlugins` の宣言は出力に出るが、`shadcn/*` のルールは出ず、無効に見える                                                                                                                  | `--print-config` を JS plugin のルールが効いている根拠にしない                                                                                                |
 | `settings.shadcn.componentImports` や `variantFunctions` を消しても、`--print-config` に `settings.shadcn` が出ない | `componentImports` を消すと自作部品が規則から見えなくなり、routes からの上書きが素通りする。`variantFunctions` を消すと variant 関数の呼び出しが落ちる。宣言が消えたことを見張るものは無い | どちらも消さない。宣言の理由は`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」(`variantFunctions`) と ADR-0023 (`componentImports`) が持つ |
 | 引数を取らない関数を `mergeFunctions` へ登録する                                                                    | 規則を通しながら、戻り値の中身の検査を落とせる (2026-09-19 実測)                                                                                                                           | 抜け道として使わない。variant 関数は `variantFunctions` へ宣言する (`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」)                      |
 
@@ -45,7 +45,7 @@ JS plugin を足す前に、oxlint ネイティブのルールで代替できな
 
 ### `@oxlint/plugins` を直接の依存にしない理由
 
-同梱の `node_modules/vite-plus/docs/guide/lint.md`「Writing Your Own Rules」が、`vite-plus/lint/plugins` と `vite-plus/lint/plugins-dev` を使い、直接の依存を足さないよう求める。挙げる理由は 2 つある。
+[Vite+ docs「Lint」][] の Writing Your Own Rules が、`vite-plus/lint/plugins` と `vite-plus/lint/plugins-dev` を使い、直接の依存を足さないよう求める。挙げる理由は 2 つある。
 
 | 理由                                  | 原文                                                                                                                            |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -62,9 +62,17 @@ vite-plus 0.3.2 には両方の entrypoint があり、2026-09-22 に型解決�
 
 ### JS plugin より先にネイティブのルールを探す理由
 
-| 理由                  | 根拠                                                                                                                                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 安定版の API ではない | oxlint の JS plugins の文書が "JS plugins are currently in alpha, and remain under active development." と書く (https://oxc.rs/docs/guide/usage/linter/js-plugins.html、2026-09-28 に確認) |
-| lint の時間が伸びる   | このリポジトリに実測は残していない。測り方は `docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の時間と警告を読む」                                                                |
+| 理由                  | 根拠                                                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 安定版の API ではない | [Oxlint docs「JS Plugins」][] が "JS plugins are currently in alpha, and remain under active development." と書く (2026-09-28 に確認) |
+| lint の時間が伸びる   | このリポジトリに実測は残していない。測り方は `docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の時間と警告を読む」           |
 
 `@shadcn/lint` を JS plugin で足したのは、oxlint が Tailwind と shadcn/ui の領域のルールをネイティブに持たないためである (ADR-0023)。
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+[Vite+ docs「Lint」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/lint.md
+[Oxlint docs「JS Plugins」]: https://oxc.rs/docs/guide/usage/linter/js-plugins.html
+[oxc-project/oxc#22117]: https://github.com/oxc-project/oxc/issues/22117
