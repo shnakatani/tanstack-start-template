@@ -29,7 +29,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 2. `test.name` を付ける。名前が重なると Vitest がエラーで止まる ([Vitest docs「Test Projects」][]: "All projects must have unique names; otherwise, Vitest will throw an error.")
 3. root の `plugins` にある plugin を project に書き直さない。inline の project は root の plugin を継承する ([Vitest docs「sharedViteServer」][]: "If every project repeats the same `plugins` entry, move it to the declaring config.")。project にだけ要る plugin は、その project の `plugins` に足す
 4. playwright の provider や `@storybook/addon-vitest` の plugin のような重い依存を使う project は、project を返す関数にし、依存を関数の中で `import()` する。`browserProject` と `storybookProject` がこの形 (`docs/guides/vite-configuration.md`「重い依存を遅らせて読み込む」)
-5. ブラウザで走る project は、`mergeConfig(chromiumProjectBase(), defineProject({ ... }))` で共通の設定に重ねる。`tailwindcss()`・`resolve.dedupe`・`browser` の共通部分を写さない (「project を inline に並べる理由」)
+5. ブラウザで走る project は、`mergeConfig(await chromiumProjectBase(), defineProject({ ... }))` で共通の設定に重ねる。`tailwindcss()`・`resolve.dedupe`・`browser` の共通部分を写さない (「project を inline に並べる理由」)
 6. `vp test list --filesOnly` で、足した project に集まるファイルを見る。`include` に一致しないテストは、落ちることもなく 1 度も走らない
 
 ### テストでだけ plugin を変える

@@ -1,4 +1,3 @@
-import tailwindcss from "@tailwindcss/vite";
 import type { UserWorkspaceConfig } from "vite-plus/test/config";
 
 /**
@@ -7,12 +6,13 @@ import type { UserWorkspaceConfig } from "vite-plus/test/config";
  * この上に自分の設定を重ねる。配列は連結され、オブジェクトは深く merge される
  * (`docs/guides/testing/configuration.md`「project を inline に並べる理由」)。
  *
- * 関数で返すのは 2 つの理由から。`tailwindcss()` を project を解決するときにだけ呼ぶ
- * (`docs/guides/vite-configuration.md`「読み込むだけで起きる副作用を持たせない理由」)。
+ * 関数で返すのは 2 つの理由から。`@tailwindcss/vite` を読み込んで `tailwindcss()` を呼ぶのを、project を
+ * 解決するときだけにする (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」「読み込むだけで起きる副作用を持たせない理由」)。
  * `tailwindcss()` は呼ぶたびに新しい plugin を返し、ブラウザで走る project はそれぞれ自前の
  * Vite server を持つので、plugin の instance を project の間で共有しない
  */
-export function chromiumProjectBase() {
+export async function chromiumProjectBase() {
+  const { default: tailwindcss } = await import("@tailwindcss/vite");
   return {
     // Tailwind のクラスを実 CSS に解決する。setupFiles の src/test/browser/browser-setup.tsx が
     // src/styles.css を import し、この plugin がユーティリティクラスを生成する。Node の project には

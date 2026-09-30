@@ -15,7 +15,7 @@ export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number])
     import("vite-plus/test/browser-playwright"),
   ]);
   return mergeConfig(
-    chromiumProjectBase(),
+    await chromiumProjectBase(),
     defineProject({
       plugins: [
         storybookTest({ configDir: ".storybook", initialGlobals: { theme } }),
