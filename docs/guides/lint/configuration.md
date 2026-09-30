@@ -218,6 +218,6 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 
 [oxc-project/oxc#7379]: https://github.com/oxc-project/oxc/pull/7379
 [Oxlint docs「overrides」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#overrides
-[Oxlint docs「plugins」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#plugins
 [Vite+ docs「Lint」]: https://viteplus.dev/guide/lint
+[Oxlint docs「plugins」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#plugins
 [Storybook の `storybook-story-instructions.md`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/cli/skills/content/instructions/storybook-story-instructions.md
