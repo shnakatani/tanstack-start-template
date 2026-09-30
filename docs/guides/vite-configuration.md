@@ -23,7 +23,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 
 1. `tooling/<block>/` にモジュールを作り、block の中身をオブジェクトで export する。型は `satisfies` で付ける。`test` は `vite-plus/test/config` の `TestUserConfig`、`lint` は `vite-plus/lint` の `OxlintConfig` を使う。override の一部だけを切り出すなら `Omit<OxlintOverride, 'files'>` にし、`files` は override を組み立てる側 (lint なら `tooling/lint/config.ts` の `overrides`) に残す (`OxlintOverride` の `files` は省けない)
 2. `vite.config.ts` で import し、block に渡す (`test: testConfig`)。override のように一部だけを切り出すときは spread で組み込む ([Vite+ docs「Monorepo」][] の「Composing Configuration Files」の例)
-3. 設定の中の文字列のパスは、切り出したモジュールの位置から書かない。Vitest の `include`、`globalSetup`、`setupFiles` は root から解決され ([Vitest docs「include」][]、[Vitest docs「globalSetup」][]、[Vitest docs「setupFiles」][])、Oxlint の `jsPlugins` は config ファイルから解決される ([Oxlint docs「JS Plugins」][]。2026-09-30 に確認)
+3. 設定の中の文字列のパスは、切り出したモジュールの位置から書かない。Vitest の `include`、`globalSetup`、`setupFiles` は root から解決され ([Vitest docs「include」][]、[Vitest docs「globalSetup」][]、[Vitest docs「setupFiles」][])、Oxlint の `jsPlugins` は config ファイルから、`overrides` の `files` と `ignorePatterns` は config ファイルのあるディレクトリから解決される ([Oxlint docs「JS Plugins」][] と、oxlint 1.85.0 の `configuration_schema.json` の `GlobSet` と `ignorePatterns` の説明。2026-10-01 に確認)
 4. 切り出したモジュールに、読み込むだけで起きる副作用 (警告の出力、環境変数の書き換え) を持たせない (「読み込むだけで起きる副作用を持たせない理由」)。条件つきの警告は、その block を使う経路でだけ呼ばれる関数の中で出す。`tooling/test/config.ts` の `storybookProjects` が返す project の関数が、Storybook 経由の縮退を知らせる警告をこの形で出す
 5. `vp check` と、その block を使うコマンド (`vp test list --filesOnly`、`vp lint --print-config`) の出力が切り出す前と変わらないことを確かめる
 
