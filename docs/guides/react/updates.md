@@ -76,7 +76,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 入力                      | `useMutation` の options。`onError` は型で必須。省略すると、reject の吸収が通知の無い失敗になる                                                                                                     |
 | 出力                      | `mutate` / `mutateAsync` は型で外してあり、`runAction(variables): Promise<void>` を使う。`runAction` は `mutateAsync` を await して reject を吸収し、通知は `onError` (`toastMutationError`) が出す |
-| 呼び出し                  | `action` から `runAction` を呼ぶ。`mutate` は Promise を返さず、reject も `.catch(noop)` で握るので (`@tanstack/react-query` の `useMutation.js`)、Transition が完了も失敗も観測できない            |
+| 呼び出し                  | `action` から `runAction` を呼ぶ。`mutate` は Promise を返さず、reject も `.catch(noop)` で握るので ([`@tanstack/react-query` の `useMutation.ts`][])、Transition が完了も失敗も観測できない        |
 | 再取得と close            | `onSuccess` は完了点によらず再取得の Promise を返す。TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く。閉じる時点は「完了点ごとに Transition を終える」               |
 | `await` の後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる ([React docs「useTransition」][] の Caveats にある既知の制限)。画面の更新は query の再取得に任せる                          |
 
@@ -142,6 +142,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 [WAI-ARIA 1.2「Presentational Children」]: https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational
 [mui/base-ui#5133]: https://github.com/mui/base-ui/issues/5133
 [adobe/react-spectrum#9894]: https://github.com/adobe/react-spectrum/pull/9894
+[`@tanstack/react-query` の `useMutation.ts`]: https://github.com/TanStack/query/blob/@tanstack/react-query@5.104.0/packages/react-query/src/useMutation.ts
 [TkDodo「Concurrent Optimistic Updates in React Query」]: https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query
 [`@tanstack/query-core` の `utils.ts`]: https://github.com/TanStack/query/blob/@tanstack/query-core@5.104.0/packages/query-core/src/utils.ts
 [TanStack/query#9742]: https://github.com/TanStack/query/issues/9742

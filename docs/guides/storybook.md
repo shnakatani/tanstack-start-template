@@ -147,7 +147,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 
 ### vitest 経由の story に padding を当てる理由
 
-`layout` パラメータを当てるのは `WebView.prepareForStory` で (`storybook/dist/preview/runtime.js` の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
+`layout` パラメータを当てるのは `WebView.prepareForStory` で ([Storybook の `WebView.ts`][] の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
 
 - この差は `.storybook/preview.css` の `body:not(.sb-show-main)` が埋める。Storybook の UI では body へ `sb-show-main` が付くので、付いていないときだけ同じ `1rem` を当てる。`sb-main-*` で見ないのは、`layout: "none"` の story が UI 側でも `sb-main-*` を持たないため (理由は同ファイルのコメント)
 - 埋めないと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、そのはみ出しが背景を持つ唯一の箱 (body) の外へ出て axe が色を測れなくなる。`html` は背景を持たないので受け止められない
@@ -179,3 +179,4 @@ MCP が優るのは、ツールの説明がエージェントに常に見える�
 [Storybook docs「Storybook for TanStack React」]: https://storybook.js.org/docs/get-started/frameworks/tanstack-react
 [Storybook docs「Telemetry」]: https://storybook.js.org/docs/configure/telemetry
 [Storybook docs「Interaction tests」]: https://storybook.js.org/docs/writing-tests/interaction-testing
+[Storybook の `WebView.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/preview-api/modules/preview-web/WebView.ts
