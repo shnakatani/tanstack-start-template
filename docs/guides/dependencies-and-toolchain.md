@@ -123,9 +123,9 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
   1. `vp pm patch <pkg>@<版> -- --edit-dir <dir>` で編集用のディレクトリを作る。`<dir>` はリポジトリの外 (`mktemp -d` の下) に置く。リポジトリの中では、`git apply` が何も当てずに exit 0 で終わる (git 2.55.0)
   2. `<dir>` の中で `git apply -v <元の patch>` を打ち、ファイルごとに `Applied patch <path> cleanly.` が出ることを確かめてから、新しい変更を加える
   3. `vp pm patch-commit <dir>` で patch を書き出す。書き出されたファイルが、範囲のキーの指すファイルと同じであることを `git status` で確かめる
-  4. `pnpm-workspace.yaml` に足された版を固定したキーを消す。残すと版を固定したキーが優先され、範囲のキーの patch が使われずに install が `ERR_PNPM_UNUSED_PATCH` で落ちる。`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-09-30 に pnpm 11.28.0 で 2 回観測)
+  4. `pnpm-workspace.yaml` に足された版を固定したキーを消す。残すと版を固定したキーが優先され ([pnpm docs「pnpm patch」][])、範囲のキーの patch が使われずに install が `ERR_PNPM_UNUSED_PATCH` で落ちる (2026-09-30 に pnpm 11.28.0 で観測)。`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-09-30 に pnpm 11.28.0 で 2 回観測)
   5. `git diff pnpm-lock.yaml` が patch のハッシュの行だけであることと、`node_modules/<pkg>/` の配布物に元の変更と新しい変更の両方があることを grep で確かめる
-  6. `mise run verify` を通す。`@storybook/tanstack-react` の `dist/preset.js` への変更は、verify の `vp exec storybook build` が確かめる。`@storybook/addon-vitest` の patch は外れても verify が落ちないので (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」)、配布物への grep で確かめる
+  6. `mise run verify` を通す。verify が確かめない変更もあるので、`pnpm-workspace.yaml` の撤去条件のコメントが確かめ方を挙げていれば、それも通す
 
 ### workflow に action を足す
 
