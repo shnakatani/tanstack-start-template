@@ -30,8 +30,8 @@
 | Visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                       |
 | Receives Events    | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                                |
 
-- `force: true` は actionability の検査の一部を飛ばす ([Playwright docs「Auto-waiting」][] の Forcing actions)。飛ぶ検査の内訳は「合成イベントが実物からずれる理由」にある
-- force でも座標は要る。animation を戻したテストでは、スライドインの途中の要素が "Element is outside of the viewport" で落ちる。viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の 4 条件の定義に無く、[`playwright-core` の `server/dom.ts`][] の `_performPointerAction` が行う (ソースの読み取りで、公式 docs では未確認)
+- `force: true` は actionability の検査の一部を飛ばす ([Playwright docs「Auto-waiting」][] の Forcing actions)。飛ぶ検査と残る検査は「force が飛ばす検査と残る検査」にある
+- force でも座標は要る。animation を戻したテストでは、スライドインの途中の要素が "Element is outside of the viewport" で落ちるので、settled を待って押す (「force が飛ばす検査と残る検査」)
 - 合成イベントを足したくなったら、先に `force: true` で届くかを測る。届くなら合成イベントは要らない
 
 ### スクロールさせる
@@ -100,12 +100,6 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 | `.click({ force: true })`        | 0 回           | 1 回              |
 | 合成 click を対象へ直接 dispatch | 1 回           | 1 回 (バブリング) |
 
-`force` が飛ばす検査の内訳は次のとおり。ブラウザのヒットテストはこれと別で、`force` でも残る。
-
-- [Playwright docs「Auto-waiting」][] の Forcing actions は "non-essential actionability checks" を飛ばすと書く。中身は列挙せず、例に挙げるのは Receives Events だけである
-- Enabled も飛ぶことは、`aria-disabled` の要素で実測した (上の `aria-disabled` の項目)
-- Visible と Stable は docs では未確認である。[`playwright-core` の `server/dom.ts`][] の `_performPointerAction` は、`force` のとき visible / enabled / stable の待ちと、Playwright 側の hit target の確認 (Receives Events の検査) を飛ばす (ソースの読み取り)
-
 - vitest の `Locator` (`@vitest/browser` 5.0.1) に `dispatchEvent` は無い ([Vitest docs「Locators」][])。Playwright の `locator.dispatchEvent()` を届かせる公式経路はカスタムコマンド (`BrowserCommand`) だけである ([Vitest docs「Commands」][] の Custom playwright commands)。vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)
 
 合成 click の helper を `src/test/` に置くと、テンプレートを複製した利用者全員へ配られる。使いうる消費者は 2 つとも sample の部品で、sample を消すと消費者ゼロの helper だけが残る。
@@ -119,6 +113,16 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 | 合成 click の helper を置き、用途を 1 つに絞る                    | 消費者が sample の部品だけになる。利用者が sample を消すと、消費者ゼロの helper が配られたままになる                                                                                                 | 却下     |
 | 合成 click で base-ui 内部のガードを見続ける                      | 守る対象が上流ライブラリの内部で、[Base UI の `Button.test.tsx`][] が同じことを見ている。このリポジトリのコードは `pointer-events` と状態属性の assert で守れる                                      | 却下     |
 | カスタムコマンドで Playwright の `locator.dispatchEvent()` を呼ぶ | 公式経路だが、server 側のコマンド定義と型拡張が要る。合成イベントを使う場面が無いので不要                                                                                                            | 却下     |
+
+### force が飛ばす検査と残る検査
+
+`force: true` で飛ぶのは Playwright の actionability の検査の一部で、viewport 内の座標の確認とブラウザのヒットテストは残る。
+
+- [Playwright docs「Auto-waiting」][] の Forcing actions は "non-essential actionability checks" を飛ばすと書く。中身は列挙せず、例に挙げるのは Receives Events だけである
+- Enabled も飛ぶことは、`aria-disabled` の要素で実測した (「合成イベントが実物からずれる理由」)
+- Visible と Stable は docs では未確認である。[`playwright-core` の `server/dom.ts`][] の `_performPointerAction` は、`force` のとき visible / enabled / stable の待ちと、Playwright 側の hit target の確認 (Receives Events の検査) を飛ばす (ソースの読み取り)
+- viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の 4 条件の定義に無く、同じ `_performPointerAction` が `force` でも行う (ソースの読み取りで、公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
+- ブラウザのヒットテストも残る。`pointer-events: none` の対象へ `force` で送ったイベントが下の要素へ落ちる実測は「合成イベントが実物からずれる理由」にある
 
 ### animation を無効にして走らせる理由
 
@@ -162,7 +166,6 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 - [scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」][] (vitest-browser-svelte で `aria-disabled="true"` の要素に `userEvent.click` が届かず、合成 click の helper で代える例)
 
 [Playwright docs「Auto-waiting」]: https://playwright.dev/docs/actionability
-[`playwright-core` の `server/dom.ts`]: https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/src/server/dom.ts
 [Vitest docs「userEvent.wheel」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/interactivity.md#usereventwheel-410-userevent-wheel
 [Playwright docs「mouse.wheel」]: https://playwright.dev/docs/api/class-mouse#mouse-wheel
 [vitest-dev/vitest#10058]: https://github.com/vitest-dev/vitest/issues/10058
@@ -180,6 +183,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 [Vitest docs「Commands」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/commands.md
 [HTML Standard「clean up after running script」]: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
 [React docs「useFormStatus」]: https://react.dev/reference/react-dom/hooks/useFormStatus
+[`playwright-core` の `server/dom.ts`]: https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/src/server/dom.ts
 [Base UI docs「Animation」]: https://base-ui.com/react/handbook/animation
 [mui/base-ui#5519]: https://github.com/mui/base-ui/issues/5519
 [mui/base-ui#5537]: https://github.com/mui/base-ui/pull/5537

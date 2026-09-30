@@ -109,4 +109,4 @@ light と dark で同じ `mist-500` になる。
 - WCAG 2.2 1.4.3 Contrast (Minimum): https://www.w3.org/TR/WCAG22/#contrast-minimum
 - Understanding SC 1.4.3 (Intent が placeholder を名指しで含める。丸めるなの note もここ): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
 - WCAG 2.2 勧告本体 `contrast ratio` の Note 3 / 4 / 6 (測る背景の定義と color pairs): https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio
-- axe が placeholder を誤った前景色で評価する件 (open): https://github.com/dequelabs/axe-core/issues/4260
+- axe が placeholder を誤った前景色で評価する件 (2026-09-23 に close。閉じた dequelabs/axe-core#5359 も placeholder の色では評価しない): https://github.com/dequelabs/axe-core/issues/4260

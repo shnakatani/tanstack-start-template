@@ -16,12 +16,12 @@ Oxlint の設定を書き換えるとき、ルールやプラグインを足す�
 
 oxlint は「設定したつもりで効いていない」状態を診断なしで作る (「設定の落とし穴」)。設定の文面ではなく、`vp lint --print-config` が出す解決後の設定か、実際の診断で確かめる。
 
-- `scripts/checks/integrity/lint-config.test.ts` は解決後の設定の `plugins` を期待値と突き合わせる。プラグインを足したら、そのテストの `EXPECTED_PLUGINS` にも足す
+- `scripts/checks/integrity/lint-config.test.ts` は解決後の設定の `plugins` を期待値と突き合わせる。トップレベルの `plugins` にプラグインを足したら、そのテストの `EXPECTED_PLUGINS` にも足す
 - 同じテストは、`vite.config.ts` の `lint.rules` に書いたキーが `--print-config` の `rules` に残るかも見る。プラグインの脱落で捨てられたルールを、名指し単位で見つけられる
 - 突き合わせでは 2 つのキーの形をまたぐ。eslint コアのルールは接頭辞なしで出力され、`typescript/` 接頭辞で書いた extension rule はコアのルール名へ解決される (2026-09-02 時点で `no-array-constructor` と `no-useless-constructor` の 2 件)。解決先が `correctness` なら名指しは no-op なので、`--print-config` で実効を比べる
 - React Compiler 由来のルールは `--print-config` の `rules` を `react/` で絞り、eslint-plugin-react-hooks のルール一覧と比べる
 - jsx-a11y は `--print-config` の `rules` を `jsx_a11y/` で絞り、上流 recommended の一覧と `comm` で両方向の差を取る。`rules` は「カテゴリで有効になったもの」と「名指ししたもの」の和なので、名前が出れば有効と読んでよい
-- `overrides` で足したプラグインとそのルールは、`--print-config` ではなく、当たるファイルへの実際の診断で確かめる。`--print-config` は `overrides` を書いたとおりの形で出し、ファイルを渡しても出力は変わらない (2026-09-30 に oxlint 1.85.0 で実測)。override のプラグインでカテゴリから有効になるルールも展開しない ([oxc-project/oxc#24878][])
+- `overrides` で足したプラグインとそのルールは、`--print-config` ではなく、当たるファイルへの実際の診断で確かめる。`--print-config` は `overrides` を書いたとおりの形で出し、ファイルを渡しても出力は変わらない (2026-09-30 に oxlint 1.85.0 で実測)。override のプラグインでカテゴリから有効になるルールも展開しない ([oxc-project/oxc#24878][]。2026-09-30 時点で open で、1.85.0 でも再現した)
 
 `--print-config` から有効と読めるのは、名前が出ている場合だけである。JS plugin 由来のルールは出力に出ないので、無いことは無効の証拠にならない (`docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」)。
 
