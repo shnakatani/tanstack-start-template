@@ -117,7 +117,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 依存の配布物に patch を当てるときは、`pnpm-workspace.yaml` の `patchedDependencies` へ足し、patch ごとに理由と撤去条件をコメントに書く (ADR-0005「pin には出口条件を書く」)。
 
-- キーは patch を作った版ではなく、その系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。Dependabot の更新ではその依存だけが PR から外れ、storybook の各パッケージのように揃えて上げる依存の版が割れる ([dependabot-core「group_update_creation.rb」][] の `create_change_for` が失敗した依存の変更を作らずに飛ばす。2026-09-30 にコードで確かめた。Dependabot の実行では観測していない)
+- キーは patch を作った版ではなく、その系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。Dependabot の更新ではその依存だけが PR から外れ、storybook の各パッケージのように揃えて上げる依存の版が割れる ([dependabot-core「group_update_creation.rb」][] の `compile_all_dependency_changes_for` は、グループの依存ごとに `compile_updates_for` と `create_change_for` を呼ぶ。どちらかが失敗すると空の配列か `false` が返り、その依存を飛ばして残りの依存で PR を作る。2026-09-30 にコードで確かめた。Dependabot の実行では観測していない)
 - 上流が同じ箇所を直した版へ上がると、範囲のキーの patch は当たらなくなり、install が落ちる。pnpm 11 は patch の失敗を常にエラーにする ([pnpm docs「pnpm patch」][])。落ちた Dependabot の PR を処理するとき (ADR-0005「pin には出口条件を書く」の、Dependabot の PR を処理するときの確認) に、その patch の撤去条件を確かめる
 
 ### workflow に action を足す
@@ -167,4 +167,4 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
 [pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
-[dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb
+[dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153

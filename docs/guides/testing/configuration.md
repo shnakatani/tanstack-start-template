@@ -12,14 +12,14 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 
 ### 設定の置き場所
 
-| 置くもの                                                                                                           | 置き場所                                                                                                                                                                  |
-| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test` の中身 (project の一覧、全 project が共有する `exclude`、`globalSetup`、coverage)                           | `tooling/test/config.ts` の `testConfig`。`vite.config.ts` の `test` がこれを読む。project は `exclude` などを継承する (`globalSetup` は継承されず、root で 1 回だけ走る) |
-| ブラウザテストの project                                                                                           | `tooling/test/browser-project.ts`                                                                                                                                         |
-| story の project                                                                                                   | `tooling/test/storybook-project.ts`                                                                                                                                       |
-| ブラウザで走る project に共通する設定 (`tailwindcss()`、`resolve.dedupe`、chromium を headless で動かす `browser`) | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる                                                |
-| project が共有する Vite の設定 (`envDir`、`resolve`)                                                               | `vite.config.ts` のトップレベル。project はこれを継承する                                                                                                                 |
-| テストでだけ外す plugin                                                                                            | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                                                                   |
+| 置くもの                                                                                                           | 置き場所                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test` の中身 (project の一覧、全 project が共有する `exclude`、`globalSetup`、coverage)                           | `tooling/test/config.ts` の `testConfig`。`vite.config.ts` の `test` がこれを読む。project は `exclude` を継承する。`globalSetup` は継承されず root で 1 回だけ走り、coverage は root だけが持つ (「project を inline に並べる理由」) |
+| ブラウザテストの project                                                                                           | `tooling/test/browser-project.ts`                                                                                                                                                                                                     |
+| story の project                                                                                                   | `tooling/test/storybook-project.ts`                                                                                                                                                                                                   |
+| ブラウザで走る project に共通する設定 (`tailwindcss()`、`resolve.dedupe`、chromium を headless で動かす `browser`) | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる                                                                                                            |
+| project が共有する Vite の設定 (`envDir`、`resolve`)                                                               | `vite.config.ts` のトップレベル。project はこれを継承する                                                                                                                                                                             |
+| テストでだけ外す plugin                                                                                            | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                                                                                                                               |
 
 `vitest.config.ts` は作らない (ADR-0037。仕組みは「`vitest.config.ts` を置かない理由」)。
 
@@ -79,6 +79,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 決定は ADR-0037 が持つ。この節は、継承の仕組みと、関数で渡す project の扱いを持つ。
 
 - Vitest 5 では、inline の project だけが root の設定を継承する ([Vitest docs「Test Projects」][]: "Projects referenced as config files or directories do not inherit any options from the root config.")
+- root の `globalSetup` は、inline の project にも継承されない。実行ごとに root で 1 回だけ走る ([Vitest docs「Test Projects」][]: "`globalSetup` is not inherited from the root config: the root-level `globalSetup` already runs once per test run")。coverage は project の設定に書けず、root が全体で 1 回取る (同じページの "`coverage`: coverage is done for the whole process")
 - ファイルで参照する project でも、共有の設定ファイルを作って `mergeConfig` で合わせれば写さずに済む (同じページの "You can create a shared config file and merge it with the project config yourself")。ただし project ごとに merge を書き、root とは別の共有ファイルを持つことになる。inline なら何も書かずに root を継承する
 - 関数で渡した project も inline の project として扱われる。docs に関数の例は無いが、`DEBUG=vitest:projects vp test list --filesOnly` が `inline project "browser" resolves its own Vite config` と出す (2026-09-30、vitest 5.0.1)。自前の Vite config を作りつつ、root の config ファイルを extends する
 - ブラウザで走る project (ブラウザテストと story) だけが共有する設定 (`tailwindcss()`、`resolve.dedupe`、`browser` の共通部分) は root に置けない。置くと Node の project まで `tailwindcss()` と `browser.enabled` を継承する。`extends` は root か 1 つの config ファイルしか指せず ([Vitest docs「Test Projects」][]: "The `extends` option also accepts a path to another config file")、inline の project は入れ子の project を持てない (同じページの "The `projects` option inside an inline configuration is not supported.")。そこで `tooling/test/chromium-project.ts` の `chromiumProjectBase` に置き、各 project が `mergeConfig` で重ねる。同じページがファイルで参照する project 向けに示す、共有の設定を merge する形 ("You can create a shared config file and merge it with the project config yourself") を、inline の project の一部に当てたもの
@@ -144,12 +145,12 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 
 ### story の project の `cacheDir` をテーマで分ける理由
 
-`storybookTest()` は `configDir` のハッシュから `cacheDir` を導く (`@storybook/addon-vitest` の vitest-plugin が `oneWayHash(configDir)` を projectId にする。10.6.0 の `dist` で 2026-09-30 に確かめた)。テーマ違いの 2 つの project は同じ `configDir` を渡すので、分けないと事前バンドルのキャッシュを 1 つ共有し、実行中に別々の依存を見つけて互いのキャッシュを無効化し合う (2026-09-20 に `@storybook/addon-vitest` 10.6.0 で観測。story 53 件、`include` を `axe-core` だけにした状態で、共有のままでは 106 ファイル中 62 が失敗して reload が 8 回、分けると全て通り reload は 0 回)。分けておけば、走査の結果が 2 つの project で違っても互いのキャッシュを壊さない。
+`storybookTest()` は `configDir` のハッシュから `cacheDir` を導く (`@storybook/addon-vitest` の vitest-plugin が `oneWayHash(configDir)` を projectId にする。10.6.0 の `dist` で 2026-09-30 に確かめた)。テーマ違いの 2 つの project は同じ `configDir` を渡すので、分けないと事前バンドルのキャッシュを 1 つ共有し、実行中に別々の依存を見つけて互いのキャッシュを無効化し合う (2026-09-20 に `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測。story 53 件、`include` を `axe-core` だけにした状態で、共有のままでは 106 ファイル中 62 が失敗して reload が 8 回、分けると全て通り reload は 0 回)。分けておけば、走査の結果が 2 つの project で違っても互いのキャッシュを壊さない。
 
-| 組み方                                                                   | 理由                                                                                                                                                                     |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `order: "post"` の config フックを持つ plugin で `cacheDir` を上書きする | addon は `cacheDir` を順序指定の無い config フックで入れるので、post 順のフックが後から上書きできる。同じ手で project 名は戻せない (ADR-0028)                            |
-| 固定のパス (`node_modules/.cache/storybook-vitest/<theme>`) で組み立てる | browser mode は config を読み直すので、既存の `cacheDir` から相対で作ると `light/light` のように入れ子になる (2026-09-21 までに `@storybook/addon-vitest` 10.6.0 で観測) |
+| 組み方                                                                   | 理由                                                                                                                                                                                    |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `order: "post"` の config フックを持つ plugin で `cacheDir` を上書きする | addon は `cacheDir` を順序指定の無い config フックで入れるので、post 順のフックが後から上書きできる。同じ手で project 名は戻せない (ADR-0028)                                           |
+| 固定のパス (`node_modules/.cache/storybook-vitest/<theme>`) で組み立てる | browser mode は config を読み直すので、既存の `cacheDir` から相対で作ると `light/light` のように入れ子になる (2026-09-21 までに `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測) |
 
 ## 出典
 
