@@ -64,7 +64,7 @@ W3C 自身の推奨値も面に依存する。WAI Forms Tutorial の `::placehol
 dark は帯に入る段が無い。`mist-400` は入力値との 3:1 を割る側 (2.35) で外れ、`mist-500` は 4.5:1 を割る側で外れる。
 **割る側を選んだ。** 入力値との区別が消えると、飛ばされるフィールドができるためである。**この選択は SC 1.4.3 への不適合を承知で採ったもので、正当化ではない。**
 
-Carbon が `$text-placeholder` を 2.55 (light の `--background` 相当) のまま置き、carbon#19553 で「placeholder はコントラスト要件の対象ではない」と述べて閉じているのは承知しているが、**これは Understanding 1.4.3 の Intent と正面から食い違うので根拠に使わない。** 参照するのは 3 分類の枠組みだけである。
+Carbon が `$text-placeholder` を 2.55 (light の `--background` 相当) のまま置き、carbon-design-system/carbon#19553 で「placeholder はコントラスト要件の対象ではない」と述べて閉じているのは承知しているが、**これは Understanding 1.4.3 の Intent と正面から食い違うので根拠に使わない。** 参照するのは 3 分類の枠組みだけである。
 `--muted-foreground` と兼ねていた `mist-400` も dark では帯の外だったので、この決定は外れる側を入れ替えたものである。
 
 light と dark で同じ `mist-500` になる。
