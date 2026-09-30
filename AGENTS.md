@@ -15,6 +15,7 @@ mise run verify   # マージ前に通す。手順は .mise.toml の [tasks.veri
 - パッケージは `vp add` / `vp rm` で操作し、pnpm / npm / yarn を直接打たない (lockfile の解決が Vite+ の管理から外れる)。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
 - **worktree のパスに `+` を含めない**。vitest browser が URL 上の `+` をスペースと解釈し、browser mode が無言でハングする。`EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
+- 既にある patch へ変更を足すときは、`vp pm patch` の編集用のディレクトリをリポジトリの外 (`mktemp -d` の下) に作り、`git apply -v <元の patch>` で元の変更を当ててから変更を加える。`vp pm patch` は範囲のキーの patch を当てず、そのまま `vp pm patch-commit` すると元の変更が黙って消える (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
 
 ## テストの実行
 
