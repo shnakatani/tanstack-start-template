@@ -29,10 +29,10 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 
 ### 重い依存を遅らせて読み込む
 
-| 依存の種類                                                             | 遅らせ方                                                                                                                                                                                                                    |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `plugins` に並べる plugin                                              | `lazyPlugins` に渡す関数の中で呼ぶ ([Vite+ docs「Troubleshooting」][])。足した plugin は「重い依存を遅らせる理由」と同じ測り方で `import()` の前後を測り、`real` の範囲が重ならずに縮むものだけを関数の中で `import()` する |
-| `plugins` 以外で使う依存 (Vitest の project が使う provider や plugin) | その依存を使う設定を関数にし、関数の中で外部のパッケージを `import()` する。project の例は `tooling/test/browser-project.ts`                                                                                                |
+| 依存の種類                                                             | 遅らせ方                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plugins` に並べる plugin                                              | `lazyPlugins` に渡す関数の中で呼ぶ ([Vite+ docs「Troubleshooting」][])。足した plugin は、「重い依存を遅らせる理由」の plugin の計測と同じく `vp lint` と `vp fmt --check` を 11 回ずつ走らせ、先頭で import した形と関数の中で `import()` した形を比べる。両方のコマンドで `real` の範囲が重ならずに縮むものだけを、関数の中で `import()` する |
+| `plugins` 以外で使う依存 (Vitest の project が使う provider や plugin) | その依存を使う設定を関数にし、関数の中で外部のパッケージを `import()` する。project の例は `tooling/test/browser-project.ts`                                                                                                                                                                                                                    |
 
 `import()` するのは外部のパッケージそのものにする。`tooling/` のモジュールを `import()` しても遅れない (「重い依存を遅らせる理由」)。
 
@@ -70,7 +70,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 | `tooling/test/` のモジュールを `import()`         | 0.99-1.01s | 0.60s            |
 | project の関数の中で外部の依存を `import()`       | 0.81-0.82s | 0.43-0.44s       |
 
-2026-09-30 に、`plugins` の plugin を読み込む形ごとに `/usr/bin/time -p vp lint src/lib/app-name.ts` と `/usr/bin/time -p vp fmt --check src/lib/app-name.ts` を 11 回ずつ走らせ、初回を除いた `real` の範囲 (vite-plus 1.0.0、Node 24.21.0、`@tanstack/react-start` 1.168.58、`nitro` 3.0.260610-beta、`@tanstack/devtools-vite` 0.8.5、`@tailwindcss/vite` 4.3.3、`@vitejs/plugin-react` 6.1.1)。1 行目は、前の表の最後の行と同じ形である。`@vitejs/plugin-react` は遅らせても範囲が重なったので、先頭で import する:
+2026-09-30 に、`plugins` の plugin を読み込む形ごとに `/usr/bin/time -p vp lint src/lib/app-name.ts` と `/usr/bin/time -p vp fmt --check src/lib/app-name.ts` を 11 回ずつ走らせ、初回を除いた `real` の範囲 (vite-plus 1.0.0、Node 24.21.0、`@tanstack/react-start` 1.168.58、`nitro` 3.0.260610-beta、`@tanstack/devtools-vite` 0.8.5、`@tailwindcss/vite` 4.3.3、`@vitejs/plugin-react` 6.1.1)。「全部の plugin を先頭で import」は、テストの設定の計測の「project の関数の中で外部の依存を `import()`」と同じ形である。`@vitejs/plugin-react` は遅らせても範囲が重なったので、先頭で import する:
 
 | 形                                                                                    | `vp lint`  | `vp fmt --check` |
 | ------------------------------------------------------------------------------------- | ---------- | ---------------- |
