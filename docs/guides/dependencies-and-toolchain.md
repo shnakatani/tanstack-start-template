@@ -26,6 +26,9 @@
 
 秘密が要るようになったら、暗号化した env ファイルと、`dotenvx run --` のような復号の経路を、Vite の env 機構と分けて足す。Vite は既に在る環境変数を `.env` で上書きしないので、復号を先に済ませて `process.env` へ入れる形が噛み合う。Vite の `.env` 読み込みは `envDir: false` で切ってある (ADR-0004)。
 
+- 暗号化した env ファイルは `.gitignore` の `.env` か `.env.*` に当たる。commit するファイルは `!.env.production` のような行で外し、その行を、同じファイルに当たるどの行よりも後ろに置く。同じ `.gitignore` の中では最後に当たった行が効くので、ツールの init が後から末尾に足した行が当たると、`!` の行は打ち消される ([gitignore(5)][])
+- 秘密鍵の `.env.keys` は `.env.*` が覆う。dotenvx が ignore を求めるのはこのファイルである ([dotenvx README][])
+
 ### Dependabot の alerts を有効にする
 
 テンプレートから作ったリポジトリで、Dependabot の alerts と security updates を有効にする (ADR-0005)。この設定はコードに現れない。
@@ -146,6 +149,13 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 tsconfig / `tooling/test/config.ts` (test。project はここから継承する) / `tooling/lint/config.ts` (lint) / `vite.config.ts` (fmt) は、それぞれ `.claude/worktrees/**` を除外している。走査対象を持つ config を新しく足したら、同じ除外をその場で書く。除外の経路は config ごとに別で共通化できず、1 つ落とすと worktree のコードがその走査へ黙って混ざる。
 
+### `git status` に出ないファイルを調べる
+
+作ったファイルが `git status` に出ないときは、`git check-ignore -v <パス>` で、当たった `.gitignore` の行を見る。
+
+- `.gitignore` の、先頭と途中に `/` を含まない行 (`out`、`pids`、`.cache` など) は、どの深さの同じ名前のディレクトリにも当たる ([gitignore(5)][])。そこに作ったファイルは、`git add .` では何も言われずに飛ばされ、パスを名指しした `git add` では拒まれる ([git-add(1)][])
+- 外すときは、`.gitignore` の末尾に `!src/routes/out/` のように、当たったディレクトリのパスを足す。親のディレクトリが除外されていると、中のファイルを名指しした `!` は効かない ([gitignore(5)][])。当たった行が使わないツールのもの (Next.js の `out` など) なら、行ごと消してもよい
+
 ## explanation
 
 ### `typescript` を直接の依存に置かない理由
@@ -179,3 +189,6 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
 [dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
 [dependabot-core「pnpm_lockfile_updater.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L285-L295
+[gitignore(5)]: https://git-scm.com/docs/gitignore
+[git-add(1)]: https://git-scm.com/docs/git-add
+[dotenvx README]: https://github.com/dotenvx/dotenvx/blob/v2.32.3/README.md
