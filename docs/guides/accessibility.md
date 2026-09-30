@@ -49,12 +49,12 @@ axe の結果が緑でも、「測った」ことも「WCAG を満たした」�
 
 - axe が担当するのは WCAG の一部だけである。2026-09-21 に `axe-core@4.13.0` で数えると 105 ルール / 28 SC で、[axe-core の `README.md`][] は「平均 57% を自動検出」と書く。色に関わる範囲は特に狭い
 
-| SC                      | axe のルール                                                 | 代わりに押さえるもの              |
-| ----------------------- | ------------------------------------------------------------ | --------------------------------- |
-| 1.4.3 (文字 4.5:1)      | `color-contrast` 1 つ                                        | —                                 |
-| 1.4.11 (非テキスト 3:1) | 0 ルール                                                     | トークンの値を人が測る (ADR-0024) |
-| 1.4.1 (色の使用)        | `link-in-text-block` だけ                                    | 本文中のリンク以外は見ない        |
-| `::placeholder`         | 誤った前景色で評価する ([dequelabs/axe-core#4260][] が open) | 人が見比べる (ADR-0025)           |
+| SC                      | axe のルール                                                                                                            | 代わりに押さえるもの              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| 1.4.3 (文字 4.5:1)      | `color-contrast` 1 つ                                                                                                   | —                                 |
+| 1.4.11 (非テキスト 3:1) | 0 ルール                                                                                                                | トークンの値を人が測る (ADR-0024) |
+| 1.4.1 (色の使用)        | `link-in-text-block` だけ                                                                                               | 本文中のリンク以外は見ない        |
+| `::placeholder`         | 誤った前景色で評価する ([dequelabs/axe-core#4260][]。修正の [dequelabs/axe-core#5359][] は 2026-09-30 時点で未リリース) | 人が見比べる (ADR-0025)           |
 
 ### `incomplete` は混成のバケツ
 
@@ -134,7 +134,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 | 情報                   | 分かったこと                                                                                                                                                                                                                                          | 出典                                                                               |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | 仕様                   | `<table>` に別の role を載せると、`<th>` / `<td>` は対応する role を失う。status は `aria-atomic="true"` の live region                                                                                                                               | [ARIA in HTML][] の `th` / `td` の行、[WAI-ARIA 1.2][] の `status`                 |
-| 支援技術の対応         | JAWS は `aria-busy="true"` の要素を読み飛ばし、NVDA・VoiceOver・TalkBack・Narrator は中身をそのまま読む ([a11ysupport.io の `aria-busy.json`][]、2020〜2021 年の測定)。2026-03-12 の ARIA WG でも「JAWS treats it like aria-hidden」と報告された      | [a11ysupport.io の `aria-busy.json`][]、[w3c/aria#2737][] (`aria-busy` の中の構造) |
+| 支援技術の対応         | JAWS は `aria-busy="true"` の要素を読み飛ばし、NVDA・VoiceOver・TalkBack・Narrator は中身をそのまま読む ([a11ysupport.io の `aria-busy.json`][]、2019〜2021 年の測定)。2026-03-12 の ARIA WG でも「JAWS treats it like aria-hidden」と報告された      | [a11ysupport.io の `aria-busy.json`][]、[w3c/aria#2737][] (`aria-busy` の中の構造) |
 | デザインシステムの実装 | 表の読み込み中を持つ系統 (Carbon、Primer、AWS Cloudscape、Twilio Paste、PatternFly、Ant Design、Salesforce Lightning、Atlassian、React Spectrum) はどれも本物の table と列見出しを残す。告知は区画ごとに 1 回にする (Primer、PatternFly、Fluent、EUI) | [Cloudscape の `src/table/skeleton-rows.tsx`][]、[Primer docs「Loading」][]        |
 
 | 案                                                                                                                                                          | 評価                                                                                                                                            | 採否     |
@@ -245,6 +245,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 [axe-core の `README.md`]: https://github.com/dequelabs/axe-core/blob/v4.13.0/README.md
 [dequelabs/axe-core#4260]: https://github.com/dequelabs/axe-core/issues/4260
+[dequelabs/axe-core#5359]: https://github.com/dequelabs/axe-core/pull/5359
 [WCAG 2.2「contrast ratio」]: https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio
 [Vitest docs「Test Tags」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-tags.md
 [Vitest docs「tags」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/tags.md
@@ -252,7 +253,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 [w3c/aria#1317]: https://github.com/w3c/aria/issues/1317
 [ARIA in HTML]: https://www.w3.org/TR/html-aria/
 [WAI-ARIA 1.2]: https://www.w3.org/TR/wai-aria-1.2/
-[a11ysupport.io の `aria-busy.json`]: https://github.com/accessibilitysupported/a11ysupport.io/blob/main/data/tests/tech/aria/aria-busy.json
+[a11ysupport.io の `aria-busy.json`]: https://github.com/accessibilitysupported/a11ysupport.io/blob/master/data/tests/tech/aria/aria-busy.json
 [w3c/aria#2737]: https://github.com/w3c/aria/issues/2737
 [Cloudscape の `src/table/skeleton-rows.tsx`]: https://github.com/cloudscape-design/components/blob/main/src/table/skeleton-rows.tsx
 [Primer docs「Loading」]: https://primer.style/product/ui-patterns/loading/
