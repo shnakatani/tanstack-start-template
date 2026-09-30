@@ -83,9 +83,9 @@ Vite+ は、重い plugin を `lazyPlugins` に渡す async の関数の中で `
 | さらに `tailwindcss` を `import()` (`vite.config.ts` と `chromiumProjectBase` の両方) | 0.58-0.60s | 0.21s            |
 | さらに `@vitejs/plugin-react` を `import()`                                           | 0.58-0.61s | 0.20-0.21s       |
 
-`tailwindcss` は `tooling/test/chromium-project.ts` の `chromiumProjectBase` でも読む。`vite.config.ts` が先頭で import している間は、`chromiumProjectBase` で遅らせても同じ module が読まれるので、表のとおり両方を遅らせないと縮まない。そのため `chromiumProjectBase` でも先頭で import する。
+`tailwindcss` は `tooling/test/chromium-project.ts` の `chromiumProjectBase` でも読む。`vite.config.ts` が先頭で import している間は、`chromiumProjectBase` で遅らせても同じ module が読まれるので、両方を遅らせないと縮まないと見込む (片方だけを遅らせる形は測っていない)。そのため `chromiumProjectBase` でも先頭で import する。
 
-`@storybook/tanstack-react` が Promise の plugin を解決してから外すようになったら、関数を async にして plugin を `import()` へ移せる。この節の計測は、そのときに移す plugin を選ぶ材料になる。
+async の関数でも `vp exec storybook build` が通るようになったら (`@storybook/tanstack-react` が Promise の plugin を解決してから外すようになるなど)、関数を async にして plugin を `import()` へ移せる。この節の計測は、そのときに移す plugin を選ぶ材料になる。
 
 ## 出典
 
