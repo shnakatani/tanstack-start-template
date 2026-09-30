@@ -21,22 +21,20 @@
 
 **React Compiler を `infer` モードで導入し、予防的なメモ化を強制する lint プラグインを積まない。**
 
-| #   | 決定                                                                                                                                                                  |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `@vitejs/plugin-react` の `compiler` オプション (`oxc-transform-react`) で Compiler を適用し、`compilationMode` は既定の `infer` を使う。babel は経路から外す         |
-| 2   | `react-perf` などメモ化を強制するプラグインを `lint.plugins` に置かない                                                                                               |
-| 3   | 分割後の React Compiler ルールは `correctness` / `perf` のカテゴリ経由と `react/unsupported-syntax` の名指しで入れる。bail out を報告する `react/todo` は有効にしない |
-| 4   | 手動メモ化を外すのは、撤去前後でコンパイル出力が悪化しないことを実測できた箇所だけとする                                                                              |
-| 5   | Compiler がカバーしない箇所を欠陥として扱わない。判断は実測された性能劣化で行い、予防的なメモ化は入れない                                                             |
-| 6   | bail out は `compiler.logDiagnostics` でビルドログへ出す。期待値として固定する検査は持たない                                                                          |
+- `@vitejs/plugin-react` の `compiler` オプション (`oxc-transform-react`) で Compiler を適用し、`compilationMode` は既定の `infer` を使う。babel は経路から外す
+- `react-perf` などメモ化を強制するプラグインを `lint.plugins` に置かない
+- 分割後の React Compiler ルールは `correctness` / `perf` のカテゴリ経由と `react/unsupported-syntax` の名指しで入れる。bail out を報告する `react/todo` は有効にしない
+- 手動メモ化を外すのは、撤去前後でコンパイル出力が悪化しないことを実測できた箇所だけとする
+- Compiler がカバーしない箇所を欠陥として扱わない。判断は実測された性能劣化で行い、予防的なメモ化は入れない
+- bail out は `compiler.logDiagnostics` でビルドログへ出す。期待値として固定する検査は持たない
 
-### 手動メモ化を残す条件 (決定 4)
+### 手動メモ化を残す条件
 
 React チームは既存コードの手動メモ化を残すよう推奨している。撤去の前後で比べる指標と計測のコードは `docs/guides/react/memoization.md`「手動メモ化を外すか判定する」にある。
 
 registry コード (`src/components/ui/`) は ADR-0020 の統制対象なので、この判定の対象にせず改変しない。
 
-### bail out をビルドログへ出す (決定 6)
+### bail out をビルドログへ出す
 
 `viteReact({ compiler: { logDiagnostics: true } })` で、Compiler が諦めた箇所をビルドログへ出す。
 既定は `false` で、最適化が外れたことがどこにも現れない。
@@ -44,20 +42,20 @@ registry コード (`src/components/ui/`) は ADR-0020 の統制対象なので�
 
 bail out の一覧を期待値として固定する検査は置かない。理由は 3 つある。
 
-| 理由                     | 内容                                                                                                                                                                                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 直さない検査になる       | 落ちてもコードは直さず期待値を書き換えるだけになる (決定 5)。修正義務のない赤信号は、上流更新のたびに文言と件数で鳴る。適用経路を babel と oxc で替えるだけで bail out の件数が変わる (2026-09-02 実測) |
-| 守ると謳う経路を守れない | Compiler を直接呼ぶ検査は `vite.config.ts` を読まない。`compiler` オプションを外しても検査は緑のままになる                                                                                              |
-| 残りは他が見ている       | パース・意味解析の失敗はビルドが落ちる。パッケージの欠落も `config` フックが `this.error` を投げる                                                                                                      |
+| 理由                     | 内容                                                                                                                                                                                                                                                 |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 直さない検査になる       | 落ちてもコードは直さず期待値を書き換えるだけになる (Compiler がカバーしない箇所を欠陥として扱わない決定)。修正義務のない赤信号は、上流更新のたびに文言と件数で鳴る。適用経路を babel と oxc で替えるだけで bail out の件数が変わる (2026-09-02 実測) |
+| 守ると謳う経路を守れない | Compiler を直接呼ぶ検査は `vite.config.ts` を読まない。`compiler` オプションを外しても検査は緑のままになる                                                                                                                                           |
+| 残りは他が見ている       | パース・意味解析の失敗はビルドが落ちる。パッケージの欠落も `config` フックが `this.error` を投げる                                                                                                                                                   |
 
-この検査を置く動機になりうるのは、`@babel/core` 8 系が最適化を silent に落とすことである。決定 1 で babel を経路から外しているので、その動機は無い。
+この検査を置く動機になりうるのは、`@babel/core` 8 系が最適化を silent に落とすことである。Compiler を `compiler` オプションで適用して babel を経路から外しているので、その動機は無い。
 
-### bail out を lint で報告しない (決定 3)
+### bail out を lint で報告しない
 
 oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され、診断は 22 のルールへ分割された。
 未実装による bail out は `react/todo` が担う (カテゴリ分けと選定の基準は ADR-0007)。
 
-`react/todo` を `"error"` にすると bail out を修正すべき違反として扱うことになり、決定 5 と矛盾する。原因は Compiler の未実装でありコードの誤りではない。
+`react/todo` を `"error"` にすると bail out を修正すべき違反として扱うことになり、Compiler がカバーしない箇所を欠陥として扱わない決定と矛盾する。原因は Compiler の未実装でありコードの誤りではない。
 `vp lint -D react/todo` が報告するのは registry コードだけで、ADR-0020 により書き換えない (2026-09-02 確認)。件数は上流の追随で動くため、必要なときにこのコマンドで数える。
 
 `vp lint -D react/todo` は `logDiagnostics` の退路としてその場で叩く (2026-09-02 に、ビルドログと同じ bail out を同じ数だけ報告すると確かめた)。使い方は `docs/guides/react/memoization.md`「React Compiler の診断を読む」にある。
@@ -68,15 +66,15 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 
 ### 検討した選択肢
 
-| 案                                           | 評価                                                                                                                        | 採否     |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
-| Compiler 導入 + 予防的メモ化ルールを積まない | 指摘の大半を Compiler が自動で担い、手作業がゼロになる。代償はビルド時間の増加                                              | **採用** |
-| メモ化ルールを有効にして全箇所を修正         | Compiler 環境では推奨形の方がコンパイル出力が大きくなる。base-ui の `render` prop 標準形にも反する                          | 却下     |
-| `compilationMode: "annotation"` で段階導入   | 対象が `"use memo"` を書いた関数に限られ、ルールを積まない根拠 (全関数が対象) が成り立たない                                | 却下     |
-| Compiler の適用を oxc ネイティブで行う       | `@vitejs/plugin-react` 6.1 の `compiler` オプションで babel を経路から外せる。experimental だが退避は版を下げるだけで足りる | **採用** |
-| Compiler の適用を babel で行う               | `@babel/core` が 8 系で最適化を silent に落とすため major の停止が要り、ビルドも延びる                                      | 却下     |
-| bail out をビルドログへ出す                  | 見えるのは処理を試みて失敗した箇所だけで、対象外の関数はイベントすら出ない。それでも維持コストがゼロなので採る              | **採用** |
-| bail out の一覧を検査で固定する              | 落ちてもコードは直さず期待値を更新するだけになる (決定 5)。検査自体も `vite.config.ts` の配線を見ない                       | 却下     |
+| 案                                           | 評価                                                                                                                                               | 採否     |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Compiler 導入 + 予防的メモ化ルールを積まない | 指摘の大半を Compiler が自動で担い、手作業がゼロになる。代償はビルド時間の増加                                                                     | **採用** |
+| メモ化ルールを有効にして全箇所を修正         | Compiler 環境では推奨形の方がコンパイル出力が大きくなる。base-ui の `render` prop 標準形にも反する                                                 | 却下     |
+| `compilationMode: "annotation"` で段階導入   | 対象が `"use memo"` を書いた関数に限られ、ルールを積まない根拠 (全関数が対象) が成り立たない                                                       | 却下     |
+| Compiler の適用を oxc ネイティブで行う       | `@vitejs/plugin-react` 6.1 の `compiler` オプションで babel を経路から外せる。experimental だが退避は版を下げるだけで足りる                        | **採用** |
+| Compiler の適用を babel で行う               | `@babel/core` が 8 系で最適化を silent に落とすため major の停止が要り、ビルドも延びる                                                             | 却下     |
+| bail out をビルドログへ出す                  | 見えるのは処理を試みて失敗した箇所だけで、対象外の関数はイベントすら出ない。それでも維持コストがゼロなので採る                                     | **採用** |
+| bail out の一覧を検査で固定する              | 落ちてもコードは直さず期待値を更新するだけになる (Compiler がカバーしない箇所を欠陥として扱わない決定)。検査自体も `vite.config.ts` の配線を見ない | 却下     |
 
 ## Consequences
 
@@ -84,11 +82,11 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 - `package.json` から babel を外しても install からは消えない。`@vitejs/plugin-react` の optional peer として `@rolldown/plugin-babel` と `babel-plugin-react-compiler` と `@babel/core` が lockfile に残る (2026-09-02 実測: `vp why babel-plugin-react-compiler` が plugin-react 経由で解決する)。プロジェクト root からは解決できないので (`require.resolve` が `MODULE_NOT_FOUND`)、`vite.config.ts` から使うことはできない
 - Compiler は client 環境だけで走る。自前コードの SSR 出力にメモ化は入らない (2026-09-02 実測: `grep -c useMemoCache .output/server/_ssr/ssr.mjs` が 0)。`.output/server/_libs/` にはコンパイル済みで配布される base-ui と react-router が入るため、`.output/server` を丸ごと grep すると当たる。単一レンダーの経路なのでメモ化の効きどころが無い
 - `oxc-transform-react` は `@vitejs/plugin-react` の optional peer で、宣言された範囲 (`^0.145.0`) が上流自身の devDependency (`^0.147.0`) より狭い。範囲の是正までは `pnpm-workspace.yaml` の `peerDependencyRules` で受ける
-- bail out はビルドログにしか出ない。増減はゲートにならず、気づくのはログを読んだときになる。決定 5 が bail out を欠陥として扱わないので、この非対称は意図どおりである
+- bail out はビルドログにしか出ない。増減はゲートにならず、気づくのはログを読んだときになる。Compiler がカバーしない箇所を欠陥として扱わないと決めているので、この非対称は意図どおりである
 - Compiler が黙って外れる経路 (`vite.config.ts` から `compiler` オプションが消える) を機械で見張るものは無い。塞ぐならビルド成果物を見る検査が要る
 - メモ化が正しさや依存ガードに効く箇所があれば、その規範は rules 側に置く。Compiler への委譲はそれを否定しない
 - Rules of React の検査を外すと Compiler が bail out する土壌ができる。分割後のルール群は導入の前提として据え置く
-- `compiler` オプションが experimental でなくなったら決定 1 を見直す。`peerDependencyRules` の緩和の出口条件は `pnpm-workspace.yaml` のコメントが持つ
+- `compiler` オプションが experimental でなくなったら、このオプションで Compiler を適用する決定を見直す。`peerDependencyRules` の緩和の出口条件は `pnpm-workspace.yaml` のコメントが持つ
 
 ## 出典
 

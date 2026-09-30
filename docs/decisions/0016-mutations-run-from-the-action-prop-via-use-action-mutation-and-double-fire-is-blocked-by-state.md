@@ -71,7 +71,7 @@ React はユーザー起点のイベントごとに次のイベントより前�
 
 二重発火の検証を実イベントで書く手順は `docs/guides/testing/user-interactions.md`「クリックを発火する」にある。
 
-完了点 (a) (ADR-0017) では Action が close だけを含み Transition が確定直後に終わるため、`isPending` の dedupe が効かない間がある。その間の防ぎ方は `docs/guides/react/updates.md`「完了点ごとに Transition を終える」にある。
+完了点「確定操作の直後」(ADR-0017) では Action が close だけを含み Transition が確定直後に終わるため、`isPending` の dedupe が効かない間がある。その間の防ぎ方は `docs/guides/react/updates.md`「完了点ごとに Transition を終える」にある。
 
 ### mutation の書き方
 

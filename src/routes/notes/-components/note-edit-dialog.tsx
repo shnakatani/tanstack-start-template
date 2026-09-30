@@ -27,7 +27,7 @@ export function NoteEditDialog() {
     onMutate: () => {
       announce("更新しています");
     },
-    // 完了点 (b): 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
+    // 完了点「サーバー応答」: 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
     // 一覧の再取得は queryKey の前方一致に委ねる
     onSuccess: async (_data, update) => {
       noteEditDialogHandle.close();

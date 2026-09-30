@@ -41,7 +41,7 @@ describe("createDb", () => {
     expect(rows[0]?.createdAt).toBeInstanceOf(Date);
   });
 
-  // 暦の日付 (ADR-0031 の分類 2) は、入力スキーマを通らない書き込みでも形と暦の存在を DB が守る
+  // 暦の日付 (ADR-0031) は、入力スキーマを通らない書き込みでも形と暦の存在を DB が守る
   it("notes.due_date は暦にある 0000〜9999 年の YYYY-MM-DD か NULL だけを受け入れる", () => {
     const db = createDb(":memory:");
     migrateDb(db);

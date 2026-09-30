@@ -49,7 +49,7 @@ export const noteInputSchema = v.object({
     v.metadata({ label: BODY_LABEL }),
   ),
   /**
-   * 暦の日付 (ADR-0031 の分類 2)。期日なしは null。`Date` を経由せず `YYYY-MM-DD` のまま持つ。
+   * 暦の日付 (ADR-0031)。期日なしは null。`Date` を経由せず `YYYY-MM-DD` のまま持つ。
    * `isoDate()` は形式だけを見て 2023-06-31 を通すので、暦に存在するかを `v.check` で足す
    */
   dueDate: v.pipe(

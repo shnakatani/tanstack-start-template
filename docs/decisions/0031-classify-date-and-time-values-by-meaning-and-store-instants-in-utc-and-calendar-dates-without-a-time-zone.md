@@ -42,21 +42,21 @@ react.dev「hydrateRoot」は "There are no guarantees that attribute difference
 
 日付や日時の値を足すときは、値の意味で次の 4 つに分け、分類ごとに持ち方を決める。分類は Temporal の型に合わせる。
 
-| 分類                        | 見分け方                                                            | 保存の形                                                                                          | ドメイン型 | 表示                                                 | Temporal の型                                           |
-| --------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------- | ------------------------------------------------------- |
-| 1. 瞬間                     | 一点を指す時刻 (既に起きたことの記録、期間から計算した期限)         | UTC のエポックミリ秒 (`integer` の `timestamp_ms`)                                                | `Date`     | 決めた TZ の壁時計に直す。今は `APP_TIME_ZONE`       | `Instant`                                               |
-| 2. 暦の日付                 | 誰から見ても同じ数字の日                                            | `YYYY-MM-DD` の TEXT。`CHECK (<列> IS date(<列>) AND length(<列>) = 10)` で暦にある日付だけを通す | 文字列     | 変換せずにそのまま出す                               | `PlainDate`                                             |
-| 3. 場所に結びつく日付・日時 | ある場所の 1 日、人が壁時計で約束した将来の時刻                     | ローカルの日付や日時 (TEXT) と、IANA の TZ 名 (TEXT) を別の列で持つ。オフセットは持たない         | 文字列の組 | その TZ で意味を持つ。他の TZ で見せるときは変換する | 日時は `ZonedDateTime`。日付は `PlainDate` と TZ 名の組 |
-| 4. 「今日」や期限の判定     | 値ではなく判定 (期限を過ぎたか、既定値にする今日、選べる範囲の制限) | —                                                                                                 | —          | どの TZ の今日かを明示する。今は `APP_TIME_ZONE`     | `Temporal.Now.plainDateISO(timeZone)`                   |
+| 分類                     | 見分け方                                                            | 保存の形                                                                                          | ドメイン型 | 表示                                                 | Temporal の型                                           |
+| ------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------- | ------------------------------------------------------- |
+| 瞬間                     | 一点を指す時刻 (既に起きたことの記録、期間から計算した期限)         | UTC のエポックミリ秒 (`integer` の `timestamp_ms`)                                                | `Date`     | 決めた TZ の壁時計に直す。今は `APP_TIME_ZONE`       | `Instant`                                               |
+| 暦の日付                 | 誰から見ても同じ数字の日                                            | `YYYY-MM-DD` の TEXT。`CHECK (<列> IS date(<列>) AND length(<列>) = 10)` で暦にある日付だけを通す | 文字列     | 変換せずにそのまま出す                               | `PlainDate`                                             |
+| 場所に結びつく日付・日時 | ある場所の 1 日、人が壁時計で約束した将来の時刻                     | ローカルの日付や日時 (TEXT) と、IANA の TZ 名 (TEXT) を別の列で持つ。オフセットは持たない         | 文字列の組 | その TZ で意味を持つ。他の TZ で見せるときは変換する | 日時は `ZonedDateTime`。日付は `PlainDate` と TZ 名の組 |
+| 「今日」や期限の判定     | 値ではなく判定 (期限を過ぎたか、既定値にする今日、選べる範囲の制限) | —                                                                                                 | —          | どの TZ の今日かを明示する。今は `APP_TIME_ZONE`     | `Temporal.Now.plainDateISO(timeZone)`                   |
 
-- 分類 2 と 3 の値は、途中で `Date` や瞬間を経由しない。入力部品が `Date` を返すときは、その場で年・月・日だけを取り出して文字列にする
-- 分類 3 は、TZ が `APP_TIME_ZONE` の 1 つしか無くても TZ 名の列を持つ。値だけで意味が決まり、TZ を足しても列の形は変わらない。夏時間のある TZ を足すときは、重複する時刻を区別する規則が要るので、この ADR を書き換える (下の「扱わない値」)
-- 人が壁時計で約束した将来の時刻 (会議の開始など) は、瞬間 (分類 1) ではなく分類 3 で持つ。保存したあとに TZ の定義が変わっても、約束した壁時計の時刻を保てる。期間から計算した期限 (有効期限など) は壁時計の約束を持たないので、分類 1 で持つ
-- 分類 4 の判定は、実行環境のローカル TZ に任せない。SSR では同じ判定がサーバーとブラウザの両方で走り、TZ が違うと今日が食い違う (サーバーが UTC なら、JST の 0 時から 9 時までは前日になる)
-- 分類 4 の判定は、テストで時計を固定できる形にする (Vitest の `vi.setSystemTime`)
-- 入力部品が入力の手助けとして見せる今日 (Calendar の今日の強調、選択が無いときに開く月とフォーカス先) は、分類 4 に入れず、ブラウザの TZ に任せる。選ぶ人に、その人の暦の今日を見せる。その部品はブラウザでだけ描く (初めに閉じていて `keepMounted` を付けない Popover の中に置くか、`<ClientOnly>` で囲む)。サーバーで描くと、サーバーの今日が hydration の後も残る (Context の表)
-- 選べる範囲の制限 (過去の日を選べなくするなど) は値の妥当性の判定なので、分類 4 に従う。`APP_TIME_ZONE` の今日を求めてから Calendar に渡す。ブラウザの今日で決めると、サーバーの検証と割れる
-- 既定値にする今日 (分類 4) と、Calendar が強調する今日は、`APP_TIME_ZONE` の外にいる利用者では、2 つの TZ で日付が違う時間帯に食い違ってよい
+- 暦の日付と、場所に結びつく日付・日時の値は、途中で `Date` や瞬間を経由しない。入力部品が `Date` を返すときは、その場で年・月・日だけを取り出して文字列にする
+- 場所に結びつく日付・日時は、TZ が `APP_TIME_ZONE` の 1 つしか無くても TZ 名の列を持つ。値だけで意味が決まり、TZ を足しても列の形は変わらない。夏時間のある TZ を足すときは、重複する時刻を区別する規則が要るので、この ADR を書き換える (下の「扱わない値」)
+- 人が壁時計で約束した将来の時刻 (会議の開始など) は、瞬間ではなく場所に結びつく日付・日時で持つ。保存したあとに TZ の定義が変わっても、約束した壁時計の時刻を保てる。期間から計算した期限 (有効期限など) は壁時計の約束を持たないので、瞬間で持つ
+- 「今日」や期限の判定は、実行環境のローカル TZ に任せない。SSR では同じ判定がサーバーとブラウザの両方で走り、TZ が違うと今日が食い違う (サーバーが UTC なら、JST の 0 時から 9 時までは前日になる)
+- 「今日」や期限の判定は、テストで時計を固定できる形にする (Vitest の `vi.setSystemTime`)
+- 入力部品が入力の手助けとして見せる今日 (Calendar の今日の強調、選択が無いときに開く月とフォーカス先) は、「今日」や期限の判定に入れず、ブラウザの TZ に任せる。選ぶ人に、その人の暦の今日を見せる。その部品はブラウザでだけ描く (初めに閉じていて `keepMounted` を付けない Popover の中に置くか、`<ClientOnly>` で囲む)。サーバーで描くと、サーバーの今日が hydration の後も残る (Context の表)
+- 選べる範囲の制限 (過去の日を選べなくするなど) は値の妥当性の判定なので、「今日」や期限の判定に従う。`APP_TIME_ZONE` の今日を求めてから Calendar に渡す。ブラウザの今日で決めると、サーバーの検証と割れる
+- 既定値にする今日 (「今日」や期限の判定) と、Calendar が強調する今日は、`APP_TIME_ZONE` の外にいる利用者では、2 つの TZ で日付が違う時間帯に食い違ってよい
 
 次の値は扱わない。足すときにこの ADR を書き換える。
 
@@ -76,8 +76,8 @@ react.dev「hydrateRoot」は "There are no guarantees that attribute difference
 | 値の意味で分類し、分類ごとに持ち方を変える                                     | 主要な言語とライブラリの公式の型の分け方と一致する (「出典」の表)                                                                                                                                                                                                                                   | **採用** |
 | すべてを瞬間 (UTC) で持つ                                                      | 暦の日付が TZ でずれる。Martin Fowler「Time Point」は、Outlook の終日の予定が時刻の範囲で持たれ、ボストンからシカゴへ移ると前日に表示された例を挙げる。Stack Overflow の定番の回答 (質問 2532729) は "Timestamping can use UTC, but future time scheduling and date-only values should not." と書く | 却下     |
 | すべてをローカルの日時 (TZ なし) で持つ                                        | 瞬間を一意に表せない。PostgreSQL の wiki「Don't Do This」は TZ を持たない `timestamp` を "a picture of a calendar and a clock rather than a point in time" と呼び、瞬間には `timestamptz` を勧める                                                                                                  | 却下     |
-| 分類 3 の TZ をオフセットで持つ                                                | オフセットは夏時間や TZ の定義の変更に追従しない。MDN「Temporal.ZonedDateTime」は "Avoid using offset identifiers if there is a named time zone you can use instead." と書く。RFC 9557 も、タイムスタンプの TZ の注記にオフセットを使う形を "strongly discouraged" とする                           | 却下     |
-| 分類 3 の TZ を列に持たず、規約で `APP_TIME_ZONE` とみなす                     | 列は要らないが、TZ が増えたとき既存の値の TZ を規約からしか復元できない                                                                                                                                                                                                                             | 却下     |
+| 場所に結びつく日付・日時の TZ をオフセットで持つ                               | オフセットは夏時間や TZ の定義の変更に追従しない。MDN「Temporal.ZonedDateTime」は "Avoid using offset identifiers if there is a named time zone you can use instead." と書く。RFC 9557 も、タイムスタンプの TZ の注記にオフセットを使う形を "strongly discouraged" とする                           | 却下     |
+| 場所に結びつく日付・日時の TZ を列に持たず、規約で `APP_TIME_ZONE` とみなす    | 列は要らないが、TZ が増えたとき既存の値の TZ を規約からしか復元できない                                                                                                                                                                                                                             | 却下     |
 | 瞬間をオフセット付き (記録時のオフセットを残す形) で持つ                       | .NET の `DateTimeOffset` と java.time の `OffsetDateTime` の形。記録した場所の壁時計を後で復元できるが、テンプレートの値 (作成日時) は記録時の場所を使わない。Django と PostgreSQL は UTC で持つ                                                                                                    | 却下     |
 | Calendar の今日はブラウザの TZ に任せ、Calendar はブラウザでだけ描く           | react-day-picker の既定のまま使える。サーバーで描かない形は、gpbl/react-day-picker#2768 でメンテナが案内し、TanStack Start「Hydration Errors」の Strategy 3 (`<ClientOnly>`) にもある                                                                                                               | **採用** |
 | Calendar の今日も `APP_TIME_ZONE` で決める (`timeZone` prop を渡す)            | サーバーとブラウザで今日が揃い、サーバーで描ける。代わりに、選択中の値を素の `Date` ではなく `TZDate` で渡す必要がある (react-day-picker docs「Working with time-zoned dates」)。`APP_TIME_ZONE` の外にいる利用者では、その人の暦の今日と食い違う                                                   | 却下     |
@@ -88,9 +88,9 @@ react.dev「hydrateRoot」は "There are no guarantees that attribute difference
 
 ## Consequences
 
-- Temporal が使えるようになったとき、保存の形を変えずに読み替えられる。分類 1 は `Instant`、2 は `PlainDate`、3 の日時は `ZonedDateTime`、3 の日付は `PlainDate` と TZ 名の組になる
-- 分類 2 の値は `Date` を経由できないので、`Date` を返す入力部品 (Calendar など) との境界に変換が要る。変換の手順は `docs/guides/dates-and-time-zones.md` が持つ
-- 分類 2 の値を `new Date("YYYY-MM-DD")` で読むと、ブラウザの TZ によって 1 日ずれる。型は文字列なので、`Date` に渡すまでは型検査で気付けない
+- Temporal が使えるようになったとき、保存の形を変えずに読み替えられる。瞬間は `Instant`、暦の日付は `PlainDate`、場所に結びつく日時は `ZonedDateTime`、場所に結びつく日付は `PlainDate` と TZ 名の組になる
+- 暦の日付の値は `Date` を経由できないので、`Date` を返す入力部品 (Calendar など) との境界に変換が要る。変換の手順は `docs/guides/dates-and-time-zones.md` が持つ
+- 暦の日付の値を `new Date("YYYY-MM-DD")` で読むと、ブラウザの TZ によって 1 日ずれる。型は文字列なので、`Date` に渡すまでは型検査で気付けない
 - 再評価の条件: Temporal が Baseline になり、テンプレートの Node で使えるようになったら、ドメイン型を Temporal の型へ移すかを見直す。保存の形は変えない
 
 ## 出典

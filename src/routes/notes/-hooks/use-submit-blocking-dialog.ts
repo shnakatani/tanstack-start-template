@@ -13,7 +13,7 @@ export function useSubmitBlockingDialog({ isPending }: { isPending: boolean }) {
   // 保存の mutation が pending の間は、ユーザー起点の close を止める。止めないと、閉じて開き直した
   // フォームを、先行する保存の onSuccess の close が入力ごと閉じる。入力フォームは同じ対象を
   // 開き直しても別の入力になるので、開いている対象と mutation の対象を比べても区別できない
-  // (`docs/guides/react/updates.md`「完了点ごとに Transition を終える」の (b))。止めるのは
+  // (`docs/guides/react/updates.md`「完了点ごとに Transition を終える」のサーバー応答)。止めるのは
   // このダイアログだけで、一覧の操作は止めない (ADR-0017「ブロック範囲」)。
   //
   // pending は応答後も再取得の完了まで続くので、その間に開き直したダイアログも閉じられない。

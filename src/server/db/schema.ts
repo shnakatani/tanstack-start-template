@@ -7,9 +7,9 @@ export const notes = sqliteTable(
     id: integer("id").primaryKey({ autoIncrement: true }),
     title: text("title").notNull(),
     body: text("body").notNull().default(""),
-    // 暦の日付 (ADR-0031 の分類 2) を YYYY-MM-DD の TEXT で持つ。期日なしは NULL
+    // 暦の日付 (ADR-0031) を YYYY-MM-DD の TEXT で持つ。期日なしは NULL
     dueDate: text("due_date"),
-    // 作成日時と更新日時は瞬間 (ADR-0031 の分類 1) を UTC のエポックミリ秒で持つ。値は DB の
+    // 作成日時と更新日時は瞬間 (ADR-0031) を UTC のエポックミリ秒で持つ。値は DB の
     // 既定値で入れる (drizzle docs のガイド「Timestamp as a default value」)。更新日時は
     // drizzle の update のたびに $onUpdate がアプリの時計で入れる
     createdAt: integer("created_at", { mode: "timestamp_ms" })

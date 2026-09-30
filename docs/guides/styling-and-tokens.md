@@ -15,7 +15,7 @@
 
 - semantic token を使う。淡いハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token で書く
 - 新しい意味のある色は、`src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。定義より前に utility を書くと、`no-unknown-classes` が止める
-- 露出の口 (`@theme inline` で utility にするか、`:root` と `@utility` だけにするか) は、誤った当て方を誘う既存の書き方があるかで選ぶ (ADR-0024 の決定 4)
+- 露出の口 (`@theme inline` で utility にするか、`:root` と `@utility` だけにするか) は、誤った当て方を誘う既存の書き方があるかで選ぶ (ADR-0024「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」)
 - `@theme inline` へ通した面のトークンを文字として書く余地は残る。面のトークンを文字に使うなら、載る下地ごとに比を測る。2026-09-22 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.76、`--muted` / `--accent` / `--secondary` で 4.28〜4.33 になり、後者は SC 1.4.3 を割る
 - `-foreground` を「面の上の文字」以外の意味で使わない。上流はこの接尾辞を solid な面の上の文字に割り当てており、別の意味を載せると次の生成で衝突する
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
@@ -67,7 +67,7 @@ ui 部品の見た目を変えたいときは、上の行から順に当ては�
 
 ### トークンを作り直す
 
-上流の preset が変わったときや、base color を変えたときは、生成物からやり直す (ADR-0024 の決定 1)。
+上流の preset が変わったときや、base color を変えたときは、生成物からやり直す (ADR-0024「土台は空ファイルへの生成物とし、自作分を載せ直す」)。
 
 1. `src/styles.css` を `@import "tailwindcss";` だけに戻す
 2. `shadcn init --preset b1Z7Mag76 --base base --force --no-reinstall` で生成する。preset code は `shadcn preset decode` で `vega / mist / blue / chart blue / lucide / geist / radius default / menuAccent subtle / menuColor default` に展開される
@@ -96,7 +96,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 - `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である
 - 比を書いた箇所を触るときは測り直す。[Understanding SC 1.4.3][] と [Understanding SC 1.4.11][] は計算値を丸めるなと地の文に書いており (WCAG 2.2 本体に記述は無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない
 - 表示は切り捨てなので、2 桁の値が実際の比を上回ることはない。`4.59` と出た値が 4.6 を満たすことはない
-- `--primary` の hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置き、`mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。4.6 を下回る hue は light を `<hue>-900` にする (ADR-0024 の決定 2)
+- `--primary` の hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置き、`mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。4.6 を下回る hue は light を `<hue>-900` にする (ADR-0024「有彩色のアクセントは light と dark で役割を反転させる」)
 - placeholder の帯の上端 (入力値との 3:1) は `mise run contrast` では出せない。入力値 (`--foreground`) と 3:1 になる輝度を解いてから、背景との比へ直す。light は例示が入力値より明るいので `Lp = 3 * (L入力値 + 0.05) - 0.05`、dark は暗いので `Lp = (L入力値 + 0.05) / 3 - 0.05` を解き、`Lp` と背景の輝度で比を取る。輝度の式は `scripts/contrast/lib/contrast.ts` にある
 - 比を計算できない入力は黙って通さず throw する。silent に通すと、画面に存在しない比が文書へ写る。throw する入力は次のとおり
 
@@ -115,7 +115,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 ### 実在の対を story で描く
 
-既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を `src/components/contrast.stories.tsx` に足し、axe の対象に入れる (ADR-0024 の決定 5)。比を計算する story は書かない。
+既定の story が描かない組み合わせ (hover の tint など) は、実テキストとして描く story を `src/components/contrast.stories.tsx` に足し、axe の対象に入れる (ADR-0024「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。比を計算する story は書かない。
 
 ### axe の比と突き合わせる
 

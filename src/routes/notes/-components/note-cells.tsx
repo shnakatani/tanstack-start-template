@@ -18,7 +18,7 @@ export function NoteBodyCell({ row }: NoteCellContext) {
 }
 
 /**
- * 期日の cell。暦の日付は TZ で変換せずに、ロケールの書式で出す (ADR-0031 の分類 2)。保存中の行も
+ * 期日の cell。暦の日付は TZ で変換せずに、ロケールの書式で出す (ADR-0031)。保存中の行も
  * 送信した値を持つのでそのまま描く。未設定は「—」
  */
 export function NoteDueDateCell({ row }: NoteCellContext) {

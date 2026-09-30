@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { formatCalendarDate, isExistingCalendarDate, parseCalendarDate } from "./calendar-date";
 
 /**
- * 暦の日付 (ADR-0031 の分類 2) と Calendar の `Date` の境界を、このプロセスの TZ で確かめる。
+ * 暦の日付 (ADR-0031) と Calendar の `Date` の境界を、このプロセスの TZ で確かめる。
  * `toISOString()` や `new Date("YYYY-MM-DD")` を挟むと、UTC より進んだ TZ か遅れた TZ のどちらかで
  * 1 日ずれる (ADR-0031 の Context)
  */

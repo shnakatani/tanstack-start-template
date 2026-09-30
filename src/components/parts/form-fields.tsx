@@ -356,7 +356,7 @@ interface FormDateFieldProps
 }
 
 /**
- * 暦の日付 (`YYYY-MM-DD`、ADR-0031 の分類 2) を Calendar で選ぶフィールド。値が無いことを null で持つ。
+ * 暦の日付 (`YYYY-MM-DD`、ADR-0031) を Calendar で選ぶフィールド。値が無いことを null で持つ。
  * 組み方は shadcn docs「Date Picker」の Popover + Calendar + Button。`Date` との変換は
  * `src/lib/calendar-date.ts` が行い、form の値に `Date` を入れない。
  *
