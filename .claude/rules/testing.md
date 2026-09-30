@@ -5,6 +5,7 @@ paths:
   - "scripts/**/*.test.*"
   - "src/test/**"
   - "**/*.test-helpers.*"
+  - "tooling/test/**"
 ---
 
 # テストルール
