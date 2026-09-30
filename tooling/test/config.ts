@@ -27,7 +27,8 @@ function storybookProjects(): TestProjectConfiguration[] {
   return themes.map((theme) => () => {
     // 縮退を黙って通さない。VITEST_STORYBOOK がシェルへ残ったまま `vp test run` を叩くと、
     // dark の a11y 検査が消えたことに誰も気付けない。関数の中で出すのは、project を解決する
-    // テストの実行でだけ出すため (config を読むだけの lint / fmt / build では出さない)
+    // テストの実行でだけ出すため (config を読むだけの lint / fmt / build では出さない)。
+    // Vitest は --project で絞る前に関数の project を全部呼ぶので、story を回さない実行でも出る
     if (storybookRun)
       console.warn("[storybook] VITEST_STORYBOOK が真なので light だけを回す (ADR-0028)");
     return storybookProject(theme);
