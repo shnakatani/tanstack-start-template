@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { ChoiceCard, ChoiceCardList } from "./choice-card";
 
-/** 1 行目にだけ trailing を置く。タイトルと checkbox の間に入る位置が見える */
+/** チームA の行にだけ trailing を置く。タイトルと checkbox の間に入る位置が見える */
 const ROWS = [
   { id: "a", label: "チームA" },
   { id: "b", label: "チームB" },
@@ -97,7 +97,7 @@ export const GeneratedId: Story = {
     await expect(labels.map((label) => label.control?.tagName)).toEqual(["INPUT", "INPUT"]);
     await expect(new Set(labels.map((label) => label.htmlFor)).size).toBe(2);
 
-    // 2 行目のラベルを押しても 1 行目は連動しない
+    // チームB のラベルを押しても チームA は連動しない
     await userEvent.click(screen.getByText("チームB"));
 
     await expect(screen.getByRole("checkbox", { name: "チームB" })).toBeChecked();

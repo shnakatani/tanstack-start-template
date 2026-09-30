@@ -31,7 +31,8 @@ function adrContent(file: string): string {
 
 describe("ADR 索引の整合性", () => {
   it("走査対象が解決できている (パスずれ・rename で空検証に退化しない)", () => {
-    // README からのリンクと Superseded 系のテストは、ADR_FILES を filter して空配列と比べる。
+    // 「全 ADR ファイルが README の一覧からリンクされている」と Superseded 系のテストは、
+    // ADR_FILES を filter して空配列と比べる。
     // 列挙が空になると全部が無条件に通る。Superseded 系は該当 ADR が無い間つねに空なので、
     // 退化との区別がここでしか付かない
     expect(ADR_FILES.length).toBeGreaterThan(0);

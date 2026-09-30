@@ -226,7 +226,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 | colorjs は `axe.js` へインライン展開されており、パッケージマネージャで差し替える手段が無い。axe 自身が版を上げたいが Prototype.js との衝突で戻している                                                                                                  | [dequelabs/axe-core#5313][] と [dequelabs/axe-core#4429][]・[dequelabs/axe-core#4464][] |
 | その版差が `none` の扱いに出る。同梱の 0.4.3 は `rgb(0 0 0 / none)` を alpha 1 で通す (2026-09-22 実測)。[CSS Color 4「“Missing” Color Components and the none Keyword」][] は欠けた成分を 0 と定める (「a missing component behaves as a zero value」) | [dequelabs/axe-core#5309][] と [dequelabs/axe-core#4269][]                              |
 
-- 3 点目はこのリポジトリに効く。[dequelabs/axe-core#5309][] は Tailwind が無彩色へ吐く `none` で color-contrast が無言で飛ぶ報告で、このリポジトリのトークンも oklch で書かれている
+- `none` の扱いに出る版差は、このリポジトリに効く。[dequelabs/axe-core#5309][] は Tailwind が無彩色へ吐く `none` で color-contrast が無言で飛ぶ報告で、このリポジトリのトークンも oklch で書かれている
 - 0.7.1 は同じ入力を解決する。`oklch(0.5 none 180)` は灰色になり、null が残るのは sRGB のまま渡された `rgb(none 0 0)` と alpha の `/ none` だけである (2026-09-22 実測)。axe が飛ばす綴りをこの変換器は測れる
 - `@asamuzakjp/css-color` も候補に挙がった。不透明色では Chrome と完全に一致するが、`color-mix` を含む値では canvas の読み取りと一致しない。合成を自前で持つ点は `colorjs.io` と変わらず、`axe-core` が採用している側を選んだ
 

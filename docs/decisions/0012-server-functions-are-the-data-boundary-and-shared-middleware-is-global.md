@@ -40,7 +40,7 @@ console.log(context.probeUser.uid);
 | `context.thisPropertyDoesNotExist` を読む | 設定あり             | `Found 1 error` (`TS2339: Property 'thisPropertyDoesNotExist' does not exist on type '{ probeUser: { uid: string; }; }'`) |
 
 件数は読み方で変わる (中間変数へ代入すると `no-unsafe-assignment` が加わる)。上の表は `console.log` で読んだときの値である。
-3 件目が示すとおり、`context` は `any` へ落ちず global middleware が足した context 型そのものへ解決する。
+`context.thisPropertyDoesNotExist` を読む行が示すとおり、`context` は `any` へ落ちず global middleware が足した context 型そのものへ解決する。
 
 配線は `@tanstack/start-client-core` 1.170.27 の `dist/esm/createMiddleware.d.ts` で、`AssignAllServerFnContext` が `Register` の `config` から `functionMiddleware` を取り出す `GlobalServerFnContext` を合成する。`src/routeTree.gen.ts` が `config` を登録済みである。
 

@@ -25,7 +25,7 @@ rules の外にある文書 (`docs/guides/` の設計ガイド。ADR-0001) へ C
 | rules に「作業の前に `docs/guides/x.md` を読む」と書く       | 2 回とも読まれなかった。memory docs の "Claude sees `AGENTS.md` only if it decides to open the file" (CLAUDE.md から言葉で AGENTS.md を読むよう指示した場合の記述) と同じ振る舞い                                                                                                                                                   |
 | skill に置き、`paths` を付ける                               | 自分では測っていない。上流の anthropics/claude-code#49835 (メンテナが 2026-08-19 に再現を確かめたが、修正されないまま 2026-09-25 に stale の bot が close) は、`paths` を付けた skill が一覧にも `/name` の呼び出しにも出ないと報告している。2.1.233 での再現の報告では、一致するファイルを読むまで隠れ、読んだ後に使えるようになる |
 
-memory docs は import について "Imported files are expanded and loaded into context at launch alongside the CLAUDE.md that references them." と書いており、1 行目の結果と一致する。
+memory docs は import について "Imported files are expanded and loaded into context at launch alongside the CLAUDE.md that references them." と書いており、`paths` つきの rules から import した行の結果と一致する。
 
 ## Decision
 
