@@ -46,6 +46,6 @@ run = [
   "vp build",
   # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
   "vp node scripts/checks/runtime/security-headers.ts",
-  # Storybook の Vite 設定が組めることを確かめる。async の lazyPlugins は tanstack-react の patch に頼る (pnpm-workspace.yaml)
+  # Storybook の静的ビルドが通ることを確かめる (docs/guides/vite-configuration.md「重い依存を遅らせて読み込む」)
   "vp exec storybook build --quiet",
 ]

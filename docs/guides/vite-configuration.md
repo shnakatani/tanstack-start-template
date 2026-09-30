@@ -36,7 +36,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 
 `import()` するのは外部のパッケージそのものにする。`tooling/` のモジュールを `import()` しても遅れない (「重い依存を遅らせる理由」)。
 
-`lazyPlugins` に渡す関数を async にすると、plugin は全部まとめて 1 つの Promise に包まれて Vite へ渡る ([voidzero-dev/vite-plus#1215][]: "Async callbacks have their Promise wrapped in an array internally for Vite's `asyncFlatten`"。vite-plus 1.0.0 の `lazyPlugins` で 2026-09-30 に確認)。Promise の中を見ずに plugin を絞る側は、絞りそこねる。`@storybook/tanstack-react` 10.6.0 がそうで、TanStack Start の plugin が残って `storybook build` が `[plugin tanstack-start:start-manifest-capture-client-build] Error: multiple entries detected` で落ちる (2026-09-30 に観測) のを、`pnpm-workspace.yaml` の `patchedDependencies` の patch で補っている。`mise run verify` と CI の `vp exec storybook build` が、この失敗を止める。
+`lazyPlugins` に渡す関数を async にすると、plugin は全部まとめて 1 つの Promise に包まれて Vite へ渡る ([voidzero-dev/vite-plus#1215][]: "Async callbacks have their Promise wrapped in an array internally for Vite's `asyncFlatten`"。vite-plus 1.0.0 の `lazyPlugins` で 2026-09-30 に確認)。Promise の中を見ずに plugin を絞る側は、絞りそこねる。`@storybook/tanstack-react` 10.6.0 がそうで、TanStack Start の plugin が残って `storybook build` が `[plugin tanstack-start:start-manifest-capture-client-build] Error: multiple entries detected` で落ちる (2026-09-30 に観測) のを、`pnpm-workspace.yaml` の `patchedDependencies` の patch で補っている。patch が外れるか当たらなくなってこの失敗が戻ると、`mise run verify` と CI の `vp exec storybook build` が落ちる。
 
 ## explanation
 
