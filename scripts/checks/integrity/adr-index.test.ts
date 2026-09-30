@@ -12,7 +12,7 @@ import { REPO_ROOT } from "../../lib/repo-root";
 
 const DECISIONS_DIR = resolve(REPO_ROOT, "docs", "decisions");
 
-// 5 つの検査が同じディレクトリの同じ内容を見るため、列挙と読み込みは 1 回にまとめて共有する
+// 各検査が同じディレクトリの同じ内容を見るため、列挙と読み込みは 1 回にまとめて共有する
 // (テストごとに読み直すと、実行の途中でファイルが変わったとき検査ごとに別の実体を見る)
 const ADR_FILES = readdirSync(DECISIONS_DIR).filter((name) => /^\d{4}-.+\.md$/.test(name));
 const ADR_CONTENTS = new Map(

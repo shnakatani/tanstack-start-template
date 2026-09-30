@@ -97,7 +97,7 @@ export const GeneratedId: Story = {
     await expect(labels.map((label) => label.control?.tagName)).toEqual(["INPUT", "INPUT"]);
     await expect(new Set(labels.map((label) => label.htmlFor)).size).toBe(2);
 
-    // チームB のラベルを押しても チームA は連動しない
+    // チームB のラベルを押してもチームA は連動しない
     await userEvent.click(screen.getByText("チームB"));
 
     await expect(screen.getByRole("checkbox", { name: "チームB" })).toBeChecked();

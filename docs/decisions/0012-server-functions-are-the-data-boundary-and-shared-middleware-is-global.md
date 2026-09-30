@@ -89,7 +89,7 @@ console.log(context.probeUser.uid);
 
 - server function がデータ境界であること: intent skill `@tanstack/start-client-core#start-core/server-functions` の Common Mistakes 1 件目
 - global middleware の設定形と認可の middleware factory: intent skill `@tanstack/start-client-core#start-core/middleware` の Global Middleware / Middleware Factories
-- 上記 2 スキルはどちらも `library_version: 1.170.14` を名乗り、`@tanstack/start-client-core` 1.170.27 に同梱されている (2026-09-06 に確認)
+- `start-core/server-functions` と `start-core/middleware` のスキルはどちらも `library_version: 1.170.14` を名乗り、`@tanstack/start-client-core` 1.170.27 に同梱されている (2026-09-06 に確認)
 - context 型の合成: `@tanstack/start-client-core` 1.170.27 の `dist/esm/createMiddleware.d.ts` (`AssignAllServerFnContext` / `GlobalServerFnContext`)
 - middleware の平坦化順と base builder の展開: 同 1.170.27 の `dist/esm/createServerFn.js`
 - `createServerFn` の直接 import を `no-restricted-imports` で禁じられること、`overrides` の `files` と `excludeFiles` で適用範囲を絞れること: oxlint 1.79.0 へ一時 config を `--config` で渡して確認 (2026-09-06)。`vite.config.ts` の `lint` 経由は未検証
