@@ -42,7 +42,7 @@ function storybookProjects(): TestProjectConfiguration[] {
 }
 
 /**
- * `vite.config.ts` の `test` (ADR-0004)。project はどれも inline に並べ、root の `vite.config.ts` の
+ * `vite.config.ts` の `test` (ADR-0037)。project はどれも inline に並べ、root の `vite.config.ts` の
  * 設定 (`envDir`、`resolve`、テスト時の `plugins`) を継承させる
  * (`docs/guides/testing/configuration.md`「project を inline に並べる理由」)。
  *

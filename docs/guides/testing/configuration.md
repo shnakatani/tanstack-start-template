@@ -2,9 +2,10 @@
 
 Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
 
-| 決定                                              | ADR      |
-| ------------------------------------------------- | -------- |
-| 開発環境のツールチェーンは mise と Vite+ に寄せる | ADR-0004 |
+| 決定                                                                                              | ADR      |
+| ------------------------------------------------------------------------------------------------- | -------- |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                                                 | ADR-0004 |
+| Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる | ADR-0037 |
 
 ## how-to
 
@@ -18,7 +19,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 | project が共有する設定 (`envDir`、`resolve`)            | `vite.config.ts` のトップレベル。project はこれを継承する                         |
 | テストでだけ外す plugin                                 | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)           |
 
-`vitest.config.ts` は作らない (ADR-0004。仕組みは「`vitest.config.ts` を置かない理由」)。
+`vitest.config.ts` は作らない (ADR-0037。仕組みは「`vitest.config.ts` を置かない理由」)。
 
 ### project を足す
 
@@ -45,7 +46,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 
 ### `vitest.config.ts` を置かない理由
 
-決定は ADR-0004 が持つ。この節は、その形で組む前提になる Vite+ と Vitest の仕組みを持つ。
+決定は ADR-0037 が持つ。この節は、その形で組む前提になる Vite+ と Vitest の仕組みを持つ。
 
 - Vite+ は Vitest の設定を `vite.config.ts` の `test` に置くよう勧める ([Vite+ docs「Test」][]: "We do not recommend using `vitest.config.ts` with Vite+.")
 - `vitest.config.ts` があると、Vitest はそちらを優先して `vite.config.ts` の設定を無視する ([Vitest docs「Configuring Vitest」][]: "all options in your `vite.config` will be **ignored**")。`envDir` のような共有の設定を 2 つの config に写し続けることになる
@@ -53,7 +54,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 
 ### project を inline に並べる理由
 
-決定は ADR-0004 が持つ。この節は、継承の仕組みと、関数で渡す project の扱いを持つ。
+決定は ADR-0037 が持つ。この節は、継承の仕組みと、関数で渡す project の扱いを持つ。
 
 - Vitest 5 では、inline の project だけが root の設定を継承する ([Vitest docs「Test Projects」][]: "Projects referenced as config files or directories do not inherit any options from the root config.")
 - ファイルで参照する project でも、共有の設定ファイルを作って `mergeConfig` で合わせれば写さずに済む (同じページの "You can create a shared config file and merge it with the project config yourself")。ただし project ごとに merge を書き、root とは別の共有ファイルを持つことになる。inline なら何も書かずに root を継承する
