@@ -21,7 +21,7 @@ const preview: Preview = {
     // 消費側が size を変えるのは正当な使い方なので、測ると上流の変更や消費側の変更でテストが
     // 落ち、そのたびに消される。値は browser test と
     // 同じ src/test/browser/viewport-sizes から引き、写さない。addon-vitest は story ごとに
-    // この options を page.viewport() へ渡す (vitest.storybook.config.ts)
+    // この options を page.viewport() へ渡す (tooling/test/storybook-project.ts)
     viewport: {
       options: {
         narrow: {

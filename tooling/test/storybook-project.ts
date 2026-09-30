@@ -1,11 +1,7 @@
-import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import tailwindcss from "@tailwindcss/vite";
-import { playwright } from "vite-plus/test/browser-playwright";
 import { defineProject } from "vite-plus/test/config";
 
-import { isStorybookRun } from "./scripts/lib/storybook-env";
-
-const THEMES = ["light", "dark"] as const;
+export const STORYBOOK_THEMES = ["light", "dark"] as const;
 
 /**
  * テーマごとに 1 つの project を作る。`initialGlobals` で toolbar の global を固定すると、
@@ -13,9 +9,15 @@ const THEMES = ["light", "dark"] as const;
  * `parameters.a11y.test: "error"` が dark の contrast を検査していないのに検査しているように
  * 見える。`theme` は `@storybook/addon-themes` の global 名である。
  */
-function storybookProject(theme: (typeof THEMES)[number]) {
-  // vitest.config.ts の inline project なので root の設定を継承する (Vitest 5 の extends の既定)。
-  // ここには story の実行に固有のものだけを書く
+export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number]) {
+  // `tooling/test/config.ts` が inline の project として並べるので、root の `vite.config.ts` の
+  // 設定を継承する (Vitest 5 の extends の既定)。ここには story の実行に固有のものだけを書く。
+  // addon-vitest の plugin と playwright の provider は関数の中で読み込む
+  // (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
+  const [{ storybookTest }, { playwright }] = await Promise.all([
+    import("@storybook/addon-vitest/vitest-plugin"),
+    import("vite-plus/test/browser-playwright"),
+  ]);
   return defineProject({
     plugins: [
       tailwindcss(),
@@ -73,30 +75,4 @@ function storybookProject(theme: (typeof THEMES)[number]) {
       },
     },
   });
-}
-
-/**
- * テーマごとの project を並べる。Storybook 経由の実行だけ light の 1 つに絞る。
- *
- * `@storybook/addon-vitest@10.6.0` は `VITEST_STORYBOOK=true` のとき project 名を
- * `storybook:${configDir}` へ強制上書きする (`dist/vitest-plugin/index.js` の
- * `storybook:workspace-name-override`)。同じ `configDir` から 2 つ作ると名前が衝突し、
- * Storybook の test panel も `storybook tools test run` も起動しない
- * (storybookjs/storybook#32427、2025-09-07 から open)。
- *
- * 上書きは `order: "pre"` の config フックで入り、こちらの post 順の上書きでは戻せない
- * (2026-09-21 実測。同じ手は `cacheDir` には効く)。configDir を分ければ名前も分かれるが、
- * 上流のバグのために設定ディレクトリを 2 つ持つことになる。
- *
- * 絞るのは Storybook 経由の経路だけで、`vp test run` と `mise run verify` は両テーマを回す。
- * 判定の正本は後者で、test panel は書いている最中の確認に使う。
- */
-export function storybookProjects() {
-  if (!isStorybookRun(process.env.VITEST_STORYBOOK))
-    return THEMES.map((theme) => storybookProject(theme));
-
-  // 縮退を黙って通さない。VITEST_STORYBOOK がシェルへ残ったまま `vp test run` を叩くと、
-  // dark の a11y 検査が消えたことに誰も気付けない
-  console.warn("[storybook] VITEST_STORYBOOK が真なので light だけを回す (ADR-0028)");
-  return [storybookProject("light")];
 }

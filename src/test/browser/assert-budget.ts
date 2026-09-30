@@ -7,7 +7,7 @@
  * 上げると Playwright の操作 (`click` / `fill` など) の上限も一緒に上がる。config が
  * `actionTimeout` にも同じ値を渡しており、そちらは操作にしか効かないためである (docs/guides/testing/waiting-and-assertions.md「assert の予算を宣言する」)。
  *
- * 消費者は `grep -rn ASSERT_TIMEOUT_MS src vitest.browser.config.ts` で出る。config の
+ * 消費者は `grep -rn ASSERT_TIMEOUT_MS src tooling/test` で出る。config の
  * 2 つの設定のほか、`absent.test.tsx` が退行を見る閾値とテスト自身の timeout に使う。
  * **値を動かしたらそれを回す。** 比で書いてあるので追随するが、追随した先が妥当かは実測で確かめる。
  */

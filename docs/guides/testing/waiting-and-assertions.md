@@ -76,7 +76,7 @@ matcher の無い実測 (rect / computed style / `matches()`) は `expect.poll` 
 
 ### assert の予算を宣言する
 
-assert の予算をテストの予算と分けて宣言する。`vitest.browser.config.ts` に `expect.poll.timeout` と `playwright()` provider の `actionTimeout` を対で置き、値は 5000ms にする。理由は「assert の予算を分ける理由」にある。
+assert の予算をテストの予算と分けて宣言する。`tooling/test/browser-project.ts` に `expect.poll.timeout` と `playwright()` provider の `actionTimeout` を対で置き、値は 5000ms にする。理由は「assert の予算を分ける理由」にある。
 
 | 規範                                                                                                                             | 守らないと何が壊れるか                                                                                                       |
 | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -90,7 +90,7 @@ assert の予算をテストの予算と分けて宣言する。`vitest.browser.
 
 ### viewport に収まることを測る
 
-viewport の寸法の定数は `src/test/browser/viewport-sizes.ts` が持ち、`src/test/assert/viewport.ts` が再 export する。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`vitest.browser.config.ts` の `browser.viewport` が `viewport-sizes.ts` から `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。config から `viewport.ts` を読むと、browser mode の外で落ちる (`viewport-sizes.ts` の docstring)。
+viewport の寸法の定数は `src/test/browser/viewport-sizes.ts` が持ち、`src/test/assert/viewport.ts` が再 export する。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`tooling/test/browser-project.ts` の `browser.viewport` が `viewport-sizes.ts` から `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。config から `viewport.ts` を読むと、browser mode の外で落ちる (`viewport-sizes.ts` の docstring)。
 
 popup の全体が viewport に収まることは、`src/test/assert/viewport.ts` の `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。実測と理由は `src/test/assert/viewport.ts` の docstring が持つ。
 

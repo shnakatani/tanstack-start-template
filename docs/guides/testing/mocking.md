@@ -20,7 +20,7 @@
 - 差し替えたモジュールは静的 import で受け、`vi.mocked(fn)` で戻り値を決める。`vi.mock` は巻き上げられ、すべての import より先に実行されるので、`await import` で後から読まなくても差し替え後のモジュールが届く ([Vitest docs「vi.mock」][] の本文)
 - factory の中から factory の外の変数を参照しない。`vi.mock` は巻き上げられるので、`There was an error when mocking a module` で落ちる ([Vitest docs「vi.mock」][] の warning、2026-09-28 に 5.0.1 で実測)。外の値が要るなら `vi.hoisted` で定義する
 - `__mocks__` の export は元と同じ名前を全部並べ、元に export を足したら mock にも足す。手書きの mock は元の変更に追随しない ([Jest docs「Manual Mocks」][])。足し忘れると import 側が `does not provide an export named` の SyntaxError で落ちる
-- `__mocks__` は coverage の分母から外す (`vitest.config.ts` の `coverage.exclude`)。`coverage.include` が `src/**` を含み、`coverage.exclude` の既定は空なので、外さないと出荷されないファイルが分母に入る ([Vitest docs「coverage.exclude」][])
+- `__mocks__` は coverage の分母から外す (`tooling/test/config.ts` の `coverage.exclude`)。`coverage.include` が `src/**` を含み、`coverage.exclude` の既定は空なので、外さないと出荷されないファイルが分母に入る ([Vitest docs「coverage.exclude」][])
 
 ### 戻り値を決める
 

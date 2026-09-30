@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-29
+- Revised: 2026-09-30 (Vitest の設定を `vitest.config.ts` から `vite.config.ts` の `test` へ移し、`envDir: false` の置き場所を 1 つにした)
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -52,12 +53,27 @@ Vite 公式は「`VITE_*` variables should _not_ contain sensitive information�
 
 読み込む `.env` が現時点で無いので、いま切っても失うものは無い。逆に、後から `.env` を置いた人が「Vite が勝手に読む」前提でコードを書くのを防げる。
 
-`envDir: false` は `vite.config.ts` / `vitest.config.ts` / `vitest.browser.config.ts` の 3 つへ書く。
-Vitest の config は Vite の config を継承せず上書きする (公式が「all options in your `vite.config` will be ignored」と明記)。
-`mergeConfig` で引き継ぐ手はあるが採らない。test 用の config を分けているのは `tanstackStart()` を外すためで (TanStack/router#6246 の回避)、全体を継承すると plugin ごと戻る。
-片方だけに書くと、暗号化した `.env` を置いた時点でビルドとテストで挙動が割れ、最も切り分けにくい形の不具合になる。
+`envDir: false` は `vite.config.ts` に 1 つだけ書く。
+テストの project は `vite.config.ts` の設定を継承するので (次の「Vitest の設定は `vite.config.ts` の `test` に置く」)、ビルドとテストで値が割れない。
 
 秘密が要るようになったときの足し方は `docs/guides/dependencies-and-toolchain.md`「秘密を足す」にある。
+
+### Vitest の設定は `vite.config.ts` の `test` に置く
+
+Vite+ は Vitest の設定を `vite.config.ts` の `test` に置くよう勧め、`vitest.config.ts` を推奨しない (Vite+ の `docs/guide/test.md`)。
+`vitest.config.ts` があると Vitest はそちらを優先し、`vite.config.ts` の設定を無視する (Vitest の config docs「all options in your `vite.config` will be **ignored**」)。
+
+Vitest の設定は `vite.config.ts` の `test` に置き、中身は `tooling/test/` から import して組み立てる。この組み立て方は Vite+ が `docs/guide/monorepo.md`「Composing Configuration Files」で示している。
+project はどれも inline に並べ、root の設定を継承させる。Vitest 5 では inline の project だけが root を継承する (Vitest docs「Test Projects」)。
+`tanstackStart()` をテストから外す目的は、`vite.config.ts` の `plugins` の中で `process.env.VITEST` を見る分岐で果たす (TanStack/router#6246)。config を分ける理由にはならない。
+切り出したファイルの組み込み方と、重い依存を遅らせる理由とその計測は `docs/guides/vite-configuration.md`、project の足し方と分岐の書き方は `docs/guides/testing/configuration.md` にある。
+
+| 案                                                                               | 評価                                                                                                                                                                                                                                         | 採否     |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `vite.config.ts` の `test` に置き、`tooling/test/` の project を inline に並べる | Vite+ の推奨に沿う。共有の設定を root の 1 箇所に持ち、project が継承する                                                                                                                                                                    | **採用** |
+| `vitest.config.ts` を分けて持つ                                                  | Vite+ が推奨しない。`vite.config.ts` が無視されるので、共有の設定を写し続ける。`tanstackStart()` を外す目的は `vite.config.ts` の中の分岐で足りる                                                                                            | 却下     |
+| project を `test.projects` にファイルのパスで並べる                              | Vitest の書き方の 1 つだが、ファイルで参照した project は root を継承しない。共有の設定ファイルを `mergeConfig` で合わせる手 (Vitest docs「Test Projects」) もあるが、project ごとに merge を書き、root とは別の共有ファイルを持つことになる | 却下     |
+| `test` の中身を `vite.config.ts` に直接書く                                      | lint の設定と並んで 1 ファイルが長くなる。import で組み立てても Vite+ の推奨からは外れない                                                                                                                                                   | 却下     |
 
 ### runtime と package manager の版は `package.json` が持つ
 
@@ -135,6 +151,10 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 - Vite+ が既定で作る shim は `pnpm` を含まない。素の `pnpm` の用意の仕方は `docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」にある
 - Vite+ の更新は同梱ツールの一括更新になる。更新 PR で見るものは `docs/guides/dependencies-and-toolchain.md`「依存を上げたときに見直すもの」にある
 - `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名でも別物なので、実行前に `package.json` と `vite.config.ts` を確認する
+- テストは `tanstackStart()` を通らないので、`createIsomorphicFn` などの Start の変換はテストで効かない (TanStack/router#6246 のコメント)。TanStack/router#6246 が直ったら、`plugins` の分岐から `tanstackStart()` を外したままにするかを再評価する
+- テストは React Compiler も通らない。テストの分岐の `viteReact()` に `compiler` を渡していない
+- `process.env.VITEST` が立たない経路 (Vitest の `createVitest()` を直接呼ぶ) では `tanstackStart()` が外れない。経路ごとの扱いは `docs/guides/testing/configuration.md`「判定を `process.env.VITEST` で書く理由」にある
+- ブラウザの project も、Vite+ の `defineConfig` が root に足す test 用の plugin (`vite-plus:vitest-resolver` など) を継承し、その plugin がブラウザの project に `vitest` などの alias を足す。`vite-plus` が export する `defineProject` の docstring は、ブラウザの project がこの plugin を受け取らないと pnpm strict や Yarn PnP で `vitest` を解決できないことがあると書いている
 
 ## 出典
 
@@ -142,3 +162,8 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines
 - mise の `disable_tools` と、設定をローカル config へ置けること: https://mise.jdx.dev/configuration/settings.html
 - mise が読む Node.js のバージョンファイル (`devEngines` は idiomatic version file 扱いで既定 off): https://mise.jdx.dev/lang/node.html
+- Vite+ が Vitest の設定を `vite.config.ts` の `test` に置くよう勧めること: `node_modules/vite-plus/docs/guide/test.md`
+- 設定を別のファイルから import して組み立てる形: `node_modules/vite-plus/docs/guide/monorepo.md`「Composing Configuration Files」
+- Vitest の config ファイルの優先順: https://vitest.dev/config/
+- inline の project だけが root を継承すること: https://vitest.dev/guide/projects
+- `tanstackStart()` が test 環境にも `optimizeDeps` を注入する不具合: https://github.com/TanStack/router/issues/6246
