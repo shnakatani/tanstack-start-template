@@ -280,7 +280,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 デザイントークンは `src/styles.css` の `@theme` と `:root` が SSOT で、Storybook のトークンの story (`src/components/tokens.stories.tsx`) は値を書き写さず、CSSOM から読んで一覧する。公式の `ColorPalette` は色値を MDX へ書き写し、専用 addon は `styles.css` へ注釈コメントを要するので、どちらも SSOT と二重管理になる。
 
 - Tailwind は既定で、utility から参照されている変数だけを出力する ([Tailwind CSS docs「Theme variables」][] の Generating all CSS variables)。`inline` は utility へ値を直接埋め込むため、`rounded-*` の utility を書いても対応する変数を読む rule が生まれない。実際に使っているトークンでも、CSSOM から読む一覧からは消える
-- どの変数が出力に残るかは Tailwind の source scan の結果で決まる。scan は既定でリポジトリ全体を読み、Markdown も対象にする ([Tailwind CSS docs「Detecting classes in source files」][] の Which files are scanned) ため、ADR や rules に書いた名前が「使用中」と判定されて出力に残っていた
+- どの変数が出力に残るかは Tailwind の source scan の結果で決まる。scan は既定でリポジトリ全体を読み、Markdown も対象にする ([Tailwind CSS docs「Detecting classes in source files」][] の Which files are scanned) ため、scan を絞らないと、Markdown に書いた名前も「使用中」と判定され、その utility や変数が出力に残る
 - `.storybook/preview.css` は `src/styles.css` を `@import "../src/styles.css" theme(static);` で読み直す ([Tailwind CSS docs「Preflight」][] の Disabling Preflight、[tailwindlabs/tailwindcss#16514][])。`theme()` は import 単位で効くため、本番の CSS は `static` の分を持たない ([tailwindlabs/tailwindcss#16514][]、[Tailwind CSS の `index.ts`][] の `@media theme(…)` の処理)
 - 代償は、`src/styles.css` が定義しておらず utility も参照していない既定 theme のトークンまで、カタログの Radius と Typography に並ぶことである。Colors は `--color-*: initial` が既定の色を消しているので増えない。混ざるトークンの数え方は「Storybook のカタログに混ざるトークンを数える」にある
 
