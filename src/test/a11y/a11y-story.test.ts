@@ -52,8 +52,8 @@ describe("collectUnexpectedIncomplete", () => {
 
   test("外さないキーが同じ node に混ざっていれば落とさない", () => {
     const results = collectUnexpectedIncomplete([
-      // 1 つの node には同じルールの複数の check が載る。2 つ目は除外リストに無いキーなら
-      // 何でもよく、idrefs は aria-valid-attr-value と aria-errormessage のどちらも立てる
+      // 1 つの node には同じルールの複数の check が載る。controlsWithinPopup と並べるキーは
+      // 除外リストに無いものなら何でもよく、idrefs は aria-valid-attr-value と aria-errormessage のどちらも立てる
       rule("aria-valid-attr-value", [
         node({ messageKeys: ["controlsWithinPopup", "idrefs"], target: ["#both"] }),
       ]),

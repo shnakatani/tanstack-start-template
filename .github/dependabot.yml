@@ -38,7 +38,7 @@ updates:
           - "@vitejs/plugin-react"
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
-      # 上の 2 グループの patterns を写し、変えたらここも変える (dependabot/dependabot-core#14576。
+      # vite-plus と react-compiler のグループの patterns を写し、変えたらここも変える (dependabot/dependabot-core#14576。
       # docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)
       minor-and-patch:
         update-types:

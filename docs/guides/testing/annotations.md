@@ -46,7 +46,7 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 - テストファイルの行が stack に 1 つも無いと、注釈は位置を持たず、`github-actions` reporter は PR に出さない ([Vitest の `github-actions.ts`][] の `onTestCaseAnnotate`)
 - UI と HTML reporter では、位置を持たない注釈はソースの表示に出ず、Report にだけ出る ([Vitest の `ViewEditor.vue`][] の `createAnnotationElement`、[Vitest の `ViewTestReport.vue`][])
 - [Vitest docs「Test Annotations」][] の html は、テストファイルの外で呼んだ注釈は UI で見えないと書く。5.0.1 の実装は Report に全部並べるので、docs が実装より古い
-- Vitest を上げたら位置を確かめ直す。上の 4 通りで `annotate` を呼ぶ使い捨てのテストを置き、`GITHUB_ACTIONS=true vp test run <path>` の `::warning` 行の `line` を見る
+- Vitest を上げたら位置を確かめ直す。「注釈の位置を読む」の表の場所ごとに `annotate` を呼ぶ使い捨てのテストを置き、`GITHUB_ACTIONS=true vp test run <path>` の `::warning` 行の `line` を見る
 
 ## explanation
 

@@ -12,7 +12,7 @@ import { REPO_ROOT } from "../../lib/repo-root";
 
 const DECISIONS_DIR = resolve(REPO_ROOT, "docs", "decisions");
 
-// 5 つの検査が同じディレクトリの同じ内容を見るため、列挙と読み込みは 1 回にまとめて共有する
+// 各検査が同じディレクトリの同じ内容を見るため、列挙と読み込みは 1 回にまとめて共有する
 // (テストごとに読み直すと、実行の途中でファイルが変わったとき検査ごとに別の実体を見る)
 const ADR_FILES = readdirSync(DECISIONS_DIR).filter((name) => /^\d{4}-.+\.md$/.test(name));
 const ADR_CONTENTS = new Map(
@@ -31,8 +31,9 @@ function adrContent(file: string): string {
 
 describe("ADR 索引の整合性", () => {
   it("走査対象が解決できている (パスずれ・rename で空検証に退化しない)", () => {
-    // 下の 4 件はいずれも ADR_FILES を filter して空配列と比べる。列挙が空になると
-    // 全部が無条件に通る。Superseded 系の 3 件は該当 ADR が無い間つねに空なので、
+    // 「全 ADR ファイルが README の一覧からリンクされている」と Superseded 系のテストは、
+    // ADR_FILES を filter して空配列と比べる。
+    // 列挙が空になると全部が無条件に通る。Superseded 系は該当 ADR が無い間つねに空なので、
     // 退化との区別がここでしか付かない
     expect(ADR_FILES.length).toBeGreaterThan(0);
   });

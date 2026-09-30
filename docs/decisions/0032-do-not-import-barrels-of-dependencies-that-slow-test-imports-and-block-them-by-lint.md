@@ -36,7 +36,7 @@
 
 - 依存を足すか使い始めたときに、バレルしか使っていなければ測って判断する手間が増える。測り方はガイドにある
 - `paths` は specifier の完全一致なので、`react-day-picker/locale` と `react-day-picker/locale/*` は止まらない。どちらも `date-fns/locale` のバレルを読む。Calendar に locale を渡すときは `date-fns/locale/<locale>` から組む
-- `RESTRICTED_BARREL_IMPORTS` をトップレベルか override の片方からだけ外すと、外した側の範囲で無言で効かなくなる。`scripts/checks/integrity/lint-config.test.ts` はルールのオプションの中身を見ないので、この外し方を捕まえない (「調査結果」の壊し方 2)
+- `RESTRICTED_BARREL_IMPORTS` をトップレベルか override の片方からだけ外すと、外した側の範囲で無言で効かなくなる。`scripts/checks/integrity/lint-config.test.ts` はルールのオプションの中身を見ないので、この外し方を捕まえない (「調査結果」の、トップレベルだけに `paths` を置いた設定)
 - 残った課題:
   - react-day-picker が date-fns のルートを読む経路が残っている。Calendar を描くテストの import は 63ms (中央値) で、経路の分は内訳が出ず測れていない。`resolve.alias`、`deps.optimizer.client`、`optimizeDeps.include` はどれも差がばらつきを超えなかった (「調査結果」の (b))
   - 同じ測り方で測る候補: lucide-react など、テンプレートのコードがルートから import している依存。測って重ければ `RESTRICTED_BARREL_IMPORTS` に足す
@@ -91,13 +91,13 @@ browser project (chromium)、4 回ずつ (比較は 2-4 回目)。`Import Durati
 
 バレルを import する probe を、import 禁止の override の範囲 (`src/lib/`) と範囲外 (`src/test/`) に 1 つずつ置き、`vp lint -f unix` の `no-restricted-imports` の診断を数えた。probe は `date-fns`、`date-fns/format`、`date-fns/locale` を 1 行ずつ import する。
 
-| 設定                                  | `src/lib/` の probe                    | `src/test/` の probe |
-| ------------------------------------- | -------------------------------------- | -------------------- |
-| 両方に `paths`                        | 2 件 (`date-fns` と `date-fns/locale`) | 2 件 (同じ)          |
-| 両方から `paths` を消す (壊し方 1)    | 0 件                                   | 0 件                 |
-| トップレベルだけに `paths` (壊し方 2) | 0 件                                   | 2 件                 |
+| 設定                       | `src/lib/` の probe                    | `src/test/` の probe |
+| -------------------------- | -------------------------------------- | -------------------- |
+| 両方に `paths`             | 2 件 (`date-fns` と `date-fns/locale`) | 2 件 (同じ)          |
+| 両方から `paths` を消す    | 0 件                                   | 0 件                 |
+| トップレベルだけに `paths` | 0 件                                   | 2 件                 |
 
-どの設定でも `date-fns/format` の行は診断されなかった。壊し方 2 の下でも `scripts/checks/integrity/lint-config.test.ts` は 7 件とも通った。
+どの設定でも `date-fns/format` の行は診断されなかった。トップレベルだけに `paths` を置いた設定でも、`scripts/checks/integrity/lint-config.test.ts` は 7 件とも通った。
 
 ## 出典
 

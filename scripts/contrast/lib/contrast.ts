@@ -160,7 +160,7 @@ function clampChannel(value: number): number {
  *
  * 上流へは未報告。2026-09-22 に `gh search issues --repo color-js/color.js` を
  * `alpha null` / `alpha types` / `PlainColorObject` の 3 クエリで引き、返った 5 件
- * (すべて 3 つ目) はいずれも alpha が null を返す件ではなかった
+ * (すべて `PlainColorObject` のクエリ) はいずれも alpha が null を返す件ではなかった
  */
 function readAlpha(color: Color): number | null {
   return color.alpha;

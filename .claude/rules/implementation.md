@@ -24,7 +24,7 @@ lint では見ないのでレビューで見る。
 - router の外の変化 (認証など) の購読は router の `InnerWrap` の effect に置き、変化時に `router.invalidate()` を呼ぶ。ルートとページの effect は `errorComponent` の表示中に外れる (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 - 遷移を契機にする副作用 (analytics、外部キャッシュの消去、描画後の DOM 操作) は `InnerWrap` のコンポーネントで `router.subscribe` に置く。ページの effect は他のページの間の遷移を見ない (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 - `router.subscribe` を張る effect の中で、今のページにも 1 回その処理を行う。SSR で描いた最初のページでは `onResolved` が出ず、`onRendered` は購読より先に出る (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
-- そのページが出ている間だけ要る router との連携は、ページの effect で購読し、後始末で解除する。上の 2 つはページを離れても途切れてはいけない副作用に限る (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
+- そのページが出ている間だけ要る router との連携は、ページの effect で購読し、後始末で解除する。router の外の変化の購読と遷移を契機にする副作用を `InnerWrap` に置くのは、ページを離れても途切れてはいけないものに限る (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 
 ## Effect が読む最新値は useEffectEvent へ切り出す
 

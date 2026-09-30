@@ -11,7 +11,7 @@ interface StoryArgs {
   value: FilterValue;
   onValueChange: (value: FilterValue) => void;
   disabled: boolean;
-  /** 2 つ目の item にだけ渡す。group ではなく item 自身の属性で発火する */
+  /** `unread` の item にだけ渡す。group ではなく item 自身の属性で発火する */
   invalid: boolean;
 }
 
