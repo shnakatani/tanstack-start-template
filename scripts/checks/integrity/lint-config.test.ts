@@ -131,7 +131,7 @@ const EXPECTED_OVERRIDES = [
 const COMPANION_GLOBS = new Set(companionGlobs("**/"));
 
 /** lint が見に行くべきソースの所在 */
-const SOURCE_ROOTS = ["src", "scripts", ".storybook"];
+const SOURCE_ROOTS = ["src", "scripts", ".storybook", "tooling"];
 
 /** 追跡されているのに lint されなくてよい唯一のソース。生成物 (ADR 対象外) */
 const ALLOWED_INVISIBLE = ["src/routeTree.gen.ts"];

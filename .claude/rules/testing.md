@@ -5,6 +5,7 @@ paths:
   - "scripts/**/*.test.*"
   - "src/test/**"
   - "**/*.test-helpers.*"
+  - "tooling/test/**"
 ---
 
 # テストルール
@@ -41,7 +42,7 @@ paths:
 | 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読まれるだけのファイルが見分けられない (`contrast/`) |
 
 - 検査は `scripts/checks/` の下へ置く。外へ置くと `scripts-tools` へ合流し、落ちたときに直す対象が読めなくなる
-- project を足したら `vitest.config.ts` の `projects` に追加する。include に一致しないテストは無言で 1 度も走らない
+- project を足したら `tooling/test/config.ts` の `projects` に追加する。include に一致しないテストは無言で 1 度も走らない (`docs/guides/testing/configuration.md`「project を足す」)
 - `src/` 全体へ当てるソース検査は、先に lint (必要なら `jsPlugins`) で表せないかを見る。字面走査より対象の実体に近い (ADR-0023)
 - ソース検査を作るなら `scripts/checks/source/` と `checks-source` project を対で作り、判定は `scripts/lib/` に置いて単体テストを別に持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 落ちたときに判断が要らない検査は作らない。期待値の書き換えしか選択肢が無い検査は上流更新のたびに鳴り、判断を鈍らせる (`docs/guides/testing/check-scripts.md`「検査スクリプトを分けて置く理由」)
@@ -58,7 +59,7 @@ paths:
 
 - `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tags-filter a11y`。`--tags-filter '!a11y'` で外しても、挙動テストに相乗りした assert は走る (vitest の Test Tags)
 - tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tags-filter a11y` は story を走らせない (vitest の Test Tags)
-- tag の定義は `vitest.browser.config.ts` の `test.tags`。定義に無い tag はエラーで落ちる (vitest の Test Tags の `strictTags`)
+- tag の定義は `tooling/test/browser-project.ts` の `test.tags`。定義に無い tag はエラーで落ちる (vitest の Test Tags の `strictTags`)
 - 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。専用テストへ降ろすと操作の再現が重複する (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 - `expectNoA11yViolations` を呼ぶテストには `{ tags: ["axe"] }` を付ける。`mise run a11y:incomplete` がこの tag で絞り、付け忘れると helper が落ちる (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 
@@ -160,7 +161,7 @@ paths:
 
 - viewport 定数と `expectWithinViewport` は `src/test/assert/viewport.ts`。`page.viewport()` で変えたら `afterEach` で `DEFAULT_VIEWPORT` へ戻す (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
 - 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。sub-pixel の誤差で、収まっていても落ちる実行がある (w3c/IntersectionObserver#477)
-- 既定 viewport は `vitest.browser.config.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる
+- 既定 viewport は `tooling/test/browser-project.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる
 - スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)

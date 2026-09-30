@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-09-29
+- Date: 2026-09-30
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -52,10 +52,8 @@ Vite 公式は「`VITE_*` variables should _not_ contain sensitive information�
 
 読み込む `.env` が現時点で無いので、いま切っても失うものは無い。逆に、後から `.env` を置いた人が「Vite が勝手に読む」前提でコードを書くのを防げる。
 
-`envDir: false` は `vite.config.ts` / `vitest.config.ts` / `vitest.browser.config.ts` の 3 つへ書く。
-Vitest の config は Vite の config を継承せず上書きする (公式が「all options in your `vite.config` will be ignored」と明記)。
-`mergeConfig` で引き継ぐ手はあるが採らない。test 用の config を分けているのは `tanstackStart()` を外すためで (TanStack/router#6246 の回避)、全体を継承すると plugin ごと戻る。
-片方だけに書くと、暗号化した `.env` を置いた時点でビルドとテストで挙動が割れ、最も切り分けにくい形の不具合になる。
+`envDir: false` は `vite.config.ts` に 1 つだけ書く。
+テストの project は `vite.config.ts` の設定を継承するので (ADR-0037)、ビルドとテストで値が割れない。
 
 秘密が要るようになったときの足し方は `docs/guides/dependencies-and-toolchain.md`「秘密を足す」にある。
 

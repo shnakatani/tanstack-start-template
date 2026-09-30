@@ -131,7 +131,7 @@ pin には出口条件を書く (ADR-0005 の決定 6)。間接的に pin の圏
 
 ### 走査対象を持つ config を足す
 
-tsconfig / `vitest.config.ts` / `vitest.browser.config.ts` / `vite.config.ts` (lint・fmt) は、それぞれ `.claude/worktrees/**` を除外している。走査対象を持つ config を新しく足したら、同じ除外をその場で書く。除外の経路は config ごとに別で共通化できず、1 つ落とすと worktree のコードがその走査へ黙って混ざる。
+tsconfig / `tooling/test/config.ts` (test。project はここから継承する) / `vite.config.ts` (lint・fmt) は、それぞれ `.claude/worktrees/**` を除外している。走査対象を持つ config を新しく足したら、同じ除外をその場で書く。除外の経路は config ごとに別で共通化できず、1 つ落とすと worktree のコードがその走査へ黙って混ざる。
 
 ## explanation
 

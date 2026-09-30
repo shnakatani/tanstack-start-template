@@ -16,7 +16,7 @@ import type { ReactNode } from "react";
  * 前のファイルの click 位置が残り、開状態の検証が hover の配色と交絡するのを防ぐためで、
  * story の実行経路には関わらない。
  *
- * light と dark は project が分かれており (`vitest.config.ts`)、`vp test run` と
+ * light と dark は project が分かれており (`tooling/test/config.ts`)、`vp test run` と
  * `mise run verify` では同じ story が両方で走る。片方でしか現れない不透明度も両方で描かれる。
  * Storybook 経由の実行 (test panel / `storybook tools test run`) は light だけなので、
  * dark 側を確かめるときは `vp test run` で回す (ADR-0028)。2026-09-21 時点では

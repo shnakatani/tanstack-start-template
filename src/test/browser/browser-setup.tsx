@@ -3,7 +3,7 @@
  *
  * `src/styles.css` は本番では `src/routes/__root.tsx` が `?url` で読み込むため、
  * コンポーネント単体 render のブラウザテストには届かない。ここで直接 import し、
- * `vitest.browser.config.ts` の `@tailwindcss/vite` plugin にユーティリティクラスを
+ * `tooling/test/chromium-project.ts` の `chromiumProjectBase` が足す `@tailwindcss/vite` plugin にユーティリティクラスを
  * 実 CSS へ解決させることで、getBoundingClientRect / getComputedStyle による
  * レイアウト挙動の検証を可能にする。
  */

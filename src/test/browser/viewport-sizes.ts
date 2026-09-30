@@ -1,5 +1,5 @@
 /**
- * viewport の寸法。寸法はすべてここに置く。`vitest.browser.config.ts` が
+ * viewport の寸法。寸法はすべてここに置く。`tooling/test/browser-project.ts` が
  * `DEFAULT_VIEWPORT` を `browser.viewport` として読むため、このファイルは
  * `vite-plus/test/browser` を import しない。
  * `src/test/assert/viewport.ts` は browser mode でしか動かず、config から読むと

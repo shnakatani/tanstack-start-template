@@ -163,7 +163,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### a11y の tag を付ける
 
-1. axe で「アクセシブルか」を問うテストに `it(名前, { tags: ["a11y"] }, fn)` を付ける。tag の定義は `vitest.browser.config.ts` の `test.tags` にある
+1. axe で「アクセシブルか」を問うテストに `it(名前, { tags: ["a11y"] }, fn)` を付ける。tag の定義は `tooling/test/browser-project.ts` の `test.tags` にある
 2. 単独で走らせるときは `vp test run --tags-filter a11y`、外すときは `--tags-filter '!a11y'`
 3. 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。その状態は操作の途中にしか無く、専用のテストへ降ろすと操作の再現が重複する。assert の近くに、`a11y` の tag を付けない理由を書く
 4. `expectNoA11yViolations` を呼ぶテストには、専用のテストか挙動テストかを問わず `axe` の tag を付ける。`mise run a11y:incomplete` がこの tag で絞る。付け忘れると helper が落ちる
