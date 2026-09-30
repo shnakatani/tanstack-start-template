@@ -84,12 +84,6 @@ export async function browserProject() {
       ],
       setupFiles: ["src/test/browser/browser-setup.tsx"],
       include: [BROWSER_TEST_GLOB],
-      exclude: [
-        "**/node_modules/**",
-        "**/dist/**",
-        "**/.claude/worktrees/**",
-        "**/.claude/skills/**",
-      ],
       browser: {
         enabled: true,
         // CI の遅さに備えて操作の上限を config で置くための option (vitest-dev/vitest#6983)。

@@ -5,13 +5,6 @@ import { isStorybookRun } from "../../scripts/lib/storybook-env";
 import { browserProject } from "./browser-project";
 import { STORYBOOK_THEMES, storybookProject } from "./storybook-project";
 
-const sharedExclude = [
-  "**/node_modules/**",
-  "**/dist/**",
-  "**/.claude/worktrees/**",
-  "**/.claude/skills/**",
-];
-
 /**
  * テーマごとの project を並べる。Storybook 経由の実行だけ light の 1 つに絞る。
  *
@@ -55,12 +48,13 @@ export const testConfig = {
   // テスト全体のタイムゾーンを決める。root に置く。project に置くと、その project のテストを含む
   // 実行でだけ走り、他の project の TZ が選んだファイルで変わる
   globalSetup: ["./vitest.global-setup.ts"],
+  // project はどれもこれを継承し、自分の exclude を後ろに連結する (Vitest 5 の extends は配列を連結する)
+  exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/worktrees/**", "**/.claude/skills/**"],
   projects: [
     {
       test: {
         name: "unit",
         include: ["src/**/*.test.ts"],
-        exclude: sharedExclude,
       },
     },
     {
@@ -75,7 +69,7 @@ export const testConfig = {
         // 対で作る。除外がディレクトリ名に依っているぶん、検査を `scripts/checks/` の外へ
         // 置くと、走らないのではなく scripts-tools へ無言で合流する
         include: ["scripts/**/*.test.ts"],
-        exclude: [...sharedExclude, "scripts/checks/**"],
+        exclude: ["scripts/checks/**"],
         // scripts のテストは bash / git の subprocess 起動を伴い、全体 run の
         // 並列負荷では既定 5s を超えることがある
         testTimeout: 20_000,
@@ -85,7 +79,6 @@ export const testConfig = {
       test: {
         name: "checks-integrity",
         include: ["scripts/checks/integrity/**/*.test.ts"],
-        exclude: sharedExclude,
         testTimeout: 20_000,
       },
     },
