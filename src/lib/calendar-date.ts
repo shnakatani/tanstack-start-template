@@ -3,7 +3,7 @@ import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
 
 /**
- * 暦の日付 (ADR-0031 の分類 2) の `YYYY-MM-DD` と、入力部品が返す `Date` の境界。
+ * 暦の日付 (ADR-0031) の `YYYY-MM-DD` と、入力部品が返す `Date` の境界。
  * `Date` はローカル TZ の 0 時として扱い、年・月・日だけを出し入れする。`toISOString()` と
  * `new Date("YYYY-MM-DD")` は UTC を挟み、TZ によって 1 日ずれる
  * (`docs/guides/dates-and-time-zones.md`「日付の入力を扱う」)。

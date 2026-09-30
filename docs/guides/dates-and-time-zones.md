@@ -13,13 +13,13 @@
 
 値の意味を次の順に問い、最初に当てはまった分類にする。分類ごとの保存の形とドメイン型は ADR-0031 の Decision の表に従う。
 
-| 問い                                                                              | 当てはまったら                      |
-| --------------------------------------------------------------------------------- | ----------------------------------- |
-| 1. 誰から見ても同じ数字の日か (誕生日、期日のラベル)                              | 暦の日付                            |
-| 2. ある場所の 1 日か、人が壁時計で約束した将来の時刻か (現地の営業日、会議の開始) | 場所に結びつく値                    |
-| 3. 一点を指す時刻か (既に起きたことの記録、期間から計算した期限)                  | 瞬間 (保存の形は ADR-0031 の分類 1) |
+| 問い                                                                              | 当てはまったら             |
+| --------------------------------------------------------------------------------- | -------------------------- |
+| 1. 誰から見ても同じ数字の日か (誕生日、期日のラベル)                              | 暦の日付                   |
+| 2. ある場所の 1 日か、人が壁時計で約束した将来の時刻か (現地の営業日、会議の開始) | 場所に結びつく値           |
+| 3. 一点を指す時刻か (既に起きたことの記録、期間から計算した期限)                  | 瞬間 (保存の形は ADR-0031) |
 
-- 「今日」や期限の判定は、ADR-0031 の分類 4 に従う
+- 「今日」や期限の判定は、ADR-0031 に従う
 - 迷ったら、「別の場所にいる人が、同じ数字で理解すべきか」を問う。同じ数字で理解すべきなら暦の日付、場所の 1 日として意味を持つなら場所に結びつく値にする
 - ADR-0031 が扱わない値 (時刻だけの値、時間の長さ、繰り返しの予定など) を足すときは、先に ADR-0031 を書き換える
 
@@ -29,13 +29,13 @@
 - 別の書式が要るときも `timeZone: APP_TIME_ZONE` を渡した `Intl.DateTimeFormat` で組み、`src/lib/format-date-time.ts` に並べる。並びや区切りはオプション (`dateStyle`、`month: "long"` など) で選び、ロケールを別の言語に替えて並びを得ない (「書式をロケールに任せる理由」)
 - ロケールに無い並びがどうしても要るときは、`formatToParts()` で部品を取り出して組み立てる。[MDN「Intl.DateTimeFormat.prototype.formatToParts()」][] は "useful for building custom strings from the locale-specific tokens" と書く
 - 描画する値を、実行環境のローカル TZ で組み立てない。`Date#toLocaleString` 系、`Date#getHours` 系、`timeZone` を渡さない `Intl.DateTimeFormat` が当たる。`timeZone` の既定は "the runtime's time zone" ([MDN「Intl.DateTimeFormat() constructor」][] の `timeZone`)
-- 瞬間 (ADR-0031 の分類 1) を date-fns で整形するときは、各関数の `in` オプションに `tz(APP_TIME_ZONE)` を渡すか、値を `TZDate` にする。渡さないと date-fns はシステムの TZ で計算する ([date-fns docs「Time zones」][] の Working with time zones)
+- 瞬間 (ADR-0031) を date-fns で整形するときは、各関数の `in` オプションに `tz(APP_TIME_ZONE)` を渡すか、値を `TZDate` にする。渡さないと date-fns はシステムの TZ で計算する ([date-fns docs「Time zones」][] の Working with time zones)
 - `tz` と `TZDate` は `@date-fns/tz` の export で、テンプレートの直接の依存には入っていない (react-day-picker 経由でだけ入っている)。使うときは `vp add @date-fns/tz` で直接の依存に足す
 - 利用者ごとのタイムゾーンで出したくなったら、`APP_TIME_ZONE` を固定値から「サーバーで一度決めてクライアントへ渡す値」に変える。決め方は [TanStack Start docs「Hydration Errors」][] の Strategy 1 と 2 (cookie を正とし、無い間は決まった値を使う)
 
 ### 画面に暦の日付を出す
 
-- 暦の日付 (ADR-0031 の分類 2) は `formatCalendarDateLabel` (`src/lib/format-calendar-date-label.ts`) で出す。変換 (`src/lib/calendar-date.ts`) と別の module に置くのは、変換がスキーマの検証から読まれて main bundle に入るため。同じ module に置くと `format` とロケールのデータも main bundle に入る。`YYYY-MM-DD` をローカルの 0 時の `Date` にしてから、ローカルのまま date-fns で整形するので、TZ に依存せず、SSR と hydration で割れない
+- 暦の日付 (ADR-0031) は `formatCalendarDateLabel` (`src/lib/format-calendar-date-label.ts`) で出す。変換 (`src/lib/calendar-date.ts`) と別の module に置くのは、変換がスキーマの検証から読まれて main bundle に入るため。同じ module に置くと `format` とロケールのデータも main bundle に入る。`YYYY-MM-DD` をローカルの 0 時の `Date` にしてから、ローカルのまま date-fns で整形するので、TZ に依存せず、SSR と hydration で割れない
 - Calendar との受け渡しは `formatCalendarDate` (`Date` → `YYYY-MM-DD`) と `parseCalendarDate` (`YYYY-MM-DD` → `Date`) を使う
 - date-fns は個別エントリポイント (`date-fns/format`、`date-fns/locale/ja`) から引く (ADR-0032)
 
@@ -50,7 +50,7 @@
 
 - `Calendar` (`src/components/ui/calendar.tsx`、中身は react-day-picker) は、既定でブラウザのローカル TZ で日付を組む。[react-day-picker docs「Setting the Time Zone」][] は "By default, DayPicker uses the browser’s local time zone." と書く
 - `timeZone` prop を渡すと、指定した TZ で日付を読み書きする。その場合、値は素の `Date` ではなく `TZDate` で扱う ([react-day-picker docs「Setting the Time Zone」][] の Working with time-zoned dates)。react-day-picker 10.0.1 は `TZDate` を `@date-fns/tz` から再 export している。テンプレートは `timeZone` prop を今は使っていない
-- Calendar が強調する今日と、選択が無いときに開く月とフォーカス先 (`autoFocus` を付けたとき) は、ブラウザの TZ で決まる。ADR-0031 はこれを分類 4 の判定に入れず、ブラウザに任せる
+- Calendar が強調する今日と、選択が無いときに開く月とフォーカス先 (`autoFocus` を付けたとき) は、ブラウザの TZ で決まる。ADR-0031 はこれを「今日」や期限の判定に入れず、ブラウザに任せる
 - Calendar はブラウザでだけ描く。初めに閉じていて `keepMounted` を付けない Popover の中に置くなら、そのままでよい。Base UI の `Popover.Portal` は `keepMounted` の既定が `false` で、閉じている間は popup を描かない。実例は `FormDateField` (`src/components/parts/form-fields.tsx`)。画面にじかに置くときは `<ClientOnly>` (`@tanstack/react-router`) で囲む ([TanStack Start docs「Hydration Errors」][] の Strategy 3)
 - [shadcn docs「Calendar」][] の「Selected Date (With TimeZone)」の例 (`timeZone` を `useEffect` で渡す) は、サーバーで描いた今日の食い違いを直さない (ADR-0031 の Context の実測)
 - 暦の日付を `Calendar` で入力するときは、選ばれた `Date` から、ローカル TZ のまま年・月・日だけを取り出して `YYYY-MM-DD` にする。`toISOString()` を使わない。UTC に直すので、UTC より進んだ TZ (JST など) では 1 日前になる (ADR-0031 の Context)

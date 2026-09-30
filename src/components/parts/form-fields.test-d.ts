@@ -20,7 +20,7 @@ describe("fieldValue の型契約", () => {
     >();
     expectTypeOf<ComponentProps<typeof FormSelectField>["fieldValue"]>().toEqualTypeOf<string>();
     expectTypeOf<ComponentProps<typeof FormCheckboxField>["fieldValue"]>().toEqualTypeOf<boolean>();
-    // 期日なしを null で持つ。空文字や undefined に潰さない (ADR-0031 の分類 2 は YYYY-MM-DD か null)
+    // 期日なしを null で持つ。空文字や undefined に潰さない (ADR-0031 の暦の日付は YYYY-MM-DD か null)
     expectTypeOf<ComponentProps<typeof FormDateField>["fieldValue"]>().toEqualTypeOf<
       string | null
     >();
