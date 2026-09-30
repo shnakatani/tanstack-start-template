@@ -48,14 +48,8 @@ paths:
 - bail out のログは `vp build` では `[plugin vite:react-compiler]` だけで `error` / `warn` を含まない。ビルドログは `react-compiler` で grep する (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 - babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0014)
 
-## catalog (`pnpm-workspace.yaml` の `catalog`)
-
-- catalog へ依存を足したら、`.github/dependabot.yml` の `vite-plus` グループの `patterns` と、`minor-and-patch` の `exclude-patterns` にも足す。足さないと、Dependabot がその依存を両方のグループの PR に載せる (`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」)
-
 ## 依存の patch (`pnpm-workspace.yaml` の `patchedDependencies`)
 
 - patch には理由と撤去条件をコメントで付ける。書かないと、上流が直したときや patch が当たらなくなったときに、外してよいかを判断できない (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
-- 撤去条件の違う変更を 1 つの patch に持つなら、撤去条件を変えるファイルごとに書き、条件が成り立ったファイルの diff だけを外す。まとめて書くと、片方の条件で patch ごと消し、もう片方の変更まで失う (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
+- 撤去条件の違う変更を 1 つの patch に持つなら、patch が変えるファイルごとに撤去条件を書き、条件が成り立ったファイルの diff だけを外す。まとめて書くと、片方の条件で patch ごと消し、もう片方の変更まで失う (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
 - キーは系列の範囲 (`"<pkg>@^<版>"`) にする。版まで固定すると、後続の版では patch が使われず install が落ちる (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
-- `vp pm patch-commit` のあとは、`pnpm-workspace.yaml` に足された版を固定したキーを消す。残すと範囲のキーの patch が使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
-- `vp pm patch-commit` のあとは、`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile は、patch を当てた依存の `optionalDependencies` を落としている (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
