@@ -37,7 +37,7 @@ TanStack Query の `useQuery` / `useMutation`、TanStack Router のストア、B
 | 受け手の prop 型を `() => void \| Promise<void>` にする | 自作コンポーネント間でしか使えず DOM の prop には適用できないため、境界ごとに書き方が割れる | 却下     |
 | `checksVoidReturn.attributes` を off にする             | 本当に rejection を落としている箇所も検出できなくなる                                       | 却下     |
 
-- React 公式もこの構造を採っている。React 19 の `TransitionFunction` は非同期処理を受け取るが、`onClick` に渡すハンドラ自体は同期である ([React docs「useTransition」][])
+- React 公式もこの構造を採っている。React 19 の `startTransition` は非同期の Action を受け取るが、`onClick` に渡すハンドラ自体は同期である ([React docs「useTransition」][])
 - mutation を伴う操作は、同期ハンドラの内側で `startTransition` に非同期関数を渡す形 (Action) にし、pending は Transition から取る (ADR-0015)。`startTransition` を併用すると pending の源が mutation の `isPending` と二重になるが、源を Transition 側へ一本化してこれを避ける
 - 非同期イベントハンドラの書き方は typescript-eslint のメンテナの回答に沿う ([typescript-eslint/typescript-eslint#11008][])
 
