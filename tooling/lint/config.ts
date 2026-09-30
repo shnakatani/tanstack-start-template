@@ -477,7 +477,7 @@ export const lintConfig = {
     ".agents/**",
     ".claude/skills/**",
     // registry の生成時 baseline (ADR-0020)。上流のコードをそのまま保存する記録なので
-    // lint / 型検査の対象にしない。整形だけは合わせるため fmt 側では除外しない
+    // lint / 型検査の対象にしない。整形だけは合わせるため `vite.config.ts` の `fmt` では除外しない
     "docs/registry-baseline/**",
   ],
 } satisfies OxlintConfig;
