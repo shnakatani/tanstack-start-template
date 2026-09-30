@@ -15,8 +15,8 @@
 - client に送らせないフィールドがあるときは、保存済みスキーマから `v.omit` で入力スキーマを派生させる。派生元が `v.object` なら、未知のキーは reject されず黙って strip される。これは `v.omit` ではなく `v.object` の性質で、`v.strictObject` から派生させると同じ入力が reject される (2026-09-02 実測)。どちらの挙動を意図したかをテストで固定する
 - 入力用と保存用で pipe が分かれる項目 (入力側だけが `v.trim()` を持つ項目など) の呼称は、`TInput` を型引数で与えた 1 つの `v.metadata` action を両方の pipe に渡す。型引数も注釈も無い action は `TInput` が `unknown` に推論され、`v.pipe` に入らない
 - `@valibot/to-json-schema` を使うときは、`title` / `description` の action も同じ pipe に足せる。呼称の出処はスキーマ 1 つのまま保てる
-- フォームの `onSubmit` では、値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator に渡したスキーマの変換 (`v.trim()` など) を値に反映しない。docs「Submission Handling」の "Transforming data with Standard Schemas" は "The value passed to the `onSubmit` function will always be the input data." と書き、`onSubmit` の中でスキーマに通すよう案内する。変換を手で書き写すと、スキーマに変換を足したときに送信値だけが古くなる
-- 通すのは `v.parse` にする。`onSubmit` は各項目の検証が通ったあとにしか呼ばれないので、ここで失敗するのは項目の validator と入力スキーマがずれたときだけで、throw して気付ける形が合う。`v.is` / `v.assert` は変換を適用しない (valibot docs「Parse data」の "transformations have no effect")。`formApi.parseValuesWithSchema()` は issue だけを返し、変換後の値を返さない (docs「FormApi」)
+- フォームの `onSubmit` では、値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator に渡したスキーマの変換 (`v.trim()` など) を値に反映しない。[TanStack Form docs「Submission Handling」][] の "Transforming data with Standard Schemas" は "The value passed to the `onSubmit` function will always be the input data." と書き、`onSubmit` の中でスキーマに通すよう案内する。変換を手で書き写すと、スキーマに変換を足したときに送信値だけが古くなる
+- 通すのは `v.parse` にする。`onSubmit` は各項目の検証が通ったあとにしか呼ばれないので、ここで失敗するのは項目の validator と入力スキーマがずれたときだけで、throw して気付ける形が合う。`v.is` / `v.assert` は変換を適用しない ([valibot docs「Parse data」][] の "transformations have no effect")。`formApi.parseValuesWithSchema()` は issue だけを返し、変換後の値を返さない ([TanStack Form docs「FormApi」][])
 
 ### スキーマの型テストを書く
 
@@ -45,8 +45,8 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 - 消費側は部品を使うたびに `fieldValue={field.state.value}` を書く。必須 prop なので、書き忘れは型検査が止める
 - prop の名前は `value` にしない。部品が内部で `Input` へ渡す `value` と紛れる
 - `expectTypeOf` で `ComponentProps<typeof 部品>["fieldValue"]` を固定する型テストを、部品の隣の `*.test-d.ts` に書く。prop が外れても誰も気付かないためである。検査のされ方は `docs/guides/testing/type-tests.md`「型テストを置く」にある
-- 検証エラーは `form-fields.tsx` の `useFormFieldState` が返す `errors` を `FieldError` に渡し、`field.state.meta.errors` をそのまま渡さない。validator は Standard Schema の issue のほかに文字列や任意の値を返せ (TanStack Form の custom-errors ガイド)、部品は `useFieldContext` 越しに読むので errors は `any[]` になる。`FieldError` は `{ message }` の形しか描かないので、揃えないと文字列のエラーが黙って消える
-- errors はどの field でも 1 段平らにしてから揃える。`disableErrorFlat` の field では `flat(1)` が行われず、issue の配列が 1 要素として入る (TanStack Form の FieldOptions のリファレンス「disableErrorFlat」)
+- 検証エラーは `form-fields.tsx` の `useFormFieldState` が返す `errors` を `FieldError` に渡し、`field.state.meta.errors` をそのまま渡さない。validator は Standard Schema の issue のほかに文字列や任意の値を返せ ([TanStack Form docs「Custom Errors」][])、部品は `useFieldContext` 越しに読むので errors は `any[]` になる。`FieldError` は `{ message }` の形しか描かないので、揃えないと文字列のエラーが黙って消える
+- errors はどの field でも 1 段平らにしてから揃える。`disableErrorFlat` の field では `flat(1)` が行われず、issue の配列が 1 要素として入る ([TanStack Form docs「FieldOptions」][] の disableErrorFlat)
 - `aria-invalid` と `data-invalid` は `field.state.meta.isValid` から取る。TanStack Form が submit を止める判定と同じ値である。`errors.flat(1)` の件数で決めると、`disableErrorFlat` の field で validator が `[]` を返したとき (errors は `[[]]`) に invalid が落ち、submit が止まる理由が支援技術から読めなくなる
 
 ### Select の値を解決する
@@ -60,8 +60,8 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 | 候補から消えた値          | 表示は保つ。`options` が描画中に変わりうるとき (query や別のフィールドから来るとき) は、保存を消費側の validator で止め、選び直しを促す (`form-fields.stories.tsx` の `SelectBlocksSubmitWhenValueLeftOptions`) | 通知が来ない条件 (未登録、`null`、マウント時の値へ戻る) で、候補に無い値のまま送信される |
 
 - `FormSelectField` を包まずに `Select` を使う箇所は、同じ引き取りを自分で書く
-- `options` が描画中に変わりうるとき (query や別のフィールドから来るとき)、validator は `form.AppField` の `validators` に宣言する。部品の中から足す公式の形は見つからない (2026-09-26 に TanStack Form の validation と form-composition のガイドを確認)。validator は送信時にも走るので、候補の変化で再検証されなくても送信で止まる (TanStack Form の validation ガイド)
-- 候補が別のフィールドから決まるなら、依存元の `listeners` で値を空に戻す形もある (TanStack Form の listeners ガイド)。候補が query など form の外から来るときは validator で止める
+- `options` が描画中に変わりうるとき (query や別のフィールドから来るとき)、validator は `form.AppField` の `validators` に宣言する。部品の中から足す公式の形は見つからない (2026-09-26 に [TanStack Form docs「Form and Field Validation」][] と [TanStack Form docs「Form Composition」][] を確認)。validator は送信時にも走るので、候補の変化で再検証されなくても送信で止まる ([TanStack Form docs「Form and Field Validation」][] の Preventing invalid forms from being submitted)
+- 候補が別のフィールドから決まるなら、依存元の `listeners` で値を空に戻す形もある ([TanStack Form docs「Side effects for event triggers」][])。候補が query など form の外から来るときは validator で止める
 
 ### 高さのあるダイアログを組む
 
@@ -110,43 +110,41 @@ placeholder を足すときは、次の 2 つを確かめる (ADR-0025)。
 
 公式の例は 3 通りある (2026-09-23 時点)。
 
-| 出典                                                 | 形                                                                                                                                                                           |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base UI Dialog「Inside scroll dialog」               | Popup は画面に収めたまま、Header と Actions の間に `ScrollArea` を置いて本体だけをスクロールさせる。Popup の直下に Header / ScrollArea.Root / Actions を並べる               |
-| Base UI Dialog「Outside scroll dialog」              | Viewport 側をスクロールさせ、Popup が画面の下端を越えて伸びる                                                                                                                |
-| shadcn Dialog「Scrollable Content」「Sticky Footer」 | Header と Footer の間の本文を `-mx-4 no-scrollbar max-h-[50vh] overflow-y-auto px-4` の div でスクロールさせる。Header / Footer は sticky ではなく、本文の外に置いて固定する |
+| 出典                                                             | 形                                                                                                                                                                           |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Base UI docs「Dialog」][] の Inside scroll dialog               | Popup は画面に収めたまま、Header と Actions の間に `ScrollArea` を置いて本体だけをスクロールさせる。Popup の直下に Header / ScrollArea.Root / Actions を並べる               |
+| [Base UI docs「Dialog」][] の Outside scroll dialog              | Viewport 側をスクロールさせ、Popup が画面の下端を越えて伸びる                                                                                                                |
+| [shadcn docs「Dialog」][] の Scrollable Content と Sticky Footer | Header と Footer の間の本文を `-mx-4 no-scrollbar max-h-[50vh] overflow-y-auto px-4` の div でスクロールさせる。Header / Footer は sticky ではなく、本文の外に置いて固定する |
 
-`ActionDialogContent` は Base UI の Inside scroll の並びを保ったまま、`DialogContent` の中を `form` で包む。form は `display: contents` で box を作らないので、見出し・本文・フッターは Popup の直下と同じく flex の子として並ぶ。form の置き場所を出典の形に合わせない理由は「フォームを `DialogContent` の中に置く理由」にある。
+`ActionDialogContent` は [Base UI docs「Dialog」][] の Inside scroll の並びを保ったまま、`DialogContent` の中を `form` で包む。form は `display: contents` で box を作らないので、見出し・本文・フッターは Popup の直下と同じく flex の子として並ぶ。form の置き場所を出典の形に合わせない理由は「フォームを `DialogContent` の中に置く理由」にある。
 
-- Outside scroll を採らないのは、見出しと X ボタンが流れるためである。backstop が効いたとき (組み忘れたとき) と同じ見え方を、正規の形にすることになる
-- shadcn の例のように本文を `max-h-[50vh]` で打ち切らないのは、打ち切りの値が viewport と Dialog の余白に追随せず、ダイアログごとに値を持つことになるためである
+- [Base UI docs「Dialog」][] の Outside scroll を採らないのは、見出しと X ボタンが流れるためである。backstop が効いたとき (組み忘れたとき) と同じ見え方を、正規の形にすることになる
+- [shadcn docs「Dialog」][] の例のように本文を `max-h-[50vh]` で打ち切らないのは、打ち切りの値が viewport と Dialog の余白に追随せず、ダイアログごとに値を持つことになるためである
 
 ### フォームを `DialogContent` の中に置く理由
 
 form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 
-| 案                                                                                                                                                                                | 評価                                                                                                                                                                                                             | 採否     |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| form を `DialogContent` の外に置き、見出し・本文・フッターを `DialogContent` の直下に並べる (shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx` の「With Form」) | `DialogContent` は Portal で body の下へ出るので、DOM の上で送信ボタンが form の外になり、送信が起きない。ブラウザテストで送信ボタンの `form` が `null`、`onSubmit` が 0 回だった (form を中に置いた対照は 1 回) | 却下     |
-| Popup を `render` で form として描く                                                                                                                                              | Popup は描いた要素に `role="dialog"` を付ける。ARIA in HTML が form 要素に許す役割は none / presentation / search で、dialog を含まない                                                                          | 却下     |
-| `DialogContent` の中を `display: contents` の form で包む (`ActionDialogContent`)                                                                                                 | form が入力欄と送信ボタンの祖先になり、Enter とクリックで送信が起きる。form は box を作らないので、並びは Base UI の Inside scroll と同じになる                                                                  | **採用** |
+| 案                                                                                                                                                                                    | 評価                                                                                                                                                                                                             | 採否     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| form を `DialogContent` の外に置き、見出し・本文・フッターを `DialogContent` の直下に並べる ([shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx`][] の「With Form」) | `DialogContent` は Portal で body の下へ出るので、DOM の上で送信ボタンが form の外になり、送信が起きない。ブラウザテストで送信ボタンの `form` が `null`、`onSubmit` が 0 回だった (form を中に置いた対照は 1 回) | 却下     |
+| Popup を `render` で form として描く                                                                                                                                                  | Popup は描いた要素に `role="dialog"` を付ける。[ARIA in HTML][] が form 要素に許す役割は none / presentation / search で、dialog を含まない                                                                      | 却下     |
+| `DialogContent` の中を `display: contents` の form で包む (`ActionDialogContent`)                                                                                                     | form が入力欄と送信ボタンの祖先になり、Enter とクリックで送信が起きる。form は box を作らないので、並びは [Base UI docs「Dialog」][] の Inside scroll と同じになる                                               | **採用** |
 
-- React docs の `createPortal` は「A portal only changes the physical placement of the DOM node」と書く。HTML 仕様の form owner は「nearest ancestor form element」で、React の木の上の親子関係を見ない
-- 上流で同じ症状に触れているのは shadcn-ui/ui の discussion 2918 のコメントだけである
-- `display: contents` の要素は、ブラウザによって accessibility tree から消える (MDN「display」、子孫は残る)。Adrian Roselli は操作・フォーカスを受ける要素に使わないよう勧め、定期的な確認を求める (2025-07-31 の追記)。この form は操作もフォーカスも受けず、名前を持たないので form の役割として公開されない。確認は `src/components/action/dialog.stories.tsx` の axe が担う
+- [React docs「createPortal」][] は「A portal only changes the physical placement of the DOM node」と書く。[HTML Standard「Association of controls and forms」][] の form owner は「nearest ancestor form element」で、React の木の上の親子関係を見ない
+- 上流で同じ症状に触れているのは [shadcn-ui/ui#2918][] のコメントだけである
+- `display: contents` の要素は、ブラウザによって accessibility tree から消える ([MDN「display」][]、子孫は残る)。[Adrian Roselli「Display: Contents Is Not a CSS Reset」][] は操作・フォーカスを受ける要素に使わないよう勧め、定期的な確認を求める (2025-07-31 の追記)。この form は操作もフォーカスも受けず、名前を持たないので form の役割として公開されない。確認は `src/components/action/dialog.stories.tsx` の axe が担う
 
 ### `fieldValue` で値型を突き合わせる理由
 
-`fieldComponents` に登録した部品は `useFieldContext<T>()` でフィールドを読む。`T` は部品側の宣言にすぎず、実際にどのフィールドへ差されたかとは結び付かない。number のフィールドに文字列の部品を差しても型検査は通る。TanStack/form の discussion 1240 が同じ事象を挙げ、pre-bound の field component は型安全でないと報告している (2025-03-07 起票)。
+`fieldComponents` に登録した部品は `useFieldContext<T>()` でフィールドを読む ([TanStack Form docs「Form Composition」][] の Pre-bound Field Components)。`T` は部品側の宣言にすぎず、実際にどのフィールドへ差されたかとは結び付かない。number のフィールドに文字列の部品を差しても型検査は通る。[TanStack/form#1240][] が同じ事象を挙げ、pre-bound の field component は型安全でないと報告している (2025-03-07 起票)。
 消費側で `name` から型付けされるのは `field.state.value` だけで、部品へ値の型を知らせる経路はこの値を props で受けるしかない。
 
-| 案                                              | 評価                                                                                                        | 採否     |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------- |
-| 使わない `fieldValue` prop で値型を突き合わせる | 消費側の 1 prop で、`name` 由来の型と部品の型が衝突すれば型エラーになる。discussion 1240 の採用回答と同じ形 | **採用** |
-| `useFieldContext<T>()` の宣言に任せる           | 宣言が実フィールドと結び付かない (discussion 1240)                                                          | 却下     |
-| 上流の値型を突き合わせる API を待つ             | stable (1.33.5) の公開型に無い (2026-09-23、`npm pack` で取得して確認)                                      | 見送り   |
-
-- 出典: TanStack/form discussion 1240 (https://github.com/TanStack/form/discussions/1240)、Form Composition (https://tanstack.com/form/latest/docs/framework/react/guides/form-composition)
+| 案                                              | 評価                                                                                                               | 採否     |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------- |
+| 使わない `fieldValue` prop で値型を突き合わせる | 消費側の 1 prop で、`name` 由来の型と部品の型が衝突すれば型エラーになる。[TanStack/form#1240][] の採用回答と同じ形 | **採用** |
+| `useFieldContext<T>()` の宣言に任せる           | 宣言が実フィールドと結び付かない ([TanStack/form#1240][])                                                          | 却下     |
+| 上流の値型を突き合わせる API を待つ             | stable (1.33.5) の公開型に無い (2026-09-23、`npm pack` で取得して確認)                                             | 見送り   |
 
 ### Select の値を消費側で解決する理由
 
@@ -157,4 +155,25 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 | 消費側で値を解決し、Base UI の通知は警告に使う | 通知の有無に依らず form の値が決まる                             | **採用** |
 | Base UI の自己リセットに任せる                 | 公式 docs に無い挙動で、通知されない条件があり、版で経路が変わる | 却下     |
 
-- 出典: TanStack Form の validation ガイド (https://tanstack.com/form/latest/docs/framework/react/guides/validation)、listeners ガイド (https://tanstack.com/form/latest/docs/framework/react/guides/listeners)
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+[TanStack Form docs「Submission Handling」]: https://tanstack.com/form/latest/docs/framework/react/guides/submission-handling
+[valibot docs「Parse data」]: https://valibot.dev/guides/parse-data/
+[TanStack Form docs「FormApi」]: https://tanstack.com/form/latest/docs/reference/classes/FormApi
+[TanStack Form docs「Custom Errors」]: https://tanstack.com/form/latest/docs/framework/react/guides/custom-errors
+[TanStack Form docs「FieldOptions」]: https://tanstack.com/form/latest/docs/reference/interfaces/FieldOptions
+[TanStack Form docs「Form and Field Validation」]: https://tanstack.com/form/latest/docs/framework/react/guides/validation
+[TanStack Form docs「Form Composition」]: https://tanstack.com/form/latest/docs/framework/react/guides/form-composition
+[TanStack Form docs「Side effects for event triggers」]: https://tanstack.com/form/latest/docs/framework/react/guides/listeners
+[Base UI docs「Dialog」]: https://base-ui.com/react/components/dialog
+[shadcn docs「Dialog」]: https://ui.shadcn.com/docs/components/base/dialog
+[shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/df1752dfe092957f84aa467d2270436139e3ecc7/apps/v4/registry/bases/base/examples/dialog-example.tsx
+[ARIA in HTML]: https://www.w3.org/TR/html-aria/#el-form
+[React docs「createPortal」]: https://react.dev/reference/react-dom/createPortal
+[HTML Standard「Association of controls and forms」]: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#association-of-controls-and-forms
+[shadcn-ui/ui#2918]: https://github.com/shadcn-ui/ui/discussions/2918
+[MDN「display」]: https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/display
+[Adrian Roselli「Display: Contents Is Not a CSS Reset」]: https://adrianroselli.com/2018/05/display-contents-is-not-a-css-reset.html
+[TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240
