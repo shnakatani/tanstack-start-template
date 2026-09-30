@@ -41,7 +41,6 @@ paths:
 - 切り出したモジュールに、読み込むだけで起きる副作用 (警告の出力、環境変数の書き換え) を持たせない。`vite.config.ts` は `vp lint` / `vp fmt` / `vp build` のたびに読まれる (`docs/guides/vite-configuration.md`「読み込むだけで起きる副作用を持たせない理由」)
 - `plugins` の重い plugin は `lazyPlugins` に渡す関数の中で `import()` する。先頭で import すると `vp lint` / `vp fmt` のたびに評価される (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
 - 動的 import で遅らせるのは外部のパッケージそのものにする。`tooling/` のモジュールを動的 import しても、Vite が config を 1 ファイルへ bundle するので遅れない (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
-- `lazyPlugins` に渡す関数の形 (同期か async か) か、`@storybook/tanstack-react` の patch を変えたら `vp exec storybook build` を通す。`mise run verify` は Storybook を build せず、`@storybook/tanstack-react` が TanStack Start の plugin を絞りそこねても落ちない (`docs/guides/vite-configuration.md`「重い依存を遅らせて読み込む」)
 
 ## React Compiler (`vite.config.ts` の `plugins`)
 

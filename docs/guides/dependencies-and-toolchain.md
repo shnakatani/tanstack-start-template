@@ -125,7 +125,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
   3. `vp pm patch-commit <dir>` で patch を書き出す。書き出されたファイルが、範囲のキーの指すファイルと同じであることを `git status` で確かめる
   4. `pnpm-workspace.yaml` に足された版を固定したキーを消す。`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-09-30 に pnpm 11.28.0 で 2 回観測)
   5. `git diff pnpm-lock.yaml` が patch のハッシュの行だけであることと、`node_modules/<pkg>/` の配布物に元の変更と新しい変更の両方があることを grep で確かめる
-  6. patch の撤去条件のコメントが確かめ方を挙げていれば、それを通す (`@storybook/tanstack-react` なら `vp exec storybook build`)
+  6. `mise run verify` を通す。patch を当てた依存を使う検査も入っている (`@storybook/tanstack-react` なら `vp exec storybook build`)
 
 ### workflow に action を足す
 

@@ -42,6 +42,9 @@ jobs:
       # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
       - run: vp node scripts/checks/runtime/security-headers.ts
 
+      # Storybook の Vite 設定が組めることを確かめる。async の lazyPlugins は tanstack-react の patch に頼る (pnpm-workspace.yaml)
+      - run: vp exec storybook build --quiet
+
   # peer の食い違いを数え、install が要らないので verify と並列に走らせる (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」、ADR-0004)
   # 変更の有無で飛ばさない。課金はジョブごとに分単位で切り上がり、飛ばしても 1 分として数えられる (GitHub Docs「Actions runner pricing」)
   peers:

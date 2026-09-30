@@ -84,7 +84,7 @@ packageExtensions:
 # 撤去条件: tanstack-react の安定版が storybookjs/storybook#36333 を含んだとき
 # dist/preset.js への変更: tanstack-react@10.6.0 は plugin を絞るとき Promise の中を見ない。vite.config.ts の lazyPlugins に渡す関数は async なので、
 # TanStack Start の plugin が残って storybook build が落ちる。Promise を解決し、関数が同期のときと同じ並びにしてから絞る (docs/guides/vite-configuration.md「重い依存を遅らせて読み込む」)
-# 撤去条件: tanstack-react の安定版が、Promise の plugin を解決してから絞るようになったとき。mise run verify は Storybook を build しないので、この変更を変えたか外したら vp exec storybook build が通ることを確かめる
+# 撤去条件: tanstack-react の安定版が、Promise の plugin を解決してから絞るようになったとき。外したら、mise run verify の vp exec storybook build が通ることで確かめる
 patchedDependencies:
   "@storybook/addon-vitest@^10.6.0": patches/@storybook__addon-vitest@10.6.0.patch
   "@storybook/tanstack-react@^10.6.0": patches/@storybook__tanstack-react@10.6.0.patch
