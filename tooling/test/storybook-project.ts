@@ -34,7 +34,8 @@ export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number])
         // storybookjs/storybook#33875)。axe-core は addon-a11y が動的 import で読む
         // (docs/guides/testing/configuration.md「project に `optimizeDeps` を書く理由」)
         include: ["axe-core"],
-        // @tanstack/react-start 系は exclude しない。@storybook/tanstack-react の preset がモックへ差し替え、除外もする
+        // ブラウザテストの project (browser-project.ts) と違い、@tanstack/react-start 系を exclude に書かない。
+        // @storybook/tanstack-react の preset が、それらの import をモックへ差し替え、自分で exclude にも足す
         // (docs/guides/testing/configuration.md「project に `optimizeDeps` を書く理由」)
       },
       test: {
