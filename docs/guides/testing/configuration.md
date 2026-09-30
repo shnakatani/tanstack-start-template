@@ -12,14 +12,14 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 
 ### 設定の置き場所
 
-| 置くもの                                                                                                           | 置き場所                                                                                                                   |
-| ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `test` の中身 (project の一覧、`globalSetup`、coverage)                                                            | `tooling/test/config.ts` の `testConfig`。`vite.config.ts` の `test` がこれを読む                                          |
-| ブラウザテストの project                                                                                           | `tooling/test/browser-project.ts`                                                                                          |
-| story の project                                                                                                   | `tooling/test/storybook-project.ts`                                                                                        |
-| ブラウザで走る project に共通する設定 (`tailwindcss()`、`resolve.dedupe`、chromium を headless で動かす `browser`) | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる |
-| project が共有する設定 (`envDir`、`resolve`)                                                                       | `vite.config.ts` のトップレベル。project はこれを継承する                                                                  |
-| テストでだけ外す plugin                                                                                            | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                    |
+| 置くもの                                                                                                           | 置き場所                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test` の中身 (project の一覧、全 project が共有する `exclude`、`globalSetup`、coverage)                           | `tooling/test/config.ts` の `testConfig`。`vite.config.ts` の `test` がこれを読む。project は `exclude` などを継承する (`globalSetup` は継承されず、root で 1 回だけ走る) |
+| ブラウザテストの project                                                                                           | `tooling/test/browser-project.ts`                                                                                                                                         |
+| story の project                                                                                                   | `tooling/test/storybook-project.ts`                                                                                                                                       |
+| ブラウザで走る project に共通する設定 (`tailwindcss()`、`resolve.dedupe`、chromium を headless で動かす `browser`) | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる                                                |
+| project が共有する Vite の設定 (`envDir`、`resolve`)                                                               | `vite.config.ts` のトップレベル。project はこれを継承する                                                                                                                 |
+| テストでだけ外す plugin                                                                                            | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                                                                   |
 
 `vitest.config.ts` は作らない (ADR-0037。仕組みは「`vitest.config.ts` を置かない理由」)。
 
