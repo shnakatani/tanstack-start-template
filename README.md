@@ -43,7 +43,7 @@ mise run storybook                                # 部品とデザイントー�
 | `vp check --fix`               | コミット前に format・lint・型検査を通す                                           |
 | `vp build`                     | 本番ビルド。出力は `.output/`、起動は `vp run start`                              |
 
-`vp <name>` は組み込みコマンド (一覧は `vp help`)、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを走らせる。`package.json` の `check` / `test` / `build` は中身が `vp <name>` なので、`pnpm run <name>` でも同じものが走る (ADR-0004)。
+`vp <name>` は組み込みコマンド (一覧は `vp help`)、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを走らせる。組み込みと同名の script は足さない (ADR-0004)。
 
 ## ドキュメント
 
