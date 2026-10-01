@@ -46,12 +46,12 @@ export const Destructive: Story = {
 };
 
 /**
- * 破壊操作のアイコンボタン。hover でのみ着色すると touch 環境で色が出ないため、
- * アイコン単体でも destructive 系の variant を当てる (hover だけの着色は touch 環境で出ない)
+ * 破壊操作のアイコンボタン。アイコン単体でも `destructive` を当て、`size` を `icon*` にする
+ * (shadcn registry の `button-example.tsx` の Icon Only と同じ形)。hover だけの着色は touch 環境で出ない
  */
 export const DestructiveIcon: Story = {
   args: {
-    variant: "destructive-ghost",
+    variant: "destructive",
     size: "icon",
     "aria-label": "削除する",
     children: <TrashIcon />,

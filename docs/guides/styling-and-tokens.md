@@ -17,6 +17,7 @@
 - 新しい意味のある色は、`src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。定義より前に utility を書くと、`no-unknown-classes` が止める
 - 露出の口 (`@theme inline` で utility にするか、`:root` と `@utility` だけにするか) は、誤った当て方を誘う既存の書き方があるかで選ぶ (ADR-0024「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」)
 - `@theme inline` へ通した面のトークンを文字として書く余地は残る。面のトークンを文字に使うなら、載る下地ごとに比を測る。2026-09-22 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.76、`--muted` / `--accent` / `--secondary` で 4.28〜4.33 になり、後者は SC 1.4.3 を割る
+- 破壊操作のボタンは、テキストでもアイコンでも `variant="destructive"` にする。アイコンだけのボタンは `size` を `icon` / `icon-xs` / `icon-sm` / `icon-lg` から選ぶ ([shadcn docs「Button」][] の `variant`、[shadcn の `button-example.tsx`][] の Icon Only)。hover でだけ色を付ける形は、touch 環境で色が出ない
 - `-foreground` を「面の上の文字」以外の意味で使わない。上流はこの接尾辞を solid な面の上の文字に割り当てており、別の意味を載せると次の生成で衝突する
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
 - `cn` は npm の `cn` パッケージから import する。registry が `@/lib/utils` ではなくそこから取るので、`src/lib/utils.ts` は置かない (ADR-0020)
@@ -301,6 +302,8 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 - [CSS Color 4「Resolving `<color>` Values」][] (oklch の computed value は oklch のまま)
 
+[shadcn docs「Button」]: https://ui.shadcn.com/docs/components/base/button
+[shadcn の `button-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/examples/button-example.tsx
 [shadcn skill「Customization & Theming」]: https://github.com/shadcn-ui/ui/blob/main/skills/shadcn/customization.md
 [shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/base/data-table
 [shadcn-ui/lint docs「no-restyle」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md

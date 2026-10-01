@@ -14,7 +14,7 @@ palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-ra
 - semantic token を使う。淡色ハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0024 の段に乗せる
 - `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書く。registry 内なら台帳 `docs/registry-deviations.md` にも記録する (`docs/guides/styling-and-tokens.md`「`color-mix()` を書く」)
-- 破壊操作は常時 destructive 色にする。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover だけの着色は touch 環境で出ない
+- 破壊操作のボタンは、テキストでもアイコンでも `variant="destructive"` にし、アイコンだけなら `size="icon*"` を合わせる。hover だけの着色は touch 環境で出ない (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)
 - コントラストは本文 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark は light と別に検算する。opacity variant は背景合成で比が変わる
