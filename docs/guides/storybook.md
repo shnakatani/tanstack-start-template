@@ -69,7 +69,7 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 - popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)
 - Storybook の test 実行では、ブラウザテストの animation の無効化を適用していない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら `tooling/test/storybook-project.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う
 - `storybook/test` の `expect` は、vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を play へ機械的に写せない箇所がある
-- story は StrictMode の下で描かれ、描画と mount 直後の effect が 2 回走る。play で呼び出しの回数を確かめると、描画中の副作用はここで落ちる。2 回を見たら期待値ではなく部品を直す (`docs/guides/testing/configuration.md`「StrictMode の下で描く」)
+- story は StrictMode の下で描かれ、描画と mount 直後の effect が 2 回走る (`docs/guides/testing/configuration.md`「StrictMode の下で描く」)
 
 ### ブラウザテストから play へ移す
 

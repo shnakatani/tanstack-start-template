@@ -14,8 +14,7 @@ const preview: Preview = {
       defaultTheme: "light",
       parentSelector: "html",
     }),
-    // story をアプリの root と同じく StrictMode で包む。配列の後ろほど外側に重なるので最後に置く。
-    // main.ts の framework の strictMode は vitest 経由の story に届かないので使わない (ADR-0039)
+    // story をアプリの root と同じく StrictMode で包む。一番外側に重ねるため最後に置く (ADR-0039)
     (Story) => (
       <StrictMode>
         <Story />

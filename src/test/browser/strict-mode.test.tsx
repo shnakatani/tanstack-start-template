@@ -17,7 +17,6 @@ describe("ブラウザテストの描画", () => {
 
     await render(<Probe />);
 
-    // StrictMode は開発時に mount 直後の effect を 1 度外して付け直す (React docs「StrictMode」)
     expect(lifecycle).toEqual(["mount", "unmount", "mount"]);
   });
 });
