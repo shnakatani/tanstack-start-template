@@ -104,7 +104,12 @@ lint では見ないのでレビューで見る。
 
 ## 手動メモ化の増減
 
-`useMemo` / `useCallback` は足すのも外すのも実測してから。判定手順は `docs/guides/react/memoization.md`「手動メモ化を外すか判定する」。`src/components/ui/` は ADR-0020 の統制下なので触らない。
+`src/components/ui/` は ADR-0020 の統制下なので触らない。
+
+- 新しいコードで `useMemo` / `useCallback` を予防的に書かない。手で書くのは、性能の問題が実際に出た箇所と、effect の依存のように値の同一性を精密に制御する箇所だけ。ほかは Compiler がメモ化する (`docs/guides/react/memoization.md`「手動メモ化を書く」)
+- effect の依存は、まず関数や object を effect の中へ移すか `useEffectEvent` へ切り出して依存から外し、外せないときだけ最後の手段としてメモ化する。先にメモ化すると、要らない依存が残る (`docs/guides/react/memoization.md`「手動メモ化を書く」)
+- キャッシュが捨てられると壊れる値は `useMemo` に持たず、state か ref に持つ。React は `useMemo` のキャッシュを捨てうる (`docs/guides/react/memoization.md`「手動メモ化を書く」)
+- 既存の `useMemo` / `useCallback` は、撤去の前後でコンパイル出力が悪化しないことを測れた箇所だけ外す。外形からは劣化が読み取れない (`docs/guides/react/memoization.md`「手動メモ化を外すか判定する」)
 
 ## コンポーネントは function 宣言で定義する
 

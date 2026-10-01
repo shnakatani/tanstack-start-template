@@ -13,11 +13,23 @@
 Compiler はコンポーネントか hook として認識した関数しか最適化しない。テーブルの列定義のように、コンポーネントでも hook でもない定義は最適化されないまま動く。
 これは仕様どおりの挙動で、欠陥として扱わない (ADR-0014)。
 
+### 手でメモ化する場面を 2 つにする理由
+
+Compiler を入れたコードでも、`useMemo` / `useCallback` は「どの値をメモ化するか」を制御する escape hatch として残る。公式は、新しいコードでもメモ化を Compiler に任せつつ、精密な制御が要る箇所では `useMemo` / `useCallback` を使うよう勧め、その典型に effect の依存を挙げる。依存が意味の上で変わらないのに effect が走り直すのを防ぐ使い方である ([React docs「React Compiler」][] の What should I do about useMemo, useCallback, and React.memo?)。
+性能の問題が出た箇所だけに限ると、この使い方を締め出す。effect の依存は性能ではなく、effect がいつ走るかという挙動に関わるからである。
+
 ## how-to
 
 ### 手動メモ化を書く
 
-新しいコードで予防的に `useMemo` / `useCallback` を書かない。性能の問題として実際に現れた箇所だけを手でメモ化する (ADR-0014)。
+新しいコードのメモ化は Compiler に任せ、予防的に `useMemo` / `useCallback` を書かない (ADR-0014)。手で書くのは次の 2 つの場面だけにする。理由は「手でメモ化する場面を 2 つにする理由」にある。
+
+| 場面                                               | 書き方                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 性能の問題が実際に出た箇所                         | 問題の出た値か関数を `useMemo` / `useCallback` で包む                                                                                                                                                                                                                                                                                                                               |
+| 値の同一性を精密に制御する箇所 (effect の依存など) | 上から順に当てる。まず依存を外す: 関数や object を effect の中へ移す、最新の値を読むだけなら `useEffectEvent` へ切り出す ([React docs「useEffect」][] の My Effect runs after every re-render、[React docs「useCallback」][] の Preventing an Effect from firing too often)。外せないときに最後の手段として `useMemo` / `useCallback` で包む ([React docs「useEffect」][] の同じ節) |
+
+- キャッシュが捨てられると壊れる値は `useMemo` に持たず、state か ref に持つ。React は開発中の編集や初回 mount 中の suspend でキャッシュを捨てる ([React docs「useMemo」][] の Caveats)
 
 ### 手動メモ化を外すか判定する
 
@@ -52,3 +64,12 @@ const sentinels = (code.match(/memo_cache_sentinel/g) ?? []).length;
 - bail out は `vp build` のログに出る (`compiler.logDiagnostics`)。ログの行は `[plugin vite:react-compiler]` で始まり、`error` / `warn` を含まない。`react-compiler` で grep する
 - `vp lint -D react/todo` は同じ bail out を file:line つきで報告する (2026-09-02 に同じツリーで件数が一致)。`oxc-transform-react` が非 fatal の診断をビルドログへ出さなくなったときは、こちらをその場で叩く。`react/todo` は設定で有効にしない (ADR-0014「bail out を lint で報告しない」)
 - Compiler の適用が壊れたら、`@vitejs/plugin-react` と `oxc-transform-react` を前の版へ揃えて下げる。babel の経路へは戻さない (ADR-0014)
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+
+[React docs「React Compiler」]: https://react.dev/learn/react-compiler/introduction
+[React docs「useEffect」]: https://react.dev/reference/react/useEffect
+[React docs「useCallback」]: https://react.dev/reference/react/useCallback
+[React docs「useMemo」]: https://react.dev/reference/react/useMemo
