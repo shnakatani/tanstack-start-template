@@ -36,7 +36,7 @@ lint (`typescript/consistent-type-assertions`) が止める。`as const` は可�
 ## children prop は明示的に ReactNode で宣言する
 
 - 自前の props 型に `children: ReactNode` (必須) / `children?: ReactNode` (任意) を書く。どちらかはコンポーネントの意図で選ぶ
-- 型は `ReactNode` に固定する (`ReactElement` 等へ狭めるのは本当に制約したいときだけ、理由コメント付き)
+- 型は `ReactNode` にする。`ReactElement` へ狭めるのは子を JSX 要素ちょうど 1 つに限る部品だけにし、理由をコメントに書く。`ReactElement` は文字列・複数の子・`cond && <x />` を拒み、要素の種類は絞れない (`docs/guides/react/props.md`「children を `ReactNode` で受ける理由」)
 - `PropsWithChildren` は使わない。children が常に optional になり必須を表現できない (react.dev と React TypeScript Cheatsheet の第一形が明示宣言)
 - JSX 子要素と違うセマンティクスのものを受けるなら、`children` ではなく別名の prop (例: `renderRow` / `rows`) にする
 - 対象外: shadcn 生成コード (`src/components/ui/`) と外部 API の型都合
