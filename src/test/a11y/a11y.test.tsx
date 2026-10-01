@@ -67,18 +67,18 @@ describe("expectNoA11yViolations", () => {
     it(
       "axe の tag を持つテストは、tag の無いテストと並行しても落ちない",
       { tags: ["axe"] },
-      async ({ task }) => {
+      async ({ task, onTestFinished }) => {
         // 並行するテストは同じ iframe で動き、隣の beforeEach の cleanup が render した DOM を消す。
         // React を通さずに置く
         const main = document.createElement("main");
         main.innerHTML = "<p>白地の黒い文字</p>";
         document.body.append(main);
-        try {
-          await expectNoA11yViolations(main, { annotate: vi.fn(), task });
-        } finally {
+        onTestFinished(() => {
           main.remove();
-          checked.resolve(undefined);
-        }
+        });
+
+        await expectNoA11yViolations(main, { annotate: vi.fn(), task });
+        checked.resolve(undefined);
       },
     );
 

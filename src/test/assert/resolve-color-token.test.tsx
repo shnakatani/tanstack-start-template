@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { resolveColorToken } from "./resolve-color-token";
 
@@ -7,15 +7,14 @@ import { resolveColorToken } from "./resolve-color-token";
 const PROBE_TOKEN = "--resolve-color-token-probe";
 const PROBE_LITERAL = "oklch(50% 0.1 200)";
 
-function withProbeScope(run: (scope: HTMLElement) => void): void {
+function appendProbeScope(): HTMLElement {
   const scope = document.createElement("div");
   scope.style.setProperty(PROBE_TOKEN, PROBE_LITERAL);
   document.body.append(scope);
-  try {
-    run(scope);
-  } finally {
+  onTestFinished(() => {
     scope.remove();
-  }
+  });
+  return scope;
 }
 
 /**
@@ -25,13 +24,11 @@ function withProbeScope(run: (scope: HTMLElement) => void): void {
  */
 describe("resolveColorToken", () => {
   it("宣言の字面ではなくブラウザの算出値を返す", () => {
-    withProbeScope((scope) => {
-      const resolved = resolveColorToken(PROBE_TOKEN, scope);
+    const resolved = resolveColorToken(PROBE_TOKEN, appendProbeScope());
 
-      expect(resolved).toMatch(/^(rgb|oklch|color)\(/);
-      // 百分率の字面は算出時に正規化される。字面のまま返っていたら比較が無意味になる
-      expect(resolved).not.toBe(PROBE_LITERAL);
-    });
+    expect(resolved).toMatch(/^(rgb|oklch|color)\(/);
+    // 百分率の字面は算出時に正規化される。字面のまま返っていたら比較が無意味になる
+    expect(resolved).not.toBe(PROBE_LITERAL);
   });
 
   it("未定義のトークンを継承色で埋めずに投げる", () => {
@@ -42,19 +39,17 @@ describe("resolveColorToken", () => {
 
   // 定義はあるが色でない値も、色と同じく継承色へ落ちる。定義の有無だけでは通り抜ける
   it("色でない値を持つトークンも投げる", () => {
-    withProbeScope((scope) => {
-      scope.style.setProperty(PROBE_TOKEN, "0.625rem");
-      // 字面まで見る。添えていないと、宣言の値を落としても検出できない
-      expect(() => resolveColorToken(PROBE_TOKEN, scope)).toThrow(/\(0\.625rem\)/);
-    });
+    const scope = appendProbeScope();
+    scope.style.setProperty(PROBE_TOKEN, "0.625rem");
+    // 字面まで見る。添えていないと、宣言の値を落としても検出できない
+    expect(() => resolveColorToken(PROBE_TOKEN, scope)).toThrow(/\(0\.625rem\)/);
   });
 
   // 字面を CSS.supports で見る形はここを通してしまう。継承色は測りたい値ではない
   it("currentColor のトークンも投げる", () => {
-    withProbeScope((scope) => {
-      scope.style.setProperty(PROBE_TOKEN, "currentColor");
-      expect(() => resolveColorToken(PROBE_TOKEN, scope)).toThrow(RegExp(PROBE_TOKEN));
-    });
+    const scope = appendProbeScope();
+    scope.style.setProperty(PROBE_TOKEN, "currentColor");
+    expect(() => resolveColorToken(PROBE_TOKEN, scope)).toThrow(RegExp(PROBE_TOKEN));
   });
 
   it("解決に使った probe を残さない", () => {
@@ -72,11 +67,10 @@ describe("resolveColorToken", () => {
     const dark = document.createElement("div");
     dark.className = "dark";
     document.body.append(dark);
-
-    try {
-      expect(resolveColorToken("--destructive", dark)).not.toBe(resolveColorToken("--destructive"));
-    } finally {
+    onTestFinished(() => {
       dark.remove();
-    }
+    });
+
+    expect(resolveColorToken("--destructive", dark)).not.toBe(resolveColorToken("--destructive"));
   });
 });
