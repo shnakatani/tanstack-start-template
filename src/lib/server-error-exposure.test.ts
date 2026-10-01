@@ -1,3 +1,5 @@
+import { runInNewContext } from "node:vm";
+
 import { notFound, redirect } from "@tanstack/react-router";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
@@ -13,6 +15,20 @@ describe("serverErrorAdapter", () => {
   it("Error とそのサブクラスを掴む", () => {
     expect(serverErrorAdapter.test(new Error("取得に失敗しました"))).toBe(true);
     expect(serverErrorAdapter.test(new DrizzleQueryError("select 1", ["secret"]))).toBe(true);
+  });
+
+  // 別の realm で作った Error は instanceof Error が偽になる。掴まないと seroval が直列化を拒み、
+  // SSR ではエラー画面の代わりに汎用の 500 になる
+  it("別の realm で作った Error を掴む", () => {
+    const otherRealmError: unknown = runInNewContext("new Error('取得に失敗しました')");
+
+    expect(serverErrorAdapter.test(otherRealmError)).toBe(true);
+  });
+
+  // Error.isError が偽で instanceof Error が真の値 (Node の worker の 'error' イベントの値など) も掴む。
+  // 掴まないと組み込みの直列化が message を運ぶ
+  it("Error.prototype を持つが Error.isError が偽の値も掴む", () => {
+    expect(serverErrorAdapter.test(Object.create(Error.prototype))).toBe(true);
   });
 
   // redirect と notFound は Router の制御の throw で、差し替えると遷移と 404 が壊れる
