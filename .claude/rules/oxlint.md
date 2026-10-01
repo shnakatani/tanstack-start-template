@@ -28,4 +28,4 @@ lint は Oxlint が担い、設定は `tooling/lint/config.ts` に書いて `vit
 - 基準が off にするルールでも `correctness` に入っていればカテゴリ側が勝つ。`rules` で明示的に off にしないと有効なまま残る (ADR-0007)
 - eslint コアを拡張したルールは `typescript/` 接頭辞でもコアへ解決される。解決先が `correctness` なら名指しは no-op なので `--print-config` で実効を比べる (`docs/guides/lint/configuration.md`「設定を書き換えたら解決後の設定で確かめる」)
 - `vp check` は warn を exit code に出さない。`lint.categories` の格上げを外さない。`lint-config.test.ts` が解決後の設定で固定する (`docs/guides/lint/configuration.md`「設定の落とし穴」)
-- import の並びは Oxfmt の `sortImports` が持つ。`eslint/sort-imports` (`style` カテゴリで未有効) を有効にしない。Oxfmt と領域が重なる
+- import 宣言の順は Oxfmt の `sortImports` に任せ、`eslint/sort-imports` を宣言の順を見る形で有効にしない。`@eslint/js` の recommended に無く、Oxfmt が並べた結果を違反と報告する (`docs/guides/lint/configuration.md`「`eslint/sort-imports` を宣言の順で有効にしない理由」)

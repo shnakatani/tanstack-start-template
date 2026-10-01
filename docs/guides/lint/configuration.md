@@ -33,6 +33,12 @@ oxlint は「設定したつもりで効いていない」状態を診断なし�
 2. 入っていないものを足すなら、ADR-0007「基準から外れる名指し」の表に理由と一緒に追記する
 3. 基準と違うオプションを置くなら、理由を `tooling/lint/config.ts` のそのルールの行のコメントに書く
 
+### import の並びを Oxfmt に任せる
+
+- import 宣言の順は Oxfmt の `sortImports` が持つ。設定は `vite.config.ts` の `fmt` にある ([Oxfmt docs「Sort imports」][])
+- Oxlint の `eslint/sort-imports` を、宣言の順を見る形 (既定の `ignoreDeclarationSort: false`) で有効にしない。理由は「`eslint/sort-imports` を宣言の順で有効にしない理由」にある
+- 衝突の大きさは `vp lint -D eslint/sort-imports src` の `eslint(sort-imports)` の行数で測る
+
 ### 上流 recommended の改訂に追随する
 
 名指ししたルールは `rules` に並ぶので、上流 recommended の改訂には自動で追随しない。
@@ -232,6 +238,12 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 
 どれを名指しして引き上げるかは ADR-0007「React Compiler のルールは eslint-plugin-react-hooks を基準にする」が決める。
 
+### `eslint/sort-imports` を宣言の順で有効にしない理由
+
+- 基準に入らない。`eslint/sort-imports` は `@eslint/js` の `recommended` に無く、ADR-0007 の eslint コアの基準から外れる (eslint v10.10.0 の [eslint の `eslint-recommended.js`][] に `sort-imports` の行が無い。2026-10-02 に確認)
+- 宣言の順は Oxfmt と基準が食い違う。Oxfmt の `sortImports` は perfectionist の `sort-imports` に基づく ([Oxfmt docs「Sort imports」][])。`eslint/sort-imports` は宣言を member の構文で比べてから名前で比べる ([Oxlint docs「eslint/sort-imports」][])。既定の形で有効にすると、Oxfmt が並べた結果を違反として報告する
+- 重なるのは宣言の順だけで、名前付き import の中の並び (`import { b, a } from "x"`) は Oxfmt が並べない。2026-10-02 に oxfmt 0.70.0 の `sortImports: true` で、宣言は並べ替わり `{ b, a, C }` はそのまま残った。中の並びはどの道具も検査していない
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
@@ -247,3 +259,6 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 [Oxlint docs「plugins」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#plugins
 [Storybook の `storybook-story-instructions.md`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/cli/skills/content/instructions/storybook-story-instructions.md
 [React docs「compilationMode」]: https://react.dev/reference/react-compiler/compilationMode
+[Oxfmt docs「Sort imports」]: https://oxc.rs/docs/guide/usage/formatter/sorting.html#sort-imports
+[Oxlint docs「eslint/sort-imports」]: https://oxc.rs/docs/guide/usage/linter/rules/eslint/sort-imports.html
+[eslint の `eslint-recommended.js`]: https://github.com/eslint/eslint/blob/v10.10.0/packages/js/src/configs/eslint-recommended.js
