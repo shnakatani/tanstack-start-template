@@ -23,7 +23,7 @@
 ### query のキャッシュとダイアログの close は Transition に乗らない
 
 TanStack Query の `useQuery` / `useMutation`、TanStack Router のストア、Base UI のダイアログの handle は、どれも `useSyncExternalStore` で購読されている。React はこの購読の更新を、Transition の中で起きても緊急更新として描く。
-そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは、pending の管理、Action の順序保証、pending の切り替えを `<ViewTransition>` で装飾できることである (ADR-0015)。
+そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは、pending の管理と、pending の切り替えを `<ViewTransition>` で装飾できることである (ADR-0015)。Transition は Action の実行順を保証しない ([React docs「useTransition」][] の Troubleshooting「My state updates in Transitions are out of order」)。
 出典と実測は ADR-0015「制約: TanStack Query と Router のストアは Transition に参加しない」が持つ。`useOptimistic` に query の値を渡せない理由もここにある (「楽観表示を出す」)。
 
 ### `await` の後の更新の扱いを選んだ理由
