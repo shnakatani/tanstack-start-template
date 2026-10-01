@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-09-30
+- Date: 2026-10-02
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -118,6 +118,19 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 代償として、Vite+ が版を管理するパッケージ群は Vite+ のリリース単位でしか動かせない。
 この制約が依存更新のゲートに与える影響は ADR-0005 が持つ。
 
+### `package.json` の scripts は `vp <name>` をそのまま呼ぶ
+
+Vite+ の `docs/guide/local-cli.md`「Best Practices」は、global CLI を併用するときも含めて、`vp` を呼ぶ scripts を `package.json` に置くことを勧める ("whether you use both CLIs or only the project-local CLI")。例は `dev` / `check` / `test` / `build` の 4 つで、どれも中身が `vp <name>` である。
+
+- built-in と同名の script は、中身を `vp <name>` に限る。中身が違うと `vp <name>` と `vp run <name>` が別のものを走らせる (`docs/guide/run.md`「Built-in Commands vs Scripts」)
+- 公式の例のうち `check` / `test` / `build` を置き、`dev` は置かない。起動の入口は worktree ごとに port を導出する `mise run serve` で、`"dev": "vp dev"` はその導出を通らずに既定の port で起動する入口になり、worktree 同士で port がぶつかる
+
+| 案                                                     | 評価                                                                                                          | 採否     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | -------- |
+| 公式の例のうち `dev` を除く 3 つを、例と同じ中身で置く | `pnpm run check` のように package manager からも打て、`vp run <name>` を打っても `vp <name>` と同じものが走る | **採用** |
+| 公式の例の 4 つをそのまま置く                          | `pnpm run dev` が port の導出を通らずに起動する                                                               | 却下     |
+| built-in と同名の script を置かない                    | 公式の推奨から外れる。外れて防げるのは中身の違う script による取り違えだけで、それは中身を限れば防げる        | 却下     |
+
 ### 検討した選択肢
 
 | 案                                                 | 評価                                                               | 採否     |
@@ -132,11 +145,14 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 - 開発者のグローバル mise 設定が `node` や `pnpm` を持っていても、`.mise.toml` の `[settings] disable_tools` がその PATH 注入を止める。2026-09-02 の実測では、設定前は `mise env` の PATH に `installs/node/24/bin` と `installs/pnpm/latest` が `~/.vite-plus/bin` より前に入り、設定後は両方が消えて `node` が vp の shim (24.20.0) に解決した
 - Vite+ が既定で作る shim は `pnpm` を含まない。素の `pnpm` の用意の仕方は `docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」にある
 - Vite+ の更新は同梱ツールの一括更新になる。更新 PR で見るものは `docs/guides/dependencies-and-toolchain.md`「依存を上げたときに見直すもの」にある
-- `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名でも別物なので、実行前に `package.json` と `vite.config.ts` を確認する
+- `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名の script は中身が `vp <name>` なので同じものが走る。2026-10-02 に vp 1.0.0 で、`vp run test run <path>` は `vp test run <path>` を cache disabled で走らせた
+- 同名の script があると、`vp check` と `vp test` は stderr に ``note: You are running `vp test` as a Vite+ built-in command. If you meant to run the test npm script, use `vpr test` instead.`` を出す (2026-10-02 に vp 1.0.0 で観測)。中身が `vp <name>` なので、どちらを打っても同じものが走る
 
 ## 出典
 
 - Vite+ の runtime 解決順と `packageManager` による package manager shim、`vp env pin` の書き込み先: `node_modules/vite-plus/docs/guide/env.md`
+- Vite+ が勧める `package.json` の scripts の形: `node_modules/vite-plus/docs/guide/local-cli.md`「Best Practices」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/local-cli.md#best-practices)
+- built-in と `vp run` の script の違い: `node_modules/vite-plus/docs/guide/run.md`「Built-in Commands vs Scripts」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/run.md)
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines
 - mise の `disable_tools` と、設定をローカル config へ置けること: https://mise.jdx.dev/configuration/settings.html
 - mise が読む Node.js のバージョンファイル (`devEngines` は idiomatic version file 扱いで既定 off): https://mise.jdx.dev/lang/node.html

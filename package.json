@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check": "vp check",
+    "test": "vp test",
     "build": "vp build",
     "prepare": "vp config",
     "start": "node .output/server/index.mjs"

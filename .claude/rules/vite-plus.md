@@ -20,7 +20,8 @@ paths:
 ## script とタスク
 
 - マージ前検証を `vp run` のタスクへまとめない。Vite Task は親の環境変数を素通しせず、結果をキャッシュして gate がリプレイされる (ADR-0004)
-- built-in と同名の script を新設しない。`vp <name>` の built-in と `vp run <name>` の script が別物になり取り違える。ただし `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す
+- built-in と同名の script は、中身を `vp <name>` に限る。中身が違うと `vp <name>` と `vp run <name>` が別のものを走らせる (ADR-0004)
+- `dev` の script は足さない。`mise run serve` の worktree ごとの port の導出を通らずに既定の port で起動する入口になる (ADR-0004)
 - ビルド成果物を起動する検査は `vp build` の後に置く。CI も同じ順序で workflow に並べる
 
 ## 型検査
