@@ -19,6 +19,7 @@ server で起きた例外を server のログに残し、production では clien
 | SSR の読み込み (validateSearch・beforeLoad・loader) で server function を通さずに投げた例外 | `src/server.ts` の handler callback から呼ぶ `logSsrMatchErrors` (`src/server/ssr-errors.ts`) | `[ssr] <routeId>`                                   |
 | SSR の loader から呼んだ server function                                                    | 上の 2 つ                                                                                     | `[server fn] <関数名>` と `[ssr] <routeId>` の 2 行 |
 | SSR の描画中、route の `head()`                                                             | TanStack が `console.error` で出す (ソースを読んだだけ。ADR-0038)                             | 描画中は `Error in renderToReadableStream:`         |
+| Start の外へ抜けた例外 (request middleware・handler callback の throw)                      | h3 が unhandled の `HTTPError` として `console.error` で出す (ソースを読んだだけ。ADR-0038)   | 未実測                                              |
 | client (遷移後の loader と描画で、server function を通さないもの)                           | server には残らない。React がブラウザの console に出す ([react.dev「hydrateRoot」][])         | —                                                   |
 
 - server function の例外は `logServerFnErrors` が `console.error` で残して投げ直す。redirect と notFound は残さない。理由は「例外を global の function middleware で残す理由」
