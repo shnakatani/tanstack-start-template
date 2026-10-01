@@ -143,7 +143,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、global CLI を併�
 
 - Node.js と pnpm 以外のツールは `.mise.toml` の `[tools]` へ宣言する (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
 - 開発者のグローバル mise 設定が `node` や `pnpm` を持っていても、`.mise.toml` の `[settings] disable_tools` がその PATH 注入を止める。2026-09-02 の実測では、設定前は `mise env` の PATH に `installs/node/24/bin` と `installs/pnpm/latest` が `~/.vite-plus/bin` より前に入り、設定後は両方が消えて `node` が vp の shim (24.20.0) に解決した
-- Vite+ が既定で作る shim は `pnpm` を含まない。素の `pnpm` の用意の仕方は `docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」にある
+- Vite+ の shim は `pnpm` を含み、素の `pnpm` は `packageManager` の版に解決される (Vite+ の `docs/guide/env.md`。2026-10-02 に vp 1.0.0 の `~/.vite-plus/bin` で確認)。corepack などで別に入れなくてよい (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
 - Vite+ の更新は同梱ツールの一括更新になる。更新 PR で見るものは `docs/guides/dependencies-and-toolchain.md`「依存を上げたときに見直すもの」にある
 - `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名の script は中身が `vp <name>` なので同じものが走る。2026-10-02 に vp 1.0.0 で、`vp run test run <path>` は `vp test run <path>` を cache disabled で走らせた
 - 同名の script があると、`vp check` と `vp test` は stderr に ``note: You are running `vp test` as a Vite+ built-in command. If you meant to run the test npm script, use `vpr test` instead.`` を出す (2026-10-02 に vp 1.0.0 で観測)。中身が `vp <name>` なので、どちらを打っても同じものが走る

@@ -14,8 +14,7 @@
 ### 手元の環境を用意する
 
 - mise のシェル hook を入れる。hook を入れていない手元では `.mise.toml` の `[env]` が読まれず、`DB_FILE_NAME` が未設定のまま走る。port の導出はタスクの `env` に置いてあるので、hook が無くても `mise run serve` / `mise run storybook` は port を決められる
-- 素の `pnpm` が要るなら `corepack enable` を一度実行する。Vite+ が既定で作る shim は `node` / `npm` / `npx` / `corepack` で、`pnpm` を含まない
-- `corepack enable` が作る `pnpm` の launcher は PATH に載り、`packageManager` の版に従う。Vite+ の corepack shim が `--install-directory` を Vite+ の bin へ向けるため
+- 素の `pnpm` は Vite+ の shim が用意するので、corepack などで別に入れなくてよい。Vite+ の shim は `node` / `npm` / `pnpm` / `yarn` / `bun` とその alias で ([Vite+ docs「Environment」][])、`pnpm` は `packageManager` の版に解決される。2026-10-02 に vp 1.0.0 で、`~/.vite-plus/bin` の `pnpm` / `pn` / `pnpx` / `pnx` は `vp` への symlink で、リポジトリで `pnpm --version` は 11.28.0 を返した
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
 
 ### Node.js の版を打ち直す
@@ -192,3 +191,4 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [gitignore(5)]: https://git-scm.com/docs/gitignore
 [git-add(1)]: https://git-scm.com/docs/git-add
 [dotenvx README]: https://github.com/dotenvx/dotenvx/blob/v2.32.3/README.md
+[Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/env.md
