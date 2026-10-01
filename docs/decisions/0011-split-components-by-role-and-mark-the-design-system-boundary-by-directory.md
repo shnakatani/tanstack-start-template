@@ -6,7 +6,7 @@
 
 ## Context
 
-`src/components/` を「ドメインを跨いで共有する自作コンポーネント」と 1 つに定義すると、役割が異なる 2 種類が同じ階層に混在する。`page-header` / `data-table` / `choice-card` / `form-fields` 等は ui 部品を組み合わせて配る部品、`route-error` / `not-found` は部品を並べて画面を組む側である。
+`src/components/` を「ドメインを跨いで共有する自作コンポーネント」と 1 つに定義すると、役割が異なる 2 種類が同じ階層に混在する。`page-header` / `data-table` / `form-fields` 等は ui 部品を組み合わせて配る部品、`route-error` / `not-found` は部品を並べて画面を組む側である。
 
 `@shadcn/lint` の `no-restyle` は、対象を 2 軸で設定する (https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md)。
 

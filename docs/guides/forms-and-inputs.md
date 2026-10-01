@@ -93,7 +93,9 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 ### 入力欄の周りに要素を置く
 
 - input の上に疑似要素や別の要素を重ねて、hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる。テストでは Playwright の hit-target 検査で click が落ちる (`docs/guides/testing/user-interactions.md`「クリックを発火する」)。registry の `Input` 単体は `src/components/ui/input-pointer.test.tsx` が見る
-- checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`src/components/parts/choice-card.tsx`) を使う。単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置き、グループの外枠は `FieldSet` と `FieldLegend` にする
+- checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `FieldSet` と `FieldLegend` で囲み、その中の `FieldGroup` に `Field orientation="horizontal"` の行 (`Checkbox id` と `FieldLabel htmlFor`) を並べる ([shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend、[shadcn docs「Field」][] の Checkbox)。Choice Card を既定にしない理由は「複数選択を checkbox の並びで組む理由」にある
+- 複数選択の行の間隔は、`FieldGroup` に `data-slot="checkbox-group"` を渡して詰める。registry の `FieldGroup` がこの属性で間隔を持ち、[shadcn の `dialog-example.tsx`][] もこの形で詰める。skill の例の `className="gap-3"` は、`ui/` の外では `no-restyle` が止める
+- 単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置く
 
 ### placeholder を足す
 
@@ -146,6 +148,15 @@ form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 | `useFieldContext<T>()` の宣言に任せる           | 宣言が実フィールドと結び付かない ([TanStack/form#1240][])                                                          | 却下     |
 | 上流の値型を突き合わせる API を待つ             | stable (1.33.5) の公開型に無い (2026-09-23、`npm pack` で取得して確認)                                             | 見送り   |
 
+### 複数選択を checkbox の並びで組む理由
+
+[shadcn docs「Field」][] は、checkbox を並べる形を 2 つ示す。
+
+| 案                                                                                                                     | 評価                                                                                                                                                                                                                                                                                                                                                       | 採否         |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Checkbox の並び (`FieldSet` > `FieldLegend` > `FieldGroup` > `Field orientation="horizontal"`。Field docs の Checkbox) | [shadcn skill「Forms & Inputs」][] が、関連する checkbox のまとまりに使う形として挙げる。horizontal の `Field` は `FieldLabel` を行の残りの幅へ広げる (`src/components/ui/field.tsx`) ので、行の右端を押しても切り替わる。幅 400px の行で label が x=28〜400 を占め、x=390 を押すと `aria-checked="true"` になった (2026-10-02、shadcn 4.21.0 の registry) | **採用**     |
+| Choice Card (`FieldLabel` で `Field` を包む。Field docs の Choice Card)                                                | 行ごとに枠線と余白と選択時の面を持つカードの意匠になる (`src/components/ui/field.tsx` の `FieldLabel`)。一覧の既定にすると、どの行にもカードの枠が付く。押せる範囲は Checkbox の並びと変わらない                                                                                                                                                           | 既定にしない |
+
 ### Select の値を消費側で解決する理由
 
 Base UI の `Select` は、候補が変わって現在値が候補から消えたとき、自分で値を戻して `onValueChange` を呼ぶことがある。この自己リセットは公式 docs に無い挙動で、通知が来ない条件があり、版で経路が変わる。条件の読み取りと版は `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
@@ -176,4 +187,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [shadcn-ui/ui#2918]: https://github.com/shadcn-ui/ui/discussions/2918
 [MDN「display」]: https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/display
 [Adrian Roselli「Display: Contents Is Not a CSS Reset」]: https://adrianroselli.com/2018/05/display-contents-is-not-a-css-reset.html
+[shadcn skill「Forms & Inputs」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/forms.md
+[shadcn docs「Field」]: https://ui.shadcn.com/docs/components/base/field
+[shadcn の `dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/examples/dialog-example.tsx
 [TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240

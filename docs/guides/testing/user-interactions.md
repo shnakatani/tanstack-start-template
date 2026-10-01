@@ -92,7 +92,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 合成イベントを要求する場面は無い (2026-09-22 実測)。理由に挙がる 2 つはどちらも合成イベントを要求しない。
 
 - inert バックドロップが pointer event を横取りする件は再現しない。ダイアログのフォームの保存とキャンセル、削除確認の確定とキャンセルを押す 4 箇所は、`locator.click()` で全件通った。registry の AlertDialog の最小構成でも、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通る
-- `aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトする 2 箇所は、対象に `pointer-events: none` が当たっているかで解が分かれる。`src/components/parts/choice-card.test.tsx` の対象には当たっておらず、`Checkbox` への `disabled` の転送を落とす mutant で測ると `.click()` は false red、`.click({ force: true })` は 41ms で緑になり mutant で赤になる。`src/components/parts/segmented-radio-group.test.tsx` の対象には当たっており、クリックが届かないことを `pointer-events` の assert (`expected 'auto' to be 'none'` を 97ms で捕まえる) と `aria-disabled` の assert で見る
+- `aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトする場面は、対象に `pointer-events: none` が当たっているかで解が分かれる。disabled の `Checkbox` を `FieldLabel` で包んだ行 ([shadcn docs「Field」][] の Choice Card の形) の label には当たっておらず、`Checkbox` への `disabled` の転送を落とす mutant で測ると `.click()` は false red、`.click({ force: true })` は 41ms で緑になり mutant で赤になる。`src/components/parts/segmented-radio-group.test.tsx` の対象には当たっており、クリックが届かないことを `pointer-events` の assert (`expected 'auto' to be 'none'` を 97ms で捕まえる) と `aria-disabled` の assert で見る
 - `pointer-events: none` の対象を click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った (2026-09-22)。`force` が飛ばすのは actionability の検査で、ブラウザのヒットテストは残るので、`force` のイベントは対象へ届かず下の要素へ落ちる
 
 | 経路                             | 対象のハンドラ | 下の器のハンドラ  |
@@ -165,6 +165,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 - [scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」][] (vitest-browser-svelte で `aria-disabled="true"` の要素に `userEvent.click` が届かず、合成 click の helper で代える例)
 
+[shadcn docs「Field」]: https://ui.shadcn.com/docs/components/base/field
 [Playwright docs「Auto-waiting」]: https://playwright.dev/docs/actionability
 [Vitest docs「userEvent.wheel」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/interactivity.md#usereventwheel-410-userevent-wheel
 [Playwright docs「mouse.wheel」]: https://playwright.dev/docs/api/class-mouse#mouse-wheel

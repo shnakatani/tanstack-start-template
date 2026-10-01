@@ -49,7 +49,7 @@ export const Vertical: Story = {
 
 /**
  * 横並び。`@md/field-group` を持たないので、`FieldGroup` の外でも常に横に並ぶ。
- * チェックボックス 1 件の行をこの向きで組む流儀は `ChoiceCard` の story が持つ
+ * チェックボックスの行はこの向きで `Checkbox id` と `FieldLabel htmlFor` を並べる (docs/guides/forms-and-inputs.md「入力欄の周りに要素を置く」)
  */
 export const Horizontal: Story = {
   args: { orientation: "horizontal" },
