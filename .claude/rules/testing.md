@@ -72,16 +72,16 @@ paths:
 
 `toHaveAttribute` か `querySelector` を書く前に下表を見る。ユーザーから見た状態を先に見る (Testing Library の Guiding Principles)。
 
-| 見たいもの                                    | 使うもの                                                                                                                                            |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 検証エラー (`aria-invalid` / `checkValidity`) | `toBeInvalid()`                                                                                                                                     |
-| 選択状態 (`aria-checked` / native checked)    | `toBeChecked()`                                                                                                                                     |
-| native `disabled`                             | `toBeDisabled()` / `toBeEnabled()`                                                                                                                  |
-| `aria-disabled` と Base UI の `Checkbox`      | `toHaveAttribute("aria-disabled", "true")`。Checkbox の native `disabled` は a11y tree に出ない隠し input が持つ (Base UI 1.8.0 で実測、2026-09-20) |
-| `aria-describedby` が指す文言                 | `toHaveAccessibleDescription()`                                                                                                                     |
-| accessible name                               | `toHaveAccessibleName()`                                                                                                                            |
+| 見たいもの                                                       | 使うもの                                                                                                                                                          |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 検証エラー (`aria-invalid` / `checkValidity`)                    | `toBeInvalid()`                                                                                                                                                   |
+| 選択状態 (`aria-checked` / native checked)                       | `toBeChecked()`                                                                                                                                                   |
+| 無効 (native `disabled`、`aria-disabled`、Base UI の `Checkbox`) | `toBeDisabled()` / `toBeEnabled()`。Vitest の matcher は `aria-disabled` も見る (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」) |
+| `aria-describedby` が指す文言                                    | `toHaveAccessibleDescription()`                                                                                                                                   |
+| accessible name                                                  | `toHaveAccessibleName()`                                                                                                                                          |
 
-- `aria-busy` に相当する matcher は無い。`getByRole(..., { busy: true })` で絞るか属性で見る
+- native の `disabled` と `aria-disabled` のどちらで無効にしたかを確かめるときだけ、属性を `toHaveAttribute` で見る。`toBeDisabled` はどちらでも通る (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」)
+- `aria-busy` は `toHaveAttribute("aria-busy", …)` で見る。`getByRole` に `busy` を渡さない。Vitest の locator に `busy` は無く、変数で渡すと型検査を抜けて黙って捨てられる (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」)
 - Base UI の styling hook (`data-checked` 等) は見た目を駆動する属性なので属性で見てよい。ARIA 側と重ねるときは別々に付くことをコメントに残す
 - `querySelector` で掴むのは accessibility tree に差が出ない対象に限り、理由を実装近傍に書く。書けないならそのアサートは消す
 - 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (`ActionButtonShell` の `toHaveAccessibleName`)

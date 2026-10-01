@@ -100,6 +100,17 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 - 一部が見えていること (`ratio` 0) は、公式の `toBeInViewport()` のまま使う。End キーで最下部へ届くことの検証は公式の matcher で足りる
 - `max-height` を `toHaveStyle` で見る形は採らない。Tailwind の class を写す同語反復で、収まるかどうかは内容の高さと viewport で決まる
 
+### 無効と処理中の状態を確かめる
+
+| 見たいもの                                                                             | 使うもの                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 無効か有効か (native `disabled`、`aria-disabled`、Base UI の `Checkbox` の `disabled`) | `expect.element(x).toBeDisabled()` / `toBeEnabled()`。Vitest の matcher は `aria-disabled` も見る (「無効の判定を `toBeDisabled` に任せる理由」)                         |
+| native の `disabled` と `aria-disabled` のどちらで無効にしたか                         | `toHaveAttribute("disabled")` と `toHaveAttribute("aria-disabled", "true")`。`toBeDisabled` はどちらでも通るので区別できない。実例は `src/components/ui/button.test.tsx` |
+| story の play で見る無効                                                               | `toHaveAttribute("aria-disabled", "true")`。`storybook/test` の `toBeDisabled` は `aria-disabled` を見ない                                                               |
+| 処理中 (`aria-busy`)                                                                   | `expect.element(x).toHaveAttribute("aria-busy", "true")`。`aria-busy` を見る matcher は無い                                                                              |
+
+- `getByRole` に `busy` の option を渡さない。Vitest の locator は `busy` を持たない。literal で書けば型検査が止めるが、変数を経由すると型検査を抜け、実行時に捨てられて `aria-busy="false"` の要素にも当たる (「無効の判定を `toBeDisabled` に任せる理由」)
+
 ### 状態と通知を検証する
 
 通知は `src/test/assert/live-announcer.ts` の `expectAnnouncements(expected, politeness)` (待つ) と `readAnnouncements(politeness)` (1 回読む) で、`announce()` の呼び出しの履歴を読む。live region のノードは 7000ms で消えるので、region を読むと、遅い環境では先頭が消えて落ち、retry の間に古い通知が消えると後から出た同じ文言の通知と取り違えて、余計な通知があっても一致する。region へ書くこと自体は `src/lib/live-announcer.test.tsx` が確かめる。
@@ -253,6 +264,28 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 | `findElement` の既定を 15000 で復元する                     | 待機の予算が assert と 2 つに割れる。`findElement` がするのは肯定 assert と同じ種類の待機である                                            | 却下     |
 | `findElement()` に予算を渡す helper を置く                  | `src/` に呼び出しが 0 件で (2026-09-22 実測)、使い手がいない。mount 待ちは `expect.element` で足りる                                       | 却下     |
 
+### 無効の判定を `toBeDisabled` に任せる理由
+
+`expect.element` の matcher は jest-dom の fork だが ([Vitest docs「Assertion API」][] の冒頭 "forked from `@testing-library/jest-dom`")、`toBeDisabled` の判定は jest-dom と違う。同じ名前の matcher が、どこから import したかで `aria-disabled` を見るかどうかが分かれる。
+
+| matcher                                            | `aria-disabled` | 根拠                                                                                                                                                                                                                                                                  |
+| -------------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vitest の `toBeDisabled` / `toBeEnabled` (テスト)  | 見る            | [Vitest の `toBeEnabled.ts`][] の `isElementDisabled` が `ivya/utils` の `getAriaDisabled` を返す。[Playwright docs「LocatorAssertions.toBeDisabled」][] は同じ判定を "Element is disabled if it has "disabled" attribute or is disabled via 'aria-disabled'." と書く |
+| jest-dom の `toBeDisabled`                         | 見ない          | [jest-dom README「toBeDisabled」][] の "This custom matcher does not take into account the presence or absence of the `aria-disabled` attribute."                                                                                                                     |
+| `storybook/test` の `toBeDisabled` (story の play) | 見ない          | storybook 10.6.0 の `dist/test/index.js` の `isElementDisabled` が `canElementBeDisabled(element) && element.hasAttribute("disabled")` で判定する                                                                                                                     |
+
+- [Vitest docs「Assertion API」][] の toBeDisabled は `disabled` 属性による判定だけを書き、`aria-disabled` に触れない (5.0.1)。docs に書かれていない挙動に頼ることになるが、判定は Playwright の関数そのもので、fork を入れた [vitest-dev/vitest#7605][] は "We can also reuse PW's locator methods that can already work with accessibility" と書く
+- 2026-10-02 に vitest 5.0.1 で測った。`aria-disabled="true"` の button、Base UI の `Checkbox disabled` (露出する要素は span で `aria-disabled` を持ち、native の `disabled` は a11y tree に出ない隠し input が持つ)、`focusableWhenDisabled` の `Button disabled` (native の `disabled` が付かない) で `toBeDisabled()` が通り、無効でない対照では落ちた
+- 同日に、`src/routes/notes/-components/note-cells.tsx` のトリガーの `disabled={isBusy}` を `false` にした mutant は `toBeDisabled()` で、`true` にした mutant は `toBeEnabled()` で落ちた
+- `aria-busy` には対応する matcher が無い ([Vitest docs「Assertion API」][] に `busy` の語が無い)。[Vitest docs「Locators」][] の getByRole と [`@vitest/browser` の `context.d.ts`][] の `LocatorByRoleOptions` も `busy` を持たない。`busy` で絞れるのは Testing Library の ByRole ([Testing Library docs「ByRole」][] の busy) で、Vitest の locator ではない
+- `busy` を変数に入れて渡すと型検査を抜ける。実行時の selector は `internal:role=button[name="保存"s]` で `busy` が消え、`aria-busy="false"` の button に当たった (2026-10-02、vitest 5.0.1)。テストは状態を見ないまま通る
+
+| 案                                           | 評価                                                                                                                                                                                 | 採否                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `toBeDisabled()` / `toBeEnabled()`           | ユーザーから見た無効を 1 つの matcher で見る。部品が native と `aria-disabled` のどちらで無効にしても同じ assert で通る                                                              | **採用**                                                                        |
+| `toHaveAttribute("aria-disabled", "true")`   | jest-dom のメンテナが jest-dom の回避策として挙げた形 ([testing-library/jest-dom#144][])。Vitest の matcher では要らず、部品が native の `disabled` へ替わると、無効のままでも落ちる | 却下。native と aria の区別そのものを確かめるテストと、story の play でだけ使う |
+| `getByRole(role, { disabled: true })` で絞る | Vitest の locator の option ([Vitest docs「Locators」][] の getByRole)。状態が違うと locator が一致せず、要素が無いのか有効なのかが失敗文で区別できない                              | 却下                                                                            |
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
@@ -291,3 +324,9 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 [vitest-dev/vitest#8705]: https://github.com/vitest-dev/vitest/pull/8705
 [vitest-dev/vitest#9167]: https://github.com/vitest-dev/vitest/pull/9167
 [jest-dom docs「toHaveStyle」]: https://github.com/testing-library/jest-dom#tohavestyle
+[Vitest の `toBeEnabled.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser/src/client/tester/expect/toBeEnabled.ts
+[Playwright docs「LocatorAssertions.toBeDisabled」]: https://github.com/microsoft/playwright/blob/v1.63.0/docs/src/api/class-locatorassertions.md#async-method-locatorassertionstobedisabled
+[jest-dom README「toBeDisabled」]: https://github.com/testing-library/jest-dom/blob/v6.9.1/README.md#tobedisabled
+[vitest-dev/vitest#7605]: https://github.com/vitest-dev/vitest/pull/7605
+[testing-library/jest-dom#144]: https://github.com/testing-library/jest-dom/issues/144#issuecomment-577235097
+[Testing Library docs「ByRole」]: https://testing-library.com/docs/queries/byrole/#busy
