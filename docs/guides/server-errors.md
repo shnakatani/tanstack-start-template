@@ -23,7 +23,7 @@ server で起きた例外を server のログに残し、production では clien
 - ログの 1 行目の関数名は middleware の引数の `serverFnMeta.name` から取る。`serverFnMeta` は docs のガイドに無く、公開の型 (`ServerFnMeta`) と [TanStack/router#6213][] で入った
 - 個々の server function の中で catch してログを書かない。global の middleware と二重に残る
 - server function から別の server function を呼ぶと、内側と外側の両方で middleware が走り、同じ例外が 2 回残る (@tanstack/react-start 1.168.49、2026-09-29 に実測)
-- SSR の例外は、`src/server.ts` の handler callback が描画の前に `ctx.router.state.matches` のうち `status === "error"` の match を残す。包み方は [TanStack Start docs「Server Entry Point」][] の Custom Server Handlers の形。notFound は 404 のための制御の throw なので残さない
+- SSR の例外は、`src/server.ts` の handler callback が描画の前に `ctx.router.state.matches` のうち `status === "error"` の match を残す。callback は dehydrate の後に呼ばれるので、dehydrate が失敗したときは残らない (ADR-0038)。包み方は [TanStack Start docs「Server Entry Point」][] の Custom Server Handlers の形。notFound は 404 のための制御の throw なので残さない
 - SSR の loader から呼んだ server function の例外が 2 行になるのは受け入れる。同じ例外を 1 回だけ出す仕組みは足さない (ADR-0038)
 
 ### 例外の文言を書く
@@ -35,10 +35,9 @@ server で起きた例外を server のログに残し、production では clien
 
 ### 詳細を出す環境を変える
 
-- 判定は `src/lib/server-error-exposure.ts` の `exposesServerErrorDetails` だけが持ち、値はビルド時に置き換わる `import.meta.env.DEV` を返す。例外の詳細を出すかの判定で `import.meta.env.DEV` を直接読まない
-- `serverErrorAdapter` (`src/lib/server-error-exposure.ts`) と `src/components/screens/route-error.tsx` がこの関数を読む。環境を変えるときは関数の中身だけを変える
-- 片方だけを変えると、server で描く HTML と client の描画が食い違って hydration がずれる。server で描く errorComponent は adapter を通らない生の Error を受けるので、HTML に文言を入れるかは `route-error.tsx` が決める (ADR-0038)
-- テストでは `vi.stubEnv("DEV", …)` で切り替える。関数は呼んだ時点で値を読む
+- 判定は `serverErrorAdapter` (`src/lib/server-error-exposure.ts`) と `src/components/screens/route-error.tsx` の 2 か所が、ビルド時に置き換わる `import.meta.env.DEV` を直接読む。関数で包まない。包むと呼び出し側で値が畳み込まれず、production の bundle に DEV の分岐が残る (ADR-0038)
+- 環境の判定を変えるときは 2 か所を同じ条件に揃える。片方だけを変えると、server で描く HTML と client の描画が食い違って hydration がずれる。server で描く errorComponent は adapter を通らない生の Error を受けるので、HTML に文言を入れるかは `route-error.tsx` が決める (ADR-0038)
+- テストでは `vi.stubEnv("DEV", …)` で切り替える
 
 ## explanation
 
