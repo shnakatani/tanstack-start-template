@@ -206,12 +206,12 @@ vitest から走らせた story の viewport は、`@storybook/addon-vitest` の
 
 `storybook@10.6.0` は agent 向けの機構を 2 経路で配っている。本体同梱の CLI (`storybook skills` / `storybook tools`) と、別パッケージの `@storybook/addon-mcp` である。どちらも同じツール群を公開する。公式 docs に載っているのは MCP だけで、CLI は記載が無く、`storybook --help` のコマンド一覧にも出ない。
 
-| 観点             | CLI                                  | MCP                                                                     |
-| ---------------- | ------------------------------------ | ----------------------------------------------------------------------- |
-| 追加パッケージ   | 不要 (本体同梱)                      | `@storybook/addon-mcp`                                                  |
-| Storybook の起動 | 多くのツールで不要 (上の表)          | 全ツールで必要 (HTTP endpoint 経由)                                     |
-| 設定             | 不要                                 | `main.ts` に `componentsManifest: true` と、エージェントへの URL の登録 |
-| 配布             | clone すれば誰でも同じコマンドが動く | 登録はエージェント側の個人設定                                          |
+| 観点             | CLI                                  | MCP                                                                                                                     |
+| ---------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| 追加パッケージ   | 不要 (本体同梱)                      | `@storybook/addon-mcp`                                                                                                  |
+| Storybook の起動 | 多くのツールで不要 (上の表)          | 全ツールで必要 (HTTP endpoint 経由)                                                                                     |
+| 設定             | 不要                                 | `main.ts` の `features` に `componentsManifest: true` ([Storybook docs「MCP server」][])と、エージェントへの URL の登録 |
+| 配布             | clone すれば誰でも同じコマンドが動く | 登録はエージェント側の個人設定                                                                                          |
 
 決め手は配布である。MCP の登録はエージェント側の設定に URL を 1 つ持つが、このリポジトリの Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスクが `derive-dev-port.sh` で導出する)。同じ登録を collaborator へ配れない。CLI は `--cwd` / `-c` でプロジェクトを指すので、port の影響を受けない。
 
@@ -239,6 +239,7 @@ MCP が優るのは、ツールの説明がエージェントに常に見える�
 [Storybook docs「ArgTypes」]: https://storybook.js.org/docs/api/arg-types
 [Storybook docs「TypeScript」]: https://storybook.js.org/docs/configure/integration/typescript
 [Storybook docs「Manifests」]: https://storybook.js.org/docs/ai/manifests
+[Storybook docs「MCP server」]: https://storybook.js.org/docs/ai/mcp/overview
 [storybookjs/storybook#35599]: https://github.com/storybookjs/storybook/pull/35599
 [joe-bell/cva#270]: https://github.com/joe-bell/cva/issues/270
 [cva docs「What's new」]: https://beta.cva.style/getting-started/whats-new
