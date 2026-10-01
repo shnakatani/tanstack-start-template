@@ -59,7 +59,6 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 ### 入力部品を操作する
 
 - `NumberField` (ADR-0021) のロールは `spinbutton` ではなく `textbox` になる。`getByRole("textbox")` で取る
-- locator の `fill()` は、controlled な `type="text"` では既存の値を置き換えず追記になる。要素を全選択してから打つ
 
 ### debounce のある入力をテストする
 
