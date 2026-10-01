@@ -14,7 +14,7 @@
 ### 手元の環境を用意する
 
 - mise のシェル hook を入れる。hook を入れていない手元では `.mise.toml` の `[env]` が読まれず、`DB_FILE_NAME` が未設定のまま走る。port の導出はタスクの `env` に置いてあるので、hook が無くても `mise run serve` / `mise run storybook` は port を決められる
-- 素の `pnpm` は Vite+ の shim が用意するので、corepack などで別に入れなくてよい。Vite+ の shim は `node` / `npm` / `pnpm` / `yarn` / `bun` とその alias で ([Vite+ docs「Environment」][])、`pnpm` は `packageManager` の版に解決される。2026-10-02 に vp 1.0.0 で、`~/.vite-plus/bin` の `pnpm` / `pn` / `pnpx` / `pnx` は `vp` への symlink で、リポジトリで `pnpm --version` は 11.28.0 を返した
+- 素の `pnpm` は corepack などで別に入れない。Vite+ の shim が `packageManager` の版の `pnpm` を用意する ([Vite+ docs「Environment」][]。確かめた結果は「入口を `vp` にそろえる理由」)
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
 
 ### 依存を足す・外す
@@ -181,8 +181,8 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 ### 入口を `vp` にそろえる理由
 
 - [Vite+ docs「Package Management」][] は、`vp` がプロジェクトの package manager を見分けて走らせ、`vp install` / `vp add` / `vp remove` を package manager をまたいだ共通の入口にする ("Instead of switching between `pnpm install`, `npm install`, `yarn install`, and `bun install`, you can keep using `vp install`, `vp add`, `vp remove`")。打つ側がプロジェクトの package manager を覚えなくてよい
-- `npm` と `yarn` は pnpm に翻訳されない (同 docs: "Mismatched tools are not translated; `npm` in a `pnpm` project still resolves as npm.")。2026-10-02 に npm 11.19.0 で `npm install is-odd@3.0.1 --package-lock-only` を打つと、`package-lock.json` ができて `pnpm-lock.yaml` は変わらなかった。`yarn` は測っていない
-- 素の `pnpm` は結果を変えない。shim が `packageManager` の版 (pnpm 11.28.0) に解決し、2026-10-02 に `vp add is-number@7.0.0 --lockfile-only` と `pnpm add is-number@7.0.0 --lockfile-only` は同じ `package.json` と `pnpm-lock.yaml` を作った。`pnpm` も止めるのは lockfile のためではなく、入口を `vp` の 1 つにそろえるためである
+- `npm` と `yarn` は pnpm に翻訳されない (同 docs: "Mismatched tools are not translated; `npm` in a `pnpm` project still resolves as npm.")。このリポジトリの `package.json` は `catalog:` を使うので、npm は依存を解決できない。2026-10-02 に npm 11.19.0 で `npm install is-odd@3.0.1 --package-lock-only` を打つと、`npm error code EUNSUPPORTEDPROTOCOL` (`Unsupported URL Type "catalog:"`) で止まり、`package-lock.json` を作らず `pnpm-lock.yaml` も変わらなかった。`yarn` は測っていない
+- 素の `pnpm` は結果を変えない。shim が `packageManager` の版 (pnpm 11.28.0) に解決する ([Vite+ docs「Environment」][])。2026-10-02 に vp 1.0.0 で、`~/.vite-plus/bin` の `pnpm` / `pn` / `pnpx` / `pnx` は `vp` への symlink で、リポジトリで `pnpm --version` は 11.28.0 を返した。同日に `vp add is-number@7.0.0 --lockfile-only` と `pnpm add is-number@7.0.0 --lockfile-only` は同じ `package.json` と `pnpm-lock.yaml` を作った。`pnpm` も止めるのは lockfile のためではなく、入口を `vp` の 1 つにそろえるためである
 
 ## 出典
 

@@ -12,7 +12,7 @@ mise run verify   # マージ前に通す。手順は .mise.toml の [tasks.veri
 ## 開発上の注意
 
 - 実装中は 1 ファイル目を `vp check --fix` まで通してから横展開する
-- パッケージは `vp add` / `vp remove` で操作し、pnpm / npm / yarn を直接打たない。入口を `vp` にそろえ、`npm` が `pnpm-lock.yaml` を更新せず `package-lock.json` を作るのを防ぐ (`docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」)。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
+- 依存は `vp add` / `vp remove` で足し外し、pnpm / npm / yarn で足し外さない。入口を `vp` にそろえる (`npm` はこのリポジトリの `catalog:` を読めず `EUNSUPPORTEDPROTOCOL` で止まる)。`vp` が中継しないサブコマンドは素の `pnpm` で打つ (`pnpm peers check`)。出典は `docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
 - **worktree のパスに `+` を含めない**。vitest browser が URL 上の `+` をスペースと解釈し、browser mode が無言でハングする。`EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
 - patch は `vp pm patch <pkg>` を版を付けずに打って作り、作り直すときも同じにする。版を付けると既にある patch が編集用のディレクトリに当たらず、`vp pm patch-commit` の `ERR_PNPM_UNUSED_PATCH` の案内どおりにキーを消すと、元の変更が黙って消える (2026-10-01、pnpm 11.28.0。`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)

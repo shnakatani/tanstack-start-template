@@ -37,7 +37,7 @@ oxlint は「設定したつもりで効いていない」状態を診断なし�
 
 - import 宣言の順は Oxfmt の `sortImports` が持つ。設定は `vite.config.ts` の `fmt` にある ([Oxfmt docs「Sort imports」][])
 - Oxlint の `eslint/sort-imports` を、宣言の順を見る形 (既定の `ignoreDeclarationSort: false`) で有効にしない。理由は「`eslint/sort-imports` を宣言の順で有効にしない理由」にある
-- 衝突の大きさは `vp lint -D eslint/sort-imports src` の `eslint(sort-imports)` の行数で測る
+- 衝突の大きさは `vp lint -D eslint/sort-imports src` の `eslint(sort-imports)` の行のうち、`Member '` を含む行を除いた数で測る。`Member '` の行は名前付き import の中の並びで、Oxfmt が並べないので衝突ではない
 
 ### 上流 recommended の改訂に追随する
 
