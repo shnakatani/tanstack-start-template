@@ -60,7 +60,7 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 - Action の reject は最寄りの Error Boundary へ届く。`runAction` を通さない Action は、失敗を Action の中で処理し切る (ADR-0016)
 - `onSuccess` は再取得の Promise を返す。再取得完了前に close するなら、対象の項目にその pending から busy 表現を付ける (`docs/guides/react/updates.md`「完了点ごとに Transition を終える」)
 - 止めるのは対象の項目だけにする。並行操作が整合を壊すときだけ全体を止め、理由を実装近傍に書く (ADR-0017)
-- Action の中で `await` の後に `setState` を書かない。Transition から外れる。画面の更新は query の再取得に任せる (`docs/guides/react/updates.md`「mutation の書き方」)
+- Action の中の `await` の後の state 更新は、上から順に当てる: サーバーの値は set せず query の再取得に任せる / Action の結果を state に持つなら `useActionState` / それ以外は set を `startTransition` で包む。`await` の後の更新は Transition にならず、Transition の中の Action は実行順も保証されない (`docs/guides/react/updates.md`「mutation の書き方」)
 - `useOptimistic` に query の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (`docs/guides/react/updates.md`「楽観表示を出す」)
 - mutation の pending は、1 件ずつなら `isPending && variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState` で読む (`docs/guides/react/updates.md`「mutation の pending を読む」)
 - `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける。`variables` は `parseEach` (`src/lib/parse-each.ts`) で絞る (`docs/guides/react/updates.md`「mutation の pending を読む」)
