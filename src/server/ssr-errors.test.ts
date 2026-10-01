@@ -16,6 +16,22 @@ describe("logSsrMatchErrors", () => {
     expect(error).toHaveBeenCalledExactlyOnceWith("[ssr] /notes/", thrown);
   });
 
+  // 1 つ目の error で打ち切ると、後ろの route の例外がどこにも残らない
+  it("error になった match が複数あれば、全部を残す", () => {
+    using error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const parentError = new Error("親の loader が失敗しました");
+    const childError = new Error("子の loader が失敗しました");
+
+    logSsrMatchErrors([
+      { routeId: "__root__", status: "error", error: parentError },
+      { routeId: "/notes/", status: "error", error: childError },
+    ]);
+
+    expect(error).toHaveBeenCalledTimes(2);
+    expect(error).toHaveBeenNthCalledWith(1, "[ssr] __root__", parentError);
+    expect(error).toHaveBeenNthCalledWith(2, "[ssr] /notes/", childError);
+  });
+
   // notFound は 404 の画面を出すための制御の throw で、異常ではない
   it("notFound と pending の match は残さない", () => {
     using error = vi.spyOn(console, "error").mockImplementation(() => {});

@@ -96,6 +96,8 @@ describe("RouteErrorContent", () => {
 
     await expectText(screen, "取得に失敗しました");
     await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
+    // 既定で閉じた開閉の UI は、ラベルを変えても aria-expanded="false" のボタンとして残る
+    await expectAbsent(screen.getByRole("button", { expanded: false }));
     await expectAbsent(screen.getByText(/at loader/));
   });
 });

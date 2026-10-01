@@ -94,7 +94,7 @@ describe("createDb", () => {
     using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      expect(() => createDb(fileName)).toThrow(missingDbMessage(fileName));
+      expect(() => createDb(fileName)).toThrow(new Error(missingDbMessage(fileName)));
       expect(error).not.toHaveBeenCalled();
       expect(existsSync(fileName)).toBe(false);
     } finally {
@@ -107,8 +107,24 @@ describe("createDb", () => {
     using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      expect(() => createDb(dir)).toThrow(missingDbMessage(dir));
+      expect(() => createDb(dir)).toThrow(new Error(missingDbMessage(dir)));
       expect(error).not.toHaveBeenCalled();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // 相対パスのままでは、どのディレクトリを基準に開こうとしたかが server のログから分からない。
+  // `path.resolve` は `process.cwd()` を読むので、cwd を一時ディレクトリへ差し替えて解決先を固定する。
+  // 差し替えは `statSync` が引く実際の cwd には効かないので、どちらの cwd にも無い名前を渡す
+  it("相対パスを渡したら、cwd を基準に解決した絶対パスを文言に入れて throw する", () => {
+    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
+    using _cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
+
+    try {
+      expect(() => createDb("missing.sqlite")).toThrow(
+        new Error(missingDbMessage(join(dir, "missing.sqlite"))),
+      );
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
