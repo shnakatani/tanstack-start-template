@@ -116,8 +116,9 @@ paths:
 
 ## StrictMode の下で描く
 
-- ブラウザテストと story は StrictMode の下で描く。`src/test/browser/browser-setup.tsx` の `configure` と `.storybook/preview.tsx` の decorator を外さず、`.storybook/main.ts` の `strictMode` で代えない。main.ts の設定は vitest 経由の story に届かない (ADR-0039)
-- 呼び出しの回数が StrictMode で 2 回になったら、期待値ではなく部品を直す。描画中の副作用は effect かイベントハンドラへ移し、mount 直後の effect の 2 回目は cleanup で打ち消す (`docs/guides/testing/configuration.md`「StrictMode の下で描く」)
+- ブラウザテストと story は StrictMode の下で描く。`src/test/browser/browser-setup.tsx` の `configure` と `.storybook/preview.tsx` の decorator を外さない (ADR-0039)
+- story の StrictMode を `.storybook/main.ts` の `strictMode` で代えない。vitest 経由の story に届かない (ADR-0039)
+- 呼び出しの回数が StrictMode で 2 回になったら、期待値ではなく部品を直す (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
 
 ## テスト環境制約に遭遇したら
 
