@@ -31,6 +31,20 @@ describe("serverErrorAdapter", () => {
     expect(serverErrorAdapter.test(Object.create(Error.prototype))).toBe(true);
   });
 
+  // adapter は client の bundle にも入り、Vite の既定の build target のブラウザは Error.isError を持たない。
+  // 型は lib の ESNext.Error が常にあるとするので、有無の確かめを消すと型でも lint でも止まらない
+  it("Error.isError が無い環境でも throw せず、instanceof で Error を掴む", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Error, "isError");
+    Reflect.deleteProperty(Error, "isError");
+    try {
+      expect(serverErrorAdapter.test(new Error("取得に失敗しました"))).toBe(true);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(Error, "isError", descriptor);
+      }
+    }
+  });
+
   // redirect と notFound は Router の制御の throw で、差し替えると遷移と 404 が壊れる
   it("redirect と notFound を掴まない", () => {
     expect(serverErrorAdapter.test(redirect({ to: "/" }))).toBe(false);
