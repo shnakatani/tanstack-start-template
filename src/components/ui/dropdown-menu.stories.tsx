@@ -15,7 +15,8 @@ import {
 
 /**
  * 項目は必ず `DropdownMenuGroup` の中に置く (shadcn skill の `rules/composition.md`)。
- * 全項目を包む単一の Group には名前を与えない。base-ui がトリガー由来の名前を popup へ付ける
+ * 全項目を包む単一の Group に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない
+ * (docs/guides/accessibility.md「メニューの項目をグループに分ける」)
  */
 function DropdownMenuExample() {
   return (

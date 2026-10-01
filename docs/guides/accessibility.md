@@ -149,7 +149,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### `ItemGroup` をネイティブのリストで組む理由
 
-[shadcn docs「Item」][] は `ItemGroup` を "A container that groups related items together with consistent styling." とだけ書き、リストとしての組み方を示さない。registry の `ItemGroup` は `role="list"` を持つが `Item` は `listitem` にならず、空のリストとして読まれる ([shadcn-ui/ui#11532][])。上流には、`ItemGroup` から `role="list"` を外し、リストとして読ませたいときは `role="list"` と `role="listitem"` を足す形を docs に書く PR がある ([shadcn-ui/ui#12085][]、2026-10-01 作成、2026-10-02 時点で open)。
+[shadcn docs「Item」][] は `ItemGroup` を、`Item` を束ねて list of items を作る部品と書く (冒頭の "Group it with the `ItemGroup` component to create a list of items." と Group の節の "Use `ItemGroup` to group related items together."。shadcn 4.21.0 の `item.mdx`)。ただし、リストとしてのマークアップ (`ul` / `li` や `role`) は示さない。registry の `ItemGroup` は `role="list"` を持つが `Item` は `listitem` にならず、空のリストとして読まれる ([shadcn-ui/ui#11532][])。上流には、`ItemGroup` から `role="list"` を外し、リストとして読ませたいときは `role="list"` と `role="listitem"` を足す形を docs に書く PR がある ([shadcn-ui/ui#12085][]、2026-10-01 作成、2026-10-02 時点で open)。
 
 | 案                                                              | 評価                                                                                                                  | 採否     |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -258,6 +258,18 @@ story で統制できるのは markup までで、フォントは実行環境が
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
 
+### Combobox の popup に名前を与える
+
+`ComboboxContent` (Base UI の `Combobox.Popup`) に名前を渡すかは、`ComboboxInput` を置く場所で決まる。Base UI 1.8.0 は popup の role を、入力欄が popup の中にあれば `dialog`、外にあれば `presentation` にする (`@base-ui/react` の `combobox/popup/ComboboxPopup.js`)。
+
+| `ComboboxInput` の置き場所 | `ComboboxContent` の `aria-label`                                                                                                                                                                                                                         |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ComboboxContent` の中     | 渡す。dialog の popup は名前を持つ ([APG「Combobox Pattern」][] が dialog の popup に当てる [APG「Dialog (Modal) Pattern」][] の Roles, States, and Properties)。[Base UI docs「Combobox」][] の Input inside popup のデモも popup に `aria-label` を渡す |
+| `ComboboxContent` の外     | 渡さない。`presentation` は名前を持てない role で ([WAI-ARIA 1.2][] §5.2.8.6)、渡すと違反になる。名前は入力欄の側に `aria-label` か label で与える ([Base UI docs「Combobox」][] の Usage guidelines)                                                     |
+
+- 名前の過不足は story の axe が見る (中の構成は `aria-dialog-name`、外の構成は `aria-prohibited-attr`)。popup は開くまで描かれないので、popup を開く play を書かないと働かない
+- `ComboboxContent` の型が名前を必須にしない乖離は、台帳 `docs/registry-deviations.md` の combobox.tsx の行にある
+
 ### リストの構造を組む
 
 - `ItemGroup` で項目を並べるときは `ItemGroup render={<ul />}` にし、子を `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の div のままだと、`ItemGroup` は `role="list"` を持つのに `Item` が `listitem` にならず、空のリストとして読まれる ([shadcn-ui/ui#11532][]、2026-10-02 時点で open)。`render` を通す乖離は台帳 `docs/registry-deviations.md` の item.tsx の行にある
@@ -280,6 +292,9 @@ story で統制できるのは markup までで、フォントは実行環境が
 [shadcn-ui/ui#12085]: https://github.com/shadcn-ui/ui/pull/12085
 [APG「Menu and Menubar Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/menubar/
 [Base UI docs「Menu」]: https://base-ui.com/react/components/menu
+[APG「Combobox Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+[APG「Dialog (Modal) Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+[Base UI docs「Combobox」]: https://base-ui.com/react/components/combobox
 [shadcn docs「Dropdown Menu」]: https://ui.shadcn.com/docs/components/base/dropdown-menu
 [shadcn の `dropdown-menu-checkboxes.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/dropdown-menu-checkboxes.tsx
 [axe-core の `README.md`]: https://github.com/dequelabs/axe-core/blob/v4.13.0/README.md

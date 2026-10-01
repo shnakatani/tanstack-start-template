@@ -101,7 +101,8 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 - input の上に疑似要素や別の要素を重ねて、hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる。テストでは Playwright の hit-target 検査で click が落ちる (`docs/guides/testing/user-interactions.md`「クリックを発火する」)。registry の `Input` 単体は `src/components/ui/input-pointer.test.tsx` が見る
 - checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `FieldSet` と `FieldLegend` で囲み、その中の `FieldGroup` に `Field orientation="horizontal"` の行 (`Checkbox id` と `FieldLabel htmlFor`) を並べる ([shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend、[shadcn docs「Field」][] の Checkbox)。Choice Card を既定にしない理由は「複数選択を checkbox の並びで組む理由」にある
 - 複数選択の行の間隔は、`FieldGroup` に `data-slot="checkbox-group"` を渡して詰める。registry の `FieldGroup` がこの属性で間隔を持ち、[shadcn の `dialog-example.tsx`][] もこの形で詰める。skill の例の `className="gap-3"` は、`ui/` の外では `no-restyle` が止める
-- 単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置く
+- 複数選択の行の `FieldLabel` に class を足さず、太さは registry の既定 (`font-medium`) のまま置く。公式の例が行の `FieldLabel` に付ける `className="font-normal"` も、`ui/` の外では `no-restyle` が止める。既定のまま置く理由は「複数選択を checkbox の並びで組む理由」にある
+- 単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置く。[shadcn の `field-checkbox.tsx`][] の末尾の単独の行と同じく、`FieldLabel` に class を足さない
 
 ### placeholder を足す
 
@@ -163,6 +164,12 @@ form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 | Checkbox の並び (`FieldSet` > `FieldLegend` > `FieldGroup` > `Field orientation="horizontal"`。Field docs の Checkbox) | [shadcn skill「Forms & Inputs」][] が、関連する checkbox のまとまりに使う形として挙げる。horizontal の `Field` は `FieldLabel` を行の残りの幅へ広げる (`src/components/ui/field.tsx`) ので、行の右端を押しても切り替わる。幅 400px の行で label が x=28〜400 を占め、x=390 を押すと `aria-checked="true"` になった (2026-10-02、shadcn 4.21.0 の registry) | **採用**     |
 | Choice Card (`FieldLabel` で `Field` を包む。Field docs の Choice Card)                                                | 行ごとに枠線と余白と選択時の面を持つカードの意匠になる (`src/components/ui/field.tsx` の `FieldLabel`)。一覧の既定にすると、どの行にもカードの枠が付く。押せる範囲は Checkbox の並びと変わらない                                                                                                                                                           | 既定にしない |
 
+行の `FieldLabel` の太さは、公式の例と揃えない。
+
+- [shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend の例と、[shadcn docs「Field」][] の Checkbox の例 ([shadcn の `field-checkbox.tsx`][]) は、まとまりの中の行の `FieldLabel` に `className="font-normal"` を付ける
+- `ui/` の外では `no-restyle` がこの class を止める。`@shadcn/lint` 0.2.0 は font-weight を typography に分類し、`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許す (2026-10-02 に `vp lint` で確認。メッセージは "`<FieldLabel>` owns its typography")
+- lint は `src/components/ui/field.tsx` に variant を足す道を案内するが、太さの違いは ADR-0020「追加と削除の基準」の機能上の必要に当たらない。variant を足さず、registry の既定 (`font-medium`) のまま置く
+
 ### Select に `items` を渡す理由
 
 [Base UI docs「Select」][] の Formatting the value は、トリガーに値ではなく表示名を出す手段を 3 つ挙げる。
@@ -205,6 +212,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [Adrian Roselli「Display: Contents Is Not a CSS Reset」]: https://adrianroselli.com/2018/05/display-contents-is-not-a-css-reset.html
 [shadcn skill「Forms & Inputs」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/forms.md
 [shadcn docs「Field」]: https://ui.shadcn.com/docs/components/base/field
+[shadcn の `field-checkbox.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/field-checkbox.tsx
 [shadcn の `dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/examples/dialog-example.tsx
 [Base UI docs「Select」]: https://base-ui.com/react/components/select
 [shadcn skill「Base vs Radix」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/base-vs-radix.md

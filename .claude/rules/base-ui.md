@@ -24,6 +24,6 @@ paths:
 
 ## Combobox と ItemGroup
 
-- `ComboboxContent` の中に `ComboboxInput` を置く構成だけ `aria-label` を渡す。外に置く構成で渡すと name prohibited の違反になる (`docs/registry-deviations.md` の combobox.tsx の行)
-- 名前の過不足は story の axe が見る。popup を開く play を書かないと働かない (`docs/registry-deviations.md` の combobox.tsx の行)
+- `ComboboxContent` の中に `ComboboxInput` を置く構成だけ `aria-label` を渡す。外に置く構成で渡すと name prohibited の違反になる (`docs/guides/accessibility.md`「Combobox の popup に名前を与える」)
+- 名前の過不足は story の axe が見る。popup を開く play を書かないと働かない (`docs/guides/accessibility.md`「Combobox の popup に名前を与える」)
 - `ItemGroup` は `render={<ul />}`、子は `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の div のままだと空のリストとして読まれる (`docs/guides/accessibility.md`「リストの構造を組む」)

@@ -92,7 +92,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 合成イベントを要求する場面は無い (2026-09-22 実測)。理由に挙がる 2 つはどちらも合成イベントを要求しない。
 
 - inert バックドロップが pointer event を横取りする件は再現しない。ダイアログのフォームの保存とキャンセル、削除確認の確定とキャンセルを押す 4 箇所は、`locator.click()` で全件通った。registry の AlertDialog の最小構成でも、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通る
-- `aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトする場面は、対象に `pointer-events: none` が当たっているかで解が分かれる。disabled の `Checkbox` を `FieldLabel` で包んだ行 ([shadcn docs「Field」][] の Choice Card の形) の label には当たっておらず、`Checkbox` への `disabled` の転送を落とす mutant で測ると `.click()` は false red、`.click({ force: true })` は 41ms で緑になり mutant で赤になる。`src/components/parts/segmented-radio-group.test.tsx` の対象には当たっており、クリックが届かないことを `pointer-events` の assert (`expected 'auto' to be 'none'` を 97ms で捕まえる) と `aria-disabled` の assert で見る
+- `aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトする件も、合成イベントを要求しない。`src/components/parts/segmented-radio-group.test.tsx` の disabled の項目は `pointer-events: none` を持ち、クリックが届かないことを `pointer-events` の assert (`expected 'auto' to be 'none'` を 97ms で捕まえる) と `aria-disabled` の assert で見る
 - `pointer-events: none` の対象を click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った (2026-09-22)。`force` が飛ばすのは actionability の検査で、ブラウザのヒットテストは残るので、`force` のイベントは対象へ届かず下の要素へ落ちる
 
 | 経路                             | 対象のハンドラ | 下の器のハンドラ  |
@@ -102,7 +102,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 - vitest の `Locator` (`@vitest/browser` 5.0.1) に `dispatchEvent` は無い ([Vitest docs「Locators」][])。Playwright の `locator.dispatchEvent()` を届かせる公式経路はカスタムコマンド (`BrowserCommand`) だけである ([Vitest docs「Commands」][] の Custom playwright commands)。vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)
 
-合成 click の helper を `src/test/` に置くと、テンプレートを複製した利用者全員へ配られる。使いうる消費者は 2 つとも sample の部品で、sample を消すと消費者ゼロの helper だけが残る。
+合成 click の helper を `src/test/` に置くと、テンプレートを複製した利用者全員へ配られる。使いうる消費者は `src/components/parts/segmented-radio-group.tsx` の 1 つで、アプリの画面が使わない sample の部品である。sample を消すと消費者ゼロの helper だけが残る。
 
 | 案                                                                | 評価                                                                                                                                                                                                 | 採否     |
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -119,7 +119,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 `force: true` で飛ぶのは Playwright の actionability の検査の一部で、viewport 内の座標の確認とブラウザのヒットテストは残る。
 
 - [Playwright docs「Auto-waiting」][] の Forcing actions は "non-essential actionability checks" を飛ばすと書く。中身は列挙せず、例に挙げるのは Receives Events だけである
-- Enabled も飛ぶことは、`aria-disabled` の要素で実測した (「合成イベントが実物からずれる理由」)
+- Enabled も飛ぶ。`src/components/parts/segmented-radio-group.tsx` の disabled の項目 (`aria-disabled="true"`) へ送ると、`.click()` は enabled の待ちで timeout まで返らず、`.click({ force: true })` は 30ms で返った (2026-10-02、`@vitest/browser` 5.0.1 と Playwright 1.63.0)
 - Visible と Stable は docs では未確認である。[`playwright-core` の `server/dom.ts`][] の `_performPointerAction` は、`force` のとき visible / enabled / stable の待ちと、Playwright 側の hit target の確認 (Receives Events の検査) を飛ばす (ソースの読み取り)
 - viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の 4 条件の定義に無く、同じ `_performPointerAction` が `force` でも行う (ソースの読み取りで、公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
 - ブラウザのヒットテストも残る。`pointer-events: none` の対象へ `force` で送ったイベントが下の要素へ落ちる実測は「合成イベントが実物からずれる理由」にある
@@ -165,7 +165,6 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 - [scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」][] (vitest-browser-svelte で `aria-disabled="true"` の要素に `userEvent.click` が届かず、合成 click の helper で代える例)
 
-[shadcn docs「Field」]: https://ui.shadcn.com/docs/components/base/field
 [Playwright docs「Auto-waiting」]: https://playwright.dev/docs/actionability
 [Vitest docs「userEvent.wheel」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/interactivity.md#usereventwheel-410-userevent-wheel
 [Playwright docs「mouse.wheel」]: https://playwright.dev/docs/api/class-mouse#mouse-wheel

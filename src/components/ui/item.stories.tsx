@@ -136,7 +136,7 @@ export const MediaVariants: Story = {
 /**
  * 並べる形。`ItemGroup` の既定は `role="list"` の div だが、その形だと子に
  * `role="listitem"` が要り、`<li>` は ul/ol/menu の中でしか置けないので HTML が破綻する。
- * `render` で `ul` / `li` へ倒すと ARIA も content model も揃う (ADR-0020)
+ * `render` で `ul` / `li` へ倒すと ARIA も content model も揃う (docs/guides/accessibility.md「リストの構造を組む」)
  */
 export const Grouped: Story = {
   render: () => (

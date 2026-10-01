@@ -67,16 +67,14 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ### 公式のノブ
 
-打ち消しクラスを積む前に、公式が用意したノブを探す。
+打ち消しクラスを積む前に、公式が用意したノブを探す (`docs/guides/registry.md`「公式のノブを先に探す」)。
 
-| やりたいこと                      | 使うもの                                          | 出典                     |
-| --------------------------------- | ------------------------------------------------- | ------------------------ |
-| Card の余白を詰める・広げる       | `--card-spacing` (`size` prop でも切り替わる)     | Card docs の Spacing     |
-| Card 内の要素をカード端まで広げる | `-mx-(--card-spacing)` (フッター直上は `-mb-` も) | 同 Edge-to-Edge          |
-| ヘッダー帯の右側にボタンを置く    | `CardAction` (`ml-auto` や flex 化は要らない)     | 同 CardAction            |
-| ScrollArea のフォーカス指標を保つ | `scroll-area-focus-outline` (`styles.css`)        | base-ui の inside-scroll |
-
-Card docs: https://ui.shadcn.com/docs/components/base/card 。
+| やりたいこと                      | 使うもの                                          |
+| --------------------------------- | ------------------------------------------------- |
+| Card の余白を詰める・広げる       | `--card-spacing` (`size` prop でも切り替わる)     |
+| Card 内の要素をカード端まで広げる | `-mx-(--card-spacing)` (フッター直上は `-mb-` も) |
+| ヘッダー帯の右側にボタンを置く    | `CardAction` (`ml-auto` や flex 化は要らない)     |
+| ScrollArea のフォーカス指標を保つ | `scroll-area-focus-outline` (`styles.css`)        |
 
 - ui 部品の見た目を変えるときは、既定か公式のノブ → `ui/` の variant → 素の要素で包む → contract の順に選ぶ。contract は部品の名前で全ファイルに効くので、値をそろえたい見た目に使わない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
 - `ScrollArea` の内側の余白は中身の要素に書く。lint が余白を止めたときに案内する margin と親の gap は外側の直し方で、内側の余白には使えない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
@@ -118,7 +116,8 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 - input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `FieldSet` + `FieldLegend` の中の `FieldGroup data-slot="checkbox-group"` に `Field orientation="horizontal"` の行を並べる。`FieldLegend` がまとまりの名前になり、行間は registry の間隔に寄る (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
-- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`)。ラベルに className を足さない。太さとカーソルは registry の既定のままで、shadcn の単独 checkbox の例と同じ。グループの外枠は `FieldSet` + `FieldLegend`
+- 複数選択の行の `FieldLabel` は、公式の例 (shadcn skill の `rules/forms.md`、Field docs の Checkbox) が付ける `className="font-normal"` を写さず、太さを registry の既定のまま置く。`ui/` の外では `no-restyle` が止め、太さは variant を足す理由にならない (`docs/guides/forms-and-inputs.md`「複数選択を checkbox の並びで組む理由」)
+- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`) で組み、ラベルに className を足さない。太さとカーソルは registry の既定のままで、shadcn の単独 checkbox の例と同じ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)
 - `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)
 
