@@ -116,6 +116,11 @@ paths:
 - optimistic state は `src/test/app/defer-mock.ts` の `deferMock` で決着を握って観測する。`mockRejectedValue` は即 reject して中間状態が見えない
 - assertion の順序は、optimistic state の確認 → `reject()` → ロールバックの確認
 
+## StrictMode の下で描く
+
+- ブラウザテストと story は StrictMode の下で描く。`src/test/browser/browser-setup.tsx` の `configure` と `.storybook/preview.tsx` の decorator を外さず、`.storybook/main.ts` の `strictMode` で代えない。main.ts の設定は vitest 経由の story に届かない (ADR-0039)
+- 呼び出しの回数が StrictMode で 2 回になったら、期待値ではなく部品を直す。描画中の副作用は effect かイベントハンドラへ移し、mount 直後の effect の 2 回目は cleanup で打ち消す (`docs/guides/testing/configuration.md`「StrictMode の下で描く」)
+
 ## テスト環境制約に遭遇したら
 
 1. 代替手段を検討する

@@ -1,5 +1,6 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview } from "@storybook/tanstack-react";
+import { StrictMode } from "react";
 
 import { NARROW_VIEWPORT } from "@/test/browser/viewport-sizes";
 
@@ -13,6 +14,13 @@ const preview: Preview = {
       defaultTheme: "light",
       parentSelector: "html",
     }),
+    // story をアプリの root と同じく StrictMode で包む。配列の後ろほど外側に重なるので最後に置く。
+    // main.ts の framework の strictMode は vitest 経由の story に届かないので使わない (ADR-0039)
+    (Story) => (
+      <StrictMode>
+        <Story />
+      </StrictMode>
+    ),
   ],
   parameters: {
     // 違反を警告で留めない。addon はここで violations を見る (ADR-0028)

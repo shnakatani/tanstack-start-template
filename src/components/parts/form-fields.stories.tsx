@@ -638,7 +638,10 @@ export const TogglesCheckbox: Story = {
   },
 };
 
-/** validators つきで誤用すると、表示できない検証エラーを警告する */
+/**
+ * validators つきで誤用すると、表示できない検証エラーを警告する。warn は検証エラーが変わったときに 1 回だけ出す。
+ * 描画中に出す実装は、StrictMode (`.storybook/preview.tsx`) の 2 回目の描画で 2 回になって落ちる
+ */
 export const CheckboxValidatorsWarn: Story = {
   tags: ["!dev"],
   args: { validateCheckbox: true },
