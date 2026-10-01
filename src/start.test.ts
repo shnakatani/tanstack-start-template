@@ -9,16 +9,10 @@ describe("startInstance", () => {
     vi.unstubAllEnvs();
   });
 
-  it("production では Error を差し替える adapter を登録する", async () => {
-    vi.stubEnv("DEV", false);
+  // adapter の並びを DEV と production で揃え、文言を運ぶかは adapter の中で決める (ADR-0038)
+  it.each([true, false])("DEV が %s でも、Error を差し替える adapter を登録する", async (dev) => {
+    vi.stubEnv("DEV", dev);
     const options = await startInstance.getOptions();
     expect(options.serializationAdapters).toEqual([serverErrorAdapter]);
-  });
-
-  // DEV では組み込みの直列化が message を運び、画面に例外の文言を出せる
-  it("DEV では adapter を登録しない", async () => {
-    vi.stubEnv("DEV", true);
-    const options = await startInstance.getOptions();
-    expect(options.serializationAdapters).toEqual([]);
   });
 });

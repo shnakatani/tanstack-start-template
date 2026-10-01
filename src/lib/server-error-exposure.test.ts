@@ -23,6 +23,10 @@ describe("exposesServerErrorDetails", () => {
 });
 
 describe("serverErrorAdapter", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("Error とそのサブクラスを掴む", () => {
     expect(serverErrorAdapter.test(new Error("取得に失敗しました"))).toBe(true);
     expect(serverErrorAdapter.test(new DrizzleQueryError("select 1", ["secret"]))).toBe(true);
@@ -34,7 +38,8 @@ describe("serverErrorAdapter", () => {
     expect(serverErrorAdapter.test(notFound())).toBe(false);
   });
 
-  it("client で復元した Error は汎用の文言だけを持ち、元の文言を運ばない", () => {
+  it("production では、client で復元した Error は汎用の文言だけを持ち、元の文言を運ばない", () => {
+    vi.stubEnv("DEV", false);
     const original = new DrizzleQueryError("select * from notes where title like ?", [
       "user-typed-secret",
     ]);
@@ -45,5 +50,18 @@ describe("serverErrorAdapter", () => {
     expect(JSON.stringify(serialized)).not.toContain("user-typed-secret");
     expect(restored).toBeInstanceOf(Error);
     expect(restored.message).toBe(SERVER_ERROR_MESSAGE);
+  });
+
+  // DEV の画面は例外の文言を出すので、client まで運ぶ
+  it("DEV では元の文言を運び、client で同じ文言の Error に復元する", () => {
+    vi.stubEnv("DEV", true);
+    const original = new Error("削除対象のノートが見つかりません: id=42");
+
+    const restored = serverErrorAdapter.fromSerializable(
+      serverErrorAdapter.toSerializable(original),
+    );
+
+    expect(restored).toBeInstanceOf(Error);
+    expect(restored.message).toBe("削除対象のノートが見つかりません: id=42");
   });
 });
