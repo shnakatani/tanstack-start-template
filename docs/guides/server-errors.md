@@ -13,13 +13,13 @@ server で起きた例外を server のログに残し、production では clien
 
 例外が起きた場所ごとに、残す口とログの 1 行目は次のとおり。
 
-| 例外が起きた場所                                                                               | 残す口                                                                                        | ログの 1 行目                                       |
-| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| server function (client から呼ばれた)                                                          | `src/start.ts` の `logServerFnErrors` (global の `functionMiddleware`)                        | `[server fn] <関数名>`                              |
-| SSR の loader / beforeLoad (server function を通さずに投げた例外。`validateSearch` の失敗など) | `src/server.ts` の handler callback から呼ぶ `logSsrMatchErrors` (`src/server/ssr-errors.ts`) | `[ssr] <routeId>`                                   |
-| SSR の loader から呼んだ server function                                                       | 上の 2 つ                                                                                     | `[server fn] <関数名>` と `[ssr] <routeId>` の 2 行 |
-| SSR の描画中、route の `head()`                                                                | TanStack が `console.error` で出す                                                            | 描画中は `Error in renderToReadableStream:`         |
-| client (遷移後の loader、描画)                                                                 | server には残らない。React がブラウザの console に出す ([react.dev「hydrateRoot」][])         | —                                                   |
+| 例外が起きた場所                                                                            | 残す口                                                                                        | ログの 1 行目                                       |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| server function (client から呼ばれた)                                                       | `src/start.ts` の `logServerFnErrors` (global の `functionMiddleware`)                        | `[server fn] <関数名>`                              |
+| SSR の読み込み (validateSearch・beforeLoad・loader) で server function を通さずに投げた例外 | `src/server.ts` の handler callback から呼ぶ `logSsrMatchErrors` (`src/server/ssr-errors.ts`) | `[ssr] <routeId>`                                   |
+| SSR の loader から呼んだ server function                                                    | 上の 2 つ                                                                                     | `[server fn] <関数名>` と `[ssr] <routeId>` の 2 行 |
+| SSR の描画中、route の `head()`                                                             | TanStack が `console.error` で出す (ソースを読んだだけ。ADR-0038)                             | 描画中は `Error in renderToReadableStream:`         |
+| client (遷移後の loader と描画で、server function を通さないもの)                           | server には残らない。React がブラウザの console に出す ([react.dev「hydrateRoot」][])         | —                                                   |
 
 - server function の例外は `logServerFnErrors` が `console.error` で残して投げ直す。redirect と notFound は残さない。理由は「例外を global の function middleware で残す理由」
 - ログの 1 行目の関数名は middleware の引数の `serverFnMeta.name` から取る。`serverFnMeta` は docs のガイドに無く、公開の型 (`ServerFnMeta`) と [TanStack/router#6213][] で入った
@@ -31,9 +31,9 @@ server で起きた例外を server のログに残し、production では clien
 ### 例外の文言を書く
 
 - 文言に秘密と個人情報 (DB の行の値、ユーザーの入力) を入れない。文言は server のログに残り、DEV では画面にも出る ([TanStack Start docs「Observability」][] の Security Considerations)
-- production の client には `SERVER_ERROR_MESSAGE` (`src/lib/server-error-exposure.ts`) だけが届く (ADR-0038)。画面と toast は固定文言を出す
+- production では直列化で元の文言を落とし、client は `SERVER_ERROR_MESSAGE` (`src/lib/server-error-exposure.ts`) の Error に復元する (ADR-0038)。画面と toast は固定文言を出す
 - パスや id は文言に入れてよい。調べるときの手がかりになる (`src/server/db/index.ts` の `createDb()` は開こうとした絶対パスを入れる)
-- ユーザーに見せる文言を持つ例外を足すときは、`src/start.ts` の `serializationAdapters` で `serverErrorAdapter` より前に専用の adapter を並べ、`src/lib/mutation-error.ts` の `curateMutationErrorMessage` に分岐を足す。adapter は並びの先頭から当たるので、後ろに置くと `serverErrorAdapter` が先に掴む
+- ユーザーに見せる文言を持つ例外を足すときは、専用の adapter を `src/start.ts` の `serializationAdapters` に `exposesServerErrorDetails()` の条件の外で常に登録して `serverErrorAdapter` より前に並べ、`src/lib/mutation-error.ts` の `curateMutationErrorMessage` に分岐を足す。adapter は並びの先頭から当たるので、後ろに置くと `serverErrorAdapter` が先に掴む。条件の中に並べると DEV で登録されない
 
 ### 詳細を出す環境を変える
 

@@ -8,11 +8,11 @@
 
 server で起きた 1 つの例外は、server のログ・client への応答・画面の 3 か所へ行く。TanStack Start の既定の構成では、3 か所それぞれに次の欠けがある。
 
-| 行き先          | 既定の構成で起きること                                                                                                                                                                                                                                                         | 欠け                                                                                                                                                                     |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| client への応答 | 組み込みの `ShallowErrorPlugin` が Error の `message` を残して直列化する (router-core 1.171.32 の `dist/esm/ssr/serializer/ShallowErrorPlugin.js`)。production でも同じで、server function の応答と SSR の HTML (dehydrate) の両方に載る                                       | アプリが投げた文言と SQLite の文言が client へ届く (下の「client へ届く文言」)                                                                                           |
-| server のログ   | SSR の loader / beforeLoad の例外は route の `onError` に渡るだけで、console に出ない (router-core 1.171.32 の `dist/esm/load-server.js`)。server では errorComponent を throw せずに描く (react-router 1.170.39 の `dist/esm/Match.js`) ので、React の `onError` にも届かない | server function を通さずに loader / beforeLoad が投げた例外 (`validateSearch` の失敗など) がどこにも残らない。server function の中の例外は ADR-0012 の middleware が残す |
-| 画面            | client で復元した Error の stack は、復元した位置を指す。開発サーバーでは `ShallowErrorPlugin.deserialize` を指した (2026-10-01 に観測)                                                                                                                                        | 画面に stack を出しても発生元を示さない                                                                                                                                  |
+| 行き先          | 既定の構成で起きること                                                                                                                                                                                                                                                                                                                                                                                                          | 欠け                                                                                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| client への応答 | 組み込みの `ShallowErrorPlugin` が Error の `message` を残して直列化する (router-core 1.171.32 の `dist/esm/ssr/serializer/ShallowErrorPlugin.js`)。production でも同じで、server function の応答と SSR の HTML (dehydrate) の両方に載る。TanStack Start docs「Server Functions」の Basic Errors も "Errors are serialized to the client" と書く                                                                                | アプリが投げた文言と SQLite の文言が client へ届く (下の「client へ届く文言」)                                                                                     |
+| server のログ   | SSR の読み込み (validateSearch・beforeLoad・loader) の例外は route の `onError` に渡るだけで、console に出ない (router-core 1.171.32 の `dist/esm/load-server.js`。`validateSearch` の失敗は `matchRoutes` が match の `searchError` に持たせ、`load-server.js` が同じく `onError` に渡す)。server では errorComponent を throw せずに描く (react-router 1.170.39 の `dist/esm/Match.js`) ので、React の `onError` にも届かない | SSR の読み込みで server function を通さずに投げた例外 (`validateSearch` の失敗など) がどこにも残らない。server function の中の例外は ADR-0012 の middleware が残す |
+| 画面            | client で復元した Error の stack は、復元した位置を指す。開発サーバーでは `ShallowErrorPlugin.deserialize` を指した (2026-10-01 に観測)                                                                                                                                                                                                                                                                                         | 画面に stack を出しても発生元を示さない                                                                                                                            |
 
 ### client へ届く文言
 
@@ -24,12 +24,13 @@ server で起きた 1 つの例外は、server のログ・client への応答�
 
 drizzle の `DrizzleQueryError` は、文言に SQL と params を入れる (`Failed query: <SQL>` と `params: <params>`、drizzle-orm 0.45.3 の `errors.js`)。このテンプレートの driver では、この例外は起きない。
 
-| driver                                                   | 例外の扱い                                                                                                                                  | 確かめ方                                      |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `drizzle-orm/better-sqlite3` (`src` が使う唯一の driver) | better-sqlite3 の例外を包まずに投げる。drizzle-orm 0.45.3 の `better-sqlite3/session.js` に `queryWithCache` と `DrizzleQueryError` は 0 件 | 本番ビルドで 2026-10-01 に実測 (下の「実測」) |
-| libsql・d1・sqlite-proxy・op-sqlite                      | 同じ版の `sqlite-core/session.js` の `queryWithCache` (38-100 行目) が `DrizzleQueryError` に包む                                           | ソースを読んだだけで、実測していない          |
+| driver                                                   | 例外の扱い                                                                                                                                      | 確かめ方                                      |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `drizzle-orm/better-sqlite3` (`src` が使う唯一の driver) | better-sqlite3 の例外を包まずに投げる。drizzle-orm 0.45.3 の `better-sqlite3/session.js` に `queryWithCache` と `DrizzleQueryError` は 0 件     | 本番ビルドで 2026-10-01 に実測 (下の「実測」) |
+| libsql・d1・sqlite-proxy・op-sqlite                      | 各 `session.js` が `.queryWithCache(` を呼び、同じ版の `sqlite-core/session.js` の `queryWithCache` (38-100 行目) が `DrizzleQueryError` に包む | ソースを読んだだけで、実測していない          |
+| bun-sqlite・durable-sqlite・expo-sqlite・sql-js          | better-sqlite3 と同じく `.queryWithCache(` を呼ばない                                                                                           | ソースを読んだだけで、実測していない          |
 
-driver を替えると、SQL と params が例外の文言に入る。
+表の 2 行目の driver に替えると、SQL と params が例外の文言に入る。各 `session.js` の `.queryWithCache(` の件数は `grep -c '\.queryWithCache(' node_modules/drizzle-orm/<driver>/session.js` で数えた (2026-10-01)。
 
 ### 公式の設定と先行例
 
@@ -70,32 +71,33 @@ driver を替えると、SQL と params が例外の文言に入る。
 
 例外が起きた場所ごとの server のログは次のとおり。
 
-| 例外が起きた場所                               | 残すもの                                                         | 行数   | 根拠                                                                                                                                       |
-| ---------------------------------------------- | ---------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| server function (client から HTTP で呼ばれた)  | `src/start.ts` の `logServerFnErrors`                            | 1      | 2026-10-01 に実測                                                                                                                          |
-| server function (SSR の loader から呼ばれた)   | `logServerFnErrors` と `src/server.ts`                           | 2      | 2026-10-01 に実測                                                                                                                          |
-| server function の中から呼んだ server function | `logServerFnErrors` (内側と外側)                                 | 2      | @tanstack/react-start 1.168.49、2026-09-29 に実測                                                                                          |
-| SSR の loader / beforeLoad が自分で投げた例外  | `src/server.ts`                                                  | 1      | 2026-10-01 に実測                                                                                                                          |
-| SSR の描画中の throw                           | TanStack の `console.error` (`Error in renderToReadableStream:`) | 未実測 | react-router 1.170.39 の `dist/esm/ssr/renderRouterToStream.js` を読んだ。`/notes` は loader が先に query を待つので、描画中には失敗しない |
-| route の `head()` の throw                     | TanStack の `console.error`                                      | 未実測 | router-core 1.171.32 の `dist/esm/load-server.js` を読んだ                                                                                 |
-| client で起きた例外 (遷移後の loader、描画)    | server には残らない。React がブラウザの console に出す           | —      | react.dev「hydrateRoot」。2026-10-01 にブラウザの console で観測                                                                           |
+| 例外が起きた場所                                                                            | 残すもの                                                         | 行数   | 根拠                                                                                                                                       |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| server function (client から HTTP で呼ばれた)                                               | `src/start.ts` の `logServerFnErrors`                            | 1      | 2026-10-01 に実測                                                                                                                          |
+| server function (SSR の loader から呼ばれた)                                                | `logServerFnErrors` と `src/server.ts`                           | 2      | 2026-10-01 に実測                                                                                                                          |
+| server function の中から呼んだ server function                                              | `logServerFnErrors` (内側と外側)                                 | 2      | @tanstack/react-start 1.168.49、2026-09-29 に実測                                                                                          |
+| SSR の読み込み (validateSearch・beforeLoad・loader) で server function を通さずに投げた例外 | `src/server.ts`                                                  | 1      | 2026-10-01 に `validateSearch` の失敗で実測                                                                                                |
+| SSR の描画中の throw                                                                        | TanStack の `console.error` (`Error in renderToReadableStream:`) | 未実測 | react-router 1.170.39 の `dist/esm/ssr/renderRouterToStream.js` を読んだ。`/notes` は loader が先に query を待つので、描画中には失敗しない |
+| route の `head()` の throw                                                                  | TanStack の `console.error`                                      | 未実測 | router-core 1.171.32 の `dist/esm/load-server.js` を読んだ                                                                                 |
+| client で起きた例外 (遷移後の loader と描画で、server function を通さないもの)              | server には残らない。React がブラウザの console に出す           | —      | react.dev「hydrateRoot」。2026-10-01 にブラウザの console で観測                                                                           |
 
 ## Decision
 
-**server で起きた例外は、production では文言を持たない Error として client へ運ぶ。server のログには、server function の例外を global の function middleware で、SSR の読み込みで error になった route の例外を server entry で残す。同じ例外が 2 つの口で 2 行になる場合は受け入れる。**
+**server で起きた例外は、production では元の文言を持たない Error として client へ運ぶ。server のログには、server function の例外を global の function middleware で、SSR の読み込みで error になった route の例外を server entry で残す。同じ例外が 2 つの口で 2 行になる場合は受け入れる。**
 
-| 項目                         | 決定                                                                                                                                                                                           |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 詳細を出す環境               | DEV は例外の文言を client と画面に出し、production は出さない。判定は 1 つの関数 (`src/lib/server-error-exposure.ts`) にまとめ、値はビルド時に置き換わる `import.meta.env.DEV`                 |
-| client への応答 (production) | `createStart` の `serializationAdapters` (`src/start.ts`) に、Error とそのサブクラスをすべて文言を持たない Error へ差し替える adapter を 1 つ登録する                                          |
-| client への応答 (DEV)        | adapter を登録しない。組み込みの `ShallowErrorPlugin` が message を運ぶ                                                                                                                        |
-| server で描く HTML           | errorComponent (`src/components/screens/route-error.tsx`) が、production では固定文言、DEV では例外の文言を出す                                                                                |
-| stack の表示                 | 画面に出さない。DEV でも出さない                                                                                                                                                               |
-| server function のログ       | global の function middleware (`src/start.ts`) が残す (ADR-0012)                                                                                                                               |
-| SSR のログ                   | custom server entry (`src/server.ts`) の handler callback が、描画の前に `ctx.router.state.matches` のうち `status === "error"` の match の error を `[ssr] <routeId>` で `console.error` する |
-| ログの重複                   | SSR の loader から呼んだ server function の例外は 2 行出る。受け入れ、同じオブジェクトを 1 回だけ出す仕組みは持たない                                                                          |
-| 例外の文言に載せないもの     | 秘密と個人情報 (DB の行の値、ユーザーの入力)。文言は server のログに残り、DEV では画面にも出る。パスと id は載せてよい                                                                         |
+| 項目                         | 決定                                                                                                                                                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 詳細を出す環境               | DEV は例外の文言を client と画面に出し、production は出さない。判定は 1 つの関数 (`src/lib/server-error-exposure.ts`) にまとめ、値はビルド時に置き換わる `import.meta.env.DEV`                                                              |
+| client への応答 (production) | `createStart` の `serializationAdapters` (`src/start.ts`) に、Error とそのサブクラスをすべて元の文言を持たない Error へ差し替える adapter を 1 つ登録する。直列化では元の文言を落とし、client は `SERVER_ERROR_MESSAGE` の Error に復元する |
+| client への応答 (DEV)        | adapter を登録しない。組み込みの `ShallowErrorPlugin` が message を運ぶ                                                                                                                                                                     |
+| server で描く HTML           | errorComponent (`src/components/screens/route-error.tsx`) が、production では固定文言、DEV では例外の文言を出す                                                                                                                             |
+| stack の表示                 | 画面に出さない。DEV でも出さない                                                                                                                                                                                                            |
+| server function のログ       | global の function middleware (`src/start.ts`) が残す (ADR-0012)                                                                                                                                                                            |
+| SSR のログ                   | custom server entry (`src/server.ts`) の handler callback が、描画の前に `ctx.router.state.matches` のうち `status === "error"` の match の error を `[ssr] <routeId>` で `console.error` する                                              |
+| ログの重複                   | SSR の loader から呼んだ server function の例外は 2 行出る。受け入れ、同じオブジェクトを 1 回だけ出す仕組みは持たない                                                                                                                       |
+| 例外の文言に載せないもの     | 秘密と個人情報 (DB の行の値、ユーザーの入力)。文言は server のログに残り、DEV では画面にも出る。パスと id は載せてよい                                                                                                                      |
 
+- 文言の差し替えとログを 1 本の ADR で決めるのは、互いに前提だからである。production では client に例外の文言が届かないので、原因は server のログにしか残らない。OWASP Error Handling Cheat Sheet の global error handler も、generic response と server 側のログを 1 つの仕組みで持つ (Context の先行例の表)
 - 判定を 1 つの関数にまとめるのは、server で描く errorComponent が adapter を通らない生の Error を受けるためである (`Match.js` の server の分岐)。HTML に文言を入れるかは errorComponent が決めるので、adapter の登録と errorComponent の判定が食い違うと、server の HTML と client の描画が食い違って hydration がずれる。1 つにまとめる形は自前の発案である
 - stack を画面に出さないのは、画面の stack が console と server のログ以上の情報を持たないためである。client で起きた例外の stack は React が既定でブラウザの console に出す (react.dev「hydrateRoot」)。server で起きた例外の stack は、client では復元した位置を指し、発生元の stack は server のログにある
 - 例外の文言に載せないものを決めるのは、production でも文言が server のログに残るためである。TanStack Start docs「Observability」の Security Considerations は "Never log sensitive data (passwords, tokens, PII)" と書く
@@ -106,14 +108,14 @@ driver を替えると、SQL と params が例外の文言に入る。
 
 経路ごとに、各口が例外の文言を覆えるかは次のとおり。
 
-| 経路                                                           | adapter で差し替える                                      | function middleware で汎用の Error に投げ直す                    | 根拠                                                                               |
-| -------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| server function の応答                                         | 覆える                                                    | server function の中の例外だけ覆える                             | 2026-10-01 に実測                                                                  |
-| SSR の dehydrate (match の error、TanStack Query の dehydrate) | 覆える                                                    | server function 由来だけ覆える。loader の自前の throw は覆えない | 2026-10-01 に実測                                                                  |
-| server で描く errorComponent                                   | 覆えない (生の Error を受ける)                            | server function 由来なら覆える                                   | `Match.js` の server の分岐                                                        |
-| SSR の描画中の throw                                           | 覆えない (React が扱う。DEV のビルドは HTML へ文言を出す) | 覆えない                                                         | 下の「受け入れる残りの穴」                                                         |
-| RawStream のエラーフレーム                                     | 覆えない (message をバイト列へ直接書く)                   | 覆えない                                                         | start-server-core 1.169.37 の `dist/esm/frame-protocol.js` の `encodeErrorPayload` |
-| Error でない値の throw                                         | 覆えない (adapter は `instanceof Error` だけを掴む)       | —                                                                | `src/lib/server-error-exposure.ts`                                                 |
+| 経路                                                           | adapter で差し替える                                      | function middleware で汎用の Error に投げ直す                    | 根拠                                                                                                                       |
+| -------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| server function の応答                                         | 覆える                                                    | server function の中の例外だけ覆える                             | adapter の列は 2026-10-01 に実測。function middleware の列は、middleware が server function の実行だけを包むことからの帰結 |
+| SSR の dehydrate (match の error、TanStack Query の dehydrate) | 覆える                                                    | server function 由来だけ覆える。loader の自前の throw は覆えない | adapter の列は 2026-10-01 に実測。function middleware の列は、middleware が server function の実行だけを包むことからの帰結 |
+| server で描く errorComponent                                   | 覆えない (生の Error を受ける)                            | server function 由来なら覆える                                   | `Match.js` の server の分岐                                                                                                |
+| SSR の描画中の throw                                           | 覆えない (React が扱う。DEV のビルドは HTML へ文言を出す) | 覆えない                                                         | 下の「受け入れる残りの穴」                                                                                                 |
+| RawStream のエラーフレーム                                     | 覆えない (message をバイト列へ直接書く)                   | 覆えない                                                         | start-server-core 1.169.37 の `dist/esm/frame-protocol.js` の `encodeErrorPayload`                                         |
+| Error でない値の throw                                         | 覆えない (adapter は `instanceof Error` だけを掴む)       | —                                                                | `src/lib/server-error-exposure.ts`                                                                                         |
 
 | 案                                                                                                                   | 評価                                                                                                                                                               | 採否     |
 | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -123,14 +125,14 @@ driver を替えると、SQL と params が例外の文言に入る。
 
 #### SSR の例外を残す口
 
-| 口                                                                           | 評価                                                                                                                                                                                                                                 | 採否     |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| custom server entry の handler callback で `ctx.router.state.matches` を読む | 1 か所で全 route の loader / beforeLoad の例外を拾える。部品は公式 (TanStack Start docs「Server Entry Point」の Custom Server Handlers)。`matches` の読み方は docs「Observability」の New Relic の例と同じ。ログに使うのは自前の発案 | **採用** |
-| route の `onError`                                                           | 例外が起きた route の `onError` だけが呼ばれる (`load-server.js`)。全 route に書くことになる                                                                                                                                         | 却下     |
-| `defaultOnCatch` / route の `onCatch`                                        | `componentDidCatch` からしか呼ばれない。server では errorComponent を throw せずに描くので、呼ばれない                                                                                                                               | 却下     |
-| request middleware の try/catch                                              | loader / beforeLoad の例外は router が match の error に変えて描画へ進むので、throw として届かない                                                                                                                                   | 却下     |
-| nitro の error hook                                                          | request middleware と同じ理由で、throw として届かない                                                                                                                                                                                | 却下     |
-| adapter の中でログを出す                                                     | 直列化の中に副作用を置くことになる。adapter は値しか受けないので、どの server function・route で起きたかが分からない                                                                                                                 | 却下     |
+| 口                                                                           | 評価                                                                                                                                                                                                                                                          | 採否     |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| custom server entry の handler callback で `ctx.router.state.matches` を読む | 1 か所で全 route の読み込み (validateSearch・beforeLoad・loader) の例外を拾える。部品は公式 (TanStack Start docs「Server Entry Point」の Custom Server Handlers)。`matches` の読み方は docs「Observability」の New Relic の例と同じ。ログに使うのは自前の発案 | **採用** |
+| route の `onError`                                                           | 例外が起きた route の `onError` だけが呼ばれる (`load-server.js`)。全 route に書くことになる                                                                                                                                                                  | 却下     |
+| `defaultOnCatch` / route の `onCatch`                                        | `componentDidCatch` からしか呼ばれない。server では errorComponent を throw せずに描くので、呼ばれない                                                                                                                                                        | 却下     |
+| request middleware の try/catch                                              | 読み込み (validateSearch・beforeLoad・loader) の例外は router が match の error に変えて描画へ進むので、throw として届かない                                                                                                                                  | 却下     |
+| nitro の error hook                                                          | request middleware と同じ理由で、throw として届かない                                                                                                                                                                                                         | 却下     |
+| adapter の中でログを出す                                                     | 直列化の中に副作用を置くことになる。adapter は値しか受けないので、どの server function・route で起きたかが分からない                                                                                                                                          | 却下     |
 
 #### ログの重複
 
@@ -148,8 +150,8 @@ Sentry は同じ形を取り、重複を SDK で落とす。
 ## Consequences
 
 - production の client には `SERVER_ERROR_MESSAGE` の Error だけが届く。画面と toast は固定文言を出し、原因は server のログで追う
-- ユーザーに見せる文言を持つ例外を足すときは、専用の adapter を `serverErrorAdapter` (`src/lib/server-error-exposure.ts`) より前に並べる。seroval は plugin を並びの先頭から試し、最初に当たったものを使う (seroval 1.6.4 の `dist/index.js` の `parsePluginSync`)
-- driver を libsql などに替えると、SQL と params を含む `DrizzleQueryError` の文言が server のログに残る (Context の driver の表。ソースを読んだ結果)。production の client には届かない
+- ユーザーに見せる文言を持つ例外を足すときは、専用の adapter を `src/start.ts` で `exposesServerErrorDetails()` の条件の外に置いて常に登録し、`serverErrorAdapter` (`src/lib/server-error-exposure.ts`) より前に並べる。条件の中に並べると DEV で登録されない。seroval は plugin を並びの先頭から試し、最初に当たったものを使う (seroval 1.6.4 の `dist/index.js` の `parsePluginSync`)
+- driver を Context の driver の表の 2 行目のもの (libsql・d1・sqlite-proxy・op-sqlite) に替えると、SQL と params を含む `DrizzleQueryError` の文言が server のログに残る (ソースを読んだ結果)。production の client には届かない
 - 自分のコードが投げない例外の文言は、この ADR の「例外の文言に載せないもの」の外にある。router の `SearchParamError` は検索の入力値を含んだまま server のログに残る (2026-10-01 に観測)
 
 ### 受け入れる残りの穴
@@ -169,7 +171,7 @@ docs に保証は無く、実装の並びと上流の e2e に依る。
 | 実装       | start-client-core 1.170.32 の `dist/esm/getDefaultSerovalPlugins.js` は `[...adapters.map(makeSerovalPlugin), ...routerPlugins]` を返す。router-core 1.171.32 の `dist/esm/ssr/ssr-server.js` も adapter を `ssrSerovalPlugins` の前に並べる                                                                                                        |
 | 上流の e2e | TanStack/router の `e2e/react-start/serialization-adapters/tests/app.spec.ts` の `custom error` は、Error のサブクラスの独自プロパティ (`"foo":"bar"`) が client に届くことを確かめる。adapter が先に効かなければ `ShallowErrorPlugin` が落とすので、このテストは通らない。server function の経路だけで、同じファイルの SSR の節は Error を扱わない |
 
-- TanStack を上げるときは、production ビルドで server function の応答と SSR の HTML に例外の文言が載らないことを確かめる
+- TanStack を上げるときは、Context の「実測」の本番ビルドの手順で確かめる。テーブルの無い空の SQLite を `DB_FILE_NAME` に渡して `node .output/server/index.mjs` を起動し、`/notes` の SSR の HTML と一覧の server function の応答に元の文言 (`no such table`) が無く、`server-error` の印があることを見る
 - 並びを固定する常設の検査は置かない。plugin の列を自分で組むテストでは、上流の並びの変化を検出できない
 
 ### 再評価の条件
