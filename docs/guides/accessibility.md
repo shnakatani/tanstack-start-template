@@ -147,6 +147,16 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - 「読み込み中」の行を画面に出さないのは、skeleton の見た目を読み込み後の表に近づけるためである。registry の `TableRow` / `TableCell` は下線と余白を持ち込むので、この行だけ素の `<tr>` / `<td>` で置く
 - pending 表示は条件付きで mount されるので、表示した時点で読み上げられる保証は無い。支援技術は通常、live region の変化だけを伝え、最初から入っている中身は伝えない ([WAI-ARIA 1.3 Editor's Draft][] の live region の節「Typically, assistive technology will only convey changes to a live region」)。読み込みの開始と完了の告知は扱っていない
 
+### `ItemGroup` をネイティブのリストで組む理由
+
+[shadcn docs「Item」][] は `ItemGroup` を "A container that groups related items together with consistent styling." とだけ書き、リストとしての組み方を示さない。registry の `ItemGroup` は `role="list"` を持つが `Item` は `listitem` にならず、空のリストとして読まれる ([shadcn-ui/ui#11532][])。上流には、`ItemGroup` から `role="list"` を外し、リストとして読ませたいときは `role="list"` と `role="listitem"` を足す形を docs に書く PR がある ([shadcn-ui/ui#12085][]、2026-10-01 作成、2026-10-02 時点で open)。
+
+| 案                                                              | 評価                                                                                                                  | 採否     |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| `render={<ul />}` と `render={<li />}` の対で組む               | タグがリストの意味を持ち、`jsx-a11y/prefer-tag-over-role` に通る。[shadcn-ui/ui#12085][] が入っても組み方は変わらない | **採用** |
+| registry の既定 (`role="list"` の div) のまま使う               | 空のリストとして読まれる ([shadcn-ui/ui#11532][])                                                                     | 却下     |
+| `role="list"` と `role="listitem"` を足す (#12085 の docs の形) | `jsx-a11y/prefer-tag-over-role` が止める                                                                              | 却下     |
+
 ### メニューのグループの見出しを強制しない理由
 
 見出しの無いグループは、画面では区切り線でしか分かれず、支援技術にも区切りだけが伝わる。晴眼の利用者と支援技術の利用者が得る情報は同じで、区切りで分ける形は [APG「Menu and Menubar Pattern」][] が示す形である。group の名前は [WAI-ARIA 1.2][] でも必須ではない (group role の特性に Accessible Name Required が無い)。
@@ -248,6 +258,11 @@ story で統制できるのは markup までで、フォントは実行環境が
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
 
+### リストの構造を組む
+
+- `ItemGroup` で項目を並べるときは `ItemGroup render={<ul />}` にし、子を `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の div のままだと、`ItemGroup` は `role="list"` を持つのに `Item` が `listitem` にならず、空のリストとして読まれる ([shadcn-ui/ui#11532][]、2026-10-02 時点で open)。`render` を通す乖離は台帳 `docs/registry-deviations.md` の item.tsx の行にある
+- `role="list"` と `role="listitem"` を足して組まない。`jsx-a11y/prefer-tag-over-role` が部品に渡した `role` も止める (2026-10-02、oxlint 1.85.0)。ネイティブのタグを選ぶ理由は「`ItemGroup` をネイティブのリストで組む理由」にある
+
 ### メニューの項目をグループに分ける
 
 - 項目を分けるときは `DropdownMenuGroup` で包み、グループの間に `DropdownMenuSeparator` を置く ([APG「Menu and Menubar Pattern」][] の Roles, States, and Properties)
@@ -260,6 +275,9 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
+[shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
+[shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
+[shadcn-ui/ui#12085]: https://github.com/shadcn-ui/ui/pull/12085
 [APG「Menu and Menubar Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/menubar/
 [Base UI docs「Menu」]: https://base-ui.com/react/components/menu
 [shadcn docs「Dropdown Menu」]: https://ui.shadcn.com/docs/components/base/dropdown-menu
