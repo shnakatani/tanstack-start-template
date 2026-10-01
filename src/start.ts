@@ -29,6 +29,6 @@ const logServerFnErrors = createMiddleware({ type: "function" }).server(
 export const startInstance = createStart(() => ({
   requestMiddleware: [csrfMiddleware],
   functionMiddleware: [logServerFnErrors],
-  // production では server の例外を、文言を持たない Error として client へ運ぶ (ADR-0038)
+  // production では server の例外を、元の文言を持たない Error として client へ運ぶ (ADR-0038)
   serializationAdapters: exposesServerErrorDetails() ? [] : [serverErrorAdapter],
 }));

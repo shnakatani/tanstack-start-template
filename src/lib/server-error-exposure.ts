@@ -17,8 +17,9 @@ export function exposesServerErrorDetails(): boolean {
 }
 
 /**
- * Error とそのサブクラスを、文言を持たない汎用の Error として client へ運ぶ (ADR-0038)。
- * 組み込みの直列化は message を運ぶので、drizzle の例外では SQL とユーザーの入力が応答に載る。
+ * Error とそのサブクラスを、元の文言を持たない Error として client へ運び、client では
+ * `SERVER_ERROR_MESSAGE` の Error に復元する (ADR-0038)。組み込みの直列化は message を運ぶので、
+ * 差し替えないとアプリが投げた文言と SQLite の文言 (テーブル名や列名を含む) が応答に載る。
  * redirect (`Response`) と notFound (素のオブジェクト) は Error ではないので掴まない
  */
 export const serverErrorAdapter = createSerializationAdapter({

@@ -7,18 +7,18 @@ export const MUTATION_ERROR_FALLBACK_MESSAGE =
 /**
  * mutation の onError で toast に出す文言を組み立てる。
  *
- * server function から返る Error は、どれも開発者向けの文言である
- * (`削除対象のノートが見つかりません: id=42` / `notes の読み出しがスキーマ検証に失敗しました ...`)。
- * ユーザーが取れる行動を含まないうえ、id や検証失敗の項目パスといった内部事情を画面へ運ぶため、
- * そのまま render せず固定文言へ丸める。infra / network 由来の raw error
- * ("Failed to fetch" 等の英語技術文言) も同じ扱いになる。
+ * server function から返る Error は、production では汎用の文言 (`SERVER_ERROR_MESSAGE`) で、
+ * DEV では開発者向けの文言 (`削除対象のノートが見つかりません: id=42` など) である (ADR-0038)。
+ * どちらもユーザーが取れる行動を含まないため、そのまま render せず固定文言へ丸める。
+ * infra / network 由来の raw error ("Failed to fetch" 等の英語技術文言) も同じ扱いになる。
  *
  * raw error は observability のため console.warn に残す (fail-closed。
  * `query-cache-handlers.ts` の background refetch 用ハンドラと対になる意匠)。
  *
  * ユーザー向けの文言を持つエラーを導入するときは、その型の分岐をここへ足して
- * `error.message` を返す。分岐を足す場所をここ 1 箇所に閉じるために、
- * 呼び出し側は toast へ渡す文言をこの関数からのみ受け取る。
+ * `error.message` を返す。production で文言を client へ運ぶには、`serverErrorAdapter` より前に
+ * その型の adapter を並べる (`docs/guides/server-errors.md`「例外の文言を書く」)。分岐を足す場所を
+ * ここ 1 箇所に閉じるために、呼び出し側は toast へ渡す文言をこの関数からのみ受け取る。
  */
 export function curateMutationErrorMessage(error: unknown): string {
   console.warn("[mutation] failed", { error });
