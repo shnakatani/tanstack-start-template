@@ -37,7 +37,7 @@ server で起きた例外を server のログに残し、production では clien
 
 ### 詳細を出す環境を変える
 
-- 判定は `src/lib/server-error-exposure.ts` の `exposesServerErrorDetails` だけが持つ。値はビルド時に置き換わる `import.meta.env.DEV` で、他のファイルで `import.meta.env.DEV` を読まない
+- 判定は `src/lib/server-error-exposure.ts` の `exposesServerErrorDetails` だけが持ち、値はビルド時に置き換わる `import.meta.env.DEV` を返す。例外の詳細を出すかの判定で `import.meta.env.DEV` を直接読まない
 - adapter の登録 (`src/start.ts`) と `src/components/screens/route-error.tsx` がこの関数を読む。環境を変えるときは関数の中身だけを変える
 - 片方だけを変えると、server で描く HTML と client の描画が食い違って hydration がずれる。server で描く errorComponent は adapter を通らない生の Error を受けるので、HTML に文言を入れるかは `route-error.tsx` が決める (ADR-0038)
 - テストでは `vi.stubEnv("DEV", …)` で切り替える。関数は呼んだ時点で値を読む

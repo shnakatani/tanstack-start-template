@@ -4,6 +4,8 @@ paths:
   - "src/server/**"
   - "src/routes/**"
   - "src/start.ts"
+  - "src/server.ts"
+  - "src/lib/server-error-exposure.ts"
 ---
 
 # server function の境界
@@ -27,6 +29,9 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 - 認可の base builder は、ロールによる出し分けが要るようになった時点で足す。先に置くと守る対象の無い装置になる (ADR-0012)
 - server function の例外を、個々の fn の中で catch して console へ書かない。global の `logServerFnErrors` (`src/start.ts`) が残して投げ直すので、二重に残る (`docs/guides/server-errors.md`「例外を server のログに残す」)
 - 例外の文言に秘密と個人情報 (DB の行の値、ユーザーの入力) を入れない。文言は server のログに残り、DEV では画面にも出る (`docs/guides/server-errors.md`「例外の文言を書く」)
+- SSR の読み込み (validateSearch・beforeLoad・loader) の例外を、route の `onError` や catch で console へ書かない。`src/server.ts` から呼ぶ `logSsrMatchErrors` (`src/server/ssr-errors.ts`) が `[ssr] <routeId>` で残すので、二重に残る (`docs/guides/server-errors.md`「例外を server のログに残す」)
+- ユーザーに見せる文言を持つ例外を client へ運ぶ adapter は、`src/start.ts` の `exposesServerErrorDetails()` の条件の外で常に登録し、`serverErrorAdapter` より前に並べる。条件の中に並べると DEV で登録されず、組み込みの直列化が素の Error に戻すので、client の型の判定が DEV と production で食い違う (`docs/guides/server-errors.md`「例外の文言を書く」)
+- 例外の詳細を client と画面に出すかの判定は `exposesServerErrorDetails()` (`src/lib/server-error-exposure.ts`) で行い、`import.meta.env.DEV` を直接読まない。adapter の登録と `route-error.tsx` の判定が食い違うと、server で描いた HTML と client の描画がずれる (`docs/guides/server-errors.md`「詳細を出す環境を変える」)
 
 ## ファイルの置き場所と名前
 
