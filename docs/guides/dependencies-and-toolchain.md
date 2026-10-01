@@ -17,6 +17,11 @@
 - 素の `pnpm` は Vite+ の shim が用意するので、corepack などで別に入れなくてよい。Vite+ の shim は `node` / `npm` / `pnpm` / `yarn` / `bun` とその alias で ([Vite+ docs「Environment」][])、`pnpm` は `packageManager` の版に解決される。2026-10-02 に vp 1.0.0 で、`~/.vite-plus/bin` の `pnpm` / `pn` / `pnpx` / `pnx` は `vp` への symlink で、リポジトリで `pnpm --version` は 11.28.0 を返した
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
 
+### 依存を足す・外す
+
+- 依存は `vp add` / `vp remove` で足し外す ([Vite+ docs「Package Management」][] の「Add and Remove」)。素の `pnpm` / `npm` / `yarn` で足し外さない。理由は「入口を `vp` にそろえる理由」にある
+- `vp` が中継しないサブコマンドだけは素の `pnpm` で打つ。`pnpm peers check` がこれに当たる (「peer の食い違いを数える」)
+
 ### Node.js の版を打ち直す
 
 `vp env pin` で `devEngines.runtime` を打ち直したら、`devEngines.runtime.onFail` を `error` へ戻す。`vp env pin` が書き込む既定は `download` で、pnpm もこのフィールドを読む。`download` のままだと pnpm が宣言の runtime を自前で解決して lockfile へ記録し、`node_modules/node` を展開する (2026-09-02 に `vp remove` の再解決で、`node@runtime:24.20.0` と全プラットフォーム分の tarball URL が lockfile に入った)。
@@ -58,8 +63,8 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 pnpm peers check
 ```
 
-- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile を書き換えないので、`pnpm peers check` は直接打っても解決が Vite+ の管理から外れない
-- `vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
+- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile は書き換えない
+- 素の `pnpm` で打つ。`vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm/pnpm#14114][])
 - 許可を外すだけでは lockfile が変わらないので、`--force` を付けても `strictPeerDependencies: true` にしても install は通る (2026-09-29、pnpm 11.28.0)。`pnpm peers check` だけが食い違いを出す
 - 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<確かめた版の major>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
@@ -173,6 +178,12 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 
 作り直しの手順も短くなる。`vp pm patch` を版を付けずに打つと、パッケージ名だけのキーの patch を編集用のディレクトリに当て、`patch-commit` は同じキーと同じファイルへ書き戻す。範囲のキーの patch は `vp pm patch` が当てず、`patch-commit` は範囲のキーとは別のキーとファイルを足すので、作り直すたびに元の patch を当て直し、キーとファイルを手で直すことになる (2026-10-01 に pnpm 11.28.0 で、両方のキーについて観測)。
 
+### 入口を `vp` にそろえる理由
+
+- [Vite+ docs「Package Management」][] は、`vp` がプロジェクトの package manager を見分けて走らせ、`vp install` / `vp add` / `vp remove` を package manager をまたいだ共通の入口にする ("Instead of switching between `pnpm install`, `npm install`, `yarn install`, and `bun install`, you can keep using `vp install`, `vp add`, `vp remove`")。打つ側がプロジェクトの package manager を覚えなくてよい
+- `npm` と `yarn` は pnpm に翻訳されない (同 docs: "Mismatched tools are not translated; `npm` in a `pnpm` project still resolves as npm.")。2026-10-02 に npm 11.19.0 で `npm install is-odd@3.0.1 --package-lock-only` を打つと、`package-lock.json` ができて `pnpm-lock.yaml` は変わらなかった。`yarn` は測っていない
+- 素の `pnpm` は結果を変えない。shim が `packageManager` の版 (pnpm 11.28.0) に解決し、2026-10-02 に `vp add is-number@7.0.0 --lockfile-only` と `pnpm add is-number@7.0.0 --lockfile-only` は同じ `package.json` と `pnpm-lock.yaml` を作った。`pnpm` も止めるのは lockfile のためではなく、入口を `vp` の 1 つにそろえるためである
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
@@ -191,4 +202,5 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [gitignore(5)]: https://git-scm.com/docs/gitignore
 [git-add(1)]: https://git-scm.com/docs/git-add
 [dotenvx README]: https://github.com/dotenvx/dotenvx/blob/v2.32.3/README.md
+[Vite+ docs「Package Management」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/install.md
 [Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/env.md
