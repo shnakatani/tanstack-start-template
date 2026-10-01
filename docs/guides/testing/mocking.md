@@ -1,6 +1,6 @@
 # テストのモジュール差し替え
 
-テストで `vi.mock` を使ってモジュールを差し替えるときの形の選び方と、`__mocks__` の置き方を持つ。
+テストで `vi.mock` を使ってモジュールを差し替えるときの形の選び方と、`__mocks__` の置き方、環境変数の差し替えを持つ。
 
 | 決定                                                                                         | ADR      |
 | -------------------------------------------------------------------------------------------- | -------- |
@@ -41,6 +41,18 @@
 - `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、`vi.mocked(fn).mock.results` を見る
 - `mock.results` には `vi.when: no behavior defined when called with [...]` の例外と、渡った引数が入る (文言の形は [Vitest docs のレシピ「Conditional Mocking with vi.when」][] の `onUnmatched` の例)
 
+### 環境変数を差し替える
+
+`import.meta.env` と `process.env` の値は `vi.stubEnv` で差し替え、テストの中では戻さない。戻すのは 2 か所で、どちらも全 project に効く。理由は「環境変数の戻しを設定と setup の両方に置く理由」。
+
+| 戻す場所                                                | 時点         |
+| ------------------------------------------------------- | ------------ |
+| `tooling/test/config.ts` の `unstubEnvs: true`          | 各テストの前 |
+| `vitest.setup.ts` (root の `setupFiles`) の `afterEach` | 各テストの後 |
+
+- `.concurrent` を付けたテストでは `vi.stubEnv` を使わない。戻すのは `vi.unstubAllEnvs()` で、1 つのテストの終わりに並行する別のテストの値も戻る ([Vitest docs「unstubEnvs」][] の warning)
+- env はモジュールの最上位ではなく、呼び出しの時点で読む。最上位で読んだ値は、テストで差し替えても変わらない
+
 ## explanation
 
 ### `__mocks__` に寄せる理由
@@ -67,6 +79,19 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 - [`@vitest/mocker` の `node/resolver.ts`][] の `resolveId` は importer を加工せずに解決へ渡し、同じファイルの `resolveMockId` は root と join する。相対パスが落ちる原因はこの差と推定している
 - 一部だけ変えるなら、partial mock を各テストの factory で書く。factory の `importOriginal` はテストファイルを起点に解決されるので、この問題に当たらない
 
+### 環境変数の戻しを設定と setup の両方に置く理由
+
+[Vitest docs「Mocking」][] の Mock `import.meta.env` は、自動で戻す手段として `unstubEnvs` を挙げ、手で戻すなら `beforeEach` で `vi.unstubAllEnvs` を呼ぶよう書く。設定は 1 行で全 project に届く。inline の project は root の設定を継承する ([Vitest docs「Projects」][] の Configuration)。
+
+設定だけでは塞げない窓がある。[Vitest docs「unstubEnvs」][] は "Should Vitest automatically call `vi.unstubAllEnvs()` before each test." と書き、戻すのは次のテストの前である。`--no-isolate` で走らせると、ファイルの最後のテストの値が、同じ worker で次に走るファイルのモジュール評価と `beforeAll` に見える。最後のテストで stub して戻さないファイルと、モジュールの最上位と `beforeAll` で env を読むファイルを `--no-isolate --no-file-parallelism --sequence.shuffle.files` でseed を 5 通り変えて走らせると、unit と browser の両 project で値が残る seed があった。setup の `afterEach` を足すと、5 通りのどれでも残らなかった (vitest 5.0.1、2026-10-02 に実測)。setup file は `--no-isolate` でもファイルごとに走り直し、hook もファイルごとに置き直される ([Vitest docs「setupFiles」][] の warning にある `afterEach` の例と同じ形)。
+
+| 案                                                                    | 評価                                                                                                           | 採否     |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------- |
+| 設定の `unstubEnvs` と setup の `afterEach` の両方で戻す              | テストに後始末を書かない。`--no-isolate` でもファイルをまたいで残らない                                        | **採用** |
+| 設定の `unstubEnvs` だけで戻す                                        | 公式が先に挙げる形。`--no-isolate` では、ファイルの最後の値が次のファイルのモジュール評価と `beforeAll` に残る | 却下     |
+| 使うテストファイルごとに `afterEach(() => vi.unstubAllEnvs())` を書く | 書き忘れると次のテストへ値が残り、気付く手段が無い                                                             | 却下     |
+| setup の `afterEach` だけで戻す                                       | 窓は塞がるが、公式が自動で戻す手段として挙げる設定を使わない                                                   | 却下     |
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
@@ -80,3 +105,7 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 [vitest-dev/vitest#5765]: https://github.com/vitest-dev/vitest/pull/5765
 [vitest-dev/vitest#8343]: https://github.com/vitest-dev/vitest/issues/8343
 [`@vitest/mocker` の `node/resolver.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/mocker/src/node/resolver.ts
+[Vitest docs「Mocking」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/mocking.md#mock-import-meta-env
+[Vitest docs「unstubEnvs」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/unstubenvs.md
+[Vitest docs「Projects」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/projects.md#configuration
+[Vitest docs「setupFiles」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/setupfiles.md
