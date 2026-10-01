@@ -37,6 +37,7 @@ server で起きた例外を server のログに残し、production では clien
 
 - 判定は `serverErrorAdapter` (`src/lib/server-error-exposure.ts`) と `src/components/screens/route-error.tsx` の 2 か所が、ビルド時に置き換わる `import.meta.env.DEV` を直接読む。関数で包まない。包むと呼び出し側で値が畳み込まれず、production の bundle に DEV の分岐が残る (ADR-0038)
 - 環境の判定を変えるときは 2 か所を同じ条件に揃える。片方だけを変えると、server で描く HTML と client の描画が食い違って hydration がずれる。server で描く errorComponent は adapter を通らない生の Error を受けるので、HTML に文言を入れるかは `route-error.tsx` が決める (ADR-0038)
+- errorComponent で例外を文字列にするときは `thrownValueMessage` (`src/lib/thrown-value-message.ts`) を通す。DEV の client は、server の画面が `thrownValueMessage` で作った文字列を message に持つ Error を受けるので、`error.message` を直接描くと server と食い違うことがある (ADR-0038)
 - テストでは `vi.stubEnv("DEV", …)` で切り替える
 
 ## explanation

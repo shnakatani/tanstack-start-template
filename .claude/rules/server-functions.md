@@ -33,7 +33,7 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 - SSR の読み込み (validateSearch・beforeLoad・loader) の例外を、route の `onError` や catch で console へ書かない。`src/server.ts` から呼ぶ `logSsrMatchErrors` (`src/server/ssr-errors.ts`) が `[ssr] <routeId>` で残すので、二重に残る (`docs/guides/server-errors.md`「例外を server のログに残す」)
 - ユーザーに見せる文言を持つ例外の adapter は `serverErrorAdapter` より前に並べる。adapter は先頭から試されて最初に当たったものが使われるので、後ろに置くと `serverErrorAdapter` が先に掴んで素の Error に戻し、型の分岐が外れる (production では文言も落ちる) (ADR-0038)
 - 例外の詳細を client と画面に出すかの判定は、`serverErrorAdapter` (`src/lib/server-error-exposure.ts`) と `route-error.tsx` で `import.meta.env.DEV` を直接読んで行い、関数で包まない。包むと呼び出し側で値が畳み込まれず、production の bundle に DEV の分岐が残る (ADR-0038)
-- 2 か所の判定に別の条件 (環境変数など) を足さない。片方だけ変わると、server で描いた HTML と client の描画が食い違って hydration がずれる (`docs/guides/server-errors.md`「詳細を出す環境を変える」)
+- 2 か所の判定を変えるときは、両方を同じ条件に揃える。片方だけ変わると、server で描いた HTML と client の描画が食い違って hydration がずれる (`docs/guides/server-errors.md`「詳細を出す環境を変える」)
 
 ## ファイルの置き場所と名前
 
