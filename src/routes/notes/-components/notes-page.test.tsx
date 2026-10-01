@@ -359,12 +359,8 @@ describe("NotesPage", () => {
       await expectNoteDialogClosed(screen);
       await expect.element(noteRow(screen, UPDATED_NOTE)).toHaveAttribute("aria-busy", "true");
       await expect.element(noteRow(screen, UPDATED_NOTE).getByText("更新中")).toBeInTheDocument();
-      await expect
-        .element(rowEditButton(screen, UPDATED_NOTE.title))
-        .toHaveAttribute("aria-disabled", "true");
-      await expect
-        .element(rowEditButton(screen, OTHER_NOTE.title))
-        .not.toHaveAttribute("aria-disabled", "true");
+      await expect.element(rowEditButton(screen, UPDATED_NOTE.title)).toBeDisabled();
+      await expect.element(rowEditButton(screen, OTHER_NOTE.title)).toBeEnabled();
       // 閉じたあと Base UI は開いたトリガーへフォーカスを返す。トリガーは無効になっているが、
       // focusableWhenDisabled なのでフォーカスが body へ落ちない
       await expect.element(rowEditButton(screen, UPDATED_NOTE.title)).toHaveFocus();
@@ -601,9 +597,7 @@ describe("NotesPage", () => {
     await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
     await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "false");
-    await expect
-      .element(rowDeleteButton(screen, NOTE.title))
-      .not.toHaveAttribute("aria-disabled", "true");
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toBeEnabled();
     // raw error は curateMutationErrorMessage が warn に残す (observability)
     expect(warnSpy).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
   });
@@ -647,12 +641,8 @@ describe("NotesPage", () => {
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
     await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "false");
     // 止めるのは削除中の行だけ (ADR-0017「ブロック範囲」)。他の行のトリガーは有効のまま
-    await expect
-      .element(rowDeleteButton(screen, OTHER_NOTE.title))
-      .not.toHaveAttribute("aria-disabled", "true");
-    await expect
-      .element(rowDeleteButton(screen, NOTE.title))
-      .toHaveAttribute("aria-disabled", "true");
+    await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toBeEnabled();
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toBeDisabled();
     // 行は静的テキスト (sr-only) で状態を持つ (ADR-0026)
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
     // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の

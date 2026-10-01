@@ -30,7 +30,7 @@ describe("ActionButton", () => {
     await button.click();
     await expect.element(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
-    await expect.element(button).toHaveAttribute("aria-disabled", "true");
+    await expect.element(button).toBeDisabled();
     await expect.element(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
