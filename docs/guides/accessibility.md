@@ -147,6 +147,15 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - 「読み込み中」の行を画面に出さないのは、skeleton の見た目を読み込み後の表に近づけるためである。registry の `TableRow` / `TableCell` は下線と余白を持ち込むので、この行だけ素の `<tr>` / `<td>` で置く
 - pending 表示は条件付きで mount されるので、表示した時点で読み上げられる保証は無い。支援技術は通常、live region の変化だけを伝え、最初から入っている中身は伝えない ([WAI-ARIA 1.3 Editor's Draft][] の live region の節「Typically, assistive technology will only convey changes to a live region」)。読み込みの開始と完了の告知は扱っていない
 
+### メニューのグループの見出しを強制しない理由
+
+見出しの無いグループは、画面では区切り線でしか分かれず、支援技術にも区切りだけが伝わる。晴眼の利用者と支援技術の利用者が得る情報は同じで、区切りで分ける形は [APG「Menu and Menubar Pattern」][] が示す形である。group の名前は [WAI-ARIA 1.2][] でも必須ではない (group role の特性に Accessible Name Required が無い)。
+
+| 案                                         | 評価                                                                                                                                                     | 採否     |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 見出しの要否をグループごとに決める         | [shadcn docs「Dropdown Menu」][] の Usage と同じ形。[Base UI docs「Menu」][] も Group labels を足せる部品として書き、必須にしない                        | **採用** |
+| 2 グループ以上なら全グループに見出しを置く | 公式の例で全グループに見出しを置くのは Base UI の Group labels のデモだけで、a11y の要件ではない。見出しの有無は画面の設計で、名前を補う判断とは別である | 却下     |
+
 ## how-to
 
 ### 読み込み中の表示を組む
@@ -239,10 +248,22 @@ story で統制できるのは markup までで、フォントは実行環境が
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
 
+### メニューの項目をグループに分ける
+
+- 項目を分けるときは `DropdownMenuGroup` で包み、グループの間に `DropdownMenuSeparator` を置く ([APG「Menu and Menubar Pattern」][] の Roles, States, and Properties)
+- グループに見出しを置くときは、`DropdownMenuLabel` を `DropdownMenuGroup` の中に置く。`DropdownMenuLabel` は Base UI の `Menu.GroupLabel` で、親のグループの名前になる ([Base UI docs「Menu」][] の Group labels)
+- 見出しはグループごとに要否を決め、すべてのグループには求めない ([shadcn docs「Dropdown Menu」][] の Usage は 2 グループのうち 1 つ目にだけ置く)。理由は「メニューのグループの見出しを強制しない理由」にある
+- メニュー全体を包む単一の `DropdownMenuGroup` に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない。menu は開いたトリガーを `aria-labelledby` で指して名前を持つ ([APG「Menu and Menubar Pattern」][]) ので、同じ名前を重ねても区別が増えない
+- トリガーの名前が中身を言わないとき (「Open」の下に表示の切り替えが並ぶなど) は、単一のグループにも中身を言う見出しを置いてよい ([shadcn の `dropdown-menu-checkboxes.tsx`][] は「Appearance」を置く)
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
+[APG「Menu and Menubar Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/menubar/
+[Base UI docs「Menu」]: https://base-ui.com/react/components/menu
+[shadcn docs「Dropdown Menu」]: https://ui.shadcn.com/docs/components/base/dropdown-menu
+[shadcn の `dropdown-menu-checkboxes.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/dropdown-menu-checkboxes.tsx
 [axe-core の `README.md`]: https://github.com/dequelabs/axe-core/blob/v4.13.0/README.md
 [dequelabs/axe-core#4260]: https://github.com/dequelabs/axe-core/issues/4260
 [dequelabs/axe-core#5359]: https://github.com/dequelabs/axe-core/pull/5359

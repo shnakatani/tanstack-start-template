@@ -66,7 +66,8 @@ export const Opened: Story = {
 };
 
 /**
- * 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
+ * グループに分けた形。見出しを置くなら `DropdownMenuLabel` をグループの中に置き、グループの名前にする。
+ * 見出しの要否はグループごとに決める (docs/guides/accessibility.md「メニューの項目をグループに分ける」)
  */
 export const Grouped: Story = {
   render: () => (
