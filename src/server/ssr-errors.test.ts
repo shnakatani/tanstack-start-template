@@ -43,4 +43,18 @@ describe("logSsrMatchErrors", () => {
 
     expect(error).not.toHaveBeenCalled();
   });
+
+  // 型にない status は型検査が止めるが、router の版がずれて実行時に来ても、ログの処理で SSR の応答を壊さない
+  it("型にない status の match が来ても throw せず、status と例外を残す", () => {
+    using error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const thrown = new Error("取得に失敗しました");
+    const match = { routeId: "/notes/", status: "success" as const, error: thrown };
+    Reflect.set(match, "status", "redirected");
+
+    expect(() => logSsrMatchErrors([match])).not.toThrow();
+    expect(error).toHaveBeenCalledExactlyOnceWith("[ssr] /notes/ の match の status が想定外", {
+      status: "redirected",
+      error: thrown,
+    });
+  });
 });

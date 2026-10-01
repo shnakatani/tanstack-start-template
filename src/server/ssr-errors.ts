@@ -20,9 +20,14 @@ export function logSsrMatchErrors(matches: ReadonlyArray<SsrMatch>): void {
       case "pending":
       case "success":
         break;
+      // 型にない status は型検査 (never) が止める。router の版がずれて実行時に来ても、ログの処理で
+      // SSR の応答を壊さないよう throw せず、status と例外を残す
       default: {
         const unhandled: never = match.status;
-        throw new Error(`unhandled match status: ${String(unhandled)}`);
+        console.error(`[ssr] ${match.routeId} の match の status が想定外`, {
+          status: unhandled,
+          error: match.error,
+        });
       }
     }
   }
