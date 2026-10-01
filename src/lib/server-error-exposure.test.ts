@@ -64,4 +64,18 @@ describe("serverErrorAdapter", () => {
     expect(restored).toBeInstanceOf(Error);
     expect(restored.message).toBe("削除対象のノートが見つかりません: id=42");
   });
+
+  // message を undefined で持つ Error (ライブラリが代入するもの) は、server の描画では `Error` と出る。
+  // client で汎用の文言に戻すと、DEV で server と client の描画が食い違う
+  it("DEV では message が undefined の Error を、汎用の文言ではなく空の文言の Error に戻す", () => {
+    vi.stubEnv("DEV", true);
+    const original = new Error("取得に失敗しました");
+    Object.defineProperty(original, "message", { value: undefined });
+
+    const restored = serverErrorAdapter.fromSerializable(
+      serverErrorAdapter.toSerializable(original),
+    );
+
+    expect(restored.message).toBe("");
+  });
 });

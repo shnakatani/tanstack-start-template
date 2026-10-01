@@ -20,12 +20,12 @@ export function exposesServerErrorDetails(): boolean {
  * Error とそのサブクラスを client へ運ぶ (ADR-0038)。production では元の文言を落とし、client では
  * `SERVER_ERROR_MESSAGE` の Error に復元する。DEV では画面に出す文言を運ぶ。組み込みの直列化は
  * message を運ぶので、差し替えないとアプリが投げた文言と SQLite の文言 (テーブル名や列名を含む) が
- * 応答に載る。DEV でも登録し、adapter の並びを環境によらず同じにする。redirect (`Response`) と
- * notFound (素のオブジェクト) は Error ではないので掴まない
+ * 応答に載る。復元は message のキーがあるかで分け、値が undefined の Error も組み込みの直列化と同じく
+ * 空の文言に戻す。redirect (`Response`) と notFound (素のオブジェクト) は Error ではないので掴まない
  */
 export const serverErrorAdapter = createSerializationAdapter<Error, { message?: string }>({
   key: "server-error",
   test: (value): value is Error => value instanceof Error,
   toSerializable: (error) => (exposesServerErrorDetails() ? { message: error.message } : {}),
-  fromSerializable: ({ message }) => new Error(message ?? SERVER_ERROR_MESSAGE),
+  fromSerializable: (value) => new Error("message" in value ? value.message : SERVER_ERROR_MESSAGE),
 });
