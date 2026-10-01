@@ -16,9 +16,10 @@ export const MUTATION_ERROR_FALLBACK_MESSAGE =
  * `query-cache-handlers.ts` の background refetch 用ハンドラと対になる意匠)。
  *
  * ユーザー向けの文言を持つエラーを導入するときは、その型の分岐をここへ足して
- * `error.message` を返す。production で文言を client へ運ぶには、`serverErrorAdapter` より前に
- * その型の adapter を並べる (`docs/guides/server-errors.md`「例外の文言を書く」)。分岐を足す場所を
- * ここ 1 箇所に閉じるために、呼び出し側は toast へ渡す文言をこの関数からのみ受け取る。
+ * `error.message` を返す。production で文言を client へ運ぶには、
+ * `exposesServerErrorDetails()` の条件の外で、`serverErrorAdapter` より前にその型の adapter を
+ * 並べる (`docs/guides/server-errors.md`「例外の文言を書く」)。分岐を足す場所をここ 1 箇所に
+ * 閉じるために、呼び出し側は toast へ渡す文言をこの関数からのみ受け取る。
  */
 export function curateMutationErrorMessage(error: unknown): string {
   console.warn("[mutation] failed", { error });

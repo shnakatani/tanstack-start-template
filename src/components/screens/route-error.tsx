@@ -31,7 +31,7 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
 
   return (
     <CenteredCard fill="section">
-      {/* 本文 (例外の文言) が左寄せのため、見出しも中央寄せにしない */}
+      {/* 本文が左寄せのため、見出しも中央寄せにしない */}
       <CardHeader>
         <CardPageTitle tone="destructive">
           <h1>エラーが発生しました</h1>
