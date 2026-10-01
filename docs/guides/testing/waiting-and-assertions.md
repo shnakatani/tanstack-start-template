@@ -106,7 +106,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 無効か有効か (native `disabled`、`aria-disabled`、Base UI の `Checkbox` の `disabled`) | `expect.element(x).toBeDisabled()` / `toBeEnabled()`。Vitest の matcher は `aria-disabled` も見る (「無効の判定を `toBeDisabled` に任せる理由」)                         |
 | native の `disabled` と `aria-disabled` のどちらで無効にしたか                         | `toHaveAttribute("disabled")` と `toHaveAttribute("aria-disabled", "true")`。`toBeDisabled` はどちらでも通るので区別できない。実例は `src/components/ui/button.test.tsx` |
-| story の play で見る無効                                                               | `toHaveAttribute("aria-disabled", "true")`。`storybook/test` の `toBeDisabled` は `aria-disabled` を見ない                                                               |
+| story の play で見る `aria-disabled` の無効                                            | `toHaveAttribute("aria-disabled", "true")`。`storybook/test` の `toBeDisabled` は `aria-disabled` を見ない                                                               |
 | 処理中 (`aria-busy`)                                                                   | `expect.element(x).toHaveAttribute("aria-busy", "true")`。`aria-busy` を見る matcher は無い                                                                              |
 
 - `getByRole` に `busy` の option を渡さない。Vitest の locator は `busy` を持たない。literal で書けば型検査が止めるが、変数を経由すると型検査を抜け、実行時に捨てられて `aria-busy="false"` の要素にも当たる (「無効の判定を `toBeDisabled` に任せる理由」)
