@@ -60,8 +60,8 @@ describe("RouteErrorContent", () => {
     await expectText(screen, THROWN_VALUE_UNPRINTABLE);
   });
 
-  // error.message は server function の throw 文言 (id や検証失敗の項目パスを含む) をそのまま
-  // 運ぶ。開発者向けの内部事情なので production では画面へ出さない
+  // server で描くときの error と DEV の client の error は、server function の throw 文言 (id や
+  // 検証失敗の項目パスを含む) をそのまま持つ。開発者向けの内部事情なので production では画面へ出さない
   it("production では raw な error.message を出さず固定文言だけを出す", async () => {
     vi.stubEnv("DEV", false);
     const error = new Error("削除対象のノートが見つかりません: id=42");
@@ -95,8 +95,7 @@ describe("RouteErrorContent", () => {
     const { screen } = await renderError(error, vi.fn());
 
     await expectText(screen, "取得に失敗しました");
-    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
-    // 既定で閉じた開閉の UI は、ラベルを変えても aria-expanded="false" のボタンとして残る
+    // 既定で閉じた開閉の UI は、ラベルによらず aria-expanded="false" のボタンとして残る
     await expectAbsent(screen.getByRole("button", { expanded: false }));
     await expectAbsent(screen.getByText(/at loader/));
   });

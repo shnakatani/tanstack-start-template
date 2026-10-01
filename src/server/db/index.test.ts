@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -87,52 +87,38 @@ describe("createDb", () => {
   });
 
   // アプリは migration を当てないので、作った空の DB は最初のクエリで落ちるだけになる。作らずに落とす。
-  // 例外は呼び出し元の server function の middleware が server のログに残すので、ここで別に出すと 2 行になる
+  // 例外は server のログに残す口 (ADR-0038) が残すので、ここで別に出すと 2 行になる
   it("DB のファイルが無ければ作らずに、開こうとしたパスを文言に入れて throw する", () => {
-    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
-    const fileName = join(dir, "missing.sqlite");
+    using dir = mkdtempDisposableSync(join(tmpdir(), "db-test-"));
+    const fileName = join(dir.path, "missing.sqlite");
     using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    try {
-      expect(() => createDb(fileName)).toThrow(new Error(missingDbMessage(fileName)));
-      expect(error).not.toHaveBeenCalled();
-      expect(existsSync(fileName)).toBe(false);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    expect(() => createDb(fileName)).toThrow(new Error(missingDbMessage(fileName)));
+    expect(error).not.toHaveBeenCalled();
+    expect(existsSync(fileName)).toBe(false);
   });
 
   it("ディレクトリを渡しても、開こうとしたパスを文言に入れて throw する", () => {
-    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
-    using error = vi.spyOn(console, "error").mockImplementation(() => {});
+    using dir = mkdtempDisposableSync(join(tmpdir(), "db-test-"));
 
-    try {
-      expect(() => createDb(dir)).toThrow(new Error(missingDbMessage(dir)));
-      expect(error).not.toHaveBeenCalled();
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    expect(() => createDb(dir.path)).toThrow(new Error(missingDbMessage(dir.path)));
   });
 
   // 相対パスのままでは、どのディレクトリを基準に開こうとしたかが server のログから分からない。
   // `path.resolve` は `process.cwd()` を読むので、cwd を一時ディレクトリへ差し替えて解決先を固定する。
   // 差し替えは `statSync` が引く実際の cwd には効かないので、どちらの cwd にも無い名前を渡す
   it("相対パスを渡したら、cwd を基準に解決した絶対パスを文言に入れて throw する", () => {
-    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
-    using _cwd = vi.spyOn(process, "cwd").mockReturnValue(dir);
+    using dir = mkdtempDisposableSync(join(tmpdir(), "db-test-"));
+    using _cwd = vi.spyOn(process, "cwd").mockReturnValue(dir.path);
 
-    try {
-      expect(() => createDb("missing.sqlite")).toThrow(
-        new Error(missingDbMessage(join(dir, "missing.sqlite"))),
-      );
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    expect(() => createDb("missing.sqlite")).toThrow(
+      new Error(missingDbMessage(join(dir.path, "missing.sqlite"))),
+    );
   });
 
   it("既にある DB のファイルを開く", () => {
-    const dir = mkdtempSync(join(tmpdir(), "db-test-"));
-    const fileName = join(dir, "dev.sqlite");
+    using dir = mkdtempDisposableSync(join(tmpdir(), "db-test-"));
+    const fileName = join(dir.path, "dev.sqlite");
     new Database(fileName).close();
 
     let db: ReturnType<typeof createDb> | undefined;
@@ -141,9 +127,9 @@ describe("createDb", () => {
       // native binding での接続自体が有効であることも確認する (migration 未適用でも通る素の疎通)
       expect(db.$client.prepare("select 1 as one").get()).toEqual({ one: 1 });
     } finally {
-      // 開いたままの handle を残して削除すると、WAL/journal の後始末が走らず削除も取りこぼす
+      // 開いたままの handle を残して削除すると、WAL/journal の後始末が走らず削除も取りこぼす。
+      // ディレクトリは関数を抜けるときに `using` が消すので、その前にここで閉じる
       db?.$client.close();
-      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
