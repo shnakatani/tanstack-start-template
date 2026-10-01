@@ -11,16 +11,13 @@ server で起きた例外を server のログに残し、production では clien
 
 ### 例外を server のログに残す
 
-例外が起きた場所ごとに、残す口とログの 1 行目は次のとおり。
+テンプレートが自分で残す口とログの 1 行目は次のとおり。ほかの場所 (SSR の描画中、`head()`、Start の外へ抜けた例外、client) の例外がどこに残るかと、その根拠は ADR-0038 の Context の表が持つ。
 
 | 例外が起きた場所                                                                            | 残す口                                                                                        | ログの 1 行目                                       |
 | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | server function (client から呼ばれた)                                                       | `src/start.ts` の `logServerFnErrors` (global の `functionMiddleware`)                        | `[server fn] <関数名>`                              |
 | SSR の読み込み (validateSearch・beforeLoad・loader) で server function を通さずに投げた例外 | `src/server.ts` の handler callback から呼ぶ `logSsrMatchErrors` (`src/server/ssr-errors.ts`) | `[ssr] <routeId>`                                   |
 | SSR の loader から呼んだ server function                                                    | 上の 2 つ                                                                                     | `[server fn] <関数名>` と `[ssr] <routeId>` の 2 行 |
-| SSR の描画中、route の `head()`                                                             | TanStack が `console.error` で出す (ソースを読んだだけ。ADR-0038)                             | 描画中は `Error in renderToReadableStream:`         |
-| Start の外へ抜けた例外 (request middleware・handler callback の throw)                      | h3 が unhandled の `HTTPError` として `console.error` で出す (ソースを読んだだけ。ADR-0038)   | 未実測                                              |
-| client (遷移後の loader と描画で、server function を通さないもの)                           | server には残らない。React がブラウザの console に出す ([react.dev「hydrateRoot」][])         | —                                                   |
 
 - server function の例外は `logServerFnErrors` が `console.error` で残して投げ直す。redirect と notFound は残さない。理由は「例外を global の function middleware で残す理由」
 - ログの 1 行目の関数名は middleware の引数の `serverFnMeta.name` から取る。`serverFnMeta` は docs のガイドに無く、公開の型 (`ServerFnMeta`) と [TanStack/router#6213][] で入った
@@ -57,8 +54,6 @@ server で起きた例外を server のログに残し、production では clien
 
 redirect と notFound は、画面の遷移や 404 のための制御の throw で、異常ではないので残さない。
 
-production では `serverErrorAdapter` が、client へ運ぶ例外の文言を差し替える (ADR-0038)。
-
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
@@ -66,4 +61,3 @@ production では `serverErrorAdapter` が、client へ運ぶ例外の文言を�
 [TanStack Start docs「Observability」]: https://tanstack.com/start/latest/docs/framework/react/guide/observability
 [TanStack Start docs「Server Entry Point」]: https://tanstack.com/start/latest/docs/framework/react/guide/server-entry-point
 [TanStack/router#6213]: https://github.com/TanStack/router/pull/6213
-[react.dev「hydrateRoot」]: https://react.dev/reference/react-dom/client/hydrateRoot

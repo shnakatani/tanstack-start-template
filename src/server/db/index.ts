@@ -29,7 +29,7 @@ export function createDb(fileName: string = requireDbFileName()) {
   // アプリは migration を当てないので、無い DB を作ると最初のクエリが no such table で落ちるだけになる。
   // fileMustExist が作らずに落とすが、その文言は開こうとしたパスを含まず、ディレクトリを指しても
   // existsSync は真を返す。先にファイルかを見て、開こうとしたパスを文言に入れて落とす。
-  // 例外は呼び出し元の server function の middleware (`src/start.ts`) が server のログに残す
+  // 例外はここで catch せず、server のログに残す口に任せる (ADR-0038)
   if (fileName !== ":memory:" && !statSync(fileName, { throwIfNoEntry: false })?.isFile()) {
     throw new Error(
       `[db] DB のファイルが無い (${resolve(fileName)})。mise run db:migrate で作るか、DB_FILE_NAME を確かめる`,
