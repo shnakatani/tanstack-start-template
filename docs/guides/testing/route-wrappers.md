@@ -16,7 +16,7 @@ Route hooks を使う wrapper は、root だけをテスト用に差し替えた
 | root は `createRootRouteWithContext<{ queryClient }>()({ component: () => <Outlet /> })` で本番と同じ context 型を持たせ ([TanStack Router docs「How to Set Up Testing with Code-Based Routing」][] の Test with Context)、実 `Route` を生成コードと同じ `update({ id, path, getParentRoute })` で付ける。`update` の公開型に id / path / getParentRoute が無いので (生成コードは `as any`)、交差型で注釈した変数を渡す | 生成済みの `routeTree` は browser test で描けない。`createTestRouter` (`src/test/app/create-test-router.tsx`) は component から自前の route を作るので、`validateSearch` や loader を持つ実 `Route` を付けられない |
 | router には本番と同じ `defaultErrorComponent` (`RouteErrorContent`) を渡す                                                                                                                                                                                                                                                                                                                                              | 無いと、検証の失敗が root の外まで抜けて組み込みの `ErrorComponent` が描き、"wasn't caught by any route" の warn が出る                                                                                            |
 
-browser test は DEV で走るので、search の検証に失敗すると `RouteErrorContent` が `error.message` (Standard Schema の issues の JSON) をそのまま出す。テストは schema の文言が含まれることを見る。
+browser test は DEV で走るので、search の検証に失敗すると `RouteErrorContent` が例外の文言を出す。文言は `thrownValueMessage` (`src/lib/thrown-value-message.ts`) が作り、検証の失敗では `error.message` (Standard Schema の issues の JSON) になる。テストは schema の文言が含まれることを見る。
 
 ### pending 表示の時間を扱う
 
