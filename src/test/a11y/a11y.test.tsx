@@ -77,8 +77,12 @@ describe("expectNoA11yViolations", () => {
           main.remove();
         });
 
-        await expectNoA11yViolations(main, { annotate: vi.fn(), task });
-        checked.resolve(undefined);
+        // 隣のテストの待ちは、検査が投げても解く。DOM の後始末とは別に、検査の直後に置く
+        try {
+          await expectNoA11yViolations(main, { annotate: vi.fn(), task });
+        } finally {
+          checked.resolve(undefined);
+        }
       },
     );
 

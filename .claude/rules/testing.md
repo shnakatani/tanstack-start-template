@@ -173,7 +173,10 @@ paths:
 - 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない
 - マウス位置を動かすテストは、overlay が閉じる前に `parkMouse()` で戻す。露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
 - モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、既定が立つ前の状態を読む (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
-- テストの本文で React を通さずに置いた DOM (`document.body.append` / `document.head.append`) は、置いた直後に `onTestFinished(() => el.remove())` で外す。並行のテストでは文脈の `onTestFinished` を使う。vitest-browser-react の `cleanup()` は `render()` で描いたものしか外さず、後のテストへ残る (`docs/guides/testing/manual-dom-cleanup.md`「置いた DOM を外す」)
+
+## テストが置いたものの後始末
+
+- テストの本文で React を通さずに置いた DOM (`document.body.append` / `document.head.append`) は、置いた直後に `onTestFinished(() => el.remove())` で外す。並行のテストでは、関数から登録する場合も含め、文脈の `onTestFinished` を使う。vitest-browser-react の `cleanup()` は `render()` で描いたものしか外さず、後のテストへ残る (`docs/guides/testing/manual-dom-cleanup.md`「置いた DOM を外す」)
 
 ## ブラウザ操作ツールの使い分け
 
