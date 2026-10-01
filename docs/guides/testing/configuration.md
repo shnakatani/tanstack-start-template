@@ -1,12 +1,13 @@
 # テストの設定
 
-Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・ブラウザと story の project に事前バンドルする依存を足す手順、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
+Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
 
 | 決定                                                                                                   | ADR      |
 | ------------------------------------------------------------------------------------------------------ | -------- |
 | 開発環境のツールチェーンは mise と Vite+ に寄せる                                                      | ADR-0004 |
 | Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる      | ADR-0037 |
 | a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0028 |
+| story とブラウザテストはアプリと同じく StrictMode の下で描く                                           | ADR-0039 |
 
 ## how-to
 
@@ -20,6 +21,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 | ブラウザで走る project に共通する設定 (`tailwindcss()`、chromium を headless で動かす `browser`) | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる                                                                                                            |
 | project が共有する Vite の設定 (`envDir`、`resolve`)                                             | `vite.config.ts` のトップレベル。project はこれを継承する                                                                                                                                                                             |
 | テストでだけ外す plugin                                                                          | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                                                                                                                               |
+| 部品を StrictMode で描く設定                                                                     | ブラウザテストは `src/test/browser/browser-setup.tsx` の `configure({ reactStrictMode: true })`、story は `.storybook/preview.tsx` の decorator (「StrictMode の下で描く」)                                                           |
 
 `vitest.config.ts` は作らない (ADR-0037。仕組みは「`vitest.config.ts` を置かない理由」)。
 
@@ -54,6 +56,15 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 
 - story の project の `optimizeDeps.exclude` に `@tanstack/react-start` 系を書かない。書かなくても実パッケージへ届かない
 - `browser` の `include` を外せるかは、出口条件の issue が動いたときに見直す。`include` を外して `browser` project を回し、上の症状が出ないことで判定する。issue が閉じたことだけを根拠に外さない
+
+### StrictMode の下で描く
+
+story とブラウザテストは、アプリと同じく StrictMode の下で描く (ADR-0039)。
+
+- ブラウザテストは `src/test/browser/browser-setup.tsx` の `configure({ reactStrictMode: true })` が、`render` と `renderHook` の全部に効かせる。テストごとに `<StrictMode>` で包み直さない
+- story は `.storybook/preview.tsx` の decorator が包む。decorators の最後に置き、一番外側に保つ。`.storybook/main.ts` の `framework.options.strictMode` では代えない。vitest 経由の story に届かない (「StrictMode の口が経路で分かれる理由」)
+- 呼び出しの回数を確かめるテストが StrictMode で 2 回を見たら、期待値でも StrictMode でもなく部品を直す。描画中の副作用は effect かイベントハンドラへ移し、mount 直後の effect の 2 回目は cleanup で打ち消す
+- StrictMode が効いていることは `src/test/browser/strict-mode.test.tsx` が確かめる。story の側の効き目は、描画中に副作用を出す実装へ戻すと回数を確かめる story が落ちることで確かめる
 
 ### 設定の落とし穴
 
@@ -151,6 +162,18 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 | `order: "post"` の config フックを持つ plugin で `cacheDir` を上書きする | addon は `cacheDir` を順序指定の無い config フックで入れるので、post 順のフックが後から上書きできる。同じ手で project 名は戻せない (ADR-0028)                                           |
 | 固定のパス (`node_modules/.cache/storybook-vitest/<theme>`) で組み立てる | browser mode は config を読み直すので、既存の `cacheDir` から相対で作ると `light/light` のように入れ子になる (2026-09-21 までに `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測) |
 
+### StrictMode の口が経路で分かれる理由
+
+StrictMode で描くかを決める口は、経路ごとに次のとおり (2026-10-01、Storybook 10.6.0、vitest-browser-react 2.3.0 で確かめた)。
+
+| 経路                                            | main.ts の `framework.options.strictMode`                                                                                                                                                    | `.storybook/preview.tsx` の decorator | `configure({ reactStrictMode: true })`    |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------- |
+| Storybook の画面                                | 効く。builder-vite が iframe の HTML に `FRAMEWORK_OPTIONS` を埋め込み、`@storybook/react` がそれを読む ([Storybook の `transform-iframe-html.ts`][]、[Storybook の `renderToCanvas.tsx`][]) | 効く                                  | 関係しない                                |
+| vitest 経由の story (`@storybook/addon-vitest`) | 効かない。iframe の HTML を通らず、vitest plugin は framework から名前しか読まない ([Storybook の `vitest-plugin/index.ts`][])                                                               | 効く                                  | 関係しない                                |
+| ブラウザテスト                                  | 関係しない                                                                                                                                                                                   | 関係しない                            | 効く ([vitest-browser-react の README][]) |
+
+decorator を preview の最後に置くのは、Storybook が story・component・project の順に並べた decorator を前から重ね、後ろほど外側に来るためである ([Storybook の `prepareStory.ts`][])。`@storybook/tanstack-react` は router の decorator を一番内側に足すので ([Storybook の tanstack-react の `preview.tsx`][])、router ごと StrictMode に入る。アプリも `<StartClient />` を丸ごと `<StrictMode>` で包む。
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。
@@ -163,3 +186,9 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 [TanStack/router#6074]: https://github.com/TanStack/router/pull/6074
 [vitest-dev/vitest#10775]: https://github.com/vitest-dev/vitest/issues/10775
 [storybookjs/storybook#33875]: https://github.com/storybookjs/storybook/pull/33875
+[Storybook の `transform-iframe-html.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/builders/builder-vite/src/transform-iframe-html.ts
+[Storybook の `renderToCanvas.tsx`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/renderers/react/src/renderToCanvas.tsx
+[Storybook の `vitest-plugin/index.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/addons/vitest/src/vitest-plugin/index.ts
+[Storybook の `prepareStory.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/preview-api/modules/store/csf/prepareStory.ts
+[Storybook の tanstack-react の `preview.tsx`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/frameworks/tanstack-react/src/preview.tsx
+[vitest-browser-react の README]: https://github.com/vitest-dev/vitest-browser-react/blob/v2.3.0/README.md
