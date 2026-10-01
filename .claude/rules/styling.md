@@ -80,11 +80,11 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 - ui 部品の見た目を変えるときは、既定か公式のノブ → `ui/` の variant → 素の要素で包む → contract の順に選ぶ。contract は部品の名前で全ファイルに効くので、値をそろえたい見た目に使わない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
 - `ScrollArea` の内側の余白は中身の要素に書く。lint が余白を止めたときに案内する margin と親の gap は外側の直し方で、内側の余白には使えない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
-- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする (`docs/guides/registry.md`「公式のノブを先に探す」)
+- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える (`docs/guides/registry.md`「公式のノブを先に探す」)
 - 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `ScrollArea` のバー幅の余白を降りるのは `ui/` の部品の中だけにし (実例は `ui/dialog.tsx` の `DialogScrollBody`)、`ui/` の外で要るなら `ui/` の部品を使うか足す。`ui/` の外では contract が `ScrollArea` に layout と角丸しか許さないため (`docs/guides/registry.md`「公式のノブを先に探す」)
-- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (`docs/registry-deviations.md` の scroll-area.tsx の行)
+- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。`ScrollArea` が横のバーも描くので、足すと横バーが 2 本になる (`docs/guides/registry.md`「公式のノブを先に探す」)
 
 ### 親の gap で表現できない箇所
 

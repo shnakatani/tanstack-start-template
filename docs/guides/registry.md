@@ -80,9 +80,11 @@ vp exec shadcn add <name> --diff | grep -c '^│ │ @@'
 
 registry の見た目を変えたいときは、打ち消しの class を積む前に、公式が用意した CSS 変数や prop のノブ (Card の `--card-spacing` と `CardAction`、ScrollArea の `scroll-area-focus-outline` など) を探す。ノブには次の落とし穴がある。
 
-- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて、診断なしで効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする
+- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて、診断なしで効かなくなる。中身をカードの端まで広げるときは、[shadcn docs「Card」][] の Spacing のとおり `-mx-(--card-spacing)` (フッターの直上は `CardContent` に `-mb-(--card-spacing)` も) を使う
+- 見出しの下に区切り線を引いた帯が要る画面が出たら、`src/components/ui/card.tsx` に区切り線の variant を足し、台帳に行を足す (ADR-0020「追加と削除の基準」)。公式の例 ([shadcn の `message-scroller-state.tsx`][]) は `Card className="gap-0"`、`CardHeader className="border-b"`、`CardContent className="p-0"` で組むが、`ui/` の外ではこの 3 つを `no-restyle` が止める (2026-10-02、`@shadcn/lint` 0.2.0)。registry の `CardHeader` は区切り線の付いたときの余白 (`[.border-b]:pb-(--card-spacing)`) を既に持つ
 - `scroll-area-focus-outline` (`src/styles.css`) は、Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。当てないと registry の focus ring が消える
 - ScrollArea のバーと、そのぶんの余白は `ScrollArea` の Root が既定で持つ (台帳 `docs/registry-deviations.md` の scroll-area.tsx の行)。この余白を降りられるのは `ui/` の中だけで、実例は `src/components/ui/dialog.tsx` の `DialogScrollBody` にある。`ui/` の外では contract が `ScrollArea` に layout に加えて角丸 (class グループ `rounded`) だけを許す (ADR-0011) ので、降りたい消費側は降りる形を持つ `ui/` の部品を使うか、`ui/` に部品を足して台帳に行を足す (ADR-0020)
+- 横のスクロールバーを消費側で合成しない。`ScrollArea` は縦と横のバーを Root の直下に自分で描く ([Base UI docs「Scroll Area」][] の Anatomy の並び。乖離は台帳 `docs/registry-deviations.md` の scroll-area.tsx の行)。[shadcn docs「Scroll Area」][] の Horizontal のように children へ `<ScrollBar orientation="horizontal" />` を足すと、Viewport の中にもう 1 本でき、横バーが 2 本になる (2026-10-02 実測、shadcn 4.21.0 の registry と Base UI 1.8.0)。Base UI は溢れていない向きのバーを mount しないので、常に描いても空のバーは出ない
 - 背景を持つスクロール領域は、器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る
 
 ## explanation
@@ -100,5 +102,9 @@ shadcn の skill (`.claude/skills/shadcn/customization.md`「Customizing Compone
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
+[shadcn docs「Card」]: https://ui.shadcn.com/docs/components/base/card
+[shadcn の `message-scroller-state.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/message-scroller-state.tsx
+[Base UI docs「Scroll Area」]: https://base-ui.com/react/components/scroll-area
+[shadcn docs「Scroll Area」]: https://ui.shadcn.com/docs/components/base/scroll-area
 [shadcn-ui/ui#8991]: https://github.com/shadcn-ui/ui/issues/8991
 [shadcn docs「Introduction」]: https://ui.shadcn.com/docs
