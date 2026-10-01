@@ -37,8 +37,8 @@ server で起きた例外を server のログに残し、production では clien
 
 - 判定は `serverErrorAdapter` (`src/lib/server-error-exposure.ts`) と `src/components/screens/route-error.tsx` の 2 か所が、ビルド時に置き換わる `import.meta.env.DEV` を直接読む。関数で包まない。包むと呼び出し側で値が畳み込まれず、production の bundle に DEV の分岐が残る (ADR-0038)
 - 環境の判定を変えるときは 2 か所を同じ条件に揃える。片方だけを変えると、server で描く HTML と client の描画が食い違って hydration がずれる。server で描く errorComponent は adapter を通らない生の Error を受けるので、HTML に文言を入れるかは `route-error.tsx` が決める (ADR-0038)
-- 例外を描く errorComponent を足すときは、`RouteErrorContent` を使うか、`import.meta.env.DEV` の分岐の中で `thrownValueMessage` (`src/lib/thrown-value-message.ts`) を通して文言を出す。分岐の外で文言を出すと、production の server の HTML に文言が入る (ADR-0038)
-- DEV の client が受ける Error の message は、adapter が `thrownValueMessage` で作った文字列 (server の画面と同じ文字列) になる。`error.message` を直接描くと、message が空の例外などで server と食い違う (ADR-0038)
+- route の errorComponent で例外の文言を描くのは `RouteErrorContent` だけにし、ほかの errorComponent は固定の文言を出す。ほかで描くと、判定が上の 2 か所から外れ、production の server の HTML に文言が入るか hydration がずれる (ADR-0038)
+- `RouteErrorContent` が文言を `thrownValueMessage` で作るのは、DEV の client が受ける Error の message が、adapter が `thrownValueMessage` で作った文字列 (server の画面と同じ文字列) だからである。`error.message` を直接描くと、message が空の例外などで server と食い違う (ADR-0038)
 - テストでは `vi.stubEnv("DEV", …)` で切り替える
 
 ## explanation
