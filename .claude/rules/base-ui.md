@@ -13,7 +13,7 @@ paths:
 
 ## Select: `items` prop 必須
 
-- `Select.Root` に `items` (`Record<string, ReactNode>` か `{ value, label }[]`) を渡す。無いと `Select.Value` がトリガーに ID などの内部値を出す (Base UI Select docs「Formatting the value」)
+- `Select.Root` に `items` (`Record<string, ReactNode>` か `{ value, label }[]`) を渡す。無いと `Select.Value` がトリガーに ID などの内部値を出す (`docs/guides/forms-and-inputs.md`「Select に候補を渡す」)
 - 実例は `src/components/parts/form-fields.tsx` の `FormSelectField`
 
 ## Select: 候補が変わったときの自己リセットに依存しない

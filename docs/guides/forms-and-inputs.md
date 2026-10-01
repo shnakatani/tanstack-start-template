@@ -49,6 +49,12 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 - errors はどの field でも 1 段平らにしてから揃える。`disableErrorFlat` の field では `flat(1)` が行われず、issue の配列が 1 要素として入る ([TanStack Form docs「FieldOptions」][] の disableErrorFlat)
 - `aria-invalid` と `data-invalid` は `field.state.meta.isValid` から取る。TanStack Form が submit を止める判定と同じ値である。`errors.flat(1)` の件数で決めると、`disableErrorFlat` の field で validator が `[]` を返したとき (errors は `[[]]`) に invalid が落ち、submit が止まる理由が支援技術から読めなくなる
 
+### Select に候補を渡す
+
+- `Select` (Base UI の `Select.Root`) に `items` を渡し、同じ配列から `SelectItem` を描く。`items` が無いと、`SelectValue` はトリガーに値そのもの (ID などの内部値) を出す ([Base UI docs「Select」][] の Formatting the value)。形は `Record<string, ReactNode>` か `{ value, label }[]` にする
+- `items` を渡すのは shadcn の base の形である。[shadcn skill「Base vs Radix」][] の Select は "Base requires an `items` prop on the root." と書き、[shadcn docs「Select」][] の Usage も `items` を渡す。`SelectValue` の children 関数と object values を使わない理由は「Select に `items` を渡す理由」にある
+- 実例は `src/components/parts/form-fields.tsx` の `FormSelectField`
+
 ### Select の値を解決する
 
 選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない。値の解決は消費側で引き取り、次の形にする。理由は「Select の値を消費側で解決する理由」にある。実例と、通知が来る条件の読み取りは `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
@@ -157,6 +163,16 @@ form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 | Checkbox の並び (`FieldSet` > `FieldLegend` > `FieldGroup` > `Field orientation="horizontal"`。Field docs の Checkbox) | [shadcn skill「Forms & Inputs」][] が、関連する checkbox のまとまりに使う形として挙げる。horizontal の `Field` は `FieldLabel` を行の残りの幅へ広げる (`src/components/ui/field.tsx`) ので、行の右端を押しても切り替わる。幅 400px の行で label が x=28〜400 を占め、x=390 を押すと `aria-checked="true"` になった (2026-10-02、shadcn 4.21.0 の registry) | **採用**     |
 | Choice Card (`FieldLabel` で `Field` を包む。Field docs の Choice Card)                                                | 行ごとに枠線と余白と選択時の面を持つカードの意匠になる (`src/components/ui/field.tsx` の `FieldLabel`)。一覧の既定にすると、どの行にもカードの枠が付く。押せる範囲は Checkbox の並びと変わらない                                                                                                                                                           | 既定にしない |
 
+### Select に `items` を渡す理由
+
+[Base UI docs「Select」][] の Formatting the value は、トリガーに値ではなく表示名を出す手段を 3 つ挙げる。
+
+| 案                              | 評価                                                                                                                                        | 採否     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `Select.Root` に `items` を渡す | 1 つの配列からトリガーの表示とリストの項目を描くので、値と表示名の対応を 1 か所に持つ。[shadcn skill「Base vs Radix」][] が base に求める形 | **採用** |
+| `Select.Value` の children 関数 | 値から表示名への対応を、リストの項目とは別にもう 1 か所書く                                                                                 | 却下     |
+| 項目の値を object にする        | form の値が object になり、スキーマと送信する値の形が変わる                                                                                 | 却下     |
+
 ### Select の値を消費側で解決する理由
 
 Base UI の `Select` は、候補が変わって現在値が候補から消えたとき、自分で値を戻して `onValueChange` を呼ぶことがある。この自己リセットは公式 docs に無い挙動で、通知が来ない条件があり、版で経路が変わる。条件の読み取りと版は `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
@@ -190,4 +206,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [shadcn skill「Forms & Inputs」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/forms.md
 [shadcn docs「Field」]: https://ui.shadcn.com/docs/components/base/field
 [shadcn の `dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/examples/dialog-example.tsx
+[Base UI docs「Select」]: https://base-ui.com/react/components/select
+[shadcn skill「Base vs Radix」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/base-vs-radix.md
+[shadcn docs「Select」]: https://ui.shadcn.com/docs/components/base/select
 [TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240
