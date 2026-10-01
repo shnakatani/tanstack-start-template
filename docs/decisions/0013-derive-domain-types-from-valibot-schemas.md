@@ -1,7 +1,7 @@
 # ADR-0013: ドメイン型は valibot スキーマから導出する
 
 - Status: Accepted
-- Date: 2026-09-14
+- Date: 2026-10-02
 - 関連: ADR-0007 (`typescript/consistent-type-assertions` による型アサーション禁止)
 
 ## Context
@@ -64,6 +64,19 @@ ORM の戻り値は、UI へ流す前に `v.safeParse` で突き合わせる。
 失敗時に投げるメッセージには**値そのものを載せず、位置 (`v.getDotPath`) と件数だけを載せる**。
 server のログに残る文言に DB の中身 (個人情報になりうる) を混ぜないためで、位置と件数があればどの行のどの項目かは追える (ADR-0038)。
 
+読み出し口では `v.parse` を使わない。
+Valibot docs「Parse data」は検証の書き方を 3 つ挙げ、`parse` は合わないときに `ValiError` を投げ、`safeParse` は issue を返す。
+`ValiError` は message に受け取った値を含み (`Invalid type: Expected string but received 12345`)、`issues` の各 issue も `input` に値を持つ。
+`parse` の設定で `message` を差し替えても `issues` は残り、`src/start.ts` の `logServerFnErrors` がエラーをオブジェクトごと `console.error` に渡すので、値が server のログに残る (valibot 1.5.0、2026-10-02 実測)。
+`safeParse` なら、issue を受け取った側が投げる文言を位置と件数に絞れる。
+
+| 案                                                      | 評価                                                                                   | 採否     |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------- |
+| `v.parse` で投げる                                      | message と issue の `input` に値が載り、`logServerFnErrors` が出すエラーごとログに残る | 却下     |
+| `v.parse` の `message` を差し替えて投げる               | message からは値が消えるが、issue の `input` が残る                                    | 却下     |
+| `v.is` で型ガードする                                   | issue が得られず、失敗の位置を出せない (Valibot docs「Parse data」の Type guards)      | 却下     |
+| `v.safeParse` で受け、位置と件数だけの `Error` を投げる | 値をログへ出さずに、どの行のどの項目かを追える                                         | **採用** |
+
 ### 4. 項目の呼称も metadata から導出する
 
 項目の呼称 (フォームの label、一覧の見出し、検証メッセージの主語) は `v.metadata({ label })` の action として各項目の pipe に載せ、消費側は `v.getMetadata(schema.entries.x).label` で型付きに読む。valibot の `metadata` は `const` generic でリテラル型を保ち、`getMetadata` は `InferMetadata` で pipe 内の metadata を merge した型を返す (`v.getTitle` は `string | undefined` に落ちるため使わない)。呼称を集めた object は `satisfies Record<keyof T, string>` を付けて、項目を足したときに呼称の追加を型で強制する。
@@ -99,6 +112,7 @@ TanStack Table の `header` (`types/ColumnDef.d.ts`) と、このリポジトリ
 ## 出典
 
 - Valibot Quick start (スキーマを型の単一の出処とする記述): https://valibot.dev/guides/quick-start/
+- Valibot Parse data (`parse` / `safeParse` / 型ガードの 3 つの書き方): https://valibot.dev/guides/parse-data/
 - Valibot `metadata` / `getMetadata`: https://valibot.dev/api/metadata/ / https://valibot.dev/api/getMetadata/
 - TanStack/form#2111 (参加者の回答: schema の制約を field へ出す経路は無い): https://github.com/TanStack/form/discussions/2111
 - Standard Schema spec 1.1.0 (`StandardJSONSchemaV1`): https://standardschema.dev/
