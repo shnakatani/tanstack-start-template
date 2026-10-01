@@ -178,9 +178,9 @@ function DialogDescription({ className, ...props }: DialogPrimitive.Description.
  * ダイアログの左右端まで届く。溢れていないダイアログでは線が装飾に見えるため、
  * base-ui が Root と Viewport の双方に出す `data-has-overflow-y` でスクロールが要るときだけ色を付ける
  * (`border-transparent` を先に置くのでレイアウトシフトは起きない)。border を registry の
- * `ui/scroll-area.tsx` 側へは入れない — 入れると境界線を求めていない消費者
- * (`route-error.tsx` のスタックトレース領域など) にも不要な線が出る。同じ属性で出し分けて
- * いるスクロールバー幅の退避は、バーの太さと対なので `ui/scroll-area.tsx` が既定で持つ。
+ * `ui/scroll-area.tsx` 側へは入れない — 入れると境界線を求めていない消費者にも不要な線が出る。
+ * 同じ属性で出し分けているスクロールバー幅の退避は、バーの太さと対なので
+ * `ui/scroll-area.tsx` が既定で持つ。
  *
  * `data-has-overflow-y:pr-0` は `ScrollArea` の既定 (スクロールバー幅の退避) を降りる指定。
  * 本文の `px-6` が既にバー幅を上回るので、上乗せすると本文だけ見出し・フッターよりバー幅ぶん

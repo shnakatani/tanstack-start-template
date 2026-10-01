@@ -4,8 +4,7 @@ export const THROWN_VALUE_UNPRINTABLE = "表示できない値が投げられま
 /**
  * 投げられた値を画面に出す文言にする。Router はエラー境界に error を unknown で渡す (route は Error 以外も
  * throw できる)。Error ならその message を、それ以外は値を文字列にする (TanStack Router の data-loading ガイド
- * 「Handling Errors with routeOptions.errorComponent」の例と同じ形)。server function と SSR の loader の
- * エラーは、TanStack Start の直列化で message だけを持つ Error としてクライアントに届く。
+ * 「Handling Errors with routeOptions.errorComponent」の例と同じ形)。
  *
  * ガイドの例には次の 2 つを足した。Router の組み込みの ErrorComponent も、どちらの保護も持たない。
  * - message が空か文字列でない Error は、値を文字列にする (`Error` や `Error: [object Object]`)。空だと本文に
@@ -27,19 +26,5 @@ export function thrownValueMessage(value: unknown): string {
   } catch {
     console.warn("[thrownValueMessage] 文字列にできない値", { value });
     return THROWN_VALUE_UNPRINTABLE;
-  }
-}
-
-/**
- * 投げられた値のスタックトレースを取り出す。Error でない値と、stack が文字列でない Error は undefined を返す
- * (TanStack/router#8209 の案内どおり instanceof Error で絞る)。`instanceof` の判定か stack の読み取りが
- * throw する値も undefined を返す。理由は thrownValueMessage と同じく、エラーの画面ごと壊さないためである
- */
-export function thrownValueStack(value: unknown): string | undefined {
-  try {
-    return value instanceof Error && typeof value.stack === "string" ? value.stack : undefined;
-  } catch {
-    console.warn("[thrownValueStack] stack を読めない値", { value });
-    return undefined;
   }
 }

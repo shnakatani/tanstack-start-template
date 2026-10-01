@@ -36,7 +36,7 @@ export function createNoteHandlers(getDb: () => NotesDb) {
       // 読み出し口で突き合わせる。通してしまうと壊れた行が UI まで無検査で流れる
       const parsed = v.safeParse(noteListSchema, rows);
       if (!parsed.success) {
-        // 値そのものは載せない (client まで届くエラーに DB の中身を混ぜない)。
+        // 値そのものは載せない (server のログに残る文言に DB の中身を混ぜない。ADR-0013)。
         // 位置 (<行番号>.<項目名>) と件数があれば、どの行のどの項目かは追える
         const paths = [...new Set(parsed.issues.map((issue) => v.getDotPath(issue) ?? "<root>"))];
         throw new Error(
@@ -51,7 +51,7 @@ export function createNoteHandlers(getDb: () => NotesDb) {
       if (!created) {
         // INSERT ... RETURNING が 0 行を返す経路は把握していない。id 不明のまま
         // 成功を返すと呼び出し側が作成済みの 1 件を追えなくなるため fail-closed にする。
-        // 値そのものは載せない (list と同じく、client まで届くエラーに入力内容を混ぜない)
+        // 値そのものは載せない (list と同じく、server のログに残る文言に入力内容を混ぜない)
         throw new Error("ノートを作成しましたが id を取得できませんでした");
       }
       return created;

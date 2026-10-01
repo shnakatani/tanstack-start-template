@@ -1,6 +1,8 @@
 import { isNotFound, isRedirect } from "@tanstack/react-router";
 import { createCsrfMiddleware, createMiddleware, createStart } from "@tanstack/react-start";
 
+import { serverErrorAdapter } from "@/lib/server-error-exposure";
+
 const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === "serverFn",
 });
@@ -27,4 +29,7 @@ const logServerFnErrors = createMiddleware({ type: "function" }).server(
 export const startInstance = createStart(() => ({
   requestMiddleware: [csrfMiddleware],
   functionMiddleware: [logServerFnErrors],
+  // production では server の例外を、元の文言を持たない Error として client へ運ぶ。DEV でも登録して
+  // adapter の並びを環境によらず同じにし、文言を運ぶかは adapter が決める (ADR-0038)
+  serializationAdapters: [serverErrorAdapter],
 }));

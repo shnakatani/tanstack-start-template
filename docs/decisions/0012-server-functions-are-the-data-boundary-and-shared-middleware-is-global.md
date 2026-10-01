@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-06
-- 関連: ADR-0007 (lint ルールの選定基準)
+- 関連: ADR-0007 (lint ルールの選定基準)、ADR-0038 (server function の外の例外のログと、client へ運ぶ例外の中身)
 
 ## Context
 

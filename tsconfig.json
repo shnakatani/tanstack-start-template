@@ -15,7 +15,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "lib": ["ES2024", "ESNext.Error", "DOM", "DOM.Iterable"],
     "types": ["vite-plus/client"],
 
     /* Bundler mode */

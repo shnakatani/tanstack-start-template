@@ -4,6 +4,10 @@ paths:
   - "src/server/**"
   - "src/routes/**"
   - "src/start.ts"
+  - "src/server.ts"
+  - "src/lib/server-error-exposure.ts"
+  - "src/components/screens/route-error.tsx"
+  - "src/router.tsx"
 ---
 
 # server function の境界
@@ -25,8 +29,13 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 - 認証 middleware を個々の `createServerFn` へ書かない。`createMiddleware({ type: "function" })` で作り `src/start.ts` の `functionMiddleware` へ渡す。1 件の付け忘れが無認証の endpoint になる (ADR-0012)
 - 型付きの context を得る目的で個々の `createServerFn` へ `.middleware()` を足さない。global の値は `.middleware()` なしでも型付きで読め、global の方が先に走る (ADR-0012)
 - 認可の base builder は、ロールによる出し分けが要るようになった時点で足す。先に置くと守る対象の無い装置になる (ADR-0012)
-- server function の例外を、個々の fn の中で catch して console へ書かない。global の `logServerFnErrors` (`src/start.ts`) が残して投げ直すので、二重に残る (`docs/guides/server-functions.md`「例外を server のログに残す」)
-- 例外の文言にパスや内部の値を入れない。文言は本番でも client に返る。調べるための値は `console.error` で server のログに残す (`docs/guides/server-functions.md`「例外を global の function middleware で残す理由」)
+- server function の例外を、個々の fn の中で catch して console へ書かない。global の `logServerFnErrors` (`src/start.ts`) が残して投げ直すので、二重に残る (`docs/guides/server-errors.md`「例外を server のログに残す」)
+- 例外の文言に秘密と個人情報 (DB の行の値、ユーザーの入力) を入れない。文言は server のログに残り、DEV では画面にも出る (`docs/guides/server-errors.md`「例外の文言を書く」)
+- SSR の読み込み (validateSearch・beforeLoad・loader) の例外を、route の `onError` や catch で console へ書かない。`src/server.ts` から呼ぶ `logSsrMatchErrors` (`src/server/ssr-errors.ts`) が `[ssr] <routeId>` で残すので、二重に残る (`docs/guides/server-errors.md`「例外を server のログに残す」)
+- ユーザーに見せる文言を持つ例外の adapter は `serverErrorAdapter` より前に並べる。adapter は先頭から試されて最初に当たったものが使われるので、後ろに置くと `serverErrorAdapter` が先に掴んで素の Error に戻し、型の分岐が外れる (production では文言も落ちる) (ADR-0038)
+- 例外の詳細を client と画面に出すかの判定は、`serverErrorAdapter` (`src/lib/server-error-exposure.ts`) と `route-error.tsx` で `import.meta.env.DEV` を直接読んで行い、関数で包まない。包むと呼び出し側で値が畳み込まれず、production の bundle に DEV の分岐が残る (ADR-0038)
+- 2 か所の判定を変えるときは、両方を同じ条件に揃える。片方だけ変わると、server で描いた HTML と client の描画が食い違って hydration がずれる (`docs/guides/server-errors.md`「詳細を出す環境を変える」)
+- route と router の errorComponent (`errorComponent` と `defaultErrorComponent`) で例外の文言を描くのは `RouteErrorContent` だけにし、ほかは固定の文言を出す。ほかで描くと、例外の詳細を出すかの判定が adapter と `route-error.tsx` の 2 か所から外れ、production の HTML に文言が入るか hydration がずれる (`docs/guides/server-errors.md`「詳細を出す環境を変える」)
 
 ## ファイルの置き場所と名前
 

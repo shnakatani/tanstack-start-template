@@ -1,11 +1,10 @@
 import { RouterProvider } from "@tanstack/react-router";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { THROWN_VALUE_UNPRINTABLE } from "@/lib/thrown-value-message";
 import { createTestRouter } from "@/test/app/create-test-router";
-import { expectAbsent, expectRemoved } from "@/test/assert/absent";
+import { expectAbsent } from "@/test/assert/absent";
 import { expectText } from "@/test/assert/screen-assertions";
 
 import { ROUTE_ERROR_FALLBACK_MESSAGE, RouteErrorContent } from "./route-error";
@@ -19,13 +18,9 @@ async function renderError(error: unknown, reset: () => void) {
 
 /**
  * screens/ は story のカタログの対象外で、見え方は実画面で見る (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは
- * 表示の内容、production での秘匿、再試行の配線、スタックトレースのキーボード開閉で、
- * いずれも寸法や色を測らない。寸法と色は並べた部品が持ち、その部品のテストと story が見る。
- *
- * 長いスタックトレースがパネル内でスクロールすることは `CodeBlock` の `Overflowing` story、
- * 内容が高くてもカードの上端が画面に残ることは `CenteredCard` が持つ挙動で、ここでは
- * 組み合わせているだけ。トリガーの色を本文と分けることは `no-restyle` が守る
- * (ADR-0011 が捕まえた実在の欠陥)。
+ * 表示の内容、production での秘匿、再試行の配線で、いずれも寸法や色を測らない。寸法と色は並べた部品が持ち、
+ * その部品のテストと story が見る。内容が高くてもカードの上端が画面に残ることは `CenteredCard` が持つ挙動で、
+ * ここでは組み合わせているだけ
  */
 describe("RouteErrorContent", () => {
   afterEach(() => {
@@ -42,11 +37,10 @@ describe("RouteErrorContent", () => {
   });
 
   // route は Error 以外も throw でき、Router はエラー境界の error を unknown で渡す
-  it("Error でない値が投げられたら、その値を文字列にして出し、スタックトレースは出さない", async () => {
+  it("Error でない値が投げられたら、その値を文字列にして出す", async () => {
     const { screen } = await renderError("取得の途中で中断されました", vi.fn());
 
     await expectText(screen, "取得の途中で中断されました");
-    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
   });
 
   // instanceof の判定が throw する値でも、エラーの画面ごと壊れずに固定の文言を出す
@@ -64,15 +58,13 @@ describe("RouteErrorContent", () => {
     const { screen } = await renderError(error, vi.fn());
 
     await expectText(screen, THROWN_VALUE_UNPRINTABLE);
-    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
   });
 
-  // error.message は server function の throw 文言 (id や検証失敗の項目パスを含む) をそのまま
-  // 運ぶ。開発者向けの内部事情なので production では画面へ出さない
-  it("production では raw な error.message とスタックトレースを出さず固定文言だけを出す", async () => {
+  // server で描くときの error と DEV の client の error は、server function の throw 文言 (id や
+  // 検証失敗の項目パスを含む) をそのまま持つ。開発者向けの内部事情なので production では画面へ出さない
+  it("production では raw な error.message を出さず固定文言だけを出す", async () => {
     vi.stubEnv("DEV", false);
     const error = new Error("削除対象のノートが見つかりません: id=42");
-    error.stack = "Error: 削除対象のノートが見つかりません: id=42\n    at loader";
 
     const { screen } = await renderError(error, vi.fn());
 
@@ -81,7 +73,6 @@ describe("RouteErrorContent", () => {
     await expectAbsent(
       screen.getByText("削除対象のノートが見つかりません: id=42", { exact: false }),
     );
-    await expectAbsent(screen.getByRole("button", { name: "スタックトレース", exact: false }));
   });
 
   it("再試行で reset と router.invalidate の両方が呼ばれる", async () => {
@@ -95,35 +86,17 @@ describe("RouteErrorContent", () => {
     expect(invalidateSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("スタックトレースは h3 見出しとして既定で閉じる", async () => {
+  // client で起きた例外の stack は React がブラウザの console に出し、server 由来の例外の stack は
+  // 発生元を指さない (ADR-0038)。画面には出さない
+  it("DEV でも stack を出さない", async () => {
     const error = new Error("取得に失敗しました");
     error.stack = "Error: 取得に失敗しました\n    at loader";
+
     const { screen } = await renderError(error, vi.fn());
 
-    const trigger = screen.getByRole("button", { name: "スタックトレース" });
-    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
-    await expect
-      .element(screen.getByRole("heading", { name: "スタックトレース", level: 3 }))
-      .toBeInTheDocument();
-    // 肯定 anchor は直上の見出し。閉じている間は中身が出ない (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
+    await expectText(screen, "取得に失敗しました");
+    // 既定で閉じた開閉の UI は、ラベルによらず aria-expanded="false" のボタンとして残る
+    await expectAbsent(screen.getByRole("button", { expanded: false }));
     await expectAbsent(screen.getByText(/at loader/));
-  });
-
-  it("スタックトレースを Enter と Space で開閉する", async () => {
-    const error = new Error("取得に失敗しました");
-    error.stack = "Error: 取得に失敗しました\n    at loader";
-    const { screen } = await renderError(error, vi.fn());
-    const trigger = screen.getByRole("button", { name: "スタックトレース" });
-
-    // 最初の tab stop がトリガー (見出しと本文は focusable でない)
-    await userEvent.tab();
-    await expect.element(trigger).toHaveFocus();
-    await userEvent.keyboard("{Enter}");
-    await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
-    await expect.element(screen.getByText(/at loader/)).toBeVisible();
-
-    await userEvent.keyboard(" ");
-    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
-    await expectRemoved(screen.getByText(/at loader/));
   });
 });
