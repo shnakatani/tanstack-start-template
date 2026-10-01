@@ -10,8 +10,10 @@ import { notes } from "@/server/db/schema";
 
 import { createDb, migrateDb } from "./index";
 
-const MISSING_DB_MESSAGE =
-  /^\[db\] DB のファイルが無い。mise run db:migrate で作るか、DB_FILE_NAME を確かめる$/;
+/** createDb がファイルの無いときに投げる文言。開こうとしたパスを含む */
+function missingDbMessage(path: string): string {
+  return `[db] DB のファイルが無い (${path})。mise run db:migrate で作るか、DB_FILE_NAME を確かめる`;
+}
 
 describe("createDb", () => {
   const originalDbFileName = process.env.DB_FILE_NAME;
@@ -84,30 +86,29 @@ describe("createDb", () => {
     expect(updatedAt).toBe(createdAt);
   });
 
-  // アプリは migration を当てないので、作った空の DB は最初のクエリで落ちるだけになる。作らずに落とす
-  // server function の例外の文言は client に直列化されて返るので、パスは文言に入れず server のログにだけ残す
-  it("DB のファイルが無ければ作らずに throw し、開こうとしたパスは server のログにだけ残す", () => {
+  // アプリは migration を当てないので、作った空の DB は最初のクエリで落ちるだけになる。作らずに落とす。
+  // 例外は呼び出し元の server function の middleware が server のログに残すので、ここで別に出すと 2 行になる
+  it("DB のファイルが無ければ作らずに、開こうとしたパスを文言に入れて throw する", () => {
     const dir = mkdtempSync(join(tmpdir(), "db-test-"));
     const fileName = join(dir, "missing.sqlite");
     using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      // 文言を完全一致で固定し、throw することとパスを含まないことを 1 本で確かめる
-      expect(() => createDb(fileName)).toThrow(MISSING_DB_MESSAGE);
-      expect(error).toHaveBeenCalledWith("[db] DB のファイルが無い", { path: fileName });
+      expect(() => createDb(fileName)).toThrow(missingDbMessage(fileName));
+      expect(error).not.toHaveBeenCalled();
       expect(existsSync(fileName)).toBe(false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it("ディレクトリを渡しても、開こうとしたパスをログに残して throw する", () => {
+  it("ディレクトリを渡しても、開こうとしたパスを文言に入れて throw する", () => {
     const dir = mkdtempSync(join(tmpdir(), "db-test-"));
     using error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      expect(() => createDb(dir)).toThrow(MISSING_DB_MESSAGE);
-      expect(error).toHaveBeenCalledWith("[db] DB のファイルが無い", { path: dir });
+      expect(() => createDb(dir)).toThrow(missingDbMessage(dir));
+      expect(error).not.toHaveBeenCalled();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
