@@ -65,17 +65,23 @@ describe("serverErrorAdapter", () => {
     expect(restored.message).toBe("削除対象のノートが見つかりません: id=42");
   });
 
-  // message を undefined で持つ Error (ライブラリが代入するもの) は、server の描画では `Error` と出る。
-  // client で汎用の文言に戻すと、DEV で server と client の描画が食い違う
-  it("DEV では message が undefined の Error を、汎用の文言ではなく空の文言の Error に戻す", () => {
+  // server で描く errorComponent は生の Error を thrownValueMessage で文字列にする。client で別の文字列に
+  // なると、DEV で server と client の描画が食い違う。message が空のサブクラスと、message を undefined で
+  // 持つ Error (ライブラリが代入するもの) は、message ではなく値を文字列にした形で出る
+  it("DEV では、server の画面が描くのと同じ文字列を運ぶ", () => {
     vi.stubEnv("DEV", true);
-    const original = new Error("取得に失敗しました");
-    Object.defineProperty(original, "message", { value: undefined });
+    const emptyMessage = new TypeError("");
+    const undefinedMessage = new Error("取得に失敗しました");
+    Object.defineProperty(undefinedMessage, "message", { value: undefined });
 
-    const restored = serverErrorAdapter.fromSerializable(
-      serverErrorAdapter.toSerializable(original),
+    const restoredEmpty = serverErrorAdapter.fromSerializable(
+      serverErrorAdapter.toSerializable(emptyMessage),
+    );
+    const restoredUndefined = serverErrorAdapter.fromSerializable(
+      serverErrorAdapter.toSerializable(undefinedMessage),
     );
 
-    expect(restored.message).toBe("");
+    expect(restoredEmpty.message).toBe("TypeError");
+    expect(restoredUndefined.message).toBe("Error");
   });
 });
