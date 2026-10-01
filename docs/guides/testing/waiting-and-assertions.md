@@ -92,10 +92,10 @@ assert の予算をテストの予算と分けて宣言する。`tooling/test/br
 
 viewport の寸法の定数は `src/test/browser/viewport-sizes.ts` が持ち、`src/test/assert/viewport.ts` が再 export する。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`tooling/test/browser-project.ts` の `browser.viewport` が `viewport-sizes.ts` から `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。config から `viewport.ts` を読むと、browser mode の外で落ちる (`viewport-sizes.ts` の docstring)。
 
-popup の全体が viewport に収まることは、`src/test/assert/viewport.ts` の `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。実測と理由は `src/test/assert/viewport.ts` の docstring が持つ。
+popup の全体が viewport に収まることは、`src/test/assert/viewport.ts` の `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。理由は「viewport の収まりを自前の helper で測る理由」にある。
 
 - 判定は `src/test/assert/viewport-overflows.ts` の純粋関数が持ち、はみ出した辺と px を文字列で返す。helper は `toEqual([])` で比べるので、失敗文に `bottom +40px` のような原因が残る
-- 高さか幅が 0 の要素は、収まっているとは見なさない。潰れた要素ははみ出しを自明に満たす。`toBeInViewport` も面積 0 の要素に ratio 1 を返す ([IntersectionObserver 仕様「Run the Update Intersection Observations Steps」][] の step 12)
+- 高さか幅が 0 の要素は、収まっているとは見なさない (`height 0` / `width 0` を返す)。潰れた要素ははみ出しを自明に満たす
 - 呼び出し側は先に mount を待たなくてよい。helper 自身が poll し、要素が無ければ `element()` の throw (`Cannot find element with locator: …`) がそのまま失敗文になる
 - 一部が見えていること (`ratio` 0) は、公式の `toBeInViewport()` のまま使う。End キーで最下部へ届くことの検証は公式の matcher で足りる
 - `max-height` を `toHaveStyle` で見る形は採らない。Tailwind の class を写す同語反復で、収まるかどうかは内容の高さと viewport で決まる
@@ -263,6 +263,21 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 | `testTimeout` を短くして赤のコストを抑える                  | 待つべき assert の予算も一緒に縮む。遅い環境で緑のテストが落ちる                                                                           | 却下     |
 | `findElement` の既定を 15000 で復元する                     | 待機の予算が assert と 2 つに割れる。`findElement` がするのは肯定 assert と同じ種類の待機である                                            | 却下     |
 | `findElement()` に予算を渡す helper を置く                  | `src/` に呼び出しが 0 件で (2026-09-22 実測)、使い手がいない。mount 待ちは `expect.element` で足りる                                       | 却下     |
+
+### viewport の収まりを自前の helper で測る理由
+
+[Vitest docs「Assertion API」][] の toBeInViewport は、要素の全体が収まることの例に `toBeInViewport({ ratio: 1 })` を挙げる ("Full of a specific element should be in viewport")。判定は IntersectionObserver の比で、popup の収まりを見るには 2 つ足りない。
+
+| 足りないもの                     | 根拠                                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 面積 0 の要素が通る              | [IntersectionObserver 仕様「Run the Update Intersection Observations Steps」][] の step 12 は、面積が 0 の要素の比を、交差していれば 1 にする ("Otherwise, let intersectionRatio be 1 if isIntersecting is true")。高さ 0 の要素で、`toBeInViewport({ ratio: 1 })` は通り、`expectWithinViewport` は `expected [ 'height 0' ] to deeply equal []` で落ちた (vitest 5.0.1、2026-10-02)。潰れた popup の退行を見逃す |
+| 失敗文がはみ出した場所を持たない | 下に 40px はみ出す要素で、公式の matcher は `Received element is not in viewport with ratio 1 (actual ratio: 0.333)`、`expectWithinViewport` は `expected [ 'bottom +40px' ] to deeply equal []` を出した (同日)。比からは、どの辺がどれだけ出たかを読めない                                                                                                                                                       |
+
+| 案                                                                                         | 評価                                                                                                  | 採否     |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | -------- |
+| `expectWithinViewport` (矩形を viewport と比べる純粋関数 `viewportOverflows` を poll する) | 面積 0 で落ち、失敗文に辺と px が残る。helper と純粋関数を自前で持つ                                  | **採用** |
+| `toBeInViewport({ ratio: 1 })`                                                             | 公式の例どおり。面積 0 の要素で通り、失敗文は比だけになる                                             | 却下     |
+| `toBeInViewport({ ratio: 1 })` に面積が 0 でないことの assert を足す                       | 面積 0 は捕まえるが、失敗文は比だけのまま。assert が 2 つに分かれ、別々の瞬間に成立してよいことになる | 却下     |
 
 ### 無効の判定を `toBeDisabled` に任せる理由
 
