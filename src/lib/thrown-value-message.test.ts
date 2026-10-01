@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import {
-  THROWN_VALUE_UNPRINTABLE,
-  thrownValueMessage,
-  thrownValueStack,
-} from "./thrown-value-message";
+import { THROWN_VALUE_UNPRINTABLE, thrownValueMessage } from "./thrown-value-message";
 
 describe("thrownValueMessage", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -79,56 +75,6 @@ describe("thrownValueMessage", () => {
     );
 
     expect(thrownValueMessage(value)).toBe(THROWN_VALUE_UNPRINTABLE);
-    // 引数の比較は vitest の等価判定が prototype を参照して落ちるので、呼ばれたことだけを見る
-    expect(warnSpy).toHaveBeenCalledOnce();
-  });
-});
-
-describe("thrownValueStack", () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    warnSpy.mockRestore();
-  });
-
-  it("Error はその stack を返す", () => {
-    const error = new Error("取得に失敗しました");
-
-    expect(thrownValueStack(error)).toBe(error.stack);
-  });
-
-  it("Error でない値と、stack が文字列でない Error は undefined を返す", () => {
-    expect(thrownValueStack({ stack: "at x" })).toBeUndefined();
-    expect(thrownValueStack(Object.assign(new Error(), { stack: 1 }))).toBeUndefined();
-  });
-
-  it("stack の読み取りが throw する Error は undefined を返し、元の値を warn に残す", () => {
-    // V8 は stack を instance の own property に置くので、prototype の getter では上書きできない
-    const value = Object.defineProperty(new Error(), "stack", {
-      get() {
-        throw new Error("読み取れない");
-      },
-    });
-
-    expect(thrownValueStack(value)).toBeUndefined();
-    expect(warnSpy).toHaveBeenCalledWith("[thrownValueStack] stack を読めない値", { value });
-  });
-
-  it("instanceof の判定が throw する値も undefined を返す", () => {
-    const value = new Proxy(
-      {},
-      {
-        getPrototypeOf() {
-          throw new Error("参照できない");
-        },
-      },
-    );
-
-    expect(thrownValueStack(value)).toBeUndefined();
     // 引数の比較は vitest の等価判定が prototype を参照して落ちるので、呼ばれたことだけを見る
     expect(warnSpy).toHaveBeenCalledOnce();
   });

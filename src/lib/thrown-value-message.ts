@@ -29,17 +29,3 @@ export function thrownValueMessage(value: unknown): string {
     return THROWN_VALUE_UNPRINTABLE;
   }
 }
-
-/**
- * 投げられた値のスタックトレースを取り出す。Error でない値と、stack が文字列でない Error は undefined を返す
- * (TanStack/router#8209 の案内どおり instanceof Error で絞る)。`instanceof` の判定か stack の読み取りが
- * throw する値も undefined を返す。理由は thrownValueMessage と同じく、エラーの画面ごと壊さないためである
- */
-export function thrownValueStack(value: unknown): string | undefined {
-  try {
-    return value instanceof Error && typeof value.stack === "string" ? value.stack : undefined;
-  } catch {
-    console.warn("[thrownValueStack] stack を読めない値", { value });
-    return undefined;
-  }
-}
