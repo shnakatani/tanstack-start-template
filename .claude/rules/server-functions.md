@@ -7,6 +7,7 @@ paths:
   - "src/server.ts"
   - "src/lib/server-error-exposure.ts"
   - "src/components/screens/route-error.tsx"
+  - "src/router.tsx"
 ---
 
 # server function の境界
@@ -34,7 +35,7 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 - ユーザーに見せる文言を持つ例外の adapter は `serverErrorAdapter` より前に並べる。adapter は先頭から試されて最初に当たったものが使われるので、後ろに置くと `serverErrorAdapter` が先に掴んで素の Error に戻し、型の分岐が外れる (production では文言も落ちる) (ADR-0038)
 - 例外の詳細を client と画面に出すかの判定は、`serverErrorAdapter` (`src/lib/server-error-exposure.ts`) と `route-error.tsx` で `import.meta.env.DEV` を直接読んで行い、関数で包まない。包むと呼び出し側で値が畳み込まれず、production の bundle に DEV の分岐が残る (ADR-0038)
 - 2 か所の判定を変えるときは、両方を同じ条件に揃える。片方だけ変わると、server で描いた HTML と client の描画が食い違って hydration がずれる (`docs/guides/server-errors.md`「詳細を出す環境を変える」)
-- route の errorComponent (`createFileRoute` の `errorComponent` と router の `defaultErrorComponent`) で例外の文言を描くのは `RouteErrorContent` だけにし、ほかは固定の文言を出す。ほかで描くと、例外の詳細を出すかの判定が adapter と `route-error.tsx` の 2 か所から外れ、production の HTML に文言が入るか hydration がずれる (`docs/guides/server-errors.md`「詳細を出す環境を変える」)
+- route と router の errorComponent (`errorComponent` と `defaultErrorComponent`) で例外の文言を描くのは `RouteErrorContent` だけにし、ほかは固定の文言を出す。ほかで描くと、例外の詳細を出すかの判定が adapter と `route-error.tsx` の 2 か所から外れ、production の HTML に文言が入るか hydration がずれる (`docs/guides/server-errors.md`「詳細を出す環境を変える」)
 
 ## ファイルの置き場所と名前
 
