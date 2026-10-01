@@ -67,7 +67,7 @@ drizzle の `DrizzleQueryError` は、文言に SQL と params を入れる (`Fa
 | DB のファイルが無い                           | `[server fn] listNotes` と `[ssr] /notes/` の行に `[db] DB のファイルが無い (<絶対パス>)` が出る。`[db]` で始まる単独の行は 0 件。HTML にパスは 0 件                                           |
 | 存在しない URL                                | status 404。HTML の `server-error` は 0 件で、ログは増えない                                                                                                                                   |
 | ビルド成果物                                  | 判定の関数は server と client の両方の bundle で `false` を返す関数に置き換わる。adapter は両方の bundle に入る                                                                                |
-| 開発サーバー                                  | 画面に元の文言が出て、stack の表示は無い。pageerror と hydration の警告は 0 件。応答は組み込みの `$TSR/Error` が message を運ぶ                                                                |
+| 開発サーバー                                  | 画面に元の文言が出て、stack の表示は無い。pageerror と hydration の警告は 0 件。応答と SSR の dehydrate では `serverErrorAdapter` が message を運ぶ (`$TSR/t/server-error`)                    |
 
 例外が起きた場所ごとの server のログは次のとおり。
 
@@ -86,20 +86,19 @@ drizzle の `DrizzleQueryError` は、文言に SQL と params を入れる (`Fa
 
 **server で起きた例外は、production では元の文言を持たない Error として client へ運ぶ。server のログには、server function の例外を global の function middleware で、SSR の読み込みで error になった route の例外を server entry で残す。同じ例外が 2 つの口で 2 行になる場合は受け入れる。**
 
-| 項目                         | 決定                                                                                                                                                                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 詳細を出す環境               | DEV は例外の文言を client と画面に出し、production は出さない。判定は 1 つの関数 (`src/lib/server-error-exposure.ts`) にまとめ、値はビルド時に置き換わる `import.meta.env.DEV`                                                              |
-| client への応答 (production) | `createStart` の `serializationAdapters` (`src/start.ts`) に、Error とそのサブクラスをすべて元の文言を持たない Error へ差し替える adapter を 1 つ登録する。直列化では元の文言を落とし、client は `SERVER_ERROR_MESSAGE` の Error に復元する |
-| client への応答 (DEV)        | adapter を登録しない。組み込みの `ShallowErrorPlugin` が message を運ぶ                                                                                                                                                                     |
-| server で描く HTML           | errorComponent (`src/components/screens/route-error.tsx`) が、production では固定文言、DEV では例外の文言を出す                                                                                                                             |
-| stack の表示                 | 画面に出さない。DEV でも出さない                                                                                                                                                                                                            |
-| server function のログ       | global の function middleware (`src/start.ts`) が残す (ADR-0012)                                                                                                                                                                            |
-| SSR のログ                   | custom server entry (`src/server.ts`) の handler callback が、描画の前に `ctx.router.state.matches` のうち `status === "error"` の match の error を `[ssr] <routeId>` で `console.error` する                                              |
-| ログの重複                   | SSR の loader から呼んだ server function の例外は 2 行出る。受け入れ、同じオブジェクトを 1 回だけ出す仕組みは持たない                                                                                                                       |
-| 例外の文言に載せないもの     | 秘密と個人情報 (DB の行の値、ユーザーの入力)。文言は server のログに残り、DEV では画面にも出る。パスと id は載せてよい                                                                                                                      |
+| 項目                     | 決定                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 詳細を出す環境           | DEV は例外の文言を client と画面に出し、production は出さない。判定は 1 つの関数 (`src/lib/server-error-exposure.ts`) にまとめ、値はビルド時に置き換わる `import.meta.env.DEV`                                                                                                                                                             |
+| client への応答          | `createStart` の `serializationAdapters` (`src/start.ts`) に、Error とそのサブクラスを掴む adapter (`serverErrorAdapter`) を DEV でも production でも 1 つ登録する。production では直列化で元の文言を落とし、client は `SERVER_ERROR_MESSAGE` の Error に復元する。DEV では文言を運ぶ。どちらにするかは adapter が判定の関数を読んで決める |
+| server で描く HTML       | errorComponent (`src/components/screens/route-error.tsx`) が、production では固定文言、DEV では例外の文言を出す                                                                                                                                                                                                                            |
+| stack の表示             | 画面に出さない。DEV でも出さない                                                                                                                                                                                                                                                                                                           |
+| server function のログ   | global の function middleware (`src/start.ts`) が残す (ADR-0012)                                                                                                                                                                                                                                                                           |
+| SSR のログ               | custom server entry (`src/server.ts`) の handler callback が、描画の前に `ctx.router.state.matches` のうち `status === "error"` の match の error を `[ssr] <routeId>` で `console.error` する                                                                                                                                             |
+| ログの重複               | SSR の loader から呼んだ server function の例外は 2 行出る。受け入れ、同じオブジェクトを 1 回だけ出す仕組みは持たない                                                                                                                                                                                                                      |
+| 例外の文言に載せないもの | 秘密と個人情報 (DB の行の値、ユーザーの入力)。文言は server のログに残り、DEV では画面にも出る。パスと id は載せてよい                                                                                                                                                                                                                     |
 
 - 文言の差し替えとログを 1 本の ADR で決めるのは、互いに前提だからである。production では client に例外の文言が届かないので、原因は server のログにしか残らない。OWASP Error Handling Cheat Sheet の global error handler も、generic response と server 側のログを 1 つの仕組みで持つ (Context の先行例の表)
-- 判定を 1 つの関数にまとめるのは、server で描く errorComponent が adapter を通らない生の Error を受けるためである (`Match.js` の server の分岐)。HTML に文言を入れるかは errorComponent が決めるので、adapter の登録と errorComponent の判定が食い違うと、server の HTML と client の描画が食い違って hydration がずれる。1 つにまとめる形は自前の発案である
+- 判定を 1 つの関数にまとめるのは、server で描く errorComponent が adapter を通らない生の Error を受けるためである (`Match.js` の server の分岐)。HTML に文言を入れるかは errorComponent が決めるので、adapter と errorComponent の判定が食い違うと、server の HTML と client の描画が食い違って hydration がずれる。1 つにまとめる形は自前の発案である
 - stack を画面に出さないのは、画面の stack が console と server のログ以上の情報を持たないためである。client で起きた例外の stack は React が既定でブラウザの console に出す (react.dev「hydrateRoot」)。server で起きた例外の stack は、client では復元した位置を指し、発生元の stack は server のログにある
 - 例外の文言に載せないものを決めるのは、production でも文言が server のログに残るためである。TanStack Start docs「Observability」の Security Considerations は "Never log sensitive data (passwords, tokens, PII)" と書く
 
@@ -125,6 +124,13 @@ drizzle の `DrizzleQueryError` は、文言に SQL と params を入れる (`Fa
 | adapter で一括して差し替える                                                                                         | 覆う経路が最も広く、仕組みは 1 つ。組み込みより先に効く順序は実装に依る (Consequences)                                                                             | **採用** |
 | 上に加えて、function middleware でも汎用の Error に投げ直す                                                          | 並びが変わっても server function 由来の例外は守られる。仕組みが 2 つになり、SSR の loader とログが受ける例外も汎用になる (元の例外を `cause` に持たせる工夫が要る) | 却下     |
 | 各 handler で catch して残し、汎用の Error を投げる (TanStack Start docs「Observability」の Error Boundaries 節の形) | fn ごとに書くので、書き忘れた fn が穴になる。loader の自前の throw を覆えない                                                                                      | 却下     |
+
+#### DEV の扱い
+
+| 案                                                                                 | 評価                                                                                                                                                         | 採否     |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| adapter を DEV でも登録し、文言を運ぶかを adapter の中で判定の関数を読んで決める   | plugin の並びが環境によらず同じになる。利用者が adapter を足す手順に環境の条件が入らず、並べ方の誤り (`serverErrorAdapter` の後ろに置く) が DEV でも再現する | **採用** |
+| DEV では adapter を登録せず、組み込みの `ShallowErrorPlugin` に message を運ばせる | 並びが環境で変わる。利用者の adapter を環境の条件の外に置く規範が要り、並べ方の誤りは DEV では起きずに production で初めて文言が落ちる形で出る               | 却下     |
 
 #### SSR の例外を残す口
 
@@ -153,7 +159,7 @@ Sentry は同じ形を取り、重複を SDK で落とす。
 ## Consequences
 
 - production では、server function の応答と SSR の dehydrate で client へ運ぶ Error は、`SERVER_ERROR_MESSAGE` の Error として届く。Error でない値の throw など、この形で届かないものは下の「受け入れる残りの穴」の表に挙げる。画面と toast は固定文言を出し、原因は server のログで追う
-- ユーザーに見せる文言を持つ例外を足すときは、専用の adapter を `src/start.ts` で `exposesServerErrorDetails()` の条件の外に置いて常に登録し、`serverErrorAdapter` (`src/lib/server-error-exposure.ts`) より前に並べる。条件の中に並べると DEV で登録されない。seroval は plugin を並びの先頭から試し、最初に当たったものを使う。同期・非同期・stream の 3 つの直列化のどれでも同じである (seroval 1.6.4 の `dist/index.js` の `parsePluginSync` (2506 行目)・`parsePlugin$1` (非同期、966 行目)・`parsePluginStream` (2512 行目))
+- ユーザーに見せる文言を持つ例外を足すときは、専用の adapter を `src/start.ts` の `serializationAdapters` で `serverErrorAdapter` (`src/lib/server-error-exposure.ts`) より前に並べる。seroval は plugin を並びの先頭から試し、最初に当たったものを使う。同期・非同期・stream の 3 つの直列化のどれでも同じである (seroval 1.6.4 の `dist/index.js` の `parsePluginSync` (2506 行目)・`parsePlugin$1` (非同期、966 行目)・`parsePluginStream` (2512 行目))
 - driver を Context の driver の表の 2 行目のもの (libsql・d1・sqlite-proxy・op-sqlite) に替えると、SQL と params を含む `DrizzleQueryError` の文言が server のログに残る (ソースを読んだ結果)。production の client には届かない
 - 自分のコードが投げない例外の文言は、この ADR の「例外の文言に載せないもの」の外にある。router の `SearchParamError` は検索の入力値を含んだまま server のログに残る (2026-10-01 に観測)
 

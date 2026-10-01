@@ -31,12 +31,12 @@ server で起きた例外を server のログに残し、production では clien
 - 文言に秘密と個人情報 (DB の行の値、ユーザーの入力) を入れない。文言は server のログに残り、DEV では画面にも出る ([TanStack Start docs「Observability」][] の Security Considerations)
 - production では直列化で元の文言を落とし、client は `SERVER_ERROR_MESSAGE` (`src/lib/server-error-exposure.ts`) の Error に復元する (ADR-0038)。画面と toast は固定文言を出す
 - パスや id は文言に入れてよい。調べるときの手がかりになる (`src/server/db/index.ts` の `createDb()` は開こうとした絶対パスを入れる)
-- ユーザーに見せる文言を持つ例外を足すときは、専用の adapter を `src/start.ts` の `serializationAdapters` に `exposesServerErrorDetails()` の条件の外で常に登録して `serverErrorAdapter` より前に並べ、`src/lib/mutation-error.ts` の `curateMutationErrorMessage` に分岐を足す。adapter は並びの先頭から当たるので、後ろに置くと `serverErrorAdapter` が先に掴む。条件の中に並べると DEV で登録されない
+- ユーザーに見せる文言を持つ例外を足すときは、専用の adapter を `src/start.ts` の `serializationAdapters` で `serverErrorAdapter` より前に並べ、`src/lib/mutation-error.ts` の `curateMutationErrorMessage` に分岐を足す。adapter は並びの先頭から当たるので、後ろに置くと `serverErrorAdapter` が先に掴む
 
 ### 詳細を出す環境を変える
 
 - 判定は `src/lib/server-error-exposure.ts` の `exposesServerErrorDetails` だけが持ち、値はビルド時に置き換わる `import.meta.env.DEV` を返す。例外の詳細を出すかの判定で `import.meta.env.DEV` を直接読まない
-- adapter の登録 (`src/start.ts`) と `src/components/screens/route-error.tsx` がこの関数を読む。環境を変えるときは関数の中身だけを変える
+- `serverErrorAdapter` (`src/lib/server-error-exposure.ts`) と `src/components/screens/route-error.tsx` がこの関数を読む。環境を変えるときは関数の中身だけを変える
 - 片方だけを変えると、server で描く HTML と client の描画が食い違って hydration がずれる。server で描く errorComponent は adapter を通らない生の Error を受けるので、HTML に文言を入れるかは `route-error.tsx` が決める (ADR-0038)
 - テストでは `vi.stubEnv("DEV", …)` で切り替える。関数は呼んだ時点で値を読む
 
