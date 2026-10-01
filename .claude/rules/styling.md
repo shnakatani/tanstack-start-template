@@ -104,7 +104,8 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 ## 状態表示
 
-- ページのローディングは、欠かせない query を route loader での取得の待ち合わせ + `useSuspenseQuery` + route の `pendingComponent` で、副次的な query をページの中の `<Suspense>` で出す (ADR-0033)。タイミングは `src/router.tsx` の既定に任せる
+- ページのローディングは、欠かせない query を route loader での取得の待ち合わせ + `useSuspenseQuery` + route の `pendingComponent` で、副次的な query をページの中の `<Suspense>` で出す (ADR-0033)
+- pending 表示の閾値と最小表示時間は TanStack Router の既定に任せ、`src/router.tsx` に `defaultPendingMs` / `defaultPendingMinMs` を書かない。書いた値は公式 docs の説明から外れ、理由を残さないと誰も変えられなくなる (`docs/guides/data-loading.md`「読み込み中の表示を出す」)
 - route に `pendingComponent` が無い画面は、router の `defaultPendingComponent` (`PendingContent`) が受ける。消さない。無いと suspend が root まで巻き上がって何も描かれない (ADR-0029)
 - ページ内で `isLoading ? <Skeleton>` の即時分岐を新設しない。取得が速い環境で skeleton が点滅する
 - skeleton はレイアウトを模倣し (`table-skeleton.tsx`)、図形を `aria-hidden` にして「読み込み中」の文言を区画に 1 つだけ置く。図形ごとに置くと同じ文言が数だけ読まれる (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
