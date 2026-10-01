@@ -1,9 +1,18 @@
-import { RouterProvider } from "@tanstack/react-router";
+import { QueryClientProvider, queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { THROWN_VALUE_UNPRINTABLE } from "@/lib/thrown-value-message";
 import { createTestRouter } from "@/test/app/create-test-router";
+import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent } from "@/test/assert/absent";
 import { expectText } from "@/test/assert/screen-assertions";
 
@@ -11,9 +20,46 @@ import { ROUTE_ERROR_FALLBACK_MESSAGE, RouteErrorContent } from "./route-error";
 
 async function renderError(error: unknown, reset: () => void) {
   const router = createTestRouter("/", () => <RouteErrorContent error={error} reset={reset} />);
-  const invalidateSpy = vi.spyOn(router, "invalidate");
   const screen = await render(<RouterProvider router={router} />);
-  return { screen, invalidateSpy };
+  return { screen };
+}
+
+/**
+ * 1 回目の取得だけが失敗する query を読む route を、本番と同じ `RouteErrorContent` を境界にして描く。
+ * `loaderAwaits` が真なら loader が取得を待ち (ADR-0033 の欠かせない query)、偽なら loader は取得せず、
+ * 描画中の `useSuspenseQuery` だけが取得する
+ */
+async function renderFailingOnceRoute({ loaderAwaits }: { loaderAwaits: boolean }) {
+  const queryFn = vi
+    .fn<() => Promise<string>>()
+    .mockRejectedValueOnce(new Error("取得に失敗しました"))
+    .mockResolvedValue("取得した本文");
+  const pageQueryOptions = queryOptions({ queryKey: ["route-error-test", loaderAwaits], queryFn });
+  const queryClient = createTestQueryClient();
+  const rootRoute = createRootRoute({ component: () => <Outlet /> });
+  const pageRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    loader: async () => {
+      if (loaderAwaits) await queryClient.query({ ...pageQueryOptions, staleTime: "static" });
+    },
+    component: function Page() {
+      const { data } = useSuspenseQuery(pageQueryOptions);
+      return <p>{data}</p>;
+    },
+  });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([pageRoute]),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+    defaultErrorComponent: RouteErrorContent,
+    // pending 表示の最小表示時間 (既定 500ms) を打ち消す (src/test/app/create-test-router.tsx と同じ)
+    defaultPendingMinMs: 0,
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
 }
 
 /**
@@ -75,15 +121,25 @@ describe("RouteErrorContent", () => {
     );
   });
 
-  it("再試行で reset と router.invalidate の両方が呼ばれる", async () => {
-    const reset = vi.fn();
-    const { screen, invalidateSpy } = await renderError(new Error("取得に失敗しました"), reset);
+  it("loader が待つ取得の失敗から、再試行で回復する", async () => {
+    const screen = await renderFailingOnceRoute({ loaderAwaits: true });
+    const retry = screen.getByRole("button", { name: "再試行" });
+    await expect.element(retry).toBeInTheDocument();
 
-    await expect.element(screen.getByRole("button", { name: "再試行" })).toBeInTheDocument();
-    await screen.getByRole("button", { name: "再試行" }).click();
+    await retry.click();
 
-    expect(reset).toHaveBeenCalledTimes(1);
-    expect(invalidateSpy).toHaveBeenCalledTimes(1);
+    await expectText(screen, "取得した本文");
+  });
+
+  // loader が取得しない query は、失敗が Query のキャッシュに残る。router の再読込だけでは取得し直さない
+  it("loader が取得しない useSuspenseQuery の失敗から、再試行で回復する", async () => {
+    const screen = await renderFailingOnceRoute({ loaderAwaits: false });
+    const retry = screen.getByRole("button", { name: "再試行" });
+    await expect.element(retry).toBeInTheDocument();
+
+    await retry.click();
+
+    await expectText(screen, "取得した本文");
   });
 
   // client で起きた例外の stack は React がブラウザの console に出し、server 由来の例外の stack は

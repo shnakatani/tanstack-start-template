@@ -1,5 +1,7 @@
+import { useQueryErrorResetBoundary } from "@tanstack/react-query";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { CenteredCard } from "@/components/parts/centered-card";
 import { CardPageTitle } from "@/components/parts/page-title";
@@ -15,16 +17,26 @@ export const ROUTE_ERROR_FALLBACK_MESSAGE =
   "ページを表示できませんでした。時間をおいて再試行してください。";
 
 /**
- * route エラー境界の共通表示。再試行は React boundary の reset に加えて
- * router.invalidate() で loader を再実行する (reset だけだと loader / suspense query の
- * エラーが cache に残ったまま再 throw され、即座に同じエラー画面へ戻る)。
+ * route エラー境界の共通表示。形は TanStack Router docs「External Data Loading」の
+ * Error handling with TanStack Query の例に合わせる。
+ *
+ * - 再試行は `router.invalidate()` だけを呼ぶ。loader の再実行と route の error boundary の reset を
+ *   router がまとめて行う (TanStack Router docs「Data Loading」の Handling Errors)
+ * - 表示した時点で Query の error boundary を reset する。しないと、loader が取得しない
+ *   `useSuspenseQuery` の失敗が Query のキャッシュに残り、再試行しても取得し直さずに同じエラーを
+ *   投げ直す (`route-error.test.tsx` が見る)。表示した時点で reset するので、再試行せずに離れて
+ *   戻ったときも取得し直す (同 docs の例の説明)
  */
-export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
+export function RouteErrorContent({ error }: ErrorComponentProps) {
   const router = useRouter();
+  const queryErrorResetBoundary = useQueryErrorResetBoundary();
+
+  useEffect(() => {
+    queryErrorResetBoundary.reset();
+  }, [queryErrorResetBoundary]);
 
   // 再実行の結果は loader と error boundary が受けるため待たない
   function handleRetry() {
-    reset();
     void router.invalidate();
   }
 
