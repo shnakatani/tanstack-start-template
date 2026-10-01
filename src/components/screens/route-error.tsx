@@ -5,7 +5,6 @@ import { CenteredCard } from "@/components/parts/centered-card";
 import { CardPageTitle } from "@/components/parts/page-title";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
-import { exposesServerErrorDetails } from "@/lib/server-error-exposure";
 import { thrownValueMessage } from "@/lib/thrown-value-message";
 
 /**
@@ -39,10 +38,11 @@ export function RouteErrorContent({ error, reset }: ErrorComponentProps) {
       </CardHeader>
       <CardContent>
         {/* 例外の文言は DEV でだけ出す。production では client に届く文言が汎用のものに差し替わり、
-              server で描く HTML もここで固定文言にする (ADR-0038)。原因は server のログと、
-              ブラウザの console (React が既定で出す) で追う */}
+              server で描く HTML もここで固定文言にする。判定は serverErrorAdapter と同じく
+              import.meta.env.DEV を直接読み、production の bundle から DEV の分岐を落とす (ADR-0038)。
+              原因は server のログと、ブラウザの console (React が既定で出す) で追う */}
         <p className="text-muted-foreground">
-          {exposesServerErrorDetails() ? thrownValueMessage(error) : ROUTE_ERROR_FALLBACK_MESSAGE}
+          {import.meta.env.DEV ? thrownValueMessage(error) : ROUTE_ERROR_FALLBACK_MESSAGE}
         </p>
         <Button onClick={handleRetry} className="self-start">
           再試行

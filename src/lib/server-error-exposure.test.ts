@@ -2,25 +2,7 @@ import { notFound, redirect } from "@tanstack/react-router";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import {
-  exposesServerErrorDetails,
-  SERVER_ERROR_MESSAGE,
-  serverErrorAdapter,
-} from "./server-error-exposure";
-
-describe("exposesServerErrorDetails", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  // 呼んだ時点で読むので、テストが DEV を切り替えられる
-  it("DEV なら true、production なら false を返す", () => {
-    vi.stubEnv("DEV", true);
-    expect(exposesServerErrorDetails()).toBe(true);
-    vi.stubEnv("DEV", false);
-    expect(exposesServerErrorDetails()).toBe(false);
-  });
-});
+import { SERVER_ERROR_MESSAGE, serverErrorAdapter } from "./server-error-exposure";
 
 describe("serverErrorAdapter", () => {
   afterEach(() => {
