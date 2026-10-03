@@ -18,16 +18,20 @@ Compiler はコンポーネントか hook として認識した関数しか最�
 Compiler を入れたコードでも、`useMemo` / `useCallback` は「どの値をメモ化するか」を制御する escape hatch として残る。公式は、新しいコードでもメモ化を Compiler に任せつつ、精密な制御が要る箇所では `useMemo` / `useCallback` を使うよう勧め、その典型に effect の依存を挙げる。依存が意味の上で変わらないのに effect が走り直すのを防ぐ使い方である ([React docs「React Compiler」][] の What should I do about useMemo, useCallback, and React.memo?)。
 性能の問題が出た箇所だけに限ると、この使い方を締め出す。effect の依存は性能ではなく、effect がいつ走るかという挙動に関わるからである。
 
+### effect の依存をメモ化より先に外す理由
+
+`useMemo` は性能の最適化で、値が保たれることを保証しない。公式は "since `useMemo` is performance optimization, not a semantic guarantee, React may throw away the cached value if there is a specific reason to do that. This will also cause the effect to re-fire, so it's even better to remove the need for a function dependency" と書き、object を effect の中へ移す形を示す ([React docs「useMemo」][] の Preventing an Effect from firing too often)。キャッシュを捨てる場面は Caveats が挙げ、開発中の編集と初回 mount 中の suspend がある (同 Caveats)。`useCallback` にも同じ節があり、関数を effect の中へ移す形を "even better" とする ([React docs「useCallback」][] の Preventing an Effect from firing too often)。
+
 ## how-to
 
 ### 手動メモ化を書く
 
 新しいコードのメモ化は Compiler に任せ、予防的に `useMemo` / `useCallback` を書かない (ADR-0014)。手で書くのは次の 2 つの場面だけにする。理由は「手でメモ化する場面を 2 つにする理由」にある。
 
-| 場面                                               | 書き方                                                                                                                                                                                                                                                                                                                                                                              |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 性能の問題が実際に出た箇所                         | 問題の出た値か関数を `useMemo` / `useCallback` で包む                                                                                                                                                                                                                                                                                                                               |
-| 値の同一性を精密に制御する箇所 (effect の依存など) | 上から順に当てる。まず依存を外す: 関数や object を effect の中へ移す、最新の値を読むだけなら `useEffectEvent` へ切り出す ([React docs「useEffect」][] の My Effect runs after every re-render、[React docs「useCallback」][] の Preventing an Effect from firing too often)。外せないときに最後の手段として `useMemo` / `useCallback` で包む ([React docs「useEffect」][] の同じ節) |
+| 場面                                               | 書き方                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 性能の問題が実際に出た箇所                         | 問題の出た値か関数を `useMemo` / `useCallback` で包む                                                                                                                                                                                                                                                                                                                                                                                |
+| 値の同一性を精密に制御する箇所 (effect の依存など) | 上から順に当てる。まず依存を外す: 関数や object を effect の中へ移す、最新の値を読むだけなら `useEffectEvent` へ切り出す ([React docs「useEffect」][] の My Effect runs after every re-render、[React docs「useCallback」][] の Preventing an Effect from firing too often)。外せないときに最後の手段として `useMemo` / `useCallback` で包む ([React docs「useEffect」][] の同じ節)。理由は「effect の依存をメモ化より先に外す理由」 |
 
 - キャッシュが捨てられると壊れる値は `useMemo` に持たず、state か ref に持つ。React は開発中の編集や初回 mount 中の suspend でキャッシュを捨てる ([React docs「useMemo」][] の Caveats)
 
