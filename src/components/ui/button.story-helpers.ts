@@ -21,7 +21,6 @@ export const BUTTON_VARIANTS = variantOptions({
   ghost: null,
   dashed: null,
   destructive: null,
-  "destructive-ghost": null,
   link: null,
 } satisfies Record<ButtonVariant, null>);
 

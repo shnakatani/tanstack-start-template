@@ -101,15 +101,12 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 - vitest の `Locator` (`@vitest/browser` 5.0.1) に `dispatchEvent` は無い ([Vitest docs「Locators」][])。Playwright の `locator.dispatchEvent()` を届かせる公式経路はカスタムコマンド (`BrowserCommand`) だけである ([Vitest docs「Commands」][] の Custom playwright commands)。vitest-dev/vitest の issue には `aria-disabled` / `force` / `dispatchEvent` を主題にしたものが無い (2026-09-13、`gh search issues` を 9 語で検索)
 
-合成 click の helper を `src/test/` に置くと、テンプレートを複製した利用者全員へ配られる。使いうる消費者は 2 つとも sample の部品で、sample を消すと消費者ゼロの helper だけが残る。
-
 | 案                                                                | 評価                                                                                                                                                                                                 | 採否     |
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | 実イベント (`click()` と `userEvent.keyboard`) で 2 連射する      | 実装の仕組み (描画のタイミング) をテストに書かない。[Base UI の `Button.test.tsx`][] と [React Aria の `Button.test.js`][] と同じ形。mutant で落ちることを確認済み                                   | **採用** |
 | 合成イベントの間に `await Promise.resolve()` を挟む               | ブラウザが実イベント間で行う checkpoint ([HTML Standard「clean up after running script」][]) の模倣で、React の描画が microtask で流れる知識をテストに焼き込む。React 側の実装が変わると意味が変わる | 却下     |
 | 合成イベントの同期 2 連射を残し、実装に ref のフラグを持つ        | 起きない事象への防御をテストが要求する形。[React docs「useFormStatus」][] の `disabled={pending}` の形から外れる (ADR-0016)                                                                          | 却下     |
 | 2 回目を `click({ force: true })` で送る                          | `data-disabled:pointer-events-none` の部品では下の要素へ届き、何が止めたか分からない。キーボードなら部品自身に届く                                                                                   | 却下     |
-| 合成 click の helper を置き、用途を 1 つに絞る                    | 消費者が sample の部品だけになる。利用者が sample を消すと、消費者ゼロの helper が配られたままになる                                                                                                 | 却下     |
 | 合成 click で base-ui 内部のガードを見続ける                      | 守る対象が上流ライブラリの内部で、[Base UI の `Button.test.tsx`][] が同じことを見ている。このリポジトリのコードは `pointer-events` と状態属性の assert で守れる                                      | 却下     |
 | カスタムコマンドで Playwright の `locator.dispatchEvent()` を呼ぶ | 公式経路だが、server 側のコマンド定義と型拡張が要る。合成イベントを使う場面が無いので不要                                                                                                            | 却下     |
 
@@ -118,7 +115,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 `force: true` で飛ぶのは Playwright の actionability の検査の一部で、viewport 内の座標の確認とブラウザのヒットテストは残る。
 
 - [Playwright docs「Auto-waiting」][] の Forcing actions は "non-essential actionability checks" を飛ばすと書く。中身は列挙せず、例に挙げるのは Receives Events だけである
-- Enabled も飛ぶことは、`aria-disabled` の要素で実測した (「合成イベントが実物からずれる理由」)
+- Enabled も飛ぶ。`src/components/parts/segmented-radio-group.tsx` の disabled の項目 (`aria-disabled="true"`) へ送ると、`.click()` は enabled の待ちで timeout まで返らず、`.click({ force: true })` は 30ms で返った (2026-10-02、`@vitest/browser` 5.0.1 と Playwright 1.63.0)
 - Visible と Stable は docs では未確認である。[`playwright-core` の `server/dom.ts`][] の `_performPointerAction` は、`force` のとき visible / enabled / stable の待ちと、Playwright 側の hit target の確認 (Receives Events の検査) を飛ばす (ソースの読み取り)
 - viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の 4 条件の定義に無く、同じ `_performPointerAction` が `force` でも行う (ソースの読み取りで、公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
 - ブラウザのヒットテストも残る。`pointer-events: none` の対象へ `force` で送ったイベントが下の要素へ落ちる実測は「合成イベントが実物からずれる理由」にある

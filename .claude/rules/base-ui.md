@@ -12,7 +12,7 @@ paths:
 
 ## Select: `items` prop 必須
 
-- `Select.Root` に `items` (`Record<string, ReactNode>` か `{ value, label }[]`) を渡す。無いと `Select.Value` がトリガーに ID などの内部値を出す (Base UI Select docs「Formatting the value」)
+- `Select.Root` に `items` (`Record<string, ReactNode>` か `{ value, label }[]`) を渡す。無いと `Select.Value` がトリガーに ID などの内部値を出す (`docs/guides/forms-and-inputs.md`「Select に候補を渡す」)
 - 実例は `src/components/parts/form-fields.tsx` の `FormSelectField`
 
 ## Select: 候補が変わったときの自己リセットに依存しない
@@ -23,6 +23,6 @@ paths:
 
 ## Combobox と ItemGroup
 
-- `ComboboxContent` の中に `ComboboxInput` を置く構成だけ `aria-label` を渡す。外に置く構成で渡すと name prohibited の違反になる (`docs/registry-deviations.md` の combobox.tsx の行)
-- 名前の過不足は story の axe が見る。popup を開く play を書かないと働かない (`docs/registry-deviations.md` の combobox.tsx の行)
-- `ItemGroup` は `render={<ul />}`、子は `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の div のままだと list の構造が破綻する (`docs/registry-deviations.md` の item.tsx の行)
+- `ComboboxContent` の中に `ComboboxInput` を置く構成だけ `aria-label` を渡す。外に置く構成で渡すと name prohibited の違反になる (`docs/guides/accessibility.md`「Combobox の popup に名前を与える」)
+- 名前の過不足は story の axe が見る。popup を開く play を書かないと働かない (`docs/guides/accessibility.md`「Combobox の popup に名前を与える」)
+- `ItemGroup` は `render={<ul />}`、子は `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の div のままだと空のリストとして読まれる (`docs/guides/accessibility.md`「リストの構造を組む」)

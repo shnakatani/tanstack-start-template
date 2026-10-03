@@ -2,19 +2,34 @@ import { useId } from "react";
 import type { ReactNode } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldContent, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
+
+import { rendersNothing } from "./renders-nothing";
 
 /**
- * 複数選択リストの器。`FieldGroup` 素の gap はフォームのフィールド間の値で行の並びには
- * 過大なため、registry の `FieldGroup` が持つ `data-[slot=checkbox-group]:gap-3` に寄せる。
- * shadcn の registry の例 (`dialog-example.tsx`) も `data-slot="checkbox-group"` で同じ間隔にしている。
+ * 補足を添える選択肢や、選択が主役の一覧に並べるカード状の行の器。ラベルだけの複数選択は
+ * FieldSet の中に Field の行を並べる (docs/guides/forms-and-inputs.md「入力欄の周りに要素を置く」)。
+ * まとまりの名前は外側の `FieldSet` と `FieldLegend` が持つ。
+ *
+ * `FieldGroup` 素の gap はフォームのフィールド間の値で行の並びには過大なため、registry の
+ * `FieldGroup` が持つ `data-[slot=checkbox-group]:gap-3` に寄せる。shadcn の registry の例
+ * (`dialog-example.tsx`) も `data-slot="checkbox-group"` で同じ間隔にしている。
  */
 function ChoiceCardList({ children }: { children: ReactNode }) {
   return <FieldGroup data-slot="checkbox-group">{children}</FieldGroup>;
 }
 
 /**
- * 複数選択リストの 1 行。公式の Choice Card パターン。
+ * 補足を添える選択肢や、選択が主役の一覧のカード状の行。ラベルだけの複数選択は FieldSet の中に
+ * Field の行を並べる (docs/guides/forms-and-inputs.md「入力欄の周りに要素を置く」)。
+ * 公式の Choice Card パターンを `Checkbox` で組む。
  *
  * > Wrap `Field` components inside `FieldLabel` to create selectable field groups.
  * > This works with `RadioItem`, `Checkbox` and `Switch` components.
@@ -23,6 +38,7 @@ function ChoiceCardList({ children }: { children: ReactNode }) {
 function ChoiceCard({
   id,
   label,
+  description,
   checked,
   disabled = false,
   trailing,
@@ -31,13 +47,20 @@ function ChoiceCard({
   /** 省略時は内部で採番する。外から参照する必要があるときだけ渡す */
   id?: string;
   label: ReactNode;
+  /**
+   * タイトルの下に置く説明文。shadcn の Choice Card の例と同じく、`FieldContent` の中で `FieldTitle` に続ける。
+   * checkbox の名前には入れず、説明として結ぶ
+   */
+  description?: ReactNode;
   checked: boolean;
   disabled?: boolean;
   /**
-   * タイトルと checkbox の間に置く補足 (識別子・状態バッジ等)。
+   * タイトルと checkbox の間に置く補足 (状態バッジ等)。説明文の後ろに続けて checkbox の説明として読ませる。
+   * 行を見分ける識別子として名前に読ませたいときは、`label` に含める。
+   * 条件で表示を切り替えるなら呼び出し側で条件を書く (`cond && <Badge />`)。条件で null を返す部品を渡すと、
+   * 何を描くかは値から分からないので包みが残り、隙間が 1 つ増える。
    * `Field` horizontal は `FieldContent` があると `items-start` になる (`ui/field.tsx`) ので、
-   * 補足はタイトルの 1 行目に上端を揃える。行の content box より低い補足に `self-center` を
-   * 足すとその分だけ下がるため、registry の揃えから外したいときだけ渡す
+   * 補足はタイトルの 1 行目に上端を揃える
    */
   trailing?: ReactNode;
   onCheckedChange: (checked: boolean) => void;
@@ -46,6 +69,19 @@ function ChoiceCard({
   // hook の呼び出しが条件付きになり、消費側が id の有無を切り替えると hook 数が変わる
   const generatedId = useId();
   const rowId = id ?? generatedId;
+  const titleId = useId();
+  const descriptionId = useId();
+  const trailingId = useId();
+  // `cond && <Badge />` の偽や空の一覧の map のような何も描かない値で要素を描くと、空の要素が
+  // flex の子になって隙間が増え、aria-describedby が空の要素を指す
+  const hasDescription = !rendersNothing(description);
+  const hasTrailing = !rendersNothing(trailing);
+  // label の中のテキストはすべて checkbox の名前に入るので、名前をタイトルに絞り、
+  // 説明文と trailing は説明として結ぶ (docs/guides/forms-and-inputs.md「Choice Card の名前と説明を分ける理由」)
+  const describedBy =
+    [hasDescription ? descriptionId : undefined, hasTrailing ? trailingId : undefined]
+      .filter((value) => value !== undefined)
+      .join(" ") || undefined;
 
   return (
     <FieldLabel
@@ -57,13 +93,20 @@ function ChoiceCard({
     >
       <Field orientation="horizontal" data-disabled={disabled || undefined}>
         <FieldContent>
-          <FieldTitle>{label}</FieldTitle>
+          <FieldTitle id={titleId}>{label}</FieldTitle>
+          {hasDescription && <FieldDescription id={descriptionId}>{description}</FieldDescription>}
         </FieldContent>
-        {trailing}
+        {hasTrailing && (
+          // 説明に結ぶ id を付けるための包み。display: contents にしない。
+          // contents の要素の読み上げはブラウザで差が出てきた (docs/guides/forms-and-inputs.md「Choice Card の名前と説明を分ける理由」)
+          <span id={trailingId}>{trailing}</span>
+        )}
         <Checkbox
           id={rowId}
           checked={checked}
           disabled={disabled}
+          aria-labelledby={titleId}
+          aria-describedby={describedBy}
           onCheckedChange={onCheckedChange}
         />
       </Field>

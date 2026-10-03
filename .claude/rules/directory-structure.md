@@ -11,7 +11,7 @@ paths:
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/components/ui/`         | shadcn 生成コンポーネント (`vp dlx shadcn@latest add` の出力先。ADR-0011)。registry に相当が無い ui 部品は、拡張する registry のファイルの中に足す (ADR-0020)                     |
 | `src/components/action/`     | `ui/` を包み `action` prop で Transition 化した部品。ファイル名は包む先と同名 (ADR-0016)。ui と同じく design system component として認識し、層の規則を適用する (ADR-0011)         |
-| `src/components/parts/`      | ui 部品を組み合わせる自作部品。見た目の差は `ui/` の variant で持つ。層の規則を適用する (ADR-0011 / ADR-0022)                                                                     |
+| `src/components/parts/`      | ui 部品を組み合わせる自作部品。見た目の差は `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順で持つ。層の規則を適用する (ADR-0011 / ADR-0022)                       |
 | `src/components/screens/`    | 部品を並べて画面を組む共有コンポーネント。層の規則を適用する (ADR-0011 / ADR-0022)                                                                                                |
 | `src/components/`            | 上のどれでもないもの。層の規則を適用する (ADR-0011 / ADR-0022)。実例は `live-regions.tsx`                                                                                         |
 | `src/features/<domain>/`     | ドメイン固有で複数の画面から使うコンポーネント (ADR-0010)                                                                                                                         |

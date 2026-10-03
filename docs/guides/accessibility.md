@@ -147,6 +147,25 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - 「読み込み中」の行を画面に出さないのは、skeleton の見た目を読み込み後の表に近づけるためである。registry の `TableRow` / `TableCell` は下線と余白を持ち込むので、この行だけ素の `<tr>` / `<td>` で置く
 - pending 表示は条件付きで mount されるので、表示した時点で読み上げられる保証は無い。支援技術は通常、live region の変化だけを伝え、最初から入っている中身は伝えない ([WAI-ARIA 1.3 Editor's Draft][] の live region の節「Typically, assistive technology will only convey changes to a live region」)。読み込みの開始と完了の告知は扱っていない
 
+### `ItemGroup` をネイティブのリストで組む理由
+
+[shadcn docs「Item」][] は `ItemGroup` を、`Item` を束ねて list of items を作る部品と書く (冒頭の "Group it with the `ItemGroup` component to create a list of items." と Group の節の "Use `ItemGroup` to group related items together."。shadcn 4.21.0 の `item.mdx`)。ただし、リストとしてのマークアップ (`ul` / `li` や `role`) は示さない。registry の `ItemGroup` は `role="list"` を持つが `Item` は `listitem` にならず、空のリストとして読まれる ([shadcn-ui/ui#11532][])。上流には、`ItemGroup` から `role="list"` を外し、リストとして読ませたいときは `role="list"` と `role="listitem"` を足す形を docs に書く PR がある ([shadcn-ui/ui#12085][]、2026-10-01 作成、2026-10-02 時点で open)。
+
+| 案                                                              | 評価                                                                                                                  | 採否     |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| `render={<ul />}` と `render={<li />}` の対で組む               | タグがリストの意味を持ち、`jsx-a11y/prefer-tag-over-role` に通る。[shadcn-ui/ui#12085][] が入っても組み方は変わらない | **採用** |
+| registry の既定 (`role="list"` の div) のまま使う               | 空のリストとして読まれる ([shadcn-ui/ui#11532][])                                                                     | 却下     |
+| `role="list"` と `role="listitem"` を足す (#12085 の docs の形) | `jsx-a11y/prefer-tag-over-role` が止める                                                                              | 却下     |
+
+### メニューのグループの見出しを強制しない理由
+
+見出しの無いグループは、画面では区切り線でしか分かれず、支援技術にも区切りだけが伝わる。晴眼の利用者と支援技術の利用者が得る情報は同じで、区切りで分ける形は [APG「Menu and Menubar Pattern」][] が示す形である。group の名前は [WAI-ARIA 1.2][] でも必須ではない (group role の特性に Accessible Name Required が無い)。
+
+| 案                                         | 評価                                                                                                                                                     | 採否     |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 見出しの要否をグループごとに決める         | [shadcn docs「Dropdown Menu」][] の Usage と同じ形。[Base UI docs「Menu」][] も Group labels を足せる部品として書き、必須にしない                        | **採用** |
+| 2 グループ以上なら全グループに見出しを置く | 公式の例で全グループに見出しを置くのは Base UI の Group labels のデモだけで、a11y の要件ではない。見出しの有無は画面の設計で、名前を補う判断とは別である | 却下     |
+
 ## how-to
 
 ### 読み込み中の表示を組む
@@ -239,10 +258,45 @@ story で統制できるのは markup までで、フォントは実行環境が
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
 
+### Combobox の popup に名前を与える
+
+`ComboboxContent` (Base UI の `Combobox.Popup`) に名前を渡すかは、`ComboboxInput` を置く場所で決まる。Base UI 1.8.0 は popup の role を、入力欄が popup の中にあれば `dialog`、外にあれば `presentation` にする (`@base-ui/react` の `combobox/popup/ComboboxPopup.js`)。
+
+| `ComboboxInput` の置き場所 | `ComboboxContent` の `aria-label`                                                                                                                                                                                                                         |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ComboboxContent` の中     | 渡す。dialog の popup は名前を持つ ([APG「Combobox Pattern」][] が dialog の popup に当てる [APG「Dialog (Modal) Pattern」][] の Roles, States, and Properties)。[Base UI docs「Combobox」][] の Input inside popup のデモも popup に `aria-label` を渡す |
+| `ComboboxContent` の外     | 渡さない。`presentation` は名前を持てない role で ([WAI-ARIA 1.2][] §5.2.8.6)、渡すと違反になる。名前は入力欄の側に `aria-label` か label で与える ([Base UI docs「Combobox」][] の Usage guidelines)                                                     |
+
+- 名前の過不足は story の axe が見る (中の構成は `aria-dialog-name`、外の構成は `aria-prohibited-attr`)。popup は開くまで描かれないので、popup を開く play を書かないと働かない
+- `ComboboxContent` の型が名前を必須にしない乖離は、台帳 `docs/registry-deviations.md` の combobox.tsx の行にある
+
+### リストの構造を組む
+
+- `ItemGroup` で項目を並べるときは `ItemGroup render={<ul />}` にし、子を `Item render={<li />}` と `ItemSeparator render={<li />}` で組む。既定の div のままだと、`ItemGroup` は `role="list"` を持つのに `Item` が `listitem` にならず、空のリストとして読まれる ([shadcn-ui/ui#11532][]、2026-10-02 時点で open)。`render` を通す乖離は台帳 `docs/registry-deviations.md` の item.tsx の行にある
+- `role="list"` と `role="listitem"` を足して組まない。`jsx-a11y/prefer-tag-over-role` が部品に渡した `role` も止める (2026-10-02、oxlint 1.85.0)。ネイティブのタグを選ぶ理由は「`ItemGroup` をネイティブのリストで組む理由」にある
+
+### メニューの項目をグループに分ける
+
+- 項目を分けるときは `DropdownMenuGroup` で包み、グループの間に `DropdownMenuSeparator` を置く ([APG「Menu and Menubar Pattern」][] の Roles, States, and Properties)
+- グループに見出しを置くときは、`DropdownMenuLabel` を `DropdownMenuGroup` の中に置く。`DropdownMenuLabel` は Base UI の `Menu.GroupLabel` で、親のグループの名前になる ([Base UI docs「Menu」][] の Group labels)
+- 見出しはグループごとに要否を決め、すべてのグループには求めない ([shadcn docs「Dropdown Menu」][] の Usage は 2 グループのうち 1 つ目にだけ置く)。理由は「メニューのグループの見出しを強制しない理由」にある
+- メニュー全体を包む単一の `DropdownMenuGroup` に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない。menu は開いたトリガーを `aria-labelledby` で指して名前を持つ ([APG「Menu and Menubar Pattern」][]) ので、同じ名前を重ねても区別が増えない
+- トリガーの名前が中身を言わないとき (「Open」の下に表示の切り替えが並ぶなど) は、単一のグループにも中身を言う見出しを置いてよい ([shadcn の `dropdown-menu-checkboxes.tsx`][] は「Appearance」を置く)
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
 
+[shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
+[shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
+[shadcn-ui/ui#12085]: https://github.com/shadcn-ui/ui/pull/12085
+[APG「Menu and Menubar Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/menubar/
+[Base UI docs「Menu」]: https://base-ui.com/react/components/menu
+[APG「Combobox Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+[APG「Dialog (Modal) Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+[Base UI docs「Combobox」]: https://base-ui.com/react/components/combobox
+[shadcn docs「Dropdown Menu」]: https://ui.shadcn.com/docs/components/base/dropdown-menu
+[shadcn の `dropdown-menu-checkboxes.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/dropdown-menu-checkboxes.tsx
 [axe-core の `README.md`]: https://github.com/dequelabs/axe-core/blob/v4.13.0/README.md
 [dequelabs/axe-core#4260]: https://github.com/dequelabs/axe-core/issues/4260
 [dequelabs/axe-core#5359]: https://github.com/dequelabs/axe-core/pull/5359

@@ -1,7 +1,7 @@
 # ADR-0020: registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る
 
 - Status: Accepted
-- Date: 2026-09-21
+- Date: 2026-10-02
 - 関連: ADR-0011 (`no-restyle` の適用範囲)、ADR-0024 (`src/styles.css` の baseline とトークンの値の決め方)
 
 ## Context
@@ -63,11 +63,10 @@ baseline の取得漏れは `scripts/checks/integrity/registry-baseline.test.ts`
 ### 追加と削除の基準
 
 追加は機能上の必要 (silent failure の防止、アーキテクチャ上の理由、アクセシビリティ要件) がある場合に限る。
-公式はソース編集を認めているが、既存 variant と `className` で足りる範囲を先に使う (公式の優先順位)。
+公式はソース編集を認めているが、見た目を変える手段は `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順で選ぶ。
 
-例外は公式の優先順位 3 (新規 variant の追加) に乗る場合。
-同じ意匠の `className` 上書きが複数箇所に現れ、それが既存 variant で表現できないなら、variant へ引き上げる方が消費側に色と typography が散るより健全である。
-この経路で追加するときは、どの variant の `className` 上書きを畳んだのかと、既存 variant で表現できない理由を許容リストの行に書く。
+例外は公式の優先順位 3 (新規 variant の追加) に乗る場合で、同じ順で variant の段に当たったときである。
+足すときは、その variant が何を表すかと、既存の variant で表せない理由を許容リストの行に書く。
 
 registry に相当する部品が無く、registry の部品へ当てる見た目を 1 つの用途に組み替える部品も、`ui/` に足してよい。
 `no-restyle` は部品ディレクトリ (`ui/`) の外で registry の部品への見た目の上書きを止めるため (ADR-0011)、その部品は `ui/` にしか置けない。

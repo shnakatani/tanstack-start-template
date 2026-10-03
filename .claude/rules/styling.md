@@ -14,7 +14,7 @@ palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-ra
 - semantic token を使う。淡色ハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 新しい「意味のある色」は `src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。露出は下表で選び、値は ADR-0024 の段に乗せる
 - `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書き、`ui/` で rule を off にしない。off にすると `ui/` に入る任意値の色を拾う経路が無くなる (ADR-0023)
-- 破壊操作は常時 destructive 色にする。テキストボタンは `destructive`、アイコンボタンは `destructive-ghost`。hover だけの着色は touch 環境で出ない
+- 破壊操作のボタンは、テキストでもアイコンでも `variant="destructive"` にし、アイコンだけなら `size="icon*"` を合わせる。hover だけの着色は touch 環境で出ない (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)
 - コントラストは本文 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark は light と別に検算する。opacity variant は背景合成で比が変わる
@@ -67,25 +67,22 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ### 公式のノブ
 
-打ち消しクラスを積む前に、公式が用意したノブを探す。
+打ち消しクラスを積む前に、公式が用意したノブを探す (`docs/guides/registry.md`「公式のノブを先に探す」)。
 
-| やりたいこと                      | 使うもの                                          | 出典                      |
-| --------------------------------- | ------------------------------------------------- | ------------------------- |
-| Card の余白を詰める・広げる       | `--card-spacing` (`size` prop でも切り替わる)     | Card docs の Spacing      |
-| Card 内の要素をカード端まで広げる | `-mx-(--card-spacing)` (フッター直上は `-mb-` も) | 同 Edge-to-Edge           |
-| ヘッダー帯の右側にボタンを置く    | `CardAction` (`ml-auto` や flex 化は要らない)     | 同 CardAction             |
-| 複数選択のリストを組む            | `ChoiceCard` / `ChoiceCardList`                   | Field docs の Choice Card |
-| ScrollArea のフォーカス指標を保つ | `scroll-area-focus-outline` (`styles.css`)        | base-ui の inside-scroll  |
-
-Card docs: https://ui.shadcn.com/docs/components/base/card 。
+| やりたいこと                      | 使うもの                                          |
+| --------------------------------- | ------------------------------------------------- |
+| Card の余白を詰める・広げる       | `--card-spacing` (`size` prop でも切り替わる)     |
+| Card 内の要素をカード端まで広げる | `-mx-(--card-spacing)` (フッター直上は `-mb-` も) |
+| ヘッダー帯の右側にボタンを置く    | `CardAction` (`ml-auto` や flex 化は要らない)     |
+| ScrollArea のフォーカス指標を保つ | `scroll-area-focus-outline` (`styles.css`)        |
 
 - ui 部品の見た目を変えるときは、既定か公式のノブ → `ui/` の variant → 素の要素で包む → contract の順に選ぶ。contract は部品の名前で全ファイルに効くので、値をそろえたい見た目に使わない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
 - `ScrollArea` の内側の余白は中身の要素に書く。lint が余白を止めたときに案内する margin と親の gap は外側の直し方で、内側の余白には使えない (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」)
-- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる。「見出し帯 + 全幅テーブル」は器を自前にする (`docs/guides/registry.md`「公式のノブを先に探す」)
+- `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える (`docs/guides/registry.md`「公式のノブを先に探す」)
 - 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `ScrollArea` のバー幅の余白を降りるのは `ui/` の部品の中だけにし (実例は `ui/dialog.tsx` の `DialogScrollBody`)、`ui/` の外で要るなら `ui/` の部品を使うか足す。`ui/` の外では contract が `ScrollArea` に layout と角丸しか許さないため (`docs/guides/registry.md`「公式のノブを先に探す」)
-- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。余白は出るのにバーが無い器を作れる (`docs/registry-deviations.md` の scroll-area.tsx の行)
+- `<ScrollBar orientation="horizontal" />` を消費側で合成しない。`ScrollArea` が横のバーも描くので、足すと横バーが 2 本になる (`docs/guides/registry.md`「公式のノブを先に探す」)
 
 ### 親の gap で表現できない箇所
 
@@ -118,8 +115,10 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 ## 操作できる要素の組み方
 
 - input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
-- checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`choice-card.tsx`) を使う (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
-- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`)。ラベルに className を足さない。太さとカーソルは registry の既定のままで、shadcn の単独 checkbox の例と同じ。グループの外枠は `FieldSet` + `FieldLegend`
+- checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択の既定は `FieldSet` + `FieldLegend` の中の `FieldGroup data-slot="checkbox-group"` に `Field orientation="horizontal"` の行を並べる形。`FieldLegend` がまとまりの名前になり、行間は registry の間隔に寄る (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
+- 選択肢ごとに補足 (状態のバッジなど) を添える場面と、選択が画面の主役の場面は、`ChoiceCardList` / `ChoiceCard` (`choice-card.tsx`) でカード状の選択面を組み、`FieldLabel` で `Field` を包む形を手書きしない。説明文は `description` に、補足は `trailing` に渡し、行を見分ける識別子は `label` に含める。補足の表示の条件は呼び出し側で書き、条件で null を返す部品を渡さない。`id` の採番、disabled の行の cursor、checkbox の名前をタイトルに絞り説明文と補足を説明に結ぶことを部品が持つ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
+- 複数選択のまとまりの中の行の `FieldLabel` には `weight="normal"` を渡す。公式の例が付ける `className="font-normal"` は `ui/` の外では `no-restyle` が止めるので、`ui/field.tsx` の variant で書く (`docs/guides/forms-and-inputs.md`「複数選択の形を場面で分ける理由」)
+- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`) で組み、ラベルに className も `weight` も渡さない。太さとカーソルは registry の既定のままで、shadcn の単独 checkbox の例と同じ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)
 - `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)
 
@@ -145,8 +144,8 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0026)
 - pending の検証は `aria-busy` と announcer の通知で行う。`getByRole("status")` で項目を掴まない (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 - 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0027)
-- メニュー全体を包む単一の `DropdownMenuGroup` には名前を与えない。メニュー自体がトリガー由来の名前を持つ
-- 項目を 2 グループ以上に分けるときは `DropdownMenuLabel` で各グループに名前を与える
+- メニュー全体を包む単一の `DropdownMenuGroup` に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない。menu はトリガーを名前に持つので区別が増えない (`docs/guides/accessibility.md`「メニューの項目をグループに分ける」)
+- メニューのグループの見出し (`DropdownMenuLabel`) はグループごとに要否を決め、全グループには求めない。「迷ったら与える側に倒す」はグループの見出しには及ばない。見出しの無いグループも区切りで分かれる (`docs/guides/accessibility.md`「メニューの項目をグループに分ける」)
 - ナビゲーションは landmark (`nav`、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける
 
 ### 可視テキストを持つ要素に aria-label を足さない

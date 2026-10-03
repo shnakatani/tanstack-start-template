@@ -49,7 +49,7 @@ export const Vertical: Story = {
 
 /**
  * 横並び。`@md/field-group` を持たないので、`FieldGroup` の外でも常に横に並ぶ。
- * チェックボックス 1 件の行をこの向きで組む流儀は `ChoiceCard` の story が持つ
+ * チェックボックスの行はこの向きで `Checkbox id` と `FieldLabel htmlFor` を並べる。カード状の行は `ChoiceCard` がこの向きの `Field` を `FieldLabel` で包む (docs/guides/forms-and-inputs.md「入力欄の周りに要素を置く」)
  */
 export const Horizontal: Story = {
   args: { orientation: "horizontal" },
@@ -92,6 +92,32 @@ export const WithContent: Story = {
       </FieldContent>
       <Checkbox id="field-notify" />
     </Field>
+  ),
+};
+
+/**
+ * 複数選択のまとまり。`FieldLegend` がまとまりの名前になり、行の `FieldLabel` は `weight="normal"` で
+ * 通常の太さにする (docs/guides/forms-and-inputs.md「入力欄の周りに要素を置く」)
+ */
+export const CheckboxGroup: Story = {
+  render: () => (
+    <FieldSet>
+      <FieldLegend variant="label">デスクトップに表示する項目</FieldLegend>
+      <FieldGroup data-slot="checkbox-group">
+        <Field orientation="horizontal">
+          <Checkbox id="field-group-hard-disks" defaultChecked />
+          <FieldLabel htmlFor="field-group-hard-disks" weight="normal">
+            ハードディスク
+          </FieldLabel>
+        </Field>
+        <Field orientation="horizontal">
+          <Checkbox id="field-group-external-disks" />
+          <FieldLabel htmlFor="field-group-external-disks" weight="normal">
+            外部ディスク
+          </FieldLabel>
+        </Field>
+      </FieldGroup>
+    </FieldSet>
   ),
 };
 

@@ -49,6 +49,12 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 - errors はどの field でも 1 段平らにしてから揃える。`disableErrorFlat` の field では `flat(1)` が行われず、issue の配列が 1 要素として入る ([TanStack Form docs「FieldOptions」][] の disableErrorFlat)
 - `aria-invalid` と `data-invalid` は `field.state.meta.isValid` から取る。TanStack Form が submit を止める判定と同じ値である。`errors.flat(1)` の件数で決めると、`disableErrorFlat` の field で validator が `[]` を返したとき (errors は `[[]]`) に invalid が落ち、submit が止まる理由が支援技術から読めなくなる
 
+### Select に候補を渡す
+
+- `Select` (Base UI の `Select.Root`) に `items` を渡し、同じ配列から `SelectItem` を描く。`items` が無いと、`SelectValue` はトリガーに値そのもの (ID などの内部値) を出す ([Base UI docs「Select」][] の Formatting the value)。形は `Record<string, ReactNode>` か `{ value, label }[]` にする
+- `items` を渡すのは shadcn の base の形である。[shadcn skill「Base vs Radix」][] の Select は "Base requires an `items` prop on the root." と書き、[shadcn docs「Select」][] の Usage も `items` を渡す。`SelectValue` の children 関数と object values を使わない理由は「Select に `items` を渡す理由」にある
+- 実例は `src/components/parts/form-fields.tsx` の `FormSelectField`
+
 ### Select の値を解決する
 
 選んでいた値が候補から消えたことを、`onValueChange` の `null` 通知で検出しない。値の解決は消費側で引き取り、次の形にする。理由は「Select の値を消費側で解決する理由」にある。実例と、通知が来る条件の読み取りは `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
@@ -93,7 +99,11 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 ### 入力欄の周りに要素を置く
 
 - input の上に疑似要素や別の要素を重ねて、hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる。テストでは Playwright の hit-target 検査で click が落ちる (`docs/guides/testing/user-interactions.md`「クリックを発火する」)。registry の `Input` 単体は `src/components/ui/input-pointer.test.tsx` が見る
-- checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `ChoiceCard` / `ChoiceCardList` (`src/components/parts/choice-card.tsx`) を使う。単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置き、グループの外枠は `FieldSet` と `FieldLegend` にする
+- checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択の既定は、`FieldSet` と `FieldLegend` で囲み、その中の `FieldGroup` に `Field orientation="horizontal"` の行 (`Checkbox id` と `FieldLabel htmlFor`) を並べる形にする ([shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend、[shadcn docs「Field」][] の Checkbox)。ラベルだけの選択肢を並べる通常の複数選択はこの形で組む
+- 選択肢ごとに補足 (状態のバッジなど) を添える場面と、選択そのものが画面の主役になる場面では、カード状の選択面を `ChoiceCardList` と `ChoiceCard` (`src/components/parts/choice-card.tsx`) で組む ([shadcn docs「Field」][] の Choice Card)。説明文は `description` に、補足は `trailing` に渡す。どちらも checkbox の説明として読まれる。条件で表示を切り替える補足は、条件で null を返す部品にせず、呼び出し側で条件を書く (`cond && <Badge />`)。行を見分ける識別子は名前として読ませるので、`trailing` でなく `label` に含める。まとまりの名前は、既定の形と同じく外側の `FieldSet` と `FieldLegend` が持つ。`FieldLabel` で `Field` を包む形を部品の外で手書きしない。部品が吸収している点は「複数選択の形を場面で分ける理由」にある
+- 複数選択の行の間隔は、`FieldGroup` に `data-slot="checkbox-group"` を渡して詰める。registry の `FieldGroup` がこの属性で間隔を持ち、[shadcn の `dialog-example.tsx`][] もこの形で詰める。skill の例の `className="gap-3"` は、`ui/` の外では `no-restyle` が止める
+- 複数選択のまとまりの中の行の `FieldLabel` には `weight="normal"` を渡し、通常の太さで描く。[shadcn の `field-checkbox.tsx`][] が行の `FieldLabel` に付ける `className="font-normal"` に当たる。太さを `className` で変えない。理由は「複数選択の形を場面で分ける理由」にある
+- 単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置く。[shadcn の `field-checkbox.tsx`][] の末尾の単独の行と同じく、`FieldLabel` に class も `weight` も渡さない
 
 ### placeholder を足す
 
@@ -146,6 +156,66 @@ form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 | `useFieldContext<T>()` の宣言に任せる           | 宣言が実フィールドと結び付かない ([TanStack/form#1240][])                                                          | 却下     |
 | 上流の値型を突き合わせる API を待つ             | stable (1.33.5) の公開型に無い (2026-09-23、`npm pack` で取得して確認)                                             | 見送り   |
 
+### 複数選択の形を場面で分ける理由
+
+[shadcn docs「Field」][] は、選択肢を並べる形として Checkbox の節と Choice Card の節を示す。Choice Card の節の本文 ([shadcn の `field.mdx`][]) は "Wrap `Field` components inside `FieldLabel` to create selectable field groups. This works with `RadioItem`, `Checkbox` and `Switch` components." と書き、デモ ([shadcn の `field-choice-card.tsx`][]) は `RadioGroup` で組む。このテンプレートは複数選択の既定を Checkbox の並びにし、Choice Card は `Checkbox` で組んで場面を限って使う。
+
+| 形                                                                                                                     | 使う場面                                                         | 評価                                                                                                                                                                                                                                                                                                                                                       | 扱い             |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| Checkbox の並び (`FieldSet` > `FieldLegend` > `FieldGroup` > `Field orientation="horizontal"`。Field docs の Checkbox) | ラベルだけの選択肢を並べる通常の複数選択                         | [shadcn skill「Forms & Inputs」][] が、関連する checkbox のまとまりに使う形として挙げる。horizontal の `Field` は `FieldLabel` を行の残りの幅へ広げる (`src/components/ui/field.tsx`) ので、行の右端を押しても切り替わる。幅 400px の行で label が x=28〜400 を占め、x=390 を押すと `aria-checked="true"` になった (2026-10-02、shadcn 4.21.0 の registry) | **既定**         |
+| Choice Card (`FieldLabel` で `Field` を包む。Field docs の Choice Card。部品は `ChoiceCardList` / `ChoiceCard`)        | 選択肢ごとに補足を添える場面、選択そのものが画面の主役になる場面 | 行ごとに枠線と余白と選択時の面を持つカードの意匠になる (`src/components/ui/field.tsx` の `FieldLabel`)。補足を置く余地と選択時の面があり、選択した行が一覧の中で目立つ。一覧の既定にすると、補足の無い通常の選択肢にもカードの枠が付く。押せる範囲は Checkbox の並びと変わらない                                                                           | 場面を限って使う |
+
+`src/components/parts/choice-card.tsx` は Choice Card の形を `Checkbox` で部品にし、手書きすると落としやすい次の 4 点を吸収する。
+
+| 点                | 部品の持ち方                                                                                                                                                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id` の採番       | `id` を省くと `useId` で採番する。`useId` は引数の有無に関わらず毎回呼ぶ。デフォルト引数 (`id = useId()`) にすると、消費側が `id` の有無を切り替えたときに hook の数が変わる                                                                                                                                       |
+| 行の cursor       | 有効な行に `cursor-pointer`、disabled の行に `cursor-default` を当てる。registry の `FieldLabel` は cursor を持たず、`Label` の disabled の指定 (`group-data-[disabled=true]`) は祖先に素の `.group` を要求するので、Choice Card の形では当たらない                                                                |
+| `trailing` の揃え | `trailing` をタイトルと checkbox の間に置く。horizontal の `Field` は `FieldContent` があると `items-start` になる (`src/components/ui/field.tsx`) ので、補足はタイトルの 1 行目に上端が揃う                                                                                                                       |
+| 名前と説明        | 説明文を [shadcn の `field-choice-card.tsx`][] と同じく `FieldContent` の中の `FieldTitle` の下に置く。checkbox の `aria-labelledby` を `FieldTitle` に、`aria-describedby` を説明文と `trailing` に向ける。向けないと、label の中の説明文と補足が名前に入る。理由は「Choice Card の名前と説明を分ける理由」にある |
+
+まとまりの中の行の `FieldLabel` は、公式の例に合わせて `weight="normal"` で通常の太さにする。
+
+- [shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend の例、[shadcn docs「Field」][] の Checkbox の例 ([shadcn の `field-checkbox.tsx`][])、[shadcn の `dialog-example.tsx`][] は、まとまりの中の行の `FieldLabel` に `className="font-normal"` を付ける。`field-checkbox.tsx` の末尾の単独の行と、Choice Card の例 ([shadcn の `field-choice-card.tsx`][]) の `FieldLabel` には付けない
+- `ui/` の外では `no-restyle` がこの class を止める。`@shadcn/lint` 0.2.0 は font-weight を typography に分類し、`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許す (2026-10-02 に `vp lint` で確認)。メッセージは `"font-normal" is not allowed on <FieldLabel>: <FieldLabel> owns its typography. Add a variant in src/components/ui/field.tsx only if the design explicitly calls for this treatment.` である (2026-10-04、`@shadcn/lint` 0.2.0 の `vp lint` で確認)
+- `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順に照らすと、0 の段には当たらない。registry の `FieldLabel` には太さを切り替えるノブ (data 属性・CSS 変数・prop) が無い
+- まとまりの中の行の通常の太さは、複数選択のまとまりのたびに繰り返す見た目で、公式の例も明示的に付けるので、1 の段に当たる。`src/components/ui/field.tsx` の `FieldLabel` の `weight` の variant と、台帳 `docs/registry-deviations.md` の行で持つ
+- variant の名前は、変える性質 (`weight`) と、公式の例の class と同じ語 (`normal`) にする。公式の例を写すときに `className="font-normal"` が `weight="normal"` へ 1 対 1 で置き換わる
+- `ChoiceCard` には当てない。Choice Card の例は `FieldLabel` に太さを付けず、カードの見出しは `FieldTitle` が自分の太さ (`font-medium`) で描く
+
+### Choice Card の名前と説明を分ける理由
+
+Choice Card は `FieldLabel` (`<label>`) の中にタイトル・説明文・`trailing` を置く。Base UI の `Checkbox` は、自分を包む label を `aria-labelledby` で指して名前にする。
+
+- accname は、`aria-labelledby` が指す要素の子孫のテキストを、深さによらず名前に集める。子孫が `aria-label` などで自分の text alternative を持つときだけ、その値が子孫のテキストに代わる ([accname 1.2][] の 4.3.2 の注記 "results in text collected from all the elements in the current node's subtree, no matter how deep it is. However, any given descendant node's text alternative can result from higher precedent markup described in steps B through D above")。説明文と補足は素のテキストなので、shadcn の例のままでは名前に入る
+- `aria-describedby` には、名前に使ったテキストを除く規定が無い。[accname 1.2][] の 4.2 で名前との重複を除く条件が付くのは、優先順の 3 (host language、"only if they were not already used for the accessible name") と 4 (`title`、"Only use if not already used for the accessible name of this node") だけである。説明文を `aria-describedby` に結ぶだけでは、説明文が名前と説明の両方で読まれる
+- [APG「Providing Accessible Names and Descriptions」][] は名前を "a short string, typically 1 to 3 words" とし、説明は "A visible description together with aria-describedby is generally recommended." と書く。同じ役割の要素には "Create unique names for elements with the same role unless the elements are actually identical." と求めるので、行を見分ける識別子は名前に入れる
+- [Base UI docs「Forms」][] の Naming form controls は、Input controls の例 (Implicitly labeling a switch) で `Field.Label` に control と文言を包み、`Field.Description` をその外に置く。Describing the control は `Field.Description` が説明を自動で結ぶと書くので、名前はラベル、説明は説明文になる
+
+| 案                                                                                      | 名前 / 説明 (Chromium の accessibility tree、2026-10-04)         | 評価                                                                                                                                                                                            | 採否     |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| shadcn の例のまま                                                                       | 「チームA 開発と運用を担当する 管理者」/ なし                    | 名前が長く、説明として区別されない                                                                                                                                                              | 却下     |
+| 例に `aria-describedby` だけを足す                                                      | 「チームA 開発と運用を担当する 管理者」/「開発と運用を担当する」 | 説明文を名前と説明で 2 回読む                                                                                                                                                                   | 却下     |
+| 説明文を label の外へ出す (Base UI の形)                                                | 「チームA」/「開発と運用を担当する」                             | 枠・選択時の面・フォーカスリングは `FieldLabel` が持つ (`src/components/ui/field.tsx`) ので、説明文がカードの外に出るか、その見た目を `parts/` に写すことになる。説明文を押しても切り替わらない | 却下     |
+| `aria-labelledby` を `FieldTitle` に、`aria-describedby` を説明文と `trailing` に向ける | 「チームA」/「開発と運用を担当する 管理者」                      | 見た目と押せる範囲は shadcn の例のまま、名前と説明は Base UI の形と同じ分け方になる。明示した `aria-labelledby` は Base UI が付ける値より優先される                                             | **採用** |
+
+`trailing` は任意の要素なので、id を付けるために素の `span` で包む。`display: contents` にはしない。
+
+- `display: contents` の要素の accessibility tree での扱いは、ブラウザごとに不具合と修正を重ねてきた ([Adrian Roselli「Display: Contents Is Not a CSS Reset」][])
+- 他のブラウザで説明に入るかを、テストで確かめられない。Playwright の ARIA snapshot が持つのは役割・名前と `checked` などの状態で、説明を含まない ([Playwright docs「ARIA snapshots」][])。ブラウザの accessibility tree から説明を読めたのは、Chromium の CDP (`Accessibility.getFullAXTree`) だけだった (2026-10-04、Playwright 1.63.0)
+- 素の `span` は flex の子になるので、呼び出し側が補足に付けた `self-*` の揃えは包みの中にしか効かない。補足はタイトルの 1 行目に上端を揃える
+- 包むかどうかは値で決め、何も描かない値 (undefined・null・真偽値・空文字と、それだけの配列) では包まない (`src/components/parts/renders-nothing.ts`)。部品が何を描くかは React の中から分からない ([React docs「Children」][] の "There is no way to get the rendered output of an inner component like `<MoreRows />` when manipulating children.")。条件で null を返す部品を渡すと、何も描かなくても包みが残り、隙間が 1 つ増える
+
+### Select に `items` を渡す理由
+
+[Base UI docs「Select」][] の Formatting the value は、トリガーに値ではなく表示名を出す手段を 3 つ挙げる。
+
+| 案                              | 評価                                                                                                                                        | 採否     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `Select.Root` に `items` を渡す | 1 つの配列からトリガーの表示とリストの項目を描くので、値と表示名の対応を 1 か所に持つ。[shadcn skill「Base vs Radix」][] が base に求める形 | **採用** |
+| `Select.Value` の children 関数 | 値から表示名への対応を、リストの項目とは別にもう 1 か所書く                                                                                 | 却下     |
+| 項目の値を object にする        | form の値が object になり、スキーマと送信する値の形が変わる                                                                                 | 却下     |
+
 ### Select の値を消費側で解決する理由
 
 Base UI の `Select` は、候補が変わって現在値が候補から消えたとき、自分で値を戻して `onValueChange` を呼ぶことがある。この自己リセットは公式 docs に無い挙動で、通知が来ない条件があり、版で経路が変わる。条件の読み取りと版は `src/components/parts/form-fields.tsx` の `FormSelectField` の docstring にある。
@@ -172,8 +242,22 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/df1752dfe092957f84aa467d2270436139e3ecc7/apps/v4/registry/bases/base/examples/dialog-example.tsx
 [ARIA in HTML「form」]: https://www.w3.org/TR/html-aria/#el-form
 [React docs「createPortal」]: https://react.dev/reference/react-dom/createPortal
+[React docs「Children」]: https://react.dev/reference/react/Children
 [HTML Standard「Association of controls and forms」]: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#association-of-controls-and-forms
 [shadcn-ui/ui#2918]: https://github.com/shadcn-ui/ui/discussions/2918
 [MDN「display」]: https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/display
 [Adrian Roselli「Display: Contents Is Not a CSS Reset」]: https://adrianroselli.com/2018/05/display-contents-is-not-a-css-reset.html
+[shadcn skill「Forms & Inputs」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/forms.md
+[shadcn docs「Field」]: https://ui.shadcn.com/docs/components/base/field
+[shadcn の `field.mdx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/content/docs/components/base/field.mdx
+[shadcn の `field-checkbox.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/field-checkbox.tsx
+[shadcn の `field-choice-card.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/field-choice-card.tsx
+[shadcn の `dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/examples/dialog-example.tsx
+[Base UI docs「Select」]: https://base-ui.com/react/components/select
+[accname 1.2]: https://www.w3.org/TR/2026/WD-accname-1.2-20261002/
+[APG「Providing Accessible Names and Descriptions」]: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
+[Base UI docs「Forms」]: https://base-ui.com/react/handbook/forms
+[Playwright docs「ARIA snapshots」]: https://playwright.dev/docs/aria-snapshots
+[shadcn skill「Base vs Radix」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/base-vs-radix.md
+[shadcn docs「Select」]: https://ui.shadcn.com/docs/components/base/select
 [TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240
