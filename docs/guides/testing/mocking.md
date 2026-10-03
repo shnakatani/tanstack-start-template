@@ -45,10 +45,10 @@
 
 `import.meta.env` と `process.env` の値は `vi.stubEnv` で差し替え、テストの中では戻さない。戻すのは 2 か所で、どちらも全 project に効く。理由は「環境変数の戻しを設定と setup の両方に置く理由」。
 
-| 戻す場所                                                | 時点         |
-| ------------------------------------------------------- | ------------ |
-| `tooling/test/config.ts` の `unstubEnvs: true`          | 各テストの前 |
-| `vitest.setup.ts` (root の `setupFiles`) の `afterEach` | 各テストの後 |
+| 戻す場所                                                      | 時点         |
+| ------------------------------------------------------------- | ------------ |
+| `tooling/test/config.ts` の `unstubEnvs: true`                | 各テストの前 |
+| `tooling/test/setup.ts` (root の `setupFiles`) の `afterEach` | 各テストの後 |
 
 - `.concurrent` を付けたテストでは `vi.stubEnv` を使わない。戻すのは `vi.unstubAllEnvs()` で、1 つのテストの終わりに並行する別のテストの値も戻る ([Vitest docs「unstubEnvs」][] の warning)
 - env はモジュールの最上位ではなく、呼び出しの時点で読む。最上位で読んだ値は、テストで差し替えても変わらない
