@@ -64,18 +64,12 @@ ORM の戻り値は、UI へ流す前に `v.safeParse` で突き合わせる。
 失敗時に投げるメッセージには**値そのものを載せず、位置 (`v.getDotPath`) と件数だけを載せる**。
 server のログに残る文言に DB の中身 (個人情報になりうる) を混ぜないためで、位置と件数があればどの行のどの項目かは追える (ADR-0038)。
 
-読み出し口では `v.parse` を使わない。
-Valibot docs「Parse data」は検証の書き方を 3 つ挙げ、`parse` は合わないときに `ValiError` を投げ、`safeParse` は issue を返す。
-`ValiError` は message に受け取った値を含み (`Invalid type: Expected string but received 12345`)、`issues` の各 issue も `input` に値を持つ。
-`parse` の設定で `message` を差し替えても `issues` は残り、`src/start.ts` の `logServerFnErrors` がエラーをオブジェクトごと `console.error` に渡すので、値が server のログに残る (valibot 1.5.0、2026-10-02 実測)。
-`safeParse` なら、issue を受け取った側が投げる文言を位置と件数に絞れる。
-
-| 案                                                      | 評価                                                                                   | 採否     |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------- |
-| `v.parse` で投げる                                      | message と issue の `input` に値が載り、`logServerFnErrors` が出すエラーごとログに残る | 却下     |
-| `v.parse` の `message` を差し替えて投げる               | message からは値が消えるが、issue の `input` が残る                                    | 却下     |
-| `v.is` で型ガードする                                   | issue が得られず、失敗の位置を出せない (Valibot docs「Parse data」の Type guards)      | 却下     |
-| `v.safeParse` で受け、位置と件数だけの `Error` を投げる | 値をログへ出さずに、どの行のどの項目かを追える                                         | **採用** |
+| 案                                                      | 評価                                                                                                                                                                                                                                                                                                                             | 採否     |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `v.parse` で投げる                                      | 合わないと `ValiError` を投げ (Valibot docs「Parse data」)、その message (`Invalid type: Expected string but received 12345`) と各 issue の `input` に受け取った値が載る。`src/start.ts` の `logServerFnErrors` がエラーをオブジェクトごと `console.error` に渡すので、値が server のログに残る (valibot 1.5.0、2026-10-02 実測) | 却下     |
+| `v.parse` の `message` を差し替えて投げる               | message からは値が消えるが、issue の `input` が残り、同じ経路でログに残る                                                                                                                                                                                                                                                        | 却下     |
+| `v.is` で型ガードする                                   | issue が得られず、失敗の位置を出せない (Valibot docs「Parse data」の Type guards)                                                                                                                                                                                                                                                | 却下     |
+| `v.safeParse` で受け、位置と件数だけの `Error` を投げる | issue を返すので (Valibot docs「Parse data」)、受け取った側が投げる文言を位置と件数に絞れる。値をログへ出さずに、どの行のどの項目かを追える                                                                                                                                                                                      | **採用** |
 
 ### 4. 項目の呼称も metadata から導出する
 

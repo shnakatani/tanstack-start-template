@@ -13,7 +13,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 
 ### story を置く
 
-- story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まる。[Storybook docs「Sidebar & URLS」][] は部品のパスを写した階層を勧め、auto-title はその階層をファイルの場所から作る。手で書くと、ファイルを動かしたときに title だけが古いパスを指す
+- story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まる (「story に `title` を書かない理由」)
 - story を置けるのは `src/components/` 配下に限る。`.storybook/main.ts` の `stories` をそこへ絞っているためで、他へ置くと Storybook も vitest の project も拾わず、a11y 検査ごと無言で外れる。範囲を広げるかは、`features/` や `routes/**/-components/` に story を書きたくなった時点で決める
 - `src/components/ui/` の registry 部品は、消費側からの import が 0 件でもすべて story を書く。理由は「registry 部品を全件カタログにする理由」にある
 - `src/components/ui/` に置いた `*.stories.tsx` は、`*.test.tsx` と同じ「registry 由来でない付随ファイル」として baseline 検査の対象外になる (ADR-0020)
@@ -31,7 +31,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 - `ui/` の story は `no-restyle` / `require-static-classes` の適用外で、lint は鳴らない (ADR-0011)。鳴らないぶんはレビューで見る。`parts/` や `action/` など `ui/` の外の story は、消費側と同じく lint が止める
 - pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く (`src/test/app/settling-action.ts`)。決着しない Transition が残ると、後続 story が pending のまま止まる
 - Storybook の vitest 実行は story ごとに描き先の要素と root を作り直し、前の story を unmount する。それでも、React が進行中の Transition を root をまたいでまとめるので ([React docs「useTransition」][] の Caveats の "If there are multiple ongoing Transitions, React currently batches them together.")、後続 story の Transition が残った Transition と一緒に待たされる。2026-09-28 に React 19.3.0・Storybook 10.6.0 で、決着しない action を押した story の後ろでは 50ms で決着する action の story が 1.5 秒たっても pending のままで、単独では 78ms で解けた
-- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。canvas の余白は全 story に共通の要件で、Storybook の UI では既定の `layout: "padded"` ([Storybook docs「Story layout」][])、vitest 経由では `.storybook/preview.css` が持つ。decorator で足すと、その story だけが別の余白で描かれる (「vitest 経由の story に padding を当てる理由」)
+- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない (「vitest 経由の story に padding を当てる理由」)
 - 狭い幅での見え方は、story に `globals: { viewport: { value: "narrow" } }` を付けて目で見る。その story に寸法を測る play は書かない (「狭幅を story で見る理由」)。実例は `src/components/parts/centered-card.stories.tsx` の `Narrow`
 - viewport を選ばない story は、vitest から走らせるとブラウザテストの既定と別の寸法で描かれる。story とブラウザテストで幅に依る見え方が食い違ったら、まずこの差を疑う (「vitest 経由の story の viewport が決まる仕組み」)
 
@@ -151,6 +151,10 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 
 上流の `write-story` skill ([Storybook の `storybook-story-instructions.md`][]) は「ALWAYS write a Storybook story for any component written」と書いており、この方針はその既定値に沿う。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
 
+### story に `title` を書かない理由
+
+[Storybook docs「Sidebar & URLS」][] は "We recommend using a nesting scheme that mirrors the filesystem path of the components." と勧め、auto-title はその階層をファイルの場所から作る。`title` を手で書くと、ファイルを動かしたときに title だけが古いパスを指す。
+
 ### `cva` の variant の `options` を手で渡す理由
 
 Storybook は `argTypes` を部品の型から推論し、手で書いた `argTypes` はその推論を上書きする ([Storybook docs「ArgTypes」][] の "Any argTypes specified manually will override the inferred values.")。`cva` の variant は、推論に任せるとどちらの解析器でも control で使える選択肢にならない。
@@ -160,9 +164,10 @@ Storybook は `argTypes` を部品の型から推論し、手で書いた `argTy
 | 既定の `react-docgen`                                     | `any` になり、control に選択肢が出ない (2026-10-01、`vp exec storybook tools docs show --id ui-button` の Props が `variant?: any`)                                                            |
 | `react-docgen-typescript`                                 | literal の union に `null` が混ざり、`null` も選択肢に出る。選ぶと variant の class が付かない (2026-10-02、Storybook 10.6.0 / react-docgen-typescript 2.4.0 / class-variance-authority 0.7.1) |
 
-- 公式は型が出ないときの直し方として `react-docgen-typescript` への切り替えを案内し ([Storybook docs「TypeScript」][] の "The types are not being generated for my component")、[Storybook docs「Manifests」][] も多くのプロジェクトに `react-docgen-typescript` を勧める。このリポジトリはこの案内から外れ、既定の `react-docgen` のまま `options` を手で書く
-- `null` は class-variance-authority 0.7.1 の `VariantProps` が variant の型に持つ値で、渡すと variant を外す ([cva docs「What's new」][] の "Passing `null` used to disable a variant")。Storybook は union の `null` を選択肢に含める方針で ([storybookjs/storybook#35599][])、`react-docgen-typescript` の設定にも `null` を外すものは無い
-- cva の作者は cva@1 で `null` を外すと答えている ([joe-bell/cva#270][]、[cva docs「What's new」][] の "Goodbye `null`")。cva@1 はパッケージ名が `cva` に変わり、2026-10-02 時点で beta だけが公開されている (`npm view cva dist-tags` が `beta: 1.0.0-beta.12`)
+- 公式は型が出ないときの直し方として `react-docgen-typescript` への切り替えを案内し ([Storybook docs「TypeScript」][] の "The types are not being generated for my component")、[Storybook docs「Manifests」][] も manifest の props を抜き出す解析器として多くのプロジェクトに `react-docgen-typescript` を勧める (同じ段落は、生成が遅ければ速いが粗い `react-docgen` へ切り替えてよいとも書く)。このリポジトリはこの案内から外れ、既定の `react-docgen` のまま `options` を手で書く
+- `null` は class-variance-authority 0.7.1 の `VariantProps` が variant の型に持つ値で、渡すと variant を外す ([cva docs「What's new」][] の "Passing `null` used to disable a variant")。`react-docgen-typescript` の経路ではこの `null` が選択肢に残り (上の表の実測)、`react-docgen-typescript` の設定にも `null` を外すものは無い
+- cva の作者は "`null` will be removed in `cva@1.0`, and this is likely a Storybook issue not a `cva` issue" と答えて issue を閉じた ([joe-bell/cva#270][]。外す内容は [cva docs「What's new」][] の "Goodbye `null`")。型から `null` を外すのは cva@1 で、cva 0.7.1 のまま `react-docgen-typescript` の control から `null` を外すことは、cva も Storybook も約束していない
+- cva@1 はパッケージ名が `cva` に変わり、安定版は無い (2026-10-04、`npm view cva dist-tags` が `latest: 0.0.0`、`beta: 1.0.0-beta.12`)
 
 | 案                                                                                                 | 評価                                                                                              | 採否     |
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------- |
@@ -180,7 +185,7 @@ cva@1 の安定版へ上げたら、`react-docgen-typescript` に切り替えて
 
 - この差は `.storybook/preview.css` の `body:not(.sb-show-main)` が埋める。Storybook の UI では body へ `sb-show-main` が付くので、付いていないときだけ同じ `1rem` を当てる。`sb-main-*` で見ないのは、`layout: "none"` の story が UI 側でも `sb-main-*` を持たないため (理由は同ファイルのコメント)
 - 埋めないと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、そのはみ出しが背景を持つ唯一の箱 (body) の外へ出て axe が色を測れなくなる。`html` は背景を持たないので受け止められない
-- decorator で余白を足さないのは、この余白が全 story に共通の要件だからである。[Storybook docs「Decorators」][] は部品が端まで描かれるときの直し方として decorator で余白を足す例を示すが、その余白は Storybook の UI では既定の `padded` が、vitest 経由では `preview.css` がすでに付ける。decorator で足すと、その story だけが二重の余白で描かれる
+- decorator で余白を足さないのは、この余白が全 story に共通の要件だからである。[Storybook docs「Decorators」][] は部品が端まで描かれるときの直し方として decorator で余白を足す例を示すが、その余白は Storybook の UI では既定の `layout: "padded"` ([Storybook docs「Story layout」][]) が、vitest 経由では `preview.css` がすでに付ける。decorator で足すと、その story だけが二重の余白で描かれる
 
 ### 狭幅を story で見る理由
 
@@ -240,6 +245,5 @@ MCP が優るのは、ツールの説明がエージェントに常に見える�
 [Storybook docs「TypeScript」]: https://storybook.js.org/docs/configure/integration/typescript
 [Storybook docs「Manifests」]: https://storybook.js.org/docs/ai/manifests
 [Storybook docs「MCP server」]: https://storybook.js.org/docs/ai/mcp/overview
-[storybookjs/storybook#35599]: https://github.com/storybookjs/storybook/pull/35599
 [joe-bell/cva#270]: https://github.com/joe-bell/cva/issues/270
 [cva docs「What's new」]: https://beta.cva.style/getting-started/whats-new

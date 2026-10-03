@@ -28,7 +28,7 @@ paths:
 lint (`typescript/consistent-type-assertions`) が止める。`as const` は可。直し方 (ADR-0007):
 
 - 型が合わないときはキャストせず実装を変える。代替はランタイムガード / `as const` / 型ガード関数 / 親型 API
-- 外部データ (DB の行 / API レスポンス等) は既存のスキーマ (`src/features/<domain>/schema.ts`) を `v.safeParse` に通して検証し、`v.parse` を使わない。`parse` の `ValiError` は受け取った値を持ち、server のログに残る (ADR-0013)
+- DB の行 (ORM の戻り値) は読み出し口で既存のスキーマ (`src/features/<domain>/schema.ts`) の `v.safeParse` に通し、失敗時は値を載せず位置と件数だけを投げる。`v.parse` が投げる `ValiError` は受け取った値を持ち、server のログに残る (ADR-0013)
 - テスト double もまず型注釈で表現する。抑制へ落とすのは、private constructor を持つ外部型のように構造的構築が閉じている場合だけ
 - 回避不能な場合のみ `oxlint-disable-next-line typescript/consistent-type-assertions` で行単位抑制し、理由を directive の `--` に書く
 - `src/components/ui/` の registry で抑制したら台帳 `docs/registry-deviations.md` にも記録する (ADR-0020)
