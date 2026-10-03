@@ -99,9 +99,10 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 ### 入力欄の周りに要素を置く
 
 - input の上に疑似要素や別の要素を重ねて、hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる。テストでは Playwright の hit-target 検査で click が落ちる (`docs/guides/testing/user-interactions.md`「クリックを発火する」)。registry の `Input` 単体は `src/components/ui/input-pointer.test.tsx` が見る
-- checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択は `FieldSet` と `FieldLegend` で囲み、その中の `FieldGroup` に `Field orientation="horizontal"` の行 (`Checkbox id` と `FieldLabel htmlFor`) を並べる ([shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend、[shadcn docs「Field」][] の Checkbox)。Choice Card を既定にしない理由は「複数選択を checkbox の並びで組む理由」にある
+- checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択の既定は、`FieldSet` と `FieldLegend` で囲み、その中の `FieldGroup` に `Field orientation="horizontal"` の行 (`Checkbox id` と `FieldLabel htmlFor`) を並べる形にする ([shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend、[shadcn docs「Field」][] の Checkbox)。ラベルだけの選択肢を並べる通常の複数選択はこの形で組む
+- 選択肢ごとに補足 (識別子や状態のバッジ) を添える場面と、選択そのものが画面の主役になる場面では、カード状の選択面を `ChoiceCardList` と `ChoiceCard` (`src/components/parts/choice-card.tsx`) で組む ([shadcn docs「Field」][] の Choice Card)。補足は `trailing` に渡す。まとまりの名前は、既定の形と同じく外側の `FieldSet` と `FieldLegend` が持つ。`FieldLabel` で `Field` を包む形を部品の外で手書きしない。部品が吸収している点は「複数選択の形を場面で分ける理由」にある
 - 複数選択の行の間隔は、`FieldGroup` に `data-slot="checkbox-group"` を渡して詰める。registry の `FieldGroup` がこの属性で間隔を持ち、[shadcn の `dialog-example.tsx`][] もこの形で詰める。skill の例の `className="gap-3"` は、`ui/` の外では `no-restyle` が止める
-- 複数選択の行の `FieldLabel` に class を足さず、太さは registry の既定 (`font-medium`) のまま置く。公式の例が行の `FieldLabel` に付ける `className="font-normal"` も、`ui/` の外では `no-restyle` が止める。既定のまま置く理由は「複数選択を checkbox の並びで組む理由」にある
+- 複数選択の行の `FieldLabel` に class を足さず、太さは registry の既定 (`font-medium`) のまま置く。公式の例が行の `FieldLabel` に付ける `className="font-normal"` も、`ui/` の外では `no-restyle` が止める。既定のまま置く理由は「複数選択の形を場面で分ける理由」にある
 - 単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置く。[shadcn の `field-checkbox.tsx`][] の末尾の単独の行と同じく、`FieldLabel` に class を足さない
 
 ### placeholder を足す
@@ -155,14 +156,22 @@ form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 | `useFieldContext<T>()` の宣言に任せる           | 宣言が実フィールドと結び付かない ([TanStack/form#1240][])                                                          | 却下     |
 | 上流の値型を突き合わせる API を待つ             | stable (1.33.5) の公開型に無い (2026-09-23、`npm pack` で取得して確認)                                             | 見送り   |
 
-### 複数選択を checkbox の並びで組む理由
+### 複数選択の形を場面で分ける理由
 
-[shadcn docs「Field」][] は、checkbox を並べる形を 2 つ示す。
+[shadcn docs「Field」][] は、checkbox を並べる形を 2 つ示す。どちらも公式の形で、このテンプレートは既定を Checkbox の並びにし、Choice Card は場面を限って使う。
 
-| 案                                                                                                                     | 評価                                                                                                                                                                                                                                                                                                                                                       | 採否         |
-| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Checkbox の並び (`FieldSet` > `FieldLegend` > `FieldGroup` > `Field orientation="horizontal"`。Field docs の Checkbox) | [shadcn skill「Forms & Inputs」][] が、関連する checkbox のまとまりに使う形として挙げる。horizontal の `Field` は `FieldLabel` を行の残りの幅へ広げる (`src/components/ui/field.tsx`) ので、行の右端を押しても切り替わる。幅 400px の行で label が x=28〜400 を占め、x=390 を押すと `aria-checked="true"` になった (2026-10-02、shadcn 4.21.0 の registry) | **採用**     |
-| Choice Card (`FieldLabel` で `Field` を包む。Field docs の Choice Card)                                                | 行ごとに枠線と余白と選択時の面を持つカードの意匠になる (`src/components/ui/field.tsx` の `FieldLabel`)。一覧の既定にすると、どの行にもカードの枠が付く。押せる範囲は Checkbox の並びと変わらない                                                                                                                                                           | 既定にしない |
+| 形                                                                                                                     | 使う場面                                                         | 評価                                                                                                                                                                                                                                                                                                                                                       | 扱い             |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| Checkbox の並び (`FieldSet` > `FieldLegend` > `FieldGroup` > `Field orientation="horizontal"`。Field docs の Checkbox) | ラベルだけの選択肢を並べる通常の複数選択                         | [shadcn skill「Forms & Inputs」][] が、関連する checkbox のまとまりに使う形として挙げる。horizontal の `Field` は `FieldLabel` を行の残りの幅へ広げる (`src/components/ui/field.tsx`) ので、行の右端を押しても切り替わる。幅 400px の行で label が x=28〜400 を占め、x=390 を押すと `aria-checked="true"` になった (2026-10-02、shadcn 4.21.0 の registry) | **既定**         |
+| Choice Card (`FieldLabel` で `Field` を包む。Field docs の Choice Card。部品は `ChoiceCardList` / `ChoiceCard`)        | 選択肢ごとに補足を添える場面、選択そのものが画面の主役になる場面 | 行ごとに枠線と余白と選択時の面を持つカードの意匠になる (`src/components/ui/field.tsx` の `FieldLabel`)。補足を置く余地と選択時の面があり、選択した行が一覧の中で目立つ。一覧の既定にすると、補足の無い通常の選択肢にもカードの枠が付く。押せる範囲は Checkbox の並びと変わらない                                                                           | 場面を限って使う |
+
+Choice Card は、[shadcn の `field.mdx`][] が "Wrap `Field` components inside `FieldLabel` to create selectable field groups. This works with `RadioItem`, `Checkbox` and `Switch` components." と書く形である。`src/components/parts/choice-card.tsx` はこの形を `Checkbox` で部品にし、手書きすると落としやすい次の 3 点を吸収する。
+
+| 点                | 部品の持ち方                                                                                                                                                                                                                                        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id` の採番       | `id` を省くと `useId` で採番する。`useId` は引数の有無に関わらず毎回呼ぶ。デフォルト引数 (`id = useId()`) にすると、消費側が `id` の有無を切り替えたときに hook の数が変わる                                                                        |
+| 行の cursor       | 有効な行に `cursor-pointer`、disabled の行に `cursor-default` を当てる。registry の `FieldLabel` は cursor を持たず、`Label` の disabled の指定 (`group-data-[disabled=true]`) は祖先に素の `.group` を要求するので、Choice Card の形では当たらない |
+| `trailing` の揃え | `trailing` をタイトルと checkbox の間に置く。horizontal の `Field` は `FieldContent` があると `items-start` になる (`src/components/ui/field.tsx`) ので、補足はタイトルの 1 行目に上端が揃う                                                        |
 
 行の `FieldLabel` の太さは、公式の例と揃えない。
 
@@ -212,6 +221,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [Adrian Roselli「Display: Contents Is Not a CSS Reset」]: https://adrianroselli.com/2018/05/display-contents-is-not-a-css-reset.html
 [shadcn skill「Forms & Inputs」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/forms.md
 [shadcn docs「Field」]: https://ui.shadcn.com/docs/components/base/field
+[shadcn の `field.mdx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/content/docs/components/base/field.mdx
 [shadcn の `field-checkbox.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/field-checkbox.tsx
 [shadcn の `dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/examples/dialog-example.tsx
 [Base UI docs「Select」]: https://base-ui.com/react/components/select

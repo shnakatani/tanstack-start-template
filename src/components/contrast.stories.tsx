@@ -78,16 +78,16 @@ export const OnBackground: StoryObj = {
       <Row className="bg-primary/80 text-primary-foreground">主操作の hover bg-primary/80</Row>
       <Row className="bg-primary/5 text-primary">破線ボタンの hover bg-primary/5</Row>
       <Row className="bg-primary/5 text-foreground">
-        Choice Card の選択済み FieldLabel bg-primary/5 + text-foreground
+        選択済み ChoiceCard bg-primary/5 + text-foreground
       </Row>
       <Row className="bg-primary/5 text-muted-foreground">
-        Choice Card の選択済み FieldLabel の説明 bg-primary/5 + text-muted-foreground
+        選択済み ChoiceCard の説明 bg-primary/5 + text-muted-foreground
       </Row>
       <Row className="bg-primary/10 text-foreground">
-        Choice Card の選択済み FieldLabel (dark) bg-primary/10 + text-foreground
+        選択済み ChoiceCard (dark) bg-primary/10 + text-foreground
       </Row>
       <Row className="bg-primary/10 text-muted-foreground">
-        Choice Card の選択済み FieldLabel の説明 (dark) bg-primary/10 + text-muted-foreground
+        選択済み ChoiceCard の説明 (dark) bg-primary/10 + text-muted-foreground
       </Row>
       <Row className="bg-muted/50 text-muted-foreground">
         淡色行の hover bg-muted/50 + text-muted-foreground
