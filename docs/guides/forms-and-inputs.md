@@ -102,7 +102,7 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 - checkbox の行を素の `<label>` や手書きの `role="group"` で組まない。複数選択の既定は、`FieldSet` と `FieldLegend` で囲み、その中の `FieldGroup` に `Field orientation="horizontal"` の行 (`Checkbox id` と `FieldLabel htmlFor`) を並べる形にする ([shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend、[shadcn docs「Field」][] の Checkbox)。ラベルだけの選択肢を並べる通常の複数選択はこの形で組む
 - 選択肢ごとに補足 (識別子や状態のバッジ) を添える場面と、選択そのものが画面の主役になる場面では、カード状の選択面を `ChoiceCardList` と `ChoiceCard` (`src/components/parts/choice-card.tsx`) で組む ([shadcn docs「Field」][] の Choice Card)。補足は `trailing` に渡す。まとまりの名前は、既定の形と同じく外側の `FieldSet` と `FieldLegend` が持つ。`FieldLabel` で `Field` を包む形を部品の外で手書きしない。部品が吸収している点は「複数選択の形を場面で分ける理由」にある
 - 複数選択の行の間隔は、`FieldGroup` に `data-slot="checkbox-group"` を渡して詰める。registry の `FieldGroup` がこの属性で間隔を持ち、[shadcn の `dialog-example.tsx`][] もこの形で詰める。skill の例の `className="gap-3"` は、`ui/` の外では `no-restyle` が止める
-- 複数選択の行の `FieldLabel` に class を足さず、太さは registry の既定 (`font-medium`) のまま置く。公式の例が行の `FieldLabel` に付ける `className="font-normal"` も、`ui/` の外では `no-restyle` が止める。既定のまま置く理由は「複数選択の形を場面で分ける理由」にある
+- 複数選択の行の `FieldLabel` に class を足さず、太さは registry の既定 (`font-medium`) のまま置く。公式の例が行の `FieldLabel` に付ける `className="font-normal"` も、`ui/` の外では `no-restyle` が止める。デザインが行に通常の太さを求めるときは、`src/components/ui/field.tsx` の `FieldLabel` に variant を足し、台帳 `docs/registry-deviations.md` に行を足す (`docs/guides/styling-and-tokens.md`「部品の見た目を変える」の 1 の段)。この判断の理由は「複数選択の形を場面で分ける理由」にある
 - 単独の checkbox は `Field orientation="horizontal"` の中に `Checkbox` と `FieldLabel` を置く。[shadcn の `field-checkbox.tsx`][] の末尾の単独の行と同じく、`FieldLabel` に class を足さない
 
 ### placeholder を足す
@@ -173,11 +173,13 @@ Choice Card は、[shadcn の `field.mdx`][] が "Wrap `Field` components inside
 | 行の cursor       | 有効な行に `cursor-pointer`、disabled の行に `cursor-default` を当てる。registry の `FieldLabel` は cursor を持たず、`Label` の disabled の指定 (`group-data-[disabled=true]`) は祖先に素の `.group` を要求するので、Choice Card の形では当たらない |
 | `trailing` の揃え | `trailing` をタイトルと checkbox の間に置く。horizontal の `Field` は `FieldContent` があると `items-start` になる (`src/components/ui/field.tsx`) ので、補足はタイトルの 1 行目に上端が揃う                                                        |
 
-行の `FieldLabel` の太さは、公式の例と揃えない。
+行の `FieldLabel` の太さは、デザインの要求が無いあいだ registry の既定のまま置く。
 
-- [shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend の例と、[shadcn docs「Field」][] の Checkbox の例 ([shadcn の `field-checkbox.tsx`][]) は、まとまりの中の行の `FieldLabel` に `className="font-normal"` を付ける
-- `ui/` の外では `no-restyle` がこの class を止める。`@shadcn/lint` 0.2.0 は font-weight を typography に分類し、`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許す (2026-10-02 に `vp lint` で確認。メッセージは "`<FieldLabel>` owns its typography")
-- lint は `src/components/ui/field.tsx` に variant を足す道を案内するが、太さの違いは ADR-0020「追加と削除の基準」の機能上の必要に当たらない。variant を足さず、registry の既定 (`font-medium`) のまま置く
+- [shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend の例、[shadcn docs「Field」][] の Checkbox の例 ([shadcn の `field-checkbox.tsx`][])、[shadcn の `dialog-example.tsx`][] は、まとまりの中の行の `FieldLabel` に `className="font-normal"` を付ける
+- `ui/` の外では `no-restyle` がこの class を止める。`@shadcn/lint` 0.2.0 は font-weight を typography に分類し、`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許す (2026-10-02 に `vp lint` で確認)。メッセージは "`<FieldLabel>` owns its typography. Add a variant in src/components/ui/field.tsx only if the design explicitly calls for this treatment." である (2026-10-04 に `vp lint` で確認)
+- `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順に照らすと、0 の段には当たらない。公式の例はまとまりの中の行で既定の太さを使わず、`FieldLabel` には太さを切り替えるノブ (data 属性・CSS 変数・prop) も無い
+- まとまりの中の行の太さは、複数選択のたびに繰り返す見た目なので、揃えるなら 1 の段 (`src/components/ui/field.tsx` の variant と台帳の行) に当たる
+- 揃えるかはデザインの要求で決める。lint のメッセージも、variant を足すのはデザインがその扱いを求めるときに限る
 
 ### Select に `items` を渡す理由
 

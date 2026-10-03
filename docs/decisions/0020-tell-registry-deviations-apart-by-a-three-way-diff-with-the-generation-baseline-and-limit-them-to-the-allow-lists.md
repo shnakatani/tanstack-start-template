@@ -63,10 +63,9 @@ baseline の取得漏れは `scripts/checks/integrity/registry-baseline.test.ts`
 ### 追加と削除の基準
 
 追加は機能上の必要 (silent failure の防止、アーキテクチャ上の理由、アクセシビリティ要件) がある場合に限る。
-公式はソース編集を認めているが、既存 variant と `className` で足りる範囲を先に使う (公式の優先順位)。
+公式はソース編集を認めているが、見た目を変える手段は `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順で選ぶ。
 
-例外は公式の優先順位 3 (新規 variant の追加) に乗る場合。
-variant を足すかどうかは `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順で決める。
+例外は公式の優先順位 3 (新規 variant の追加) に乗る場合で、同じ順で variant の段に当たったときである。
 足すときは、その variant が何を表すかと、既存の variant で表せない理由を許容リストの行に書く。
 
 registry に相当する部品が無く、registry の部品へ当てる見た目を 1 つの用途に組み替える部品も、`ui/` に足してよい。
