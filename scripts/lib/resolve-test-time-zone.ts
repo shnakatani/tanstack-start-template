@@ -1,7 +1,7 @@
 const BASE_TIME_ZONE = "America/New_York";
 
 /**
- * テスト全体のタイムゾーンを決める。`vitest.global-setup.ts` がメインプロセスの `TZ` に入れる。
+ * テスト全体のタイムゾーンを決める。`tooling/test/global-setup.ts` がメインプロセスの `TZ` に入れる。
  *
  * 既定は基準の TZ。`TEST_TIME_ZONE` があればそちらにする。`scripts/time-zones/run-tests.ts` が
  * TZ を変えて `*.tz.test.ts` を走らせるときに使う。ホストの `TZ` は使わない。基準の値の選び方は

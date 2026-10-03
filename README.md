@@ -51,6 +51,6 @@ mise run storybook                                # 部品とデザイントー�
 | ----------------------------- | ---------------------------------------------- |
 | `TEMPLATE_SETUP.md`           | テンプレートから始めた直後の手順               |
 | `docs/decisions/`             | ADR                                            |
-| `docs/guides/`                | 設計ガイド                                     |
+| `docs/guides/`                | 設計ガイド (コーディング規約の本体)            |
 | `docs/registry-baseline/`     | shadcn registry の生成時の baseline (ADR-0020) |
 | `docs/registry-deviations.md` | baseline から動かした行の台帳 (ADR-0020)       |

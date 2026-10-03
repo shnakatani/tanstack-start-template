@@ -2,16 +2,12 @@ import { runInNewContext } from "node:vm";
 
 import { notFound, redirect } from "@tanstack/react-router";
 import { DrizzleQueryError } from "drizzle-orm/errors";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import { SERVER_ERROR_MESSAGE, serverErrorAdapter } from "./server-error-exposure";
 import { thrownValueMessage } from "./thrown-value-message";
 
 describe("serverErrorAdapter", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it("Error とそのサブクラスを掴む", () => {
     expect(serverErrorAdapter.test(new Error("取得に失敗しました"))).toBe(true);
     expect(serverErrorAdapter.test(new DrizzleQueryError("select 1", ["secret"]))).toBe(true);

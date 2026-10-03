@@ -359,7 +359,6 @@ function DateForm({ onChangeValue }: StoryArgs) {
   );
 }
 
-/** NumberField は type="text" なので、locator 相当の入力は追記になる。全選択してから打つ */
 function textbox(name: string): HTMLInputElement {
   const element = screen.getByRole("textbox", { name });
   if (!(element instanceof HTMLInputElement)) {
@@ -368,6 +367,11 @@ function textbox(name: string): HTMLInputElement {
   return element;
 }
 
+/**
+ * `storybook/test` の `userEvent` は `fill` を持たず、focus して `keyboard` で打つと既存の値に
+ * 追記になる。値を置き換えるので全選択してから打つ。Vitest の locator の `fill()` は既存の値を
+ * 置き換えるので、テストではこの手順は要らない
+ */
 async function replaceValue(element: HTMLInputElement, keys: string): Promise<void> {
   element.focus();
   element.select();

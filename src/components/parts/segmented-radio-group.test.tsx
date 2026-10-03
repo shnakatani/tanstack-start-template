@@ -86,7 +86,7 @@ describe("SegmentedRadioGroup", () => {
 
     const item = screen.getByRole("radio", { name: "未読" });
 
-    await expect.element(item).toHaveAttribute("aria-disabled", "true");
+    await expect.element(item).toBeDisabled();
     // クリックが届かないことは pointer-events の指定で見る。イベントを対象へ届かせて
     // base-ui 内部のガードまで確かめない。上流の担当で、base-ui 自身のテストが持つ (docs/guides/testing/user-interactions.md「クリックを発火する」)
     await expect.element(item).toHaveStyle("opacity: 0.5; pointer-events: none");

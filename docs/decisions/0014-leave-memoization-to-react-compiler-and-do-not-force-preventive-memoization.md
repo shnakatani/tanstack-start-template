@@ -84,7 +84,7 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 - `oxc-transform-react` は `@vitejs/plugin-react` の optional peer で、宣言された範囲 (`^0.145.0`) が上流自身の devDependency (`^0.147.0`) より狭い。範囲の是正までは `pnpm-workspace.yaml` の `peerDependencyRules` で受ける
 - bail out はビルドログにしか出ない。増減はゲートにならず、気づくのはログを読んだときになる。Compiler がカバーしない箇所を欠陥として扱わないと決めているので、この非対称は意図どおりである
 - Compiler が黙って外れる経路 (`vite.config.ts` から `compiler` オプションが消える) を機械で見張るものは無い。塞ぐならビルド成果物を見る検査が要る
-- メモ化が正しさや依存ガードに効く箇所があれば、その規範は rules 側に置く。Compiler への委譲はそれを否定しない
+- メモ化が正しさや依存ガードに効く箇所があれば、その規範はガイドに書く。Compiler への委譲はそれを否定しない
 - Rules of React の検査を外すと Compiler が bail out する土壌ができる。分割後のルール群は導入の前提として据え置く
 - `compiler` オプションが experimental でなくなったら、このオプションで Compiler を適用する決定を見直す。`peerDependencyRules` の緩和の出口条件は `pnpm-workspace.yaml` のコメントが持つ
 

@@ -37,7 +37,7 @@ paths:
 
 - block を切り出すときは `tooling/<block>/` に置き、`vite.config.ts` から import して組み立てる。ツールが読む入口が `vite.config.ts` のまま変わらない (`docs/guides/vite-configuration.md`「別のファイルから組み立てる理由」)
 - ツールごとの設定ファイル (`vitest.config.ts`、`oxlint.config.ts`、`.oxlintrc.json`) に分けない。併用するとどちらが効くかがツールごとに違い、`vitest.config.ts` があると `vite.config.ts` が丸ごと黙って無視される (`docs/guides/vite-configuration.md`「1 つの `vite.config.ts` に集める理由」)
-- 切り出したモジュールに、読み込むだけで起きる副作用 (警告の出力、環境変数の書き換え) を持たせない。`vite.config.ts` は `vp lint` / `vp fmt` / `vp build` のたびに読まれる (`docs/guides/vite-configuration.md`「読み込むだけで起きる副作用を持たせない理由」)
+- `vite.config.ts` が import するモジュールに、読み込むだけで起きる副作用 (警告の出力、環境変数の書き換え) を持たせない。`vite.config.ts` は `vp lint` / `vp fmt` / `vp build` のたびに読まれる (`docs/guides/vite-configuration.md`「読み込むだけで起きる副作用を持たせない理由」)
 - `lazyPlugins` には同期の関数を渡し、plugin は先頭で import する。async にすると `@storybook/tanstack-react` が TanStack Start の plugin を外せず `storybook build` が落ち、`mise run verify` はそれを捕まえない (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 - project が使う重い依存 (playwright の provider、`@storybook/addon-vitest` の plugin) は、project を作る関数の中で動的 import する。先頭で import すると `vp lint` / `vp fmt` のたびに評価される (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
 - root の `plugins` と同じパッケージ (`chromiumProjectBase` の `tailwindcss`) は、project でも先頭で import する。root が先頭で import している間は、遅らせても同じ module が読まれる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
