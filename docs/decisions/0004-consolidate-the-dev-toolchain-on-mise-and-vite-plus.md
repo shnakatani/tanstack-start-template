@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-10-02
+- Date: 2026-10-04
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -125,14 +125,14 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 
 - 開発者の入口 (`check` / `test` / `dev`) は足さない。このリポジトリの開発者は README のセットアップで global の `vp` を入れ、`vp install` も `.mise.toml` のタスクもそれを前提にするので、上の利点が当てはまらない。足すと `vp <name>` を打つたびに stderr に note が出る (Consequences)
 - `dev` には別の理由もある。起動の入口は worktree ごとに port を導出する `mise run serve` である。`"dev": "vp dev"` は Vite の既定の port で起動し、使用中なら Vite が次の空き port へずらす (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")。`mise run serve` が worktree ごとに決める port から外れ、起動した順で port が変わる
-- `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す。global の `vp` を入れない環境 (本番の Node サーバーなど) がこの 2 つで走らせ、`build` の中の `vp` は `node_modules/.bin` から解決する。公式が勧める利点がそのまま当てはまる場面である。代償として、`vp build` を打つたびに note が出る (Consequences)
+- `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す。global の `vp` を入れない環境 (本番の Node サーバーなど) がこの 2 つで走らせる。公式が勧める利点がそのまま当てはまる場面である。代償として、`vp build` を打つたびに note が出る (Consequences)
 
-| 案                                                   | 評価                                                                                                                                                                     | 採否     |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| 開発者の入口は足さず、`build` を `start` と対で残す  | global の `vp` の無い環境は `pnpm run build` → `pnpm start` で走らせられる。開発者は `vp check` / `vp test` をそのまま打つ。note は `vp build` でだけ出る                | **採用** |
-| built-in と同名の script を置かない (`build` も外す) | `vp build` の note も消えるが、global の `vp` の無い環境で `start` と対になる script が無くなり、ビルドの打ち方 (`pnpm exec vp build` など) を環境ごとに決めることになる | 却下     |
-| 公式の例のうち `check` / `test` も足す               | `pnpm run check` のように package manager からも打てるが、開発者は global の `vp` を入れるので使い道が無い。`vp check` / `vp test` を打つたびに note が出る              | 却下     |
-| 公式の例の 4 つをすべて置く                          | 上に加え、`pnpm run dev` が `mise run serve` の port から外れ、起動した順で port が変わる                                                                                | 却下     |
+| 案                                                   | 評価                                                                                                                                                                                                                                                                                                           | 採否     |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 開発者の入口は足さず、`build` を `start` と対で残す  | global の `vp` の無い環境は `pnpm run build` → `pnpm start` で走らせられる。開発者は `vp check` / `vp test` をそのまま打つ。note は `vp build` でだけ出る                                                                                                                                                      | **採用** |
+| built-in と同名の script を置かない (`build` も外す) | `vp build` の note も消えるが、`pnpm start` と対の `pnpm run build` が無くなる。global の `vp` の無い環境は `pnpm exec vp build` と打つことになる (`docs/guide/local-cli.md` の "Without the global CLI, prefix interactive commands with your package manager's local-binary executor, such as `pnpm exec`.") | 却下     |
+| 公式の例のうち `check` / `test` も足す               | `pnpm run check` のように package manager からも打てるが、開発者は global の `vp` を入れるので使い道が無い。`vp check` / `vp test` を打つたびに note が出る                                                                                                                                                    | 却下     |
+| 公式の例の 4 つをすべて置く                          | 上に加え、`pnpm run dev` が `mise run serve` の port から外れ、起動した順で port が変わる                                                                                                                                                                                                                      | 却下     |
 
 ### 検討した選択肢
 
