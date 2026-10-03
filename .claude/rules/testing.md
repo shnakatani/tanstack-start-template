@@ -104,7 +104,8 @@ paths:
 
 - `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する
 - `vi.stubEnv` と `vi.stubGlobal` の値はテストの中で戻さない。設定の `unstubEnvs` / `unstubGlobals` と `tooling/test/setup.ts` の `afterEach` が毎テスト戻す (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
-- 差し替えは `beforeEach` かテストの中で書き、ファイルの最上位と `beforeAll` で書かない。最初のテストの前に戻り、ブラウザでは本物のグローバルのまま黙って通る (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
+- 差し替えは `beforeEach` かテストの中で書き、ファイルの最上位と `beforeAll` で書かない。最初のテストの前に戻り、差し替える前の値のまま気付かずに通ることがある (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
+- テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は戻らず後のテストへ残る (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - 同じモジュールを複数のテストで丸ごと差し替えるなら、隣の `__mocks__/<同名>` に置き、factory なしの `vi.mock(import(...))` で読む。無いと元を読んで automock し、ブラウザで読めないものは落ちる (`docs/guides/testing/mocking.md`「`__mocks__` に寄せる理由」)
 - 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
 - 引数ごとに応答を変える mock は `vi.when(vi.mocked(fn), { onUnmatched: "throw" })` で書き、`mockImplementation` に引数の分岐を手書きしない。想定外の引数で呼ばれたことを見逃さない (`docs/guides/testing/mocking.md`「戻り値を決める」)
