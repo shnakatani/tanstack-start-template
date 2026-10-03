@@ -10,12 +10,12 @@ DB_FILE_NAME = "{{ [config_root, '.data/dev.sqlite'] | join_path }}"
 [tasks.serve]
 description = "dev server を起動する"
 env = { DEV_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 3000') }}" }
-run = "vp dev --port $DEV_PORT"
+run = "vp dev --port $DEV_PORT --strictPort"
 
 [tasks.storybook]
 description = "Storybook を起動する"
 env = { STORYBOOK_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 6006') }}" }
-run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open"
+run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open --exact-port"
 
 [tasks.contrast]
 description = "トークンからコントラスト比を測る"

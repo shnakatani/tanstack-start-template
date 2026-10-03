@@ -7,8 +7,9 @@
 # 複数 worktree で dev server を同時起動すると port 3000 が衝突するため、
 # git-dir と git-common-dir の一致判定で main / linked worktree を判定する。
 # ハッシュ由来のため別名 worktree 同士が同じ port に衝突する可能性はあるが
-# 許容する（衝突時は起動時の「ポート使用中」エラーで気づける。厳密な一意性は
-# 不要なため）。
+# 許容する（衝突しても起動時に気づける。serve は `--strictPort`、
+# storybook は `--exact-port` で、使用中の port なら終了する。
+# 厳密な一意性は不要なため）。
 # git 情報が取れない場合は base にフォールバックする — port 分離が
 # 効かないだけでアプリは従来どおり動く（fail-safe）。ただし観測可能にするため
 # stderr に警告を残す。
