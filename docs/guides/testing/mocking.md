@@ -51,7 +51,7 @@
 | `tooling/test/setup.ts` (root の `setupFiles`) の `afterEach`           | 各テストの後 |
 
 - 差し替えは `beforeEach` かテストの中で書く。ファイルの最上位と `beforeAll` で差し替えた値は、最初のテストの前に戻る。env は差し替える前の値で、グローバルは差し替える前のもの (ブラウザでは本物の `matchMedia` など) で走り、差し替えが効いていないことに気付かずに通ることがある。[Vitest docs「Mocking Globals」][] の例は最上位で `vi.stubGlobal` を呼ぶが、この形にしない
-- `.concurrent` を付けたテストでは `vi.stubEnv` も `vi.stubGlobal` も使わない。setup の `afterEach` は、1 つのテストが終わるたびに、並行して走っている別のテストが差し替えた値も戻す。[Vitest docs「unstubEnvs」][] と [Vitest docs「unstubGlobals」][] の warning は設定でも壊れうると書くが、設定だけでは、並行するテストが同時に始まるときも、別のテストが後から始まるとき (`--maxConcurrency=2`) も値は戻らなかった (2026-10-04 に実測)
+- `.concurrent` を付けたテストでは `vi.stubEnv` も `vi.stubGlobal` も使わない。並行して走っている別のテストが差し替えた値も、設定は別のテストが始まるたびに、setup の `afterEach` は別のテストが終わるたびに戻す ([Vitest docs「unstubEnvs」][] と [Vitest docs「unstubGlobals」][] の warning。vitest 5.0.1、unit project に `maxConcurrency: 2` を書いて 2026-10-04 に実測)
 - テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は設定も setup も戻さず、後のテストへ残る ([Vitest docs「vi.stubGlobal」][] の tip: "you won't be able to use `vi.unstubAllGlobals` to restore original value")。setup の `beforeEach` が毎テスト立て直す値 (`src/test/browser/animations.ts` の Base UI のフラグ) は、立て直しが戻しを担うので代入でよい
 - env はモジュールの最上位ではなく、呼び出しの時点で読む。最上位で読んだ値は、テストで差し替えても変わらない
 
@@ -85,7 +85,7 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 
 [Vitest docs「Mocking」][] の Mock a global variable は、`vi.stubGlobal` の値は `unstubGlobals` を有効にするか `vi.unstubAllGlobals` を呼ばない限りテストの間で戻らない、と書く。Mock `import.meta.env` は、自動で戻したいなら `vi.stubEnv` を `unstubEnvs` と使うか、`beforeEach` で `vi.unstubAllEnvs` を手で呼ぶよう書く (既定で戻らないとは書かないが、自動で戻す手段として挙げている)。どちらにするかの推奨は無く、既定は戻さない側である ([Vitest docs「unstubGlobals」][] の Default は `false`)。設定は 1 行で全 project に届く。inline の project は root の設定を継承する ([Vitest docs「Projects」][] の Configuration)。
 
-設定が戻す時点は、docs の中で食い違う。[Vitest docs「unstubGlobals」][] の本文は "Should Vitest automatically call `vi.unstubAllGlobals()` before each test." と書き、同じページの warning は "the completion of one test will restore all global values" と書く。[Vitest docs「Mocking Globals」][] は "restore the original values after each test" と書く。実測では次のテストの前だった。最上位で差し替えた値は最初のテストの時点で既に戻り、設定だけのときは並行する短いテストが終わっても長いテストの値は戻らなかった (2026-10-04)。
+設定が戻す時点は、docs の中で食い違う。[Vitest docs「unstubGlobals」][] の本文は "Should Vitest automatically call `vi.unstubAllGlobals()` before each test." と書き、同じページの warning は "the completion of one test will restore all global values" と書く。[Vitest docs「Mocking Globals」][] は "restore the original values after each test" と書く。実測では次のテストの前だった。最上位で差し替えた値は最初のテストの時点で既に戻り、並行のテストでは、設定だけのときは短いテストが終わった時点では戻らず、次のテストが始まった時点で長いテストの値が戻った (2026-10-04)。
 
 設定だけでは塞げない窓がある。戻すのが次のテストの前なので、`--no-isolate` で走らせると、ファイルの最後のテストの値が、同じ worker で次に走るファイルのモジュール評価と `beforeAll` に見える。最後のテストで stub して戻さないファイルと、モジュールの最上位と `beforeAll` で env を読むファイルを `--no-isolate --no-file-parallelism --sequence.shuffle.files` でseed を 5 通り変えて走らせると、unit と browser の両 project で値が残る seed があった。setup の `afterEach` を足すと、5 通りのどれでも残らなかった (vitest 5.0.1、2026-10-02 に実測。`vi.stubGlobal` は 2026-10-04 に unit project で同じ形を確かめた)。setup file は `--no-isolate` でもファイルごとに走り直し、hook もファイルごとに置き直される ([Vitest docs「setupFiles」][] の warning にある `afterEach` の例と同じ形)。
 
