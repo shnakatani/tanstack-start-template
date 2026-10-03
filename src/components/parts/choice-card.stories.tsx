@@ -8,8 +8,8 @@ import { ChoiceCard, ChoiceCardList } from "./choice-card";
 
 /** チームA の行にだけ trailing を置く。タイトルと checkbox の間に入る位置が見える */
 const ROWS = [
-  { id: "a", label: "チームA" },
-  { id: "b", label: "チームB" },
+  { id: "a", label: "チームA", description: "開発と運用を担当する" },
+  { id: "b", label: "チームB", description: "問い合わせに対応する" },
 ] as const;
 
 interface StoryArgs {
@@ -18,9 +18,11 @@ interface StoryArgs {
   disabled: boolean;
   /** false なら id を渡さず `ChoiceCard` の内部採番に任せる */
   withId: boolean;
+  /** true なら行ごとに説明文を添える */
+  withDescription: boolean;
 }
 
-function Harness({ checkedIds, disabled, withId }: StoryArgs) {
+function Harness({ checkedIds, disabled, withId, withDescription }: StoryArgs) {
   const [checked, setChecked] = useState<ReadonlySet<string>>(() => new Set(checkedIds));
 
   return (
@@ -30,6 +32,7 @@ function Harness({ checkedIds, disabled, withId }: StoryArgs) {
           key={row.id}
           id={withId ? row.id : undefined}
           label={row.label}
+          description={withDescription ? row.description : undefined}
           checked={checked.has(row.id)}
           disabled={disabled}
           trailing={row.id === "a" ? <Badge variant="secondary">管理者</Badge> : undefined}
@@ -53,7 +56,7 @@ function Harness({ checkedIds, disabled, withId }: StoryArgs) {
 const meta = {
   // checkedIds は useState の初期値にしか効かないため、control で変えたら remount して反映する
   render: (args) => <Harness key={args.checkedIds.join(",")} {...args} />,
-  args: { checkedIds: [], disabled: false, withId: true },
+  args: { checkedIds: [], disabled: false, withId: true, withDescription: false },
 } satisfies Meta<StoryArgs>;
 
 export default meta;
@@ -68,6 +71,16 @@ export const Checked: Story = { args: { checkedIds: ["a"] } };
 
 /** disabled の行。押せると主張しない (cursor は既定のまま) */
 export const Disabled: Story = { args: { disabled: true, checkedIds: ["a"] } };
+
+/** 説明文を添えた行。タイトルの下に置き、checkbox の説明として読ませる */
+export const WithDescription: Story = {
+  args: { withDescription: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("checkbox", { name: /チームB/ })).toHaveAccessibleDescription(
+      "問い合わせに対応する",
+    );
+  },
+};
 
 /** 行のクリックで checkbox がトグルする (ラベルと id で紐づく) */
 export const TogglesOnRowClick: Story = {

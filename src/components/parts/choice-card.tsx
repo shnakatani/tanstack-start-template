@@ -2,7 +2,14 @@ import { useId } from "react";
 import type { ReactNode } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldContent, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
 
 /**
  * 複数選択リストの器。`FieldGroup` 素の gap はフォームのフィールド間の値で行の並びには
@@ -23,6 +30,7 @@ function ChoiceCardList({ children }: { children: ReactNode }) {
 function ChoiceCard({
   id,
   label,
+  description,
   checked,
   disabled = false,
   trailing,
@@ -31,6 +39,11 @@ function ChoiceCard({
   /** 省略時は内部で採番する。外から参照する必要があるときだけ渡す */
   id?: string;
   label: ReactNode;
+  /**
+   * タイトルの下に置く説明文。shadcn の Choice Card の例と同じく、`FieldContent` の中で `FieldTitle` に続ける。
+   * registry の `FieldDescription` は control と結ばれないので、id を checkbox の `aria-describedby` へ渡す
+   */
+  description?: ReactNode;
   checked: boolean;
   disabled?: boolean;
   /**
@@ -46,6 +59,7 @@ function ChoiceCard({
   // hook の呼び出しが条件付きになり、消費側が id の有無を切り替えると hook 数が変わる
   const generatedId = useId();
   const rowId = id ?? generatedId;
+  const descriptionId = useId();
 
   return (
     <FieldLabel
@@ -58,12 +72,16 @@ function ChoiceCard({
       <Field orientation="horizontal" data-disabled={disabled || undefined}>
         <FieldContent>
           <FieldTitle>{label}</FieldTitle>
+          {description !== undefined && (
+            <FieldDescription id={descriptionId}>{description}</FieldDescription>
+          )}
         </FieldContent>
         {trailing}
         <Checkbox
           id={rowId}
           checked={checked}
           disabled={disabled}
+          aria-describedby={description === undefined ? undefined : descriptionId}
           onCheckedChange={onCheckedChange}
         />
       </Field>
