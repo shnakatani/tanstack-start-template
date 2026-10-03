@@ -26,11 +26,11 @@ describe("ActionButton", () => {
     const button = screen.getByRole("button", { name: "保存" });
 
     // 実イベント (CDP 経由) で 3 回発火する。2 回目は次のユーザーイベント、
-    // 3 回目は aria-disabled を確認した後
+    // 3 回目は無効を確認した後
     await button.click();
     await expect.element(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
-    await expect.element(button).toHaveAttribute("aria-disabled", "true");
+    await expect.element(button).toBeDisabled();
     await expect.element(button).toHaveFocus();
     await userEvent.keyboard("{Enter}");
 

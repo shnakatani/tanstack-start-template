@@ -24,7 +24,6 @@ async function renderError(error: unknown, reset: () => void) {
  */
 describe("RouteErrorContent", () => {
   afterEach(() => {
-    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 

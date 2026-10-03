@@ -28,7 +28,11 @@ function storybookProjects(): TestProjectConfiguration[] {
  */
 export const testConfig = {
   // テスト全体のタイムゾーンを決める (docs/guides/testing/time-zones.md「基準を root の globalSetup に置く理由」)
-  globalSetup: ["./vitest.global-setup.ts"],
+  globalSetup: ["./tooling/test/global-setup.ts"],
+  // `vi.stubEnv` の値を戻す。設定は次のテストの前に戻し、setup の `afterEach` は `--no-isolate` で
+  // ファイルの最後の値が次のファイルへ残るのを塞ぐ (docs/guides/testing/mocking.md「環境変数を差し替える」)
+  unstubEnvs: true,
+  setupFiles: ["./tooling/test/setup.ts"],
   // project はどれもこれを継承し、自分の exclude を後ろに連結する (Vitest 5 の extends は配列を連結する)
   exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/worktrees/**", "**/.claude/skills/**"],
   projects: [

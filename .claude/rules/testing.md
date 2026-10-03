@@ -49,7 +49,7 @@ paths:
 - ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる
-- テスト全体の TZ は root の globalSetup (`vitest.global-setup.ts`) で決め、`APP_TIME_ZONE` と違う値にする。一致すると、ローカル TZ に依存する実装を壁時計の値のテストが見逃す (`docs/guides/testing/time-zones.md`「基準のタイムゾーンを決める理由」)
+- テスト全体の TZ は root の globalSetup (`tooling/test/global-setup.ts`) で決め、`APP_TIME_ZONE` と違う値にする。一致すると、ローカル TZ に依存する実装を壁時計の値のテストが見逃す (`docs/guides/testing/time-zones.md`「基準のタイムゾーンを決める理由」)
 - `Intl.DateTimeFormat` で整形した日時を固定の文字列と比べない。`format()` の出力は実装ごとに違ってよい。壁時計は数字の並びで比べ、画面の期待値は `formatDateTime` で作る。date-fns の `format` は Intl を使わないので、固定の文字列と比べてよい (`docs/guides/dates-and-time-zones.md`「整形した日時をテストで確かめる」)
 - Node で動くテスト (unit project) のうち、`Date` のローカルの getter や TZ を指定しない date-fns を直接呼ぶモジュールと、ローカルの TZ に依存しないことを保証するモジュールのテストは、ファイルごと `src/**/*.tz.test.ts` にする。1 件ずつ分けると、分け損ねたテストが基準の TZ でしか走らない (`docs/guides/testing/time-zones.md`「Node で動くテストを TZ ごとに走らせる」)
 - テストの中で `vi.stubEnv("TZ", …)` で TZ を切り替えず、TZ ごとの実行はスクリプト (`scripts/time-zones/run-tests.ts`) に任せる。threads / vmThreads の pool ではテストの中の切り替えが `Date` に効かず、無言で通る (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
@@ -72,16 +72,16 @@ paths:
 
 `toHaveAttribute` か `querySelector` を書く前に下表を見る。ユーザーから見た状態を先に見る (Testing Library の Guiding Principles)。
 
-| 見たいもの                                    | 使うもの                                                                                                                                            |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 検証エラー (`aria-invalid` / `checkValidity`) | `toBeInvalid()`                                                                                                                                     |
-| 選択状態 (`aria-checked` / native checked)    | `toBeChecked()`                                                                                                                                     |
-| native `disabled`                             | `toBeDisabled()` / `toBeEnabled()`                                                                                                                  |
-| `aria-disabled` と Base UI の `Checkbox`      | `toHaveAttribute("aria-disabled", "true")`。Checkbox の native `disabled` は a11y tree に出ない隠し input が持つ (Base UI 1.8.0 で実測、2026-09-20) |
-| `aria-describedby` が指す文言                 | `toHaveAccessibleDescription()`                                                                                                                     |
-| accessible name                               | `toHaveAccessibleName()`                                                                                                                            |
+| 見たいもの                                                       | 使うもの                                                                                                                                                          |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 検証エラー (`aria-invalid` / `checkValidity`)                    | `toBeInvalid()`                                                                                                                                                   |
+| 選択状態 (`aria-checked` / native checked)                       | `toBeChecked()`                                                                                                                                                   |
+| 無効 (native `disabled`、`aria-disabled`、Base UI の `Checkbox`) | `toBeDisabled()` / `toBeEnabled()`。Vitest の matcher は `aria-disabled` も見る (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」) |
+| `aria-describedby` が指す文言                                    | `toHaveAccessibleDescription()`                                                                                                                                   |
+| accessible name                                                  | `toHaveAccessibleName()`                                                                                                                                          |
 
-- `aria-busy` に相当する matcher は無い。`getByRole(..., { busy: true })` で絞るか属性で見る
+- native の `disabled` と `aria-disabled` のどちらで無効にしたかを確かめるときだけ、属性を `toHaveAttribute` で見る。`toBeDisabled` はどちらでも通る (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」)
+- `aria-busy` は `toHaveAttribute("aria-busy", …)` で見る。`getByRole` に `busy` を渡さない。Vitest の locator に `busy` は無く、変数で渡すと型検査を抜けて黙って捨てられる (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」)
 - Base UI の styling hook (`data-checked` 等) は見た目を駆動する属性なので属性で見てよい。ARIA 側と重ねるときは別々に付くことをコメントに残す
 - `querySelector` で掴むのは accessibility tree に差が出ない対象に限り、理由を実装近傍に書く。書けないならそのアサートは消す
 - 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (`ActionButtonShell` の `toHaveAccessibleName`)
@@ -103,7 +103,7 @@ paths:
 ## mock の注意点
 
 - `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する
-- `vi.stubEnv` を使ったら `afterEach(() => vi.unstubAllEnvs())`
+- `vi.stubEnv` の値はテストの中で戻さない。設定の `unstubEnvs` と `tooling/test/setup.ts` の `afterEach` が毎テスト戻す (`docs/guides/testing/mocking.md`「環境変数を差し替える」)
 - 同じモジュールを複数のテストで丸ごと差し替えるなら、隣の `__mocks__/<同名>` に置き、factory なしの `vi.mock(import(...))` で読む。無いと元を読んで automock し、ブラウザで読めないものは落ちる (`docs/guides/testing/mocking.md`「`__mocks__` に寄せる理由」)
 - 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
 - 引数ごとに応答を変える mock は `vi.when(vi.mocked(fn), { onUnmatched: "throw" })` で書き、`mockImplementation` に引数の分岐を手書きしない。想定外の引数で呼ばれたことを見逃さない (`docs/guides/testing/mocking.md`「戻り値を決める」)
@@ -160,7 +160,7 @@ paths:
 ブラウザテストでは Tailwind が実 CSS に解決される。レイアウト回帰は className の `toContain` ではなく、実測で守る。
 
 - viewport 定数と `expectWithinViewport` は `src/test/assert/viewport.ts`。`page.viewport()` で変えたら `afterEach` で `DEFAULT_VIEWPORT` へ戻す (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
-- 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。sub-pixel の誤差で、収まっていても落ちる実行がある (w3c/IntersectionObserver#477)
+- 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。面積 0 の潰れた要素が通り、失敗文にはみ出した辺と px が出ない (`docs/guides/testing/waiting-and-assertions.md`「viewport の収まりを自前の helper で測る理由」)
 - 既定 viewport は `tooling/test/browser-project.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる
 - スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
