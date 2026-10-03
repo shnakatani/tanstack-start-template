@@ -37,8 +37,8 @@ function Harness({ disabled = false }: { disabled?: boolean }) {
 /**
  * 行のトグル、id の紐づき、説明文の結び付けは `choice-card.stories.tsx` の play が持ち、trailing の位置・
  * 行間・disabled の見え方 (cursor / data-disabled) は同 story の状態カタログで見る (docs/guides/storybook.md「カタログと play の範囲」)。
- * ここに残すのは、Playwright の actionability を force で飛ばす実イベントが要る 2 件
- * (有効な行で click が届く対照と、disabled の行) と、story の args で渡せない `trailing` の値の 1 件。
+ * ここに残すのは、Playwright の actionability を force で飛ばす実イベントが要る 2 件だけ
+ * (有効な行で click が届く対照と、disabled の行)。
  *
  * 寸法は測らない。行間は registry の `data-[slot=checkbox-group]:gap-3` で決まり、測っても Tailwind の定義を言い直すだけになる。
  */
@@ -51,13 +51,13 @@ describe("ChoiceCard", () => {
     await screen.getByText("チームA").click({ force: true });
 
     await expect
-      .element(screen.getByRole("checkbox", { name: /チームA/ }))
+      .element(screen.getByRole("checkbox", { name: "チームA" }))
       .toHaveAttribute("data-checked");
   });
 
   it("disabled の行はクリックしてもトグルせず、押せると主張しない", async () => {
     const screen = await render(<Harness disabled />);
-    const checkbox = screen.getByRole("checkbox", { name: /チームA/ });
+    const checkbox = screen.getByRole("checkbox", { name: "チームA" });
 
     // disabled な checkbox と対の label なので actionability の enabled 判定に落ちる。
     // 対象に pointer-events: none が無く click は実際に届くため force で検査だけ飛ばす (docs/guides/testing/user-interactions.md「クリックを発火する」)
@@ -68,16 +68,5 @@ describe("ChoiceCard", () => {
     // aria-disabled が付く。「押せると主張しない」は ARIA で見る。支援技術に届くのは span の
     // aria-disabled で、隠し input の disabled は accessibility tree に出ない
     await expect.element(checkbox).toHaveAttribute("aria-disabled", "true");
-  });
-
-  // `cond && <Badge />` の偽は false で届く。包みを描くと、空の要素が Field の flex の子になって
-  // 隙間が増え、aria-describedby が空の要素を指す
-  it("trailing が false なら包みを描かず、説明に結ばない", async () => {
-    const screen = await render(
-      <ChoiceCard label="チームA" checked={false} trailing={false} onCheckedChange={() => {}} />,
-    );
-    const checkbox = screen.getByRole("checkbox", { name: "チームA" });
-
-    await expect.element(checkbox).not.toHaveAttribute("aria-describedby");
   });
 });

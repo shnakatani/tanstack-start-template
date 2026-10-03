@@ -13,6 +13,13 @@ const ROWS = [
   { id: "b", label: "チームB", description: "問い合わせに対応する" },
 ] as const;
 
+/** React が何も描かない値。`cond && <Badge />` の偽、空の文字列、空の一覧の map で届く */
+const EMPTY_NODES = [
+  { name: "false", node: false },
+  { name: "空文字", node: "" },
+  { name: "空の配列", node: [] },
+] as const;
+
 interface StoryArgs {
   /** 初期の選択 */
   checkedIds: readonly string[];
@@ -100,6 +107,45 @@ export const TrailingWithoutDescription: Story = {
     const teamA = canvas.getByRole("checkbox", { name: "チームA" });
     await expect(teamA).toHaveAccessibleName("チームA");
     await expect(teamA).toHaveAccessibleDescription("管理者");
+  },
+};
+
+/**
+ * `cond && <Badge />` の偽や空の一覧の map のような、何も描かない値を trailing と description に渡した行。
+ * 空の要素を Field の flex の子に足さず (足すと gap の分だけ隙間が増える)、説明にも結ばない
+ */
+export const EmptyTrailingAndDescription: Story = {
+  tags: ["!dev"],
+  render: () => (
+    <ChoiceCardList>
+      {EMPTY_NODES.map(({ name, node }) => (
+        <ChoiceCard
+          key={name}
+          id={`empty-${name}`}
+          label={`補足が${name}`}
+          description={node}
+          trailing={node}
+          checked={false}
+          onCheckedChange={() => {}}
+        />
+      ))}
+    </ChoiceCardList>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const fields = [...canvasElement.querySelectorAll<HTMLElement>("[data-slot=field]")];
+    const none = EMPTY_NODES.map(() => 0);
+    // trailing の包みは役割を持たない span。checkbox の span は role="checkbox" を持つ
+    await expect(
+      fields.map((field) => field.querySelectorAll(":scope > span:not([role])").length),
+    ).toEqual(none);
+    await expect(
+      fields.map((field) => field.querySelectorAll("[data-slot=field-description]").length),
+    ).toEqual(none);
+    await expect(
+      EMPTY_NODES.map(({ name }) =>
+        canvas.getByRole("checkbox", { name: `補足が${name}` }).getAttribute("aria-describedby"),
+      ),
+    ).toEqual(EMPTY_NODES.map(() => null));
   },
 };
 

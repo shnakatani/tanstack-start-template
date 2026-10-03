@@ -116,7 +116,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 - input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択の既定は `FieldSet` + `FieldLegend` の中の `FieldGroup data-slot="checkbox-group"` に `Field orientation="horizontal"` の行を並べる形。`FieldLegend` がまとまりの名前になり、行間は registry の間隔に寄る (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
-- 選択肢ごとに補足 (識別子・状態のバッジ) を添える場面と、選択が画面の主役の場面は、`ChoiceCardList` / `ChoiceCard` (`choice-card.tsx`) でカード状の選択面を組み、`FieldLabel` で `Field` を包む形を手書きしない。説明文は `description` に、補足は `trailing` に渡し、行を見分ける識別子は `label` に含める。`id` の採番、disabled の行の cursor、checkbox の名前をタイトルに絞り説明文と補足を説明に結ぶことを部品が持つ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
+- 選択肢ごとに補足 (状態のバッジなど) を添える場面と、選択が画面の主役の場面は、`ChoiceCardList` / `ChoiceCard` (`choice-card.tsx`) でカード状の選択面を組み、`FieldLabel` で `Field` を包む形を手書きしない。説明文は `description` に、補足は `trailing` に渡し、行を見分ける識別子は `label` に含める。`id` の採番、disabled の行の cursor、checkbox の名前をタイトルに絞り説明文と補足を説明に結ぶことを部品が持つ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - 複数選択のまとまりの中の行の `FieldLabel` には `weight="normal"` を渡す。公式の例が付ける `className="font-normal"` は `ui/` の外では `no-restyle` が止めるので、`ui/field.tsx` の variant で書く (`docs/guides/forms-and-inputs.md`「複数選択の形を場面で分ける理由」)
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`) で組み、ラベルに className も `weight` も渡さない。太さとカーソルは registry の既定のままで、shadcn の単独 checkbox の例と同じ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)

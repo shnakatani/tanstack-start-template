@@ -10,6 +10,7 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/ui/field";
+import { rendersNothing } from "@/lib/renders-nothing";
 
 /**
  * 補足を添える選択肢や、選択が主役の一覧に並べるカード状の行の器。ラベルだけの複数選択は
@@ -68,12 +69,14 @@ function ChoiceCard({
   const titleId = useId();
   const descriptionId = useId();
   const trailingId = useId();
-  // `cond && <Badge />` の偽 (false) などの何も描かない値で包みを描くと、空の要素が flex の子になって隙間が増える
-  const hasTrailing = trailing !== undefined && trailing !== null && typeof trailing !== "boolean";
+  // `cond && <Badge />` の偽や空の一覧の map のような何も描かない値で要素を描くと、空の要素が
+  // flex の子になって隙間が増え、aria-describedby が空の要素を指す
+  const hasDescription = !rendersNothing(description);
+  const hasTrailing = !rendersNothing(trailing);
   // label の中のテキストはすべて checkbox の名前に入るので、名前をタイトルに絞り、
   // 説明文と trailing は説明として結ぶ (docs/guides/forms-and-inputs.md「Choice Card の名前と説明を分ける理由」)
   const describedBy =
-    [description === undefined ? undefined : descriptionId, hasTrailing ? trailingId : undefined]
+    [hasDescription ? descriptionId : undefined, hasTrailing ? trailingId : undefined]
       .filter((value) => value !== undefined)
       .join(" ") || undefined;
 
@@ -88,9 +91,7 @@ function ChoiceCard({
       <Field orientation="horizontal" data-disabled={disabled || undefined}>
         <FieldContent>
           <FieldTitle id={titleId}>{label}</FieldTitle>
-          {description !== undefined && (
-            <FieldDescription id={descriptionId}>{description}</FieldDescription>
-          )}
+          {hasDescription && <FieldDescription id={descriptionId}>{description}</FieldDescription>}
         </FieldContent>
         {hasTrailing && (
           // 説明に結ぶ id を付けるための包み。display: contents にしない。
