@@ -3,6 +3,7 @@ import { useState } from "react";
 import { expect, screen, userEvent } from "storybook/test";
 
 import { Badge } from "@/components/ui/badge";
+import { FieldLegend, FieldSet } from "@/components/ui/field";
 
 import { ChoiceCard, ChoiceCardList } from "./choice-card";
 
@@ -26,30 +27,33 @@ function Harness({ checkedIds, disabled, withId, withDescription }: StoryArgs) {
   const [checked, setChecked] = useState<ReadonlySet<string>>(() => new Set(checkedIds));
 
   return (
-    <ChoiceCardList>
-      {ROWS.map((row) => (
-        <ChoiceCard
-          key={row.id}
-          id={withId ? row.id : undefined}
-          label={row.label}
-          description={withDescription ? row.description : undefined}
-          checked={checked.has(row.id)}
-          disabled={disabled}
-          trailing={row.id === "a" ? <Badge variant="secondary">管理者</Badge> : undefined}
-          onCheckedChange={(next) => {
-            setChecked((current) => {
-              const draft = new Set(current);
-              if (next) {
-                draft.add(row.id);
-              } else {
-                draft.delete(row.id);
-              }
-              return draft;
-            });
-          }}
-        />
-      ))}
-    </ChoiceCardList>
+    <FieldSet>
+      <FieldLegend variant="label">担当するチーム</FieldLegend>
+      <ChoiceCardList>
+        {ROWS.map((row) => (
+          <ChoiceCard
+            key={row.id}
+            id={withId ? row.id : undefined}
+            label={row.label}
+            description={withDescription ? row.description : undefined}
+            checked={checked.has(row.id)}
+            disabled={disabled}
+            trailing={row.id === "a" ? <Badge variant="secondary">管理者</Badge> : undefined}
+            onCheckedChange={(next) => {
+              setChecked((current) => {
+                const draft = new Set(current);
+                if (next) {
+                  draft.add(row.id);
+                } else {
+                  draft.delete(row.id);
+                }
+                return draft;
+              });
+            }}
+          />
+        ))}
+      </ChoiceCardList>
+    </FieldSet>
   );
 }
 

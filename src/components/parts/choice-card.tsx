@@ -12,16 +12,22 @@ import {
 } from "@/components/ui/field";
 
 /**
- * 複数選択リストの器。`FieldGroup` 素の gap はフォームのフィールド間の値で行の並びには
- * 過大なため、registry の `FieldGroup` が持つ `data-[slot=checkbox-group]:gap-3` に寄せる。
- * shadcn の registry の例 (`dialog-example.tsx`) も `data-slot="checkbox-group"` で同じ間隔にしている。
+ * 補足を添える選択肢や、選択が主役の一覧に並べるカード状の行の器。ラベルだけの複数選択は
+ * FieldSet の中に Field の行を並べる (docs/guides/forms-and-inputs.md「入力欄の周りに要素を置く」)。
+ * まとまりの名前は外側の `FieldSet` と `FieldLegend` が持つ。
+ *
+ * `FieldGroup` 素の gap はフォームのフィールド間の値で行の並びには過大なため、registry の
+ * `FieldGroup` が持つ `data-[slot=checkbox-group]:gap-3` に寄せる。shadcn の registry の例
+ * (`dialog-example.tsx`) も `data-slot="checkbox-group"` で同じ間隔にしている。
  */
 function ChoiceCardList({ children }: { children: ReactNode }) {
   return <FieldGroup data-slot="checkbox-group">{children}</FieldGroup>;
 }
 
 /**
- * 複数選択リストの 1 行。公式の Choice Card パターン。
+ * 補足を添える選択肢や、選択が主役の一覧のカード状の行。ラベルだけの複数選択は FieldSet の中に
+ * Field の行を並べる (docs/guides/forms-and-inputs.md「入力欄の周りに要素を置く」)。
+ * 公式の Choice Card パターンを `Checkbox` で組む。
  *
  * > Wrap `Field` components inside `FieldLabel` to create selectable field groups.
  * > This works with `RadioItem`, `Checkbox` and `Switch` components.
