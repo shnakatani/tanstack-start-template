@@ -4,6 +4,7 @@
 
 | 決定                                                                                                                  | ADR      |
 | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す                   | ADR-0015 |
 | router に既定の pending 表示を置き、Suspense の最後の受け皿にする                                                     | ADR-0029 |
 | ページのデータは Query から読み、欠かせない query だけを loader で待ち、副次的な query は待たずに Suspense の中で読む | ADR-0033 |
 
@@ -35,11 +36,11 @@ route の errorComponent (`src/components/screens/route-error.tsx` の `RouteErr
 
 TanStack Query 単体の基本形は、`useQuery` の `isPending` を見て読み込み中を出す ([TanStack Query docs「Queries」][])。Router との統合では、公式は SSR に要るかでフックを分ける。このリポジトリは SSR に要らない副次的なデータも `useSuspenseQuery` で読むので (ADR-0033)、`isPending` の分岐を書く場所が無い。
 
-| 公式の手段                                                             | 公式の案内                                                                                                                                                  | このリポジトリ                                                                                                                                                                                                                                                                                                                       |
-| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| SSR に要るデータを loader で取得し、`useSuspenseQuery` で読む          | サーバーで取得し、解決したらクライアントへストリーミングする ([TanStack Router docs「TanStack Query Integration」][] の Using useSuspenseQuery vs useQuery) | 欠かせない query をこの形で読む (ADR-0033)                                                                                                                                                                                                                                                                                           |
-| SSR に要らないデータを `useQuery` で読む                               | "does not execute on the server; it will fetch on the client after hydration. Use this for data that is not required for SSR." (同上)                       | 採らない。副次的な query も loader で取得を流して `<Suspense>` の中で読み、サーバーで始めた取得の結果を HTML へストリーミングする (ADR-0033 の検討した選択肢)                                                                                                                                                                        |
-| 条件が変わる間、`placeholderData: keepPreviousData` で前のデータを残す | key が変わるたびに新しい query として `pending` に戻るのを避ける ([TanStack Query docs「Paginated / Lagged Queries」][])                                    | 採らない。`useQuery` の手段で、ページのデータを `useSuspenseQuery` で読む決定 (ADR-0033) と合わない。前の中身は、条件の更新を Transition か `useDeferredValue` に通せば Suspense が fallback を出さずに保つ ([React docs「Suspense」][] の Caveats。組み方は `docs/guides/lists-and-search.md`「入力欄を URL の編集として持つ理由」) |
+| 公式の手段                                                             | 公式の案内                                                                                                                                                  | このリポジトリ                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SSR に要るデータを loader で取得し、`useSuspenseQuery` で読む          | サーバーで取得し、解決したらクライアントへストリーミングする ([TanStack Router docs「TanStack Query Integration」][] の Using useSuspenseQuery vs useQuery) | 欠かせない query をこの形で読む (ADR-0033)                                                                                                                                                                                                                                                                                                                                                  |
+| SSR に要らないデータを `useQuery` で読む                               | "does not execute on the server; it will fetch on the client after hydration. Use this for data that is not required for SSR." (同上)                       | 採らない。副次的な query も loader で取得を流して `<Suspense>` の中で読み、サーバーで始めた取得の結果を HTML へストリーミングする (ADR-0033 の検討した選択肢)                                                                                                                                                                                                                               |
+| 条件が変わる間、`placeholderData: keepPreviousData` で前のデータを残す | key が変わるたびに新しい query として `pending` に戻るのを避ける ([TanStack Query docs「Paginated / Lagged Queries」][])                                    | 採らない。loader で取得しても、ページは公式が勧める suspense のフックで読む (ADR-0033 の検討した選択肢)。`useSuspenseQuery` に `placeholderData` は無く、前の中身は条件の更新を Transition か `useDeferredValue` に通して保つ ([TanStack Query docs「Suspense」][]、[React docs「Suspense」][] の Caveats。組み方は `docs/guides/lists-and-search.md`「入力欄を URL の編集として持つ理由」) |
 
 ### 再試行で Query の error boundary を表示時に reset する理由
 
@@ -55,11 +56,12 @@ TanStack Query 単体の基本形は、`useQuery` の `isPending` を見て読�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。TanStack Router は 1.170.39 を見た (2026-10-02)。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。TanStack Router は 1.170.39 を見た (2026-10-02。「TanStack Query Integration」は 2026-10-04)。TanStack Query は 5.104.0 を見た (2026-10-04)。
 
 [TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/guide/data-loading
 [TanStack Router docs「TanStack Query Integration」]: https://tanstack.com/router/latest/docs/integrations/query
 [TanStack Router docs「External Data Loading」]: https://tanstack.com/router/latest/docs/guide/external-data-loading
 [TanStack Query docs「Queries」]: https://tanstack.com/query/latest/docs/framework/react/guides/queries
 [TanStack Query docs「Paginated / Lagged Queries」]: https://tanstack.com/query/latest/docs/framework/react/guides/paginated-queries
+[TanStack Query docs「Suspense」]: https://tanstack.com/query/latest/docs/framework/react/guides/suspense
 [React docs「Suspense」]: https://react.dev/reference/react/Suspense

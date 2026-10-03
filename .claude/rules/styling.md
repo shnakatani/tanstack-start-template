@@ -106,7 +106,7 @@ Card docs: https://ui.shadcn.com/docs/components/base/card 。
 
 - ページのローディングは、欠かせない query を route loader での取得の待ち合わせ + `useSuspenseQuery` + route の `pendingComponent` で、副次的な query をページの中の `<Suspense>` で出す (ADR-0033)
 - route に `pendingComponent` が無い画面は、router の `defaultPendingComponent` (`PendingContent`) が受ける。消さない。無いと suspend が root まで巻き上がって何も描かれない (ADR-0029)
-- ページ内で `useQuery` の `isPending` / `isLoading` を見て skeleton を出す分岐を書かず、`useSuspenseQuery` で読む。公式は SSR に要らないデータに `useQuery` を勧めるが、副次的なデータも loader で取得を流し、サーバーで始めた取得の結果を HTML へストリーミングする (`docs/guides/data-loading.md`「`isPending` の分岐で読み込み中を出さない理由」)
+- ページ内で `useQuery` の `isPending` / `isLoading` を見て skeleton を出す分岐を書かず、`useSuspenseQuery` で読む。`useQuery` はサーバーで走らず、loader で取得していない query は hydration の後まで取得が始まらない (`docs/guides/data-loading.md`「`isPending` の分岐で読み込み中を出さない理由」)
 - skeleton はレイアウトを模倣し (`table-skeleton.tsx`)、図形を `aria-hidden` にして「読み込み中」の文言を区画に 1 つだけ置く。図形ごとに置くと同じ文言が数だけ読まれる (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - 表の skeleton は本物の列見出しを持つ table として見せ、`<table>` に role を載せない。載せると `th` と `td` が role を失う (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - route の pending 表示 (skeleton と `PendingContent`) に `aria-busy` を付けない。JAWS が要素ごと読み飛ばす (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
