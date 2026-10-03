@@ -10,7 +10,8 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/ui/field";
-import { rendersNothing } from "@/lib/renders-nothing";
+
+import { rendersNothing } from "./renders-nothing";
 
 /**
  * 補足を添える選択肢や、選択が主役の一覧に並べるカード状の行の器。ラベルだけの複数選択は

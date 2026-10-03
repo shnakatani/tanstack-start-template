@@ -112,7 +112,8 @@ export const TrailingWithoutDescription: Story = {
 
 /**
  * `cond && <Badge />` の偽や空の一覧の map のような、何も描かない値を trailing と description に渡した行。
- * 空の要素を Field の flex の子に足さず (足すと gap の分だけ隙間が増える)、説明にも結ばない
+ * 空の要素を描かず (trailing の包みは Field の、説明文は FieldContent の flex の子になり、gap の分だけ隙間が増える)、
+ * 説明にも結ばない
  */
 export const EmptyTrailingAndDescription: Story = {
   tags: ["!dev"],
