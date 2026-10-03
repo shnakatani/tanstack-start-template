@@ -21,13 +21,13 @@
 
 **`src/components/` を役割で 5 区分し、`no-restyle` の適用外を部品ディレクトリ (`ui/`) だけにする。**
 
-| 配置先                    | 内容                                                                                                | `no-restyle` |
-| ------------------------- | --------------------------------------------------------------------------------------------------- | ------------ |
-| `src/components/ui/`      | shadcn 生成コンポーネントと、registry に相当が無い ui 部品 (ADR-0020)                               | 適用外       |
-| `src/components/action/`  | `ui/` を包み `action` prop で Transition 化した部品 (ADR-0016)                                      | 適用する     |
-| `src/components/parts/`   | ui 部品を組み合わせる自作部品。見た目の差は `ui/` の variant で持ち、ui 部品へ className で当てない | 適用する     |
-| `src/components/screens/` | 部品を並べて画面を組む共有コンポーネント                                                            | 適用する     |
-| `src/components/` (直下)  | 上のどれでもないもの。実例は `live-regions.tsx`                                                     | 適用する     |
+| 配置先                    | 内容                                                                                                              | `no-restyle` |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------ |
+| `src/components/ui/`      | shadcn 生成コンポーネントと、registry に相当が無い ui 部品 (ADR-0020)                                             | 適用外       |
+| `src/components/action/`  | `ui/` を包み `action` prop で Transition 化した部品 (ADR-0016)                                                    | 適用する     |
+| `src/components/parts/`   | ui 部品を組み合わせる自作部品。見た目の差は `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順で持つ | 適用する     |
+| `src/components/screens/` | 部品を並べて画面を組む共有コンポーネント                                                                          | 適用する     |
+| `src/components/` (直下)  | 上のどれでもないもの。実例は `live-regions.tsx`                                                                   | 適用する     |
 
 適用外の範囲を `ui/` だけにするのは上流の既定の範囲である。書き方は上流と違い、規則を `"off"` にせず `excludeFiles` で外す (下の比較表)。shadcn-ui/lint の `docs/adoption.md` の設定例は `components/ui/**` だけで規則を外し、`docs/rules/no-restyle.md` は "Turn this rule off inside your component directory so components can style their own internals." と書く。
 
