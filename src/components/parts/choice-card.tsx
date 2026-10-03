@@ -57,6 +57,8 @@ function ChoiceCard({
   /**
    * タイトルと checkbox の間に置く補足 (状態バッジ等)。説明文の後ろに続けて checkbox の説明として読ませる。
    * 行を見分ける識別子として名前に読ませたいときは、`label` に含める。
+   * 条件で表示を切り替えるなら呼び出し側で条件を書く (`cond && <Badge />`)。条件で null を返す部品を渡すと、
+   * 何を描くかは値から分からないので包みが残り、隙間が 1 つ増える。
    * `Field` horizontal は `FieldContent` があると `items-start` になる (`ui/field.tsx`) ので、
    * 補足はタイトルの 1 行目に上端を揃える
    */
