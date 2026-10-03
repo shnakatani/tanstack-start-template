@@ -1,7 +1,7 @@
-# ADR-0003: 規範の置き場所は読み込まれる契機で決め、Bash で打つだけの操作の規範は AGENTS.md に置き、rules は設計ガイドを import せず読むようにも書かない
+# ADR-0003: 規範の置き場所は読み込まれる契機で決め、Bash で打つだけの操作の規範の写しは AGENTS.md に置き、rules は設計ガイドを import せず読むようにも書かない
 
 - Status: Accepted
-- Date: 2026-09-24
+- Date: 2026-10-01
 - 関連: ADR-0001 (文書の層と参照の向き) / ADR-0002 (rules の 1 項目に書くもの)
 
 ## Context
@@ -29,15 +29,15 @@ memory docs は import について "Imported files are expanded and loaded into
 
 ## Decision
 
-**規範は、それが要る場面で読み込まれる置き場所に置く。Bash で打つだけの操作の規範は `AGENTS.md` に置く。rules は設計ガイドを import せず、読むようにも書かない。規範は rules 自身が持ち、ガイドの節は出典として指すだけにする。**
+**規範は、それが要る場面で読み込まれる置き場所に置く。Bash で打つだけの操作の規範の写しは `AGENTS.md` に置く (本体はガイドか ADR。ADR-0001)。rules は設計ガイドを import せず、読むようにも書かない。rules と AGENTS.md は本体と同じ規範を自分でも持ち、ガイドの節は出典として指すだけにする。**
 
-| 規範が要る場面                                                 | 置き場所                        |
+| 規範が要る場面                                                 | 写しの置き場所                  |
 | -------------------------------------------------------------- | ------------------------------- |
 | 特定のファイルを読んで編集するとき                             | `paths` つきの `.claude/rules/` |
 | Bash でコマンドを打つだけの操作 (テストの実行、依存の操作など) | `AGENTS.md`                     |
 
 - `AGENTS.md` が大きくなりすぎたら、ファイルを読む場面の規範を `paths` つきの rules へ分ける
-- ファイルを読む前に要る規範 (新しいファイルを書き始める前の手順) と、Bash で打つだけの操作に要る規範は、`AGENTS.md` 自身に書く。`AGENTS.md` から rules やガイドを「読む」と言葉で誘導しても、読まれる保証は無い。根拠は、rules から言葉で誘導した場合に 2 回とも読まれなかった上の測定と、CLAUDE.md から言葉で AGENTS.md を読むよう指示した場合について memory docs が書く "Claude sees `AGENTS.md` only if it decides to open the file" である。AGENTS.md からの誘導そのものは測っていない。新しいファイルを書くだけでは `paths` の rules は読み込まれない
+- ファイルを読む前に要る規範 (新しいファイルを書き始める前の手順) と、Bash で打つだけの操作に要る規範は、`AGENTS.md` 自身にも写す。`AGENTS.md` から rules やガイドを「読む」と言葉で誘導しても、読まれる保証は無い。根拠は、rules から言葉で誘導した場合に 2 回とも読まれなかった上の測定と、CLAUDE.md から言葉で AGENTS.md を読むよう指示した場合について memory docs が書く "Claude sees `AGENTS.md` only if it decides to open the file" である。AGENTS.md からの誘導そのものは測っていない。新しいファイルを書くだけでは `paths` の rules は読み込まれない
 
 ### 検討した選択肢
 

@@ -1,4 +1,4 @@
-import { resolveTestTimeZone } from "./scripts/lib/resolve-test-time-zone";
+import { resolveTestTimeZone } from "../../scripts/lib/resolve-test-time-zone";
 
 /**
  * テスト全体のタイムゾーンを決める。worker の起動前にメインプロセスで走るので、pool を

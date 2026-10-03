@@ -70,7 +70,6 @@ async function renderFailingOnceRoute({ loaderAwaits }: { loaderAwaits: boolean 
  */
 describe("RouteErrorContent", () => {
   afterEach(() => {
-    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 

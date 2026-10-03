@@ -6,9 +6,9 @@
 
 ### 基準のタイムゾーン
 
-- テスト全体の TZ は `America/New_York` にする。root の `test.globalSetup` に登録した `vitest.global-setup.ts` が、メインプロセスの `TZ` に入れる。値は `scripts/lib/resolve-test-time-zone.ts` の `BASE_TIME_ZONE` が持つ
+- テスト全体の TZ は `America/New_York` にする。root の `test.globalSetup` に登録した `tooling/test/global-setup.ts` が、メインプロセスの `TZ` に入れる。値は `scripts/lib/resolve-test-time-zone.ts` の `BASE_TIME_ZONE` が持つ
 - 基準に依存するテストは、基準が `America/New_York` であることを前提にしてよい。効くことを確かめたのは unit・scripts・ブラウザの 3 つの project (「基準を root の globalSetup に置く理由」)
-- ホストの `TZ` は使わない。`TZ=<IANA 名> vp test run` と渡しても基準で上書きされ、`vitest.global-setup.ts` が TZ ごとの実行のスクリプトを案内する警告を出す。ホストが自分の都合で `TZ` を持つ環境では警告が毎回出るので、`TZ` を空にして走らせる (`TZ= vp test run`)
+- ホストの `TZ` は使わない。`TZ=<IANA 名> vp test run` と渡しても基準で上書きされ、`tooling/test/global-setup.ts` が TZ ごとの実行のスクリプトを案内する警告を出す。ホストが自分の都合で `TZ` を持つ環境では警告が毎回出るので、`TZ` を空にして走らせる (`TZ= vp test run`)
 - 基準の値を変えるときは、`APP_TIME_ZONE` とも UTC とも違う値にする (「基準を `America/New_York` にする理由」)。値を書いた箇所は `git grep -n America/New_York` で洗う。確認のテストの期待値は、実装から独立させるために書き写している
 
 ### Node で動くテストを TZ ごとに走らせる
@@ -89,7 +89,7 @@ worker からの `TZ` の変更は `Date` に効かない (「基準を root の
 - CLI の `--pool` は project の `pool` を上書きする。[Vitest docs「Advanced API」][] の「Project Configuration Resolution」は、`--pool` を含む CLI の一部のオプションを "applied to every project at the highest priority" と書く
 - 2026-09-29 に vitest 5.0.1 で、TZ ごとの project を `--pool threads` で走らせると、`src/test/test-time-zone.tz.test.ts` の 2 件が各 project で落ちた。TZ ごとの project を 1 つ足して `vitest doctor` を走らせると、`pool: 'threads'` の候補がその project の同じ 2 件で failed になり、推奨の後に "Doctor overrides options for all projects at once" と出た
 - 2026-09-29 に `parseCalendarDate` を `new Date(value)` (UTC の 0 時になる) に置き換えて `*.tz.test.ts` (22 件) を走らせると、基準で 7 件、`Asia/Tokyo` で 4 件、`Pacific/Pago_Pago` で 7 件、`UTC` で 3 件が落ちた。3 件は暦に無い日付を throw しなくなるのでどの TZ でも落ち、残りは TZ によって見つかる
-- `vitest.global-setup.ts` では `TEST_TIME_ZONE` の名前を検査しない。IANA の名前として効かない値 (`Asia/Tokio`、`asia/tokyo`、`JST-9`) を `TZ` に入れると `Intl` の既定の TZ が決まらず、`src/test/test-time-zone.tz.test.ts` が落ちる (2026-09-29、Node 24.21.0 で実測)
+- `tooling/test/global-setup.ts` では `TEST_TIME_ZONE` の名前を検査しない。IANA の名前として効かない値 (`Asia/Tokio`、`asia/tokyo`、`JST-9`) を `TZ` に入れると `Intl` の既定の TZ が決まらず、`src/test/test-time-zone.tz.test.ts` が落ちる (2026-09-29、Node 24.21.0 で実測)
 
 ### TZ ごとの実行を並列にする理由
 
