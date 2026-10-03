@@ -47,16 +47,16 @@ function ChoiceCard({
   label: ReactNode;
   /**
    * タイトルの下に置く説明文。shadcn の Choice Card の例と同じく、`FieldContent` の中で `FieldTitle` に続ける。
-   * registry の `FieldDescription` は control と結ばれないので、id を checkbox の `aria-describedby` へ渡す
+   * checkbox の名前には入れず、説明として結ぶ
    */
   description?: ReactNode;
   checked: boolean;
   disabled?: boolean;
   /**
-   * タイトルと checkbox の間に置く補足 (識別子・状態バッジ等)。
+   * タイトルと checkbox の間に置く補足 (状態バッジ等)。説明文の後ろに続けて checkbox の説明として読ませる。
+   * 行を見分ける識別子として名前に読ませたいときは、`label` に含める。
    * `Field` horizontal は `FieldContent` があると `items-start` になる (`ui/field.tsx`) ので、
-   * 補足はタイトルの 1 行目に上端を揃える。行の content box より低い補足に `self-center` を
-   * 足すとその分だけ下がるため、registry の揃えから外したいときだけ渡す
+   * 補足はタイトルの 1 行目に上端を揃える
    */
   trailing?: ReactNode;
   onCheckedChange: (checked: boolean) => void;
@@ -65,7 +65,17 @@ function ChoiceCard({
   // hook の呼び出しが条件付きになり、消費側が id の有無を切り替えると hook 数が変わる
   const generatedId = useId();
   const rowId = id ?? generatedId;
+  const titleId = useId();
   const descriptionId = useId();
+  const trailingId = useId();
+  // `cond && <Badge />` の偽 (false) などの何も描かない値で包みを描くと、空の要素が flex の子になって隙間が増える
+  const hasTrailing = trailing !== undefined && trailing !== null && typeof trailing !== "boolean";
+  // label の中のテキストはすべて checkbox の名前に入るので、名前をタイトルに絞り、
+  // 説明文と trailing は説明として結ぶ (docs/guides/forms-and-inputs.md「Choice Card の名前と説明を分ける理由」)
+  const describedBy =
+    [description === undefined ? undefined : descriptionId, hasTrailing ? trailingId : undefined]
+      .filter((value) => value !== undefined)
+      .join(" ") || undefined;
 
   return (
     <FieldLabel
@@ -77,17 +87,22 @@ function ChoiceCard({
     >
       <Field orientation="horizontal" data-disabled={disabled || undefined}>
         <FieldContent>
-          <FieldTitle>{label}</FieldTitle>
+          <FieldTitle id={titleId}>{label}</FieldTitle>
           {description !== undefined && (
             <FieldDescription id={descriptionId}>{description}</FieldDescription>
           )}
         </FieldContent>
-        {trailing}
+        {hasTrailing && (
+          // 説明に結ぶ id を付けるための包み。display: contents にしない。
+          // contents の要素の読み上げはブラウザで差が出てきた (docs/guides/forms-and-inputs.md「Choice Card の名前と説明を分ける理由」)
+          <span id={trailingId}>{trailing}</span>
+        )}
         <Checkbox
           id={rowId}
           checked={checked}
           disabled={disabled}
-          aria-describedby={description === undefined ? undefined : descriptionId}
+          aria-labelledby={titleId}
+          aria-describedby={describedBy}
           onCheckedChange={onCheckedChange}
         />
       </Field>

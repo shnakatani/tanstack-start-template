@@ -76,13 +76,30 @@ export const Checked: Story = { args: { checkedIds: ["a"] } };
 /** disabled の行。押せると主張しない (cursor は既定のまま) */
 export const Disabled: Story = { args: { disabled: true, checkedIds: ["a"] } };
 
-/** 説明文を添えた行。タイトルの下に置き、checkbox の説明として読ませる */
+/**
+ * 説明文を添えた行。名前はタイトルだけにし、説明文と trailing は checkbox の説明として読ませる。
+ * label の中の説明文は、結ばないと名前にも入る (docs/guides/forms-and-inputs.md「Choice Card の名前と説明を分ける理由」)
+ */
 export const WithDescription: Story = {
   args: { withDescription: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("checkbox", { name: /チームB/ })).toHaveAccessibleDescription(
-      "問い合わせに対応する",
-    );
+    const teamA = canvas.getByRole("checkbox", { name: "チームA" });
+    await expect(teamA).toHaveAccessibleName("チームA");
+    await expect(teamA).toHaveAccessibleDescription("開発と運用を担当する 管理者");
+
+    const teamB = canvas.getByRole("checkbox", { name: "チームB" });
+    await expect(teamB).toHaveAccessibleName("チームB");
+    await expect(teamB).toHaveAccessibleDescription("問い合わせに対応する");
+  },
+};
+
+/** 説明文が無く trailing だけの行でも、trailing は名前に入れず説明として読ませる */
+export const TrailingWithoutDescription: Story = {
+  tags: ["!dev"],
+  play: async ({ canvas }) => {
+    const teamA = canvas.getByRole("checkbox", { name: "チームA" });
+    await expect(teamA).toHaveAccessibleName("チームA");
+    await expect(teamA).toHaveAccessibleDescription("管理者");
   },
 };
 
@@ -118,6 +135,6 @@ export const GeneratedId: Story = {
     await userEvent.click(screen.getByText("チームB"));
 
     await expect(screen.getByRole("checkbox", { name: "チームB" })).toBeChecked();
-    await expect(screen.getByRole("checkbox", { name: /チームA/ })).not.toBeChecked();
+    await expect(screen.getByRole("checkbox", { name: "チームA" })).not.toBeChecked();
   },
 };
