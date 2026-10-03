@@ -1,7 +1,7 @@
 # ADR-0023: 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める
 
 - Status: Accepted
-- Date: 2026-09-27
+- Date: 2026-10-02
 - 関連: ADR-0007 (lint ルールの選定基準)、ADR-0020 (行単位の抑制の許容リスト)、ADR-0011 (`no-restyle` の適用範囲)、ADR-0022 (層の外へ class 文字列を配らない)
 
 ## Context
@@ -34,6 +34,9 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `no-raw-colors` は `bg-[#333]` のような arbitrary color を検査しないため、`no-arbitrary-values` と対で使う。
 `no-raw-colors` は class だけでなく `fill` / `stroke` など SVG 属性の raw color も見る。移行前の 2 ルールに無かった検査で、統制の範囲はここだけ広がる。
 `no-arbitrary-values` は `color-mix()` の材料が semantic token だけでも color category と判定する。raw color を持たず dark mode に追従する既存表現は、行単位で抑制する (書き方は `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」)。
+抑制の形は `@shadcn/lint` の adoption.md「Exceptions」の、例外をコードの隣に置き `--` の後に理由を書く形に従う。
+`no-arbitrary-values` は `ui/` でも off にしない。公式の adoption.md「Add more rules」と rules.md「Rules」は部品のディレクトリで off にする override を示すが、その動機は "structural values such as `ring-[3px]`" で、`deny: ["color"]` が非色の任意値を既に通している (rules.md「The policy」: "Without `allow`, permits everything else.")。
+`ui/` で検査に残るのは任意値の色だけで、off にすると registry の取り直しで入った `bg-[#333]` のような色を拾う経路が無くなる。`no-raw-colors` は任意値の色を見ない (no-raw-colors.md: "Arbitrary colors such as `bg-[#333]` belong to no-arbitrary-values.")。
 `no-restyle` は 2026-09-19 に ADR-0011 の層の決定と対で、`require-static-classes` は同日に ADR-0022 の配り方の決定と対で採用した。
 `require-static-classes` は `no-restyle` と同じ `overrides` に相乗りし、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言する。
 宣言するのは `ui/` が定義した variant 関数だけにする。宣言した関数の呼び出しは、cva の定義の中の class が `no-restyle` に検査されずに通る (2026-09-25 実測、`@shadcn/lint` 0.1.0)。`ui/` の外の cva を宣言すると、見た目の上書きの抜け道になる。
@@ -54,6 +57,14 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 | `eslint-plugin-tailwindcss`        | Tailwind v4 には対応するが peerDependencies は `eslint` だけで、oxlint 経由の利用を上流が想定していない (2026-08-17 に確認) | 却下     |
 | 自前の正規表現でソースを走査する   | 字面しか見ないため theme の実体と乖離し、任意値の中身も読めない                                                             | 却下     |
 
+token だけを混ぜる `color-mix()` の通し方:
+
+| 案                                                                                         | 評価                                                                                                                                                                                                                                                                                                                                            | 採否     |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 行単位で抑制し、`--` の後に理由を書く (adoption.md「Exceptions」)                          | 例外がコードの隣に残り、`ui/` の任意値の色の検査は続く                                                                                                                                                                                                                                                                                          | **採用** |
+| `ui/**` の override で `no-arbitrary-values` を off にする (adoption.md「Add more rules」) | 抑制コメントは要らなくなるが、`ui/` に入る任意値の色を lint が拾わなくなる                                                                                                                                                                                                                                                                      | 却下     |
+| `allow` に class を名指しする (no-arbitrary-values.md「Allow an exception」)               | `deny: ["color"]` と併せると、`allow` に挙げた class だけを通す形に変わって非色の任意値 (`rounded-[...]`、`min-h-[50vh]`) まで報告し、名指しした `color-mix()` の class も `deny` に外されて報告されたまま残る。`deny` を外して `allow` に非色の category を全部並べ直す設定になる (2026-10-02 に oxlint 1.85.0 と `@shadcn/lint` 0.2.0 で実測) | 却下     |
+
 ## Consequences
 
 - 3 ルールが発火していることを常時見張る仕組みは置かない。`--print-config` の top-level `rules` に JS plugin 由来のルールは出ず、`rules` から消しても `"off"` にしても整合性テストと `vp check` は通る。`jsPlugins` は oxlint 側が alpha 扱いで semver の対象外と明記しているが、依存の更新の内容を確かめるときに jsPlugins に変化があれば、そのとき動作を確かめる
@@ -70,6 +81,10 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 
 - oxlint の JS plugins (alpha 扱いと `{ name, specifier }` の指定形): https://oxc.rs/docs/guide/usage/linter/js-plugins.html
 - `@shadcn/lint` の setup と rule 一覧: https://github.com/shadcn-ui/lint/blob/main/SETUP.md
+- `@shadcn/lint` 0.2.0 の adoption.md (「Add more rules」の部品のディレクトリの override、「Exceptions」の行単位の抑制): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/adoption.md
+- `@shadcn/lint` 0.2.0 の rules.md (「Rules」の off にする範囲、「The policy」の `allow` と `deny`): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules.md
+- `@shadcn/lint` 0.2.0 の no-raw-colors.md (任意値の色を見ない): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules/no-raw-colors.md
+- `@shadcn/lint` 0.2.0 の no-arbitrary-values.md (「Allow an exception」): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules/no-arbitrary-values.md
 - 使われない `@typescript-eslint/parser` が ESLint と typescript を連れてくる件: https://github.com/shadcn-ui/lint/issues/1
 - pnpm の `packageExtensions` (依存の manifest へ `peerDependenciesMeta` を後付けする): https://pnpm.io/settings/dependency-resolution
 - Tailwind CSS の既定 palette を差し替える手順 (`--color-*: initial`): https://tailwindcss.com/docs/colors
