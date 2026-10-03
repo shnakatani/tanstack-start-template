@@ -21,7 +21,8 @@ paths:
 
 - `routes/<path>/-` で始まるディレクトリの中の import は相対パスで書く (`docs/guides/placement.md`「route の中の置き場」)
 - 部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/`。配る部品を `screens/` や直下へ置くと `componentImports` に入らず、素の要素に当てる見た目の上書きが検査から漏れる (ADR-0011)
-- 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の部品を参照で渡す (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
+- 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の名前付きの部品を参照で渡す。列定義の中の無名の関数で hook を呼ぶと `react/rules-of-hooks` が落とす (`docs/guides/lists-and-search.md`「cell を部品の参照で渡す理由」)
+- cell の部品が Table のメソッド (`row.getIsSelected()`、`cell.getValue()` など) で表の状態を読むなら、その部品の中で `Subscribe` する。同じ `row` / `cell` の object が渡り続け、Compiler が前の描画を使い回すとメソッドの結果が古いまま残る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0010)
 - route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない
 - story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まり、手で書くとファイルを動かしたときに title だけが古いパスを指す (`docs/guides/storybook.md`「story に `title` を書かない理由」)

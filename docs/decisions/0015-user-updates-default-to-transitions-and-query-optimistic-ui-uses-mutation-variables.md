@@ -58,14 +58,13 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 
 **ユーザー操作に起因する更新は Transition の中で行い、pending は Transition から取る。**
 
-| 更新の種類                                   | 扱い                                                                                                                                                                                                           | 担う場所                                        |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| ナビゲーション、GET                          | 同期 Transition。データは Suspense で読む                                                                                                                                                                      | TanStack Router (既存)                          |
-| mutation                                     | 非同期 Transition (Action)。`mutateAsync` を await する。完了点「確定操作の直後」(ADR-0017) では Action は close だけを含み、mutation は Transition の外で `void runAction(...)` として走る                    | `src/components/action/`                        |
-| query の再取得 (`invalidateQueries`)         | mutation の `onSuccess` が Promise を返して待つ (pending の源)。ダイアログを閉じる時点は ADR-0017 の完了点の軸で選ぶ。描画は緊急更新に落ちる (「TanStack Query と Router のストアは Transition に参加しない」) | mutation の `onSuccess`                         |
-| ダイアログの開閉                             | 緊急更新のまま (Base UI の store。「TanStack Query と Router のストアは Transition に参加しない」)。mutation 成功後に閉じる時点は ADR-0017 の完了点の軸で選ぶ                                                  | mutation の `onSuccess`                         |
-| Error Boundary の `reset()` と loader 再実行 | 緊急更新のまま。`router.invalidate()` の描画は Router が Transition 化する                                                                                                                                     | `src/components/screens/route-error.tsx` (既存) |
-| 制御コンポーネントの入力値                   | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                                                                                                                                  | 各部品                                          |
+| 更新の種類                           | 扱い                                                                                                                                                                                                           | 担う場所                 |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| ナビゲーション、GET                  | 同期 Transition。データは Suspense で読む                                                                                                                                                                      | TanStack Router (既存)   |
+| mutation                             | 非同期 Transition (Action)。`mutateAsync` を await する。完了点「確定操作の直後」(ADR-0017) では Action は close だけを含み、mutation は Transition の外で `void runAction(...)` として走る                    | `src/components/action/` |
+| query の再取得 (`invalidateQueries`) | mutation の `onSuccess` が Promise を返して待つ (pending の源)。ダイアログを閉じる時点は ADR-0017 の完了点の軸で選ぶ。描画は緊急更新に落ちる (「TanStack Query と Router のストアは Transition に参加しない」) | mutation の `onSuccess`  |
+| ダイアログの開閉                     | 緊急更新のまま (Base UI の store。「TanStack Query と Router のストアは Transition に参加しない」)。mutation 成功後に閉じる時点は ADR-0017 の完了点の軸で選ぶ                                                  | mutation の `onSuccess`  |
+| 制御コンポーネントの入力値           | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                                                                                                                                  | 各部品                   |
 
 ### 楽観表示の使い分け
 
@@ -79,11 +78,11 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 
 ### 検討した選択肢
 
-| 案                                                                             | 評価                                                                                                                                                              | 採否     |
-| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 現状維持 (mutation の `isPending`)                                             | Transition の意味論 (割り込み、Action の順序保証) を持たず、pending の切り替えが `<ViewTransition>` の対象にならない。React チームの区分 (Context) から外れ続ける | 却下     |
-| `useOptimistic` を一覧の行にも使う                                             | TanStack/query#9742 の揺れが起きる。concurrent stores (react/react#35449) が出荷するまで成立しない                                                                | 却下     |
-| ユーザー操作による更新を Transition の中で行い、pending を Transition から取る | React チームの前提 (「React 側の方針」) に沿い、pending の切り替えが `<ViewTransition>` の対象になる                                                              | **採用** |
+| 案                                                                             | 評価                                                                                                                                           | 採否     |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 現状維持 (mutation の `isPending`)                                             | Transition の意味論 (割り込み) を持たず、pending の切り替えが `<ViewTransition>` の対象にならない。React チームの区分 (Context) から外れ続ける | 却下     |
+| `useOptimistic` を一覧の行にも使う                                             | TanStack/query#9742 の揺れが起きる。concurrent stores (react/react#35449) が出荷するまで成立しない                                             | 却下     |
+| ユーザー操作による更新を Transition の中で行い、pending を Transition から取る | React チームの前提 (「React 側の方針」) に沿い、pending の切り替えが `<ViewTransition>` の対象になる                                           | **採用** |
 
 ### 他の文書との関係
 
@@ -95,7 +94,7 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 
 - pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と項目の busy は除く)。一覧のトリガーを全体で無効にするかは ADR-0017 の軸で決める
 - ダイアログを閉じる時点と、その間に止める範囲は ADR-0017 の軸で機能ごとに選ぶ。再取得完了前に閉じるときは、対象の項目が mutation の pending から busy を表現する
-- Transition 化で得るのは pending の自動管理、Action の順序保証 (完了点「確定操作の直後」で Transition の外に出した mutation は除く。ADR-0017)、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 4 つ。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (「TanStack Query と Router のストアは Transition に参加しない」「`<ViewTransition>` は Transition 内の React state 更新でしか発火しない」)
+- Transition 化で得るのは pending の自動管理、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 3 つ。Action の実行順は Transition が保証しない (`useTransition` リファレンスの Troubleshooting「My state updates in Transitions are out of order」)。順序を保つのは `useActionState` と `<form>` の action である (同)。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (「TanStack Query と Router のストアは Transition に参加しない」「`<ViewTransition>` は Transition 内の React state 更新でしか発火しない」)
 - ルート遷移への `<ViewTransition>` 適用は別途判断する
   - TanStack Router は `document.startViewTransition` を直接呼び (router-core `router.js`)、React の `<ViewTransition>` には未対応
   - 2026-09-13 の `gh search prs "ViewTransition" --repo TanStack/router` は browser API 由来の PR のみ
@@ -113,6 +112,7 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 - React 19.3 リリース記事: https://react.dev/blog/2026/09/09/react-19-3
 - react/react#35392 (`enableParallelTransitions` の追加) / react/react#37290 (既定で有効化): https://github.com/react/react/pull/35392 / https://github.com/react/react/pull/37290
 - `useTransition` リファレンス: https://react.dev/reference/react/useTransition
+- `useActionState` リファレンス: https://react.dev/reference/react/useActionState
 - `useSyncExternalStore` リファレンス (Caveats): https://react.dev/reference/react/useSyncExternalStore
 - `useOptimistic` リファレンス: https://react.dev/reference/react/useOptimistic
 - TanStack/query#9742 Is React Query incompatible with React Actions/Transitions/useOptimistic?: https://github.com/TanStack/query/issues/9742

@@ -84,13 +84,14 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 - `oxc-transform-react` は `@vitejs/plugin-react` の optional peer で、宣言された範囲 (`^0.145.0`) が上流自身の devDependency (`^0.147.0`) より狭い。範囲の是正までは `pnpm-workspace.yaml` の `peerDependencyRules` で受ける
 - bail out はビルドログにしか出ない。増減はゲートにならず、気づくのはログを読んだときになる。Compiler がカバーしない箇所を欠陥として扱わないと決めているので、この非対称は意図どおりである
 - Compiler が黙って外れる経路 (`vite.config.ts` から `compiler` オプションが消える) を機械で見張るものは無い。塞ぐならビルド成果物を見る検査が要る
-- メモ化が正しさや依存ガードに効く箇所があれば、その規範はガイドに書く。Compiler への委譲はそれを否定しない
+- Compiler への委譲は、手で書くメモ化を否定しない。新しいコードでも、性能の問題が出た箇所と、値の同一性を精密に制御する箇所 (effect の依存など) には手で書く (React Compiler の Introduction「What should I do about useMemo, useCallback, and React.memo?」)。場面ごとの書き方と順序は `docs/guides/react/memoization.md`「手動メモ化を書く」にある
 - Rules of React の検査を外すと Compiler が bail out する土壌ができる。分割後のルール群は導入の前提として据え置く
 - `compiler` オプションが experimental でなくなったら、このオプションで Compiler を適用する決定を見直す。`peerDependencyRules` の緩和の出口条件は `pnpm-workspace.yaml` のコメントが持つ
 
 ## 出典
 
 - React Compiler installation: https://react.dev/learn/react-compiler/installation
+- React Compiler introduction (新しいコードで `useMemo` / `useCallback` を精密な制御に使う推奨): https://react.dev/learn/react-compiler/introduction
 - useCallback (メモ化が価値を持つ 2 条件): https://react.dev/reference/react/useCallback
 - eslint-plugin-react-hooks のルール一覧: https://react.dev/reference/eslint-plugin-react-hooks
 - 既存コードの手動メモ化を残す推奨: https://github.com/reactwg/react-compiler/discussions/16

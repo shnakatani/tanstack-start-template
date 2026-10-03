@@ -23,8 +23,18 @@
 ### query のキャッシュとダイアログの close は Transition に乗らない
 
 TanStack Query の `useQuery` / `useMutation`、TanStack Router のストア、Base UI のダイアログの handle は、どれも `useSyncExternalStore` で購読されている。React はこの購読の更新を、Transition の中で起きても緊急更新として描く。
-そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは、pending の管理、Action の順序保証、pending の切り替えを `<ViewTransition>` で装飾できることである (ADR-0015)。
+そのため mutation を Action にしても、query の再取得による一覧の描き直しと `handle.close()` によるアンマウントは即座に起き、「古い画面を保ったまま待つ」効果も `<ViewTransition>` のアニメーションも付かない。Transition から得られるのは、pending の管理と、pending の切り替えを `<ViewTransition>` で装飾できることである (ADR-0015)。Transition は Action の実行順を保証しない ([React docs「useTransition」][] の Troubleshooting「My state updates in Transitions are out of order」)。
 出典と実測は ADR-0015「制約: TanStack Query と Router のストアは Transition に参加しない」が持つ。`useOptimistic` に query の値を渡せない理由もここにある (「楽観表示を出す」)。
+
+### `await` の後の更新の扱いを選んだ理由
+
+Action の中で `await` の後に state を set する書き方には、公式が 2 つの問題を挙げる。`await` の後の更新は Transition として扱われない ([React docs「useTransition」][] の Caveats と Troubleshooting「React doesn't treat my state update after `await` as a Transition」)。Transition の中の Action は実行順を保証しない ([React docs「useTransition」][] の Troubleshooting「My state updates in Transitions are out of order」)。そこで、set する値の種類ごとに手段を選ぶ。
+
+| set する値                            | 手段                                           | 理由                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| サーバーの値                          | set せず、query の再取得に任せる               | ページのデータは Query が持つ (ADR-0033)。手で set すると同じ値を query のキャッシュと state の 2 か所に持ち、再取得で query だけが新しくなる                                                                                                                                                                                                                          |
+| Action の結果                         | `useActionState`                               | 呼び出しを順に処理し、前の呼び出しの結果を次へ渡す ([React docs「useActionState」][])。順序を保つ手段として公式が挙げる ([React docs「useTransition」][] の Troubleshooting「My state updates in Transitions are out of order」)                                                                                                                                       |
+| どちらでもない値 (ローカルの段階など) | `await` の後の set を `startTransition` で包む | 公式の直し方 ([React docs「useTransition」][] の Troubleshooting「React doesn't treat my state update after `await` as a Transition」)。順序は保証されず、先に始めた呼び出しが後から終わると新しい値を上書きしうる。順序が要るときは自前の queue と中断が要る ([React docs「useTransition」][] の Troubleshooting「My state updates in Transitions are out of order」) |
 
 ### ハンドラを同期関数にする理由
 
@@ -72,13 +82,13 @@ mutation を伴う操作は、`src/components/action/` の部品 (`ActionButton`
 
 mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通す。`useMutation` の薄い wrapper で、次を持つ。
 
-| 項目                      | 書き方                                                                                                                                                                                              |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 入力                      | `useMutation` の options。`onError` は型で必須。省略すると、reject の吸収が通知の無い失敗になる                                                                                                     |
-| 出力                      | `mutate` / `mutateAsync` は型で外してあり、`runAction(variables): Promise<void>` を使う。`runAction` は `mutateAsync` を await して reject を吸収し、通知は `onError` (`toastMutationError`) が出す |
-| 呼び出し                  | `action` から `runAction` を呼ぶ。`mutate` は Promise を返さず、reject も `.catch(noop)` で握るので ([`@tanstack/react-query` の `useMutation.ts`][])、Transition が完了も失敗も観測できない        |
-| 再取得と close            | `onSuccess` は完了点によらず再取得の Promise を返す。TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く。閉じる時点は「完了点ごとに Transition を終える」               |
-| `await` の後の state 更新 | 書かない。Action の中で `await` の後に set すると Transition から外れる ([React docs「useTransition」][] の Caveats にある既知の制限)。画面の更新は query の再取得に任せる                          |
+| 項目                      | 書き方                                                                                                                                                                                                                                                                                                     |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入力                      | `useMutation` の options。`onError` は型で必須。省略すると、reject の吸収が通知の無い失敗になる                                                                                                                                                                                                            |
+| 出力                      | `mutate` / `mutateAsync` は型で外してあり、`runAction(variables): Promise<void>` を使う。`runAction` は `mutateAsync` を await して reject を吸収し、通知は `onError` (`toastMutationError`) が出す                                                                                                        |
+| 呼び出し                  | `action` から `runAction` を呼ぶ。`mutate` は Promise を返さず、reject も `.catch(noop)` で握るので ([`@tanstack/react-query` の `useMutation.ts`][])、Transition が完了も失敗も観測できない                                                                                                               |
+| 再取得と close            | `onSuccess` は完了点によらず再取得の Promise を返す。TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く。閉じる時点は「完了点ごとに Transition を終える」                                                                                                                      |
+| `await` の後の state 更新 | 上から順に当てる。サーバーの値は set せず、query の再取得に任せる。Action の結果を state に持つなら `useActionState` を使う。どちらでもなく `await` の後に set するなら、その set を `startTransition` で包む ([React docs「useTransition」][] の Caveats)。理由は「`await` の後の更新の扱いを選んだ理由」 |
 
 `runAction` を通さない Action の reject は、最寄りの Error Boundary へ届き画面ごと差し替わる。lint では見つからないので、Action を書くときはレビューで「失敗を Action の中で処理し切っているか」を見る。
 
@@ -138,6 +148,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
 [React docs「useTransition」]: https://react.dev/reference/react/useTransition
+[React docs「useActionState」]: https://react.dev/reference/react/useActionState
 [typescript-eslint/typescript-eslint#11008]: https://github.com/typescript-eslint/typescript-eslint/issues/11008
 [WAI-ARIA 1.2「Presentational Children」]: https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational
 [mui/base-ui#5133]: https://github.com/mui/base-ui/issues/5133
