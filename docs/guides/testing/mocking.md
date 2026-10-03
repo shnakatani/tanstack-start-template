@@ -51,7 +51,7 @@
 | `tooling/test/setup.ts` (root の `setupFiles`) の `afterEach`           | 各テストの後 |
 
 - 差し替えは `beforeEach` かテストの中で書く。ファイルの最上位と `beforeAll` で差し替えた値は、最初のテストの前に戻る。env は差し替える前の値で、グローバルは差し替える前のもの (ブラウザでは本物の `matchMedia` など) で走り、差し替えが効いていないことに気付かずに通ることがある。[Vitest docs「Mocking Globals」][] の例は最上位で `vi.stubGlobal` を呼ぶが、この形にしない
-- `.concurrent` を付けたテストでは `vi.stubEnv` も `vi.stubGlobal` も使わない。setup の `afterEach` は、1 つのテストが終わるたびに、並行して走っている別のテストが差し替えた値も戻す (2026-10-04 に実測)。設定の戻しも並行のテストを壊しうる ([Vitest docs「unstubEnvs」][] と [Vitest docs「unstubGlobals」][] の warning)
+- `.concurrent` を付けたテストでは `vi.stubEnv` も `vi.stubGlobal` も使わない。setup の `afterEach` は、1 つのテストが終わるたびに、並行して走っている別のテストが差し替えた値も戻す。[Vitest docs「unstubEnvs」][] と [Vitest docs「unstubGlobals」][] の warning は設定でも壊れうると書くが、設定だけでは、並行するテストが同時に始まるときも、別のテストが後から始まるとき (`--maxConcurrency=2`) も値は戻らなかった (2026-10-04 に実測)
 - テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は設定も setup も戻さず、後のテストへ残る ([Vitest docs「vi.stubGlobal」][] の tip: "you won't be able to use `vi.unstubAllGlobals` to restore original value")。setup の `beforeEach` が毎テスト立て直す値 (`src/test/browser/animations.ts` の Base UI のフラグ) は、立て直しが戻しを担うので代入でよい
 - env はモジュールの最上位ではなく、呼び出しの時点で読む。最上位で読んだ値は、テストで差し替えても変わらない
 
@@ -125,6 +125,6 @@ Jest は、manual mock と実装の同期を保つ手段として、mock の中�
 [Vitest docs「unstubEnvs」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/unstubenvs.md
 [Vitest docs「unstubGlobals」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/unstubglobals.md
 [Vitest docs「Mocking Globals」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/mocking/globals.md
-[Vitest docs「vi.stubGlobal」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md#vi-stubglobal
+[Vitest docs「vi.stubGlobal」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/vi.md#vistubglobal
 [Vitest docs「Projects」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/projects.md#configuration
 [Vitest docs「setupFiles」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/setupfiles.md

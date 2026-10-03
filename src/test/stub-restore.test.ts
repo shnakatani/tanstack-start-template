@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it, vi } from "vite-plus/test";
  * (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)。
  *
  * `--no-isolate` でファイルをまたぐ値を塞ぐ setup の `afterEach` は、ここでは確かめない。
- * 確かめるには複数のファイルを決まった順で走らせる必要があり、同じ節の実測が根拠になる
+ * 確かめるには複数のファイルを決まった順で走らせる必要があり、`docs/guides/testing/mocking.md`「差し替えの戻しを設定と setup の両方に置く理由」の実測が根拠になる
  */
 describe("テストの中の差し替え", () => {
   // 2 つのテストは書いた順に走る前提で組む (`.concurrent` を付けない。sequence.shuffle は既定で off)。
