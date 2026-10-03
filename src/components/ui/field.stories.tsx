@@ -95,6 +95,32 @@ export const WithContent: Story = {
   ),
 };
 
+/**
+ * 複数選択のまとまり。`FieldLegend` がまとまりの名前になり、行の `FieldLabel` は `weight="normal"` で
+ * 通常の太さにする (docs/guides/forms-and-inputs.md「入力欄の周りに要素を置く」)
+ */
+export const CheckboxGroup: Story = {
+  render: () => (
+    <FieldSet>
+      <FieldLegend variant="label">デスクトップに表示する項目</FieldLegend>
+      <FieldGroup data-slot="checkbox-group">
+        <Field orientation="horizontal">
+          <Checkbox id="field-group-hard-disks" defaultChecked />
+          <FieldLabel htmlFor="field-group-hard-disks" weight="normal">
+            ハードディスク
+          </FieldLabel>
+        </Field>
+        <Field orientation="horizontal">
+          <Checkbox id="field-group-external-disks" />
+          <FieldLabel htmlFor="field-group-external-disks" weight="normal">
+            外部ディスク
+          </FieldLabel>
+        </Field>
+      </FieldGroup>
+    </FieldSet>
+  ),
+};
+
 /** 複数のフィールドを束ねる外枠。`FieldSet` + `FieldLegend` がグループに名前を与える */
 export const Grouped: Story = {
   render: () => (

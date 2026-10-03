@@ -91,15 +91,39 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
+/**
+ * `weight="normal"` は、`FieldSet` のまとまりの中に並ぶ行のラベルを通常の太さにする。
+ * shadcn の例 (`field-checkbox.tsx`) が行の `FieldLabel` に付ける `className="font-normal"` を、
+ * `ui/` の外で `no-restyle` に止められずに書くための variant。太さは `Label` の `font-medium` を
+ * `cn` が後勝ちで置き換えて決まる
+ */
+const fieldLabelVariants = cva(
+  [
+    "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:border-primary/30 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted/50 has-[>[data-slot=field]]:has-[:focus-visible]:border-ring has-[>[data-slot=field]]:has-[:focus-visible]:ring-3 has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/50 *:data-[slot=field]:p-3 dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10",
+    "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col",
+  ],
+  {
+    variants: {
+      weight: {
+        default: "",
+        normal: "font-normal",
+      },
+    },
+    defaultVariants: {
+      weight: "default",
+    },
+  },
+);
+
+function FieldLabel({
+  className,
+  weight,
+  ...props
+}: React.ComponentProps<typeof Label> & VariantProps<typeof fieldLabelVariants>) {
   return (
     <Label
       data-slot="field-label"
-      className={cn(
-        "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:border-primary/30 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted/50 has-[>[data-slot=field]]:has-[:focus-visible]:border-ring has-[>[data-slot=field]]:has-[:focus-visible]:ring-3 has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/50 *:data-[slot=field]:p-3 dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10",
-        "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col",
-        className,
-      )}
+      className={cn(fieldLabelVariants({ weight }), className)}
       {...props}
     />
   );
