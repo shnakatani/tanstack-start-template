@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-09-30
+- Date: 2026-10-04
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -118,6 +118,22 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 代償として、Vite+ が版を管理するパッケージ群は Vite+ のリリース単位でしか動かせない。
 この制約が依存更新のゲートに与える影響は ADR-0005 が持つ。
 
+### built-in と同名の script は `start` と対の `build` だけを置く
+
+Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scripts を `package.json` に置くことを、global の CLI と併用する場合も含めて勧める ("whether you use both CLIs or only the project-local CLI")。例は `dev` / `check` / `test` / `build` の 4 つで、どれも中身が `vp <name>` である。script の中の `vp` は `node_modules/.bin` から解決する。
+勧める利点は、例のコードブロックのあとに置かれた、節の最後の段落にある: "After installing the project's dependencies, contributors can run these scripts through their package manager, such as `pnpm run dev` or `npm run dev`, without being required to install the global CLI." global の CLI を入れていない環境でも、package manager から走らせられることである。
+
+- 開発者の入口 (`check` / `test` / `dev`) は足さない。このリポジトリの開発者は README のセットアップで global の `vp` を入れ、`vp install` も `.mise.toml` のタスクもそれを前提にするので、上の利点が当てはまらない。足すと `vp <name>` を打つたびに stderr に note が出る (Consequences)
+- `dev` には別の理由もある。起動の入口は worktree ごとに port を導出する `mise run serve` である。`"dev": "vp dev"` は Vite の既定の port で起動し、使用中なら Vite が次の空き port へずらす (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")。`mise run serve` が worktree ごとに決める port から外れ、起動した順で port が変わる
+- `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す。global の `vp` を入れない環境 (本番の Node サーバーなど) がこの 2 つで走らせる。公式が勧める利点がそのまま当てはまる場面である。代償として、`vp build` を打つたびに note が出る (Consequences)
+
+| 案                                                   | 評価                                                                                                                                                                                                                                                                                                           | 採否     |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 開発者の入口は足さず、`build` を `start` と対で残す  | global の `vp` の無い環境は `pnpm run build` → `pnpm start` で走らせられる。開発者は `vp check` / `vp test` をそのまま打つ。note は `vp build` でだけ出る                                                                                                                                                      | **採用** |
+| built-in と同名の script を置かない (`build` も外す) | `vp build` の note も消えるが、`pnpm start` と対の `pnpm run build` が無くなる。global の `vp` の無い環境は `pnpm exec vp build` と打つことになる (`docs/guide/local-cli.md` の "Without the global CLI, prefix interactive commands with your package manager's local-binary executor, such as `pnpm exec`.") | 却下     |
+| 公式の例のうち `check` / `test` も足す               | `pnpm run check` のように package manager からも打てるが、開発者は global の `vp` を入れるので使い道が無い。`vp check` / `vp test` を打つたびに note が出る                                                                                                                                                    | 却下     |
+| 公式の例の 4 つをすべて置く                          | 上に加え、`pnpm run dev` が `mise run serve` の port から外れ、起動した順で port が変わる                                                                                                                                                                                                                      | 却下     |
+
 ### 検討した選択肢
 
 | 案                                                 | 評価                                                               | 採否     |
@@ -130,13 +146,17 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 
 - Node.js と pnpm 以外のツールは `.mise.toml` の `[tools]` へ宣言する (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
 - 開発者のグローバル mise 設定が `node` や `pnpm` を持っていても、`.mise.toml` の `[settings] disable_tools` がその PATH 注入を止める。2026-09-02 の実測では、設定前は `mise env` の PATH に `installs/node/24/bin` と `installs/pnpm/latest` が `~/.vite-plus/bin` より前に入り、設定後は両方が消えて `node` が vp の shim (24.20.0) に解決した
-- Vite+ が既定で作る shim は `pnpm` を含まない。素の `pnpm` の用意の仕方は `docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」にある
+- Vite+ の shim は `pnpm` を含み、素の `pnpm` は `packageManager` の版に解決される (Vite+ の `docs/guide/env.md`。2026-10-02 に vp 1.0.0 の `~/.vite-plus/bin` で確認)。corepack などで別に入れなくてよい (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
 - Vite+ の更新は同梱ツールの一括更新になる。更新 PR で見るものは `docs/guides/dependencies-and-toolchain.md`「依存を上げたときに見直すもの」にある
-- `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名でも別物なので、実行前に `package.json` と `vite.config.ts` を確認する
+- `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名の script の中身が `vp <name>` でなければ、両者は別のものを走らせる (`docs/guide/run.md`「Built-in Commands vs Scripts」)。実行前に `package.json` と `vite.config.ts` を確認する
+- `build` の script があるので、`vp build` を打つたびに stderr に ``note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.`` が出る (2026-10-02 に vp 1.0.0 で観測)。`build` を `start` と対で残す代償である。`check` / `test` を足すと、`vp check` / `vp test` でも同じ note が出る
 
 ## 出典
 
 - Vite+ の runtime 解決順と `packageManager` による package manager shim、`vp env pin` の書き込み先: `node_modules/vite-plus/docs/guide/env.md`
+- Vite+ が勧める `package.json` の scripts の形: `node_modules/vite-plus/docs/guide/local-cli.md`「Best Practices」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/local-cli.md#best-practices)
+- built-in と `vp run` の script の違い: `node_modules/vite-plus/docs/guide/run.md`「Built-in Commands vs Scripts」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/run.md)
+- 使用中の port を Vite が次の空き port へずらすこと: https://vite.dev/config/server-options#server-port
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines
 - mise の `disable_tools` と、設定をローカル config へ置けること: https://mise.jdx.dev/configuration/settings.html
 - mise が読む Node.js のバージョンファイル (`devEngines` は idiomatic version file 扱いで既定 off): https://mise.jdx.dev/lang/node.html
