@@ -1,7 +1,7 @@
 # ADR-0015: ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す
 
 - Status: Accepted
-- Date: 2026-10-02
+- Date: 2026-09-14
 - 関連: ADR-0016 (Action 層と `useActionMutation`)、ADR-0020 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0010 (配置の原則)、ADR-0017 (完了点とブロック範囲の軸)
 
 ## Context
@@ -58,27 +58,13 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 
 **ユーザー操作に起因する更新は Transition の中で行い、pending は Transition から取る。**
 
-| 更新の種類                           | 扱い                                                                                                                                                                                                           | 担う場所                                        |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| ナビゲーション、GET                  | 同期 Transition。データは Suspense で読む                                                                                                                                                                      | TanStack Router (既存)                          |
-| mutation                             | 非同期 Transition (Action)。`mutateAsync` を await する。完了点「確定操作の直後」(ADR-0017) では Action は close だけを含み、mutation は Transition の外で `void runAction(...)` として走る                    | `src/components/action/`                        |
-| query の再取得 (`invalidateQueries`) | mutation の `onSuccess` が Promise を返して待つ (pending の源)。ダイアログを閉じる時点は ADR-0017 の完了点の軸で選ぶ。描画は緊急更新に落ちる (「TanStack Query と Router のストアは Transition に参加しない」) | mutation の `onSuccess`                         |
-| ダイアログの開閉                     | 緊急更新のまま (Base UI の store。「TanStack Query と Router のストアは Transition に参加しない」)。mutation 成功後に閉じる時点は ADR-0017 の完了点の軸で選ぶ                                                  | mutation の `onSuccess`                         |
-| Error Boundary からの再試行          | `startTransition` を自分で書かず、Router に任せる。再試行は `router.invalidate()` だけを呼ぶ (「Error Boundary からの再試行」)                                                                                 | `src/components/screens/route-error.tsx` (既存) |
-| 制御コンポーネントの入力値           | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                                                                                                                                  | 各部品                                          |
-
-### Error Boundary からの再試行
-
-route の errorComponent の再試行は `router.invalidate()` だけを呼ぶ。loader の再実行と route の error boundary の reset は Router がまとめて行う (TanStack Router の Data Loading「Handling Errors with `routeOptions.errorComponent`」)。
-Query の error boundary は、errorComponent を表示した時点の effect で `useQueryErrorResetBoundary().reset()` を呼んで reset する (TanStack Router の External Data Loading「Error handling with TanStack Query」の例)。
-
-| 案                                                                                        | 評価                                                                                                                              | 採否     |
-| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 再試行で route の境界の `reset()` と `router.invalidate()` を両方呼ぶ                     | loader が取得しない `useSuspenseQuery` の失敗から回復しない。Query のキャッシュに失敗が残り、取得し直さずに同じエラーを投げ直す   | 却下     |
-| 再試行で `router.invalidate()` だけを呼ぶ                                                 | loader が取得を待つ query の失敗からは回復する。loader が取得しない `useSuspenseQuery` の失敗からは、上の案と同じ理由で回復しない | 却下     |
-| 再試行で `router.invalidate()` だけを呼び、表示時に Query の error boundary を reset する | 公式の例の形。loader が取得を待つ場合も取得しない場合も回復する                                                                   | **採用** |
-
-評価は `@tanstack/react-router` 1.170.39 と `@tanstack/react-query` 5.104.0 のブラウザテストで、1 回目だけ失敗する query を読む route を描き、再試行で本文が出るかを見た (2026-10-02)。採用した形の回帰は `src/components/screens/route-error.test.tsx` が見る。
+| 更新の種類                           | 扱い                                                                                                                                                                                                           | 担う場所                 |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| ナビゲーション、GET                  | 同期 Transition。データは Suspense で読む                                                                                                                                                                      | TanStack Router (既存)   |
+| mutation                             | 非同期 Transition (Action)。`mutateAsync` を await する。完了点「確定操作の直後」(ADR-0017) では Action は close だけを含み、mutation は Transition の外で `void runAction(...)` として走る                    | `src/components/action/` |
+| query の再取得 (`invalidateQueries`) | mutation の `onSuccess` が Promise を返して待つ (pending の源)。ダイアログを閉じる時点は ADR-0017 の完了点の軸で選ぶ。描画は緊急更新に落ちる (「TanStack Query と Router のストアは Transition に参加しない」) | mutation の `onSuccess`  |
+| ダイアログの開閉                     | 緊急更新のまま (Base UI の store。「TanStack Query と Router のストアは Transition に参加しない」)。mutation 成功後に閉じる時点は ADR-0017 の完了点の軸で選ぶ                                                  | mutation の `onSuccess`  |
+| 制御コンポーネントの入力値           | 緊急更新のまま。Transition は他の更新に割り込まれるため、入力値の反映が遅れる                                                                                                                                  | 各部品                   |
 
 ### 楽観表示の使い分け
 
@@ -127,8 +113,6 @@ Query の error boundary は、errorComponent を表示した時点の effect �
 - react/react#35392 (`enableParallelTransitions` の追加) / react/react#37290 (既定で有効化): https://github.com/react/react/pull/35392 / https://github.com/react/react/pull/37290
 - `useTransition` リファレンス: https://react.dev/reference/react/useTransition
 - `useActionState` リファレンス: https://react.dev/reference/react/useActionState
-- TanStack Router「Data Loading」(Handling Errors with `routeOptions.errorComponent`): https://tanstack.com/router/latest/docs/guide/data-loading
-- TanStack Router「External Data Loading」(Error handling with TanStack Query): https://tanstack.com/router/latest/docs/guide/external-data-loading
 - `useSyncExternalStore` リファレンス (Caveats): https://react.dev/reference/react/useSyncExternalStore
 - `useOptimistic` リファレンス: https://react.dev/reference/react/useOptimistic
 - TanStack/query#9742 Is React Query incompatible with React Actions/Transitions/useOptimistic?: https://github.com/TanStack/query/issues/9742

@@ -17,15 +17,9 @@ export const ROUTE_ERROR_FALLBACK_MESSAGE =
   "ページを表示できませんでした。時間をおいて再試行してください。";
 
 /**
- * route エラー境界の共通表示。形は TanStack Router docs「External Data Loading」の
- * Error handling with TanStack Query の例に合わせる。
- *
- * - 再試行は `router.invalidate()` だけを呼ぶ。loader の再実行と route の error boundary の reset を
- *   router がまとめて行う (TanStack Router docs「Data Loading」の Handling Errors)
- * - 表示した時点で Query の error boundary を reset する。しないと、loader が取得しない
- *   `useSuspenseQuery` の失敗が Query のキャッシュに残り、再試行しても取得し直さずに同じエラーを
- *   投げ直す (`route-error.test.tsx` が見る)。表示した時点で reset するので、再試行せずに離れて
- *   戻ったときも取得し直す (同 docs の例の説明)
+ * route エラー境界の共通表示。再試行は `router.invalidate()` だけを呼び、表示した時点で Query の
+ * error boundary を reset する。しないと、loader が取得しない `useSuspenseQuery` の失敗が Query の
+ * キャッシュに残り、再試行で回復しない (docs/guides/data-loading.md「読み込みに失敗した画面から再試行する」)
  */
 export function RouteErrorContent({ error }: ErrorComponentProps) {
   const router = useRouter();
