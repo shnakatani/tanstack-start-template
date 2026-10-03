@@ -18,8 +18,8 @@ import { expectText } from "@/test/assert/screen-assertions";
 
 import { ROUTE_ERROR_FALLBACK_MESSAGE, RouteErrorContent } from "./route-error";
 
-async function renderError(error: unknown, reset: () => void) {
-  const router = createTestRouter("/", () => <RouteErrorContent error={error} reset={reset} />);
+async function renderError(error: unknown) {
+  const router = createTestRouter("/", () => <RouteErrorContent error={error} reset={() => {}} />);
   const screen = await render(<RouterProvider router={router} />);
   return { screen };
 }
@@ -64,7 +64,7 @@ async function renderFailingOnceRoute({ loaderAwaits }: { loaderAwaits: boolean 
 
 /**
  * screens/ は story のカタログの対象外で、見え方は実画面で見る (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは
- * 表示の内容、production での秘匿、再試行の配線で、いずれも寸法や色を測らない。寸法と色は並べた部品が持ち、
+ * 表示の内容、production での秘匿、再試行での回復で、いずれも寸法や色を測らない。寸法と色は並べた部品が持ち、
  * その部品のテストと story が見る。内容が高くてもカードの上端が画面に残ることは `CenteredCard` が持つ挙動で、
  * ここでは組み合わせているだけ
  */
@@ -75,7 +75,7 @@ describe("RouteErrorContent", () => {
   });
 
   it("エラーメッセージが表示される", async () => {
-    const { screen } = await renderError(new Error("取得に失敗しました"), vi.fn());
+    const { screen } = await renderError(new Error("取得に失敗しました"));
 
     const notice = screen.getByText("エラーが発生しました");
     await expect.element(notice).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe("RouteErrorContent", () => {
 
   // route は Error 以外も throw でき、Router はエラー境界の error を unknown で渡す
   it("Error でない値が投げられたら、その値を文字列にして出す", async () => {
-    const { screen } = await renderError("取得の途中で中断されました", vi.fn());
+    const { screen } = await renderError("取得の途中で中断されました");
 
     await expectText(screen, "取得の途中で中断されました");
   });
@@ -101,7 +101,7 @@ describe("RouteErrorContent", () => {
       },
     );
 
-    const { screen } = await renderError(error, vi.fn());
+    const { screen } = await renderError(error);
 
     await expectText(screen, THROWN_VALUE_UNPRINTABLE);
   });
@@ -112,7 +112,7 @@ describe("RouteErrorContent", () => {
     vi.stubEnv("DEV", false);
     const error = new Error("削除対象のノートが見つかりません: id=42");
 
-    const { screen } = await renderError(error, vi.fn());
+    const { screen } = await renderError(error);
 
     // 肯定 anchor。固定文言が出たことを待ってから、raw な情報の不在を見る (docs/guides/testing/waiting-and-assertions.md「否定を肯定で書く」)
     await expectText(screen, ROUTE_ERROR_FALLBACK_MESSAGE);
@@ -148,7 +148,7 @@ describe("RouteErrorContent", () => {
     const error = new Error("取得に失敗しました");
     error.stack = "Error: 取得に失敗しました\n    at loader";
 
-    const { screen } = await renderError(error, vi.fn());
+    const { screen } = await renderError(error);
 
     await expectText(screen, "取得に失敗しました");
     // 既定で閉じた開閉の UI は、ラベルによらず aria-expanded="false" のボタンとして残る
