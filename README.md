@@ -43,7 +43,7 @@ mise run storybook                                # 部品とデザイントー�
 | `vp check --fix`               | コミット前に format・lint・型検査を通す                                           |
 | `vp build`                     | 本番ビルド。出力は `.output/`、起動は `vp run start`                              |
 
-`vp <name>` は組み込みコマンド (一覧は `vp help`)、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクで、同名でも別物になる (ADR-0004)。
+`vp <name>` は組み込みコマンド (一覧は `vp help`)、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを走らせる。組み込みと同名の script は、`start` と対の `build` だけを置く (ADR-0004)。
 
 ## ドキュメント
 
@@ -51,6 +51,6 @@ mise run storybook                                # 部品とデザイントー�
 | ----------------------------- | ---------------------------------------------- |
 | `TEMPLATE_SETUP.md`           | テンプレートから始めた直後の手順               |
 | `docs/decisions/`             | ADR                                            |
-| `docs/guides/`                | 設計ガイド                                     |
+| `docs/guides/`                | 設計ガイド (コーディング規約の本体)            |
 | `docs/registry-baseline/`     | shadcn registry の生成時の baseline (ADR-0020) |
 | `docs/registry-deviations.md` | baseline から動かした行の台帳 (ADR-0020)       |

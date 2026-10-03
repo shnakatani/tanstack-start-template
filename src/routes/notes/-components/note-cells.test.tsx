@@ -148,9 +148,7 @@ describe("NoteActionsCell", () => {
   it("確定行は対象を名前に含む有効な削除トリガーを出し、状態テキストは出さない", async () => {
     const screen = await renderCells();
 
-    await expect
-      .element(rowDeleteButton(screen, NOTE.title))
-      .not.toHaveAttribute("aria-disabled", "true");
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toBeEnabled();
     await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toBeInTheDocument();
     await expectAbsent(noteRow(screen, NOTE).getByText("削除中", { exact: false }));
   });
@@ -158,14 +156,10 @@ describe("NoteActionsCell", () => {
   it("削除中の行だけトリガーを無効にし、読み上げ用の「削除中」を足す", async () => {
     const screen = await renderCells({ deletingIds: [NOTE.id] });
 
-    await expect
-      .element(rowDeleteButton(screen, NOTE.title))
-      .toHaveAttribute("aria-disabled", "true");
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toBeDisabled();
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
     // 止めるのは削除中の行だけ (ADR-0017「ブロック範囲」)
-    await expect
-      .element(rowDeleteButton(screen, OTHER_NOTE.title))
-      .not.toHaveAttribute("aria-disabled", "true");
+    await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toBeEnabled();
     await expectAbsent(noteRow(screen, OTHER_NOTE).getByText("削除中", { exact: false }));
   });
 
@@ -186,7 +180,7 @@ describe("NoteActionsCell", () => {
     const screen = await renderCells();
 
     const edit = rowEditButton(screen, NOTE.title);
-    await expect.element(edit).not.toHaveAttribute("aria-disabled", "true");
+    await expect.element(edit).toBeEnabled();
     await expect.element(rowEditButton(screen, OTHER_NOTE.title)).toBeInTheDocument();
     // 並びは「編集」「削除」の順。cell の中のボタンを文書順で読む
     await expect
@@ -202,12 +196,8 @@ describe("NoteActionsCell", () => {
   it("削除中の行は編集トリガーも無効にする", async () => {
     const screen = await renderCells({ deletingIds: [NOTE.id] });
 
-    await expect
-      .element(rowEditButton(screen, NOTE.title))
-      .toHaveAttribute("aria-disabled", "true");
-    await expect
-      .element(rowEditButton(screen, OTHER_NOTE.title))
-      .not.toHaveAttribute("aria-disabled", "true");
+    await expect.element(rowEditButton(screen, NOTE.title)).toBeDisabled();
+    await expect.element(rowEditButton(screen, OTHER_NOTE.title)).toBeEnabled();
   });
 
   it("更新中の行は両方のトリガーを無効にし、名前は表示中の (編集後の) title で持つ", async () => {
@@ -215,16 +205,10 @@ describe("NoteActionsCell", () => {
 
     // 行に見えている title と、読み上げるトリガーの名前をそろえる。再取得前の note.title を
     // 使うと、見えていない名前で読み上げる
-    await expect
-      .element(rowEditButton(screen, UPDATED_NOTE.title))
-      .toHaveAttribute("aria-disabled", "true");
-    await expect
-      .element(rowDeleteButton(screen, UPDATED_NOTE.title))
-      .toHaveAttribute("aria-disabled", "true");
+    await expect.element(rowEditButton(screen, UPDATED_NOTE.title)).toBeDisabled();
+    await expect.element(rowDeleteButton(screen, UPDATED_NOTE.title)).toBeDisabled();
     // 止めるのは更新中の行だけ (ADR-0017「ブロック範囲」)
-    await expect
-      .element(rowEditButton(screen, OTHER_NOTE.title))
-      .not.toHaveAttribute("aria-disabled", "true");
+    await expect.element(rowEditButton(screen, OTHER_NOTE.title)).toBeEnabled();
     // 状態のテキストは更新日時の cell の「更新中」が持つ。削除中の sr-only は出さない
     await expectAbsent(noteRow(screen, UPDATED_NOTE).getByText("削除中", { exact: false }));
   });

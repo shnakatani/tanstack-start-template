@@ -1,7 +1,7 @@
 # ADR-0002: rules は見出しと箇条書きで 1 項目 1 規範に分け、消したら誤る規範だけを書き、lint が止めるものは書かない
 
 - Status: Accepted
-- Date: 2026-09-24
+- Date: 2026-10-01
 - 関連: ADR-0001 (文書の層と参照の向き) / ADR-0003 (読み込まれる契機で置き場所を決める)
 
 ## Context
@@ -22,7 +22,7 @@ lint・型検査・build は、違反を決定的に止め、エラーメッセ�
 
 - 規範 (何をするか、何を禁じるか)。禁止を書くときは正解を対で書く
 - 理由 1 文 (守らないと何が壊れるか)
-- 出典キー 1 つ (ADR 番号、ガイドの節、仕様の条項番号、上流 issue 番号のいずれか)。ガイドの節は `docs/guides/<file>.md「<見出し>」` の形で指す (ADR-0001)
+- 出典キー 1 つ。その規範を持つ ADR の番号か、ガイドの節を `docs/guides/<file>.md「<見出し>」` の形で指す (ADR-0001)。ライブラリの公式や上流 issue は、その ADR かガイドが引く。Claude Code のツール・skill・MCP の使い方だけを決める規範は rules か AGENTS.md にだけ置くので (ADR-0001)、上流の docs を直接指してよい
 - 選択肢に順序があるならその順序 (先に試すもの、最終手段)
 - 打ち消し不能または検出不能な落とし穴 (破っても静かに壊れるもの)
 
@@ -40,7 +40,7 @@ lint・型検査・build が止めるものは書かない。書くのは、lint
 答えが No なら削る。Yes ならそれは理由ではなく規範なので残す。
 
 規範は見出しでまとめ、1 項目 (箇条書き 1 つ、または表の 1 セル) に 1 規範を置く。
-公式の memory docs は "Specific, concise, well-structured instructions work best." とし、"**Structure**: use markdown headers and bullets to group related instructions" を挙げている。この指針は CLAUDE.md について書かれているが、同じ節 (Write effective instructions) の Consistency は `.claude/rules/` も CLAUDE.md と並べて見直す対象に挙げており、rules も context として読み込まれるので、rules の項目にも当てる。
+公式の memory docs は「CLAUDE.md vs auto memory」の節で "The more specific and concise your instructions, the more consistently Claude follows them." とし、「Write effective instructions」の節で "**Structure**: group related instructions under markdown headers and bullets." を挙げている。この指針は CLAUDE.md について書かれているが、後者の節の Consistency は `.claude/rules/` も CLAUDE.md と並べて見直す対象に挙げており、rules も context として読み込まれるので、rules の項目にも当てる。
 
 1 項目の長さに上限は設けない。長くなったら、根拠の展開 (実測値、選択肢の比較、出典の解説、作法の説明) が混ざっている兆候として扱い、ADR かガイドへ移して出典キーだけを残す。
 ファイル全体の行数にも上限は設けない。
@@ -52,23 +52,24 @@ lint・型検査・build が止めるものは書かない。書くのは、lint
 
 ### 検討した選択肢
 
-| 案                               | 評価                                                                             | 採否     |
-| -------------------------------- | -------------------------------------------------------------------------------- | -------- |
-| 規範 + 理由 1 文                 | 失敗の記録は残り、詳細は出典キーで辿れる                                         | **採用** |
-| 規範のみ残す                     | 最も短いが、規約を破る場面で理由が 1 クリック先になり形骸化を招く                | 却下     |
-| 構造だけ変える                   | 長い行を分割して表を入れる。引きやすさは改善するが二重管理が残る                 | 却下     |
-| lint が止めるものも rules に書く | 止まる前にも読めるが、lint のメッセージと 2 か所で同じことを持ち、項目が埋もれる | 却下     |
-| 1 項目の字数に上限を置く         | 字数の上限には出典が無く、見出しと箇条書きで 1 項目 1 規範に分ければ足りる       | 却下     |
+| 案                                      | 評価                                                                                                              | 採否     |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------- |
+| 規範 + 理由 1 文                        | 失敗の記録は残り、詳細は出典キーで辿れる                                                                          | **採用** |
+| 規範のみ残す                            | 最も短いが、規約を破る場面で理由が 1 クリック先になり形骸化を招く                                                 | 却下     |
+| 構造だけ変える                          | 長い行を分割して表を入れる。引きやすさは改善するが二重管理が残る                                                  | 却下     |
+| lint が止めるものも rules に書く        | 止まる前にも読めるが、lint のメッセージと 2 か所で同じことを持ち、項目が埋もれる                                  | 却下     |
+| 1 項目の字数に上限を置く                | 字数の上限には出典が無く、見出しと箇条書きで 1 項目 1 規範に分ければ足りる                                        | 却下     |
+| 出典に仕様の条項や上流 issue を直接書く | 一次情報へ 1 段で届くが、規範をガイドか ADR に書かずに済んでしまい、rules を差し替えると規範が残らない (ADR-0001) | 却下     |
 
 ## Consequences
 
 - rules から根拠を削るぶん、規約の理由を知るには ADR かガイドを開く手間が増える。理由 1 文を残すことで日常の判断はカバーする
 - 基準は機械強制できない。レビューで見る
-- lint のルールを外したり緩めたりしたら、そのルールが止めていた規範を rules に書くかを見直す
+- lint のルールを外したり緩めたりしたら、そのルールが止めていた規範をガイドに書き、rules に写すかを見直す
 
 ## 出典
 
 - Claude Code Best practices (CLAUDE.md の判定基準 "Would removing this cause Claude to make mistakes?" と、長すぎると規則が埋もれる失敗パターン): https://code.claude.com/docs/en/best-practices
-- Claude Code: How Claude remembers your project ("Longer files consume more context and reduce adherence."、"Specific, concise, well-structured instructions work best."、"**Structure**: use markdown headers and bullets to group related instructions"、CLAUDE.md の "target under 200 lines per CLAUDE.md file"): https://code.claude.com/docs/en/memory
+- Claude Code: How Claude remembers your project ("Longer files consume more context and reduce adherence."、"The more specific and concise your instructions, the more consistently Claude follows them."、"**Structure**: group related instructions under markdown headers and bullets."、CLAUDE.md の "target under 200 lines per CLAUDE.md file"): https://code.claude.com/docs/en/memory
 - Lost in the Middle: How Language Models Use Long Contexts (context 中間での利用率低下): https://aclanthology.org/2024.tacl-1.9/
 - Context Rot: How Increasing Input Tokens Impacts LLM Performance (入力長に伴う劣化): https://research.trychroma.com/context-rot
