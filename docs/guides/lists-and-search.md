@@ -92,14 +92,14 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 - URL の `q` が変わったら (確定、戻る / 進む、Link) 入力欄はその値に揃う。[React docs「Adjusting some state when a prop changes」][] はこの同期を「`key` で作り直す」か「描画中に計算する」で行い、effect で setState しない
 - 同じ画面の要素を作り直さない (ADR-0027)
 
-| 案                                                                              | 評価                                                                                                                                                         | 採否     |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| 編集を世代で紐付け、編集ごと debounce → `useDeferredValue` → `useSuspenseQuery` | URL の変化で編集も debounce 済みの値も無効になり、要素を作り直さない                                                                                         | **採用** |
-| 編集を `{ base: q, text }` で持ち、`base === q` で有効性を見る                  | 履歴が同じ値へ戻ると確定済みの編集が復活する                                                                                                                 | 却下     |
-| 文字列を debounce し「入力欄が URL と同じなら待たない」特例を置く               | 確定や戻るの後に debounce 済みの古い文字列が第 3 の条件を描く。特例はその一部しか隠さない                                                                    | 却下     |
-| `useQuery` + `placeholderData: keepPreviousData`                                | 古いデータを残せるが、`useSuspenseQuery` + `pendingComponent` の形から外れ、ページに `isPending` 分岐が戻る                                                  | 却下     |
-| debounce を `useEffect` + `setTimeout` で手組みする                             | effect 内の setState を lint が止める (`react/set-state-in-effect`)。Pacer ([TanStack Pacer docs「useDebouncedValue」][]) と `use-debounce` が公式の形を持つ | 却下     |
-| `use-debounce`                                                                  | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる                                                                                           | 却下     |
+| 案                                                                              | 評価                                                                                                                                                                                      | 採否     |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 編集を世代で紐付け、編集ごと debounce → `useDeferredValue` → `useSuspenseQuery` | URL の変化で編集も debounce 済みの値も無効になり、要素を作り直さない                                                                                                                      | **採用** |
+| 編集を `{ base: q, text }` で持ち、`base === q` で有効性を見る                  | 履歴が同じ値へ戻ると確定済みの編集が復活する                                                                                                                                              | 却下     |
+| 文字列を debounce し「入力欄が URL と同じなら待たない」特例を置く               | 確定や戻るの後に debounce 済みの古い文字列が第 3 の条件を描く。特例はその一部しか隠さない                                                                                                 | 却下     |
+| `useQuery` + `placeholderData: keepPreviousData`                                | 古いデータを残す TanStack Query の手段 ([TanStack Query docs「Paginated / Lagged Queries」][])。`useQuery` の手段で、ページのデータを `useSuspenseQuery` で読む決定 (ADR-0033) と合わない | 却下     |
+| debounce を `useEffect` + `setTimeout` で手組みする                             | effect 内の setState を lint が止める (`react/set-state-in-effect`)。Pacer ([TanStack Pacer docs「useDebouncedValue」][]) と `use-debounce` が公式の形を持つ                              | 却下     |
+| `use-debounce`                                                                  | 安定しているが、TanStack の同梱 (`@tanstack/react-pacer`) で足りる                                                                                                                        | 却下     |
 
 `key={q}` でページを作り直す案は ADR-0027 が却下している。
 
@@ -125,6 +125,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 [`@tanstack/react-table` の `skills/with-tanstack-query/SKILL.md`]: https://github.com/TanStack/table/blob/@tanstack/react-table@9.2.4/packages/react-table/skills/with-tanstack-query/SKILL.md
 [TanStack Table docs「Table and Column Meta」]: https://tanstack.com/table/latest/docs/guide/table-and-column-meta
 [TanStack Query docs「Suspense」]: https://tanstack.com/query/latest/docs/framework/react/guides/suspense
+[TanStack Query docs「Paginated / Lagged Queries」]: https://tanstack.com/query/latest/docs/framework/react/guides/paginated-queries
 [TanStack Pacer docs「Overview」]: https://tanstack.com/pacer/latest/docs/overview
 [TanStack/router#3162]: https://github.com/TanStack/router/issues/3162
 [TanStack Pacer docs「useDebouncedValue」]: https://tanstack.com/pacer/latest/docs/framework/react/reference/functions/useDebouncedValue
