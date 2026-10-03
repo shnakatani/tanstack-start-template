@@ -43,6 +43,15 @@ dev server と Storybook の port は worktree ごとに git から導出する�
 読み手が `serve` と `storybook` のタスクしかいないので、タスクの `env` で導出する。`run` の引数へ `$(...)` を書くと、script が実行できなかったときに空文字が渡って既定 port で起動する。タスクの `env` なら script の失敗がタスクの失敗になる。
 2026-09-20 の実測で、port の導出をトップレベルの `[env]` に置くと `mise hook-env` は 70ms、タスクの `env` に置くと 28ms だった。タスク側なら、シェル hook を入れていない手元でも port が決まる。
 
+導出した port は別の worktree の port と重なりうる。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
+Vite は使用中なら次の空き port へずらし (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")、Storybook も環境変数 `CI` があると尋ねずにずらす (2026-10-04 に storybook@10.6.0 で実測)。
+ずれると、worktree ごとに決めた port を指す側が別のサーバーへつながる。
+
+| 案                                                                 | 評価                                                                                                                             | 採否     |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 使用中なら終了させる (`--strictPort` / `--exact-port`)             | port が worktree で決まる。2 つの worktree が同じ port を導出したときは後の側が起動せず、worktree の名前を変えると port が変わる | **採用** |
+| 次の空き port へずらす (Vite の既定、Storybook の `CI` があるとき) | 重なっても両方が起動するが、port が起動した順で決まる。導出した port を指す側が、黙って別の worktree のサーバーへつながる        | 却下     |
+
 ### `envDir: false` で Vite の `.env` 読み込みを切る
 
 秘密を扱う段になったときの前提を先に固定する。
@@ -157,6 +166,8 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - Vite+ が勧める `package.json` の scripts の形: `node_modules/vite-plus/docs/guide/local-cli.md`「Best Practices」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/local-cli.md#best-practices)
 - built-in と `vp run` の script の違い: `node_modules/vite-plus/docs/guide/run.md`「Built-in Commands vs Scripts」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/run.md)
 - 使用中の port を Vite が次の空き port へずらすこと: https://vite.dev/config/server-options#server-port
+- 使用中の port なら Vite を終了させる `server.strictPort`: https://vite.dev/config/server-options#server-strictport
+- 使用中の port なら Storybook を終了させる `--exact-port`: https://storybook.js.org/docs/api/cli-options
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines
 - mise の `disable_tools` と、設定をローカル config へ置けること: https://mise.jdx.dev/configuration/settings.html
 - mise が読む Node.js のバージョンファイル (`devEngines` は idiomatic version file 扱いで既定 off): https://mise.jdx.dev/lang/node.html
