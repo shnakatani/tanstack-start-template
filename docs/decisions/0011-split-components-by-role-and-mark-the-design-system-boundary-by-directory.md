@@ -69,7 +69,7 @@ ui 部品の見た目の差をどこで持つか (既定と公式のノブ、`ui
 
 - 恒久的な例外はゼロになる。`excludeFiles` に書くのは `ui/` の 1 行で、層の宣言であって違反の抑制ではない。違反が増えても行は増えない
 - 規則の有効化は `tooling/lint/config.ts` が持ち、適用範囲の決定はこの ADR が持つ。層の増減は両方を動かす
-- `parts/` で ui 部品の見た目を変えたくなったら、`ui/` の variant を足す。registry からの乖離になるので、台帳 `docs/registry-deviations.md` に行が増える (ADR-0020)
+- `parts/` で ui 部品の見た目を変えたくなったら、`docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順で直し方を選ぶ。`ui/` の variant を足す段に当たると registry からの乖離になるので、台帳 `docs/registry-deviations.md` に行が増える (ADR-0020)
 - **機械で止まらない誤りが 2 つ残る。** どちらもレビューで見る
   - ui 部品にあるものを素の要素で作り直すと、規則は効かない。`no-restyle` は認識した design system component だけを見る (`no-restyle.md` の Limits)
   - 配る部品を `screens/` や直下へ置くと `componentImports` に入らない。ui 部品へ転送する `className` は包みとして検査されるが (2026-09-25 実測、`@shadcn/lint` 0.1.0)、素の要素に当てる見た目の上書きは検査されない

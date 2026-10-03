@@ -179,7 +179,7 @@ Choice Card は、[shadcn の `field.mdx`][] が "Wrap `Field` components inside
 - [shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend の例、[shadcn docs「Field」][] の Checkbox の例 ([shadcn の `field-checkbox.tsx`][])、[shadcn の `dialog-example.tsx`][] は、まとまりの中の行の `FieldLabel` に `className="font-normal"` を付ける。`field-checkbox.tsx` の末尾の単独の行と、Choice Card の例 ([shadcn の `field-choice-card.tsx`][]) の `FieldLabel` には付けない
 - `ui/` の外では `no-restyle` がこの class を止める。`@shadcn/lint` 0.2.0 は font-weight を typography に分類し、`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許す (2026-10-02 に `vp lint` で確認)。メッセージは "`<FieldLabel>` owns its typography. Add a variant in src/components/ui/field.tsx only if the design explicitly calls for this treatment." である (2026-10-04 に `vp lint` で確認)
 - `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順に照らすと、0 の段には当たらない。registry の `FieldLabel` には太さを切り替えるノブ (data 属性・CSS 変数・prop) が無い
-- まとまりの中の行の太さは複数選択のたびに繰り返す見た目なので、1 の段に当たる。`src/components/ui/field.tsx` の `FieldLabel` の `weight` の variant と、台帳 `docs/registry-deviations.md` の行で持つ
+- まとまりの中の行の通常の太さは、公式の例が明示的に付ける見た目なので、1 の段に当たる。`src/components/ui/field.tsx` の `FieldLabel` の `weight` の variant と、台帳 `docs/registry-deviations.md` の行で持つ
 - variant の名前は、変える性質 (`weight`) と、公式の例の class と同じ語 (`normal`) にする。公式の例を写すときに `className="font-normal"` が `weight="normal"` へ 1 対 1 で置き換わる
 - `ChoiceCard` には当てない。Choice Card の例は `FieldLabel` に太さを付けず、カードの見出しは `FieldTitle` が自分の太さ (`font-medium`) で描く
 
