@@ -167,17 +167,23 @@ Storybook は `argTypes` を部品の型から推論し、手で書いた `argTy
 - 公式は型が出ないときの直し方として `react-docgen-typescript` への切り替えを案内し ([Storybook docs「TypeScript」][] の "The types are not being generated for my component")、[Storybook docs「Manifests」][] も manifest の props を抜き出す解析器として多くのプロジェクトに `react-docgen-typescript` を勧める (同じ段落は、生成が遅ければ速いが粗い `react-docgen` へ切り替えてよいとも書く)。このリポジトリはこの案内から外れ、既定の `react-docgen` のまま `options` を手で書く
 - `null` は class-variance-authority 0.7.1 の `VariantProps` が variant の型に持つ値で、渡すと variant を外す ([cva docs「What's new」][] の "Passing `null` used to disable a variant")。`react-docgen-typescript` の経路ではこの `null` が選択肢に残り (上の表の実測)、`react-docgen-typescript` の設定にも `null` を外すものは無い
 - cva の作者は "`null` will be removed in `cva@1.0`, and this is likely a Storybook issue not a `cva` issue" と答えて issue を閉じた ([joe-bell/cva#270][]。外す内容は [cva docs「What's new」][] の "Goodbye `null`")。型から `null` を外すのは cva@1 で、cva 0.7.1 のまま `react-docgen-typescript` の control から `null` を外すことは、cva も Storybook も約束していない
-- cva@1 はパッケージ名が `cva` に変わり、安定版は無い (2026-10-04、`npm view cva dist-tags` が `latest: 0.0.0`、`beta: 1.0.0-beta.12`)
+- cva@1 はパッケージ名が `cva` に変わり、安定版は無い (2026-10-04、`npm view cva dist-tags` が `latest: 0.0.0`、`beta: 1.0.0-beta.12`)。上げると、import 元を `"cva"` に、base の class を `cva({ base })` の 1 引数に書き換える ([cva docs「What's new」][] の Breaking changes の "cva now accepts a single parameter")。registry 由来の `ui/` の `cva(...)` がすべて変わる
 
-| 案                                                                                                 | 評価                                                                                              | 採否     |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------- |
-| 既定の `react-docgen` の推論に任せる                                                               | variant が `any` になり、選択肢が出ない                                                           | 却下     |
-| `react-docgen-typescript` に切り替えて推論に任せる (公式の案内)                                    | `null` が選択肢に出て、選ぶと variant の class が付かない部品が描かれる                           | 却下     |
-| `react-docgen-typescript` に切り替え、cva 側で `null` を除く型を部品 16 ファイルに使う             | registry の部品を書き換えることになり、registry からの乖離 (ADR-0020) が 13 件増える (2026-10-02) | 却下     |
-| `react-docgen-typescript` に切り替え、`.storybook/preview.tsx` の自前の `argTypesEnhancers` で除く | 利用者向けの docs に無い API に頼り、`experimentalDocgenServer` を有効にすると効かない            | 却下     |
-| `options` を手で書き、`satisfies Record<Variant, null>` で網羅を強制する                           | 写しは残るが、variant の増減は型エラーで落ちる (「story を書く」)                                 | **採用** |
+| 案                                                                                                 | 評価                                                                                                                         | 採否     |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 既定の `react-docgen` の推論に任せる                                                               | variant が `any` になり、選択肢が出ない                                                                                      | 却下     |
+| `react-docgen-typescript` に切り替えて推論に任せる (公式の案内)                                    | `null` が選択肢に出て、選ぶと variant の class が付かない部品が描かれる                                                      | 却下     |
+| `react-docgen-typescript` に切り替え、cva 側で `null` を除く型を部品 16 ファイルに使う             | registry の部品を書き換えることになり、registry からの乖離 (ADR-0020) が 13 件増える (2026-10-02)                            | 却下     |
+| cva@1 (beta) へ上げ、`null` の無い型を `react-docgen-typescript` に推論させる                      | registry 由来の `ui/` の `cva(...)` がすべて書き換わり、上の行と同じく registry からの乖離 (ADR-0020) を増やす。安定版も無い | 却下     |
+| `react-docgen-typescript` に切り替え、`.storybook/preview.tsx` の自前の `argTypesEnhancers` で除く | 利用者向けの docs に無い API に頼り、`experimentalDocgenServer` を有効にすると効かない                                       | 却下     |
+| `options` を手で書き、`satisfies Record<Variant, null>` で網羅を強制する                           | 写しは残るが、variant の増減は型エラーで落ちる (「story を書く」)                                                            | **採用** |
 
-cva@1 の安定版へ上げたら、`react-docgen-typescript` に切り替えて `null` が選択肢に出ないことを確かめ、手書きの `options` を外す。ただし `react-docgen-typescript` でも推論できない arg は手書きが残る。`createLink` で包んだ部品、Base UI の型の prop、story だけが持つ args がそれに当たる。
+shadcn の registry が cva@1 へ移ったら、手書きの `options` を外す。registry から取り直した部品が cva@1 を使うので、上げても registry からの乖離にならない。2026-10-04 時点の registry の `button` (`base-vega`) は、まだ `class-variance-authority` から `cva` を import している。外す手段は 2 つある。
+
+| 手段                                                   | 外し方                                                                                                                                                                                                |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `react-docgen-typescript` へ切り替える (公式の案内)    | `null` が選択肢に出ないことを確かめてから、手書きの `options` を消す。`createLink` で包んだ部品、Base UI の型の prop、story だけが持つ args は `react-docgen-typescript` でも推論できず、手書きが残る |
+| cva@1 の `getSchema` (`cva/tools`) で `options` を作る | variant の名前・値・既定を返す。[cva docs「What's new」][] の Features は "Use it to generate Storybook controls or variant galleries from your component." と書く                                    |
 
 ### vitest 経由の story に padding を当てる理由
 
