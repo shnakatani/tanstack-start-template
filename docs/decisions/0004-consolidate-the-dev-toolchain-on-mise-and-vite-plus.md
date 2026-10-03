@@ -118,21 +118,21 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 代償として、Vite+ が版を管理するパッケージ群は Vite+ のリリース単位でしか動かせない。
 この制約が依存更新のゲートに与える影響は ADR-0005 が持つ。
 
-### `package.json` に built-in と同名の script を足さない
+### built-in と同名の script は `start` と対の `build` だけを置く
 
-Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scripts を `package.json` に置くことを勧める。例は `dev` / `check` / `test` / `build` の 4 つで、どれも中身が `vp <name>` である。
-勧める目的は同じ段落の最後の文にある: "After installing the project's dependencies, contributors can run these scripts through their package manager, such as `pnpm run dev` or `npm run dev`, without being required to install the global CLI."
+Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scripts を `package.json` に置くことを、global の CLI と併用する場合も含めて勧める ("whether you use both CLIs or only the project-local CLI")。例は `dev` / `check` / `test` / `build` の 4 つで、どれも中身が `vp <name>` である。script の中の `vp` は `node_modules/.bin` から解決する。
+勧める利点は、例のコードブロックのあとに置かれた、節の最後の段落にある: "After installing the project's dependencies, contributors can run these scripts through their package manager, such as `pnpm run dev` or `npm run dev`, without being required to install the global CLI." global の CLI を入れていない環境でも、package manager から走らせられることである。
 
-- `check` / `test` を足さない。README のセットアップは global の `vp` を入れる手順から始まり、`vp install` も `.mise.toml` のタスクも global の `vp` を前提にするので、global の CLI を入れていない協力者のためという目的が当てはまらない
-- 同名の script があると、`vp <name>` を打つたびに stderr に note が出る (Consequences)。足さなければ出ない
-- `dev` も足さない。起動の入口は worktree ごとに port を導出する `mise run serve` である。`"dev": "vp dev"` は Vite の既定の port で起動し、使用中なら Vite が次の空き port へずらす (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")。`mise run serve` が worktree ごとに決める port から外れ、起動した順で port が変わる
-- 既にある `build` の script (`"build": "vp build"`) はこの決定の対象にしていない。要否は調べていない
+- 開発者の入口 (`check` / `test` / `dev`) は足さない。このリポジトリの開発者は README のセットアップで global の `vp` を入れ、`vp install` も `.mise.toml` のタスクもそれを前提にするので、上の利点が当てはまらない。足すと `vp <name>` を打つたびに stderr に note が出る (Consequences)
+- `dev` には別の理由もある。起動の入口は worktree ごとに port を導出する `mise run serve` である。`"dev": "vp dev"` は Vite の既定の port で起動し、使用中なら Vite が次の空き port へずらす (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")。`mise run serve` が worktree ごとに決める port から外れ、起動した順で port が変わる
+- `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す。global の `vp` を入れない環境 (本番の Node サーバーなど) がこの 2 つで走らせ、`build` の中の `vp` は `node_modules/.bin` から解決する。公式が勧める利点がそのまま当てはまる場面である。代償として、`vp build` を打つたびに note が出る (Consequences)
 
-| 案                                               | 評価                                                                                                                                                   | 採否     |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| built-in と同名の script を足さない              | 公式が勧める目的はこのリポジトリに当てはまらない。global の `vp` を入れる前提なので `vp check` / `vp test` をそのまま打てる。note も出ない             | **採用** |
-| 公式の例のうち `check` / `test` を足す           | `pnpm run check` のように package manager からも打てるが、global の `vp` を入れる前提では使い道が無い。`vp check` / `vp test` を打つたびに note が出る | 却下     |
-| 公式の例の `dev` / `check` / `test` をすべて足す | 上に加え、`pnpm run dev` が `mise run serve` の port から外れ、起動した順で port が変わる                                                              | 却下     |
+| 案                                                   | 評価                                                                                                                                                                     | 採否     |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 開発者の入口は足さず、`build` を `start` と対で残す  | global の `vp` の無い環境は `pnpm run build` → `pnpm start` で走らせられる。開発者は `vp check` / `vp test` をそのまま打つ。note は `vp build` でだけ出る                | **採用** |
+| built-in と同名の script を置かない (`build` も外す) | `vp build` の note も消えるが、global の `vp` の無い環境で `start` と対になる script が無くなり、ビルドの打ち方 (`pnpm exec vp build` など) を環境ごとに決めることになる | 却下     |
+| 公式の例のうち `check` / `test` も足す               | `pnpm run check` のように package manager からも打てるが、開発者は global の `vp` を入れるので使い道が無い。`vp check` / `vp test` を打つたびに note が出る              | 却下     |
+| 公式の例の 4 つをすべて置く                          | 上に加え、`pnpm run dev` が `mise run serve` の port から外れ、起動した順で port が変わる                                                                                | 却下     |
 
 ### 検討した選択肢
 
@@ -149,7 +149,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - Vite+ の shim は `pnpm` を含み、素の `pnpm` は `packageManager` の版に解決される (Vite+ の `docs/guide/env.md`。2026-10-02 に vp 1.0.0 の `~/.vite-plus/bin` で確認)。corepack などで別に入れなくてよい (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
 - Vite+ の更新は同梱ツールの一括更新になる。更新 PR で見るものは `docs/guides/dependencies-and-toolchain.md`「依存を上げたときに見直すもの」にある
 - `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名の script の中身が `vp <name>` でなければ、両者は別のものを走らせる (`docs/guide/run.md`「Built-in Commands vs Scripts」)。実行前に `package.json` と `vite.config.ts` を確認する
-- 同名の script があると、built-in を打つたびに stderr に ``note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.`` が出る。既にある `build` の script でも `vp build` で出る (2026-10-02 に vp 1.0.0 で観測)
+- `build` の script があるので、`vp build` を打つたびに stderr に ``note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.`` が出る (2026-10-02 に vp 1.0.0 で観測)。`build` を `start` と対で残す代償である。`check` / `test` を足すと、`vp check` / `vp test` でも同じ note が出る
 
 ## 出典
 
