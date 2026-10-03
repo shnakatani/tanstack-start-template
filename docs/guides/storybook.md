@@ -24,7 +24,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 ### story を書く
 
 - variant の網羅を story の数で表さない。代表値を story にし、残りは `argTypes` の control で切り替える。直積で増やすと、カタログが読み通せない長さになる
-- `cva` の variant を control で切り替えるときは、`argTypes` の `options` を手で渡す。自動推論に任せると選択肢が出ないか、選ぶと variant の class が付かない `null` が混ざる (「`cva` の variant の `options` を手で渡す理由」)
+- `cva` の variant を control で切り替えるときは、`argTypes` の `options` を手で渡す。理由は「`cva` の variant の `options` を手で渡す理由」にある
 - 手で渡す `options` は `satisfies Record<Variant, null>` のオブジェクトを出処にして `variantOptions` (`src/components/ui/variant-options.story-helpers.ts`) で渡す。`options` は `readonly any[]` で、`satisfies Meta<typeof X>` を書いても中身を検査しない。リテラルで写すと、variant を足したときに story だけ古くなり、lint も型検査も鳴らない (2026-09-20 実測)。`satisfies` を通すと、足した側が型エラーになる
 - 検証専用の story (終了状態が他の story と同じ見た目になるもの) には `tags: ["!dev"]` を付ける。サイドバーの一覧から消えるが、vitest の project 実行では対象に残る ([Storybook docs「Tags」][] の Built-in tags。`index.json` の `tags` が `dev` を含まなくなる。2026-09-20 実測)。付け忘れはレビューで見る。ただし同じ見た目でも、別の部品の story なら残す。カタログは部品ごとに引くので、その部品の状態が 1 つも並ばない事態を避ける。実例は `ActionButtonShell` の `Idle` (`ActionButton` の `Default` と同じ見た目だが、pending が prop で切り替わることはそちらでしか見えない)
 - story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。外見を上書きする class は部品側の variant にする (ADR-0022)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない
