@@ -45,7 +45,7 @@ paths:
 
 ## React Compiler (`vite.config.ts` の `plugins`)
 
-- `viteReact` の `compiler` と、ビルドで立てる `logDiagnostics` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0014)
+- `viteReact` の `compiler` と、テストの分岐以外で立てる `logDiagnostics` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0014)
 - `viteReact(...)` の呼び出しはアプリとテストの分岐で共有し、テストの分岐に別の `viteReact()` を書かない。テストから Compiler が外れてもテストは全部通る。分岐で変えるのは `logDiagnostics` だけにする (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
 - bail out のログは `vp build` では `[plugin vite:react-compiler]` だけで `error` / `warn` を含まない。ビルドログは `react-compiler` で grep する (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 - babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0014)
