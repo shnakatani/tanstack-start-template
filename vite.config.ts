@@ -44,7 +44,8 @@ export default defineConfig({
     // Vitest の中では React の変換 (Compiler を含む) だけにする (tanstackStart() は TanStack/router#6246 の回避で外す)。
     // 外す plugin ごとの理由と、判定を process.env.VITEST で書く理由は
     // docs/guides/testing/configuration.md「テストの分岐で plugin を外す理由」「判定を `process.env.VITEST` で書く理由」
-    if (isVitest) return [react];
+    // src/components/ui を Compiler なしでも走らせる手順だけが立てる (docs/guides/testing/configuration.md「テストでも React Compiler を通す理由」)
+    if (isVitest) return [process.env.TEST_WITHOUT_REACT_COMPILER === "true" ? viteReact() : react];
     return [
       devtools(),
       tailwindcss(),

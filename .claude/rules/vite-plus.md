@@ -47,7 +47,9 @@ paths:
 
 - `viteReact` の `compiler` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0014)
 - テストの分岐以外で立てる `compiler.logDiagnostics` を外さない。外すと、Compiler が諦めた箇所がビルドログに出なくなる (ADR-0014)
-- `viteReact(...)` の呼び出しはアプリとテストの分岐で共有し、テストの分岐に別の `viteReact()` を書かない。テストから Compiler が外れてもテストは全部通る。分岐で変えるのは `logDiagnostics` だけにする (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
+- `viteReact(...)` の呼び出しはアプリとテストの分岐で共有し、テストの分岐に別の `viteReact()` を書かない。テストから Compiler が外れてもテストは全部通る (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
+- テストの分岐で共有の呼び出しと変えてよいのは、`compiler.logDiagnostics` と、`TEST_WITHOUT_REACT_COMPILER` が立つときに Compiler を外すことだけにする (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
+- `mise run verify` の、`src/components/ui/` を Compiler なしで走らせる手順を外さない。Compiler は上流の部品のメモ化への依存を隠すので、`calendar.test.tsx` の再描画のガードは Compiler なしの実行でしか落ちない (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)
 - bail out のログは `vp build` では `[plugin vite:react-compiler]` だけで `error` / `warn` を含まない。ビルドログは `react-compiler` で grep する (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 - babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0014)
 
