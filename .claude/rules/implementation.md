@@ -102,7 +102,7 @@ lint では見ないのでレビューで見る。
 
 - 依存を import するときは、個別エントリポイント (`exports` のサブパス) があればそちらから引く。バレルは使わない周辺まで読み込み、テストの実行時間を伸ばす。lint が止めるのは `RESTRICTED_BARREL_IMPORTS` に名指しした依存だけ (ADR-0032)
 
-## 手動メモ化の増減
+## メモ化と React Compiler
 
 `src/components/ui/` は ADR-0020 の統制下なので触らない。
 
