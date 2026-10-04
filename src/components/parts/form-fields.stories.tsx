@@ -26,9 +26,10 @@ const statusSchema = v.pipe(
   v.string(),
   v.check((value) => value === "active", "状態を選択してください"),
 );
+const CAN_EDIT_ERROR = "編集可を選択してください";
 const canEditSchema = v.pipe(
   v.boolean(),
-  v.check((value) => value, "編集可を選択してください"),
+  v.check((value) => value, CAN_EDIT_ERROR),
 );
 const dueDateSchema = v.pipe(
   v.nullable(v.string()),
@@ -316,12 +317,12 @@ function ReplaceableSelectForm({ onChangeValue, onSubmit }: StoryArgs) {
   );
 }
 
-/** validators つきの checkbox のラベルを親の state で差し替えるフォーム。検証エラーを変えずに描き直す */
+/** validators つきの checkbox のラベルを、親の state で差し替えるフォーム */
 function RelabelCheckboxForm() {
   const [label, setLabel] = useState(CHECKBOX_LABEL);
   const form = useAppForm({
     defaultValues: { canEdit: false },
-    validationLogic: revalidateLogic(),
+    validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" }),
   });
 
   return (
@@ -687,7 +688,7 @@ export const CheckboxValidatorsWarn: Story = {
     await waitFor(() =>
       expect(consoleWarn).toHaveBeenCalledWith(CHECKBOX_WARNING, {
         label: CHECKBOX_LABEL,
-        errors: [expect.objectContaining({ message: "編集可を選択してください" })],
+        errors: [expect.objectContaining({ message: CAN_EDIT_ERROR })],
       }),
     );
     await expect(consoleWarn).toHaveBeenCalledOnce();
@@ -702,23 +703,23 @@ export const CheckboxWarnsOnlyWhenErrorsChange: Story = {
   play: async () => {
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
     await waitFor(() => expect(consoleWarn).toHaveBeenCalledOnce());
-    await expect(consoleWarn).toHaveBeenLastCalledWith(
-      CHECKBOX_WARNING,
-      expect.objectContaining({ label: CHECKBOX_LABEL }),
-    );
+    await expect(consoleWarn).toHaveBeenLastCalledWith(CHECKBOX_WARNING, {
+      label: CHECKBOX_LABEL,
+      errors: [expect.objectContaining({ message: CAN_EDIT_ERROR })],
+    });
 
     await userEvent.click(screen.getByRole("button", { name: "ラベルを変える" }));
     const checkbox = await screen.findByRole("checkbox", { name: RELABELED_CHECKBOX_LABEL });
     await expect(consoleWarn).toHaveBeenCalledOnce();
 
-    // 付けて外すと検証が走り直し、errors は空を経て新しい配列になる
+    // 保存の後は変更のたびに検証するので、付けて外すと errors は空を経て新しい配列になる
     await userEvent.click(checkbox);
     await userEvent.click(checkbox);
     await waitFor(() => expect(consoleWarn).toHaveBeenCalledTimes(2));
-    await expect(consoleWarn).toHaveBeenLastCalledWith(
-      CHECKBOX_WARNING,
-      expect.objectContaining({ label: RELABELED_CHECKBOX_LABEL }),
-    );
+    await expect(consoleWarn).toHaveBeenLastCalledWith(CHECKBOX_WARNING, {
+      label: RELABELED_CHECKBOX_LABEL,
+      errors: [expect.objectContaining({ message: CAN_EDIT_ERROR })],
+    });
   },
 };
 
