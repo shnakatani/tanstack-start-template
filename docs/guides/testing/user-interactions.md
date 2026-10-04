@@ -48,7 +48,8 @@
 
 animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「animation を無効にして走らせる理由」)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
 
-- 本文の先頭で `enableAnimations()` を呼ぶ。次のテストの `beforeEach` が既定へ戻すので、戻す処理は書かない (`parkMouse` と同じ形)
+- 本文の先頭で `enableAnimations()` を呼ぶ。テストが終わった時点で、`enableAnimations()` が登録した `onTestFinished` が既定へ戻すので、戻す処理は書かない (「animation を戻す経路」)
+- animation を戻すテストは `.concurrent` を付けずに書き、並行の `describe` の外に置く。フラグと停止用の CSS は page 全体に効き、並行して走る別のテストでも animation が戻る
 - 無限アニメーション (Spinner) も既定では時間が 0 秒になり、描画の時点で終わっている (`getAnimations()` が空、2026-09-27 に実測)
 - 既定では閉じた popup が次の描画で unmount するので、`data-ending-style` は観測できない
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。既定では窓が無いが、animation を戻したテストでも同じ形で書く
@@ -140,18 +141,33 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 既定は `src/test/browser/browser-setup.tsx` の `beforeEach` が `src/test/browser/animations.ts` の `disableAnimations()` を毎テスト呼んで作る。`globalThis.BASE_UI_ANIMATIONS_DISABLED = true` で閉じた popup は animate-out を待たずに unmount し、`document.head` へ注入する停止用の CSS が、CSS の animation / transition の時間と遅延を 0 秒にする。本番の CSS には依存しない。
 
-| 案                                                                         | 評価                                                                                                                                                                                                                                                                                                                                     | 採否     |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| Base UI のフラグで animation を無効にし、必要なテストだけ戻す              | 窓そのものが消える。Base UI 自身のテスト基盤と同じ形で、per-test で戻す前例もある。影響は Base UI の unmount 待ちに限られ、tw-animate-css の enter や rect 実測には及ばない                                                                                                                                                              | **採用** |
-| テスト専用の停止用 CSS を注入する                                          | [Vitest docs「Visual Regression Testing」][] の「Disable animations」が挙げる形 (setup から `*` の duration と delay を `0s !important`)。テストの条件が本番の CSS から独立する。`beforeEach` が入れ、`enableAnimations()` が外す (`parkMouse` と同じ形)。rect 実測は `expect.poll` の中で読むので、enter animation を走らせる理由が無い | **採用** |
-| `prefers-reduced-motion: reduce` をエミュレートし、本番の CSS に止めさせる | テストの条件が本番の reduced motion の扱いに縛られ、本番側を変えるとテストの前提が崩れる                                                                                                                                                                                                                                                 | 却下     |
-| 検査の順序だけを規範化する (unmount を待ってから axe)                      | 根本の窓が残り、書き忘れると同じ形で再発する。採用案の補助として規範には残す                                                                                                                                                                                                                                                             | 補助     |
-| vitest の `retry` で吸収する                                               | 原因を消さず、失敗が隠れる。入れるなら flaky を可視化する reporter とセットで、別途判断する                                                                                                                                                                                                                                              | 却下     |
-| 上流 ([mui/base-ui#5537][]、[dequelabs/axe-core#4832][]) を待つ            | 時期が未定。[mui/base-ui#5537][] が入っても `heading-order` の incomplete は残りうる                                                                                                                                                                                                                                                     | 却下     |
+| 案                                                                         | 評価                                                                                                                                                                                                                                                                                                              | 採否     |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Base UI のフラグで animation を無効にし、必要なテストだけ戻す              | 窓そのものが消える。Base UI 自身のテスト基盤と同じ形で、per-test で戻す前例もある。影響は Base UI の unmount 待ちに限られ、tw-animate-css の enter や rect 実測には及ばない                                                                                                                                       | **採用** |
+| テスト専用の停止用 CSS を注入する                                          | [Vitest docs「Visual Regression Testing」][] の「Disable animations」が挙げる形 (setup から `*` の duration と delay を `0s !important`)。テストの条件が本番の CSS から独立する。`beforeEach` が入れ、`enableAnimations()` が外す。rect 実測は `expect.poll` の中で読むので、enter animation を走らせる理由が無い | **採用** |
+| `prefers-reduced-motion: reduce` をエミュレートし、本番の CSS に止めさせる | テストの条件が本番の reduced motion の扱いに縛られ、本番側を変えるとテストの前提が崩れる                                                                                                                                                                                                                          | 却下     |
+| 検査の順序だけを規範化する (unmount を待ってから axe)                      | 根本の窓が残り、書き忘れると同じ形で再発する。採用案の補助として規範には残す                                                                                                                                                                                                                                      | 補助     |
+| vitest の `retry` で吸収する                                               | 原因を消さず、失敗が隠れる。入れるなら flaky を可視化する reporter とセットで、別途判断する                                                                                                                                                                                                                       | 却下     |
+| 上流 ([mui/base-ui#5537][]、[dequelabs/axe-core#4832][]) を待つ            | 時期が未定。[mui/base-ui#5537][] が入っても `heading-order` の incomplete は残りうる                                                                                                                                                                                                                              | 却下     |
 
 - ブラウザテストは本番と違い animation を待たず、CSS の transition / animation も 0 秒の条件で走る。閉じかけの popup の挙動を守るテストは `enableAnimations()` を明示し、animation ありの条件で走っていることが本文から読めるようにする
 - `getAnimations()` の完了を待つ helper は置かない。待つ側の形は [MDN「Animation: finished property」][] の例そのものだが、観測の前に止める側 ([Playwright docs「page.screenshot」][] の `animations: "disabled"`、Chromatic の最終フレーム停止) が主流で、待つ helper に直接の先行例は無い
 - 二重発火の dedupe のテストは animate-out の窓を踏む必要があるため、animation を戻して走らせる
+
+### animation を戻す経路
+
+`enableAnimations()` は、外したフラグと停止用の CSS を戻す処理を `onTestFinished` に登録する。[Vitest docs「Hooks」][] の onTestFinished は "This hook is always called after the test has finished running" で、使い回す処理の中で後始末を登録する例 (`getTestDb`) を挙げている。Base UI 自身のテストも、フラグを `false` にしたテストで文脈の `onTestFinished` により `true` へ戻す ([Base UI の `ComboboxRoot.test.tsx`][])。
+
+| 案                                                                          | 評価                                                                                                                                                                                                                                                                                                                                                                     | 採否     |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 次のテストの `beforeEach` (`disableAnimations()`) が立て直すのに任せる      | `--no-isolate` では、ファイルの最後のテストが外した状態が、次のファイルのモジュール評価と `beforeAll` に残る。`--no-isolate --no-file-parallelism` で、最後のテストが `enableAnimations()` を呼ぶファイルの次に、モジュールの最上位と `beforeAll` でフラグと style を読むファイルを走らせると、どちらでもフラグが `false` で style が無かった (vitest 5.0.1、2026-10-04) | 却下     |
+| `enableAnimations()` の中で `onTestFinished(disableAnimations)` を登録する  | 同じ条件で、どちらでもフラグが `true` で style があった (同日)。外す行と戻す登録が 1 つの関数に並ぶ                                                                                                                                                                                                                                                                      | **採用** |
+| `browser-setup.tsx` の `afterEach` で `disableAnimations()` を呼ぶ          | 戻る。[Base UI の `test/setupVitest.ts`][] は setup の `afterEach` でフラグを戻し、テストごとの `onTestFinished` と両方を持つ。この形だけにすると、外す処理と戻す処理が別のファイルに分かれ、`enableAnimations()` を読んでも戻ることが分からない。両方を持つと、同じ戻しが 2 箇所に割れる                                                                                | 却下     |
+| フラグを `vi.stubGlobal` で差し替え、設定と setup の `afterEach` に戻させる | 停止用の CSS は `vi.stubGlobal` では戻らず、CSS の戻しに別の経路が要る。戻し方が 2 つに割れる                                                                                                                                                                                                                                                                            | 却下     |
+
+- `browser-setup.tsx` の `beforeEach` は残す。最初のテストの前に既定を立てるのはこの hook だけである
+- 登録には import した `onTestFinished` を使い、文脈の `onTestFinished` を引数で受けない。文脈が要るのは並行のテストで ([Vitest docs「Hooks」][] の warning)、`enableAnimations()` は page 全体を変えるので並行のテストでは呼ばない
+- マウス位置の戻しは `onTestFinished` に移さない。ほとんどの操作がマウスを動かし、戻しを登録する呼び出しが無い。`browser-setup.tsx` の `beforeEach` が毎テスト `parkMouse()` で退避する
 
 ## 出典
 
@@ -194,6 +210,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 [Playwright docs「browser.newContext」]: https://playwright.dev/docs/api/class-browser#browser-new-context
 [Vitest docs「retry」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/retry.md
 [Vitest docs「TestCase」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/advanced/test-case.md
+[Vitest docs「Hooks」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/hooks.md#ontestfinished
 [Vitest docs「Visual Regression Testing」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/browser/visual-regression-testing.md#disable-animations
 [MDN「Animation: finished property」]: https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished
 [Playwright docs「page.screenshot」]: https://playwright.dev/docs/api/class-page#page-screenshot

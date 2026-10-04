@@ -1,3 +1,5 @@
+import { onTestFinished } from "vite-plus/test";
+
 declare global {
   /**
    * Base UI の animation スイッチ。`true` の間、閉じた popup は animate-out の完了を待たずに
@@ -25,7 +27,7 @@ const DISABLE_ANIMATIONS_CSS = `
 /**
  * ブラウザテストの既定 (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)。`src/test/browser/browser-setup.tsx` の `beforeEach` が毎テスト呼ぶ。
  * Base UI のスイッチ (上の宣言) を立て、停止用の CSS を `document.head` へ入れる。どちらも page
- * スコープで次のテストへ残るが、次の `beforeEach` が立て直すので戻す経路は持たない (`parkMouse` と同じ形)。
+ * スコープに残る。
  */
 export function disableAnimations(): void {
   globalThis.BASE_UI_ANIMATIONS_DISABLED = true;
@@ -40,9 +42,10 @@ export function disableAnimations(): void {
 
 /**
  * このテストの間だけ animation を戻す (docs/guides/testing/user-interactions.md「animation を戻すテストを書く」)。閉じかけの popup が残る窓を検証するテストが
- * 本文の先頭で呼ぶ。次のテストの `beforeEach` が既定へ戻す。
+ * 本文の先頭で呼ぶ。テストが終わった時点で `onTestFinished` が既定へ戻す。
  */
 export function enableAnimations(): void {
   globalThis.BASE_UI_ANIMATIONS_DISABLED = false;
   document.getElementById(DISABLE_ANIMATIONS_STYLE_ID)?.remove();
+  onTestFinished(disableAnimations);
 }
