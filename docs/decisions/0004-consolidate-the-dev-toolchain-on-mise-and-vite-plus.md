@@ -52,6 +52,10 @@ Vite は使用中なら次の空き port へずらし (Vite docs の `server.por
 | 使用中なら終了させる (`--strictPort` / `--exact-port`)             | port が worktree で決まる。2 つの worktree が同じ port を導出したときは後の側が起動せず、worktree の名前を変えると port が変わる | **採用** |
 | 次の空き port へずらす (Vite の既定、Storybook の `CI` があるとき) | 重なっても両方が起動するが、port が起動した順で決まる。導出した port を指す側が、黙って別の worktree のサーバーへつながる        | 却下     |
 
+導出した port が WHATWG Fetch の bad port に当たったら、範囲の中で決定的に次の port へ進める。表は `scripts/dev-env/derive-dev-port.sh` が持つ。
+ブラウザは bad port への接続を拒むが、server は起動するので、使用中かを見るフラグでは気づけない。
+2026-10-04 に、port 3659 で起動した dev server へ curl は 200 を返し、Playwright 1.63.0 の Chromium は `net::ERR_UNSAFE_PORT` で開けなかった。
+
 ### `envDir: false` で Vite の `.env` 読み込みを切る
 
 秘密を扱う段になったときの前提を先に固定する。
@@ -168,6 +172,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - 使用中の port を Vite が次の空き port へずらすこと: https://vite.dev/config/server-options#server-port
 - 使用中の port なら Vite を終了させる `server.strictPort`: https://vite.dev/config/server-options#server-strictport
 - 使用中の port なら Storybook を終了させる `--exact-port`: https://storybook.js.org/docs/api/cli-options
+- ブラウザが接続を拒む bad port の表: https://fetch.spec.whatwg.org/#port-blocking
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines
 - mise の `disable_tools` と、設定をローカル config へ置けること: https://mise.jdx.dev/configuration/settings.html
 - mise が読む Node.js のバージョンファイル (`devEngines` は idiomatic version file 扱いで既定 off): https://mise.jdx.dev/lang/node.html
