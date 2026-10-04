@@ -6,11 +6,11 @@
 
 ## Context
 
-この ADR は、story とブラウザテストで部品を StrictMode の下で描くかを決める。戻すと、描画中の副作用 (描画のたびに出る `console.warn` など) がテストを通り抜ける。
+この ADR は、story とブラウザテストで部品を StrictMode の下で描くかを決める。StrictMode なしで描くと、描画中の副作用 (描画のたびに出る `console.warn` など) がテストを通り抜ける。
 
 アプリは StrictMode の下で動く。`src/` は client entry を持たないので、TanStack Start の既定の entry が使われ、それが `<StartClient />` を `<StrictMode>` で包む (`@tanstack/react-start` 1.168.58 の `default-entry/client.tsx`)。StrictMode は開発時に部品の描画を 2 回走らせ、mount 直後の effect を 1 度外して付け直す。描画が純粋でない部品や、cleanup の無い effect をここで見つける仕組みである (React docs「StrictMode」)。ただし effect の付け直しは、StrictMode が root にあるときだけ起きる。React docs「StrictMode」の「Enabling Strict Mode for a part of the app」は "if `<StrictMode>` is not enabled at the root of the app, it will not re-run Effects an extra time on initial mount" と書く。アプリの StrictMode は `hydrateRoot` に渡す要素そのものなので root にある。
 
-story とブラウザテストは、どちらも StrictMode なしで描いていた。そのため、アプリの開発時には 2 回になる副作用が、テストでは 1 回に見えていた。2026-10-01 に、`src/components/parts/form-fields.tsx` の部品が出す `console.warn` を `useEffect` から描画中へ戻しても、warn の回数を 1 回と確かめる story は通った。
+StrictMode なしで描くと、アプリの開発時には 2 回になる描画中の副作用が、story とブラウザテストでは 1 回に見える。2026-10-04 に、preview の decorator を外したうえで `src/components/parts/form-fields.tsx` の部品の `console.warn` を描画中に出す実装に変えると、warn の回数を 1 回と確かめる story は通った。
 
 StrictMode で描くかを決める口は、経路ごとに次のとおり (2026-10-04、Storybook 10.6.0、vitest-browser-react 2.3.0 で確かめた)。
 
@@ -50,7 +50,7 @@ Testing Library も同じ理由で、`wrapper` の中の StrictMode では React
 
 ## Consequences
 
-- 描画中の副作用が回数の検証で落ちる。2026-10-04 に、warn を描画中へ戻した実装で `CheckboxValidatorsWarn` の story が「2 回呼ばれた」で落ち、`useEffect` の実装では通ることを確かめた。decorator を外すと、描画中の実装でも通る。React は 18 から 2 回目の描画の `console` を抑えない (React docs「React 18 Upgrade Guide」の「No suppression of console logs」)
+- 描画中の副作用が回数の検証で落ちる。2026-10-04 に、warn を描画中へ戻した実装で `CheckboxValidatorsWarn` の story が「2 回呼ばれた」で落ち、`useEffect` の実装では通ることを確かめた。React は 18 から 2 回目の描画の `console` を抑えない (React docs「React 18 Upgrade Guide」の「No suppression of console logs」)
 - mount 直後の effect を setup → cleanup → setup の順に走らせるのは、ブラウザテストだけである。story では StrictMode が root にないので setup の 1 回で終わり、cleanup の欠けた effect は story では見つからない。ブラウザテストで cleanup の無い effect の呼び出しを数えて 2 回を見たら、テストの期待値ではなく effect の側を直す
 - 2026-10-04 に `mise run verify` で、light と dark の全 story とブラウザテストが StrictMode の下で通った
 - Storybook の画面も同じ decorator で包むので、描画は 2 回走り、mount 直後の effect は付け直さない。画面でも `renderToCanvas.tsx` は decorator を重ねた story を部品として root に描くためで、画面での回数は測っていない
