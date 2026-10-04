@@ -124,7 +124,6 @@ paths:
 - StrictMode の decorator は preview の decorators の最後に置く。前に置くと、後ろの decorator が StrictMode の外に出る (ADR-0039)
 - story の StrictMode を `.storybook/main.ts` の `framework.options.strictMode` で代えない。vitest 経由の story に届かず、`mise run verify` と CI では効かない (ADR-0039)
 - cleanup の欠けた effect はブラウザテストで確かめる。story だけで確かめると、mount 直後の effect が付け直されないので cleanup の欠けが黙って通る (ADR-0039)
-- 部品のテストで、描画中に呼ぶ処理が StrictMode で 2 回になったら、期待値ではなく部品を直し、effect かイベントハンドラへ移す。期待値を 2 に合わせると、描き直しのたびに出る副作用を固定する (`docs/guides/testing/configuration.md`「StrictMode の下で描く」)
 
 ## テスト環境制約に遭遇したら
 
