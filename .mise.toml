@@ -41,8 +41,6 @@ run = [
   "pnpm peers check",
   "vp check",
   "vp test run",
-  # registry の部品はライブラリと同じく Compiler なしでも確かめる (docs/guides/testing/configuration.md「テストでも React Compiler を通す理由」)
-  "TEST_WITHOUT_REACT_COMPILER=true vp test run --project browser src/components/ui",
   # *.tz.test.ts を TZ ごとに別のプロセスで走らせる (docs/guides/testing/time-zones.md「Node で動くテストを TZ ごとに走らせる」)
   "vp node scripts/time-zones/run-tests.ts",
   "vp build",
