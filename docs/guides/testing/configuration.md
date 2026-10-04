@@ -39,7 +39,8 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 ### テストでだけ plugin を変える
 
 - root の plugin をテストで外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST === "true"` の分岐から外す。config を分けない (「判定を `process.env.VITEST` で書く理由」)
-- テストの分岐は `viteReact()` だけを返す。外す plugin ごとの理由は「テストの分岐で plugin を外す理由」
+- テストの分岐は、アプリの分岐と共有する `viteReact(...)` の呼び出しだけを返す。外す plugin ごとの理由は「テストの分岐で plugin を外す理由」
+- React Compiler の設定は共有の呼び出しで変え、テストの分岐に別の `viteReact()` を書かない。別に書くと、テストから Compiler が外れてもテストは全部通る。分岐で変えるのは `compiler.logDiagnostics` だけにする (「テストでも React Compiler を通す理由」)
 - `tailwindcss()` はテストの分岐に入れない。ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す。Node の project には要らない
 
 ### ブラウザと story の project に事前バンドルする依存を足す
@@ -71,11 +72,12 @@ StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
 
 ### 設定の落とし穴
 
-| 対象                                            | 起きること                                                                                                                                                          | 対処                                                                                                                                  |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `vitest.config.ts` を足す                       | Vitest がそちらを優先し、`vite.config.ts` の設定を丸ごと黙って無視する (`test`、`envDir`、テストの分岐の plugin を含む)                                             | 足さない。中身は `tooling/test/` に書く                                                                                               |
-| Vitest の `createVitest()` を直接呼んで起動する | config を読む時点で `process.env.VITEST` が立たず、テストに `tanstackStart()` などが入る (2026-09-30、vitest 5.0.1 で確認)                                          | `VITEST=true` を渡して起動する                                                                                                        |
-| story の project に `browser.viewport` を書く   | `@storybook/addon-vitest` が story ごとに viewport を決め直すので効かない。viewport を選ばない story は、ブラウザテストの `DEFAULT_VIEWPORT` とは別の寸法で描かれる | 寸法を前提にする story は story の側で viewport を選ぶ (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」) |
+| 対象                                            | 起きること                                                                                                                                                                 | 対処                                                                                                                                  |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `vitest.config.ts` を足す                       | Vitest がそちらを優先し、`vite.config.ts` の設定を丸ごと黙って無視する (`test`、`envDir`、テストの分岐の plugin を含む)                                                    | 足さない。中身は `tooling/test/` に書く                                                                                               |
+| Vitest の `createVitest()` を直接呼んで起動する | config を読む時点で `process.env.VITEST` が立たず、テストに `tanstackStart()` などが入る (2026-09-30、vitest 5.0.1 で確認)                                                 | `VITEST=true` を渡して起動する                                                                                                        |
+| story の project に `browser.viewport` を書く   | `@storybook/addon-vitest` が story ごとに viewport を決め直すので効かない。viewport を選ばない story は、ブラウザテストの `DEFAULT_VIEWPORT` とは別の寸法で描かれる        | 寸法を前提にする story は story の側で viewport を選ぶ (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」) |
+| `vp test run --coverage` の branch カバレッジ   | ブラウザで走る project が読んだ部品では、Compiler が足すキャッシュの分岐も branch に数えられ、ソースに分岐が無くても branch カバレッジが下がる ([oxc-project/oxc#26810][]) | branch カバレッジに閾値を置くときは、この低下を見込んで決める (「テストでも React Compiler を通す理由」)                              |
 
 ## explanation
 
@@ -116,14 +118,34 @@ Vitest は、`vite.config.ts` の中でテストだけ設定を変える形と�
 
 ### テストの分岐で plugin を外す理由
 
-| plugin                  | テストの分岐での扱い        | 理由                                                                                                                                                                                                                                    |
-| ----------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tanstackStart()`       | 外す                        | test 環境にも `optimizeDeps` を無条件に注入して React を事前バンドルさせ、React が二重に読み込まれうる。hooks が壊れる ([TanStack/router#6246][]。仕組みの説明は修正の PR の [TanStack/router#6074][]。どちらも 2026-09-30 時点で open) |
-| `devtools()`、`nitro()` | 外す                        | テストの経路で使わない                                                                                                                                                                                                                  |
-| `tailwindcss()`         | 外す                        | Node の project には要らない。ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す                                                                                                                                          |
-| `viteReact()`           | 残す。`compiler` は渡さない | テストは React Compiler を通らない。アプリの分岐とは別に置いた `viteReact()` なので、`compiler` を付けてもアプリの最適化には関係しない。付けるときは、テストで Compiler を通すかを先に決める                                            |
+| plugin                  | テストの分岐での扱い                   | 理由                                                                                                                                                                                                                                    |
+| ----------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tanstackStart()`       | 外す                                   | test 環境にも `optimizeDeps` を無条件に注入して React を事前バンドルさせ、React が二重に読み込まれうる。hooks が壊れる ([TanStack/router#6246][]。仕組みの説明は修正の PR の [TanStack/router#6074][]。どちらも 2026-09-30 時点で open) |
+| `devtools()`、`nitro()` | 外す                                   | テストの経路で使わない                                                                                                                                                                                                                  |
+| `tailwindcss()`         | 外す                                   | Node の project には要らない。ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す                                                                                                                                          |
+| `viteReact()`           | 残す。アプリの分岐と同じ呼び出しを使う | テストも React Compiler を通ったコードを確かめる (「テストでも React Compiler を通す理由」)                                                                                                                                             |
 
 `tanstackStart()` を外している間は、`createIsomorphicFn` などの Start の変換がテストで効かない ([TanStack/router#6246][] のコメント)。[TanStack/router#6246][] が直ったら、テストの分岐に `tanstackStart()` を戻すかを決め直す。
+
+### テストでも React Compiler を通す理由
+
+Compiler の実行時の問題は、変換後のコードが期待と違う振る舞いをすることで起き、lint が検出できない Rules of React の違反が原因になる ([React docs「Debugging and Troubleshooting」][]: "Runtime issues occur when compiled code behaves differently than expected")。メモ化に正しさを頼るコードでは "effects over-firing, infinite loops, or missing updates" が起きる (同じページ)。Compiler を通さないテストは、アプリで動くものと違うコードを確かめることになり、この種の不具合を見つけられない。
+
+| 案                   | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | 採否     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| A テストでも通す     | テストがアプリと同じ変換のコードを確かめる。React Compiler Working Group の discussion で、Compiler の担当者がアプリでの回帰テストとしての有用性を挙げている (docs ではなく discussion の回答。[reactwg/react-compiler#45][]: "For apps having this setup can be helpful as regression tests especially when you're rolling out a new compiler version.")。Babel に Compiler を入れた構成を Jest で動かすと、何もしなければテストにも通る ([Jest docs「Getting Started」][] の Using Babel: "`babel-jest` is automatically installed when installing Jest and will automatically transform files if a babel configuration exists in your project.")。欠点は下の表 | **採用** |
+| B テストでは通さない | テストが確かめるのは Compiler を通る前のコードになり、上の実行時の問題がテストに出ない。Next.js (`next/jest`) と Expo (`jest-expo`) はテストで Compiler を通さないが、これはコードを読んだうえでの推論で、どちらも理由を文書に書いていない                                                                                                                                                                                                                                                                                                                                                                                                                        | 却下     |
+| C 両方で走らせる     | 同じ回答は on/off の両方をライブラリの作者に勧め ([reactwg/react-compiler#45][]: "For library authors we do recommend testing with the compiler on/off.")、アプリには回帰テストとしての有用性を挙げるにとどまる。ブラウザで走る project の実行が 2 倍になる                                                                                                                                                                                                                                                                                                                                                                                                       | 却下     |
+
+| 欠点              | 中身                                                                                                                                                                                                                                                                                                                                         | 扱い                                                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| branch カバレッジ | Compiler はメモ化のキャッシュの確認を `if` / `else` で足す。coverage はこれも branch に数え、1 回だけ描くテストはキャッシュに当たる側へ届かないので、ソースに分岐の無い部品でも branch カバレッジが下がる。`oxc-transform-react` での報告は [oxc-project/oxc#26810][]、Babel 版は [facebook/react#32950][] (どちらも 2026-10-05 時点で open) | このテンプレートは coverage を `mise run verify` にも CI にも入れておらず、閾値も無い。`--coverage` を付けたときの数値がずれるだけ |
+| 実行時間          | 2026-10-05 に `vp test run` 全体を Compiler の有無で交互に 5 回ずつ走らせた。なしは中央値 40 秒 (39〜57 秒)、ありは中央値 46 秒 (38〜68 秒)。計測中に別のプロセスで load average が 30 まで上がり、差は回ごとの揺れより小さい。負荷が近い 1〜2 回目は、なしが 39 / 40 秒、ありが 40 / 38 秒                                                  | 測れる差は無い                                                                                                                     |
+
+Compiler がかかる範囲と、診断の出し方は次のとおり。
+
+- `@vitejs/plugin-react` 6.1.1 は、environment の consumer が `server` でないときだけ Compiler をかける (`dist/index.js` の `createReactCompilerPlugin` の `isClient`)。Node の project (`unit` など) は ssr の environment で動くので Compiler はかからず、かかるのはブラウザで走る project (`browser`、`storybook-light`、`storybook-dark`) だけになる。2026-10-05 に、この 3 project で変換後の `FormCheckboxField` に `_c(` が現れることを確かめた
+- テストの分岐では `compiler.logDiagnostics` を切る。ブラウザで走る 3 project が同じ bail out をそれぞれ出し直すだけになる。2026-10-05 には `src/components/ui/toast.tsx` の 2 箇所が 3 回ずつ出て、`vp test run` の出力 122 行のうち 102 行を占めた。bail out はビルドログで読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 
 ### project に `optimizeDeps` を書く理由
 
@@ -178,3 +200,8 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 [vitest-dev/vitest#10775]: https://github.com/vitest-dev/vitest/issues/10775
 [storybookjs/storybook#33875]: https://github.com/storybookjs/storybook/pull/33875
 [React docs「Keeping Components Pure」]: https://react.dev/learn/keeping-components-pure
+[React docs「Debugging and Troubleshooting」]: https://react.dev/learn/react-compiler/debugging
+[reactwg/react-compiler#45]: https://github.com/reactwg/react-compiler/discussions/45
+[Jest docs「Getting Started」]: https://jestjs.io/docs/getting-started
+[oxc-project/oxc#26810]: https://github.com/oxc-project/oxc/issues/26810
+[facebook/react#32950]: https://github.com/facebook/react/issues/32950
