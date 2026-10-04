@@ -43,6 +43,27 @@ dev server と Storybook の port は worktree ごとに git から導出する�
 読み手が `serve` と `storybook` のタスクしかいないので、タスクの `env` で導出する。`run` の引数へ `$(...)` を書くと、script が実行できなかったときに空文字が渡って既定 port で起動する。タスクの `env` なら script の失敗がタスクの失敗になる。
 2026-09-20 の実測で、port の導出をトップレベルの `[env]` に置くと `mise hook-env` は 70ms、タスクの `env` に置くと 28ms だった。タスク側なら、シェル hook を入れていない手元でも port が決まる。
 
+導出した port は別の worktree の port と重なりうる。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
+Vite は使用中なら次の空き port へずらし (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")、Storybook も環境変数 `CI` があると尋ねずにずらす (2026-10-04 に storybook@10.6.0 で実測)。
+ずれると、worktree ごとに決めた port を指す側が別のサーバーへつながる。
+
+| 案                                                                 | 評価                                                                                                                             | 採否     |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 使用中なら終了させる (`--strictPort` / `--exact-port`)             | port が worktree で決まる。2 つの worktree が同じ port を導出したときは後の側が起動せず、worktree の名前を変えると port が変わる | **採用** |
+| 次の空き port へずらす (Vite の既定、Storybook の `CI` があるとき) | 重なっても両方が起動するが、port が起動した順で決まる。導出した port を指す側が、黙って別の worktree のサーバーへつながる        | 却下     |
+
+導出した port が WHATWG Fetch の bad port に当たったら、範囲の中で次の port へ進める。表は `scripts/dev-env/derive-dev-port.sh` が持つ。
+ブラウザは bad port への接続を拒むが、server は起動するので、使用中かを見るフラグでは気づけない。
+2026-10-04 に、port 3659 で起動した dev server へ curl は 200 を返し、Playwright 1.63.0 の Chromium は `net::ERR_UNSAFE_PORT` で開けなかった。
+使用中の port ではずらさないのに bad port では進めるのは、bad port かどうかが port の番号だけで決まるからである。進めた先は worktree の名前で決まり、起動した順に依らない。
+
+| 案                                                                                | 評価                                                                                                                                                                                                                                                     | 採否     |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 範囲の中で次の port へ進める                                                      | port が worktree の名前で決まる。bad port の直後の port に寄る (6670 には 6665-6670 の 6 つが寄る) が、2 つの worktree が重なる確率は Storybook の範囲で 0.1037%、bad port を除いた port へ均一に写した場合は 0.1009% で、差は小さい (2026-10-04 に計算) | **採用** |
+| bad port を除いた port の列へ、ハッシュを均一に写す                               | 重なる確率は上の 0.1009% になるが、範囲の port を毎回並べ直す処理が要る                                                                                                                                                                                  | 却下     |
+| bad port なら終了させ、worktree の名前を変えさせる                                | 番号だけで決まる事象に利用者の手を要し、起動するまで分からない                                                                                                                                                                                           | 却下     |
+| ブラウザの起動フラグで bad port を許す (Chromium の `--explicitly-allowed-ports`) | テストで起動するブラウザには効くが、利用者が普段使うブラウザには効かない                                                                                                                                                                                 | 却下     |
+
 ### `envDir: false` で Vite の `.env` 読み込みを切る
 
 秘密を扱う段になったときの前提を先に固定する。
@@ -157,6 +178,9 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - Vite+ が勧める `package.json` の scripts の形: `node_modules/vite-plus/docs/guide/local-cli.md`「Best Practices」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/local-cli.md#best-practices)
 - built-in と `vp run` の script の違い: `node_modules/vite-plus/docs/guide/run.md`「Built-in Commands vs Scripts」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/run.md)
 - 使用中の port を Vite が次の空き port へずらすこと: https://vite.dev/config/server-options#server-port
+- 使用中の port なら Vite を終了させる `server.strictPort`: https://vite.dev/config/server-options#server-strictport
+- 使用中の port なら Storybook を終了させる `--exact-port`: https://storybook.js.org/docs/api/cli-options
+- ブラウザが接続を拒む bad port の表: https://fetch.spec.whatwg.org/#port-blocking
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines
 - mise の `disable_tools` と、設定をローカル config へ置けること: https://mise.jdx.dev/configuration/settings.html
 - mise が読む Node.js のバージョンファイル (`devEngines` は idiomatic version file 扱いで既定 off): https://mise.jdx.dev/lang/node.html

@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# dev server (`vp dev --port`) の port を worktree ごとに導出する。
+# dev server (`vp dev --port`) と Storybook (`storybook dev --port`) の port を
+# worktree ごとに導出する。
 #
 #   main checkout    → <base>
 #   linked worktree  → <base>+1 から <base>+999 の決定的な値（worktree 名のハッシュから算出）
 #
-# 複数 worktree で dev server を同時起動すると port 3000 が衝突するため、
+# 複数 worktree で同時起動すると base の port が衝突するため、
 # git-dir と git-common-dir の一致判定で main / linked worktree を判定する。
 # ハッシュ由来のため別名 worktree 同士が同じ port に衝突する可能性はあるが
-# 許容する（衝突時は起動時の「ポート使用中」エラーで気づける。厳密な一意性は
-# 不要なため）。
+# 許容する（衝突しても起動時に気づける。serve は `--strictPort`、
+# storybook は `--exact-port` で、使用中の port なら終了する。
+# 厳密な一意性は不要なため）。
 # git 情報が取れない場合は base にフォールバックする — port 分離が
 # 効かないだけでアプリは従来どおり動く（fail-safe）。ただし観測可能にするため
 # stderr に警告を残す。
@@ -47,6 +49,24 @@ fi
 hash=$(printf '%s' "${name}" | cksum | cut -d' ' -f1)
 # base 相対にする。base ごとに範囲が分かれるので、同じ worktree で dev server と
 # Storybook を同時に起動しても衝突しない
-port=$((hash % 999 + base + 1))
+offset=$((hash % 999 + 1))
 
-echo "${port}"
+# ブラウザは bad port への接続を拒む (ERR_UNSAFE_PORT)。server は起動するので
+# `--strictPort` / `--exact-port` では気づけない。範囲の中で決定的に次の port へ進める。
+# 表は WHATWG Fetch「Port blocking」(https://fetch.spec.whatwg.org/#port-blocking) の
+# bad port の表を、2026-09-21 の版 (whatwg/fetch の 357bd98) から写した
+bad_ports=" 0 1 7 9 11 13 15 17 19 20 21 22 23 25 37 42 43 53 69 77 79 87 95 101 102 103 104 \
+109 110 111 113 115 117 119 123 135 137 139 143 161 179 389 427 465 512 513 514 515 526 530 \
+531 532 540 548 554 556 563 587 601 636 989 990 993 995 1719 1720 1723 2049 3659 4045 4190 \
+5060 5061 6000 6566 6665 6666 6667 6668 6669 6679 6697 10080 "
+is_bad_port() {
+  case "${bad_ports}" in
+    *" $1 "*) return 0 ;;
+  esac
+  return 1
+}
+while is_bad_port "$((base + offset))"; do
+  offset=$((offset % 999 + 1))
+done
+
+echo "$((base + offset))"

@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { cleanupTempDirs, createTempDir, git, initTempRepo } from "./git-test-utils";
 
 /**
- * 複数 worktree で dev server (`vp dev --port`) を同時起動する際の port 3000 固定衝突を
+ * 複数 worktree で dev server と Storybook を同時起動する際の base の port の衝突を
  * 避けるための scripts/dev-env/derive-dev-port.sh の仕様を機械強制する。main / linked
  * worktree の判定は git-dir / git-common-dir 一致判定を使う。
  */
@@ -76,6 +76,36 @@ describe("derive-dev-port.sh", () => {
     expect(forStorybook).toBeGreaterThanOrEqual(6007);
     expect(forStorybook).toBeLessThanOrEqual(7005);
     expect(forStorybook).not.toBe(forDev);
+  });
+
+  // bad port はブラウザが接続を拒む (ERR_UNSAFE_PORT)。server は起動するので --strictPort でも気づけない
+  it("ハッシュが bad port に当たったら、次の bad port でない port を返す", () => {
+    const repo = initTempRepo("ddp-repo-bad-");
+    // cksum("wt-142") % 999 = 658
+    const worktree = addWorktree(repo, "wt-142");
+
+    // 3000 + 658 + 1 = 3659 (bad port) → 3660
+    expect(runScript(worktree, [BASE]).stdout).toBe("3660");
+    // 6006 + 658 + 1 = 6665、6665-6669 が続けて bad port → 6670
+    expect(runScript(worktree, ["6006"]).stdout).toBe("6670");
+  });
+
+  it("bad port を避けて範囲の上端を越えるときは、範囲の下端へ戻る", () => {
+    const repo = initTempRepo("ddp-repo-wrap-");
+    // cksum("wt-1229") % 999 = 998
+    const worktree = addWorktree(repo, "wt-1229");
+
+    // 2660 + 998 + 1 = 3659 (bad port、範囲 2661-3659 の上端) → 2661
+    expect(runScript(worktree, ["2660"]).stdout).toBe("2661");
+  });
+
+  it("bad port が範囲の上端の 1 つ手前なら、下端へ戻らず上端を返す", () => {
+    const repo = initTempRepo("ddp-repo-cap-");
+    // cksum("wt-1518") % 999 = 997
+    const worktree = addWorktree(repo, "wt-1518");
+
+    // 2661 + 997 + 1 = 3659 (bad port、範囲 2662-3660 の上端の 1 つ手前) → 3660 (上端)
+    expect(runScript(worktree, ["2661"]).stdout).toBe("3660");
   });
 
   it("同名 worktree は同じ port を返す (決定的)", () => {
