@@ -1,12 +1,13 @@
 # テストの設定
 
-Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・ブラウザと story の project に事前バンドルする依存を足す手順、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
+Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
 
 | 決定                                                                                                   | ADR      |
 | ------------------------------------------------------------------------------------------------------ | -------- |
 | 開発環境のツールチェーンは mise と Vite+ に寄せる                                                      | ADR-0004 |
 | Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる      | ADR-0037 |
 | a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0028 |
+| story とブラウザテストはアプリと同じく StrictMode の下で描く                                           | ADR-0039 |
 
 ## how-to
 
@@ -22,6 +23,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 | ブラウザで走る project に共通する設定 (`tailwindcss()`、chromium を headless で動かす `browser`)                                      | `tooling/test/chromium-project.ts` の `chromiumProjectBase`。ブラウザと story の project は `mergeConfig` でこの上に重ねる                                                                                                                                                                                                                                                                                                                                |
 | project が共有する Vite の設定 (`envDir`、`resolve`)                                                                                  | `vite.config.ts` のトップレベル。project はこれを継承する                                                                                                                                                                                                                                                                                                                                                                                                 |
 | テストでだけ外す plugin                                                                                                               | `vite.config.ts` の `plugins` の分岐 (「テストでだけ plugin を変える」)                                                                                                                                                                                                                                                                                                                                                                                   |
+| 部品を StrictMode で描く設定                                                                                                          | 「StrictMode の下で描く」                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 `vitest.config.ts` は作らない (ADR-0037。仕組みは「`vitest.config.ts` を置かない理由」)。
 
@@ -56,6 +58,16 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 
 - story の project の `optimizeDeps.exclude` に `@tanstack/react-start` 系を書かない。書かなくても実パッケージへ届かない
 - `browser` の `include` を外せるかは、出口条件の issue が動いたときに見直す。`include` を外して `browser` project を回し、上の症状が出ないことで判定する。issue が閉じたことだけを根拠に外さない
+
+### StrictMode の下で描く
+
+StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
+
+- ブラウザテストは `src/test/browser/browser-setup.tsx` の `configure({ reactStrictMode: true })` が、`render` と `renderHook` の全部に効かせる。テストごとに `<StrictMode>` で包み直さない
+- story は `.storybook/preview.tsx` の decorator が包む。decorators の最後に置き、preview の他の decorator を内側に入れる。addon と framework が足す decorator は preview の decorator の外側に来るので、StrictMode の外になる (router の decorator は除く)。`.storybook/main.ts` の `framework.options.strictMode` では代えない。vitest 経由の story に届かない (ADR-0039)
+- mount 直後の effect の付け直し (setup → cleanup → setup) が起きるのはブラウザテストだけで、story では起きない。`configure` は StrictMode を root に置き、decorator は story の部品の中に置くため。cleanup の欠けは story では見つからない (ADR-0039)
+- 部品のテストで、描画中に起こす副作用 (warn、通知、外への書き込み) の回数が StrictMode で 2 回になったら、期待値を 2 に合わせず、副作用をイベントハンドラへ、置けるハンドラが無ければ effect へ移す。純粋な計算は 2 回呼ばれても結果が変わらないので、呼び出しの回数で確かめない ([React docs「Keeping Components Pure」][] の「Detecting impure calculations with StrictMode」と「Where you can cause side effects」)
+- ブラウザテストで StrictMode が効いていることは `src/test/browser/strict-mode.test.tsx` が確かめる
 
 ### 設定の落とし穴
 
@@ -165,3 +177,4 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 [TanStack/router#6074]: https://github.com/TanStack/router/pull/6074
 [vitest-dev/vitest#10775]: https://github.com/vitest-dev/vitest/issues/10775
 [storybookjs/storybook#33875]: https://github.com/storybookjs/storybook/pull/33875
+[React docs「Keeping Components Pure」]: https://react.dev/learn/keeping-components-pure

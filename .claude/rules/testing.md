@@ -6,6 +6,7 @@ paths:
   - "src/test/**"
   - "**/*.test-helpers.*"
   - "tooling/test/**"
+  - ".storybook/**"
 ---
 
 # テストルール
@@ -115,6 +116,15 @@ paths:
 
 - optimistic state は `src/test/app/defer-mock.ts` の `deferMock` で決着を握って観測する。`mockRejectedValue` は即 reject して中間状態が見えない
 - assertion の順序は、optimistic state の確認 → `reject()` → ロールバックの確認
+
+## StrictMode の下で描く
+
+- ブラウザテストは `src/test/browser/browser-setup.tsx` の `configure({ reactStrictMode: true })` を外さない (ADR-0039)
+- story は `.storybook/preview.tsx` の StrictMode の decorator を外さない (ADR-0039)
+- StrictMode の decorator は preview の decorators の最後に置く。前に置くと、後ろの decorator が StrictMode の外に出る (ADR-0039)
+- story の StrictMode を `.storybook/main.ts` の `framework.options.strictMode` で代えない。vitest 経由の story に届かず、`mise run verify` と CI では効かない (ADR-0039)
+- 描画中の副作用の回数が StrictMode で 2 回になったら、期待値を 2 に合わせず、副作用をイベントハンドラか effect へ移す (`docs/guides/testing/configuration.md`「StrictMode の下で描く」)
+- cleanup の欠けた effect はブラウザテストで確かめる。story だけで確かめると、mount 直後の effect が付け直されないので cleanup の欠けが黙って通る (ADR-0039)
 
 ## テスト環境制約に遭遇したら
 

@@ -1,5 +1,6 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview } from "@storybook/tanstack-react";
+import { StrictMode } from "react";
 
 import { NARROW_VIEWPORT } from "@/test/browser/viewport-sizes";
 
@@ -13,6 +14,12 @@ const preview: Preview = {
       defaultTheme: "light",
       parentSelector: "html",
     }),
+    // preview の他の decorator を StrictMode の内側に入れるため最後に置く。root ではないので mount 直後の effect は付け直されない (ADR-0039)
+    (Story) => (
+      <StrictMode>
+        <Story />
+      </StrictMode>
+    ),
   ],
   parameters: {
     // 違反を警告で留めない。addon はここで violations を見る (ADR-0028)

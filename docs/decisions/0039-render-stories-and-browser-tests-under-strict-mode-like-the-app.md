@@ -1,0 +1,75 @@
+# ADR-0039: story とブラウザテストはアプリと同じく StrictMode の下で描く
+
+- Status: Accepted
+- Date: 2026-10-04
+- 関連: ADR-0037 (テストの設定の置き場所)
+
+## Context
+
+この ADR は、story とブラウザテストで部品を StrictMode の下で描くかを決める。StrictMode なしで描くと、描画中の副作用 (描画のたびに出る `console.warn` など) がテストを通り抜ける。
+
+アプリは StrictMode の下で動く。`src/` は client entry を持たないので、TanStack Start の既定の entry が使われ、それが `<StartClient />` を `<StrictMode>` で包む (`@tanstack/react-start` 1.168.58 の `default-entry/client.tsx`)。StrictMode は開発時に部品の描画を 2 回走らせ、mount 直後の effect を 1 度外して付け直す。描画が純粋でない部品や、cleanup の無い effect をここで見つける仕組みである (React docs「StrictMode」)。ただし effect の付け直しは、StrictMode が root にあるときだけ起きる。React docs「StrictMode」の「Enabling Strict Mode for a part of the app」は "if `<StrictMode>` is not enabled at the root of the app, it will not re-run Effects an extra time on initial mount" と書く。アプリの StrictMode は `hydrateRoot` に渡す要素そのものなので root にある。
+
+StrictMode なしで描くと、アプリの開発時には 2 回になる描画中の副作用が、story とブラウザテストでは 1 回に見える。2026-10-04 に、preview の decorator を外したうえで `src/components/parts/form-fields.tsx` の部品の `console.warn` を描画中に出す実装に変えると、warn の回数を 1 回と確かめる story は通った。
+
+StrictMode で描くかを決める口は、経路ごとに次のとおり (2026-10-04、Storybook 10.6.0、vitest-browser-react 2.3.0 で確かめた)。
+
+| 経路                                                               | 口                                                                   | 届く範囲                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Storybook の画面                                                   | `.storybook/main.ts` の `framework.options.strictMode`               | 届く。Storybook docs「Frameworks」の options 表が React の `strictMode` ("Enables React's strict mode") として載せる公式の口である。`@storybook/react` はモジュールを読んだ時点で `global.FRAMEWORK_OPTIONS?.strictMode` を読み、root に描く要素を StrictMode で包む (`renderToCanvas.tsx`)。`FRAMEWORK_OPTIONS` を置くのは builder-vite で、Storybook の画面の iframe の HTML を組むときだけ埋め込む (`transform-iframe-html.ts`) |
+| vitest 経由の story (`@storybook/addon-vitest`)                    | 同上                                                                 | 届かない。addon-vitest の vitest plugin は framework から名前しか読まず、Vite の `define` で story へ渡す main.ts の設定は `FEATURES` だけで `FRAMEWORK_OPTIONS` は無い (`vitest-plugin/index.ts`)。main.ts に `strictMode: true` を書き decorator を外すと、描画中の warn を見逃した                                                                                                                                              |
+| 両方                                                               | `.storybook/preview.tsx` の decorator                                | 届く。preview の annotation は両方の経路で読まれる。Storybook のメンテナが storybookjs/storybook#22472 で "As a workaround for now, you can add a global decorator that adds `StrictMode`" と案内した形である                                                                                                                                                                                                                      |
+| ブラウザテスト (`vitest-browser-react` の `render` / `renderHook`) | `configure({ reactStrictMode: true })` (`vitest-browser-react/pure`) | 既定は無効。有効にすると `render` と `rerender` が描くものを StrictMode で包み、`renderHook` も `render` を通る (`src/pure.tsx`)                                                                                                                                                                                                                                                                                                   |
+
+StrictMode が root に来るかは、口ごとに違う。
+
+| 口                                                     | StrictMode の位置                                                                                                                                    | 2026-10-04 に描画と mount の `useEffect` を数えた結果             |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `.storybook/preview.tsx` の decorator                  | root ではない。`@storybook/react` は decorator を重ねた story を 1 つの部品として root に描くので、decorator は部品の中で包む (`renderToCanvas.tsx`) | vitest 経由の story と Storybook の画面で、描画 2 回、effect 1 回 |
+| `.storybook/main.ts` の `framework.options.strictMode` | root。`@storybook/react` が root に描く要素を `<StrictMode>` で包む (`renderToCanvas.tsx`)                                                           | Storybook の画面で、decorator を外して描画 2 回、effect 2 回      |
+| `configure({ reactStrictMode: true })`                 | root。`root.render()` に渡す要素を `<StrictMode>` で包む (`src/pure.tsx`)                                                                            | 描画 2 回、effect 2 回                                            |
+
+Testing Library も同じ理由で、`wrapper` の中の StrictMode では React 19 の mount 直後の effect が二重にならないとして、root で包む `reactStrictMode` を `render` の option に足した (testing-library/react-testing-library#1390)。
+
+`@storybook/tanstack-react` の設定の型 (`FrameworkOptions`) は `builder` しか持たず、`strictMode` を書くと型検査で落ちる。実行時には `@storybook/react` が読むので、Storybook の画面には効く。
+
+## Decision
+
+**story とブラウザテストは、アプリと同じく StrictMode の下で描く。story は `.storybook/preview.tsx` の decorator で包み、ブラウザテストは `src/test/browser/browser-setup.tsx` で `vitest-browser-react` の `configure({ reactStrictMode: true })` を呼ぶ。**
+
+- story の decorator は preview の decorators の最後に置き、preview の他の decorator を内側に入れる。Storybook は story・component・project の順に並べた decorator を前から重ねるので、後ろほど外側に来る (`prepareStory.ts`、`decorators.ts`)。addon と framework が足す decorator は、preview の decorator のさらに外側に来るので、StrictMode の外になる (Storybook の `MIGRATION.md`「Changed decorator order between preview.js and addons/frameworks」)。例外は router の decorator で、`@storybook/tanstack-react` の `applyDecorators` が decorator の列の先頭 (story の側) に足すので StrictMode に入る (`preview.tsx`)。StrictMode は root ではないので、story では mount 直後の effect を付け直さない (Context の 2 つ目の表)
+- 置き場所は `docs/guides/testing/configuration.md`「StrictMode の下で描く」にある
+
+| 案                                                                               | 評価                                                                                                                                                                                                                                                                                     | 採否     |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| story は preview の decorator、ブラウザテストは `configure` で StrictMode にする | 公開された API (decorator と `configure`) だけで、Storybook の画面・vitest 経由の story・ブラウザテストの 3 経路で描画が 2 回走る。代わりに、mount 直後の effect の二重実行は story では起きず、ブラウザテストだけが確かめる。decorator は story の部品の中で包み、root から包めないため | **採用** |
+| story は main.ts の `framework.options.strictMode` で StrictMode にする          | 公式の口で、Storybook の画面では root から包めるので mount 直後の effect も付け直す。ただし vitest 経由の story に届かず、`mise run verify` と CI では何も検出しない。`@storybook/tanstack-react` の型に無く、書くには型を握りつぶすことになる                                           | 却下     |
+| main.ts に加え、vitest の setup で `globalThis.FRAMEWORK_OPTIONS` を書く         | 内部の global に頼る。`@storybook/react` がモジュールを読んだ時点で読むので、setup の読み込み順にも依存する                                                                                                                                                                              | 却下     |
+| 回数を確かめる story やテストにだけ `<StrictMode>` を足す                        | 書いた所しか見ない。描画が純粋でないことは、どの部品のどの story で表に出るか前もって分からない                                                                                                                                                                                          | 却下     |
+| 親の state を変えて部品を描き直す専用の story を組む                             | 部品が読む値を変えずに描き直させることはできるが、Storybook の慣習ではない自前の仕組みで、部品ごとに組むことになる。StrictMode は React が描画の純粋さを確かめるために用意した仕組みで、全 story に一度に効く                                                                            | 却下     |
+| StrictMode なしのまま描く                                                        | アプリの開発時と描き方が違い、描画中の副作用がテストを通り抜ける                                                                                                                                                                                                                         | 却下     |
+
+## Consequences
+
+- 描画中の副作用が回数の検証で落ちる。2026-10-04 に、warn を描画中に出す実装で `CheckboxValidatorsWarn` の story が「2 回呼ばれた」で落ち、`useEffect` の実装では通ることを確かめた。React は 18 から 2 回目の描画の `console` を抑えない (React docs「React 18 Upgrade Guide」の「No suppression of console logs」)
+- mount 直後の effect を setup → cleanup → setup の順に走らせるのは、ブラウザテストだけである。story では StrictMode が root にないので setup の 1 回で終わり、cleanup の欠けた effect は story では見つからない
+- 2026-10-04 に `mise run verify` で、light と dark の全 story とブラウザテストが StrictMode の下で通った
+- Storybook の画面も同じ decorator で包むので、描画は 2 回走り、mount 直後の effect は付け直さない (Context の 2 つ目の表)
+- 再評価の条件: addon-vitest が main.ts の `framework.options.strictMode` を vitest 経由の story へ渡し、`@storybook/tanstack-react` の `FrameworkOptions` が `strictMode` を持つようになったら、main.ts の口へ移すかを見直す。root から包めるので、story でも mount 直後の effect を付け直せる
+
+## 出典
+
+- TanStack Start の既定の client entry が `StrictMode` で包むこと (`@tanstack/react-start` 1.168.58): https://github.com/TanStack/router/blob/%40tanstack%2Freact-start%401.168.58/packages/react-start/src/default-entry/client.tsx
+- StrictMode が開発時に描画と effect を 2 回走らせ、root にないときは mount 直後の effect を付け直さないこと (React docs「StrictMode」): https://react.dev/reference/react/StrictMode
+- React 18 から 2 回目の描画の `console` を抑えないこと (React docs「React 18 Upgrade Guide」): https://react.dev/blog/2022/03/08/react-18-upgrade-guide
+- `wrapper` の中の StrictMode では React 19 の mount 直後の effect が二重にならないこと (testing-library/react-testing-library#1390)
+- `@storybook/react` が `FRAMEWORK_OPTIONS.strictMode` で包むかを決めること (Storybook 10.6.0 の `renderToCanvas.tsx`): https://github.com/storybookjs/storybook/blob/v10.6.0/code/renderers/react/src/renderToCanvas.tsx
+- builder-vite が `FRAMEWORK_OPTIONS` を iframe の HTML に埋め込むこと (Storybook 10.6.0 の `transform-iframe-html.ts`): https://github.com/storybookjs/storybook/blob/v10.6.0/code/builders/builder-vite/src/transform-iframe-html.ts
+- main.ts の `framework.options.strictMode` が React の公式の口であること (Storybook docs「Frameworks」の options 表): https://storybook.js.org/docs/configure/integration/frameworks
+- addon-vitest の vitest plugin が framework から名前だけを読み、`define` で `FEATURES` だけを渡すこと (Storybook 10.6.0 の `vitest-plugin/index.ts`): https://github.com/storybookjs/storybook/blob/v10.6.0/code/addons/vitest/src/vitest-plugin/index.ts
+- preview の decorator で StrictMode を足す回避策 (storybookjs/storybook#22472)
+- `@storybook/tanstack-react` の `FrameworkOptions` (Storybook 10.6.0 の `types.ts`): https://github.com/storybookjs/storybook/blob/v10.6.0/code/frameworks/tanstack-react/src/types.ts
+- decorator を story・component・project の順に並べて前から重ねること (Storybook 10.6.0 の `prepareStory.ts` と `decorators.ts`): https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/preview-api/modules/store/csf/prepareStory.ts 、 https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/preview-api/modules/store/decorators.ts
+- addon と framework の decorator が preview の decorator の外側に来ること (Storybook 10.6.0 の `MIGRATION.md`「Changed decorator order between preview.js and addons/frameworks」): https://github.com/storybookjs/storybook/blob/v10.6.0/MIGRATION.md#changed-decorator-order-between-previewjs-and-addonsframeworks
+- `@storybook/tanstack-react` の `applyDecorators` が router の decorator を decorator の列の先頭に足すこと (Storybook 10.6.0 の `preview.tsx`): https://github.com/storybookjs/storybook/blob/v10.6.0/code/frameworks/tanstack-react/src/preview.tsx
+- `vitest-browser-react` の `configure` と `reactStrictMode` (2.3.0 の README と `src/pure.tsx`): https://github.com/vitest-dev/vitest-browser-react/blob/v2.3.0/README.md 、 https://github.com/vitest-dev/vitest-browser-react/blob/v2.3.0/src/pure.tsx

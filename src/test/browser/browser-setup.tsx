@@ -9,6 +9,7 @@
  */
 import { beforeEach, vi } from "vite-plus/test";
 import { cleanup, render } from "vitest-browser-react";
+import { configure } from "vitest-browser-react/pure";
 
 import "@/styles.css";
 import { LiveRegions } from "@/components/live-regions";
@@ -24,6 +25,9 @@ import "@/test/browser/slot-locator";
  * 毎テストの前に消す (vitest の config/clearmocks)
  */
 vi.mock(import("@/lib/live-announcer"), { spy: true });
+
+/** 部品をアプリと同じく StrictMode の下で描く (ADR-0039) */
+configure({ reactStrictMode: true });
 
 /**
  * page スコープに残る状態を毎テスト前に既定へ戻す。1 つの session が複数ファイルを順に走らせ、
