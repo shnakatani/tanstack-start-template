@@ -37,10 +37,14 @@ export default defineConfig({
   // config をメタデータとしてだけ読む経路で plugin の factory を呼ばない (先頭の import は遅れない)。
   // 関数は同期のままにする (docs/guides/vite-configuration.md「plugin を先頭で import する理由」)
   plugins: lazyPlugins(() => {
-    // Vitest の中では React の変換だけにする (tanstackStart() は TanStack/router#6246 の回避で外す)。
+    const isVitest = process.env.VITEST === "true";
+    // React の変換は Compiler の設定ごとアプリとテストで共有する。bail out はビルドログへ出し (ADR-0014)、
+    // テストでは出さない。ブラウザで走る project ごとに同じ bail out を出し直すだけになる
+    const react = viteReact({ compiler: { logDiagnostics: !isVitest } });
+    // Vitest の中では React の変換 (Compiler を含む) だけにする (tanstackStart() は TanStack/router#6246 の回避で外す)。
     // 外す plugin ごとの理由と、判定を process.env.VITEST で書く理由は
     // docs/guides/testing/configuration.md「テストの分岐で plugin を外す理由」「判定を `process.env.VITEST` で書く理由」
-    if (process.env.VITEST === "true") return [viteReact()];
+    if (isVitest) return [react];
     return [
       devtools(),
       tailwindcss(),
@@ -75,8 +79,7 @@ export default defineConfig({
           },
         },
       }),
-      // Compiler の bail out をビルドログへ出す (ADR-0014)
-      viteReact({ compiler: { logDiagnostics: true } }),
+      react,
     ];
   }),
 });
