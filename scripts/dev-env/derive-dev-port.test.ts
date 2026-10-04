@@ -78,6 +78,27 @@ describe("derive-dev-port.sh", () => {
     expect(forStorybook).not.toBe(forDev);
   });
 
+  // bad port はブラウザが接続を拒む (ERR_UNSAFE_PORT)。server は起動するので --strictPort でも気づけない
+  it("ハッシュが bad port に当たったら、次の bad port でない port を返す", () => {
+    const repo = initTempRepo("ddp-repo-bad-");
+    // cksum("wt-142") % 999 = 658
+    const worktree = addWorktree(repo, "wt-142");
+
+    // 3000 + 658 + 1 = 3659 (bad port) → 3660
+    expect(runScript(worktree, [BASE]).stdout).toBe("3660");
+    // 6006 + 658 + 1 = 6665、6665-6669 が続けて bad port → 6670
+    expect(runScript(worktree, ["6006"]).stdout).toBe("6670");
+  });
+
+  it("bad port を避けて範囲の上端を越えるときは、範囲の下端へ戻る", () => {
+    const repo = initTempRepo("ddp-repo-wrap-");
+    // cksum("wt-1229") % 999 = 998
+    const worktree = addWorktree(repo, "wt-1229");
+
+    // 2660 + 998 + 1 = 3659 (bad port、範囲 2661-3659 の上端) → 2661
+    expect(runScript(worktree, ["2660"]).stdout).toBe("2661");
+  });
+
   it("同名 worktree は同じ port を返す (決定的)", () => {
     const repoA = initTempRepo("ddp-repo-a-");
     const worktreeA = addWorktree(repoA, "feat-same");
