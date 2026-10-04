@@ -30,7 +30,7 @@ export async function storybookProject({
       plugins: [
         storybookTest({ configDir: ".storybook", initialGlobals: { theme } }),
         // 事前バンドルのキャッシュを project ごとに分ける。相対ではなく固定値で組み立てる
-        // (docs/guides/testing/configuration.md「story の project の `cacheDir` をテーマで分ける理由」)
+        // (docs/guides/testing/configuration.md「story の project の `cacheDir` を分ける理由」)
         {
           name: "storybook-theme-cache-dir",
           config: {

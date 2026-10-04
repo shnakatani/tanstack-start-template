@@ -43,11 +43,14 @@ paths:
 - root の `plugins` と同じパッケージ (`chromiumProjectBase` の `tailwindcss`) は、project でも先頭で import する。root が先頭で import している間は、遅らせても同じ module が読まれる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 - 動的 import で遅らせるのは外部のパッケージそのものにする。`tooling/` のモジュールを動的 import しても、Vite が config を 1 ファイルへ bundle するので遅れない (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
 
-## React Compiler (`vite.config.ts` の `plugins`)
+## React Compiler (`vite.config.ts` の `plugins`、`tooling/plugins/react.ts`)
 
-- `viteReact` の `compiler` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0014)
-- テストの分岐以外で立てる `compiler.logDiagnostics` を外さない。外すと、Compiler が諦めた箇所がビルドログに出なくなる (ADR-0014)
-- `viteReact(...)` の呼び出しはアプリとテストの分岐で共有し、テストの分岐に別の `viteReact()` を書かない。テストから Compiler が外れてもテストは全部通る。分岐で変えるのは `logDiagnostics` だけにする (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
+- アプリの分岐の `reactPlugin` の `compiler: true` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0014)
+- アプリの分岐の `logDiagnostics: true` を外さない。外すと、Compiler が諦めた箇所がビルドログに出なくなる (ADR-0014)
+- React の plugin は `tooling/plugins/react.ts` の `reactPlugin` から作り、テストの分岐と project で別の `viteReact()` を書かない。テストから Compiler が外れてもテストは全部通る (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
+- テストの分岐は React の plugin を返さず、ブラウザで走る project が `chromiumProjectBase` から足す。root に置くと、継承した plugin を Compiler を通さない project で外せない (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
+- Compiler を通さない project には `src/components/ui/` のテストと story だけを集める (`docs/guides/testing/configuration.md`「React Compiler を通さない project を足す」)
+- `browser-no-compiler` の project を外さない。Compiler は上流の部品が描画中に部品を定義する欠陥を隠すので、`calendar.test.tsx` の再描画のガードは Compiler を通さない project でしか落ちない (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)
 - bail out のログは `vp build` では `[plugin vite:react-compiler]` だけで `error` / `warn` を含まない。ビルドログは `react-compiler` で grep する (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 - babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0014)
 

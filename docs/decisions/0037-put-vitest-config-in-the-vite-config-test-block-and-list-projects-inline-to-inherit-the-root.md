@@ -34,7 +34,7 @@ Vitest の設定は、`vitest.config.ts` に分けても `vite.config.ts` の `t
 
 - `envDir: false` は `vite.config.ts` に 1 つだけ書けば、ビルドとテストの両方に効く
 - テストは `tanstackStart()` を通らないので、`createIsomorphicFn` などの Start の変換はテストで効かない (TanStack/router#6246 のコメント)
-- テストの分岐もアプリの分岐と同じ `viteReact(...)` の呼び出しを使うので、ブラウザで走る project のテストは React Compiler を通る。理由は `docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」にある
+- テストの分岐は root の plugin を全部外し、React の plugin はブラウザで走る project が足す。継承した plugin は project で外せないので (Vitest docs「Test Projects」: "arrays like `setupFiles` are concatenated, not overridden")、React Compiler の有無は project ごとに決まる。ブラウザで走る project のテストは Compiler を通り、`src/components/ui/` は Compiler を通さない project でも走る。理由は `docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」にある
 - `process.env.VITEST` が立たない経路 (Vitest の `createVitest()` を直接呼ぶ) では `tanstackStart()` が外れない。経路ごとの扱いは `docs/guides/testing/configuration.md`「判定を `process.env.VITEST` で書く理由」にある
 - ブラウザの project も、Vite+ の `defineConfig` が root に足す test 用の plugin (`vite-plus:vitest-resolver` など) を継承し、その plugin がブラウザの project に `vitest` などの alias を足す。`vite-plus` が export する `defineProject` の docstring は、ブラウザの project がこの plugin を受け取らないと pnpm strict や Yarn PnP で `vitest` を解決できないことがあると書いている
 
