@@ -110,7 +110,7 @@ lint では見ないのでレビューで見る。
 - `react-compiler(Todo)` の診断を消すためにコードを書き換えない。Compiler の未対応の構文で、コードの誤りではない。手を入れるのは、その関数で性能の問題が実際に出たときに限る (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 - effect の依存は、まず関数や object を effect の中へ移すか `useEffectEvent` へ切り出して依存から外し、外せないときだけ最後の手段としてメモ化する。`useMemo` は値が保たれることを保証せず、React がキャッシュを捨てると effect が走り直す (`docs/guides/react/memoization.md`「effect の依存をメモ化より先に外す理由」)
 - キャッシュが捨てられると壊れる値は `useMemo` に持たず、state か ref に持つ。React は `useMemo` のキャッシュを捨てうる (`docs/guides/react/memoization.md`「手動メモ化を書く」)
-- Compiler の自動メモ化にも正しさを頼らない。Compiler が部品を諦めたり変換を変えたりして、再計算や effect の再実行が増えても、結果が正しいように書く (`docs/guides/react/memoization.md`「手動メモ化を書く」)
+- Compiler の自動メモ化にも正しさを頼らず、再計算や effect の再実行が増えても結果が正しいように書く。Compiler が諦めた部品と、`"use no memo"` で外した部品はメモ化されない (`docs/guides/react/memoization.md`「手動メモ化を書く」)
 - 既存の `useMemo` / `useCallback` は、撤去の前後でコンパイル出力が悪化しないことを測れた箇所だけ外す。外形からは劣化が読み取れない (`docs/guides/react/memoization.md`「手動メモ化を外すか判定する」)
 
 ## コンポーネントは function 宣言で定義する

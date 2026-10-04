@@ -34,7 +34,7 @@ Compiler を入れたコードでも、`useMemo` / `useCallback` は「どの値
 | 値の同一性を精密に制御する箇所 (effect の依存など) | 上から順に当てる。まず依存を外す: 関数や object を effect の中へ移す、最新の値を読むだけなら `useEffectEvent` へ切り出す ([React docs「useEffect」][] の My Effect runs after every re-render、[React docs「useCallback」][] の Preventing an Effect from firing too often)。外せないときに最後の手段として `useMemo` / `useCallback` で包む ([React docs「useEffect」][] の同じ節)。理由は「effect の依存をメモ化より先に外す理由」 |
 
 - キャッシュが捨てられると壊れる値は `useMemo` に持たず、state か ref に持つ。React は開発中の編集や初回 mount 中の suspend でキャッシュを捨てる ([React docs「useMemo」][] の Caveats)
-- Compiler の自動メモ化にも正しさを頼らない。Compiler が部品を諦めたり (`"use no memo"` の部品を含む)、変換を変えたりして、再計算や effect の再実行が増えても、結果が正しいように書く。メモ化に正しさを頼るコードは Compiler で壊れうる ([React docs「Debugging and Troubleshooting」][]: "One of the main ways React Compiler can break your app is if your code was written to rely on memoization for correctness.")。`useMemo` は性能の最適化で、キャッシュが捨てられると effect が走り直す ([React docs「useMemo」][]: "since `useMemo` is performance optimization, not a semantic guarantee, React may throw away the cached value if there is a specific reason to do that. This will also cause the effect to re-fire")。Compiler の自動メモ化に同じ扱いを当てるのは、このテンプレートの判断である
+- Compiler の自動メモ化にも正しさを頼らず、再計算や effect の再実行が増えても結果が正しいように書く。Compiler が諦めた部品と、`"use no memo"` で外した部品はメモ化されない ([React docs「Debugging and Troubleshooting」][]: "One of the main ways React Compiler can break your app is if your code was written to rely on memoization for correctness.")
 
 ### 手動メモ化を外すか判定する
 
