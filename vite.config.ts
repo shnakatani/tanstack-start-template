@@ -39,7 +39,7 @@ export default defineConfig({
   plugins: lazyPlugins(() => {
     const isVitest = process.env.VITEST === "true";
     // React の変換は Compiler の設定ごとアプリとテストで共有する。bail out はビルドログへ出し (ADR-0014)、
-    // テストでは出さない。ブラウザで走る project ごとに同じ bail out を出し直すだけになる
+    // テストでは出さない (docs/guides/testing/configuration.md「テストでも React Compiler を通す理由」)
     const react = viteReact({ compiler: { logDiagnostics: !isVitest } });
     // Vitest の中では React の変換 (Compiler を含む) だけにする (tanstackStart() は TanStack/router#6246 の回避で外す)。
     // 外す plugin ごとの理由と、判定を process.env.VITEST で書く理由は
