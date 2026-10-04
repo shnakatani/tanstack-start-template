@@ -28,7 +28,7 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 - `beforeLoad` をデータの防御にしない。server function は route を読み込まずに呼べるので、route を守っても endpoint は無防備なまま残る (ADR-0012)
 - 認証 middleware を個々の `createServerFn` へ書かない。`createMiddleware({ type: "function" })` で作り `src/start.ts` の `functionMiddleware` へ渡す。1 件の付け忘れが無認証の endpoint になる (ADR-0012)
 - 型付きの context を得る目的で個々の `createServerFn` へ `.middleware()` を足さない。global の値は `.middleware()` なしでも型付きで読め、global の方が先に走る (ADR-0012)
-- 認可の base builder は、ロールによる出し分けが要るようになった時点で足す。先に置くと守る対象の無い装置になる (ADR-0012)
+- 認可の base builder は、ロールによる出し分けが要るようになった時点で足す (ADR-0012)
 - server function の例外を、個々の fn の中で catch して console へ書かない。global の `logServerFnErrors` (`src/start.ts`) が残して投げ直すので、二重に残る (`docs/guides/server-errors.md`「例外を server のログに残す」)
 - 例外の文言に秘密と個人情報 (DB の行の値、ユーザーの入力) を入れない。文言は server のログに残り、DEV では画面にも出る (`docs/guides/server-errors.md`「例外の文言を書く」)
 - SSR の読み込み (validateSearch・beforeLoad・loader) の例外を、route の `onError` や catch で console へ書かない。`src/server.ts` から呼ぶ `logSsrMatchErrors` (`src/server/ssr-errors.ts`) が `[ssr] <routeId>` で残すので、二重に残る (`docs/guides/server-errors.md`「例外を server のログに残す」)

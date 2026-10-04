@@ -18,8 +18,8 @@ lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止
 lint では見ないのでレビューで見る。
 
 - 原因が特定の操作 (保存、送信、操作の開始と完了の通知、親への変化の通知) なら、effect ではなくイベントハンドラか mutation の callback に書く。effect に置くと、同じ表示に戻っただけで走る (`docs/guides/react/effects.md`「effect に書くかを判定する」)
-- effect は、表示された結果を React の外の系 (DOM、ブラウザ API、外部 widget、イベントに応じて動く購読、router、announcer) に合わせるときだけ使う。要らない effect はコードを追いにくく、誤りやすくする (`docs/guides/react/effects.md`「effect とイベントハンドラを分ける理由」)
-- 開発時の二重実行で見える結果が変わったら、まず後始末を書く。多くは後始末の欠けで、effect が正しい置き場のまま直る。後始末を書いても変わるときは、操作ならイベントハンドラへ、アプリの読み込みならコンポーネントの外へ移す (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
+- effect は、表示された結果を React の外の系 (DOM、ブラウザ API、外部 widget、イベントに応じて動く購読、router、announcer) に合わせるときだけ使う (`docs/guides/react/effects.md`「effect とイベントハンドラを分ける理由」)
+- 開発時の二重実行で見える結果が変わったら、まず後始末を書く。後始末を書いても変わるときは、操作ならイベントハンドラへ、アプリの読み込みならコンポーネントの外へ移す (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
 - effect を 1 回しか走らせないための ref を書かない。1 回に抑えても、離れて戻ったときの後始末の欠けは残る。直前に反映した値を ref に持ち、同じなら何もしない形は、何度走っても同じ結果になるのでよい (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
 - router の外の変化 (認証など) の購読は router の `InnerWrap` の effect に置き、変化時に `router.invalidate()` を呼ぶ。ルートとページの effect は `errorComponent` の表示中に外れる (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 - 遷移を契機にする副作用 (analytics、外部キャッシュの消去、描画後の DOM 操作) は `InnerWrap` のコンポーネントで `router.subscribe` に置く。ページの effect は他のページの間の遷移を見ない (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
