@@ -52,7 +52,7 @@ Testing Library も同じ理由で、`wrapper` の中の StrictMode では React
 
 - 描画中の副作用が回数の検証で落ちる。2026-10-04 に、warn を描画中へ戻した実装で `CheckboxValidatorsWarn` の story が「2 回呼ばれた」で落ち、`useEffect` の実装では通ることを確かめた。decorator を外すと、描画中の実装でも通る。React は 18 から 2 回目の描画の `console` を抑えない (React docs「React 18 Upgrade Guide」の「No suppression of console logs」)
 - mount 直後の effect を setup → cleanup → setup の順に走らせるのは、ブラウザテストだけである。story では StrictMode が root にないので setup の 1 回で終わり、cleanup の欠けた effect は story では見つからない。ブラウザテストで cleanup の無い effect の呼び出しを数えて 2 回を見たら、テストの期待値ではなく effect の側を直す
-- 導入した 2026-10-01 の時点で、light と dark の全 story は StrictMode の下でも通った。ブラウザテストは、StrictMode の有無で結果が変わらなかった
+- 2026-10-04 に `mise run verify` で、light と dark の全 story とブラウザテストが StrictMode の下で通った
 - Storybook の画面も同じ decorator で包むので、描画は 2 回走り、mount 直後の effect は付け直さない。画面でも `renderToCanvas.tsx` は decorator を重ねた story を部品として root に描くためで、画面での回数は測っていない
 - addon-vitest が main.ts の framework の設定を portable stories へ運ぶようになっても、preview の decorator は 3 経路に効くので、置き場所を変える理由にはならない
 
