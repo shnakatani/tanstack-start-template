@@ -105,7 +105,7 @@ paths:
 - `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する
 - `vi.stubEnv` と `vi.stubGlobal` の値はテストの中で戻さない。設定の `unstubEnvs` / `unstubGlobals` と `tooling/test/setup.ts` の `afterEach` が毎テスト戻す (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - `vi.stubEnv` と `vi.stubGlobal` は `beforeEach` かテストの中で呼び、テストファイルと setup ファイルの最上位と `beforeAll` で呼ばない (`vi.mock` は最上位のまま)。最初のテストの前に戻り、差し替える前の値のまま気付かずに通ることがある (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
-- テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は戻らず後のテストへ残る。setup の `beforeEach` が毎テスト立て直す値 (`src/test/browser/animations.ts`) は除く (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
+- テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は戻らず後のテストへ残る。差し替える関数が `onTestFinished` で戻しを登録する値 (`src/test/browser/animations.ts`) は除く (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - 同じモジュールを複数のテストで丸ごと差し替えるなら、隣の `__mocks__/<同名>` に置き、factory なしの `vi.mock(import(...))` で読む。無いと元を読んで automock し、ブラウザで読めないものは落ちる (`docs/guides/testing/mocking.md`「`__mocks__` に寄せる理由」)
 - 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
 - 引数ごとに応答を変える mock は `vi.when(vi.mocked(fn), { onUnmatched: "throw" })` で書き、`mockImplementation` に引数の分岐を手書きしない。想定外の引数で呼ばれたことを見逃さない (`docs/guides/testing/mocking.md`「戻り値を決める」)
@@ -169,7 +169,8 @@ paths:
 - スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素・期待値側の要素にも当たる `!important` (`*` など) の 4 つだけ (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
-- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を呼ぶ (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
+- animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を呼び、戻す処理は書かない。テストの終わりに `enableAnimations()` が登録した `onTestFinished` が戻す (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
+- `.concurrent` のテストでは `enableAnimations()` を呼ばない。page 全体に効き、並行する別のテストの animation も戻る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない

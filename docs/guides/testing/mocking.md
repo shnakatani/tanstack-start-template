@@ -52,7 +52,7 @@
 
 - `vi.stubEnv` と `vi.stubGlobal` は `beforeEach` かテストの中で呼ぶ (`vi.mock` は最上位のまま)。テストファイルと setup ファイルの最上位、`beforeAll` で差し替えた値は、最初のテストの前に戻る。全テストに効かせる差し替えは、setup ファイルの `beforeEach` に書く。env は差し替える前の値で、グローバルは差し替える前のもの (ブラウザでは本物の `matchMedia` など) で走り、差し替えが効いていないことに気付かずに通ることがある。[Vitest docs「Mocking Globals」][] の例は最上位で `vi.stubGlobal` を呼ぶが、この形にしない
 - `.concurrent` を付けたテストでは `vi.stubEnv` も `vi.stubGlobal` も使わない。並行して走っている別のテストが差し替えた値も、設定は別のテストが始まるたびに、setup の `afterEach` は別のテストが終わるたびに戻す ([Vitest docs「unstubEnvs」][] と [Vitest docs「unstubGlobals」][] の warning。vitest 5.0.1、unit project に `maxConcurrency: 2` を書いて 2026-10-04 に実測)
-- テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は設定も setup も戻さず、後のテストへ残る ([Vitest docs「vi.stubGlobal」][] の tip: "you won't be able to use `vi.unstubAllGlobals` to restore original value")。setup の `beforeEach` が毎テスト立て直す値 (`src/test/browser/animations.ts` の Base UI のフラグ) は、立て直しが戻しを担うので代入でよい
+- テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は設定も setup も戻さず、後のテストへ残る ([Vitest docs「vi.stubGlobal」][] の tip: "you won't be able to use `vi.unstubAllGlobals` to restore original value")。差し替える関数が `onTestFinished` で戻しを登録する値 (`src/test/browser/animations.ts` の Base UI のフラグ) は、同じ関数が戻す停止用の CSS と戻し方をそろえるので代入でよい (`docs/guides/testing/user-interactions.md`「animation を戻す経路」)
 - 差し替えた値 (env やグローバル) を使う非同期の処理 (再取得、タイマー) は、テストの中で終わりまで待つ。`render()` で描いた部品は次のテストの前まで残る ([vitest-browser-react の README][] の "performs cleanup of the component before the test begins") が、差し替えた値はそれより先に戻るので、テストの後に走る処理は差し替える前の値を使う
 - env はモジュールの最上位ではなく、呼び出しの時点で読む。最上位で読んだ値は、テストで差し替えても変わらない
 
