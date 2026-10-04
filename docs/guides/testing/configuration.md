@@ -66,6 +66,7 @@ story とブラウザテストは、アプリと同じく StrictMode の下で�
 - ブラウザテストは `src/test/browser/browser-setup.tsx` の `configure({ reactStrictMode: true })` が、`render` と `renderHook` の全部に効かせる。テストごとに `<StrictMode>` で包み直さない
 - story は `.storybook/preview.tsx` の decorator が包む。decorators の最後に置き、一番外側に保つ。`.storybook/main.ts` の `framework.options.strictMode` では代えない。vitest 経由の story に届かない (ADR-0039)
 - 呼び出しの回数を確かめるテストが StrictMode で 2 回を見たら、期待値でも StrictMode でもなく部品を直す。直し方は `docs/guides/react/effects.md`「開発時の二重実行が示すもの」
+- mount 直後の effect の付け直し (setup → cleanup → setup) が起きるのはブラウザテストだけで、story では起きない。`configure` は StrictMode を root に置き、decorator は story の部品の中に置くため。cleanup の欠けは story では見つからない (ADR-0039)
 - ブラウザテストで StrictMode が効いていることは `src/test/browser/strict-mode.test.tsx` が確かめる
 
 ### 設定の落とし穴

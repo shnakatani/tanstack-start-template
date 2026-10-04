@@ -14,7 +14,7 @@ const preview: Preview = {
       defaultTheme: "light",
       parentSelector: "html",
     }),
-    // story をアプリの root と同じく StrictMode で包む。一番外側に重ねるため最後に置く (ADR-0039)
+    // story を StrictMode で包む。一番外側に重ねるため最後に置く。root ではないので mount 直後の effect は付け直されない (ADR-0039)
     (Story) => (
       <StrictMode>
         <Story />
