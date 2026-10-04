@@ -27,7 +27,7 @@ const DISABLE_ANIMATIONS_CSS = `
 /**
  * ブラウザテストの既定 (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)。`src/test/browser/browser-setup.tsx` の `beforeEach` が毎テスト呼ぶ。
  * Base UI のスイッチ (上の宣言) を立て、停止用の CSS を `document.head` へ入れる。どちらも page
- * スコープに残る。`enableAnimations()` が外し、そのテストの終わりにこの関数で戻す。
+ * スコープに残る。
  */
 export function disableAnimations(): void {
   globalThis.BASE_UI_ANIMATIONS_DISABLED = true;
@@ -42,8 +42,7 @@ export function disableAnimations(): void {
 
 /**
  * このテストの間だけ animation を戻す (docs/guides/testing/user-interactions.md「animation を戻すテストを書く」)。閉じかけの popup が残る窓を検証するテストが
- * 本文の先頭で呼ぶ。テストが終わった時点で `onTestFinished` が既定へ戻す。次のテストの `beforeEach` に任せると、
- * `--no-isolate` ではファイルの最後のテストの状態が次のファイルのモジュール評価と `beforeAll` に残る。
+ * 本文の先頭で呼ぶ。テストが終わった時点で `onTestFinished` が既定へ戻す。
  */
 export function enableAnimations(): void {
   globalThis.BASE_UI_ANIMATIONS_DISABLED = false;

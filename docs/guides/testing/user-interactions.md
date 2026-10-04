@@ -49,7 +49,7 @@
 animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「animation を無効にして走らせる理由」)。閉じかけの popup が残る窓そのもの (二重発火の dedupe など) を検証するテストだけ、次の形で戻す。
 
 - 本文の先頭で `enableAnimations()` を呼ぶ。テストが終わった時点で、`enableAnimations()` が登録した `onTestFinished` が既定へ戻すので、戻す処理は書かない (「animation を戻す経路」)
-- `.concurrent` のテストでは `enableAnimations()` を呼ばない。フラグと停止用の CSS は page 全体に効き、並行して走る別のテストでも animation が戻る
+- animation を戻すテストは `.concurrent` を付けずに書き、並行の `describe` の外に置く。フラグと停止用の CSS は page 全体に効き、並行して走る別のテストでも animation が戻る
 - 無限アニメーション (Spinner) も既定では時間が 0 秒になり、描画の時点で終わっている (`getAnimations()` が空、2026-09-27 に実測)
 - 既定では閉じた popup が次の描画で unmount するので、`data-ending-style` は観測できない
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。既定では窓が無いが、animation を戻したテストでも同じ形で書く
@@ -162,7 +162,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
 | 次のテストの `beforeEach` (`disableAnimations()`) が立て直すのに任せる      | `--no-isolate` では、ファイルの最後のテストが外した状態が、次のファイルのモジュール評価と `beforeAll` に残る。`--no-isolate --no-file-parallelism` で、最後のテストが `enableAnimations()` を呼ぶファイルの次に、モジュールの最上位と `beforeAll` でフラグと style を読むファイルを走らせると、どちらでもフラグが `false` で style が無かった (vitest 5.0.1、2026-10-04) | 却下     |
 | `enableAnimations()` の中で `onTestFinished(disableAnimations)` を登録する  | 同じ条件で、どちらでもフラグが `true` で style があった (同日)。外す行と戻す登録が 1 つの関数に並ぶ                                                                                                                                                                                                                                                                      | **採用** |
-| `browser-setup.tsx` の `afterEach` で `disableAnimations()` を呼ぶ          | 戻るが、外す処理と戻す処理が別のファイルに分かれ、`enableAnimations()` を読んでも戻ることが分からない                                                                                                                                                                                                                                                                    | 却下     |
+| `browser-setup.tsx` の `afterEach` で `disableAnimations()` を呼ぶ          | 戻る。[Base UI の `test/setupVitest.ts`][] は setup の `afterEach` でフラグを戻し、テストごとの `onTestFinished` と両方を持つ。この形だけにすると、外す処理と戻す処理が別のファイルに分かれ、`enableAnimations()` を読んでも戻ることが分からない。両方を持つと、同じ戻しが 2 箇所に割れる                                                                                | 却下     |
 | フラグを `vi.stubGlobal` で差し替え、設定と setup の `afterEach` に戻させる | 停止用の CSS は `vi.stubGlobal` では戻らず、CSS の戻しに別の経路が要る。戻し方が 2 つに割れる                                                                                                                                                                                                                                                                            | 却下     |
 
 - `browser-setup.tsx` の `beforeEach` は残す。最初のテストの前に既定を立てるのはこの hook だけである
