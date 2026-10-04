@@ -81,7 +81,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - `--card-spacing` を 0 にして inset ごと消さない。`-mx-(--card-spacing)` が 0 に解決されて無言で効かなくなる (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `scroll-area-focus-outline` は Root が `overflow-hidden` を持つか Viewport に mask が乗るときに当てる。registry の focus ring が消える (`docs/guides/registry.md`「公式のノブを先に探す」)
 - 背景を持つスクロール領域は器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る (`docs/guides/registry.md`「公式のノブを先に探す」)
-- `ScrollArea` のバー幅の余白を降りるのは `ui/` の部品の中だけにし (実例は `ui/dialog.tsx` の `DialogScrollBody`)、`ui/` の外で要るなら `ui/` の部品を使うか足す。`ui/` の外では contract が `ScrollArea` に layout と角丸しか許さないため (`docs/guides/registry.md`「公式のノブを先に探す」)
+- `ScrollArea` のバー幅の余白を降りるのは `ui/` の部品の中だけにし (実例は `ui/dialog.tsx` の `DialogScrollBody`)、`ui/` の外で要るなら `ui/` の部品を使うか足す (`docs/guides/registry.md`「公式のノブを先に探す」)
 - `<ScrollBar orientation="horizontal" />` を消費側で合成しない。`ScrollArea` が横のバーも描くので、足すと横バーが 2 本になる (`docs/guides/registry.md`「公式のノブを先に探す」)
 
 ### 親の gap で表現できない箇所
@@ -92,10 +92,10 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ### 内部スクロールを持つダイアログの組み方
 
-- 恒常的に viewport 高を超えるダイアログは本文を `DialogScrollBody` (`ui/dialog.tsx`) で包み、本文だけをスクロールさせる。見出しとフッターが常に見える (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- 恒常的に viewport 高を超えるダイアログは本文を `DialogScrollBody` (`ui/dialog.tsx`) で包み、本文だけをスクロールさせる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 見出し・本文・フッターは器の子として同じ深さに並べる。器はフォームを持つなら `ActionDialogContent` (`action/dialog.tsx`)、持たないなら `DialogContent`。間に box を挟むと Popup の gap と内部スクロールが効かない (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - form を `DialogContent` の外に置かない。Portal で送信ボタンが form の外へ出て送信が起きない (`docs/guides/forms-and-inputs.md`「フォームを `DialogContent` の中に置く理由」)
-- フッターは `DialogScrollBody` の後ろに置き、本文の中へ入れない。本文の中ではスクロールで流れる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
+- フッターは `DialogScrollBody` の後ろに置き、本文の中へ入れない (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。スクロール領域の内側に余白が無いと、端の要素の ring が境界で切れる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 
@@ -118,7 +118,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択の既定は `FieldSet` + `FieldLegend` の中の `FieldGroup data-slot="checkbox-group"` に `Field orientation="horizontal"` の行を並べる形。`FieldLegend` がまとまりの名前になり、行間は registry の間隔に寄る (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - 選択肢ごとに補足 (状態のバッジなど) を添える場面と、選択が画面の主役の場面は、`ChoiceCardList` / `ChoiceCard` (`choice-card.tsx`) でカード状の選択面を組み、`FieldLabel` で `Field` を包む形を手書きしない。説明文は `description` に、補足は `trailing` に渡し、行を見分ける識別子は `label` に含める。補足の表示の条件は呼び出し側で書き、条件で null を返す部品を渡さない。`id` の採番、disabled の行の cursor、checkbox の名前をタイトルに絞り説明文と補足を説明に結ぶことを部品が持つ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - 複数選択のまとまりの中の行の `FieldLabel` には `weight="normal"` を渡す。公式の例が付ける `className="font-normal"` は `ui/` の外では `no-restyle` が止めるので、`ui/field.tsx` の variant で書く (`docs/guides/forms-and-inputs.md`「複数選択の形を場面で分ける理由」)
-- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`) で組み、ラベルに className も `weight` も渡さない。太さとカーソルは registry の既定のままで、shadcn の単独 checkbox の例と同じ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
+- 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`) で組み、ラベルに className も `weight` も渡さない (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)
 - `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)
 

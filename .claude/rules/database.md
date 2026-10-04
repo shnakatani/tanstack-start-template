@@ -15,5 +15,5 @@ paths:
 
 ## migration の適用
 
-- `migrateDb()` をアプリの経路から呼ばない。適用の経路が drizzle-kit とアプリの 2 か所に分かれる (`docs/guides/database.md`「migration を起動時に適用しない理由」)
+- `migrateDb()` をアプリの経路から呼ばない (`docs/guides/database.md`「migration を起動時に適用しない理由」)
 - 起動時の適用に変えるときは、`migrateDb()` の呼び出しだけを足さず、DB を作らない前提・migration のフォルダの置き場所・DB のディレクトリの作成・デプロイの手順を一緒に変える。揃えないと、初回の起動で落ちるか、適用の経路が 2 か所に分かれる (`docs/guides/database.md`「起動時に migration を適用する形に変える」)
