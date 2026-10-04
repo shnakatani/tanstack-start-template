@@ -312,6 +312,39 @@ function ReplaceableSelectForm({ onChangeValue, onSubmit }: StoryArgs) {
   );
 }
 
+function RelabelCheckboxForm() {
+  const [label, setLabel] = useState("編集者として割り当て可能");
+  const form = useAppForm({
+    defaultValues: { canEdit: false },
+    validationLogic: revalidateLogic(),
+  });
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.handleSubmit();
+      }}
+    >
+      <FieldGroup>
+        <form.AppField name="canEdit" validators={{ onDynamic: canEditSchema }}>
+          {(field) => <field.FormCheckboxField label={label} fieldValue={field.state.value} />}
+        </form.AppField>
+        <Field orientation="horizontal">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setLabel("管理者として割り当て可能")}
+          >
+            ラベルを変える
+          </Button>
+          <Button type="submit">保存</Button>
+        </Field>
+      </FieldGroup>
+    </form>
+  );
+}
+
 /** 数値フィールド単独のフォーム。他フィールドの検証で submit が止まらない */
 function NumberForm({ onSubmit, onChangeValue }: StoryArgs) {
   const defaultValues: { sortOrder: number | null } = { sortOrder: 1 };
@@ -655,6 +688,21 @@ export const CheckboxValidatorsWarn: Story = {
         },
       ),
     );
+    await expect(consoleWarn).toHaveBeenCalledOnce();
+  },
+};
+
+export const CheckboxWarnsOnceWhenRelabeled: Story = {
+  tags: ["!dev"],
+  render: () => <RelabelCheckboxForm />,
+  beforeEach: captureConsoleWarn,
+  play: async () => {
+    await userEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() => expect(consoleWarn).toHaveBeenCalledOnce());
+
+    await userEvent.click(screen.getByRole("button", { name: "ラベルを変える" }));
+
+    await screen.findByRole("checkbox", { name: "管理者として割り当て可能" });
     await expect(consoleWarn).toHaveBeenCalledOnce();
   },
 };
