@@ -34,6 +34,7 @@ Compiler を入れたコードでも、`useMemo` / `useCallback` は「どの値
 | 値の同一性を精密に制御する箇所 (effect の依存など) | 上から順に当てる。まず依存を外す: 関数や object を effect の中へ移す、最新の値を読むだけなら `useEffectEvent` へ切り出す ([React docs「useEffect」][] の My Effect runs after every re-render、[React docs「useCallback」][] の Preventing an Effect from firing too often)。外せないときに最後の手段として `useMemo` / `useCallback` で包む ([React docs「useEffect」][] の同じ節)。理由は「effect の依存をメモ化より先に外す理由」 |
 
 - キャッシュが捨てられると壊れる値は `useMemo` に持たず、state か ref に持つ。React は開発中の編集や初回 mount 中の suspend でキャッシュを捨てる ([React docs「useMemo」][] の Caveats)
+- Compiler の自動メモ化にも正しさを頼らず、メモ化が無くても正しく動くコードを書く。Compiler が諦めた部品と `"use no memo"` の部品は、変換前のまま動く ([React docs「useMemo」][]: "You should only rely on `useMemo` as a performance optimization. If your code doesn't work without it, find the underlying problem and fix it first."。[React docs「Debugging and Troubleshooting」][]: "verify that your app works correctly without any memoization")
 
 ### 手動メモ化を外すか判定する
 
@@ -75,6 +76,7 @@ const sentinels = (code.match(/memo_cache_sentinel/g) ?? []).length;
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
 [React docs「React Compiler」]: https://react.dev/learn/react-compiler/introduction
+[React docs「Debugging and Troubleshooting」]: https://react.dev/learn/react-compiler/debugging
 [React docs「useEffect」]: https://react.dev/reference/react/useEffect
 [React docs「useCallback」]: https://react.dev/reference/react/useCallback
 [React docs「useMemo」]: https://react.dev/reference/react/useMemo
