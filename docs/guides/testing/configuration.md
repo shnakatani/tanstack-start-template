@@ -64,7 +64,7 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 story とブラウザテストは、アプリと同じく StrictMode の下で描く (ADR-0039)。
 
 - ブラウザテストは `src/test/browser/browser-setup.tsx` の `configure({ reactStrictMode: true })` が、`render` と `renderHook` の全部に効かせる。テストごとに `<StrictMode>` で包み直さない
-- story は `.storybook/preview.tsx` の decorator が包む。decorators の最後に置き、preview の他の decorator を内側に入れる。addon が足す decorator は、どこに置いても StrictMode の外になる。`.storybook/main.ts` の `framework.options.strictMode` では代えない。vitest 経由の story に届かない (ADR-0039)
+- story は `.storybook/preview.tsx` の decorator が包む。decorators の最後に置き、preview の他の decorator を内側に入れる。addon と framework が足す decorator は preview の decorator の外側に来るので、StrictMode の外になる (router と jsxDecorator は除く)。`.storybook/main.ts` の `framework.options.strictMode` では代えない。vitest 経由の story に届かない (ADR-0039)
 - 呼び出しの回数を確かめるテストが StrictMode で 2 回を見たら、期待値でも StrictMode でもなく部品を直す。直し方は `docs/guides/react/effects.md`「開発時の二重実行が示すもの」
 - mount 直後の effect の付け直し (setup → cleanup → setup) が起きるのはブラウザテストだけで、story では起きない。`configure` は StrictMode を root に置き、decorator は story の部品の中に置くため。cleanup の欠けは story では見つからない (ADR-0039)
 - StrictMode が効いていることは、ブラウザテストは `src/test/browser/strict-mode.test.tsx`、story は `src/components/strict-mode.stories.tsx` が確かめる。decorator や `configure` を外すと落ちる
