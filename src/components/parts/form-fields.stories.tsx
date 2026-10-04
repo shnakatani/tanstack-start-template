@@ -45,6 +45,10 @@ const ARCHIVED_OPTIONS = [{ value: "archived", label: "アーカイブ" }];
 
 const RAW_ERROR = { code: "REQUIRED" };
 
+const CHECKBOX_LABEL = "編集者として割り当て可能";
+const RELABELED_CHECKBOX_LABEL = "管理者として割り当て可能";
+const CHECKBOX_WARNING = "[FormCheckboxField] 検証エラーを表示できません (FieldError 非対応)";
+
 /** console.warn を黙らせつつ呼び出しを記録する。story が終わったら復元する */
 const consoleWarn = fn();
 function captureConsoleWarn() {
@@ -160,7 +164,7 @@ function FieldsForm({
         >
           {(field) => (
             <field.FormCheckboxField
-              label="編集者として割り当て可能"
+              label={CHECKBOX_LABEL}
               fieldValue={field.state.value}
               disabled={disabled}
             />
@@ -312,8 +316,9 @@ function ReplaceableSelectForm({ onChangeValue, onSubmit }: StoryArgs) {
   );
 }
 
+/** validators つきの checkbox のラベルを親の state で差し替えるフォーム。検証エラーを変えずに描き直す */
 function RelabelCheckboxForm() {
-  const [label, setLabel] = useState("編集者として割り当て可能");
+  const [label, setLabel] = useState(CHECKBOX_LABEL);
   const form = useAppForm({
     defaultValues: { canEdit: false },
     validationLogic: revalidateLogic(),
@@ -334,7 +339,7 @@ function RelabelCheckboxForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setLabel("管理者として割り当て可能")}
+            onClick={() => setLabel(RELABELED_CHECKBOX_LABEL)}
           >
             ラベルを変える
           </Button>
@@ -514,7 +519,7 @@ export const Disabled: Story = {
 
     // getByRole("checkbox") が返すのは span なので aria で見る。native の disabled は
     // 隣の隠し input が持つが、aria-hidden で accessibility tree に出ない
-    const canEdit = screen.getByRole("checkbox", { name: "編集者として割り当て可能" });
+    const canEdit = screen.getByRole("checkbox", { name: CHECKBOX_LABEL });
     await expect(canEdit).toHaveAttribute("aria-disabled", "true");
     await expect(canEdit.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
   },
@@ -665,9 +670,9 @@ export const SelectBlocksSubmitWhenValueLeftOptions: Story = {
 export const TogglesCheckbox: Story = {
   tags: ["!dev"],
   play: async () => {
-    await userEvent.click(screen.getByText("編集者として割り当て可能"));
+    await userEvent.click(screen.getByText(CHECKBOX_LABEL));
 
-    await expect(screen.getByRole("checkbox", { name: "編集者として割り当て可能" })).toBeChecked();
+    await expect(screen.getByRole("checkbox", { name: CHECKBOX_LABEL })).toBeChecked();
   },
 };
 
@@ -680,30 +685,40 @@ export const CheckboxValidatorsWarn: Story = {
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
     await waitFor(() =>
-      expect(consoleWarn).toHaveBeenCalledWith(
-        "[FormCheckboxField] 検証エラーを表示できません (FieldError 非対応)",
-        {
-          label: "編集者として割り当て可能",
-          errors: [expect.objectContaining({ message: "編集可を選択してください" })],
-        },
-      ),
+      expect(consoleWarn).toHaveBeenCalledWith(CHECKBOX_WARNING, {
+        label: CHECKBOX_LABEL,
+        errors: [expect.objectContaining({ message: "編集可を選択してください" })],
+      }),
     );
     await expect(consoleWarn).toHaveBeenCalledOnce();
   },
 };
 
-export const CheckboxWarnsOnceWhenRelabeled: Story = {
+/** 警告を出し直すのは検証エラーが変わったときだけで、出すときは今のラベルを載せる */
+export const CheckboxWarnsOnlyWhenErrorsChange: Story = {
   tags: ["!dev"],
   render: () => <RelabelCheckboxForm />,
   beforeEach: captureConsoleWarn,
   play: async () => {
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
     await waitFor(() => expect(consoleWarn).toHaveBeenCalledOnce());
+    await expect(consoleWarn).toHaveBeenLastCalledWith(
+      CHECKBOX_WARNING,
+      expect.objectContaining({ label: CHECKBOX_LABEL }),
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "ラベルを変える" }));
-
-    await screen.findByRole("checkbox", { name: "管理者として割り当て可能" });
+    const checkbox = await screen.findByRole("checkbox", { name: RELABELED_CHECKBOX_LABEL });
     await expect(consoleWarn).toHaveBeenCalledOnce();
+
+    // 付けて外すと検証が走り直し、errors は空を経て新しい配列になる
+    await userEvent.click(checkbox);
+    await userEvent.click(checkbox);
+    await waitFor(() => expect(consoleWarn).toHaveBeenCalledTimes(2));
+    await expect(consoleWarn).toHaveBeenLastCalledWith(
+      CHECKBOX_WARNING,
+      expect.objectContaining({ label: RELABELED_CHECKBOX_LABEL }),
+    );
   },
 };
 
