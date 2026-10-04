@@ -66,6 +66,7 @@ const sentinels = (code.match(/memo_cache_sentinel/g) ?? []).length;
 ### React Compiler の診断を読む
 
 - bail out は `vp build` のログに出る (`compiler.logDiagnostics`)。ログの行は `[plugin vite:react-compiler]` で始まり、`error` / `warn` を含まない。`react-compiler` で grep する
+- `react-compiler(Todo)` の診断は、Compiler が未対応の構文に当たり、その関数の最適化を諦めたことを示す。ビルドは止まらず、その関数だけがコンパイル前のまま動く ([React docs「panicThreshold」][] の `'none'`)。コードの誤りではないので、診断を消すために書き換えず、その関数で性能の問題が実際に出たときに限って手を入れる (ADR-0014)。`src/components/ui/` に出たものは ADR-0020「追加と削除の基準」に従う
 - `vp lint -D react/todo` は同じ bail out を file:line つきで報告する (2026-09-02 に同じツリーで件数が一致)。`oxc-transform-react` が非 fatal の診断をビルドログへ出さなくなったときは、こちらをその場で叩く。`react/todo` は設定で有効にしない (ADR-0014「bail out を lint で報告しない」)
 - Compiler の適用が壊れたら、`@vitejs/plugin-react` と `oxc-transform-react` を前の版へ揃えて下げる。babel の経路へは戻さない (ADR-0014)
 
@@ -77,3 +78,4 @@ const sentinels = (code.match(/memo_cache_sentinel/g) ?? []).length;
 [React docs「useEffect」]: https://react.dev/reference/react/useEffect
 [React docs「useCallback」]: https://react.dev/reference/react/useCallback
 [React docs「useMemo」]: https://react.dev/reference/react/useMemo
+[React docs「panicThreshold」]: https://react.dev/reference/react-compiler/panicThreshold
