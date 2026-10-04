@@ -26,9 +26,7 @@ import "@/test/browser/slot-locator";
  */
 vi.mock(import("@/lib/live-announcer"), { spy: true });
 
-/**
- * 部品をアプリと同じく StrictMode の下で描く (ADR-0039)。`render` と `renderHook` の両方に効く
- */
+/** 部品をアプリと同じく StrictMode の下で描く (ADR-0039) */
 configure({ reactStrictMode: true });
 
 /**
