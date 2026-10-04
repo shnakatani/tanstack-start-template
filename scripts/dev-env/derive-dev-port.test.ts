@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { cleanupTempDirs, createTempDir, git, initTempRepo } from "./git-test-utils";
 
 /**
- * 複数 worktree で dev server (`vp dev --port`) を同時起動する際の port 3000 固定衝突を
+ * 複数 worktree で dev server と Storybook を同時起動する際の base の port の衝突を
  * 避けるための scripts/dev-env/derive-dev-port.sh の仕様を機械強制する。main / linked
  * worktree の判定は git-dir / git-common-dir 一致判定を使う。
  */

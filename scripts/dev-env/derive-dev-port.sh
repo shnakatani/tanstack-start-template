@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# dev server (`vp dev --port`) の port を worktree ごとに導出する。
+# dev server (`vp dev --port`) と Storybook (`storybook dev --port`) の port を
+# worktree ごとに導出する。
 #
 #   main checkout    → <base>
 #   linked worktree  → <base>+1 から <base>+999 の決定的な値（worktree 名のハッシュから算出）
 #
-# 複数 worktree で dev server を同時起動すると port 3000 が衝突するため、
+# 複数 worktree で同時起動すると base の port が衝突するため、
 # git-dir と git-common-dir の一致判定で main / linked worktree を判定する。
 # ハッシュ由来のため別名 worktree 同士が同じ port に衝突する可能性はあるが
 # 許容する（衝突しても起動時に気づける。serve は `--strictPort`、
