@@ -6,6 +6,8 @@ paths:
   - "src/test/**"
   - "**/*.test-helpers.*"
   - "tooling/test/**"
+  - "src/**/*.stories.*"
+  - ".storybook/**"
 ---
 
 # テストルール
@@ -118,9 +120,12 @@ paths:
 
 ## StrictMode の下で描く
 
-- ブラウザテストと story は StrictMode の下で描く。`src/test/browser/browser-setup.tsx` の `configure` と `.storybook/preview.tsx` の decorator を外さない (ADR-0039)
-- story の StrictMode を `.storybook/main.ts` の `strictMode` で代えない。vitest 経由の story に届かない (ADR-0039)
-- 呼び出しの回数が StrictMode で 2 回になったら、期待値ではなく部品を直す (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
+- ブラウザテストは `src/test/browser/browser-setup.tsx` の `configure({ reactStrictMode: true })` を外さない。外すと、描画中の副作用と cleanup の欠けた effect が 1 回に見えてテストを通り抜ける (ADR-0039)
+- story は `.storybook/preview.tsx` の StrictMode の decorator を外さない。外すと、描画中の副作用が story を通り抜ける (ADR-0039)
+- StrictMode の decorator は preview の decorators の最後に置く。前に置くと、後ろの decorator が StrictMode の外に出る (ADR-0039)
+- story の StrictMode を `.storybook/main.ts` の `framework.options.strictMode` で代えない。vitest 経由の story に届かず、`mise run verify` と CI では効かない (ADR-0039)
+- cleanup の欠けた effect はブラウザテストで確かめる。story の StrictMode は root にないので、mount 直後の effect を付け直さない (ADR-0039)
+- 呼び出しの回数が StrictMode で 2 回になったら、期待値ではなく部品を直す。期待値を 2 に合わせると、本番でも描き直しのたびに出る副作用をそのまま固定する (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
 
 ## テスト環境制約に遭遇したら
 
