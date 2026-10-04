@@ -99,6 +99,15 @@ describe("derive-dev-port.sh", () => {
     expect(runScript(worktree, ["2660"]).stdout).toBe("2661");
   });
 
+  it("bad port が範囲の上端の 1 つ手前なら、下端へ戻らず上端を返す", () => {
+    const repo = initTempRepo("ddp-repo-cap-");
+    // cksum("wt-1518") % 999 = 997
+    const worktree = addWorktree(repo, "wt-1518");
+
+    // 2661 + 997 + 1 = 3659 (bad port、範囲 2662-3660 の上端の 1 つ手前) → 3660 (上端)
+    expect(runScript(worktree, ["2661"]).stdout).toBe("3660");
+  });
+
   it("同名 worktree は同じ port を返す (決定的)", () => {
     const repoA = initTempRepo("ddp-repo-a-");
     const worktreeA = addWorktree(repoA, "feat-same");
