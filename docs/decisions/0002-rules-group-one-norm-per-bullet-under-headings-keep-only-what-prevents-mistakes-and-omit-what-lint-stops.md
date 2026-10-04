@@ -1,7 +1,7 @@
 # ADR-0002: rules は見出しと箇条書きで 1 項目 1 規範に分け、消したら誤る規範だけを書き、lint が止めるものは書かない
 
 - Status: Accepted
-- Date: 2026-10-01
+- Date: 2026-10-04
 - 関連: ADR-0001 (文書の層と参照の向き) / ADR-0003 (読み込まれる契機で置き場所を決める)
 
 ## Context
@@ -21,7 +21,7 @@ lint・型検査・build は、違反を決定的に止め、エラーメッセ�
 ### rules の 1 項目に書くもの
 
 - 規範 (何をするか、何を禁じるか)。禁止を書くときは正解を対で書く
-- 理由 1 文 (守らないと何が壊れるか)
+- 理由 1 文 (規範の文から読み取れない事情)。その事情があり、消すと誤った判断をするときだけ書く。理由の文にも下の「書くか削るかの判定」を当てる
 - 出典キー 1 つ。その規範を持つ ADR の番号か、ガイドの節を `docs/guides/<file>.md「<見出し>」` の形で指す (ADR-0001)。ライブラリの公式や上流 issue は、その ADR かガイドが引く。Claude Code のツール・skill・MCP の使い方だけを決める規範は rules か AGENTS.md にだけ置くので (ADR-0001)、上流の docs を直接指してよい
 - 選択肢に順序があるならその順序 (先に試すもの、最終手段)
 - 打ち消し不能または検出不能な落とし穴 (破っても静かに壊れるもの)
@@ -36,8 +36,10 @@ lint・型検査・build が止めるものは書かない。書くのは、lint
 
 ### 書くか削るかの判定
 
-1 行ずつ「これを削除したら実装者が誤った選択をするか」を問う。
-答えが No なら削る。Yes ならそれは理由ではなく規範なので残す。
+規範の文にも理由の文にも、1 文ずつ「これを削除したら実装者が誤った選択をするか」を問う。
+答えが No なら削る。Yes なら残す。
+
+理由の文が判定に残るのは、規範の文だけでは読み取れない事情 (ツールやファイルシステムの挙動、機械で検査していないこと、一般的な慣行から外れる理由) を伝えるときである。規範だけを残さず理由を書く根拠は、prompting best practices の「Add context to improve performance」である。指示の背景を伝えることは "can help Claude better understand your goals and deliver more targeted responses" とし、読み上げエンジンの例のあとに "Claude is smart enough to generalize from the explanation." と書く。どの理由を残すかは上の判定 (Best practices の "Would removing this cause Claude to make mistakes?") で決め、規範を裏返しただけの理由 (「X しないと X にならない」の形) は消しても誤らないので削る。
 
 規範は見出しでまとめ、1 項目 (箇条書き 1 つ、または表の 1 セル) に 1 規範を置く。
 公式の memory docs は「CLAUDE.md vs auto memory」の節で "The more specific and concise your instructions, the more consistently Claude follows them." とし、「Write effective instructions」の節で "**Structure**: group related instructions under markdown headers and bullets." を挙げている。この指針は CLAUDE.md について書かれているが、後者の節の Consistency は `.claude/rules/` も CLAUDE.md と並べて見直す対象に挙げており、rules も context として読み込まれるので、rules の項目にも当てる。
@@ -52,24 +54,26 @@ lint・型検査・build が止めるものは書かない。書くのは、lint
 
 ### 検討した選択肢
 
-| 案                                      | 評価                                                                                                              | 採否     |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------- |
-| 規範 + 理由 1 文                        | 失敗の記録は残り、詳細は出典キーで辿れる                                                                          | **採用** |
-| 規範のみ残す                            | 最も短いが、規約を破る場面で理由が 1 クリック先になり形骸化を招く                                                 | 却下     |
-| 構造だけ変える                          | 長い行を分割して表を入れる。引きやすさは改善するが二重管理が残る                                                  | 却下     |
-| lint が止めるものも rules に書く        | 止まる前にも読めるが、lint のメッセージと 2 か所で同じことを持ち、項目が埋もれる                                  | 却下     |
-| 1 項目の字数に上限を置く                | 字数の上限には出典が無く、見出しと箇条書きで 1 項目 1 規範に分ければ足りる                                        | 却下     |
-| 出典に仕様の条項や上流 issue を直接書く | 一次情報へ 1 段で届くが、規範をガイドか ADR に書かずに済んでしまい、rules を差し替えると規範が残らない (ADR-0001) | 却下     |
+| 案                                                                  | 評価                                                                                                                                | 採否     |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 規範を書き、規範から読み取れない事情があるときだけ理由 1 文を添える | 理由の文も削除の判定を通るので、残る理由は規範から読み取れない事情だけになる                                                        | **採用** |
+| すべての項目に規範 + 理由 1 文を書く                                | 規範を裏返しただけの理由が項目ごとに並び、Best practices の "Would removing this cause Claude to make mistakes?" に通らない行が残る | 却下     |
+| 規範のみ残す                                                        | 最も短いが、規範から読み取れない事情 (ファイルシステムの挙動、機械で検査していないこと) が 1 クリック先になり、規範の外の場面で誤る | 却下     |
+| 構造だけ変える                                                      | 長い行を分割して表を入れる。引きやすさは改善するが二重管理が残る                                                                    | 却下     |
+| lint が止めるものも rules に書く                                    | 止まる前にも読めるが、lint のメッセージと 2 か所で同じことを持ち、項目が埋もれる                                                    | 却下     |
+| 1 項目の字数に上限を置く                                            | 字数の上限には出典が無く、見出しと箇条書きで 1 項目 1 規範に分ければ足りる                                                          | 却下     |
+| 出典に仕様の条項や上流 issue を直接書く                             | 一次情報へ 1 段で届くが、規範をガイドか ADR に書かずに済んでしまい、rules を差し替えると規範が残らない (ADR-0001)                   | 却下     |
 
 ## Consequences
 
-- rules から根拠を削るぶん、規約の理由を知るには ADR かガイドを開く手間が増える。理由 1 文を残すことで日常の判断はカバーする
+- rules から根拠を削るぶん、規約の理由を知るには ADR かガイドを開く手間が増える。規範から読み取れない事情だけを理由 1 文で残し、日常の判断はそれで足りるようにする
 - 基準は機械強制できない。レビューで見る
 - lint のルールを外したり緩めたりしたら、そのルールが止めていた規範をガイドに書き、rules に写すかを見直す
 
 ## 出典
 
 - Claude Code Best practices (CLAUDE.md の判定基準 "Would removing this cause Claude to make mistakes?" と、長すぎると規則が埋もれる失敗パターン): https://code.claude.com/docs/en/best-practices
+- Claude API docs: Prompting best practices「Add context to improve performance」("Claude is smart enough to generalize from the explanation."): https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
 - Claude Code: How Claude remembers your project ("Longer files consume more context and reduce adherence."、"The more specific and concise your instructions, the more consistently Claude follows them."、"**Structure**: group related instructions under markdown headers and bullets."、CLAUDE.md の "target under 200 lines per CLAUDE.md file"): https://code.claude.com/docs/en/memory
 - Lost in the Middle: How Language Models Use Long Contexts (context 中間での利用率低下): https://aclanthology.org/2024.tacl-1.9/
 - Context Rot: How Increasing Input Tokens Impacts LLM Performance (入力長に伴う劣化): https://research.trychroma.com/context-rot
