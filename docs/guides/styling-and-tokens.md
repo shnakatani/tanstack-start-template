@@ -46,7 +46,7 @@
 - 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0011) と、汎用の層が負う責務の範囲 (ADR-0016) で決める
 - variant 関数を消費側から呼ぶ形を採るたびに、`tooling/lint/config.ts` の `settings.shadcn.variantFunctions` へ足す。忘れると呼び出しが lint で落ちるので、気付けない失敗にはならない
 - 宣言するのは `ui/` の variant 関数だけにする。`ui/` の外の `cva` を宣言すると、定義の中の class が `no-restyle` に検査されずに部品へ通る (ADR-0023)
-- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら `ui/` の `cva` に variant を足し (台帳への行の足し方は「部品の見た目を変える」)、`ui/` の外の見た目なら部品として切り出す。`ui/` の外で `cva` の variant にしない。`ui/` の外の `cva` は `variantFunctions` へ宣言しないので、その戻り値を部品へ渡すと `require-static-classes` が落とす (`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」)
+- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら「部品の見た目を変える」の表を上の行から当てはめる。既定か公式のノブで済むならそれを採り、`ui/` の `cva` に variant を足すのはデザインが明示的に求めるときである。`ui/` の外の見た目なら部品として切り出す。`ui/` の外で `cva` の variant にしない。`ui/` の外の `cva` は `variantFunctions` へ宣言しないので、その戻り値を部品へ渡すと `require-static-classes` が落とす (`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」)
 
 ### 部品の見た目を変える
 
@@ -138,7 +138,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 ```
 
 - `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である
-- 満たす比は、文字が 4.5:1 (大きな文字は 3:1) ([WCAG 2.2 SC 1.4.3][])、UI 部品とその状態を見分けるのに要る部分と、内容の理解に要る図形が、隣の色に対して 3:1 である ([WCAG 2.2 SC 1.4.11][])。無効な部品のように比を求めない対象は、それぞれの SC の例外が挙げる
+- 満たす比は、文字が 4.5:1 (大きな文字は 3:1) ([WCAG 2.2 SC 1.4.3][])、UI 部品とその状態を見分けるのに要る部分と、内容の理解に要る図形の部分が、隣の色に対して 3:1 である ([WCAG 2.2 SC 1.4.11][])。無効な部品のように比を求めない対象は、それぞれの SC の例外が挙げる
 - light と dark は別に測る。トークンの値がテーマごとに違うので、片方で満たした対がもう片方で割ることがある
 - opacity variant (`bg-primary/10` など) が下地にある対は、その面も `--bg` に重ねて測る。下地との合成で比が変わる
 - 比を書いた箇所を触るときは測り直す。[Understanding SC 1.4.3][] と [Understanding SC 1.4.11][] は計算値を丸めるなと地の文に書いており (WCAG 2.2 本体に記述は無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない
@@ -207,7 +207,7 @@ comm -23 <(grep -oE -- '--[a-z0-9-]+:' node_modules/tailwindcss/theme.css | sort
 
 ### 兄弟の間隔を親の gap に置く理由
 
-兄弟の間隔は、子の margin ではなく親の `gap-*` に置く。間隔の持ち主を親にすると、子は自分が並ぶ文脈を知らなくて済む。子が margin で間隔を持つと、同じ部品を別の並びに置いたときに間隔が付いて回る。
+間隔の持ち主を親にすると、子は自分が並ぶ文脈を知らなくて済む。子が margin で間隔を持つと、同じ部品を別の並びに置いたときに間隔が付いて回る。
 
 ### 比の測り方を置いた理由
 

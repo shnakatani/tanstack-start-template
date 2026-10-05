@@ -17,7 +17,7 @@ palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-ra
 - 破壊操作のボタンは、テキストでもアイコンでも `variant="destructive"` にし、アイコンだけなら `size="icon*"` を合わせる。hover だけの着色は touch 環境で出ない (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)
-- コントラストは文字 4.5:1 (大きな文字は 3:1)、UI 部品と状態を見分ける部分と図形 3:1。対象外は各 SC の例外に限る。dark は light と別に測る。opacity variant は下地との合成で比が変わるので、下地ごと重ねて測る (`docs/guides/styling-and-tokens.md`「比を測る」)
+- コントラストは文字 4.5:1 (大きな文字は 3:1)、UI 部品と状態を見分けるのに要る部分と、内容の理解に要る図形の部分は 3:1。対象外は各 SC の例外に限る。dark は light と別に測る。opacity variant は下地との合成で比が変わるので、下地ごと重ねて測る (`docs/guides/styling-and-tokens.md`「比を測る」)
 - トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0024)
 - 色だけで情報を伝えない。アイコンかテキストを併用し、アイコンだけが伝えるなら `aria-hidden` にして `sr-only` の文字を添える (`docs/guides/accessibility.md`「色以外の手がかりを併せる」)
 
@@ -111,7 +111,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - 表の skeleton の列見出しは、列定義と共有する列見出しの定数から採り、列定義からは採らない (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0026)
 - データなしは `Empty` で組み、何が無いか (`EmptyTitle`) と次に取れる操作 (`EmptyContent` のボタンか、`EmptyDescription` で操作の場所を案内) をそろえる (`docs/guides/lists-and-search.md`「空状態を出す」)
-- 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら `ui/` の `cva` に variant を足し、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
+- 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら「部品の見た目を変える」の順 (既定か公式のノブ → デザインが明示的に求めるときだけ `ui/` の variant) で選び、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
 
 ## 操作できる要素の組み方
 
