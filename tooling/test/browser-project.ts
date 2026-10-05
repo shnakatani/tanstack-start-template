@@ -10,7 +10,7 @@ import { chromiumProjectBase, NO_COMPILER_DIR } from "./chromium-project";
  * 走る project に共通する設定は `chromiumProjectBase` から重ねるので、ここにはブラウザテストに固有の
  * ものだけを書き、playwright の provider は関数の中で読み込む (`docs/guides/testing/configuration.md`「project を足す」)。
  *
- * React Compiler を通す project は全部のブラウザテストを、通さない project は `src/components/ui/` の
+ * React Compiler を通す project は全部のブラウザテストを、通さない project は `NO_COMPILER_DIR` の
  * テストだけを集める (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)
  */
 export async function browserProject({ compiler }: { compiler: boolean }) {

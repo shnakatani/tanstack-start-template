@@ -42,23 +42,24 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 
 - root の plugin をテストで外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST === "true"` の分岐から外す。config を分けない (「判定を `process.env.VITEST` で書く理由」)
 - テストの分岐は plugin を返さない。外す plugin ごとの理由は「テストの分岐で plugin を外す理由」
-- React の plugin は `tooling/plugins/react.ts` の `reactPlugin` から作り、テストの分岐と project で別の `viteReact()` を書かない。呼び出しごとに変わるのは Compiler の有無だけで、Compiler の設定と `viteReact` のほかの option は共有する。別に書くと、アプリとテストで option が食い違っても、テストは全部通る (「テストでも React Compiler を通す理由」)
+- React の plugin は `tooling/plugins/react.ts` の `reactPlugin` から作り、テストの分岐と project で別の `viteReact()` を書かない。`viteReact` の作り方を 1 か所にし、アプリとテストの違いを `compiler` と `logDiagnostics` の 2 つに限る。別に書くと、ほかの option がアプリとテストで食い違っても、テストは全部通る
 - React の plugin と `tailwindcss()` は、ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す。Node の project には要らない。`.tsx` は Vite+ の既定の JSX 変換が扱う
 - `logDiagnostics` はアプリの分岐だけが立てる (「テストでも React Compiler を通す理由」)
 
 ### React Compiler を通さない project を足す
 
-`src/components/ui/` は、Compiler を通す project と通さない project の両方で走らせる (「テストでも React Compiler を通す理由」)。通さない project は次のとおり。
+`src/components/ui/` は、Compiler を通す project と通さない project の両方で走らせる (「テストでも React Compiler を通す理由」)。範囲は `tooling/test/chromium-project.ts` の `NO_COMPILER_DIR` が持ち、通さない 2 つの project はどちらもここから組み立てる。通さない project は次のとおり。
 
-| project                       | 集めるもの                        | 組み方                                                                                                                                                                                                                                                                                                                                            |
-| ----------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `browser-no-compiler`         | `src/components/ui/**/*.test.tsx` | `browserProject({ compiler: false })`。`include` で絞る                                                                                                                                                                                                                                                                                           |
-| `storybook-light-no-compiler` | `src/components/ui/` の story     | `storybookProject({ theme: "light", compiler: false })`。`@storybook/addon-vitest` は `test.include` を無視する (`The values you passed to "test.include" will be ignored`) ので、`test.exclude` で `src/components/ui/` の外の story を除く。事前バンドルの `cacheDir` も project ごとに分ける (「story の project の `cacheDir` を分ける理由」) |
+| project                       | 集めるもの                        | 組み方                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `browser-no-compiler`         | `src/components/ui/**/*.test.tsx` | `browserProject({ compiler: false })`。`NO_COMPILER_DIR` から `include` を組み立てて絞る                                                                                                                                                                                                                                                                                          |
+| `storybook-light-no-compiler` | `src/components/ui/` の story     | `storybookProject({ theme: "light", compiler: false })`。`@storybook/addon-vitest` は `test.include` を無視する (`The values you passed to "test.include" will be ignored`) ので、`NO_COMPILER_DIR` から `test.exclude` を組み立て、`src/components/ui/` の外の story を除く。事前バンドルの `cacheDir` も project ごとに分ける (「story の project の `cacheDir` を分ける理由」) |
 
 - `src/components/ui/` の外のテストと story を、Compiler を通さない project に入れない。アプリのコードのブラウザモードのテストは、Compiler を通す project だけで走らせる
 - story の Compiler を通さない project は light だけにし、dark を足さない (「テストでも React Compiler を通す理由」)
 - Storybook 経由の実行 (`VITEST_STORYBOOK` が真) では、story の Compiler を通さない project を作らない。addon が project 名を `storybook:<configDir>` へ上書きするので、作ると `Project name ... is not unique` で止まる (ADR-0028)
 - 足したあとは `vp test list --filesOnly` で、Compiler を通さない project に `src/components/ui/` のファイルだけが集まることを見る
+- `src/components/ui/` のテストを手で走らせるときは、`--project` を付けずにファイルを指定する (`vp test run src/components/ui/calendar.test.tsx`)。指定したファイルを集めるすべての project で走る (`*.test.tsx` は 2 つ、story は 3 つ)。`--project browser` で絞ると、Compiler を通す側だけになる
 
 ### ブラウザと story の project に事前バンドルする依存を足す
 
