@@ -1,11 +1,8 @@
-import { posix } from "node:path";
-
 import { defineProject, mergeConfig } from "vite-plus/test/config";
 
+import storybookMain from "../../.storybook/main";
+import { excludeStoriesOutside } from "../../scripts/lib/storybook-stories";
 import { chromiumProjectBase, NO_COMPILER_DIR } from "./chromium-project";
-
-/** `.storybook/main.ts` の stories が集める起点 */
-const STORIES_ROOT = "src/components";
 
 /** `@storybook/addon-themes` の global 名 (ADR-0028) */
 type StorybookTheme = "light" | "dark";
@@ -23,12 +20,6 @@ export async function storybookProject({
   compiler: boolean;
 }) {
   const variant = compiler ? theme : `${theme}-no-compiler`;
-  // 除外は stories の起点の直下で組むので、範囲が起点の直下でなくなったら黙って広がらないように止める
-  if (!compiler && posix.dirname(NO_COMPILER_DIR) !== STORIES_ROOT) {
-    throw new Error(
-      `NO_COMPILER_DIR (${NO_COMPILER_DIR}) が .storybook/main.ts の stories の起点 (${STORIES_ROOT}) の直下に無い。除外の組み方を変える`,
-    );
-  }
   // root の `vite.config.ts` を継承し、共通の設定は chromiumProjectBase から重ねるので、story の実行に
   // 固有のものだけを書き、重い依存は関数の中で読み込む (`docs/guides/testing/configuration.md`「project を足す」)
   const [{ storybookTest }, { playwright }] = await Promise.all([
@@ -61,14 +52,7 @@ export async function storybookProject({
       },
       test: {
         name: `storybook-${variant}`,
-        // addon は `include` を無視して `.storybook/main.ts` の stories (`src/components` の下) から集めるので、
-        // stories の起点の直下の story と、起点の下の `NO_COMPILER_DIR` 以外を除く
-        exclude: compiler
-          ? []
-          : [
-              `${STORIES_ROOT}/*.stories.*`,
-              `${STORIES_ROOT}/!(${posix.basename(NO_COMPILER_DIR)})/**`,
-            ],
+        exclude: compiler ? [] : excludeStoriesOutside(storybookMain.stories, NO_COMPILER_DIR),
         browser: {
           provider: playwright(),
           // viewport はここで指定できない (docs/guides/storybook.md「vitest 経由の story の viewport が決まる仕組み」)

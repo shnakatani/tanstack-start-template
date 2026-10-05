@@ -32,7 +32,7 @@ function storybookProjects(): TestProjectConfiguration[] {
     // Vitest は --project で絞る前に関数の project を全部呼ぶので、story を回さない実行でも出る
     if (storybookRun)
       console.warn(
-        "[storybook] VITEST_STORYBOOK が真なので light の Compiler を通す project だけを回す (ADR-0028)",
+        "[storybook] VITEST_STORYBOOK が真なので light の Compiler を通す project だけを回す (ADR-0028、docs/guides/testing/configuration.md「React Compiler を通さない project を足す」)",
       );
     return storybookProject(variant);
   });
@@ -78,7 +78,7 @@ export const testConfig = {
       },
     },
     () => browserProject({ compiler: true }),
-    // src/components/ui/ は Compiler を通さずにも走らせる (docs/guides/testing/configuration.md「テストでも React Compiler を通す理由」)
+    // NO_COMPILER_DIR は Compiler を通さずにも走らせる (docs/guides/testing/configuration.md「テストでも React Compiler を通す理由」)
     () => browserProject({ compiler: false }),
     ...storybookProjects(),
   ],
