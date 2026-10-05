@@ -100,7 +100,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 - 呼び出し側は先に mount を待たなくてよい。helper 自身が poll し、要素が無ければ `element()` の throw (`Cannot find element with locator: …`) がそのまま失敗文になる
 - 一部が見えていること (`ratio` 0) は、公式の `toBeInViewport()` のまま使う。End キーで最下部へ届くことの検証は公式の matcher で足りる
 - `max-height` を `toHaveStyle` で見る形は採らない。Tailwind の class を写す同語反復で、収まるかどうかは内容の高さと viewport で決まる
-- 溢れる内容を flex column の中に作るときは、中身の無い要素の高さを `minHeight` で与える。flex item は既定で容器に収まるまで縮み ([MDN「flex-shrink」][])、縮む下限は指定した高さと中身の高さの小さい方になる ([CSS Flexbox Level 1][] 4.5「Automatic Minimum Size of Flex Items」)。中身の無い要素に `height` で与えた高さは下限にならず、容器に収まって溢れない。`min-height` は縮む下限になる
+- 溢れる内容を flex column の中に作るときは、高さを `minHeight` で与える。flex item は既定で容器に収まるまで縮み ([MDN「flex-shrink」][])、縮む下限は指定した高さと中身の高さの小さい方になる ([CSS Flexbox Level 1][] 4.5「Automatic Minimum Size of Flex Items」)。中身が与えた高さより低いと、`height` で与えた高さは下限にならず、容器に収まって溢れない。`min-height` は縮む下限になる
 
 ### 状態を semantic matcher で確かめる
 
