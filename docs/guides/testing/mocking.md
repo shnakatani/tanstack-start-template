@@ -1,6 +1,6 @@
 # テストのモジュール差し替え
 
-テストで `vi.mock` を使ってモジュールを差し替えるときの形の選び方と、`__mocks__` の置き方、環境変数とグローバルの差し替えを持つ。
+テストで `vi.mock` を使ってモジュールを差し替えるときの形の選び方と、`__mocks__` の置き方、戻り値の決め方、呼び出しの履歴の読み方、環境変数とグローバルの差し替えを持つ。
 
 ## how-to
 
@@ -35,6 +35,12 @@
 - 未消費の `mock*Once` は、引数を問わず `vi.when` より先に使われる (2026-09-28、vitest 5.0.1 で実測)
 - `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、`vi.mocked(fn).mock.results` を見る
 - `mock.results` には `vi.when: no behavior defined when called with [...]` の例外と、渡った引数が入る (文言の形は [Vitest docs のレシピ「Conditional Mocking with vi.when」][] の `onUnmatched` の例)
+- 楽観表示は `deferMock` で応答の決着を握って確かめる。`mockRejectedValue` は呼ばれた時点で reject するので、決着前の楽観表示が見えない
+- 楽観表示のテストの assert は、楽観表示の確認、`reject()`、元に戻ったことの確認の順に並べる
+
+### 呼び出しの履歴を読む
+
+- `mock.calls` を受ける helper の引数は `unknown[][]` で型注釈する。型引数なしの `vi.fn()` の `mock.calls` は `any[][]` に、型付きの mock では引数の型の配列になる (`@vitest/spy` の `Mock` の `calls: MockParameters<T>[]`)。`unknown[][]` はどちらも受け、要素を読む側で型を絞ることになる。`any[][]` にすると、呼び出しの形を読み違えても型検査が止めない
 
 ### 環境変数とグローバルを差し替える
 
