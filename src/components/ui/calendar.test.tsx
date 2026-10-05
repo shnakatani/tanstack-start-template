@@ -38,10 +38,12 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
       .toHaveFocus();
   });
 
-  // 上流は components の Root などを Calendar の描画ごとにインラインの関数で作る。
+  // 上流は components の Root などを Calendar の描画中に定義する。
   // 関数が変わると React は別の型として DOM を作り直し、フォーカス中のボタンも消える。
   // 利用者に見える症状であるフォーカスの喪失で測る。日のボタンは作り直されても
-  // CalendarDayButton の effect がフォーカスを戻すので、戻す仕組みの無い月の移動ボタンで見る
+  // CalendarDayButton の effect がフォーカスを戻すので、戻す仕組みの無い月の移動ボタンで見る。
+  // Compiler は描画中の定義を関数の外出しとメモ化で隠すので、乖離が消えたことを検出するのは
+  // browser-no-compiler の project である (docs/guides/testing/configuration.md「テストでも React Compiler を通す理由」)
   it("親が再描画しても、フォーカス中の月の移動ボタンからフォーカスが外れない", async () => {
     const screen = await renderCalendar();
     const previous = screen.getByRole("button", { name: "Go to the Previous Month" });

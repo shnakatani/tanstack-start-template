@@ -3,22 +3,38 @@ import type { TestProjectConfiguration, TestUserConfig } from "vite-plus/test/co
 import { companionGlobs } from "../../scripts/lib/companion-files";
 import { isStorybookRun } from "../../scripts/lib/storybook-env";
 import { browserProject } from "./browser-project";
-import { STORYBOOK_THEMES, storybookProject } from "./storybook-project";
+import { storybookProject } from "./storybook-project";
+
+type StorybookVariant = Parameters<typeof storybookProject>[0];
 
 /**
- * テーマごとの project を並べる。Storybook 経由の実行だけ light の 1 つに絞り、
- * `vp test run` と `mise run verify` は両テーマを回す (ADR-0028、storybookjs/storybook#32427)
+ * story の project。テーマは両方を Compiler を通して回し (ADR-0028)、Compiler を通さない project は
+ * light だけにする (docs/guides/testing/configuration.md「テストでも React Compiler を通す理由」)
+ */
+const STORYBOOK_VARIANTS: readonly StorybookVariant[] = [
+  { theme: "light", compiler: true },
+  { theme: "dark", compiler: true },
+  { theme: "light", compiler: false },
+];
+
+/**
+ * story の project を並べる。Storybook 経由の実行だけ light の Compiler を通す 1 つに絞り、
+ * `vp test run` と `mise run verify` は全部を回す (ADR-0028、storybookjs/storybook#32427)
  */
 function storybookProjects(): TestProjectConfiguration[] {
   const storybookRun = isStorybookRun(process.env.VITEST_STORYBOOK);
-  const themes = storybookRun ? (["light"] as const) : STORYBOOK_THEMES;
-  return themes.map((theme) => () => {
-    // VITEST_STORYBOOK がシェルに残ったまま `vp test run` を叩くと dark の a11y 検査が黙って消えるので知らせる。
+  const variants = storybookRun
+    ? STORYBOOK_VARIANTS.filter((variant) => variant.theme === "light" && variant.compiler)
+    : STORYBOOK_VARIANTS;
+  return variants.map((variant) => () => {
+    // VITEST_STORYBOOK がシェルに残ったまま `vp test run` を叩くと dark と Compiler なしの story が黙って消えるので知らせる。
     // 関数の中で出す (docs/guides/vite-configuration.md「読み込むだけで起きる副作用を持たせない理由」)。
     // Vitest は --project で絞る前に関数の project を全部呼ぶので、story を回さない実行でも出る
     if (storybookRun)
-      console.warn("[storybook] VITEST_STORYBOOK が真なので light だけを回す (ADR-0028)");
-    return storybookProject(theme);
+      console.warn(
+        "[storybook] VITEST_STORYBOOK が真なので light の Compiler を通す project だけを回す (ADR-0028、docs/guides/testing/configuration.md「React Compiler を通さない project を足す」)",
+      );
+    return storybookProject(variant);
   });
 }
 
@@ -61,7 +77,9 @@ export const testConfig = {
         testTimeout: 20_000,
       },
     },
-    browserProject,
+    () => browserProject({ compiler: true }),
+    // NO_COMPILER_DIR は Compiler を通さずにも走らせる (docs/guides/testing/configuration.md「テストでも React Compiler を通す理由」)
+    () => browserProject({ compiler: false }),
     ...storybookProjects(),
   ],
   coverage: {

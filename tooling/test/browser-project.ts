@@ -3,17 +3,20 @@ import { defineProject, mergeConfig } from "vite-plus/test/config";
 import { BROWSER_TEST_GLOB } from "../../scripts/lib/companion-files";
 import { ASSERT_TIMEOUT_MS } from "../../src/test/browser/assert-budget";
 import { DEFAULT_VIEWPORT } from "../../src/test/browser/viewport-sizes";
-import { chromiumProjectBase } from "./chromium-project";
+import { chromiumProjectBase, NO_COMPILER_DIR } from "./chromium-project";
 
 /**
  * ブラウザテストの project。inline の project として root の `vite.config.ts` を継承し、ブラウザで
  * 走る project に共通する設定は `chromiumProjectBase` から重ねるので、ここにはブラウザテストに固有の
- * ものだけを書き、playwright の provider は関数の中で読み込む (`docs/guides/testing/configuration.md`「project を足す」)
+ * ものだけを書き、playwright の provider は関数の中で読み込む (`docs/guides/testing/configuration.md`「project を足す」)。
+ *
+ * React Compiler を通す project は全部のブラウザテストを、通さない project は `NO_COMPILER_DIR` の
+ * テストだけを集める (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)
  */
-export async function browserProject() {
+export async function browserProject({ compiler }: { compiler: boolean }) {
   const { playwright } = await import("vite-plus/test/browser-playwright");
   return mergeConfig(
-    chromiumProjectBase(),
+    chromiumProjectBase({ compiler }),
     defineProject({
       optimizeDeps: {
         // テストの実行中に初めて到達した依存は、再バンドルと reload をまたいだ React の二重解決で落ちる。
@@ -36,7 +39,7 @@ export async function browserProject() {
         ],
       },
       test: {
-        name: "browser",
+        name: compiler ? "browser" : "browser-no-compiler",
         // assert の予算。値は `src/test/browser/assert-budget.ts` が持ち、`actionTimeout` と対で効く
         // (docs/guides/testing/waiting-and-assertions.md「assert の予算を宣言する」)
         expect: { poll: { timeout: ASSERT_TIMEOUT_MS } },
@@ -55,7 +58,7 @@ export async function browserProject() {
           },
         ],
         setupFiles: ["src/test/browser/browser-setup.tsx"],
-        include: [BROWSER_TEST_GLOB],
+        include: [compiler ? BROWSER_TEST_GLOB : `${NO_COMPILER_DIR}/**/*.test.tsx`],
         browser: {
           // 操作の上限を置き (vitest-dev/vitest#6983)、`expect.poll.timeout` を `expect.element` へ届かせる
           // (vitest-dev/vitest#8308、vitest-dev/vitest#7871。docs/guides/testing/waiting-and-assertions.md「assert の予算を分ける理由」)

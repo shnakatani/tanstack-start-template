@@ -1,13 +1,25 @@
 import { defineProject, mergeConfig } from "vite-plus/test/config";
 
-import { chromiumProjectBase } from "./chromium-project";
+import storybookMain from "../../.storybook/main";
+import { excludeStoriesOutside } from "../../scripts/lib/storybook-stories";
+import { chromiumProjectBase, NO_COMPILER_DIR } from "./chromium-project";
 
-export const STORYBOOK_THEMES = ["light", "dark"] as const;
+/** `@storybook/addon-themes` の global 名 (ADR-0028) */
+type StorybookTheme = "light" | "dark";
 
 /**
- * テーマごとに 1 つの project を作る (ADR-0028)。`theme` は `@storybook/addon-themes` の global 名
+ * テーマごとに 1 つの project を作る (ADR-0028)。
+ * `compiler` が偽の project は React Compiler を通さず、`NO_COMPILER_DIR` の story だけを走らせる
+ * (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)
  */
-export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number]) {
+export async function storybookProject({
+  theme,
+  compiler,
+}: {
+  theme: StorybookTheme;
+  compiler: boolean;
+}) {
+  const variant = compiler ? theme : `${theme}-no-compiler`;
   // root の `vite.config.ts` を継承し、共通の設定は chromiumProjectBase から重ねるので、story の実行に
   // 固有のものだけを書き、重い依存は関数の中で読み込む (`docs/guides/testing/configuration.md`「project を足す」)
   const [{ storybookTest }, { playwright }] = await Promise.all([
@@ -15,17 +27,17 @@ export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number])
     import("vite-plus/test/browser-playwright"),
   ]);
   return mergeConfig(
-    chromiumProjectBase(),
+    chromiumProjectBase({ compiler }),
     defineProject({
       plugins: [
         storybookTest({ configDir: ".storybook", initialGlobals: { theme } }),
-        // 事前バンドルのキャッシュをテーマごとに分ける。相対ではなく固定値で組み立てる
-        // (docs/guides/testing/configuration.md「story の project の `cacheDir` をテーマで分ける理由」)
+        // 事前バンドルのキャッシュを project ごとに分ける。相対ではなく固定値で組み立てる
+        // (docs/guides/testing/configuration.md「story の project の `cacheDir` を分ける理由」)
         {
-          name: "storybook-theme-cache-dir",
+          name: "storybook-cache-dir",
           config: {
             order: "post" as const,
-            handler: () => ({ cacheDir: `node_modules/.cache/storybook-vitest/${theme}` }),
+            handler: () => ({ cacheDir: `node_modules/.cache/storybook-vitest/${variant}` }),
           },
         },
       ],
@@ -39,7 +51,8 @@ export async function storybookProject(theme: (typeof STORYBOOK_THEMES)[number])
         // (docs/guides/testing/configuration.md「project に `optimizeDeps` を書く理由」)
       },
       test: {
-        name: `storybook-${theme}`,
+        name: `storybook-${variant}`,
+        exclude: compiler ? [] : excludeStoriesOutside(storybookMain.stories, NO_COMPILER_DIR),
         browser: {
           provider: playwright(),
           // viewport はここで指定できない (docs/guides/storybook.md「vitest 経由の story の viewport が決まる仕組み」)
