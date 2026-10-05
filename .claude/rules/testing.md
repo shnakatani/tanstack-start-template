@@ -31,14 +31,14 @@ paths:
 
 - `expectTypeOf` だけのテストは `*.test-d.ts` に置き、実行するテストと同じファイルに書かない。`*.test.ts(x)` に書くと、型しか確かめないテストが `vp test run` で pass として数えられる (`docs/guides/testing/type-tests.md`「`*.test-d.ts` に分ける理由」)
 
-スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める。
+スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)。
 
-| 対象                                                                | 置き場所                     | 理由                                                                       |
-| ------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`response-headers.ts`)              |
-| テストだけが使う fixture                                            | そのテストと同じディレクトリ | `scripts/lib/` に置くと共有物と見分けが付かない (`git-test-utils.ts`)      |
-| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`derive-dev-port.sh` と隣の `.ts`)                   |
-| 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読まれるだけのファイルが見分けられない (`contrast/`) |
+| 対象                                                                | 置き場所                     | 理由                                                                                                                                          |
+| ------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`response-headers.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)              |
+| テストだけが使う fixture                                            | そのテストと同じディレクトリ | `scripts/lib/` に置くと共有物と見分けが付かない (`git-test-utils.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)      |
+| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`derive-dev-port.sh` と隣の `.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)                   |
+| 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読まれるだけのファイルが見分けられない (`contrast/`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」) |
 
 - 検査は `scripts/checks/` の下へ置く。外へ置くと `scripts-tools` へ合流し、落ちたときに直す対象が読めなくなる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - project を足したら `tooling/test/config.ts` の `projects` に追加する。include に一致しないテストは無言で 1 度も走らない (`docs/guides/testing/configuration.md`「project を足す」)
