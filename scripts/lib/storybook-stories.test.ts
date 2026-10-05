@@ -8,9 +8,15 @@ const NOT_ONE_ROOT = "1 つの起点を持つ glob ではない";
 describe("excludeStoriesOutside", () => {
   test("stories の起点の直下の story と、起点の下の dir 以外を除く", () => {
     expect(excludeStoriesOutside(STORIES, "src/components/ui")).toEqual([
-      "src/components/*.stories.*",
+      "src/components/*.stories.@(ts|tsx)",
       "src/components/!(ui)/**",
     ]);
+  });
+
+  test("起点の直下の story は stories のファイル名の glob で除く", () => {
+    expect(
+      excludeStoriesOutside(["../src/components/**/*.story.tsx"], "src/components/ui"),
+    ).toEqual(["src/components/*.story.tsx", "src/components/!(ui)/**"]);
   });
 
   test("dir が stories の起点の直下に無ければ止まる", () => {
@@ -34,6 +40,6 @@ describe("excludeStoriesOutside", () => {
     ).toThrow(NOT_ONE_ROOT);
     expect(() =>
       excludeStoriesOutside(() => Promise.resolve(STORIES), "src/components/ui"),
-    ).toThrow(NOT_ONE_ROOT);
+    ).toThrow("(関数)");
   });
 });
