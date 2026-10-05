@@ -64,8 +64,8 @@ paths:
 
 ## 境界値
 
-- 境界値テストは期待値の数式をコメントで先に書く (例: `// 900 + 200 = 1100 → slice(-1000) で先頭 100 件破棄`)
-- cap の境界値は `cap-1 / cap / cap+1` の 3 点で見る
+- 境界値テストは期待値の数式をコメントで先に書く。例は `// 900 + 200 = 1100 → slice(-1000) で先頭 100 件破棄` (`docs/guides/testing/boundary-values.md`「境界値を確かめる」)
+- cap の境界値は `cap-1 / cap / cap+1` の 3 点で見る (`docs/guides/testing/boundary-values.md`「境界値を確かめる」)
 
 ## 状態のアサートは semantic matcher を先に探す
 
