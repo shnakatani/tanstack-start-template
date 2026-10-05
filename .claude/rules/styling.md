@@ -108,9 +108,9 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - skeleton はレイアウトを模倣し (`table-skeleton.tsx`)、図形を `aria-hidden` にして「読み込み中」の文言を区画に 1 つだけ置く。図形ごとに置くと同じ文言が数だけ読まれる (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - 表の skeleton は本物の列見出しを持つ table として見せ、`<table>` に role を載せない。載せると `th` と `td` が role を失う (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - route の pending 表示 (skeleton と `PendingContent`) に `aria-busy` を付けない。JAWS が要素ごと読み飛ばす (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
-- 列見出しなど実テーブルと合わせる値は、両方が参照する定数に置く。別々に持つとロード完了時にレイアウトがずれる
+- 表の skeleton の列見出しは、列定義と共有する列見出しの定数から採り、列定義からは採らない (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0026)
-- データなしは `Empty` 系で、メッセージと次のアクションへの導線をセットで示す
+- データなしは `Empty` で組み、何が無いか (`EmptyTitle`) と次に取れる操作 (`EmptyContent` のボタンか、`EmptyDescription` で操作の場所を案内) をそろえる (`docs/guides/lists-and-search.md`「空状態を出す」)
 - 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら `ui/` の `cva` に variant を足し、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
 
 ## 操作できる要素の組み方
