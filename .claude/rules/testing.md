@@ -69,33 +69,33 @@ paths:
 
 ## 状態のアサートは semantic matcher を先に探す
 
-`toHaveAttribute` か `querySelector` を書く前に下表を見る。ユーザーから見た状態を先に見る (Testing Library の Guiding Principles)。
+`toHaveAttribute` か `querySelector` を書く前に下表を見る。ユーザーから見た状態を先に見る (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)。
 
 | 見たいもの                                                       | 使うもの                                                                                                                                                          |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 検証エラー (`aria-invalid` / `checkValidity`)                    | `toBeInvalid()`                                                                                                                                                   |
-| 選択状態 (`aria-checked` / native checked)                       | `toBeChecked()`                                                                                                                                                   |
+| 検証エラー (`aria-invalid` / `checkValidity`)                    | `toBeInvalid()` (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)                                                           |
+| 選択状態 (`aria-checked` / native checked)                       | `toBeChecked()` (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)                                                           |
 | 無効 (native `disabled`、`aria-disabled`、Base UI の `Checkbox`) | `toBeDisabled()` / `toBeEnabled()`。Vitest の matcher は `aria-disabled` も見る (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」) |
-| `aria-describedby` が指す文言                                    | `toHaveAccessibleDescription()`                                                                                                                                   |
-| accessible name                                                  | `toHaveAccessibleName()`                                                                                                                                          |
+| `aria-describedby` が指す文言                                    | `toHaveAccessibleDescription()` (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)                                           |
+| accessible name                                                  | `toHaveAccessibleName()` (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)                                                  |
 
 - native の `disabled` と `aria-disabled` のどちらで無効にしたかを確かめるときだけ、属性を `toHaveAttribute` で見る。`toBeDisabled` はどちらでも通る (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」)
 - `aria-busy` は `toHaveAttribute("aria-busy", …)` で見る。`getByRole` に `busy` を渡さない。Vitest の locator に `busy` は無く、変数で渡すと型検査を抜けて黙って捨てられる (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」)
-- Base UI の styling hook (`data-checked` 等) は見た目を駆動する属性なので属性で見てよい。ARIA 側と重ねるときは別々に付くことをコメントに残す
-- `querySelector` で掴むのは accessibility tree に差が出ない対象に限り、理由を実装近傍に書く。書けないならそのアサートは消す
-- 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (`ActionButtonShell` の `toHaveAccessibleName`)
+- Base UI の styling hook (`data-checked` 等) は見た目を駆動する属性なので属性で見てよい。ARIA 側と重ねるときは別々に付くことをコメントに残す (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)
+- `querySelector` で掴むのは accessibility tree に差が出ない対象に限り、理由を実装近傍に書く。書けないならそのアサートは消す (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)
+- 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)
 
 ## assertion helper と型ナローイング
 
-- assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と名指しした関数だけ (ADR-0007)
-- assert を含むヘルパー (操作のあとに待つものを含む) は `vi.defineHelper` で包む。包まないと失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない。包んだ helper を包まない helper から呼んでも同じになる (vitest docs の api/vi「vi.defineHelper」)
-- 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
-- ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
+- assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と名指しした関数だけ (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
+- assert を含むヘルパー (操作のあとに待つものを含む) は `vi.defineHelper` で包む。包まないと失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない。包んだ helper を包まない helper から呼んでも同じになる (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
+- 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
+- ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - テストの中で残す注意 (合否に入れないが読ませたいもの) は、テストの文脈の `annotate(message, "warning")` で残し、`console.warn` に出さない。`console.warn` は PR の画面に出ない (`docs/guides/testing/annotations.md`「`console.warn` ではなく注釈で残す理由」)
 - 注釈を残す helper はテストの文脈を引数で受ける。`TestRunner.getCurrentTest()` は並行するテストで別のテストを指す (`docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」)
 - 手元の default reporter は通ったテストの注釈を出さない。a11y の注釈は `mise run a11y:incomplete` で読み、ほかは `--reporter=verbose` を付けて走らせる (`docs/guides/testing/annotations.md`「注釈を読む」)
 - Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (`docs/guides/testing/annotations.md`「注釈を残す」)
-- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)
+- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - announcer の通知は `expectAnnouncements` / `readAnnouncements` で呼び出しの履歴を読み、配列を丸ごと比べる。live region のノードは寿命で消え、region を読むと後から出た同じ文言の通知と取り違える (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 - 通知が出なかったことは後に出る通知までの並びで示し、後の通知が無いか出る時点を確かめるときだけ、肯定 assert を待ってから 1 回読む。肯定 assert を待たない 1 回読みは、まだ出ていないだけの状態で通る (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 
@@ -163,7 +163,7 @@ paths:
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/assert/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えない。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
-- locator は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される
+- locator は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 
 ## ブラウザテストの CSS とレイアウト実測
 
@@ -171,7 +171,7 @@ paths:
 
 - viewport 定数と `expectWithinViewport` は `src/test/assert/viewport.ts`。`page.viewport()` で変えたら `afterEach` で `DEFAULT_VIEWPORT` へ戻す (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
 - 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。面積 0 の潰れた要素が通り、失敗文にはみ出した辺と px が出ない (`docs/guides/testing/waiting-and-assertions.md`「viewport の収まりを自前の helper で測る理由」)
-- 既定 viewport は `tooling/test/browser-project.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる
+- 既定 viewport は `tooling/test/browser-project.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
 - スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
@@ -182,7 +182,7 @@ paths:
 - animation を戻すテストは `.concurrent` を付けずに書き、並行の `describe` の外に置く。page 全体に効き、並行する別のテストの animation も戻る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
-- 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない
+- 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
 - マウス位置を動かすテストは、overlay が閉じる前に `parkMouse()` で戻す。露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
 - モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、既定が立つ前の状態を読む (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 

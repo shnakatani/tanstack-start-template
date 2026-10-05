@@ -26,6 +26,7 @@
 - `toHaveTextContent` は受け取った側のテキストの NBSP (U+00A0) を空白に置き換えてから比べ、期待値は置き換えない。`normalizeWhitespace: false` でも置き換わる。期待値に NBSP を書くと、肯定は必ず落ち、`.not.toHaveTextContent` は必ず通る。空白を書いた期待値は NBSP が失われても通る。NBSP そのものを確かめるなら `element().textContent` を読む ([Vitest の `toHaveTextContent.ts`][])
 - 変化しないことの検証 (disabled な行がトグルしない等) は retry では強くならない。`expect.element` は条件を満たした時点で返るので、更新の前に成功しうる。待つ対象がある検証へ言い換えられないかを先に考える
 - 生 DOM を読む箇所が「操作を挟んだか」で待ち方を誤っても、テストは大半の実行で通る。lint が止めるのは同期読みを assert へ流す形だけなので (ADR-0009)、残りはレビューで見る
+- `locator.element()` と `query()` は、複数の要素に一致すると throw する ([Vitest docs「Locators」][]: "Single-element escape hatches like `.element()` and `.query()` are strict and throw if multiple elements match.")。1 件だけに一致することを assert の前提に使うなら、その依拠を実装の近くのコメントに書く。書かないと、前提と知られずに一致を広げる変更で崩される
 
 ### 同期読みを書き換える
 
@@ -99,6 +100,23 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 - 呼び出し側は先に mount を待たなくてよい。helper 自身が poll し、要素が無ければ `element()` の throw (`Cannot find element with locator: …`) がそのまま失敗文になる
 - 一部が見えていること (`ratio` 0) は、公式の `toBeInViewport()` のまま使う。End キーで最下部へ届くことの検証は公式の matcher で足りる
 - `max-height` を `toHaveStyle` で見る形は採らない。Tailwind の class を写す同語反復で、収まるかどうかは内容の高さと viewport で決まる
+- 溢れる内容を flex column の中に作るときは、高さを `minHeight` で与える。flex item は既定で容器に収まるまで縮むので ([MDN「flex-shrink」][])、`height` で与えた高さは溢れない。`min-height` は縮む下限になる
+
+### 状態を semantic matcher で確かめる
+
+`toHaveAttribute` か `querySelector` を書く前に、下の表の matcher で書けないかを見る。ユーザーから見た状態を先に見る ([Testing Library docs「Guiding Principles」][])。
+
+| 見たいもの                                              | 使うもの                                                                                                                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 検証エラー (`aria-invalid`、`checkValidity()`)          | `toBeInvalid()`。`aria-invalid` が値無しか `"true"` の要素と、`checkValidity()` が `false` の要素を無効と判定する ([Vitest docs「Assertion API」][] の toBeInvalid) |
+| 選択状態 (`aria-checked`、native の checked)            | `toBeChecked()`。checkbox と radio の input、role が checkbox / radio / switch の要素を見る ([Vitest docs「Assertion API」][] の toBeChecked)                       |
+| 無効と処理中 (`disabled`、`aria-disabled`、`aria-busy`) | 「無効と処理中の状態を確かめる」                                                                                                                                    |
+| `aria-describedby` が指す文言                           | `toHaveAccessibleDescription()` ([Vitest docs「Assertion API」][] の toHaveAccessibleDescription)                                                                   |
+| accessible name                                         | `toHaveAccessibleName()` ([Vitest docs「Assertion API」][] の toHaveAccessibleName)                                                                                 |
+
+- Base UI の styling hook (`data-checked` など) は、見た目を駆動する属性なので属性で見てよい ([Base UI docs「Styling」][] の Data attributes)。ARIA の側と重ねて確かめるときは、2 つが別々に付くことをコメントに残す
+- `querySelector` で掴むのは、accessibility tree に差が出ない対象に限り、理由を実装の近くに書く。書けないなら、その assert は消す。Testing Library も、ユーザーに見えない class や id で引く逃げ道としての `querySelector` を勧めない ([Testing Library docs「About Queries」][] の Manual Queries)
+- 属性の assert を matcher に置き換えたら、実装を壊した mutant で落ちることを確かめる。名前は複数の経路から決まるので、matcher のほうが弱くなることがある。`src/components/action/button.tsx` の `ActionButtonShell` は `aria-labelledby` で名前を children に固定するが、外しても children の文言が name from content で同じ名前になり、`toHaveAccessibleName` は通る
 
 ### 無効と処理中の状態を確かめる
 
@@ -121,6 +139,15 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 - 履歴は `src/test/browser/browser-setup.tsx` が取り、vitest の `clearMocks` (既定で有効) が毎テストの前に消す。書き込み先の region が無ければ `readAnnouncements` が throw するので、届いていない通知では通らない
 - pending の検証は `aria-busy` と announcer の通知で行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
 - 同じ通知の経路を 2 つのテストで見ない。検索欄を持つ一覧では、ページのテストが debounce 後と無効化済みキャッシュの決着を、route の wrapper のテストが Enter と戻るを見る
+
+### assert の helper を書き、型を絞る
+
+- assertion を実行する helper は `expect*` で名付ける。`vitest/expect-expect` が assertion と認めるのは、`expect*` に当たる名前と、名指しした `assert` / `assertType` だけである ([Oxlint docs「vitest/expect-expect」][] の assertFunctionNames。値は `tooling/lint/config.ts`、設定の理由は `docs/guides/lint/configuration.md`「ルールを off にする」)
+- assert を含む helper (操作のあとに待つものを含む) は `vi.defineHelper` で包む。包むと、helper の中の assertion が落ちたときの stack trace が、helper を呼んだ行を指す ([Vitest docs「Vi」][] の vi.defineHelper)。包まないと、失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない
+- 包んだ helper を包まない helper から呼ぶと、失敗の位置は包まない helper の中の呼び出し行になる。helper から helper を呼ぶときは、外側も包む
+- 値を得るために呼ぶ helper (中で `expect.assert` を使って型を絞り、値を返すもの) は、`expect*` に改名しない。改名すると、その helper を呼ぶだけで何も確かめないテストが `vitest/expect-expect` を通る ([Oxlint docs「vitest/expect-expect」][])。代わりに、その helper だけで終わるテストを書かず、返した値をテストの中で assert する
+- helper が受け取る引数の前提を確かめる検査は、`expect` ではなく `throw` で書く。テストが測る値ではなく、helper の誤用を止めるガードである
+- テストの中で型を絞るのは `expect.assert` を使う。`toBeTruthy()` と `toBeDefined()` は実行時には落ちるが、型を絞らない ([Vitest docs のレシピ「Type Narrowing in Tests」][])
 
 ## explanation
 
@@ -303,7 +330,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。Base UI docs は 1.8.0 の docs のソースと、Testing Library docs と MDN は 2026-10-05 の内容と照らした。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -345,3 +372,9 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 [vitest-dev/vitest#7605]: https://github.com/vitest-dev/vitest/pull/7605
 [testing-library/jest-dom#144]: https://github.com/testing-library/jest-dom/issues/144#issuecomment-577235097
 [Testing Library docs「ByRole」]: https://testing-library.com/docs/queries/byrole/#busy
+[Testing Library docs「Guiding Principles」]: https://testing-library.com/docs/guiding-principles/
+[Testing Library docs「About Queries」]: https://testing-library.com/docs/queries/about/#manual-queries
+[Base UI docs「Styling」]: https://base-ui.com/react/handbook/styling
+[Oxlint docs「vitest/expect-expect」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/expect-expect.html
+[Vitest docs のレシピ「Type Narrowing in Tests」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/type-narrowing.md
+[MDN「flex-shrink」]: https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/flex-shrink
