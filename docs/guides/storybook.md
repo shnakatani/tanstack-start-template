@@ -5,6 +5,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 | 決定                                                                                                               | ADR      |
 | ------------------------------------------------------------------------------------------------------------------ | -------- |
 | 開発環境のツールチェーンは mise と Vite+ に寄せる                                                                  | ADR-0004 |
+| `src/components/` を役割で分け、design system の著作と消費の境界をディレクトリで表す                               | ADR-0011 |
 | registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0020 |
 | design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る                          | ADR-0022 |
 | a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす             | ADR-0028 |
@@ -69,7 +70,7 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 - popup を閉じる play は、閉じた popup の unmount を待ってから終える。待たないと、play の後に走る a11y 検査が animate-out の窓に入る (`docs/guides/testing/user-interactions.md`「animation を無効にして走らせる理由」)
 - Storybook の test 実行では、ブラウザテストの animation の無効化を適用していない。開閉を待つ story は `findBy` 系の待機だけで足りている。足りなくなったら `tooling/test/storybook-project.ts` の `setupFiles` へ入れる。`.storybook/preview.tsx` へ入れると `storybook dev` でも animation が消え、人が見るときの動きまで失う
 - `storybook/test` の `expect` は、vitest の matcher をすべて持つわけではない。ブラウザテストの assertion を play へ機械的に写せない箇所がある
-- story は StrictMode の下で描かれ、描画が 2 回走る。StrictMode が root にないので、mount 直後の effect は付け直されない。cleanup の欠けた effect は、ブラウザテストで確かめる (`docs/guides/testing/configuration.md`「StrictMode の下で描く」)
+- story は StrictMode の下で描かれ、描画が 2 回走る。StrictMode が root にないので、mount 直後の effect は付け直されない。cleanup の欠けた effect は、ブラウザテストで確かめる (`docs/guides/testing/configuration.md`「StrictMode の下で描く」、ADR-0039)
 
 ### ブラウザテストから play へ移す
 
@@ -149,7 +150,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 
 - 消費者の数は画面の追加と削除で動く。画面を消すと `empty` のように消費者が 0 件へ落ちる部品が出るが、次の画面で使われうる。「今どの画面が使っているか」はカタログの価値と無関係である
 - 基準が推移的に閉じない。`sheet` / `tooltip` は `sidebar` からのみ、`textarea` / `input-group` は `combobox` からのみ参照され、その参照元自体に消費者がいない。`ui/` の外で数えると 0 件になるが、素朴に数えると 1 件以上になる。同じ状態の部品が数え方だけで両側へ分かれる
-- 検査の穴が残る。story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる
+- 検査の穴が残る。story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる (ADR-0028)
 
 上流の `write-story` skill ([Storybook の `storybook-story-instructions.md`][]) は「ALWAYS write a Storybook story for any component written」と書いており、この方針はその既定値に沿う。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。
 

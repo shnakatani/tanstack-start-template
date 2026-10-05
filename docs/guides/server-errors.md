@@ -21,7 +21,7 @@ server で起きた例外を server のログに残し、production では clien
 
 - server function の例外は `logServerFnErrors` が `console.error` で残して投げ直す。redirect と notFound は残さない。理由は「例外を global の function middleware で残す理由」
 - ログの 1 行目の関数名は middleware の引数の `serverFnMeta.name` から取る。`serverFnMeta` は docs のガイドに無く、公開の型 (`ServerFnMeta`) と [TanStack/router#6213][] で入った
-- 個々の server function の中で catch してログを書かない。global の middleware と二重に残る
+- 個々の server function の中で catch してログを書かない。global の middleware と二重に残る (ADR-0012)
 - server function から別の server function を呼ぶと、内側と外側の両方で middleware が走り、同じ例外が 2 回残る (@tanstack/react-start 1.168.49、2026-09-29 に実測)
 - SSR の例外は、`src/server.ts` の handler callback が描画の前に `ctx.router.state.matches` のうち `status === "error"` の match を残す。callback は dehydrate の後に呼ばれるので、dehydrate が失敗したときは `[ssr]` の行が出ず、server function を通さずに投げた例外は残らない (ADR-0038)。包み方は [TanStack Start docs「Server Entry Point」][] の Custom Server Handlers の形。notFound は 404 のための制御の throw なので残さない
 - SSR の loader から呼んだ server function の例外が 2 行になるのは受け入れる。同じ例外を 1 回だけ出す仕組みは足さない (ADR-0038)

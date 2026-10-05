@@ -63,7 +63,7 @@ paths:
 - `docs/guides/README.md` を除くどのファイルにも `## how-to` と `## explanation` を両方置き、別のファイルに分けない (`docs/guides/writing-docs.md`「ガイドを書く」)
 - ガイドを足す・分ける・改名したら、`docs/guides/README.md` の一覧を直す (`docs/guides/writing-docs.md`「ガイドを書く」)
 - how-to の節には規範、手順、落とし穴への対処と、規範から読み取れない事情があり消すと誤るときはその理由を書き、その形を選んだ理由 (案の比較、出典の解説) は explanation に書く (`docs/guides/writing-docs.md`「ガイドを書く」)
-- 主題に関わる ADR を冒頭に「決定 / ADR」の表で並べ、関わる ADR が無いガイドには表を置かない (`docs/guides/writing-docs.md`「ガイドを書く」)
+- 冒頭の「決定 / ADR」の表には本文が `ADR-NNNN` で指す ADR を並べ、本文で指さない ADR は置かない。本文が ADR を指さないガイドには表を置かない (`docs/guides/writing-docs.md`「ガイドを書く」)
 - 冒頭の表の決定の列には、ADR の 1 行目の `ADR-NNNN: ` の後ろの題をそのまま写す (`docs/guides/writing-docs.md`「ガイドを書く」)
 - このリポジトリの実装はファイルパスで指し、抜き書きして貼らない。組み方を示す短い例 (`…` で省いた骨組みや、最小のテスト) と、測り方のコマンドやスクリプトは書いてよい。抜き書きは実装が変わっても変わらず、食い違ってもガイドの側では気付けない (`docs/guides/writing-docs.md`「ガイドを書く」)
 - このリポジトリのファイルの行番号を書かない。上流のコードは commit SHA に固定した permalink で指してよい。行番号は編集でずれ、ずれても気付けない (`docs/guides/writing-docs.md`「ガイドを書く」)

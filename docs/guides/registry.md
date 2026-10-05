@@ -4,6 +4,7 @@ shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す�
 
 | 決定                                                                                                               | ADR      |
 | ------------------------------------------------------------------------------------------------------------------ | -------- |
+| `src/components/` を役割で分け、design system の著作と消費の境界をディレクトリで表す                               | ADR-0011 |
 | registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0020 |
 | セマンティックトークンの値は上流生成物を土台とし、乖離は WCAG の実測と palette の段で決める                        | ADR-0024 |
 
@@ -61,7 +62,7 @@ add radio-group popover  → radio-group: 除去 / popover: 残存
 ### baseline と突き合わせる
 
 - 部品: `git diff --no-index docs/registry-baseline/<name>.tsx src/components/ui/<name>.tsx` の差分が、台帳の「コードの乖離」と 1:1 であることを確かめる
-- `src/styles.css`: `git diff --no-index docs/registry-baseline/styles.css src/styles.css` の差分が、台帳の「`src/styles.css` の乖離」と 1:1 であることを確かめる。`shadcn add` は `styles.css` を出力しないので、作り直す手順は `docs/guides/styling-and-tokens.md`「トークンを作り直す」にある。上流が preset の値を変えたら、baseline を作り直してから突き合わせる
+- `src/styles.css`: `git diff --no-index docs/registry-baseline/styles.css src/styles.css` の差分が、台帳の「`src/styles.css` の乖離」と 1:1 であることを確かめる。`shadcn add` は `styles.css` を出力しないので、作り直す手順は `docs/guides/styling-and-tokens.md`「トークンを作り直す」にある。上流が preset の値を変えたら、baseline を作り直してから突き合わせる (ADR-0024)
 - `registry-baseline.test.ts` が見るのは baseline の有無だけで、台帳への行の足し忘れは鳴らない。とくに `src/styles.css` の足し忘れは、この突き合わせでしか見つからない
 - 台帳の「registry の値を複製したファイル」は `--overwrite` では更新されない。行ごとの突き合わせの条件 (`tabs.tsx` の baseline が変わったとき、など) で見直す
 
