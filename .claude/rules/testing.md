@@ -11,10 +11,8 @@ paths:
 
 # テストルール
 
-## 進め方
+## テストの API
 
-- TDD で進める。failing test を書き `vp test run <path>` で fail を確かめ、最小実装で pass させ、テストを変えずにリファクタする
-- 新規テストの前に、同じ関数・スキーマをテストする既存ファイルを `grep -rn "<name>" src/ scripts/` で探す
 - `describe` / `it` / `expect` / `vi` は `vite-plus/test` から import する。`vitest` を直接 import しない (`vite-plus/test` が re-export する)
 
 ## テストの種別と置き場所
