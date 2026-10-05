@@ -1,6 +1,6 @@
 # テストの設定
 
-Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・React Compiler を通さない project の範囲・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
+テストの種別ごとの置き場所と走らせ方、テストの API の import 元、Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・React Compiler を通さない project の範囲・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
 
 | 決定                                                                                                   | ADR      |
 | ------------------------------------------------------------------------------------------------------ | -------- |
@@ -11,6 +11,36 @@ Vitest の設定の置き場所と、project の足し方・テストでだけ p
 | メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                             | ADR-0014 |
 
 ## how-to
+
+### テストの種別と置き場所
+
+壊れる原因が違うテストを同じ project に混ぜない。project が分かれていると、落ちた project の名前から、直す対象がアプリのコードか、スクリプトか、設定と文書かが分かる。
+
+| 種別                   | 壊れる原因                   | 置き場所                                            | 実行                                                                                                                          |
+| ---------------------- | ---------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                  | `vp test run --project unit`                                                                                                  |
+| TZ ごとの単体テスト    | アプリのコード変更           | `src/**/*.tz.test.ts`                               | `docs/guides/testing/time-zones.md`「Node で動くテストを TZ ごとに走らせる」                                                  |
+| アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                                 | `vp test run --project browser`。`src/components/ui/` のテストは「React Compiler を通さない project を足す」                  |
+| アプリの型テスト       | アプリの型の変更             | `src/**/*.test-d.ts`                                | `vp check` (`docs/guides/testing/type-tests.md`「型テストを置く」)                                                            |
+| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/**/*.test.ts` (`scripts/checks/**` を除く) | `vp test run --project scripts-tools`                                                                                         |
+| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity`                                                                                      |
+| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp build` の後に `vp node scripts/checks/runtime/<name>.ts` (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」) |
+
+- `src/` のテストは接尾辞で project が決まる。DOM が要るテストは `*.test.tsx` にして browser project で、DOM が要らないテストは `*.test.ts` にして unit project (Node) で走らせる。テストの helper のテストも同じに分ける。集める範囲は、`tooling/test/config.ts` の `unit` の `include` と、`scripts/lib/companion-files.ts` の `BROWSER_TEST_GLOB` が持つ
+- 種別を足すときは、置き場所と project を対で作る (「project を足す」)
+
+### テストの API を import する
+
+- `describe` / `it` / `expect` / `vi` は `vite-plus/test` から import し、`vitest` を直接 import しない。Vite+ は同梱の Vitest の API を `vite-plus/test` から出す ([Vite+ docs「Test」][]: "Vitest APIs are available from `vite-plus/test`, so a single `vite-plus` install is enough — you do not need to install `vitest` directly")
+- browser mode の API も `vitest/browser` ではなく、`vite-plus/test/browser` とその下 (`vite-plus/test/browser/context`) から import する
+
+### テストを走らせる
+
+- 1 回走らせるときは `vp test run <path>`、watch するときは `vp test watch` を打つ。Vitest 単体と違い、`vp test` は watch に入らない ([Vite+ docs「Test」][]: "Unlike Vitest on its own, `vp test` does not stay in watch mode by default.")
+- `vp test` を複数並行で走らせない。kill した実行の runner が残ると、後続の実行が collection のエラーで巻き添えになる。kill したら `ps` で残っていないことを確かめる。2026-10-05 に vite-plus 1.0.0 で、browser project を 2 つ同時に走らせただけの実行はどちらも通った
+- スクリプトが子として起動し、全部の終わりを待つ並列 (`scripts/time-zones/run-tests.ts`) は、上の並行に当たらない。親だけを kill すると子の vitest が残るので、子も `ps` で確かめる
+- worktree では、中へ cd してから `vp install` と `vp test run` を打つ。別の clone から `--root <worktree>` で指すと、story の project が cd した側の clone の story を集め、`Failed to fetch dynamically imported module` で落ちる (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。unit と browser の project は通った)
+- worktree のパスに `+` を含めない。パスに `+` を含む clone で、事前バンドルのキャッシュが無い状態から story の project を走らせると、`@storybook/addon-themes` が実行中に事前バンドルされて page が reload し、`Vitest failed to find the current suite` で落ちる。同じ clone を `+` の無いパスへ移すと reload は起きず通った (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。browser project は `+` を含むパスでも通った)
 
 ### 設定の置き場所
 
