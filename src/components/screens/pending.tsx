@@ -5,7 +5,6 @@ import { Spinner } from "@/components/ui/spinner";
  * ときの Suspense の受け皿になる (ADR-0029)。置かれる位置 (ページ全体 / Outlet の内側) が route
  * ごとに違うので、レイアウトを模倣しない。
  *
- * status は name from author のロールなので、可視テキストがあっても `aria-label` で名前を与える。
  * route の pending 表示は、状態を `announce()` で通知する規範の例外 (ADR-0026、ADR-0029)。
  * `aria-busy` は載せない (`docs/guides/accessibility.md`「読み込み中の表示を組む」)。
  */

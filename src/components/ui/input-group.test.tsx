@@ -31,9 +31,9 @@ describe("InputGroup の popup 内リング抑制 (ADR-0020)", () => {
   it("combobox popup 内の検索入力はフォーカスしてもリングが付かず border も変わらない", async () => {
     const screen = await render(
       <Combobox items={["りんご", "みかん"]}>
-        {/* テキストは DOM に出るが、ComboboxTrigger が付ける role="combobox" は内容から
-            accessible name を取らない (ARIA の name from author)。aria-label を外すと
-            getByRole の name 解決が 0 件になるため必須 (2026-08-09 に Chromium で実測) */}
+        {/* 入力欄が popup の中にあるので ComboboxTrigger は role="combobox" を持ち、中の文字から
+            名前を取らない (docs/guides/accessibility.md「accessible name を与える」)。名前を外すと
+            getByRole の name 解決が 0 件になる (2026-08-09 に Chromium で実測) */}
         <ComboboxTrigger
           render={
             <button type="button" aria-label="開く">
