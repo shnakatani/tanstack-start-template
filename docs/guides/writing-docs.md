@@ -181,7 +181,7 @@ grep -rnE '\b[0-9]{1,2}\.[0-9]{2}\b|[0-9]+(\.[0-9]+)?\s*[:対]\s*1\b' \
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。CommonMark の仕様は 0.31.2、git-config は 2.56.0 に固定した版を指す。Diátaxis、arc42、Catio、Claude Code docs の引用は 2026-10-04 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。CommonMark の仕様は 0.31.2、git-config は 2.56.0 に固定した版を指す。`gh api markdown -f mode=gfm` が従う [GFM の仕様][] 0.29-gfm も、ラベルの照合 (6.6「Links」の Unicode case fold と空白の正規化) と、定義に当たらない参照がリンクにならないこと、リンクの定義が描画される要素にならないこと (4.7) を同じ文言で定める。2026-10-05 に両者の原文と、`gh api markdown` の出力で照らした。Diátaxis、arc42、Catio、Claude Code docs の引用は 2026-10-04 に原文と照らした。
 
 [Diátaxis]: https://diataxis.fr/
 [Diátaxis「How-to guides」]: https://diataxis.fr/how-to-guides/
@@ -192,4 +192,5 @@ grep -rnE '\b[0-9]{1,2}\.[0-9]{2}\b|[0-9]+(\.[0-9]+)?\s*[:対]\s*1\b' \
 [arc42 Tip 8-8]: https://docs.arc42.org/tips/8-8/
 [Catio]: https://www.catio.tech/blog/architecture-decision-record
 [CommonMark の仕様]: https://spec.commonmark.org/0.31.2/
+[GFM の仕様]: https://github.github.com/gfm/
 [Claude Code docs「Best practices」]: https://code.claude.com/docs/en/best-practices
