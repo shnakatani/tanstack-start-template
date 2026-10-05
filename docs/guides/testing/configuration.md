@@ -32,12 +32,13 @@
 ### テストの API を import する
 
 - `describe` / `it` / `expect` / `vi` は `vite-plus/test` から import し、`vitest` を直接 import しない。Vite+ は同梱の Vitest の API を `vite-plus/test` から出す ([Vite+ docs「Test」][]: "Vitest APIs are available from `vite-plus/test`, so a single `vite-plus` install is enough — you do not need to install `vitest` directly")
-- browser mode の API も `vitest/browser` ではなく、`vite-plus/test/browser` とその下 (`vite-plus/test/browser/context`) から import する
+- browser mode の API も `vitest/browser` ではなく、`vite-plus/test/browser` とその下 (`vite-plus/test/browser/context`) から import する ([Vite+ docs「Migrate」][] の Vitest の節)
+- 型の拡張の `declare module "vitest"` / `declare module "vitest/browser"` は書き換えず、上流のモジュール名のまま置く。`vite-plus/test*` は上流の再 export なので、拡張は上流のモジュールに向けないと型が合流しない ([Vite+ docs「Migrate」][]: "augmentations are intentionally **not** rewritten")
 
 ### テストを走らせる
 
 - 1 回走らせるときは `vp test run <path>`、watch するときは `vp test watch` を打つ。Vitest 単体と違い、`vp test` は watch に入らない ([Vite+ docs「Test」][]: "Unlike Vitest on its own, `vp test` does not stay in watch mode by default.")
-- `vp test` を複数並行で走らせない。kill した実行の runner が残ると、後続の実行が collection のエラーで巻き添えになる。kill したら `ps` で残っていないことを確かめる。2026-10-05 に vite-plus 1.0.0 で、browser project を 2 つ同時に走らせただけの実行はどちらも通った
+- `vp test` を複数並行で走らせない。kill した実行の runner が残ると、後続の実行が collection のエラーで巻き添えになる。kill したら `ps` で残っていないことを確かめる
 - スクリプトが子として起動し、全部の終わりを待つ並列 (`scripts/time-zones/run-tests.ts`) は、上の並行に当たらない。親だけを kill すると子の vitest が残るので、子も `ps` で確かめる
 - worktree では、中へ cd してから `vp install` と `vp test run` を打つ。別の clone から `--root <worktree>` で指すと、story の project が cd した側の clone の story を集め、`Failed to fetch dynamically imported module` で落ちる (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。unit と browser の project は通った)
 - worktree のパスに `+` を含めない。パスに `+` を含む clone で、事前バンドルのキャッシュが無い状態から story の project を走らせると、`@storybook/addon-themes` が実行中に事前バンドルされて page が reload し、`Vitest failed to find the current suite` で落ちる。同じ clone を `+` の無いパスへ移すと reload は起きず通った (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。browser project は `+` を含むパスでも通った)
@@ -257,6 +258,7 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。sanity-io/react-rx と starbeamjs/starbeam の設定は、2026-10-05 に読んだ commit に固定した。
 
 [Vite+ docs「Test」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/test.md
+[Vite+ docs「Migrate」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/migrate.md
 [Vitest docs「Configuring Vitest」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/index.md
 [Vitest docs「Test Projects」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/projects.md
 [Vitest docs「sharedViteServer」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/sharedviteserver.md

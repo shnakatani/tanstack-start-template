@@ -87,7 +87,7 @@ paths:
 
 ## assertion helper と型ナローイング
 
-- assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と名指しした関数だけ (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
+- assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と `assert`・`assertType` だけ (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - assert を含むヘルパー (操作のあとに待つものを含む) は `vi.defineHelper` で包む。包まないと失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない。包んだ helper を包まない helper から呼んでも同じになる (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
@@ -163,7 +163,7 @@ paths:
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/assert/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えない。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
-- locator は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
+- locator の `element()` と `query()` は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 
 ## ブラウザテストの CSS とレイアウト実測
 

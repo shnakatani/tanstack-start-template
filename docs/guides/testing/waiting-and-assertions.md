@@ -100,7 +100,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 - 呼び出し側は先に mount を待たなくてよい。helper 自身が poll し、要素が無ければ `element()` の throw (`Cannot find element with locator: …`) がそのまま失敗文になる
 - 一部が見えていること (`ratio` 0) は、公式の `toBeInViewport()` のまま使う。End キーで最下部へ届くことの検証は公式の matcher で足りる
 - `max-height` を `toHaveStyle` で見る形は採らない。Tailwind の class を写す同語反復で、収まるかどうかは内容の高さと viewport で決まる
-- 溢れる内容を flex column の中に作るときは、高さを `minHeight` で与える。flex item は既定で容器に収まるまで縮むので ([MDN「flex-shrink」][])、`height` で与えた高さは溢れない。`min-height` は縮む下限になる
+- 溢れる内容を flex column の中に作るときは、中身の無い要素の高さを `minHeight` で与える。flex item は既定で容器に収まるまで縮み ([MDN「flex-shrink」][])、縮む下限は指定した高さと中身の高さの小さい方になる ([CSS Flexbox Level 1][] 4.5「Automatic Minimum Size of Flex Items」)。中身の無い要素に `height` で与えた高さは下限にならず、容器に収まって溢れない。`min-height` は縮む下限になる
 
 ### 状態を semantic matcher で確かめる
 
@@ -330,7 +330,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。Base UI docs は 1.8.0 の docs のソースと、Testing Library docs と MDN は 2026-10-05 の内容と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。Base UI docs は 1.8.0 の docs のソースと、Testing Library docs、Oxlint docs、MDN、CSS Flexbox Level 1 は 2026-10-05 の内容と照らした。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -378,3 +378,4 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 [Oxlint docs「vitest/expect-expect」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/expect-expect.html
 [Vitest docs のレシピ「Type Narrowing in Tests」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/type-narrowing.md
 [MDN「flex-shrink」]: https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/flex-shrink
+[CSS Flexbox Level 1]: https://www.w3.org/TR/css-flexbox-1/
