@@ -130,18 +130,17 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 
 ### accessible name の与え方
 
-迷ったら与える側に倒す。与えない判断をしたら理由を実装近傍に残す (`docs/guides/accessibility.md`「accessible name を与える」)。
+迷ったら与える側に倒す。与えない判断をしたら理由を実装近傍に残す。
 
-| 対象                                                                           | 対応                                                                                                                                                                                     |
-| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| テキストを持たない操作要素 (ボタン / リンク / トグル)                          | 要素に `aria-label` (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                         |
-| 状態や属性を伝える唯一の手段になっているアイコン                               | `aria-hidden` + 隣接の `sr-only` テキスト (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                   |
-| 隣接テキストが同じ意味を持つアイコン                                           | `aria-hidden`。名前を足さない。そのテキストが実際に読み上げられるときに限る (`docs/guides/accessibility.md`「accessible name を与える」)                                                 |
-| 中身から名前を取るロール (button / link など) で、可視テキストが名前になる要素 | 名前の属性を足さない (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                        |
-| 中身から名前を取らないロール (combobox / listbox / dialog など)                | 名前の要否は APG のロールの行に従う。与えるなら、画面に名前の文字があれば label か `aria-labelledby`、無ければ `aria-label` (`docs/guides/accessibility.md`「accessible name を与える」) |
-| `status` (`<output>` を含む)、`alert`、`log`、`timer`                          | 中身と同じ文言を名前にしない。名前は任意で、一部のスクリーンリーダーは名前を中身の前に読むので 2 度読まれる (`docs/guides/accessibility.md`「accessible name を与える」)                 |
-| テーブルの列見出し (`th`)                                                      | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                                                                                          |
-| ローディング等の状態表示                                                       | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026)                                                                         |
+| 対象                                                  | 対応                                                                                                             |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| テキストを持たない操作要素 (ボタン / リンク / トグル) | 要素に `aria-label`                                                                                              |
+| 状態や属性を伝える唯一の手段になっているアイコン      | `aria-hidden` + 隣接の `sr-only` テキスト                                                                        |
+| 隣接テキストが同じ意味を持つアイコン                  | `aria-hidden`。名前を足さない。そのテキストが実際に読み上げられるときに限る                                      |
+| 可視テキストが既に accessible name の要素             | 何も足さない (次項)                                                                                              |
+| name from author のロールを持つ要素                   | 可視テキストがあっても `aria-label` (次項)                                                                       |
+| テーブルの列見出し (`th`)                             | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                  |
+| ローディング等の状態表示                              | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026) |
 
 - 状態表示の例外は route の pending 表示の `PendingContent` (ADR-0026、ADR-0029)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0026)
@@ -154,8 +153,7 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 
 ### 可視テキストを持つ要素に aria-label を足さない
 
-- 中身から名前を取る要素に `aria-label` も `aria-labelledby` も付けない。名前が置き換わり、`aria-labelledby` で指していない中身は支援技術から隠れる。付けるのは、隠すことが利用者の助けになり、隠れる中身が読ませなくてよいものだけのときに限る (`docs/guides/accessibility.md`「accessible name を与える」)
-- 名前を持てないロール (`span` / `div` の `generic`、`presentation` など) に `aria-label` も `aria-labelledby` も付けない。別要素の可視テキストを名前にするときは、名前を持てるロールの要素の側から `aria-labelledby` で指す (`docs/guides/accessibility.md`「accessible name を与える」)
-- Base UI で `role="combobox"` になるのは、Select の trigger、Combobox の入力欄、入力欄を popup の中に置いたときの Combobox の trigger。中に見える値は名前にならない。Combobox の trigger は Field か Combobox の label があると、role にかかわらずそれを名前にする (`docs/guides/accessibility.md`「accessible name を与える」)
-- 名前の文字を inline でない子要素 (block、inline-block、flex や grid の item) へ分割しない。Chrome が境界に空白を入れて名前が分断される。略記と全文を出し分けるなら可視側を `aria-hidden`、全文を 1 つの `sr-only` に置く (`docs/guides/accessibility.md`「accessible name を与える」)
-- 名前に関わる要素を切り出す前後で `getByRole({ name })` の結果が変わらないことを確かめる (`docs/guides/accessibility.md`「accessible name を与える」)
+- `span` / `div` (ロール `generic`) に `aria-label` を付けない。name prohibited (WAI-ARIA 1.2 §5.2.8.6)。別要素の可視テキストは `aria-labelledby` で指す
+- 例外は name from author のロール。`role="combobox"` (Combobox / Select / Popover の trigger) は可視テキストと同値でも `aria-label` が要る (WAI-ARIA 1.2 §5.2.8)
+- 可視テキストを子要素へ分割すると Chrome が境界に空白を入れて名前が分断される。略記と全文を出し分けるなら可視側を `aria-hidden`、全文を 1 つの `sr-only` に置く
+- 名前に関わる要素を切り出す前後で `getByRole({ name })` の結果が変わらないことを確かめる

@@ -15,9 +15,9 @@ import {
 const FRUITS = ["りんご", "みかん", "ぶどう", "もも"];
 
 /**
- * 入力欄を popup の中に置くので、`ComboboxTrigger` は `role="combobox"` を持ち、中の値から名前を
- * 取らない。名前の文字が画面に無いので `aria-label` で与える
- * (docs/guides/accessibility.md「accessible name を与える」)。外すと `getByRole` の名前解決が 0 件になる
+ * `ComboboxTrigger` が付ける `role="combobox"` は name from author なので、可視テキストが
+ * あっても `aria-label` が要る (WAI-ARIA 1.2 §5.2.8)。外すと
+ * `getByRole` の名前解決が 0 件になる
  */
 function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
   return (

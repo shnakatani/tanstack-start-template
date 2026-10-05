@@ -1,6 +1,6 @@
 # アクセシビリティ
 
-axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、クライアント遷移の伝え方と、accessible name・色以外の手がかり・ナビゲーション・ダイアログの閉じる手段の組み方を持つ。
+axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、クライアント遷移の伝え方と、色以外の手がかり・ナビゲーション・ダイアログの閉じる手段の組み方を持つ。
 
 | 決定                                                                                                                              | ADR      |
 | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -286,31 +286,10 @@ story で統制できるのは markup までで、フォントは実行環境が
 - メニュー全体を包む単一の `DropdownMenuGroup` に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない。menu は開いたトリガーを `aria-labelledby` で指して名前を持つ ([APG「Menu and Menubar Pattern」][]) ので、同じ名前を重ねても区別が増えない
 - トリガーの名前が中身を言わないとき (「Open」の下に表示の切り替えが並ぶなど) は、単一のグループにも中身を言う見出しを置いてよい ([shadcn の `dropdown-menu-checkboxes.tsx`][] は「Appearance」を置く)
 
-### accessible name を与える
-
-迷ったら与える側に倒す。与えない判断をしたら、理由を実装の近くに残す。ロールごとに名前が要るかと与え方は、[APG「Providing Accessible Names and Descriptions」][] の Accessible Name Guidance by Role の表に従う。この節には、そのうえでこのリポジトリが決めることと、踏みやすい注意を書く。
-
-| 対象                                                                                         | 与え方                                                                                                                                                                                                                                                                                                                                         |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 可視の文字を持たない操作要素 (ボタン / リンク / トグル)                                      | 要素に `aria-label` を渡す ([APG「Providing Accessible Names and Descriptions」][] の Naming with a String Attribute Via aria-label)                                                                                                                                                                                                           |
-| 状態や属性を伝える唯一の手段になっているアイコン                                             | アイコンを `aria-hidden` にし、隣に `sr-only` の文字を置く ([WCAG 2.2 SC 1.1.1][])                                                                                                                                                                                                                                                             |
-| 隣の文字が同じ意味を持つアイコン                                                             | `aria-hidden` にし、名前を足さない。その文字が実際に読み上げられるときに限る。装飾は支援技術が無視できるように置く ([WCAG 2.2 SC 1.1.1][] の Decoration, Formatting, Invisible)                                                                                                                                                                |
-| 中身の文字から名前を取るロール (button、link、checkbox、tab など) で、可視の文字が名前になる | 名前の属性を足さない ([APG「Providing Accessible Names and Descriptions」][] の Rule 2: Prefer Visible Text、[WAI-ARIA 1.2][] §5.2.8.5 Roles Supporting Name from Content)。足すときの注意は表の下の 1 つ目の箇条                                                                                                                              |
-| 中身の文字から名前を取らないロール (combobox、listbox、dialog など)                          | 名前を与えるかは APG の表のそのロールの行に従う。与えるときは、名前の文字が画面にあれば `<label>` か `aria-labelledby` で指し、無ければ `aria-label` を渡す ([WAI-ARIA 1.2][] の `aria-label` の定義の "If the label text is available in the DOM")                                                                                            |
-| `status` (暗黙の role が status の `<output>` を含む)、`alert`、`log`、`timer`               | APG の表ではどれも名前が任意 (Discretionary) で、一部のスクリーンリーダーは名前を中身の前に読む ("Some screen readers announce the name of a status element before announcing the content of the status element.")。中身と同じ文言を名前にしない。同じ文言が 2 度読まれる。項目に status を置くかは「読み上げの通知を書く」(ADR-0026) が決める |
-
-- 中身の文字から名前を取る要素に `aria-label` か `aria-labelledby` を付けると、名前がその値に置き換わり、`aria-labelledby` で指していない中身は支援技術から隠れる。APG は、隠すことが利用者の助けになる場合を除いて、上書きを避けるよう強く勧める ([APG「Providing Accessible Names and Descriptions」][] の Naming with Child Content: "It is strongly recommended to avoid using either of these attributes to override content of one of the above elements except in rare circumstances where hiding content from assistive technology users is beneficial.")。付けるときは、隠れる中身が読ませなくてよいものだけであることを確かめる
-- 名前を持てないロール (素の `span` / `div` の generic、`presentation` など) には、`aria-label` も `aria-labelledby` も付けない ([WAI-ARIA 1.2][] §5.2.8.6 Roles which cannot be named)。別の要素の可視の文字を名前にするときは、名前を持てるロールの要素の側から `aria-labelledby` で指す
-- Base UI 1.8.0 で combobox になるのは、Select の trigger、Combobox の入力欄と、入力欄を popup の中に置いたときの Combobox の trigger である (`@base-ui/react` の `select/trigger/SelectTrigger.js`、`combobox/root/AriaCombobox.js`、`combobox/trigger/ComboboxTrigger.js` の `inputInsidePopup`)。入力欄を popup の外に置いたときの Combobox の trigger と、Popover の trigger は button になる
-- Base UI 1.8.0 の Combobox の trigger は、Field か Combobox の label があると、role にかかわらずその label を `aria-labelledby` で指す (`combobox/trigger/ComboboxTrigger.js` の `resolveAriaLabelledBy`)。そのとき trigger の名前は中身ではなく label になる
-- 名前の文字を、inline でない子要素 (block、inline-block、flex や grid の item) へ分けない。Chrome は子要素の境界に空白を入れて名前をつなぐので、名前が分かれる (2026-10-05、Playwright 1.63.0 の Chromium 153.0.8010.12 で実測。`display: flex` の button に `<span>Ab</span><span>cd</span>` を置くと名前は `Ab cd`、inline の span のままなら `Abcd`)。空白の入れ方は仕様で決まっていない ([accname 1.2][] の 2F の注記、[w3c/accname#225][])
-- 略記と全文を出し分けるときは、可視の側を `aria-hidden` にし、全文を 1 つの `sr-only` に置く
-- 名前に関わる要素を部品へ切り出すときは、切り出す前後で `getByRole(<role>, { name })` が同じ要素を返すことを確かめる。名前は表示の形 (上の空白) でも変わり、見た目では気付けない
-
 ### 色以外の手がかりを併せる
 
 - 色だけで情報を伝えない。色で伝える状態や区別は、アイコンか文字でも見えるようにする ([WCAG 2.2 SC 1.4.1][])。対象は情報の伝達、操作の指示、応答の促し、要素の区別である
-- アイコンで補ったときは、支援技術にも同じ情報を届ける。アイコンだけが伝えるなら、「accessible name を与える」の表のとおり `aria-hidden` にして隣に `sr-only` の文字を置く
+- アイコンで補ったときは、支援技術にも同じ情報を届ける。アイコンだけが伝えるなら、アイコンを `aria-hidden` にして隣に `sr-only` の文字を置く ([WCAG 2.2 SC 1.1.1][])
 - axe は SC 1.4.1 を本文中のリンク (`link-in-text-block`) でしか見ない (「axe の緑が意味しないこと」)。色だけに頼っていないかは人が見る
 
 ### ナビゲーションを組む
@@ -328,7 +307,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、accname 1.2、APG の引用は 2026-10-05 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に原文と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -357,11 +336,8 @@ story で統制できるのは markup までで、フォントは実行環境が
 [Adrian Roselli「More Accessible Skeletons」]: https://adrianroselli.com/2020/11/more-accessible-skeletons.html
 [WAI-ARIA 1.3 Editor's Draft]: https://w3c.github.io/aria/
 [Vitest docs「hideSkippedTests」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/hideskippedtests.md
-[APG「Providing Accessible Names and Descriptions」]: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
 [APG「Landmark Regions」]: https://www.w3.org/WAI/ARIA/apg/practices/landmark-regions/
 [WCAG 2.2 SC 1.1.1]: https://www.w3.org/TR/WCAG22/#non-text-content
 [WCAG 2.2 SC 1.4.1]: https://www.w3.org/TR/WCAG22/#use-of-color
-[accname 1.2]: https://www.w3.org/TR/accname-1.2/
-[w3c/accname#225]: https://github.com/w3c/accname/issues/225
 [TanStack Router の `link.tsx`]: https://github.com/TanStack/router/blob/b1e54dee82e8ed5850daa7f6efd04a56c1aeeae6/packages/react-router/src/link.tsx#L569
 [TanStack Router docs「Navigation」]: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.39/docs/router/guide/navigation.md
