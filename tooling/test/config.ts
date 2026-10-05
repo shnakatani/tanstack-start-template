@@ -24,7 +24,7 @@ const STORYBOOK_VARIANTS: readonly StorybookVariant[] = [
 function storybookProjects(): TestProjectConfiguration[] {
   const storybookRun = isStorybookRun(process.env.VITEST_STORYBOOK);
   const variants = storybookRun
-    ? [{ theme: "light", compiler: true } as const]
+    ? STORYBOOK_VARIANTS.filter((variant) => variant.theme === "light" && variant.compiler)
     : STORYBOOK_VARIANTS;
   return variants.map((variant) => () => {
     // VITEST_STORYBOOK がシェルに残ったまま `vp test run` を叩くと dark と Compiler なしの story が黙って消えるので知らせる。

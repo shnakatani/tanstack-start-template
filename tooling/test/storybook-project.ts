@@ -1,6 +1,18 @@
 import { defineProject, mergeConfig } from "vite-plus/test/config";
 
-import { chromiumProjectBase } from "./chromium-project";
+import { chromiumProjectBase, NO_COMPILER_DIR } from "./chromium-project";
+
+/**
+ * `dir` の外にある story を除く glob。addon は `include` を無視して `.storybook/main.ts` の stories から
+ * 集めるので、`dir` の祖先ごとに、その階層の story と `dir` へ続かないディレクトリを除く
+ */
+function storiesOutside(dir: string): string[] {
+  const segments = dir.split("/");
+  return segments.slice(1).flatMap((segment, index) => {
+    const parent = segments.slice(0, index + 1).join("/");
+    return [`${parent}/*.stories.*`, `${parent}/!(${segment})/**`];
+  });
+}
 
 /** `@storybook/addon-themes` の global 名 (ADR-0028) */
 type StorybookTheme = "light" | "dark";
@@ -32,7 +44,7 @@ export async function storybookProject({
         // 事前バンドルのキャッシュを project ごとに分ける。相対ではなく固定値で組み立てる
         // (docs/guides/testing/configuration.md「story の project の `cacheDir` を分ける理由」)
         {
-          name: "storybook-theme-cache-dir",
+          name: "storybook-cache-dir",
           config: {
             order: "post" as const,
             handler: () => ({ cacheDir: `node_modules/.cache/storybook-vitest/${variant}` }),
@@ -50,8 +62,7 @@ export async function storybookProject({
       },
       test: {
         name: `storybook-${variant}`,
-        // addon は `include` を無視して `.storybook/main.ts` の stories から集めるので、`exclude` で絞る
-        exclude: compiler ? [] : ["src/components/*.stories.*", "src/components/!(ui)/**"],
+        exclude: compiler ? [] : storiesOutside(NO_COMPILER_DIR),
         browser: {
           provider: playwright(),
           // viewport はここで指定できない (docs/guides/storybook.md「vitest 経由の story の viewport が決まる仕組み」)

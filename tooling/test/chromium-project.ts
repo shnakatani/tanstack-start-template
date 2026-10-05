@@ -17,6 +17,12 @@ import { reactPlugin } from "../plugins/react";
  * `compiler` は React Compiler を通すかを決める。Compiler を通さない project は `src/components/ui/`
  * のためだけに置く (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)
  */
+/**
+ * Compiler を通さない project が扱う範囲。registry から取り込んだ部品だけを、ライブラリと同じく
+ * Compiler の有無の両方で走らせる (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)
+ */
+export const NO_COMPILER_DIR = "src/components/ui";
+
 export function chromiumProjectBase({ compiler }: { compiler: boolean }) {
   return {
     // React の変換と、Tailwind のクラスを実 CSS に解決する plugin。setupFiles の
