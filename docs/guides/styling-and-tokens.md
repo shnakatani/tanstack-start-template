@@ -46,7 +46,7 @@
 - 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0011) と、汎用の層が負う責務の範囲 (ADR-0016) で決める
 - variant 関数を消費側から呼ぶ形を採るたびに、`tooling/lint/config.ts` の `settings.shadcn.variantFunctions` へ足す。忘れると呼び出しが lint で落ちるので、気付けない失敗にはならない
 - 宣言するのは `ui/` の variant 関数だけにする。`ui/` の外の `cva` を宣言すると、定義の中の class が `no-restyle` に検査されずに部品へ通る (ADR-0023)
-- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら「部品の見た目を変える」の表を上の行から当てはめる。既定か公式のノブで済むならそれを採り、`ui/` の `cva` に variant を足すのはデザインが明示的に求めるときである。`ui/` の外の見た目なら部品として切り出す。`ui/` の外で `cva` の variant にしない。`ui/` の外の `cva` は `variantFunctions` へ宣言しないので、その戻り値を部品へ渡すと `require-static-classes` が落とす (`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」)
+- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら、手段を「部品の見た目を変える」の表で選ぶ。`ui/` の外の見た目なら部品として切り出す。`ui/` の外で `cva` の variant にしない。`ui/` の外の `cva` は `variantFunctions` へ宣言しないので、その戻り値を部品へ渡すと `require-static-classes` が落とす (`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」)
 
 ### 部品の見た目を変える
 

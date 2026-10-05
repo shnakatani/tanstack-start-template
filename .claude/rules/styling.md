@@ -112,7 +112,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - 表の skeleton の列見出しは列見出しの定数から採り、列定義からは採らない。`pendingComponent` は code-split されず、列定義を import すると cell 部品ごと main bundle に入る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0026)
 - データなしは `Empty` で組み、何が無いか (`EmptyTitle`) と次に取れる操作 (`EmptyContent` のボタンか、`EmptyDescription` で操作の場所を案内) をそろえる (`docs/guides/lists-and-search.md`「空状態を出す」)
-- 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら「部品の見た目を変える」の順 (既定か公式のノブ → デザインが明示的に求めるときだけ `ui/` の variant) で選び、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
+- 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら手段を「部品の見た目を変える」の表で選び、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
 
 ## 操作できる要素の組み方
 
@@ -132,16 +132,16 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 
 迷ったら与える側に倒す。与えない判断をしたら理由を実装近傍に残す (`docs/guides/accessibility.md`「accessible name を与える」)。
 
-| 対象                                                                               | 対応                                                                                                                                                                                                                                                                                   |
-| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| テキストを持たない操作要素 (ボタン / リンク / トグル)                              | 要素に `aria-label` (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                                                                                                       |
-| 状態や属性を伝える唯一の手段になっているアイコン                                   | `aria-hidden` + 隣接の `sr-only` テキスト (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                                                                                 |
-| 隣接テキストが同じ意味を持つアイコン                                               | `aria-hidden`。名前を足さない。そのテキストが実際に読み上げられるときに限る (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                                               |
-| 中身から名前を取るロール (button / link など) で、可視テキストが名前になる要素     | `aria-label` を足さない。`aria-labelledby` は次項の 2 つの形に限る (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                                                        |
-| 中身から名前を取らず名前が必須のロール (combobox / listbox / dialog など)          | 中に見える値があっても名前を与える。画面に名前の文字があれば label か `aria-labelledby`、無ければ `aria-label` (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                            |
-| 中身から名前を取らず名前が必須でないロール (status と `<output>`、alert、log など) | 名前の要否はロールごとに APG の表に従う。live region のロールでは中身の文言と同じ名前を与えない。一部のスクリーンリーダーは名前を中身の前に読むので、同じ文字が 2 度読まれる。中身に無い前置きが要るときだけ `aria-label` (`docs/guides/accessibility.md`「accessible name を与える」) |
-| テーブルの列見出し (`th`)                                                          | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                                                                                                                                                                                        |
-| ローディング等の状態表示                                                           | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026)                                                                                                                                                                       |
+| 対象                                                                           | 対応                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| テキストを持たない操作要素 (ボタン / リンク / トグル)                          | 要素に `aria-label` (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                         |
+| 状態や属性を伝える唯一の手段になっているアイコン                               | `aria-hidden` + 隣接の `sr-only` テキスト (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                   |
+| 隣接テキストが同じ意味を持つアイコン                                           | `aria-hidden`。名前を足さない。そのテキストが実際に読み上げられるときに限る (`docs/guides/accessibility.md`「accessible name を与える」)                                                 |
+| 中身から名前を取るロール (button / link など) で、可視テキストが名前になる要素 | 名前の属性を足さない (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                        |
+| 中身から名前を取らないロール (combobox / listbox / dialog など)                | 名前の要否は APG のロールの行に従う。与えるなら、画面に名前の文字があれば label か `aria-labelledby`、無ければ `aria-label` (`docs/guides/accessibility.md`「accessible name を与える」) |
+| `status` (`<output>` を含む)、`alert`、`log`、`timer`                          | 中身と同じ文言を名前にしない。名前は任意で、一部のスクリーンリーダーは名前を中身の前に読むので 2 度読まれる (`docs/guides/accessibility.md`「accessible name を与える」)                 |
+| テーブルの列見出し (`th`)                                                      | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                                                                                          |
+| ローディング等の状態表示                                                       | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026)                                                                         |
 
 - 状態表示の例外は route の pending 表示の `PendingContent` (ADR-0026、ADR-0029)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0026)
@@ -154,8 +154,8 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 
 ### 可視テキストを持つ要素に aria-label を足さない
 
-- 中身から名前を取る要素に `aria-label` を足さない。中身の文字が支援技術から隠れる。`aria-labelledby` は自分か自分の子孫を指し、名前を一部の子孫に固定するか、子孫の文字に別の要素の文字をつなぐときだけ足す。指さない中身も隠れるので、隠れてよいもの (`aria-hidden` のアイコンなど) に限る (`docs/guides/accessibility.md`「accessible name を与える」)
+- 中身から名前を取る要素に `aria-label` も `aria-labelledby` も付けない。名前が置き換わり、`aria-labelledby` で指していない中身は支援技術から隠れる。付けるのは、隠すことが利用者の助けになり、隠れる中身が読ませなくてよいものだけのときに限る (`docs/guides/accessibility.md`「accessible name を与える」)
 - 名前を持てないロール (`span` / `div` の `generic`、`presentation` など) に `aria-label` も `aria-labelledby` も付けない。別要素の可視テキストを名前にするときは、名前を持てるロールの要素の側から `aria-labelledby` で指す (`docs/guides/accessibility.md`「accessible name を与える」)
-- 例外は中身から名前を取らないロール。`role="combobox"` (Select の trigger、Combobox の入力欄、入力欄を popup の中に置いたときの Combobox の trigger) は中に見える値が名前にならないので、label か `aria-labelledby` か `aria-label` で名前を与える (`docs/guides/accessibility.md`「accessible name を与える」)
+- Base UI で `role="combobox"` になるのは、Select の trigger、Combobox の入力欄、入力欄を popup の中に置いたときの Combobox の trigger。中に見える値は名前にならない。Combobox の trigger は Field か Combobox の label があると、role にかかわらずそれを名前にする (`docs/guides/accessibility.md`「accessible name を与える」)
 - 名前の文字を inline でない子要素 (block、inline-block、flex や grid の item) へ分割しない。Chrome が境界に空白を入れて名前が分断される。略記と全文を出し分けるなら可視側を `aria-hidden`、全文を 1 つの `sr-only` に置く (`docs/guides/accessibility.md`「accessible name を与える」)
 - 名前に関わる要素を切り出す前後で `getByRole({ name })` の結果が変わらないことを確かめる (`docs/guides/accessibility.md`「accessible name を与える」)
