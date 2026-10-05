@@ -103,7 +103,7 @@ StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
 
 決定は ADR-0037 が持つ。この節は、その形で組む前提になる Vite+ と Vitest の仕組みを持つ。
 
-- Vite+ は Vitest の設定を `vite.config.ts` の `test` に置くよう勧める ([Vite+ docs「Test」][]: "We do not recommend using `vitest.config.ts` with Vite+.")
+- Vite+ は Vitest の設定を `vite.config.ts` の `test` に置くよう勧める ([Vite+ docs「Test」][]: "We do not recommend using `vitest.config.ts` with Vite+."、ADR-0004)
 - `vitest.config.ts` があると、Vitest はそちらを優先して `vite.config.ts` の設定を無視する ([Vitest docs「Configuring Vitest」][]: "all options in your `vite.config` will be **ignored**")。`envDir` のような共有の設定を 2 つの config に写し続けることになる
 - 中身は `tooling/test/` に切り出し、`vite.config.ts` には `test: testConfig` の 1 行だけを置く。切り出す形の理由は `docs/guides/vite-configuration.md`「別のファイルから組み立てる理由」
 
@@ -180,7 +180,7 @@ Compiler がかかる範囲と、診断の扱いは次のとおり。
 
 - `@vitejs/plugin-react` 6.1.1 は、Vite の environment の consumer が `server` でないときだけ Compiler をかけ、`node_modules` を変換しない (`dist/index.js` の `createReactCompilerPlugin` の `isClient` と、`defaultExcludeRE`)。2026-10-05 に、変換後の `src/components/ui/separator.tsx` に `_c(` が、Compiler を通す project (`browser`、`storybook-light`、`storybook-dark`) では現れ、通さない project (`browser-no-compiler`、`storybook-light-no-compiler`) では現れないことを確かめた
 - Node の project は React の plugin を持たず、Compiler を通らない
-- テストでは `logDiagnostics` を立てない。テストで出すと、そのファイルを読むブラウザモードの project ごとに同じ bail out を出し直す。bail out はビルドログと `vp lint -D react/todo` で読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
+- テストでは `logDiagnostics` を立てない。テストで出すと、そのファイルを読むブラウザモードの project ごとに同じ bail out を出し直す。bail out はビルドログと `vp lint -D react/todo` で読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」、ADR-0014)
 
 ### project に `optimizeDeps` を書く理由
 

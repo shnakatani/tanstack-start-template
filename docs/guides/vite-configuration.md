@@ -11,11 +11,11 @@
 
 ### 設定の置き場所
 
-Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vite.config.ts` に集める (「1 つの `vite.config.ts` に集める理由」)。block を切り出すときは `tooling/<block>/` に置き、`vite.config.ts` はそれを import して組み立てる (「別のファイルから組み立てる理由」)。
+Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vite.config.ts` に集める (「1 つの `vite.config.ts` に集める理由」、ADR-0004)。block を切り出すときは `tooling/<block>/` に置き、`vite.config.ts` はそれを import して組み立てる (「別のファイルから組み立てる理由」)。
 
 | block                                                 | 置き場所                                                                                                                                                                                                                           |
 | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test`                                                | `tooling/test/config.ts` の `testConfig`。project の組み方は `docs/guides/testing/configuration.md`                                                                                                                                |
+| `test`                                                | `tooling/test/config.ts` の `testConfig` (ADR-0037)。project の組み方は `docs/guides/testing/configuration.md`                                                                                                                     |
 | `lint`                                                | `tooling/lint/config.ts` の `lintConfig`。ルールとプラグインの足し方は `docs/guides/lint/configuration.md`                                                                                                                         |
 | `fmt`、`staged`、`resolve`、`envDir`、`plugins`       | `vite.config.ts`                                                                                                                                                                                                                   |
 | `plugins` の React の plugin (`@vitejs/plugin-react`) | `tooling/plugins/react.ts` の `reactPlugin`。アプリの `plugins` と、ブラウザで走る project の `chromiumProjectBase` が同じ factory から作る。分岐の書き方は `docs/guides/testing/configuration.md`「テストでだけ plugin を変える」 |

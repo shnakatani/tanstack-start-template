@@ -4,9 +4,14 @@
 
 | 決定                                                                                                                              | ADR      |
 | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する                                      | ADR-0010 |
+| メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                                                        | ADR-0014 |
 | 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す                                                  | ADR-0018 |
 | 一覧の絞り込み条件は URL の search param が持ち、loaderDeps で loader に渡す                                                      | ADR-0019 |
+| registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る                | ADR-0020 |
+| design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る                                         | ADR-0022 |
 | ページは URL の変化で作り直さず、取得結果の入れ替わりはページの effect が取得の決着で通知し、直前に通知した条件と同じなら出さない | ADR-0027 |
+| ページのデータは Query から読み、欠かせない query だけを loader で待ち、副次的な query は待たずに Suspense の中で読む             | ADR-0033 |
 
 ## how-to
 
