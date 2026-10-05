@@ -1,6 +1,6 @@
 # スタイルとトークン
 
-色・トークン・余白を扱うときの手順と、コントラスト比の測り方を持つ。
+色・トークン・文字の階層・余白を扱うときの手順と、コントラスト比の測り方を持つ。
 
 | 決定                                                                                                                                                   | ADR      |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -46,6 +46,7 @@
 - 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0011) と、汎用の層が負う責務の範囲 (ADR-0016) で決める
 - variant 関数を消費側から呼ぶ形を採るたびに、`tooling/lint/config.ts` の `settings.shadcn.variantFunctions` へ足す。忘れると呼び出しが lint で落ちるので、気付けない失敗にはならない
 - 宣言するのは `ui/` の variant 関数だけにする。`ui/` の外の `cva` を宣言すると、定義の中の class が `no-restyle` に検査されずに部品へ通る (ADR-0023)
+- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら `ui/` の `cva` に variant を足し (台帳への行の足し方は「部品の見た目を変える」)、`ui/` の外の見た目なら部品として切り出す。`ui/` の外で `cva` の variant にしない。`ui/` の外の `cva` は `variantFunctions` へ宣言しないので、その戻り値を部品へ渡すと `require-static-classes` が落とす (`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」)
 
 ### 部品の見た目を変える
 
@@ -69,6 +70,44 @@ ui 部品の見た目を変えたいときは、上の行から順に当ては�
 | 角丸         | `ScrollArea` の `className`                                                                                |
 | 余白         | 中身の要素。lint が余白を止めたときに案内する margin と親の gap は外側の直し方で、内側の余白には使えない   |
 | 地の色と枠線 | `ScrollArea` を包む器 (素の要素)。中身にも同じ地を置く (`docs/guides/registry.md`「公式のノブを先に探す」) |
+
+### 文字の階層を選ぶ
+
+文字の大きさと太さは、役割から次の表で選ぶ。
+
+| 役割                         | クラス                    |
+| ---------------------------- | ------------------------- |
+| ページ見出し                 | `text-lg font-semibold`   |
+| セクション見出し             | `text-base font-semibold` |
+| 本文・フォームのラベル       | `text-base` / `text-sm`   |
+| 補足・タイムスタンプ・バッジ | `text-xs` も使える        |
+
+- ページ見出しは `PageHeader` (`src/components/parts/page-header.tsx`) の `title` で描き、カードの中に置くページ見出しは `CardPageTitle` (`src/components/parts/page-title.tsx`) で描く。どちらも寸法を `ui/card.tsx` の `cardTitleVariants` の `size="page"` から取るので、見出しの class を書き直さない
+- 本文に `text-xs` を使わない。タブレットで読みにくくなる
+- ページ見出しとセクション見出しを同じ大きさにしない。階層が見た目から読めなくなる
+
+### 間隔の値を選ぶ
+
+ページの間隔は次の表の値にそろえる。表の値はこのアプリで決めた値で、上流から来た値ではない。変えるときは画面で実測し、表を書き換える。
+
+| 対象                 | 値      |
+| -------------------- | ------- |
+| ページ本体の padding | `p-4`   |
+| ページ本体の縦積み   | `gap-4` |
+| リストの行間         | `gap-2` |
+
+- ページ本体の `p-4` は、ページ直下のコンテナに掛ける。全画面で中央に寄せるページは対象外
+- registry の部品の内部の間隔 (Dialog や Card の padding、`Field` 系の間隔) は registry の既定を基準にし、表に写さない
+- 表に無い値を使う前に、意味が違うのか単なる揺れかを問う。同じ意味なら表の値に合わせる
+- 別の体系 (1 画面に収める縦の予算など) を持つ画面を足すときは、その画面が表の対象外であることと値の根拠を、実装の近くに書く
+
+### 兄弟の間隔を親の gap に置く
+
+- 兄弟の間隔は親の `gap-*` に置き、子の margin (`mb-*` / `mt-*` など) で作らない。[shadcn skill「Styling & Customization」][] は layout に使う `className` の例に `mt-4` を挙げるが、兄弟の間隔には使わない。理由は「兄弟の間隔を親の gap に置く理由」にある
+- 例外は registry の部品 (`src/components/ui/`) の中である。`FieldLegend` の `mb-3` のように registry 自身が margin で取る間隔は、消費側で上書きしない
+- 例外を足すときは、この節と実装の近くの両方に同じ理由を書く
+- 負マージンによる親の padding の打ち消し (`-mx-(--card-spacing)` など) と、`*-auto` による整列 (`ml-auto` など) は兄弟の間隔ではない。この規範の対象外なので、そのまま書いてよく、例外にも挙げない
+- 機械では検査しない。レビューで見る
 
 ### トークンを作り直す
 
@@ -99,6 +138,9 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 ```
 
 - `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である
+- 満たす比は、文字が 4.5:1 (大きな文字は 3:1) ([WCAG 2.2 SC 1.4.3][])、UI 部品とその状態を見分けるのに要る部分と、内容の理解に要る図形が、隣の色に対して 3:1 である ([WCAG 2.2 SC 1.4.11][])。無効な部品のように比を求めない対象は、それぞれの SC の例外が挙げる
+- light と dark は別に測る。トークンの値がテーマごとに違うので、片方で満たした対がもう片方で割ることがある
+- opacity variant (`bg-primary/10` など) が下地にある対は、その面も `--bg` に重ねて測る。下地との合成で比が変わる
 - 比を書いた箇所を触るときは測り直す。[Understanding SC 1.4.3][] と [Understanding SC 1.4.11][] は計算値を丸めるなと地の文に書いており (WCAG 2.2 本体に記述は無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない
 - 表示は切り捨てなので、2 桁の値が実際の比を上回ることはない。`4.59` と出た値が 4.6 を満たすことはない
 - `--primary` の hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置き、`mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。4.6 を下回る hue は light を `<hue>-900` にする (ADR-0024「有彩色のアクセントは light と dark で役割を反転させる」)
@@ -166,15 +208,6 @@ comm -23 <(grep -oE -- '--[a-z0-9-]+:' node_modules/tailwindcss/theme.css | sort
 ### 兄弟の間隔を親の gap に置く理由
 
 兄弟の間隔は、子の margin ではなく親の `gap-*` に置く。間隔の持ち主を親にすると、子は自分が並ぶ文脈を知らなくて済む。子が margin で間隔を持つと、同じ部品を別の並びに置いたときに間隔が付いて回る。
-
-次は兄弟の間隔ではない。この規則の対象外なので、そのまま書いてよく、例外の一覧にも挙げない。
-
-- 負マージンによる親の padding の打ち消し (`-mx-(--card-spacing)` など)
-- `*-auto` による整列 (`ml-auto` など)
-
-### spacing の表の値
-
-ページ本体の padding やリストの行間のような表の値は、このアプリで決めた値で、上流から来た値ではない。変えるときは画面で実測し、表を書き換える。registry の部品の内部の間隔は registry の既定が基準で、表に写さない。
 
 ### 比の測り方を置いた理由
 
@@ -300,7 +333,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。WCAG 2.2 の SC の文言は 2026-10-05 に原文と照らした。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -309,6 +342,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 [shadcn docs「Button」]: https://ui.shadcn.com/docs/components/base/button
 [shadcn の `button-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/examples/button-example.tsx
 [shadcn skill「Customization & Theming」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/customization.md
+[shadcn skill「Styling & Customization」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/styling.md
 [shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/base/data-table
 [shadcn-ui/lint docs「no-restyle」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md
 [shadcn-ui/lint docs「Configuring your design system」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/design-systems.md
@@ -317,6 +351,8 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 [shadcn-ui/lint docs「Rules」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules.md
 [Understanding SC 1.4.3]: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
 [Understanding SC 1.4.11]: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
+[WCAG 2.2 SC 1.4.3]: https://www.w3.org/TR/WCAG22/#contrast-minimum
+[WCAG 2.2 SC 1.4.11]: https://www.w3.org/TR/WCAG22/#non-text-contrast
 [Tailwind CSS docs「Theme variables」]: https://tailwindcss.com/docs/theme
 [Primer Primitives の `colorContrast.config.ts`]: https://github.com/primer/primitives/blob/main/scripts/colorContrast.config.ts
 [brave/brave-browser#10000]: https://github.com/brave/brave-browser/issues/10000

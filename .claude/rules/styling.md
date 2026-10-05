@@ -17,7 +17,7 @@ palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-ra
 - 破壊操作のボタンは、テキストでもアイコンでも `variant="destructive"` にし、アイコンだけなら `size="icon*"` を合わせる。hover だけの着色は touch 環境で出ない (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)
-- コントラストは本文 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark は light と別に検算する。opacity variant は背景合成で比が変わる
+- コントラストは文字 4.5:1 (大きな文字は 3:1)、UI 部品と状態を見分ける部分と図形 3:1。対象外は各 SC の例外に限る。dark は light と別に測る。opacity variant は下地との合成で比が変わるので、下地ごと重ねて測る (`docs/guides/styling-and-tokens.md`「比を測る」)
 - トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0024)
 - 色だけで情報を伝えない。アイコンかテキストを併用し、併用先が識別に寄与しないなら `sr-only` で補う
 
@@ -34,6 +34,8 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ## typography 階層
 
+文字の大きさと太さは次の表から役割で選ぶ (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)。
+
 | レベル                       | クラス                    |
 | ---------------------------- | ------------------------- |
 | ページ見出し                 | `text-lg font-semibold`   |
@@ -41,28 +43,27 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 | 本文・フォームラベル         | `text-base` / `text-sm`   |
 | 補足・タイムスタンプ・バッジ | `text-xs` 可              |
 
-- ページ見出しは `src/components/parts/page-header.tsx` が持つ。カードの中は `CardPageTitle` (`page-title.tsx`) を通し、class を書き直さない
-- 本文に `text-xs` を使わない (タブレット可読性)。ページ見出しとセクション見出しを同サイズにしない (階層が消える)
+- ページ見出しは `PageHeader` (`page-header.tsx`) の `title`、カードの中は `CardPageTitle` (`page-title.tsx`) で描き、class を書き直さない (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)
+- 本文に `text-xs` を使わない (タブレット可読性)。ページ見出しとセクション見出しを同サイズにしない (階層が消える) (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)
 
 ## spacing 基準
 
 間隔の表現手法は shadcn skill (`.claude/skills/shadcn/rules/styling.md`) に従う。本節は値と、skill を狭める追加規定を持つ。
 
-- 兄弟の間隔を子の margin (`mb-*` / `mt-*` 等) で作らない。親の `gap-*` に置く。skill は `mt-4` を可例に挙げるが、兄弟の間隔に限りここで禁止する (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く理由」)
+- 兄弟の間隔を子の margin (`mb-*` / `mt-*` 等) で作らない。親の `gap-*` に置く。skill は `mt-4` を可例に挙げるが、兄弟の間隔に限りここで禁止する (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く」)
 - 機械強制は無いのでレビューで見る。例外は「親の gap で表現できない箇所」に挙げたものだけ
-- registry 内部の間隔 (Dialog や Card の padding、`Field` 系の間隔) は registry の既定を基準にし、下の表に写さない
-- 表の値はこのアプリで決めた値で、変えるときは画面で実測して表を書き換える (`docs/guides/styling-and-tokens.md`「spacing の表の値」)
+- registry 内部の間隔 (Dialog や Card の padding、`Field` 系の間隔) は registry の既定を基準にし、下の表に写さない (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
+- 表の値はこのアプリで決めた値で、変えるときは画面で実測して表を書き換える (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
 
-| 対象                         | 値                                        |
-| ---------------------------- | ----------------------------------------- |
-| ページ本体 padding           | `p-4`                                     |
-| ページ本体の縦積み           | `gap-4`                                   |
-| ページ見出し帯 (page-header) | `min-h-15 py-3` (`h-9` の actions と等高) |
-| リスト行間                   | `gap-2`                                   |
+| 対象               | 値      |
+| ------------------ | ------- |
+| ページ本体 padding | `p-4`   |
+| ページ本体の縦積み | `gap-4` |
+| リスト行間         | `gap-2` |
 
-- ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外
-- 表にない値を使う前に「意味が違うのか、単なる揺れか」を問う。同じ意味なら表の値に合わせる
-- 別の体系 (1 画面に収める縦予算など) を持つ画面を足すときは、表の対象外と明記し、値の根拠を実装近傍に書く
+- ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外 (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
+- 表にない値を使う前に「意味が違うのか、単なる揺れか」を問う。同じ意味なら表の値に合わせる (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
+- 別の体系 (1 画面に収める縦予算など) を持つ画面を足すときは、表の対象外と明記し、値の根拠を実装近傍に書く (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
 - registry の既定から値を変えるときは、まず公式の推奨へ合わせ、実機で見てから判断し、理由を実装近傍に書く (ADR-0020)
 
 ### 公式のノブ
@@ -88,7 +89,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 子の margin で兄弟の間隔を作ってよい例外。増やすときは実装近傍にも同じ理由を書く。
 
-- `src/components/ui/` (registry 素) は対象外。`FieldLegend` の `mb-3` のように registry 自身が margin で取る間隔は消費側で上書きしない
+- `src/components/ui/` (registry 素) は対象外。`FieldLegend` の `mb-3` のように registry 自身が margin で取る間隔は消費側で上書きしない (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く」)
 
 ### 内部スクロールを持つダイアログの組み方
 
@@ -110,7 +111,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - 列見出しなど実テーブルと合わせる値は、両方が参照する定数に置く。別々に持つとロード完了時にレイアウトがずれる
 - ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0026)
 - データなしは `Empty` 系で、メッセージと次のアクションへの導線をセットで示す
-- 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項でよい
+- 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら `ui/` の `cva` に variant を足し、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
 
 ## 操作できる要素の組み方
 
