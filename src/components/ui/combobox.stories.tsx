@@ -50,7 +50,8 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
 /** 開くところまで。絞り込みと選択は書かない (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
-  await screen.findByRole("listbox");
+  // 名前で掴み、ComboboxList が名前を listbox へ渡していることも確かめる
+  await screen.findByRole("listbox", { name: "果物" });
 }
 
 const meta = {

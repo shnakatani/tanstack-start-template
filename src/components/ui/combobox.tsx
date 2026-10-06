@@ -134,9 +134,9 @@ function ComboboxContent({
 }
 
 /**
- * listbox (grid) の名前を `aria-label` か `aria-labelledby` で受け、型で必須にする。base-ui は
- * Combobox.Label を置いても List に名前を付けず (`combobox/list/ComboboxList.js`)、axe も combobox の
- * popup の listbox を検査しない (docs/guides/accessibility.md「accessible name を与える」)
+ * listbox (grid) の名前を `aria-label` か `aria-labelledby` で受け、属性を型で必須にする (空文字は止めない)。
+ * base-ui は Combobox.Label を置いても List に名前を付けず (`combobox/list/ComboboxList.js`)、axe も
+ * popup の listbox と grid の名前を検査しない (docs/guides/accessibility.md「accessible name を与える」)
  */
 function ComboboxList({
   className,

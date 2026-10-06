@@ -151,7 +151,7 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 - Base UI (1.8.0) の Select / Combobox の trigger は `FieldLabel` / `SelectLabel` / `ComboboxLabel` を指さない。見える label で名付けるなら label に id を付けて trigger の `aria-labelledby` で指す (`docs/guides/accessibility.md`「accessible name を与える」)
 - Base UI (1.8.0) の Checkbox / Radio は、根が `span` の既定では `<label htmlFor>` や包む `<label>` からの名前をクライアントでしか付けない。サーバーの HTML から名前を持たせるなら `aria-labelledby` で指す (`docs/guides/accessibility.md`「accessible name を与える」)
 - 入力欄を popup の中に置いた Combobox の trigger は combobox になる。既定の「候補を開く」のままにせず、欄の名前を渡す。popup の中の `ComboboxInput` は `showTrigger={false}` にする (`docs/guides/accessibility.md`「accessible name を与える」)
-- Base UI (1.8.0) の Select / Combobox の listbox (grid) は名前を持たないので、`SelectContent` と `ComboboxList` に欄の名前を `aria-label` か `aria-labelledby` で渡す (型で必須。axe は combobox の popup の listbox を検査しない) (`docs/guides/accessibility.md`「accessible name を与える」)
+- Base UI (1.8.0) の Select / Combobox の listbox (Combobox の `grid` では grid) は名前を持たないので、`SelectContent` と `ComboboxList` に欄の名前を `aria-label` か `aria-labelledby` で渡す (属性は型で必須だが空文字は止めない。axe-core 4.13.0 は popup の listbox も grid の名前も検査しない) (`docs/guides/accessibility.md`「accessible name を与える」)
 - `Spinner` は `aria-hidden` で使う。`status` に中身と同じ文言の名前を付けない (`docs/guides/accessibility.md`「accessible name を与える」)
 - 名前の文字を inline でない子要素 (flex や grid の item、block、inline-block) に分けない。Chrome が境界に空白を入れて名前が分断される。略記と全文を出し分けるなら可視側を `aria-hidden`、全文を 1 つの `sr-only` に置く (`docs/guides/accessibility.md`「accessible name を与える」)
 - 名前に関わる要素を切り出す前後で `getByRole({ name })` の結果が変わらないことを確かめる (`docs/guides/accessibility.md`「accessible name を与える」)
