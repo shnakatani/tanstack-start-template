@@ -340,7 +340,8 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
 /**
  * Calendar に渡す日本語の locale。書式は `date-fns/locale/ja` から取り、この Calendar が使う
  * 4 つのラベル (labelDayButton / labelNext / labelPrevious / labelNav) は react-day-picker の ja
- * (`react-day-picker/locale/ja`) と同じ文言をここで持つ。
+ * (`react-day-picker/locale/ja`) と同じ文言をここで持つ。labelNav だけは、nav の名前に
+ * 「ナビゲーション」を含めない規範 (docs/guides/accessibility.md「ナビゲーションを組む」) に合わせて変える。
  * `react-day-picker/locale/ja` を使わないのは、中で `date-fns/locale` のバレルを読み、全ロケールを
  * 引き込むため (react-day-picker 10.0.1 の `dist/esm/locale/ja.js` の 1 行目、ADR-0032)
  */
@@ -352,7 +353,7 @@ const CALENDAR_LOCALE: Partial<DayPickerLocale> = {
       const withToday = modifiers.today ? `今日、${label}` : label;
       return modifiers.selected ? `${withToday}、選択済み` : withToday;
     },
-    labelNav: "ナビゲーションバー",
+    labelNav: "月の切り替え",
     labelNext: "次の月へ",
     labelPrevious: "前の月へ",
   },
