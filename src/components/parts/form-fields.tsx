@@ -221,10 +221,13 @@ export function FormSelectField<T extends string>({
   disabled,
 }: FormSelectFieldProps<T>) {
   const { field, id, errorId, errors, invalid } = useFormFieldState<T>();
+  const labelId = useId();
 
   return (
     <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel id={labelId} htmlFor={id}>
+        {label}
+      </FieldLabel>
       <Select
         value={field.state.value}
         onValueChange={(value) => {
@@ -256,9 +259,12 @@ export function FormSelectField<T extends string>({
         // (SelectRoot.d.ts:111)。options の安定性は消費側 (useMemo / モジュール定数) の責務。
         items={options}
       >
+        {/* trigger は button の combobox なので、見える label を aria-labelledby で指す
+            (docs/guides/accessibility.md「accessible name を与える」) */}
         <SelectTrigger
           id={id}
           className="w-full"
+          aria-labelledby={labelId}
           onBlur={field.handleBlur}
           aria-invalid={invalid}
           aria-describedby={invalid ? errorId : undefined}
@@ -288,6 +294,7 @@ interface FormCheckboxFieldProps
 export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
   const field = useFieldContext<boolean>();
   const id = useId();
+  const labelId = useId();
   const errors = field.state.meta.errors;
 
   // 検証を持たない真偽値フィールド専用なので、正規の利用では errors は常に空で
@@ -314,13 +321,18 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
   // 器の幅を w-56 に絞っており、行を中身の幅に縮めるのはその形に合わせたもの
   return (
     <Field orientation="horizontal" className="w-fit" data-disabled={disabled || undefined}>
+      {/* Base UI の Checkbox は htmlFor の label からも名前を写すが、写すのはクライアントだけなので
+          aria-labelledby で指す (docs/guides/accessibility.md「accessible name を与える」) */}
       <Checkbox
         id={id}
         checked={field.state.value}
         disabled={disabled}
+        aria-labelledby={labelId}
         onCheckedChange={field.handleChange}
       />
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel id={labelId} htmlFor={id}>
+        {label}
+      </FieldLabel>
     </Field>
   );
 }
@@ -328,7 +340,8 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
 /**
  * Calendar に渡す日本語の locale。書式は `date-fns/locale/ja` から取り、この Calendar が使う
  * 4 つのラベル (labelDayButton / labelNext / labelPrevious / labelNav) は react-day-picker の ja
- * (`react-day-picker/locale/ja`) と同じ文言をここで持つ。
+ * (`react-day-picker/locale/ja`) と同じ文言をここで持つ。labelNav だけは、nav の名前に
+ * 「ナビゲーション」を含めない規範 (docs/guides/accessibility.md「ナビゲーションを組む」) に合わせて変える。
  * `react-day-picker/locale/ja` を使わないのは、中で `date-fns/locale` のバレルを読み、全ロケールを
  * 引き込むため (react-day-picker 10.0.1 の `dist/esm/locale/ja.js` の 1 行目、ADR-0032)
  */
@@ -340,7 +353,7 @@ const CALENDAR_LOCALE: Partial<DayPickerLocale> = {
       const withToday = modifiers.today ? `今日、${label}` : label;
       return modifiers.selected ? `${withToday}、選択済み` : withToday;
     },
-    labelNav: "ナビゲーションバー",
+    labelNav: "月の切り替え",
     labelNext: "次の月へ",
     labelPrevious: "前の月へ",
   },

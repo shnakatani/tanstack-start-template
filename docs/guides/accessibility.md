@@ -1,6 +1,6 @@
 # アクセシビリティ
 
-axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、クライアント遷移の伝え方と、色以外の手がかり・ナビゲーション・ダイアログの閉じる手段の組み方を持つ。
+axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、クライアント遷移の伝え方と、accessible name・色以外の手がかり・ナビゲーション・ダイアログの閉じる手段の組み方を持つ。
 
 | 決定                                                                                                                              | ADR      |
 | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -160,6 +160,10 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 | registry の既定 (`role="list"` の div) のまま使う               | 空のリストとして読まれる ([shadcn-ui/ui#11532][])                                                                     | 却下     |
 | `role="list"` と `role="listitem"` を足す (#12085 の docs の形) | `jsx-a11y/prefer-tag-over-role` が止める                                                                              | 却下     |
 
+### accessible name の節を落とし穴に絞る理由
+
+名前の要件は WCAG と WAI-ARIA が、ロールごとの作法は APG が持つ。どちらも条件 (SHOULD と MAY の区別、ネイティブの要素の扱い、例外) が細かく、ガイドの言葉で要約すると条件を落とすか、作法を要件と同じ重さで書いてしまう。APG は自身を、規格を満たす作り方の一つを示す informative な資料と位置づける。そこでこの節は、要件と作法を原典に任せ、このリポジトリの部品 (Base UI と registry) を使うときの落とし穴と、名前を壊さないための確かめ方だけを書く。部品の挙動はソースか実測で確かめた事実として書く。
+
 ### メニューのグループの見出しを強制しない理由
 
 見出しの無いグループは、画面では区切り線でしか分かれず、支援技術にも区切りだけが伝わる。晴眼の利用者と支援技術の利用者が得る情報は同じで、区切りで分ける形は [APG「Menu and Menubar Pattern」][] が示す形である。group の名前は [WAI-ARIA 1.2][] でも必須ではない (group role の特性に Accessible Name Required が無い)。
@@ -261,6 +265,19 @@ story で統制できるのは markup までで、フォントは実行環境が
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
 
+### accessible name を与える
+
+名前が要るかと与え方は、[WCAG 2.2 SC 4.1.2][] と、[APG「Providing Accessible Names and Descriptions」][] の Accessible Name Guidance by Role に従う。APG は規格を満たす作り方を示す informative な資料で、要件ではない ([APG「Introduction」][] の APG is Not a Normative Standard)。迷ったら与える側に倒し、与えない判断をしたら理由を実装の近くに残す。この節には、このリポジトリの部品で踏みやすい落とし穴だけを書く。
+
+- Base UI 1.8.0 の Select と Combobox の trigger は、Base UI の Field.Label があればそれを、無ければ Select.Label か Combobox.Label を `aria-labelledby` で指す (`@base-ui/react` の `utils/resolveAriaLabelledBy.js`)。このリポジトリの `FieldLabel` は素の `<label>`、`SelectLabel` と `ComboboxLabel` は GroupLabel なので、どれも指されない。trigger を見える label で名付けるときは、label に id を付けて trigger の `aria-labelledby` で指す (`src/components/parts/form-fields.tsx` の `FormSelectField`)
+- Base UI 1.8.0 の Checkbox と Radio は、既定 (`nativeButton` が false) では根が `span` で、隠れた input に `<label htmlFor>` を結ぶか、`<label>` で包むと、その label の id を根の `aria-labelledby` に写す。写すのはクライアントの layout effect の中なので (`internals/labelable-provider/useAriaLabelledBy.js`)、サーバーが返す HTML の時点では根に名前が無い。サーバーの HTML から名前を持たせるときは、label に id を付けて根の `aria-labelledby` で指す (`FormCheckboxField`)
+- 入力欄を popup の中に置くと、Combobox の trigger は combobox になる (`combobox/trigger/ComboboxTrigger.js` の `inputInsidePopup`)。このリポジトリの `ComboboxTrigger` は既定で `aria-label="候補を開く"` を持つので、この形では欄の名前を `aria-label` か `aria-labelledby` で渡す。popup の中の `ComboboxInput` は既定 (`showTrigger`) で名前を渡せない trigger を内に持ち、それも combobox になるので、`showTrigger={false}` にする。`aria-labelledby` は `aria-label` より先に名前に使われる ([accname 1.2][] の 2B LabelledBy と 2D AriaLabel)
+- registry の `Spinner` は `role="status"` と `aria-label="Loading"` だけを持ち、中身の文字を持たない。`aria-hidden` にして見た目だけに使い、読み込み中であることは「読み込み中の表示を組む」の形で伝える
+- `status` に、中身と同じ文言の名前を付けない。[APG「Providing Accessible Names and Descriptions」][] の表の status の行は "Some screen readers announce the name of a status element before announcing the content of the status element." と書く
+- 名前の文字を、inline でない子要素 (flex や grid の item、block、inline-block) へ分けない。2026-10-06 に Playwright 1.63.0 の Chromium 153.0.8010.12 で、button に `<span>Ab</span><span>cd</span>` を置くと、子が inline なら名前は `Abcd`、親が flex か grid、または子が block か inline-block なら `Ab cd` だった。子の境界で空白を入れるかは仕様で決まっていない ([accname 1.2][] の 2F の注記、[w3c/accname#225][])
+- 略記と全文を出し分けるときは、可視の側を `aria-hidden` にし、全文を 1 つの `sr-only` に置く
+- 名前に関わる要素を部品へ切り出すときは、切り出す前後で `getByRole(<role>, { name })` が同じ要素を返すことを確かめる。名前は表示の形 (上の空白) でも変わり、見た目では気付けない
+
 ### Combobox の popup に名前を与える
 
 `ComboboxContent` (Base UI の `Combobox.Popup`) に名前を渡すかは、`ComboboxInput` を置く場所で決まる。Base UI 1.8.0 は popup の role を、入力欄が popup の中にあれば `dialog`、外にあれば `presentation` にする (`@base-ui/react` の `combobox/popup/ComboboxPopup.js`)。
@@ -307,7 +324,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」、accname 1.2 の引用は 2026-10-06 に原文と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -342,3 +359,8 @@ story で統制できるのは markup までで、フォントは実行環境が
 [WCAG 2.2 SC 1.4.1]: https://www.w3.org/TR/WCAG22/#use-of-color
 [TanStack Router の `link.tsx`]: https://github.com/TanStack/router/blob/b1e54dee82e8ed5850daa7f6efd04a56c1aeeae6/packages/react-router/src/link.tsx#L569
 [TanStack Router docs「Navigation」]: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.39/docs/router/guide/navigation.md
+[APG「Providing Accessible Names and Descriptions」]: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
+[accname 1.2]: https://www.w3.org/TR/accname-1.2/
+[w3c/accname#225]: https://github.com/w3c/accname/issues/225
+[WCAG 2.2 SC 4.1.2]: https://www.w3.org/TR/WCAG22/#name-role-value
+[APG「Introduction」]: https://www.w3.org/WAI/ARIA/apg/about/introduction/
