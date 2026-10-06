@@ -129,7 +129,6 @@ paths:
 1. 代替手段を検討する
 2. 実行環境で条件分岐できるなら `skipIf` を使う
 3. 恒久的に無効化するなら、`it.skip` の直前に理由付きの `oxlint-disable-next-line vitest/no-disabled-tests` を置く (`it.todo` は `vitest/warn-todo`)
-4. 完全に削除するなら、コミットメッセージに未テスト範囲を書く
 
 ## クリックの発火方法
 
