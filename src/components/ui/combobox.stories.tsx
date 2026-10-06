@@ -35,7 +35,7 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
       <ComboboxContent aria-label="果物の候補">
         <ComboboxInput aria-label="果物を検索" placeholder="検索" showTrigger={false} />
         <ComboboxEmpty>該当なし</ComboboxEmpty>
-        <ComboboxList>
+        <ComboboxList aria-label="果物">
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
               {item}
@@ -50,7 +50,8 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
 /** 開くところまで。絞り込みと選択は書かない (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "果物" }));
-  await screen.findByRole("listbox");
+  // 名前で掴み、ComboboxList が名前を listbox へ渡していることも確かめる
+  await screen.findByRole("listbox", { name: "果物" });
 }
 
 const meta = {
@@ -113,7 +114,7 @@ export const InlineWithTrigger: Story = {
     <Combobox items={FRUITS}>
       <ComboboxInput aria-label="果物" placeholder="果物を選択" />
       <ComboboxContent>
-        <ComboboxList>
+        <ComboboxList aria-label="果物">
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
               {item}
@@ -159,7 +160,7 @@ export const InlineWithClear: Story = {
     <Combobox items={FRUITS} defaultValue="りんご">
       <ComboboxInput aria-label="果物" showClear />
       <ComboboxContent>
-        <ComboboxList>
+        <ComboboxList aria-label="果物">
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
               {item}

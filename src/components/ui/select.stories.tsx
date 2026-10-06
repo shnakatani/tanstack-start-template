@@ -28,7 +28,7 @@ function SelectExample({ defaultValue }: { defaultValue?: string }) {
       <SelectTrigger aria-label="状態">
         <SelectValue placeholder="状態を選択" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent aria-label="状態">
         <SelectGroup>
           {OPTIONS.map((option) => (
             <SelectItem key={option.value} value={option.value}>
@@ -44,7 +44,8 @@ function SelectExample({ defaultValue }: { defaultValue?: string }) {
 /** 開くところまで。選択は既存のブラウザテストが持つ (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "状態" }));
-  await screen.findByRole("listbox");
+  // 名前で掴み、SelectContent が名前を listbox へ渡していることも確かめる
+  await screen.findByRole("listbox", { name: "状態" });
 }
 
 const meta = {
@@ -86,7 +87,7 @@ export const Grouped: Story = {
       <SelectTrigger aria-label="状態">
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent aria-label="状態">
         <SelectGroup>
           <SelectLabel>作業中</SelectLabel>
           <SelectItem value="draft">下書き</SelectItem>
