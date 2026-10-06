@@ -11,7 +11,6 @@ mise run verify   # マージ前に通す。手順は .mise.toml の [tasks.veri
 
 ## 開発上の注意
 
-- 実装中は 1 ファイル目を `vp check --fix` まで通してから横展開する
 - 依存は `vp add` / `vp remove` で足し外し、pnpm / npm / yarn で足し外さない。入口を `vp` にそろえる (`npm` はこのリポジトリの `catalog:` を読めず `EUNSUPPORTEDPROTOCOL` で止まる)。`vp` が中継しないサブコマンドは素の `pnpm` で打つ (`pnpm peers check`)。出典は `docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
 - **worktree のパスに `+` を含めない**。story の project が、事前バンドルのキャッシュが無い初回の実行で落ちる (`docs/guides/testing/configuration.md`「テストを走らせる」)
 - `EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
