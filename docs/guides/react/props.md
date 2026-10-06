@@ -28,7 +28,7 @@
 
 | 部品の形                                                                | props の型                                                                                                                                                                                        | 実例                                   |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| 転送先の API をすべて公開する薄いラッパー                               | `ComponentProps<…>` をそのまま受ける。spread から `ref` を外すことを型で示すときだけ `ComponentPropsWithoutRef<…>` にする ([React TypeScript Cheatsheet「ComponentProps」][] の React 19+ の注記) | `src/components/parts/button-link.tsx` |
+| 転送先の API をすべて公開する薄いラッパー                               | `ComponentProps<…>` をそのまま受ける。spread から `ref` を外すことを型で示すときだけ `ComponentPropsWithoutRef<…>` にする ([React TypeScript Cheatsheet「ComponentProps」][] の React 19+ の注記) | -                                      |
 | 1 つの転送先へ props を spread し、一部の prop だけを内部で握るラッパー | 握る prop を `Omit<ComponentProps<…>, "<握る prop>">` で外す。JSX では、握る prop を spread の後ろに書く                                                                                          | `src/components/action/`               |
 | 複数の部品を組み合わせ、値・id・`aria-invalid` を内部で配線する部品     | 公開する prop を `Pick<ComponentProps<…>, "…">` で列挙して extends し、rest を spread しない                                                                                                      | `src/components/parts/form-fields.tsx` |
 

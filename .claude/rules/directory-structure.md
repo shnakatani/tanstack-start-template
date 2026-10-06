@@ -35,12 +35,12 @@ paths:
 
 ## features と hooks と lib と server の境界
 
-| 配置先                   | 内容                                                                                                                                                                                                       |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / mutation options / server fn / 共有 UI) (`docs/guides/placement.md`「features か route か」)                                                    |
-| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、複数のファイルから使う React 依存の context 定義。1 つの部品のファイルだけで使う context はそのファイルに置く (`docs/guides/placement.md`「features か route か」) |
-| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存) (`docs/guides/placement.md`「features か route か」)                                                                                                     |
-| `src/server/`            | ドメインに属さないもの (DB 接続とテーブル定義、横断的な server function) (`docs/guides/placement.md`「features か route か」)                                                                              |
+| 配置先                   | 内容                                                                                                                                                                                                                                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/features/<domain>/` | 1 つのドメインに属し、複数の画面から使うものか、ドメインの形と同じ場所に居るべきもの (スキーマ / query options / mutation options / server fn / 共有 UI)。その route だけが使うものは route 側に置く (`docs/guides/placement.md`「features か route か」)                           |
+| `src/hooks/`             | どのドメインにも属さない React 依存のカスタム hook (`use-*`) と、複数のファイルから使う React 依存の context 定義。その route だけが使うものは route の `-hooks/`、1 つの部品のファイルだけで使う context はそのファイルに置く (`docs/guides/placement.md`「features か route か」) |
+| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存) (`docs/guides/placement.md`「features か route か」)                                                                                                                                                                              |
+| `src/server/`            | ドメインに属さないもの (DB 接続とテーブル定義、横断的な server function) (`docs/guides/placement.md`「features か route か」)                                                                                                                                                       |
 
 - `src/features/<domain>/` の中の import は相対パスで書く。ディレクトリごと移せる形を保つ (`docs/guides/placement.md`「features か route か」)
 - DB と native binding を持つ依存に触るのは、`.server.` を持つファイルとテストと `src/server/db/` の中だけ。client からの import は build (`importProtection`) が止める (ADR-0010)

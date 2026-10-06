@@ -133,6 +133,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 ### ナビゲーションを Router に任せる
 
 - `Link`・`navigate`・`router.invalidate()` による遷移と読み込みを、自分で `startTransition` に包まない。Router は、読み込んだ結果を画面へ反映する更新を React の `startTransition` で包む ([`@tanstack/react-router` の `Transitioner.tsx`][] と [`@tanstack/router-core` の `load-client.ts`][])。`Link` と `navigate` の `startTransition` option も "All navigations now use startTransition under the hood" として deprecated になっている ([`@tanstack/router-core` の `link.ts`][])。どれも 2026-10-06 に、このリポジトリの版 (`@tanstack/react-router` 1.170.39、`@tanstack/router-core` 1.171.32) で確かめた
+- Router が `startTransition` で包んでも、Router のストアは `useSyncExternalStore` で購読されるので、その更新は Transition の中でも緊急更新として描かれる (「query のキャッシュとダイアログの close は Transition に乗らない」)。遷移で古い画面を保つことは、包むことでは得られない
 - ナビゲーションを Router に任せることは ADR-0015 の「ナビゲーション、GET」の行が決める。Error Boundary からの再試行の組み方は `docs/guides/data-loading.md`「読み込みに失敗した画面から再試行する」にある
 
 ### 操作の型ごとの当て方

@@ -5,7 +5,7 @@ import { Spinner } from "@/components/ui/spinner";
 
 type ActionButtonShellProps = Omit<
   ComponentProps<typeof Button>,
-  "disabled" | "focusableWhenDisabled" | "children" | "aria-labelledby"
+  "disabled" | "focusableWhenDisabled" | "children" | "aria-labelledby" | "aria-busy"
 > & {
   isPending: boolean;
   children: ReactNode;
