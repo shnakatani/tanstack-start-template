@@ -9,6 +9,9 @@ import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 /** 一覧ページの見出し */
 export const NOTES_PAGE_TITLE = "メモ一覧";
 
+/** 一覧の table の名前。本体の `DataTable` と pending の `TableSkeleton` が同じ値を使う */
+export const NOTES_TABLE_CAPTION = "メモの一覧";
+
 /** 一覧の列の id と見出し。列の順もここが持つ。列定義 (`note-columns.ts`) と `TableSkeleton` の両方がここから採る */
 export const NOTE_COLUMN_HEADERS = {
   title: NOTE_FIELD_LABELS.title,

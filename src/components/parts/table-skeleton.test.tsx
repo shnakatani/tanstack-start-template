@@ -10,9 +10,12 @@ import { TableSkeleton } from "./table-skeleton";
  */
 describe("TableSkeleton", () => {
   it("列見出しを持つ table として露出し、本文は読み込み中の 1 行だけを見せる", async () => {
-    const screen = await render(<TableSkeleton headers={["タイトル", "本文"]} rows={3} />);
+    const screen = await render(
+      <TableSkeleton caption="メモの一覧" headers={["タイトル", "本文"]} rows={3} />,
+    );
 
-    const table = screen.getByRole("table");
+    // 名前は本体の DataTable と同じ caption で付け、読み込み中から置き換わっても変わらない
+    const table = screen.getByRole("table", { name: "メモの一覧" });
     await expect.element(table.getByRole("columnheader", { name: "タイトル" })).toBeInTheDocument();
     await expect.element(table.getByRole("columnheader", { name: "本文" })).toBeInTheDocument();
     await expect.element(table.getByRole("cell", { name: "読み込み中" })).toBeInTheDocument();
@@ -21,7 +24,7 @@ describe("TableSkeleton", () => {
   });
 
   it("どの要素にも aria-busy を載せない", async () => {
-    const screen = await render(<TableSkeleton headers={["タイトル"]} />);
+    const screen = await render(<TableSkeleton caption="メモの一覧" headers={["タイトル"]} />);
 
     await expect.element(screen.getByRole("table")).toBeInTheDocument();
     await expect.poll(() => screen.container.querySelectorAll("[aria-busy]").length).toBe(0);

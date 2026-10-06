@@ -4,7 +4,7 @@ import { TableSkeleton } from "./table-skeleton";
 
 const meta = {
   component: TableSkeleton,
-  args: { headers: ["タイトル", "本文", "期日", "操作"] },
+  args: { caption: "メモの一覧", headers: ["タイトル", "本文", "期日", "操作"] },
 } satisfies Meta<typeof TableSkeleton>;
 
 export default meta;

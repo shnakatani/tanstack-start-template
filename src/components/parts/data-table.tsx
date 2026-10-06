@@ -23,6 +23,11 @@ interface DataTableProps<TData extends RowData> extends Pick<
   /** devtools に登録する識別子。画面ごとに一意にする (`useTable` の `key`) */
   tableKey: string;
   /**
+   * table の名前。見た目には出さず caption に置く。読み込み中の `TableSkeleton` にも同じ値を渡し、
+   * 本体へ置き換わっても名前を変えない (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
+   */
+  caption: string;
+  /**
    * 行ごとに足す属性。行データから決まるものを返す。
    *
    * `className` は受けない。返した class は `rowProps` のコールバックの中にあって
@@ -42,6 +47,7 @@ interface DataTableProps<TData extends RowData> extends Pick<
  */
 export function DataTable<TData extends RowData>({
   tableKey,
+  caption,
   columns,
   data,
   getRowId,
@@ -54,6 +60,8 @@ export function DataTable<TData extends RowData>({
 
   return (
     <Table>
+      {/* registry の TableCaption に class を渡すと層の規則に当たるので、素の caption で置く */}
+      <caption className="sr-only">{caption}</caption>
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>

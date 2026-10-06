@@ -14,12 +14,14 @@ import {
  *
  * 支援技術には、列見出しを持つ table と「読み込み中」の 1 行だけを見せ、skeleton の行は `aria-hidden` で隠す
  * (`docs/guides/accessibility.md`「読み込み中の表示の見せ方を選んだ理由」)。
- * `headers` は重複させない。列の key に使う。
+ * `headers` は重複させない。列の key に使う。`caption` は本体の `DataTable` と同じ値を渡す。
  */
 export function TableSkeleton({
+  caption,
   headers,
   rows = 3,
 }: {
+  caption: string;
   headers: readonly string[];
   rows?: number;
 }) {
@@ -27,6 +29,7 @@ export function TableSkeleton({
 
   return (
     <Table>
+      <caption className="sr-only">{caption}</caption>
       <TableHeader>
         <TableRow>
           {headers.map((header) => (

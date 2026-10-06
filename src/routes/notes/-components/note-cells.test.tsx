@@ -57,7 +57,13 @@ async function renderCells({
   const rows = toNoteRows({ notes, creatingRows, deletingIds, updatingNotes });
   return await render(
     <>
-      <DataTable tableKey="notes" columns={noteColumns} data={rows} getRowId={getNoteRowId} />
+      <DataTable
+        tableKey="notes"
+        caption="メモの一覧"
+        columns={noteColumns}
+        data={rows}
+        getRowId={getNoteRowId}
+      />
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}
         entityLabel={NOTE_ENTITY_LABEL}
