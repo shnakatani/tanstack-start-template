@@ -221,10 +221,13 @@ export function FormSelectField<T extends string>({
   disabled,
 }: FormSelectFieldProps<T>) {
   const { field, id, errorId, errors, invalid } = useFormFieldState<T>();
+  const labelId = useId();
 
   return (
     <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel id={labelId} htmlFor={id}>
+        {label}
+      </FieldLabel>
       <Select
         value={field.state.value}
         onValueChange={(value) => {
@@ -256,9 +259,12 @@ export function FormSelectField<T extends string>({
         // (SelectRoot.d.ts:111)。options の安定性は消費側 (useMemo / モジュール定数) の責務。
         items={options}
       >
+        {/* trigger は button の combobox なので、見える label を aria-labelledby で指す
+            (docs/guides/accessibility.md「accessible name を与える」) */}
         <SelectTrigger
           id={id}
           className="w-full"
+          aria-labelledby={labelId}
           onBlur={field.handleBlur}
           aria-invalid={invalid}
           aria-describedby={invalid ? errorId : undefined}
