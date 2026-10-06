@@ -26,13 +26,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * 素の表。列見出しには `scope="col"` を付ける。暗黙の role は locator と一部の支援技術で
- * columnheader に解決されない (ADR-0018)。
+ * 素の表。table は名前が必須のロールなので、`TableCaption` で名前を付ける (APG
+ * 「Providing Accessible Names and Descriptions」の table の行)。列見出しには `scope="col"` を付ける。
+ * 暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)。
  * アプリの一覧は `DataTable` (parts) を通すので、ここは registry の意匠の見本
  */
 export const Default: Story = {
   render: () => (
     <Table>
+      <TableCaption>メモの一覧</TableCaption>
       <TableHeader>
         <TableRow>
           <TableHead scope="col">タイトル</TableHead>
@@ -53,7 +55,7 @@ export const Default: Story = {
   ),
 };
 
-/** 表題と合計行を添えた形 */
+/** 合計行を添えた形 */
 export const WithCaptionAndFooter: Story = {
   render: () => (
     <Table>

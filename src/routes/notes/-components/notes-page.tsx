@@ -201,6 +201,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
           ) : (
             <DataTable
               tableKey="notes"
+              caption={NOTES_PAGE_TITLE}
               columns={noteColumns}
               data={rows}
               getRowId={getNoteRowId}

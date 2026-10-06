@@ -18,7 +18,7 @@ const FRUITS: Fruit[] = [
 
 const meta = {
   component: DataTable<Fruit>,
-  args: { columns, data: FRUITS },
+  args: { caption: "果物の一覧", columns, data: FRUITS },
 } satisfies Meta<typeof DataTable<Fruit>>;
 
 export default meta;

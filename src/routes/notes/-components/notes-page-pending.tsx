@@ -13,7 +13,7 @@ export function NotesPagePending() {
     <div>
       <PageHeader title={NOTES_PAGE_TITLE} />
       <div className="p-4">
-        <TableSkeleton headers={Object.values(NOTE_COLUMN_HEADERS)} />
+        <TableSkeleton caption={NOTES_PAGE_TITLE} headers={Object.values(NOTE_COLUMN_HEADERS)} />
       </div>
     </div>
   );
