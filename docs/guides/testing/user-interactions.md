@@ -1,6 +1,6 @@
 # テストのユーザー操作
 
-ブラウザテストでユーザー操作を発火する手段と、animation・入力部品・debounce の扱いを持つ。
+ブラウザテストでユーザー操作を発火する手段と、animation・マウスの位置・入力部品・debounce の扱いを持つ。
 
 | 決定                                                                                               | ADR      |
 | -------------------------------------------------------------------------------------------------- | -------- |
@@ -57,6 +57,11 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 - transition の後に「変化しないこと」を見るテスト (実例は `src/components/parts/segmented-radio-group.test.tsx` の hover) は、retry では途中値の前に通ってしまう。animation を戻したら、変化する側の値を先に待ってから見る
 - モジュールの最上位で描画や算出値を読まない。`beforeEach` より前に走るので、`beforeEach` が立てる既定より前の状態を読む
 
+### マウスの位置を退避する
+
+- click などで実マウスを動かしたテストは、overlay (ダイアログ、popup) が閉じる前に `parkMouse()` (`src/test/browser/park-mouse.ts`) でマウスを退避する。乗ったままだと、閉じて露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
+- テストの始まりの退避は、`src/test/browser/browser-setup.tsx` の `beforeEach` が毎テスト行う (「animation を戻す経路」)
+
 ### 入力部品を操作する
 
 - `NumberField` (ADR-0021) のロールは `spinbutton` ではなく `textbox` になる。`getByRole("textbox")` で取る
@@ -65,6 +70,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 - debounce のテストは、1 文字ずつ別の `userEvent.keyboard` で打つ。`fill` は 1 回の input、`type("abc")` は 3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)
 - fake timers は使わない。browser mode では locator の操作が fake timer を進めない ([vitest-dev/vitest#10058][])。待ちを広げたいときは、定数を `vi.mock(import(...))` の partial mock で広げる
+- 広げる定数は `number` の型注釈で宣言し、literal 型に固めない。literal 型のままだと、partial mock の factory が返す広げた値が `vi.mock` の型に合わず、`No overload matches this call` (TS2769) で落ちる (2026-10-05、vitest 5.0.1 で確認)
 
 ## explanation
 

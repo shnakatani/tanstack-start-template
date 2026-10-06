@@ -15,7 +15,7 @@
 
 1. 落ちたときに判断が要るかを確かめる。判断が要るとは、設定を直すか期待値へ足すかを選ぶことを指す。期待値の書き換えしか選択肢が無いなら作らない (理由は「検査スクリプトを分けて置く理由」)
 2. lint (必要なら `jsPlugins`) で表せないかを見る。表せるなら検査スクリプトではなくルールにする (ADR-0009、`docs/guides/lint/custom-rules.md`「自前のルールを書く」)
-3. 置き場所を壊れる原因で選ぶ。設定と文書の整合は `scripts/checks/integrity/`、ビルド成果物は `scripts/checks/runtime/` (`vp build` の後に走らせる)。`scripts/checks/` の外には置かない (理由は「検査スクリプトを分けて置く理由」)
+3. 置き場所を壊れる原因で選ぶ。設定と文書の整合は `scripts/checks/integrity/`、ビルド成果物は `scripts/checks/runtime/` に置き、vitest の project にせず、`vp build` の後の独立した step で走らせる。project は `vp build` との順序を持てない。`scripts/checks/` の外には置かない (理由は「検査スクリプトを分けて置く理由」)
 4. `src/` 全体へ当てるソース検査なら、`scripts/checks/source/` と `checks-source` project を対で作る。project は `tooling/test/config.ts` の `projects` に足す
 5. 判定を `scripts/lib/` の純粋関数へ分け、単体テストを別に持つ
 
@@ -23,6 +23,8 @@
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 1 (判断が要る検査)     | `scripts/checks/integrity/lint-config.test.ts` の緩和の適用先とルールの検査 (広げたのが意図なら期待値へ足し、誤りなら設定を直す)、`scripts/checks/integrity/registry-baseline.test.ts` の 3-way の判別 |
 | 5 (判定と適用を分ける) | 実行側の `scripts/checks/runtime/security-headers.ts` と、判定の `scripts/lib/response-headers.ts`                                                                                                     |
+
+- 固定の port で成果物を起動する検査は、起動の前に、その origin が応答しないことを確かめる。前回の残骸が答えると、こちらの起動が失敗しても古い成果物を検査して緑になる (`scripts/checks/runtime/security-headers.ts`)
 
 ## explanation
 

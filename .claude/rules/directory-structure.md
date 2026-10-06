@@ -49,25 +49,25 @@ paths:
 
 テスト専用ヘルパーは 2 段に置く。同じ locator を 2 つのテストで書き分けると、ラベル変更で片方だけ落ちる。
 
-| 対象                                         | 置き場所                                                                                                                              |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/<役割>/`。役割は下の表                                                                                                      |
-| 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` では対象と同じ `-components/` か `-lib/`、route ファイル自身の分はその隣 |
-| story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` に置くと出荷されうる (`docs/guides/storybook.md`「story を置く」)    |
+| 対象                                         | 置き場所                                                                                                                                                                                             |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ドメインを跨ぐもの (render の型、a11y、mock) | `src/test/<役割>/`。役割は下の表 (`docs/guides/placement.md`「`src/test/` に helper を置く」)                                                                                                        |
+| 特定の部品の locator や fixture              | 部品と同じディレクトリの `<部品>.test-helpers.ts`。`routes/` では対象と同じ `-components/` か `-lib/`、route ファイル自身の分はその隣 (`docs/guides/placement.md`「部品専用のテスト helper を置く」) |
+| story だけが使うロジック                     | story と同じディレクトリの `<名前>.story-helpers.ts`。`src/lib/` に置くと出荷されうる (`docs/guides/storybook.md`「story を置く」)                                                                   |
 
-| `src/test/` のディレクトリ | 入れるもの                                                                   |
-| -------------------------- | ---------------------------------------------------------------------------- |
-| `src/test/browser/`        | browser project の実行環境を組むもの。config と setup が読む定数もここに置く |
-| `src/test/assert/`         | テスト本文が呼ぶ assert と実測、その引数の型                                 |
-| `src/test/a11y/`           | axe の実行と結果の整形                                                       |
-| `src/test/app/`            | アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場        |
+| `src/test/` のディレクトリ | 入れるもの                                                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/test/browser/`        | browser project の実行環境を組むもの。config と setup が読む定数もここに置く (`docs/guides/placement.md`「`src/test/` に helper を置く」) |
+| `src/test/assert/`         | テスト本文が呼ぶ assert と実測、その引数の型 (`docs/guides/placement.md`「`src/test/` に helper を置く」)                                 |
+| `src/test/a11y/`           | axe の実行と結果の整形 (`docs/guides/placement.md`「`src/test/` に helper を置く」)                                                       |
+| `src/test/app/`            | アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場 (`docs/guides/placement.md`「`src/test/` に helper を置く」)        |
 
 - `src/test/` の helper は上の表のディレクトリに置き、直下に置かない (`docs/guides/placement.md`「`src/test/` の helper を何を作るかで分ける理由」)
 - helper を持たず、全 project に効く実行環境が効いていることだけを確かめるテストは、`src/test/` の直下に置く (`test-time-zone.tz.test.ts`)。表の役割は helper が何を作るかで分けていて、テストだけのディレクトリは作らない (`docs/guides/placement.md`「`src/test/` に helper を置く」)
-- 付随ファイルの種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す
+- 付随ファイルの種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときはそこだけを直す (`docs/guides/placement.md`「`src/components/ui/` に付随ファイルを置く」)
 - helper や `src/test/` をアプリのコードから import しない。lint (`no-restricted-imports`) が止める (ADR-0008)
-- story (`*.stories.*`) も `no-restricted-imports` の対象から外す。出荷される bundle に入らない
-- helper のテストは helper と同じディレクトリに置く。DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project) にする
+- story (`*.stories.*`) も `no-restricted-imports` の対象から外す。出荷される bundle に入らない (ADR-0008)
+- helper のテストは helper と同じディレクトリに置く。DOM が要るものは `*.test.tsx` (browser project)、純粋なものは `*.test.ts` (unit project) にする (`docs/guides/placement.md`「`src/test/` に helper を置く」)
 
 ## shadcn コンポーネント導入時のチェック
 
@@ -88,4 +88,4 @@ paths:
 - loader は Query の取得のためだけに呼び、コンポーネントは値を loader の戻り値ではなく `useSuspenseQuery` で読む。loader の戻り値を読むのは route の `head` だけにする。`useSuspenseQuery` はキャッシュを読んで更新を購読するので、invalidate で描き直される (ADR-0033)
 - route の property とそれが使うものを route ファイルから export しない。export すると main bundle に入る (ADR-0010)
 - 分割されない property (`pendingComponent` / `loader` / `validateSearch` 等) が import する module は eager に読まれる。ページ本体と同じ module に置かず、pending 表示は別ファイル、共有する定数は `-lib/` に置く (ADR-0010)
-- route ファイルのテストは route ファイル名に `.test` を付ける (`index.test.tsx`)。`route.test.tsx` はレイアウトルートのテストと読める (Router の file-naming-conventions)
+- route ファイルのテストは route ファイル名に `.test` を付ける (`index.test.tsx`)。`route.test.tsx` はレイアウトルートのテストと読める (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」)

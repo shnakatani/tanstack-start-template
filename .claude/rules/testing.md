@@ -11,45 +11,43 @@ paths:
 
 # テストルール
 
-## 進め方
+## テストの API
 
-- TDD で進める。failing test を書き `vp test run <path>` で fail を確かめ、最小実装で pass させ、テストを変えずにリファクタする
-- 新規テストの前に、同じ関数・スキーマをテストする既存ファイルを `grep -rn "<name>" src/ scripts/` で探す
-- `describe` / `it` / `expect` / `vi` は `vite-plus/test` から import する。`vitest` を直接 import しない (`vite-plus/test` が re-export する)
+- `describe` / `it` / `expect` / `vi` は `vite-plus/test` から import する。`vitest` を直接 import しない (`docs/guides/testing/configuration.md`「テストの API を import する」)
 
 ## テストの種別と置き場所
 
-壊れる原因が違うものを同じ project に混ぜない。
+壊れる原因が違うものを同じ project に混ぜない (`docs/guides/testing/configuration.md`「テストの種別と置き場所」)。
 
 | 種別                   | 壊れる原因                   | 置き場所                                            | 実行                                                                                                                                                                                                                                             |
 | ---------------------- | ---------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                  | `vp test run --project unit`                                                                                                                                                                                                                     |
-| TZ ごとの単体テスト    | アプリのコード変更           | `src/**/*.tz.test.ts`                               | 基準の TZ は `vp test run --project unit`、基準以外は `vp node scripts/time-zones/run-tests.ts`                                                                                                                                                  |
+| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                  | `vp test run --project unit` (`docs/guides/testing/configuration.md`「テストの種別と置き場所」)                                                                                                                                                  |
+| TZ ごとの単体テスト    | アプリのコード変更           | `src/**/*.tz.test.ts`                               | 基準の TZ は `vp test run --project unit`、基準以外は `vp node scripts/time-zones/run-tests.ts` (`docs/guides/testing/time-zones.md`「Node で動くテストを TZ ごとに走らせる」)                                                                   |
 | アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                                 | `vp test run --project browser`。`src/components/ui/` のテストは `browser-no-compiler` にも入るので、`--project` を付けずにファイルを指定して両方で走らせる (`docs/guides/testing/configuration.md`「React Compiler を通さない project を足す」) |
-| アプリの型テスト       | アプリの型の変更             | `src/**/*.test-d.ts`                                | `vp check` (`vp test run` は集めない)                                                                                                                                                                                                            |
-| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/**/*.test.ts` (`scripts/checks/**` を除く) | `vp test run --project scripts-tools`                                                                                                                                                                                                            |
-| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity`                                                                                                                                                                                                         |
-| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp node scripts/checks/runtime/<name>.ts`                                                                                                                                                                                                       |
+| アプリの型テスト       | アプリの型の変更             | `src/**/*.test-d.ts`                                | `vp check`。`vp test run` は集めない (`docs/guides/testing/type-tests.md`「型テストを置く」)                                                                                                                                                     |
+| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/**/*.test.ts` (`scripts/checks/**` を除く) | `vp test run --project scripts-tools` (`docs/guides/testing/configuration.md`「テストの種別と置き場所」)                                                                                                                                         |
+| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity` (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)                                                                                                                                        |
+| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp node scripts/checks/runtime/<name>.ts` (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)                                                                                                                                      |
 
 - `expectTypeOf` だけのテストは `*.test-d.ts` に置き、実行するテストと同じファイルに書かない。`*.test.ts(x)` に書くと、型しか確かめないテストが `vp test run` で pass として数えられる (`docs/guides/testing/type-tests.md`「`*.test-d.ts` に分ける理由」)
 
-スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める。
+スクリプトの純粋関数・定数・fixture の置き場所は消費者で決める。上から順に当て、最初に当たった行で止める (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)。
 
-| 対象                                                                | 置き場所                     | 理由                                                                       |
-| ------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`response-headers.ts`)              |
-| テストだけが使う fixture                                            | そのテストと同じディレクトリ | `scripts/lib/` に置くと共有物と見分けが付かない (`git-test-utils.ts`)      |
-| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`derive-dev-port.sh` と隣の `.ts`)                   |
-| 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読まれるだけのファイルが見分けられない (`contrast/`) |
+| 対象                                                                | 置き場所                     | 理由                                                                                                                                          |
+| ------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`response-headers.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)              |
+| テストだけが使う fixture                                            | そのテストと同じディレクトリ | `scripts/lib/` に置くと共有物と見分けが付かない (`git-test-utils.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)      |
+| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`derive-dev-port.sh` と隣の `.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)                   |
+| 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読まれるだけのファイルが見分けられない (`contrast/`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」) |
 
-- 検査は `scripts/checks/` の下へ置く。外へ置くと `scripts-tools` へ合流し、落ちたときに直す対象が読めなくなる
+- 検査は `scripts/checks/` の下へ置く。外へ置くと `scripts-tools` へ合流し、落ちたときに直す対象が読めなくなる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - project を足したら `tooling/test/config.ts` の `projects` に追加する。include に一致しないテストは無言で 1 度も走らない (`docs/guides/testing/configuration.md`「project を足す」)
 - `src/` 全体へ当てるソース検査は、先に lint (必要なら `jsPlugins`) で表せないかを見る。字面走査より対象の実体に近い (ADR-0023)
 - ソース検査を作るなら `scripts/checks/source/` と `checks-source` project を対で作り、判定は `scripts/lib/` に置いて単体テストを別に持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 落ちたときに判断が要らない検査は作らない。期待値の書き換えしか選択肢が無い検査は上流更新のたびに鳴り、判断を鈍らせる (`docs/guides/testing/check-scripts.md`「検査スクリプトを分けて置く理由」)
-- ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない
-- 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (実行側 `scripts/checks/runtime/security-headers.ts` / 判定 `scripts/lib/response-headers.ts`)
-- 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる
+- ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
+- 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
+- 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - テスト全体の TZ は root の globalSetup (`tooling/test/global-setup.ts`) で決め、`APP_TIME_ZONE` と違う値にする。一致すると、ローカル TZ に依存する実装を壁時計の値のテストが見逃す (`docs/guides/testing/time-zones.md`「基準のタイムゾーンを決める理由」)
 - `Intl.DateTimeFormat` で整形した日時を固定の文字列と比べない。`format()` の出力は実装ごとに違ってよい。壁時計は数字の並びで比べ、画面の期待値は `formatDateTime` で作る。date-fns の `format` は Intl を使わないので、固定の文字列と比べてよい (`docs/guides/dates-and-time-zones.md`「整形した日時をテストで確かめる」)
 - Node で動くテスト (unit project) のうち、`Date` のローカルの getter や TZ を指定しない date-fns を直接呼ぶモジュールと、ローカルの TZ に依存しないことを保証するモジュールのテストは、ファイルごと `src/**/*.tz.test.ts` にする。1 件ずつ分けると、分け損ねたテストが基準の TZ でしか走らない (`docs/guides/testing/time-zones.md`「Node で動くテストを TZ ごとに走らせる」)
@@ -58,64 +56,64 @@ paths:
 
 ## a11y の検査は tag で分ける
 
-- `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tags-filter a11y`。`--tags-filter '!a11y'` で外しても、挙動テストに相乗りした assert は走る (vitest の Test Tags)
-- tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tags-filter a11y` は story を走らせない (vitest の Test Tags)
-- tag の定義は `tooling/test/browser-project.ts` の `test.tags`。定義に無い tag はエラーで落ちる (vitest の Test Tags の `strictTags`)
+- `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tags-filter a11y`。`--tags-filter '!a11y'` で外しても、挙動テストに相乗りした assert は走る (`docs/guides/accessibility.md`「a11y の tag を付ける」)
+- tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tags-filter a11y` は story を走らせない (`docs/guides/accessibility.md`「a11y の tag を付ける」)
+- tag の定義は `tooling/test/browser-project.ts` の `test.tags`。定義に無い tag はエラーで落ちる (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 - 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。専用テストへ降ろすと操作の再現が重複する (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 - `expectNoA11yViolations` を呼ぶテストには `{ tags: ["axe"] }` を付ける。`mise run a11y:incomplete` がこの tag で絞り、付け忘れると helper が落ちる (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 
 ## 境界値
 
-- 境界値テストは期待値の数式をコメントで先に書く (例: `// 900 + 200 = 1100 → slice(-1000) で先頭 100 件破棄`)
-- cap の境界値は `cap-1 / cap / cap+1` の 3 点で見る
+- 境界値テストは期待値の数式をコメントで先に書く。例は `// 900 + 200 = 1100 → slice(-1000) で先頭 100 件破棄` (`docs/guides/testing/boundary-values.md`「境界値を確かめる」)
+- cap の境界値は `cap-1 / cap / cap+1` の 3 点で見る (`docs/guides/testing/boundary-values.md`「境界値を確かめる」)
 
 ## 状態のアサートは semantic matcher を先に探す
 
-`toHaveAttribute` か `querySelector` を書く前に下表を見る。ユーザーから見た状態を先に見る (Testing Library の Guiding Principles)。
+`toHaveAttribute` か `querySelector` を書く前に下表を見る。ユーザーから見た状態を先に見る (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)。
 
 | 見たいもの                                                       | 使うもの                                                                                                                                                          |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 検証エラー (`aria-invalid` / `checkValidity`)                    | `toBeInvalid()`                                                                                                                                                   |
-| 選択状態 (`aria-checked` / native checked)                       | `toBeChecked()`                                                                                                                                                   |
+| 検証エラー (`aria-invalid` / `checkValidity`)                    | `toBeInvalid()` (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)                                                           |
+| 選択状態 (`aria-checked` / native checked)                       | `toBeChecked()` (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)                                                           |
 | 無効 (native `disabled`、`aria-disabled`、Base UI の `Checkbox`) | `toBeDisabled()` / `toBeEnabled()`。Vitest の matcher は `aria-disabled` も見る (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」) |
-| `aria-describedby` が指す文言                                    | `toHaveAccessibleDescription()`                                                                                                                                   |
-| accessible name                                                  | `toHaveAccessibleName()`                                                                                                                                          |
+| `aria-describedby` が指す文言                                    | `toHaveAccessibleDescription()` (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)                                           |
+| accessible name                                                  | `toHaveAccessibleName()` (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)                                                  |
 
 - native の `disabled` と `aria-disabled` のどちらで無効にしたかを確かめるときだけ、属性を `toHaveAttribute` で見る。`toBeDisabled` はどちらでも通る (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」)
 - `aria-busy` は `toHaveAttribute("aria-busy", …)` で見る。`getByRole` に `busy` を渡さない。Vitest の locator に `busy` は無く、変数で渡すと型検査を抜けて黙って捨てられる (`docs/guides/testing/waiting-and-assertions.md`「無効と処理中の状態を確かめる」)
-- Base UI の styling hook (`data-checked` 等) は見た目を駆動する属性なので属性で見てよい。ARIA 側と重ねるときは別々に付くことをコメントに残す
-- `querySelector` で掴むのは accessibility tree に差が出ない対象に限り、理由を実装近傍に書く。書けないならそのアサートは消す
-- 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (`ActionButtonShell` の `toHaveAccessibleName`)
+- Base UI の styling hook (`data-checked` 等) は見た目を駆動する属性なので属性で見てよい。ARIA 側と重ねるときは別々に付くことをコメントに残す (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)
+- `querySelector` で掴むのは accessibility tree に差が出ない対象に限り、理由を実装近傍に書く。書けないならそのアサートは消す (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)
+- 置き換えたら mutant で検出力を測る。semantic matcher の方が弱くなることがある (`docs/guides/testing/waiting-and-assertions.md`「状態を semantic matcher で確かめる」)
 
 ## assertion helper と型ナローイング
 
-- assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と名指しした関数だけ (ADR-0007)
-- assert を含むヘルパー (操作のあとに待つものを含む) は `vi.defineHelper` で包む。包まないと失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない。包んだ helper を包まない helper から呼んでも同じになる (vitest docs の api/vi「vi.defineHelper」)
-- 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない
-- ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード
+- assertion を実行するヘルパーは `expect*` で命名する。`vitest/expect-expect` が assertion と認めるのは `expect*` と `assert`・`assertType` だけ (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
+- assert を含むヘルパー (操作のあとに待つものを含む) は `vi.defineHelper` で包む。包まないと失敗の位置が helper の中を指し、どのテストのどの行から落ちたかが読めない。包んだ helper を包まない helper から呼んでも同じになる (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
+- 値を得るために呼ぶヘルパー内の `expect.assert` は改名しない代わりに、そのヘルパーだけで終わるテストを書かない (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
+- ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - テストの中で残す注意 (合否に入れないが読ませたいもの) は、テストの文脈の `annotate(message, "warning")` で残し、`console.warn` に出さない。`console.warn` は PR の画面に出ない (`docs/guides/testing/annotations.md`「`console.warn` ではなく注釈で残す理由」)
 - 注釈を残す helper はテストの文脈を引数で受ける。`TestRunner.getCurrentTest()` は並行するテストで別のテストを指す (`docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」)
 - 手元の default reporter は通ったテストの注釈を出さない。a11y の注釈は `mise run a11y:incomplete` で読み、ほかは `--reporter=verbose` を付けて走らせる (`docs/guides/testing/annotations.md`「注釈を読む」)
-- Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (vitest docs の guide/test-context の annotate)
-- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (vitest docs の recipes「Type Narrowing in Tests」)
+- Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (`docs/guides/testing/annotations.md`「注釈を残す」)
+- テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - announcer の通知は `expectAnnouncements` / `readAnnouncements` で呼び出しの履歴を読み、配列を丸ごと比べる。live region のノードは寿命で消え、region を読むと後から出た同じ文言の通知と取り違える (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 - 通知が出なかったことは後に出る通知までの並びで示し、後の通知が無いか出る時点を確かめるときだけ、肯定 assert を待ってから 1 回読む。肯定 assert を待たない 1 回読みは、まだ出ていないだけの状態で通る (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 
 ## mock の注意点
 
-- `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する
+- `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する (`docs/guides/testing/mocking.md`「呼び出しの履歴を読む」)
 - `vi.stubEnv` と `vi.stubGlobal` の値はテストの中で戻さない。設定の `unstubEnvs` / `unstubGlobals` と `tooling/test/setup.ts` の `afterEach` が毎テスト戻す (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - `vi.stubEnv` と `vi.stubGlobal` は `beforeEach` かテストの中で呼び、テストファイルと setup ファイルの最上位と `beforeAll` で呼ばない (`vi.mock` は最上位のまま)。最初のテストの前に戻り、差し替える前の値のまま気付かずに通ることがある (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は戻らず後のテストへ残る。差し替える関数が `onTestFinished` で戻しを登録する値 (`src/test/browser/animations.ts`) は除く (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - 同じモジュールを複数のテストで丸ごと差し替えるなら、隣の `__mocks__/<同名>` に置き、factory なしの `vi.mock(import(...))` で読む。無いと元を読んで automock し、ブラウザで読めないものは落ちる (`docs/guides/testing/mocking.md`「`__mocks__` に寄せる理由」)
-- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。browser mode では locator の操作が fake timer を進めない (vitest-dev/vitest#10058)
+- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。browser mode では locator の操作が fake timer を進めない (`docs/guides/testing/user-interactions.md`「debounce のある入力をテストする」)
 - 引数ごとに応答を変える mock は `vi.when(vi.mocked(fn), { onUnmatched: "throw" })` で書き、`mockImplementation` に引数の分岐を手書きしない。想定外の引数で呼ばれたことを見逃さない (`docs/guides/testing/mocking.md`「戻り値を決める」)
 - `vi.when` で登録した引数が全部呼ばれたことを、戻り値の `toHaveBeenExhausted()` で閉じる。`onUnmatched: "throw"` は、登録した呼び出しが来なかったことを捕まえない (`docs/guides/testing/mocking.md`「戻り値を決める」)
 
 ## optimistic update は決着を握って観測する
 
-- optimistic state は `src/test/app/defer-mock.ts` の `deferMock` で決着を握って観測する。`mockRejectedValue` は即 reject して中間状態が見えない
-- assertion の順序は、optimistic state の確認 → `reject()` → ロールバックの確認
+- optimistic state は `src/test/app/defer-mock.ts` の `deferMock` で決着を握って観測する。`mockRejectedValue` は即 reject して中間状態が見えない (`docs/guides/testing/mocking.md`「戻り値を決める」)
+- assertion の順序は、optimistic state の確認 → `reject()` → ロールバックの確認 (`docs/guides/testing/mocking.md`「戻り値を決める」)
 
 ## StrictMode の下で描く
 
@@ -165,7 +163,7 @@ paths:
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/assert/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えない。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
-- locator は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される
+- locator の `element()` と `query()` は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 
 ## ブラウザテストの CSS とレイアウト実測
 
@@ -173,7 +171,7 @@ paths:
 
 - viewport 定数と `expectWithinViewport` は `src/test/assert/viewport.ts`。`page.viewport()` で変えたら `afterEach` で `DEFAULT_VIEWPORT` へ戻す (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
 - 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。面積 0 の潰れた要素が通り、失敗文にはみ出した辺と px が出ない (`docs/guides/testing/waiting-and-assertions.md`「viewport の収まりを自前の helper で測る理由」)
-- 既定 viewport は `tooling/test/browser-project.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる
+- 既定 viewport は `tooling/test/browser-project.ts` の `browser.viewport` と `DEFAULT_VIEWPORT` を一致させる (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
 - スタイルの比較は `toHaveStyle("prop: value")` の文字列形式で、複数プロパティは `;` で 1 つにまとめる。オブジェクト形式は差分が出ない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 1 つの文字列に同じプロパティを 2 度書かない。shorthand で longhand を覆わない。後勝ちで先の宣言が黙って消える (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - スタイルは肯定で確かめる。「描かれている」は数値を出して `toBeGreaterThan(0)`、token が分かれば `resolveColorToken()` と比べる (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
@@ -184,8 +182,8 @@ paths:
 - animation を戻すテストは `.concurrent` を付けずに書き、並行の `describe` の外に置く。page 全体に効き、並行する別のテストの animation も戻る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
-- 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない
-- マウス位置を動かすテストは、overlay が閉じる前に `parkMouse()` で戻す。露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
+- 溢れるコンテンツを flex column の中に作るときは `minHeight` を使う。flex item は縮むので `height` では溢れない (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
+- マウス位置を動かすテストは、overlay が閉じる前に `parkMouse()` で戻す。露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる (`docs/guides/testing/user-interactions.md`「マウスの位置を退避する」)
 - モジュール最上位で描画や算出値を読まない。`beforeEach` より前に走り、既定が立つ前の状態を読む (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 
 ## テストが置いたものの後始末

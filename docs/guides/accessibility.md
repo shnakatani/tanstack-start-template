@@ -185,8 +185,8 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### a11y の tag を付ける
 
-1. axe で「アクセシブルか」を問うテストに `it(名前, { tags: ["a11y"] }, fn)` を付ける。tag の定義は `tooling/test/browser-project.ts` の `test.tags` にある
-2. 単独で走らせるときは `vp test run --tags-filter a11y`、外すときは `--tags-filter '!a11y'`
+1. axe で「アクセシブルか」を問うテストに `it(名前, { tags: ["a11y"] }, fn)` を付ける ([Vitest docs「Test Tags」][])。tag の定義は `tooling/test/browser-project.ts` の `test.tags` にある。定義に無い tag を付けたテストは、エラーで落ちる ([Vitest docs「strictTags」][] の既定 `true`)
+2. 単独で走らせるときは `vp test run --tags-filter a11y`、外すときは `--tags-filter '!a11y'` ([Vitest docs「Test Tags」][])
 3. 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。その状態は操作の途中にしか無く、専用のテストへ降ろすと操作の再現が重複する。assert の近くに、`a11y` の tag を付けない理由を書く
 4. `expectNoA11yViolations` を呼ぶテストには、専用のテストか挙動テストかを問わず `axe` の tag を付ける。`mise run a11y:incomplete` がこの tag で絞る。付け忘れると helper が落ちる
 
@@ -306,6 +306,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 [WCAG 2.2「contrast ratio」]: https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio
 [Vitest docs「Test Tags」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/test-tags.md
 [Vitest docs「tags」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/tags.md
+[Vitest docs「strictTags」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/stricttags.md
 [APG「Patterns」]: https://www.w3.org/WAI/ARIA/apg/patterns/
 [w3c/aria#1317]: https://github.com/w3c/aria/issues/1317
 [ARIA in HTML]: https://www.w3.org/TR/html-aria/

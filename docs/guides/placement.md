@@ -5,6 +5,7 @@
 | 決定                                                                                         | ADR      |
 | -------------------------------------------------------------------------------------------- | -------- |
 | ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する | ADR-0010 |
+| テスト専用コードの import は `no-restricted-imports` で止める                                | ADR-0008 |
 
 ## how-to
 
@@ -59,7 +60,7 @@ ADR-0010 に沿って、次の順で組む。
 
 ### `src/components/ui/` に付随ファイルを置く
 
-registry 由来でない付随ファイル (テスト・story とその helper) は `src/components/ui/` に置いてよい。`shadcn add` の出力に含まれないので baseline を持たず、registry の網羅検査の対象にならない。付随ファイルの種別は `scripts/lib/companion-files.ts` が定義する。
+registry 由来でない付随ファイル (テスト・story とその helper) は `src/components/ui/` に置いてよい。`shadcn add` の出力に含まれないので baseline を持たず、registry の網羅検査の対象にならない。付随ファイルの種別は `scripts/lib/companion-files.ts` だけが定義する。種別を足すときは、そのファイルだけを直す。
 
 ### `src/test/` に helper を置く
 
@@ -75,9 +76,28 @@ registry 由来でない付随ファイル (テスト・story とその helper) 
 - config が読む定数は、テスト本文が使うものでも `browser/` に置く。assert の helper と同じファイルにすると、config が browser mode の import (`vite-plus/test/browser`) を引いて落ちる (`viewport-sizes.ts` の docstring)
 - 1 つのファイルに役割が 2 つ混ざったら、ファイルを分けてそれぞれのディレクトリへ置く。混ざったファイルが残ると、次の helper を置くときの手本が 2 通りになる
 - helper を持たず、全 project に効く実行環境 (root の globalSetup が決める TZ など) が効いていることだけを確かめるテストは、`src/test/` の直下に置く (`test-time-zone.tz.test.ts`)。上の表は helper が何を作るかで分けていて、テストだけのディレクトリは軸から外れる
-- helper のテストは helper と同じディレクトリに置く
+- helper のテストは helper と同じディレクトリに置く。DOM が要るかで接尾辞を選ぶ (`docs/guides/testing/configuration.md`「テストの種別と置き場所」)
 - ディレクトリ名と重なる prefix (`a11y/a11y-story.ts` の `a11y-`) は外さない。文書はファイル名だけで helper を指すことが多く、`story.ts` や `setup.tsx` のような名前はファイル名だけで引いたときに 1 つに決まらない
 - `helpers`・`utils` のような中身を表さない名前にしない。役割が混ざった受け皿になり、上の「ファイルを分ける」が働かなくなる
+
+### 部品専用のテスト helper を置く
+
+特定の部品だけを扱う locator と fixture は、部品と同じディレクトリの `<部品>.test-helpers.ts` に置く。ドメインを跨ぐものは「`src/test/` に helper を置く」、story だけが使うものは `docs/guides/storybook.md`「story を置く」に従う。
+
+- `routes/` の中では、対象と同じ `-components/` か `-lib/` に置く。route ファイル自身を扱う helper は route ファイルの隣に置く
+- 同じ部品の locator を、2 つのテストで別々に書かない。ラベルを変えたときに片方だけが落ちる
+- `.test-helpers` で終わるファイルはテスト専用コードで、アプリのコードからは import しない。`no-restricted-imports` が止める (ADR-0008)
+
+### `scripts/` に関数と fixture を置く
+
+スクリプトの純粋関数・定数・fixture の置き場所は、使う側で決める。上から順に当て、最初に当たった行で止める。
+
+| 対象                                                                | 置き場所                     | 理由                                                                                  |
+| ------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
+| 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`scripts/lib/response-headers.ts`)             |
+| テストだけが使う fixture                                            | そのテストと同じディレクトリ | `scripts/lib/` に置くと共有物と見分けが付かない (`scripts/dev-env/git-test-utils.ts`) |
+| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`scripts/dev-env/derive-dev-port.sh` と隣の `.ts`)              |
+| 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読まれるだけのファイルが見分けられない (`scripts/contrast/`)    |
 
 ### 落とし穴
 

@@ -13,7 +13,8 @@ mise run verify   # マージ前に通す。手順は .mise.toml の [tasks.veri
 
 - 実装中は 1 ファイル目を `vp check --fix` まで通してから横展開する
 - 依存は `vp add` / `vp remove` で足し外し、pnpm / npm / yarn で足し外さない。入口を `vp` にそろえる (`npm` はこのリポジトリの `catalog:` を読めず `EUNSUPPORTEDPROTOCOL` で止まる)。`vp` が中継しないサブコマンドは素の `pnpm` で打つ (`pnpm peers check`)。出典は `docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
-- **worktree のパスに `+` を含めない**。vitest browser が URL 上の `+` をスペースと解釈し、browser mode が無言でハングする。`EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
+- **worktree のパスに `+` を含めない**。story の project が、事前バンドルのキャッシュが無い初回の実行で落ちる (`docs/guides/testing/configuration.md`「テストを走らせる」)
+- `EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
 - patch は `vp pm patch <pkg>` を版を付けずに打って作り、作り直すときも同じにする。版を付けると既にある patch が編集用のディレクトリに当たらず、`vp pm patch-commit` の `ERR_PNPM_UNUSED_PATCH` の案内どおりにキーを消すと、元の変更が黙って消える (2026-10-01、pnpm 11.28.0。`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
 - `vp pm patch-commit` したあとは、初めて作ったときも作り直したときも、`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-10-01、pnpm 11.28.0。`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
@@ -22,13 +23,11 @@ mise run verify   # マージ前に通す。手順は .mise.toml の [tasks.veri
 
 ## テストの実行
 
-- テストは TDD で書く。failing test を書き、`vp test run <path>` で落ちることを確かめてから最小の実装で通す
-- テストの置き場所は壊れる原因で分ける。アプリの単体は `src/**/*.test.ts` (Node で動くテストのうち、ローカルの TZ に触れうるモジュールのテストは `src/**/*.tz.test.ts`)、ブラウザは `src/**/*.test.tsx`、型だけのテストは `src/**/*.test-d.ts` (`vp check` が検査し、`vp test run` は集めない)、スクリプトは `scripts/**/*.test.ts` (`scripts/checks/**` を除く)、設定と文書の整合検査は `scripts/checks/integrity/`、ビルド成果物の検査は `scripts/checks/runtime/` (vitest の project ではなく `vp build` の後に走らせる)。新しいテストファイルを書くだけでは `paths` の rules は読み込まれない (ADR-0003)
-- `vp test run <path>` で 1 回実行する。watch は `vp test watch`
-- `vp test` を複数並行で走らせない。orphan の runner が残ると後続が collection エラーで巻き添えになる。kill 後は `ps` で残存を確かめる。スクリプトが子として起動し、全部の終わりを待つ並列 (`scripts/time-zones/run-tests.ts`) は除く。親だけを kill すると子の vitest が残るので、子も `ps` で確かめる
+- テストの置き場所は壊れる原因で分ける (`docs/guides/testing/configuration.md`「テストの種別と置き場所」)。アプリの単体は `src/**/*.test.ts` (Node で動くテストのうち、ローカルの TZ に触れうるモジュールのテストは `src/**/*.tz.test.ts`)、ブラウザは `src/**/*.test.tsx`、型だけのテストは `src/**/*.test-d.ts` (`vp check` が検査し、`vp test run` は集めない)、スクリプトは `scripts/**/*.test.ts` (`scripts/checks/**` を除く)、設定と文書の整合検査は `scripts/checks/integrity/`、ビルド成果物の検査は `scripts/checks/runtime/` (vitest の project ではなく `vp build` の後に走らせる)。新しいテストファイルを書くだけでは `paths` の rules は読み込まれない (ADR-0003)
+- `vp test run <path>` で 1 回実行する。watch は `vp test watch` (`docs/guides/testing/configuration.md`「テストを走らせる」)
+- `vp test` を複数並行で走らせない。orphan の runner が残ると後続が collection エラーで巻き添えになる。kill 後は `ps` で残存を確かめる。スクリプトが子として起動し、全部の終わりを待つ並列 (`scripts/time-zones/run-tests.ts`) は除く。親だけを kill すると子の vitest が残るので、子も `ps` で確かめる (`docs/guides/testing/configuration.md`「テストを走らせる」)
 - background で走らせるときはパイプを付けない。buffering で完了まで出力が見えず、ハングと実行中を区別できない
-- full run が普段の所要を大きく超えたら止めて切り分ける。`ps -o pid,etime,time -p <pid>` で CPU 時間が伸びていなければ待っても終わらない
-- worktree では中へ cd してから `vp install` と `vp test run` を打つ。`--root <worktree>` は依存を二重に解決し、collection が全滅する
+- worktree では中へ cd してから `vp install` と `vp test run` を打つ。`--root <worktree>` で指すと、story の project が cd した側の clone の story を集めて落ちる (`docs/guides/testing/configuration.md`「テストを走らせる」)
 - `vp check` がコードを変えずに 2 回続けて結果が割れたら、上流の非決定的な発火 (`typescript/no-unnecessary-type-assertion`、oxc-project/oxc#21752) を疑う。`--threads=1` でも再現する (2026-09-02 に vite-plus 0.3.0 / oxlint 1.79.0 で観測)
 
 ## Storybook の skill と tools
