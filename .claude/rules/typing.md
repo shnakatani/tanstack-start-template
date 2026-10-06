@@ -27,26 +27,29 @@ paths:
 
 lint (`typescript/consistent-type-assertions`) が止める。`as const` は可。直し方 (ADR-0007):
 
-- 型が合わないときはキャストせず実装を変える。代替はランタイムガード / `as const` / 型ガード関数 / 親型 API
+- 型が合わないときはキャストせず実装を変える。lint の help が案内する型注釈と `satisfies` のほかの代替は `as const` / 実行時の検査 (`typeof`・`instanceof`・`in`) / 型ガード関数 (`docs/guides/lint/configuration.md`「型アサーションを使わずに直す」)
 - server が受け取る外部データ (ORM の戻り値と、外部 API のレスポンス) は読み出し口で `src/features/<domain>/schema.ts` のスキーマの `v.safeParse` に通し、失敗時は値を載せず位置と件数だけを投げる。`v.parse` が投げる `ValiError` は受け取った値を持ち、server のログに残る (ADR-0013)
-- テスト double もまず型注釈で表現する。抑制へ落とすのは、private constructor を持つ外部型のように構造的構築が閉じている場合だけ
-- 回避不能な場合のみ `oxlint-disable-next-line typescript/consistent-type-assertions` で行単位抑制し、理由を directive の `--` に書く
+- テスト double もまず型注釈で表現する。抑制へ落とすのは、private か protected のメンバーや `#` の field を持つクラスの型のように、object literal で型を満たせない場合だけ。private の constructor だけなら object literal で満たせる (`docs/guides/lint/configuration.md`「型アサーションを使わずに直す」)
+- 回避不能な場合のみ `oxlint-disable-next-line typescript/consistent-type-assertions` で行単位抑制し、理由を directive の `--` に書く (`docs/guides/lint/configuration.md`「型アサーションを使わずに直す」)
 - `src/components/ui/` の registry で抑制したら台帳 `docs/registry-deviations.md` にも記録する (ADR-0020)
 
 ## children prop は明示的に ReactNode で宣言する
 
-- 自前の props 型に `children: ReactNode` (必須) / `children?: ReactNode` (任意) を書く。どちらかはコンポーネントの意図で選ぶ
+- 自前の props 型に `children: ReactNode` (必須) / `children?: ReactNode` (任意) を書く。どちらかはコンポーネントの意図で選ぶ (`docs/guides/react/props.md`「children を宣言する」)
 - 型は `ReactNode` にする。`ReactElement` へ狭めるのは子を JSX 要素ちょうど 1 つに限る部品だけにし、理由をコメントに書く。`ReactElement` は文字列・複数の子・`cond && <x />` を拒み、要素の種類は絞れない (`docs/guides/react/props.md`「children を `ReactNode` で受ける理由」)
-- `PropsWithChildren` は使わない。children が常に optional になり必須を表現できない (react.dev と React TypeScript Cheatsheet の第一形が明示宣言)
-- JSX 子要素と違うセマンティクスのものを受けるなら、`children` ではなく別名の prop (例: `renderRow` / `rows`) にする
-- 対象外: shadcn 生成コード (`src/components/ui/`) と外部 API の型都合
+- `PropsWithChildren` で children を足さない。children を任意で足すだけで、必須にするなら結局 props 型に `children` を書く (`docs/guides/react/props.md`「children を宣言する」)
+- JSX の子要素として描かないもの (行のデータ、行を描く関数など) は、`children` ではなく役割を表す名前の prop (例: `rows` / `renderRow`) で受ける (`docs/guides/react/props.md`「children 以外の名前で受ける」)
+- 対象外: shadcn 生成コード (`src/components/ui/`) と、外部のライブラリが求める型に props を合わせる場合 (`docs/guides/react/props.md`「children を宣言する」)
 
 ## ラッパー部品の転送 prop 型は転送先の ComponentProps から導出する
 
-- 転送する prop の型は自前で再宣言せず `Pick<ComponentProps<typeof 転送先>, "...">` を extends して導出する。出処が明示され、転送先の型変更に自動追随する (実例: `src/components/parts/form-fields.tsx`)
-- 部品が内部で握る prop (value / onChange / id / aria-invalid 等) は rest スプレッドで全面公開しない。公開する prop を Pick で列挙する。controlled prop の上書き事故と、部品が保証する規約 (Field 構成等) を迂回する className 直渡しを防ぐ
-- 転送先の全 API を意図的に公開する薄いラッパー (実例: `src/components/parts/button-link.tsx`) は `ComponentProps` / `ComponentPropsWithoutRef` の素通しで良い。Pick を要求する対象は、一部の prop を内部で握る配線部品に限る
-- 部品固有の prop (label / options / sanitize 等) のみ自前宣言する
+- 転送する prop の型は自前で再宣言せず、転送先の `ComponentProps` から導出する。自前で宣言するのは部品固有の prop (label / options / sanitize 等) だけ (`docs/guides/react/props.md`「ラッパー部品の props を転送先から導出する」)
+
+| 部品の形                                                                                               | props の型                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 転送先の全 API を公開する薄いラッパー                                                                  | `ComponentProps` の素通し。spread から `ref` を外すことを型で示すときだけ `ComponentPropsWithoutRef` (`docs/guides/react/props.md`「ラッパー部品の props を転送先から導出する」)                                                       |
+| 1 つの転送先へ spread し、一部の prop を内部で握るラッパー (`src/components/action/`)                  | 握る prop を `Omit` で外し、JSX では握る prop を spread の後ろに書く (`docs/guides/react/props.md`「ラッパー部品の props を転送先から導出する」)                                                                                       |
+| 複数の部品を組み、値・id・`aria-invalid` を内部で配線する部品 (`src/components/parts/form-fields.tsx`) | 公開する prop を `Pick` で列挙し、rest を spread しない。rest を開くと controlled prop の上書きと、Field の組み方を迂回する className 直渡しの経路ができる (`docs/guides/react/props.md`「ラッパー部品の props を転送先から導出する」) |
 
 ## fieldComponents の部品は値型突き合わせ用の prop を持たせる
 

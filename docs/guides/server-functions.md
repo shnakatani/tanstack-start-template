@@ -28,5 +28,11 @@ server function は route ファイルでも宣言できる。lint の範囲を 
 
 ### ユーザー入力で部分一致の検索を組む
 
-- 呼び出し側はパターンと `ESCAPE` を手で組まず、`src/server/db/like-pattern.ts` の `likeContains` を使う。エスケープと `ESCAPE` 句を対で渡すことを忘れた検索は、`%` が効き `\` が消えて黙って壊れる
-- 検証は実 SQLite (`:memory:`) で行い、`%` / `_` / `\` を含む検索語、ASCII の大文字小文字、日本語を見る。理由は「部分一致の検索を実 SQLite で確かめる理由」
+- 呼び出し側はパターンと `ESCAPE` を手で組まず、`src/server/db/like-pattern.ts` の `likeContains` を使う。エスケープと `ESCAPE` 句は対で要り、片方を忘れてもエラーにならず結果だけが変わる。エスケープを忘れると入力の `%` と `_` がワイルドカードとして効き、入力の `\` はエスケープの文字として消える。`ESCAPE` 句を忘れると、エスケープに足した `\` が文字として残り、`%` と `_` もワイルドカードのまま効く (2026-10-06、SQLite 3.53.4 で確かめた)。LIKE のパターンでは `%` が 0 文字以上の並びに、`_` が任意の 1 文字に当たり、文字そのものとして当てるには `ESCAPE` 句で決めた文字を前に置く ([SQLite docs「SQL Language Expressions」][] の The LIKE, GLOB, REGEXP, MATCH, and extract operators)
+- 検証は実 SQLite (`:memory:`) で行い、`%` / `_` / `\` を含む検索語、ASCII の大文字小文字、日本語を見る。SQLite の LIKE が既定で大文字小文字を同一視するのは ASCII の文字だけである ([SQLite docs「SQL Language Expressions」][] の "SQLite only understands upper/lower case for ASCII characters by default.")。理由は「部分一致の検索を実 SQLite で確かめる理由」
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。SQLite docs の引用は 2026-10-06 に原文と照らした。
+
+[SQLite docs「SQL Language Expressions」]: https://www.sqlite.org/lang_expr.html#like

@@ -9,7 +9,7 @@ paths:
 
 lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止める。代替のうち lint が案内しないもの:
 
-- 外部ストアへの購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る
+- 外部ストアの値を読む購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る (`docs/guides/react/effects.md`「effect に書くかを判定する」)
 - データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })`。副次的な query まで待つと、遷移と SSR の応答がそれを待つ (ADR-0033)
 - 副次的な query は loader で `void queryClient.query(...).catch(noop)` (`noop` は `@tanstack/react-query` の export) として流し、読む側を `<Suspense>` と Error Boundary で囲む。囲まないと、読み込み中と失敗がページ全体の pending 表示とエラー表示に置き換わる (ADR-0033)
 
@@ -50,7 +50,7 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | mutation を伴う操作               | `src/components/action/` の部品に `action` を渡す。Action の中で `useActionMutation` の `runAction` を呼ぶ                                                                                                                                                                                                                    |
 | mutation 成功後のダイアログ close | 閉じる時点は ADR-0017 の完了点の軸で選び、理由を実装近傍に書く。選択肢は ADR-0017                                                                                                                                                                                                                                             |
-| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない                                                                                                                                                                                                                                                                           |
+| ナビゲーション                    | Router に任せる。`startTransition` を自分で書かない (`docs/guides/react/updates.md`「ナビゲーションを Router に任せる」)                                                                                                                                                                                                      |
 | Error Boundary からの再試行       | `router.invalidate()` だけを呼び、`startTransition` を自分で書かない。Query の error boundary は errorComponent の表示時の effect で `useQueryErrorResetBoundary().reset()` する。しないと loader が取得しない query の失敗が残り、再試行で回復しない (`docs/guides/data-loading.md`「読み込みに失敗した画面から再試行する」) |
 | 制御コンポーネントの入力値        | 緊急更新のまま。Transition は割り込まれるので入力値の反映が遅れる                                                                                                                                                                                                                                                             |
 | 検索条件の変更                    | URL の `navigate`。打鍵中は debounce した値を `useDeferredValue` に通して `useSuspenseQuery` の key にする (`docs/guides/lists-and-search.md`「検索の入力欄を組む」)                                                                                                                                                          |
@@ -115,10 +115,9 @@ lint では見ないのでレビューで見る。
 
 ## コンポーネントは function 宣言で定義する
 
-- トップレベルのコンポーネントとコンポーネント内の名前付きヘルパーは `function` 宣言で書く。型注釈が要るヘルパーだけ arrow const
-- インラインのコールバック (`onClick` の中身など) は arrow で書く。shadcn 生成コード (`src/components/ui/`) は生成された形のまま置く
-
-Why: 巻き上げでページ本体を上、ヘルパーを下に置ける。`.tsx` で generics を `<T,>` ハックなしに書ける。
+- トップレベルのコンポーネントとコンポーネント内の名前付きヘルパーは `function` 宣言で書く。関数の型を丸ごと注釈するヘルパーだけ arrow の `const` にする (`docs/guides/react/components.md`「コンポーネントを定義する」)
+- その場で prop や引数に渡すコールバック (`onClick` の中身、`map` の引数など) は arrow で書く (`docs/guides/react/components.md`「コンポーネントを定義する」)
+- shadcn 生成コード (`src/components/ui/`) は生成された形のまま置き、この節に合わせて書き換えない (ADR-0020)
 
 ## Item は Group の中に置く
 
@@ -128,15 +127,3 @@ Why: 巻き上げでページ本体を上、ヘルパーを下に置ける。`.t
 
 - 行単位の抑制 (`oxlint-disable-next-line`) は違反が報告される行の直前に置く。`.map()` の行に置いても `key` の行には効かない (`docs/guides/lint/configuration.md`「行単位で抑制する」)
 - `no-await-in-loop` は順序依存のループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く (`docs/guides/lint/configuration.md`「行単位で抑制する」)
-
-## dead code を発見したら即決 3 択
-
-1. **削除** (呼び出し元なし)
-2. **同等修正** (呼ばれている)
-3. **スコープ外** → 別 PR へ切り出す
-
-削除の前に git blame で導入コミットを確認する。行単位で「効かない」だけを根拠に消すと、別実装で置き換えるべき意図を落とす。
-
-## 技術選択は plan 提示 → 反応待ち
-
-3 案以上の技術選択や DB スキーマ変更を伴う判断は plan を提示してユーザーの反応を待つ。

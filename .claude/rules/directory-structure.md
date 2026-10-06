@@ -24,7 +24,7 @@ paths:
 - 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の名前付きの部品を参照で渡す (`docs/guides/lists-and-search.md`「cell を部品の参照で渡す理由」)
 - cell の部品が Table のメソッド (`row.getIsSelected()`、`cell.getValue()` など) で表の状態を読むなら、その部品の中で `Subscribe` する。同じ `row` / `cell` の object が渡り続け、Compiler が前の描画を使い回すとメソッドの結果が古いまま残る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0010)
-- route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない
+- route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない (`docs/guides/placement.md`「route ファイルを組む」)
 - story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まり、手で書くとファイルを動かしたときに title だけが古いパスを指す (`docs/guides/storybook.md`「story に `title` を書かない理由」)
 - story を置けるのは `src/components/` 配下だけ。他へ置くと `.storybook/main.ts` の `stories` から無言で外れる (`docs/guides/storybook.md`「story を置く」)
 - 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分ける。親を要求する部品は親の story で扱う。CSF の meta は 1 ファイルに 1 つで、まとめると別の部品の meta 配下に並ぶ (`docs/guides/storybook.md`「story を置く」)
@@ -35,12 +35,12 @@ paths:
 
 ## features と hooks と lib と server の境界
 
-| 配置先                   | 内容                                                                                               |
-| ------------------------ | -------------------------------------------------------------------------------------------------- |
-| `src/features/<domain>/` | 1 つのドメインに属するもの一式 (スキーマ / query options / mutation options / server fn / 共有 UI) |
-| `src/hooks/`             | React 依存のカスタム hook (`use-*`) と、React 依存の context 定義                                  |
-| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存)                                                  |
-| `src/server/`            | ドメインに属さないもの (DB 接続とスキーマ、横断的な server function)                               |
+| 配置先                   | 内容                                                                                                                                                                                                                                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/features/<domain>/` | 1 つのドメインに属し、複数の画面から使うものか、ドメインの形と同じ場所に居るべきもの (スキーマ / query options / mutation options / server fn / 共有 UI)。その route だけが使うものは route 側に置く (`docs/guides/placement.md`「features か route か」)                           |
+| `src/hooks/`             | どのドメインにも属さない React 依存のカスタム hook (`use-*`) と、複数のファイルから使う React 依存の context 定義。その route だけが使うものは route の `-hooks/`、1 つの部品のファイルだけで使う context はそのファイルに置く (`docs/guides/placement.md`「features か route か」) |
+| `src/lib/`               | ドメインに属さない汎用ロジック・型 (React 非依存) (`docs/guides/placement.md`「features か route か」)                                                                                                                                                                              |
+| `src/server/`            | ドメインに属さないもの (DB 接続とテーブル定義、横断的な server function) (`docs/guides/placement.md`「features か route か」)                                                                                                                                                       |
 
 - `src/features/<domain>/` の中の import は相対パスで書く。ディレクトリごと移せる形を保つ (`docs/guides/placement.md`「features か route か」)
 - DB と native binding を持つ依存に触るのは、`.server.` を持つファイルとテストと `src/server/db/` の中だけ。client からの import は build (`importProtection`) が止める (ADR-0010)

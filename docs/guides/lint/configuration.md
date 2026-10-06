@@ -1,11 +1,12 @@
 # lint の設定
 
-Oxlint の設定を書き換えるとき、ルールやプラグインを足すとき、ルールを off にするときの手順と落とし穴を持つ。
+Oxlint の設定を書き換えるとき、ルールやプラグインを足すとき、ルールを off にするとき、鳴ったルールを直すか抑制するときの手順と落とし穴を持つ。
 
 | 決定                                                                                                               | ADR      |
 | ------------------------------------------------------------------------------------------------------------------ | -------- |
 | ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする                                     | ADR-0007 |
 | テスト専用コードの import は `no-restricted-imports` で止める                                                      | ADR-0008 |
+| ドメイン型は valibot スキーマから導出する                                                                          | ADR-0013 |
 | メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                                         | ADR-0014 |
 | registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0020 |
 | テストの import を重くする依存のバレルは使わず、個別エントリポイントから引き、lint で止める                        | ADR-0032 |
@@ -106,8 +107,24 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 - 範囲を絞って有効にするルール (`no-restricted-imports`) は緩和ではないので、この経路に載せず `excludeFiles` で対象を外す (ADR-0008)
 - テストファイルを type-aware lint の対象から外すことはしない
 
+### 型アサーションを使わずに直す
+
+`typescript/consistent-type-assertions` は `assertionStyle: "never"` で型アサーションを禁じる (ADR-0007)。鳴ったらキャストせず、次の手段で実装を書き換える。
+
+| 手段                                               | 使う場面                                                          | 出典                                                                                                                                                                                                       |
+| -------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 型注釈か `satisfies`                               | 値が型を満たすことを書けば足りる                                  | lint の help が案内する。[Oxlint docs「typescript/consistent-type-assertions」][] の `"never"` の correct の例も同じ                                                                                       |
+| `as const`                                         | リテラルの型を保つ                                                | ルールの対象外。[typescript-eslint「consistent-type-assertions」][] の "`const` assertions are always allowed by this rule."。Oxlint も `assertionStyle: "never"` で鳴らさない (2026-10-06、oxlint 1.85.0) |
+| 実行時の検査 (`typeof`・`instanceof`・`in`)        | 値の型を実行時に確かめて絞れる                                    | [TypeScript Handbook「Narrowing」][]                                                                                                                                                                       |
+| 型ガード関数 (`value is T` を返す関数)             | 同じ絞り込みを複数の箇所で使う                                    | [TypeScript Handbook「Narrowing」][] の Using type predicates                                                                                                                                              |
+| `src/features/<domain>/schema.ts` の `v.safeParse` | server が受け取る外部データ (ORM の戻り値、外部 API のレスポンス) | ADR-0013                                                                                                                                                                                                   |
+
+- テスト double も、まず型注釈で書く。抑制へ進むのは、object literal では型を満たせないとき (private か protected のメンバー、`#` の field を持つクラスの型) だけにする。クラスの型は、同じクラスに由来する private と protected のメンバーを持つ値しか受けない ([TypeScript Handbook「Type Compatibility」][] の Private and protected members in classes)。private の constructor を持つだけのクラスの型は、object literal で満たせる (2026-10-06、typescript 6.0.3 で `#` の field と合わせて確かめた)
+- どの手段でも直せないときだけ、`oxlint-disable-next-line typescript/consistent-type-assertions` で行単位に抑制し、理由を `--` の後ろに書く (「行単位で抑制する」)
+
 ### 行単位で抑制する
 
+- 抑制する理由は、directive の `--` の後ろに書く (`// oxlint-disable-next-line <ルール> -- <理由>`)。[Oxlint docs「Ignore comments」][] は `--` に触れないが、[ESLint docs「Comment descriptions」][] と同じ形で書くと、`--` から後ろはルールの名前として読まれず、抑制が効く (2026-10-06、oxlint 1.85.0 で確かめた)
 - `oxlint-disable-next-line` は、違反が報告される行の直前に置く。`.map()` の行に置いても、その中の `key` の行には効かない
 - 同じ行に複数のルールが鳴るときは、カンマで区切って 1 行にまとめる。`oxlint-disable-next-line` を 2 行積むと、2 行目が 1 行目のコメント行を「次の行」と解釈して no-op になり、1 件しか抑制されない
 - 抑制の directive に書くプラグイン名は、`jsPlugins` のエントリの `name` と揃える (`docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」)
@@ -246,7 +263,7 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。「型アサーションを使わずに直す」と「行単位で抑制する」が引く typescript-eslint、TypeScript Handbook、ESLint docs、Oxlint docs の「typescript/consistent-type-assertions」と「Ignore comments」は、2026-10-06 に原文と照らした。
 
 [oxc-project/oxc#24878]: https://github.com/oxc-project/oxc/issues/24878
 [Oxlint docs「vitest/expect-expect」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/expect-expect.html
@@ -262,3 +279,9 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 [Oxfmt docs「Sort imports」]: https://oxc.rs/docs/guide/usage/formatter/sorting.html#sort-imports
 [Oxlint docs「eslint/sort-imports」]: https://oxc.rs/docs/guide/usage/linter/rules/eslint/sort-imports.html
 [eslint の `eslint-recommended.js`]: https://github.com/eslint/eslint/blob/v10.10.0/packages/js/src/configs/eslint-recommended.js
+[Oxlint docs「typescript/consistent-type-assertions」]: https://oxc.rs/docs/guide/usage/linter/rules/typescript/consistent-type-assertions.html
+[typescript-eslint「consistent-type-assertions」]: https://typescript-eslint.io/rules/consistent-type-assertions/
+[TypeScript Handbook「Narrowing」]: https://www.typescriptlang.org/docs/handbook/2/narrowing.html
+[TypeScript Handbook「Type Compatibility」]: https://www.typescriptlang.org/docs/handbook/type-compatibility.html
+[Oxlint docs「Ignore comments」]: https://oxc.rs/docs/guide/usage/linter/ignore-comments.html
+[ESLint docs「Comment descriptions」]: https://eslint.org/docs/latest/use/configure/rules#comment-descriptions
