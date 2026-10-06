@@ -89,6 +89,11 @@ assert の予算をテストの予算と分けて宣言する。`tooling/test/br
 - 呼び出しごとの `{ timeout: 0 }` はこの設定と独立に効く (2026-09-22 実測で 53ms)。呼び出しごとの指定が先に読まれるので、予算を宣言しても「待たない」は書ける。実例は `expectAbsent`
 - 予算の宣言は「最初から出ない」否定 assert の無駄待ちを解かない。待って成立しない条件にはどんな予算を渡しても使い切るので、そちらは `expectAbsent` の `{ timeout: 0 }` が持つ
 
+### レイアウトを実測で確かめる
+
+- レイアウトの回帰は、要素の className に class が含まれるかではなく、描いた結果の寸法 (`getBoundingClientRect()`) と computed style を測って確かめる。class の文字列が在っても、その CSS が生成されて効いているかは分からない
+- ブラウザで走る project は Tailwind の plugin を通す (`tooling/test/chromium-project.ts`) ので、class は実際の CSS に解決されて測れる。style の比べ方は「否定を肯定で書く」にある
+
 ### viewport に収まることを測る
 
 viewport の寸法の定数は `src/test/browser/viewport-sizes.ts` が持ち、`src/test/assert/viewport.ts` が再 export する。`page.viewport()` で変えたら、`afterEach` で `DEFAULT_VIEWPORT` へ戻す。既定の viewport は、`tooling/test/browser-project.ts` の `browser.viewport` が `viewport-sizes.ts` から `DEFAULT_VIEWPORT` を import して使う。値を写すとどちらかが古くなる。config から `viewport.ts` を読むと、browser mode の外で落ちる (`viewport-sizes.ts` の docstring)。

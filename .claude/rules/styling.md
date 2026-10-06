@@ -48,7 +48,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ## spacing 基準
 
-間隔の表現手法は shadcn skill (`.claude/skills/shadcn/rules/styling.md`) に従う。本節は値と、skill を狭める追加規定を持つ。
+間隔の表現手法は shadcn skill に従い、`space-x-*` / `space-y-*` ではなく `gap-*` で書く。本節は値と、skill を狭める追加規定を持つ (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く」)。
 
 - 兄弟の間隔を子の margin (`mb-*` / `mt-*` 等) で作らない。親の `gap-*` に置く。skill は `mt-4` を可例に挙げるが、兄弟の間隔に限りここで禁止する (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く」)
 - 機械強制は無いのでレビューで見る。例外は「親の gap で表現できない箇所」に挙げたものだけ
@@ -87,7 +87,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ### 親の gap で表現できない箇所
 
-子の margin で兄弟の間隔を作ってよい例外。増やすときは実装近傍にも同じ理由を書く。
+子の margin で兄弟の間隔を作ってよい例外。増やすときは実装近傍にも同じ理由を書く (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く」)。
 
 - `src/components/ui/` (registry 素) は対象外。`FieldLegend` の `mb-3` のように registry 自身が margin で取る間隔は消費側で上書きしない (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く」)
 

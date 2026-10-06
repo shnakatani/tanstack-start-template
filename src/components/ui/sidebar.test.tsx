@@ -6,6 +6,7 @@ import { render } from "vitest-browser-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -45,7 +46,9 @@ describe("SidebarMenuButton の開状態 (ADR-0020 の乖離)", () => {
             <DropdownMenu>
               <DropdownMenuTrigger render={<SidebarMenuButton />}>切替</DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem>項目</DropdownMenuItem>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem>項目</DropdownMenuItem>
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

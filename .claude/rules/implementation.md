@@ -121,7 +121,9 @@ lint では見ないのでレビューで見る。
 
 ## Item は Group の中に置く
 
-`SelectItem` / `DropdownMenuItem` を `SelectContent` / `DropdownMenuContent` の直下に置かない (shadcn skill の `rules/composition.md`)。機械強制は無いのでレビューで見る。
+lint では見ないのでレビューで見る。
+
+- Group を持つ部品の項目は content の直下に置かず、対応する Group の中に置く。`SelectItem` / `SelectLabel` は `SelectGroup`、`DropdownMenuItem` / `DropdownMenuLabel` / `DropdownMenuSub` は `DropdownMenuGroup` に入れる (`docs/guides/registry.md`「項目を Group の中に置く」)
 
 ## lint の抑制
 

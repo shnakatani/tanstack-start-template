@@ -1,6 +1,6 @@
 # lint の設定
 
-Oxlint の設定を書き換えるとき、ルールやプラグインを足すとき、ルールを off にするとき、鳴ったルールを直すか抑制するときの手順と落とし穴を持つ。
+Oxlint の設定を書き換えるとき、ルールやプラグインを足すとき、ルールを off にするとき、鳴ったルールを直すか抑制するとき、`vp check` の結果が割れたときの手順と落とし穴を持つ。
 
 | 決定                                                                                                               | ADR      |
 | ------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -139,6 +139,10 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 - 2026-09-30 に vite-plus 1.0.0 (oxlint 1.85.0) で確かめた。違反を 1 つ置いた probe を `GITHUB_ACTIONS=true` で渡すと、`vp check` は既定の形式で出し、`vp lint -f github` は `::error file=...` の行を出した
 - [voidzero-dev/vite-plus#925][] が close されたとき、または `--format=default` を強制した [voidzero-dev/vite-plus#914][] が revert されたときは、同じ probe で `vp check` が注釈を出すかを確かめ直す。oxlint 側の前提 (GitHub 形式に `vp check` が読む要約の行を足す [oxc-project/oxc#20404][]) は 2026-03-16 に merge 済み
 
+### `vp check` の結果が割れたら
+
+- コードを変えずに `vp check` を 2 回続けて打ち、結果が割れたら、上流の非決定的な発火を疑う。`typescript/no-unnecessary-type-assertion` は、同じ入力でも報告したりしなかったりする ([oxc-project/oxc#21752][]) (2026-09-02 に vite-plus 0.3.0 / oxlint 1.79.0 で観測)。スレッドを 1 つに絞っても揃わない ([oxc-project/oxc#21752][] の本文: `--threads=1` で "still flaky (not internal worker race)")。`vp check` は `--threads` を持たないので、絞って確かめるなら `vp lint --threads=1` を打つ (2026-10-06 に vite-plus 1.0.0 の `vp check --help` と `vp lint --help` で確認)
+
 ### 設定の落とし穴
 
 どれも「設定したつもりで効いていない」状態を、診断なしで作る。
@@ -266,6 +270,7 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。「型アサーションを使わずに直す」と「行単位で抑制する」が引く typescript-eslint、TypeScript Handbook、ESLint docs、Oxlint docs の「typescript/consistent-type-assertions」と「Ignore comments」は、2026-10-06 に原文と照らした。
 
 [oxc-project/oxc#24878]: https://github.com/oxc-project/oxc/issues/24878
+[oxc-project/oxc#21752]: https://github.com/oxc-project/oxc/issues/21752
 [Oxlint docs「vitest/expect-expect」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/expect-expect.html
 [voidzero-dev/vite-plus#925]: https://github.com/voidzero-dev/vite-plus/issues/925
 [voidzero-dev/vite-plus#914]: https://github.com/voidzero-dev/vite-plus/pull/914

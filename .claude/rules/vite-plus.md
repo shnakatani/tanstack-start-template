@@ -13,15 +13,15 @@ paths:
 
 ## staged 設定 (pre-commit hook)
 
-- `--no-error-on-unmatched-pattern` を外さない。staged が `ignorePatterns` の生成ファイルだけのコミットで、対象ゼロが error になり commit が止まる
-- `vp staged` は `.vite-hooks/pre-commit` から呼び、hook は `package.json` の `prepare` の `vp config` が入れる。自前の skip スクリプトを間に挟まない
-- hook を入れたくない環境 (CI のビルドコンテナ等) は `VP_GIT_HOOKS=0` で止める
+- `--no-error-on-unmatched-pattern` を外さない。staged が `ignorePatterns` の生成ファイルだけのコミットで、対象ゼロが error になり commit が止まる (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
+- `vp staged` は `.vite-hooks/pre-commit` から呼び、hook は `package.json` の `prepare` の `vp config` が入れる。自前の skip スクリプトを間に挟まない (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
+- hook は止める範囲で手段を選ぶ。環境ごと (CI のビルドコンテナ等) なら `VP_GIT_HOOKS=0`、環境を受け継がないプロセス (デーモン等) ならマシンの init script で `VP_GIT_HOOKS=0`、1 つの clone なら `vp hooks disable` で止める (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
 
 ## script とタスク
 
 - マージ前検証を `vp run` のタスクへまとめない。Vite Task は親の環境変数を素通しせず、結果をキャッシュして gate がリプレイされる (ADR-0004)
 - built-in と同名の script は、`start` と対の入口 (`pnpm run build` → `pnpm start`) の `build` だけを置き、開発者の入口 (`check` / `test` / `dev`) は足さない。開発者は global の `vp` を入れるので公式が script を勧める利点が当てはまらず、同名の script があると `vp <name>` のたびに stderr に note が出る (ADR-0004)
-- ビルド成果物を起動する検査は `vp build` の後に置く。CI も同じ順序で workflow に並べる
+- ビルド成果物を起動する検査は `vp build` の後に置く。CI も同じ順序で workflow に並べる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 
 ## 型検査
 

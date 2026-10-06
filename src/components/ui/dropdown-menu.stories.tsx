@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /**
- * 項目は必ず `DropdownMenuGroup` の中に置く (shadcn skill の `rules/composition.md`)。
+ * 項目は対応する Group の中に置く (docs/guides/registry.md「項目を Group の中に置く」)。
  * 全項目を包む単一の Group に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない
  * (docs/guides/accessibility.md「メニューの項目をグループに分ける」)
  */

@@ -103,6 +103,7 @@ ui 部品の見た目を変えたいときは、上の行から順に当ては�
 
 ### 兄弟の間隔を親の gap に置く
 
+- 間隔の書き方は [shadcn skill「Styling & Customization」][] に従う。`space-x-*` / `space-y-*` を使わず、`flex` と `gap-*` で書く (`No space-x-* / space-y-*` の節: "Use `gap-*` instead.")。このガイドは、その上に値 (「間隔の値を選ぶ」) と、skill を狭める規定 (子の margin で兄弟の間隔を作らない) を足す
 - 兄弟の間隔は親の `gap-*` に置き、子の margin (`mb-*` / `mt-*` など) で作らない。[shadcn skill「Styling & Customization」][] は layout に使う `className` の例に `mt-4` を挙げるが、兄弟の間隔には使わない。理由は「兄弟の間隔を親の gap に置く理由」にある
 - 例外は registry の部品 (`src/components/ui/`) の中である。`FieldLegend` の `mb-3` のように registry 自身が margin で取る間隔は、消費側で上書きしない
 - 例外を足すときは、この節と実装の近くの両方に同じ理由を書く
