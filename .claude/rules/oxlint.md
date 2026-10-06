@@ -7,7 +7,7 @@ paths:
 
 # Oxlint 設定
 
-lint は Oxlint が担い、設定は `tooling/lint/config.ts` に書いて `vite.config.ts` の `lint` から読ませる。
+lint は Oxlint が担い、設定は `tooling/lint/config.ts` に書いて `vite.config.ts` の `lint` から読ませる (`docs/guides/lint/configuration.md`「設定の落とし穴」)。
 
 ## lint 設定 (`tooling/lint/config.ts`)
 

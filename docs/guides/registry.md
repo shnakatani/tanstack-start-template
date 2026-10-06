@@ -24,6 +24,7 @@ shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す�
 
 - コード側の理由コメントは、ADR と台帳だけでは実装者が誤る落とし穴に限る
 - 使っていない部品を先に入れること (vendor preset) は許す。chore のコミットとして記録する
+- 足した部品を変えたときも、最初のコミットの前に、baseline との差分が台帳と 1:1 であることを確かめる (「baseline と突き合わせる」)
 
 ### baseline を取り直して取り込む
 
