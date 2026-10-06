@@ -27,7 +27,7 @@ mise run verify   # マージ前に通す。手順は .mise.toml の [tasks.veri
 - `vp test` を複数並行で走らせない。orphan の runner が残ると後続が collection エラーで巻き添えになる。kill 後は `ps` で残存を確かめる。スクリプトが子として起動し、全部の終わりを待つ並列 (`scripts/time-zones/run-tests.ts`) は除く。親だけを kill すると子の vitest が残るので、子も `ps` で確かめる (`docs/guides/testing/configuration.md`「テストを走らせる」)
 - background で走らせるときはパイプを付けない。buffering で完了まで出力が見えず、ハングと実行中を区別できない
 - worktree では中へ cd してから `vp install` と `vp test run` を打つ。`--root <worktree>` で指すと、story の project が cd した側の clone の story を集めて落ちる (`docs/guides/testing/configuration.md`「テストを走らせる」)
-- `vp check` がコードを変えずに 2 回続けて結果が割れたら、上流の非決定的な発火 (`typescript/no-unnecessary-type-assertion`、oxc-project/oxc#21752) を疑う。`--threads=1` でも再現する (2026-09-02 に vite-plus 0.3.0 / oxlint 1.79.0 で観測)
+- `vp check` がコードを変えずに 2 回続けて結果が割れたら、上流の非決定的な発火 (`typescript/no-unnecessary-type-assertion`) を疑う。`--threads=1` でも再現する (`docs/guides/lint/configuration.md`「`vp check` の結果が割れたら」)
 
 ## Storybook の skill と tools
 
