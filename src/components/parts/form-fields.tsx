@@ -342,6 +342,12 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
  * 4 つのラベル (labelDayButton / labelNext / labelPrevious / labelNav) は react-day-picker の ja
  * (`react-day-picker/locale/ja`) と同じ文言をここで持つ。labelNav だけは、nav の名前に
  * 「ナビゲーション」を含めない規範 (docs/guides/accessibility.md「ナビゲーションを組む」) に合わせて変える。
+ * 月の表の名前は labelGrid の既定 (aria-label) のままにする。同じ年月は見出しの文字として DOM にもあり、
+ * WAI-ARIA 1.2 の aria-label の定義は見出しを aria-labelledby で指す形を勧める (SHOULD) が、その形にしない。
+ * animate のとき react-day-picker は月の DOM を cloneNode で複製して見出しの id が重なり (`useAnimation.js`)、
+ * 消費側が CaptionLabel / MonthCaption を差し替えると表が存在しない id を指して名前を失い、labelGrid も
+ * 効かなくなる (react-day-picker 10.0.1、2026-10-07 に確認)。名前の付け方は
+ * docs/guides/accessibility.md「accessible name を与える」
  * `react-day-picker/locale/ja` を使わないのは、中で `date-fns/locale` のバレルを読み、全ロケールを
  * 引き込むため (react-day-picker 10.0.1 の `dist/esm/locale/ja.js` の 1 行目、ADR-0032)
  */
