@@ -166,7 +166,7 @@ paths:
 
 ## ブラウザテストの CSS とレイアウト実測
 
-ブラウザテストでは Tailwind が実 CSS に解決される。レイアウト回帰は className の `toContain` ではなく、実測で守る。
+ブラウザテストでは Tailwind が実 CSS に解決される。レイアウト回帰は className の `toContain` ではなく、実測で守る (`docs/guides/testing/waiting-and-assertions.md`「レイアウトを実測で確かめる」)。
 
 - viewport 定数と `expectWithinViewport` は `src/test/assert/viewport.ts`。`page.viewport()` で変えたら `afterEach` で `DEFAULT_VIEWPORT` へ戻す (`docs/guides/testing/waiting-and-assertions.md`「viewport に収まることを測る」)
 - 全体が viewport に収まることは `expectWithinViewport(locator)` で見る。`toBeInViewport({ ratio: 1 })` は使わない。面積 0 の潰れた要素が通り、失敗文にはみ出した辺と px が出ない (`docs/guides/testing/waiting-and-assertions.md`「viewport の収まりを自前の helper で測る理由」)
