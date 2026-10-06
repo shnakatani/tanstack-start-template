@@ -77,16 +77,18 @@ function BreadcrumbSeparator({ children, className, ...props }: React.ComponentP
   );
 }
 
+/**
+ * 畳んだ階層を示す記号。registry は根に `aria-hidden` を付け、代替の `sr-only` の文字まで支援技術から
+ * 隠すので、根ではなくアイコンだけを隠す (上流 shadcn-ui/ui#8074、ADR-0020 の乖離)
+ */
 function BreadcrumbEllipsis({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       data-slot="breadcrumb-ellipsis"
-      role="presentation"
-      aria-hidden="true"
       className={cn("flex size-5 items-center justify-center [&>svg]:size-4", className)}
       {...props}
     >
-      <MoreHorizontalIcon />
+      <MoreHorizontalIcon aria-hidden />
       <span className="sr-only">More</span>
     </span>
   );
