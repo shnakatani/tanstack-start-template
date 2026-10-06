@@ -1,6 +1,6 @@
 # 依存と開発環境
 
-依存を足す・上げる・前倒しするとき、ツールや設定を足すときの手順と落とし穴を持つ。
+依存を足す・上げる・前倒しするとき、ツールや設定を足すとき、commit hook を止めるときの手順と落とし穴を持つ。
 
 | 決定                                                                                        | ADR      |
 | ------------------------------------------------------------------------------------------- | -------- |
@@ -16,6 +16,14 @@
 - mise のシェル hook を入れる。hook を入れていない手元では `.mise.toml` の `[env]` が読まれず、`DB_FILE_NAME` が未設定のまま走る。port の導出はタスクの `env` に置いてあるので、hook が無くても `mise run serve` / `mise run storybook` は port を決められる
 - 素の `pnpm` は corepack などで別に入れない。Vite+ の shim が `packageManager` の版の `pnpm` を用意する ([Vite+ docs「Environment」][]。確かめた結果は「入口を `vp` にそろえる理由」)
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
+
+### commit hook を扱う
+
+commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマンドを staged のファイルへ当てる。`vp staged` は `.vite-hooks/pre-commit` から呼び、hook のディスパッチャ (`.vite-hooks/_`) は `package.json` の `prepare` の `vp config` が入れる ([Vite+ docs「Commit Hooks」][])。
+
+- `vp staged` と hook の間に、自前の skip のスクリプトを挟まない。止める手段は、Vite+ が入れた hook 自身が実行のたびに確かめる ([Vite+ docs「Commit Hooks」][]: "The installed hooks check the environment on every run, so you can disable them per machine or per process without uninstalling anything.")
+- hook を止めるときは、止める範囲で [Vite+ docs「Commit Hooks」][] の手段を選ぶ。CI のビルドコンテナのように環境ごと止めるなら `VP_GIT_HOOKS=0` を設定する。`prepare` の `vp config` が hook を入れず、入っている hook も何もせずに終わる (Environment variable の節)。1 つの clone で止めるなら `vp hooks disable` を打つ (Removing commit hooks の節)
+- `staged` のコマンドに付けた `--no-error-on-unmatched-pattern` を外さない。staged のファイルが `ignorePatterns` に当たるもの (`src/routeTree.gen.ts` など) だけのコミットでは対象が 0 件になり、`vp fmt` と `vp lint` が error で終わって commit が止まる。`vp lint --help` はこのフラグを "Do not exit with an error when no files are selected for linting (for example, after applying ignore patterns)" と説明する。2026-10-06 に vite-plus 1.0.0 で `src/routeTree.gen.ts` だけを渡すと、`vp fmt --write` は exit 2 (`Expected at least one target file`)、`vp lint` は exit 1 で終わり、このフラグを付けるとどちらも 0 で終わった
 
 ### 依存を足す・外す
 
@@ -204,3 +212,4 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [dotenvx README]: https://github.com/dotenvx/dotenvx/blob/v2.32.3/README.md
 [Vite+ docs「Package Management」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/install.md
 [Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/env.md
+[Vite+ docs「Commit Hooks」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/commit-hooks.md
