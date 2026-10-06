@@ -128,7 +128,7 @@ paths:
 
 1. 代替手段を検討する (`docs/guides/testing/configuration.md`「実行環境の制約でテストを止める」)
 2. 実行環境で条件分岐できるなら `skipIf` を使う (`docs/guides/testing/configuration.md`「実行環境の制約でテストを止める」)
-3. 恒久的に無効化するなら、`it.skip` の直前に理由付きの `oxlint-disable-next-line vitest/no-disabled-tests` を置く (`it.todo` は `vitest/warn-todo`) (`docs/guides/testing/configuration.md`「実行環境の制約でテストを止める」)
+3. 恒久的に無効化するなら、`it.skip` の直前に理由付きの `oxlint-disable-next-line vitest/no-disabled-tests` を置く。`it.todo` なら `vitest/warn-todo` を抑制する (`docs/guides/testing/configuration.md`「実行環境の制約でテストを止める」)
 
 ## クリックの発火方法
 
