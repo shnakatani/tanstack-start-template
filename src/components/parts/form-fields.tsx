@@ -294,6 +294,7 @@ interface FormCheckboxFieldProps
 export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
   const field = useFieldContext<boolean>();
   const id = useId();
+  const labelId = useId();
   const errors = field.state.meta.errors;
 
   // 検証を持たない真偽値フィールド専用なので、正規の利用では errors は常に空で
@@ -320,13 +321,18 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
   // 器の幅を w-56 に絞っており、行を中身の幅に縮めるのはその形に合わせたもの
   return (
     <Field orientation="horizontal" className="w-fit" data-disabled={disabled || undefined}>
+      {/* Base UI の Checkbox は htmlFor の label からも名前を写すが、写すのはクライアントだけなので
+          aria-labelledby で指す (docs/guides/accessibility.md「accessible name を与える」) */}
       <Checkbox
         id={id}
         checked={field.state.value}
         disabled={disabled}
+        aria-labelledby={labelId}
         onCheckedChange={field.handleChange}
       />
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel id={labelId} htmlFor={id}>
+        {label}
+      </FieldLabel>
     </Field>
   );
 }
