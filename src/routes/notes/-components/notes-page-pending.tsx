@@ -1,11 +1,7 @@
 import { PageHeader } from "@/components/parts/page-header";
 import { TableSkeleton } from "@/components/parts/table-skeleton";
 
-import {
-  NOTE_COLUMN_HEADERS,
-  NOTES_PAGE_TITLE,
-  NOTES_TABLE_CAPTION,
-} from "../-lib/notes-page-constants";
+import { NOTE_COLUMN_HEADERS, NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 
 /**
  * 一覧の pending 表示 (route の `pendingComponent`)。ページ本体 (`notes-page.tsx`) と同じ module に
@@ -17,7 +13,7 @@ export function NotesPagePending() {
     <div>
       <PageHeader title={NOTES_PAGE_TITLE} />
       <div className="p-4">
-        <TableSkeleton caption={NOTES_TABLE_CAPTION} headers={Object.values(NOTE_COLUMN_HEADERS)} />
+        <TableSkeleton caption={NOTES_PAGE_TITLE} headers={Object.values(NOTE_COLUMN_HEADERS)} />
       </div>
     </div>
   );

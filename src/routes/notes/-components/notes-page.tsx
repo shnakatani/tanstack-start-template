@@ -25,7 +25,7 @@ import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
 import { NOTE_SEARCH_DEBOUNCE_MS, noteSearchResultMessage } from "../-lib/note-search";
-import { NOTES_PAGE_TITLE, NOTES_TABLE_CAPTION } from "../-lib/notes-page-constants";
+import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 import { NoteEditDialog } from "./note-edit-dialog";
 import { NoteSearchField } from "./note-search-field";
@@ -201,7 +201,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
           ) : (
             <DataTable
               tableKey="notes"
-              caption={NOTES_TABLE_CAPTION}
+              caption={NOTES_PAGE_TITLE}
               columns={noteColumns}
               data={rows}
               getRowId={getNoteRowId}

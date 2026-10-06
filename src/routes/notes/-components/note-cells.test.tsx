@@ -28,6 +28,7 @@ import type { Screen } from "@/test/assert/screen-assertions";
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { getNoteRowId, toNoteRows } from "../-lib/note-rows";
+import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import {
   noteDeleteTriggerName,
   noteEditTriggerName,
@@ -59,7 +60,7 @@ async function renderCells({
     <>
       <DataTable
         tableKey="notes"
-        caption="メモの一覧"
+        caption={NOTES_PAGE_TITLE}
         columns={noteColumns}
         data={rows}
         getRowId={getNoteRowId}

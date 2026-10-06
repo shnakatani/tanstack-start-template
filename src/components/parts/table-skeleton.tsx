@@ -2,6 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -29,7 +30,7 @@ export function TableSkeleton({
 
   return (
     <Table>
-      <caption className="sr-only">{caption}</caption>
+      <TableCaption className="sr-only">{caption}</TableCaption>
       <TableHeader>
         <TableRow>
           {headers.map((header) => (

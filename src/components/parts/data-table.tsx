@@ -6,6 +6,7 @@ import type { ComponentProps } from "react";
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -60,8 +61,7 @@ export function DataTable<TData extends RowData>({
 
   return (
     <Table>
-      {/* registry の TableCaption に class を渡すと層の規則に当たるので、素の caption で置く */}
-      <caption className="sr-only">{caption}</caption>
+      <TableCaption className="sr-only">{caption}</TableCaption>
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>

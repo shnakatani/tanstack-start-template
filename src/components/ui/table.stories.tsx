@@ -55,7 +55,7 @@ export const Default: Story = {
   ),
 };
 
-/** 表題と合計行を添えた形 */
+/** 合計行を添えた形 */
 export const WithCaptionAndFooter: Story = {
   render: () => (
     <Table>
