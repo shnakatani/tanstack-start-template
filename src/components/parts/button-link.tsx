@@ -1,11 +1,14 @@
 import { createLink } from "@tanstack/react-router";
 import type { VariantProps } from "class-variance-authority";
 import { cn } from "cn";
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentProps } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 
-type ButtonLinkBaseProps = ComponentPropsWithoutRef<"a"> & VariantProps<typeof buttonVariants>;
+// createLink は Link の ref (利用者の ref と合成したもの) を部品へ渡し、React 19 では ref も props として
+// 届くので、{...props} で a へ渡す。型も ref を含む ComponentProps にする
+// (TanStack Router docs「Custom Link」の例は、どれも受けた ref を描く要素へ渡す)
+type ButtonLinkBaseProps = ComponentProps<"a"> & VariantProps<typeof buttonVariants>;
 
 function ButtonLinkBase({ className, variant, size, ...props }: ButtonLinkBaseProps) {
   return (
