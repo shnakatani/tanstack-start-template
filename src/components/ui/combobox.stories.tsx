@@ -35,7 +35,7 @@ function ComboboxExample({ items = FRUITS }: { items?: string[] }) {
       <ComboboxContent aria-label="果物の候補">
         <ComboboxInput aria-label="果物を検索" placeholder="検索" showTrigger={false} />
         <ComboboxEmpty>該当なし</ComboboxEmpty>
-        <ComboboxList>
+        <ComboboxList aria-label="果物">
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
               {item}
@@ -113,7 +113,7 @@ export const InlineWithTrigger: Story = {
     <Combobox items={FRUITS}>
       <ComboboxInput aria-label="果物" placeholder="果物を選択" />
       <ComboboxContent>
-        <ComboboxList>
+        <ComboboxList aria-label="果物">
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
               {item}
@@ -159,7 +159,7 @@ export const InlineWithClear: Story = {
     <Combobox items={FRUITS} defaultValue="りんご">
       <ComboboxInput aria-label="果物" showClear />
       <ComboboxContent>
-        <ComboboxList>
+        <ComboboxList aria-label="果物">
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
               {item}

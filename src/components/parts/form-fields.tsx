@@ -271,7 +271,7 @@ export function FormSelectField<T extends string>({
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent aria-labelledby={labelId}>
           <SelectGroup>
             {options.map((option) => (
               <SelectItem key={option.value} value={option.value}>

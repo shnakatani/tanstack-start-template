@@ -51,6 +51,12 @@ function SelectTrigger({
   );
 }
 
+/**
+ * 候補の listbox の名前を `aria-label` か `aria-labelledby` で受け、型で必須にする。listbox は名前が
+ * 必須のロール (WAI-ARIA 1.2) だが、base-ui は Select.Label を置いても listbox に名前を付けない。
+ * role="listbox" は List にあり、Popup は role="presentation" なので (`select/popup/SelectPopup.js`)、
+ * 受けた名前は Popup ではなく List へ渡す
+ */
 function SelectContent({
   className,
   children,
@@ -59,12 +65,17 @@ function SelectContent({
   align = "center",
   alignOffset = 0,
   alignItemWithTrigger = true,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   ...props
-}: SelectPrimitive.Popup.Props &
+}: Omit<SelectPrimitive.Popup.Props, "aria-label" | "aria-labelledby"> &
   Pick<
     SelectPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset" | "alignItemWithTrigger"
-  >) {
+  > & { "aria-label"?: string; "aria-labelledby"?: string } & (
+    | { "aria-label": string }
+    | { "aria-labelledby": string }
+  )) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
@@ -85,7 +96,9 @@ function SelectContent({
           {...props}
         >
           <SelectScrollUpButton />
-          <SelectPrimitive.List>{children}</SelectPrimitive.List>
+          <SelectPrimitive.List aria-label={ariaLabel} aria-labelledby={ariaLabelledBy}>
+            {children}
+          </SelectPrimitive.List>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>

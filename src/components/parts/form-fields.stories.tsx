@@ -564,6 +564,22 @@ export const SelectsOption: Story = {
   },
 };
 
+/**
+ * 開いた候補の listbox も欄のラベルを名前に持つ。listbox は名前が必須のロール (WAI-ARIA 1.2) で、
+ * Base UI は名前を付けないので `SelectContent` へ渡す (docs/guides/accessibility.md「accessible name を与える」)
+ */
+export const SelectListboxIsNamed: Story = {
+  tags: ["!dev"],
+  play: async () => {
+    await userEvent.click(screen.getByRole("combobox", { name: "状態" }));
+
+    await expect(await screen.findByRole("listbox", { name: "状態" })).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
+  },
+};
+
 /** options 外の値は form 値へ流さず、配線不整合を警告する */
 export const SelectRejectsUnknownValue: Story = {
   tags: ["!dev"],

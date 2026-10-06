@@ -28,7 +28,7 @@ function SelectExample({ defaultValue }: { defaultValue?: string }) {
       <SelectTrigger aria-label="状態">
         <SelectValue placeholder="状態を選択" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent aria-label="状態">
         <SelectGroup>
           {OPTIONS.map((option) => (
             <SelectItem key={option.value} value={option.value}>
@@ -86,7 +86,7 @@ export const Grouped: Story = {
       <SelectTrigger aria-label="状態">
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent aria-label="状態">
         <SelectGroup>
           <SelectLabel>作業中</SelectLabel>
           <SelectItem value="draft">下書き</SelectItem>
