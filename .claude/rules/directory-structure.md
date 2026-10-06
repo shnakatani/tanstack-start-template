@@ -71,7 +71,7 @@ paths:
 
 ## shadcn コンポーネント導入時のチェック
 
-`src/components/ui/` を新規追加・改変したら、最初のコミット前に次を済ませる (`docs/guides/registry.md`「部品を足す」):
+`src/components/ui/` に部品を足したら、最初のコミット前に次を済ませる。足した部品を変えたときは、コミットの前に 2 だけを確かめる (`docs/guides/registry.md`「部品を足す」):
 
 1. 生成時 baseline を `docs/registry-baseline/<name>.tsx` に取る (新規追加時と `--overwrite` 再生成時)。手順は `docs/guides/registry.md`「baseline を取り直して取り込む」
 2. baseline との diff が台帳 `docs/registry-deviations.md` と 1:1 であることを確かめる。上流の形を保つ違反だけ行単位で抑制し、台帳へ記録する (ADR-0020)

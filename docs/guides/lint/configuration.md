@@ -141,7 +141,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 
 ### `vp check` の結果が割れたら
 
-- コードを変えずに `vp check` を 2 回続けて打ち、結果が割れたら、上流の非決定的な発火を疑う。`typescript/no-unnecessary-type-assertion` は、同じ入力でも報告したりしなかったりする ([oxc-project/oxc#21752][])。`--threads=1` でも再現するので、スレッドを 1 つに絞っても揃わない (2026-09-02 に vite-plus 0.3.0 / oxlint 1.79.0 で観測。[oxc-project/oxc#21752][] の本文も、`--threads=1` で "still flaky (not internal worker race)" と書く)
+- コードを変えずに `vp check` を 2 回続けて打ち、結果が割れたら、上流の非決定的な発火を疑う。`typescript/no-unnecessary-type-assertion` は、同じ入力でも報告したりしなかったりする ([oxc-project/oxc#21752][]) (2026-09-02 に vite-plus 0.3.0 / oxlint 1.79.0 で観測)。スレッドを 1 つに絞っても揃わない ([oxc-project/oxc#21752][] の本文: `--threads=1` で "still flaky (not internal worker race)")。`vp check` は `--threads` を持たないので、絞って確かめるなら `vp lint --threads=1` を打つ (2026-10-06 に vite-plus 1.0.0 の `vp check --help` と `vp lint --help` で確認)
 
 ### 設定の落とし穴
 
@@ -267,7 +267,7 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。「型アサーションを使わずに直す」と「行単位で抑制する」が引く typescript-eslint、TypeScript Handbook、ESLint docs、Oxlint docs の「typescript/consistent-type-assertions」と「Ignore comments」は、2026-10-06 に原文と照らした。oxc-project/oxc#21752 は、2026-10-06 に open であることを確かめた。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。「型アサーションを使わずに直す」と「行単位で抑制する」が引く typescript-eslint、TypeScript Handbook、ESLint docs、Oxlint docs の「typescript/consistent-type-assertions」と「Ignore comments」は、2026-10-06 に原文と照らした。
 
 [oxc-project/oxc#24878]: https://github.com/oxc-project/oxc/issues/24878
 [oxc-project/oxc#21752]: https://github.com/oxc-project/oxc/issues/21752

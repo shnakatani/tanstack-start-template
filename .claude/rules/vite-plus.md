@@ -15,7 +15,7 @@ paths:
 
 - `--no-error-on-unmatched-pattern` を外さない。staged が `ignorePatterns` の生成ファイルだけのコミットで、対象ゼロが error になり commit が止まる (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
 - `vp staged` は `.vite-hooks/pre-commit` から呼び、hook は `package.json` の `prepare` の `vp config` が入れる。自前の skip スクリプトを間に挟まない (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
-- hook は止める範囲で手段を選ぶ。環境ごと (CI のビルドコンテナ等) なら `VP_GIT_HOOKS=0`、1 つの clone なら `vp hooks disable` で止める (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
+- hook は止める範囲で手段を選ぶ。環境ごと (CI のビルドコンテナ等) なら `VP_GIT_HOOKS=0`、環境を受け継がないプロセス (デーモン等) ならマシンの init script で `VP_GIT_HOOKS=0`、1 つの clone なら `vp hooks disable` で止める (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
 
 ## script とタスク
 

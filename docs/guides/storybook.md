@@ -84,7 +84,7 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 ### Storybook の CLI を使う
 
 - UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。`stories` skill が読ませる `write-story` skill との違いは「上流の `write-story` skill との違い」にある
-- `skills` と `tools` は `vp exec storybook --help` のコマンドの一覧に出ない (2026-10-06 に storybook@10.6.0 で確認)。使い方の写しを AGENTS.md に置き、AGENTS.md を削るときも消さない。理由は「CLI を使い、MCP を入れない理由」にある
+- `skills` と `tools` は `vp exec storybook --help` のコマンドの一覧に出ない (2026-10-06 に storybook@10.6.0 で確認)
 - `@storybook/addon-mcp` を入れず、CLI を使う。MCP の登録は URL を 1 つしか持てず、worktree ごとに変わる Storybook の port へ配れない (「CLI を使い、MCP を入れない理由」)
 - `stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない
 
@@ -234,7 +234,7 @@ vitest から走らせた story の viewport は、`@storybook/addon-vitest` の
 
 決め手は配布である。MCP の登録はエージェント側の設定に URL を 1 つ持つが、このリポジトリの Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスクが `derive-dev-port.sh` で導出する)。同じ登録を collaborator へ配れない。CLI は `--cwd` / `-c` でプロジェクトを指すので、port の影響を受けない。
 
-MCP が優るのは、ツールの説明がエージェントに常に見える点である。CLI は AGENTS.md に書いても読み飛ばされれば使われない。AGENTS.md から CLI の使い方の写しを消さないのはこのためである。MCP へ移るなら、port を固定するか、worktree ごとに登録し直す運用が要る。
+MCP が優るのは、ツールの説明がエージェントに常に見える点である。CLI は、エージェントが読む文書に使い方が書かれていなければ使われない。MCP へ移るなら、port を固定するか、worktree ごとに登録し直す運用が要る。
 
 ## 出典
 
