@@ -38,25 +38,28 @@ ADR-0010 に沿って、次の順で組む。
 
 2・4・5 の理由は「route ファイルの組み方と code splitting」。
 
+- route ファイルを rename・移動しても、`createFileRoute` に渡すパスの文字列は手で書き換えない。TanStack Router の bundler plugin が書き換える ([TanStack Router docs「Routing Concepts」][] の Anatomy of a Route の "this path is automatically written and managed by the router for you via the TanStack Router Bundler Plugin or Router CLI.")
+
 ### features か route か
 
 置き場所は消費者で決める。
 
-| 条件                                                 | 置き場所                                                                                                                 |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| その route だけが使う                                | route 側 (`-components/` / `-lib/` / `-hooks/`)                                                                          |
-| 複数の画面から使う                                   | `src/features/<domain>/`                                                                                                 |
-| ドメインの形 (schema、mutation) と同じ場所に居るべき | `src/features/<domain>/`                                                                                                 |
-| どのドメインにも属さない                             | React に依存しない汎用ロジックと型は `src/lib/`、React の hook は `src/hooks/`、server の基盤は `src/server/` (ADR-0010) |
+| 条件                                                 | 置き場所                                                                                                                                                                                                                            |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| その route だけが使う                                | route 側 (`-components/` / `-lib/` / `-hooks/`)                                                                                                                                                                                     |
+| 複数の画面から使う                                   | `src/features/<domain>/`                                                                                                                                                                                                            |
+| ドメインの形 (schema、mutation) と同じ場所に居るべき | `src/features/<domain>/`                                                                                                                                                                                                            |
+| どのドメインにも属さない                             | React に依存しない汎用ロジックと型は `src/lib/`、React の hook と、複数のファイルから使う React の context の定義は `src/hooks/`、server の基盤 (DB の接続とテーブルの定義を置く `src/server/db/` など) は `src/server/` (ADR-0010) |
 
 画面の描画の形 (一覧の行モデル) は route 側、mutation の variables を絞る parser は `src/features/<domain>/` になる。
+1 つの部品のファイルの中だけで使う context は、`src/hooks/` へ出さずにそのファイルに置く (`src/components/action/form.tsx`)。
 `src/features/<domain>/` の中の import も相対パスで書き、ディレクトリごと移せる形を保つ。
 
 ### server function の置き場
 
 - 1 つのドメインに属する server function は `src/features/<domain>/functions.ts` に宣言し、実処理を `handlers.server.ts` に置く
 - 宣言と実処理を 1 ファイルにまとめない。実処理を、server function を経由せずに単体テストできる側に残す
-- ドメインに属さない横断的な server function は `src/server/` 直下に置く。1 つのドメインに属するかどうかが分かれ目になる
+- ドメインに属さない横断的な server function と、server だけで使う helper (`src/server/ssr-errors.ts` など) は `src/server/` 直下に置く。1 つのドメインに属するかどうかが分かれ目になる
 
 ### `src/components/ui/` に付随ファイルを置く
 
@@ -136,7 +139,7 @@ TanStack Router の automatic code splitting は、route ファイルの propert
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。[TanStack Router docs「Routing Concepts」][] の引用は 2026-10-06 に原文と照らした。
 
 [TanStack Router docs「File Naming Conventions」]: https://tanstack.com/router/latest/docs/routing/file-naming-conventions
 [`@tanstack/router-plugin` の `router-plugin/SKILL.md`]: https://github.com/TanStack/router/blob/@tanstack/router-plugin@1.168.40/packages/router-plugin/skills/router-plugin/SKILL.md
@@ -144,3 +147,4 @@ TanStack Router の automatic code splitting は、route ファイルの propert
 [`@tanstack/router-plugin` の `core/constants.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-plugin@1.168.40/packages/router-plugin/src/core/constants.ts
 [TanStack/router#4047]: https://github.com/TanStack/router/pull/4047
 [`@tanstack/router-core` の `router-core/code-splitting/SKILL.md`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/skills/router-core/code-splitting/SKILL.md
+[TanStack Router docs「Routing Concepts」]: https://tanstack.com/router/latest/docs/routing/routing-concepts

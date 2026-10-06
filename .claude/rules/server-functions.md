@@ -17,11 +17,11 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 
 ## 関心事の置き場所
 
-| 関心事                                                     | 置き場所                                                     |
-| ---------------------------------------------------------- | ------------------------------------------------------------ |
-| 全 server function に必ず要るもの (認証・CSRF・例外のログ) | `src/start.ts` の `functionMiddleware` / `requestMiddleware` |
-| fn ごとに要否が変わるもの (認可)                           | `createServerFn` を包む base builder                         |
-| 未ログインを login へ送る画面遷移                          | route の `beforeLoad`                                        |
+| 関心事                                                     | 置き場所                                                                |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 全 server function に必ず要るもの (認証・CSRF・例外のログ) | `src/start.ts` の `functionMiddleware` / `requestMiddleware` (ADR-0012) |
+| fn ごとに要否が変わるもの (認可)                           | `createServerFn` を包む base builder (ADR-0012)                         |
+| 未ログインを login へ送る画面遷移                          | route の `beforeLoad` (ADR-0012)                                        |
 
 認証は global へ載せれば付け忘れる場所が無い。認可の付け忘れに機械強制は無く、規範として守りレビューで見る (ADR-0012)。
 
@@ -39,12 +39,12 @@ server function は、それを呼ぶ画面とは独立に到達できる RPC en
 
 ## ファイルの置き場所と名前
 
-| 対象                                   | 置き場所                                   |
-| -------------------------------------- | ------------------------------------------ |
-| 1 つのドメインに属する server fn       | `src/features/<domain>/functions.ts`       |
-| その実処理                             | `src/features/<domain>/handlers.server.ts` |
-| ドメインに属さない server fn と helper | `src/server/` 直下                         |
+| 対象                                   | 置き場所                                                                                            |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1 つのドメインに属する server fn       | `src/features/<domain>/functions.ts` (`docs/guides/placement.md`「server function の置き場」)       |
+| その実処理                             | `src/features/<domain>/handlers.server.ts` (`docs/guides/placement.md`「server function の置き場」) |
+| ドメインに属さない server fn と helper | `src/server/` 直下 (`docs/guides/placement.md`「server function の置き場」)                         |
 
 - 実処理のファイル名に `.server.` を必ず入れる。既定の遮断はファイル名パターンだけなので、`src/server/db/` を引かない実処理 (外部 API や secret だけを扱うもの) は接尾辞を落とすと client から import できてしまう (ADR-0010)
-- 部分一致の検索は `likeContains` (`src/server/db/like-pattern.ts`) を使い、パターンと `ESCAPE` を手で組まない。忘れた検索は `%` `_` を含む入力で黙って壊れる (SQLite の LIKE: https://www.sqlite.org/lang_expr.html#like)
+- 部分一致の検索は `likeContains` (`src/server/db/like-pattern.ts`) を使い、パターンと `ESCAPE` を手で組まない。忘れた検索は `%` `_` を含む入力で黙って壊れる (`docs/guides/server-functions.md`「ユーザー入力で部分一致の検索を組む」)
 - `createServerFn` の宣言と実処理を 1 ファイルにまとめない。実処理を server function を経由せず単体テストできる側に残すため (`docs/guides/placement.md`「server function の置き場」)
