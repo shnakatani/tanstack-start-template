@@ -44,7 +44,8 @@ function SelectExample({ defaultValue }: { defaultValue?: string }) {
 /** 開くところまで。選択は既存のブラウザテストが持つ (docs/guides/storybook.md「カタログと play の範囲」) */
 async function open(): Promise<void> {
   await userEvent.click(screen.getByRole("combobox", { name: "状態" }));
-  await screen.findByRole("listbox");
+  // 名前で掴み、SelectContent が名前を listbox へ渡していることも確かめる
+  await screen.findByRole("listbox", { name: "状態" });
 }
 
 const meta = {

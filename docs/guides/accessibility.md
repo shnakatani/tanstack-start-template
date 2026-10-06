@@ -272,7 +272,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 - Base UI 1.8.0 の Select と Combobox の trigger は、Base UI の Field.Label があればそれを、無ければ Select.Label か Combobox.Label を `aria-labelledby` で指す (`@base-ui/react` の `utils/resolveAriaLabelledBy.js`)。このリポジトリの `FieldLabel` は素の `<label>`、`SelectLabel` と `ComboboxLabel` は GroupLabel なので、どれも指されない。trigger を見える label で名付けるときは、label に id を付けて trigger の `aria-labelledby` で指す (`src/components/parts/form-fields.tsx` の `FormSelectField`)
 - Base UI 1.8.0 の Checkbox と Radio は、既定 (`nativeButton` が false) では根が `span` で、隠れた input に `<label htmlFor>` を結ぶか、`<label>` で包むと、その label の id を根の `aria-labelledby` に写す。写すのはクライアントの layout effect の中なので (`internals/labelable-provider/useAriaLabelledBy.js`)、サーバーが返す HTML の時点では根に名前が無い。サーバーの HTML から名前を持たせるときは、label に id を付けて根の `aria-labelledby` で指す (`FormCheckboxField`)
 - 入力欄を popup の中に置くと、Combobox の trigger は combobox になる (`combobox/trigger/ComboboxTrigger.js` の `inputInsidePopup`)。このリポジトリの `ComboboxTrigger` は既定で `aria-label="候補を開く"` を持つので、この形では欄の名前を `aria-label` か `aria-labelledby` で渡す。popup の中の `ComboboxInput` は既定 (`showTrigger`) で名前を渡せない trigger を内に持ち、それも combobox になるので、`showTrigger={false}` にする。`aria-labelledby` は `aria-label` より先に名前に使われる ([accname 1.2][] の 2B LabelledBy と 2D AriaLabel)
-- Base UI 1.8.0 の Select と Combobox の listbox は、Select.Label や Combobox.Label を置いても名前を持たない (`select/list/SelectList.js`、`combobox/list/ComboboxList.js`)。listbox には欄の名前を付ける ([APG「Providing Accessible Names and Descriptions」][] の表の listbox の行は名前を Required とし、APG の combobox の例は listbox に欄のラベルを `aria-labelledby` か `aria-label` で付ける)。このリポジトリの `SelectContent` は名前を型で必須にして listbox へ渡す (`FormSelectField` は見える label を `aria-labelledby` で指す)。`ComboboxList` には直接渡す
+- Base UI 1.8.0 の Select と Combobox の listbox (Combobox の `grid` では grid) は、Select.Label や Combobox.Label を置いても名前を持たない (`select/list/SelectList.js`、`combobox/list/ComboboxList.js`)。listbox には欄の名前を付ける。[APG「Providing Accessible Names and Descriptions」][] の表の listbox と grid の行は名前を Required とし、APG の [Select-Only Combobox の例][APG「Select-Only Combobox Example」] は listbox に欄のラベルを `aria-labelledby` で、[Editable Combobox With List Autocomplete の例][APG「Editable Combobox With List Autocomplete Example」] は `aria-label` で付ける。このリポジトリの `SelectContent` と `ComboboxList` は名前を型で必須にする (`SelectContent` は受けた名前を listbox へ渡し、`FormSelectField` は見える label を `aria-labelledby` で指す)。axe-core 4.13.0 は combobox の popup の listbox を名前の検査から外すので (`no-naming-method-matches`)、story の axe では名前の欠けを検出できない
 - registry の `Spinner` は `role="status"` と `aria-label="Loading"` だけを持ち、中身の文字を持たない。`aria-hidden` にして見た目だけに使い、読み込み中であることは「読み込み中の表示を組む」の形で伝える
 - `status` に、中身と同じ文言の名前を付けない。[APG「Providing Accessible Names and Descriptions」][] の表の status の行は "Some screen readers announce the name of a status element before announcing the content of the status element." と書く
 - 名前の文字を、inline でない子要素 (flex や grid の item、block、inline-block) へ分けない。2026-10-06 に Playwright 1.63.0 の Chromium 153.0.8010.12 で、button に `<span>Ab</span><span>cd</span>` を置くと、子が inline なら名前は `Abcd`、親が flex か grid、または子が block か inline-block なら `Ab cd` だった。子の境界で空白を入れるかは仕様で決まっていない ([accname 1.2][] の 2F の注記、[w3c/accname#225][])
@@ -325,7 +325,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」、accname 1.2 の引用は 2026-10-06 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に原文と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -365,3 +365,5 @@ story で統制できるのは markup までで、フォントは実行環境が
 [w3c/accname#225]: https://github.com/w3c/accname/issues/225
 [WCAG 2.2 SC 4.1.2]: https://www.w3.org/TR/WCAG22/#name-role-value
 [APG「Introduction」]: https://www.w3.org/WAI/ARIA/apg/about/introduction/
+[APG「Select-Only Combobox Example」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/
+[APG「Editable Combobox With List Autocomplete Example」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/

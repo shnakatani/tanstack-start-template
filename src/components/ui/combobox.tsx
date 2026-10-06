@@ -133,7 +133,15 @@ function ComboboxContent({
   );
 }
 
-function ComboboxList({ className, ...props }: ComboboxPrimitive.List.Props) {
+/**
+ * listbox (grid) の名前を `aria-label` か `aria-labelledby` で受け、型で必須にする。base-ui は
+ * Combobox.Label を置いても List に名前を付けず (`combobox/list/ComboboxList.js`)、axe も combobox の
+ * popup の listbox を検査しない (docs/guides/accessibility.md「accessible name を与える」)
+ */
+function ComboboxList({
+  className,
+  ...props
+}: ComboboxPrimitive.List.Props & ({ "aria-label": string } | { "aria-labelledby": string })) {
   return (
     <ComboboxPrimitive.List
       data-slot="combobox-list"

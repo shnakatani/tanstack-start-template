@@ -54,8 +54,8 @@ function SelectTrigger({
 /**
  * 候補の listbox の名前を `aria-label` か `aria-labelledby` で受け、型で必須にする。listbox は名前が
  * 必須のロール (WAI-ARIA 1.2) だが、base-ui は Select.Label を置いても listbox に名前を付けない。
- * role="listbox" は List にあり、Popup は role="presentation" なので (`select/popup/SelectPopup.js`)、
- * 受けた名前は Popup ではなく List へ渡す
+ * List が描かれたあとは role="listbox" は List にあり、Popup は role="presentation" になるので
+ * (`select/popup/SelectPopup.js`)、受けた名前は Popup ではなく List へ渡す
  */
 function SelectContent({
   className,
