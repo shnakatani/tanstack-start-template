@@ -130,21 +130,12 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 
 ### accessible name の与え方
 
-規格の要件と、このリポジトリが選んだ形に分けて持つ。ロールごとの作法は APG の Accessible Name Guidance by Role を参考にする (APG は要件ではない) (`docs/guides/accessibility.md`「accessible name を与える」)。迷ったら与える側に倒す。与えない判断をしたら理由を実装近傍に残す。
+名前が要るかと与え方は WCAG 2.2 SC 4.1.2 と APG の Accessible Name Guidance by Role に従う。迷ったら与える側に倒す。与えない判断をしたら理由を実装近傍に残す (`docs/guides/accessibility.md`「accessible name を与える」)。
 
-- 要件: 操作する部品は名前を持つ。WAI-ARIA で名前が必須のロール (button / checkbox / combobox / dialog / alertdialog / listbox / table / textbox など) に名前を付け、名前を持てないロール (`generic` / `presentation` など) には付けない。名前の文字が DOM にあれば `aria-labelledby` で指し `aria-label` を使わない。見える文字の label は名前に含める。情報を伝えるアイコンに代替を置き、装飾は `aria-hidden` (`docs/guides/accessibility.md`「accessible name を与える」)
-
-| 場面                                                                                               | 対応                                                                                                                                                                                                                           |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 中身の文字が名前になる部品 (button / link / menuitem など)                                         | 名前の属性を足さない。`sr-only` の文字も名前になる (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                |
-| 中身に文脈を足す (欄のラベルと値、行の題と操作)                                                    | 足す文字がすべて DOM にありつないだ順で読めるなら `aria-labelledby`、そうでなければ `aria-label` に見える文字を含める (`docs/guides/accessibility.md`「accessible name を与える」)                                             |
-| 見える label を HTML の input / select / textarea に結ぶ                                           | `<label htmlFor>` (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                                                 |
-| 見える label をそれ以外に結ぶ (Select / Combobox の trigger、Base UI の Checkbox / Switch / Radio) | label に id を付けて `aria-labelledby` で指す。label のクリックで動かすなら `htmlFor` も残す。Base UI (1.8.0) の `htmlFor` からの名前はクライアントでしか付かない (`docs/guides/accessibility.md`「accessible name を与える」) |
-| 見える label を置かない欄 (placeholder だけ)                                                       | `aria-label` (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                                                      |
-| 入力欄を popup の中に置いた Combobox の trigger                                                    | 欄の名前を渡す。既定の「候補を開く」のままにしない (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                |
-| `status` / `alert` / `log` / `timer`                                                               | 名前を付けない。中身と同じ名前は 2 度読まれる (`docs/guides/accessibility.md`「accessible name を与える」)                                                                                                                     |
-| テーブルの列見出し (`th`)                                                                          | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                                                                                                                                |
-| ローディング等の状態表示                                                                           | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026)                                                                                                               |
+| 対象                      | 対応                                                                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| テーブルの列見出し (`th`) | `scope="col"`。暗黙の role は locator と一部の支援技術で columnheader に解決されない (ADR-0018)                  |
+| ローディング等の状態表示  | `announce()` (`src/lib/live-announcer.ts`) で通知する。項目に `<output>` / `role="status"` を足さない (ADR-0026) |
 
 - 状態表示の例外は route の pending 表示の `PendingContent` (ADR-0026、ADR-0029)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0026)
@@ -157,6 +148,9 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 
 ### accessible name の落とし穴
 
-- `FieldLabel` / `SelectLabel` / `ComboboxLabel` は、Base UI (1.8.0) の Select / Combobox の trigger から指されない。見える label で名付けるなら trigger に `aria-labelledby` を渡す (`ComboboxTrigger` の既定の `aria-label` より先に使われる) (`docs/guides/accessibility.md`「accessible name を与える」)
+- Base UI (1.8.0) の Select / Combobox の trigger は `FieldLabel` / `SelectLabel` / `ComboboxLabel` を指さない。見える label で名付けるなら label に id を付けて trigger の `aria-labelledby` で指す (`docs/guides/accessibility.md`「accessible name を与える」)
+- Base UI (1.8.0) の Checkbox / Radio は `<label htmlFor>` からの名前をクライアントでしか付けない。サーバーの HTML から名前を持たせるなら `aria-labelledby` で指す (`docs/guides/accessibility.md`「accessible name を与える」)
+- 入力欄を popup の中に置いた Combobox の trigger は combobox になる。既定の「候補を開く」のままにせず、欄の名前を渡す (`docs/guides/accessibility.md`「accessible name を与える」)
+- `Spinner` は `aria-hidden` で使う。`status` に中身と同じ文言の名前を付けない (`docs/guides/accessibility.md`「accessible name を与える」)
 - 名前の文字を flex の item に分けない。Chrome が境界に空白を入れて名前が分断される。略記と全文を出し分けるなら可視側を `aria-hidden`、全文を 1 つの `sr-only` に置く (`docs/guides/accessibility.md`「accessible name を与える」)
 - 名前に関わる要素を切り出す前後で `getByRole({ name })` の結果が変わらないことを確かめる (`docs/guides/accessibility.md`「accessible name を与える」)
