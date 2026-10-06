@@ -130,6 +130,11 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 - `useOptimistic` の第 1 引数に `useQuery` / `useSuspenseQuery` の `data` と、そこから計算した値を渡さない。query のストアは Transition に乗らないので、楽観値と再取得の結果が揺れる ([TanStack/query#9742][])
 - `useOptimistic` を使うのは、query を経由しない部品のローカル値だけにする
 
+### ナビゲーションを Router に任せる
+
+- `Link`・`navigate`・`router.invalidate()` による遷移と読み込みを、自分で `startTransition` に包まない。Router は、読み込んだ結果を画面へ反映する更新を React の `startTransition` で包む ([`@tanstack/react-router` の `Transitioner.tsx`][] と [`@tanstack/router-core` の `load-client.ts`][])。`Link` と `navigate` の `startTransition` option も "All navigations now use startTransition under the hood" として deprecated になっている ([`@tanstack/router-core` の `link.ts`][])。どれも 2026-10-06 に、このリポジトリの版 (`@tanstack/react-router` 1.170.39、`@tanstack/router-core` 1.171.32) で確かめた
+- ナビゲーションを Router に任せることは ADR-0015 の「ナビゲーション、GET」の行が決める。Error Boundary からの再試行の組み方は `docs/guides/data-loading.md`「読み込みに失敗した画面から再試行する」にある
+
 ### 操作の型ごとの当て方
 
 一覧の行の削除 (確認ダイアログあり)、ダイアログのフォームからの追加、対象の行を初期値にしたダイアログのフォームからの更新には、ADR-0017 の軸を次のように当てる。新しい操作を足すときの見本になる。
@@ -158,3 +163,6 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 [TkDodo「Concurrent Optimistic Updates in React Query」]: https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query
 [`@tanstack/query-core` の `utils.ts`]: https://github.com/TanStack/query/blob/@tanstack/query-core@5.104.0/packages/query-core/src/utils.ts
 [TanStack/query#9742]: https://github.com/TanStack/query/issues/9742
+[`@tanstack/react-router` の `Transitioner.tsx`]: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.39/packages/react-router/src/Transitioner.tsx
+[`@tanstack/router-core` の `load-client.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/src/load-client.ts
+[`@tanstack/router-core` の `link.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/src/link.ts
