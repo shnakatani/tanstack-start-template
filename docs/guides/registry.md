@@ -1,6 +1,6 @@
 # registry との付き合い方
 
-shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す・取り直す・変えるときの手順と、その形にしている理由を持つ。
+shadcn registry の部品 (`src/components/ui/`) と `src/styles.css` を足す・取り直す・変えるとき、部品を組み合わせるときの手順と、その形にしている理由を持つ。
 
 | 決定                                                                                                               | ADR      |
 | ------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -97,6 +97,12 @@ registry の見た目を変えたいときは、打ち消しの class を積む�
 - 横のスクロールバーを消費側で合成しない。`ScrollArea` は縦と横のバーを Root の直下に自分で描く ([Base UI docs「Scroll Area」][] の Anatomy の並び。乖離は台帳 `docs/registry-deviations.md` の scroll-area.tsx の行)。[shadcn docs「Scroll Area」][] の Horizontal のように children へ `<ScrollBar orientation="horizontal" />` を足すと、Viewport の中にもう 1 本でき、横バーが 2 本になる (2026-10-02 実測、shadcn 4.21.0 の registry と Base UI 1.8.0)。Base UI は溢れていない向きのバーを mount しないので、常に描いても空のバーは出ない
 - 背景を持つスクロール領域は、器と中身の両方へ背景を置く。器だけだと axe が背景を解決できず、中身だけだとバーの余白が地のまま残る
 
+### 項目を Group の中に置く
+
+- Group を持つ部品の項目は、content (`SelectContent`、`DropdownMenuContent`) の直下に置かず、対応する Group の中に置く。項目と Group の対応は、[shadcn skill「Component Composition」][] の Items always inside their Group component の表に従う ("Never render items directly inside the content container.")。`src/components/ui/` にある部品では、`SelectItem` と `SelectLabel` を `SelectGroup` に、`DropdownMenuItem` と `DropdownMenuLabel` と `DropdownMenuSub` を `DropdownMenuGroup` に入れる
+- lint はこの並びを止めない。レビューで見る
+- メニューの項目をいくつのグループに分け、どのグループに見出しを置くかは `docs/guides/accessibility.md`「メニューの項目をグループに分ける」にある
+
 ## explanation
 
 ### 生成コードを直接変えてよい理由
@@ -110,7 +116,7 @@ shadcn の skill (`.claude/skills/shadcn/customization.md`「Customizing Compone
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn skill「Component Composition」は shadcn 4.21.0 に固定した版を指す。
 
 [shadcn docs「Card」]: https://ui.shadcn.com/docs/components/base/card
 [shadcn の `message-scroller-state.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/message-scroller-state.tsx
@@ -119,3 +125,4 @@ shadcn の skill (`.claude/skills/shadcn/customization.md`「Customizing Compone
 [shadcn docs「Scroll Area」]: https://ui.shadcn.com/docs/components/base/scroll-area
 [shadcn-ui/ui#8991]: https://github.com/shadcn-ui/ui/issues/8991
 [shadcn docs「Introduction」]: https://ui.shadcn.com/docs
+[shadcn skill「Component Composition」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/composition.md
