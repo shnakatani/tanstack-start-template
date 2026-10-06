@@ -1,6 +1,6 @@
 # アクセシビリティ
 
-axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、クライアント遷移の伝え方と、色以外の手がかり・ナビゲーション・ダイアログの閉じる手段の組み方を持つ。
+axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、クライアント遷移の伝え方と、accessible name・色以外の手がかり・ナビゲーション・ダイアログの閉じる手段の組み方を持つ。
 
 | 決定                                                                                                                              | ADR      |
 | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -160,6 +160,10 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 | registry の既定 (`role="list"` の div) のまま使う               | 空のリストとして読まれる ([shadcn-ui/ui#11532][])                                                                     | 却下     |
 | `role="list"` と `role="listitem"` を足す (#12085 の docs の形) | `jsx-a11y/prefer-tag-over-role` が止める                                                                              | 却下     |
 
+### accessible name の与え方を APG の表に委ねる理由
+
+ロールごとの名前の要否と与え方は、[APG「Providing Accessible Names and Descriptions」][] の Accessible Name Guidance by Role が表にしている。この表をガイドの言葉で言い換えると、言い換えるたびに条件 (ネイティブの要素なら `<label>`、見える label の有無、Warning の例外) が落ちる。how-to の表は、このリポジトリで頻繁に出る形だけを APG の原文と並べ、残りのロールは APG の表を引く。
+
 ### メニューのグループの見出しを強制しない理由
 
 見出しの無いグループは、画面では区切り線でしか分かれず、支援技術にも区切りだけが伝わる。晴眼の利用者と支援技術の利用者が得る情報は同じで、区切りで分ける形は [APG「Menu and Menubar Pattern」][] が示す形である。group の名前は [WAI-ARIA 1.2][] でも必須ではない (group role の特性に Accessible Name Required が無い)。
@@ -261,6 +265,29 @@ story で統制できるのは markup までで、フォントは実行環境が
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
 
+### accessible name を与える
+
+ロールごとに名前が要るかと与え方は、[APG「Providing Accessible Names and Descriptions」][] の Accessible Name Guidance by Role の表に従う。迷ったら与える側に倒し、与えない判断をしたら理由を実装の近くに残す。
+
+| 対象                                                                                       | 与え方                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 中身の文字から名前を取るロール (button、link、menuitem、checkbox、radio、switch など)      | 中身の文字で名前を付け、`aria-label` も `aria-labelledby` も足さない。APG の表はこれらのロールに "Warning! Using aria-label or aria-labelledby will hide descendant content from assistive technologies." と書く。`sr-only` の文字も中身に入る                                                                                                                                                                                                                                   |
+| 上の行のロールで、名前になる文字を中に持たない要素 (アイコンだけのボタンなど)              | `aria-label` を渡すか、中に `sr-only` の文字を置く                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 上の行のロールで、名前になる文字が要素の外に見えている要素 (隣に題を置いた checkbox など)  | ネイティブの input なら `<label>`、そうでなければ `aria-labelledby` でその文字を指す (APG の表の checkbox の行: "If based on HTML type="checkbox", use a label element. Otherwise, reference visible content via aria-labelledby.")                                                                                                                                                                                                                                              |
+| 名前が必須で、中身から名前を取らないロール (combobox、listbox、dialog、textbox、searchbox) | 見える label があれば、ネイティブの input / select / textarea なら `<label>`、そうでなければ `aria-labelledby` で指す。見える label が無ければ `aria-label` を渡す (APG の表のこれらのロールの行: "Otherwise use aria-labelledby if a visible label is present. Use aria-label if a visible label is not present.")。placeholder を label の代わりにしない ([HTML Standard の placeholder 属性][]: "The placeholder attribute should not be used as an alternative to a label.") |
+| `status`、`alert`、`log`、`timer`                                                          | 名前は任意 (APG の表で Discretionary)。中身と同じ文言を名前にしない。APG の表は、一部のスクリーンリーダーが名前を中身の前に読むとし ("Some screen readers announce the name of a status element before announcing the content of the status element.")、`aria-label` を中身に無い前置きを足す手段に挙げる                                                                                                                                                                        |
+| 状態や属性を伝える唯一の手段になっているアイコン                                           | アイコンを `aria-hidden` にし、隣に `sr-only` の文字を置く ([WCAG 2.2 SC 1.1.1][])                                                                                                                                                                                                                                                                                                                                                                                               |
+| 隣の文字が同じ意味を持つアイコン                                                           | `aria-hidden` にし、名前を足さない。その文字が実際に読み上げられるときに限る                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+- 中身の文字から名前を取る要素の名前を上書きするのは、次の 2 つの形に限る。APG は、`aria-label` か `aria-labelledby` で名前を付けると、`aria-labelledby` で指していない中身が支援技術から隠れるとし、隠すことが利用者の助けになる場合を除いて上書きを避けるよう強く勧める ([APG「Providing Accessible Names and Descriptions」][] の Naming with Child Content: "It is strongly recommended to avoid using either of these attributes to override content of one of the above elements except in rare circumstances where hiding content from assistive technology users is beneficial.")
+  - 中身の一部を名前から外す。名前に残す子を `aria-labelledby` で指す。外してよいのは、別の経路で伝える中身か、読ませなくてよい中身だけにする。`src/components/action/button.tsx` は、処理中の表示を名前から外し、状態は `aria-busy` と通知で伝える
+  - 中身に文脈を足す。足す文字がすべて画面にあり、自分の中身とつないだ順で名前として読めるなら、合わせて `aria-labelledby` で指す。[APG「Providing Accessible Names and Descriptions」][] の Naming with Referenced Content は、リンク自身と見出しを指して "Read more... 7 ways you can help save the bees" と名付ける例を挙げる。そうでなければ (画面に無い文字を足す、語順を変える) `aria-label` を渡し、見える文字を名前に含める ([WCAG 2.2 SC 2.5.3][])
+- 名前を持てないロール (素の `span` / `div` の generic、`presentation` など) には、`aria-label` も `aria-labelledby` も付けない ([WAI-ARIA 1.2][] §5.2.8.6 Roles which cannot be named)。別の要素の文字を名前にするときは、名前を持てるロールの要素の側から `aria-labelledby` で指す
+- Base UI 1.8.0 で combobox になるのは、Select の trigger、Combobox の入力欄、入力欄を popup の中に置いたときの Combobox の trigger である (`@base-ui/react` の `select/trigger/SelectTrigger.js`、`combobox/root/AriaCombobox.js`、`combobox/trigger/ComboboxTrigger.js` の `inputInsidePopup`)。Select と Combobox の trigger は Base UI の Field.Label と、Select.Label か Combobox.Label を `aria-labelledby` で指すが (`resolveAriaLabelledBy`)、このリポジトリの `FieldLabel` は素の `<label>`、`SelectLabel` と `ComboboxLabel` は GroupLabel なので、どれも trigger の名前にならない。trigger には名前を渡す
+- 名前の文字を、inline でない子要素 (block、inline-block、flex や grid の item) へ分けない。Chrome は子要素の境界に空白を入れて名前をつなぐので、名前が分かれる (2026-10-05、Playwright 1.63.0 の Chromium 153.0.8010.12 で実測。`display: flex` の button に `<span>Ab</span><span>cd</span>` を置くと名前は `Ab cd`、inline の span のままなら `Abcd`)。空白の入れ方は仕様で決まっていない ([accname 1.2][] の 2F の注記、[w3c/accname#225][])
+- 略記と全文を出し分けるときは、可視の側を `aria-hidden` にし、全文を 1 つの `sr-only` に置く
+- 名前に関わる要素を部品へ切り出すときは、切り出す前後で `getByRole(<role>, { name })` が同じ要素を返すことを確かめる。名前は表示の形 (上の空白) でも変わり、見た目では気付けない
+
 ### Combobox の popup に名前を与える
 
 `ComboboxContent` (Base UI の `Combobox.Popup`) に名前を渡すかは、`ComboboxInput` を置く場所で決まる。Base UI 1.8.0 は popup の role を、入力欄が popup の中にあれば `dialog`、外にあれば `presentation` にする (`@base-ui/react` の `combobox/popup/ComboboxPopup.js`)。
@@ -307,7 +334,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」、HTML Standard、accname 1.2 の引用は 2026-10-06 に原文と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -342,3 +369,8 @@ story で統制できるのは markup までで、フォントは実行環境が
 [WCAG 2.2 SC 1.4.1]: https://www.w3.org/TR/WCAG22/#use-of-color
 [TanStack Router の `link.tsx`]: https://github.com/TanStack/router/blob/b1e54dee82e8ed5850daa7f6efd04a56c1aeeae6/packages/react-router/src/link.tsx#L569
 [TanStack Router docs「Navigation」]: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.39/docs/router/guide/navigation.md
+[APG「Providing Accessible Names and Descriptions」]: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
+[HTML Standard の placeholder 属性]: https://html.spec.whatwg.org/multipage/input.html#the-placeholder-attribute
+[WCAG 2.2 SC 2.5.3]: https://www.w3.org/TR/WCAG22/#label-in-name
+[accname 1.2]: https://www.w3.org/TR/accname-1.2/
+[w3c/accname#225]: https://github.com/w3c/accname/issues/225
