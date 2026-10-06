@@ -97,7 +97,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0020)", () => {
       <Combobox items={["りんご", "みかん"]}>
         <ComboboxTrigger
           render={
-            <button type="button" aria-label="果物 (エラーあり)">
+            <button type="button" aria-label="果物">
               <ChevronDownIcon aria-hidden />
             </button>
           }
@@ -120,7 +120,7 @@ describe("InputGroup の popup 内リング抑制 (ADR-0020)", () => {
       </Combobox>,
     );
 
-    await screen.getByRole("combobox", { name: "果物 (エラーあり)" }).click();
+    await screen.getByRole("combobox", { name: "果物" }).click();
 
     const popup = screen.getByRole("dialog", { name: "果物の候補" });
     const input = popup.getByRole("combobox", { name: "エラー検索" });

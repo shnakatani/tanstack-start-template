@@ -162,7 +162,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### accessible name の節を落とし穴に絞る理由
 
-名前の要件は WCAG と WAI-ARIA が、ロールごとの作法は APG が持つ。どちらも条件 (SHOULD と MAY の区別、ネイティブの要素の扱い、例外) が細かく、ガイドの言葉で要約すると条件を落とすか、作法を要件と同じ重さで書いてしまう。APG は自身を、規格を満たす作り方の一つを示す informative な資料と位置づける。そこでこの節は、要件と作法を原典に任せ、このリポジトリの部品 (Base UI と registry) を使うときに原典からは読み取れない落とし穴だけを、ソースか実測で確かめた事実として書く。
+名前の要件は WCAG と WAI-ARIA が、ロールごとの作法は APG が持つ。どちらも条件 (SHOULD と MAY の区別、ネイティブの要素の扱い、例外) が細かく、ガイドの言葉で要約すると条件を落とすか、作法を要件と同じ重さで書いてしまう。APG は自身を、規格を満たす作り方の一つを示す informative な資料と位置づける。そこでこの節は、要件と作法を原典に任せ、このリポジトリの部品 (Base UI と registry) を使うときの落とし穴と、名前を壊さないための確かめ方だけを書く。部品の挙動はソースか実測で確かめた事実として書く。
 
 ### メニューのグループの見出しを強制しない理由
 
@@ -270,11 +270,11 @@ story で統制できるのは markup までで、フォントは実行環境が
 名前が要るかと与え方は、[WCAG 2.2 SC 4.1.2][] と、[APG「Providing Accessible Names and Descriptions」][] の Accessible Name Guidance by Role に従う。APG は規格を満たす作り方を示す informative な資料で、要件ではない ([APG「Introduction」][] の APG is Not a Normative Standard)。迷ったら与える側に倒し、与えない判断をしたら理由を実装の近くに残す。この節には、このリポジトリの部品で踏みやすい落とし穴だけを書く。
 
 - Base UI 1.8.0 の Select と Combobox の trigger は、Base UI の Field.Label があればそれを、無ければ Select.Label か Combobox.Label を `aria-labelledby` で指す (`@base-ui/react` の `utils/resolveAriaLabelledBy.js`)。このリポジトリの `FieldLabel` は素の `<label>`、`SelectLabel` と `ComboboxLabel` は GroupLabel なので、どれも指されない。trigger を見える label で名付けるときは、label に id を付けて trigger の `aria-labelledby` で指す (`src/components/parts/form-fields.tsx` の `FormSelectField`)
-- Base UI 1.8.0 の Checkbox と Radio は根が `span` で、隠れた input に `<label htmlFor>` を結ぶと、その label の id を根の `aria-labelledby` に写す。写すのはクライアントの layout effect の中なので (`internals/labelable-provider/useAriaLabelledBy.js`)、サーバーが返す HTML の時点では根に名前が無い。サーバーの HTML から名前を持たせるときは、label に id を付けて根の `aria-labelledby` で指す (`FormCheckboxField`)
-- 入力欄を popup の中に置くと、Combobox の trigger は combobox になる (`combobox/trigger/ComboboxTrigger.js` の `inputInsidePopup`)。このリポジトリの `ComboboxTrigger` は既定で `aria-label="候補を開く"` を持つので、この形では欄の名前を `aria-label` か `aria-labelledby` で渡す。`aria-labelledby` は `aria-label` より先に名前に使われる ([accname 1.2][] の 2B LabelledBy と 2D AriaLabel)
+- Base UI 1.8.0 の Checkbox と Radio は、既定 (`nativeButton` が false) では根が `span` で、隠れた input に `<label htmlFor>` を結ぶか、`<label>` で包むと、その label の id を根の `aria-labelledby` に写す。写すのはクライアントの layout effect の中なので (`internals/labelable-provider/useAriaLabelledBy.js`)、サーバーが返す HTML の時点では根に名前が無い。サーバーの HTML から名前を持たせるときは、label に id を付けて根の `aria-labelledby` で指す (`FormCheckboxField`)
+- 入力欄を popup の中に置くと、Combobox の trigger は combobox になる (`combobox/trigger/ComboboxTrigger.js` の `inputInsidePopup`)。このリポジトリの `ComboboxTrigger` は既定で `aria-label="候補を開く"` を持つので、この形では欄の名前を `aria-label` か `aria-labelledby` で渡す。popup の中の `ComboboxInput` は既定 (`showTrigger`) で名前を渡せない trigger を内に持ち、それも combobox になるので、`showTrigger={false}` にする。`aria-labelledby` は `aria-label` より先に名前に使われる ([accname 1.2][] の 2B LabelledBy と 2D AriaLabel)
 - registry の `Spinner` は `role="status"` と `aria-label="Loading"` だけを持ち、中身の文字を持たない。`aria-hidden` にして見た目だけに使い、読み込み中であることは「読み込み中の表示を組む」の形で伝える
 - `status` に、中身と同じ文言の名前を付けない。[APG「Providing Accessible Names and Descriptions」][] の表の status の行は "Some screen readers announce the name of a status element before announcing the content of the status element." と書く
-- 名前の文字を flex の item に分けない。2026-10-05 に Playwright 1.63.0 の Chromium 153.0.8010.12 で、`display: flex` の button に `<span>Ab</span><span>cd</span>` を置くと名前は `Ab cd`、inline の span のままなら `Abcd` だった。子の境界で空白を入れるかは仕様で決まっていない ([accname 1.2][] の 2F の注記、[w3c/accname#225][])
+- 名前の文字を、inline でない子要素 (flex や grid の item、block、inline-block) へ分けない。2026-10-06 に Playwright 1.63.0 の Chromium 153.0.8010.12 で、button に `<span>Ab</span><span>cd</span>` を置くと、子が inline なら名前は `Abcd`、親が flex か grid、または子が block か inline-block なら `Ab cd` だった。子の境界で空白を入れるかは仕様で決まっていない ([accname 1.2][] の 2F の注記、[w3c/accname#225][])
 - 略記と全文を出し分けるときは、可視の側を `aria-hidden` にし、全文を 1 つの `sr-only` に置く
 - 名前に関わる要素を部品へ切り出すときは、切り出す前後で `getByRole(<role>, { name })` が同じ要素を返すことを確かめる。名前は表示の形 (上の空白) でも変わり、見た目では気付けない
 
