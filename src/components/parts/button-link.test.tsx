@@ -1,4 +1,5 @@
 import { RouterProvider } from "@tanstack/react-router";
+import { createRef } from "react";
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
@@ -23,6 +24,19 @@ describe("ButtonLink", () => {
     const screen = await render(<RouterProvider router={router} />);
 
     await expectText(screen, "メモ一覧へ");
+  });
+
+  // createLink は Link の ref を部品へ渡す。部品が ref を a へ渡さないと、利用者の ref が a を指さない
+  it("ref が描画された a 要素を指す", async () => {
+    const ref = createRef<HTMLAnchorElement>();
+    const router = createTestRouter("/", () => (
+      <ButtonLink ref={ref} to="/notes">
+        メモ一覧へ
+      </ButtonLink>
+    ));
+    const screen = await render(<RouterProvider router={router} />);
+
+    await expect.poll(() => ref.current === screen.getByRole("link").query()).toBe(true);
   });
 
   it("リンクが a 要素としてレンダリングされる", async () => {
