@@ -280,7 +280,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 ### メニューの項目をグループに分ける
 
-- 項目はどれも `DropdownMenuGroup` の中に置く (`docs/guides/registry.md`「項目を Group の中に置く」)。項目を分けるときはグループを分け、グループの間に `DropdownMenuSeparator` を置く ([APG「Menu and Menubar Pattern」][] の Roles, States, and Properties)
+- 項目をどの Group に置くかは `docs/guides/registry.md`「項目を Group の中に置く」に従う。項目を分けるときはグループを分け、グループの間に `DropdownMenuSeparator` を置く ([APG「Menu and Menubar Pattern」][] の Roles, States, and Properties)
 - グループに見出しを置くときは、`DropdownMenuLabel` を `DropdownMenuGroup` の中に置く。`DropdownMenuLabel` は Base UI の `Menu.GroupLabel` で、親のグループの名前になる ([Base UI docs「Menu」][] の Group labels)
 - 見出しはグループごとに要否を決め、すべてのグループには求めない ([shadcn docs「Dropdown Menu」][] の Usage は 2 グループのうち 1 つ目にだけ置く)。理由は「メニューのグループの見出しを強制しない理由」にある
 - メニュー全体を包む単一の `DropdownMenuGroup` に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない。menu は開いたトリガーを `aria-labelledby` で指して名前を持つ ([APG「Menu and Menubar Pattern」][]) ので、同じ名前を重ねても区別が増えない
