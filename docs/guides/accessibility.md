@@ -1,6 +1,6 @@
 # アクセシビリティ
 
-axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、クライアント遷移の伝え方を持つ。
+axe の検査の置き場所と読み方、抑制の書き方、読み上げの通知の書き方、クライアント遷移の伝え方と、色以外の手がかり・ナビゲーション・ダイアログの閉じる手段の組み方を持つ。
 
 | 決定                                                                                                                              | ADR      |
 | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -286,9 +286,28 @@ story で統制できるのは markup までで、フォントは実行環境が
 - メニュー全体を包む単一の `DropdownMenuGroup` に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない。menu は開いたトリガーを `aria-labelledby` で指して名前を持つ ([APG「Menu and Menubar Pattern」][]) ので、同じ名前を重ねても区別が増えない
 - トリガーの名前が中身を言わないとき (「Open」の下に表示の切り替えが並ぶなど) は、単一のグループにも中身を言う見出しを置いてよい ([shadcn の `dropdown-menu-checkboxes.tsx`][] は「Appearance」を置く)
 
+### 色以外の手がかりを併せる
+
+- 色だけで情報を伝えない。色で伝える状態や区別は、アイコンか文字でも見えるようにする ([WCAG 2.2 SC 1.4.1][])。対象は情報の伝達、操作の指示、応答の促し、要素の区別である
+- アイコンで補ったときは、支援技術にも同じ情報を届ける。アイコンだけが伝えるなら、アイコンを `aria-hidden` にして隣に `sr-only` の文字を置く ([WCAG 2.2 SC 1.1.1][])
+- axe は SC 1.4.1 を本文中のリンク (`link-in-text-block`) でしか見ない (「axe の緑が意味しないこと」)。色だけに頼っていないかは人が見る
+
+### ナビゲーションを組む
+
+- サイトやページの中を移動するリンクのまとまりは `<nav>` で包む ([APG「Landmark Regions」][] の Navigation)。`role="navigation"` は `jsx-a11y/prefer-tag-over-role` が止める (2026-10-05、oxlint 1.85.0)
+- 1 ページに `<nav>` が複数あるときは、それぞれに区別できる名前を与える。見出しがあれば `aria-labelledby` で指し、無ければ `aria-label` を渡す。名前に「ナビゲーション」を含めない。ロールと重ねて読まれる。同じリンクの組を 2 か所に置くときは同じ名前にする ([APG「Landmark Regions」][] の Step 3: Label areas と Navigation)
+- 現在のページを指す項目に `aria-current="page"` を付ける。1 つのまとまりの中で current にするのは 1 つだけにする ([WAI-ARIA 1.2][] の `aria-current`)
+- TanStack Router の `Link` は、active のときに `aria-current="page"` を自分で付ける ([TanStack Router の `link.tsx`][])。手で書くのは、`Link` を使わずに現在地を示すときだけにする
+- `Link` の active の判定は、既定では path の前方一致である ([TanStack Router docs「Navigation」][] の Active Options)。同じ `<nav>` に親と子の path へのリンクが並ぶと、子のページで両方が current になるので、親へのリンクに `activeOptions={{ exact: true }}` を渡す
+
+### ダイアログの閉じる手段を残す
+
+- `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、閉じるボタンを tab 順の中に置く。手段は `DialogClose` / `SheetClose` で描くキャンセルのボタンか、`DialogFooter` の `showCloseButton` である ([APG「Dialog (Modal) Pattern」][] の Keyboard Interaction の注記 "It is strongly recommended that the tab sequence of all dialogs include a visible element with role `button` that closes the dialog, such as a close icon or cancel button.")
+- tab 順に閉じるボタンが無いと、キーボードで閉じる手段が Escape だけになる
+
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に原文と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -318,3 +337,8 @@ story で統制できるのは markup までで、フォントは実行環境が
 [Adrian Roselli「More Accessible Skeletons」]: https://adrianroselli.com/2020/11/more-accessible-skeletons.html
 [WAI-ARIA 1.3 Editor's Draft]: https://w3c.github.io/aria/
 [Vitest docs「hideSkippedTests」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/hideskippedtests.md
+[APG「Landmark Regions」]: https://www.w3.org/WAI/ARIA/apg/practices/landmark-regions/
+[WCAG 2.2 SC 1.1.1]: https://www.w3.org/TR/WCAG22/#non-text-content
+[WCAG 2.2 SC 1.4.1]: https://www.w3.org/TR/WCAG22/#use-of-color
+[TanStack Router の `link.tsx`]: https://github.com/TanStack/router/blob/b1e54dee82e8ed5850daa7f6efd04a56c1aeeae6/packages/react-router/src/link.tsx#L569
+[TanStack Router docs「Navigation」]: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.39/docs/router/guide/navigation.md

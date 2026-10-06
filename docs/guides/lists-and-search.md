@@ -34,6 +34,11 @@
 | 列定義の id と見出し        | 列定義は `columnBaseFrom(<列見出しの定数>)` (`src/components/parts/data-table-columns.ts`) が返す関数に id を渡し、`{ id, header }` を得て組む。id の typo は型が止め、見出しは写さない。戻り値は注釈で広げず、TanStack Table の `IdIdentifier` を `satisfies` で検査する (同梱 skill [`@tanstack/table-core` の `skills/typescript/SKILL.md`][] は、広い注釈で列の型を消すことを誤りに挙げる)。列の過不足と順序のずれは、pending の見出しと列定義の `header` を比べるテストが見る                                                                            |
 | loading                     | `TableSkeleton` の `headers` は `Object.values(<列見出しの定数>)` から採り、列定義から採らない。`pendingComponent` は code-split されず、import した列定義の cell 部品ごと main bundle に入る (ADR-0010)。支援技術への見せ方は `docs/guides/accessibility.md`「読み込み中の表示を組む」                                                                                                                                                                                                                                                                       |
 
+### 空状態を出す
+
+- 表示するデータが無いときは `Empty` (`src/components/ui/empty.tsx`) で組む ([shadcn docs「Empty」][]、[shadcn skill「Component Composition」][] の Empty states use Empty component)
+- 何が無いかを `EmptyTitle` に、次に取れる操作を `EmptyDescription` か `EmptyContent` に置き、両方をそろえる。操作のボタンを置くなら `EmptyContent` に置き ([shadcn docs「Empty」][] の Usage)、ほかの場所にある操作へ案内するなら `EmptyDescription` にその場所を書く
+
 ### 絞り込み条件を URL に置く
 
 ADR-0019 に沿って、次のように組む。
@@ -117,7 +122,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn docs「Empty」と shadcn skill「Component Composition」は shadcn 4.21.0 に固定した版を指す。
 
 [TanStack Table docs「FlexRender」]: https://tanstack.com/table/latest/docs/framework/react/guide/flex-render
 [shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/base/data-table
@@ -134,3 +139,5 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 [TanStack Pacer docs「Overview」]: https://tanstack.com/pacer/latest/docs/overview
 [TanStack/router#3162]: https://github.com/TanStack/router/issues/3162
 [TanStack Pacer docs「useDebouncedValue」]: https://tanstack.com/pacer/latest/docs/framework/react/reference/functions/useDebouncedValue
+[shadcn docs「Empty」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/content/docs/components/base/empty.mdx
+[shadcn skill「Component Composition」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/composition.md

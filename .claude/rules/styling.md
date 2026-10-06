@@ -17,9 +17,9 @@ palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-ra
 - 破壊操作のボタンは、テキストでもアイコンでも `variant="destructive"` にし、アイコンだけなら `size="icon*"` を合わせる。hover だけの着色は touch 環境で出ない (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)
-- コントラストは本文 4.5:1、アイコンと UI 部品 3:1 (WCAG 1.4.3 / 1.4.11)。dark は light と別に検算する。opacity variant は背景合成で比が変わる
+- コントラストは文字 4.5:1 (大きな文字は 3:1)、UI 部品と状態を見分けるのに要る部分と、内容の理解に要る図形の部分は 3:1。対象外は各 SC の例外に限る。dark は light と別に測る。opacity variant は下地との合成で比が変わるので、下地ごと重ねて測る (`docs/guides/styling-and-tokens.md`「比を測る」)
 - トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0024)
-- 色だけで情報を伝えない。アイコンかテキストを併用し、併用先が識別に寄与しないなら `sr-only` で補う
+- 色だけで情報を伝えない。アイコンかテキストを併用し、アイコンだけが伝えるなら `aria-hidden` にして `sr-only` の文字を添える (`docs/guides/accessibility.md`「色以外の手がかりを併せる」)
 
 Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` の変更だけで完結する。
 
@@ -34,6 +34,8 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ## typography 階層
 
+文字の大きさと太さは次の表から役割で選ぶ (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)。
+
 | レベル                       | クラス                    |
 | ---------------------------- | ------------------------- |
 | ページ見出し                 | `text-lg font-semibold`   |
@@ -41,28 +43,27 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 | 本文・フォームラベル         | `text-base` / `text-sm`   |
 | 補足・タイムスタンプ・バッジ | `text-xs` 可              |
 
-- ページ見出しは `src/components/parts/page-header.tsx` が持つ。カードの中は `CardPageTitle` (`page-title.tsx`) を通し、class を書き直さない
-- 本文に `text-xs` を使わない (タブレット可読性)。ページ見出しとセクション見出しを同サイズにしない (階層が消える)
+- ページ見出しは `PageHeader` (`page-header.tsx`) の `title`、カードの中は `CardPageTitle` (`page-title.tsx`) で描き、class を書き直さない (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)
+- 本文に `text-xs` を使わない (タブレット可読性)。ページ見出しとセクション見出しを同サイズにしない (階層が消える) (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)
 
 ## spacing 基準
 
 間隔の表現手法は shadcn skill (`.claude/skills/shadcn/rules/styling.md`) に従う。本節は値と、skill を狭める追加規定を持つ。
 
-- 兄弟の間隔を子の margin (`mb-*` / `mt-*` 等) で作らない。親の `gap-*` に置く。skill は `mt-4` を可例に挙げるが、兄弟の間隔に限りここで禁止する (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く理由」)
+- 兄弟の間隔を子の margin (`mb-*` / `mt-*` 等) で作らない。親の `gap-*` に置く。skill は `mt-4` を可例に挙げるが、兄弟の間隔に限りここで禁止する (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く」)
 - 機械強制は無いのでレビューで見る。例外は「親の gap で表現できない箇所」に挙げたものだけ
-- registry 内部の間隔 (Dialog や Card の padding、`Field` 系の間隔) は registry の既定を基準にし、下の表に写さない
-- 表の値はこのアプリで決めた値で、変えるときは画面で実測して表を書き換える (`docs/guides/styling-and-tokens.md`「spacing の表の値」)
+- registry 内部の間隔 (Dialog や Card の padding、`Field` 系の間隔) は registry の既定を基準にし、下の表に写さない (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
+- 表の値はこのアプリで決めた値で、変えるときは画面で実測して表を書き換える (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
 
-| 対象                         | 値                                        |
-| ---------------------------- | ----------------------------------------- |
-| ページ本体 padding           | `p-4`                                     |
-| ページ本体の縦積み           | `gap-4`                                   |
-| ページ見出し帯 (page-header) | `min-h-15 py-3` (`h-9` の actions と等高) |
-| リスト行間                   | `gap-2`                                   |
+| 対象               | 値      |
+| ------------------ | ------- |
+| ページ本体 padding | `p-4`   |
+| ページ本体の縦積み | `gap-4` |
+| リスト行間         | `gap-2` |
 
-- ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外
-- 表にない値を使う前に「意味が違うのか、単なる揺れか」を問う。同じ意味なら表の値に合わせる
-- 別の体系 (1 画面に収める縦予算など) を持つ画面を足すときは、表の対象外と明記し、値の根拠を実装近傍に書く
+- ページ本体の `p-4` はページ直下のコンテナに掛ける。全画面センタリングのページは対象外 (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
+- 表にない値を使う前に「意味が違うのか、単なる揺れか」を問う。同じ意味なら表の値に合わせる (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
+- 別の体系 (1 画面に収める縦予算など) を持つ画面を足すときは、表の対象外と明記し、値の根拠を実装近傍に書く (`docs/guides/styling-and-tokens.md`「間隔の値を選ぶ」)
 - registry の既定から値を変えるときは、まず公式の推奨へ合わせ、実機で見てから判断し、理由を実装近傍に書く (ADR-0020)
 
 ### 公式のノブ
@@ -88,7 +89,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 子の margin で兄弟の間隔を作ってよい例外。増やすときは実装近傍にも同じ理由を書く。
 
-- `src/components/ui/` (registry 素) は対象外。`FieldLegend` の `mb-3` のように registry 自身が margin で取る間隔は消費側で上書きしない
+- `src/components/ui/` (registry 素) は対象外。`FieldLegend` の `mb-3` のように registry 自身が margin で取る間隔は消費側で上書きしない (`docs/guides/styling-and-tokens.md`「兄弟の間隔を親の gap に置く」)
 
 ### 内部スクロールを持つダイアログの組み方
 
@@ -107,10 +108,11 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - skeleton はレイアウトを模倣し (`table-skeleton.tsx`)、図形を `aria-hidden` にして「読み込み中」の文言を区画に 1 つだけ置く。図形ごとに置くと同じ文言が数だけ読まれる (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - 表の skeleton は本物の列見出しを持つ table として見せ、`<table>` に role を載せない。載せると `th` と `td` が role を失う (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - route の pending 表示 (skeleton と `PendingContent`) に `aria-busy` を付けない。JAWS が要素ごと読み飛ばす (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
-- 列見出しなど実テーブルと合わせる値は、両方が参照する定数に置く。別々に持つとロード完了時にレイアウトがずれる
+- 列見出しなど skeleton と本体で合わせる値は、両方が参照する定数に置く。別々に持つと、読み込みが終わって本体へ置き換わるときにレイアウトがずれる (`docs/guides/data-loading.md`「読み込み中の表示を出す」)
+- 表の skeleton の列見出しは列見出しの定数から採り、列定義からは採らない。`pendingComponent` は code-split されず、列定義を import すると cell 部品ごと main bundle に入る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0026)
-- データなしは `Empty` 系で、メッセージと次のアクションへの導線をセットで示す
-- 状態によるスタイル分岐が 2 箇所以上で同型に重複したら cva variant 化を検討する。単一箇所なら `cn()` + 三項でよい
+- データなしは `Empty` で組み、何が無いか (`EmptyTitle`) と次に取れる操作 (`EmptyContent` のボタンか、`EmptyDescription` で操作の場所を案内) をそろえる (`docs/guides/lists-and-search.md`「空状態を出す」)
+- 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら手段を「部品の見た目を変える」の表で選び、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
 
 ## 操作できる要素の組み方
 
@@ -120,7 +122,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - 複数選択のまとまりの中の行の `FieldLabel` には `weight="normal"` を渡す。公式の例が付ける `className="font-normal"` は `ui/` の外では `no-restyle` が止めるので、`ui/field.tsx` の variant で書く (`docs/guides/forms-and-inputs.md`「複数選択の形を場面で分ける理由」)
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`) で組み、ラベルに className も `weight` も渡さない (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)
-- `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (WAI-ARIA APG Dialog (Modal) Pattern)
+- `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (`docs/guides/accessibility.md`「ダイアログの閉じる手段を残す」)
 
 ## a11y 最低基準
 
@@ -146,7 +148,8 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 - 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0027)
 - メニュー全体を包む単一の `DropdownMenuGroup` に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない。menu はトリガーを名前に持つので区別が増えない (`docs/guides/accessibility.md`「メニューの項目をグループに分ける」)
 - メニューのグループの見出し (`DropdownMenuLabel`) はグループごとに要否を決め、全グループには求めない。「迷ったら与える側に倒す」はグループの見出しには及ばない。見出しの無いグループも区切りで分かれる (`docs/guides/accessibility.md`「メニューの項目をグループに分ける」)
-- ナビゲーションは landmark (`nav`、または `role="navigation"` + `aria-label`) を持ち、現在地に `aria-current="page"` を付ける
+- ナビゲーションは `<nav>` で包み、複数あるならそれぞれに区別できる名前を与える。同じリンクの組なら同じ名前にする (`docs/guides/accessibility.md`「ナビゲーションを組む」)
+- 1 つのまとまり (`<nav>` など) の中では、現在地の項目 1 つだけに `aria-current="page"` を付ける。`Link` は active で自動で付けるので、手で書くのは `Link` を使わないときだけ。`Link` の active は既定で前方一致なので、同じ `<nav>` に親と子へのリンクが並ぶなら親に `activeOptions={{ exact: true }}` を渡す (`docs/guides/accessibility.md`「ナビゲーションを組む」)
 
 ### 可視テキストを持つ要素に aria-label を足さない
 
