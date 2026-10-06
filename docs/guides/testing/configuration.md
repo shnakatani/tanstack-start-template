@@ -1,6 +1,6 @@
 # テストの設定
 
-テストの種別ごとの置き場所と走らせ方、テストの API の import 元、Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・React Compiler を通さない project の範囲・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
+テストの種別ごとの置き場所と走らせ方、テストの API の import 元、実行環境の制約でテストを止める手順、Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・React Compiler を通さない project の範囲・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
 
 | 決定                                                                                                   | ADR      |
 | ------------------------------------------------------------------------------------------------------ | -------- |
@@ -42,6 +42,16 @@
 - スクリプトが子として起動し、全部の終わりを待つ並列 (`scripts/time-zones/run-tests.ts`) は、上の並行に当たらない。親だけを kill すると子の vitest が残るので、子も `ps` で確かめる
 - worktree では、中へ cd してから `vp install` と `vp test run` を打つ。別の clone から `--root <worktree>` で指すと、story の project が cd した側の clone の story を集め、`Failed to fetch dynamically imported module` で落ちる (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。unit と browser の project は通った)
 - worktree のパスに `+` を含めない。パスに `+` を含む clone で、事前バンドルのキャッシュが無い状態から story の project を走らせると、`@storybook/addon-themes` が実行中に事前バンドルされて page が reload し、`Vitest failed to find the current suite` で落ちる。同じ clone を `+` の無いパスへ移すと reload は起きず通った (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。browser project は `+` を含むパスでも通った)
+
+### 実行環境の制約でテストを止める
+
+テストが実行環境の制約で走らないときは、次の順で決める。
+
+1. 制約を避けて同じことを確かめる手段を探す
+2. 実行環境を条件に書けるなら、`it.skipIf(<条件>)` でその環境でだけ飛ばす。[Vitest docs「Test」][] の test.skipIf は "Instead of wrapping the test code with `if`, you can use `test.skipIf` to skip the test whenever the condition is truthy." と書く
+3. 恒久的に止めるなら `it.skip` にし、直前に `// oxlint-disable-next-line vitest/no-disabled-tests -- <理由>` を置く。`it.todo` で残すなら、抑制するルールは `vitest/warn-todo` にする。抑制が無いと、`it.skip` は [Oxlint docs「vitest/no-disabled-tests」][]、`it.todo` は [Oxlint docs「vitest/warn-todo」][] が止める
+
+- `it.skipIf` は `vitest/no-disabled-tests` に止められない。2026-10-06 に oxlint 1.85.0 で、`it.skipIf(...)` と抑制を置いた `it.skip` は通り、抑制の無い `it.skip` と `it.todo` はそれぞれのルールで落ちた
 
 ### 設定の置き場所
 
@@ -255,11 +265,14 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。sanity-io/react-rx と starbeamjs/starbeam の設定は、2026-10-05 に読んだ commit に固定した。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。Oxlint docs の「vitest/no-disabled-tests」と「vitest/warn-todo」は、2026-10-06 に原文と照らした。sanity-io/react-rx と starbeamjs/starbeam の設定は、2026-10-05 に読んだ commit に固定した。
 
 [Vite+ docs「Test」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/test.md
 [Vite+ docs「Migrate」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/migrate.md
 [Vitest docs「Configuring Vitest」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/index.md
+[Vitest docs「Test」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/test.md
+[Oxlint docs「vitest/no-disabled-tests」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/no-disabled-tests.html
+[Oxlint docs「vitest/warn-todo」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/warn-todo.html
 [Vitest docs「Test Projects」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/projects.md
 [Vitest docs「sharedViteServer」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/sharedviteserver.md
 [TanStack/router#6246]: https://github.com/TanStack/router/issues/6246
