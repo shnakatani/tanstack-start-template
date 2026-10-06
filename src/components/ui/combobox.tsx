@@ -236,9 +236,10 @@ function ComboboxChips({
 }
 
 /**
- * 削除ボタンはアイコンだけの button で、base-ui の ChipRemove は既定の名前を持たない。名前は外す値を
- * 含めて `removeLabel` で受け、削除ボタンを出すときは型で必須にする (Base UI docs「Combobox」の例は
- * `aria-label={`Remove ${value}`}`)。ADR-0020 の乖離
+ * 削除ボタンはアイコンだけの button で、base-ui 1.8.0 の ChipRemove は既定の名前を持たない。名前は外す値を
+ * 含めて `removeLabel` で受け、削除ボタンを出すときは属性を型で必須にする (空文字は止めない)。値を名前に
+ * 含める形は Base UI docs「Combobox」の例の ChipRemove と同じ。chip 本体の `aria-label` と
+ * `aria-description` は props で渡せる。ADR-0020 の乖離
  */
 function ComboboxChip({
   className,
@@ -247,7 +248,7 @@ function ComboboxChip({
   removeLabel,
   ...props
 }: ComboboxPrimitive.Chip.Props &
-  ({ showRemove: false; removeLabel?: never } | { showRemove?: true; removeLabel: string })) {
+  ({ showRemove: false; removeLabel?: never } | { showRemove?: boolean; removeLabel: string })) {
   return (
     <ComboboxPrimitive.Chip
       data-slot="combobox-chip"

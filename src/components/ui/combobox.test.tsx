@@ -7,10 +7,10 @@ import {
   ComboboxChips,
   ComboboxChipsInput,
   ComboboxValue,
-} from "./combobox";
+} from "@/components/ui/combobox";
 
 /**
- * 状態のカタログは `combobox.stories.tsx` が持つ。ここに残すのは、registry から動かした
+ * chip は story に無く、このテストだけが描く。確かめるのは、registry から動かした
  * chip の削除ボタンの名前だけ (docs/registry-deviations.md の combobox.tsx の行)
  */
 describe("ComboboxChip", () => {

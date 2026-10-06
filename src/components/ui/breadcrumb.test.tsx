@@ -8,7 +8,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "./breadcrumb";
+} from "@/components/ui/breadcrumb";
 
 /**
  * 状態のカタログは `breadcrumb.stories.tsx` が持つ。ここに残すのは、registry から動かした
@@ -16,7 +16,7 @@ import {
  */
 describe("BreadcrumbEllipsis", () => {
   // 畳んだ階層があることは代替の文字でしか伝わらない (WCAG 2.2 SC 1.1.1)
-  it("畳んだ階層の代替の文字がアクセシビリティツリーに出る", async () => {
+  it("畳んだ階層の代替の文字を aria-hidden の中に置かない", async () => {
     const screen = await render(
       <Breadcrumb>
         <BreadcrumbList>
@@ -33,7 +33,7 @@ describe("BreadcrumbEllipsis", () => {
 
     // aria-hidden の祖先があると、sr-only の文字ごとアクセシビリティツリーから消える
     await expect
-      .poll(() => screen.getByText("More").element().closest('[aria-hidden="true"]'))
+      .poll(() => screen.getByText("省略した階層").element().closest('[aria-hidden="true"]'))
       .toBeNull();
   });
 });
