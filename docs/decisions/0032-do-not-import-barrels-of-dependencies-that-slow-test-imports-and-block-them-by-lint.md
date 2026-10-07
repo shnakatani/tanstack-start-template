@@ -10,7 +10,7 @@
 
 テンプレートの依存で最初に当たるのは date-fns である。2026-09-27 に date-fns 4.4.0 で数えると、`index.js` は 245 行、`locale.js` は 95 行の `export * from` を持つ。テンプレートで probe を 1 つずつ実行し、`--experimental.importDurations.print` で import の時間を測った (「調査結果」)。unit project と browser project の両方で、バレルと個別エントリポイントの差が回ごとのばらつきを超えた。
 
-lint が止めるのはアプリのコードが書く specifier で、依存の中の import には届かない。2026-10-07 に react-day-picker 10.0.2 の `dist/esm` を読むと、内部は date-fns を関数ごとの個別エントリポイントから import する (`dist/esm/classes/DateLib.js`) ので、Calendar を描く経路にバレルは無い。アプリのコードが書く specifier では、`react-day-picker/locale/ja` が `date-fns/locale/ja` を import し (`dist/esm/locale/ja.js` の 1 行目)、`react-day-picker/locale` が `date-fns/locale` のバレルを再 export する (`dist/esm/locale.js` の 1 行目)。
+lint が止めるのはアプリのコードが書く specifier で、依存の中の import には届かない。2026-10-07 に react-day-picker 10.0.2 の `dist/esm` を読むと、内部は date-fns を関数ごとの個別エントリポイントから import する (`dist/esm/classes/DateLib.js`) ので、Calendar を描く経路に date-fns のバレルは無い。アプリのコードが書く specifier では、`react-day-picker/locale/ja` が `date-fns/locale/ja` を import し (`dist/esm/locale/ja.js` の 1 行目)、`react-day-picker/locale` が `date-fns/locale` のバレルを再 export する (`dist/esm/locale.js` の 1 行目)。
 
 ## Decision
 
