@@ -138,11 +138,9 @@ export const lintConfig = {
     "typescript/no-unsafe-return": "error",
     "typescript/no-useless-constructor": "error",
     // throw redirect() / notFound() は Router の制御フロー。公式の案内どおり allow する。
-    // allowThrowingAny と allowThrowingUnknown はルールの既定の true から外し (基準の
-    // strict-type-checked はオプションを渡さない)、型が any か unknown の値の throw も止める。
-    // Error でない値は server のエラーの文言を落とす adapter を通らない
-    // (ADR-0038「Error でない値の throw を止める lint のオプション」)。catch の変数は unknown なので、
-    // 投げ直しまで止めないよう allowRethrowing は true を明示する
+    // allowThrowingAny と allowThrowingUnknown を既定の true から外し、型が any か unknown の値の throw も
+    // 止める。Error でない値は server のエラーの文言を落とす adapter を通らない
+    // (ADR-0038「Error でない値の throw を止める lint のオプション」)
     "typescript/only-throw-error": [
       "error",
       {
@@ -150,7 +148,6 @@ export const lintConfig = {
           { from: "package", package: "@tanstack/router-core", name: "Redirect" },
           { from: "package", package: "@tanstack/router-core", name: "NotFoundError" },
         ],
-        allowRethrowing: true,
         allowThrowingAny: false,
         allowThrowingUnknown: false,
       },
