@@ -135,7 +135,7 @@ story でこれらに当たる箇所は、CI では緑のまま測られてい�
 
 - story を書いた部品は axe の検査対象になり、検査範囲が既存のブラウザテストより広がる。`vp test run` に storybook project が加わり、CI の実行時間が伸びる
 - story の `incomplete` は CI に出ない。確かめ方は `docs/guides/accessibility.md`「story の `incomplete` を確かめる」にある
-- vitest から走らせた story には canvas の余白が当たらない。余白の有無は合否を変えない (`docs/guides/storybook.md`「story の余白を decorator で足さない理由」)
+- vitest から走らせた story には canvas の余白が当たらず、余白も足さない (`docs/guides/storybook.md`「story の余白を decorator で足さない理由」)。余白の有無で合否が変わりうる。グリフが行ボックスからはみ出す部品では、余白があれば axe が背景を決められ、比が閾値に届かなければ `violations` として落ちうる。余白が無いとその箇所は `incomplete` になって合否に入らず、CI では測られないまま緑になる (「受け入れる穴」)
 - ブラウザテストの `incomplete` は warning の注釈で残る。読み方は `docs/guides/accessibility.md`「ブラウザテストの `incomplete` を読む」にある
 
 ## 出典
