@@ -8,7 +8,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 | `src/components/` を役割で分け、design system の著作と消費の境界をディレクトリで表す                               | ADR-0011 |
 | registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0020 |
 | design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る                          | ADR-0022 |
-| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす             | ADR-0028 |
+| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` はどちらの層でも合否に入れない               | ADR-0028 |
 | story とブラウザテストはアプリと同じく StrictMode の下で描く                                                       | ADR-0039 |
 
 ## how-to
