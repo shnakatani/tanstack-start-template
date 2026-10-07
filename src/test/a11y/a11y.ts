@@ -45,7 +45,7 @@ export const expectNoA11yViolations = vi.defineHelper(
 
     // incomplete は合否へ入れない。組み上げて操作した結果に出るものは、部品の問題ではなく
     // 合成とタイミングの産物で、実行環境の速さで結果が変わる (docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」の事故)。
-    // story の層でも落とさない (ADR-0028)。ただし黙って捨てると、緑のときに
+    // ただし黙って捨てると、緑のときに
     // 何が測れていないのかを誰も読めない。warning の注釈で残す。読み方は
     // docs/guides/accessibility.md「ブラウザテストの `incomplete` を読む」
     if (result.incomplete.length > 0) {

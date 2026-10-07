@@ -1,8 +1,6 @@
 import type axe from "axe-core";
 
 /**
- * a11y の失敗メッセージと注釈の文言。ブラウザテスト側 (`a11y.ts`) が使う。
- *
  * 要素セレクタだけだと、どの色が何対何で落ちたのかが読めないので `failureSummary` まで出す。
  */
 export function describeA11yResults(results: readonly axe.Result[]): string[] {
