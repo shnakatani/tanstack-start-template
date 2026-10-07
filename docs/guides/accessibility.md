@@ -210,10 +210,13 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 粒度は 2 つあり、要素で外せるならそちらを選ぶ。ルールごと切ると、その story ではその規則が 1 つも働かなくなる。
 
-| 粒度   | 書き方                            | 使う場面                                                 | 実例                                          |
-| ------ | --------------------------------- | -------------------------------------------------------- | --------------------------------------------- |
-| ルール | `parameters.a11y.config.rules`    | その story のどの要素でも、同じ理由で出る                | `combobox.stories.tsx` の `aria-hidden-focus` |
-| 要素   | `parameters.a11y.context.exclude` | 特定の要素だけが判定できず、同じ規則を他の要素では見たい | —                                             |
+| 粒度   | 書き方                                                                            | 使う場面                                                 |
+| ------ | --------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| ルール | `parameters: { a11y: { config: { rules: [{ id: "<rule>", enabled: false }] } } }` | その story のどの要素でも、同じ理由で出る                |
+| 要素   | `parameters: { a11y: { context: { exclude: ["<selector>"] } } }`                  | 特定の要素だけが判定できず、同じ規則を他の要素では見たい |
+
+- 書き方の出典は [Storybook docs「Accessibility testing」][] の Individual rules と Excluded elements
+- ルールで外す実例は `src/components/ui/combobox.stories.tsx` の `aria-hidden-focus`
 
 ### story の `incomplete` を確かめる
 
