@@ -49,7 +49,7 @@
 ### 日付の入力を扱う
 
 - `Calendar` (`src/components/ui/calendar.tsx`、中身は react-day-picker) は、既定でブラウザのローカル TZ で日付を組む。[react-day-picker docs「Setting the Time Zone」][] は "By default, DayPicker uses the browser’s local time zone." と書く
-- `timeZone` prop を渡すと、指定した TZ で日付を読み書きする。その場合、値は素の `Date` ではなく `TZDate` で扱う ([react-day-picker docs「Setting the Time Zone」][] の Working with time-zoned dates)。react-day-picker 10.0.1 は `TZDate` を `@date-fns/tz` から再 export している。テンプレートは `timeZone` prop を今は使っていない
+- `timeZone` prop を渡すと、指定した TZ で日付を読み書きする。その場合、値は素の `Date` ではなく `TZDate` で扱う ([react-day-picker docs「Setting the Time Zone」][] の Working with time-zoned dates)。react-day-picker 10.0.2 は `TZDate` を `@date-fns/tz` から再 export している。テンプレートは `timeZone` prop を今は使っていない
 - Calendar が強調する今日と、選択が無いときに開く月とフォーカス先 (`autoFocus` を付けたとき) は、ブラウザの TZ で決まる。ADR-0031 はこれを「今日」や期限の判定に入れず、ブラウザに任せる
 - Calendar はブラウザでだけ描く。初めに閉じていて `keepMounted` を付けない Popover の中に置くなら、そのままでよい。Base UI の `Popover.Portal` は `keepMounted` の既定が `false` で、閉じている間は popup を描かない。実例は `FormDateField` (`src/components/parts/form-fields.tsx`)。画面にじかに置くときは `<ClientOnly>` (`@tanstack/react-router`) で囲む ([TanStack Start docs「Hydration Errors」][] の Strategy 3)
 - [shadcn docs「Calendar」][] の「Selected Date (With TimeZone)」の例 (`timeZone` を `useEffect` で渡す) は、サーバーで描いた今日の食い違いを直さない (ADR-0031 の Context の実測)

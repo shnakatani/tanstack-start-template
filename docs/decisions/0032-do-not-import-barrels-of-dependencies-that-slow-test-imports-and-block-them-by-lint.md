@@ -1,7 +1,7 @@
 # ADR-0032: テストの import を重くする依存のバレルは使わず、個別エントリポイントから引き、lint で止める
 
 - Status: Accepted
-- Date: 2026-09-27
+- Date: 2026-10-07
 - 関連: ADR-0008 (同じ `no-restricted-imports` の override を持つ)、ADR-0031 (暦の日付と Calendar の扱い)
 
 ## Context
@@ -10,7 +10,7 @@
 
 テンプレートの依存で最初に当たるのは date-fns である。2026-09-27 に date-fns 4.4.0 で数えると、`index.js` は 245 行、`locale.js` は 95 行の `export * from` を持つ。テンプレートで probe を 1 つずつ実行し、`--experimental.importDurations.print` で import の時間を測った (「調査結果」)。unit project と browser project の両方で、バレルと個別エントリポイントの差が回ごとのばらつきを超えた。
 
-依存の中の import は、アプリのコードの書き方では変わらない。react-day-picker 10.0.1 は内部で date-fns のルートを import し (`dist/esm/classes/DateLib.js` の 2 行目)、`react-day-picker/locale/ja` は `date-fns/locale` のバレルを import する (`dist/esm/locale/ja.js` の 1 行目)。
+依存の中の import は、アプリのコードの書き方では変わらない。2026-10-07 に react-day-picker 10.0.2 の `dist/esm` を読むと、内部は date-fns を関数ごとの個別エントリポイントから import する (`classes/DateLib.js`)。`react-day-picker/locale/ja` は `date-fns/locale/ja` を import する (`locale/ja.js` の 1 行目) が、`react-day-picker/locale` は `date-fns/locale` のバレルを再 export する (`locale.js` の 1 行目)。
 
 ## Decision
 
@@ -18,8 +18,6 @@
 - 実測でバレルがテストの import を重くする依存を、`tooling/lint/config.ts` の `RESTRICTED_BARREL_IMPORTS` に名指しで足し、`no-restricted-imports` の `paths` で止める。メッセージで個別エントリポイントを案内する。足す手順は `docs/guides/dependencies-and-toolchain.md`「依存をバレルの禁止の対象に足す」にある
 - 最初の対象は date-fns の `date-fns` と `date-fns/locale` である
 - `RESTRICTED_BARREL_IMPORTS` はトップレベルの `rules` と、テスト専用コードの import 禁止の override (ADR-0008) の両方へ渡す。override は同じルールのオプションを置き換える (「調査結果」)
-- 依存の中の経路 (react-day-picker が date-fns のルートを読む経路) は、手段を入れず、残った課題にする
-- Calendar の locale は `date-fns/locale/ja` から組む (`src/components/parts/form-fields.tsx` の `CALENDAR_LOCALE`)。`react-day-picker/locale/ja` は使わない
 - 型だけの import も止まる (`allowTypeImports` の既定は `false`)。型が要るときは、依存先の型 (react-day-picker の `DayPickerLocale`) か関数の引数の型から取る
 
 ### 検討した選択肢
@@ -35,16 +33,13 @@
 ## Consequences
 
 - 依存を足すか使い始めたときに、バレルしか使っていなければ測って判断する手間が増える。測り方はガイドにある
-- `paths` は specifier の完全一致なので、`react-day-picker/locale` と `react-day-picker/locale/*` は止まらない。どちらも `date-fns/locale` のバレルを読む。Calendar に locale を渡すときは `date-fns/locale/<locale>` から組む
+- `paths` は specifier の完全一致なので、`date-fns/locale` のバレルを再 export する `react-day-picker/locale` は止まらない。Calendar の locale は `react-day-picker/locale/<locale>` から引く
 - `RESTRICTED_BARREL_IMPORTS` をトップレベルか override の片方からだけ外すと、外した側の範囲で無言で効かなくなる。`scripts/checks/integrity/lint-config.test.ts` はルールのオプションの中身を見ないので、この外し方を捕まえない (「調査結果」の、トップレベルだけに `paths` を置いた設定)
-- 残った課題:
-  - react-day-picker が date-fns のルートを読む経路が残っている。Calendar を描くテストの import は 63ms (中央値) で、経路の分は内訳が出ず測れていない。`resolve.alias`、`deps.optimizer.client`、`optimizeDeps.include` はどれも差がばらつきを超えなかった (「調査結果」の「Calendar を描くテスト」)
-  - 同じ測り方で測る候補: lucide-react など、テンプレートのコードがルートから import している依存。測って重ければ `RESTRICTED_BARREL_IMPORTS` に足す
-- 再評価の条件: react-day-picker が date-fns を個別エントリポイントから引くようになったら、依存の中の経路の扱いを見直す。`react-day-picker/locale/ja` が `date-fns/locale` を読まなくなったら、`CALENDAR_LOCALE` をそれに置き換える
+- 残った課題: 同じ測り方で測る候補は、lucide-react など、テンプレートのコードがルートから import している依存。測って重ければ `RESTRICTED_BARREL_IMPORTS` に足す
 
 ## 調査結果
 
-### date-fns のバレルと個別エントリポイント (2026-09-27、vitest 4.1.11、Node 24.21.0、date-fns 4.4.0、react-day-picker 10.0.1)
+### date-fns のバレルと個別エントリポイント (2026-09-27、vitest 4.1.11、Node 24.21.0、date-fns 4.4.0)
 
 probe は `format` と `ja` だけを import して 1 回 `format` を呼ぶテスト 1 ファイル。`vp test run --project <project> <probe> --experimental.importDurations.print --experimental.importDurations.limit=10` で測った。差の判定は、比較する回の中央値の差が、両者の最大と最小の差の和を超えるかで行った。指標は `Duration` の `import` を主にし、内訳の self の和 (`Total import time` の self) を補助にした。Vitest docs は Self を "excluding static imports"、Total を "including static imports" と書く。内訳の total の和は、テストファイルの total が依存の total を含むので入れ子を二重に数え、指標にしない。
 
@@ -58,21 +53,17 @@ unit project (Node、pool forks)、3 回ずつ:
 | 個別エントリポイント (`date-fns/format`、`date-fns/locale/ja`) | 1   | 4             | 47ms                        | 47ms / 92ms                      | 53ms               |
 | 個別エントリポイント                                           | 2   | 4             | 48ms                        | 48ms / 93ms                      | 53ms               |
 | 個別エントリポイント                                           | 3   | 4             | 48ms                        | 48ms / 93ms                      | 53ms               |
-| `react-day-picker/locale/ja`                                   | 1   | 4             | 961ms                       | 961ms / 1.92s                    | 966ms              |
-| `react-day-picker/locale/ja`                                   | 2   | 4             | 951ms                       | 951ms / 1.90s                    | 957ms              |
-| `react-day-picker/locale/ja`                                   | 3   | 4             | 952ms                       | 952ms / 1.90s                    | 957ms              |
 
-`Duration` の `import` の中央値は、バレル 958ms、個別エントリポイント 53ms、`react-day-picker/locale/ja` 957ms。バレルと個別エントリポイントの差は 905ms で、ばらつき (20ms + 0ms) を超えた。self の和の中央値でも、バレル 952ms と個別エントリポイント 48ms の差 904ms が、ばらつき (19ms + 1ms) を超えた。バレルの 1 回目では self の和が 3ms + 486ms + 447ms + 2ms = 938ms、total の和が 938ms + 486ms + 447ms + 2ms = 1873ms (表示は 1.87s) で、total の和は date-fns の 2 モジュールを二重に数えている。バレルの 1 回目の内訳では、`date-fns/locale.js` が 486ms、`date-fns/index.js` が 447ms だった。
+`Duration` の `import` の中央値は、バレル 958ms、個別エントリポイント 53ms。バレルと個別エントリポイントの差は 905ms で、ばらつき (20ms + 0ms) を超えた。self の和の中央値でも、バレル 952ms と個別エントリポイント 48ms の差 904ms が、ばらつき (19ms + 1ms) を超えた。バレルの 1 回目では self の和が 3ms + 486ms + 447ms + 2ms = 938ms、total の和が 938ms + 486ms + 447ms + 2ms = 1873ms (表示は 1.87s) で、total の和は date-fns の 2 モジュールを二重に数えている。バレルの 1 回目の内訳では、`date-fns/locale.js` が 486ms、`date-fns/index.js` が 447ms だった。
 
 browser project (chromium)、4 回ずつ (比較は 2-4 回目)。`Import Duration Breakdown` は出なかったので、`Duration` の `import` だけを指標にした:
 
-| probe                        | 1 回目 | 2 回目 | 3 回目 | 4 回目 | 中央値 (2-4 回目) |
-| ---------------------------- | ------ | ------ | ------ | ------ | ----------------- |
-| バレル                       | 562ms  | 66ms   | 67ms   | 67ms   | 67ms              |
-| 個別エントリポイント         | 10ms   | 10ms   | 10ms   | 10ms   | 10ms              |
-| `react-day-picker/locale/ja` | 529ms  | 26ms   | 25ms   | 26ms   | 26ms              |
+| probe                | 1 回目 | 2 回目 | 3 回目 | 4 回目 | 中央値 (2-4 回目) |
+| -------------------- | ------ | ------ | ------ | ------ | ----------------- |
+| バレル               | 562ms  | 66ms   | 67ms   | 67ms   | 67ms              |
+| 個別エントリポイント | 10ms   | 10ms   | 10ms   | 10ms   | 10ms              |
 
-バレルと個別エントリポイントの差は 57ms で、ばらつき (1ms + 0ms) を超えた。バレルと `react-day-picker/locale/ja` の 1 回目は、Vite の "dependencies optimized" と "optimized dependencies changed. reloading" を出した。
+バレルと個別エントリポイントの差は 57ms で、ばらつき (1ms + 0ms) を超えた。バレルの 1 回目は、Vite の "dependencies optimized" と "optimized dependencies changed. reloading" を出した。
 
 ### Calendar を描くテスト (react-day-picker が date-fns のルートを読む経路) (2026-09-27、vitest 4.1.11、Node 24.21.0、date-fns 4.4.0、react-day-picker 10.0.1)
 
