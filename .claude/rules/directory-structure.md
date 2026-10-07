@@ -31,7 +31,7 @@ paths:
 - 1 つのファイルが複数の部品を export するとき、単独で描画できる部品は story ファイルを分ける。親を要求する部品は親の story で扱う。CSF の meta は 1 ファイルに 1 つで、まとめると別の部品の meta 配下に並ぶ (`docs/guides/storybook.md`「story を置く」)
 - `cva` の variant の control は `argTypes` の `options` を手で渡し、`satisfies Record<Variant, null>` で網羅を強制する。推論に任せると選択肢が出ないか `null` が混ざり、手で写したものは型検査も lint も一致を見ない (`docs/guides/storybook.md`「`cva` の variant の `options` を手で渡す理由」)
 - トークンの story に typography の階層のような class の規範を写さない。写すと片方だけが古くなり、突き合わせる検査も無い (`docs/guides/storybook.md`「story を置く」)
-- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。canvas の余白は全 story に `layout: "padded"` と `.storybook/preview.css` が付けるので、decorator で足すとその story だけが二重の余白になる (`docs/guides/storybook.md`「vitest 経由の story に padding を当てる理由」)
+- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない。canvas の余白は Storybook の UI で `layout: "padded"` が付けるので、decorator で足すとその story だけが二重の余白になる (`docs/guides/storybook.md`「story の余白を decorator で足さない理由」)
 - `ui/` の story から部品へ渡す `className` は layout に限る。`ui/` は lint (`no-restyle`) の適用外なのでレビューで見る (`docs/guides/storybook.md`「story を書く」)
 
 ## features と hooks と lib と server の境界

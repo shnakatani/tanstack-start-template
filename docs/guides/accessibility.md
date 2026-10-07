@@ -25,7 +25,7 @@ axe の検査の置き場所と読み方、抑制の書き方、読み上げの�
 | story の axe            | 部品が取りうる状態。操作の後も `play` で見る                                                   | 部品か story     |
 | ブラウザテストの axe    | story を置けないページと文書全体 (`src/routes/`)。ランドマーク構造など、部品へ分解できないもの | そのケースの実装 |
 
-境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (`docs/guides/storybook.md`「カタログと play の範囲」)。分かれるのは置ける場所と、そこから来る描画を統制できるか (ADR-0028) である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
+境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (`docs/guides/storybook.md`「カタログと play の範囲」)。分かれるのは置ける場所である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
 
 ブラウザテストの axe が見るのは、`expectNoA11yViolations` を書いたケースだけである。書いていない画面は、devtools の a11y パネルで触りながら確かめる。
 
@@ -33,10 +33,10 @@ axe の検査の置き場所と読み方、抑制の書き方、読み上げの�
 
 axe の結果が緑でも、「測った」ことも「WCAG を満たした」ことも意味しない。緑を測った証明とせず、測った件数を別に要求する。
 
-- `incomplete` を塞いでも、`passes` に入ったことは「測った」の証明にならない。`color-contrast` は、画面に出ていない要素を合格にする (`axe.js` の `_isVisibleOnScreen` 分岐、`messageKey: 'hidden'`)。この空振りは `passes` にも数えられるので、`passes` の件数を見ても捕まえられない
+- `passes` に入ったことは「測った」の証明にならない。`color-contrast` は、画面に出ていない要素を合格にする (`axe.js` の `_isVisibleOnScreen` 分岐、`messageKey: 'hidden'`)。この空振りは `passes` にも数えられるので、`passes` の件数を見ても捕まえられない
 - この形は axe に固有ではない。前件が成立しないまま成立する assertion は vacuous pass と呼ばれ、定石は「失敗を厳しくする」ではなく「実際に測った件数が 0 でないことを別に要求する」である
 - `expectNoA11yViolations` (`src/test/a11y/a11y.ts`) の `passes.length > 0` はその粗い版で、ルール単位では見ていない。捕まえるのはルールが 1 つも走らなかった場合 (対象が空、設定で全ルールが外れた) だけで、`hidden` の空振りは捕まえない
-- `passes` の件数を要求するのはブラウザテストの層だけで、story の層 (`src/test/a11y/a11y-story.ts`) は `passes` を見ない。story の層で空振りの緑を落とすものは無い
+- `passes` の件数を要求するのはブラウザテストの層だけで、story の層 (`addon-a11y`) は `passes` を見ない。story の層で空振りの緑を落とすものは無い
 
 | 案                                                       | 評価                                                                                                                                                                  | 採否     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -61,7 +61,7 @@ axe の結果が緑でも、「測った」ことも「WCAG を満たした」�
 
 ### `incomplete` は混成のバケツ
 
-axe の `incomplete` は「判定できなかった」だけを意味しない。技術的に判定できなかったもの、ルールが JavaScript のエラーで落ちたもの、失敗にするのをためらって人の確認へ回したものが混ざる。件数ゼロを条件にすると、この 3 つを区別せずに落とすことになる。どの層でどれを落とすかは ADR-0028 が決める。
+axe の `incomplete` は「判定できなかった」だけを意味しない。技術的に判定できなかったもの、ルールが JavaScript のエラーで落ちたもの、失敗にするのをためらって人の確認へ回したものが混ざる。件数ゼロを条件にすると、この 3 つを区別せずに落とすことになる。`incomplete` は story でもブラウザテストでも合否に入れない (ADR-0028)。
 
 ### 比は実際に載る面ごとに測る
 
@@ -69,11 +69,10 @@ axe の `incomplete` は「判定できなかった」だけを意味しない�
 
 ### 抑制を出た story に置く理由
 
-| 案                                                         | 評価                                                                                          | 採否     |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------- |
-| 出た story の `parameters.a11y` に、理由と出口を添えて置く | 抑制の範囲がその story に閉じ、外せる条件が抑制の隣に残る                                     | **採用** |
-| `.storybook/preview.tsx` でルールをグローバルに無効化する  | 全 story でその規則が働かなくなり、後から足した部品の違反も出なくなる                         | 却下     |
-| `IGNORED_INCOMPLETE` に足す                                | `incomplete` だけを合否から外す仕組みで、`violations` は止まらない。守備範囲が違う (ADR-0028) | 却下     |
+| 案                                                         | 評価                                                                  | 採否     |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- | -------- |
+| 出た story の `parameters.a11y` に、理由と出口を添えて置く | 抑制の範囲がその story に閉じ、外せる条件が抑制の隣に残る             | **採用** |
+| `.storybook/preview.tsx` でルールをグローバルに無効化する  | 全 story でその規則が働かなくなり、後から足した部品の違反も出なくなる | 却下     |
 
 - `context.exclude` で外した要素は、その story ではどの規則の対象からも外れる。外した理由と出口は story 側のコメントが持つ
 
@@ -214,33 +213,23 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 | 粒度   | 書き方                            | 使う場面                                                 | 実例                                          |
 | ------ | --------------------------------- | -------------------------------------------------------- | --------------------------------------------- |
 | ルール | `parameters.a11y.config.rules`    | その story のどの要素でも、同じ理由で出る                | `combobox.stories.tsx` の `aria-hidden-focus` |
-| 要素   | `parameters.a11y.context.exclude` | 特定の要素だけが判定できず、同じ規則を他の要素では見たい | `calendar.stories.tsx` の見出しの除外         |
+| 要素   | `parameters.a11y.context.exclude` | 特定の要素だけが判定できず、同じ規則を他の要素では見たい | —                                             |
 
-`src/test/a11y/a11y-story.ts` の `IGNORED_INCOMPLETE` とは守備範囲が違う。あちらは `incomplete` だけを合否から外し、`config.rules` はルールごと止めるので `violations` も消える。同じルール名が両方に現れても重複ではない。片方を消せるかは、消して落ちるかで決める (次節の数え直し)。
+### story の `incomplete` を確かめる
+
+- story の `incomplete` は合否に入らず、CI にも出ない (ADR-0028)。`color-contrast` が背景を決められなかった要素は、緑のまま測られていない
+- Storybook の UI (`mise run storybook`) で story を開き、a11y パネルの Incomplete を見る。[Storybook docs「Accessibility testing」][] は Incomplete を "highlights areas that you should confirm manually because they could not be checked automatically" と書く
+- 見るのは、部品や story を足したときと、要素の重なり・擬似要素・行の高さを変えたとき。どれも `color-contrast` が背景を決められなくなる原因になる
 
 ### ブラウザテストの `incomplete` を読む
 
-- `expectNoA11yViolations` (`src/test/a11y/a11y.ts`) は `incomplete` を合否に入れず、warning の注釈で残す。どの層で落とすかは ADR-0028 が決める
+- `expectNoA11yViolations` (`src/test/a11y/a11y.ts`) は `incomplete` を合否に入れず、warning の注釈で残す (ADR-0028)
 - 手元では `mise run a11y:incomplete` で読み、PR では該当テストの行に warning の注釈が付く。読み方は `docs/guides/testing/annotations.md`「注釈を読む」、位置の決まり方は `docs/guides/testing/annotations.md`「注釈の位置を読む」
 - 注釈の位置は `expectNoA11yViolations` を呼んだテストの行で、どの要素がなぜ判定できなかったかは本文で見る。本文の形は `src/test/a11y/a11y-message.ts` の `describeA11yIncomplete`
 
-### `incomplete` を数え直す
-
-`IGNORED_INCOMPLETE` の行が今も要るかは、次の手順で確かめる。
-
-1. `src/test/a11y/a11y-story.ts` の `IGNORED_INCOMPLETE` を空にする
-2. story 側の `parameters.a11y.config.rules` も併せて外す。残すと、ルールごと止めた story は `incomplete` も出さないので数から漏れる
-3. storybook の project を回し、落ちた story と失敗メッセージのルール ID を読む
-4. 一度も出なくなった除外の行は消す。当たらない除外を残すと、なぜ外したかを誰も再現できなくなる
-
 ### axe を上げたとき
 
-- `IGNORED_INCOMPLETE` の名指しは、axe の出荷物と突き合わせられない。版が上がって `color-contrast` の分岐が変わっても何も鳴らないので、ADR-0028「`color-contrast` の `incomplete` は外さない」の 3 分岐を `axe.js` で読み直す
 - axe が担当するルールと SC の数 (上の「axe の緑が意味しないこと」) を数え直す
-
-### story が CI でだけ赤になったら
-
-story で統制できるのは markup までで、フォントは実行環境が持つ。テキストの折り返す位置が変わると矩形の重なり先も変わり、同じ story が手元では緑、CI では赤になりうる。直す対象は markup の側にある (折り返して枠の外へ出る書き方をやめる)。
 
 ### 読み上げの通知を書く
 
@@ -325,7 +314,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に、Storybook docs「Accessibility testing」の引用は 2026-10-08 に原文と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -337,6 +326,7 @@ story で統制できるのは markup までで、フォントは実行環境が
 [Base UI docs「Combobox」]: https://base-ui.com/react/components/combobox
 [shadcn docs「Dropdown Menu」]: https://ui.shadcn.com/docs/components/base/dropdown-menu
 [shadcn の `dropdown-menu-checkboxes.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/dropdown-menu-checkboxes.tsx
+[Storybook docs「Accessibility testing」]: https://storybook.js.org/docs/writing-tests/accessibility-testing
 [axe-core の `README.md`]: https://github.com/dequelabs/axe-core/blob/v4.13.0/README.md
 [dequelabs/axe-core#4260]: https://github.com/dequelabs/axe-core/issues/4260
 [dequelabs/axe-core#5359]: https://github.com/dequelabs/axe-core/pull/5359
