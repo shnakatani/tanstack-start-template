@@ -1,8 +1,8 @@
 # ADR-0038: server で起きた例外は production では client へ運ばず、server のログには server function と SSR の 2 つの口で残す
 
 - Status: Accepted
-- Date: 2026-10-01
-- 関連: ADR-0012 (server function の例外のログを global の middleware に置く)、ADR-0013 (読み出しの検証の文言に DB の値を載せない)
+- Date: 2026-10-08
+- 関連: ADR-0007 (lint のルールとオプションの基準)、ADR-0012 (server function の例外のログを global の middleware に置く)、ADR-0013 (読み出しの検証の文言に DB の値を載せない)
 
 ## Context
 
@@ -97,6 +97,7 @@ drizzle の `DrizzleQueryError` は、文言に SQL と params を入れる (`Fa
 | SSR のログ               | custom server entry (`src/server.ts`) の handler callback が、描画の前に `ctx.router.state.matches` のうち `status === "error"` の match の error を `[ssr] <routeId>` で `console.error` する                                                                                                                                                                                                            |
 | ログの重複               | SSR の loader から呼んだ server function の例外は 2 行出る。受け入れ、同じオブジェクトを 1 回だけ出す仕組みは持たない                                                                                                                                                                                                                                                                                     |
 | 例外の文言に載せないもの | 秘密と個人情報 (DB の行の値、ユーザーの入力)。文言は server のログに残り、DEV では画面にも出る。パスと id は載せてよい                                                                                                                                                                                                                                                                                    |
+| 自分のコードが投げる値   | Error と、Router の `redirect` と `notFound` に限る。lint の `typescript/only-throw-error` を、基準 (`strict-type-checked`) の既定から外して `allowThrowingAny` と `allowThrowingUnknown` を false にし、catch で受けた値の投げ直しだけを `allowRethrowing` で通す (`tooling/lint/config.ts`、「Error でない値の throw を止める lint のオプション」)                                                      |
 
 - 文言の差し替えとログを 1 本の ADR で決めるのは、互いに前提だからである。production では client に例外の文言が届かないので、原因は server のログにしか残らない。OWASP Error Handling Cheat Sheet の global error handler も、generic response と server 側のログを 1 つの仕組みで持つ (Context の先行例の表)
 - 判定を adapter と errorComponent の 2 か所で同じ `import.meta.env.DEV` に揃えるのは、server で描く errorComponent が adapter を通らない生の Error を受けるためである (`Match.js` の server の分岐)。HTML に文言を入れるかは errorComponent が決めるので、2 か所の判定が食い違うと、server の HTML と client の描画が食い違って hydration がずれる
@@ -188,7 +189,7 @@ typescript-eslint の `only-throw-error` は、`allowThrowingAny`・`allowThrowi
 | 案                                                                                                    | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                         | 採否     |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
 | 既定のオプションのまま                                                                                | 公式の基準 (`strict-type-checked`) と同じ。型が `any` か `unknown` の値の throw が通る。Error でない値は adapter を通らず (経路の表の「Error でない値の throw」)、server function で投げたときの Start の扱いも上流で定まっていない。`TanStack/router#8617` は Error でない falsy な値を投げると呼び出し側で成功として返ると報告し、`TanStack/router#7364` は Error でない値を失敗にせずデータとして返す変更を提案している (どちらも 2026-10-08 時点で open) | 却下     |
-| `allowThrowingAny` と `allowThrowingUnknown` を false にする (`allowRethrowing` は既定の true のまま) | 自分のコードが投げる値は、Error と、`redirect` と `notFound` に限られる。catch で受けた値の投げ直しは通る。基準から外れるので、理由を設定のコメントに残す。この設定で `vp lint` をリポジトリ全体に走らせると、違反は 0 件だった (2026-10-08)                                                                                                                                                                                                                 | **採用** |
+| `allowThrowingAny` と `allowThrowingUnknown` を false にする (`allowRethrowing` は既定の true のまま) | 自分のコードが投げる値は、Error と、`redirect` と `notFound` に限られる。catch で受けた値の投げ直しは通る。厳しめの共有の設定 (eslint-config-love の `lib/plugin-usage/typescript-eslint.js`) も 2 つを false にしている。基準から外れるので、理由を設定のコメントに残す。この設定で `vp lint` をリポジトリ全体に走らせると、違反は 0 件だった (2026-10-08)                                                                                                  | **採用** |
 
 ## Consequences
 
