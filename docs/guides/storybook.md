@@ -8,7 +8,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 | `src/components/` を役割で分け、design system の著作と消費の境界をディレクトリで表す                               | ADR-0011 |
 | registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る | ADR-0020 |
 | design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る                          | ADR-0022 |
-| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす             | ADR-0028 |
+| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` はどちらの層でも合否に入れない               | ADR-0028 |
 | story とブラウザテストはアプリと同じく StrictMode の下で描く                                                       | ADR-0039 |
 
 ## how-to
@@ -33,7 +33,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 - `ui/` の story は `no-restyle` / `require-static-classes` の適用外で、lint は鳴らない (ADR-0011)。鳴らないぶんはレビューで見る。`parts/` や `action/` など `ui/` の外の story は、消費側と同じく lint が止める
 - pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く (`src/test/app/settling-action.ts`)。決着しない Transition が残ると、後続 story が pending のまま止まる
 - Storybook の vitest 実行は story ごとに描き先の要素と root を作り直し、前の story を unmount する。それでも、React が進行中の Transition を root をまたいでまとめるので ([React docs「useTransition」][] の Caveats の "If there are multiple ongoing Transitions, React currently batches them together.")、後続 story の Transition が残った Transition と一緒に待たされる。2026-09-28 に React 19.3.0・Storybook 10.6.0 で、決着しない action を押した story の後ろでは 50ms で決着する action の story が 1.5 秒たっても pending のままで、単独では 78ms で解けた
-- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない (「vitest 経由の story に padding を当てる理由」)
+- story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない (「story の余白を decorator で足さない理由」)
 - 狭い幅での見え方は、story に `globals: { viewport: { value: "narrow" } }` を付けて目で見る。その story に寸法を測る play は書かない (「狭幅を story で見る理由」)。実例は `src/components/parts/centered-card.stories.tsx` の `Narrow`
 - viewport を選ばない story は、vitest から走らせるとブラウザテストの既定と別の寸法で描かれる。story とブラウザテストで幅に依る見え方が食い違ったら、まずこの差を疑う (「vitest 経由の story の viewport が決まる仕組み」)
 
@@ -193,13 +193,13 @@ shadcn の registry が cva@1 へ移ったら、手書きの `options` を外す
 | `react-docgen-typescript` へ切り替える (公式の案内)    | `null` が選択肢に出ないことを確かめてから、手書きの `options` を消す。`createLink` で包んだ部品、Base UI の型の prop、story だけが持つ args は `react-docgen-typescript` でも推論できず、手書きが残る |
 | cva@1 の `getSchema` (`cva/tools`) で `options` を作る | variant の名前・値・既定を返す。[cva docs「What's new」][] の Features は "Use it to generate Storybook controls or variant galleries from your component." と書く                                    |
 
-### vitest 経由の story に padding を当てる理由
+### story の余白を decorator で足さない理由
 
-`layout` パラメータを当てるのは `WebView.prepareForStory` で ([Storybook の `WebView.ts`][] の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には既定の `layout: "padded"` が効かず、canvas の原点へ密着して描かれる。
+[Storybook docs「Decorators」][] は部品が端まで描かれるときの直し方として decorator で余白を足す例を示すが、Storybook の UI では既定の `layout: "padded"` ([Storybook docs「Story layout」][]) がすでに余白を付ける。decorator で足すと、その story だけが二重の余白で描かれる。
 
-- この差は `.storybook/preview.css` の `body:not(.sb-show-main)` が埋める。Storybook の UI では body へ `sb-show-main` が付くので、付いていないときだけ同じ `1rem` を当てる。`sb-main-*` で見ないのは、`layout: "none"` の story が UI 側でも `sb-main-*` を持たないため (理由は同ファイルのコメント)
-- 埋めないと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、そのはみ出しが背景を持つ唯一の箱 (body) の外へ出て axe が色を測れなくなる。`html` は背景を持たないので受け止められない
-- decorator で余白を足さないのは、この余白が全 story に共通の要件だからである。[Storybook docs「Decorators」][] は部品が端まで描かれるときの直し方として decorator で余白を足す例を示すが、その余白は Storybook の UI では既定の `layout: "padded"` ([Storybook docs「Story layout」][]) が、vitest 経由では `preview.css` がすでに付ける。decorator で足すと、その story だけが二重の余白で描かれる
+- `layout` パラメータを当てるのは `WebView.prepareForStory` で ([Storybook の `WebView.ts`][] の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には `layout: "padded"` が効かず、canvas の原点へ密着して描かれる
+- 密着して描くと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、はみ出しが背景を持つ唯一の箱 (body) の外へ出て、axe の `color-contrast` が背景を決められず `incomplete` を返す。その箇所は CI では測られない (ADR-0028 の「受け入れる穴」)。Storybook の UI では余白の上で描くので測られる (`docs/guides/accessibility.md`「story の `incomplete` を確かめる」)
+- vitest 経由の story にだけ余白を当てる口は公式に無い。当てるには、Storybook の UI と見分けるために内部の class 名 (`sb-show-main`) を使い、余白の値を写す独自の仕組みが要るので、当てない (ADR-0028)
 
 ### 狭幅を story で見る理由
 

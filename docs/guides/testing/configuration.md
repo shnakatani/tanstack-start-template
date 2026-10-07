@@ -2,13 +2,13 @@
 
 テストの種別ごとの置き場所と走らせ方、テストの API の import 元、実行環境の制約でテストを止める手順、Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・React Compiler を通さない project の範囲・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
 
-| 決定                                                                                                   | ADR      |
-| ------------------------------------------------------------------------------------------------------ | -------- |
-| 開発環境のツールチェーンは mise と Vite+ に寄せる                                                      | ADR-0004 |
-| Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる      | ADR-0037 |
-| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` は描画を統制できる層でだけ落とす | ADR-0028 |
-| story とブラウザテストはアプリと同じく StrictMode の下で描く                                           | ADR-0039 |
-| メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                             | ADR-0014 |
+| 決定                                                                                                 | ADR      |
+| ---------------------------------------------------------------------------------------------------- | -------- |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                                                    | ADR-0004 |
+| Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる    | ADR-0037 |
+| a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` はどちらの層でも合否に入れない | ADR-0028 |
+| story とブラウザテストはアプリと同じく StrictMode の下で描く                                         | ADR-0039 |
+| メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                           | ADR-0014 |
 
 ## how-to
 

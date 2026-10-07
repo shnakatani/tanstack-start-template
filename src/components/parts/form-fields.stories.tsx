@@ -5,7 +5,6 @@ import { expect, fn, screen, spyOn, userEvent, waitFor, within } from "storybook
 import * as v from "valibot";
 
 import { Button } from "@/components/ui/button";
-import { excludeFromA11y } from "@/components/ui/calendar.story-helpers";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { useAppForm } from "@/hooks/use-app-form";
 import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "@/lib/field-errors";
@@ -821,8 +820,6 @@ export const DateWithValue: Story = {
  */
 export const DateOpen: Story = {
   render: (args) => <DateForm {...args} />,
-  // 見出しを axe から外す理由は calendar.story-helpers.ts の excludeFromA11y の docstring にある
-  parameters: excludeFromA11y(),
   play: async () => {
     await openDatePicker();
 
