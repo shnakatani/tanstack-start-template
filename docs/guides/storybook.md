@@ -216,7 +216,7 @@ vitest から走らせた story の viewport は、`@storybook/addon-vitest` の
 | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | viewport を選んでいる (`globals.viewport.value` か `parameters.viewport.defaultViewport`) | 選んだ option の `styles` の幅と高さ                                             |
 | viewport を選んでいない                                                                   | addon の既定の 1200x900                                                          |
-| addon の vitest plugin が `@vitest/browser/context` を `vitest/browser` へ向け替えない    | どの story も project の `browser.viewport` (未設定なら Vitest の既定の 414x896) |
+| addon の `@vitest/browser/context` の import が失敗する                                   | どの story も project の `browser.viewport` (未設定なら Vitest の既定の 414x896) |
 
 - 1200x900 は `@storybook/addon-vitest` 10.6.1 の `DEFAULT_VIEWPORT_DIMENSIONS` である (2026-10-07 に確認)。ブラウザテストの既定 (`src/test/browser/viewport-sizes.ts` の `DEFAULT_VIEWPORT`) とは別の値で、同じ部品でも story とブラウザテストで描く寸法が違う
 - addon-vitest は `page` を `@vitest/browser/context` から読む。Vitest 5 の Browser Mode が仮想 module にするのは `vitest/browser` だけで、`@vitest/browser/context` の実体は読み込むと throw する。addon-vitest 10.6.1 の vitest plugin (`storybook:vitest-browser-context`) が、Vitest 4 以上でこの import を `vitest/browser` へ向け替えるので読める (2026-10-07 に addon-vitest 10.6.1 と `@vitest/browser` 5.0.1 の dist で確認)。向け替えが効かないと addon は失敗を握りつぶして何もせずに戻るので、viewport の指定が効かないまま story が走り、何も言わない。project が `browser.viewport` を書いていなければ、描く寸法は Vitest の既定の 414x896 になる ([Vitest docs「browser.viewport」][]、Vitest 5.0.1)
