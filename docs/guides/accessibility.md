@@ -219,6 +219,8 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 - story の `incomplete` は合否に入らず、CI にも出ない (ADR-0028)。`color-contrast` が背景を決められなかった要素は、緑のまま測られていない
 - Storybook の UI (`mise run storybook`) で story を開き、a11y パネルの Incomplete を見る。[Storybook docs「Accessibility testing」][] は Incomplete を "highlights areas that you should confirm manually because they could not be checked automatically" と書く
+- ツールバーのテーマ (`@storybook/addon-themes`) を light と dark の両方へ切り替えて見る。パネルが見るのは選んでいるテーマで描いた結果だけである
+- UI と CI では描き方が違う。UI は `layout: "padded"` の余白の上に描き、vitest 経由の story は余白なしで描く (`docs/guides/storybook.md`「story の余白を decorator で足さない理由」)。余白が無いことで出る `incomplete` (グリフが行ボックスからはみ出す部品の `color-contrast`) は、UI のパネルには出ない。UI では背景が決まるので、比が足りなければ Violations に出る
 - 見るのは、部品や story を足したときと、要素の重なり・擬似要素・行の高さを変えたとき。どれも `color-contrast` が背景を決められなくなる原因になる
 
 ### ブラウザテストの `incomplete` を読む
