@@ -60,7 +60,7 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 
 - TanStack Query は対象外。Query を使う部品の story を書くようになったら、QueryClient を `.storybook/preview.tsx` の構成へ手で置く
 - server-only の依存を引く部品の story を書くようになったら、その依存を `__mocks__` で遮断する
-- story の URL を組むとき、path の `$name` と `$` の segment だけが展開され、`{-$name}` や `{$id}.json` のような波括弧の segment は展開されない。tanstack-react の path の展開の制限で (`pnpm-workspace.yaml` の patch も上流の修正も同じ)、上流の修正 ([storybookjs/storybook#36333][]) の本文も `{-$optional}` を未対応と書く。波括弧の segment を持つ route の story を書くようになったら、URL が組めるかをその時点で確かめる
+- story の URL を組むとき、path の `$name` と `$` の segment だけが展開され、`{-$name}` や `{$id}.json` のような波括弧の segment は展開されない。tanstack-react の path の展開の制限で、その展開を足した上流の修正 ([storybookjs/storybook#36333][]) の本文も `{-$optional}` を未対応と書く。波括弧の segment を持つ route の story を書くようになったら、URL が組めるかをその時点で確かめる
 
 ### play を書く
 
@@ -216,10 +216,11 @@ vitest から走らせた story の viewport は、`@storybook/addon-vitest` の
 | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | viewport を選んでいる (`globals.viewport.value` か `parameters.viewport.defaultViewport`) | 選んだ option の `styles` の幅と高さ                                             |
 | viewport を選んでいない                                                                   | addon の既定の 1200x900                                                          |
-| `patchedDependencies` の addon-vitest の patch が当たっていない                           | どの story も project の `browser.viewport` (未設定なら Vitest の既定の 414x896) |
+| addon の vitest plugin が `@vitest/browser/context` を `vitest/browser` へ向け替えない    | どの story も project の `browser.viewport` (未設定なら Vitest の既定の 414x896) |
 
-- 1200x900 は `@storybook/addon-vitest` 10.6.0 の `DEFAULT_VIEWPORT_DIMENSIONS` である (2026-09-30 に確認)。ブラウザテストの既定 (`src/test/browser/viewport-sizes.ts` の `DEFAULT_VIEWPORT`) とは別の値で、同じ部品でも story とブラウザテストで描く寸法が違う
-- addon-vitest 10.6.0 は `page` を `@vitest/browser/context` から読むが、Vitest 5 ではこの import が失敗する。addon は失敗を握りつぶして何もせずに戻るので、viewport の指定が効かないまま story が走り、何も言わない。project が `browser.viewport` を書いていなければ、描く寸法は Vitest の既定の 414x896 になる ([Vitest docs「browser.viewport」][]、Vitest 5.0.1)。patch は import 先を `vitest/browser` へ替える (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
+- 1200x900 は `@storybook/addon-vitest` 10.6.1 の `DEFAULT_VIEWPORT_DIMENSIONS` である (2026-10-07 に確認)。ブラウザテストの既定 (`src/test/browser/viewport-sizes.ts` の `DEFAULT_VIEWPORT`) とは別の値で、同じ部品でも story とブラウザテストで描く寸法が違う
+- addon-vitest は `page` を `@vitest/browser/context` から読む。Vitest 5 の Browser Mode が仮想 module にするのは `vitest/browser` だけで、`@vitest/browser/context` の実体は読み込むと throw する。addon-vitest 10.6.1 の vitest plugin (`storybook:vitest-browser-context`) が、Vitest 4 以上でこの import を `vitest/browser` へ向け替えるので読める (2026-10-07 に addon-vitest 10.6.1 と `@vitest/browser` 5.0.1 の dist で確認)。向け替えが効かないと addon は失敗を握りつぶして何もせずに戻るので、viewport の指定が効かないまま story が走り、何も言わない。project が `browser.viewport` を書いていなければ、描く寸法は Vitest の既定の 414x896 になる ([Vitest docs「browser.viewport」][]、Vitest 5.0.1)
+- `mise run verify` はこの失敗を捕まえない。addon-vitest か Vitest を上げたら、viewport を選ばない story に一時的な play を足し、`window.innerWidth` が 1200 になることを確かめてから消す (2026-10-07 に addon-vitest 10.6.1 と Vitest 5.0.1 で、viewport を選ばない story が 1200、`narrow` を選ぶ story が 375 になることを確かめた)
 
 ### CLI を使い、MCP を入れない理由
 
