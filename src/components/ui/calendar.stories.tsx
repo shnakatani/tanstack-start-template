@@ -2,8 +2,6 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 
 import { Calendar } from "@/components/ui/calendar";
 
-import { excludeFromA11y } from "./calendar.story-helpers";
-
 /**
  * カタログを時計で動かさないよう、月と「今日」を固定する。`defaultMonth` だけでは
  * `today` modifier が実時計を読み続け、月が変わると強調の位置が消える
@@ -14,7 +12,6 @@ const TODAY = new Date(2026, 8, 20);
 const meta = {
   component: Calendar,
   args: { mode: "single", defaultMonth: MONTH, today: TODAY },
-  parameters: excludeFromA11y(),
 } satisfies Meta<typeof Calendar>;
 
 export default meta;
@@ -32,12 +29,6 @@ export const Range: Story = {
     mode: "range",
     selected: { from: new Date(2026, 8, 14), to: new Date(2026, 8, 20) },
   },
-  // 期間の両端も registry 素。`after:w-4 after:bg-muted` の擬似要素で隣のセルへ橋を架けており、
-  // axe は一定以上の面積を持つ擬似要素があると背景の判定を打ち切る (pseudoContent)。
-  // 両端は `bg-primary` / `text-primary-foreground` で、`range_middle` の
-  // `bg-muted` / `text-foreground` とは別の対である。この対は `Single` と `Multiple` の
-  // 選択セル (`data-selected-single`) が検査し続ける。上流へは未起票 (shadcn-ui/ui)
-  parameters: excludeFromA11y('[data-range-start="true"]', '[data-range-end="true"]'),
 };
 
 /** 複数の日を選ぶ */
@@ -53,9 +44,6 @@ export const Multiple: Story = {
  * `today` から前 100 年で組まれ、選択肢が毎年 1 つ増える
  */
 export const WithDropdownCaption: Story = {
-  // この形では見出しに incomplete が出ないので、meta の除外を打ち消す (2026-09-21 に実測。
-  // nav の絶対配置は同じままなので、重なっても解決できる理由までは確かめていない)
-  parameters: { a11y: { context: { exclude: [] } } },
   args: {
     captionLayout: "dropdown",
     startMonth: new Date(2020, 0, 1),
