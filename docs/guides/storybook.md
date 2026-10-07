@@ -198,7 +198,8 @@ shadcn の registry が cva@1 へ移ったら、手書きの `options` を外す
 [Storybook docs「Decorators」][] は部品が端まで描かれるときの直し方として decorator で余白を足す例を示すが、Storybook の UI では既定の `layout: "padded"` ([Storybook docs「Story layout」][]) がすでに余白を付ける。decorator で足すと、その story だけが二重の余白で描かれる。
 
 - `layout` パラメータを当てるのは `WebView.prepareForStory` で ([Storybook の `WebView.ts`][] の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には `layout: "padded"` が効かず、canvas の原点へ密着して描かれる
-- 密着して描くと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、はみ出しが背景を持つ唯一の箱 (body) の外へ出て、axe の `color-contrast` が背景を決められず `incomplete` を返す。`incomplete` は合否に入れないので (ADR-0028)、vitest 経由の story に余白は当てない。確かめ方は `docs/guides/accessibility.md`「story の `incomplete` を確かめる」
+- 密着して描くと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、はみ出しが背景を持つ唯一の箱 (body) の外へ出て、axe の `color-contrast` が背景を決められず `incomplete` を返す。その箇所は CI では測られない (ADR-0028 の「受け入れる穴」)。Storybook の UI では余白の上で描くので測られる (`docs/guides/accessibility.md`「story の `incomplete` を確かめる」)
+- vitest 経由の story にだけ余白を当てる口は公式に無い。当てるには、Storybook の UI と見分けるために内部の class 名 (`sb-show-main`) を使い、余白の値を写す独自の仕組みが要るので、当てない (ADR-0028)
 
 ### 狭幅を story で見る理由
 

@@ -226,6 +226,11 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - UI と CI では描き方が違う。UI は `layout: "padded"` の余白の上に描き、vitest 経由の story は余白なしで描く (`docs/guides/storybook.md`「story の余白を decorator で足さない理由」)。余白が無いことで出る `incomplete` (グリフが行ボックスからはみ出す部品の `color-contrast`) は、UI のパネルには出ない。UI では背景が決まるので、比が足りなければ Violations に出る
 - 見るのは、部品や story を足したときと、要素の重なり・擬似要素・行の高さを変えたとき。どれも `color-contrast` が背景を決められなくなる原因になる
 
+### story が CI でだけ赤になったら
+
+- 書体は実行環境が持つ。折り返す位置が変わると矩形の重なり先も変わり、片方の環境でだけ `color-contrast` の背景が決まることがある
+- `incomplete` は合否に入らないので (ADR-0028)、赤はその環境の描画で比を測り、閾値に届かなかった観測である。手元で緑なのは、手元では背景が決まらず測れていないからである。配色か、折り返して枠の外へ出る書き方を直す
+
 ### ブラウザテストの `incomplete` を読む
 
 - `expectNoA11yViolations` (`src/test/a11y/a11y.ts`) は `incomplete` を合否に入れず、warning の注釈で残す (ADR-0028)
