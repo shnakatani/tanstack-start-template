@@ -141,8 +141,8 @@ export const lintConfig = {
     // allowThrowingAny と allowThrowingUnknown はルールの既定の true から外し (基準の
     // strict-type-checked はオプションを渡さない)、型が any か unknown の値の throw も止める。
     // Error でない値は server のエラーの文言を落とす adapter を通らない
-    // (ADR-0038「Error でない値の throw を止める lint のオプション」)。allowRethrowing は、
-    // src/start.ts の logServerFnErrors が catch の投げ直しに頼るので true を明示する
+    // (ADR-0038「Error でない値の throw を止める lint のオプション」)。catch の変数は unknown なので、
+    // 投げ直しまで止めないよう allowRethrowing は true を明示する
     "typescript/only-throw-error": [
       "error",
       {
