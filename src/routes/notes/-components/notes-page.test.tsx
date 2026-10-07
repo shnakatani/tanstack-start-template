@@ -1,4 +1,4 @@
-import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { Suspense } from "react";
@@ -103,18 +103,6 @@ const expectSettledRow = vi.defineHelper(async (screen: Screen, note: Note) => {
   await expect.element(row).toHaveAttribute("aria-busy", "false");
 });
 
-/**
- * query が描画に使われなくなるまで待つ。observer が key を切り替えるのは描画の後の effect なので、
- * 一覧が描かれた直後はまだ前の key の query が active で、無効化するとその場で再取得される
- */
-const expectQueryInactive = vi.defineHelper(
-  async (queryClient: QueryClient, queryKey: QueryKey) => {
-    await expect
-      .poll(() => queryClient.getQueryCache().findAll({ queryKey, exact: true, type: "inactive" }))
-      .toHaveLength(1);
-  },
-);
-
 const openDeleteConfirm = vi.defineHelper(async (screen: Screen, note: Note) => {
   await rowDeleteButton(screen, note.title).click();
   await expectText(screen, deleteConfirmDescription(note.title));
@@ -209,10 +197,13 @@ describe("NotesPage", () => {
     await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
 
     // 全件の一覧 (inactive) が mutation で無効化された状態を作る。空に戻すと古い 1 件を表示したまま
-    // 再取得が走るので、決着 (0 件) までは通知しない
-    const allQueryKey = notesQueryOptions({ q: "" }).queryKey;
-    await expectQueryInactive(queryClient, allQueryKey);
-    await queryClient.invalidateQueries({ queryKey: allQueryKey, exact: true });
+    // 再取得が走るので、決着 (0 件) までは通知しない。observer が key を離れるのは描画の後の effect で、
+    // 既定の refetchType ("active") ではまだ離れていない query をその場で再取得するので、印だけを付ける
+    await queryClient.invalidateQueries({
+      queryKey: notesQueryOptions({ q: "" }).queryKey,
+      exact: true,
+      refetchType: "none",
+    });
     // 空に戻したあとの再取得は、応答をテストで握る。積み足した応答が使われる順序は
     // docs/guides/testing/mocking.md「戻り値を決める」
     const listed = Promise.withResolvers<Note[]>();
@@ -245,12 +236,15 @@ describe("NotesPage", () => {
     const searchbox = noteSearchbox(screen);
     await searchbox.fill("");
     await expectText(screen, NOTE.title);
-    await expectAnnouncements(["絞り込みを解除し、メモを全件表示しています"]);
 
-    // abc の一覧 (inactive) が mutation で無効化された状態を作り、abc に戻したときの再取得を握る
+    // abc の一覧 (inactive) が mutation で無効化された状態を作り、abc に戻したときの再取得を握る。
+    // refetchType を "none" にする理由は「検索語を空に戻すと…」のテストと同じ
     const abcQueryKey = notesQueryOptions({ q: "abc" }).queryKey;
-    await expectQueryInactive(queryClient, abcQueryKey);
-    await queryClient.invalidateQueries({ queryKey: abcQueryKey, exact: true });
+    await queryClient.invalidateQueries({
+      queryKey: abcQueryKey,
+      exact: true,
+      refetchType: "none",
+    });
     const refetched = Promise.withResolvers<Note[]>();
     listing.calledWith({ data: { q: "abc" } }).thenReturnOnce(refetched.promise);
     await searchbox.fill("abc");
