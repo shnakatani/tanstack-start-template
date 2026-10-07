@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { revalidateLogic } from "@tanstack/react-form";
 import { useState } from "react";
-import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
+import { expect, fn, screen, spyOn, userEvent, waitFor, within } from "storybook/test";
 import * as v from "valibot";
 
 import { Button } from "@/components/ui/button";
@@ -826,8 +826,9 @@ export const DateOpen: Story = {
   play: async () => {
     await openDatePicker();
 
-    await expect(screen.getByRole("dialog")).toHaveAccessibleName("期日");
-    await expect(screen.getByRole("navigation")).toHaveAccessibleName("月の切り替え");
+    const dialog = screen.getByRole("dialog");
+    await expect(dialog).toHaveAccessibleName("期日");
+    await expect(within(dialog).getByRole("navigation")).toHaveAccessibleName("月の切り替え");
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "2026年8月7日金曜日、選択済み" })).toHaveFocus(),
     );

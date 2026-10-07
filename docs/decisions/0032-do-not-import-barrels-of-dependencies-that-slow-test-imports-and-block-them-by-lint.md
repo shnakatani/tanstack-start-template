@@ -10,7 +10,7 @@
 
 テンプレートの依存で最初に当たるのは date-fns である。2026-09-27 に date-fns 4.4.0 で数えると、`index.js` は 245 行、`locale.js` は 95 行の `export * from` を持つ。テンプレートで probe を 1 つずつ実行し、`--experimental.importDurations.print` で import の時間を測った (「調査結果」)。unit project と browser project の両方で、バレルと個別エントリポイントの差が回ごとのばらつきを超えた。
 
-依存の中の import は、アプリのコードの書き方では変わらない。2026-10-07 に react-day-picker 10.0.2 の `dist/esm` を読むと、内部は date-fns を関数ごとの個別エントリポイントから import する (`classes/DateLib.js`)。`react-day-picker/locale/ja` は `date-fns/locale/ja` を import する (`locale/ja.js` の 1 行目) が、`react-day-picker/locale` は `date-fns/locale` のバレルを再 export する (`locale.js` の 1 行目)。
+lint が止めるのはアプリのコードが書く specifier で、依存の中の import には届かない。2026-10-07 に react-day-picker 10.0.2 の `dist/esm` を読むと、内部は date-fns を関数ごとの個別エントリポイントから import する (`classes/DateLib.js`)。`react-day-picker/locale/ja` は `date-fns/locale/ja` を import する (`locale/ja.js` の 1 行目) が、`react-day-picker/locale` は `date-fns/locale` のバレルを再 export する (`locale.js` の 1 行目)。
 
 ## Decision
 
@@ -67,7 +67,7 @@ browser project (chromium)、4 回ずつ (比較は 2-4 回目)。`Import Durati
 
 ### Calendar を描くテスト (react-day-picker が date-fns のルートを読む経路) (2026-09-27、vitest 4.1.11、Node 24.21.0、date-fns 4.4.0、react-day-picker 10.0.1)
 
-`src/components/ui/calendar.tsx` の `Calendar` を 1 つ描くテスト 1 ファイルを、browser project で 6 回ずつ測った (比較は 2-6 回目)。`Import Duration Breakdown` は出なかったので、`Duration` の `import` を指標にした。browser project の `optimizeDeps.include` には、測った時点で `react-day-picker` が入っている。
+依存の中の import がバレルを読むときに、Vitest の手段が効くかを測った。測った react-day-picker 10.0.1 は、内部で date-fns のルートを import する (`dist/esm/classes/DateLib.js` の 2 行目)。`src/components/ui/calendar.tsx` の `Calendar` を 1 つ描くテスト 1 ファイルを、browser project で 6 回ずつ測った (比較は 2-6 回目)。`Import Duration Breakdown` は出なかったので、`Duration` の `import` を指標にした。browser project の `optimizeDeps.include` には、測った時点で `react-day-picker` が入っている。
 
 | 手段                                              | 1 回目 | 2 回目 | 3 回目 | 4 回目 | 5 回目 | 6 回目 | 中央値 (2-6 回目) | 最大 − 最小 |
 | ------------------------------------------------- | ------ | ------ | ------ | ------ | ------ | ------ | ----------------- | ----------- |
