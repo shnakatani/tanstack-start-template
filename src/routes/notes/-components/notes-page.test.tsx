@@ -233,7 +233,10 @@ describe("NotesPage", () => {
     await expectText(screen, "『abc』に一致するメモはありません");
     const searchbox = noteSearchbox(screen);
     await searchbox.fill("");
-    await expectText(screen, NOTE.title);
+    // 一覧が描かれただけでは足りない。Query の observer が abc から外れるのは描画の後の effect なので、
+    // その前に無効化すると abc は active のまま既定の応答で再取得され、abc に戻しても取得中にならない。
+    // 通知は同じ effect の flush で observer の切り替えより後に出るので、通知を待てば abc は inactive
+    await expectAnnouncements(["絞り込みを解除し、メモを全件表示しています"]);
 
     // abc の一覧 (inactive) が mutation で無効化された状態を作り、abc に戻したときの再取得を握る
     const abcQueryKey = notesQueryOptions({ q: "abc" }).queryKey;
