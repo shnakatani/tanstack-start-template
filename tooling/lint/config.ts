@@ -139,7 +139,7 @@ export const lintConfig = {
     "typescript/no-useless-constructor": "error",
     // throw redirect() / notFound() は Router の制御フロー。公式の案内どおり allow する。
     // allowThrowingAny と allowThrowingUnknown を既定の true から外し、型が any か unknown の値の throw も
-    // 止める。Error でない値は server のエラーの文言を落とす adapter を通らない
+    // 止める (catch で受けた値の投げ直しは止めない)。Error でない値は server のエラーの文言を落とす adapter を通らない
     // (ADR-0038「Error でない値の throw を止める lint のオプション」)
     "typescript/only-throw-error": [
       "error",
