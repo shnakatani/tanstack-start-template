@@ -1,9 +1,8 @@
 import { NumberField } from "@base-ui/react/number-field";
-import { format } from "date-fns/format";
-import { ja } from "date-fns/locale/ja";
 import { CalendarIcon } from "lucide-react";
 import { type ComponentProps, useEffect, useEffectEvent, useId, useRef } from "react";
-import type { DayPickerLocale } from "react-day-picker";
+import type { Labels } from "react-day-picker";
+import { ja } from "react-day-picker/locale/ja";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -338,31 +337,19 @@ export function FormCheckboxField({ label, disabled }: FormCheckboxFieldProps) {
 }
 
 /**
- * Calendar に渡す日本語の locale。書式は `date-fns/locale/ja` から取り、この Calendar が使う
- * 4 つのラベル (labelDayButton / labelNext / labelPrevious / labelNav) は react-day-picker の ja
- * (`react-day-picker/locale/ja`) と同じ文言をここで持つ。labelNav だけは、nav の名前に
- * 「ナビゲーション」を含めない規範 (docs/guides/accessibility.md「ナビゲーションを組む」) に合わせて変える。
- * 月の表の名前は labelGrid の既定 (aria-label) のままにする。同じ年月は見出しの文字として DOM にもあり、
+ * Calendar のラベルの上書き。日本語のラベルは locale に渡す react-day-picker の ja が持ち、ここでは
+ * nav の名前 (labelNav) だけを変える。ja の「ナビゲーションバー」は、nav の名前に「ナビゲーション」を
+ * 含めない規範 (docs/guides/accessibility.md「ナビゲーションを組む」) に合わない。上書きは locale を
+ * 組み直さず、react-day-picker docs「Advanced Translations」の Override ARIA labels のとおり labels で渡す。
+ * 月の表の名前は labelGrid (aria-label) のままにする。同じ年月は見出しの文字として DOM にもあり、
  * WAI-ARIA 1.2 の aria-label の定義は見出しを aria-labelledby で指す形を勧める (SHOULD) が、その形にしない。
  * 見出しに id を付けて指すと、animate のとき react-day-picker が月の DOM を cloneNode で複製して id が重なり
  * (`useAnimation.js`)、表が前の月の見出しで名付けられうる。aria-labelledby が効く間は、消費側が渡す
- * labelGrid も無視される (react-day-picker 10.0.1、2026-10-07 に確認)。名前の付け方の規範は
+ * labelGrid も無視される (react-day-picker 10.0.2、2026-10-07 に確認)。名前の付け方の規範は
  * docs/guides/accessibility.md「accessible name を与える」にある。
- * `react-day-picker/locale/ja` を使わないのは、中で `date-fns/locale` のバレルを読み、全ロケールを
- * 引き込むため (react-day-picker 10.0.1 の `dist/esm/locale/ja.js` の 1 行目、ADR-0032)
  */
-const CALENDAR_LOCALE: Partial<DayPickerLocale> = {
-  ...ja,
-  labels: {
-    labelDayButton: (date, modifiers) => {
-      const label = format(date, "PPPP", { locale: ja });
-      const withToday = modifiers.today ? `今日、${label}` : label;
-      return modifiers.selected ? `${withToday}、選択済み` : withToday;
-    },
-    labelNav: "月の切り替え",
-    labelNext: "次の月へ",
-    labelPrevious: "前の月へ",
-  },
+const CALENDAR_LABELS: Partial<Labels> = {
+  labelNav: () => "月の切り替え",
 };
 
 interface FormDateFieldProps
@@ -444,7 +431,8 @@ export function FormDateField({ label, emptyText, disabled }: FormDateFieldProps
             onSelect={(date) => {
               field.handleChange(date === undefined ? null : formatCalendarDate(date));
             }}
-            locale={CALENDAR_LOCALE}
+            locale={ja}
+            labels={CALENDAR_LABELS}
           />
           <Button
             type="button"

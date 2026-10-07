@@ -827,6 +827,7 @@ export const DateOpen: Story = {
     await openDatePicker();
 
     await expect(screen.getByRole("dialog")).toHaveAccessibleName("期日");
+    await expect(screen.getByRole("navigation")).toHaveAccessibleName("月の切り替え");
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "2026年8月7日金曜日、選択済み" })).toHaveFocus(),
     );
