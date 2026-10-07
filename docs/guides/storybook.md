@@ -114,7 +114,7 @@ telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既�
 | TanStack 専用 framework を使う   | router を memory-backed で自動ラップし、server function を自動 stub する                            | **採用** |
 | telemetry を既定のまま有効にする | このテンプレートから作られる全プロジェクトへ配られる設定なので、明示で潰す                          | 却下     |
 
-- Storybook の静的ビルド (`vp exec storybook build`) は、`mise run verify` と CI では走らせていない。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は 2026-09-30 時点で未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外すので build は通る (2026-09-30、`@storybook/tanstack-react` 10.6.0)。`lazyPlugins` に async の関数を渡すと外せなくなる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
+- Storybook の静的ビルド (`vp exec storybook build`) は、`mise run verify` と CI では走らせていない。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は 2026-10-07 時点で未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外すので build は通る (2026-10-07、`@storybook/tanstack-react` 10.6.1)。`lazyPlugins` に async の関数を渡すと外せなくなる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 
 ### story を状態のカタログにする理由
 
@@ -219,7 +219,7 @@ vitest から走らせた story の viewport は、`@storybook/addon-vitest` の
 | addon の `@vitest/browser/context` の import が失敗する                                   | どの story も project の `browser.viewport` (未設定なら Vitest の既定の 414x896) |
 
 - 1200x900 は `@storybook/addon-vitest` 10.6.1 の `DEFAULT_VIEWPORT_DIMENSIONS` である (2026-10-07 に確認)。ブラウザテストの既定 (`src/test/browser/viewport-sizes.ts` の `DEFAULT_VIEWPORT`) とは別の値で、同じ部品でも story とブラウザテストで描く寸法が違う
-- addon-vitest は `page` を `@vitest/browser/context` から読む。Vitest 5 の Browser Mode が仮想 module にするのは `vitest/browser` だけで、`@vitest/browser/context` の実体は読み込むと throw する。addon-vitest 10.6.1 の vitest plugin (`storybook:vitest-browser-context`) が、Vitest 4 以上でこの import を `vitest/browser` へ向け替えるので読める (2026-10-07 に addon-vitest 10.6.1 と `@vitest/browser` 5.0.1 の dist で確認)。向け替えが効かないと addon は失敗を握りつぶして何もせずに戻るので、viewport の指定が効かないまま story が走り、何も言わない。project が `browser.viewport` を書いていなければ、描く寸法は Vitest の既定の 414x896 になる ([Vitest docs「browser.viewport」][]、Vitest 5.0.1)
+- addon-vitest は `page` を `@vitest/browser/context` から読む。Vitest 5 の Browser Mode が仮想 module にするのは `vitest/browser` だけで、`@vitest/browser/context` の実体は読み込むと throw する。addon-vitest 10.6.1 の vitest plugin (`storybook:vitest-browser-context`、[Storybook の vitest plugin の `index.ts`][]) が、Vitest 4 以上でこの import を `vitest/browser` へ向け替えるので読める (2026-10-07 に addon-vitest 10.6.1 と `@vitest/browser` 5.0.1 の dist で確認)。向け替えが効かないと addon は失敗を握りつぶして何もせずに戻るので、viewport の指定が効かないまま story が走り、何も言わない。project が `browser.viewport` を書いていなければ、描く寸法は Vitest の既定の 414x896 になる ([Vitest docs「browser.viewport」][]、Vitest 5.0.1)
 - `mise run verify` はこの失敗を捕まえない。addon-vitest か Vitest を上げたら、viewport を選ばない story に一時的な play を足し、`window.innerWidth` が 1200 になることを確かめてから消す (2026-10-07 に addon-vitest 10.6.1 と Vitest 5.0.1 で、viewport を選ばない story が 1200、`narrow` を選ぶ story が 375 になることを確かめた)
 
 ### CLI を使い、MCP を入れない理由
@@ -251,7 +251,8 @@ MCP が優るのは、ツールの説明がエージェントに常に見える�
 [Storybook docs「Interaction tests」]: https://storybook.js.org/docs/writing-tests/interaction-testing
 [Storybook の `WebView.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/core/src/preview-api/modules/preview-web/WebView.ts
 [storybookjs/storybook#36333]: https://github.com/storybookjs/storybook/pull/36333
-[Storybook の `viewports.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.0/code/addons/vitest/src/vitest-plugin/viewports.ts
+[Storybook の `viewports.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.1/code/addons/vitest/src/vitest-plugin/viewports.ts
+[Storybook の vitest plugin の `index.ts`]: https://github.com/storybookjs/storybook/blob/v10.6.1/code/addons/vitest/src/vitest-plugin/index.ts
 [Vitest docs「browser.viewport」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/viewport.md
 [Storybook docs「Sidebar & URLS」]: https://storybook.js.org/docs/configure/user-interface/sidebar-and-urls
 [Storybook docs「Story layout」]: https://storybook.js.org/docs/configure/story-layout
