@@ -137,7 +137,11 @@ export const lintConfig = {
     "typescript/no-unsafe-member-access": "error",
     "typescript/no-unsafe-return": "error",
     "typescript/no-useless-constructor": "error",
-    // throw redirect() / notFound() は Router の制御フロー。公式の案内どおり allow する
+    // throw redirect() / notFound() は Router の制御フロー。公式の案内どおり allow する。
+    // allowThrowingAny と allowThrowingUnknown は基準 (strict-type-checked) の既定の true から外す。
+    // Error でない値は server のエラーの文言を落とす adapter を通らず (ADR-0038)、server function で
+    // 投げたときの Start の扱いも上流で定まっていない (TanStack/router#8617、TanStack/router#7364)。
+    // catch で受けた値の投げ直しは allowRethrowing (既定の true) で通る
     "typescript/only-throw-error": [
       "error",
       {
@@ -145,6 +149,8 @@ export const lintConfig = {
           { from: "package", package: "@tanstack/router-core", name: "Redirect" },
           { from: "package", package: "@tanstack/router-core", name: "NotFoundError" },
         ],
+        allowThrowingAny: false,
+        allowThrowingUnknown: false,
       },
     ],
     "typescript/prefer-literal-enum-member": "error",
