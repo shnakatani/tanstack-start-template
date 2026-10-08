@@ -50,8 +50,8 @@ export const testConfig = {
   unstubEnvs: true,
   unstubGlobals: true,
   setupFiles: ["./tooling/test/setup.ts"],
-  // router は View Transition の ready の reject を拾わず、間を空けずに続く遷移で飛ばされた遷移の
-  // AbortError が unhandled rejection になる。遷移は完了するので、これだけを run の失敗から外す (ADR-0040)
+  // router は View Transition の ready の reject を拾わず、飛ばされた遷移の AbortError が unhandled rejection に
+  // なる。Chromium の飛ばされた View Transition の AbortError を、理由を問わず run の失敗と出力から外す (ADR-0040)
   onUnhandledError(error) {
     return !(error.name === "AbortError" && error.message.includes("Transition was skipped"));
   },
