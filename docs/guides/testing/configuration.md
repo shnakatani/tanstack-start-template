@@ -83,9 +83,9 @@
 
 - root の plugin をテストで外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST === "true"` の分岐から外す。config を分けない (「判定を `process.env.VITEST` で書く理由」)
 - テストの分岐は plugin を返さない。外す plugin ごとの理由は「テストの分岐で plugin を外す理由」
-- React の plugin は `tooling/plugins/react.ts` の `reactPlugin` から作り、テストの分岐と project で別の `viteReact()` を書かない。`viteReact` の作り方を 1 か所にし、アプリとテストの違いを `compiler` と `logDiagnostics` の 2 つに限る。別に書くと、ほかの option がアプリとテストで食い違っても、テストは全部通る
+- React の plugin は `tooling/plugins/react.ts` の `reactPlugin` から作り、テストの分岐と project で別の `viteReact()` を書かない。`viteReact` の作り方を 1 か所にし、アプリとテストの違いを `compiler` と `reportDiagnostics` の 2 つに限る。別に書くと、ほかの option がアプリとテストで食い違っても、テストは全部通る
 - React の plugin と `tailwindcss()` は、ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す。Node の project には要らない。`.tsx` は Vite+ の既定の JSX 変換が扱う
-- `logDiagnostics` はアプリの分岐だけが立てる (「テストでも React Compiler を通す理由」)
+- `reportDiagnostics` はアプリの分岐だけが立てる (「テストでも React Compiler を通す理由」)
 
 ### React Compiler を通さない project を足す
 
@@ -212,16 +212,16 @@ Compiler の有無は、project ごとに React の plugin を持たせて切り
 
 Compiler を通さない story の project は light だけにする。テーマを 2 つ持つのは a11y の色の検査のためで (ADR-0028)、Compiler が変えるのはメモ化であり、描く色はテーマで決まる。色の検査は Compiler を通す 2 つの project が持つ。
 
-| 手放すもの       | 中身                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| カバレッジの数値 | Compiler が足したコードもカバレッジに数えられ、数値が下がる。2026-10-05 に `browser` の project を `--coverage` で測ると、branch の総数が 572 から 2252 に増え、branch は 60.31% から 56.12%、lines は 69.15% から 59.02% になった (`oxc-transform-react` 0.147.0、`@vitest/coverage-v8` 5.0.1)。同じ低下を [oxc-project/oxc#26810][] が報告している (2026-10-05 時点で open)。このテンプレートは coverage を `mise run verify` にも CI にも入れておらず、閾値も無い |
-| 実行時間         | Compiler を通さない 2 つの project の分だけ延びる。2026-10-05 に `vp test run` 全体と、その 2 つを除いた project だけの実行を交互に 3 回ずつ走らせ、`real` は全体が 52.7〜57.4 秒、除いた実行が 37.5〜39.5 秒だった (Vitest 5.0.1、Node 24.20.0、Apple M3 の 8 コア。直前の実行の負荷が残り、1 分の load average は 2.4〜20.6)                                                                                                                                       |
+| 手放すもの       | 中身                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| カバレッジの数値 | Compiler が足したコードもカバレッジに数えられ、数値が下がる。2026-10-08 に `browser` の project を `--coverage` で測ると、branch の総数が 595 から 2296 に増え、branch は 62.85% から 59.18%、lines は 71.41% から 62.2% になった (`oxc-transform-react` 0.152.0、`@vitest/coverage-v8` 5.0.1)。同じ低下を [oxc-project/oxc#26810][] が報告している (2026-10-08 時点で open)。このテンプレートは coverage を `mise run verify` にも CI にも入れておらず、閾値も無い |
+| 実行時間         | Compiler を通さない 2 つの project の分だけ延びる。2026-10-05 に `vp test run` 全体と、その 2 つを除いた project だけの実行を交互に 3 回ずつ走らせ、`real` は全体が 52.7〜57.4 秒、除いた実行が 37.5〜39.5 秒だった (Vitest 5.0.1、Node 24.20.0、Apple M3 の 8 コア。直前の実行の負荷が残り、1 分の load average は 2.4〜20.6)                                                                                                                                      |
 
 Compiler がかかる範囲と、診断の扱いは次のとおり。
 
 - `@vitejs/plugin-react` 6.1.1 は、Vite の environment の consumer が `server` でないときだけ Compiler をかけ、`node_modules` を変換しない (`dist/index.js` の `createReactCompilerPlugin` の `isClient` と、`defaultExcludeRE`)。2026-10-05 に、変換後の `src/components/ui/separator.tsx` に `_c(` が、Compiler を通す project (`browser`、`storybook-light`、`storybook-dark`) では現れ、通さない project (`browser-no-compiler`、`storybook-light-no-compiler`) では現れないことを確かめた
 - Node の project は React の plugin を持たず、Compiler を通らない
-- テストでは `logDiagnostics` を立てない。テストで出すと、そのファイルを読むブラウザモードの project ごとに同じ bail out を出し直す。bail out はビルドログと `vp lint -D react/todo` で読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」、ADR-0014)
+- テストでは `reportDiagnostics` を立てない。テストで出すと、そのファイルを読むブラウザモードの project ごとに同じ bail out を出し直す。bail out はビルドログと `vp lint -D react/todo` で読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」、ADR-0014)
 
 ### project に `optimizeDeps` を書く理由
 

@@ -26,7 +26,7 @@
 - 分割後の React Compiler ルールは `correctness` / `perf` のカテゴリ経由と `react/unsupported-syntax` の名指しで入れる。bail out を報告する `react/todo` は有効にしない
 - 手動メモ化を外すのは、撤去前後でコンパイル出力が悪化しないことを実測できた箇所だけとする
 - Compiler がカバーしない箇所を欠陥として扱わない。判断は実測された性能劣化で行い、予防的なメモ化は入れない
-- bail out は `compiler.logDiagnostics` でビルドログへ出す。期待値として固定する検査は持たない
+- bail out は `compiler.reportDiagnostics` でビルドログへ出す。期待値として固定する検査は持たない
 
 ### 手動メモ化を残す条件
 
@@ -36,9 +36,9 @@ registry コード (`src/components/ui/`) は ADR-0020 の統制対象なので�
 
 ### bail out をビルドログへ出す
 
-`viteReact` の `compiler.logDiagnostics` を `true` にして、Compiler が諦めた箇所をビルドログへ出す。テストの分岐での扱いは `docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」にある。
+`viteReact` の `compiler.reportDiagnostics` を `true` にして、Compiler が諦めた箇所をビルドログへ出す。テストの分岐での扱いは `docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」にある。
 既定は `false` で、最適化が外れたことがどこにも現れない。
-`result.fatal` が立つ診断は `logDiagnostics` によらず transform を失敗させ、ビルドが落ちる (`@vitejs/plugin-react` の `dist/index.js` が `this.error` を呼ぶ)。ただし fatal になるのはパース・意味解析・オプション検証の失敗で、Compiler 自身の診断は `panicThreshold` の既定 `none` により recoverable に留まる。
+`result.fatal` が立つ診断は `reportDiagnostics` によらず transform を失敗させ、ビルドが落ちる (`@vitejs/plugin-react` の `dist/index.js` が `this.error` を呼ぶ)。ただし fatal になるのはパース・意味解析・オプション検証の失敗で、Compiler 自身の診断は `panicThreshold` の既定 `none` により recoverable に留まる。
 
 bail out の一覧を期待値として固定する検査は置かない。理由は 3 つある。
 
@@ -58,7 +58,7 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 `react/todo` を `"error"` にすると bail out を修正すべき違反として扱うことになり、Compiler がカバーしない箇所を欠陥として扱わない決定と矛盾する。原因は Compiler の未実装でありコードの誤りではない。
 `vp lint -D react/todo` が報告するのは registry コードだけで、ADR-0020 により書き換えない (2026-09-02 確認)。件数は上流の追随で動くため、必要なときにこのコマンドで数える。
 
-`vp lint -D react/todo` は `logDiagnostics` の退路としてその場で叩く (2026-09-02 に、ビルドログと同じ bail out を同じ数だけ報告すると確かめた)。使い方は `docs/guides/react/memoization.md`「React Compiler の診断を読む」にある。
+`vp lint -D react/todo` は `reportDiagnostics` の退路としてその場で叩く (2026-09-02 に、ビルドログと同じ bail out を同じ数だけ報告すると確かめた)。使い方は `docs/guides/react/memoization.md`「React Compiler の診断を読む」にある。
 `"warn"` にもできない。`vp check` は warn を exit 0 で通すため、gate に載らないルールは設定してあるだけの状態になる。
 
 `react/unsupported-syntax` は分けて扱い `"error"` で入れる。
@@ -81,12 +81,11 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 - Compiler の適用は experimental な機能に乗る (`@vitejs/plugin-react` の README が明記)。壊れたときの退避は `docs/guides/react/memoization.md`「React Compiler の診断を読む」にある
 - `package.json` から babel を外しても install からは消えない。`@vitejs/plugin-react` の optional peer として `@rolldown/plugin-babel` と `babel-plugin-react-compiler` と `@babel/core` が lockfile に残る (2026-09-02 実測: `vp why babel-plugin-react-compiler` が plugin-react 経由で解決する)。プロジェクト root からは解決できないので (`require.resolve` が `MODULE_NOT_FOUND`)、`vite.config.ts` から使うことはできない
 - Compiler は client 環境だけで走る。自前コードの SSR 出力にメモ化は入らない (2026-09-02 実測: `grep -c useMemoCache .output/server/_ssr/ssr.mjs` が 0)。`.output/server/_libs/` にはコンパイル済みで配布される base-ui と react-router が入るため、`.output/server` を丸ごと grep すると当たる。単一レンダーの経路なのでメモ化の効きどころが無い
-- `oxc-transform-react` は `@vitejs/plugin-react` の optional peer で、宣言された範囲 (`^0.145.0`) が上流自身の devDependency (`^0.147.0`) より狭い。範囲の是正までは `pnpm-workspace.yaml` の `peerDependencyRules` で受ける
 - bail out はビルドログにしか出ない。増減はゲートにならず、気づくのはログを読んだときになる。Compiler がカバーしない箇所を欠陥として扱わないと決めているので、この非対称は意図どおりである
 - Compiler が黙って外れる経路 (`vite.config.ts` から `compiler` オプションが消える) を機械で見張るものは無い。塞ぐならビルド成果物を見る検査が要る
 - Compiler への委譲は、手で書くメモ化を否定しない。新しいコードでも、性能の問題が出た箇所と、値の同一性を精密に制御する箇所 (effect の依存など) には手で書く (React Compiler の Introduction「What should I do about useMemo, useCallback, and React.memo?」)。場面ごとの書き方と順序は `docs/guides/react/memoization.md`「手動メモ化を書く」にある
 - Rules of React の検査を外すと Compiler が bail out する土壌ができる。分割後のルール群は導入の前提として据え置く
-- `compiler` オプションが experimental でなくなったら、このオプションで Compiler を適用する決定を見直す。`peerDependencyRules` の緩和の出口条件は `pnpm-workspace.yaml` のコメントが持つ
+- `compiler` オプションが experimental でなくなったら、このオプションで Compiler を適用する決定を見直す
 
 ## 出典
 

@@ -82,7 +82,7 @@ pnpm peers check
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側の major を上げると、許可の範囲を外れて `pnpm peers check` に再び食い違いとして出る。新しい major で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
-- `@vitejs/plugin-react` と `oxc-transform-react` は、`.github/dependabot.yml` の `react-compiler` グループで 1 本の PR にする。plugin-react は optional peer の oxc-transform-react を呼び出す。その peer の範囲は `pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` の `"@vitejs/plugin-react>oxc-transform-react"` で許しているので、install は食い違いを止めない。別々の PR に割れると、上流が試していない組み合わせが片方ずつ入る
+- `@vitejs/plugin-react` と `oxc-transform-react` は、`.github/dependabot.yml` の `react-compiler` グループで 1 本の PR にする。plugin-react は optional peer の oxc-transform-react を呼び出す。別々の PR に割れると、上流が試していない組み合わせが片方ずつ入る
 - `vite` と `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-09-28、vite-plus 1.0.0 で実測)
 - `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
 - `vite` の行は効いている。`vite@*` の catalog の値は `npm:` の alias で、このとき peer の宣言は置き換わらず、行を消すと `pnpm peers check` が食い違いを出す (2026-09-28、pnpm 11.28.0 で実測。pnpm の docs はこの場合を書いていない)
