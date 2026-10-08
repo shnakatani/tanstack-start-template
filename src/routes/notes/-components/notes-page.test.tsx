@@ -197,12 +197,10 @@ describe("NotesPage", () => {
     await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
 
     // 全件の一覧 (inactive) が mutation で無効化された状態を作る。空に戻すと古い 1 件を表示したまま
-    // 再取得が走るので、決着 (0 件) までは通知しない。observer が key を離れるのは描画の後の effect で、
-    // 既定の refetchType ("active") ではまだ離れていない query をその場で再取得するので、印だけを付ける
+    // 再取得が走るので、決着 (0 件) までは通知しない
     await queryClient.invalidateQueries({
       queryKey: notesQueryOptions({ q: "" }).queryKey,
       exact: true,
-      refetchType: "none",
     });
     // 空に戻したあとの再取得は、応答をテストで握る。積み足した応答が使われる順序は
     // docs/guides/testing/mocking.md「戻り値を決める」
@@ -237,8 +235,8 @@ describe("NotesPage", () => {
     await searchbox.fill("");
     await expectText(screen, NOTE.title);
 
-    // abc の一覧 (inactive) が mutation で無効化された状態を作り、abc に戻したときの再取得を握る。
-    // refetchType を "none" にする理由は「検索語を空に戻すと…」のテストと同じ
+    // abc の一覧が無効化された状態を作り、abc に戻したときの再取得を握る。描画の直後は abc の query が
+    // まだ active なことがあり、既定の refetchType ではその場で再取得されるので "none" にする
     const abcQueryKey = notesQueryOptions({ q: "abc" }).queryKey;
     await queryClient.invalidateQueries({
       queryKey: abcQueryKey,
