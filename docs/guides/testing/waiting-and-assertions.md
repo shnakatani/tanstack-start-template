@@ -2,10 +2,10 @@
 
 ブラウザテストで要素と状態を待つ口の選び方と、assert の書き方・予算を持つ。
 
-| 決定                                                                                          | ADR      |
-| --------------------------------------------------------------------------------------------- | -------- |
-| ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める                     | ADR-0009 |
-| 状態の通知は常時 mount の live region に集約し、項目の状態は静的テキストと `aria-busy` で持つ | ADR-0026 |
+| 決定                                                                                              | ADR      |
+| ------------------------------------------------------------------------------------------------- | -------- |
+| ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める                         | ADR-0009 |
+| 状態の通知は常時 mount の live region に集約し、項目の状態は静的テキストと `aria-disabled` で持つ | ADR-0026 |
 
 ## how-to
 
@@ -111,28 +111,25 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 `toHaveAttribute` か `querySelector` を書く前に、下の表の matcher で書けないかを見る。ユーザーから見た状態を先に見る ([Testing Library docs「Guiding Principles」][])。
 
-| 見たいもの                                              | 使うもの                                                                                                                                                            |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 検証エラー (`aria-invalid`、`checkValidity()`)          | `toBeInvalid()`。`aria-invalid` が値無しか `"true"` の要素と、`checkValidity()` が `false` の要素を無効と判定する ([Vitest docs「Assertion API」][] の toBeInvalid) |
-| 選択状態 (`aria-checked`、native の checked)            | `toBeChecked()`。checkbox と radio の input、role が checkbox / radio / switch の要素を見る ([Vitest docs「Assertion API」][] の toBeChecked)                       |
-| 無効と処理中 (`disabled`、`aria-disabled`、`aria-busy`) | 「無効と処理中の状態を確かめる」                                                                                                                                    |
-| `aria-describedby` が指す文言                           | `toHaveAccessibleDescription()` ([Vitest docs「Assertion API」][] の toHaveAccessibleDescription)                                                                   |
-| accessible name                                         | `toHaveAccessibleName()` ([Vitest docs「Assertion API」][] の toHaveAccessibleName)                                                                                 |
+| 見たいもの                                     | 使うもの                                                                                                                                                            |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 検証エラー (`aria-invalid`、`checkValidity()`) | `toBeInvalid()`。`aria-invalid` が値無しか `"true"` の要素と、`checkValidity()` が `false` の要素を無効と判定する ([Vitest docs「Assertion API」][] の toBeInvalid) |
+| 選択状態 (`aria-checked`、native の checked)   | `toBeChecked()`。checkbox と radio の input、role が checkbox / radio / switch の要素を見る ([Vitest docs「Assertion API」][] の toBeChecked)                       |
+| 無効 (`disabled`、`aria-disabled`)             | 「無効の状態を確かめる」                                                                                                                                            |
+| `aria-describedby` が指す文言                  | `toHaveAccessibleDescription()` ([Vitest docs「Assertion API」][] の toHaveAccessibleDescription)                                                                   |
+| accessible name                                | `toHaveAccessibleName()` ([Vitest docs「Assertion API」][] の toHaveAccessibleName)                                                                                 |
 
 - Base UI の styling hook (`data-checked` など) は、見た目を駆動する属性なので属性で見てよい ([Base UI docs「Styling」][] の Data attributes)。ARIA の側と重ねて確かめるときは、2 つが別々に付くことをコメントに残す
 - `querySelector` で掴むのは、accessibility tree に差が出ない対象に限り、理由を実装の近くに書く。書けないなら、その assert は消す。Testing Library も、ユーザーに見えない class や id で引く逃げ道としての `querySelector` を勧めない ([Testing Library docs「About Queries」][] の Manual Queries)
 - 属性の assert を matcher に置き換えたら、実装を壊した mutant で落ちることを確かめる。名前は複数の経路から決まるので、matcher のほうが弱くなることがある。`src/components/action/button.tsx` の `ActionButtonShell` は `aria-labelledby` で名前を children に固定するが、外しても children の文言が name from content で同じ名前になり、`toHaveAccessibleName` は通る
 
-### 無効と処理中の状態を確かめる
+### 無効の状態を確かめる
 
 | 見たいもの                                                                             | 使うもの                                                                                                                                                                 |
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 無効か有効か (native `disabled`、`aria-disabled`、Base UI の `Checkbox` の `disabled`) | `expect.element(x).toBeDisabled()` / `toBeEnabled()`。Vitest の matcher は `aria-disabled` も見る (「無効の判定を `toBeDisabled` に任せる理由」)                         |
 | native の `disabled` と `aria-disabled` のどちらで無効にしたか                         | `toHaveAttribute("disabled")` と `toHaveAttribute("aria-disabled", "true")`。`toBeDisabled` はどちらでも通るので区別できない。実例は `src/components/ui/button.test.tsx` |
 | story の play で見る `aria-disabled` の無効                                            | `toHaveAttribute("aria-disabled", "true")`。`storybook/test` の `toBeDisabled` は `aria-disabled` を見ない                                                               |
-| 処理中 (`aria-busy`)                                                                   | `expect.element(x).toHaveAttribute("aria-busy", "true")`。`aria-busy` を見る matcher は無い                                                                              |
-
-- `getByRole` に `busy` の option を渡さない。Vitest の locator は `busy` を持たない。literal で書けば型検査が止めるが、変数を経由すると型検査を抜け、実行時に捨てられて `aria-busy="false"` の要素にも当たる (「無効の判定を `toBeDisabled` に任せる理由」)
 
 ### 状態と通知を検証する
 
@@ -142,7 +139,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 - 通知が出なかったことは、テストの流れで後に出る通知までの履歴を丸ごと比べて示す。後に出る通知が無いときと、出る時点を確かめるとき (決着の前に出ないなど。早く出ても並びは同じになる) は、その時点の効果を表す肯定 assert を待ってから `readAnnouncements` を 1 回読む。直前に待った `expectAnnouncements` の一致は、その肯定 assert と 1 回読みを兼ねる。1 回読みは、読んだ後に遅れて出る通知を見逃す
 - 後の通知を得るために操作を足さない。足した操作の通知は別のテストが見ている経路で、壊れると 2 本とも落ちて原因を切り分けにくい
 - 履歴は `src/test/browser/browser-setup.tsx` が取り、vitest の `clearMocks` (既定で有効) が毎テストの前に消す。書き込み先の region が無ければ `readAnnouncements` が throw するので、届いていない通知では通らない
-- pending の検証は `aria-busy` と announcer の通知で行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
+- pending の検証は項目の状態 (行の静的テキスト、ボタンの `aria-disabled`) と announcer の通知で行う。`getByRole("status", { name })` で項目の pending を掴まない。項目に `role="status"` は付けていない (ADR-0026)
 - 同じ通知の経路を 2 つのテストで見ない。検索欄を持つ一覧では、ページのテストが debounce 後と無効化済みキャッシュの決着を、route の wrapper のテストが Enter と戻るを見る
 
 ### assert の helper を書き、型を絞る
@@ -324,8 +321,6 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 - [Vitest docs「Assertion API」][] の toBeDisabled は `disabled` 属性による判定だけを書き、`aria-disabled` に触れない (5.0.1)。docs に書かれていない挙動に頼ることになるが、判定は Playwright の関数そのもので、fork を入れた [vitest-dev/vitest#7605][] は "We can also reuse PW's locator methods that can already work with accessibility" と書く
 - 2026-10-02 に vitest 5.0.1 で測った。`aria-disabled="true"` の button、Base UI の `Checkbox disabled` (露出する要素は span で `aria-disabled` を持ち、native の `disabled` は a11y tree に出ない隠し input が持つ)、`focusableWhenDisabled` の `Button disabled` (native の `disabled` が付かない) で `toBeDisabled()` が通り、無効でない対照では落ちた
 - 同日に、`src/routes/notes/-components/note-cells.tsx` のトリガーの `disabled={isBusy}` を `false` にした mutant は `toBeDisabled()` で、`true` にした mutant は `toBeEnabled()` で落ちた
-- `aria-busy` には対応する matcher が無い ([Vitest docs「Assertion API」][] に `busy` の語が無い)。[Vitest docs「Locators」][] の getByRole と [`@vitest/browser` の `context.d.ts`][] の `LocatorByRoleOptions` も `busy` を持たない。`busy` で絞れるのは Testing Library の ByRole ([Testing Library docs「ByRole」][] の busy) で、Vitest の locator ではない
-- `busy` を変数に入れて渡すと型検査を抜ける。実行時の selector は `internal:role=button[name="保存"s]` で `busy` が消え、`aria-busy="false"` の button に当たった (2026-10-02、vitest 5.0.1)。テストは状態を見ないまま通る
 
 | 案                                           | 評価                                                                                                                                                                                 | 採否                                                                            |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
@@ -376,7 +371,6 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 [jest-dom README「toBeDisabled」]: https://github.com/testing-library/jest-dom/blob/v6.9.1/README.md#tobedisabled
 [vitest-dev/vitest#7605]: https://github.com/vitest-dev/vitest/pull/7605
 [testing-library/jest-dom#144]: https://github.com/testing-library/jest-dom/issues/144#issuecomment-577235097
-[Testing Library docs「ByRole」]: https://testing-library.com/docs/queries/byrole/#busy
 [Testing Library docs「Guiding Principles」]: https://testing-library.com/docs/guiding-principles/
 [Testing Library docs「About Queries」]: https://testing-library.com/docs/queries/about/#manual-queries
 [Base UI docs「Styling」]: https://base-ui.com/react/handbook/styling

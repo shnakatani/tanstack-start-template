@@ -110,7 +110,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - route の pending 表示 (skeleton と `PendingContent`) に `aria-busy` を付けない。JAWS が要素ごと読み飛ばす (`docs/guides/accessibility.md`「読み込み中の表示を組む」)
 - 列見出しなど skeleton と本体で合わせる値は、両方が参照する定数に置く。別々に持つと、読み込みが終わって本体へ置き換わるときにレイアウトがずれる (`docs/guides/data-loading.md`「読み込み中の表示を出す」)
 - 表の skeleton の列見出しは列見出しの定数から採り、列定義からは採らない。`pendingComponent` は code-split されず、列定義を import すると cell 部品ごと main bundle に入る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
-- ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-busy` で持つ (ADR-0026)
+- ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-disabled` で持つ (ADR-0026)
 - データなしは `Empty` で組み、何が無いか (`EmptyTitle`) と次に取れる操作 (`EmptyContent` のボタンか、`EmptyDescription` で操作の場所を案内) をそろえる (`docs/guides/lists-and-search.md`「空状態を出す」)
 - 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら手段を「部品の見た目を変える」の表で選び、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
 
@@ -139,7 +139,7 @@ lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yVio
 
 - 状態表示の例外は route の pending 表示の `PendingContent` (ADR-0026、ADR-0029)
 - live region は初期マークアップに置いて消さない。条件付きで mount した region は読まれないか挙動が揺れる (ADR-0026)
-- pending の検証は `aria-busy` と announcer の通知で行う。`getByRole("status")` で項目を掴まない (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
+- pending の検証は項目の状態 (行の静的テキスト、ボタンの `aria-disabled`) と announcer の通知で行う。`getByRole("status")` で項目を掴まない (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
 - 取得結果の通知は、ページの effect が取得の決着で `announce()` し、直前と同じ条件なら出さない。取得中に出すと古い件数を読む (ADR-0027)
 - メニュー全体を包む単一の `DropdownMenuGroup` に、トリガーの名前を繰り返す `DropdownMenuLabel` を置かない。menu はトリガーを名前に持つので区別が増えない (`docs/guides/accessibility.md`「メニューの項目をグループに分ける」)
 - メニューのグループの見出し (`DropdownMenuLabel`) はグループごとに要否を決め、全グループには求めない。「迷ったら与える側に倒す」はグループの見出しには及ばない。見出しの無いグループも区切りで分かれる (`docs/guides/accessibility.md`「メニューの項目をグループに分ける」)
