@@ -20,7 +20,6 @@
 - semantic token を使う。淡いハイライトは `bg-primary/10` のような opacity variant、SVG の `fill` / `stroke` は `currentColor` か token で書く
 - 新しい意味のある色は、`src/styles.css` の `:root` / `.dark` に CSS 変数を定義してから使う。定義より前に utility を書くと、`no-unknown-classes` が止める
 - 露出の口 (`@theme inline` で utility にするか、`:root` と `@utility` だけにするか) は、誤った当て方を誘う既存の書き方があるかで選ぶ (ADR-0024「1 つのトークンが用途を兼ねて両立しないときは、狭い側を別トークンへ切る」)
-- `@theme inline` へ通した面のトークンを文字として書く余地は残る。面のトークンを文字に使うなら、載る下地ごとに比を測る。2026-09-22 時点で `text-destructive-surface` は light の `--background` / `--card` で 4.76、`--muted` / `--accent` / `--secondary` で 4.28〜4.33 になり、後者は SC 1.4.3 を割る
 - 破壊操作のボタンは、テキストでもアイコンでも `variant="destructive"` にする。アイコンだけのボタンは `size` を `icon` / `icon-xs` / `icon-sm` / `icon-lg` から選ぶ ([shadcn docs「Button」][] の `variant`、[shadcn の `button-example.tsx`][] の Icon Only)。hover でだけ色を付ける形は、touch 環境で色が出ない
 - `-foreground` を「面の上の文字」以外の意味で使わない。上流はこの接尾辞を solid な面の上の文字に割り当てており、別の意味を載せると次の生成で衝突する
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える
@@ -293,6 +292,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | ADR-0024 の Context の上流既定値の表                             | 種別 B。本リポジトリのトークンではないので再計算できない                                      |
 | ADR-0024 の palette の hue 表                                    | どの hue を 1 段下げるかの論証そのもの。上流 palette の値なので本リポジトリの変更では動かない |
+| ADR-0024 の破壊色の tint の表                                    | 1 つのトークンで面と文字を兼ねる決定の論証そのもの。日付つきの実測として残す                  |
 | ADR-0025 の帯の表                                                | 数値が消えると、帯に入る段がどれかを追試できない                                              |
 | `src/components/parts/segmented-radio-group.test.tsx` の回帰の値 | 過去の観測として固定したもの                                                                  |
 | `src/styles.css` の段を選んだ理由のコメント                      | 種別 B。上流が生成した段 (blue-700 / mist-500 / blue-800) の比で、本リポジトリの値ではない    |

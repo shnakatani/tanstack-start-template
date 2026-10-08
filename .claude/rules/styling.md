@@ -29,7 +29,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 | 誤用を誘う既存の形 | 露出                               | 例                         |
 | ------------------ | ---------------------------------- | -------------------------- |
-| 無い               | `@theme inline` で token 化        | `--destructive-surface`    |
+| 無い               | `@theme inline` で token 化        | `--success`                |
 | 在る               | `:root` だけ + `@utility` の当て口 | `--placeholder` (ADR-0025) |
 
 ## typography 階層
