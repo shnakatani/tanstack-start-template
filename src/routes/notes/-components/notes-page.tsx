@@ -81,6 +81,8 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     announceResults();
   }, [deferredQ, settled]);
 
+  const createTrigger = useRef<HTMLButtonElement>(null);
+
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
     // 開始の通知の置き場 (ADR-0026)。この画面は variables 方式 (ADR-0017) なのでキャッシュは触らない。
@@ -168,7 +170,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
               onValueChange={handleTextChange}
               onSubmit={handleSubmit}
             />
-            <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
+            <DialogTrigger ref={createTrigger} handle={noteCreateDialogHandle} render={<Button />}>
               ＋ {NOTE_ENTITY_LABEL}を追加
             </DialogTrigger>
           </>
@@ -222,6 +224,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
         handle={noteDeleteDialogHandle}
         entityLabel={NOTE_ENTITY_LABEL}
         onConfirm={confirmDelete}
+        fallbackFocusRef={createTrigger}
       />
     </div>
   );

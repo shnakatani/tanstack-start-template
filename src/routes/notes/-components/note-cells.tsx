@@ -77,8 +77,9 @@ export function NoteActionsCell({ row }: NoteCellContext) {
       <DialogTrigger
         handle={noteEditDialogHandle}
         payload={note}
-        // focusableWhenDisabled の理由は削除トリガーと同じ。編集のダイアログは応答で閉じ、
-        // その時点で行は更新中 (無効) なので、戻り先が native disabled だとフォーカスが body へ落ちる
+        // 編集のダイアログは応答で閉じ、Base UI はフォーカスをこのトリガーへ返す。その時点で行は
+        // 更新中 (無効) なので、native disabled だとフォーカスが body へ落ちる。focusableWhenDisabled は
+        // Trigger の props 型は受けず Button primitive が受ける
         render={<Button variant="outline" size="sm" focusableWhenDisabled />}
         // 可視ラベル「編集」を含めて WCAG 2.5.3 (Label in Name) を満たす
         aria-label={`${title}を編集`}
@@ -89,13 +90,10 @@ export function NoteActionsCell({ row }: NoteCellContext) {
       <AlertDialogTrigger
         handle={noteDeleteDialogHandle}
         payload={{ id: note.id, name: note.title }}
-        render={<Button variant="destructive" size="sm" focusableWhenDisabled />}
+        render={<Button variant="destructive" size="sm" />}
         // 行が増えても操作対象が読み上げで分かるようにする。可視ラベル「削除」を
         // 含めることで WCAG 2.5.3 (Label in Name) も満たす
         aria-label={`${title}を削除`}
-        // render 側の focusableWhenDisabled は閉じたあと Base UI がトリガーへフォーカスを返すとき、
-        // native disabled でフォーカスが body へ落ちるのを防ぐ
-        // (Trigger の props 型は受けず Button primitive が受ける)
         disabled={isBusy}
       >
         削除

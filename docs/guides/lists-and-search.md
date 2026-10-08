@@ -1,11 +1,12 @@
 # 一覧・絞り込み・検索
 
-一覧テーブル、URL の search param による絞り込み、打鍵に追従する検索欄を組むときの手順と、その形にしている理由を持つ。
+一覧テーブル、行を消したあとのフォーカス、URL の search param による絞り込み、打鍵に追従する検索欄を組むときの手順と、その形にしている理由を持つ。
 
 | 決定                                                                                                                              | ADR      |
 | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | ドメインに属するコードは `src/features/<domain>/` へ集め、環境はファイル名の接尾辞で宣言する                                      | ADR-0010 |
 | メモ化は React Compiler に委ね、予防的なメモ化を強制しない                                                                        | ADR-0014 |
+| ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める                                                  | ADR-0017 |
 | 一覧テーブルは TanStack Table v9 の列定義で組み、描画は registry の Table に残す                                                  | ADR-0018 |
 | 一覧の絞り込み条件は URL の search param が持ち、loaderDeps で loader に渡す                                                      | ADR-0019 |
 | registry との乖離は生成時 baseline との 3-way で判別し、許容リスト (registry コードと `src/styles.css`) の行に限る                | ADR-0020 |
@@ -39,6 +40,17 @@
 
 - 表示するデータが無いときは `Empty` (`src/components/ui/empty.tsx`) で組む ([shadcn docs「Empty」][]、[shadcn skill「Component Composition」][] の Empty states use Empty component)
 - 何が無いかを `EmptyTitle` に、次に取れる操作を `EmptyDescription` か `EmptyContent` に置き、両方をそろえる。操作のボタンを置くなら `EmptyContent` に置き ([shadcn docs「Empty」][] の Usage)、ほかの場所にある操作へ案内するなら `EmptyDescription` にその場所を書く
+
+### 行を消したあとのフォーカスを移す
+
+行を消す操作を確認ダイアログで確定したら、閉じるときのフォーカスを消える行の外へ移す。既定ではダイアログを開いた行のトリガーへ戻り、行が消えた時点で body へ落ちる ([APG「Developing a Keyboard Interface」][] の Persistence of focus: "If such events are not managed to set focus on the button that triggered the dialog or on the list item following the deleted item, browsers move focus to the body element, effectively causing a loss of focus within the user interface.")。
+
+- 確定したあとは、閉じ方 (キャンセル、Escape を含む) によらず、次の行の同じ操作 (同じ列の、セルの中で同じ位置) へ移す。無ければ前の行、ほかの行に移せる操作が無ければ (最後の 1 件や、残りがすべて削除中のとき) ページが渡す要素 (一覧への追加ボタンなど) へ移す。開いたトリガーは消える ([APG「Dialog (Modal) Pattern」][] の Keyboard Interaction の注記: "The invoking element no longer exists. Then, focus is set on another element that provides logical work flow.")
+- 確定せずに閉じたときは、開いたトリガーへ戻す (Base UI の既定)。行は残る
+- `DeleteConfirmDialog` がこれを持ち、確定の時点で決めた移し先を Popup の `finalFocus` で返す ([Base UI docs「Alert Dialog」][] の `finalFocus`)。ほかの行に移せる操作が無いときの移し先は `fallbackFocusRef` で受ける
+- 移し先は閉じる時点ではなく確定の時点で決める。完了点「再取得完了」(ADR-0017) では閉じる時点で行が消えていて、隣の行を位置から引けない
+- 無効な操作 (削除中や更新中の行) へは移さない。消える途中の行へ移すと、その行が消えたときに body へ落ちる
+- 確定が失敗して行が戻っても、フォーカスは移し先に残る。失敗は toast で伝わる
 
 ### 絞り込み条件を URL に置く
 
@@ -78,6 +90,10 @@ ADR-0018 の Context が出典を持つ。組むときに効くのは次の 4 �
 - query の結果は `data` に直接渡し、state に写さない。写すと、キャッシュに遅れる同期経路が増える (skill [`@tanstack/react-table` の `skills/with-tanstack-query/SKILL.md`][])
 - cell に関数や状態を渡す経路は `table.options.meta` ([TanStack Table docs「Table and Column Meta」][])
 - 楽観表示は Table ではなく Query 側の関心事である。Table は機構を持たない (ADR-0018)
+
+### 行を消したあとのフォーカスを確認ダイアログで移す理由
+
+フォーカスが消える要素に残るのは、行を消す確定のあとだけである。そこで、ダイアログを閉じる地点で Base UI の `finalFocus` を使って移す。`DataTable` で行の消失を見張って後から移す形は、行が DOM から外れる直前を捉える仕組みを自前で持つことになるので採らない。
 
 ### cell を部品の参照で渡す理由
 
@@ -123,7 +139,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn docs「Empty」と shadcn skill「Component Composition」は shadcn 4.21.0 に固定した版を指す。WAI-ARIA 1.2 と APG の引用は 2026-10-06 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn docs「Empty」と shadcn skill「Component Composition」は shadcn 4.21.0 に固定した版を指す。WAI-ARIA 1.2 と APG「Providing Accessible Names and Descriptions」の引用は 2026-10-06 に、APG「Dialog (Modal) Pattern」と「Developing a Keyboard Interface」の引用は 2026-10-08 に原文と照らした。
 
 [TanStack Table docs「FlexRender」]: https://tanstack.com/table/latest/docs/framework/react/guide/flex-render
 [shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/base/data-table
@@ -144,3 +160,6 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 [shadcn skill「Component Composition」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/composition.md
 [WAI-ARIA 1.2]: https://www.w3.org/TR/wai-aria-1.2/#table
 [APG「Providing Accessible Names and Descriptions」]: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
+[APG「Developing a Keyboard Interface」]: https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/
+[APG「Dialog (Modal) Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+[Base UI docs「Alert Dialog」]: https://base-ui.com/react/components/alert-dialog

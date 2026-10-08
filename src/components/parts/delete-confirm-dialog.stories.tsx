@@ -40,7 +40,7 @@ function WithoutTrigger({ target: _target, ...props }: StoryArgs) {
   useEffect(() => {
     handle.open(null);
   }, [handle]);
-  return <DeleteConfirmDialog handle={handle} {...props} />;
+  return <DeleteConfirmDialog handle={handle} fallbackFocusRef={{ current: null }} {...props} />;
 }
 
 function WithTrigger({ target, ...props }: StoryArgs) {
@@ -50,7 +50,7 @@ function WithTrigger({ target, ...props }: StoryArgs) {
       <AlertDialogTrigger handle={handle} payload={target} render={<Button />}>
         開く
       </AlertDialogTrigger>
-      <DeleteConfirmDialog handle={handle} {...props} />
+      <DeleteConfirmDialog handle={handle} fallbackFocusRef={{ current: null }} {...props} />
     </>
   );
 }
