@@ -49,7 +49,7 @@
 | 確定               | 次の行の同じ操作 (同じ列の、セルの中で同じ位置)。無ければ前の行の同じ操作。どちらも無ければ (最後の 1 件) ページが渡す要素 (一覧への追加ボタンなど)。開いたトリガーは消える ([APG「Dialog (Modal) Pattern」][] の Keyboard Interaction の注記: "The invoking element no longer exists. Then, focus is set on another element that provides logical work flow.") |
 | キャンセル、Escape | 開いたトリガー (Base UI の既定)。行は残る                                                                                                                                                                                                                                                                                                                       |
 
-- 確認ダイアログの部品が持つ。移し先を確定の時点で決め、Popup の `finalFocus` に渡す関数が返す ([Base UI docs「Alert Dialog」][] の `finalFocus`)。`DataTable` と mutation に置くと、閉じた後に行の消失を見張る仕組みが要る
+- 確認ダイアログの部品が、確定の時点で移し先を決め、Popup の `finalFocus` に渡す関数が返す ([Base UI docs「Alert Dialog」][] の `finalFocus`)
 - 移し先を閉じる時点で決めない。完了点「再取得完了」(ADR-0017) では閉じる時点で行が消えていて、隣の行を位置から引けない
 - 次の行を探すのは `findSiblingRowControl` (`src/lib/find-sibling-row-control.ts`)。無効な操作 (削除中や更新中の行) は飛ばす。消える途中の行へ移すと、その行が消えたときに body へ落ちる
 - `DeleteConfirmDialog` はこれを持ち、最後の 1 件の移し先を `fallbackFocusRef` で受ける。行の別の操作から開くダイアログで行を消すときも、同じ移し先にする
