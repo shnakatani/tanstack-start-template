@@ -233,7 +233,7 @@ vitest から走らせた story の viewport は、`@storybook/addon-vitest` の
 | 設定             | 不要                                 | `main.ts` の `features` に `componentsManifest: true` ([Storybook docs「MCP server」][])と、エージェントへの URL の登録 |
 | 配布             | clone すれば誰でも同じコマンドが動く | 登録はエージェント側の個人設定                                                                                          |
 
-決め手は配布である。MCP の登録はエージェント側の設定に URL を 1 つ持つが、このリポジトリの Storybook の port は worktree ごとに変わる (`.mise.toml` の `storybook` タスクが `derive-dev-port.sh` で導出する)。同じ登録を collaborator へ配れない。CLI は `--cwd` / `-c` でプロジェクトを指すので、port の影響を受けない。
+決め手は配布である。MCP の登録はエージェント側の設定に URL を 1 つ持つが、このリポジトリの Storybook の port は worktree ごとに変わる (`.mise.toml` の `[daemons.storybook]` の自動 port。ADR-0004)。同じ登録を collaborator へ配れない。CLI は `--cwd` / `-c` でプロジェクトを指すので、port の影響を受けない。
 
 MCP が優るのは、ツールの説明がエージェントに常に見える点である。CLI は、エージェントが読む文書に使い方が書かれていなければ使われない。MCP へ移るなら、port を固定するか、worktree ごとに登録し直す運用が要る。
 

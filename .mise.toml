@@ -1,20 +1,23 @@
-# node と pnpm は package.json から Vite+ が解決するので、mise の PATH への注入を止める (ADR-0004)
+# 下の daemons の自動 port を確かめた版。これより古い mise は読み込みで止まる (ADR-0004)
+min_version = "2026.9.18"
+
 [settings]
+# node と pnpm は package.json から Vite+ が解決するので、mise の PATH への注入を止める (ADR-0004)
 disable_tools = ["node", "pnpm"]
+# daemons (下の port の導出) が experimental (ADR-0004)
+experimental = true
 
 [env]
 # config_root から組んで絶対パスにする (docs/guides/database.md「パスを cwd 基準にする理由」)
 DB_FILE_NAME = "{{ [config_root, '.data/dev.sqlite'] | join_path }}"
 
-# port は worktree ごとに導出し、[env] ではなくタスクの env に置く (ADR-0004)
+# port は下の daemons が worktree ごとに導出する (ADR-0004)
 [tasks.serve]
 description = "dev server を起動する"
-env = { DEV_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 3000') }}" }
-run = "vp dev --port $DEV_PORT --strictPort"
+run = "vp dev --port $SERVE_PORT --strictPort"
 
 [tasks.storybook]
 description = "Storybook を起動する"
-env = { STORYBOOK_PORT = "{{ exec(command='bash scripts/dev-env/derive-dev-port.sh 6006') }}" }
 run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open --exact-port"
 
 [tasks.contrast]
@@ -47,3 +50,15 @@ run = [
   # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
   "vp node scripts/checks/runtime/security-headers.ts",
 ]
+
+# 自動 port を SERVE_PORT / STORYBOOK_PORT として出す。タスクは mise run で前面でも動く。
+# proxy を使わないので URL の変数を出さない (ADR-0004)
+[daemons.serve]
+task = "serve"
+port = { auto = true, base = 3000 }
+proxy = false
+
+[daemons.storybook]
+task = "storybook"
+port = { auto = true, base = 6006 }
+proxy = false

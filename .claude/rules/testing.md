@@ -36,8 +36,8 @@ paths:
 | 対象                                                                | 置き場所                     | 理由                                                                                                                                          |
 | ------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | 検査の判定、または実行口の外 (config / 別ディレクトリ) から使うもの | `scripts/lib/`               | 実行口を 1 つ動かしても付いて回らない (`response-headers.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)              |
-| テストだけが使う fixture                                            | そのテストと同じディレクトリ | `scripts/lib/` に置くと共有物と見分けが付かない (`git-test-utils.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)      |
-| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`derive-dev-port.sh` と隣の `.ts`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)                   |
+| テストだけが使う fixture                                            | そのテストと同じディレクトリ | `scripts/lib/` に置くと共有物と見分けが付かない (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)                            |
+| 1 つの実行口だけが使い、実行口と拡張子が違う                        | `scripts/<ツール>/` 直下     | 拡張子で見分けが付く (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」)                                                       |
 | 1 つの実行口だけが使い、実行口と拡張子が同じ                        | `scripts/<ツール>/lib/`      | 直接実行するファイルと読まれるだけのファイルが見分けられない (`contrast/`) (`docs/guides/placement.md`「`scripts/` に関数と fixture を置く」) |
 
 - 検査は `scripts/checks/` の下へ置く。外へ置くと `scripts-tools` へ合流し、落ちたときに直す対象が読めなくなる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
