@@ -54,7 +54,7 @@ export const Settles: Story = {
     await expect(button).toHaveFocus();
 
     settling.settle();
-    await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
+    await waitFor(() => expect(button).toHaveAttribute("aria-disabled", "false"));
   },
 };
 

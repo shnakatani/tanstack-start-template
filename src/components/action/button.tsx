@@ -5,7 +5,7 @@ import { Spinner } from "@/components/ui/spinner";
 
 type ActionButtonShellProps = Omit<
   ComponentProps<typeof Button>,
-  "disabled" | "focusableWhenDisabled" | "children" | "aria-labelledby" | "aria-busy"
+  "disabled" | "focusableWhenDisabled" | "children" | "aria-labelledby"
 > & {
   isPending: boolean;
   children: ReactNode;
@@ -25,7 +25,7 @@ type ActionButtonShellProps = Omit<
  *   完全一致の locator が揺れる。`aria-label` を渡した部品はそちらが名前になる
  * - 名前の与え方は children か `aria-label` に限る。`aria-labelledby` は内部で使うため prop から
  *   外してある (受け付けたまま `{...props}` の後で上書きすると、渡した側から見て黙って消える)
- * - 状態は要素自身の `aria-disabled` で持ち、`aria-busy` は受け取らない (ADR-0026)。`Spinner` は視覚専用 (`aria-hidden`)。
+ * - 状態は要素自身の `aria-disabled` で持つ。`Spinner` は視覚専用 (`aria-hidden`)。
  *   WAI-ARIA 1.2 §5.2.9 により button の子孫はユーザーエージェントが accessibility API に
  *   露出すべきでないので、子の `role="status"` に頼らない。通知は feature 側が `announce()`
  *   (ADR-0026) で出す
