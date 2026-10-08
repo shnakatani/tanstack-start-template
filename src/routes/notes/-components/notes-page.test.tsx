@@ -174,7 +174,7 @@ describe("NotesPage", () => {
     listed.resolve([]);
     await expectText(screen, "『abc』に一致するメモはありません");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
-    // 半透明は読み上げに出ないので、決着した結果を通知する (ADR-0027)
+    // 決着した結果を通知する (ADR-0027)
     await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
     expect(listing).toHaveBeenExhausted();
   });

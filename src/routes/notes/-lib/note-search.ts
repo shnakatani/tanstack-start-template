@@ -11,7 +11,7 @@ export const NOTE_SEARCH_LABEL = `${NOTE_ENTITY_LABEL}を検索`;
 export const NOTE_SEARCH_DEBOUNCE_MS: number = 300;
 
 /**
- * 絞り込みの結果が入れ替わったときの通知文 (ADR-0027: 一覧の半透明は読み上げに出ない)。
+ * 絞り込みの結果が入れ替わったときの通知文 (ADR-0027)。
  * 件数は楽観行を含めない (取得した一覧の件数)。
  */
 export function noteSearchResultMessage(q: string, count: number): string {
