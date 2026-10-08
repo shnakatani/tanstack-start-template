@@ -106,6 +106,7 @@ function createAnnouncedRouter(
     history: createMemoryHistory({ initialEntries: ["/a"] }),
     // 本番 (src/router.tsx) と同じ配線を通す
     InnerWrap: options.innerWrap ?? RouterInnerWrap,
+    defaultViewTransition: true,
     defaultPendingMinMs: 0,
   });
 }
