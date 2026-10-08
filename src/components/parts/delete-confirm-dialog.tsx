@@ -58,11 +58,6 @@ export function DeleteConfirmDialog<TId = string>({
     if (open) {
       trigger.current = details.trigger ?? null;
       focusAfterConfirm.current = null;
-      return;
-    }
-    // 確定しても開いたまま失敗し (完了点「再取得完了」)、そのあとキャンセルしたときは行が残るので、既定のトリガーへ戻す
-    if (details.reason !== "imperative-action") {
-      focusAfterConfirm.current = null;
     }
   }
 

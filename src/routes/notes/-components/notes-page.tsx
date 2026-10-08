@@ -81,7 +81,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     announceResults();
   }, [deferredQ, settled]);
 
-  // 最後の 1 件を削除したときのフォーカスの移し先
+  // ほかの行に移せる操作が無いとき (最後の 1 件など) の、削除のあとのフォーカスの移し先
   const createTrigger = useRef<HTMLButtonElement>(null);
 
   const deleteMutation = useActionMutation({
