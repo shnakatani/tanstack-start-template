@@ -99,9 +99,10 @@ export const PlainSubmitNotCalledTwice: Story = {
     await userEvent.keyboard("{Enter}");
 
     await expect(args.submitAction).toHaveBeenCalledTimes(1);
+    await expect(status).toHaveAttribute("aria-disabled", "true");
 
     settling.settle();
-    await waitFor(() => expect(status).not.toHaveAttribute("aria-disabled", "true"));
+    await waitFor(() => expect(status).toHaveAttribute("aria-disabled", "false"));
     await userEvent.keyboard("{Enter}");
     await expect(args.submitAction).toHaveBeenCalledTimes(2);
     settling.settle();

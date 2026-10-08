@@ -147,7 +147,7 @@ export const Pending: Story = {
     await userEvent.keyboard("{Enter}");
     await expect(confirm).toHaveAttribute("aria-disabled", "true");
     settling.settle();
-    await waitFor(() => expect(confirm).not.toHaveAttribute("aria-disabled", "true"));
+    await waitFor(() => expect(confirm).toHaveAttribute("aria-disabled", "false"));
   },
 };
 
@@ -164,7 +164,7 @@ export const NotCalledTwice: Story = {
     await expect(args.onConfirm).toHaveBeenCalledTimes(1);
     await expect(args.onConfirm).toHaveBeenCalledWith(TARGET);
     settling.settle();
-    await waitFor(() => expect(confirm).not.toHaveAttribute("aria-disabled", "true"));
+    await waitFor(() => expect(confirm).toHaveAttribute("aria-disabled", "false"));
   },
 };
 
