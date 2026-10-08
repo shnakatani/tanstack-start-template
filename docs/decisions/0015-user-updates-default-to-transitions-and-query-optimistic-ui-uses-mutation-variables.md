@@ -1,7 +1,7 @@
 # ADR-0015: ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す
 
 - Status: Accepted
-- Date: 2026-09-14
+- Date: 2026-10-09
 - 関連: ADR-0016 (Action 層と `useActionMutation`)、ADR-0020 (registry コードは触らない。Action 層は registry の外に置く)、ADR-0010 (配置の原則)、ADR-0017 (完了点とブロック範囲の軸)
 
 ## Context
@@ -95,9 +95,11 @@ query のキャッシュ更新は「TanStack Query と Router のストアは Tr
 - pending の源が Transition の `isPending` に一本化される。mutation の `isPending` を直接 UI へ渡す形は残さない (楽観表示と項目の busy は除く)。一覧のトリガーを全体で無効にするかは ADR-0017 の軸で決める
 - ダイアログを閉じる時点と、その間に止める範囲は ADR-0017 の軸で機能ごとに選ぶ。再取得完了前に閉じるときは、対象の項目が mutation の pending から busy を表現する
 - Transition 化で得るのは pending の自動管理、部品契約の統一、pending の切り替えを `<ViewTransition>` で装飾できることの 3 つ。Action の実行順は Transition が保証しない (`useTransition` リファレンスの Troubleshooting「My state updates in Transitions are out of order」)。順序を保つのは `useActionState` と `<form>` の action である (同)。「古い画面を保ったまま新しいデータを待つ」効果と一覧の行の増減のアニメーションは、query の再取得には効かない (「TanStack Query と Router のストアは Transition に参加しない」「`<ViewTransition>` は Transition 内の React state 更新でしか発火しない」)
-- ルート遷移への `<ViewTransition>` 適用は別途判断する
-  - TanStack Router は `document.startViewTransition` を直接呼び (router-core `router.js`)、React の `<ViewTransition>` には未対応
-  - 2026-09-13 の `gh search prs "ViewTransition" --repo TanStack/router` は browser API 由来の PR のみ
+- ルート遷移は TanStack Router の `defaultViewTransition: true` で View Transitions のクロスフェードにする (`src/router.tsx`)。router は `document.startViewTransition` を直接呼び、React の `<ViewTransition>` には対応していない (2026-10-09 に `gh search prs "ViewTransition" --repo TanStack/router` で、browser API の PR しか無いことを確かめた)
+  - 既定のクロスフェードは opacity の変化で、WCAG 2.3.3 の motion animation に当たらない (Understanding 2.3.3: "does not include changes of color, blurring, or opacity which do not change the perceived size, shape, or position")。移動や拡大縮小を足すときは、reduced motion の扱いと合わせて決める
+  - router は `startViewTransition` が返す promise の reject を拾わない (TanStack/router#7906。修正の TanStack/router#7907 は 2026-10-09 時点で未 merge)。前の遷移が ready になる前に次の遷移が始まると、`AbortError: Transition was skipped. New ViewTransition started` が unhandled rejection になる。2026-10-09 に dev server と Playwright 1.63.0 の Chromium で、リンクを押した直後に戻ると 10 回中 9 回出た。間隔を 100ms 以上空けると 0 回で、遷移を待ってからの往復 30 回でも 0 回だった。遷移は完了し、console とエラー監視に出るだけである
+  - タブが隠れた状態で遷移しても、`InvalidStateError` が unhandled rejection になる (TanStack/router#7906 の再現。手元では未実測)
+  - Safari でスワイプして戻る・進むと、ブラウザの遷移のアニメーションと二重に動く (TanStack/router#6754。手元では未実測)
 - 再評価条件
   - concurrent stores (react/react#35449) が出荷したら、query が持つデータへの `useOptimistic` 適用を再評価する
 
