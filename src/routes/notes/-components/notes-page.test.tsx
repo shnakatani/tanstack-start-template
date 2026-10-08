@@ -235,9 +235,14 @@ describe("NotesPage", () => {
     await searchbox.fill("");
     await expectText(screen, NOTE.title);
 
-    // abc の一覧 (inactive) が mutation で無効化された状態を作り、abc に戻したときの再取得を握る
+    // abc の一覧が無効化された状態を作り、abc に戻したときの再取得を握る。描画の直後は abc の query が
+    // まだ active なことがあり、既定の refetchType ではその場で再取得されるので "none" にする
     const abcQueryKey = notesQueryOptions({ q: "abc" }).queryKey;
-    await queryClient.invalidateQueries({ queryKey: abcQueryKey, exact: true });
+    await queryClient.invalidateQueries({
+      queryKey: abcQueryKey,
+      exact: true,
+      refetchType: "none",
+    });
     const refetched = Promise.withResolvers<Note[]>();
     listing.calledWith({ data: { q: "abc" } }).thenReturnOnce(refetched.promise);
     await searchbox.fill("abc");
