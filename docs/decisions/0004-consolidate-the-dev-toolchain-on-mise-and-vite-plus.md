@@ -38,21 +38,20 @@ CI は mise を要さない。`.mise.toml` の `[tasks.verify]` と同じ順序�
 アプリ名のように環境ごとに値が変わらないものは環境変数にしない。
 `VITE_APP_NAME` を `.mise.toml` の `[env]` に置くと、値の定義・型宣言・未設定の検出・CI への受け渡しが芋づるで要り、CI が mise に依存する原因になる。
 
-毎回の解決にコストがかかる値も `[env]` へ置かない。mise が env を解決するたび (シェル hook の下ではディレクトリへ入るたび) にその処理が走る。
+毎回の解決にコストがかかる値も `[env]` へ置かず、読むタスクの `env` に置く。`[env]` に置くと、mise が env を解決するたび (シェル hook の下ではディレクトリへ入るたび) にその処理が走る。2026-09-20 に、git のサブプロセスで値を導出する処理をトップレベルの `[env]` に置くと `mise hook-env` は 70ms、タスクの `env` に置くと 28ms だった。
 
 ### dev server と Storybook の port は mise の daemons の自動 port で worktree ごとに決める
 
-`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名のタスクを走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise docs「Ports, URLs, and worktrees」の Automatic ports と Port variables)。タスクはこの値を `--port` に渡すので、`mise run serve` で前面に起動しても、`mise daemons start serve` で常駐させても同じ port になる。
+`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名のタスクを走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise v2026.9.18 の docs/daemons.md「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、`mise run serve` で前面に起動できる。docs は daemon の環境にも同じ変数が入ると書くので、`mise daemons start serve` で常駐させても同じ port になる (常駐の経路は試していない)。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (同「Per-daemon proxy settings」)。
 
 2026-10-09 に mise 2026.9.18 で確かめた振る舞いは次のとおりである。
 
-| 場所                                     | port                                                   |
-| ---------------------------------------- | ------------------------------------------------------ |
-| git の primary checkout                  | `3000` / `6006`                                        |
-| linked worktree                          | パスから決まる別の値 (`3001`〜`3511` / `6007`〜`6517`) |
-| 同じ port での 2 つ目の `mise run serve` | `Port <port> is already in use` で終了する             |
+| 場所                    | port                                                   |
+| ----------------------- | ------------------------------------------------------ |
+| git の primary checkout | `3000` / `6006`                                        |
+| linked worktree         | パスから決まる別の値 (`3001`〜`3511` / `6007`〜`6517`) |
 
-- daemons は experimental で、`[settings]` の `experimental = true` が要る (mise docs「Daemons」の Requirements)。このフラグは daemons のほかに、既定になる前の振る舞いも有効にする (mise docs の settings の `experimental`: "Some new behavior also ships behind this flag before it becomes the default")
+- daemons は experimental で、`[settings]` の `experimental = true` が要る (mise v2026.9.18 の docs/daemons.md の冒頭)。このフラグは daemons のほかに、試験中の振る舞いも有効にする (mise v2026.9.18 の settings の `experimental`: "New functionality that I want to test with a smaller subset of users I will often push out under experimental mode even if it's not related to an experimental feature.")
 - 自動 port は mise v2026.9.12 から使える。`min_version` は確かめた版の `2026.9.18` にし、それより古い mise を設定の読み込みで止める
 - mise は bad port を避けない。ブラウザは WHATWG Fetch の bad port への接続を拒むが、server は起動するので、使用中かを見るフラグでは気づけない (2026-10-04 に port 3659 で起動した dev server へ、curl は 200 を返し、Playwright 1.63.0 の Chromium は `net::ERR_UNSAFE_PORT` で開けなかった)。`base` を変えるときは、`base` から `base + 511` に bad port が入らない値を選ぶ。`3000`〜`3511` と `6006`〜`6517` には無い (whatwg/fetch の e9460d1、2026-10-06)
 
@@ -60,11 +59,11 @@ CI は mise を要さない。`.mise.toml` の `[tasks.verify]` と同じ順序�
 | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | mise の daemons の自動 port                             | primary checkout で base、worktree ごとに別の port、重なったら終了、を mise の宣言だけで持てる。experimental なので `experimental = true` と `min_version` が要る | **採用** |
 | worktree の名前のハッシュから自前の script で導出する   | 同じ振る舞いを、primary checkout の判定と bad port の表ごと自前で持つ                                                                                             | 却下     |
-| 割り当てを記録して重なりをなくす (workz、devports など) | lock と、消えた worktree の割り当ての回収を自前で持つ                                                                                                             | 却下     |
+| 割り当てを記録して重なりをなくす (workz、devports など) | ツールが 1 つ増え、worktree を消すたびにそのツールで割り当てを外す操作が要る                                                                                      | 却下     |
 
-自動 port は別の worktree や別のプロジェクトの port と重なりうる。mise も重なった port をずらさない (mise docs「Ports, URLs, and worktrees」の Port conflicts)。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
+自動 port は別の worktree や別のプロジェクトの port と重なりうる。mise も重なった port をずらさない (mise v2026.9.18 の docs/daemons.md「Port conflicts」)。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
 Vite は使用中なら次の空き port へずらし (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")、Storybook も環境変数 `CI` があると尋ねずにずらす (2026-10-04 に storybook@10.6.0 で実測)。
-ずれると、worktree ごとに決まった port を指す側が別のサーバーへつながる。
+ずれると、worktree ごとに決まった port を指す側が別のサーバーへつながる。2026-10-09 に vite-plus 1.0.0 で、同じ port での 2 つ目の `mise run serve` が `Port 3129 is already in use` で終わることを確かめた。
 
 | 案                                                                 | 評価                                                                                                                      | 採否     |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -188,10 +187,9 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - 使用中の port なら Vite を終了させる `server.strictPort`: https://vite.dev/config/server-options#server-strictport
 - 使用中の port なら Storybook を終了させる `--exact-port`: https://storybook.js.org/docs/api/cli-options
 - ブラウザが接続を拒む bad port の表: https://fetch.spec.whatwg.org/#port-blocking
-- mise の daemons と experimental の要件: https://mise.jdx.dev/daemons.html
-- mise の daemons の自動 port と port の重なり: https://mise.jdx.dev/daemons/worktrees.html
-- mise の `experimental` の設定: https://mise.jdx.dev/configuration/settings.html#experimental
-- mise の `min_version`: https://mise.jdx.dev/configuration.html#minimum-mise-version
+- mise の daemons (experimental の要件、自動 port、port の変数、port の重なり、proxy): https://github.com/jdx/mise/blob/v2026.9.18/docs/daemons.md
+- mise の `experimental` の設定: https://github.com/jdx/mise/blob/v2026.9.18/settings.toml
+- mise の `min_version` (「Minimum mise version」): https://github.com/jdx/mise/blob/v2026.9.18/docs/configuration.md
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines
 - mise の `disable_tools` と、設定をローカル config へ置けること: https://mise.jdx.dev/configuration/settings.html
 - mise が読む Node.js のバージョンファイル (`devEngines` は idiomatic version file 扱いで既定 off): https://mise.jdx.dev/lang/node.html

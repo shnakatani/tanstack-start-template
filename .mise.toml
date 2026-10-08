@@ -51,11 +51,14 @@ run = [
   "vp node scripts/checks/runtime/security-headers.ts",
 ]
 
-# 自動 port を SERVE_PORT / STORYBOOK_PORT として出す。タスクは mise run で前面でも動く (ADR-0004)
+# 自動 port を SERVE_PORT / STORYBOOK_PORT として出す。タスクは mise run で前面でも動く。
+# proxy を使わないので URL の変数を出さない (ADR-0004)
 [daemons.serve]
 task = "serve"
 port = { auto = true, base = 3000 }
+proxy = false
 
 [daemons.storybook]
 task = "storybook"
 port = { auto = true, base = 6006 }
+proxy = false
