@@ -31,7 +31,7 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
-    // ルート遷移を View Transitions のクロスフェードにする (ADR-0015)
+    // ナビゲーションを View Transitions のクロスフェードにする (ADR-0040)
     defaultViewTransition: true,
     // loader / useSuspenseQuery のエラーを失敗 route の境界で受ける (周囲のレイアウトを
     // 保ったまま日本語 UI + 再試行を出す。未設定だと SSR は英語の組み込み UI、client は

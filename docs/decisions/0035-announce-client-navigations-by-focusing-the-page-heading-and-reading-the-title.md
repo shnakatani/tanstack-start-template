@@ -124,7 +124,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - 入れない改善: 戻った先で、前に focus していた要素へ focus を戻す。MPA で bfcache から戻ったときと揃う形で (whatwg/html#6696、2021-10-14 マージ。"the focused element stays the same/not reset")、Navigation API の explainer も traverse の例に挙げる。ただし explainer 自身が "the notion of \"the same element\" is not generally stable" とし、要素を識別子で覚える仕組みが要る。ブラウザの実装も揃っていない (下の「調査結果」)
 - 見出しの focus と title の読み上げの聞こえ方は、一次資料で決着していない。2026-09-28 に macOS 27.0 の VoiceOver と Chrome 153.0.8010.53 で、2 つのページの間の遷移と戻るを聞き、見出しの読み上げの後に title の読み上げが順に、途切れずに聞こえた。エラー画面へ移ったとき (失敗したルートの title と、focus の移った見出し「エラーが発生しました」の組み合わせ) と、NVDA・JAWS では確かめていない。聞こえ方が悪ければ文言と強さを見直す
 - 遷移の後の focus と読み上げは `src/components/route-announcer.test.tsx`、伝えるかの判定は `src/lib/route-announcement.test.ts`、focus の移し方は `src/lib/focus-page-heading.test.tsx`、title は `src/lib/page-title.test.ts` が見る
-- ルート遷移は View Transitions を通る (ADR-0015)。`src/components/route-announcer.test.tsx` は本番と同じく `defaultViewTransition: true` の router で、遷移の後の focus と title を確かめる。2026-10-09 に、このテストの実行中に `document.startViewTransition` が 19 回呼ばれ、全件が通ることを確かめた (router-core 1.171.34)
+- ルート遷移は View Transitions を通る (ADR-0040)。`src/components/route-announcer.test.tsx` は本番と同じく `defaultViewTransition: true` の router で、遷移の後の focus と title を確かめる。2026-10-09 に、テストで `document.startViewTransition` を包んで呼び出しを数え、呼ばれて `ready` がすべて resolve したうえで全件が通ることを確かめた (router-core 1.171.34)
 
 ## 調査結果
 
