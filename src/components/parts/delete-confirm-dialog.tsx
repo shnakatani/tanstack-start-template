@@ -1,4 +1,5 @@
 import type { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
+import { type RefObject, useRef } from "react";
 
 import { AlertDialogActionButton } from "@/components/action/alert-dialog";
 import {
@@ -10,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { findSiblingRowControl } from "@/lib/find-sibling-row-control";
 
 /**
  * 削除対象。`id` はこの部品では読まず `onConfirm` へそのまま渡すので、消費側の id 型を
@@ -35,6 +37,11 @@ interface DeleteConfirmDialogProps<TId> {
    * 失敗時の扱いは完了点で変わる (確定操作の直後なら閉じた後に toast、再取得完了なら開いたままリトライ)。
    */
   onConfirm: (target: DeleteTarget<TId>) => Promise<void> | void;
+  /**
+   * 確定で閉じたときに、ほかの行に同じ操作が無ければフォーカスを移す先 (一覧への追加ボタンなど)。
+   * 移し先の決め方は docs/guides/lists-and-search.md「行を消したあとのフォーカスを移す」
+   */
+  fallbackFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function DeleteConfirmDialog<TId = string>({
@@ -42,7 +49,23 @@ export function DeleteConfirmDialog<TId = string>({
   entityLabel,
   description,
   onConfirm,
+  fallbackFocusRef,
 }: DeleteConfirmDialogProps<TId>) {
+  const trigger = useRef<Element | null>(null);
+  const focusAfterConfirm = useRef<HTMLElement | null>(null);
+
+  function handleOpenChange(open: boolean, details: AlertDialogPrimitive.Root.ChangeEventDetails) {
+    if (open) {
+      trigger.current = details.trigger ?? null;
+      focusAfterConfirm.current = null;
+      return;
+    }
+    // 確定しても開いたまま失敗し (完了点「再取得完了」)、そのあとキャンセルしたときは行が残るので、既定のトリガーへ戻す
+    if (details.reason !== "imperative-action") {
+      focusAfterConfirm.current = null;
+    }
+  }
+
   function confirm(payload: DeleteTarget<TId> | undefined) {
     if (!payload) {
       // Trigger 経由なら payload は必ず入る。imperative open 等で欠けた場合に
@@ -50,13 +73,15 @@ export function DeleteConfirmDialog<TId = string>({
       console.warn("[DeleteConfirmDialog] confirm clicked with no payload", { entityLabel });
       return;
     }
+    const sibling = trigger.current === null ? null : findSiblingRowControl(trigger.current);
+    focusAfterConfirm.current = sibling ?? fallbackFocusRef.current;
     return onConfirm(payload);
   }
 
   return (
-    <AlertDialog handle={handle}>
+    <AlertDialog handle={handle} onOpenChange={handleOpenChange}>
       {({ payload }) => (
-        <AlertDialogContent>
+        <AlertDialogContent finalFocus={() => focusAfterConfirm.current ?? true}>
           <AlertDialogHeader>
             <AlertDialogTitle>{entityLabel}の削除</AlertDialogTitle>
             <AlertDialogDescription>

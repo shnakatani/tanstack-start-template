@@ -708,6 +708,61 @@ describe("NotesPage", () => {
       );
   });
 
+  it("削除を確定すると次の行の削除ボタンへフォーカスが移り、行が消えたあとも残る", async () => {
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]).mockResolvedValue([OTHER_NOTE]);
+    vi.mocked(removeNote).mockResolvedValue(undefined);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openDeleteConfirm(screen, NOTE);
+
+    await confirmDeleteButton(screen).click();
+
+    // 既定の戻り先 (確定した行の削除ボタン) は行と一緒に消え、フォーカスが body へ落ちる。
+    // 移し先は同じ列の同じ操作なので、同じ行の編集ボタンではない
+    await expectRemoved(noteRow(screen, NOTE));
+    await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toHaveFocus();
+  });
+
+  it("最後の行を削除すると、前の行の削除ボタンへフォーカスが移る", async () => {
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]).mockResolvedValue([NOTE]);
+    vi.mocked(removeNote).mockResolvedValue(undefined);
+    const screen = await renderPage();
+    await expectText(screen, OTHER_NOTE.title);
+    await openDeleteConfirm(screen, OTHER_NOTE);
+
+    await confirmDeleteButton(screen).click();
+
+    await expectRemoved(noteRow(screen, OTHER_NOTE));
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toHaveFocus();
+  });
+
+  it("1 件だけの行を削除すると、追加ボタンへフォーカスが移る", async () => {
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
+    vi.mocked(removeNote).mockResolvedValue(undefined);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openDeleteConfirm(screen, NOTE);
+
+    await confirmDeleteButton(screen).click();
+
+    await expectText(screen, "メモが登録されていません");
+    await expect
+      .element(screen.getByRole("button", { name: NOTE_CREATE_TRIGGER_LABEL }))
+      .toHaveFocus();
+  });
+
+  it("削除をキャンセルすると、開いた行の削除ボタンへフォーカスが戻る", async () => {
+    vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+    await openDeleteConfirm(screen, NOTE);
+
+    await screen.getByRole("button", { name: "キャンセル" }).click();
+
+    await expectDeleteConfirmClosed(screen);
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toHaveFocus();
+  });
+
   it("削除の開始と完了を announcer が通知し、完了には対象名を載せる", async () => {
     // 行の半透明も行の消失も読み上げに出ないので、両端を polite の region で伝える (ADR-0026)
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);

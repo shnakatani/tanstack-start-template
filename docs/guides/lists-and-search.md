@@ -1,6 +1,6 @@
 # 一覧・絞り込み・検索
 
-一覧テーブル、URL の search param による絞り込み、打鍵に追従する検索欄を組むときの手順と、その形にしている理由を持つ。
+一覧テーブル、行を消したあとのフォーカス、URL の search param による絞り込み、打鍵に追従する検索欄を組むときの手順と、その形にしている理由を持つ。
 
 | 決定                                                                                                                              | ADR      |
 | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -39,6 +39,21 @@
 
 - 表示するデータが無いときは `Empty` (`src/components/ui/empty.tsx`) で組む ([shadcn docs「Empty」][]、[shadcn skill「Component Composition」][] の Empty states use Empty component)
 - 何が無いかを `EmptyTitle` に、次に取れる操作を `EmptyDescription` か `EmptyContent` に置き、両方をそろえる。操作のボタンを置くなら `EmptyContent` に置き ([shadcn docs「Empty」][] の Usage)、ほかの場所にある操作へ案内するなら `EmptyDescription` にその場所を書く
+
+### 行を消したあとのフォーカスを移す
+
+行を消す操作を確認ダイアログで確定したら、閉じるときのフォーカスを消える行の外へ移す。既定ではダイアログを開いた行のトリガーへ戻り、行が消えた時点で body へ落ちる ([APG「Developing a Keyboard Interface」][] の Persistence of focus: "If such events are not managed to set focus on the button that triggered the dialog or on the list item following the deleted item, browsers move focus to the body element, effectively causing a loss of focus within the user interface.")。
+
+| 閉じ方             | 移し先                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 確定               | 次の行の同じ操作 (同じ列の、セルの中で同じ位置)。無ければ前の行の同じ操作。どちらも無ければ (最後の 1 件) ページが渡す要素 (一覧への追加ボタンなど)。開いたトリガーは消える ([APG「Dialog (Modal) Pattern」][] の Keyboard Interaction の注記: "The invoking element no longer exists. Then, focus is set on another element that provides logical work flow.") |
+| キャンセル、Escape | 開いたトリガー (Base UI の既定)。行は残る                                                                                                                                                                                                                                                                                                                       |
+
+- 確認ダイアログの部品が持つ。移し先を確定の時点で決め、Popup の `finalFocus` に渡す関数が返す ([Base UI docs「Alert Dialog」][] の `finalFocus`)。`DataTable` と mutation に置くと、閉じた後に行の消失を見張る仕組みが要る
+- 移し先を閉じる時点で決めない。完了点「再取得完了」(ADR-0017) では閉じる時点で行が消えていて、隣の行を位置から引けない
+- 次の行を探すのは `findSiblingRowControl` (`src/lib/find-sibling-row-control.ts`)。無効な操作 (削除中や更新中の行) は飛ばす。消える途中の行へ移すと、その行が消えたときに body へ落ちる
+- `DeleteConfirmDialog` はこれを持ち、最後の 1 件の移し先を `fallbackFocusRef` で受ける。行の別の操作から開くダイアログで行を消すときも、同じ移し先にする
+- 確定が失敗して行が戻っても、フォーカスは移し先に残る。失敗は toast で伝わる
 
 ### 絞り込み条件を URL に置く
 
@@ -123,7 +138,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn docs「Empty」と shadcn skill「Component Composition」は shadcn 4.21.0 に固定した版を指す。WAI-ARIA 1.2 と APG の引用は 2026-10-06 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn docs「Empty」と shadcn skill「Component Composition」は shadcn 4.21.0 に固定した版を指す。WAI-ARIA 1.2 と APG「Providing Accessible Names and Descriptions」の引用は 2026-10-06 に、APG「Dialog (Modal) Pattern」と「Developing a Keyboard Interface」の引用は 2026-10-08 に原文と照らした。
 
 [TanStack Table docs「FlexRender」]: https://tanstack.com/table/latest/docs/framework/react/guide/flex-render
 [shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/base/data-table
@@ -144,3 +159,6 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 [shadcn skill「Component Composition」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/composition.md
 [WAI-ARIA 1.2]: https://www.w3.org/TR/wai-aria-1.2/#table
 [APG「Providing Accessible Names and Descriptions」]: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
+[APG「Developing a Keyboard Interface」]: https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/
+[APG「Dialog (Modal) Pattern」]: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+[Base UI docs「Alert Dialog」]: https://base-ui.com/react/components/alert-dialog

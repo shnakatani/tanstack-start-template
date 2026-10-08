@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { expect, fn, screen, spyOn, userEvent, waitFor } from "storybook/test";
 
 import { AlertDialogTrigger, createAlertDialogHandle } from "@/components/ui/alert-dialog";
@@ -37,20 +37,22 @@ interface StoryArgs {
  */
 function WithoutTrigger({ target: _target, ...props }: StoryArgs) {
   const [handle] = useState(() => createAlertDialogHandle<DeleteTarget>());
+  const fallbackFocusRef = useRef<HTMLElement>(null);
   useEffect(() => {
     handle.open(null);
   }, [handle]);
-  return <DeleteConfirmDialog handle={handle} {...props} />;
+  return <DeleteConfirmDialog handle={handle} fallbackFocusRef={fallbackFocusRef} {...props} />;
 }
 
 function WithTrigger({ target, ...props }: StoryArgs) {
   const [handle] = useState(() => createAlertDialogHandle<DeleteTarget>());
+  const fallbackFocusRef = useRef<HTMLElement>(null);
   return (
     <>
       <AlertDialogTrigger handle={handle} payload={target} render={<Button />}>
         開く
       </AlertDialogTrigger>
-      <DeleteConfirmDialog handle={handle} {...props} />
+      <DeleteConfirmDialog handle={handle} fallbackFocusRef={fallbackFocusRef} {...props} />
     </>
   );
 }

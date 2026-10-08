@@ -69,6 +69,7 @@ async function renderCells({
         handle={noteDeleteDialogHandle}
         entityLabel={NOTE_ENTITY_LABEL}
         onConfirm={onConfirm}
+        fallbackFocusRef={{ current: null }}
       />
     </>,
   );
@@ -231,5 +232,17 @@ describe("NoteActionsCell", () => {
       .toBeInTheDocument();
     await confirmDeleteButton(screen).click();
     expect(onConfirm).toHaveBeenCalledWith({ id: OTHER_NOTE.id, name: OTHER_NOTE.title });
+  });
+
+  it("確定しても閉じず (完了点「再取得完了」の失敗) にキャンセルすると、開いた行の削除トリガーへフォーカスが戻る", async () => {
+    // onConfirm は閉じないので、確定のあとも開いたまま残る
+    const screen = await renderCells();
+    await rowDeleteButton(screen, NOTE.title).click();
+    await confirmDeleteButton(screen).click();
+
+    await screen.getByRole("button", { name: "キャンセル" }).click();
+
+    // 確定の時点で決めた移し先 (次の行) は、確定で閉じたときだけ使う
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toHaveFocus();
   });
 });

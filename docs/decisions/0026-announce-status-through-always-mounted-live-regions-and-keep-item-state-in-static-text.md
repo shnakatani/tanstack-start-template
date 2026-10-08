@@ -61,7 +61,7 @@ pending 中の状態をスクリーンリーダーへ伝えるために、条件
 
 - `docs/guides/react/updates.md`「Action 層の部品が守る契約」の pending 行は「`Spinner` は視覚専用。状態は `aria-disabled` と announcer」とする。ガイドと `src/components/action/button.tsx` の子孫 role の表現は §5.2.9 の主語 (ユーザーエージェントが露出すべきでない) に揃える。ADR-0017 の行の busy 表現の読み上げは本 ADR を参照する
 - テストでの pending の確かめ方は `docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」にある
-- 削除完了で行ごと unmount されるとき、行のトリガーにあったフォーカスが body へ落ちる。本 ADR は完了の announce で通知は補うが、フォーカスの退避先は別途決める
+- 削除完了で行ごと unmount されるとき、行のトリガーにあったフォーカスの移し先は、本 ADR ではなく `docs/guides/lists-and-search.md`「行を消したあとのフォーカスを移す」が持つ
 - 再評価条件: Base UI か shadcn が announcer を出荷したら差し替える。React Aria へ基盤を変えるなら `announce` をそちらへ寄せる
 
 ## 出典
