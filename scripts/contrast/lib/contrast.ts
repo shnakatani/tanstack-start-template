@@ -78,7 +78,7 @@ function parseBlock(css: string, selector: string): TokenTable {
     throw new Error(`宣言だけのブロックではない (入れ子か、閉じ括弧が行頭にない): ${selector}`);
   }
   const table: Record<string, string> = {};
-  // 宣言は複数行にまたがる (`--destructive-surface`)。改行を潰してから ; で割る
+  // formatter が長い宣言を複数行へ折り返す。改行を潰してから ; で割る
   for (const declaration of body.replace(/\s+/g, " ").split(";")) {
     if (declaration.trim() === "") {
       continue;

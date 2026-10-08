@@ -19,10 +19,10 @@ import type { ReactNode } from "react";
  * light と dark は project が分かれており (`tooling/test/config.ts`)、`vp test run` と
  * `mise run verify` では同じ story が両方で走る。片方でしか現れない不透明度も両方で描かれる。
  * Storybook 経由の実行 (test panel / `storybook tools test run`) は light だけなので、
- * dark 側を確かめるときは `vp test run` で回す (ADR-0028)。2026-09-21 時点では
- * どちらのテーマでも 4.5:1 を満たす。いちばん狭いのは light 側で描いた
- * `bg-destructive-surface/30` で、トークンを動かすと画面に存在しない対で落ちうる。そのときは
- * 落ちた対がそのテーマで現れるかを先に確かめる。同じ色なら `mise run contrast` と axe の比は
+ * dark 側を確かめるときは `vp test run` で回す (ADR-0028)。2026-10-08 に全行を
+ * `mise run contrast` で測り、どちらのテーマでも 4.5:1 を満たした。いちばん狭いのは light 側で
+ * 描いた `bg-destructive/30` で、light の部品はこの不透明度を使わない。トークンを
+ * 動かすと画面に存在しない対で落ちうる。そのときは落ちた対がそのテーマで現れるかを先に確かめる。同じ色なら `mise run contrast` と axe の比は
  * 一致するが、axe は画面の面の重なりまで畳むので、渡す面が違えば値も違う (docs/guides/styling-and-tokens.md「測り方の限界」)。
  *
  * 1 つの面に複数の文字色が乗る組み合わせ (`bg-muted/50`) は、文字色ごとに 1 行を置く。
@@ -66,14 +66,10 @@ export default meta;
 export const OnBackground: StoryObj = {
   render: () => (
     <div className="bg-background flex flex-col gap-2 p-4">
-      <Row className="bg-destructive-surface/10 text-destructive">
-        破壊の既定 bg-destructive-surface/10
-      </Row>
-      <Row className="bg-destructive-surface/20 text-destructive">
-        破壊の hover bg-destructive-surface/20
-      </Row>
-      <Row className="bg-destructive-surface/30 text-destructive">
-        破壊の hover (dark) bg-destructive-surface/30
+      <Row className="bg-destructive/10 text-destructive">破壊の既定 bg-destructive/10</Row>
+      <Row className="bg-destructive/20 text-destructive">破壊の hover bg-destructive/20</Row>
+      <Row className="bg-destructive/30 text-destructive">
+        破壊の hover (dark) bg-destructive/30
       </Row>
       <Row className="bg-primary/80 text-primary-foreground">主操作の hover bg-primary/80</Row>
       <Row className="bg-primary/5 text-primary">破線ボタンの hover bg-primary/5</Row>
@@ -111,15 +107,9 @@ export const OnBackground: StoryObj = {
 export const OnCard: StoryObj = {
   render: () => (
     <div className="bg-card flex flex-col gap-2 rounded-lg p-4">
-      <Row className="bg-destructive-surface/10 text-destructive">
-        メニューの破壊項目 bg-destructive-surface/10
-      </Row>
-      <Row className="bg-destructive-surface/20 text-destructive">
-        メニューの破壊項目 bg-destructive-surface/20
-      </Row>
-      <Row className="bg-destructive-surface/30 text-destructive">
-        メニューの破壊項目 bg-destructive-surface/30
-      </Row>
+      <Row className="bg-destructive/10 text-destructive">メニューの破壊項目 bg-destructive/10</Row>
+      <Row className="bg-destructive/20 text-destructive">メニューの破壊項目 bg-destructive/20</Row>
+      <Row className="bg-destructive/30 text-destructive">メニューの破壊項目 bg-destructive/30</Row>
     </div>
   ),
 };

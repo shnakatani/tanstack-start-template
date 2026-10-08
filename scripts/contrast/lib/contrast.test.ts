@@ -22,7 +22,7 @@ const FIXTURE = `
   --background: oklch(9 9 9);
   */
   --foreground: oklch(0.148 0.004 228.8);
-  --destructive-surface: oklch(
+  --wrapped-color: oklch(
     57.7% 0.245 27.325
   ); /* 複数行にまたがる宣言 */
   --radius: 0.625rem;
@@ -38,9 +38,7 @@ describe("parseTokenTable", () => {
   });
 
   it("複数行にまたがる宣言を 1 つの値にまとめる", () => {
-    expect(parseTokenTable(FIXTURE).light["--destructive-surface"]).toBe(
-      "oklch( 57.7% 0.245 27.325 )",
-    );
+    expect(parseTokenTable(FIXTURE).light["--wrapped-color"]).toBe("oklch( 57.7% 0.245 27.325 )");
   });
 
   it("コメントの中の宣言を拾わない", () => {
