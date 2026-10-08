@@ -19,7 +19,7 @@ type CreatingNoteRow = { kind: "creating" } & CreatingRow;
 /** 一覧の 1 行。確定行と保存中の行の union で、cell は `kind` で分岐する (`docs/guides/lists-and-search.md`「一覧テーブルを組む」の行の型の行)。 */
 export type NoteRow = SavedNoteRow | CreatingNoteRow;
 
-/** busy 表現 (aria-busy + 半透明) を付ける行。保存中の行と、削除中か更新中の確定行 (ADR-0017) */
+/** busy 表現 (半透明) を付ける行。保存中の行と、削除中か更新中の確定行 (ADR-0017) */
 export function isNoteRowBusy(row: NoteRow): boolean {
   return row.kind === "creating" || row.isDeleting || row.pendingUpdate !== null;
 }

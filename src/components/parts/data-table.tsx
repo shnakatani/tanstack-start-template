@@ -1,7 +1,6 @@
 import type { Row, RowData, TableOptions } from "@tanstack/react-table";
 import { useTable } from "@tanstack/react-table";
 import { useTanStackTableDevtools } from "@tanstack/react-table-devtools";
-import type { ComponentProps } from "react";
 
 import {
   Table,
@@ -33,11 +32,9 @@ interface DataTableProps<TData extends RowData> extends Pick<
    *
    * `className` は受けない。返した class は `rowProps` のコールバックの中にあって
    * `no-restyle` が追えず、`<TableRow>` へ直接書けば落ちる class が無診断で通る。
-   * 外見は部品が持つ (ADR-0022)。半透明は registry の `TableRow` が `aria-busy` から当てる。
+   * 外見は部品が持つ (ADR-0022)。半透明は registry の `TableRow` が `data-busy` から当てる。
    */
-  rowProps?: (
-    row: Row<DataTableFeatures, TData>,
-  ) => Pick<ComponentProps<typeof TableRow>, "aria-busy">;
+  rowProps?: (row: Row<DataTableFeatures, TData>) => { "data-busy"?: boolean };
   /** data が空のときに 1 行で出す案内。画面が `Empty` 部品を別に持つなら描画側で分岐する */
   emptyText?: string;
 }
@@ -76,12 +73,12 @@ export function DataTable<TData extends RowData>({
       <TableBody>
         {rows.length > 0 ? (
           rows.map((row) => {
-            // 受け取った値から aria-busy だけを取り出して渡す。spread にすると、返り値の型に
+            // 受け取った値から data-busy だけを取り出して渡す。spread にすると、返り値の型に
             // 無い className がリテラルでない経路 (const props = {...}; () => props) で載って
             // しまい、JSX の後勝ちで静かに落ちる
-            const busy = rowProps?.(row)["aria-busy"];
+            const busy = rowProps?.(row)["data-busy"];
             return (
-              <TableRow key={row.id} aria-busy={busy}>
+              <TableRow key={row.id} data-busy={busy}>
                 {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id}>
                     <table.FlexRender cell={cell} />

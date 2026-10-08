@@ -6,7 +6,7 @@
 
 ## Context
 
-一覧の検索 (ADR-0019) では、打鍵が止まるたびに一覧が入れ替わる。行の半透明と `aria-busy` は読み上げに出ないので、入れ替わったことと件数はスクリーンリーダーに届かない。WCAG 2.2 の 4.1.3 Status Messages は「5 results returned」を例に、結果の件数を status message として伝えることを求める。
+一覧の検索 (ADR-0019) では、打鍵が止まるたびに一覧が入れ替わる。行の半透明は読み上げに出ないので、入れ替わったことと件数はスクリーンリーダーに届かない。WCAG 2.2 の 4.1.3 Status Messages は「5 results returned」を例に、結果の件数を status message として伝えることを求める。
 
 ADR-0026 は通知を `announce()` (常時 mount の live region) に集約したが、呼び出し層として決めたのは mutation の `onMutate` / `onSuccess` だけで、query 由来の結果 (取得した一覧の件数) をどの層が通知するかは決めていなかった。
 
@@ -17,7 +17,6 @@ ADR-0026 は通知を `announce()` (常時 mount の live region) に集約し�
 | 条件の確定 (debounce → `useDeferredValue`) と取得の決着 (`isFetching`) はページの中で起きる                   | ADR-0019 のデータの流れ                                                                     |
 | 同じ条件に対する通知は 1 回にする。debounce 後に通知した直後の Enter (URL が同じ条件になる) で 2 回読ませない | 重複は通知を埋める                                                                          |
 | 取得中に通知すると古い件数を読む。無効化済みキャッシュは表示しながら再取得する                                | TanStack Query の `useSuspenseQuery` はデータがあれば Suspend せず、`isFetching` だけが立つ |
-| `aria-busy` 単独では通知にならない                                                                            | ADR-0026 の検討案の表が却下                                                                 |
 
 先行例は次のとおり (2026-09-23 に確認)。
 
@@ -65,7 +64,7 @@ ADR-0026 は通知を `announce()` (常時 mount の live region) に集約し�
 | 可視の件数を `role="status"` の要素で置く (WCAG の技術 ARIA22 の形)                | ADR-0026 が項目の `role="status"` を却下している                                                                                                                           | 却下     |
 | wrapper が URL の `q` の変化だけで通知する                                         | 打鍵中の入れ替わり (debounce 後) が無音になる。GOV.UK は入力中も通知する                                                                                                   | 却下     |
 | 記憶を `useSyncExternalStore` の store に置く                                      | ADR-0026 が却下した理由 (Transition の中の store 更新) と同じ                                                                                                              | 却下     |
-| 通知しない (`aria-busy` と半透明だけ)                                              | ADR-0026 の検討案の表が却下                                                                                                                                                | 却下     |
+| 通知しない (半透明だけ)                                                            | 半透明は読み上げに出ず、WCAG 2.2 の 4.1.3 が求める件数が届かない                                                                                                           | 却下     |
 
 ## 出典
 

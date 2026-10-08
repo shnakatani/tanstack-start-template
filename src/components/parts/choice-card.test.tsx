@@ -66,7 +66,7 @@ describe("ChoiceCard", () => {
     await expect.element(checkbox).not.toHaveAttribute("data-checked");
     // Base UI の Checkbox は native disabled を隠し input に持ち、露出する span には
     // aria-disabled が付く。支援技術に届くのは span の aria-disabled で、Vitest の toBeDisabled は
-    // aria-disabled も見る (docs/guides/testing/waiting-and-assertions.md「無効と処理中の状態を確かめる」)
+    // aria-disabled も見る (docs/guides/testing/waiting-and-assertions.md「無効の状態を確かめる」)
     await expect.element(checkbox).toBeDisabled();
   });
 });

@@ -100,7 +100,7 @@ const expectDeleteConfirmClosed = vi.defineHelper(async (screen: Screen) => {
 const expectSettledRow = vi.defineHelper(async (screen: Screen, note: Note) => {
   const row = noteRow(screen, note);
   await expect.element(row).toHaveLength(1);
-  await expect.element(row).toHaveAttribute("aria-busy", "false");
+  await expect.element(row).toHaveStyle("opacity: 1");
 });
 
 const openDeleteConfirm = vi.defineHelper(async (screen: Screen, note: Note) => {
@@ -166,17 +166,15 @@ describe("NotesPage", () => {
     await expect
       .poll(() => vi.mocked(listNotes).mock.calls)
       .toEqual([[{ data: { q: "" } }], [{ data: { q: "abc" } }]]);
-    // 取得中は古い一覧が見えたまま aria-busy になる。`useDeferredValue` を外すと Suspense が
+    // 取得中は古い一覧が見えたまま半透明になる。`useDeferredValue` を外すと Suspense が
     // 古い木を display: none で隠すので、在るかではなく見えるかで確かめる
     await expect.element(screen.getByText(NOTE.title)).toBeVisible();
-    await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "true");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 0.6");
 
     listed.resolve([]);
     await expectText(screen, "『abc』に一致するメモはありません");
-    await expect.element(screen.getBySlot("stale-content")).toHaveAttribute("aria-busy", "false");
     await expect.element(screen.getBySlot("stale-content")).toHaveStyle("opacity: 1");
-    // 半透明と aria-busy は読み上げに出ないので、決着した結果を通知する (ADR-0027)
+    // 決着した結果を通知する (ADR-0027)
     await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
     expect(listing).toHaveBeenExhausted();
   });
@@ -351,18 +349,18 @@ describe("NotesPage", () => {
       // 応答前から、対象の行は編集後の title で busy になる (モーダル表示中は行が aria-hidden なので includeHidden)
       await expect
         .element(noteRow(screen, UPDATED_NOTE, { includeHidden: true }))
-        .toHaveAttribute("aria-busy", "true");
+        .toHaveStyle("opacity: 0.6");
       // 楽観表示の対象は variables の id で選ぶ。isPending だけで塗ると無関係の行まで busy になる
       await expect
         .element(noteRow(screen, OTHER_NOTE, { includeHidden: true }))
-        .toHaveAttribute("aria-busy", "false");
+        .toHaveStyle("opacity: 1");
       expect(vi.mocked(updateNote)).toHaveBeenCalledExactlyOnceWith({ data: NOTE_UPDATE });
 
       update.resolve(undefined);
 
       // 応答でダイアログが閉じ、再取得中も行は busy のまま。止めるのは更新中の行だけ
       await expectNoteDialogClosed(screen);
-      await expect.element(noteRow(screen, UPDATED_NOTE)).toHaveAttribute("aria-busy", "true");
+      await expect.element(noteRow(screen, UPDATED_NOTE)).toHaveStyle("opacity: 0.6");
       await expect.element(noteRow(screen, UPDATED_NOTE).getByText("更新中")).toBeInTheDocument();
       await expect.element(rowEditButton(screen, UPDATED_NOTE.title)).toBeDisabled();
       await expect.element(rowEditButton(screen, OTHER_NOTE.title)).toBeEnabled();
@@ -398,7 +396,7 @@ describe("NotesPage", () => {
     // 応答前は編集後の title で busy になる (モーダル表示中は行が aria-hidden なので includeHidden)
     await expect
       .element(noteRow(screen, UPDATED_NOTE, { includeHidden: true }))
-      .toHaveAttribute("aria-busy", "true");
+      .toHaveStyle("opacity: 0.6");
 
     update.reject(new Error(rawMessage));
 
@@ -407,9 +405,7 @@ describe("NotesPage", () => {
     await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗では楽観表示を残さない。行は再取得前の値に戻り、busy も解ける。ダイアログは入力を保って
     // 開いたままなので、行はモーダルの下 (aria-hidden) にある
-    await expect
-      .element(noteRow(screen, NOTE, { includeHidden: true }))
-      .toHaveAttribute("aria-busy", "false");
+    await expect.element(noteRow(screen, NOTE, { includeHidden: true })).toHaveStyle("opacity: 1");
     await expectAbsent(noteRow(screen, UPDATED_NOTE, { includeHidden: true }));
     // raw error は curateMutationErrorMessage が warn に残す (observability)
     expect(warnSpy).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
@@ -431,13 +427,13 @@ describe("NotesPage", () => {
 
       // 応答前から新しい行が先頭に busy で出る (モーダル表示中は行が aria-hidden なので includeHidden)
       const optimisticRow = noteRow(screen, CREATED_NOTE, { includeHidden: true });
-      await expect.element(optimisticRow).toHaveAttribute("aria-busy", "true");
+      await expect.element(optimisticRow).toHaveStyle("opacity: 0.6");
 
       create.resolve({ id: CREATED_NOTE.id });
 
       // 応答でダイアログが閉じ、再取得中も行は busy のまま
       await expectNoteDialogClosed(screen);
-      await expect.element(noteRow(screen, CREATED_NOTE)).toHaveAttribute("aria-busy", "true");
+      await expect.element(noteRow(screen, CREATED_NOTE)).toHaveStyle("opacity: 0.6");
       // 行は静的テキストで状態を持つ (ADR-0026)。live region にはしないので、仮想カーソルで
       // 行を読んだときにだけ出る。通知は announcer が担う
       await expect.element(noteRow(screen, CREATED_NOTE).getByText("保存中")).toBeInTheDocument();
@@ -541,7 +537,7 @@ describe("NotesPage", () => {
     // 応答前 (一覧はまだ 0 件) から楽観行が出て、空状態は消えている
     await expect
       .element(noteRow(screen, CREATED_NOTE, { includeHidden: true }))
-      .toHaveAttribute("aria-busy", "true");
+      .toHaveStyle("opacity: 0.6");
     await expectRemoved(screen.getByText("メモが登録されていません"));
 
     create.resolve({ id: CREATED_NOTE.id });
@@ -593,7 +589,7 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     // 完了点「確定操作の直後」でダイアログは閉じるので、決着までの pending は行の busy だけが伝える
-    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, NOTE)).toHaveStyle("opacity: 0.6");
 
     remove.reject(new Error(rawMessage));
 
@@ -601,7 +597,7 @@ describe("NotesPage", () => {
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗しても busy を残さない。残ると行のトリガーが disabled のまま固まりリトライできない
-    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "false");
+    await expect.element(noteRow(screen, NOTE)).toHaveStyle("opacity: 1");
     await expect.element(rowDeleteButton(screen, NOTE.title)).toBeEnabled();
     // raw error は curateMutationErrorMessage が warn に残す (observability)
     expect(warnSpy).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
@@ -620,13 +616,13 @@ describe("NotesPage", () => {
     // 確定で閉じる。removeNote は未決着
     await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
-    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, NOTE)).toHaveStyle("opacity: 0.6");
 
     remove.resolve(undefined);
 
     // 応答後も、再取得 (2 回目の listNotes) が決着するまで行は busy のまま
     await expect.poll(() => vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
-    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, NOTE)).toHaveStyle("opacity: 0.6");
 
     refetch.resolve([]);
 
@@ -642,9 +638,9 @@ describe("NotesPage", () => {
 
     await confirmDeleteButton(screen).click();
 
-    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, NOTE)).toHaveStyle("opacity: 0.6");
     // 楽観表示の対象は variables で選ぶ。isPending だけで塗ると無関係の行まで busy になる
-    await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "false");
+    await expect.element(noteRow(screen, OTHER_NOTE)).toHaveStyle("opacity: 1");
     // 止めるのは削除中の行だけ (ADR-0017「ブロック範囲」)。他の行のトリガーは有効のまま
     await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toBeEnabled();
     await expect.element(rowDeleteButton(screen, NOTE.title)).toBeDisabled();
@@ -692,8 +688,8 @@ describe("NotesPage", () => {
     // 2 件とも、それぞれの id で 1 回ずつ削除を呼んだ (exhausted は「少なくとも 1 回」までしか見ない)
     await expect.poll(() => removing).toHaveBeenExhausted();
     expect(vi.mocked(removeNote)).toHaveBeenCalledTimes(2);
-    await expect.element(noteRow(screen, NOTE)).toHaveAttribute("aria-busy", "true");
-    await expect.element(noteRow(screen, OTHER_NOTE)).toHaveAttribute("aria-busy", "true");
+    await expect.element(noteRow(screen, NOTE)).toHaveStyle("opacity: 0.6");
+    await expect.element(noteRow(screen, OTHER_NOTE)).toHaveStyle("opacity: 0.6");
 
     removingNote.resolve(undefined);
     removingOther.resolve(undefined);

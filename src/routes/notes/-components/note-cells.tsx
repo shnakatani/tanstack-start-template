@@ -29,8 +29,7 @@ export function NoteDueDateCell({ row }: NoteCellContext) {
 /** 作成日時の cell。保存中の行はまだ日時を持たないので、その位置で保存中を伝える。 */
 export function NoteCreatedAtCell({ row }: NoteCellContext) {
   if (row.original.kind !== "saved") {
-    // 行の aria-busy が true の間は支援技術が内容の変化を無視してよい (WAI-ARIA 1.2 aria-busy)
-    // ので、このテキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0026)
+    // このテキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0026)
     return "保存中";
   }
   // 整形は必ずタイムゾーンを明示した formatDateTime を通す。ローカル TZ 依存の整形は
@@ -63,7 +62,7 @@ export function NoteActionsCell({ row }: NoteCellContext) {
   }
   const { note, isDeleting } = row.original;
   // 止めるのは削除中か更新中の行だけ (ADR-0017「ブロック範囲」)。更新と削除を同じ行に並行させない。
-  // 判定は行の aria-busy (半透明) と同じ isNoteRowBusy から取る。別々に書くと、条件を足したときに
+  // 判定は行の半透明と同じ isNoteRowBusy から取る。別々に書くと、条件を足したときに
   // 行の見た目とトリガーの無効化がずれる
   const isBusy = isNoteRowBusy(row.original);
   // トリガーの名前は行に見えている title から作る。更新中は編集後の値が見えているので、

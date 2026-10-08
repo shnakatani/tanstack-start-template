@@ -22,7 +22,7 @@ describe("Button の disabled の見た目", () => {
     const offButton = screen.getByRole("button", { name: "使用不可" });
 
     // native と aria のどちらで無効にしたかを見るので属性で比べる。toBeDisabled はどちらでも通る
-    // (docs/guides/testing/waiting-and-assertions.md「無効と処理中の状態を確かめる」)
+    // (docs/guides/testing/waiting-and-assertions.md「無効の状態を確かめる」)
     await expect.element(offButton).not.toHaveAttribute("disabled");
     await expect.element(offButton).toHaveAttribute("aria-disabled", "true");
     await expect.element(offButton).toHaveStyle("opacity: 0.5; pointer-events: none");

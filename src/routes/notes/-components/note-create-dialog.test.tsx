@@ -246,7 +246,7 @@ describe("NoteCreateDialog", () => {
     await saveButton(screen).click();
 
     // 応答前は pending 表示のまま開いている
-    await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
+    await expect.element(saveButton(screen)).toBeDisabled();
     await expectDialogOpen(screen, "dialog");
 
     create.resolve({ id: 1 });
@@ -302,7 +302,7 @@ describe("NoteCreateDialog", () => {
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
-    await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
+    await expect.element(saveButton(screen)).toBeDisabled();
 
     // キャンセルは押せない。Escape は Base UI が閉じようとするのを onOpenChange で止める
     await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
