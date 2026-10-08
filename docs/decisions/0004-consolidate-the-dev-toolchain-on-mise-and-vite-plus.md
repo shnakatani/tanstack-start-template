@@ -55,11 +55,11 @@ CI は mise を要さない。`.mise.toml` の `[tasks.verify]` と同じ順序�
 - 自動 port は mise v2026.9.12 から使える。`min_version` は確かめた版の `2026.9.18` にし、それより古い mise を設定の読み込みで止める
 - mise は bad port を避けない。ブラウザは WHATWG Fetch の bad port への接続を拒むが、server は起動するので、使用中かを見るフラグでは気づけない (2026-10-04 に port 3659 で起動した dev server へ、curl は 200 を返し、Playwright 1.63.0 の Chromium は `net::ERR_UNSAFE_PORT` で開けなかった)。`base` を変えるときは、`base` から `base + 511` に bad port が入らない値を選ぶ。`3000`〜`3511` と `6006`〜`6517` には無い (whatwg/fetch の e9460d1、2026-10-06)
 
-| 案                                                      | 評価                                                                                                                                                              | 採否     |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| mise の daemons の自動 port                             | primary checkout で base、worktree ごとに別の port、重なったら終了、を mise の宣言だけで持てる。experimental なので `experimental = true` と `min_version` が要る | **採用** |
-| worktree の名前のハッシュから自前の script で導出する   | 同じ振る舞いを、primary checkout の判定と bad port の表ごと自前で持つ                                                                                             | 却下     |
-| 割り当てを記録して重なりをなくす (workz、devports など) | ツールが 1 つ増え、worktree を消すたびにそのツールで割り当てを外す操作が要る                                                                                      | 却下     |
+| 案                                                      | 評価                                                                                                                                                                         | 採否     |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| mise の daemons の自動 port                             | primary checkout で base、worktree ごとに別の port を mise の宣言だけで持て、重なっても port をずらさない。experimental なので `experimental = true` と `min_version` が要る | **採用** |
+| worktree の名前のハッシュから自前の script で導出する   | 同じ振る舞いを、primary checkout の判定と bad port の表ごと自前で持つ                                                                                                        | 却下     |
+| 割り当てを記録して重なりをなくす (workz、devports など) | ツールが 1 つ増え、worktree を消すたびにそのツールで割り当てを外す操作が要る                                                                                                 | 却下     |
 
 自動 port は別の worktree や別のプロジェクトの port と重なりうる。mise も重なった port をずらさない (mise v2026.9.18 の docs/daemons.md「Port conflicts」)。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
 Vite は使用中なら次の空き port へずらし (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")、Storybook も環境変数 `CI` があると尋ねずにずらす (2026-10-04 に storybook@10.6.0 で実測)。
