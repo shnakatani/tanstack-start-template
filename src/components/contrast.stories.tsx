@@ -107,7 +107,7 @@ export const OnBackground: StoryObj = {
   ),
 };
 
-/** `--card` / `--popover` の上。dropdown-menu の破壊項目がここに出る */
+/** `--card` / `--popover` の上。dropdown-menu の破壊項目と、dialog の中の破壊ボタンがここに出る */
 export const OnCard: StoryObj = {
   render: () => (
     <div className="bg-card flex flex-col gap-2 rounded-lg p-4">
@@ -118,7 +118,7 @@ export const OnCard: StoryObj = {
         メニューの破壊項目 bg-destructive-surface/20
       </Row>
       <Row className="bg-destructive-surface/30 text-destructive">
-        メニューの破壊項目 bg-destructive-surface/30
+        破壊ボタンの hover (dark、dialog の中) bg-destructive-surface/30
       </Row>
     </div>
   ),
