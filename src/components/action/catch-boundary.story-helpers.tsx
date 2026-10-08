@@ -1,3 +1,4 @@
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { CatchBoundary } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { spyOn } from "storybook/test";
@@ -16,17 +17,18 @@ export const CAUGHT_PREFIX = "境界で受けた: ";
  */
 export function CaughtHere({ children }: { children: ReactNode }) {
   return (
-    <CatchBoundary
-      getResetKey={() => "story"}
-      errorComponent={({ error }) => (
-        <p>
-          {CAUGHT_PREFIX}
-          {thrownValueMessage(error)}
-        </p>
-      )}
-    >
+    <CatchBoundary getResetKey={() => "story"} errorComponent={CaughtFallback}>
       {children}
     </CatchBoundary>
+  );
+}
+
+function CaughtFallback({ error }: ErrorComponentProps) {
+  return (
+    <p>
+      {CAUGHT_PREFIX}
+      {thrownValueMessage(error)}
+    </p>
   );
 }
 

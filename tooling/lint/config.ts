@@ -192,6 +192,8 @@ export const lintConfig = {
     "react/no-unescaped-entities": "error",
     "react/no-unknown-property": "error",
     "react/require-render-return": "error",
+    // recommended の外 (ADR-0007「基準から外れる名指し」)
+    "react/no-unstable-nested-components": "error",
 
     // -- react-hooks: eslint-plugin-react-hooks の recommended-latest。名指しはカテゴリ外の 2 つ
     // (ADR-0007、oxc-project/oxc#25500) --

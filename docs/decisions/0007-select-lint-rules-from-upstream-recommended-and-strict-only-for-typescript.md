@@ -1,7 +1,7 @@
 # ADR-0007: ルールの選定は上流 recommended を基準にし、typescript だけ strict を基準にする
 
 - Status: Accepted
-- Date: 2026-09-27
+- Date: 2026-10-08
 - 関連: ADR-0014 (React Compiler の診断ルールの扱い)、ADR-0023 (色の統制に足す `@shadcn/lint`)、ADR-0008 (テスト専用コードの import 境界)
 
 ## Context
@@ -97,11 +97,12 @@ oxc 自身の設定と同じく、`correctness` と `perf` に入る分だけを
 
 recommended に無くても、規約や他の決定を機械で守るために足すルールがある。
 
-| ルール                                  | 名指しの理由                                                                                                                                  |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                                        |
-| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)。テストの import を重くする依存のバレルを止める (ADR-0032) |
-| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる                    |
+| ルール                                  | 名指しの理由                                                                                                                                                                                                                            |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                                                                                                                                  |
+| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)。テストの import を重くする依存のバレルを止める (ADR-0032)                                                                                           |
+| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる                                                                                                              |
+| `react/no-unstable-nested-components`   | 描画中に props へ渡す部品の定義を止める。React Compiler がメモ化すると症状が消え、テストでは見つからない (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)。`react/static-components` はこの形を止めない |
 
 テスト専用コードの import を止める範囲と手段の比較は ADR-0008 が持つ。
 
