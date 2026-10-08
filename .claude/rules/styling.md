@@ -123,7 +123,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - 複数選択のまとまりの中の行の `FieldLabel` には `weight="normal"` を渡す。公式の例が付ける `className="font-normal"` は `ui/` の外では `no-restyle` が止めるので、`ui/field.tsx` の variant で書く (`docs/guides/forms-and-inputs.md`「複数選択の形を場面で分ける理由」)
 - 単独の checkbox は `Field orientation="horizontal"` (`Checkbox id` + `FieldLabel htmlFor`) で組み、ラベルに className も `weight` も渡さない (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - `table-fixed` + `min-w-[N]` を持つ部品は境界 viewport (N 直下) でも実測する。広い幅だけで測ると狭幅で列幅が無言で最小化する (`docs/guides/styling-and-tokens.md`「列幅の決まる部品を測る」)
-- 行を消す確認ダイアログは、確定したあと閉じるときのフォーカスを次の行の同じ操作 (無ければ前の行、ほかの行に移せる操作が無ければページが渡す要素) へ `finalFocus` で移す。既定の戻り先は開いた行のトリガーで、行と一緒に消えて body へ落ちる (`docs/guides/lists-and-search.md`「行を消したあとのフォーカスを移す」)
+- 行を消す確認は `DeleteConfirmDialog` で組み、`fallbackFocusRef` にページの要素 (一覧への追加ボタンなど) を渡す。確定のあと、フォーカスが消える行と一緒に body へ落ちないよう、部品が次の行へ移す (`docs/guides/lists-and-search.md`「行を消したあとのフォーカスを移す」)
 - `DialogContent` / `SheetContent` の X ボタン (`showCloseButton`) を消すときは、キャンセルボタン (`DialogClose` など) を tab 順に置く。tab 順に閉じる button が無いと、キーボードで閉じる手段が Escape だけになる (`docs/guides/accessibility.md`「ダイアログの閉じる手段を残す」)
 
 ## a11y 最低基準

@@ -45,15 +45,11 @@
 
 行を消す操作を確認ダイアログで確定したら、閉じるときのフォーカスを消える行の外へ移す。既定ではダイアログを開いた行のトリガーへ戻り、行が消えた時点で body へ落ちる ([APG「Developing a Keyboard Interface」][] の Persistence of focus: "If such events are not managed to set focus on the button that triggered the dialog or on the list item following the deleted item, browsers move focus to the body element, effectively causing a loss of focus within the user interface.")。
 
-| 閉じ方                                | 移し先                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 確定したあと閉じる (閉じ方によらない) | 次の行の同じ操作 (同じ列の、セルの中で同じ位置)。無ければ前の行の同じ操作。ほかの行に移せる操作が無ければ (最後の 1 件や、残りがすべて削除中のとき) ページが渡す要素 (一覧への追加ボタンなど)。開いたトリガーは消える ([APG「Dialog (Modal) Pattern」][] の Keyboard Interaction の注記: "The invoking element no longer exists. Then, focus is set on another element that provides logical work flow.") |
-| 確定せずに閉じる (キャンセル、Escape) | 開いたトリガー (Base UI の既定)。行は残る                                                                                                                                                                                                                                                                                                                                                                 |
-
-- 確認ダイアログの部品が、確定の時点で移し先を決め、Popup の `finalFocus` に渡す関数が返す ([Base UI docs「Alert Dialog」][] の `finalFocus`)
-- 移し先を閉じる時点で決めない。完了点「再取得完了」(ADR-0017) では閉じる時点で行が消えていて、隣の行を位置から引けない
-- 次の行を探すのは `findSiblingRowControl` (`src/lib/find-sibling-row-control.ts`)。無効な操作 (削除中や更新中の行) は飛ばす。消える途中の行へ移すと、その行が消えたときに body へ落ちる
-- `DeleteConfirmDialog` はこれを持ち、ほかの行に移せる操作が無いときの移し先を `fallbackFocusRef` で受ける。行の別の操作から開くダイアログで行を消すときも、同じ移し先にする
+- 確定したあとは、閉じ方 (キャンセル、Escape を含む) によらず、次の行の同じ操作 (同じ列の、セルの中で同じ位置) へ移す。無ければ前の行、ほかの行に移せる操作が無ければ (最後の 1 件や、残りがすべて削除中のとき) ページが渡す要素 (一覧への追加ボタンなど) へ移す。開いたトリガーは消える ([APG「Dialog (Modal) Pattern」][] の Keyboard Interaction の注記: "The invoking element no longer exists. Then, focus is set on another element that provides logical work flow.")
+- 確定せずに閉じたときは、開いたトリガーへ戻す (Base UI の既定)。行は残る
+- `DeleteConfirmDialog` がこれを持ち、確定の時点で決めた移し先を Popup の `finalFocus` で返す ([Base UI docs「Alert Dialog」][] の `finalFocus`)。ほかの行に移せる操作が無いときの移し先は `fallbackFocusRef` で受ける
+- 移し先は閉じる時点ではなく確定の時点で決める。完了点「再取得完了」(ADR-0017) では閉じる時点で行が消えていて、隣の行を位置から引けない
+- 無効な操作 (削除中や更新中の行) へは移さない。消える途中の行へ移すと、その行が消えたときに body へ落ちる
 - 確定が失敗して行が戻っても、フォーカスは移し先に残る。失敗は toast で伝わる
 
 ### 絞り込み条件を URL に置く
@@ -94,6 +90,10 @@ ADR-0018 の Context が出典を持つ。組むときに効くのは次の 4 �
 - query の結果は `data` に直接渡し、state に写さない。写すと、キャッシュに遅れる同期経路が増える (skill [`@tanstack/react-table` の `skills/with-tanstack-query/SKILL.md`][])
 - cell に関数や状態を渡す経路は `table.options.meta` ([TanStack Table docs「Table and Column Meta」][])
 - 楽観表示は Table ではなく Query 側の関心事である。Table は機構を持たない (ADR-0018)
+
+### 行を消したあとのフォーカスを確認ダイアログで移す理由
+
+フォーカスが消える要素に残るのは、行を消す確定のあとだけである。そこで、ダイアログを閉じる地点で Base UI の `finalFocus` を使って移す。`DataTable` で行の消失を見張って後から移す形は、行が DOM から外れる直前を捉える仕組みを自前で持つことになるので採らない。
 
 ### cell を部品の参照で渡す理由
 

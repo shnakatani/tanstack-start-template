@@ -546,7 +546,7 @@ describe("NotesPage", () => {
     await expectSettledRow(screen, CREATED_NOTE);
   });
 
-  it("削除を確認すると removeNote が number の id で呼ばれ、一覧が再取得される", async () => {
+  it("削除を確認すると removeNote が number の id で呼ばれ、一覧が再取得され、追加ボタンへフォーカスが移る", async () => {
     vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
     vi.mocked(removeNote).mockResolvedValue(undefined);
     const screen = await renderPage();
@@ -562,9 +562,13 @@ describe("NotesPage", () => {
     // invalidate → refetch が働けば 2 回目の listNotes の結果 (0 件) が反映される
     await expectText(screen, "メモが登録されていません");
     expect(vi.mocked(listNotes).mock.calls.length).toBeGreaterThanOrEqual(2);
+    // ほかに行が無いので、ページが渡す要素へ移る
+    await expect
+      .element(screen.getByRole("button", { name: NOTE_CREATE_TRIGGER_LABEL }))
+      .toHaveFocus();
   });
 
-  it("削除をキャンセルすると removeNote を呼ばず行が残る", async () => {
+  it("削除をキャンセルすると removeNote を呼ばず行が残り、開いた行の削除ボタンへフォーカスが戻る", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const screen = await renderPage();
     await expectText(screen, NOTE.title);
@@ -575,6 +579,7 @@ describe("NotesPage", () => {
     await expectDeleteConfirmClosed(screen);
     expect(vi.mocked(removeNote)).not.toHaveBeenCalled();
     await expectText(screen, NOTE.title);
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toHaveFocus();
   });
 
   it("削除に失敗すると固定文言を toast に出し (server の raw message は表示しない)、行の busy が解ける", async () => {
@@ -720,46 +725,6 @@ describe("NotesPage", () => {
     // 移し先は同じ列の同じ操作なので、同じ行の編集ボタンではない
     await expectRemoved(noteRow(screen, NOTE));
     await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toHaveFocus();
-  });
-
-  it("最後の行を削除すると、前の行の削除ボタンへフォーカスが移る", async () => {
-    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]).mockResolvedValue([NOTE]);
-    vi.mocked(removeNote).mockResolvedValue(undefined);
-    const screen = await renderPage();
-    await expectText(screen, OTHER_NOTE.title);
-    await openDeleteConfirm(screen, OTHER_NOTE);
-
-    await confirmDeleteButton(screen).click();
-
-    await expectRemoved(noteRow(screen, OTHER_NOTE));
-    await expect.element(rowDeleteButton(screen, NOTE.title)).toHaveFocus();
-  });
-
-  it("1 件だけの行を削除すると、追加ボタンへフォーカスが移る", async () => {
-    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]).mockResolvedValue([]);
-    vi.mocked(removeNote).mockResolvedValue(undefined);
-    const screen = await renderPage();
-    await expectText(screen, NOTE.title);
-    await openDeleteConfirm(screen, NOTE);
-
-    await confirmDeleteButton(screen).click();
-
-    await expectText(screen, "メモが登録されていません");
-    await expect
-      .element(screen.getByRole("button", { name: NOTE_CREATE_TRIGGER_LABEL }))
-      .toHaveFocus();
-  });
-
-  it("削除をキャンセルすると、開いた行の削除ボタンへフォーカスが戻る", async () => {
-    vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
-    const screen = await renderPage();
-    await expectText(screen, NOTE.title);
-    await openDeleteConfirm(screen, NOTE);
-
-    await screen.getByRole("button", { name: "キャンセル" }).click();
-
-    await expectDeleteConfirmClosed(screen);
-    await expect.element(rowDeleteButton(screen, NOTE.title)).toHaveFocus();
   });
 
   it("削除の開始と完了を announcer が通知し、完了には対象名を載せる", async () => {
