@@ -28,7 +28,7 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 ## Consequences
 
 - 前の遷移の `ready` が resolve する前に次の遷移が始まると、`AbortError: Transition was skipped. New ViewTransition started` が unhandled rejection になる。遷移は完了し、`src/` には `unhandledrejection` を受ける処理が無いので、本番では console に出るだけである
-- Vitest は既定で unhandled error で run を失敗させる (Vitest docs の `dangerouslyIgnoreUnhandledErrors`)。`defaultViewTransition: true` の router でナビゲーションを間を空けずに続けるテストは、テストが通っても `vp test run` が失敗する
+- Vitest は既定で unhandled error で run を失敗させる (Vitest docs の `dangerouslyIgnoreUnhandledErrors`)。テストは遷移を待ってすぐ次の遷移を起こすので、この `AbortError` が出る (2026-10-09 に CI の `route-announcer.test.tsx` で 3 件)。`tooling/test/config.ts` の `onUnhandledError` で、名前が `AbortError` で文言が `Transition was skipped` を含むものだけを run の失敗から外す (Vitest docs の `onUnhandledError` が、決まった unhandled error を除く手段として案内する形)。利用者のテストでも、この error は落ちなくなる。文言は Chromium のもので、ほかのブラウザでテストを走らせるなら合わせて見直す
 - タブが隠れた状態のナビゲーションでも、`ready` が `InvalidStateError` で reject する (TanStack/router#7906 の再現。手元では未実測)
 - Safari でスワイプして戻る・進むと、ブラウザの遷移のアニメーションと二重に動く (TanStack/router#6754。手元では未実測)。issue に、Navigation API の `hasUAVisualTransition` を見て `types` の関数から `false` を返す回避の形がある
 - 移動・拡大縮小・ぼかしを足すときは、reduced motion の扱いと合わせて決める
@@ -48,6 +48,7 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 
 - `defaultViewTransition` (TanStack Router docs の `RouterOptionsType`): https://tanstack.com/router/latest/docs/api/router/RouterOptionsType#defaultviewtransition-property
 - 既定で unhandled error が run を失敗させること (Vitest docs の `dangerouslyIgnoreUnhandledErrors`): https://vitest.dev/config/dangerouslyignoreunhandlederrors
+- 決まった unhandled error を run の失敗から外す手段 (Vitest docs の `onUnhandledError`): https://vitest.dev/config/onunhandlederror
 - WCAG 2.3.3 の motion animation の定義と errata (Understanding 2.3.3): https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html
 - `ready` が reject する条件と accessibility tree (CSS View Transitions Level 1): https://www.w3.org/TR/css-view-transitions-1/
 - router が `ready` の reject を拾わない件と、直す PR: https://github.com/TanStack/router/issues/7906、https://github.com/TanStack/router/pull/7907

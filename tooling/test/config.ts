@@ -50,6 +50,11 @@ export const testConfig = {
   unstubEnvs: true,
   unstubGlobals: true,
   setupFiles: ["./tooling/test/setup.ts"],
+  // router は View Transition の ready の reject を拾わず、間を空けずに続く遷移で飛ばされた遷移の
+  // AbortError が unhandled rejection になる。遷移は完了するので、これだけを run の失敗から外す (ADR-0040)
+  onUnhandledError(error) {
+    return !(error.name === "AbortError" && error.message.includes("Transition was skipped"));
+  },
   // project はどれもこれを継承し、自分の exclude を後ろに連結する (Vitest 5 の extends は配列を連結する)
   exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/worktrees/**", "**/.claude/skills/**"],
   projects: [
