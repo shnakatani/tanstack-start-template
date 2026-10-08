@@ -42,21 +42,27 @@ import {
  * `DataTable` に渡して cell を描く。確認ダイアログの Root は `NoteActionsCell` のトリガーと
  * 同じ handle で同居させる (Root は 1 handle につき 1 つ)。
  */
-async function renderCells({
-  notes = [NOTE, OTHER_NOTE],
-  deletingIds = [],
-  creatingRows = [],
-  updatingNotes = [],
-  onConfirm = vi.fn(),
-}: {
+interface CellsOptions {
   notes?: Note[];
   deletingIds?: number[];
   creatingRows?: CreatingRow[];
   updatingNotes?: NoteUpdate[];
   onConfirm?: (target: NoteDeleteTarget) => void;
-} = {}) {
+}
+
+async function renderCells(options: CellsOptions = {}) {
+  return await render(cells(options));
+}
+
+function cells({
+  notes = [NOTE, OTHER_NOTE],
+  deletingIds = [],
+  creatingRows = [],
+  updatingNotes = [],
+  onConfirm = vi.fn(),
+}: CellsOptions) {
   const rows = toNoteRows({ notes, creatingRows, deletingIds, updatingNotes });
-  return await render(
+  return (
     <>
       <DataTable
         tableKey="notes"
@@ -71,7 +77,7 @@ async function renderCells({
         onConfirm={onConfirm}
         fallbackFocusRef={{ current: null }}
       />
-    </>,
+    </>
   );
 }
 
@@ -232,6 +238,32 @@ describe("NoteActionsCell", () => {
       .toBeInTheDocument();
     await confirmDeleteButton(screen).click();
     expect(onConfirm).toHaveBeenCalledWith({ id: OTHER_NOTE.id, name: OTHER_NOTE.title });
+  });
+
+  it("確定の時点で決めた移し先の行が閉じる前に消えたら、フォーカスは body へ落ちない", async () => {
+    // onConfirm は閉じないので、確定のあとも開いたまま残る
+    const onConfirm = vi.fn();
+    const screen = await renderCells({ onConfirm });
+    await rowDeleteButton(screen, NOTE.title).click();
+    await confirmDeleteButton(screen).click();
+    // 移し先 (次の行) が、閉じる前に別の理由で消える
+    await screen.rerender(cells({ notes: [NOTE], onConfirm }));
+
+    await screen.getByRole("button", { name: "キャンセル" }).click();
+
+    // fallbackFocusRef も空なので、Base UI の既定 (開いたトリガー) へ戻る
+    await expect.element(rowDeleteButton(screen, NOTE.title)).toHaveFocus();
+  });
+
+  it("確定したときに移し先が無ければ warn に残す", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const screen = await renderCells({ notes: [NOTE] });
+    await rowDeleteButton(screen, NOTE.title).click();
+    await confirmDeleteButton(screen).click();
+
+    expect(warn).toHaveBeenCalledWith("[DeleteConfirmDialog] no focus target after confirm", {
+      entityLabel: NOTE_ENTITY_LABEL,
+    });
   });
 
   it("確定のあとにキャンセルで閉じても、確定の時点で決めた次の行へフォーカスが移る", async () => {

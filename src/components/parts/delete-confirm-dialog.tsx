@@ -70,13 +70,26 @@ export function DeleteConfirmDialog<TId = string>({
     }
     const sibling = trigger.current === null ? null : findSiblingRowControl(trigger.current);
     focusAfterConfirm.current = sibling ?? fallbackFocusRef.current;
+    if (focusAfterConfirm.current === null) {
+      // 閉じたあとトリガーへ戻り、行と一緒に消えて body へ落ちる
+      console.warn("[DeleteConfirmDialog] no focus target after confirm", { entityLabel });
+    }
     return onConfirm(payload);
+  }
+
+  // 閉じるまでに移し先の行が消えていたら (別の再取得など)、ページが渡す要素へ移す
+  function finalFocus() {
+    const target = focusAfterConfirm.current;
+    if (target === null) {
+      return true;
+    }
+    return target.isConnected ? target : (fallbackFocusRef.current ?? true);
   }
 
   return (
     <AlertDialog handle={handle} onOpenChange={handleOpenChange}>
       {({ payload }) => (
-        <AlertDialogContent finalFocus={() => focusAfterConfirm.current ?? true}>
+        <AlertDialogContent finalFocus={finalFocus}>
           <AlertDialogHeader>
             <AlertDialogTitle>{entityLabel}の削除</AlertDialogTitle>
             <AlertDialogDescription>
