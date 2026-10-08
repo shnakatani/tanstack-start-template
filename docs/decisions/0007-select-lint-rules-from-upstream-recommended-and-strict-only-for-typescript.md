@@ -97,12 +97,12 @@ oxc 自身の設定と同じく、`correctness` と `perf` に入る分だけを
 
 recommended に無くても、規約や他の決定を機械で守るために足すルールがある。
 
-| ルール                                  | 名指しの理由                                                                                                                                                                                                                            |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                                                                                                                                  |
-| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)。テストの import を重くする依存のバレルを止める (ADR-0032)                                                                                           |
-| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる                                                                                                              |
-| `react/no-unstable-nested-components`   | 描画中に props へ渡す部品の定義を止める。React Compiler がメモ化すると症状が消え、テストでは見つからない (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)。`react/static-components` はこの形を止めない |
+| ルール                                  | 名指しの理由                                                                                                                                                                                                                                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                                                                                                                                                                                                              |
+| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)。テストの import を重くする依存のバレルを止める (ADR-0032)                                                                                                                                                                       |
+| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる                                                                                                                                                                                          |
+| `react/no-unstable-nested-components`   | 描画中の部品の定義 (props に直接渡す形を含む) を止める。React Compiler を通すと症状が消え、Compiler を通す project のテストでは見つからない (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)。`react/static-components` は props に直接渡す形を止めない (oxlint 1.85.0、2026-10-08) |
 
 テスト専用コードの import を止める範囲と手段の比較は ADR-0008 が持つ。
 
