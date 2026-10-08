@@ -38,7 +38,7 @@ interface DeleteConfirmDialogProps<TId> {
    */
   onConfirm: (target: DeleteTarget<TId>) => Promise<void> | void;
   /**
-   * 確定で閉じたときに、ほかの行に同じ操作が無ければフォーカスを移す先 (一覧への追加ボタンなど)。
+   * 確定したあと閉じるときに、ほかの行に移せる操作が無ければフォーカスを移す先 (一覧への追加ボタンなど)。
    * 移し先の決め方は docs/guides/lists-and-search.md「行を消したあとのフォーカスを移す」
    */
   fallbackFocusRef: RefObject<HTMLElement | null>;

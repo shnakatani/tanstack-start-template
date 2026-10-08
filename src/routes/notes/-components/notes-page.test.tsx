@@ -646,12 +646,11 @@ describe("NotesPage", () => {
     await expect.element(rowDeleteButton(screen, NOTE.title)).toBeDisabled();
     // 行は静的テキスト (sr-only) で状態を持つ (ADR-0026)
     await expect.element(noteRow(screen, NOTE).getByText("削除中")).toBeInTheDocument();
-    // focusableWhenDisabled では native disabled が付かないため、見た目は cva base の
-    // data-disabled: が担う (ADR-0020)。半透明 + pointer-events なしを算出スタイルで固定する
+    // 半透明 + pointer-events なしを算出スタイルで固定する
     const targetTrigger = rowDeleteButton(screen, NOTE.title);
     await expect.element(targetTrigger).toHaveStyle("opacity: 0.5; pointer-events: none");
     // 削除中の行 (半透明) もコントラスト等の a11y 違反が無い。削除中のトリガー
-    // (aria-disabled) と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
+    // と sr-only の状態テキストを含めて測る。楽観行の検査とは対象が違う。
     // 楽観行の検査と同じ理由で、a11y tag を付けた専用テストへは降ろさない。
     // popup を閉じた後の axe は unmount を待ってから (docs/guides/testing/user-interactions.md「animation を戻すテストを書く」)
     await expectDeleteConfirmClosed(screen);
