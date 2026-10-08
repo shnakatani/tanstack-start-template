@@ -13,7 +13,8 @@
 
 ### 手元の環境を用意する
 
-- mise のシェル hook を入れる。hook を入れていない手元では `.mise.toml` の `[env]` が読まれず、`DB_FILE_NAME` が未設定のまま走る。port の導出はタスクの `env` に置いてあるので、hook が無くても `mise run serve` / `mise run storybook` は port を決められる
+- mise のシェル hook を入れる。hook を入れていない手元では `.mise.toml` の `[env]` が読まれず、`DB_FILE_NAME` が未設定のまま走る。port は mise が設定を読む時点で daemons の自動 port から決めるので、hook が無くても `mise run serve` / `mise run storybook` は port を決められる (ADR-0004)
+- mise は `.mise.toml` の `min_version` 以上にする。古い mise は設定の読み込みで止まる (ADR-0004)
 - 素の `pnpm` は corepack などで別に入れない。Vite+ の shim が `packageManager` の版の `pnpm` を用意する ([Vite+ docs「Environment」][]。確かめた結果は「入口を `vp` にそろえる理由」)
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
 

@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-10-04
+- Date: 2026-10-09
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -17,7 +17,7 @@
 
 | ツール      | 役割                                                                                                | 宣言する場所                                            |
 | ----------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| mise        | タスクランナー、環境変数                                                                            | `.mise.toml` の `[tasks.*]` と `[env]`                  |
+| mise        | タスクランナー、環境変数、dev server と Storybook の port                                           | `.mise.toml` の `[tasks.*]` と `[env]` と `[daemons.*]` |
 | Vite+       | Node.js と pnpm の解決、dev server / build / lint / format / test / パッケージ操作の統一 CLI (`vp`) | `package.json` と `pnpm-workspace.yaml` の `catalog:`   |
 | pnpm        | パッケージマネージャ                                                                                | `package.json` の `packageManager`                      |
 | drizzle-kit | スキーマからの migration 生成と適用                                                                 | `package.json` と `mise run db:generate` / `db:migrate` |
@@ -38,31 +38,38 @@ CI は mise を要さない。`.mise.toml` の `[tasks.verify]` と同じ順序�
 アプリ名のように環境ごとに値が変わらないものは環境変数にしない。
 `VITE_APP_NAME` を `.mise.toml` の `[env]` に置くと、値の定義・型宣言・未設定の検出・CI への受け渡しが芋づるで要り、CI が mise に依存する原因になる。
 
-毎回の解決にコストがかかる値も `[env]` へ置かない。
-dev server と Storybook の port は worktree ごとに git から導出するため、`[env]` に置くと mise が env を解決するたび (シェル hook の下ではディレクトリへ入るたび) に git のサブプロセスが走る。
-読み手が `serve` と `storybook` のタスクしかいないので、タスクの `env` で導出する。`run` の引数へ `$(...)` を書くと、script が実行できなかったときに空文字が渡って既定 port で起動する。タスクの `env` なら script の失敗がタスクの失敗になる。
-2026-09-20 の実測で、port の導出をトップレベルの `[env]` に置くと `mise hook-env` は 70ms、タスクの `env` に置くと 28ms だった。タスク側なら、シェル hook を入れていない手元でも port が決まる。
+毎回の解決にコストがかかる値も `[env]` へ置かない。mise が env を解決するたび (シェル hook の下ではディレクトリへ入るたび) にその処理が走る。
 
-導出した port は別の worktree の port と重なりうる。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
+### dev server と Storybook の port は mise の daemons の自動 port で worktree ごとに決める
+
+`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名のタスクを走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise docs「Ports, URLs, and worktrees」の Automatic ports と Port variables)。タスクはこの値を `--port` に渡すので、`mise run serve` で前面に起動しても、`mise daemons start serve` で常駐させても同じ port になる。
+
+2026-10-09 に mise 2026.9.18 で確かめた振る舞いは次のとおりである。
+
+| 場所                                     | port                                                   |
+| ---------------------------------------- | ------------------------------------------------------ |
+| git の primary checkout                  | `3000` / `6006`                                        |
+| linked worktree                          | パスから決まる別の値 (`3001`〜`3511` / `6007`〜`6517`) |
+| 同じ port での 2 つ目の `mise run serve` | `Port <port> is already in use` で終了する             |
+
+- daemons は experimental で、`[settings]` の `experimental = true` が要る (mise docs「Daemons」の Requirements)。このフラグは daemons のほかに、既定になる前の振る舞いも有効にする (mise docs の settings の `experimental`: "Some new behavior also ships behind this flag before it becomes the default")
+- 自動 port は mise v2026.9.12 から使える。`min_version` は確かめた版の `2026.9.18` にし、それより古い mise を設定の読み込みで止める
+- mise は bad port を避けない。ブラウザは WHATWG Fetch の bad port への接続を拒むが、server は起動するので、使用中かを見るフラグでは気づけない (2026-10-04 に port 3659 で起動した dev server へ、curl は 200 を返し、Playwright 1.63.0 の Chromium は `net::ERR_UNSAFE_PORT` で開けなかった)。`base` を変えるときは、`base` から `base + 511` に bad port が入らない値を選ぶ。`3000`〜`3511` と `6006`〜`6517` には無い (whatwg/fetch の e9460d1、2026-10-06)
+
+| 案                                                      | 評価                                                                                                                                                              | 採否     |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| mise の daemons の自動 port                             | primary checkout で base、worktree ごとに別の port、重なったら終了、を mise の宣言だけで持てる。experimental なので `experimental = true` と `min_version` が要る | **採用** |
+| worktree の名前のハッシュから自前の script で導出する   | 同じ振る舞いを、primary checkout の判定と bad port の表ごと自前で持つ                                                                                             | 却下     |
+| 割り当てを記録して重なりをなくす (workz、devports など) | lock と、消えた worktree の割り当ての回収を自前で持つ                                                                                                             | 却下     |
+
+自動 port は別の worktree や別のプロジェクトの port と重なりうる。mise も重なった port をずらさない (mise docs「Ports, URLs, and worktrees」の Port conflicts)。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
 Vite は使用中なら次の空き port へずらし (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")、Storybook も環境変数 `CI` があると尋ねずにずらす (2026-10-04 に storybook@10.6.0 で実測)。
-ずれると、worktree ごとに決めた port を指す側が別のサーバーへつながる。
+ずれると、worktree ごとに決まった port を指す側が別のサーバーへつながる。
 
-| 案                                                                 | 評価                                                                                                                             | 採否     |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 使用中なら終了させる (`--strictPort` / `--exact-port`)             | port が worktree で決まる。2 つの worktree が同じ port を導出したときは後の側が起動せず、worktree の名前を変えると port が変わる | **採用** |
-| 次の空き port へずらす (Vite の既定、Storybook の `CI` があるとき) | 重なっても両方が起動するが、port が起動した順で決まる。導出した port を指す側が、黙って別の worktree のサーバーへつながる        | 却下     |
-
-導出した port が WHATWG Fetch の bad port に当たったら、範囲の中で次の port へ進める。表は `scripts/dev-env/derive-dev-port.sh` が持つ。
-ブラウザは bad port への接続を拒むが、server は起動するので、使用中かを見るフラグでは気づけない。
-2026-10-04 に、port 3659 で起動した dev server へ curl は 200 を返し、Playwright 1.63.0 の Chromium は `net::ERR_UNSAFE_PORT` で開けなかった。
-使用中の port ではずらさないのに bad port では進めるのは、bad port かどうかが port の番号だけで決まるからである。進めた先は worktree の名前で決まり、起動した順に依らない。
-
-| 案                                                                                | 評価                                                                                                                                                                                                                                                     | 採否     |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 範囲の中で次の port へ進める                                                      | port が worktree の名前で決まる。bad port の直後の port に寄る (6670 には 6665-6670 の 6 つが寄る) が、2 つの worktree が重なる確率は Storybook の範囲で 0.1037%、bad port を除いた port へ均一に写した場合は 0.1009% で、差は小さい (2026-10-04 に計算) | **採用** |
-| bad port を除いた port の列へ、ハッシュを均一に写す                               | 重なる確率は上の 0.1009% になるが、範囲の port を毎回並べ直す処理が要る                                                                                                                                                                                  | 却下     |
-| bad port なら終了させ、worktree の名前を変えさせる                                | 番号だけで決まる事象に利用者の手を要し、起動するまで分からない                                                                                                                                                                                           | 却下     |
-| ブラウザの起動フラグで bad port を許す (Chromium の `--explicitly-allowed-ports`) | テストで起動するブラウザには効くが、利用者が普段使うブラウザには効かない                                                                                                                                                                                 | 却下     |
+| 案                                                                 | 評価                                                                                                                      | 採否     |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 使用中なら終了させる (`--strictPort` / `--exact-port`)             | port が worktree で決まる。2 つの worktree が同じ port になったときは後の側が起動しない                                   | **採用** |
+| 次の空き port へずらす (Vite の既定、Storybook の `CI` があるとき) | 重なっても両方が起動するが、port が起動した順で決まる。決まった port を指す側が、黙って別の worktree のサーバーへつながる | 却下     |
 
 ### `envDir: false` で Vite の `.env` 読み込みを切る
 
@@ -181,6 +188,10 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - 使用中の port なら Vite を終了させる `server.strictPort`: https://vite.dev/config/server-options#server-strictport
 - 使用中の port なら Storybook を終了させる `--exact-port`: https://storybook.js.org/docs/api/cli-options
 - ブラウザが接続を拒む bad port の表: https://fetch.spec.whatwg.org/#port-blocking
+- mise の daemons と experimental の要件: https://mise.jdx.dev/daemons.html
+- mise の daemons の自動 port と port の重なり: https://mise.jdx.dev/daemons/worktrees.html
+- mise の `experimental` の設定: https://mise.jdx.dev/configuration/settings.html#experimental
+- mise の `min_version`: https://mise.jdx.dev/configuration.html#minimum-mise-version
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines
 - mise の `disable_tools` と、設定をローカル config へ置けること: https://mise.jdx.dev/configuration/settings.html
 - mise が読む Node.js のバージョンファイル (`devEngines` は idiomatic version file 扱いで既定 off): https://mise.jdx.dev/lang/node.html
