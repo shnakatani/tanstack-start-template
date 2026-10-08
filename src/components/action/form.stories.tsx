@@ -49,13 +49,12 @@ export const Settles: Story = {
     await userEvent.click(button);
 
     await expect(args.submitAction).toHaveBeenCalledTimes(1);
-    await expect(button).toHaveAttribute("aria-busy", "true");
     await expect(button).toHaveAttribute("aria-disabled", "true");
     // native disabled にはしない (フォーカスを保つ)
     await expect(button).toHaveFocus();
 
     settling.settle();
-    await waitFor(() => expect(button).not.toHaveAttribute("aria-busy", "true"));
+    await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
   },
 };
 
@@ -86,7 +85,7 @@ export const PlainSubmitNotCalledTwice: Story = {
         <Button type="submit">保存</Button>
         {/* 素の submit ボタンは pending を DOM に出さない。`settle()` は Promise を解くだけで
             `handleSubmit` が読む isPending は再描画まで true のままなので、決着が描画へ
-            届いたことを観測する口が要る。`ActionFormSubmit` を併置して aria-busy を借りる
+            届いたことを観測する口が要る。`ActionFormSubmit` を併置して aria-disabled を借りる
             (カタログには出さない story なので、見た目への影響はない) */}
         <ActionFormSubmit>状態</ActionFormSubmit>
       </>
@@ -102,7 +101,7 @@ export const PlainSubmitNotCalledTwice: Story = {
     await expect(args.submitAction).toHaveBeenCalledTimes(1);
 
     settling.settle();
-    await waitFor(() => expect(status).not.toHaveAttribute("aria-busy", "true"));
+    await waitFor(() => expect(status).not.toHaveAttribute("aria-disabled", "true"));
     await userEvent.keyboard("{Enter}");
     await expect(args.submitAction).toHaveBeenCalledTimes(2);
     settling.settle();

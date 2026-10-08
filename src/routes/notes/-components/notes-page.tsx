@@ -84,7 +84,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
     // 開始の通知の置き場 (ADR-0026)。この画面は variables 方式 (ADR-0017) なのでキャッシュは触らない。
-    // 行の半透明と aria-busy は読み上げに出ないので、開始を通知する。開始は確定を押した直後なので
+    // 行の半透明は読み上げに出ないので、開始を通知する。開始は確定を押した直後なので
     // 対象名を載せない
     onMutate: () => {
       announce("削除しています");
@@ -208,7 +208,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
               // busy の判定は行データから (ADR-0017)。通知は announcer が担う (ADR-0026)
               rowProps={({ original }) => {
                 const isBusy = isNoteRowBusy(original);
-                return { "aria-busy": isBusy };
+                return { "data-busy": isBusy };
               }}
             />
           )}

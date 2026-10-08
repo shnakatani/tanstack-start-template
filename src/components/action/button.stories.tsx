@@ -45,7 +45,6 @@ export const Settles: Story = {
     await userEvent.click(button);
 
     await expect(args.action).toHaveBeenCalledTimes(1);
-    await expect(button).toHaveAttribute("aria-busy", "true");
     await expect(button).toHaveAttribute("aria-disabled", "true");
     // 名前は pending でも変わらない
     await expect(button).toHaveAccessibleName("保存");
@@ -62,8 +61,7 @@ export const Settles: Story = {
     await expect(button).toHaveFocus();
 
     settling.settle();
-    await waitFor(() => expect(button).not.toHaveAttribute("aria-busy", "true"));
-    await expect(button).not.toHaveAttribute("aria-disabled", "true");
+    await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled", "true"));
   },
 };
 

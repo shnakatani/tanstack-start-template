@@ -145,10 +145,9 @@ export const Pending: Story = {
     const confirm = screen.getByRole("button", { name: "削除" });
     confirm.focus();
     await userEvent.keyboard("{Enter}");
-    await expect(confirm).toHaveAttribute("aria-busy", "true");
     await expect(confirm).toHaveAttribute("aria-disabled", "true");
     settling.settle();
-    await waitFor(() => expect(confirm).toHaveAttribute("aria-busy", "false"));
+    await waitFor(() => expect(confirm).not.toHaveAttribute("aria-disabled", "true"));
   },
 };
 
@@ -165,7 +164,7 @@ export const NotCalledTwice: Story = {
     await expect(args.onConfirm).toHaveBeenCalledTimes(1);
     await expect(args.onConfirm).toHaveBeenCalledWith(TARGET);
     settling.settle();
-    await waitFor(() => expect(confirm).toHaveAttribute("aria-busy", "false"));
+    await waitFor(() => expect(confirm).not.toHaveAttribute("aria-disabled", "true"));
   },
 };
 

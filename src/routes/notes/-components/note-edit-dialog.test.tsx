@@ -123,7 +123,7 @@ describe("NoteEditDialog", () => {
 
     await saveButton(screen).click();
 
-    await expect.element(saveButton(screen)).toHaveAttribute("aria-busy", "true");
+    await expect.element(saveButton(screen)).toBeDisabled();
     await expectDialogOpen(screen, "dialog");
 
     update.resolve(undefined);

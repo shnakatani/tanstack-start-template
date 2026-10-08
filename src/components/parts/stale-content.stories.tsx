@@ -14,5 +14,5 @@ type Story = StoryObj<typeof meta>;
 /** 最新の内容。そのまま描く */
 export const Fresh: Story = {};
 
-/** 新しい内容を待っている間。半透明 + aria-busy */
+/** 新しい内容を待っている間。半透明 */
 export const Stale: Story = { args: { stale: true } };

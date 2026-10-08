@@ -32,10 +32,10 @@ export const Empty: Story = {
   args: { tableKey: "fruits-empty", data: [] },
 };
 
-/** rowProps で行ごとに busy を表す。半透明は DataTable が aria-busy から当てる */
+/** rowProps で行ごとに busy を表す。半透明は registry の TableRow が data-busy から当てる */
 export const BusyRow: Story = {
   args: {
     tableKey: "fruits-busy-row",
-    rowProps: ({ original }) => ({ "aria-busy": original.id === 2 }),
+    rowProps: ({ original }) => ({ "data-busy": original.id === 2 }),
   },
 };
