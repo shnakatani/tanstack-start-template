@@ -83,9 +83,9 @@
 
 - root の plugin をテストで外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST === "true"` の分岐から外す。config を分けない (「判定を `process.env.VITEST` で書く理由」)
 - テストの分岐は plugin を返さない。外す plugin ごとの理由は「テストの分岐で plugin を外す理由」
-- React の plugin は `tooling/plugins/react.ts` の `reactPlugin` から作り、テストの分岐と project で別の `viteReact()` を書かない。`viteReact` の作り方を 1 か所にし、アプリとテストの違いを `compiler` と `logDiagnostics` の 2 つに限る。別に書くと、ほかの option がアプリとテストで食い違っても、テストは全部通る
+- React の plugin は `tooling/plugins/react.ts` の `reactPlugin` から作り、テストの分岐と project で別の `viteReact()` を書かない。`viteReact` の作り方を 1 か所にし、アプリとテストの違いを `compiler` と `reportDiagnostics` の 2 つに限る。別に書くと、ほかの option がアプリとテストで食い違っても、テストは全部通る
 - React の plugin と `tailwindcss()` は、ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す。Node の project には要らない。`.tsx` は Vite+ の既定の JSX 変換が扱う
-- `logDiagnostics` はアプリの分岐だけが立てる (「テストでも React Compiler を通す理由」)
+- `reportDiagnostics` はアプリの分岐だけが立てる (「テストでも React Compiler を通す理由」)
 
 ### React Compiler を通さない project を足す
 
@@ -221,7 +221,7 @@ Compiler がかかる範囲と、診断の扱いは次のとおり。
 
 - `@vitejs/plugin-react` 6.1.1 は、Vite の environment の consumer が `server` でないときだけ Compiler をかけ、`node_modules` を変換しない (`dist/index.js` の `createReactCompilerPlugin` の `isClient` と、`defaultExcludeRE`)。2026-10-05 に、変換後の `src/components/ui/separator.tsx` に `_c(` が、Compiler を通す project (`browser`、`storybook-light`、`storybook-dark`) では現れ、通さない project (`browser-no-compiler`、`storybook-light-no-compiler`) では現れないことを確かめた
 - Node の project は React の plugin を持たず、Compiler を通らない
-- テストでは `logDiagnostics` を立てない。テストで出すと、そのファイルを読むブラウザモードの project ごとに同じ bail out を出し直す。bail out はビルドログと `vp lint -D react/todo` で読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」、ADR-0014)
+- テストでは `reportDiagnostics` を立てない。テストで出すと、そのファイルを読むブラウザモードの project ごとに同じ bail out を出し直す。bail out はビルドログと `vp lint -D react/todo` で読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」、ADR-0014)
 
 ### project に `optimizeDeps` を書く理由
 

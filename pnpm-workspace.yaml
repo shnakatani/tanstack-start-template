@@ -40,9 +40,6 @@ peerDependencyRules:
     vite: "*"
     vitest: "*"
     # --- ここから下はこのテンプレートが追加 ---
-    # @vitejs/plugin-react の optional peer (oxc-transform-react ^0.145.0) が上流自身の使う ^0.147.0 を満たさない (ADR-0014)
-    # 撤去条件: plugin-react の peer の範囲が、上流自身の使う oxc-transform-react の版を含んだとき
-    "@vitejs/plugin-react>oxc-transform-react": "^0.147.0"
     # storybook@10.6.1 の optional peer (vite-plus ^0.1.15 || ^0.2.0) が 1.0 に追いついていない。読むのは 1.0 も
     # export する vite-plus/versions だけ (storybook@10.6.1 の dist で確認)。撤去条件: storybook の peer が vite-plus 1.x を含んだとき
     # 値が major なので export が消えても鳴らない。上げたときの確認は docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」

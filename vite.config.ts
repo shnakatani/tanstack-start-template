@@ -77,7 +77,7 @@ export default defineConfig({
         },
       }),
       // bail out はビルドログへ出す (ADR-0014)
-      reactPlugin({ compiler: true, logDiagnostics: true }),
+      reactPlugin({ compiler: true, reportDiagnostics: true }),
     ];
   }),
 });

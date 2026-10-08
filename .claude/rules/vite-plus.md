@@ -46,7 +46,7 @@ paths:
 ## React Compiler (`vite.config.ts` の `plugins`、`tooling/plugins/react.ts`)
 
 - アプリの分岐の `reactPlugin` の `compiler: true` を外さない。外しても全部通り、最適化だけが無言で落ちる (ADR-0014)
-- アプリの分岐の `logDiagnostics: true` を外さない。外すと、Compiler が諦めた箇所がビルドログに出なくなる (ADR-0014)
+- アプリの分岐の `reportDiagnostics: true` を外さない。外すと、Compiler が諦めた箇所がビルドログに出なくなる (ADR-0014)
 - React の plugin は `tooling/plugins/react.ts` の `reactPlugin` から作り、テストの分岐と project で別の `viteReact()` を書かない。`viteReact` のほかの option がアプリとテストで食い違っても、テストは全部通る (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
 - テストの分岐は React の plugin を返さず、ブラウザで走る project が `chromiumProjectBase` から足す。root に置くと、継承した plugin を Compiler を通さない project で外せない (`docs/guides/testing/configuration.md`「テストでだけ plugin を変える」)
 - Compiler を通さない project には `src/components/ui/` のテストと story だけを集める (`docs/guides/testing/configuration.md`「React Compiler を通さない project を足す」)
