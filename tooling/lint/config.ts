@@ -74,6 +74,7 @@ export const lintConfig = {
   rules: {
     // -- 基準から外れる名指し (ADR-0007) --
     "typescript/consistent-type-assertions": ["error", { assertionStyle: "never" }],
+    "react/no-unstable-nested-components": "error",
 
     // バレルの禁止 (ADR-0032)。下の import 禁止の override にも同じ paths を渡す
     "no-restricted-imports": ["error", { paths: RESTRICTED_BARREL_IMPORTS }],
