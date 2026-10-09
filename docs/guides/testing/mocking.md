@@ -44,18 +44,20 @@
 
 ### 差し替えた実装を戻す
 
-`vi.fn` と `vi.spyOn` に張った実装と戻り値 (`mock*Once` を含む) は、`tooling/test/config.ts` の `mockReset: true` が各テストの前に `vi.resetAllMocks()` で戻す ([Vitest docs「mockReset」][])。テストの中で `vi.resetAllMocks()` や `mockReset()` を呼ばない。理由は「差し替えた実装を設定で戻す理由」。
+`vi.fn` と `vi.spyOn` に張った実装と戻り値 (`mock*Once` を含む) は、`tooling/test/config.ts` の `mockReset: true` が各テストの前に `vi.resetAllMocks()` で戻す ([Vitest docs「mockReset」][])。テストファイルの中 (`beforeEach` / `afterEach` とテストの本文) で `vi.resetAllMocks()` や `mockReset()` を呼ばない。理由は「差し替えた実装を設定で戻す理由」。
 
-| mock の作り方                                 | 戻る先                            |
-| --------------------------------------------- | --------------------------------- |
-| `vi.fn()` (`__mocks__` の export、automock)   | `undefined` を返す空の実装        |
-| `vi.fn(impl)` (`vi.mock` の factory の中など) | `impl`                            |
-| `vi.spyOn(obj, "method")`                     | 元の `obj.method`。spy のまま残る |
+| mock の作り方                                             | 戻る先                            | 出典                                 |
+| --------------------------------------------------------- | --------------------------------- | ------------------------------------ |
+| `vi.fn()` (`__mocks__` の export)                         | `undefined` を返す空の実装        | [Vitest docs「Mock の mockReset」][] |
+| `vi.fn(impl)` (`vi.mock` の factory の中など)             | `impl`                            | [Vitest docs「Mock の mockReset」][] |
+| `vi.spyOn(obj, "method")`                                 | 元の `obj.method`。spy のまま残る | [Vitest docs「Mock の mockReset」][] |
+| factory も `__mocks__` も無い `vi.mock` (automock)        | `undefined` を返す空の実装        | [Vitest の `automocker.ts`][]        |
+| `vi.mock(import(...), { spy: true })` (autospy) の export | 元の実装                          | [Vitest の `automocker.ts`][]        |
 
-戻る先は [Vitest docs「Mock の mockReset」][] の記述による。2026-10-09 に vitest 5.0.1 の unit と browser の project で、表のとおりに戻ることを確かめた。
+automock と autospy は、[Vitest の `automocker.ts`][] が autospy にだけ元の実装を `originalImplementation` として渡すことによる。`vi.fn` と `vi.spyOn` の 3 行は、2026-10-09 に vitest 5.0.1 の unit と browser の project で表のとおりに戻ることを確かめた。
 
 - 既定の戻り値は `beforeEach` で張る。設定の戻しは `beforeEach` より前に走るので、`beforeEach` で張った値は残る。テストファイルの最上位と `beforeAll` で張った値は、最初のテストの前に消える (2026-10-09、vitest 5.0.1 で実測。順序は [Vitest の `run.ts`][] が `onBeforeTryTask` を `beforeEach` より先に呼ぶことによる)
-- `.concurrent` を付けたテストでは、共有の mock に実装や戻り値を張らない。並行して走っている別のテストが始まるたびに、すべての mock が戻る ([Vitest の `runners/test.ts`][] の `onBeforeTryTask`、[Vitest docs「mockReset」][] の warning)
+- `.concurrent` を付けたテストでは、共有の mock に実装や戻り値を張らない。並行して走っている別のテストが始まるたびに、すべての mock が戻る。戻す時点はテストの開始で、[Vitest の `runners/test.ts`][] の `onBeforeTryTask` が戻す。[Vitest docs「mockReset」][] の warning は、並行のテストで壊れることを "the completion of one test" と終了の時点で書くが、5.0.1 の実装は開始の時点で戻す
 
 ### 環境変数とグローバルを差し替える
 
@@ -144,8 +146,8 @@ Vitest の既定で有効なのは `clearMocks` だけで、消すのは呼び�
 | 使うテストファイルごとに `beforeEach` で `vi.resetAllMocks()` を呼ぶ | 呼ばないファイルでは残る。`vi.spyOn` で `console.warn` を黙らせて戻さないテストがあると、同じファイルの後のテストでも warn が出ず、気付く手段が無い                                                                   | 却下     |
 | 設定の `restoreMocks: true`                                          | 戻すのは `vi.spyOn` で作った spy だけで ([Vitest docs「restoreMocks」][]: "This restores all original implementations on spies created manually with `vi.spyOn`.")、`__mocks__` の `vi.fn()` に張った戻り値は戻さない | 却下     |
 
-- 並行するテストで mock が戻る注意は、`mockReset` だけのものではない。既定で有効な `clearMocks` と、このリポジトリが有効にしている `unstubEnvs` / `unstubGlobals` にも同じ warning がある ([Vitest docs「clearMocks」][]、[Vitest docs「unstubEnvs」][])
-- 今あるテストは、使う戻り値を `beforeEach` かテストの中で張り直している。手で書いた `vi.resetAllMocks()` も設定も外したまま、`vi.mock` を使うテストを走らせても全部通った (2026-10-09)。設定が防ぐのは、張り直さずに書いたテストと、戻し忘れた `vi.spyOn` である
+- 並行するテストで mock が戻る注意は、`mockReset` だけのものではない。既定で有効な `clearMocks` と、このリポジトリが有効にしている `unstubEnvs` / `unstubGlobals` にも同じ warning がある ([Vitest docs「clearMocks」][]、[Vitest docs「unstubEnvs」][]、[Vitest docs「unstubGlobals」][])
+- 使う戻り値を毎テストの `beforeEach` か本文で張り直すテストは、設定を外しても通る。設定を外して緑のままでも、設定が要らないことにはならない。設定が防ぐのは、張り直さずに書いたテストと、戻し忘れた `vi.spyOn` である
 
 ## 出典
 
@@ -173,5 +175,6 @@ Vitest の既定で有効なのは `clearMocks` だけで、消すのは呼び�
 [Vitest docs「Mock の mockReset」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/mock.md#mockreset
 [Vitest docs「clearMocks」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/clearmocks.md
 [Vitest docs「restoreMocks」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/restoremocks.md
+[Vitest の `automocker.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/mocker/src/automocker.ts
 [Vitest の `run.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/runtime/runner/run.ts
 [Vitest の `runners/test.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/runtime/runners/test.ts
