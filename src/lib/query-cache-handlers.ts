@@ -19,8 +19,9 @@ type QueryCacheOnError = NonNullable<QueryCacheConfig["onError"]>;
  *   二重表示になる
  * - observer の無い query の data は画面に出ていない。失敗は error reducer が isInvalidated を立てるので、
  *   画面に出すときに observer の mount 時の取り直しが改めて取り、その失敗をここで通知する。loader が
- *   await した取得なら、route の errorComponent も伝える。observer の options が staleTime: "static" か
- *   refetchOnMount: false の query は mount で取り直さないので、失敗は通知されず古い data が出る
+ *   await した取得なら、route の errorComponent も伝える。observer の options が enabled: false、
+ *   staleTime: "static"、refetchOnMount: false のどれかなら mount で取り直さないので、失敗は通知されず
+ *   古い data が出る
  *
  * onError は query-core の fetch() catch 内で全 fetch 失敗時に発火する
  * (query-core: cache.config.onError?.(error, this))。data の有無は error reducer が
