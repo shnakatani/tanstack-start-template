@@ -17,6 +17,7 @@ import { RouterInnerWrap } from "@/components/router-inner-wrap";
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { Toaster } from "@/components/ui/toast";
 import { getNote, listNotes, updateNote } from "@/features/notes/functions";
+import { noteQueryOptions } from "@/features/notes/queries";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import type { Note } from "@/features/notes/schema";
 import { NOTE, NOTE_UPDATE, OTHER_NOTE, UPDATED_NOTE } from "@/features/notes/schema.test-helpers";
@@ -283,6 +284,9 @@ function serveNotes(notes: Note[]) {
   return fetching;
 }
 
+/** 閉じかけのダイアログの本体。閉じるアニメーションを遅らせる style と、それが効いたかを見る observer が共有する */
+const CLOSING_DIALOG_SELECTOR = "[data-slot=dialog-content][data-closed]";
+
 describe("/notes/$noteId/edit route", () => {
   it("編集リンクで開くと、一覧のキャッシュではなく取り直した値でフォームを作る", async () => {
     // 一覧を描いたあとで別のタブが保存した、という状態
@@ -352,18 +356,19 @@ describe("/notes/$noteId/edit route", () => {
     await expect.element(titleTextbox(screen)).toHaveFocus();
   });
 
-  it("読み込み中のダイアログを閉じると、閉じるアニメーションの間に取得が終わっても、フォームを開かず一覧へ戻る", async () => {
-    // 閉じるアニメーションを取得の決着より長く保ち、その間に決着させる。アニメーションの後で一覧へ戻すと、
-    // その間に取得が終わったとき、本物のダイアログが読み込み中のダイアログに替わって開く
+  it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に取得が終わってもフォームを開かない", async () => {
+    // 閉じる操作の時点で戻る実装では、閉じるアニメーションの窓が無い。アニメーションが終わってから戻る
+    // 実装 (退行) ではその窓の間に取得が終わると、本物のダイアログが読み込み中のダイアログに替わって開く。
+    // その退行で落ちるよう、閉じるアニメーションを取得の決着より長く保つ
     enableAnimations();
     const slowClose = document.createElement("style");
-    slowClose.textContent =
-      "[data-slot=dialog-content][data-closed] { animation-duration: 60s !important; }";
+    slowClose.textContent = `${CLOSING_DIALOG_SELECTOR} { animation-duration: 60s !important; }`;
     document.head.append(slowClose);
     onTestFinished(() => slowClose.remove());
     let slowedWhileClosing = false;
     const watchClosing = new MutationObserver(() => {
-      const closing = document.querySelector("[data-slot=dialog-content][data-closed]");
+      // locator は使えない: 戻る実装では閉じかけの要素は直ちに外れ、retry の間隔では捉えられない
+      const closing = document.querySelector(CLOSING_DIALOG_SELECTOR);
       if (closing && getComputedStyle(closing).animationDuration === "60s") {
         slowedWhileClosing = true;
       }
@@ -377,15 +382,19 @@ describe("/notes/$noteId/edit route", () => {
     await expect.element(screen.getByRole("dialog").getByText("読み込み中")).toBeInTheDocument();
 
     await screen.getByRole("button", { name: "閉じる", exact: true }).click();
-    // 閉じる途中に style が効いていたこと。route を離れるとダイアログは直ちに外れるので、外れる前の
-    // 一瞬を observer で捉える。slot 名や属性が変わって style が掴めなくなると、アニメーションが
-    // 即座に終わる経路 (競合を通らないまま通る) になるので、ここで落とす
-    await expectRemoved(screen.getByRole("dialog"));
-    expect(slowedWhileClosing).toBe(true);
     fetching.resolve(NOTE);
 
+    // 取得の決着が届いたこと (不在を確かめる前の肯定 anchor)
+    await expect
+      .poll(() =>
+        router.options.context.queryClient.getQueryData(noteQueryOptions(NOTE.id).queryKey),
+      )
+      .toEqual(NOTE);
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
+    await expectRemoved(screen.getByRole("dialog"));
     await expectAbsent(titleTextbox(screen));
+    // 閉じる途中の要素に style が効いていたこと。掴めなくなるとアニメーションが即座に終わり、上の退行でも通る
+    expect(slowedWhileClosing).toBe(true);
   });
 
   it("リンクを押さずに開いた読み込み中のダイアログを閉じると、取得が終わる前でもその行の編集リンクへ focus を移し、取得が終わってもフォームは開かない", async () => {
@@ -406,6 +415,12 @@ describe("/notes/$noteId/edit route", () => {
 
     fetching.resolve(NOTE);
 
+    // 取得の決着が届いたこと (不在を確かめる前の肯定 anchor)
+    await expect
+      .poll(() =>
+        router.options.context.queryClient.getQueryData(noteQueryOptions(NOTE.id).queryKey),
+      )
+      .toEqual(NOTE);
     await expectAbsent(screen.getByRole("dialog"));
     await expectAbsent(titleTextbox(screen));
     await expect.element(rowEditLink(screen, NOTE.title)).toHaveFocus();
