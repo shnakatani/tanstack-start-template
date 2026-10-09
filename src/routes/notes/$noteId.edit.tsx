@@ -43,35 +43,32 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   component: EditRoute,
 });
 
-/** 閉じたら一覧へ戻る。一覧の絞り込み (search) を保ち、新しい履歴を積むので、戻るで開き直せる */
-function useCloseToNotes() {
+/**
+ * Route hooks を吸収し、ダイアログへ渡す値とハンドラを返す (ADR-0010)。閉じたら一覧へ戻る。一覧の絞り込み
+ * (search) を保ち、新しい履歴を積むので、戻るで開き直せる
+ */
+function useEditDialogProps() {
+  const { noteId } = Route.useParams();
   const navigate = Route.useNavigate();
-  return () => {
+  function onClosed() {
     void navigate({ to: "/notes", search: (prev) => prev });
-  };
+  }
+  return { noteId, onClosed };
 }
 
 /** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */
 function EditRoute() {
-  const { noteId } = Route.useParams();
-  const onClosed = useCloseToNotes();
-  return <NoteEditDialog noteId={noteId} onClosed={onClosed} />;
+  return <NoteEditDialog {...useEditDialogProps()} />;
 }
 
 function EditPending() {
-  const { noteId } = Route.useParams();
-  const onClosed = useCloseToNotes();
-  return <NoteEditPendingDialog noteId={noteId} onClosed={onClosed} />;
+  return <NoteEditPendingDialog {...useEditDialogProps()} />;
 }
 
 function EditNotFound() {
-  const { noteId } = Route.useParams();
-  const onClosed = useCloseToNotes();
-  return <NoteEditNotFoundDialog noteId={noteId} onClosed={onClosed} />;
+  return <NoteEditNotFoundDialog {...useEditDialogProps()} />;
 }
 
 function EditError() {
-  const { noteId } = Route.useParams();
-  const onClosed = useCloseToNotes();
-  return <NoteEditErrorDialog noteId={noteId} onClosed={onClosed} />;
+  return <NoteEditErrorDialog {...useEditDialogProps()} />;
 }
