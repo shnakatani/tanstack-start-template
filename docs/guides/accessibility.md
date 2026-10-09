@@ -123,6 +123,7 @@ focus は奪わない。`src/lib/focus-page-heading.ts` の `focusPageHeading` �
 | 遷移の直前と同じ要素                      | 移す     | 押したリンクが残るレイアウトにある、戻る・進む                                                                                                                                                                                        |
 | それ以外の要素                            | 移さない | 遷移中にアプリか利用者が別の要素へ focus を動かした。メニューの項目から遷移すると、閉じたメニューが trigger へ focus を戻すので見出しへ移らず、title の読み上げだけになる (Base UI の Menu の `finalFocus` の既定、2026-09-28 に実測) |
 
+- 上の表で移す場面でも、遷移の後にモーダルのダイアログが開いていれば移さず、title の読み上げだけを行う。移し先の `<h1>` の祖先か自身が `aria-hidden="true"` か `inert` のとき (Base UI のモーダルは外側を `aria-hidden` で隠す) と、`aria-modal="true"` のダイアログが表示されているときに当たる。モーダルのダイアログは focus を自分の中へ移す (ADR-0035)
 - 移し先は文書順で最初の `<h1>` である。レイアウトに `<h1>` を置くと、遷移のたびにそちらへ移る
 - `<h1>` が無いと focus は `<body>` に落ち、`console.warn` が出る
 - 見出しに focus の枠は出さない (`focusVisible: false`)。理由は ADR-0035 にある

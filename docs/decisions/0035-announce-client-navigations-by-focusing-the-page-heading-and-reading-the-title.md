@@ -21,18 +21,19 @@
 
 ## Decision
 
-| 項目               | 決定                                                                                                                                                                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 伝え方             | 見出しへの focus 移動と、title の読み上げを併用する                                                                                                                                                                      |
-| focus の移し先     | ページの `<h1>`。`tabindex="-1"` を付けて `focus({ preventScroll: true, focusVisible: false })` を呼ぶ。`<h1>` が無ければ `<body>`                                                                                       |
-| focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                               |
-| 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移と、ページとその上に重ねたダイアログの route の行き来も同じに扱う                                                         |
-| 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                        |
-| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                          |
-| 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                    |
-| title              | 各ルートの `head()` で `pageTitle(ctx, <ページ名>)` (`src/lib/page-title.ts`) を通して持つ。形は `<ページ名> — <APP_NAME>`、ページ名が無ければ `<APP_NAME>`                                                              |
-| not found の title | `head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら `ページが見つかりません — <APP_NAME>`                                                                                                                |
-| 実装の置き場       | `createRouter` の `InnerWrap` に渡す部品 (`src/components/router-inner-wrap.tsx`) の中に、購読だけを持つ部品 (`src/components/route-announcer.tsx`) を置く。部品は effect で `router.subscribe` を購読し、DOM を描かない |
+| 項目               | 決定                                                                                                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 伝え方             | 見出しへの focus 移動と、title の読み上げを併用する                                                                                                                                                                       |
+| focus の移し先     | ページの `<h1>`。`tabindex="-1"` を付けて `focus({ preventScroll: true, focusVisible: false })` を呼ぶ。`<h1>` が無ければ `<body>`                                                                                        |
+| focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                                |
+| 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移と、ページとその上に重ねたダイアログの route の行き来も同じに扱う                                                          |
+| 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                         |
+| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                           |
+| モーダルの下       | 遷移の後に、移し先の `<h1>` の祖先か自身が `aria-hidden="true"` か `inert` のとき、または `aria-modal="true"` の `role="dialog"` か `role="alertdialog"` が表示されているときは、focus を移さない。title の読み上げは行う |
+| 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                     |
+| title              | 各ルートの `head()` で `pageTitle(ctx, <ページ名>)` (`src/lib/page-title.ts`) を通して持つ。形は `<ページ名> — <APP_NAME>`、ページ名が無ければ `<APP_NAME>`                                                               |
+| not found の title | `head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら `ページが見つかりません — <APP_NAME>`                                                                                                                 |
+| 実装の置き場       | `createRouter` の `InnerWrap` に渡す部品 (`src/components/router-inner-wrap.tsx`) の中に、購読だけを持つ部品 (`src/components/route-announcer.tsx`) を置く。部品は effect で `router.subscribe` を購読し、DOM を描かない  |
 
 ### focus を移す目的と、枠を出さない理由
 
@@ -106,18 +107,45 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 
 - Next.js の `app-router-announcer.tsx` は、前回と title が違うときだけ読み上げる (`previousTitle.current !== currentTitle`、0541251 で確認)
 - Nuxt のガイドは "The announcer reads the title that Unhead rendered" とし、同じ title の route の間では何も読まないとする (nuxt/nuxt の 2b103c9 の `docs/3.guide/2.best-practices/accessibility.md`)
-- ダイアログの中の focus は Base UI に任せる (開くとダイアログの中の最初の要素、閉じると `finalFocus`)
+- ダイアログの中の focus は Base UI に任せる (開くとダイアログの中の最初の要素、閉じると `finalFocus`)。開いたときは見出しへ移さない (下の「モーダルのダイアログが開いている遷移」)
 
-2026-10-10 に、dev server を playwright-cli の Chromium 155.0.8059.39 で開いて測った (`@base-ui/react` 1.8.0、`@tanstack/react-router` 1.170.41、`@tanstack/router-core` 1.171.34)。ページの行のリンクから開くダイアログの route で、開く・閉じる・戻る・進むを操作した。本番のビルドと、Chromium 以外のブラウザでは測っていない。
+2026-10-10 に、dev server を playwright-cli の Chromium 155.0.8059.39 で開いて測った (`@base-ui/react` 1.8.0、`@tanstack/react-router` 1.170.41、`@tanstack/router-core` 1.171.34)。ページの行のリンクから開くダイアログの route で、開く・閉じる・戻る・進むを操作した。本番のビルドと、Chromium 以外のブラウザでは測っていない。開く遷移の focus は、同じ日に Vitest の browser mode (Chromium、本番の `InnerWrap`) で、背後のページの `<h1>` が `focusin` を受けないことを確かめた。
 
-| 遷移                                            | focus の動き                                                      | 読み上げ           |
-| ----------------------------------------------- | ----------------------------------------------------------------- | ------------------ |
-| 行のリンクから開く (クリック、キーボード、進む) | リンク → ページの見出し → 18〜25ms 後にダイアログの中の最初の要素 | ダイアログの title |
-| 閉じる (Escape、キャンセル、保存)、戻る         | ダイアログの中 → 開いたリンク。見出しへは移らない                 | 元のページの title |
-| 別のページからダイアログの URL へ移る           | 見出し → ダイアログの中の最初の要素                               | ダイアログの title |
+| 遷移                                            | focus の動き                                            | 読み上げ           |
+| ----------------------------------------------- | ------------------------------------------------------- | ------------------ |
+| 行のリンクから開く (クリック、キーボード、進む) | リンク → ダイアログの中の最初の要素。見出しへは移らない | ダイアログの title |
+| 閉じる (Escape、キャンセル、保存)、戻る         | ダイアログの中 → 開いたリンク。見出しへは移らない       | 元のページの title |
+| 別のページからダイアログの URL へ移る           | ダイアログの中の最初の要素。見出しへは移らない          | ダイアログの title |
 
-- 開くとき見出しを経るのは、Base UI の初期 focus が `requestAnimationFrame` で積まれ、`onRendered` より後に来るからである。`onRendered` の時点で focus は遷移前のリンクに残り、「覚えた要素のまま」に当たる
+- 開いた直後の `onRendered` の時点では、Base UI の初期 focus (`requestAnimationFrame` で積まれる) がまだ走っておらず、focus は遷移前のリンクに残る。「覚えた要素のまま」に当たるが、同じ時点で Base UI がダイアログの外側を `aria-hidden="true"` で隠し終えているので、見出しへは移さない
 - 閉じるとき見出しへ移らないのは、Base UI が `onRendered` より前に `finalFocus` の要素へ focus を戻し終えるからである。`onRendered` の時点の focus は、覚えたダイアログの中の要素と違う
+
+### モーダルのダイアログが開いている遷移
+
+遷移の後にモーダルのダイアログが開いていれば、見出しへ focus を移さず、title の読み上げだけを行う。ダイアログの route に限らず、遷移の後に開いているモーダルのダイアログすべてに当てる。
+
+- モーダルのダイアログは、開くと focus を自分の中へ移す。APG の Dialog (Modal) Pattern は "When a dialog opens, focus moves to an element inside the dialog." とする。背後のページの見出しは、開いたダイアログと関係しない
+- 見出しへ移すと、ダイアログが focus を中へ移すまでの間 (2026-10-10 に dev server で 18〜25ms)、focus は支援技術から隠れた見出しに乗る。axe の aria-hidden-focus は "A focusable element with aria-hidden="true" is ignored as part of the reading order, but still part of the focus order" とする
+- 読み上げは止めない。VoiceOver と TalkBack は、ダイアログの入力欄への focus でダイアログの名前を読まない (下の表)。この 2 つでは、title の読み上げがダイアログの名前を伝える唯一の経路になる
+
+判定は DOM から取る。どちらかに当たれば移さない。
+
+| 条件                                                                                                  | 当たるダイアログ                                                                                                          | 理由                                                                                                                                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 移し先の `<h1>` の祖先か自身が `aria-hidden="true"` か `inert`                                        | Base UI のモーダルのダイアログ。開いている間、外側を `aria-hidden="true"` で隠す (`FloatingFocusManager` の `markOthers`) | WAI-ARIA 1.2 は `aria-hidden` の `true` を "The element is hidden from the accessibility API." とする。ダイアログかどうかに依らず、隠れた要素へは focus を移さない                                                                     |
+| `aria-modal="true"` の `role="dialog"` か `role="alertdialog"` が表示されている (`checkVisibility()`) | 外側を隠さず、`aria-modal` だけでモーダルを表すダイアログ                                                                 | Base UI 1.8.0 の Dialog の popup は `aria-modal` を付けない (`DialogPopup` が渡す props)。mui/base-ui#4843 (open) は Dialog に `aria-modal` を使う提案で、Base UI が `aria-modal` を付けて外側を隠さなくなっても、この条件で判定が続く |
+
+- 2026-10-10 に Vitest の browser mode (Chromium、`@base-ui/react` 1.8.0) で、ダイアログの route を開く 4 通り (行のリンク、進む、別のページからの `navigate`、`pendingMs: 0` の読み込み中のダイアログを経る) の `onRendered` の時点を測った。4 通りとも、popup は `role="dialog"` で `aria-modal` を持たず、背後のページの `<h1>` は `aria-hidden="true"` の祖先の下にあった
+- 非モーダルのダイアログ (Base UI の `modal={false}`) が外側を隠すかは測っていない。隠さなければ、見出しへ移す
+
+見出しへ移すかで変わる読み上げの見込みを、スクリーンリーダーごとに並べる。実機では聞いていない。確度は、ソース = 実装を commit 固定で読んだ、公式 = ベンダーの docs かベンダー社員の回答、第三者 = 第三者のテスト結果、未検証 = 出典が無い。
+
+| スクリーンリーダー             | 見出しへ移したとき                                                       | 移さないときに残ること                                                                                                                                              | 確度                                                                    | 出典                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| NVDA + Chrome / Firefox        | 背後の見出しが一瞬読まれうる (focus と live region の通知の到着順による) | 入力欄への focus で browse mode から focus mode へ切り替わり、`speech.cancelSpeech()` が title の読み上げを消す見込み。ダイアログの名前は focus で読む              | ソース                                                                  | nvaccess/nvda の 732d1ce の `browseMode.py` (`event_gainFocus`)、nvaccess/nvda#11299 (2021-01-29) |
+| JAWS + Chrome                  | 背後の見出しが読まれうる                                                 | 入力欄への focus でダイアログの名前と中身を読み、live region は focus の読み上げの後に回す。後に回した title が残るなら、ダイアログの名前を二度聞く。残るかは未検証 | 公式 (focus を優先する)、第三者 (ダイアログの名前)、未検証 (二度聞くか) | FreedomScientific/standards-support#721 (2023-06-01)、a11ysupport.io (2023-01-13)                 |
+| VoiceOver macOS / iOS + Safari | 未検証                                                                   | 入力欄への focus でダイアログの名前を読まない。title の読み上げが届くかは未検証                                                                                     | 第三者 (ダイアログの名前)、未検証 (title が届くか)                      | a11ysupport.io (2023-01-13)                                                                       |
+| TalkBack + Chrome              | 背後の見出しの発話は、入力欄への focus で切られる                        | ダイアログの名前を読まない。polite の title は新しい発話に割り込まれず最後まで読む見込み                                                                            | ソース (発話の待ち行列)、第三者 (ダイアログの名前)                      | google/talkback の 229212f、a11ysupport.io (2023-01-13)                                           |
 
 ### 読み上げの文言と強さ
 
@@ -146,7 +174,8 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - 各ページの見出しを含む本体は、loader が待った query で描く必要がある (欠かせない query を loader で待つのは ADR-0033)。`onRendered` の契機は route の Suspense 境界の外側の layout effect で、route の Suspense 境界 (`pendingComponent` を fallback に持つ) はその内側にある。本体が loader の後に suspend すると、focus は pending 表示の中の最初の `<h1>` (無ければレイアウトの最初の `<h1>`、それも無ければ `<body>`) へ移り、pending 表示の `<h1>` へ移った場合は本体に置き換わると `<body>` へ落ちる (@tanstack/react-router 1.170.32 の `src/Matches.tsx` 97〜101 行と `src/Match.tsx` 106〜112 行・128 行を読んだ推論、未実測)
 - 遷移の直後は、Tab を押すまで focus の位置が目では見えない。Gatsby 2019 の拡大鏡の被験者は枠が位置をつかむのに役立つと答えており、この利用者には手がかりが減る。枠の有無を比べたテストは見つかっていない
 - 入れない改善: 戻った先で、前に focus していた要素へ focus を戻す。MPA で bfcache から戻ったときと揃う形で (whatwg/html#6696、2021-10-14 マージ。"the focused element stays the same/not reset")、Navigation API の explainer も traverse の例に挙げる。ただし explainer 自身が "the notion of \"the same element\" is not generally stable" とし、要素を識別子で覚える仕組みが要る。ブラウザの実装も揃っていない (下の「調査結果」)
-- 見出しの focus と title の読み上げの聞こえ方は、一次資料で決着していない。2026-09-28 に macOS 27.0 の VoiceOver と Chrome 153.0.8010.53 で、2 つのページの間の遷移と戻るを聞き、見出しの読み上げの後に title の読み上げが順に、途切れずに聞こえた。エラー画面へ移ったとき (失敗したルートの title と、focus の移った見出し「エラーが発生しました」の組み合わせ)、ダイアログの route を開いたとき (見出しを経てダイアログの中へ移る focus と、ダイアログの title の組み合わせ)、NVDA・JAWS では確かめていない。聞こえ方が悪ければ文言と強さを見直す
+- 見出しの focus と title の読み上げの聞こえ方は、一次資料で決着していない。2026-09-28 に macOS 27.0 の VoiceOver と Chrome 153.0.8010.53 で、2 つのページの間の遷移と戻るを聞き、見出しの読み上げの後に title の読み上げが順に、途切れずに聞こえた。エラー画面へ移ったとき (失敗したルートの title と、focus の移った見出し「エラーが発生しました」の組み合わせ)、ダイアログの route を開いたとき (ダイアログの中へ移る focus と、ダイアログの title の組み合わせ)、NVDA・JAWS では確かめていない。聞こえ方が悪ければ文言と強さを見直す
+- ページの `<h1>` を `aria-hidden="true"` か `inert` の下に置くと、遷移の後に focus はそこへ移らない。focus を失った遷移では `<body>` に残る
 - 遷移の後の focus と読み上げは `src/components/route-announcer.test.tsx`、伝えるかの判定は `src/lib/route-announcement.test.ts`、focus の移し方は `src/lib/focus-page-heading.test.tsx`、title は `src/lib/page-title.test.ts` が見る
 - ルート遷移は View Transitions を通る (ADR-0040)。`src/components/route-announcer.test.tsx` は View Transitions を有効にした router (`defaultViewTransition: true`) で、遷移の後の focus と title を確かめる。2026-10-09 に、テストで `document.startViewTransition` を包んで呼び出しを数え、呼ばれて `ready` がすべて resolve したうえで全件が通ることを確かめた (router-core 1.171.34)
 
@@ -209,6 +238,15 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - Nuxt の `<NuxtRouteAnnouncer>`: https://nuxt.com/docs/api/components/nuxt-route-announcer
 - Nuxt のガイド「Accessibility」(2b103c9): https://github.com/nuxt/nuxt/blob/2b103c91ca86474a94a99e6f57cda5897619e959/docs/3.guide/2.best-practices/accessibility.md
 - TanStack/router#8561: https://github.com/TanStack/router/pull/8561
+- APG「Dialog (Modal) Pattern」: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+- axe の aria-hidden-focus: https://dequeuniversity.com/rules/axe/4.10/aria-hidden-focus
+- WAI-ARIA 1.2 `aria-hidden`: https://www.w3.org/TR/wai-aria-1.2/#aria-hidden
+- mui/base-ui#4843: https://github.com/mui/base-ui/issues/4843
+- NVDA の `browseMode.py` (732d1ce): https://github.com/nvaccess/nvda/blob/732d1ce2f0f051da3ef1e6a6247c64cf04596337/source/browseMode.py#L2300-L2320
+- nvaccess/nvda#11299: https://github.com/nvaccess/nvda/issues/11299
+- FreedomScientific/standards-support#721: https://github.com/FreedomScientific/standards-support/issues/721
+- a11ysupport.io の APG モーダルダイアログのテスト結果 (6730ad4): https://github.com/accessibilitysupported/a11ysupport.io/blob/6730ad42e83dd780f63555ab3f14f1c26ea0fae5/data/tests/apg/modal-dialog-example.json
+- TalkBack の `EventTypeWindowContentChangedFeedbackRule` (229212f): https://github.com/google/talkback/blob/229212fdf5842191d0a93fc95d9ca1423b346866/talkback/src/main/java/com/google/android/accessibility/talkback/compositor/rule/EventTypeWindowContentChangedFeedbackRule.java#L401-L408
 - Astro の `router.ts`: https://github.com/withastro/astro/blob/main/packages/astro/src/transitions/router.ts
 - Gatsby の `navigation.js`: https://github.com/gatsbyjs/gatsby/blob/master/packages/gatsby/cache-dir/navigation.js
 - MDN `HTMLElement.focus()`: https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus
