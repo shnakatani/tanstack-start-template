@@ -41,7 +41,7 @@ vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
 import { noteSearchbox } from "./-components/note-search-field.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
-import { Route } from "./index";
+import { Route } from "./route";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
@@ -64,7 +64,7 @@ const attachment: Parameters<typeof Route.update>[0] & {
   id: string;
   path: string;
   getParentRoute: () => typeof testRootRoute;
-} = { id: "/notes/", path: "/notes/", getParentRoute: () => testRootRoute };
+} = { id: "/notes", path: "/notes", getParentRoute: () => testRootRoute };
 
 const routeTree = testRootRoute.addChildren([Route.update(attachment)]);
 

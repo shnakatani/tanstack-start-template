@@ -63,7 +63,7 @@ import {
 import { noteSearchbox } from "./note-search-field.test-helpers";
 import { NotesPage } from "./notes-page";
 
-/** page を props 直渡しで描く。route の定義、loader、wrapper (Route hooks と通知) は ../index.test.tsx が持つ */
+/** page を props 直渡しで描く。route の定義、loader、wrapper (Route hooks と通知) は ../route.test.tsx が持つ */
 async function renderPage({
   q = "",
   onQueryChange = () => {},

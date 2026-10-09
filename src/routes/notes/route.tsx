@@ -1,4 +1,4 @@
-import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
+import { Outlet, createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import * as v from "valibot";
 
 import { notesQueryOptions } from "@/features/notes/queries";
@@ -9,7 +9,7 @@ import { NotesPage } from "./-components/notes-page";
 import { NotesPagePending } from "./-components/notes-page-pending";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 
-export const Route = createFileRoute("/notes/")({
+export const Route = createFileRoute("/notes")({
   // URL の search を schema で検証する。valibot 1.x は Standard Schema なので adapter 不要
   validateSearch: noteListFilterSchema,
   // 既定値は URL に書かない。/notes と /notes?q= を同じ場所にする。既定は schema から導く
@@ -35,5 +35,11 @@ function NotesRoute() {
     // 履歴を積まない (replace)。戻るは 1 つ前の画面へ戻る (ADR-0019)
     void navigate({ search: (prev) => ({ ...prev, q: next }), replace: true });
   }
-  return <NotesPage q={q} onQueryChange={handleQueryChange} />;
+  // 子 route (一覧の上に重ねるダイアログ) は一覧の後ろに描く。一覧は開閉の間も描いたまま残す
+  return (
+    <>
+      <NotesPage q={q} onQueryChange={handleQueryChange} />
+      <Outlet />
+    </>
+  );
 }

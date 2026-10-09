@@ -21,7 +21,7 @@ const base = columnBaseFrom(NOTE_COLUMN_HEADERS);
 
 /**
  * メモ一覧の列定義 (ADR-0018)。列の順・id・見出しは pending 表示と共有する `NOTE_COLUMN_HEADERS` が持ち、
- * ここと過不足なく並ぶことは `index.test.tsx` の pending のテストが見る。
+ * ここと過不足なく並ぶことは `route.test.tsx` の pending のテストが見る。
  * 描画を持つ列は `cell` にコンポーネントの参照を渡す (`FlexRender` が cell の context を
  * props にして描く。TanStack Table「Flex Render」)。JSX はこのファイルに書かない
  */

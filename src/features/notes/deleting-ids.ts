@@ -14,7 +14,7 @@ const deleteTargetSchema = v.object({ ...noteIdSchema.entries, name: v.string() 
 
 /**
  * pending な削除 mutation の `variables` を削除対象へ絞って id を取り出す
- * (`src/routes/notes/index.tsx` の `useMutationState`)。
+ * (`src/routes/notes/-components/notes-page.tsx` の `useMutationState`)。
  *
  * `mutation.state.variables` の型は `unknown` なので、行の突き合わせに使う前に schema で
  * 型へ絞る。削除対象の形でない値は使えないので `parseEach` が warn を残して除外する。
