@@ -18,7 +18,13 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 
 `src/router.tsx` に置く。リンク、`navigate` (search だけを変える `replace` を含む)、redirect、戻る・進むのナビゲーションに効く。`router.invalidate()` (Error Boundary の再試行)、preload、SSR では使わない (router-core 1.171.34 の `src/load-client.ts` と `src/router.ts`)。
 
-ブラウザが自分で遷移のアニメーションを出したナビゲーション (Safari のスワイプで戻る・進むなど) では、View Transition を飛ばす。Navigation API の `navigate` イベントの `hasUAVisualTransition` で記録し、`defaultViewTransition.types` の関数が `false` を返す (`src/lib/skip-view-transition-after-ua-transition.ts`。MDN「NavigateEvent: hasUAVisualTransition」の例と、TanStack Router docs の `ViewTransitionOptionsType` の "`false` to skip the view transition")。飛ばさないと、ブラウザの遷移と View Transition が二重に動く (TanStack/router#6754)。router は history のイベントで動き、この判定を持たない
+ブラウザが自分で遷移のアニメーションを出した戻る・進む (Safari のスワイプなど) では、View Transition を飛ばす。飛ばさないと、ブラウザの遷移と View Transition が二重に動く (TanStack/router#6754)。router が戻る・進むで聞く `popstate` の `hasUAVisualTransition` で記録し、`defaultViewTransition.types` の関数が 1 回読んだら値を戻して `false` を返す (`src/lib/skip-view-transition-after-ua-transition.ts`。MDN「PopStateEvent: hasUAVisualTransition」と、TanStack Router docs の `ViewTransitionOptionsType` の "`false` to skip the view transition")。
+
+| 判定に使うもの                                          | 評価                                                                                                                                                             | 採否     |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `popstate` の `hasUAVisualTransition` (読んだら戻す)    | router が戻る・進むで聞くイベントそのもの。対応は Safari 18、Chrome 118、Firefox 149 (mdn/browser-compat-data)。push と replace では出ないので、読んだら値を戻す | **採用** |
+| Navigation API の `navigate` の `hasUAVisualTransition` | push と replace でも出るので値は毎回上書きされるが、対応は Safari 26.2 から。Safari 18.2〜26.1 では二重に動く                                                    | 却下     |
+| 飛ばさない                                              | スワイプで戻る・進むたびに、ブラウザの遷移と View Transition が二重に動く                                                                                        | 却下     |
 
 | 案                                    | 評価                                                                                                                                                                                                                                                      | 採否     |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -32,7 +38,7 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 - 前の遷移の `ready` が resolve する前に次の遷移が始まると、`AbortError: Transition was skipped. New ViewTransition started` が unhandled rejection になる。遷移は完了し、`src/` には `unhandledrejection` を受ける処理が無いので、本番では console に出るだけである
 - Vitest は既定で unhandled error で run を失敗させる (Vitest docs の `dangerouslyIgnoreUnhandledErrors`)。テストは遷移を待ってすぐ次の遷移を起こすので、この `AbortError` が出る (2026-10-09 に CI の `route-announcer.test.tsx` で 3 件)。`tooling/test/config.ts` の `onUnhandledError` で、名前が `AbortError` で文言が `Transition was skipped` を含むものを、run の失敗と出力の両方から外す (Vitest docs の `onUnhandledError` が、決まった unhandled error を除く手段として案内する形)。Chromium は飛ばした View Transition の AbortError の文言をどれもこの句で始めるので、テストのコードが自分で呼んだ `startViewTransition` の skip も外れる。router が `ready` の reject を拾うようになったら (TanStack/router#7907)、このフィルタを外す。利用者のテストでも、この error は落ちなくなる。文言は Chromium のもので、ほかのブラウザでテストを走らせるなら合わせて見直す
 - タブが隠れた状態のナビゲーションでも、`ready` が `InvalidStateError` で reject する (TanStack/router#7906 の再現。手元では未実測)
-- Navigation API の無いブラウザ (Safari は 26.2 より前) では判定できず、スワイプで戻る・進むと二重に動く。`types` の関数は、ブラウザが `:active-view-transition-type()` に対応しているときだけ呼ばれる (router-core 1.171.34 の `src/router.ts` の `startViewTransition`)。2026-10-09 に、Navigation API を持つ macOS の Safari で、スワイプでは Safari の遷移だけになり、リンクではクロスフェードになることを目で確かめた
+- `types` の関数は、ブラウザが `:active-view-transition-type()` に対応しているときだけ呼ばれる (router-core 1.171.34 の `src/router.ts` の `startViewTransition`)。対応していないブラウザ (Safari 18.2、Chrome 125 より前) では判定を使わず、スワイプで戻る・進むと二重に動く。2026-10-09 に Safari 27.0.1 で、スワイプでは Safari の遷移だけになり、リンクと、スワイプで戻った直後のリンクではクロスフェードになることを目で確かめた
 - 移動・拡大縮小・ぼかしを足すときは、reduced motion の扱いと合わせて決める
 
 ## 調査結果
@@ -55,5 +61,6 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 - `ready` が reject する条件と accessibility tree (CSS View Transitions Level 1): https://www.w3.org/TR/css-view-transitions-1/
 - router が `ready` の reject を拾わない件と、直す PR: https://github.com/TanStack/router/issues/7906、https://github.com/TanStack/router/pull/7907
 - Safari のスワイプで二重に動く件: https://github.com/TanStack/router/issues/6754
-- ブラウザが遷移のアニメーションを出したかを返す `hasUAVisualTransition` と、それで View Transition を飛ばす例 (MDN「NavigateEvent: hasUAVisualTransition」。対応は Chrome 118、Firefox 147、Safari 26.2): https://developer.mozilla.org/en-US/docs/Web/API/NavigateEvent/hasUAVisualTransition
+- 戻る・進むでブラウザが遷移のアニメーションを出したかを返す `hasUAVisualTransition` と、それで View Transition を飛ばす例 (MDN「PopStateEvent: hasUAVisualTransition」): https://developer.mozilla.org/en-US/docs/Web/API/PopStateEvent/hasUAVisualTransition
+- 対応するブラウザの版 (mdn/browser-compat-data の `PopStateEvent.hasUAVisualTransition`、`NavigateEvent.hasUAVisualTransition`、`:active-view-transition-type`。2026-10-09 に確認): https://github.com/mdn/browser-compat-data
 - `types` の関数が `false` を返すと View Transition を飛ばすこと (TanStack Router docs の `ViewTransitionOptionsType`): https://tanstack.com/router/latest/docs/api/router/ViewTransitionOptionsType

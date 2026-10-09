@@ -2,28 +2,35 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { skipViewTransitionAfterUATransition } from "./skip-view-transition-after-ua-transition";
 
-function navigateEvent(hasUAVisualTransition: boolean): Event {
-  return Object.assign(new Event("navigate"), { hasUAVisualTransition });
+function popstate(hasUAVisualTransition: boolean): Event {
+  return Object.assign(new Event("popstate"), { hasUAVisualTransition });
 }
 
 describe("skipViewTransitionAfterUATransition", () => {
-  it("navigate がまだ無ければ View Transition を飛ばさない", () => {
+  it("戻る・進むがまだ無ければ View Transition を飛ばさない", () => {
     const types = skipViewTransitionAfterUATransition(new EventTarget());
     expect(types()).toEqual([]);
   });
 
-  it("ブラウザが遷移のアニメーションを出したナビゲーションでは飛ばす", () => {
-    const navigation = new EventTarget();
-    const types = skipViewTransitionAfterUATransition(navigation);
-    navigation.dispatchEvent(navigateEvent(true));
+  it("ブラウザが遷移のアニメーションを出した戻る・進むでは飛ばす", () => {
+    const target = new EventTarget();
+    const types = skipViewTransitionAfterUATransition(target);
+    target.dispatchEvent(popstate(true));
     expect(types()).toBe(false);
   });
 
-  it("次のナビゲーションでブラウザが出さなければ、また View Transition を使う", () => {
-    const navigation = new EventTarget();
-    const types = skipViewTransitionAfterUATransition(navigation);
-    navigation.dispatchEvent(navigateEvent(true));
-    navigation.dispatchEvent(navigateEvent(false));
+  it("飛ばしたあとの遷移 (popstate の出ない push を含む) では、また View Transition を使う", () => {
+    const target = new EventTarget();
+    const types = skipViewTransitionAfterUATransition(target);
+    target.dispatchEvent(popstate(true));
+    types();
+    expect(types()).toEqual([]);
+  });
+
+  it("ブラウザがアニメーションを出さなかった戻る・進むでは飛ばさない", () => {
+    const target = new EventTarget();
+    const types = skipViewTransitionAfterUATransition(target);
+    target.dispatchEvent(popstate(false));
     expect(types()).toEqual([]);
   });
 });

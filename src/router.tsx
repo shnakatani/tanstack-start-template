@@ -33,11 +33,9 @@ export function getRouter() {
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
     // ナビゲーションを View Transitions のクロスフェードにし、ブラウザが自分でアニメーションを出した
-    // ナビゲーションでは飛ばす。Navigation API が無いサーバーとブラウザでは常にクロスフェードにする (ADR-0040)
+    // 戻る・進むでは飛ばす。サーバーでは判定せず true を渡す (View Transition はサーバーでは動かない。ADR-0040)
     defaultViewTransition:
-      typeof window !== "undefined" && "navigation" in window
-        ? { types: skipViewTransitionAfterUATransition(window.navigation) }
-        : true,
+      typeof window === "undefined" ? true : { types: skipViewTransitionAfterUATransition(window) },
     // loader / useSuspenseQuery のエラーを失敗 route の境界で受ける (周囲のレイアウトを
     // 保ったまま日本語 UI + 再試行を出す。未設定だと SSR は英語の組み込み UI、client は
     // root の全画面エラーに落ちる)
