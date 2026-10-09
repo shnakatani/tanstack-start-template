@@ -15,16 +15,16 @@ type QueryCacheOnError = NonNullable<QueryCacheConfig["onError"]>;
  * 表示しているとは、query に data があり (query.state.data !== undefined)、購読している observer が
  * ある (query.getObserversCount() > 0) ことをいう。
  *
- * - 初回ロード失敗 (data === undefined) は error boundary (RouteErrorContent) が扱う
- * - observer の無い query の失敗 (閉じたダイアログの 1 件を loader が staleTime: 0 で取り直すなど) は、
- *   その取得を await した側 (route の errorComponent) が扱う
- *
- * どちらもここで通知すると二重表示になる。
+ * - 初回ロード失敗 (data === undefined) は error boundary (RouteErrorContent) が扱う。ここで通知すると
+ *   二重表示になる
+ * - observer の無い query の data は画面に出ていない。失敗は error reducer が isInvalidated を立てるので、
+ *   画面に出すときに observer の mount 時の取り直しが改めて取り、その失敗をここで通知する。loader が
+ *   await した取得なら、route の errorComponent も伝える。observer の options が staleTime: "static" か
+ *   refetchOnMount: false の query は mount で取り直さないので、失敗は通知されず古い data が出る
  *
  * onError は query-core の fetch() catch 内で全 fetch 失敗時に発火する
  * (query-core: cache.config.onError?.(error, this))。data の有無は error reducer が
- * state.data を保持するため、発火時点の query.state.data で判別できる。observer の有無は
- * query.getObserversCount() (購読中の observer の数) で判別できる。
+ * state.data を保持するため、発火時点の query.state.data で判別できる。
  *
  * ユーザーには固定の日本語文言を出す。raw error は "Failed to fetch" 等の英語・技術文言が
  * 多く、そのまま見せると非アクショナブルなため observability 用に console.warn に残す。
@@ -38,8 +38,7 @@ export function createBackgroundRefetchErrorHandler(
   notify: (message: string) => void,
 ): QueryCacheOnError {
   return (error: DefaultError, query: Query<unknown, unknown, unknown>) => {
-    // data === undefined は初回ロード失敗 = error boundary 行き。observer が無い query は表示していない
-    // data の取り直し = 取得を await した側 (route の errorComponent) 行き。ここで通知すると二重表示になる
+    // 表示していない query の失敗は通知しない (理由は JSDoc)
     if (query.state.data === undefined || query.getObserversCount() === 0) return;
     console.warn("[query-cache] background refetch failed", {
       queryHash: query.queryHash,

@@ -111,8 +111,7 @@ const routeTree = testRootRoute.addChildren([
  * memory history で)。props 直渡しの page テスト (-components/notes-page.test.tsx) では wrapper が一度も実行されない
  */
 async function renderRoute(initialLocation: string, { pendingMs }: { pendingMs?: number } = {}) {
-  // 本番 (`src/router.tsx`) と同じ配線を通す。取り直しの失敗の toast が、保存のあとの一覧の取り直しでは出て、
-  // 編集の route の loader が取り直す 1 件の失敗 (ダイアログが伝える) では出ないことを見る
+  // 本番 (`src/router.tsx`) と同じ配線を通し、取り直しの失敗の toast が出るかをテストで見られるようにする
   const queryClient = createTestQueryClient({
     queryCache: new QueryCache({
       onError: createBackgroundRefetchErrorHandler((message) =>
