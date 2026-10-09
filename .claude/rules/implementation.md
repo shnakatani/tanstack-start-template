@@ -86,7 +86,7 @@ lint では見ないのでレビューで見る。
 - ダイアログの route に `staticData: { dialogRoute: true }` を付ける。付けないと、閉じたあとリンクへ戻した focus を遷移の読み上げが見出しへ奪う (ADR-0035)
 - 閉じる操作では `open` を false にするだけにし、route を離れるのは `onOpenChangeComplete` で行う。先に離れると閉じるアニメーションが出ない (ADR-0041)
 - `finalFocus` は、利用者が閉じたときだけでなく、戻る・進むで開いたまま unmount したときにも開いた行のリンクを返す。閉じる操作のときだけ返すと、戻るで一覧へ移ったときに focus が body に落ちる。ページとダイアログの行き来では、遷移の読み上げも見出しへ移さない (ADR-0041)
-- `useMatchRoute` で pending を照合するとき、`params.parse` で変換した値を `params` に渡さない。URL の文字列と比べて一致しない (TanStack/router#2450)。route だけで照合し、返った params を文字列で比べる (ADR-0041)
+- `useMatchRoute` で pending を照合するとき、`params.parse` で変換した値を `params` に渡さない。URL の文字列と比べて一致しない。route だけで照合し、返った params を文字列で比べる (ADR-0041)
 - 開くリンクに `preload={false}` を渡す。開くたびに取り直すので、preload は捨てる取得になる (ADR-0041)
 - 操作中の行のリンクは `disabled` に `tabIndex={0}` を添える。`disabled` の Link は href を外して focus できなくなり、閉じたときに focus を戻せない (ADR-0041)
 
