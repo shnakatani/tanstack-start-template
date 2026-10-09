@@ -80,7 +80,7 @@ lint では見ないのでレビューで見る。
 
 lint では見ないのでレビューで見る。
 
-- 既存の値を初期値にする編集のダイアログは、一覧の route の子 route にし、loader で `queryClient.query({ ...options, staleTime: 0 })` を `staleReloadMode: "blocking"` で待つ。キャッシュや前に取った値で開くと、別のタブや別の利用者の変更より古い値でフォームが始まる (ADR-0041)
+- 既存の値を初期値にする編集のダイアログは、開く元のページの route の子 route にし、loader で `queryClient.query({ ...options, staleTime: 0 })` を `staleReloadMode: "blocking"` で待つ。キャッシュや前に取った値で開くと、別のタブや別の利用者の変更より古い値でフォームが始まる (ADR-0041)
 - 1 件の query は一覧の query の先頭キーの下に置かない。保存後の一覧の invalidate が、閉じかけのダイアログの 1 件まで取り直す (ADR-0041)
 - 1 件の query は `staleTime: Infinity` にし、開いている間は取り直さない。取り直すと、触れていないフォームは利用者の目の前で値が替わる (ADR-0041)
 - ダイアログの route に `staticData: { dialogRoute: true }` を付ける。付けないと、閉じたあとリンクへ戻した focus を遷移の読み上げが見出しへ奪う (ADR-0035)

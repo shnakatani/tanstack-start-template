@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-09
-- 関連: ADR-0017 (完了点とブロック範囲)、ADR-0033 (loader と Query)、ADR-0035 (遷移の後の focus と title)、ADR-0040 (View Transitions)
+- 関連: ADR-0017 (完了点とブロック範囲)、ADR-0026 (状態の通知)、ADR-0033 (loader と Query)、ADR-0035 (遷移の後の focus と title)、ADR-0040 (View Transitions)
 
 ## Context
 
@@ -20,16 +20,16 @@
 
 ## Decision
 
-**既存の値を編集するダイアログは、一覧の route の子 route にする。loader は `staleReloadMode: "blocking"` にし、`queryClient.query({ ...options, staleTime: 0 })` を待ってから開く。**
+**既存の値を編集するダイアログは、開く元のページの route の子 route にする。loader は `staleReloadMode: "blocking"` にし、`queryClient.query({ ...options, staleTime: 0 })` を待ってから開く。**
 
 | 対象                      | 決定                                                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| route                     | 一覧を layout route に置き、`<Outlet />` の位置にダイアログの route を描く (TanStack Router の example `location-masking` の形)。URL はマスクしない                                                                                                                                                                                                                                              |
+| route                     | 開く元のページを layout route に置き、`<Outlet />` の位置にダイアログの route を描く (TanStack Router の example `location-masking` の形)。URL はマスクしない                                                                                                                                                                                                                                    |
 | loader                    | object の形で `staleReloadMode: "blocking"`。キャッシュがあっても取り直し (`staleTime: 0`)、取り終えるまで開かない。`background` では、戻るで入ったときに前に取った値のまま開き、新しい値が届くと、触れていないフォームは値が替わり、打ち始めたフォームは古い値のまま残る                                                                                                                        |
 | 1 件の query              | 一覧の query の先頭キーの下に置かない。保存後の一覧の invalidate が前方一致で当たり、閉じかけのダイアログの 1 件まで取り直す。observer の再取得は止める (`staleTime: Infinity`)。開いている間に裏で取り直すと、触れていないフォームは利用者の目の前で値が替わり、触れたフォームには届かない                                                                                                      |
 | 開くリンク                | `preload={false}`。開くたびに取り直すので、preload は捨てる取得になる。一覧の search は保つ                                                                                                                                                                                                                                                                                                      |
 | 読み込み中                | 押したリンクに `Spinner` (`aria-hidden`) を出す。pending の照合は `useMatchRoute` の `pending` で、route だけで照合して返った params を文字列で比べる。`params.parse` した値を渡すと URL の文字列と比べて一致しない (TanStack/router#2450)                                                                                                                                                       |
-| 長い読み込み              | `pendingMs` を超えたら、`pendingComponent` にダイアログの形の読み込み中を出す。押した行が一覧に無いときも状況が見える                                                                                                                                                                                                                                                                            |
+| 長い読み込み              | `pendingMs` を超えたら、`pendingComponent` にダイアログの形の読み込み中を出す。開く行のリンクが一覧に無いとき (戻る・進む、URL を直接開いた) も状況が見える                                                                                                                                                                                                                                      |
 | 読み込み開始の読み上げ    | 出さない。`pendingMs` の間に本物か読み込み中のダイアログが開き、focus がその中へ移る。ADR-0026 の mutation の開始の通知とは扱いが違う                                                                                                                                                                                                                                                            |
 | 行が操作中のリンク        | Link の `disabled` に `tabIndex={0}` を添える。Link は `disabled` で href を外し `role="link"` と `aria-disabled` を付けるので、そのままでは focus できず、閉じたときに focus を戻せない。href を持つ `<a>` に `aria-disabled` を付ける形は採らない (WAI-ARIA 1.2 の `aria-disabled` の Note)                                                                                                    |
 | 開閉                      | ダイアログは `open` を state で持つ。閉じる操作では `open` を false にし、閉じるアニメーションの後で一覧へ `navigate` する。先に離れると route ごと unmount して閉じるアニメーションが出ない。読み込み中のダイアログ (`pendingComponent`) だけは閉じる操作の時点で一覧へ戻る。アニメーションを待つ間に取得が終わると、本物のダイアログが替わって開く。一覧へは新しい履歴で戻り、戻るで開き直せる |
@@ -65,7 +65,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - 開いた状態は SSR の HTML に入らない。ダイアログは Base UI のポータルの中にあり、hydration の後に開く。編集のフォームは JS が無いと送信できないので受け入れる (2026-10-09、`@base-ui/react` 1.8.0 で実測)
 - 開くたびに 1 件を取得し、取り終えるまで開かない
 - 開いた後で別のタブや別の利用者が保存すると、開いた時点の値は古くなる。保存は後から保存した側が先の変更を上書きする。この決定は開く時点の古さだけを防ぐ
-- 押した行が一覧に無いと、`pendingMs` までは何も見えない
+- 開く行のリンクが一覧に無いと (戻る・進む、URL を直接開いた)、`pendingMs` までは何も見えない
 
 ### 再評価の条件
 
