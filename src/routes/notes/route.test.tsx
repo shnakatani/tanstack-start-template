@@ -30,6 +30,7 @@ import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import { expectText } from "@/test/assert/screen-assertions";
+import type { Screen } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
 
@@ -284,6 +285,13 @@ function serveNotes(notes: Note[]) {
   return fetching;
 }
 
+/** 一覧の見出しに、枠を出さずに focus があること。見出しは操作できる要素ではないので枠を出さない (ADR-0035) */
+const expectNotesHeadingFocused = vi.defineHelper(async (screen: Screen) => {
+  const heading = screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 });
+  await expect.element(heading).toHaveFocus();
+  await expect.poll(() => heading.element().matches(":focus-visible")).toBe(false);
+});
+
 /** 閉じかけのダイアログの本体。閉じるアニメーションを遅らせる style と、それが効いたかを見る observer が共有する */
 const CLOSING_DIALOG_SELECTOR = "[data-slot=dialog-content][data-closed]";
 
@@ -517,6 +525,54 @@ describe("/notes/$noteId/edit route", () => {
       `${NOTES_PAGE_TITLE} — ${APP_NAME}`,
     ]);
     await expect.element(heading).toHaveFocus();
+  });
+
+  it("一覧に無い行の読み込み中のダイアログを閉じると、ページの見出しへ枠を出さずに focus を移す", async () => {
+    // router.navigate で開き、Base UI の既定の戻し先 (開く前に focus していた要素) を作らない
+    vi.mocked(listNotes).mockResolvedValue([]);
+    const fetching = deferMock(getNote);
+    const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
+    await expect
+      .element(screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 }))
+      .toBeInTheDocument();
+    void router.navigate({ to: "/notes/$noteId/edit", params: { noteId: NOTE.id } });
+    await expect.element(screen.getByRole("dialog").getByText("読み込み中")).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    await expect.poll(() => router.state.location.pathname).toBe("/notes");
+    await expectRemoved(screen.getByRole("dialog"));
+    await expectNotesHeadingFocused(screen);
+
+    fetching.resolve(NOTE);
+  });
+
+  it("見つからないダイアログを閉じると、ページの見出しへ枠を出さずに focus を移す", async () => {
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    vi.mocked(getNote).mockRejectedValue(notFound());
+    const { screen } = await renderRoute("/notes/999/edit");
+    await expect
+      .element(screen.getByRole("dialog", { name: "メモが見つかりません" }))
+      .toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    await expectRemoved(screen.getByRole("dialog"));
+    await expectNotesHeadingFocused(screen);
+  });
+
+  it("一覧に無い行の取得の失敗のダイアログを閉じると、ページの見出しへ枠を出さずに focus を移す", async () => {
+    vi.mocked(listNotes).mockResolvedValue([]);
+    vi.mocked(getNote).mockRejectedValue(new Error("取得の失敗"));
+    const { screen } = await renderRoute(`/notes/${NOTE.id}/edit`);
+    await expect
+      .element(screen.getByRole("dialog", { name: "メモを読み込めませんでした" }))
+      .toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    await expectRemoved(screen.getByRole("dialog"));
+    await expectNotesHeadingFocused(screen);
   });
 
   it("存在しない id では、ダイアログで見つからないことを伝え、閉じると一覧へ戻る", async () => {
