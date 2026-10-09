@@ -21,8 +21,6 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   },
   // 一覧の上に重ねるダイアログの route。一覧との行き来を遷移として伝えない (ADR-0035)
   staticData: { dialogRoute: true },
-  // params だけが変わる遷移でも component を作り直す。既定では使い回し、前のメモに打った入力が残ったまま
-  // 保存先だけが移った先のメモになる (ADR-0041)
   loader: {
     // キャッシュがあっても取り直し、取り終えるまで開かない。既定の background では、戻るで入ったときに
     // 前に取った値で開き、新しい値が届くと触れていないフォームは利用者の目の前で値が替わり、打ち始めた
@@ -37,6 +35,8 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
     },
     staleReloadMode: "blocking",
   },
+  // params だけが変わる遷移でも component を作り直す。既定では使い回し、前のメモに打った入力が残ったまま
+  // 保存先だけが移った先のメモになる (ADR-0041)
   remountDeps: ({ params }) => params,
   head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTE_EDIT_DIALOG_TITLE) }] }),
   pendingComponent: EditPending,
