@@ -41,7 +41,7 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 | テストファイルの中の helper を `vi.defineHelper` で包む | helper を呼んだテストの行           |
 | テストファイルの中の helper を包まない                  | helper の中で `annotate` を呼んだ行 |
 
-- 4 行とも Vitest 5.0.1 で 2026-09-29 に実測した。docs は位置の決まり方を書いていない。[Vitest docs「Vi」][] の vi.defineHelper も assertion の失敗の stack trace にしか触れない
+- 4 行とも Vitest 5.0.3 で 2026-10-10 に実測した。docs は位置の決まり方を書いていない。[Vitest docs「Vi」][] の vi.defineHelper も assertion の失敗の stack trace にしか触れない
 - `vi.defineHelper` で包んだ helper の行が stack から外れるのは、[vitest-dev/vitest#11047][] (Vitest 5.0.1 に含まれる) からである
 - テストファイルの行が stack に 1 つも無いと、注釈は位置を持たず、`github-actions` reporter は PR に出さない ([Vitest の `github-actions.ts`][] の `onTestCaseAnnotate`)
 - UI と HTML reporter では、位置を持たない注釈はソースの表示に出ず、Report にだけ出る ([Vitest の `ViewEditor.vue`][] の `createAnnotationElement`、[Vitest の `ViewTestReport.vue`][])
