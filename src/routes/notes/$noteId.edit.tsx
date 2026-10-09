@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import * as v from "valibot";
 
 import { noteQueryOptions } from "@/features/notes/queries";
+import { noteIdSchema } from "@/features/notes/schema";
 import { pageTitle } from "@/lib/page-title";
 
 import { NoteEditDialog } from "./-components/note-edit-dialog";
@@ -12,7 +14,7 @@ import {
 import { NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
 export const Route = createFileRoute("/notes/$noteId/edit")({
-  // URL の noteId は数値の id。数値でない値は getNote の検証 (noteIdSchema) が弾き、errorComponent が受ける
+  // URL の noteId は数値の id。id の形でない値は loader が見つからないものとして扱う
   params: {
     parse: ({ noteId }) => ({ noteId: Number(noteId) }),
     stringify: ({ noteId }) => ({ noteId: String(noteId) }),
@@ -25,8 +27,14 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
     // キャッシュがあっても取り直し、取り終えるまで開かない。既定の background では、戻るで入ったときに
     // 前に取った値で開き、新しい値が届くと触れていないフォームは利用者の目の前で値が替わり、打ち始めた
     // フォームは古い値のまま残る (ADR-0041)
-    handler: ({ context, params }) =>
-      context.queryClient.query({ ...noteQueryOptions(params.noteId), staleTime: 0 }),
+    handler: ({ context, params }) => {
+      // id の形でなければ取得しない。取得に回すと getNote の検証 (noteIdSchema) が弾き、再試行しても
+      // 直らない取得の失敗として出る
+      if (!v.is(noteIdSchema, { id: params.noteId })) {
+        throw notFound();
+      }
+      return context.queryClient.query({ ...noteQueryOptions(params.noteId), staleTime: 0 });
+    },
     staleReloadMode: "blocking",
   },
   remountDeps: ({ params }) => params,

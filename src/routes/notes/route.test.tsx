@@ -431,6 +431,17 @@ describe("/notes/$noteId/edit route", () => {
     expect(fetching).toHaveBeenExhausted();
   });
 
+  it("id の形でない URL では、取得せずにダイアログで見つからないことを伝える", async () => {
+    // 取得に回すと getNote の検証が弾き、再試行しても直らない取得の失敗のダイアログになる
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    const { screen } = await renderRoute("/notes/abc/edit");
+
+    await expect
+      .element(screen.getByRole("dialog", { name: "メモが見つかりません" }))
+      .toBeInTheDocument();
+    expect(vi.mocked(getNote)).not.toHaveBeenCalled();
+  });
+
   it("取得に失敗するとダイアログで伝え、再試行で取り直してフォームを出す", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     vi.mocked(getNote).mockRejectedValueOnce(new Error("取得の失敗")).mockResolvedValueOnce(NOTE);
