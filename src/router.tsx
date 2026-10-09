@@ -8,6 +8,7 @@ import { PendingContent } from "@/components/screens/pending";
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { toast } from "@/components/ui/toast";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
+import { skipViewTransitionAfterUATransition } from "@/lib/skip-view-transition-after-ua-transition";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -31,8 +32,12 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
-    // ナビゲーションを View Transitions のクロスフェードにする (ADR-0040)
-    defaultViewTransition: true,
+    // ナビゲーションを View Transitions のクロスフェードにし、ブラウザが自分でアニメーションを出した
+    // ナビゲーションでは飛ばす。Navigation API が無いサーバーとブラウザでは常にクロスフェードにする (ADR-0040)
+    defaultViewTransition:
+      typeof window !== "undefined" && "navigation" in window
+        ? { types: skipViewTransitionAfterUATransition(window.navigation) }
+        : true,
     // loader / useSuspenseQuery のエラーを失敗 route の境界で受ける (周囲のレイアウトを
     // 保ったまま日本語 UI + 再試行を出す。未設定だと SSR は英語の組み込み UI、client は
     // root の全画面エラーに落ちる)
