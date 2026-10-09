@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { RouterInnerWrap } from "@/components/router-inner-wrap";
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { Toaster } from "@/components/ui/toast";
 import { getNote, listNotes, updateNote } from "@/features/notes/functions";
@@ -107,6 +108,9 @@ async function renderRoute(initialLocation: string, { pendingMs }: { pendingMs?:
     routeTree,
     context: { queryClient },
     history: createMemoryHistory({ initialEntries: [initialLocation] }),
+    // 本番 (`src/router.tsx`) と同じ配線を通す。遷移の読み上げと focus の移動 (ADR-0035) が、ダイアログを
+    // 閉じたあとの focus と通知に加わる
+    InnerWrap: RouterInnerWrap,
     // search の検証失敗を route の境界で受けることを、本番 (`src/router.tsx`) と同じ部品を渡して見る
     // (既定値の同一性は測らない)。無いと root の外まで抜けて組み込みの ErrorComponent が描き、
     // "wasn't caught by any route" の warn が出る (2026-09-23 に実測)
@@ -360,6 +364,8 @@ describe("/notes/$noteId/edit route", () => {
     // 一覧 → 編集 → 一覧。戻るで編集を開き直せる
     expect(router.history.length).toBe(3);
     await expect.element(rowEditLink(screen, NOTE.title)).toHaveFocus();
+    // ページとその上のダイアログの行き来は、開くときも閉じるときも読み上げない (ADR-0035)
+    expect(readAnnouncements()).toEqual([]);
     expect(fetching).toHaveBeenExhausted();
   });
 
