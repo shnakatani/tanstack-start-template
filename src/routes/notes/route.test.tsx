@@ -599,4 +599,30 @@ describe("/notes/$noteId/edit route", () => {
     expect(updating).toHaveBeenExhausted();
     expect(fetching).toHaveBeenExhausted();
   });
+
+  it("開いたまま別のメモの編集の URL へ移ると、打った入力を捨て、移った先の値でフォームを作り直す", async () => {
+    // params だけが変わる遷移で同じダイアログを使い回すと、前のメモに打った入力が残ったまま、保存先だけが
+    // 移った先のメモになる
+    const fetching = serveNotes([NOTE, OTHER_NOTE]);
+    vi.mocked(updateNote).mockResolvedValue(undefined);
+    const { screen, router } = await renderRoute(`/notes/${NOTE.id}/edit`);
+    await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    await titleTextbox(screen).fill("前のメモに打った見出し");
+
+    await router.navigate({ to: "/notes/$noteId/edit", params: { noteId: OTHER_NOTE.id } });
+
+    await expect.element(titleTextbox(screen)).toHaveValue(OTHER_NOTE.title);
+    await saveButton(screen).click();
+
+    await expectNoteDialogClosed(screen);
+    expect(vi.mocked(updateNote)).toHaveBeenCalledExactlyOnceWith({
+      data: {
+        id: OTHER_NOTE.id,
+        title: OTHER_NOTE.title,
+        body: OTHER_NOTE.body,
+        dueDate: OTHER_NOTE.dueDate,
+      },
+    });
+    expect(fetching).toHaveBeenExhausted();
+  });
 });

@@ -33,6 +33,7 @@
 | 読み込み開始の読み上げ    | 出さない。`pendingMs` の間に本物か読み込み中のダイアログが開き、focus がその中へ移る。ADR-0026 の mutation の開始の通知とは扱いが違う                                                                                                                                                         |
 | 行が操作中のリンク        | Link の `disabled` に `tabIndex={0}` を添える。Link は `disabled` で href を外し `role="link"` と `aria-disabled` を付けるので、そのままでは focus できず、閉じたときに focus を戻せない。href を持つ `<a>` に `aria-disabled` を付ける形は採らない (WAI-ARIA 1.2 の `aria-disabled` の Note) |
 | 開閉                      | ダイアログは `open` を state で持つ。閉じる操作では `open` を false にし、閉じるアニメーションの後で一覧へ `navigate` する。先に離れると route ごと unmount して閉じるアニメーションが出ない。一覧へは新しい履歴で戻り、戻るで開き直せる                                                      |
+| 別の値の URL へ移る       | route に `remountDeps: ({ params }) => params` を付ける。router は既定で、params だけが変わる遷移では component を作り直さない。打ち始めたフォームが前の値のまま残り、保存は移った先の値へ書く                                                                                                |
 | 閉じたときの focus        | 下の表。`finalFocus` に関数を渡して分ける                                                                                                                                                                                                                                                     |
 | 見つからない / 取得の失敗 | `notFoundComponent` と `errorComponent` もダイアログの形で出す。例外の文言は出さず固定の文言にする                                                                                                                                                                                            |
 | 遷移の伝え方              | ダイアログの route に `staticData: { dialogRoute: true }` を付け、ページとの行き来を伝えない (ADR-0035)                                                                                                                                                                                       |
@@ -74,13 +75,14 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 
 2026-10-09 に、`@tanstack/react-router` 1.170.41 (router-core 1.171.34)、`@tanstack/react-query` 5.104.1、`@tanstack/react-form` 1.33.5 (form-core 1.33.5)、`@base-ui/react` 1.8.0、Playwright の Chromium (playwright-cli と、Vitest の browser mode) で測った。Safari と Firefox は測っていない。
 
-| 確かめたこと                                                                                   | 結果                                                                                                                                    |
-| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| hover で preload したあと DB を書き換えて開く                                                  | `blocking` は新しい値で開き、`background` は preload した値で開いた                                                                     |
-| `background` で、閉じたあと戻り、取り直しが新しい値を返す (2026-10-10、Vitest の browser mode) | 前に取った値でフォームが開き、取り直しが決着すると、触れていないフォームは新しい値に替わった                                            |
-| 閉じるアニメーション                                                                           | `onOpenChangeComplete` で `navigate` すると、アニメーションの間は URL が編集のまま                                                      |
-| 取得に 2.5 秒かかる場合                                                                        | リンクに `Spinner`、約 1 秒後に読み込み中のダイアログ、取り終えてフォーム。focus は読み込み中のダイアログの「閉じる」から入力欄へ移った |
-| ホームから編集の URL へ遷移する                                                                | 見出しへ focus を移したあと、約 100ms でダイアログの中へ移った                                                                          |
+| 確かめたこと                                                                                                     | 結果                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| hover で preload したあと DB を書き換えて開く                                                                    | `blocking` は新しい値で開き、`background` は preload した値で開いた                                                                     |
+| `background` で、閉じたあと戻り、取り直しが新しい値を返す (2026-10-10、Vitest の browser mode)                   | 前に取った値でフォームが開き、取り直しが決着すると、触れていないフォームは新しい値に替わった                                            |
+| `remountDeps` なしで、打ち始めたまま別の id の編集の URL へ `navigate` する (2026-10-10、Vitest の browser mode) | フォームは前の id に打った入力のまま残った                                                                                              |
+| 閉じるアニメーション                                                                                             | `onOpenChangeComplete` で `navigate` すると、アニメーションの間は URL が編集のまま                                                      |
+| 取得に 2.5 秒かかる場合                                                                                          | リンクに `Spinner`、約 1 秒後に読み込み中のダイアログ、取り終えてフォーム。focus は読み込み中のダイアログの「閉じる」から入力欄へ移った |
+| ホームから編集の URL へ遷移する                                                                                  | 見出しへ focus を移したあと、約 100ms でダイアログの中へ移った                                                                          |
 
 ## 出典
 
@@ -88,6 +90,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - TanStack Router「Data Loading」: https://tanstack.com/router/latest/docs/framework/react/guide/data-loading
 - TanStack Router「Route Masking」: https://tanstack.com/router/latest/docs/framework/react/guide/route-masking
 - TanStack Router「Navigation」(`useMatchRoute` and `<MatchRoute>`): https://tanstack.com/router/latest/docs/framework/react/guide/navigation
+- TanStack Router「RouteOptions type」(`remountDeps`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouteOptionsType
 - TanStack Router「Static Route Data」: https://tanstack.com/router/latest/docs/framework/react/guide/static-route-data
 - TanStack Router「useCanGoBack hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useCanGoBack
 - TanStack Query「Window Focus Refetching」: https://tanstack.com/query/latest/docs/framework/react/guides/window-focus-refetching

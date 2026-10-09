@@ -16,8 +16,9 @@ import { NoteFormContent } from "./note-form";
 
 /**
  * メモの編集ダイアログ。編集の route (`$noteId.edit.tsx`) の component が描き、loader が取り直した
- * 1 件をフォームの初期値にする (ADR-0041)。route に入るたびに mount するので、フォームも mutation も
- * 開くたびに作り直す。閉じたら `onClosed` で一覧の route へ戻る
+ * 1 件をフォームの初期値にする (ADR-0041)。一覧から route に入ると mount し、開いたまま別のメモの URL へ
+ * 移ると route の `remountDeps` が作り直すので、フォームも mutation も開くメモごとに別になる。閉じたら
+ * `onClosed` で一覧の route へ戻る
  */
 export function NoteEditDialog({ noteId, onClosed }: { noteId: Note["id"]; onClosed: () => void }) {
   const queryClient = useQueryClient();
