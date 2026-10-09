@@ -49,6 +49,8 @@ export const testConfig = {
   // `--no-isolate` でファイルの最後の値が次のファイルへ残るのを塞ぐ (docs/guides/testing/mocking.md「環境変数とグローバルを差し替える」)
   unstubEnvs: true,
   unstubGlobals: true,
+  // vi.fn と vi.spyOn に張った実装と戻り値を各テストの前に戻す (docs/guides/testing/mocking.md「差し替えた実装を戻す」)
+  mockReset: true,
   setupFiles: ["./tooling/test/setup.ts"],
   // router は View Transition の ready の reject を拾わず、飛ばされた遷移の AbortError が unhandled rejection に
   // なる。Chromium の飛ばされた View Transition の AbortError を、理由を問わず run の失敗と出力から外す (ADR-0040)

@@ -100,7 +100,6 @@ async function renderRoute(initialLocation: string) {
  */
 describe("/notes route", () => {
   beforeEach(() => {
-    vi.resetAllMocks();
     vi.mocked(listNotes).mockResolvedValue([]);
   });
 
