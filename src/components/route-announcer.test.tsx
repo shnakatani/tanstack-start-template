@@ -18,7 +18,7 @@ import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
 import { pageTitle } from "@/lib/page-title";
-import { readAnnouncements } from "@/test/assert/live-announcer";
+import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 
 import { RouteAnnouncer } from "./route-announcer";
 import { RouterInnerWrap } from "./router-inner-wrap";
@@ -101,8 +101,48 @@ function createAnnouncedRouter(
     component: () => <h1>Gone</h1>,
     notFoundComponent: () => <h1>項目が見つかりません</h1>,
   });
+  // Base UI のモーダルのダイアログと同じく、開いている間ダイアログの外側を aria-hidden で隠す
+  const hiddenBehindDialog = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/hidden-behind-dialog",
+    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "外を隠すダイアログ") }] }),
+    component: () => (
+      <>
+        <div aria-hidden="true">
+          <h1>背後のページ</h1>
+        </div>
+        {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- Base UI の Dialog が描く div と role の形を再現する */}
+        <div role="dialog" aria-label="外を隠すダイアログ">
+          <input aria-label="入力" />
+        </div>
+      </>
+    ),
+  });
+  // 外側を隠さず、aria-modal だけでモーダルを表すダイアログ
+  const ariaModalDialog = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/aria-modal-dialog",
+    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "aria-modal のダイアログ") }] }),
+    component: () => (
+      <>
+        <h1>背後のページ</h1>
+        {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- div に role を付けて aria-modal でモーダルを表すダイアログ部品の形を再現する */}
+        <div role="dialog" aria-modal="true" aria-label="aria-modal のダイアログ">
+          <input aria-label="入力" />
+        </div>
+      </>
+    ),
+  });
   return createRouter({
-    routeTree: rootRoute.addChildren([a, b, err, missing, gone]),
+    routeTree: rootRoute.addChildren([
+      a,
+      b,
+      err,
+      missing,
+      gone,
+      hiddenBehindDialog,
+      ariaModalDialog,
+    ]),
     history: createMemoryHistory({ initialEntries: ["/a"] }),
     // 本番 (src/router.tsx) と同じ配線を通す
     InnerWrap: options.innerWrap ?? RouterInnerWrap,
@@ -135,6 +175,28 @@ it("戻る (history の traverse) でも h1 へ移す", async () => {
   router.history.back();
   await expect.element(screen.getByRole("heading", { name: "A" })).toHaveFocus();
 });
+
+it.each([
+  ["外側を aria-hidden で隠す", "/hidden-behind-dialog", "外を隠すダイアログ"],
+  ["aria-modal を持つ", "/aria-modal-dialog", "aria-modal のダイアログ"],
+])(
+  "遷移の後に、%sモーダルのダイアログが開いていれば、title を読み上げ、見出しへ focus を移さない",
+  async (_, path, name) => {
+    const router = createAnnouncedRouter();
+    const screen = await render(<RouterProvider router={router} />);
+    await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+    router.history.push(path);
+    await expectAnnouncements([`${name} — ${APP_NAME}`]);
+    // focus を移すかは、読み上げと同じ onRendered の中で読み上げより先に決まっている。
+    // 遷移前の focus は body なので、見出しへ移していれば body から外れている
+    expect(document.activeElement).toBe(document.body);
+
+    // ダイアログの中に focus を置いたまま別のページへ移ると、見出しへ移す
+    screen.getByRole("textbox", { name: "入力" }).element().focus();
+    router.history.push("/b");
+    await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
+  },
+);
 
 it("検索条件だけの変化では focus を動かさず、読み上げない", async () => {
   const router = createAnnouncedRouter();

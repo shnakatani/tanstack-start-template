@@ -27,7 +27,6 @@ import { getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
 import { NOTE_SEARCH_DEBOUNCE_MS, noteSearchResultMessage } from "../-lib/note-search";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
-import { NoteEditDialog } from "./note-edit-dialog";
 import { NoteSearchField } from "./note-search-field";
 
 /** URL / server function と同じ schema で正規化する (trim / 上限)。 */
@@ -217,8 +216,6 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
       </div>
 
       <NoteCreateDialog />
-
-      <NoteEditDialog />
 
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}

@@ -1,7 +1,9 @@
+import { notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 import {
   createNoteHandler,
+  getNoteHandler,
   listNotesHandler,
   removeNoteHandler,
   updateNoteHandler,
@@ -15,6 +17,17 @@ export const listNotes = createServerFn({ method: "GET" })
   .validator(noteListFilterSchema)
   .handler(async ({ data }) => {
     return listNotesHandler(data);
+  });
+
+export const getNote = createServerFn({ method: "GET" })
+  .validator(noteIdSchema)
+  .handler(async ({ data }) => {
+    const note = await getNoteHandler(data);
+    if (note === undefined) {
+      // 行が無いことは route の notFoundComponent が受ける
+      throw notFound();
+    }
+    return note;
   });
 
 export const createNote = createServerFn({ method: "POST" })

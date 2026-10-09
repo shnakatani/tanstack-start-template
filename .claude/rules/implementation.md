@@ -10,7 +10,7 @@ paths:
 lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止める。代替のうち lint が案内しないもの:
 
 - 外部ストアの値を読む購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る (`docs/guides/react/effects.md`「effect に書くかを判定する」)
-- データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })`。副次的な query まで待つと、遷移と SSR の応答がそれを待つ (ADR-0033)
+- データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })` (既存の値を編集するダイアログの route は `staleTime: 0`。ADR-0041)。副次的な query まで待つと、遷移と SSR の応答がそれを待つ (ADR-0033)
 - 副次的な query は loader で `void queryClient.query(...).catch(noop)` (`noop` は `@tanstack/react-query` の export) として流し、読む側を `<Suspense>` と Error Boundary で囲む。囲まないと、読み込み中と失敗がページ全体の pending 表示とエラー表示に置き換わる (ADR-0033)
 
 ## effect かイベントハンドラかを原因で決める
@@ -40,7 +40,7 @@ lint (`typescript/no-misused-promises`) が止める。直し方 (`docs/guides/r
 - ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `void` やインラインの `async` を書かない
 - 待たない判断は内側で 1 回だけ表明する。呼び先が失敗を自分で処理するなら `void`、呼び出し側で通知や後始末をするなら `.catch()`
 - 操作の失敗を Error Boundary へ届けない。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる (ADR-0016)
-- 実例は `src/components/screens/route-error.tsx` の `handleRetry`。mutation を伴う操作は次節に従う
+- 実例は `src/hooks/use-route-retry.ts` の `handleRetry`。mutation を伴う操作は次節に従う
 
 ## ユーザー操作による更新は Transition の中で行う
 
@@ -72,9 +72,25 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 
 lint では見ないのでレビューで見る。
 
-- ルートを足したら `head()` で `pageTitle(ctx, <ページ名>)` の title を持たせる。無いと親の title になり、遷移の読み上げでページを区別できない (ADR-0035)
+- ルートを足したら `head()` で `pageTitle(ctx, <ページ名>)` の title を持たせる。ページの上に重ねるダイアログの route も、ダイアログの名前で持つ。無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
 - title は `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
 - ページの見出しは `PageHeader` の `h1` で持つ。遷移の後の focus は h1 へ移り、無いと body に落ちて利用者がページの先頭から探し直す (ADR-0035)
+
+## 既存の値を編集するダイアログは子 route にする
+
+lint では見ないのでレビューで見る。
+
+- 既存の値を初期値にする編集のダイアログは、開く元のページの route の子 route にし、loader で `queryClient.query({ ...options, staleTime: 0 })` を `staleReloadMode: "blocking"` で待つ。キャッシュや前に取った値で開くと、別のタブや別の利用者の変更より古い値でフォームが始まる (ADR-0041)
+- 1 件の query は一覧の query の先頭キーの下に置かない。保存後の一覧の invalidate が、閉じかけのダイアログの 1 件まで取り直す (ADR-0041)
+- 1 件の query は `staleTime: Infinity` にし、開いている間は取り直さない。取り直すと、触れていないフォームは利用者の目の前で値が替わる (ADR-0041)
+- 開く元のページがキャッシュした一覧に同じ項目があれば、loader は取り直した値と一覧の行の更新日時を比べ、違えば一覧を `invalidateQueries(…, { cancelRefetch: false })` で invalidate し、待たない。1 件が not found なら、同じ項目が一覧に残っているときに同じく invalidate してから not found を投げ直す。取り直した値を `setQueriesData` で一覧へ書き込まない。絞り込みの条件とずれ、他の行の取り直しも遅れる (ADR-0041)
+- ダイアログの route に `remountDeps: ({ params }) => params` を付ける。付けないと、開いたまま別の値の URL へ移ったとき、打ち始めたフォームが前の値のまま残り、移った先の値へ保存する (ADR-0041)
+- 閉じる操作では `open` を false にするだけにし、route を離れるのは `onOpenChangeComplete` で行う。先に離れると閉じるアニメーションが出ない。例外は読み込み中のダイアログ (`pendingComponent`) で、閉じる操作の時点で離れる。アニメーションを待つ間に取得が終わると、本物のダイアログが開く (ADR-0041)
+- `finalFocus` は、利用者が閉じたときだけでなく、戻る・進むで開いたまま unmount したときにも開いた行のリンクを返す。閉じる操作のときだけ返すと、戻るで一覧へ移ったときに focus がダイアログと一緒に外れて見出しへ移り、開いた行の位置を失う (ADR-0041)
+- 開いたまま unmount した時点でダイアログの route がまだ表示されていれば (読み込み中のダイアログが本物に替わった、別の値の URL へ移った)、`finalFocus` は `false` を返す。判定は `finalFocus` の中で `router.state.matches` を読み、描画の時点の hook の値を使わない。利用者が閉じたかを先に見る。リンクを返すと、替わったダイアログが入力欄へ移すまでの間リンクが focus を受ける (ADR-0041)
+- `useMatchRoute` で pending を照合するとき、`params.parse` で変換した値を `params` に渡さない。URL の文字列と比べて一致しない。route だけで照合し、返った params を文字列で比べる (ADR-0041)
+- 開くリンクに `preload={false}` を渡す。開くたびに取り直すので、preload は捨てる取得になる (ADR-0041)
+- 行のリンクは操作中に `disabled` を渡し、`tabIndex={0}` は操作中かに関わらず渡す。`disabled` の Link は href を外して focus できなくなり、閉じたときに focus を戻せない。操作中だけ渡すと、操作が終わるとき focus を持ったリンクが blur してから focus を受け直す (ADR-0041)
 
 ## 日付と日時の値は意味で分類して持つ
 

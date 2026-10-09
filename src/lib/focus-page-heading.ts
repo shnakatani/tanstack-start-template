@@ -5,6 +5,8 @@
  *
  * 遷移中にアプリが別の要素へ focus を移していたら奪わない (Navigation API の focusReset の既定と同じ条件)。
  * 移すのは、focus が body にある (focus していた要素が消えた) ときと、遷移前の要素に残っているときだけ。
+ * 見出しが支援技術から隠れているときと、`role` と `aria-modal="true"` を持つダイアログが開いているときも移さない。
+ * モーダルのダイアログは開くと focus を自分の中へ移すので、その背後の見出しを経由させない (ADR-0035)。
  * スクロール位置は router の scrollRestoration が決めるので、focus ではスクロールさせない。
  */
 export function focusPageHeading(focusedBeforeNavigation: Element | null): void {
@@ -15,6 +17,41 @@ export function focusPageHeading(focusedBeforeNavigation: Element | null): void 
     return;
   }
   const heading = document.querySelector("h1");
+  if ((heading !== null && isHiddenFromAssistiveTechnology(heading)) || hasOpenModalDialog()) {
+    return;
+  }
+  focusHeadingOrBody(heading);
+}
+
+/**
+ * 祖先か自身が `aria-hidden="true"` か `inert` なら、支援技術から隠れている。そこへ focus を移すと、
+ * 読み上げの順序から外れたまま focus だけが乗る (axe の aria-hidden-focus)。
+ * Base UI のモーダルのダイアログは、開いている間その外側を `aria-hidden="true"` で隠す
+ */
+function isHiddenFromAssistiveTechnology(element: Element): boolean {
+  return element.closest('[aria-hidden="true"], [inert]') !== null;
+}
+
+/**
+ * 外側を隠さず `aria-modal="true"` だけでモーダルを表すダイアログが、表示されているか。`role` 属性を
+ * 明示したダイアログ (Base UI の Dialog の形) だけを見る。`showModal()` で開いた `<dialog>` は当たらない
+ */
+function hasOpenModalDialog(): boolean {
+  const dialogs = document.querySelectorAll(
+    '[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]',
+  );
+  return [...dialogs].some((dialog) => dialog.checkVisibility());
+}
+
+/**
+ * ページの h1 へ、枠を出さずに focus を移す。h1 が無ければ body へ。focus を奪ってよいかの判定は
+ * 呼び出し側が持つ
+ */
+export function moveFocusToPageHeading(): void {
+  focusHeadingOrBody(document.querySelector("h1"));
+}
+
+function focusHeadingOrBody(heading: HTMLHeadingElement | null): void {
   if (heading === null) {
     // どのページも PageHeader で h1 を持つ。無いのはページの組み方の漏れなので残す
     console.warn("[focusPageHeading] h1 が無い", { pathname: window.location.pathname });

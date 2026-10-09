@@ -1,8 +1,8 @@
 # ADR-0033: ページのデータは Query から読み、欠かせない query だけを loader で待ち、副次的な query は待たずに Suspense の中で読む
 
 - Status: Accepted
-- Date: 2026-09-28
-- 関連: ADR-0019 (一覧の絞り込み条件を loader に渡す)、ADR-0029 (既定の pending 表示)
+- Date: 2026-10-09
+- 関連: ADR-0019 (一覧の絞り込み条件を loader に渡す)、ADR-0029 (既定の pending 表示)、ADR-0041 (既存の値を編集するダイアログの loader)
 
 ## Context
 
@@ -36,6 +36,7 @@ Router「Deferred Data Loading」の例は、待たない取得をまだ `prefet
 | 欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) | loader から `queryClient.query({ ...options, staleTime: "static" })` の Promise を返すか await する。`staleTime: "static"` はキャッシュがあればそれを返し、取得し直しで待たない                                         |
 | 副次的な query                                                            | loader で `void queryClient.query(options).catch(noop)` (`noop` は `@tanstack/react-query` の export) とし、読む側を `<Suspense>` と Error Boundary で囲む。reject を受けないと、失敗がサーバーで未処理の reject になる |
 | route の `head` が要る値                                                  | loader から返し、`head` で読む。コンポーネントは同じ値も `useSuspenseQuery` で読む                                                                                                                                      |
+| 既存の値を編集するダイアログの、フォームの初期値にする query              | loader で `queryClient.query({ ...options, staleTime: 0 })` を `staleReloadMode: "blocking"` で待つ。キャッシュの値で開くと、別のタブや別の利用者の変更より古い値でフォームが始まる (ADR-0041)                          |
 
 欠かせない query かどうかはページごとに、上の表の左列で決める。
 

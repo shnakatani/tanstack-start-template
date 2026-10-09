@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { listNotes } from "./functions";
-import type { NoteListFilter } from "./schema";
+import { getNote, listNotes } from "./functions";
+import type { Note, NoteListFilter } from "./schema";
 
 /**
  * 一覧の鮮度窓。Link の intent preload が連続したときの重複フェッチを抑える。route loader は
@@ -22,5 +22,26 @@ export function notesQueryOptions(filter: NoteListFilter) {
     queryKey: [...NOTES_QUERY_KEY, filter],
     queryFn: () => listNotes({ data: filter }),
     staleTime: NOTES_STALE_TIME_MS,
+  });
+}
+
+/**
+ * 1 件のクエリの先頭キー。一覧の `NOTES_QUERY_KEY` の下に置かない。下に置くと、保存後の一覧の
+ * invalidate が前方一致で当たり、閉じかけの編集ダイアログの 1 件まで取り直す。開くときの取り直しは
+ * 編集の route の loader が持つ
+ */
+const NOTE_QUERY_KEY = ["note"] as const;
+
+/**
+ * 1 件のクエリ。編集フォームの初期値に使う。開いている間に裏で取り直すと、触れていないフォームは
+ * 利用者の目の前で値が替わり、打ち始めたフォームには届かない (TanStack Form は、触れていないフォームに
+ * だけ新しい `defaultValues` を反映する)。どちらも要らないので observer の再取得を止める。
+ * 開くときの取り直しは route の loader が `staleTime: 0` で行う
+ */
+export function noteQueryOptions(id: Note["id"]) {
+  return queryOptions({
+    queryKey: [...NOTE_QUERY_KEY, id],
+    queryFn: () => getNote({ data: { id } }),
+    staleTime: Infinity,
   });
 }

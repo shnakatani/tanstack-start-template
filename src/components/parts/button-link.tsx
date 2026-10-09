@@ -11,6 +11,9 @@ import { buttonVariants } from "@/components/ui/button";
 type ButtonLinkBaseProps = ComponentProps<"a"> & VariantProps<typeof buttonVariants>;
 
 function ButtonLinkBase({ className, variant, size, ...props }: ButtonLinkBaseProps) {
+  // Router の Link は disabled のとき aria-disabled を付ける。buttonVariants は aria-disabled ではなく
+  // data-disabled で薄くするので、同じ状態を data-disabled にも写す
+  const disabled = props["aria-disabled"] === true || props["aria-disabled"] === "true";
   return (
     // oxlint-disable-next-line jsx-a11y/anchor-has-content -- 汎用ラッパーで、children は呼び出し側が {...props} 経由で渡す前提。単体では判定できない
     <a
@@ -18,6 +21,7 @@ function ButtonLinkBase({ className, variant, size, ...props }: ButtonLinkBasePr
       // registry の子孫セレクタ (button-group.tsx の `[data-slot=button]` 等) は
       // この属性で対象を選ぶため、欠けるとリンクだけが選択から漏れる
       data-slot="button"
+      data-disabled={disabled ? "" : undefined}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

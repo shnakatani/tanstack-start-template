@@ -1,4 +1,5 @@
 import { revalidateLogic } from "@tanstack/react-form";
+import type { ComponentProps } from "react";
 import * as v from "valibot";
 
 import { ActionDialogContent } from "@/components/action/dialog";
@@ -30,6 +31,7 @@ export function NoteFormContent({
   defaultValues,
   onSubmit,
   blocksClose,
+  finalFocus,
 }: {
   /** ダイアログの見出し (「メモを追加」/「メモを編集」) */
   heading: string;
@@ -41,6 +43,8 @@ export function NoteFormContent({
    * 止める判定と同じ値を渡す。キャンセルをこの値で無効化し、押せるのに閉じないずれを防ぐ
    */
   blocksClose: boolean;
+  /** 閉じたときの focus の移し先 (Base UI の `finalFocus`)。省くと Base UI の既定 (開いたトリガー) */
+  finalFocus?: ComponentProps<typeof ActionDialogContent>["finalFocus"];
 }) {
   const form = useAppForm({
     defaultValues,
@@ -56,7 +60,7 @@ export function NoteFormContent({
 
   return (
     // 検証に失敗すると handleSubmit は onSubmit を呼ばずに resolve し、Transition もすぐ終わる
-    <ActionDialogContent submitAction={() => form.handleSubmit()}>
+    <ActionDialogContent submitAction={() => form.handleSubmit()} finalFocus={finalFocus}>
       <DialogHeader>
         <DialogTitle>{heading}</DialogTitle>
       </DialogHeader>
