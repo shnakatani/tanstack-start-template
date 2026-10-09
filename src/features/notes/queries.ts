@@ -30,7 +30,7 @@ export function notesQueryOptions(filter: NoteListFilter) {
  * invalidate が前方一致で当たり、閉じかけの編集ダイアログの 1 件まで取り直す。開くときの取り直しは
  * 編集の route の loader が持つ
  */
-export const NOTE_QUERY_KEY = ["note"] as const;
+const NOTE_QUERY_KEY = ["note"] as const;
 
 /**
  * 1 件のクエリ。編集フォームの初期値に使う。開いている間に裏で取り直すと、触れていないフォームは
