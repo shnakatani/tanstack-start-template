@@ -1,4 +1,4 @@
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryCache, QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   createMemoryHistory,
@@ -16,7 +16,7 @@ import { render } from "vitest-browser-react";
 
 import { RouterInnerWrap } from "@/components/router-inner-wrap";
 import { RouteErrorContent } from "@/components/screens/route-error";
-import { Toaster } from "@/components/ui/toast";
+import { toast, Toaster } from "@/components/ui/toast";
 import { getNote, listNotes, updateNote } from "@/features/notes/functions";
 import { noteQueryOptions } from "@/features/notes/queries";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
@@ -24,6 +24,10 @@ import type { Note } from "@/features/notes/schema";
 import { NOTE, NOTE_UPDATE, OTHER_NOTE, UPDATED_NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import {
+  BACKGROUND_REFETCH_ERROR_MESSAGE,
+  createBackgroundRefetchErrorHandler,
+} from "@/lib/query-cache-handlers";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
@@ -107,7 +111,15 @@ const routeTree = testRootRoute.addChildren([
  * memory history で)。props 直渡しの page テスト (-components/notes-page.test.tsx) では wrapper が一度も実行されない
  */
 async function renderRoute(initialLocation: string, { pendingMs }: { pendingMs?: number } = {}) {
-  const queryClient = createTestQueryClient();
+  // 本番 (`src/router.tsx`) と同じ配線を通す。取り直しの失敗の toast が、保存のあとの一覧の取り直しでは出て、
+  // 編集の route の loader が取り直す 1 件の失敗 (ダイアログが伝える) では出ないことを見る
+  const queryClient = createTestQueryClient({
+    queryCache: new QueryCache({
+      onError: createBackgroundRefetchErrorHandler((message) =>
+        toast.add({ type: "error", title: message, id: "background-refetch-error" }),
+      ),
+    }),
+  });
   const router = createRouter({
     routeTree,
     context: { queryClient },
@@ -730,6 +742,61 @@ describe("/notes/$noteId/edit route", () => {
 
     await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
     expect(vi.mocked(getNote)).toHaveBeenCalledTimes(2);
+  });
+
+  it("閉じてから開き直した取得の失敗は、ダイアログだけで伝え、取り直しの失敗の toast を出さない", async () => {
+    // 1 回目に取った値はキャッシュに残り、閉じるとそれを読む部品は無くなる。開き直す loader の取り直しが
+    // 失敗したとき、キャッシュに値があることだけで「表示中のデータの取り直しの失敗」と扱うと、
+    // 失敗のダイアログに toast が重なる
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    vi.mocked(getNote).mockResolvedValueOnce(NOTE).mockRejectedValueOnce(new Error("取得の失敗"));
+    const { screen } = await renderRoute("/notes");
+    await rowEditLink(screen, NOTE.title).click();
+    await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    await userEvent.keyboard("{Escape}");
+    await expectNoteDialogClosed(screen);
+
+    await rowEditLink(screen, NOTE.title).click();
+
+    // 失敗のダイアログが肯定 anchor。toast は loader が失敗を受け取る前に積まれるので、ダイアログが出た
+    // 時点で出ていなければ出ない
+    await expect
+      .element(screen.getByRole("dialog", { name: "メモを読み込めませんでした" }))
+      .toBeInTheDocument();
+    await expectAbsent(screen.getByText(BACKGROUND_REFETCH_ERROR_MESSAGE, { exact: false }));
+    expect(vi.mocked(getNote)).toHaveBeenCalledTimes(2);
+    // 通知しない失敗はハンドラの warn にも残さない。失敗は loader を待った route のダイアログが伝えている
+    // (router 自身の "Error in route match" の warn は別)
+    expect(warn).not.toHaveBeenCalledWith(
+      "[query-cache] background refetch failed",
+      expect.anything(),
+    );
+  });
+
+  it("保存のあとの一覧の取り直しが失敗すると、取り直しの失敗の toast を出す", async () => {
+    // 一覧は表示したまま。古い行が残ることを、ダイアログの無い画面で toast だけが伝える
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
+    const refetch = deferMock(listNotes);
+    vi.mocked(getNote).mockResolvedValue(NOTE);
+    vi.mocked(updateNote).mockResolvedValue(undefined);
+    const { screen } = await renderRoute("/notes");
+    await rowEditLink(screen, NOTE.title).click();
+    await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    await titleTextbox(screen).fill(UPDATED_NOTE.title);
+    await saveButton(screen).click();
+    await parkMouse();
+    await expectNoteDialogClosed(screen);
+
+    refetch.reject(new Error("Failed to fetch"));
+
+    await expectText(screen, BACKGROUND_REFETCH_ERROR_MESSAGE);
+    // raw error は observability のため warn に残す
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      "[query-cache] background refetch failed",
+      expect.anything(),
+    );
   });
 
   it("title をダイアログの名前とアプリ名で組む", async () => {
