@@ -427,7 +427,7 @@ describe("/notes/$noteId/edit route", () => {
     expect(router.state.location.pathname).toBe("/notes");
   });
 
-  it("閉じると一覧へ新しい履歴で戻り、絞り込みを保ち、開いたリンクへ focus を戻す", async () => {
+  it("閉じると一覧へ新しい履歴で戻り、絞り込みを保ち、開閉の遷移を読み上げ、開いたリンクへ focus を戻す", async () => {
     const fetching = serveNotes([NOTE]);
     const { screen, router } = await renderRoute("/notes?q=abc");
     await rowEditLink(screen, NOTE.title).click();
@@ -439,9 +439,13 @@ describe("/notes/$noteId/edit route", () => {
     await expect.poll(() => router.state.location.href).toBe("/notes?q=abc");
     // 一覧 → 編集 → 一覧。戻るで編集を開き直せる
     expect(router.history.length).toBe(3);
+    // ダイアログの route との行き来も、ほかの遷移と同じく title を読み上げる (ADR-0035)
+    await expectAnnouncements([
+      `${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`,
+      `${NOTES_PAGE_TITLE} — ${APP_NAME}`,
+    ]);
+    // 読み上げの後も、Base UI が戻した focus は見出しへ移らない
     await expect.element(rowEditLink(screen, NOTE.title)).toHaveFocus();
-    // ページとその上のダイアログの行き来は、開くときも閉じるときも読み上げない (ADR-0035)
-    expect(readAnnouncements()).toEqual([]);
     expect(fetching).toHaveBeenExhausted();
   });
 
@@ -469,6 +473,11 @@ describe("/notes/$noteId/edit route", () => {
 
     await expectNoteDialogClosed(screen);
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
+    await expectAnnouncements([
+      `${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`,
+      `${NOTES_PAGE_TITLE} — ${APP_NAME}`,
+    ]);
+    // 読み上げの後も、Base UI が戻した focus は見出しへ移らない
     await expect.element(rowEditLink(screen, NOTE.title)).toHaveFocus();
     expect(fetching).toHaveBeenExhausted();
   });
@@ -487,6 +496,26 @@ describe("/notes/$noteId/edit route", () => {
     await expect.element(heading).toHaveFocus();
     // 見出しは操作できる要素ではないので枠を出さない (ADR-0035)
     await expect.poll(() => heading.element().matches(":focus-visible")).toBe(false);
+  });
+
+  it("一覧に無い行のダイアログからブラウザの戻るで一覧へ戻ると、遷移の読み上げが見出しへ focus を移す", async () => {
+    // 戻るでは finalFocus が返すリンクが無く、ダイアログと一緒に focus が外れる
+    vi.mocked(listNotes).mockResolvedValue([]);
+    vi.mocked(getNote).mockResolvedValue(NOTE);
+    const { screen, router } = await renderRoute("/notes");
+    const heading = screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 });
+    await expect.element(heading).toBeInTheDocument();
+    await router.navigate({ to: "/notes/$noteId/edit", params: { noteId: NOTE.id } });
+    await expect.element(titleTextbox(screen)).toHaveFocus();
+
+    router.history.back();
+
+    await expectNoteDialogClosed(screen);
+    await expectAnnouncements([
+      `${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`,
+      `${NOTES_PAGE_TITLE} — ${APP_NAME}`,
+    ]);
+    await expect.element(heading).toHaveFocus();
   });
 
   it("存在しない id では、ダイアログで見つからないことを伝え、閉じると一覧へ戻る", async () => {
@@ -600,8 +629,14 @@ describe("/notes/$noteId/edit route", () => {
         .element(rowEditLink(screen, UPDATED_NOTE.title))
         .not.toHaveAttribute("aria-disabled");
       expect(router.state.location.pathname).toBe("/notes");
-      // route を離れて unmount したあとも、useMutation に渡した onSuccess が完了を通知する
-      await expectAnnouncements(["更新しています", `『${UPDATED_NOTE.title}』を更新しました`]);
+      // route を離れて unmount したあとも、useMutation に渡した onSuccess が完了を通知する。完了の通知は
+      // 再取得を待ってから出るので、再取得を握ったこのテストでは閉じた遷移の読み上げより後になる
+      await expectAnnouncements([
+        `${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`,
+        "更新しています",
+        `${NOTES_PAGE_TITLE} — ${APP_NAME}`,
+        `『${UPDATED_NOTE.title}』を更新しました`,
+      ]);
       // 開くときに 1 回だけ取得する。保存後の一覧の invalidate は 1 件のクエリに当たらない
       expect(vi.mocked(getNote)).toHaveBeenCalledOnce();
     },

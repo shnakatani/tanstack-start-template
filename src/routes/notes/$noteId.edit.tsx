@@ -19,8 +19,6 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
     parse: ({ noteId }) => ({ noteId: Number(noteId) }),
     stringify: ({ noteId }) => ({ noteId: String(noteId) }),
   },
-  // 一覧の上に重ねるダイアログの route。一覧との行き来を遷移として伝えない (ADR-0035)
-  staticData: { dialogRoute: true },
   loader: {
     // キャッシュがあっても取り直し、取り終えるまで開かない。既定の background では、戻るで入ったときに
     // 前に取った値で開き、新しい値が届くと触れていないフォームは利用者の目の前で値が替わり、打ち始めた

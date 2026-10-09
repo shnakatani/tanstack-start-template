@@ -69,19 +69,7 @@ function createAnnouncedRouter(
     getParentRoute: () => rootRoute,
     path: "/b",
     head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "B") }] }),
-    component: () => (
-      <>
-        <h1>B</h1>
-        <Outlet />
-      </>
-    ),
-  });
-  // ページ (/b) の上に重ねるダイアログの route
-  const bDialog = createRoute({
-    getParentRoute: () => b,
-    path: "dialog",
-    staticData: { dialogRoute: true },
-    component: () => <p>ダイアログ</p>,
+    component: () => <h1>B</h1>,
   });
   const err = createRoute({
     getParentRoute: () => rootRoute,
@@ -114,7 +102,7 @@ function createAnnouncedRouter(
     notFoundComponent: () => <h1>項目が見つかりません</h1>,
   });
   return createRouter({
-    routeTree: rootRoute.addChildren([a, b.addChildren([bDialog]), err, missing, gone]),
+    routeTree: rootRoute.addChildren([a, b, err, missing, gone]),
     history: createMemoryHistory({ initialEntries: ["/a"] }),
     // 本番 (src/router.tsx) と同じ配線を通す
     InnerWrap: options.innerWrap ?? RouterInnerWrap,
@@ -223,38 +211,4 @@ it("RouteAnnouncer が外れた後の遷移では、focus を動かさず読み�
   await expect.poll(() => router.state.status).toBe("idle");
   await expect.element(button).toHaveFocus();
   expect(readAnnouncements()).toEqual([]);
-});
-
-it("ページの上のダイアログの route を開閉しても、focus を動かさず読み上げない", async () => {
-  const router = createAnnouncedRouter();
-  const screen = await render(<RouterProvider router={router} />);
-  await userEvent.click(screen.getByRole("button", { name: "B へ" }));
-  await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
-  // 開いたトリガーに focus がある場面を作る。伝えると、覚えた要素のままなので見出しへ移る
-  const opener = screen.getByRole("button", { name: "検索" });
-  opener.element().focus();
-
-  router.history.push("/b/dialog");
-  await expect.element(screen.getByText("ダイアログ")).toBeInTheDocument();
-  await expect.poll(() => router.state.resolvedLocation?.pathname).toBe("/b/dialog");
-  await expect.element(opener).toHaveFocus();
-
-  router.history.back();
-  await expect.poll(() => router.state.resolvedLocation?.pathname).toBe("/b");
-  await expect.element(opener).toHaveFocus();
-  expect(readAnnouncements()).toEqual([`B — ${APP_NAME}`]);
-});
-
-it("ダイアログの route から別のページへ移ると、見出しへ移して読み上げる", async () => {
-  const router = createAnnouncedRouter();
-  const screen = await render(<RouterProvider router={router} />);
-  await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
-
-  // 別のページからダイアログを直接開くと、ページが変わるので伝える
-  router.history.push("/b/dialog");
-  await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
-
-  router.history.push("/a");
-  await expect.element(screen.getByRole("heading", { name: "A" })).toHaveFocus();
-  expect(readAnnouncements()).toEqual([`B — ${APP_NAME}`, APP_NAME]);
 });

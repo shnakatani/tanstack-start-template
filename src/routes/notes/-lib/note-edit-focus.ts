@@ -17,7 +17,7 @@ export function noteEditLinkProps(noteId: Note["id"]): { "data-note-edit-link": 
  * 行が一覧に無い (絞り込みで外れた、削除された) とき:
  * - 利用者が閉じた (`closedByUser`) なら、ページの見出しへ枠を出さずに移す (ADR-0035)。Base UI に要素を
  *   返すと枠の扱いを渡せないので、自分で移して Base UI には何もさせない
- * - 開いたまま unmount したなら、focus に触れない。ページの変わる遷移は route の announcer が見出しへ移す
+ * - 開いたまま unmount したなら、focus に触れない。route を離れる遷移は route の announcer が見出しへ移す
  */
 export function focusAfterNoteEditClosed(
   noteId: Note["id"],

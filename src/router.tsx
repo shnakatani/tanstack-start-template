@@ -57,8 +57,4 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: ReturnType<typeof getRouter>;
   }
-  interface StaticDataRouteOption {
-    /** ページの上に重ねるダイアログの route。ページとの行き来を遷移として伝えない (route-announcement.ts の isDialogToggle) */
-    dialogRoute?: boolean;
-  }
 }
