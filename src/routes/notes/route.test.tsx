@@ -54,7 +54,7 @@ vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
 }));
 
 import { Route as NoteEditRoute } from "./$noteId.edit";
-import { noteRow, rowEditLink } from "./-components/note-cells.test-helpers";
+import { noteEditTriggerName, noteRow, rowEditLink } from "./-components/note-cells.test-helpers";
 import {
   expectNoteDialogClosed,
   saveButton,
@@ -309,6 +309,14 @@ function recordFocusins(): Element[] {
   return targets;
 }
 
+/**
+ * 記録した要素の aria-label。行の編集リンクはモーダルの背後で aria-hidden になり locator で引けないので、
+ * 名前を持つ aria-label の値 (`noteEditTriggerName`) で見分ける
+ */
+function ariaLabelsOf(targets: Element[]): (string | null)[] {
+  return targets.map((target) => target.getAttribute("aria-label"));
+}
+
 /** 閉じかけのダイアログの本体。閉じるアニメーションを遅らせる style と、それが効いたかを見る observer が共有する */
 const CLOSING_DIALOG_SELECTOR = "[data-slot=dialog-content][data-closed]";
 
@@ -439,9 +447,8 @@ describe("/notes/$noteId/edit route", () => {
     // 読み込み中のダイアログが本物に替わっても、focus は本物の先頭の入力へ移る
     await expect.element(titleTextbox(screen)).toHaveFocus();
     // 替わる間に行のリンクを経ない。消える側が戻し先にリンクを返すと、本物が入力欄へ移すまでの
-    // 1 frame だけリンクが focus を受ける。リンクはモーダルの背後にあるので includeHidden で引く
-    const link = rowEditLink(screen, NOTE.title, { includeHidden: true });
-    await expect.poll(() => focused.includes(link.element())).toBe(false);
+    // 1 frame だけリンクが focus を受ける。focus は直前の toHaveFocus で落ち着いている
+    expect(ariaLabelsOf(focused)).not.toContain(noteEditTriggerName(NOTE));
   });
 
   it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に取得が終わってもフォームを開かない", async () => {
@@ -671,6 +678,28 @@ describe("/notes/$noteId/edit route", () => {
 
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
     expect(fetching).toHaveBeenExhausted();
+  });
+
+  it("一覧に行がある id が見つからなければ、見つからないダイアログの背後で一覧を取り直し、その行を消す", async () => {
+    // 一覧を描いたあとで別のタブが削除した、という状態
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE, OTHER_NOTE]);
+    const refetch = deferMock(listNotes);
+    vi.mocked(getNote).mockRejectedValue(notFound());
+    const { screen } = await renderRoute("/notes");
+
+    await rowEditLink(screen, NOTE.title).click();
+
+    // ダイアログは一覧の取り直しを待たずに開く
+    const notFoundDialog = screen.getByRole("dialog", { name: "メモが見つかりません" });
+    await expect.element(notFoundDialog).toBeInTheDocument();
+    await expect.poll(() => vi.mocked(listNotes)).toHaveBeenCalledTimes(2);
+
+    refetch.resolve([OTHER_NOTE]);
+
+    // モーダル表示中は行が aria-hidden なので includeHidden
+    await expectRemoved(noteRow(screen, NOTE, { includeHidden: true }));
+    await expect.element(noteRow(screen, OTHER_NOTE, { includeHidden: true })).toBeInTheDocument();
+    await expect.element(notFoundDialog).toBeInTheDocument();
   });
 
   it("id の形でない URL では、取得せずにダイアログで見つからないことを伝える", async () => {
@@ -909,9 +938,8 @@ describe("/notes/$noteId/edit route", () => {
 
     await expect.element(titleTextbox(screen)).toHaveValue(OTHER_NOTE.title);
     await expect.element(titleTextbox(screen)).toHaveFocus();
-    // リンクはモーダルの背後にあるので includeHidden で引く
-    const link = rowEditLink(screen, NOTE.title, { includeHidden: true });
-    await expect.poll(() => focused.includes(link.element())).toBe(false);
+    // focus は直前の toHaveFocus で落ち着いている
+    expect(ariaLabelsOf(focused)).not.toContain(noteEditTriggerName(NOTE));
     expect(fetching).toHaveBeenExhausted();
   });
 });

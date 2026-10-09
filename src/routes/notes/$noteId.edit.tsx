@@ -1,9 +1,8 @@
-import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, isNotFound, notFound, useRouter } from "@tanstack/react-router";
 import * as v from "valibot";
 
-import { NOTES_QUERY_KEY, noteQueryOptions } from "@/features/notes/queries";
+import { noteQueryOptions } from "@/features/notes/queries";
 import { noteIdSchema } from "@/features/notes/schema";
-import type { Note } from "@/features/notes/schema";
 import { pageTitle } from "@/lib/page-title";
 
 import { NoteEditDialog } from "./-components/note-edit-dialog";
@@ -12,7 +11,7 @@ import {
   NoteEditNotFoundDialog,
   NoteEditPendingDialog,
 } from "./-components/note-edit-status-dialogs";
-import { hasDifferingListRow } from "./-lib/note-list-staleness";
+import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
 import { NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
 export const Route = createFileRoute("/notes/$noteId/edit")({
@@ -32,18 +31,16 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
         throw notFound();
       }
       const { queryClient } = context;
-      const note = await queryClient.query({ ...noteQueryOptions(params.noteId), staleTime: 0 });
-      // 取り直した値が背後の一覧の行と食い違えば、一覧を invalidate して裏で取り直す。しないと、ダイアログは
-      // 新しい値、背後の行は古い値のまま並ぶ。値を一覧のキャッシュへ書き込まない (ADR-0041)。
-      // `NOTES_QUERY_KEY` の下には一覧の query だけを置くので、data は一覧の行の配列である
-      const cachedLists = queryClient.getQueriesData<Note[]>({ queryKey: NOTES_QUERY_KEY });
-      if (hasDifferingListRow(note, cachedLists)) {
-        // ダイアログは一覧の取得を待たない。進行中の一覧の取得 (保存の後の再取得など) は取り消さない。
-        // 既定の cancelRefetch: true は取り消して始め直し、取り消された取得を待つ側 (保存の onSuccess) が
-        // 一覧の決着より先に終わる ("If set to `false`, no refetch will be made if there is already a
-        // request running." Query reference「InvalidateOptions」)
-        void queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY }, { cancelRefetch: false });
-      }
+      // 取り直した値か、見つからないこと (削除された) が背後の一覧の行と食い違えば、一覧を裏で取り直す
+      const note = await queryClient
+        .query({ ...noteQueryOptions(params.noteId), staleTime: 0 })
+        .catch((error: unknown) => {
+          if (isNotFound(error)) {
+            invalidateNoteListsIfStale(queryClient, params.noteId, null);
+          }
+          throw error;
+        });
+      invalidateNoteListsIfStale(queryClient, note.id, note.updatedAt);
       return note;
     },
     staleReloadMode: "blocking",
