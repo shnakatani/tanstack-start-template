@@ -3,7 +3,8 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 /**
- * route の errorComponent の再試行。再試行は `router.invalidate()` だけを呼び、表示した時点で Query の
+ * route の errorComponent の再試行。ページの形 (`RouteErrorContent`) でもダイアログの形でも、
+ * errorComponent は再試行のハンドラをここから取る。再試行は `router.invalidate()` だけを呼び、表示した時点で Query の
  * error boundary を reset する。しないと、loader が取得しない `useSuspenseQuery` の失敗が Query の
  * キャッシュに残り、再試行で回復しない (docs/guides/data-loading.md「読み込みに失敗した画面から再試行する」)
  */

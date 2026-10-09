@@ -2,7 +2,7 @@ import { useState, type ComponentProps } from "react";
 
 import type { Dialog } from "@/components/ui/dialog";
 
-import { blocksUserClose } from "./use-submit-blocking-dialog";
+import { blocksUserClose } from "../-lib/dialog-close-blocking";
 
 /**
  * route として開くダイアログの開閉。開いた状態で mount し、閉じる操作では open を false にするだけにする。
