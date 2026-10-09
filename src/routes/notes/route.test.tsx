@@ -463,7 +463,8 @@ describe("/notes/$noteId/edit route", () => {
 
   it("ブラウザの戻るで一覧へ戻ると、開いたリンクへ focus を戻す", async () => {
     // 戻るでは閉じる操作を経ずに route ごと unmount する。そのときも Base UI は finalFocus を呼ぶので、
-    // 行のリンクがあればそこへ戻す。無いと focus が body へ落ちる
+    // 行のリンクがあればそこへ戻す。無いと focus はダイアログと一緒に外れ、遷移の読み上げが見出しへ移すので、
+    // 開いた行の位置を失う
     const fetching = serveNotes([NOTE]);
     const { screen, router } = await renderRoute("/notes");
     await rowEditLink(screen, NOTE.title).click();
@@ -606,6 +607,12 @@ describe("/notes/$noteId/edit route", () => {
 
       await expectNoteDialogClosed(screen);
       await expect.poll(() => router.state.location.pathname).toBe("/notes");
+      // 完了の通知は onSuccess が再取得を待ってから出す。再取得を握っている間に、閉じた遷移の読み上げが出る
+      await expectAnnouncements([
+        `${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`,
+        "更新しています",
+        `${NOTES_PAGE_TITLE} — ${APP_NAME}`,
+      ]);
       await expect.element(noteRow(screen, UPDATED_NOTE)).toHaveStyle("opacity: 0.6");
       await expect.element(noteRow(screen, UPDATED_NOTE).getByText("更新中")).toBeInTheDocument();
       const busyLink = rowEditLink(screen, UPDATED_NOTE.title);
@@ -629,8 +636,7 @@ describe("/notes/$noteId/edit route", () => {
         .element(rowEditLink(screen, UPDATED_NOTE.title))
         .not.toHaveAttribute("aria-disabled");
       expect(router.state.location.pathname).toBe("/notes");
-      // route を離れて unmount したあとも、useMutation に渡した onSuccess が完了を通知する。完了の通知は
-      // 再取得を待ってから出るので、再取得を握ったこのテストでは閉じた遷移の読み上げより後になる
+      // route を離れて unmount したあとも、useMutation に渡した onSuccess が再取得の後に完了を通知する
       await expectAnnouncements([
         `${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`,
         "更新しています",
