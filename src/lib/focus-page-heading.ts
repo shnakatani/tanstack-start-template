@@ -5,7 +5,7 @@
  *
  * 遷移中にアプリが別の要素へ focus を移していたら奪わない (Navigation API の focusReset の既定と同じ条件)。
  * 移すのは、focus が body にある (focus していた要素が消えた) ときと、遷移前の要素に残っているときだけ。
- * 見出しが支援技術から隠れているときと、`aria-modal="true"` のダイアログが開いているときも移さない。
+ * 見出しが支援技術から隠れているときと、`role` と `aria-modal="true"` を持つダイアログが開いているときも移さない。
  * モーダルのダイアログは開くと focus を自分の中へ移すので、その背後の見出しを経由させない (ADR-0035)。
  * スクロール位置は router の scrollRestoration が決めるので、focus ではスクロールさせない。
  */
@@ -32,7 +32,10 @@ function isHiddenFromAssistiveTechnology(element: Element): boolean {
   return element.closest('[aria-hidden="true"], [inert]') !== null;
 }
 
-/** 外側を隠さず `aria-modal="true"` だけでモーダルを表すダイアログが、表示されているか */
+/**
+ * 外側を隠さず `aria-modal="true"` だけでモーダルを表すダイアログが、表示されているか。`role` 属性を
+ * 明示したダイアログ (Base UI の Dialog の形) だけを見る。`showModal()` で開いた `<dialog>` は当たらない
+ */
 function hasOpenModalDialog(): boolean {
   const dialogs = document.querySelectorAll(
     '[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]',
