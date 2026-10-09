@@ -97,9 +97,11 @@ export function NoteActionsCell({ row }: NoteCellContext) {
         // 可視ラベル「編集」を含めて WCAG 2.5.3 (Label in Name) を満たす
         aria-label={`${title}を編集`}
         // 削除中と更新中は開かせない (ADR-0017「ブロック範囲」)。disabled の Link は href を外すので
-        // focus できなくなる。保存して閉じたとき Base UI がこのリンクへ focus を戻せるよう、tab 順に残す
+        // focus できなくなる。保存して閉じたとき Base UI がこのリンクへ focus を戻せるよう、tab 順に残す。
+        // busy でないときも外さない。busy が解けるとき React は tabindex を外してから href を付けるので、
+        // 間でリンクが focus できなくなり、focus を持っていれば blur してから React が focus を戻し直す
         disabled={isBusy}
-        tabIndex={isBusy ? 0 : undefined}
+        tabIndex={0}
       >
         編集
         {isEditPending && <Spinner aria-hidden />}

@@ -1,6 +1,6 @@
 import { RouterProvider } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { DataTable } from "@/components/parts/data-table";
@@ -249,6 +249,31 @@ describe("NoteActionsCell", () => {
     await expect
       .element(rowEditLink(screen, OTHER_NOTE.title))
       .not.toHaveAttribute("aria-disabled");
+  });
+
+  it("focus を持った編集リンクは、削除中が解けても focus を失わず、受け直しもしない", async () => {
+    // busy が解けるとき tabindex が href より先に外れると、その間リンクは focus できなくなる。Chromium が
+    // blur し、commit の後に React が同じリンクへ focus を戻すので、focus の移動が 2 回起きる
+    const { screen, update } = await renderUpdatableCells({ deletingIds: [NOTE.id] });
+    const edit = rowEditLink(screen, NOTE.title);
+    await expect.element(edit).toHaveAttribute("aria-disabled", "true");
+    edit.element().focus();
+    await expect.element(edit).toHaveFocus();
+    const focusEvents: string[] = [];
+    const record = (event: Event) => {
+      focusEvents.push(event.type);
+    };
+    // blur は bubble しないので capture で受ける
+    for (const type of ["blur", "focusout", "focusin"]) {
+      document.addEventListener(type, record, true);
+      onTestFinished(() => document.removeEventListener(type, record, true));
+    }
+
+    update({ deletingIds: [] });
+
+    await expect.element(edit).toHaveAttribute("href", `/notes/${NOTE.id}/edit`);
+    await expect.element(edit).toHaveFocus();
+    expect(focusEvents).toEqual([]);
   });
 
   it("更新中の行は両方のトリガーを無効にし、名前は表示中の (編集後の) title で持つ", async () => {
