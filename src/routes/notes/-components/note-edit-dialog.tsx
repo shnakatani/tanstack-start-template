@@ -17,9 +17,18 @@ import { NoteFormContent } from "./note-form";
  * メモの編集ダイアログ。編集の route (`$noteId.edit.tsx`) の component が描き、loader が取り直した
  * 1 件をフォームの初期値にする (ADR-0041)。一覧から route に入ると mount し、開いたまま別のメモの URL へ
  * 移ると route の `remountDeps` が作り直すので、フォームも mutation も開くメモごとに別になる。閉じたら
- * `onClosed` で一覧の route へ戻る
+ * `onClosed` で一覧の route へ戻る。`isEditRouteActive` は focus の戻し先を決めるときに呼ぶ
+ * (`focusAfterNoteEditClosed`)
  */
-export function NoteEditDialog({ noteId, onClosed }: { noteId: Note["id"]; onClosed: () => void }) {
+export function NoteEditDialog({
+  noteId,
+  onClosed,
+  isEditRouteActive,
+}: {
+  noteId: Note["id"];
+  onClosed: () => void;
+  isEditRouteActive: () => boolean;
+}) {
   const queryClient = useQueryClient();
   const { data: note } = useSuspenseQuery(noteQueryOptions(noteId));
 
@@ -58,7 +67,9 @@ export function NoteEditDialog({ noteId, onClosed }: { noteId: Note["id"]; onClo
         onSubmit={(input) => updateMutation.runAction({ id: note.id, ...input })}
         blocksClose={blocksClose}
         // open が false なのは利用者が閉じたとき。route を離れて開いたまま unmount したときは true のまま
-        finalFocus={() => focusAfterNoteEditClosed(note.id, { closedByUser: !open })}
+        finalFocus={() =>
+          focusAfterNoteEditClosed(note.id, { closedByUser: !open, isEditRouteActive })
+        }
       />
     </Dialog>
   );

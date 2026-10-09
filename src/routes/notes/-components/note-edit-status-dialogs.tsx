@@ -20,6 +20,8 @@ import { NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
 interface NoteEditStatusDialogProps {
   noteId: Note["id"];
   onClosed: () => void;
+  /** focus の戻し先を決めるときに呼ぶ (`focusAfterNoteEditClosed`) */
+  isEditRouteActive: () => boolean;
 }
 
 /**
@@ -29,19 +31,21 @@ interface NoteEditStatusDialogProps {
  */
 function NoteEditStatusDialogContent({
   noteId,
+  isEditRouteActive,
   closedByUser,
   title,
   description,
   action,
-}: {
-  noteId: Note["id"];
+}: Pick<NoteEditStatusDialogProps, "noteId" | "isEditRouteActive"> & {
   closedByUser: boolean;
   title: string;
   description: string;
   action?: ReactNode;
 }) {
   return (
-    <DialogContent finalFocus={() => focusAfterNoteEditClosed(noteId, { closedByUser })}>
+    <DialogContent
+      finalFocus={() => focusAfterNoteEditClosed(noteId, { closedByUser, isEditRouteActive })}
+    >
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
@@ -58,6 +62,7 @@ function NoteEditStatusDialogContent({
 function NoteEditStatusDialog({
   noteId,
   onClosed,
+  isEditRouteActive,
   title,
   description,
   action,
@@ -71,6 +76,7 @@ function NoteEditStatusDialog({
     <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
       <NoteEditStatusDialogContent
         noteId={noteId}
+        isEditRouteActive={isEditRouteActive}
         closedByUser={!open}
         title={title}
         description={description}
@@ -86,7 +92,11 @@ function NoteEditStatusDialog({
  * 閉じたら閉じるアニメーションを待たずに一覧へ戻る。待つ間に取得が終わると、本物のダイアログがこれに
  * 替わって開く
  */
-export function NoteEditPendingDialog({ noteId, onClosed }: NoteEditStatusDialogProps) {
+export function NoteEditPendingDialog({
+  noteId,
+  onClosed,
+  isEditRouteActive,
+}: NoteEditStatusDialogProps) {
   const [open, setOpen] = useState(true);
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
@@ -98,6 +108,7 @@ export function NoteEditPendingDialog({ noteId, onClosed }: NoteEditStatusDialog
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <NoteEditStatusDialogContent
         noteId={noteId}
+        isEditRouteActive={isEditRouteActive}
         closedByUser={!open}
         title={NOTE_EDIT_DIALOG_TITLE}
         description="読み込み中"

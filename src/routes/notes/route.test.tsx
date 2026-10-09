@@ -293,6 +293,22 @@ const expectNotesHeadingFocused = vi.defineHelper(async (screen: Screen) => {
   await expect.poll(() => heading.element().matches(":focus-visible")).toBe(false);
 });
 
+/**
+ * これから focusin を受けた要素を順に記録する。1 frame だけ focus が通った要素は、`toHaveFocus` の
+ * retry の間隔では捉えられない
+ */
+function recordFocusins(): Element[] {
+  const targets: Element[] = [];
+  const record = (event: FocusEvent) => {
+    if (event.target instanceof Element) {
+      targets.push(event.target);
+    }
+  };
+  document.addEventListener("focusin", record);
+  onTestFinished(() => document.removeEventListener("focusin", record));
+  return targets;
+}
+
 /** 閉じかけのダイアログの本体。閉じるアニメーションを遅らせる style と、それが効いたかを見る observer が共有する */
 const CLOSING_DIALOG_SELECTOR = "[data-slot=dialog-content][data-closed]";
 
@@ -392,12 +408,17 @@ describe("/notes/$noteId/edit route", () => {
     await rowEditLink(screen, NOTE.title).click();
 
     await expect.element(screen.getByRole("dialog").getByText("読み込み中")).toBeInTheDocument();
+    const focused = recordFocusins();
 
     fetching.resolve(NOTE);
 
     await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
     // 読み込み中のダイアログが本物に替わっても、focus は本物の先頭の入力へ移る
     await expect.element(titleTextbox(screen)).toHaveFocus();
+    // 替わる間に行のリンクを経ない。消える側が戻し先にリンクを返すと、本物が入力欄へ移すまでの
+    // 1 frame だけリンクが focus を受ける。リンクはモーダルの背後にあるので includeHidden で引く
+    const link = rowEditLink(screen, NOTE.title, { includeHidden: true });
+    await expect.poll(() => focused.includes(link.element())).toBe(false);
   });
 
   it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に取得が終わってもフォームを開かない", async () => {
@@ -849,6 +870,25 @@ describe("/notes/$noteId/edit route", () => {
         dueDate: OTHER_NOTE.dueDate,
       },
     });
+    expect(fetching).toHaveBeenExhausted();
+  });
+
+  it("開いたまま別のメモの編集の URL へ移ると、前の行のリンクを経ずに移った先の入力欄へ focus を移す", async () => {
+    // 消える側のダイアログが戻し先に行のリンクを返すと、替わるダイアログが入力欄へ移すまでの 1 frame だけ
+    // リンクが focus を受ける
+    const fetching = serveNotes([NOTE, OTHER_NOTE]);
+    const { screen, router } = await renderRoute(`/notes/${NOTE.id}/edit`);
+    await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    await expect.element(titleTextbox(screen)).toHaveFocus();
+    const focused = recordFocusins();
+
+    await router.navigate({ to: "/notes/$noteId/edit", params: { noteId: OTHER_NOTE.id } });
+
+    await expect.element(titleTextbox(screen)).toHaveValue(OTHER_NOTE.title);
+    await expect.element(titleTextbox(screen)).toHaveFocus();
+    // リンクはモーダルの背後にあるので includeHidden で引く
+    const link = rowEditLink(screen, NOTE.title, { includeHidden: true });
+    await expect.poll(() => focused.includes(link.element())).toBe(false);
     expect(fetching).toHaveBeenExhausted();
   });
 });

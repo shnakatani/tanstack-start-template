@@ -43,7 +43,8 @@ async function renderDialog() {
     <QueryClientProvider client={queryClient}>
       <h1>{NOTES_PAGE_TITLE}</h1>
       <Suspense fallback={null}>
-        <NoteEditDialog noteId={NOTE.id} onClosed={onClosed} />
+        {/* 本番では編集の route の中で描くので、route は表示されている扱いにする */}
+        <NoteEditDialog noteId={NOTE.id} onClosed={onClosed} isEditRouteActive={() => true} />
       </Suspense>
       <Toaster />
     </QueryClientProvider>,

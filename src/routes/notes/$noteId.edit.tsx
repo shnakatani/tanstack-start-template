@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
 import * as v from "valibot";
 
 import { noteQueryOptions } from "@/features/notes/queries";
@@ -50,10 +50,17 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
 function useEditDialogProps() {
   const { noteId } = Route.useParams();
   const navigate = Route.useNavigate();
+  const router = useRouter();
   function onClosed() {
     void navigate({ to: "/notes", search: (prev) => prev });
   }
-  return { noteId, onClosed };
+  // ダイアログが unmount する時点で、この route がまだ表示されているか。`router.state` は描画の値ではなく
+  // 読んだ時点の状態を返す (Router docs「useRouter hook」)。hook で読んだ値は最後の描画のもので、
+  // unmount の時点の遷移先を映さない
+  function isEditRouteActive() {
+    return router.state.matches.some((match) => match.routeId === Route.id);
+  }
+  return { noteId, onClosed, isEditRouteActive };
 }
 
 /** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */
