@@ -313,20 +313,43 @@ function recordFocusins(): Element[] {
 const CLOSING_DIALOG_SELECTOR = "[data-slot=dialog-content][data-closed]";
 
 describe("/notes/$noteId/edit route", () => {
-  it("編集リンクで開くと、一覧のキャッシュではなく取り直した値でフォームを作る", async () => {
-    // 一覧を描いたあとで別のタブが保存した、という状態
-    const fresh = { ...NOTE, title: "別のタブで変えた見出し" };
-    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+  it("編集リンクで開くと、一覧のキャッシュではなく取り直した値でフォームを作り、背後の一覧も取り直す", async () => {
+    // 一覧を描いたあとで別のタブが保存した、という状態。更新日時も進む
+    const fresh = {
+      ...NOTE,
+      title: "別のタブで変えた見出し",
+      updatedAt: new Date("2026-08-20T00:00:00.000Z"),
+    };
+    vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
+    const refetch = deferMock(listNotes);
     vi.mocked(getNote).mockResolvedValue(fresh);
     const { screen, router } = await renderRoute("/notes");
 
     await rowEditLink(screen, NOTE.title).click();
 
+    // ダイアログは一覧の取り直しを待たずに開く
     await expect.element(titleTextbox(screen)).toHaveValue(fresh.title);
     expect(vi.mocked(getNote)).toHaveBeenCalledExactlyOnceWith({ data: { id: NOTE.id } });
     expect(router.state.location.pathname).toBe(`/notes/${NOTE.id}/edit`);
-    // 開いても一覧は取り直さない (一覧の loader は staleTime: "static")
+    await expect.poll(() => vi.mocked(listNotes)).toHaveBeenCalledTimes(2);
+
+    refetch.resolve([fresh]);
+
+    // 開いている間に、背後の行も取り直した値になる (モーダル表示中は行が aria-hidden なので includeHidden)
+    await expect.element(noteRow(screen, fresh, { includeHidden: true })).toBeInTheDocument();
+    await expect.element(titleTextbox(screen)).toHaveValue(fresh.title);
+  });
+
+  it("取り直した値の更新日時が一覧の行と同じなら、一覧は取り直さない", async () => {
+    const fetching = serveNotes([NOTE]);
+    const { screen } = await renderRoute("/notes");
+
+    await rowEditLink(screen, NOTE.title).click();
+
+    await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    // invalidate は loader の中で 1 件を取り終えたときに呼ぶので、フォームが開いた時点で呼び出しは済んでいる
     expect(vi.mocked(listNotes)).toHaveBeenCalledOnce();
+    expect(fetching).toHaveBeenExhausted();
   });
 
   it.each([
