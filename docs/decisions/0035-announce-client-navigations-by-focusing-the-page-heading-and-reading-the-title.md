@@ -109,7 +109,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - Nuxt のガイドは "The announcer reads the title that Unhead rendered" とし、同じ title の route の間では何も読まないとする (nuxt/nuxt の 2b103c9 の `docs/3.guide/2.best-practices/accessibility.md`)
 - ダイアログの中の focus は Base UI に任せる (開くとダイアログの中の最初の要素、閉じると `finalFocus`)。開いたときは見出しへ移さない (下の「モーダルのダイアログが開いている遷移」)
 
-2026-10-10 に、dev server を playwright-cli の Chromium 155.0.8059.39 で開いて測った (`@base-ui/react` 1.8.0、`@tanstack/react-router` 1.170.41、`@tanstack/router-core` 1.171.34)。ページの行のリンクから開くダイアログの route で、開く・閉じる・戻る・進むを操作した。本番のビルドと、Chromium 以外のブラウザでは測っていない。開く遷移の focus は、同じ日に Vitest の browser mode (Chromium、本番の `InnerWrap`) で、背後のページの `<h1>` が `focusin` を受けないことを確かめた。
+2026-10-10 に、dev server を playwright-cli の Chromium 155.0.8059.39 で開いて測った (`@base-ui/react` 1.8.0、`@tanstack/react-router` 1.170.41、`@tanstack/router-core` 1.171.34)。ページの行のリンクから開くダイアログの route で、開く・閉じる・戻る・進むを操作した。本番のビルドと、Chromium 以外のブラウザでは測っていない。開く遷移の focus は、同じ日に Vitest の browser mode (Chromium、本番の `InnerWrap`) で、行のリンクのクリック、リンクに focus を置いた Enter、進む、別のページからの `navigate` のそれぞれで、背後のページの `<h1>` が `focusin` を受けないことを確かめた。
 
 | 遷移                                            | focus の動き                                            | 読み上げ           |
 | ----------------------------------------------- | ------------------------------------------------------- | ------------------ |
@@ -122,11 +122,11 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 
 ### モーダルのダイアログが開いている遷移
 
-遷移の後にモーダルのダイアログが開いていれば、見出しへ focus を移さず、title の読み上げだけを行う。ダイアログの route に限らず、遷移の後に開いているモーダルのダイアログすべてに当てる。
+遷移の後にモーダルのダイアログが開いていれば、見出しへ focus を移さず、title の読み上げだけを行う。当てるのは、ダイアログの route に限らず、`role="dialog"` か `role="alertdialog"` を属性で明示したモーダルのダイアログ (Base UI の Dialog の形) である。`showModal()` で開いたネイティブの `<dialog>` は、下のどちらの条件にも当たらない。
 
 - モーダルのダイアログは、開くと focus を自分の中へ移す。APG の Dialog (Modal) Pattern は "When a dialog opens, focus moves to an element inside the dialog." とする。背後のページの見出しは、開いたダイアログと関係しない
 - 見出しへ移すと、ダイアログが focus を中へ移すまでの間 (2026-10-10 に dev server で 18〜25ms)、focus は支援技術から隠れた見出しに乗る。axe の aria-hidden-focus は "A focusable element with aria-hidden="true" is ignored as part of the reading order, but still part of the focus order" とする
-- 読み上げは止めない。VoiceOver と TalkBack は、ダイアログの入力欄への focus でダイアログの名前を読まない (下の表)。この 2 つでは、title の読み上げがダイアログの名前を伝える唯一の経路になる
+- 読み上げは止めない。VoiceOver と TalkBack は、ダイアログの入力欄への focus でダイアログの名前を読まない (下の表)。この 2 つでは、title の読み上げが届けば、それがダイアログの名前を伝える唯一の経路になる。届くかは、どちらも未検証である
 
 判定は DOM から取る。どちらかに当たれば移さない。
 
@@ -140,12 +140,12 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 
 見出しへ移すかで変わる読み上げの見込みを、スクリーンリーダーごとに並べる。実機では聞いていない。確度は、ソース = 実装を commit 固定で読んだ、公式 = ベンダーの docs かベンダー社員の回答、第三者 = 第三者のテスト結果、未検証 = 出典が無い。
 
-| スクリーンリーダー             | 見出しへ移したとき                                                       | 移さないときに残ること                                                                                                                                              | 確度                                                                    | 出典                                                                                              |
-| ------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| NVDA + Chrome / Firefox        | 背後の見出しが一瞬読まれうる (focus と live region の通知の到着順による) | 入力欄への focus で browse mode から focus mode へ切り替わり、`speech.cancelSpeech()` が title の読み上げを消す見込み。ダイアログの名前は focus で読む              | ソース                                                                  | nvaccess/nvda の 732d1ce の `browseMode.py` (`event_gainFocus`)、nvaccess/nvda#11299 (2021-01-29) |
-| JAWS + Chrome                  | 背後の見出しが読まれうる                                                 | 入力欄への focus でダイアログの名前と中身を読み、live region は focus の読み上げの後に回す。後に回した title が残るなら、ダイアログの名前を二度聞く。残るかは未検証 | 公式 (focus を優先する)、第三者 (ダイアログの名前)、未検証 (二度聞くか) | FreedomScientific/standards-support#721 (2023-06-01)、a11ysupport.io (2023-01-13)                 |
-| VoiceOver macOS / iOS + Safari | 未検証                                                                   | 入力欄への focus でダイアログの名前を読まない。title の読み上げが届くかは未検証                                                                                     | 第三者 (ダイアログの名前)、未検証 (title が届くか)                      | a11ysupport.io (2023-01-13)                                                                       |
-| TalkBack + Chrome              | 背後の見出しの発話は、入力欄への focus で切られる                        | ダイアログの名前を読まない。polite の title は新しい発話に割り込まれず最後まで読む見込み                                                                            | ソース (発話の待ち行列)、第三者 (ダイアログの名前)                      | google/talkback の 229212f、a11ysupport.io (2023-01-13)                                           |
+| スクリーンリーダー             | 見出しへ移したとき                                                       | 移さないときに残ること                                                                                                                                                            | 確度                                                                                                                                                                 | 出典                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| NVDA + Chrome / Firefox        | 背後の見出しが一瞬読まれうる (focus と live region の通知の到着順による) | 入力欄への focus で browse mode から focus mode へ切り替わり、`speech.cancelSpeech()` が title の読み上げを消す見込み。ダイアログの名前は focus で読む                            | ソース                                                                                                                                                               | nvaccess/nvda の 732d1ce の `browseMode.py` (`event_gainFocus`)、nvaccess/nvda#11299 (2021-01-29) |
+| JAWS + Chrome                  | 背後の見出しが読まれうる                                                 | 入力欄への focus でダイアログの名前と中身を読み、live region は focus の読み上げの後に回す。後に回した title が残るなら、ダイアログの名前を二度聞く。残るかは未検証               | 公式 (focus を優先する)、第三者 (ダイアログの名前)、未検証 (二度聞くか)                                                                                              | FreedomScientific/standards-support#721 (2023-06-01)、a11ysupport.io (2023-01-13)                 |
+| VoiceOver macOS / iOS + Safari | 未検証                                                                   | 入力欄への focus でダイアログの名前を読まない。title の読み上げが届くかは未検証                                                                                                   | 第三者 (ダイアログの名前)、未検証 (title が届くか)                                                                                                                   | a11ysupport.io (2023-01-13)                                                                       |
+| TalkBack + Chrome              | 背後の見出しの発話は、入力欄への focus で切られる                        | ダイアログの名前を読まない。live region の通知が届けば、polite の title は新しい発話に割り込まれず最後まで読む見込み。region に子の要素を足す形 (ADR-0026) の通知が届くかは未検証 | ソース (発話の待ち行列)、第三者 (ダイアログの名前)、未検証 (live region の通知が届くか。公開のソースでは `enableOnlyAnnounceChangedLiveRegionNodes` が false を返す) | google/talkback の 229212f (`FeatureFlagReader` を含む)、a11ysupport.io (2023-01-13)              |
 
 ### 読み上げの文言と強さ
 
@@ -247,6 +247,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - FreedomScientific/standards-support#721: https://github.com/FreedomScientific/standards-support/issues/721
 - a11ysupport.io の APG モーダルダイアログのテスト結果 (6730ad4): https://github.com/accessibilitysupported/a11ysupport.io/blob/6730ad42e83dd780f63555ab3f14f1c26ea0fae5/data/tests/apg/modal-dialog-example.json
 - TalkBack の `EventTypeWindowContentChangedFeedbackRule` (229212f): https://github.com/google/talkback/blob/229212fdf5842191d0a93fc95d9ca1423b346866/talkback/src/main/java/com/google/android/accessibility/talkback/compositor/rule/EventTypeWindowContentChangedFeedbackRule.java#L401-L408
+- TalkBack の `FeatureFlagReader` (229212f): https://github.com/google/talkback/blob/229212fdf5842191d0a93fc95d9ca1423b346866/talkback/src/main/java/com/google/android/accessibility/talkback/flags/FeatureFlagReader.java#L116-L118
 - Astro の `router.ts`: https://github.com/withastro/astro/blob/main/packages/astro/src/transitions/router.ts
 - Gatsby の `navigation.js`: https://github.com/gatsbyjs/gatsby/blob/master/packages/gatsby/cache-dir/navigation.js
 - MDN `HTMLElement.focus()`: https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus
