@@ -133,7 +133,6 @@ describe("NotesPage", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    vi.resetAllMocks();
     vi.mocked(listNotes).mockResolvedValue([]);
     // curateMutationErrorMessage が raw error を warn に残す。失敗系テストの出力を汚さない
     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});

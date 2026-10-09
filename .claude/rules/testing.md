@@ -101,6 +101,9 @@ paths:
 ## mock の注意点
 
 - `mock.calls` を受けるヘルパーの引数は `unknown[][]` で型注釈する (`docs/guides/testing/mocking.md`「呼び出しの履歴を読む」)
+- テストファイルのどこでも、`vi.resetAllMocks()` と `mockReset()` を呼ばない。設定の `mockReset` が `vi.fn`・`vi.spyOn`・`vi.mock` の mock に張った実装と戻り値を毎テストの前に戻す (`docs/guides/testing/mocking.md`「差し替えた実装を戻す」)
+- mock の既定の戻り値は `beforeEach` で張り、テストファイルの最上位と `beforeAll` で張らない。張った値は最初のテストの前に消える (`docs/guides/testing/mocking.md`「差し替えた実装を戻す」)
+- `.concurrent` を付けたテストでは、共有の mock に実装や戻り値を張らない。並行する別のテストが始まるたびに戻る (`docs/guides/testing/mocking.md`「差し替えた実装を戻す」)
 - `vi.stubEnv` と `vi.stubGlobal` の値はテストの中で戻さない。設定の `unstubEnvs` / `unstubGlobals` と `tooling/test/setup.ts` の `afterEach` が毎テスト戻す (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - `vi.stubEnv` と `vi.stubGlobal` は `beforeEach` かテストの中で呼び、テストファイルと setup ファイルの最上位と `beforeAll` で呼ばない (`vi.mock` は最上位のまま)。最初のテストの前に戻り、差し替える前の値のまま気付かずに通ることがある (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は戻らず後のテストへ残る。差し替える関数が `onTestFinished` で戻しを登録する値 (`src/test/browser/animations.ts`) は除く (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
