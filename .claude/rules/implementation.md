@@ -72,7 +72,7 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 
 lint では見ないのでレビューで見る。
 
-- ルートを足したら `head()` で `pageTitle(ctx, <ページ名>)` の title を持たせる。無いと親の title になり、遷移の読み上げでページを区別できない (ADR-0035)
+- ルートを足したら `head()` で `pageTitle(ctx, <ページ名>)` の title を持たせる。ページの上に重ねるダイアログの route も、ダイアログの名前で持つ。無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
 - title は `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
 - ページの見出しは `PageHeader` の `h1` で持つ。遷移の後の focus は h1 へ移り、無いと body に落ちて利用者がページの先頭から探し直す (ADR-0035)
 
@@ -83,10 +83,9 @@ lint では見ないのでレビューで見る。
 - 既存の値を初期値にする編集のダイアログは、開く元のページの route の子 route にし、loader で `queryClient.query({ ...options, staleTime: 0 })` を `staleReloadMode: "blocking"` で待つ。キャッシュや前に取った値で開くと、別のタブや別の利用者の変更より古い値でフォームが始まる (ADR-0041)
 - 1 件の query は一覧の query の先頭キーの下に置かない。保存後の一覧の invalidate が、閉じかけのダイアログの 1 件まで取り直す (ADR-0041)
 - 1 件の query は `staleTime: Infinity` にし、開いている間は取り直さない。取り直すと、触れていないフォームは利用者の目の前で値が替わる (ADR-0041)
-- ダイアログの route に `staticData: { dialogRoute: true }` を付ける。付けないと、閉じたあとリンクへ戻した focus を遷移の読み上げが見出しへ奪う (ADR-0035)
 - ダイアログの route に `remountDeps: ({ params }) => params` を付ける。付けないと、開いたまま別の値の URL へ移ったとき、打ち始めたフォームが前の値のまま残り、移った先の値へ保存する (ADR-0041)
 - 閉じる操作では `open` を false にするだけにし、route を離れるのは `onOpenChangeComplete` で行う。先に離れると閉じるアニメーションが出ない。例外は読み込み中のダイアログ (`pendingComponent`) で、閉じる操作の時点で離れる。アニメーションを待つ間に取得が終わると、本物のダイアログが開く (ADR-0041)
-- `finalFocus` は、利用者が閉じたときだけでなく、戻る・進むで開いたまま unmount したときにも開いた行のリンクを返す。閉じる操作のときだけ返すと、戻るで一覧へ移ったときに focus が body に落ちる。ページとダイアログの行き来では、遷移の読み上げも見出しへ移さない (ADR-0041)
+- `finalFocus` は、利用者が閉じたときだけでなく、戻る・進むで開いたまま unmount したときにも開いた行のリンクを返す。閉じる操作のときだけ返すと、戻るで一覧へ移ったときに focus がダイアログと一緒に外れて見出しへ移り、開いた行の位置を失う (ADR-0041)
 - `useMatchRoute` で pending を照合するとき、`params.parse` で変換した値を `params` に渡さない。URL の文字列と比べて一致しない。route だけで照合し、返った params を文字列で比べる (ADR-0041)
 - 開くリンクに `preload={false}` を渡す。開くたびに取り直すので、preload は捨てる取得になる (ADR-0041)
 - 操作中の行のリンクは `disabled` に `tabIndex={0}` を添える。`disabled` の Link は href を外して focus できなくなり、閉じたときに focus を戻せない (ADR-0041)
