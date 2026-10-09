@@ -31,3 +31,8 @@ export const Destructive: Story = {
 export const Link: Story = {
   args: { variant: "link", size: "sm", children: "新規登録する" },
 };
+
+/** Router の Link の disabled。href を持たず、Button の無効と同じ意匠で薄くなる */
+export const Disabled: Story = {
+  args: { variant: "outline", disabled: true },
+};

@@ -66,4 +66,28 @@ describe("ButtonLink", () => {
 
     await expect.element(screen.getByRole("link")).toHaveClass("underline-offset-4");
   });
+
+  // Router の Link は disabled のとき href を外して aria-disabled を付ける (`link.js` の linkDisabled)。
+  // buttonVariants は aria-disabled ではなく data-disabled で薄くするので、部品が同じ状態を写す
+  it("disabled のとき href を持たず、data-disabled を持つ", async () => {
+    const router = createTestRouter("/", () => (
+      <ButtonLink to="/notes" disabled>
+        メモ一覧へ
+      </ButtonLink>
+    ));
+    const screen = await render(<RouterProvider router={router} />);
+
+    const link = screen.getByRole("link");
+    await expect.element(link).toHaveAttribute("aria-disabled", "true");
+    await expect.element(link).toHaveAttribute("data-disabled", "");
+    await expect.element(link).not.toHaveAttribute("href");
+  });
+
+  it("有効なときは data-disabled を持たない", async () => {
+    const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
+    const screen = await render(<RouterProvider router={router} />);
+
+    await expect.element(screen.getByRole("link")).toHaveAttribute("href", "/notes");
+    await expect.element(screen.getByRole("link")).not.toHaveAttribute("data-disabled");
+  });
 });
