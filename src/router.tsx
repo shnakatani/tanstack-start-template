@@ -14,8 +14,9 @@ import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
   // mutation 成功後の一覧 refetch 失敗 (background refetch) が無通知で古いデータを残す
-  // silent failure を防ぐ。初回ロード失敗は error boundary (RouteErrorContent) が扱うため
-  // 二重通知を避けてハンドラ側で除外する (詳細: query-cache-handlers.ts)。
+  // silent failure を防ぐ。通知するのは部品が表示しているデータの refetch の失敗だけ。初回ロード失敗は
+  // error boundary (RouteErrorContent) が、表示していないデータの取得の失敗はそれを await した側
+  // (route の errorComponent) が扱うため、二重通知を避けてハンドラ側で除外する (詳細: query-cache-handlers.ts)。
   const queryClient = new QueryClient({
     queryCache: new QueryCache({
       // stable id で background refetch 失敗の toast を 1 つに collapse する
