@@ -203,6 +203,24 @@ describe("notes handlers", () => {
     });
   });
 
+  describe("get", () => {
+    it("指定した id の 1 件を返す", async () => {
+      const target = await handlers.create({ title: "取る", body: "本文", dueDate: "2026-08-20" });
+      await handlers.create({ title: "取らない", body: "", dueDate: null });
+
+      expect(await handlers.get({ id: target.id })).toMatchObject({
+        id: target.id,
+        title: "取る",
+        body: "本文",
+        dueDate: "2026-08-20",
+      });
+    });
+
+    it("存在しない id では undefined を返す (not found の判定は server function が持つ)", async () => {
+      expect(await handlers.get({ id: 999 })).toBeUndefined();
+    });
+  });
+
   describe("update", () => {
     afterEach(() => {
       vi.useRealTimers();

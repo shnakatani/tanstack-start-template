@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { listNotes } from "./functions";
-import type { NoteListFilter } from "./schema";
+import { getNote, listNotes } from "./functions";
+import type { Note, NoteListFilter } from "./schema";
 
 /**
  * 一覧の鮮度窓。Link の intent preload が連続したときの重複フェッチを抑える。route loader は
@@ -22,5 +22,25 @@ export function notesQueryOptions(filter: NoteListFilter) {
     queryKey: [...NOTES_QUERY_KEY, filter],
     queryFn: () => listNotes({ data: filter }),
     staleTime: NOTES_STALE_TIME_MS,
+  });
+}
+
+/**
+ * 1 件のクエリの先頭キー。一覧の `NOTES_QUERY_KEY` の下に置かない。下に置くと、保存後の一覧の
+ * invalidate が前方一致で当たり、閉じかけの編集ダイアログの 1 件まで取り直す。開くときの取り直しは
+ * 編集の route の loader が持つ
+ */
+export const NOTE_QUERY_KEY = ["note"] as const;
+
+/**
+ * 1 件のクエリ。編集フォームの初期値に使う。フォームは開いた時点の値で作り、開いている間に裏で
+ * 取り直しても追わないので、observer の再取得を止める (TkDodo「React Query and Forms」)。
+ * 開くときの取り直しは route の loader が `staleTime: 0` で行う
+ */
+export function noteQueryOptions(id: Note["id"]) {
+  return queryOptions({
+    queryKey: [...NOTE_QUERY_KEY, id],
+    queryFn: () => getNote({ data: { id } }),
+    staleTime: Infinity,
   });
 }

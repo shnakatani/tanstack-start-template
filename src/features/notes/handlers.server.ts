@@ -13,6 +13,24 @@ export type NotesDb = ReturnType<typeof createDb>;
 const noteListSchema = v.array(noteSchema);
 
 /**
+ * DB から読んだ行を noteSchema で検証する。drizzle の行型は「そう入っているはず」という主張であって、
+ * 実データがそれを満たす保証ではない。手書き SQL・別経路の書き込み・schema 変更前の残存行でずれ得るので、
+ * 読み出し口で突き合わせる。通してしまうと壊れた行が UI まで無検査で流れる
+ */
+function parseNoteRows(rows: unknown): Note[] {
+  const parsed = v.safeParse(noteListSchema, rows);
+  if (!parsed.success) {
+    // 値そのものは載せない (server のログに残る文言に DB の中身を混ぜない。ADR-0013)。
+    // 位置 (<行番号>.<項目名>) と件数があれば、どの行のどの項目かは追える
+    const paths = [...new Set(parsed.issues.map((issue) => v.getDotPath(issue) ?? "<root>"))];
+    throw new Error(
+      `notes の読み出しがスキーマ検証に失敗しました (${parsed.issues.length} 件): ${paths.join(", ")}`,
+    );
+  }
+  return parsed.output;
+}
+
+/**
  * notes の読み書きを 1 つの DB 接続に束ねる。接続そのものではなく接続を返す関数を
  * 受け取るのは、テストが `:memory:` の接続を差し込めるようにするため
  * (module-level の接続を直接掴むと差し替え口が無くなる)。
@@ -31,19 +49,12 @@ export function createNoteHandlers(getDb: () => NotesDb) {
         .where(titleMatches)
         .orderBy(desc(notes.createdAt), desc(notes.id));
 
-      // drizzle の行型は「そう入っているはず」という主張であって、実データがそれを満たす
-      // 保証ではない。手書き SQL・別経路の書き込み・schema 変更前の残存行でずれ得るので、
-      // 読み出し口で突き合わせる。通してしまうと壊れた行が UI まで無検査で流れる
-      const parsed = v.safeParse(noteListSchema, rows);
-      if (!parsed.success) {
-        // 値そのものは載せない (server のログに残る文言に DB の中身を混ぜない。ADR-0013)。
-        // 位置 (<行番号>.<項目名>) と件数があれば、どの行のどの項目かは追える
-        const paths = [...new Set(parsed.issues.map((issue) => v.getDotPath(issue) ?? "<root>"))];
-        throw new Error(
-          `notes の読み出しがスキーマ検証に失敗しました (${parsed.issues.length} 件): ${paths.join(", ")}`,
-        );
-      }
-      return parsed.output;
+      return parseNoteRows(rows);
+    },
+
+    get: async ({ id }: NoteId): Promise<Note | undefined> => {
+      const rows = await getDb().select().from(notes).where(eq(notes.id, id));
+      return parseNoteRows(rows)[0];
     },
 
     create: async (data: NoteInput): Promise<{ id: number }> => {
@@ -97,6 +108,7 @@ function appDbConnection(): NotesDb {
 const handlers = createNoteHandlers(appDbConnection);
 
 export const listNotesHandler = handlers.list;
+export const getNoteHandler = handlers.get;
 export const createNoteHandler = handlers.create;
 export const updateNoteHandler = handlers.update;
 export const removeNoteHandler = handlers.remove;
