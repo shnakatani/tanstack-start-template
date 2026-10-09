@@ -1,6 +1,4 @@
-import { useQueryErrorResetBoundary } from "@tanstack/react-query";
-import { useRouter } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Note } from "@/features/notes/schema";
+import { useRouteRetry } from "@/hooks/use-route-retry";
 
 import { useRouteDialog } from "../-hooks/use-route-dialog";
 import { focusAfterNoteEditClosed } from "../-lib/note-edit-focus";
@@ -102,20 +101,7 @@ export function NoteEditNotFoundDialog(props: NoteEditStatusDialogProps) {
  * ダイアログの中に置けない
  */
 export function NoteEditErrorDialog(props: NoteEditStatusDialogProps) {
-  const router = useRouter();
-  const queryErrorResetBoundary = useQueryErrorResetBoundary();
-
-  // 表示時に Query の error boundary を戻す。戻さないと再試行で取り直さない
-  // (`docs/guides/data-loading.md`「読み込みに失敗した画面から再試行する」)
-  useEffect(() => {
-    queryErrorResetBoundary.reset();
-  }, [queryErrorResetBoundary]);
-
-  // 再実行の結果は loader と error boundary が受けるため待たない
-  function handleRetry() {
-    void router.invalidate();
-  }
-
+  const handleRetry = useRouteRetry();
   return (
     <NoteEditStatusDialog
       {...props}

@@ -24,7 +24,7 @@
 
 ### 読み込みに失敗した画面から再試行する
 
-route の errorComponent (`src/components/screens/route-error.tsx` の `RouteErrorContent`) は、[TanStack Router docs「External Data Loading」][] の Error handling with TanStack Query の例の形に合わせる。
+route の errorComponent の再試行は、[TanStack Router docs「External Data Loading」][] の Error handling with TanStack Query の例の形に合わせる。組み方は `src/hooks/use-route-retry.ts` の `useRouteRetry` が持ち、errorComponent はこの hook から再試行のハンドラを取る。
 
 | 対象                    | 組み方                                                                                                                                                                                                                                                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

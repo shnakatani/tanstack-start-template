@@ -61,7 +61,7 @@ Action の中で `await` の後に state を set する書き方には、公式�
 
 - ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `async` 関数や `void` 式を直接書かない
 - 待たない判断は内側で 1 回だけ書く。呼び先が失敗を自分で通知するなら `void`、呼び出し側で通知や後始末をするなら `.catch()` を付ける
-- 実例は `src/components/screens/route-error.tsx` の `handleRetry`
+- 実例は `src/hooks/use-route-retry.ts` の `handleRetry`
 - mutation を伴う操作は、次の「mutation を Action 層から呼ぶ」に従う
 
 ### mutation を Action 層から呼ぶ
