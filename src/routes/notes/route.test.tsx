@@ -9,7 +9,7 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
@@ -26,9 +26,10 @@ import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
-import { expectAbsent } from "@/test/assert/absent";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import { expectText } from "@/test/assert/screen-assertions";
+import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -349,6 +350,29 @@ describe("/notes/$noteId/edit route", () => {
     await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
     // 読み込み中のダイアログが本物に替わっても、focus は本物の先頭の入力へ移る
     await expect.element(titleTextbox(screen)).toHaveFocus();
+  });
+
+  it("読み込み中のダイアログを閉じると、閉じるアニメーションの間に取得が終わっても、フォームを開かず一覧へ戻る", async () => {
+    // 閉じるアニメーションを取得の決着より長く保ち、その間に決着させる。アニメーションの後で一覧へ戻すと、
+    // その間に取得が終わったとき、本物のダイアログが読み込み中のダイアログに替わって開く
+    enableAnimations();
+    const slowClose = document.createElement("style");
+    slowClose.textContent =
+      "[data-slot=dialog-content][data-closed] { animation-duration: 60s !important; }";
+    document.head.append(slowClose);
+    onTestFinished(() => slowClose.remove());
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    const fetching = deferMock(getNote);
+    const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
+    await rowEditLink(screen, NOTE.title).click();
+    await expect.element(screen.getByRole("dialog").getByText("読み込み中")).toBeInTheDocument();
+
+    await screen.getByRole("button", { name: "閉じる", exact: true }).click();
+    fetching.resolve(NOTE);
+
+    await expect.poll(() => router.state.location.pathname).toBe("/notes");
+    await expectRemoved(screen.getByRole("dialog"));
+    await expectAbsent(titleTextbox(screen));
   });
 
   it("閉じると一覧へ新しい履歴で戻り、絞り込みを保ち、開いたリンクへ focus を戻す", async () => {

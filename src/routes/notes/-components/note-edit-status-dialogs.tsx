@@ -23,17 +23,36 @@ interface NoteEditStatusDialogProps {
   onClosed: () => void;
 }
 
-/** 編集のフォームを出せない間のダイアログの器。閉じたら一覧の route へ戻る */
+/**
+ * 編集のフォームを出せない間のダイアログの器。閉じたら一覧の route へ戻る。`leaveOnClose` を立てると、
+ * 閉じるアニメーションの後ではなく、閉じる操作の時点で戻る
+ */
 function NoteEditStatusDialog({
   noteId,
   onClosed,
   title,
   description,
   action,
-}: NoteEditStatusDialogProps & { title: string; description: string; action?: ReactNode }) {
+  leaveOnClose = false,
+}: NoteEditStatusDialogProps & {
+  title: string;
+  description: string;
+  action?: ReactNode;
+  leaveOnClose?: boolean;
+}) {
   const { open, setOpen, onOpenChangeComplete } = useRouteDialog(onClosed);
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen && leaveOnClose) {
+      onClosed();
+    }
+  }
   return (
-    <Dialog open={open} onOpenChange={setOpen} onOpenChangeComplete={onOpenChangeComplete}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      onOpenChangeComplete={leaveOnClose ? undefined : onOpenChangeComplete}
+    >
       {/* open が false なのは利用者が閉じたとき。本物のダイアログに替わる、route を離れるなど、
           開いたまま unmount したときは true のまま */}
       <DialogContent finalFocus={() => focusAfterNoteEditClosed(noteId, { closedByUser: !open })}>
@@ -51,12 +70,19 @@ function NoteEditStatusDialog({
 }
 
 /**
- * 1 件の取得が `pendingMs` を超えたときに出す。押した行が一覧に無い (絞り込みで外れた) ときも、
- * ここで読み込み中だと分かる
+ * 1 件の取得が `pendingMs` を超えたときに出す。開く行のリンクが一覧に無い (戻る・進む、URL を直接開いた)
+ * ときも、ここで読み込み中だと分かる。
+ * 閉じたら閉じるアニメーションを待たずに一覧へ戻る。待つ間に取得が終わると、本物のダイアログがこれに
+ * 替わって開く
  */
 export function NoteEditPendingDialog(props: NoteEditStatusDialogProps) {
   return (
-    <NoteEditStatusDialog {...props} title={NOTE_EDIT_DIALOG_TITLE} description="読み込み中" />
+    <NoteEditStatusDialog
+      {...props}
+      title={NOTE_EDIT_DIALOG_TITLE}
+      description="読み込み中"
+      leaveOnClose
+    />
   );
 }
 
