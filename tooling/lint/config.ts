@@ -115,6 +115,7 @@ export const lintConfig = {
     "typescript/no-empty-object-type": "error",
     "typescript/no-explicit-any": "error",
     "typescript/no-extraneous-class": "error",
+    "typescript/no-generated-empty-object-type": "error",
     "typescript/no-invalid-void-type": "error",
     "typescript/no-misused-promises": "error",
     "typescript/no-mixed-enums": "error",
