@@ -361,6 +361,15 @@ describe("/notes/$noteId/edit route", () => {
       "[data-slot=dialog-content][data-closed] { animation-duration: 60s !important; }";
     document.head.append(slowClose);
     onTestFinished(() => slowClose.remove());
+    let slowedWhileClosing = false;
+    const watchClosing = new MutationObserver(() => {
+      const closing = document.querySelector("[data-slot=dialog-content][data-closed]");
+      if (closing && getComputedStyle(closing).animationDuration === "60s") {
+        slowedWhileClosing = true;
+      }
+    });
+    watchClosing.observe(document.body, { attributes: true, subtree: true });
+    onTestFinished(() => watchClosing.disconnect());
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const fetching = deferMock(getNote);
     const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
@@ -368,11 +377,39 @@ describe("/notes/$noteId/edit route", () => {
     await expect.element(screen.getByRole("dialog").getByText("読み込み中")).toBeInTheDocument();
 
     await screen.getByRole("button", { name: "閉じる", exact: true }).click();
+    // 閉じる途中に style が効いていたこと。route を離れるとダイアログは直ちに外れるので、外れる前の
+    // 一瞬を observer で捉える。slot 名や属性が変わって style が掴めなくなると、アニメーションが
+    // 即座に終わる経路 (競合を通らないまま通る) になるので、ここで落とす
+    await expectRemoved(screen.getByRole("dialog"));
+    expect(slowedWhileClosing).toBe(true);
     fetching.resolve(NOTE);
 
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
-    await expectRemoved(screen.getByRole("dialog"));
     await expectAbsent(titleTextbox(screen));
+  });
+
+  it("リンクを押さずに開いた読み込み中のダイアログを閉じると、取得が終わる前でもその行の編集リンクへ focus を移し、取得が終わってもフォームは開かない", async () => {
+    // リンクを押して開くと Base UI の既定 (開く前に focus していた要素) でもリンクへ戻り、finalFocus が
+    // 効いていなくても通ってしまう。router.navigate で開くと既定の戻し先が無いので、finalFocus だけが決める
+    vi.mocked(listNotes).mockResolvedValue([NOTE]);
+    const fetching = deferMock(getNote);
+    const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
+    await expect.element(rowEditLink(screen, NOTE.title)).toBeInTheDocument();
+    void router.navigate({ to: "/notes/$noteId/edit", params: { noteId: NOTE.id } });
+    await expect.element(screen.getByRole("dialog").getByText("読み込み中")).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    await expect.poll(() => router.state.location.pathname).toBe("/notes");
+    await expectRemoved(screen.getByRole("dialog"));
+    await expect.element(rowEditLink(screen, NOTE.title)).toHaveFocus();
+
+    fetching.resolve(NOTE);
+
+    await expectAbsent(screen.getByRole("dialog"));
+    await expectAbsent(titleTextbox(screen));
+    await expect.element(rowEditLink(screen, NOTE.title)).toHaveFocus();
+    expect(router.state.location.pathname).toBe("/notes");
   });
 
   it("閉じると一覧へ新しい履歴で戻り、絞り込みを保ち、開いたリンクへ focus を戻す", async () => {
