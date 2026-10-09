@@ -66,9 +66,9 @@ function NoteEditStatusDialog({
   description: string;
   action?: ReactNode;
 }) {
-  const { open, setOpen, onOpenChangeComplete } = useRouteDialog(onClosed);
+  const { open, onOpenChange, onOpenChangeComplete } = useRouteDialog({ onClosed });
   return (
-    <Dialog open={open} onOpenChange={setOpen} onOpenChangeComplete={onOpenChangeComplete}>
+    <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
       <NoteEditStatusDialogContent
         noteId={noteId}
         closedByUser={!open}

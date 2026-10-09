@@ -9,7 +9,6 @@ import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
 import { useRouteDialog } from "../-hooks/use-route-dialog";
-import { useSubmitBlockingDialog } from "../-hooks/use-submit-blocking-dialog";
 import { focusAfterNoteEditClosed } from "../-lib/note-edit-focus";
 import { NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
@@ -23,7 +22,6 @@ import { NoteFormContent } from "./note-form";
 export function NoteEditDialog({ noteId, onClosed }: { noteId: Note["id"]; onClosed: () => void }) {
   const queryClient = useQueryClient();
   const { data: note } = useSuspenseQuery(noteQueryOptions(noteId));
-  const { open, setOpen, onOpenChangeComplete } = useRouteDialog(onClosed);
 
   const updateMutation = useActionMutation({
     ...updateNoteMutation,
@@ -47,22 +45,13 @@ export function NoteEditDialog({ noteId, onClosed }: { noteId: Note["id"]; onClo
     onError: toastMutationError,
   });
 
-  const { blocksClose, onOpenChange } = useSubmitBlockingDialog({
+  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete } = useRouteDialog({
+    onClosed,
     isPending: updateMutation.isPending,
   });
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(nextOpen, details) => {
-        // 送信中の close は onOpenChange が止める (details.cancel())。止めたときは open を変えない
-        onOpenChange(nextOpen, details);
-        if (!details.isCanceled) {
-          setOpen(nextOpen);
-        }
-      }}
-      onOpenChangeComplete={onOpenChangeComplete}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
       <NoteFormContent
         heading={NOTE_EDIT_DIALOG_TITLE}
         defaultValues={{ title: note.title, body: note.body, dueDate: note.dueDate }}
