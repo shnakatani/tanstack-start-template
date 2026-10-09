@@ -83,7 +83,7 @@ lint では見ないのでレビューで見る。
 - 既存の値を初期値にする編集のダイアログは、開く元のページの route の子 route にし、loader で `queryClient.query({ ...options, staleTime: 0 })` を `staleReloadMode: "blocking"` で待つ。キャッシュや前に取った値で開くと、別のタブや別の利用者の変更より古い値でフォームが始まる (ADR-0041)
 - 1 件の query は一覧の query の先頭キーの下に置かない。保存後の一覧の invalidate が、閉じかけのダイアログの 1 件まで取り直す (ADR-0041)
 - 1 件の query は `staleTime: Infinity` にし、開いている間は取り直さない。取り直すと、触れていないフォームは利用者の目の前で値が替わる (ADR-0041)
-- 開く元のページがキャッシュした一覧に同じ項目があれば、loader は取り直した値と一覧の行の更新日時を比べ、違えば一覧を `invalidateQueries(…, { cancelRefetch: false })` で invalidate し、待たない。取り直した値を `setQueriesData` で一覧へ書き込まない。絞り込みの条件とずれ、他の行の取り直しも遅れる (ADR-0041)
+- 開く元のページがキャッシュした一覧に同じ項目があれば、loader は取り直した値と一覧の行の更新日時を比べ、違えば一覧を `invalidateQueries(…, { cancelRefetch: false })` で invalidate し、待たない。1 件が not found なら、同じ項目が一覧に残っているときに同じく invalidate してから not found を投げ直す。取り直した値を `setQueriesData` で一覧へ書き込まない。絞り込みの条件とずれ、他の行の取り直しも遅れる (ADR-0041)
 - ダイアログの route に `remountDeps: ({ params }) => params` を付ける。付けないと、開いたまま別の値の URL へ移ったとき、打ち始めたフォームが前の値のまま残り、移った先の値へ保存する (ADR-0041)
 - 閉じる操作では `open` を false にするだけにし、route を離れるのは `onOpenChangeComplete` で行う。先に離れると閉じるアニメーションが出ない。例外は読み込み中のダイアログ (`pendingComponent`) で、閉じる操作の時点で離れる。アニメーションを待つ間に取得が終わると、本物のダイアログが開く (ADR-0041)
 - `finalFocus` は、利用者が閉じたときだけでなく、戻る・進むで開いたまま unmount したときにも開いた行のリンクを返す。閉じる操作のときだけ返すと、戻るで一覧へ移ったときに focus がダイアログと一緒に外れて見出しへ移り、開いた行の位置を失う (ADR-0041)

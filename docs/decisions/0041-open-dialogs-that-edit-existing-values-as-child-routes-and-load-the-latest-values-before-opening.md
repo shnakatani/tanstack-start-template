@@ -32,7 +32,7 @@
 | 長い読み込み              | `pendingMs` を超えたら、`pendingComponent` にダイアログの形の読み込み中を出す。開く行のリンクが一覧に無いとき (戻る・進む、URL を直接開いた) も状況が見える                                                                                                                                                                                                                                                                                                                              |
 | 読み込み開始の読み上げ    | 出さない。`pendingMs` の間に本物か読み込み中のダイアログが開き、focus がその中へ移る。ADR-0026 の mutation の開始の通知とは扱いが違う                                                                                                                                                                                                                                                                                                                                                    |
 | 行が操作中のリンク        | 操作中は Link に `disabled` を渡し、`tabIndex={0}` は操作中かに関わらず渡す。Link は `disabled` で href を外し `role="link"` と `aria-disabled` を付けるので、tabindex が無いと focus できず、閉じたときに focus を戻せない。操作中だけ渡すと、操作が終わるとき React が tabindex を外してから href を付けるので、focus を持ったリンクがその間に blur し、React が focus を戻し直す。href を持つ `<a>` に `aria-disabled` を付ける形は採らない (WAI-ARIA 1.2 の `aria-disabled` の Note) |
-| 背後の一覧                | loader は 1 件を取り終えたら、一覧のキャッシュにある同じ項目と更新日時を比べ、違えば一覧を invalidate する。ダイアログは一覧の取得を待たず、進行中の一覧の取得は取り消さない (`cancelRefetch: false`)。取り直した値を一覧のキャッシュへ書き込まない。比べずに開くと、ダイアログは新しい値、背後の行は古い値のまま並ぶ。選択肢は下の「背後の一覧をそろえる」                                                                                                                              |
+| 背後の一覧                | loader は 1 件を取り終えたら、一覧のキャッシュにある同じ項目と更新日時を比べ、違えば一覧を invalidate する。1 件が見つからず (削除された)、一覧のキャッシュに同じ項目が残っていれば、同じく invalidate してから not found を投げる。ダイアログは一覧の取得を待たず、進行中の一覧の取得があればそれを使う (`cancelRefetch: false`)。取り直した値を一覧のキャッシュへ書き込まない。比べずに開くと、ダイアログは新しい値、背後の行は古い値のまま並ぶ。選択肢は下の「背後の一覧をそろえる」  |
 | 開閉                      | ダイアログは `open` を state で持つ。閉じる操作では `open` を false にし、閉じるアニメーションの後で一覧へ `navigate` する。先に離れると route ごと unmount して閉じるアニメーションが出ない。読み込み中のダイアログ (`pendingComponent`) だけは閉じる操作の時点で一覧へ戻る。アニメーションを待つ間に取得が終わると、本物のダイアログが替わって開く。一覧へは新しい履歴で戻り、戻るで開き直せる                                                                                         |
 | 別の値の URL へ移る       | route に `remountDeps: ({ params }) => params` を付ける。router は既定で、params だけが変わる遷移では component を作り直さない。打ち始めたフォームが前の値のまま残り、保存は移った先の値へ書く                                                                                                                                                                                                                                                                                           |
 | 閉じたときの focus        | 下の表。`finalFocus` に関数を渡して分ける                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -64,7 +64,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | route が残っていれば `false` を返す                                                                      | リンクを経ずに替わる側の入力欄へ移る。戻る・進むと利用者が閉じたときの戻し先は変わらない。替わる間の 1 frame は focus が body にある                                                                                                                                                                | **採用** |
 | Dialog の Root を読み込み中と本物で 1 つに保つ (Root を開く元の route に上げ、Popup の中に `<Outlet />`) | unmount が起きない見込み。開いたまま別の値の URL へ移ると中身だけが作り直され、新しい入力欄へは手で移すことになる見込み。TanStack Router の example `location-masking` の骨格 (状態ごとに別のダイアログ) から外れる。未実測                                                                         | 却下     |
-| `finalFocus` を渡さず Base UI の既定に任せる                                                             | unmount の時点で focus は body にあり、既定の戻し先 (開く前に focus していた要素) へ戻る。URL を直接開いたときは戻し先が無い                                                                                                                                                                        | 却下     |
+| `finalFocus` を渡さず Base UI の既定に任せる                                                             | unmount の時点で focus は body にあり、既定の戻し先 (開く前に focus していた要素) へ戻る見込み。URL を直接開いたときは戻し先が無い (`@base-ui/react` 1.8.0 のコードの読みで、未実測)                                                                                                                | 却下     |
 | 上流の修正を待つ                                                                                         | floating-ui/floating-ui#3510 (2026-10-10 時点で open) は、microtask の時点で focus が body 以外へ移っていれば戻さない形で、替わる側の初期 focus が後から来るこの場面には効かない見込み。関数を渡した `finalFocus` はそのガードを通らない (どちらも `@base-ui/react` 1.8.0 のコードの読みで、未実測) | 却下     |
 
 ### 背後の一覧をそろえる
@@ -80,7 +80,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 | `refetchOnWindowFocus: "always"` を QueryClient の `defaultOptions` に置く | 上の案の短所に加え、1 件の query も `staleTime: Infinity` を越えてタブへ戻るたびに取り直し、開いている間にフォームの値が替わる                                                                                                                                        | 却下     |
 | 一覧の `staleTime` を下げる                                                | 食い違いの窓が縮むだけで閉じない。`staleTime` が抑えている重複の取得が増える                                                                                                                                                                                          | 却下     |
 
-`cancelRefetch` は `false` にする。既定の `true` は進行中の取得を取り消して始め直す ("If set to `true`, a currently running request will be cancelled before a new request is made"。TanStack Query「InvalidateOptions」)。保存のあとの一覧の再取得を待って項目の busy を保つ形 (ADR-0017) では、取り消された取得を待っていた側が一覧の決着より先に終わり、busy が先に外れる (`@tanstack/query-core` 5.104.1 の `Query.fetch` と `QueryClient.refetchQueries` のコードの読みで、未実測)。
+`cancelRefetch` は `false` にする。既定の `true` は進行中の取得を捨てて始め直す ("If set to `true`, a currently running request will be cancelled before a new request is made"。TanStack Query「InvalidateOptions」)。進行中の一覧の取得が保存のあとの再取得なら、それは保存を含む一覧を取っているので、捨てると同じ一覧をもう 1 回取ることになる。`false` はその取得を使う。捨てた取得を待っていた側 (保存のあとの再取得を待つ処理) は、新しい取得の Promise に乗り換えるので、先に終わることはない ([`@tanstack/query-core` 5.104.1 の `Query.fetch` の catch](https://github.com/TanStack/query/blob/29859ae60c8dca0a5cdbf8abccc775b655cf43e2/packages/query-core/src/query.ts#L777-L782))。
 
 ### 検討した選択肢
 
@@ -99,6 +99,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - 開くたびに 1 件を取得し、取り終えるまで開かない
 - 開いた後で別のタブや別の利用者が保存すると、開いた時点の値は古くなる。保存は後から保存した側が先の変更を上書きする。この決定は開く時点の古さだけを防ぐ
 - 背後の一覧は、開いた項目が食い違ったときだけ取り直す。開かずに一覧だけを見ている間、一覧の古さはタブへ戻ったときの再取得 (`staleTime` を過ぎていれば走る) に任せる。このタブを見たまま別の利用者が保存した変更は、その項目を開くか、タブを離れて戻るまで一覧に出ない
+- `cancelRefetch: false` では、別のタブが保存するより前に始まった一覧の取得が進行中だと、invalidate はその取得に吸収される。その取得の結果は保存より古いことがあり、そのときは一覧が古いまま残る
 - 開く行のリンクが一覧に無いと (戻る・進む、URL を直接開いた)、`pendingMs` までは何も見えない
 
 ### 再評価の条件
@@ -121,6 +122,8 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 | 替わるときに `finalFocus` が開いた行のリンクを返す形で、読み込み中のダイアログを本物に替える、開いたまま別の id の編集の URL へ移る (2026-10-10、Vitest の browser mode。`focusin` を記録) | どちらもリンクが focusin を受け、その後に替わった側の入力欄へ移った。`false` を返す形ではリンクは focusin を受けなかった                |
 | focus を持った行のリンクの操作中が解ける。操作中だけ `tabIndex={0}` を渡す形 (2026-10-10、Vitest の browser mode。blur と `focusin` を記録)                                                | リンクが blur し、同じリンクが 2 回目の focusin を受けた。常に渡す形では、どちらも起きなかった                                          |
 | 別のタブで更新日時が進んだ値を取り直して開く (2026-10-10、Vitest の browser mode)                                                                                                          | ダイアログは一覧の取得を待たずに開き、一覧の取得が決着すると、開いている間に背後の行が新しい値になった                                  |
+| 別のタブで削除された値を開き、1 件の取得が not found になる (2026-10-10、Vitest の browser mode)                                                                                           | 見つからないダイアログが一覧の取得を待たずに開き、一覧の取得が決着すると、背後から削除された行が消えた                                  |
+| 一覧の取得が進行中に、待たない invalidate を重ねる (2026-10-10、Node で `@tanstack/query-core` 5.104.1 を直接動かした)                                                                     | `cancelRefetch: true` では一覧の取得が 2 回走り、進行中の取得を待っていた側は 2 回目の決着まで待った。`false` では 1 回だった           |
 
 ## 出典
 
