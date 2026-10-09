@@ -10,7 +10,7 @@ paths:
 lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止める。代替のうち lint が案内しないもの:
 
 - 外部ストアの値を読む購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る (`docs/guides/react/effects.md`「effect に書くかを判定する」)
-- データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })`。副次的な query まで待つと、遷移と SSR の応答がそれを待つ (ADR-0033)
+- データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })` (既存の値を編集するダイアログの route は `staleTime: 0`。ADR-0041)。副次的な query まで待つと、遷移と SSR の応答がそれを待つ (ADR-0033)
 - 副次的な query は loader で `void queryClient.query(...).catch(noop)` (`noop` は `@tanstack/react-query` の export) として流し、読む側を `<Suspense>` と Error Boundary で囲む。囲まないと、読み込み中と失敗がページ全体の pending 表示とエラー表示に置き換わる (ADR-0033)
 
 ## effect かイベントハンドラかを原因で決める
@@ -75,6 +75,20 @@ lint では見ないのでレビューで見る。
 - ルートを足したら `head()` で `pageTitle(ctx, <ページ名>)` の title を持たせる。無いと親の title になり、遷移の読み上げでページを区別できない (ADR-0035)
 - title は `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
 - ページの見出しは `PageHeader` の `h1` で持つ。遷移の後の focus は h1 へ移り、無いと body に落ちて利用者がページの先頭から探し直す (ADR-0035)
+
+## 既存の値を編集するダイアログは子 route にする
+
+lint では見ないのでレビューで見る。
+
+- 既存の値を初期値にする編集のダイアログは、一覧の route の子 route にし、loader で `queryClient.query({ ...options, staleTime: 0 })` を `staleReloadMode: "blocking"` で待つ。キャッシュや前に取った値で開くと、別のタブや別の利用者の変更より古い値でフォームが始まる (ADR-0041)
+- 1 件の query は一覧の query の先頭キーの下に置かない。保存後の一覧の invalidate が、閉じかけのダイアログの 1 件まで取り直す (ADR-0041)
+- 1 件の query は `staleTime: Infinity` にし、開いている間は取り直さない。取り直すと、触れていないフォームは利用者の目の前で値が替わる (ADR-0041)
+- ダイアログの route に `staticData: { dialogRoute: true }` を付ける。付けないと、閉じたあとリンクへ戻した focus を遷移の読み上げが見出しへ奪う (ADR-0035)
+- 閉じる操作では `open` を false にするだけにし、route を離れるのは `onOpenChangeComplete` で行う。先に離れると閉じるアニメーションが出ない (ADR-0041)
+- `finalFocus` は、利用者が閉じたときだけでなく、戻る・進むで開いたまま unmount したときにも開いた行のリンクを返す。閉じる操作のときだけ返すと、戻るで一覧へ移ったときに focus が body に落ちる。ページとダイアログの行き来では、遷移の読み上げも見出しへ移さない (ADR-0041)
+- `useMatchRoute` で pending を照合するとき、`params.parse` で変換した値を `params` に渡さない。URL の文字列と比べて一致しない (TanStack/router#2450)。route だけで照合し、返った params を文字列で比べる (ADR-0041)
+- 開くリンクに `preload={false}` を渡す。開くたびに取り直すので、preload は捨てる取得になる (ADR-0041)
+- 操作中の行のリンクは `disabled` に `tabIndex={0}` を添える。`disabled` の Link は href を外して focus できなくなり、閉じたときに focus を戻せない (ADR-0041)
 
 ## 日付と日時の値は意味で分類して持つ
 

@@ -1,8 +1,8 @@
 # ADR-0035: クライアント遷移は、新しいページの見出しへの focus と title の読み上げで伝える
 
 - Status: Accepted
-- Date: 2026-09-28
-- 関連: ADR-0026 (読み上げは `announce()` の polite の region に流す)、ADR-0027 (検索条件の変化は件数の通知で伝える)、ADR-0029 (route の pending 表示は `announce()` で通知しない)
+- Date: 2026-10-09
+- 関連: ADR-0026 (読み上げは `announce()` の polite の region に流す)、ADR-0027 (検索条件の変化は件数の通知で伝える)、ADR-0029 (route の pending 表示は `announce()` で通知しない)、ADR-0041 (ページの上に重ねるダイアログの route)
 
 ## Context
 
@@ -21,18 +21,18 @@
 
 ## Decision
 
-| 項目               | 決定                                                                                                                                                                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 伝え方             | 見出しへの focus 移動と、title の読み上げを併用する                                                                                                                                                                      |
-| focus の移し先     | ページの `<h1>`。`tabindex="-1"` を付けて `focus({ preventScroll: true, focusVisible: false })` を呼ぶ。`<h1>` が無ければ `<body>`                                                                                       |
-| focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                               |
-| 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移も同じに扱う                                                                                                              |
-| 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                        |
-| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                          |
-| 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                    |
-| title              | 各ルートの `head()` で `pageTitle(ctx, <ページ名>)` (`src/lib/page-title.ts`) を通して持つ。形は `<ページ名> — <APP_NAME>`、ページ名が無ければ `<APP_NAME>`                                                              |
-| not found の title | `head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら `ページが見つかりません — <APP_NAME>`                                                                                                                |
-| 実装の置き場       | `createRouter` の `InnerWrap` に渡す部品 (`src/components/router-inner-wrap.tsx`) の中に、購読だけを持つ部品 (`src/components/route-announcer.tsx`) を置く。部品は effect で `router.subscribe` を購読し、DOM を描かない |
+| 項目               | 決定                                                                                                                                                                                                                                                |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 伝え方             | 見出しへの focus 移動と、title の読み上げを併用する                                                                                                                                                                                                 |
+| focus の移し先     | ページの `<h1>`。`tabindex="-1"` を付けて `focus({ preventScroll: true, focusVisible: false })` を呼ぶ。`<h1>` が無ければ `<body>`                                                                                                                  |
+| focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                                                          |
+| 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移も同じに扱う                                                                                                                                         |
+| 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)、ページとその上に重ねたダイアログの route の行き来 (ダイアログでない一番深い match が前後で同じで、どちらかに `staticData.dialogRoute` の route がある。ADR-0041) |
+| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                                                     |
+| 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                                               |
+| title              | 各ルートの `head()` で `pageTitle(ctx, <ページ名>)` (`src/lib/page-title.ts`) を通して持つ。形は `<ページ名> — <APP_NAME>`、ページ名が無ければ `<APP_NAME>`                                                                                         |
+| not found の title | `head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら `ページが見つかりません — <APP_NAME>`                                                                                                                                           |
+| 実装の置き場       | `createRouter` の `InnerWrap` に渡す部品 (`src/components/router-inner-wrap.tsx`) の中に、購読だけを持つ部品 (`src/components/route-announcer.tsx`) を置く。部品は effect で `router.subscribe` を購読し、DOM を描かない                            |
 
 ### focus を移す目的と、枠を出さない理由
 
@@ -92,6 +92,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 
 - 検索条件だけの変化は伝えない。focus を動かすと入力欄から外れ (上の vercel/next.js#96050)、件数は ADR-0027 の通知が伝える
 - 最初のページはブラウザが読むので伝えない。Next.js の announcer も "not for the first load because screen readers do that automatically" とする (`app-router-announcer.tsx`、canary ブランチ、2026-09-28 に確認)
+- ページとその上のダイアログの行き来を伝えると、閉じたあと Base UI が開いたリンクへ戻した focus を、「覚えた要素のまま」として見出しへ移す。ダイアログの focus は Base UI に任せる (開くとダイアログの中の最初の要素、閉じると `finalFocus`)。ダイアログから別のページへ移る遷移と、別のページからダイアログを直接開く遷移は、ページが変わるので伝える
 - 奪わない条件は Navigation API の explainer の「Focus management」に合わせる: "this focus reset will not take place if the user or developer has manually changed focus while the promise was settling, and that element is still visible and focusable"
 - 戻る・進むを通常の遷移と区別しない。Reach Router 1.3.1 (`src/lib/history.js`) は popstate を `action: "POP"` で同じ listener に流す。SvelteKit (`packages/kit/src/runtime/client/client.js` の `finish_navigation`、version-3 ブランチの 30d06f5) は popstate の遷移も同じ関数で focus を扱う。Navigation API の既定も traverse を区別しない
 

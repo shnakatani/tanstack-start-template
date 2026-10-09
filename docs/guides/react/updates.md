@@ -9,6 +9,7 @@
 | ユーザー操作の完了点とブロック範囲は機能ごとに選び、既定は対象の項目だけを止める                                      | ADR-0017 |
 | 状態の通知は常時 mount の live region に集約し、項目の状態は静的テキストと `aria-disabled` で持つ                     | ADR-0026 |
 | ページのデータは Query から読み、欠かせない query だけを loader で待ち、副次的な query は待たずに Suspense の中で読む | ADR-0033 |
+| 既存の値を編集するダイアログは子 route にし、loader が最新の値を取り終えてから開く                                    | ADR-0041 |
 
 ## explanation
 
@@ -137,13 +138,13 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ### 操作の型ごとの当て方
 
-一覧の行の削除 (確認ダイアログあり)、ダイアログのフォームからの追加、対象の行を初期値にしたダイアログのフォームからの更新には、ADR-0017 の軸を次のように当てる。新しい操作を足すときの見本になる。
+一覧の行の削除 (確認ダイアログあり)、ダイアログのフォームからの追加、対象の行を子 route のダイアログで開いたフォームからの更新には、ADR-0017 の軸を次のように当てる。新しい操作を足すときの見本になる。
 
-| 操作 | 完了点                 | 表現                                                                                                                                                                                                                                                                                                           | 理由                                                                                                                 |
-| ---- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| 削除 | 確定操作の直後に閉じる | 行を半透明にし、行のトリガーだけを無効にする。mutation に `mutationKey` を付け、一覧側で `useMutationState` (`status: "pending"`) の `variables` を配列で読み、行ごとに判定する。同時の削除を許し、各 mutation は自分の再取得を待つ                                                                            | 失敗は toast と行の復帰で戻せる。確定で閉じるので、共有の handle を先行する削除の `onSuccess` が閉じる問題も起きない |
-| 追加 | サーバー応答で閉じる   | `onSuccess` の先頭で閉じ、再取得の Promise を返す。mutation はダイアログ側にあるので `mutationKey` を付け、一覧側で `useMutationState` の `variables` を読んで新しい行を半透明で出し、再取得の完了で実データに置き換える                                                                                       | 楽観で閉じると、失敗したときに入力を戻す先が無い                                                                     |
-| 更新 | サーバー応答で閉じる   | `onSuccess` の先頭で閉じ、再取得の Promise を返す。mutation はダイアログ側にあるので `mutationKey` を付け、一覧側で `useMutationState` (`status: "pending"`) の `variables` を読んで対象の行を半透明にし、編集後の値を出す。対象の行のトリガーだけを無効にし、他の行は操作できる。再取得の完了で実データに戻る | 楽観で閉じると、失敗したときに入力を戻す先が無い                                                                     |
+| 操作 | 完了点                 | 表現                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | 理由                                                                                                                 |
+| ---- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 削除 | 確定操作の直後に閉じる | 行を半透明にし、行のトリガーだけを無効にする。mutation に `mutationKey` を付け、一覧側で `useMutationState` (`status: "pending"`) の `variables` を配列で読み、行ごとに判定する。同時の削除を許し、各 mutation は自分の再取得を待つ                                                                                                                                                                                                                                                                  | 失敗は toast と行の復帰で戻せる。確定で閉じるので、共有の handle を先行する削除の `onSuccess` が閉じる問題も起きない |
+| 追加 | サーバー応答で閉じる   | `onSuccess` の先頭で閉じ、再取得の Promise を返す。mutation はダイアログ側にあるので `mutationKey` を付け、一覧側で `useMutationState` の `variables` を読んで新しい行を半透明で出し、再取得の完了で実データに置き換える                                                                                                                                                                                                                                                                             | 楽観で閉じると、失敗したときに入力を戻す先が無い                                                                     |
+| 更新 | サーバー応答で閉じる   | ダイアログは子 route にし、loader が最新の値を取り終えてから開く (ADR-0041)。`onSuccess` の先頭で閉じ、再取得の Promise を返す。閉じると route を離れて unmount するが、`useMutation` に渡した callback はそのあとも走る ([TanStack Query docs「Mutations」][])。mutation に `mutationKey` を付け、一覧側で `useMutationState` (`status: "pending"`) の `variables` を読んで対象の行を半透明にし、編集後の値を出す。対象の行のリンクだけを無効にし、他の行は操作できる。再取得の完了で実データに戻る | 楽観で閉じると、失敗したときに入力を戻す先が無い                                                                     |
 
 - 半透明は `src/lib/busy-opacity.ts` の `BUSY_OPACITY_CLASS` を使う。値の理由と、当たる対の測り方は同じ定数の docstring が持つ
 - 半透明は読み上げに出ない。通知は announcer で出し、行には仮想カーソル用の静的テキスト (「削除中」「保存中」「更新中」) を置く (ADR-0026)
@@ -163,6 +164,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 [TkDodo「Concurrent Optimistic Updates in React Query」]: https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query
 [`@tanstack/query-core` の `utils.ts`]: https://github.com/TanStack/query/blob/@tanstack/query-core@5.104.0/packages/query-core/src/utils.ts
 [TanStack/query#9742]: https://github.com/TanStack/query/issues/9742
+[TanStack Query docs「Mutations」]: https://tanstack.com/query/latest/docs/framework/react/guides/mutations
 [`@tanstack/react-router` の `Transitioner.tsx`]: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.39/packages/react-router/src/Transitioner.tsx
 [`@tanstack/router-core` の `load-client.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/src/load-client.ts
 [`@tanstack/router-core` の `link.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/src/link.ts
