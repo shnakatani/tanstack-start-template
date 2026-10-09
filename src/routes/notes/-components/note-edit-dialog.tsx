@@ -67,7 +67,8 @@ export function NoteEditDialog({ noteId, onClosed }: { noteId: Note["id"]; onClo
         defaultValues={{ title: note.title, body: note.body, dueDate: note.dueDate }}
         onSubmit={(input) => updateMutation.runAction({ id: note.id, ...input })}
         blocksClose={blocksClose}
-        finalFocus={() => focusAfterNoteEditClosed(note.id)}
+        // open が false なのは利用者が閉じたとき。route を離れて開いたまま unmount したときは true のまま
+        finalFocus={() => focusAfterNoteEditClosed(note.id, { closedByUser: !open })}
       />
     </Dialog>
   );

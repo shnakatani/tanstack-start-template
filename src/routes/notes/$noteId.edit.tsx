@@ -20,8 +20,9 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   // 一覧の上に重ねるダイアログの route。一覧との行き来を遷移として伝えない (ADR-0035)
   staticData: { dialogRoute: true },
   loader: {
-    // フォームは開いた時点の値で作るので、キャッシュがあっても取り直し、取り終えるまで開かない。
-    // 既定の background では、戻るで入ったときに前に取った値のまま開く (ADR-0041)
+    // キャッシュがあっても取り直し、取り終えるまで開かない。既定の background では、戻るで入ったときに
+    // 前に取った値で開き、新しい値が届くと触れていないフォームは利用者の目の前で値が替わり、打ち始めた
+    // フォームは古い値のまま残る (ADR-0041)
     handler: ({ context, params }) =>
       context.queryClient.query({ ...noteQueryOptions(params.noteId), staleTime: 0 }),
     staleReloadMode: "blocking",

@@ -9,7 +9,7 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
@@ -279,17 +279,6 @@ function serveNotes(notes: Note[]) {
 }
 
 describe("/notes/$noteId/edit route", () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    // curateMutationErrorMessage が raw error を warn に残す。失敗系テストの出力を汚さない
-    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    warnSpy.mockRestore();
-  });
-
   it("編集リンクで開くと、一覧のキャッシュではなく取り直した値でフォームを作る", async () => {
     // 一覧を描いたあとで別のタブが保存した、という状態
     const fresh = { ...NOTE, title: "別のタブで変えた見出し" };
@@ -354,6 +343,8 @@ describe("/notes/$noteId/edit route", () => {
     fetching.resolve(NOTE);
 
     await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    // 読み込み中のダイアログが本物に替わっても、focus は本物の先頭の入力へ移る
+    await expect.element(titleTextbox(screen)).toHaveFocus();
   });
 
   it("閉じると一覧へ新しい履歴で戻り、絞り込みを保ち、開いたリンクへ focus を戻す", async () => {
@@ -380,6 +371,22 @@ describe("/notes/$noteId/edit route", () => {
     await userEvent.keyboard("{Escape}");
 
     await expectNoteDialogClosed(screen);
+    await expect.element(rowEditLink(screen, NOTE.title)).toHaveFocus();
+    expect(fetching).toHaveBeenExhausted();
+  });
+
+  it("ブラウザの戻るで一覧へ戻ると、開いたリンクへ focus を戻す", async () => {
+    // 戻るでは閉じる操作を経ずに route ごと unmount する。そのときも Base UI は finalFocus を呼ぶので、
+    // 行のリンクがあればそこへ戻す。無いと focus が body へ落ちる
+    const fetching = serveNotes([NOTE]);
+    const { screen, router } = await renderRoute("/notes");
+    await rowEditLink(screen, NOTE.title).click();
+    await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+
+    router.history.back();
+
+    await expectNoteDialogClosed(screen);
+    await expect.poll(() => router.state.location.pathname).toBe("/notes");
     await expect.element(rowEditLink(screen, NOTE.title)).toHaveFocus();
     expect(fetching).toHaveBeenExhausted();
   });
@@ -500,12 +507,16 @@ describe("/notes/$noteId/edit route", () => {
         .element(rowEditLink(screen, UPDATED_NOTE.title))
         .not.toHaveAttribute("aria-disabled");
       expect(router.state.location.pathname).toBe("/notes");
+      // route を離れて unmount したあとも、useMutation に渡した onSuccess が完了を通知する
+      await expectAnnouncements(["更新しています", `『${UPDATED_NOTE.title}』を更新しました`]);
       // 開くときに 1 回だけ取得する。保存後の一覧の invalidate は 1 件のクエリに当たらない
       expect(vi.mocked(getNote)).toHaveBeenCalledOnce();
     },
   );
 
   it("更新に失敗すると固定文言を toast に出し、開いたまま入力を保ち、行の busy が解ける", async () => {
+    // curateMutationErrorMessage が raw error を warn に残す。このテストの出力を汚さない
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const rawMessage = `更新対象のノートが見つかりません: id=${NOTE.id}`;
     const fetching = serveNotes([NOTE]);
     const update = deferMock(updateNote);
@@ -529,6 +540,8 @@ describe("/notes/$noteId/edit route", () => {
     // 失敗では楽観表示を残さない。行は元の値に戻り、busy も解ける (ダイアログの下なので includeHidden)
     await expect.element(noteRow(screen, NOTE, { includeHidden: true })).toHaveStyle("opacity: 1");
     await expectAbsent(noteRow(screen, UPDATED_NOTE, { includeHidden: true }));
+    // raw error は curateMutationErrorMessage が warn に残す (observability)
+    expect(warn).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
     expect(fetching).toHaveBeenExhausted();
   });
 

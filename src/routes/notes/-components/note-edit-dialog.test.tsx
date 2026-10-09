@@ -1,6 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
@@ -20,6 +20,7 @@ import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
 
+import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NoteEditDialog } from "./note-edit-dialog";
 import {
   bodyTextbox,
@@ -29,7 +30,10 @@ import {
   titleTextbox,
 } from "./note-form.test-helpers";
 
-/** route の loader が 1 件を取り直した状態 (キャッシュに 1 件がある) で描く。route の出入りは ../route.test.tsx が持つ */
+/**
+ * route の loader が 1 件を取り直した状態 (キャッシュに 1 件がある) で描く。route の出入りは ../route.test.tsx が持つ。
+ * ダイアログは一覧のページの上に開くので、閉じたときの focus の移し先になるページの見出しを置く
+ */
 async function renderDialog() {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(noteQueryOptions(NOTE.id).queryKey, NOTE);
@@ -37,6 +41,7 @@ async function renderDialog() {
   const onClosed = vi.fn();
   const screen = await render(
     <QueryClientProvider client={queryClient}>
+      <h1>{NOTES_PAGE_TITLE}</h1>
       <Suspense fallback={null}>
         <NoteEditDialog noteId={NOTE.id} onClosed={onClosed} />
       </Suspense>
@@ -48,17 +53,6 @@ async function renderDialog() {
 }
 
 describe("NoteEditDialog", () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    // curateMutationErrorMessage が raw error を warn に残す。失敗系テストの出力を汚さない
-    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    warnSpy.mockRestore();
-  });
-
   it("見出しと、取り直した 1 件の値が入ったフォームで開く", async () => {
     const { screen } = await renderDialog();
 
@@ -142,6 +136,8 @@ describe("NoteEditDialog", () => {
   });
 
   it("保存に失敗すると固定文言を toast に出し、server の raw message は出さず、開いたまま入力を保つ", async () => {
+    // curateMutationErrorMessage が raw error を warn に残す。このテストの出力を汚さない
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const rawMessage = "更新対象のノートが見つかりません: id=1";
     vi.mocked(updateNote).mockRejectedValue(new Error(rawMessage));
     const { screen, onClosed } = await renderDialog();
@@ -154,6 +150,7 @@ describe("NoteEditDialog", () => {
     await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     await expect.element(titleTextbox(screen)).toHaveValue("変えた見出し");
     expect(onClosed).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
   });
 
   it("更新の開始と完了を announcer が通知し、完了には更新後の見出しを対象名に載せる", async () => {

@@ -591,7 +591,7 @@ describe("NotesPage", () => {
     await confirmDeleteButton(screen).click();
 
     // 既定の戻り先 (確定した行の削除ボタン) は行と一緒に消え、フォーカスが body へ落ちる。
-    // 移し先は同じ列の同じ操作なので、同じ行の編集ボタンではない
+    // 移し先は同じ列の同じ操作なので、同じ行の編集リンクではない
     await expectRemoved(noteRow(screen, NOTE));
     await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toHaveFocus();
   });

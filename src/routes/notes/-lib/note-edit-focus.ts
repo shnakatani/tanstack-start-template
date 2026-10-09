@@ -9,16 +9,26 @@ export function noteEditLinkProps(noteId: Note["id"]): { "data-note-edit-link": 
 }
 
 /**
- * 編集ダイアログを閉じたときの focus の移し先 (Base UI の `finalFocus`)。開いた行の編集リンクへ戻す。
- * URL を直接開いたときは、Base UI の既定 (開く前に focus していた要素) が無く body に落ちる。
- * 行が一覧に無ければ (絞り込みで外れた、削除された) ページの見出しへ移す。見出しには枠を出さない (ADR-0035)。
- * Base UI に要素を返すと枠の扱いを渡せないので、自分で移して Base UI には何もさせない
+ * 編集ダイアログの focus の戻し先 (Base UI の `finalFocus`)。Base UI は閉じたときだけでなく、開いたまま
+ * unmount したとき (戻る・進むで route を離れた、読み込み中のダイアログが本物に替わった) にも呼ぶ。
+ *
+ * 開いた行の編集リンクがあれば、そこへ戻す。URL を直接開いたときは、Base UI の既定 (開く前に focus して
+ * いた要素) が無く body に落ちるので、行のリンクを探して返す。
+ * 行が一覧に無い (絞り込みで外れた、削除された) とき:
+ * - 利用者が閉じた (`closedByUser`) なら、ページの見出しへ枠を出さずに移す (ADR-0035)。Base UI に要素を
+ *   返すと枠の扱いを渡せないので、自分で移して Base UI には何もさせない
+ * - 開いたまま unmount したなら、focus に触れない。ページの変わる遷移は route の announcer が見出しへ移す
  */
-export function focusAfterNoteEditClosed(noteId: Note["id"]): HTMLElement | false {
+export function focusAfterNoteEditClosed(
+  noteId: Note["id"],
+  { closedByUser }: { closedByUser: boolean },
+): HTMLElement | false {
   const link = document.querySelector<HTMLElement>(`[${NOTE_EDIT_LINK_ATTRIBUTE}="${noteId}"]`);
   if (link !== null) {
     return link;
   }
-  moveFocusToPageHeading();
+  if (closedByUser) {
+    moveFocusToPageHeading();
+  }
   return false;
 }

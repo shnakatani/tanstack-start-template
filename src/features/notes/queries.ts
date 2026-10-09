@@ -33,8 +33,9 @@ export function notesQueryOptions(filter: NoteListFilter) {
 export const NOTE_QUERY_KEY = ["note"] as const;
 
 /**
- * 1 件のクエリ。編集フォームの初期値に使う。フォームは開いた時点の値で作り、開いている間に裏で
- * 取り直しても追わないので、observer の再取得を止める (TkDodo「React Query and Forms」)。
+ * 1 件のクエリ。編集フォームの初期値に使う。開いている間に裏で取り直すと、触れていないフォームは
+ * 利用者の目の前で値が替わり、打ち始めたフォームには届かない (TanStack Form は、触れていないフォームに
+ * だけ新しい `defaultValues` を反映する)。どちらも要らないので observer の再取得を止める。
  * 開くときの取り直しは route の loader が `staleTime: 0` で行う
  */
 export function noteQueryOptions(id: Note["id"]) {

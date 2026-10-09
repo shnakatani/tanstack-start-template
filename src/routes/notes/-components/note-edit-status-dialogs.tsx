@@ -34,7 +34,9 @@ function NoteEditStatusDialog({
   const { open, setOpen, onOpenChangeComplete } = useRouteDialog(onClosed);
   return (
     <Dialog open={open} onOpenChange={setOpen} onOpenChangeComplete={onOpenChangeComplete}>
-      <DialogContent finalFocus={() => focusAfterNoteEditClosed(noteId)}>
+      {/* open が false なのは利用者が閉じたとき。本物のダイアログに替わる、route を離れるなど、
+          開いたまま unmount したときは true のまま */}
+      <DialogContent finalFocus={() => focusAfterNoteEditClosed(noteId, { closedByUser: !open })}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
