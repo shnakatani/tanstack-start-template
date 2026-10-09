@@ -39,6 +39,7 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 - Vitest は既定で unhandled error で run を失敗させる (Vitest docs の `dangerouslyIgnoreUnhandledErrors`)。テストは遷移を待ってすぐ次の遷移を起こすので、この `AbortError` が出る (2026-10-09 に CI の `route-announcer.test.tsx` で 3 件)。`tooling/test/config.ts` の `onUnhandledError` で、名前が `AbortError` で文言が `Transition was skipped` を含むものを、run の失敗と出力の両方から外す (Vitest docs の `onUnhandledError` が、決まった unhandled error を除く手段として案内する形)。Chromium は飛ばした View Transition の AbortError の文言をどれもこの句で始めるので、テストのコードが自分で呼んだ `startViewTransition` の skip も外れる。router が `ready` の reject を拾うようになったら (TanStack/router#7907)、このフィルタを外す。利用者のテストでも、この error は落ちなくなる。文言は Chromium のもので、ほかのブラウザでテストを走らせるなら合わせて見直す
 - タブが隠れた状態のナビゲーションでも、`ready` が `InvalidStateError` で reject する (TanStack/router#7906 の再現。手元では未実測)
 - `types` の関数は、ブラウザが `:active-view-transition-type()` に対応しているときだけ呼ばれる (router-core 1.171.34 の `src/router.ts` の `startViewTransition`)。対応していないブラウザ (Safari 18.2、Chrome 125 より前) では判定を使わず、スワイプで戻る・進むと二重に動く。2026-10-09 に Safari 27.0.1 で、スワイプでは Safari の遷移だけになり、リンクと、スワイプで戻った直後のリンクではクロスフェードになることを目で確かめた
+- 戻る・進むの読み込みが View Transition を始める前に打ち切られると (読み込み中にリンクを押した、`router.invalidate()` が来たなど)、記録した値が残り、次のナビゲーションのクロスフェードを飛ばす。飛ばす側にしか転ばず、二重には動かない (router-core 1.171.34 の `src/load-client.ts` の `runClientTransaction`)
 - 移動・拡大縮小・ぼかしを足すときは、reduced motion の扱いと合わせて決める
 
 ## 調査結果

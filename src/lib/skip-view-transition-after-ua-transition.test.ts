@@ -27,9 +27,10 @@ describe("skipViewTransitionAfterUATransition", () => {
     expect(types()).toEqual([]);
   });
 
-  it("ブラウザがアニメーションを出さなかった戻る・進むでは飛ばさない", () => {
+  it("ブラウザがアニメーションを出した戻る・進むの後に、出さなかった戻る・進むが続けば飛ばさない", () => {
     const target = new EventTarget();
     const types = skipViewTransitionAfterUATransition(target);
+    target.dispatchEvent(popstate(true));
     target.dispatchEvent(popstate(false));
     expect(types()).toEqual([]);
   });
