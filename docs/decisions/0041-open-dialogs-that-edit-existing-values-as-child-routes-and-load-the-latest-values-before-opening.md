@@ -132,7 +132,6 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - TanStack Router「Route Masking」: https://tanstack.com/router/latest/docs/framework/react/guide/route-masking
 - TanStack Router「Navigation」(`useMatchRoute` and `<MatchRoute>`): https://tanstack.com/router/latest/docs/framework/react/guide/navigation
 - TanStack Router「RouteOptions type」(`remountDeps`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouteOptionsType
-- TanStack Router「Static Route Data」: https://tanstack.com/router/latest/docs/framework/react/guide/static-route-data
 - TanStack Router「useCanGoBack hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useCanGoBack
 - TanStack Router「useRouter hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useRouterHook
 - TanStack Router「RouterState type」(`matches`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouterStateType
