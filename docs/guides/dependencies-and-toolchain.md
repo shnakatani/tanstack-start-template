@@ -94,11 +94,22 @@ pnpm peers check
 
 1. 依存の `package.json` の `exports` を読み、個別エントリポイントがあるかと、バレルがどれか (ルートの `.`、`./locale` のようなまとめ) を確かめる。個別エントリポイントが無い依存は対象にできない
 2. バレルから 1 つだけ import するテストと、同じものを個別エントリポイントから import するテストを 1 ファイルずつ `src/lib/` に一時的に置く。Node で読むなら `.test.ts`、ブラウザで読むなら `.test.tsx`
-3. 1 ファイルずつ `vp test run --project <unit か browser> <ファイル> --experimental.importDurations.print --experimental.importDurations.limit=10` を複数回実行し、`Duration` の `import` と、内訳が出れば `Total import time` の self を回ごとに控える。`Total import time` の total は入れ子の import を二重に数えるので使わない (ADR-0032 の「調査結果」)。browser project は 1 回目に依存の事前バンドルが走りうるので、比較から外す
-4. 比較する回の中央値の差が、両者の最大と最小の差の和を超えるかを見る。超えなければ足さない
-5. 足すなら `RESTRICTED_BARREL_IMPORTS` に `{ name, message }` を 1 つずつ足す。`name` は specifier の完全一致で、サブパス (`date-fns/format`) は止めない。`message` には個別エントリポイントの例と `(ADR-0032)` を書く
-6. `vp lint -f unix src scripts .storybook` で、足した依存のバレルを import している箇所を洗い出し、個別エントリポイントへ直す
-7. 一時的に置いたテストを消す
+3. テストファイルの `collectDuration` を出す reporter を、リポジトリの外 (例: `/tmp/collect-reporter.mjs`) に一時的に置く。Vitest 5 の `Duration` の行は phase を割合で出し、import の時間を ms で出さない。CLI でパスを渡す reporter は、default export をクラスにする
+
+   ```js
+   export default class {
+     onTestRunEnd(testModules) {
+       for (const m of testModules)
+         console.log(m.moduleId, Math.round(m.diagnostic().collectDuration));
+     }
+   }
+   ```
+
+4. ほかの重い処理を止めてから、1 ファイルずつ `vp test run --project <unit か browser> <ファイル> --experimental.importDurations.print --experimental.importDurations.limit=10 --reporter=default --reporter=<reporter のパス>` を続けて 5 回ずつ実行する。回ごとに、reporter が出す `collectDuration` と、内訳が出れば `Total import time` の self を控える。`Total import time` の total は入れ子の import を二重に数えるので使わない (ADR-0032 の「調査結果」)。browser project は、依存の事前バンドルのキャッシュを作る最初の実行を比較から外す
+5. 比較する回の中央値の差が、両者の最大と最小の差の和を超えるかを見る。超えなければ足さない。負荷が高いと回ごとのばらつきが広がり、差があっても超えなくなる
+6. 足すなら `RESTRICTED_BARREL_IMPORTS` に `{ name, message }` を 1 つずつ足す。`name` は specifier の完全一致で、サブパス (`date-fns/format`) は止めない。`message` には個別エントリポイントの例と `(ADR-0032)` を書く
+7. `vp lint -f unix src scripts .storybook` で、足した依存のバレルを import している箇所を洗い出し、個別エントリポイントへ直す
+8. 一時的に置いたテストと reporter を消す
 
 - 依存の中の import (ある依存が別の依存のバレルを読む経路) は lint が届かない。テストを遅くしているかは、その依存を描くテストを同じ手順で測る
 - `RESTRICTED_BARREL_IMPORTS` はトップレベルとテスト専用コードの import 禁止の override の両方へ渡っている。片方だけに書き足さない (`docs/guides/lint/configuration.md`「設定の落とし穴」)
