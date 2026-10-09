@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,47 +23,59 @@ interface NoteEditStatusDialogProps {
 }
 
 /**
- * 編集のフォームを出せない間のダイアログの器。閉じたら一覧の route へ戻る。`leaveOnClose` を立てると、
- * 閉じるアニメーションの後ではなく、閉じる操作の時点で戻る
+ * 編集のフォームを出せない間のダイアログの中身。閉じ方は呼び出し側の Dialog の Root が決める。
+ * `closedByUser` は利用者が閉じたか。本物のダイアログに替わる、route を離れるなど、開いたまま unmount
+ * したときは false のまま
  */
+function NoteEditStatusDialogContent({
+  noteId,
+  closedByUser,
+  title,
+  description,
+  action,
+}: {
+  noteId: Note["id"];
+  closedByUser: boolean;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <DialogContent finalFocus={() => focusAfterNoteEditClosed(noteId, { closedByUser })}>
+      <DialogHeader>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
+      <DialogFooter>
+        <DialogClose render={<Button variant="outline" />}>閉じる</DialogClose>
+        {action}
+      </DialogFooter>
+    </DialogContent>
+  );
+}
+
+/** 見つからない・取得の失敗のダイアログ。閉じるアニメーションの後で一覧の route へ戻る */
 function NoteEditStatusDialog({
   noteId,
   onClosed,
   title,
   description,
   action,
-  leaveOnClose = false,
 }: NoteEditStatusDialogProps & {
   title: string;
   description: string;
   action?: ReactNode;
-  leaveOnClose?: boolean;
 }) {
   const { open, setOpen, onOpenChangeComplete } = useRouteDialog(onClosed);
-  function handleOpenChange(nextOpen: boolean) {
-    setOpen(nextOpen);
-    if (!nextOpen && leaveOnClose) {
-      onClosed();
-    }
-  }
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
-      onOpenChangeComplete={leaveOnClose ? undefined : onOpenChangeComplete}
-    >
-      {/* open が false なのは利用者が閉じたとき。本物のダイアログに替わる、route を離れるなど、
-          開いたまま unmount したときは true のまま */}
-      <DialogContent finalFocus={() => focusAfterNoteEditClosed(noteId, { closedByUser: !open })}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>閉じる</DialogClose>
-          {action}
-        </DialogFooter>
-      </DialogContent>
+    <Dialog open={open} onOpenChange={setOpen} onOpenChangeComplete={onOpenChangeComplete}>
+      <NoteEditStatusDialogContent
+        noteId={noteId}
+        closedByUser={!open}
+        title={title}
+        description={description}
+        action={action}
+      />
     </Dialog>
   );
 }
@@ -74,14 +86,23 @@ function NoteEditStatusDialog({
  * 閉じたら閉じるアニメーションを待たずに一覧へ戻る。待つ間に取得が終わると、本物のダイアログがこれに
  * 替わって開く
  */
-export function NoteEditPendingDialog(props: NoteEditStatusDialogProps) {
+export function NoteEditPendingDialog({ noteId, onClosed }: NoteEditStatusDialogProps) {
+  const [open, setOpen] = useState(true);
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      setOpen(false);
+      onClosed();
+    }
+  }
   return (
-    <NoteEditStatusDialog
-      {...props}
-      title={NOTE_EDIT_DIALOG_TITLE}
-      description="読み込み中"
-      leaveOnClose
-    />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <NoteEditStatusDialogContent
+        noteId={noteId}
+        closedByUser={!open}
+        title={NOTE_EDIT_DIALOG_TITLE}
+        description="読み込み中"
+      />
+    </Dialog>
   );
 }
 
