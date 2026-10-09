@@ -106,7 +106,7 @@ pnpm peers check
    ```
 
 4. ほかの重い処理を止めてから、1 ファイルずつ `vp test run --project <unit か browser> <ファイル> --experimental.importDurations.print --experimental.importDurations.limit=10 --reporter=default --reporter=<reporter のパス>` を、バレルと個別エントリポイントで 1 回ずつ交互に、5 回ずつ続けて実行する。交互にすると、途中で負荷が変わっても片方にだけ載らない。回ごとに、reporter が出す `collectDuration` と、内訳が出れば `Total import time` の self を控える。`Total import time` の total は入れ子の import を二重に数えるので使わない (ADR-0032 の「調査結果」)。browser project は、依存の事前バンドルのキャッシュを作る最初の実行を比較から外す
-5. `collectDuration` について、比較する回の中央値の差が、両者の最大と最小の差の和を超えるかを見る。超えなければ足さない。1 回だけ大きく延びた回があるとばらつきが広がり、差があっても超えないことがある
+5. `collectDuration` について、比較する回の中央値の差が、両者の最大と最小の差の和を超えるかを見る。上の 5 回ずつを 1 群として 3 群測り、2 群以上で超えなければ足さない。大きく延びた回があるとばらつきが広がり、差があっても 1 群では超えないことがある
 6. 足すなら `RESTRICTED_BARREL_IMPORTS` に `{ name, message }` を 1 つずつ足す。`name` は specifier の完全一致で、サブパス (`date-fns/format`) は止めない。`message` には個別エントリポイントの例と `(ADR-0032)` を書く
 7. `vp lint -f unix src scripts .storybook` で、足した依存のバレルを import している箇所を洗い出し、個別エントリポイントへ直す
 8. 一時的に置いたテストと reporter を消す
