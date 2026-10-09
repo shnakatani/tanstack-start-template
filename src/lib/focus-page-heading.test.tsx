@@ -62,6 +62,48 @@ describe("focusPageHeading", () => {
     await expect.element(input).toHaveFocus();
   });
 
+  it.each([
+    ["祖先が aria-hidden", { "aria-hidden": true }],
+    ["祖先が inert", { inert: true }],
+  ])("見出しが支援技術から隠れているとき (%s)、見出しへ移さない", async (_, hiding) => {
+    await render(
+      <div {...hiding}>
+        <h1>背後のページ</h1>
+      </div>,
+    );
+    focusPageHeading(null);
+    expect(document.activeElement).toBe(document.body);
+    // 隠れた見出しは role で引けないので querySelector で掴む
+    expect(document.querySelector("h1")?.hasAttribute("tabindex")).toBe(false);
+  });
+
+  it("aria-modal のダイアログが開いているときは、外側が隠れていなくても見出しへ移さない", async () => {
+    const screen = await render(
+      <>
+        <h1>背後のページ</h1>
+        {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- div に role を付けて aria-modal でモーダルを表すダイアログ部品の形を再現する */}
+        <div role="dialog" aria-modal="true" aria-label="ダイアログ">
+          <button type="button">閉じる</button>
+        </div>
+      </>,
+    );
+    focusPageHeading(null);
+    await expect.element(screen.getByRole("dialog", { name: "ダイアログ" })).toBeVisible();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("aria-modal のダイアログが閉じて hidden なら、見出しへ移す", async () => {
+    // Base UI の keepMounted のように、閉じたダイアログを hidden で残す形
+    const screen = await render(
+      <>
+        <h1>ページ</h1>
+        <div role="alertdialog" aria-modal="true" aria-label="閉じたダイアログ" hidden />
+      </>,
+    );
+    focusPageHeading(null);
+    await expect.element(screen.getByRole("heading", { name: "ページ" })).toHaveFocus();
+  });
+
   it("既に tabindex を持つ h1 の値を書き換えない", async () => {
     // JSX の tabIndex={0} は jsx-a11y/no-noninteractive-tabindex に引っかかるため、
     // 描画後に属性を直接付与して「既存の値を持つ h1」を作る

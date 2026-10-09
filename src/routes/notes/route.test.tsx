@@ -312,6 +312,29 @@ describe("/notes/$noteId/edit route", () => {
     expect(vi.mocked(listNotes)).toHaveBeenCalledOnce();
   });
 
+  it("編集リンクで開くと、遷移の title を読み上げ、一覧の見出しを経由せずにダイアログの入力欄へ focus を移す", async () => {
+    // 開いた直後の onRendered では Base UI の初期 focus がまだ走っておらず、focus は押したリンクに残る。
+    // 見出しへ移していれば、入力欄へ移る前に h1 が focusin を受ける
+    const fetching = serveNotes([NOTE]);
+    const { screen } = await renderRoute("/notes");
+    await expect.element(rowEditLink(screen, NOTE.title)).toBeInTheDocument();
+    const focusedHeadings: Element[] = [];
+    const recordHeadingFocus = (event: FocusEvent) => {
+      if (event.target instanceof Element && event.target.matches("h1")) {
+        focusedHeadings.push(event.target);
+      }
+    };
+    document.addEventListener("focusin", recordHeadingFocus);
+    onTestFinished(() => document.removeEventListener("focusin", recordHeadingFocus));
+
+    await rowEditLink(screen, NOTE.title).click();
+
+    await expect.element(titleTextbox(screen)).toHaveFocus();
+    await expectAnnouncements([`${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`]);
+    expect(focusedHeadings).toEqual([]);
+    expect(fetching).toHaveBeenExhausted();
+  });
+
   it("閉じたあと戻ると、前に取った値ではなく取り直した値で開き直す", async () => {
     // staleReloadMode が既定の background だと、前に取った値のまま開く。取り直しが届くと、触れていない
     // フォームは新しい値へ替わるので、取り直している間に開いていないことを読み込み中のダイアログで見る
