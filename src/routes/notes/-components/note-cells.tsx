@@ -1,12 +1,15 @@
+import { useMatchRoute } from "@tanstack/react-router";
+
+import { ButtonLink } from "@/components/parts/button-link";
 import type { DataTableCellContext } from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { DialogTrigger } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
-import { noteEditDialogHandle } from "../-lib/note-edit-dialog-handle";
+import { noteEditLinkProps } from "../-lib/note-edit-focus";
 import type { NoteRow } from "../-lib/note-rows";
 import { isNoteRowBusy, noteInputOf } from "../-lib/note-rows";
 
@@ -53,10 +56,11 @@ export function NoteUpdatedAtCell({ row }: NoteCellContext) {
 }
 
 /**
- * 操作の cell。確定行には編集と削除のトリガー (detached trigger。Root はページが 1 つずつ描く) を
+ * 操作の cell。確定行には編集の route へのリンクと、削除のトリガー (detached trigger。Root はページが描く) を
  * 出し、保存中の行は id をまだ持たないので何も出さない。
  */
 export function NoteActionsCell({ row }: NoteCellContext) {
+  const matchRoute = useMatchRoute();
   if (row.original.kind !== "saved") {
     return null;
   }
@@ -65,6 +69,11 @@ export function NoteActionsCell({ row }: NoteCellContext) {
   // 判定は行の半透明と同じ isNoteRowBusy から取る。別々に書くと、条件を足したときに
   // 行の見た目とトリガーの無効化がずれる
   const isBusy = isNoteRowBusy(row.original);
+  // 押した行の編集の route を読み込んでいる間、リンクに Spinner を出す (Router「Navigation」の useMatchRoute の pending)。
+  // params を渡して照合すると、params.parse した数値と URL の文字列を比べて一致しない (TanStack/router#2450)。
+  // route だけで照合し、返った params を文字列で比べる
+  const pendingEdit = matchRoute({ to: "/notes/$noteId/edit", pending: true });
+  const isEditPending = pendingEdit !== false && String(pendingEdit.noteId) === String(note.id);
   // トリガーの名前は行に見えている title から作る。更新中は編集後の値が見えているので、
   // 再取得前の note.title で読み上げると画面と食い違う
   const { title } = noteInputOf(row.original);
@@ -74,19 +83,27 @@ export function NoteActionsCell({ row }: NoteCellContext) {
           位置づけは保存中の行の「保存中」と同じ (ADR-0026)。更新中は更新日時の cell が可視の
           「更新中」を出すので、ここには足さない */}
       {isDeleting && <span className="sr-only">削除中</span>}
-      <DialogTrigger
-        handle={noteEditDialogHandle}
-        payload={note}
-        // 編集のダイアログは応答で閉じ、Base UI はフォーカスをこのトリガーへ返す。その時点で行は
-        // 更新中 (無効) なので、native disabled だとフォーカスが body へ落ちる。focusableWhenDisabled は
-        // Trigger の props 型は受けず Button primitive が受ける
-        render={<Button variant="outline" size="sm" focusableWhenDisabled />}
+      <ButtonLink
+        from="/notes"
+        to="/notes/$noteId/edit"
+        params={{ noteId: note.id }}
+        // 一覧の絞り込みを保ったまま開き、閉じたら同じ一覧へ戻る
+        search={(prev) => prev}
+        // 開くたびに loader が取り直すので、hover の preload は捨てる取得にしかならない (ADR-0041)
+        preload={false}
+        variant="outline"
+        size="sm"
+        {...noteEditLinkProps(note.id)}
         // 可視ラベル「編集」を含めて WCAG 2.5.3 (Label in Name) を満たす
         aria-label={`${title}を編集`}
+        // 削除中と更新中は開かせない (ADR-0017「ブロック範囲」)。disabled の Link は href を外すので
+        // focus できなくなる。保存して閉じたとき Base UI がこのリンクへ focus を戻せるよう、tab 順に残す
         disabled={isBusy}
+        tabIndex={isBusy ? 0 : undefined}
       >
         編集
-      </DialogTrigger>
+        {isEditPending && <Spinner aria-hidden />}
+      </ButtonLink>
       <AlertDialogTrigger
         handle={noteDeleteDialogHandle}
         payload={{ id: note.id, name: note.title }}

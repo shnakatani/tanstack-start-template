@@ -1,3 +1,5 @@
+import { RouterProvider } from "@tanstack/react-router";
+import { useSyncExternalStore } from "react";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
@@ -22,6 +24,7 @@ import {
   UPDATED_NOTE,
 } from "@/features/notes/schema.test-helpers";
 import { formatDateTime } from "@/lib/format-date-time";
+import { createTestRouter } from "@/test/app/create-test-router";
 import { expectAbsent } from "@/test/assert/absent";
 import type { Screen } from "@/test/assert/screen-assertions";
 
@@ -34,7 +37,7 @@ import {
   noteEditTriggerName,
   noteRow,
   rowDeleteButton,
-  rowEditButton,
+  rowEditLink,
 } from "./note-cells.test-helpers";
 
 /**
@@ -50,8 +53,36 @@ interface CellsOptions {
   onConfirm?: (target: NoteDeleteTarget) => void;
 }
 
+/**
+ * cell の編集リンクは router を要るので、`/notes` の test router の中で描く。props を差し替えるテストは
+ * `update` で渡し直す (RouterProvider の外からは rerender で子の props を変えられない)
+ */
+async function renderUpdatableCells(options: CellsOptions = {}) {
+  let current = options;
+  const listeners = new Set<() => void>();
+  const store = {
+    get: () => current,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+  function Cells() {
+    return cells(useSyncExternalStore(store.subscribe, store.get));
+  }
+  const router = createTestRouter("/notes", () => <Cells />);
+  const screen = await render(<RouterProvider router={router} />);
+  function update(next: CellsOptions) {
+    current = next;
+    for (const listener of listeners) {
+      listener();
+    }
+  }
+  return { screen, update };
+}
+
 async function renderCells(options: CellsOptions = {}) {
-  return await render(cells(options));
+  return (await renderUpdatableCells(options)).screen;
 }
 
 function cells({
@@ -185,33 +216,39 @@ describe("NoteActionsCell", () => {
       screen.getByRole("button", { name: noteDeleteTriggerName(CREATED_NOTE), exact: false }),
     );
     await expectAbsent(
-      screen.getByRole("button", { name: noteEditTriggerName(CREATED_NOTE), exact: false }),
+      screen.getByRole("link", { name: noteEditTriggerName(CREATED_NOTE), exact: false }),
     );
     await expect.element(rowDeleteButton(screen, NOTE.title)).toBeInTheDocument();
   });
 
-  it("確定行は削除の前に、対象を名前に含む有効な編集トリガーを出す", async () => {
+  it("確定行は削除の前に、対象を名前に含む、編集の route へのリンクを出す", async () => {
     const screen = await renderCells();
 
-    const edit = rowEditButton(screen, NOTE.title);
-    await expect.element(edit).toBeEnabled();
-    await expect.element(rowEditButton(screen, OTHER_NOTE.title)).toBeInTheDocument();
-    // 並びは「編集」「削除」の順。cell の中のボタンを文書順で読む
+    const edit = rowEditLink(screen, NOTE.title);
+    await expect.element(edit).toHaveAttribute("href", `/notes/${NOTE.id}/edit`);
+    await expect.element(edit).not.toHaveAttribute("aria-disabled");
+    await expect.element(rowEditLink(screen, OTHER_NOTE.title)).toBeInTheDocument();
+    // 並びは「編集」「削除」の順。cell の中のリンクとボタンを文書順で読む
     await expect
       .poll(() =>
-        noteRow(screen, NOTE)
-          .getByRole("button")
-          .elements()
-          .map((button) => button.getAttribute("aria-label")),
+        [...noteRow(screen, NOTE).element().querySelectorAll("a, button")].map((element) =>
+          element.getAttribute("aria-label"),
+        ),
       )
       .toEqual([noteEditTriggerName(NOTE), noteDeleteTriggerName(NOTE)]);
   });
 
-  it("削除中の行は編集トリガーも無効にする", async () => {
+  it("削除中の行は編集リンクも無効にし、focus できるまま残す", async () => {
     const screen = await renderCells({ deletingIds: [NOTE.id] });
 
-    await expect.element(rowEditButton(screen, NOTE.title)).toBeDisabled();
-    await expect.element(rowEditButton(screen, OTHER_NOTE.title)).toBeEnabled();
+    const edit = rowEditLink(screen, NOTE.title);
+    await expect.element(edit).toHaveAttribute("aria-disabled", "true");
+    await expect.element(edit).not.toHaveAttribute("href");
+    // 保存して閉じたとき Base UI がここへ focus を戻せるよう、tab 順に残す
+    await expect.element(edit).toHaveAttribute("tabindex", "0");
+    await expect
+      .element(rowEditLink(screen, OTHER_NOTE.title))
+      .not.toHaveAttribute("aria-disabled");
   });
 
   it("更新中の行は両方のトリガーを無効にし、名前は表示中の (編集後の) title で持つ", async () => {
@@ -219,10 +256,14 @@ describe("NoteActionsCell", () => {
 
     // 行に見えている title と、読み上げるトリガーの名前をそろえる。再取得前の note.title を
     // 使うと、見えていない名前で読み上げる
-    await expect.element(rowEditButton(screen, UPDATED_NOTE.title)).toBeDisabled();
+    await expect
+      .element(rowEditLink(screen, UPDATED_NOTE.title))
+      .toHaveAttribute("aria-disabled", "true");
     await expect.element(rowDeleteButton(screen, UPDATED_NOTE.title)).toBeDisabled();
     // 止めるのは更新中の行だけ (ADR-0017「ブロック範囲」)
-    await expect.element(rowEditButton(screen, OTHER_NOTE.title)).toBeEnabled();
+    await expect
+      .element(rowEditLink(screen, OTHER_NOTE.title))
+      .not.toHaveAttribute("aria-disabled");
     // 状態のテキストは更新日時の cell の「更新中」が持つ。削除中の sr-only は出さない
     await expectAbsent(noteRow(screen, UPDATED_NOTE).getByText("削除中", { exact: false }));
   });
@@ -243,11 +284,11 @@ describe("NoteActionsCell", () => {
   it("確定の時点で決めた移し先の行が閉じる前に消えたら、フォーカスは body へ落ちない", async () => {
     // onConfirm は閉じないので、確定のあとも開いたまま残る
     const onConfirm = vi.fn();
-    const screen = await renderCells({ onConfirm });
+    const { screen, update } = await renderUpdatableCells({ onConfirm });
     await rowDeleteButton(screen, NOTE.title).click();
     await confirmDeleteButton(screen).click();
     // 移し先 (次の行) が、閉じる前に別の理由で消える
-    await screen.rerender(cells({ notes: [NOTE], onConfirm }));
+    update({ notes: [NOTE], onConfirm });
 
     await screen.getByRole("button", { name: "キャンセル" }).click();
 

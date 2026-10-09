@@ -24,7 +24,7 @@ export function noteEditTriggerName(note: Pick<Note, "title">) {
   return `${note.title}を編集`;
 }
 
-/** 行の編集トリガー (`NoteActionsCell`)。名前は `noteEditTriggerName` から作る */
-export function rowEditButton(screen: Screen, title: string) {
-  return screen.getByRole("button", { name: noteEditTriggerName({ title }) });
+/** 行の編集リンク (`NoteActionsCell`)。名前は `noteEditTriggerName` から作る。無効のときも Router が role="link" を付ける */
+export function rowEditLink(screen: Screen, title: string) {
+  return screen.getByRole("link", { name: noteEditTriggerName({ title }) });
 }

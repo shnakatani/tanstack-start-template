@@ -14,6 +14,14 @@ export function focusPageHeading(focusedBeforeNavigation: Element | null): void 
   if (!focusLost && active !== focusedBeforeNavigation) {
     return;
   }
+  moveFocusToPageHeading();
+}
+
+/**
+ * ページの h1 へ、枠を出さずに focus を移す。h1 が無ければ body へ。focus を奪ってよいかの判定は
+ * 呼び出し側が持つ
+ */
+export function moveFocusToPageHeading(): void {
   const heading = document.querySelector("h1");
   if (heading === null) {
     // どのページも PageHeader で h1 を持つ。無いのはページの組み方の漏れなので残す

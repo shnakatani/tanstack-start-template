@@ -45,7 +45,10 @@ export function useSubmitBlockingDialog({ isPending }: { isPending: boolean }) {
   }
 
   // 型は転送先の props から導出する (再宣言すると転送先の型変更に追随しない)
-  const onOpenChange: ComponentProps<typeof Dialog>["onOpenChange"] = (open, details) => {
+  const onOpenChange: NonNullable<ComponentProps<typeof Dialog>["onOpenChange"]> = (
+    open,
+    details,
+  ) => {
     // 保存の onSuccess の close は handle 経由なので reason が imperative-action になる。通す
     if (!open && blocksClose && details.reason !== "imperative-action") {
       details.cancel();
