@@ -241,13 +241,14 @@ oxlint のカテゴリは実装者がルールを分類した軸で、上流の 
 - 基準が off にするルールでも、`correctness` に入っていればカテゴリ側が勝つ。`rules` で明示的に off にしないと有効のまま残る
 - 基準がオプションを指定していても、名指ししないルールは oxlint の既定のオプションで動く。既定と基準の関係ごとの扱いは ADR-0007「カテゴリ経由のルールのオプション」にある
 
-2026-10-10 に、jsx-a11y の recommended がオプションを指定する 6 ルールを、eslint-plugin-jsx-a11y 6.10.2 の recommended と比べた。3 ルールで oxlint の既定のほうが厳しかった。次の書き方の報告は oxlint 1.85.0 の `vp lint` で確かめた。1.87.0 でも 6 ルールのソースは同じである。
+2026-10-10 に、jsx-a11y の recommended がオプションを指定する 6 ルールを、eslint-plugin-jsx-a11y 6.10.2 の recommended と比べた。3 ルールで oxlint の既定のほうが厳しかった。次の書き方の報告は oxlint 1.85.0 の `vp lint` で確かめた。1.87.0 でも 6 ルールのソースは同じである。表の最後の行は jsx-a11y の比べ合わせとは別に、oxlint 1.85.0 と 1.87.0 の実装と @vitest/eslint-plugin 1.6.27 で確かめた。
 
-| ルール                                                   | oxlint の既定で報告され、基準では通る書き方                                                                |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `jsx-a11y/no-noninteractive-element-interactions`        | 基準の 8 つ以外の handler (`<li onFocus>`、`<li onMouseEnter>` など)。oxlint の既定は 26 の handler を見る |
-| `jsx-a11y/no-noninteractive-element-to-interactive-role` | `<ul role="listbox">`、`<ol role="listbox">`、`<li role="option">`、`<table role="grid">`                  |
-| `jsx-a11y/no-static-element-interactions`                | 式で書いた role (`<div role={role} onClick={...}>`)。基準は `allowExpressionValues: true`                  |
+| ルール                                                   | oxlint の既定で報告され、基準では通る書き方                                                                                                         |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jsx-a11y/no-noninteractive-element-interactions`        | 基準の 8 つ以外の handler (`<li onFocus>`、`<li onMouseEnter>` など)。oxlint の既定は 26 の handler を見る                                          |
+| `jsx-a11y/no-noninteractive-element-to-interactive-role` | `<ul role="listbox">`、`<ol role="listbox">`、`<li role="option">`、`<table role="grid">`                                                           |
+| `jsx-a11y/no-static-element-interactions`                | 式で書いた role (`<div role={role} onClick={...}>`)。基準は `allowExpressionValues: true`                                                           |
+| `vitest/no-standalone-expect`                            | `vi.defineHelper` の callback の中の `expect`。上流はオプションでなく実装で許す。テンプレートは `additionalTestBlockFunctions` で基準まで戻している |
 
 `listbox` と `option` の 2 つは、`no-noninteractive-element-to-interactive-role` を緩めても `prefer-tag-over-role` が報告する。
 
