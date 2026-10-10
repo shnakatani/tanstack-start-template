@@ -28,14 +28,24 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
     await userEvent.tab();
     await userEvent.tab();
     await expect
-      .element(screen.getByRole("button", { name: "Friday, August 7th, 2026, selected" }))
+      .element(screen.getByRole("button", { name: "Friday, August 7, 2026, selected" }))
       .toHaveFocus();
 
     await userEvent.keyboard("{ArrowRight}");
 
     await expect
-      .element(screen.getByRole("button", { name: "Saturday, August 8th, 2026" }))
+      .element(screen.getByRole("button", { name: "Saturday, August 8, 2026" }))
       .toHaveFocus();
+  });
+
+  // 上流は locale を渡さないとき、日付のボタンの名前に序数を使う ("Sunday, August 30th, 2026")。
+  // 見た目の "30" が名前の 1 語として入らず、WCAG 2.5.3 に当たる
+  it("locale を渡さないとき、日付のボタンの名前に見た目の日の数字が 1 語として入る", async () => {
+    const screen = await renderCalendar();
+
+    await expect
+      .element(screen.getByRole("button", { name: "Sunday, August 30, 2026" }))
+      .toHaveTextContent("30");
   });
 
   // 上流は components の Root などを Calendar の描画中に定義する。

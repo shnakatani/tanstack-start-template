@@ -3,6 +3,7 @@ import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react
 import * as React from "react";
 import {
   DayPicker,
+  defaultLocale,
   getDefaultClassNames,
   useDayPicker,
   type CustomComponents,
@@ -11,6 +12,22 @@ import {
 } from "react-day-picker";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+
+/**
+ * locale を渡さないときに、既定の英語の locale へ重ねる差分。完全な日付の書式から序数を外す。
+ * 既定の書式 ("EEEE, MMMM do, y") だと日付のボタンの名前が "Sunday, August 30th, 2026" になり、
+ * 見た目の "30" が名前の 1 語として入らない (WCAG 2.5.3。ACT 規則 2ee8b8 は単語ごとに比べ、
+ * axe-core 4.14.0 の label-content-name-mismatch が違反にする)。DayPicker は渡した locale を既定に重ねるので、
+ * 差分だけを渡せば "Today, " などの文言は既定のまま残る (react-day-picker docs「Advanced Translations」の
+ * Tweak locale data)。`code` を持たせないので、日付のボタンの `data-day` は locale を渡さないときと同じ
+ */
+const DEFAULT_LOCALE_WITHOUT_ORDINAL_DAY = {
+  formatLong: {
+    ...defaultLocale.formatLong,
+    date: (options) =>
+      options.width === "full" ? "EEEE, MMMM d, y" : defaultLocale.formatLong.date(options),
+  },
+} satisfies Partial<Locale>;
 
 function Calendar({
   className,
@@ -37,7 +54,7 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
-      locale={locale}
+      locale={locale ?? DEFAULT_LOCALE_WITHOUT_ORDINAL_DAY}
       formatters={{
         formatMonthDropdown: (date) => date.toLocaleString(locale?.code, { month: "short" }),
         ...formatters,
