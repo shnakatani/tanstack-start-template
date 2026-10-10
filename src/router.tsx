@@ -14,12 +14,11 @@ import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
   // mutation 成功後の一覧 refetch 失敗 (background refetch) が無通知で古いデータを残す
-  // silent failure を防ぐ。初回ロード失敗は error boundary (RouteErrorContent) が扱うため
-  // 二重通知を避けてハンドラ側で除外する (詳細: query-cache-handlers.ts)。
+  // silent failure を防ぐ。通知する条件は query-cache-handlers.ts が持つ。
   const queryClient = new QueryClient({
     queryCache: new QueryCache({
       // stable id で background refetch 失敗の toast を 1 つに collapse する
-      // (複数クエリ / ナビゲーション毎の stale prefetch 失敗が積み上がらないように)
+      // (複数クエリの失敗が積み上がらないように)
       onError: createBackgroundRefetchErrorHandler((message) =>
         toast.add({ type: "error", title: message, id: "background-refetch-error" }),
       ),
