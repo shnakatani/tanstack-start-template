@@ -45,6 +45,9 @@ function storybookProjects(): TestProjectConfiguration[] {
 export const testConfig = {
   // テスト全体のタイムゾーンを決める (docs/guides/testing/time-zones.md「基準を root の globalSetup に置く理由」)
   globalSetup: ["./tooling/test/global-setup.ts"],
+  // ブラウザで走る project はそれぞれ maxWorkers 枚のページを同時に開く。合計をコア数に近づける
+  // (docs/guides/testing/configuration.md「並列数を絞る理由」)
+  maxWorkers: "20%",
   // `vi.stubEnv` と `vi.stubGlobal` の値を戻す。設定は次のテストの前に戻し、setup の `afterEach` は
   // `--no-isolate` でファイルの最後の値が次のファイルへ残るのを塞ぐ (docs/guides/testing/mocking.md「環境変数とグローバルを差し替える」)
   unstubEnvs: true,

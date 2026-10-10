@@ -95,7 +95,7 @@ worker からの `TZ` の変更は `Date` に効かない (「基準を root の
 
 1 回の実行の大半は、テストではなく `vp` と Vitest の起動に使われる。TZ 5 つを 8 コアで走らせると、直列で 5.05 秒、並列で 2.03 秒だった (2026-09-29、vitest 5.0.1 / vp 1.0.0)。
 
-- 既定の `maxWorkers` は利用できる並列数を全部使う ([Vitest docs「maxWorkers」][])。各プロセスに `VITEST_MAX_WORKERS=1` を渡して、プロセスの数と掛け算で worker が増えないようにする。[Vitest docs「Improving Performance」][] の shard の例と、[date-fns の `tz.ts`][] も同じ形
+- `maxWorkers` は 1 つのプロセスの中の test worker の並列数の上限である ([Vitest docs「maxWorkers」][])。各プロセスに `VITEST_MAX_WORKERS=1` を渡して、プロセスの数と掛け算で worker が増えないようにする。[Vitest docs「Improving Performance」][] の shard の例と、[date-fns の `tz.ts`][] も同じ形
 - 端末の Ctrl-C はプロセスグループ全体に届くので、子も止まる (vp 1.0.0、2026-09-29 に実測)。親のプロセスだけに signal を送ると子が残る
 
 ### テストの中の切り替えが効く範囲
