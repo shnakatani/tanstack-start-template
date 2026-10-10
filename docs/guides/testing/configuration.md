@@ -263,6 +263,24 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 | `order: "post"` の config フックを持つ plugin で `cacheDir` を上書きする                                                       | addon は `cacheDir` を順序指定の無い config フックで入れるので、post 順のフックが後から上書きできる。同じ手で project 名は戻せない (ADR-0028)                                           |
 | 固定のパス (`node_modules/.cache/storybook-vitest/<theme>`、Compiler を通さない project は `<theme>-no-compiler`) で組み立てる | browser mode は config を読み直すので、既存の `cacheDir` から相対で作ると `light/light` のように入れ子になる (2026-09-21 までに `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測) |
 
+### 並列数を絞る理由
+
+`tooling/test/config.ts` の `maxWorkers` を `"20%"` にする。vitest 5.0.x のブラウザの pool は、ブラウザで走る project ごとに Chromium を 1 つ起動し、それぞれに `maxWorkers` 枚のページを同時に開かせる。`maxWorkers` を書かないと 1 project あたり `min(12, コア数 - 1)` 枚になる ([Vitest の `pools/browser.ts`][] の `getThreadsCount`)。ページの合計はブラウザで走る project の数 × 1 project あたりの枚数で、下の測定の時点では 5 project × 7 枚の 35 枚が 8 コアに載っていた。
+
+2026-10-10 に vitest 5.0.1 で、8 コアの macOS で `vp test run` を既定と `--maxWorkers=2` で 5 回ずつ走らせた (うち 2 回ずつは交互に走らせた)。ページの数は、Playwright の Chromium の renderer のプロセスを 2 秒ごとに数えた最大である。
+
+| 設定             | 同時に開いたページ | 落ちた回 | 落ちたテスト (1 回あたり) | 所要       |
+| ---------------- | ------------------ | -------- | ------------------------- | ---------- |
+| 既定             | 35                 | 5 / 5    | 1〜19 件                  | 77〜136 秒 |
+| `--maxWorkers=2` | 10                 | 0 / 5    | 0 件                      | 56〜67 秒  |
+
+- 落ちたテストの大半は `locator.click: Timeout 5000ms exceeded` で、call log が止まる段は回ごとに違った (`done scrolling`、`performing click action`、`waiting for element to be stable` など)。特定の段が止まるのではなく、操作の全体が `actionTimeout` を使い切っていると読んでいる。どのテストもファイル単体では通る
+- `"20%"` は、ページの合計 (ブラウザで走る project の数 × `maxWorkers`) をコア数に近づける値である。割合は四捨五入され、下限は 1 になる (vitest 5.0.1 の `getWorkersCountByPercentage`)。8 コアで 2、4 コアで 1 になる
+- Node の project の worker も同じ値に絞られる。8 コアでは、絞ったほうが全体の所要は短かった (上の表)
+- 同じ症状の報告 [vitest-dev/vitest#7871][] で、メンテナは CI の負荷を原因に挙げている
+
+Vitest は [vitest-dev/vitest#11525][] (2026-10-09 に merge) で、ブラウザの pool が開くページの合計を `maxWorkers` に収める形へ変えた (本文: "`maxWorkers` is also the budget of pages shared by the open instances")。この修正を含む版へ上げたら `maxWorkers` を外し、全体の実行を測り直す。残すと、ページの合計がコア数の 2 割に縮む。2026-10-10 の時点で、この修正を含む版は出ていない (最新は 5.0.3)。
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。Oxlint docs の「vitest/no-disabled-tests」と「vitest/warn-todo」は、2026-10-06 に原文と照らした。sanity-io/react-rx と starbeamjs/starbeam の設定は、2026-10-05 に読んだ commit に固定した。
@@ -279,6 +297,9 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 [TanStack/router#6246]: https://github.com/TanStack/router/issues/6246
 [TanStack/router#6074]: https://github.com/TanStack/router/pull/6074
 [vitest-dev/vitest#10775]: https://github.com/vitest-dev/vitest/issues/10775
+[vitest-dev/vitest#7871]: https://github.com/vitest-dev/vitest/issues/7871
+[vitest-dev/vitest#11525]: https://github.com/vitest-dev/vitest/pull/11525
+[Vitest の `pools/browser.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/vitest/src/node/pools/browser.ts
 [storybookjs/storybook#33875]: https://github.com/storybookjs/storybook/pull/33875
 [React docs「Keeping Components Pure」]: https://react.dev/learn/keeping-components-pure
 [React docs「Debugging and Troubleshooting」]: https://react.dev/learn/react-compiler/debugging
