@@ -1,3 +1,6 @@
+import { enCA } from "react-day-picker/locale/en-CA";
+import { enUS } from "react-day-picker/locale/en-US";
+import { ja } from "react-day-picker/locale/ja";
 import { describe, expect, it } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
@@ -28,24 +31,38 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
     await userEvent.tab();
     await userEvent.tab();
     await expect
-      .element(screen.getByRole("button", { name: "Friday, August 7, 2026, selected" }))
+      .element(screen.getByRole("button", { name: "Friday, August 7", exact: false }))
       .toHaveFocus();
 
     await userEvent.keyboard("{ArrowRight}");
 
     await expect
-      .element(screen.getByRole("button", { name: "Saturday, August 8, 2026" }))
+      .element(screen.getByRole("button", { name: "Saturday, August 8", exact: false }))
       .toHaveFocus();
   });
 
-  // 上流は locale を渡さないとき、日付のボタンの名前に序数を使う ("Sunday, August 30th, 2026")。
-  // 見た目の "30" が名前の 1 語として入らず、WCAG 2.5.3 に当たる
-  it("locale を渡さないとき、日付のボタンの名前に見た目の日の数字が 1 語として入る", async () => {
-    const screen = await renderCalendar();
+  // 上流は英語の locale で、日付のボタンの名前に序数を使う ("Sunday, August 30th, 2026")。
+  // 見た目の "30" が名前の 1 語として入らず、WCAG 2.5.3 に当たる。語の分け方は axe-core 4.14.0 の
+  // label-content-name-mismatch と同じく Intl.Segmenter で、日本語の名前も語に分けて比べる
+  it.each([
+    ["既定 (locale なし)", undefined],
+    ["en-US", enUS],
+    ["en-CA", enCA],
+    ["ja", ja],
+  ])("%s で、どの日付のボタンも見た目の日の数字を名前の 1 語として含む", async (_, locale) => {
+    const screen = await render(
+      <Calendar mode="single" selected={SELECTED} defaultMonth={SELECTED} locale={locale} />,
+    );
+    const days = screen.getByRole("grid").getByRole("button");
+    await expect.element(days.first()).toBeInTheDocument();
 
-    await expect
-      .element(screen.getByRole("button", { name: "Sunday, August 30, 2026" }))
-      .toHaveTextContent("30");
+    const segmenter = new Intl.Segmenter(locale?.code ?? "en-US", { granularity: "word" });
+    for (const day of days.elements()) {
+      const words = [...segmenter.segment(day.getAttribute("aria-label") ?? "")]
+        .filter((segment) => segment.isWordLike)
+        .map((segment) => segment.segment);
+      expect(words, day.getAttribute("aria-label") ?? "").toContain(day.textContent);
+    }
   });
 
   // 上流は components の Root などを Calendar の描画中に定義する。

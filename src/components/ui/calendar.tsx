@@ -13,21 +13,38 @@ import {
 
 import { Button, buttonVariants } from "@/components/ui/button";
 
+type FormatLong = NonNullable<Locale["formatLong"]>;
+
 /**
- * locale を渡さないときに、既定の英語の locale へ重ねる差分。完全な日付の書式から序数を外す。
- * 既定の書式 ("EEEE, MMMM do, y") だと日付のボタンの名前が "Sunday, August 30th, 2026" になり、
- * 見た目の "30" が名前の 1 語として入らない (WCAG 2.5.3。ACT 規則 2ee8b8 は単語ごとに比べ、
- * axe-core 4.14.0 の label-content-name-mismatch が違反にする)。DayPicker は渡した locale を既定に重ねるので、
- * 差分だけを渡せば "Today, " などの文言は既定のまま残る (react-day-picker docs「Advanced Translations」の
- * Tweak locale data)。`code` を持たせないので、日付のボタンの `data-day` は locale を渡さないときと同じ
+ * 完全な日付の書式の日を、序数 (`do`) から数字 (`d`) にする。en-US と en-CA の書式は日を "30th" と書き、
+ * 日付のボタンの名前 ("Sunday, August 30th, 2026") に見た目の "30" が 1 語として入らない
+ * (WCAG 2.5.3。ACT 規則 2ee8b8 は単語ごとに比べ、axe-core 4.14.0 の label-content-name-mismatch が違反にする)。
+ * 名前は react-day-picker が完全な日付の書式から作るので、書式だけを差し替えれば "Today, " などの文言は残る
  */
-const DEFAULT_LOCALE_WITHOUT_ORDINAL_DAY = {
-  formatLong: {
-    ...defaultLocale.formatLong,
-    date: (options) =>
-      options.width === "full" ? "EEEE, MMMM d, y" : defaultLocale.formatLong.date(options),
-  },
-} satisfies Partial<Locale>;
+function withoutOrdinalDay(formatLong: FormatLong): FormatLong {
+  return {
+    ...formatLong,
+    date: (options) => {
+      const pattern = formatLong.date(options);
+      return options.width === "full" ? pattern.replace(/\bdo\b/, "d") : pattern;
+    },
+  };
+}
+
+/**
+ * DayPicker は渡した locale を既定 (en-US) に重ねるので、実際に効く locale が英語なら序数を外す。
+ * ドイツ語の "30." のように句読点で区切られる序数は "30" が 1 語として残るので、英語の locale に限る。
+ * 方針は react-day-picker docs「Advanced Translations」の Tweak locale data (locale を最小限に拡張する) に沿い、
+ * 形は DayPicker が既定に重ねる部分の locale (`Partial<Locale>`) にする。locale を渡さないときは `code` を
+ * 持たせないので、日付のボタンの `data-day` はブラウザの言語で書かれたまま変わらない
+ */
+function withoutEnglishOrdinalDay(locale: Partial<Locale> = {}): Partial<Locale> {
+  if (!(locale.code ?? defaultLocale.code).startsWith("en")) return locale;
+  return {
+    ...locale,
+    formatLong: withoutOrdinalDay(locale.formatLong ?? defaultLocale.formatLong),
+  };
+}
 
 function Calendar({
   className,
@@ -54,7 +71,7 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
-      locale={locale ?? DEFAULT_LOCALE_WITHOUT_ORDINAL_DAY}
+      locale={withoutEnglishOrdinalDay(locale)}
       formatters={{
         formatMonthDropdown: (date) => date.toLocaleString(locale?.code, { month: "short" }),
         ...formatters,
