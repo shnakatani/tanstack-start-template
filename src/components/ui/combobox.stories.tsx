@@ -119,6 +119,8 @@ export const InlineWithTrigger: Story = {
         // popup が閉じて aria-hidden が外れるので、focus は隠れた要素に入らない。aria-hidden は portal の
         // 先の option へ touch の読み上げを導くために付ける。axe は開いた状態しか見ず、ACT 6cfa84 の
         // 前提 (aria-hidden は操作で変わらない) で判定する (mui/base-ui#5528)。この story でだけ止める。
+        // axe の aria-hidden-focus が、開閉で aria-hidden が変わる要素を違反にしなくなったら外す
+        // (この行を外して InlineWithTrigger が通るかで確かめる)。
         // popup を開くのをやめる手は採らない。
         // 開かないと下の aria-prohibited-attr の見張りごと消える。
         //

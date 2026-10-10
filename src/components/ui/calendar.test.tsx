@@ -50,7 +50,8 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
 
   // WCAG 2.5.3。locale は書き換えの分岐ごとに 1 つ置く (locale なし、序数を外す en-US、2 桁の日の en-ZA、
   // 1 日だけ序数が数字に文字を足す sq、序数を残す de、書き換えない ja)。判定は axe の label-content-name-mismatch に
-  // 任せ、どの日付のボタンもこの規則で測られて合格したことまで求める
+  // 任せ、この規則で合格した要素がちょうど日付のボタンであることまで求める。判定できなかった日付のボタンは
+  // 合格に入らないので、incomplete を別に見なくても落ちる
   it.each([
     ["既定 (locale なし)", undefined],
     ["en-US", enUS],
@@ -65,12 +66,17 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
       const screen = await renderCalendar(locale);
       const days = screen.getByRole("grid").getByRole("button");
       await expect.element(days.first()).toBeInTheDocument();
-      const dayCount = days.elements().length;
+      const dayNames = days.elements().map((day) => day.getAttribute("aria-label"));
 
-      const result = await axe.run(screen.container, { runOnly: ["label-content-name-mismatch"] });
+      const result = await axe.run(screen.container, {
+        runOnly: ["label-content-name-mismatch"],
+        elementRef: true,
+      });
       expect(describeA11yResults(result.violations), "a11y 違反").toEqual([]);
-      expect(describeA11yResults(result.incomplete), "axe が判定できなかった項目").toEqual([]);
-      expect(result.passes.flatMap((rule) => rule.nodes)).toHaveLength(dayCount);
+      const passedNames = result.passes
+        .flatMap((rule) => rule.nodes)
+        .map((node) => node.element?.getAttribute("aria-label"));
+      expect(passedNames).toEqual(dayNames);
     },
   );
 
