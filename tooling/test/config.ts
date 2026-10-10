@@ -1,4 +1,8 @@
-import type { TestProjectConfiguration, TestUserConfig } from "vite-plus/test/config";
+import {
+  configDefaults,
+  type TestProjectConfiguration,
+  type TestUserConfig,
+} from "vite-plus/test/config";
 
 import { companionGlobs } from "../../scripts/lib/companion-files";
 import { isStorybookRun } from "../../scripts/lib/storybook-env";
@@ -54,6 +58,12 @@ export const testConfig = {
   unstubGlobals: true,
   // vi.fn・vi.spyOn・vi.mock の mock に張った実装と戻り値を各テストの前に戻す (docs/guides/testing/mocking.md「差し替えた実装を戻す」)
   mockReset: true,
+  // 既定の組を残し、GitHub Actions でだけ 1 ファイルの HTML report を .vitest/index.html に書く。CI が落ちた
+  // テストの report を artifact に上げる (.github/workflows/ci.yml、Vitest docs「Vitest UI」の View Reports from CI)
+  reporters:
+    process.env.GITHUB_ACTIONS === "true"
+      ? [...configDefaults.reporters, ["html", { singleFile: true }]]
+      : configDefaults.reporters,
   setupFiles: ["./tooling/test/setup.ts"],
   // router は View Transition の ready の reject を拾わず、飛ばされた遷移の AbortError が unhandled rejection に
   // なる。Chromium の飛ばされた View Transition の AbortError を、理由を問わず run の失敗と出力から外す (ADR-0040)
