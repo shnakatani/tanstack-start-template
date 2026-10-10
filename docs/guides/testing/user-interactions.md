@@ -141,7 +141,7 @@ Base UI の popup (Dialog、AlertDialog、Drawer、Popover、Menu、Select、Com
 
 ### popup の初期 focus が遅れて当たる理由
 
-Base UI 1.8.0 の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、Combobox の popup が使う) は、開いたときの focus を `enqueueFocus` で `requestAnimationFrame` の次のフレームに当てる (`floating-ui-react/utils/enqueueFocus.js`。2026-10-10 に確認)。開く操作が返ってもまだ focus は popup に無く、その間に送ったキーは popup の外 (開く操作をした要素か body) に当たる。CI で popup の End が比 0 のまま timeout し、手元で `requestAnimationFrame` を 400ms 遅らせると同じ失敗が再現した。
+Base UI 1.8.0 の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、Combobox の popup が使う) は、開いたときの focus を `enqueueFocus` で `requestAnimationFrame` の次のフレームに当てる (`floating-ui-react/utils/enqueueFocus.js`。2026-10-10 に確認)。`open` を渡して `render()` した直後は、focus はまだ popup に無く body にある (2026-10-10 に実測)。その間に送ったキーは popup の外 (開く操作をした要素か body) に当たる。描画を待つ assert (`expect.element(...).toBeInViewport()` など) を挟んだテストでは、15 回とも、その assert が通った時点で focus は届いていた (2026-10-10、alert-dialog と dialog で実測)。それでも、キーボード操作の前提を assert として書いておけば、focus が届かなかったのか、キーが効かなかったのかを失敗の時点で切り分けられる。
 
 当てる直前に、focus がすでに popup の中へ移っていれば当てない (`FloatingFocusManager` の `shouldFocus`)。テストが click や `focus()` で中へ focus を移したあとは、待たずにキーを送れる。Escape は `useDismiss` が document の keydown で受けるので、focus の位置に依らない。
 
