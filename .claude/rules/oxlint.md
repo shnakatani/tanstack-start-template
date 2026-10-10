@@ -26,7 +26,7 @@ lint は Oxlint が担い、設定は `tooling/lint/config.ts` に書いて `vit
 - CLI の `-D` は未知のルール名を exit 0 で無視する。0 件を結論にする前に `--print-config` でルール名の実在を確かめる (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 - `-D` は同名ルールを持つプラグインをすべて有効にする。件数は診断の `plugin(rule)` 別に数える (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 - 基準が off にするルールでも `correctness` に入っていればカテゴリ側が勝つ。`rules` で明示的に off にしないと有効なまま残る (ADR-0007)
-- カテゴリで有効になるルールは、oxlint の既定のオプションが基準より厳しくても名指ししない。緩める必要が出たら、基準のオプションを丸ごと写さず、基準の範囲で必要な分だけ名指しする (ADR-0007「カテゴリ経由のルールのオプション」)
+- カテゴリで有効になるルールは、oxlint の既定のオプションが基準より厳しくても名指ししない。緩める必要が出たら、基準のオプションを丸ごと写さず、必要な分だけ名指しして理由をコメントに残す。基準より緩めるのも理由をコメントに残すときだけ (ADR-0007「カテゴリ経由のルールのオプション」)
 - eslint コアを拡張したルールは `typescript/` 接頭辞でもコアへ解決される。解決先が `correctness` なら名指しは no-op なので `--print-config` で実効を比べる (`docs/guides/lint/configuration.md`「設定を書き換えたら解決後の設定で確かめる」)
 - `vp check` は warn を exit code に出さない。`lint.categories` の格上げを外さない。`lint-config.test.ts` が解決後の設定で固定する (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 - import 宣言の順は Oxfmt の `sortImports` に任せ、`eslint/sort-imports` を宣言の順を見る形で有効にしない。`@eslint/js` の recommended に無く、Oxfmt が並べた結果を違反と報告する (`docs/guides/lint/configuration.md`「`eslint/sort-imports` を宣言の順で有効にしない理由」)
