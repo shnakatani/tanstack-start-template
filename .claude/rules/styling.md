@@ -128,7 +128,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ## a11y 最低基準
 
-lint は custom `<Button>` の中身を見ない。テストは `expectNoA11yViolations` を書いたケースだけを見るので、他は devtools の A11y パネルで触りながら確かめる (`docs/guides/accessibility.md`「層ごとの役割」)。
+lint は custom `<Button>` の中身を見ない。テストが画面を見るのは `expectNoA11yViolations` を書いたケースだけなので、他は devtools の A11y パネルで触りながら確かめる (`docs/guides/accessibility.md`「層ごとの役割」)。
 
 ### accessible name の与え方
 

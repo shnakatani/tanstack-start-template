@@ -27,9 +27,9 @@ axe の検査の置き場所と読み方、抑制の書き方、読み上げの�
 
 境界は「操作の前か後か」ではない。story も `play` で操作の後の状態を見る (`docs/guides/storybook.md`「カタログと play の範囲」)。分かれるのは置ける場所である。`.storybook/main.ts` の `stories` は `src/components/**` しか見ないので、ページと文書全体は story にできない。`root-document.test.ts` が見ているランドマーク構造は部品へ分解できず、ブラウザテストでしか押さえられない。両方要る。
 
-ブラウザテストの axe が見るのは、`expectNoA11yViolations` を書いたケースだけである。書いていない画面は、devtools の a11y パネルで触りながら確かめる。
+ブラウザテストの axe が画面を見るのは、`expectNoA11yViolations` を書いたケースだけである。書いていない画面は、devtools の a11y パネルで触りながら確かめる。
 
-部品の registry 乖離のガードで規則を 1 つだけ測るときは、`axe.run` の `runOnly` を直接呼び、その規則で合格した要素が狙った要素と一致することまで求める (`src/components/ui/calendar.test.tsx`)。画面のアクセシビリティを問う検査ではないので、`expectNoA11yViolations` と ADR-0028 の層の対象外で、`incomplete` は狙った要素が合格に入らないことで捕まえる。
+部品の registry 乖離のガードで規則を 1 つだけ測るときは、`axe.run` の `runOnly` を直接呼び、その規則で合格した要素が狙った要素と一致することまで求める (`src/components/ui/calendar.test.tsx`)。対象の要素が決まった部品のガードで、`src/routes/` の画面を見る層ではないので、`expectNoA11yViolations` と ADR-0028 の層の対象外である。`incomplete` は、狙った要素が合格に入らないことで捕まえる。
 
 ### axe の緑が意味しないこと
 
