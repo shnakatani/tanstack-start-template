@@ -62,6 +62,18 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 - click などで実マウスを動かしたテストは、overlay (ダイアログ、popup) が閉じる前に `parkMouse()` (`src/test/browser/park-mouse.ts`) でマウスを退避する。乗ったままだと、閉じて露出した要素の hover 配色と transition を axe が測り、色の実測が揺れる
 - テストの始まりの退避は、`src/test/browser/browser-setup.tsx` の `beforeEach` が毎テスト行う (「animation を戻す経路」)
 
+### popup を開いた直後にキーを送る
+
+Base UI の popup (Dialog、AlertDialog、Drawer、Popover、Menu、Select、Combobox。どれも `FloatingFocusManager` で開いたときの focus を当てる) を開いた直後に、開いたときの focus が当たる要素へキーを送るときは、`expect.element(<focus を受ける要素>).toHaveFocus()` で focus が届いたのを待ってから送る (「popup の初期 focus が遅れて当たる理由」)。届く前のキーは popup の外 (開く操作をした要素か body) に当たり、スクロールの End や確定の Enter が効かない。
+
+| 開いたあとの操作                                                         | focus を待つか                                                               |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| 開いたときの focus が当たる要素へキーを送る (End でスクロールする、など) | 待つ                                                                         |
+| click や `focus()` で popup の中へ focus を移してからキーを送る          | 待たなくてよい。Base UI は、中へ移った focus を開いたときの focus で奪わない |
+| Escape で閉じる                                                          | 待たなくてよい。Base UI は Escape を document の keydown で受ける            |
+
+- focus を受ける要素は部品の `initialFocus` で決まる。Dialog と AlertDialog の既定は、popup の中に tabbable があれば最初の tabbable、無ければ popup 自身である ([Base UI docs「Alert Dialog」][] の `initialFocus`)。閉じるボタンを持つ `DialogContent` では閉じるボタンが受ける
+
 ### 入力部品を操作する
 
 - `NumberField` (ADR-0021) のロールは `spinbutton` ではなく `textbox` になる。`getByRole("textbox")` で取る
@@ -127,6 +139,12 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 - viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の 4 条件の定義に無く、同じ `_performPointerAction` が `force` でも行う (ソースの読み取りで、公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
 - ブラウザのヒットテストも残る。`pointer-events: none` の対象へ `force` で送ったイベントが下の要素へ落ちる実測は「合成イベントが実物からずれる理由」にある
 
+### popup の初期 focus が遅れて当たる理由
+
+Base UI 1.8.0 の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、Combobox の popup が使う) は、開いたときの focus を `enqueueFocus` で `requestAnimationFrame` の次のフレームに当てる (`floating-ui-react/utils/enqueueFocus.js`。2026-10-10 に確認)。`open` を渡して `render()` した直後は、focus はまだ popup に無く body にある (2026-10-10 に実測)。その間に送ったキーは popup の外 (開く操作をした要素か body) に当たる。描画を待つ assert (`expect.element(...).toBeInViewport()` など) を挟んだテストでは、15 回とも、その assert が通った時点で focus は届いていた (2026-10-10、alert-dialog と dialog で実測)。それでも、キーボード操作の前提を assert として書いておけば、focus が届かなかったのか、キーが効かなかったのかを失敗の時点で切り分けられる。
+
+当てる直前に、focus がすでに popup の中へ移っていれば当てない (`FloatingFocusManager` の `shouldFocus`)。テストが click や `focus()` で中へ focus を移したあとは、待たずにキーを送れる。Escape は `useDismiss` が document の keydown で受けるので、focus の位置に依らない。
+
 ### animation を無効にして走らせる理由
 
 ブラウザテストは animation を無効にした状態を既定にし、閉じかけの popup が残る窓そのものを検証するテストだけが自分のテストの間だけ animation を戻す。popup を閉じた後の a11y 検査は unmount を待ってから行う。
@@ -190,6 +208,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 [Vitest docs「Interactivity API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/interactivity.md
 [vitest-dev/vitest#5770]: https://github.com/vitest-dev/vitest/issues/5770
 [MDN「Event: cancelable property」]: https://developer.mozilla.org/en-US/docs/Web/API/Event/cancelable
+[Base UI docs「Alert Dialog」]: https://base-ui.com/react/components/alert-dialog
 [HTML Standard「fire a synthetic pointer event」]: https://html.spec.whatwg.org/multipage/webappapis.html#fire-a-synthetic-pointer-event
 [Playwright docs「locator.dispatchEvent」]: https://playwright.dev/docs/api/class-locator#locator-dispatch-event
 [Playwright docs「Actions」]: https://playwright.dev/docs/input#programmatic-click

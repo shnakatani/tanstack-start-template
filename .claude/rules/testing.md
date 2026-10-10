@@ -144,6 +144,7 @@ paths:
 | -   | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。ライブラリ内部のガードまで見に行かない         |
 | -   | 決着前の二重発火の検証                                | 1 → 2 の実イベントを 2 回。同一要素への同期 2 連射は実イベントで起きない          |
 
+- Base UI の popup を開いた直後に、開いたときの focus が当たる要素へキーを送るときは、`expect.element(x).toHaveFocus()` で focus を待ってから送る。Base UI は開いたときの focus を 1 フレーム後に当てる (`docs/guides/testing/user-interactions.md`「popup を開いた直後にキーを送る」)
 - `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
 - 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
 - `sr-only` のテキストは 1px + clip で viewport 判定に落ちる。`getByRole(..., { name })` で本体を掴む (`docs/guides/testing/user-interactions.md`「クリックを発火する」)

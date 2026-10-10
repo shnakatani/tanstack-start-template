@@ -17,7 +17,9 @@ import {
  * + Popup の flex-col。`docs/registry-deviations.md`) のガードで、`registry-baseline.test.ts` は
  * baseline の存在しか見ず乖離が消えても落ちないことを実測した (2026-09-22)。
  *
- * 到達性は実キーボードで見る (Popup は開いたとき focus を受け、End で末尾へスクロールする)。
+ * 到達性は実キーボードで見る。開いたとき Popup の中で最初の tabbable の閉じるボタンが focus を受け、
+ * End で末尾へスクロールする。focus が届くのを待ってから End を送る
+ * (docs/guides/testing/user-interactions.md「popup を開いた直後にキーを送る」)。
  * 溢れコンテンツは `height` ではなく `minHeight` で作る: DialogContent は flex column で、
  * flex item は既定で縮むため `height: 3000px` の子は popup 高に潰れて溢れを再現できない。
  */
@@ -69,6 +71,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     await expect.element(screen.getByText("先頭コンテンツ")).toBeInViewport();
     await expect.element(marker).not.toBeInViewport();
 
+    await expect.element(screen.getByRole("button", { name: "Close" })).toHaveFocus();
     await userEvent.keyboard("{End}");
 
     await expect.element(marker).toBeInViewport();
@@ -82,6 +85,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     expect(window.innerHeight).toBe(SHORT_VIEWPORT.height);
     await expectWithinViewport(screen.getByRole("dialog"));
 
+    await expect.element(screen.getByRole("button", { name: "Close" })).toHaveFocus();
     await userEvent.keyboard("{End}");
     await expect.element(screen.getByText(BOTTOM_MARKER)).toBeInViewport();
   });
