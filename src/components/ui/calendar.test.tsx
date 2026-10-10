@@ -1,3 +1,9 @@
+import type { Locale } from "react-day-picker";
+import { de } from "react-day-picker/locale/de";
+import { enUS } from "react-day-picker/locale/en-US";
+import { enZA } from "react-day-picker/locale/en-ZA";
+import { ja } from "react-day-picker/locale/ja";
+import { sq } from "react-day-picker/locale/sq";
 import { describe, expect, it } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
@@ -13,8 +19,10 @@ import { Calendar } from "@/components/ui/calendar";
 
 const SELECTED = new Date(2026, 7, 7);
 
-function renderCalendar() {
-  return render(<Calendar mode="single" selected={SELECTED} defaultMonth={SELECTED} />);
+function renderCalendar(locale?: Partial<Locale>) {
+  return render(
+    <Calendar mode="single" selected={SELECTED} defaultMonth={SELECTED} locale={locale} />,
+  );
 }
 
 describe("Calendar の registry 乖離 (ADR-0020)", () => {
@@ -28,14 +36,48 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
     await userEvent.tab();
     await userEvent.tab();
     await expect
-      .element(screen.getByRole("button", { name: "Friday, August 7th, 2026, selected" }))
+      .element(screen.getByRole("button", { name: "Friday, August 7", exact: false }))
       .toHaveFocus();
 
     await userEvent.keyboard("{ArrowRight}");
 
     await expect
-      .element(screen.getByRole("button", { name: "Saturday, August 8th, 2026" }))
+      .element(screen.getByRole("button", { name: "Saturday, August 8", exact: false }))
       .toHaveFocus();
+  });
+
+  // WCAG 2.5.3。locale は書き換えの分岐ごとに 1 つ置く (locale なし、序数を外す en-US、2 桁の日の en-ZA、
+  // 1 日だけ序数が数字に文字を足す sq、序数を残す de、書き換えない ja)。語の分け方は axe-core 4.14.0 の
+  // label-content-name-mismatch に揃える (NFKD で分解し、文字と数字以外を空白にしてから Intl.Segmenter で分ける)
+  it.each([
+    ["既定 (locale なし)", undefined],
+    ["en-US", enUS],
+    ["en-ZA", enZA],
+    ["sq", sq],
+    ["de", de],
+    ["ja", ja],
+  ])("%s で、どの日付のボタンも見た目の日の数字を名前の 1 語として含む", async (_, locale) => {
+    const screen = await renderCalendar(locale);
+    const days = screen.getByRole("grid").getByRole("button");
+    await expect.element(days.first()).toBeInTheDocument();
+
+    const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+    for (const day of days.elements()) {
+      const name = day.getAttribute("aria-label") ?? "";
+      const words = [...segmenter.segment(name.normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, " "))]
+        .map((segment) => segment.segment.trim())
+        .filter(Boolean);
+      expect(words, name).toContain(day.textContent);
+    }
+  });
+
+  // ドイツ語の序数 ("7.") は数字が 1 語として残るので書き換えない。書き換えると綴りが崩れる
+  it("ドイツ語では、日付のボタンの名前の序数を残す", async () => {
+    const screen = await renderCalendar(de);
+
+    await expect
+      .element(screen.getByRole("button", { name: "Freitag, 7. August 2026", exact: false }))
+      .toBeInTheDocument();
   });
 
   // 上流は components の Root などを Calendar の描画中に定義する。

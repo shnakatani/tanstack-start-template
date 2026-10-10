@@ -3,6 +3,7 @@ import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react
 import * as React from "react";
 import {
   DayPicker,
+  defaultLocale,
   getDefaultClassNames,
   useDayPicker,
   type CustomComponents,
@@ -11,6 +12,38 @@ import {
 } from "react-day-picker";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+
+const DAYS_OF_MONTH = Array.from({ length: 31 }, (_, index) => index + 1);
+
+/**
+ * 日付のボタンの名前に、見た目の日の数字が 1 語として入るよう、locale の完全な日付の書式 (名前の元) を書き換える
+ * (docs/registry-deviations.md)。序数は、その出力に見た目の数字が 1 語として入らない locale ("30th"、ヒンディー語の
+ * "३०") でだけ外し、句読点だけを足す序数 (ドイツ語の "30.") は綴りの一部なので残す。locale を渡さないときは
+ * `code` を持たせず、`data-day` を変えない
+ */
+function withDayAsWord(locale: Partial<Locale> = {}): Partial<Locale> {
+  const formatLong = locale.formatLong ?? defaultLocale.formatLong;
+  const localize = locale.localize ?? defaultLocale.localize;
+  const fullPattern = formatLong.date({ width: "full" });
+  // 文字と数字以外を区切りにする (ACT 規則 2ee8b8 の単語の比較。axe-core 4.14.0 の label-content-name-mismatch も同じ区切り)
+  const ordinalKeepsDayAsWord = DAYS_OF_MONTH.every((day) =>
+    localize
+      .ordinalNumber(day, { unit: "date" })
+      .split(/[^\p{L}\p{N}]+/u)
+      .includes(String(day)),
+  );
+  const rewritten = (
+    ordinalKeepsDayAsWord ? fullPattern : fullPattern.replace(/\bdo\b/g, "d")
+  ).replace(/\bdd\b/g, "d");
+  if (rewritten === fullPattern) return locale;
+  return {
+    ...locale,
+    formatLong: {
+      ...formatLong,
+      date: (options) => (options.width === "full" ? rewritten : formatLong.date(options)),
+    },
+  };
+}
 
 function Calendar({
   className,
@@ -37,7 +70,7 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
-      locale={locale}
+      locale={withDayAsWord(locale)}
       formatters={{
         formatMonthDropdown: (date) => date.toLocaleString(locale?.code, { month: "short" }),
         ...formatters,
