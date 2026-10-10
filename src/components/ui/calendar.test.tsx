@@ -1,10 +1,7 @@
-import { bg } from "react-day-picker/locale/bg";
+import type { Locale } from "react-day-picker";
 import { de } from "react-day-picker/locale/de";
-import { enCA } from "react-day-picker/locale/en-CA";
 import { enUS } from "react-day-picker/locale/en-US";
 import { enZA } from "react-day-picker/locale/en-ZA";
-import { gd } from "react-day-picker/locale/gd";
-import { hi } from "react-day-picker/locale/hi";
 import { ja } from "react-day-picker/locale/ja";
 import { sq } from "react-day-picker/locale/sq";
 import { describe, expect, it } from "vite-plus/test";
@@ -22,8 +19,10 @@ import { Calendar } from "@/components/ui/calendar";
 
 const SELECTED = new Date(2026, 7, 7);
 
-function renderCalendar() {
-  return render(<Calendar mode="single" selected={SELECTED} defaultMonth={SELECTED} />);
+function renderCalendar(locale?: Partial<Locale>) {
+  return render(
+    <Calendar mode="single" selected={SELECTED} defaultMonth={SELECTED} locale={locale} />,
+  );
 }
 
 describe("Calendar の registry 乖離 (ADR-0020)", () => {
@@ -47,24 +46,18 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
       .toHaveFocus();
   });
 
-  // 上流は locale の完全な日付の書式で名前を作り、序数 ("30th"、"30mh") や 2 桁の日 ("07") で見た目の数字が
-  // 名前の 1 語として入らない locale がある (WCAG 2.5.3)。語の分け方は axe-core 4.14.0 の
+  // WCAG 2.5.3。locale は書き換えの分岐ごとに 1 つ置く (locale なし、序数を外す en-US、2 桁の日の en-ZA、
+  // 1 日だけ序数が数字に文字を足す sq、序数を残す de、書き換えない ja)。語の分け方は axe-core 4.14.0 の
   // label-content-name-mismatch に揃える (NFKD で分解し、文字と数字以外を空白にしてから Intl.Segmenter で分ける)
   it.each([
     ["既定 (locale なし)", undefined],
     ["en-US", enUS],
-    ["en-CA", enCA],
     ["en-ZA", enZA],
-    ["bg", bg],
-    ["gd", gd],
     ["sq", sq],
-    ["hi", hi],
     ["de", de],
     ["ja", ja],
   ])("%s で、どの日付のボタンも見た目の日の数字を名前の 1 語として含む", async (_, locale) => {
-    const screen = await render(
-      <Calendar mode="single" selected={SELECTED} defaultMonth={SELECTED} locale={locale} />,
-    );
+    const screen = await renderCalendar(locale);
     const days = screen.getByRole("grid").getByRole("button");
     await expect.element(days.first()).toBeInTheDocument();
 
@@ -80,9 +73,7 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
 
   // ドイツ語の序数 ("7.") は数字が 1 語として残るので書き換えない。書き換えると綴りが崩れる
   it("ドイツ語では、日付のボタンの名前の序数を残す", async () => {
-    const screen = await render(
-      <Calendar mode="single" selected={SELECTED} defaultMonth={SELECTED} locale={de} />,
-    );
+    const screen = await renderCalendar(de);
 
     await expect
       .element(screen.getByRole("button", { name: "Freitag, 7. August 2026", exact: false }))
