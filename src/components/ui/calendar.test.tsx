@@ -1,6 +1,12 @@
+import { bg } from "react-day-picker/locale/bg";
+import { de } from "react-day-picker/locale/de";
 import { enCA } from "react-day-picker/locale/en-CA";
 import { enUS } from "react-day-picker/locale/en-US";
+import { enZA } from "react-day-picker/locale/en-ZA";
+import { gd } from "react-day-picker/locale/gd";
+import { hi } from "react-day-picker/locale/hi";
 import { ja } from "react-day-picker/locale/ja";
+import { sq } from "react-day-picker/locale/sq";
 import { describe, expect, it } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
@@ -41,13 +47,19 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
       .toHaveFocus();
   });
 
-  // 上流は英語の locale で、日付のボタンの名前に序数を使う ("Sunday, August 30th, 2026")。
-  // 見た目の "30" が名前の 1 語として入らず、WCAG 2.5.3 に当たる。語の分け方は axe-core 4.14.0 の
+  // 上流は locale の完全な日付の書式で名前を作り、序数 ("30th"、"30mh") や 2 桁の日 ("07") で見た目の数字が
+  // 名前の 1 語として入らない locale がある (WCAG 2.5.3)。語の分け方は axe-core 4.14.0 の
   // label-content-name-mismatch と同じく Intl.Segmenter で、日本語の名前も語に分けて比べる
   it.each([
     ["既定 (locale なし)", undefined],
     ["en-US", enUS],
     ["en-CA", enCA],
+    ["en-ZA", enZA],
+    ["bg", bg],
+    ["gd", gd],
+    ["sq", sq],
+    ["hi", hi],
+    ["de", de],
     ["ja", ja],
   ])("%s で、どの日付のボタンも見た目の日の数字を名前の 1 語として含む", async (_, locale) => {
     const screen = await render(
@@ -63,6 +75,17 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
         .map((segment) => segment.segment);
       expect(words, day.getAttribute("aria-label") ?? "").toContain(day.textContent);
     }
+  });
+
+  // ドイツ語の序数 ("7.") は数字が 1 語として残るので書き換えない。書き換えると綴りが崩れる
+  it("ドイツ語では、日付のボタンの名前の序数を残す", async () => {
+    const screen = await render(
+      <Calendar mode="single" selected={SELECTED} defaultMonth={SELECTED} locale={de} />,
+    );
+
+    await expect
+      .element(screen.getByRole("button", { name: "Freitag, 7. August 2026", exact: false }))
+      .toBeInTheDocument();
   });
 
   // 上流は components の Root などを Calendar の描画中に定義する。
