@@ -102,7 +102,8 @@ export const lintConfig = {
     "prefer-spread": "error",
 
     // -- typescript: typescript-eslint の strict / strict-type-checked のうち、oxlint の
-    // correctness に入っていない分 (ADR-0007)。オプションも基準に揃える --
+    // correctness に入っていない分と、correctness に入るが既定のオプションが基準より緩い分 (ADR-0007)。
+    // オプションも基準に揃える --
     // extension rule はコアへ解決される。no-unused-* はコアが correctness で有効なので書かない
     // (docs/guides/lint/configuration.md「設定を書き換えたら解決後の設定で確かめる」)
     "typescript/ban-ts-comment": ["error", { minimumDescriptionLength: 10 }],

@@ -92,7 +92,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 | 上流 recommended に無く `correctness` 経由で入る              | `vitest/require-mock-type-parameters`                                                 |
 | 基準の variant が off にするが `correctness` 経由で有効になる | `jsdoc/require-property-type` (カテゴリ側の有効化が勝つため `rules` で明示的に落とす) |
 
-基準がより緩いオプションを持つ場合も同様に、指定と理由を残す (`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames`、`vitest/no-standalone-expect` の `additionalTestBlockFunctions`)。
+基準より緩いオプションを置くときも同じ条件で、指定と理由を残す (`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames`、`vitest/no-standalone-expect` の `additionalTestBlockFunctions`)。
 
 - `assertFunctionNames` は既定 (`expect` / `expectTypeOf` / `assert` / `assertType`) へ足すのではなく置換する。既定値を覆う指定にしないと、既定の名前の呼び出しが assertion と数えられなくなる。既定の一覧は [Oxlint docs「vitest/expect-expect」][] による (2026-09-30 に確認)
 - `expect*` は `expect.assert` のようなメンバ呼び出しにも一致する (2026-09-06 に oxlint 1.79.0 で実測)
@@ -239,9 +239,9 @@ error にする側の 4 ルール (`eslint-recommended`) は根拠の向きが�
 oxlint のカテゴリは実装者がルールを分類した軸で、上流の recommended とは一致しない (ADR-0007)。そのため次のずれが起きる。
 
 - 基準が off にするルールでも、`correctness` に入っていればカテゴリ側が勝つ。`rules` で明示的に off にしないと有効のまま残る
-- 基準がオプションを指定していても、名指ししないルールは oxlint の既定のオプションで動く。既定が基準より厳しいときはそのまま受け入れ、緩めるときは基準の範囲で名指しする (ADR-0007)
+- 基準がオプションを指定していても、名指ししないルールは oxlint の既定のオプションで動く。既定と基準の関係ごとの扱いは ADR-0007「カテゴリ経由のルールのオプション」にある
 
-2026-10-10 に oxlint 1.87.0 で、jsx-a11y の recommended がオプションを指定する 6 ルールを eslint-plugin-jsx-a11y 6.10.2 の recommended と比べた。3 ルールで oxlint の既定のほうが厳しく、次の書き方を報告した。
+2026-10-10 に oxlint 1.85.0 と 1.87.0 で (6 ルールのソースは同じ)、jsx-a11y の recommended がオプションを指定する 6 ルールを eslint-plugin-jsx-a11y 6.10.2 の recommended と比べた。3 ルールで oxlint の既定のほうが厳しく、次の書き方を報告した。
 
 | ルール                                                   | oxlint の既定で報告され、基準では通る書き方                                                                |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
