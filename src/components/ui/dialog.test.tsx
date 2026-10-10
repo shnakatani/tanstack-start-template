@@ -18,9 +18,8 @@ import {
  * baseline の存在しか見ず乖離が消えても落ちないことを実測した (2026-09-22)。
  *
  * 到達性は実キーボードで見る。開いたとき Popup の中で最初の tabbable の閉じるボタンが focus を受け、
- * End で末尾へスクロールする。Base UI はこの focus を 1 フレーム後に当てる (FloatingFocusManager の
- * enqueueFocus) ので、focus が届くのを待ってから End を送る。届く前の End は body に当たり、
- * スクロール容器の Popup は動かない。
+ * End で末尾へスクロールする。focus が届くのを待ってから End を送る
+ * (docs/guides/testing/user-interactions.md「popup を開いた直後にキーを送る」)。
  * 溢れコンテンツは `height` ではなく `minHeight` で作る: DialogContent は flex column で、
  * flex item は既定で縮むため `height: 3000px` の子は popup 高に潰れて溢れを再現できない。
  */

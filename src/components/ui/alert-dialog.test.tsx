@@ -22,9 +22,8 @@ import {
  * 実測した (2026-09-22) ので、乖離の機能はここで固定する。
  *
  * 到達性は実キーボードで見る。中に tabbable が無いので Popup 自身が focus を受け、End で末尾まで
- * スクロールする。Base UI は開いたときの focus を 1 フレーム後に当てる (FloatingFocusManager の
- * enqueueFocus) ので、focus が届くのを待ってから End を送る。届く前の End は body に当たり、
- * スクロール容器の Popup は動かない。溢れコンテンツは `minHeight` で作る (flex item は既定で縮む。
+ * スクロールする。focus が届くのを待ってから End を送る (docs/guides/testing/user-interactions.md
+ * 「popup を開いた直後にキーを送る」)。溢れコンテンツは `minHeight` で作る (flex item は既定で縮む。
  * dialog.test.tsx 参照)。
  */
 
