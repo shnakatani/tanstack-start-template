@@ -92,7 +92,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 | 上流 recommended に無く `correctness` 経由で入る              | `vitest/require-mock-type-parameters`                                                 |
 | 基準の variant が off にするが `correctness` 経由で有効になる | `jsdoc/require-property-type` (カテゴリ側の有効化が勝つため `rules` で明示的に落とす) |
 
-基準がより緩いオプションを持つ場合も同様に、指定と理由を残す (`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames`、`vitest/no-standalone-expect` の `additionalTestBlockFunctions`)。
+基準より緩いオプションは、上の表の条件に当たらなくても、理由を `tooling/lint/config.ts` のコメントに残せば置いてよい (ADR-0007「カテゴリ経由のルールのオプション」)。いまの例は `typescript/restrict-template-expressions` の `allowNumber`、`typescript/no-confusing-void-expression` の `ignoreVoidReturningFunctions`、`typescript/only-throw-error` の `allow`、`promise/always-return` の `ignoreLastCallback`、`vitest/valid-expect` の `maxArgs`、`vitest/expect-expect` の `assertFunctionNames` で、どれもそのルールの行に理由がある。
 
 - `assertFunctionNames` は既定 (`expect` / `expectTypeOf` / `assert` / `assertType`) へ足すのではなく置換する。既定値を覆う指定にしないと、既定の名前の呼び出しが assertion と数えられなくなる。既定の一覧は [Oxlint docs「vitest/expect-expect」][] による (2026-09-30 に確認)
 - `expect*` は `expect.assert` のようなメンバ呼び出しにも一致する (2026-09-06 に oxlint 1.79.0 で実測)
@@ -239,6 +239,18 @@ error にする側の 4 ルール (`eslint-recommended`) は根拠の向きが�
 oxlint のカテゴリは実装者がルールを分類した軸で、上流の recommended とは一致しない (ADR-0007)。そのため次のずれが起きる。
 
 - 基準が off にするルールでも、`correctness` に入っていればカテゴリ側が勝つ。`rules` で明示的に off にしないと有効のまま残る
+- 基準がオプションを指定していても、名指ししないルールは oxlint の既定のオプションで動く。既定と基準の関係ごとの扱いは ADR-0007「カテゴリ経由のルールのオプション」にある
+
+2026-10-10 に、jsx-a11y の recommended がオプションを指定する 6 ルールを、eslint-plugin-jsx-a11y 6.10.2 の recommended と比べた。3 ルールで oxlint の既定のほうが厳しかった。次の書き方の報告は oxlint 1.85.0 の `vp lint` で確かめた。1.87.0 でも 6 ルールのソースは同じである。表の最後の行は jsx-a11y の比べ合わせとは別に、oxlint 1.85.0 と 1.87.0 の実装と @vitest/eslint-plugin 1.6.27 で確かめた。
+
+| ルール                                                   | oxlint の既定で報告され、基準では通る書き方                                                                                                         |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jsx-a11y/no-noninteractive-element-interactions`        | 基準の 8 つ以外の handler (`<li onFocus>`、`<li onMouseEnter>` など)。oxlint の既定は 26 の handler を見る                                          |
+| `jsx-a11y/no-noninteractive-element-to-interactive-role` | `<ul role="listbox">`、`<ol role="listbox">`、`<li role="option">`、`<table role="grid">`                                                           |
+| `jsx-a11y/no-static-element-interactions`                | 式で書いた role (`<div role={role} onClick={...}>`)。基準は `allowExpressionValues: true`                                                           |
+| `vitest/no-standalone-expect`                            | `vi.defineHelper` の callback の中の `expect`。上流はオプションでなく実装で許す。テンプレートは `additionalTestBlockFunctions` で基準まで戻している |
+
+`listbox` と `option` の 2 つは、`no-noninteractive-element-to-interactive-role` を緩めても `prefer-tag-over-role` が報告する。
 
 ### React Compiler の既定 off のルール
 
