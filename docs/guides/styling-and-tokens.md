@@ -257,16 +257,14 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 ### 色の解決に colorjs.io を使う理由
 
-色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリ ([axe-core の `LICENSE-3RD-PARTY.txt`][]) を `axe.commons.color` 経由で呼ぶ形は、次の 3 点で採らない。
+色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリ ([axe-core の `LICENSE-3RD-PARTY.txt`][]) を `axe.commons.color` 経由で呼ぶ形は、次の 2 点で採らない。
 
-| 採らない理由                                                                                                                                                                                                                                            | 出典                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `axe.commons` は `axe.run` の外で呼ぶ前提の名前空間ではない。外で安全なものは `axe.utils` 側だとメンテナが定義している                                                                                                                                  | [dequelabs/axe-core#2731][]                                                             |
-| colorjs は `axe.js` へインライン展開されており、パッケージマネージャで差し替える手段が無い。axe 自身が版を上げたいが Prototype.js との衝突で戻している                                                                                                  | [dequelabs/axe-core#5313][] と [dequelabs/axe-core#4429][]・[dequelabs/axe-core#4464][] |
-| その版差が `none` の扱いに出る。同梱の 0.4.3 は `rgb(0 0 0 / none)` を alpha 1 で通す (2026-09-22 実測)。[CSS Color 4「“Missing” Color Components and the none Keyword」][] は欠けた成分を 0 と定める (「a missing component behaves as a zero value」) | [dequelabs/axe-core#5309][] と [dequelabs/axe-core#4269][]                              |
+| 採らない理由                                                                                                                                                                                         | 出典                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `axe.commons` は `axe.run` の外で呼ぶ前提の名前空間ではない。外で安全なものは `axe.utils` 側だとメンテナが定義している                                                                               | [dequelabs/axe-core#2731][]                                |
+| colorjs は `axe.js` へインライン展開され、axe が自前の patch (`CSS.supports` の呼び出しの guard、Prototype.js との衝突の回避) を当てた形で入っている。パッケージマネージャで版を差し替える手段が無い | [dequelabs/axe-core#5422][] と [dequelabs/axe-core#5313][] |
 
-- `none` の扱いに出る版差は、このリポジトリに効く。[dequelabs/axe-core#5309][] は Tailwind が無彩色へ吐く `none` で color-contrast が無言で飛ぶ報告で、このリポジトリのトークンも oklch で書かれている
-- 0.7.1 は同じ入力を解決する。`oklch(0.5 none 180)` は灰色になり、null が残るのは sRGB のまま渡された `rgb(none 0 0)` と alpha の `/ none` だけである (2026-09-22 実測)。axe が飛ばす綴りをこの変換器は測れる
+- `axe-core@4.14.0` は `colorjs.io` 0.7.1 を同梱し、`none` を 0 として解決する ([CSS Color 4「“Missing” Color Components and the none Keyword」][] の「a missing component behaves as a zero value」)。この変換器 (`resolveSrgb`) は、sRGB のまま渡された `rgb(none 0 0)` と alpha の `/ none` では 0 とせずに throw する。理由は `scripts/contrast/lib/contrast.ts` の `resolveSrgb` のコメントにある (2026-10-10 に確認)
 - `@asamuzakjp/css-color` も候補に挙がった。不透明色では Chrome と完全に一致するが、`color-mix` を含む値では canvas の読み取りと一致しない。合成を自前で持つ点は `colorjs.io` と変わらず、`axe-core` が採用している側を選んだ
 
 ### 8bit へ丸める位置
@@ -305,8 +303,8 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 - トークンを動かしたときに鳴るものは無い。残した数値の陳腐化は機械では検出しない。代わりに再測が 1 コマンドになる
 - 測る対は人が渡す。「この対を測り忘れた」は検出できない。先行例も解いていない
-- 同じ色を渡せば axe の `getContrast` と比が一致する。2026-09-22 に axe-core 4.13.0 と実トークン 5,000 対で突き合わせ、差はゼロだった。手順は「axe の比と突き合わせる」
-- `colorjs.io` の版が上がると値が変わりうる。`toGamut` の `method: "clip"` は axe-core 4.13.0 の `Color.parseString` に合わせたものである ([dequelabs/axe-core#4908][] がガマット外の oklch をブラウザに合わせた)
+- 同じ色を渡せば axe の `getContrast` と比が一致する。2026-10-10 に axe-core 4.14.0 と実トークン 6,156 対 (不透明なトークンどうしの対を、前景の alpha 1・0.6・0.3 で重ねたもの) で突き合わせ、差はゼロだった。手順は「axe の比と突き合わせる」
+- `colorjs.io` の版が上がると値が変わりうる。`toGamut` の `method: "clip"` は axe-core の `Color.parseString` に合わせたものである ([dequelabs/axe-core#4908][] がガマット外の oklch をブラウザに合わせた)。2026-10-10 に axe-core 4.14.0 と、ガマットの外を含む oklch 1,755 色で比を突き合わせ、差は 3e-14 以下だった
 - 残る違いは丸める位置である。axe は層ごとに丸め、この変換器は重ね終わった後の 1 回だけ丸める。半透明を重ねた対では SC の判定が割れうる
 - 画面の比と一致するとは限らない。axe はブラウザで `mix-blend-mode`・`text-shadow`・祖先の `opacity`・要素の重なりまで畳むが、この変換器は `--bg` で渡された面だけを重ねる
 - 単体テストが固定するのは axe の `getContrast` との一致で、要素のスタックを畳んだ後の報告値は node では再現できない
@@ -358,14 +356,11 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 [Primer Primitives の `colorContrast.config.ts`]: https://github.com/primer/primitives/blob/main/scripts/colorContrast.config.ts
 [brave/brave-browser#10000]: https://github.com/brave/brave-browser/issues/10000
 [WCAG 2.2「relative luminance」]: https://www.w3.org/TR/WCAG22/#dfn-relative-luminance
-[axe-core の `LICENSE-3RD-PARTY.txt`]: https://github.com/dequelabs/axe-core/blob/v4.13.0/LICENSE-3RD-PARTY.txt
+[axe-core の `LICENSE-3RD-PARTY.txt`]: https://github.com/dequelabs/axe-core/blob/v4.14.0/LICENSE-3RD-PARTY.txt
 [dequelabs/axe-core#2731]: https://github.com/dequelabs/axe-core/issues/2731
 [dequelabs/axe-core#5313]: https://github.com/dequelabs/axe-core/issues/5313
-[dequelabs/axe-core#4429]: https://github.com/dequelabs/axe-core/pull/4429
-[dequelabs/axe-core#4464]: https://github.com/dequelabs/axe-core/pull/4464
+[dequelabs/axe-core#5422]: https://github.com/dequelabs/axe-core/pull/5422
 [CSS Color 4「“Missing” Color Components and the none Keyword」]: https://www.w3.org/TR/css-color-4/#missing
-[dequelabs/axe-core#5309]: https://github.com/dequelabs/axe-core/issues/5309
-[dequelabs/axe-core#4269]: https://github.com/dequelabs/axe-core/issues/4269
 [dequelabs/axe-core#4908]: https://github.com/dequelabs/axe-core/pull/4908
 [Tailwind CSS docs「Detecting classes in source files」]: https://tailwindcss.com/docs/detecting-classes-in-source-files
 [Tailwind CSS docs「Preflight」]: https://tailwindcss.com/docs/preflight

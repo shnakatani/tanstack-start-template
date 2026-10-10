@@ -1,3 +1,4 @@
+import axe from "axe-core";
 import type { Locale } from "react-day-picker";
 import { de } from "react-day-picker/locale/de";
 import { enUS } from "react-day-picker/locale/en-US";
@@ -9,6 +10,7 @@ import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { Calendar } from "@/components/ui/calendar";
+import { describeA11yResults } from "@/test/a11y/a11y-message";
 
 /**
  * calendar.tsx の registry 乖離 (ADR-0020、docs/registry-deviations.md の calendar.tsx の行) のガード。
@@ -47,8 +49,9 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
   });
 
   // WCAG 2.5.3。locale は書き換えの分岐ごとに 1 つ置く (locale なし、序数を外す en-US、2 桁の日の en-ZA、
-  // 1 日だけ序数が数字に文字を足す sq、序数を残す de、書き換えない ja)。語の分け方は axe-core 4.14.0 の
-  // label-content-name-mismatch に揃える (NFKD で分解し、文字と数字以外を空白にしてから Intl.Segmenter で分ける)
+  // 1 日だけ序数が数字に文字を足す sq、序数を残す de、書き換えない ja)。判定は axe の label-content-name-mismatch に
+  // 任せ、この規則で合格した要素がちょうど日付のボタンであることまで求める。判定できなかった日付のボタンは
+  // 合格に入らないので、incomplete を別に見なくても落ちる
   it.each([
     ["既定 (locale なし)", undefined],
     ["en-US", enUS],
@@ -56,20 +59,26 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
     ["sq", sq],
     ["de", de],
     ["ja", ja],
-  ])("%s で、どの日付のボタンも見た目の日の数字を名前の 1 語として含む", async (_, locale) => {
-    const screen = await renderCalendar(locale);
-    const days = screen.getByRole("grid").getByRole("button");
-    await expect.element(days.first()).toBeInTheDocument();
+  ])(
+    "%s で、どの日付のボタンも見た目の日の数字を名前の 1 語として含む",
+    { tags: ["a11y", "axe"] },
+    async (_, locale) => {
+      const screen = await renderCalendar(locale);
+      const days = screen.getByRole("grid").getByRole("button");
+      await expect.element(days.first()).toBeInTheDocument();
+      const dayNames = days.elements().map((day) => day.getAttribute("aria-label"));
 
-    const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
-    for (const day of days.elements()) {
-      const name = day.getAttribute("aria-label") ?? "";
-      const words = [...segmenter.segment(name.normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, " "))]
-        .map((segment) => segment.segment.trim())
-        .filter(Boolean);
-      expect(words, name).toContain(day.textContent);
-    }
-  });
+      const result = await axe.run(screen.container, {
+        runOnly: ["label-content-name-mismatch"],
+        elementRef: true,
+      });
+      expect(describeA11yResults(result.violations), "a11y 違反").toEqual([]);
+      const passedNames = result.passes
+        .flatMap((rule) => rule.nodes)
+        .map((node) => node.element?.getAttribute("aria-label"));
+      expect(passedNames).toEqual(dayNames);
+    },
+  );
 
   // ドイツ語の序数 ("7.") は数字が 1 語として残るので書き換えない。書き換えると綴りが崩れる
   it("ドイツ語では、日付のボタンの名前の序数を残す", async () => {

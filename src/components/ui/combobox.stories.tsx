@@ -114,8 +114,13 @@ export const InlineWithTrigger: Story = {
       config: {
         // 非 modal の popup を開くと base-ui が外側へ aria-hidden を付けるが、tab 順からは
         // 外さないため axe が aria-hidden-focus を violations として出す。
-        // この行を外すとこの story だけが violations で落ちる (2026-09-21 に実測)。
-        // 上流のバグで mui/base-ui#5528 が open。直るまでこの story でだけ止める。
+        // この行を外すとこの story だけが violations で落ちる (2026-10-10 に axe-core 4.14.0 で実測)。
+        // base-ui の意図した挙動で、axe の誤検出である。base-ui のメンテナによると、Tab の focusout で
+        // popup が閉じて aria-hidden が外れるので、focus は隠れた要素に入らない。aria-hidden は portal の
+        // 先の option へ touch の読み上げを導くために付ける。axe は開いた状態しか見ず、ACT 6cfa84 の
+        // 前提 (aria-hidden は操作で変わらない) で判定する (mui/base-ui#5528)。この story でだけ止める。
+        // axe の aria-hidden-focus が、開閉で aria-hidden が変わる要素を違反にしなくなったら外す
+        // (この行を外して InlineWithTrigger が通るかで確かめる)。
         // popup を開くのをやめる手は採らない。
         // 開かないと下の aria-prohibited-attr の見張りごと消える。
         //

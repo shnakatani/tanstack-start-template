@@ -210,12 +210,12 @@ describe("contrastRatio", () => {
   });
 
   it("axe-core の getContrast と一致する", () => {
-    // 2026-09-22 に axe-core 4.13.0 で得た値。再現は次のとおり。
+    // 2026-10-10 に axe-core 4.14.0 で得た値。再現は次のとおり。
     //   const { Color, getContrast } = axe.commons.color;
     //   const parse = (s) => { const c = new Color(); c.parseString(s); return c; };
     //   getContrast(parse("oklch(57.7% 0.245 27.325)"), parse("#ffffff"))
     // 上流の red-600 の値で、本リポジトリのトークンを動かしても変わらない
-    const AXE_REPORTED = 4.764721882929455;
+    const AXE_REPORTED = 4.764721928255903;
     const ratio = contrastRatio(
       resolveSrgb("oklch(57.7% 0.245 27.325)").rgb,
       resolveSrgb("oklch(1 0 0)").rgb,
@@ -226,11 +226,11 @@ describe("contrastRatio", () => {
   it("閾値の帯に入る色でも axe-core の getContrast と一致する", () => {
     // 成分が (0.03928, 0.04045] に入る色。2021-05 より前の閾値 0.03928 を使うと
     // 比が 2e-4 ずれてこのテストだけが落ちる。「axe-core の getContrast と一致する」の色は帯に入らないので、
-    // 閾値を戻しても通ってしまう (2026-09-22 実測)
+    // 閾値を戻しても通ってしまう (2026-09-22 実測)。値は 2026-10-10 に axe-core 4.14.0 で得た
     //   const { Color, getContrast } = axe.commons.color;
     //   const parse = (s) => { const c = new Color(); c.parseString(s); return c; };
     //   getContrast(parse("oklch(0.145625 0 0)"), parse("#ffffff"))
-    const AXE_REPORTED = 19.778400131206332;
+    const AXE_REPORTED = 19.77840015212371;
     const ratio = contrastRatio(
       resolveSrgb("oklch(0.145625 0 0)").rgb,
       resolveSrgb("oklch(1 0 0)").rgb,

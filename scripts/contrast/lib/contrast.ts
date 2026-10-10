@@ -111,8 +111,9 @@ type Srgb = { readonly rgb: Rgb; readonly alpha: number };
 /**
  * CSS の色を sRGB へ解決する。
  *
- * `toGamut` の形は axe-core 4.13.0 の `Color.parseString` に合わせている。合わせないと、
+ * `toGamut` の形は axe-core の `Color.parseString` に合わせている。合わせないと、
  * sRGB の外にある oklch で負の成分が残り、axe と別の比が出る (dequelabs/axe-core#4908)。
+ * axe-core 4.14.0 とは、ガマットの外を含む oklch 1755 色で比の差が 3e-14 以下だった (2026-10-10 実測)。
  *
  * ここでは丸めない。面を重ねる前に丸めると層ごとに誤差が乗る。8bit へ落とすのは重ね終わった
  * あとの 1 回だけで、`measurePair` の `toDisplayed` が持つ
@@ -136,9 +137,9 @@ export function resolveSrgb(value: string): Srgb {
   // oklch を 2496 色掃いた最大のはみ出しは 4.3e-14 で、比には現れない (2026-09-22 に
   // colorjs.io 0.7.1 で実測)
   //
-  // axe-core も輝度の前に clamp しない (`axe.js:18341` の `getRelativeLuminance` は `this.r`
+  // axe-core も輝度の前に clamp しない (`axe.js` の `getRelativeLuminance` は `this.r`
   // を読む)。8bit へ丸めた `_red` を読むのは半透明を合成する経路だけで、そこでは表示ではなく
-  // 算術に使われる (`axe.js:24779` の `_flattenColors`)
+  // 算術に使われる (`axe.js` の `_flattenColors`)
   return { rgb: [clampChannel(r), clampChannel(g), clampChannel(b)], alpha };
 }
 
@@ -192,7 +193,7 @@ function flattenLayers(bottom: Rgb, layers: readonly Srgb[]): Rgb {
  * WCAG 2.2 の relative luminance (https://www.w3.org/TR/WCAG22/#dfn-relative-luminance)。
  *
  * 閾値は 0.04045 である。2021-05 より前の版は 0.03928 で、同 URL の Note 2 が差し替えを
- * 説明している。axe-core 4.13.0 も 0.04045 を使う (`axe.js` の `getRelativeLuminance`)。
+ * 説明している。axe-core 4.14.0 も 0.04045 を使う (`axe.js` の `getRelativeLuminance`)。
  * 揃えないと、成分が 2 つの値の間に入る色だけ axe と違う比が出る
  */
 function relativeLuminance(rgb: Rgb): number {

@@ -25,7 +25,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 **免除の筋そのものへの反対もある。** mbgower は「冗長かどうかは関係がなく、SC 1.4.3 の incidental の例外は placeholder に及ばない」と述べている。philljenkins の「ラベルを 4.5:1 に保ったうえで placeholder は 3:1 + イタリック」案も含め、決着していない。
 
-**この色を検査は測っていない。しかも「測っていない」より悪い。** `axe-core@4.13.0` の `color-contrast` は空の入力欄にもマッチし (`lib/rules/color-contrast-matches.js` の `// Match all form fields, regardless of if they have text`)、`::placeholder` ではなく要素自身の `color` で判定する (`lib/` に `::placeholder` の言及が 0 件。2026-09-21 実測)。Deque 自身が dequelabs/axe-core#4260 で「placeholder を評価したかのように見える違反が、実際には別の前景色で出る」と書いている。**緑であることは placeholder が測られたことを意味しない。**
+**この色を検査は測っていない。** `axe-core@4.14.0` の `color-contrast` は空の入力欄にもマッチし (`lib/rules/color-contrast-matches.js` の `// Match all form fields, regardless of if they have text`)、`::placeholder` ではなく要素自身の `color` で比を出す。基準に届けば合格、届かなければ incomplete (`emptyValue`) にする。この扱いを入れた dequelabs/axe-core#5359 は「Placeholder contrast using `::placeholder` color is not implemented here」と書く (2026-10-10 に確認)。**緑であることは placeholder が測られたことを意味しない。**
 
 ## Decision
 
@@ -109,4 +109,4 @@ light と dark で同じ `mist-500` になる。
 - WCAG 2.2 1.4.3 Contrast (Minimum): https://www.w3.org/TR/WCAG22/#contrast-minimum
 - Understanding SC 1.4.3 (Intent が placeholder を名指しで含める。丸めるなの note もここ): https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
 - WCAG 2.2 勧告本体 `contrast ratio` の Note 3 / 4 / 6 (測る背景の定義と color pairs): https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio
-- axe が placeholder を誤った前景色で評価する件 (2026-09-23 に close。閉じた dequelabs/axe-core#5359 も placeholder の色では評価しない): https://github.com/dequelabs/axe-core/issues/4260
+- 値が空の入力欄を要素の `color` で測り、基準に届かなければ incomplete にする変更 (`::placeholder` の色は評価しない): https://github.com/dequelabs/axe-core/pull/5359
