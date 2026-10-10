@@ -33,7 +33,9 @@ function withoutOrdinalDay(formatLong: FormatLong): FormatLong {
 
 /**
  * DayPicker は渡した locale を既定 (en-US) に重ねるので、実際に効く locale が英語なら序数を外す。
- * ドイツ語の "30." のように句読点で区切られる序数は "30" が 1 語として残るので、英語の locale に限る。
+ * 英語の locale に限るのは、序数を数字にすると綴りが崩れる言語があるため (ドイツ語の "30." は点が落ちる。
+ * "30" は 1 語として残るので直す必要もない)。日を 2 桁で書く書式 (en-ZA の "07") と、英語以外で語にくっつく
+ * 序数 (スコットランド・ゲール語の "2na" など) は直していない。
  * 方針は react-day-picker docs「Advanced Translations」の Tweak locale data (locale を最小限に拡張する) に沿い、
  * 形は DayPicker が既定に重ねる部分の locale (`Partial<Locale>`) にする。locale を渡さないときは `code` を
  * 持たせないので、日付のボタンの `data-day` はブラウザの言語で書かれたまま変わらない
