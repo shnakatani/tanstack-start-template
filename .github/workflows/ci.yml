@@ -39,7 +39,7 @@ jobs:
         id: test
       # テストが落ちたら、GitHub Actions でだけ書く 1 ファイルの HTML report (tooling/test/config.ts の reporters) を
       # 上げ、ブラウザで開くリンクを run の notice に出す。report は失敗したテストに失敗時のスクリーンショットを付ける
-      # (Vitest docs「Vitest UI」の View Reports from CI)。TZ ごとの step は report を書き直すので、その前に置く
+      # (Vitest docs「Vitest UI」の View Reports from CI)
       # テストが通った run では上げない。private のリポジトリでは artifact が容量 (Free で 500MB) を使う。保持期間は
       # リポジトリの設定 (既定 90 日) に任せる。失敗した job を再実行すると、前の試行の artifact は取れなくなる
       # (actions/upload-artifact#585)。再実行の前に開く
@@ -50,7 +50,8 @@ jobs:
           path: .vitest/index.html
           # zip にせず上げると、GitHub がブラウザでそのまま開く (GitHub Changelog 2026-02-26)
           archive: false
-      - if: failure() && steps.upload-report.outcome == 'success'
+      # report が書かれる前に落ちると、upload は警告だけ出して成功し、artifact-url を持たない
+      - if: failure() && steps.upload-report.outputs.artifact-url != ''
         run: echo "::notice title=Vitest HTML report::$REPORT_URL"
         env:
           REPORT_URL: ${{ steps.upload-report.outputs.artifact-url }}
