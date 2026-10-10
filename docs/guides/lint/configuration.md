@@ -239,6 +239,17 @@ error にする側の 4 ルール (`eslint-recommended`) は根拠の向きが�
 oxlint のカテゴリは実装者がルールを分類した軸で、上流の recommended とは一致しない (ADR-0007)。そのため次のずれが起きる。
 
 - 基準が off にするルールでも、`correctness` に入っていればカテゴリ側が勝つ。`rules` で明示的に off にしないと有効のまま残る
+- 基準がオプションを指定していても、名指ししないルールは oxlint の既定のオプションで動く。既定が基準より厳しいときはそのまま受け入れ、緩めるときは基準の範囲で名指しする (ADR-0007)
+
+2026-10-10 に oxlint 1.87.0 で、jsx-a11y の recommended がオプションを指定する 6 ルールを eslint-plugin-jsx-a11y 6.10.2 の recommended と比べた。3 ルールで oxlint の既定のほうが厳しく、次の書き方を報告した。
+
+| ルール                                                   | oxlint の既定で報告され、基準では通る書き方                                                                |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `jsx-a11y/no-noninteractive-element-interactions`        | 基準の 8 つ以外の handler (`<li onFocus>`、`<li onMouseEnter>` など)。oxlint の既定は 26 の handler を見る |
+| `jsx-a11y/no-noninteractive-element-to-interactive-role` | `<ul role="listbox">`、`<ol role="listbox">`、`<li role="option">`、`<table role="grid">`                  |
+| `jsx-a11y/no-static-element-interactions`                | 式で書いた role (`<div role={role} onClick={...}>`)。基準は `allowExpressionValues: true`                  |
+
+`listbox` と `option` の 2 つは、`no-noninteractive-element-to-interactive-role` を緩めても `prefer-tag-over-role` が報告する。
 
 ### React Compiler の既定 off のルール
 
