@@ -132,8 +132,8 @@ StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
 
 ### ブラウザで走る project の並列数を決める
 
-- `maxWorkers` は `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない。ある project に root と違う値を書くと、root の値を継承する project と同じ `sequence.groupOrder` で一緒に走る実行で、Vitest がエラーで止まる。`1` だけは直列の別のグループに回るので止まらない ([Vitest の `pool.ts`][] の `groupSpecs`)
-- 値は割合で書き、`1 / ブラウザで走る project の数` に合わせる。ブラウザで走る project を足す・減らすたびに合わせ直す。合わせないとページの合計がコア数から外れる (「並列数を絞る理由」)
+- `maxWorkers` は `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない。ある project に root と違う値を書くと、root の値を継承する project と同じ `sequence.groupOrder` で一緒に走る実行で、Vitest がエラーで止まる ([Vitest の `pool.ts`][] の `groupSpecs`)
+- 値は割合で書き、`1 / ブラウザで走る project の数` に合わせる。ブラウザで走る project を足す・減らすたびに合わせ直す。合わせないとページの合計がコア数から外れ、多くなる側に外れると、全体の実行で locator の操作が timeout で落ちる (「並列数を絞る理由」)
 - 絞った値は、project を絞った実行 (`--project browser`)、`vp test watch`、Storybook の画面から走らせる story にも効く。`vp test` を 1 回だけ違う並列数で走らせるときは、CLI の `--maxWorkers` で上書きする。CLI の値は project の値より優先される ([Vitest の `resolveProjects.ts`][] の `PROJECT_CLI_OVERRIDES`)。Storybook の画面からの実行は CLI を通らないので、この手段では変わらない
 - ブラウザの pool がページの合計を `maxWorkers` に収める版 ([vitest-dev/vitest#11525][] を含む版) へ上げたら、`maxWorkers` を外して全体の実行を測り直す。残すと、ページの合計がコア数の 2 割に縮む
 
@@ -285,7 +285,7 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 - 落ちたテストの大半は `locator.click: Timeout 5000ms exceeded` で、call log が止まる段は回ごとに違った (`done scrolling`、`performing click action`、`waiting for element to be stable` など)。特定の段が止まるのではなく、操作の全体が `actionTimeout` を使い切っていると読んでいる。どのテストもファイル単体では通る
 - `"20%"` は、ページの合計 (ブラウザで走る project の数 × `maxWorkers`) をコア数に近づける値である。割合はコア数に掛けて四捨五入され、下限は 1 になる ([Vitest docs「maxWorkers」][]、[Vitest の `utils/workers.ts`][] の `getWorkersCountByPercentage`)。8 コアで 2、4 コアで 1 になる
 - Node の project の worker も同じ値に絞られる。8 コアでは、絞ったほうが全体の所要は短かった (上の表)
-- ページの合計はコア数とともに増え、13 コアで 15 枚、23 コアで 25 枚になる (`getWorkersCountByPercentage` の式で計算)。測ったのは 8 コアだけである
+- ブラウザで走る project が 5 つのとき、ページの合計はコア数とともに増え、13 コアで 15 枚、23 コアで 25 枚になる (`getWorkersCountByPercentage` の式で計算)。測ったのは 8 コアだけである
 - 同じ症状の報告 [vitest-dev/vitest#7871][] (2025-04、vitest 3.1.2 での報告) で、メンテナは CI の負荷を原因に挙げた。この issue は 2026-10-09 に [vitest-dev/vitest#11525][] の merge で閉じられた
 
 Vitest は [vitest-dev/vitest#11525][] (2026-10-09 に merge) で、ブラウザの pool が開くページの合計を `maxWorkers` に収める形へ変えた (本文: "`maxWorkers` is also the budget of pages shared by the open instances")。上げたら外す手順は「ブラウザで走る project の並列数を決める」にある。2026-10-10 の時点で、この修正を含む版は出ていない (最新は 5.0.3)。
