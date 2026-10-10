@@ -49,7 +49,7 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
 
   // 上流は locale の完全な日付の書式で名前を作り、序数 ("30th"、"30mh") や 2 桁の日 ("07") で見た目の数字が
   // 名前の 1 語として入らない locale がある (WCAG 2.5.3)。語の分け方は axe-core 4.14.0 の
-  // label-content-name-mismatch と同じく Intl.Segmenter で、日本語の名前も語に分けて比べる
+  // label-content-name-mismatch に揃える (NFKD で分解し、文字と数字以外を空白にしてから Intl.Segmenter で分ける)
   it.each([
     ["既定 (locale なし)", undefined],
     ["en-US", enUS],
@@ -68,12 +68,13 @@ describe("Calendar の registry 乖離 (ADR-0020)", () => {
     const days = screen.getByRole("grid").getByRole("button");
     await expect.element(days.first()).toBeInTheDocument();
 
-    const segmenter = new Intl.Segmenter(locale?.code ?? "en-US", { granularity: "word" });
+    const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
     for (const day of days.elements()) {
-      const words = [...segmenter.segment(day.getAttribute("aria-label") ?? "")]
-        .filter((segment) => segment.isWordLike)
-        .map((segment) => segment.segment);
-      expect(words, day.getAttribute("aria-label") ?? "").toContain(day.textContent);
+      const name = day.getAttribute("aria-label") ?? "";
+      const words = [...segmenter.segment(name.normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, " "))]
+        .map((segment) => segment.segment.trim())
+        .filter(Boolean);
+      expect(words, name).toContain(day.textContent);
     }
   });
 

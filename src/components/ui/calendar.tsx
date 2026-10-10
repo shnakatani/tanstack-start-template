@@ -15,7 +15,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 
 const DAYS_OF_MONTH = Array.from({ length: 31 }, (_, index) => index + 1);
 
-/** 英字と数字以外を区切りとして語に分ける。axe-core 4.14.0 の label-content-name-mismatch と同じ区切り */
+/** 文字と数字以外を区切りとして語に分ける。axe-core 4.14.0 の label-content-name-mismatch が語に分ける前に当てる置換と同じ */
 function words(text: string): string[] {
   return text
     .replace(/[^\p{L}\p{N}]/gu, " ")
