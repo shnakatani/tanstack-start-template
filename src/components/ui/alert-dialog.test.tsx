@@ -21,8 +21,11 @@ import {
  * `registry-baseline.test.ts` は baseline の存在しか見ず、乖離が消えても落ちないことを
  * 実測した (2026-09-22) ので、乖離の機能はここで固定する。
  *
- * 到達性は実キーボードで見る。Popup は開いたとき focus を受け、End で末尾までスクロール
- * する。溢れコンテンツは `minHeight` で作る (flex item は既定で縮む。dialog.test.tsx 参照)。
+ * 到達性は実キーボードで見る。中に tabbable が無いので Popup 自身が focus を受け、End で末尾まで
+ * スクロールする。Base UI は開いたときの focus を 1 フレーム後に当てる (FloatingFocusManager の
+ * enqueueFocus) ので、focus が届くのを待ってから End を送る。届く前の End は body に当たり、
+ * スクロール容器の Popup は動かない。溢れコンテンツは `minHeight` で作る (flex item は既定で縮む。
+ * dialog.test.tsx 参照)。
  */
 
 const BOTTOM_MARKER = "末尾コンテンツ";
@@ -61,6 +64,7 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     await expect.element(screen.getByText("先頭コンテンツ")).toBeInViewport();
     await expect.element(marker).not.toBeInViewport();
 
+    await expect.element(screen.getByRole("alertdialog")).toHaveFocus();
     await userEvent.keyboard("{End}");
 
     await expect.element(marker).toBeInViewport();
