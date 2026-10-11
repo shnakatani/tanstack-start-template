@@ -157,8 +157,8 @@ describe("/notes/new route", () => {
   });
 
   it("chunk の読み込みに失敗するとダイアログで伝え、再試行で chunk を読み直す", async () => {
-    // 再試行が chunk の読み込みをもう 1 回呼ぶことを見る。本物の dynamic import は、ブラウザが失敗を
-    // module map に残すと、呼び直しても取り直さない (ADR-0041 の実測)
+    // 再試行が chunk の読み込みをもう 1 回呼ぶことを見る。本物の dynamic import でブラウザが chunk を
+    // 取り直すかまでは見ない
     mockCreateRouteChunk()
       .mockRejectedValueOnce(new Error("chunk の読み込みの失敗"))
       .mockResolvedValueOnce(undefined);

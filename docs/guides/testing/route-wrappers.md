@@ -2,10 +2,6 @@
 
 Route hooks を使う wrapper を、実 router で描いて検証する手順と、その形にしている理由を持つ。
 
-| 決定                                                                                                | ADR      |
-| --------------------------------------------------------------------------------------------------- | -------- |
-| フォームのダイアログは子 route にし、既存の値を編集するものは loader が最新の値を取り終えてから開く | ADR-0041 |
-
 ## how-to
 
 ### route の wrapper をテストする
@@ -44,7 +40,7 @@ loader を持たない route の読み込み中と読み込みの失敗を検証
 
 失敗させる importer は、`Failed to fetch dynamically imported module`、`error loading dynamically imported module`、`Importing a module script failed` のどれでも始まらない文言で reject する。これらで始まる文言は `lazyRouteComponent` がブラウザの module の取得の失敗とみなし ([`@tanstack/router-core` 1.171.34 の `isModuleNotFoundError`][])、テストを動かしているページを読み込み直そうとする ([`@tanstack/react-router` 1.170.41 の `lazyRouteComponent`][])。
 
-失敗させた importer は、再試行で呼び直せば読み直せる。本物の dynamic import は、ブラウザが失敗を module map に残すと、呼び直しても取り直さない (ADR-0041)。テストが確かめられるのは、再試行が chunk の読み込みをもう 1 回呼ぶところまでである。
+失敗させた importer は、再試行で呼び直せば読み直せる。テストが確かめられるのは、再試行が chunk の読み込みをもう 1 回呼ぶところまでである。本物の dynamic import を呼び直したときに、ブラウザが chunk を取り直すかは確かめられない。
 
 ## explanation
 

@@ -106,7 +106,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 - 完了点「確定操作の直後」では Transition が確定の直後に終わるので、close の animate-out の間やダイアログの無い操作では `isPending` の dedupe が効かない。同じ対象の mutation が pending なら action を no-op にする。判定は `queryClient.isMutating` か `useMutationState` で取る
 - 完了点「サーバー応答」で handle を複数の対象で共有するときは、閉じる前に、開いている対象がこの mutation の対象と同じかを確かめる。先行する操作の `onSuccess` が、別の対象で開き直したダイアログを閉じてしまう
-- 入力フォームのダイアログは子 route にする (ADR-0041)。同じ対象で開き直すと別の入力になり、対象の id では見分けられない
+- 入力を保存するフォームのダイアログ (追加、編集) は、handle で開かず子 route にする (ADR-0041)。同じ対象で開き直したダイアログは別の入力を持つが、上の対象の id の比較では見分けられず、先行する保存の `onSuccess` が開き直したダイアログを入力ごと閉じうる
 - 子 route のダイアログは、そのダイアログの mutation の pending の間、ユーザー起点の close を止める。応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない
 - 再取得の完了より前に閉じるなら、対象の項目にその pending から busy の表現を付ける。付け忘れると、古い一覧が pending の表示なしで見える
 
