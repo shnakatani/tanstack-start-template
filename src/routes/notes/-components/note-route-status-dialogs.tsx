@@ -22,22 +22,22 @@ interface NoteRouteStatusDialogProps extends NoteDialogNavigation {
 
 /**
  * フォームを出せない間のダイアログの中身。閉じ方は呼び出し側の Dialog の Root が決める。
- * `closedByUser` は利用者が閉じたか。本物のダイアログに替わる、route を離れるなど、開いたまま unmount
- * したときは false のまま
+ * `closedBeforeUnmount` は unmount の前に閉じ始めていたか。本物のダイアログに替わる、route を離れるなど、開いたまま
+ * unmount したときは false のまま
  */
 function NoteRouteStatusDialogContent({
   finalFocus,
-  closedByUser,
+  closedBeforeUnmount,
   title,
   description,
   action,
 }: Omit<NoteRouteStatusDialogProps, "onClosed"> & {
-  closedByUser: boolean;
+  closedBeforeUnmount: boolean;
   description: string;
   action?: ReactNode;
 }) {
   return (
-    <DialogContent finalFocus={() => finalFocus(closedByUser)}>
+    <DialogContent finalFocus={() => finalFocus(closedBeforeUnmount)}>
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
@@ -58,7 +58,7 @@ function NoteRouteStatusDialog({
   const { open, onOpenChange, onOpenChangeComplete } = useRouteDialog({ onClosed });
   return (
     <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
-      <NoteRouteStatusDialogContent {...props} closedByUser={!open} />
+      <NoteRouteStatusDialogContent {...props} closedBeforeUnmount={!open} />
     </Dialog>
   );
 }
@@ -79,7 +79,11 @@ export function NoteRoutePendingDialog({ onClosed, ...props }: NoteRouteStatusDi
   }
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <NoteRouteStatusDialogContent {...props} closedByUser={!open} description="読み込み中" />
+      <NoteRouteStatusDialogContent
+        {...props}
+        closedBeforeUnmount={!open}
+        description="読み込み中"
+      />
     </Dialog>
   );
 }

@@ -8,12 +8,12 @@ import { focusAfterRouteDialogClosed, hasNotesChildMatch } from "../-lib/note-di
  * 一覧の上に重ねるダイアログが、route から受けるハンドラ (ADR-0010)。
  *
  * - onClosed: 一覧へ戻る。一覧の絞り込み (search) を保ち、新しい履歴を積むので、戻るで開き直せる
- * - finalFocus: 閉じたときの focus の移し先 (Base UI の `finalFocus`)。`closedByUser` は利用者が閉じたか。
+ * - finalFocus: 閉じたときの focus の移し先 (Base UI の `finalFocus`)。`closedBeforeUnmount` は unmount の前に閉じ始めていたか。
  *   開いたまま unmount したときは false
  */
 export interface NoteDialogNavigation {
   onClosed: () => void;
-  finalFocus: (closedByUser: boolean) => HTMLElement | false;
+  finalFocus: (closedBeforeUnmount: boolean) => HTMLElement | false;
 }
 
 /**
@@ -29,9 +29,9 @@ export function useNoteDialogNavigation(
   function onClosed() {
     void navigate({ to: "/notes", search: (prev) => prev });
   }
-  function finalFocus(closedByUser: boolean) {
+  function finalFocus(closedBeforeUnmount: boolean) {
     const target = focusAfterRouteDialogClosed({
-      closedByUser,
+      closedBeforeUnmount,
       // `router.state` は描画の値ではなく読んだ時点の状態を返す (Router docs「useRouter hook」)。hook で読んだ
       // 値は最後の描画のもので、unmount の時点の遷移先を映さない
       dialogRouteShown: hasNotesChildMatch(router.state.matches),

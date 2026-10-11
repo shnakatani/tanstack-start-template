@@ -61,7 +61,7 @@ export function NoteEditDialog({
         defaultValues={{ title: note.title, body: note.body, dueDate: note.dueDate }}
         onSubmit={(input) => updateMutation.runAction({ id: note.id, ...input })}
         blocksClose={blocksClose}
-        // open が false なのは利用者が閉じたとき。route を離れて開いたまま unmount したときは true のまま
+        // open が false なのは閉じたとき (閉じる操作、保存の応答)。route を離れて開いたまま unmount したときは true のまま
         finalFocus={() => finalFocus(!open)}
       />
     </Dialog>

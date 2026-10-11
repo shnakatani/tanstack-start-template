@@ -45,7 +45,8 @@ export function hasNotesChildMatch(matches: readonly { routeId: string }[]): boo
  * 一覧の上に重ねるダイアログを閉じたときの focus の移し先。Base UI は `finalFocus` を、閉じたときだけでなく、
  * 開いたまま unmount したときにも呼ぶ。分岐は ADR-0041「閉じたときの focus」の表の行と列に対応する。
  *
- * - closedByUser: 表の「利用者が閉じた」(保存の応答で閉じたときも含む)。開いたまま unmount したときは false
+ * - closedBeforeUnmount: unmount の前に閉じ始めていたか。表の「閉じた」(閉じる操作、保存の応答)。開いたまま unmount
+ *   したときは false
  * - dialogRouteShown: 開いたまま unmount したとき、true なら表の「別のダイアログに替わった」(読み込み中の
  *   ダイアログが本物や失敗・見つからないのダイアログに替わった、別のダイアログの URL へ移った)、false なら
  *   「戻る・進むで離れた」
@@ -56,16 +57,16 @@ export function hasNotesChildMatch(matches: readonly { routeId: string }[]): boo
  * 戻し先の要素は読まずにそのまま返すので、型を要素に限らない
  */
 export function focusAfterRouteDialogClosed<Target>({
-  closedByUser,
+  closedBeforeUnmount,
   dialogRouteShown,
   returnTarget,
 }: {
-  closedByUser: boolean;
+  closedBeforeUnmount: boolean;
   dialogRouteShown: boolean;
   returnTarget: Target | null;
 }): Target | "page-heading" | false {
-  // 利用者が閉じた時点でもダイアログの route は表示されたままなので、closedByUser を先に見る
-  if (closedByUser) {
+  // 閉じた時点でもダイアログの route は表示されたままなので、closedBeforeUnmount を先に見る
+  if (closedBeforeUnmount) {
     return returnTarget ?? "page-heading";
   }
   // 替わったときに戻し先を返すと、替わる側のダイアログが次の frame で自分の入力欄へ focus を移すまでの間だけ、

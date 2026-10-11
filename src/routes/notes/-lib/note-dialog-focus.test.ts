@@ -5,28 +5,32 @@ import { focusAfterRouteDialogClosed, hasNotesChildMatch } from "./note-dialog-f
 describe("focusAfterRouteDialogClosed", () => {
   const link = { name: "開いた元のリンク" };
 
-  // 利用者が閉じた時点でもダイアログの route は表示されたままなので、dialogRouteShown は true で渡す
-  const userClosed = { closedBy: "利用者が閉じた", closedByUser: true, dialogRouteShown: true };
-  const left = { closedBy: "戻る・進むで離れた", closedByUser: false, dialogRouteShown: false };
+  // 閉じた時点でもダイアログの route は表示されたままなので、dialogRouteShown は true で渡す
+  const closed = { closedBy: "閉じた", closedBeforeUnmount: true, dialogRouteShown: true };
+  const left = {
+    closedBy: "戻る・進むで離れた",
+    closedBeforeUnmount: false,
+    dialogRouteShown: false,
+  };
   const replaced = {
     closedBy: "別のダイアログに替わった",
-    closedByUser: false,
+    closedBeforeUnmount: false,
     dialogRouteShown: true,
   };
 
   it.each([
-    { ...userClosed, target: "ある", returnTarget: link, expected: link },
-    { ...userClosed, target: "無い", returnTarget: null, expected: "page-heading" },
+    { ...closed, target: "ある", returnTarget: link, expected: link },
+    { ...closed, target: "無い", returnTarget: null, expected: "page-heading" },
     { ...left, target: "ある", returnTarget: link, expected: link },
     { ...left, target: "無い", returnTarget: null, expected: false },
     { ...replaced, target: "ある", returnTarget: link, expected: false },
     { ...replaced, target: "無い", returnTarget: null, expected: false },
   ])(
     "$closedBy とき、戻し先が$target なら $expected を返す",
-    ({ closedByUser, dialogRouteShown, returnTarget, expected }) => {
-      expect(focusAfterRouteDialogClosed({ closedByUser, dialogRouteShown, returnTarget })).toBe(
-        expected,
-      );
+    ({ closedBeforeUnmount, dialogRouteShown, returnTarget, expected }) => {
+      expect(
+        focusAfterRouteDialogClosed({ closedBeforeUnmount, dialogRouteShown, returnTarget }),
+      ).toBe(expected);
     },
   );
 });
