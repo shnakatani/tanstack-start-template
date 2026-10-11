@@ -3,12 +3,11 @@ import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/re
 import { useDeferredValue, useEffect, useEffectEvent, useRef, useState } from "react";
 import * as v from "valibot";
 
+import { ButtonLink } from "@/components/parts/button-link";
 import { DataTable } from "@/components/parts/data-table";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
 import { PageHeader } from "@/components/parts/page-header";
 import { StaleContent } from "@/components/parts/stale-content";
-import { Button } from "@/components/ui/button";
-import { DialogTrigger } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { parseCreatingRows } from "@/features/notes/creating-rows";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
@@ -23,10 +22,10 @@ import { toastMutationError } from "@/lib/mutation-error";
 
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
+import { noteCreateLinkProps } from "../-lib/note-dialog-focus";
 import { getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
 import { NOTE_SEARCH_DEBOUNCE_MS, noteSearchResultMessage } from "../-lib/note-search";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
-import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
 import { NoteSearchField } from "./note-search-field";
 
 /** URL / server function と同じ schema で正規化する (trim / 上限)。 */
@@ -80,7 +79,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     announceResults();
   }, [deferredQ, settled]);
 
-  const createTrigger = useRef<HTMLButtonElement>(null);
+  const createLink = useRef<HTMLAnchorElement>(null);
 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
@@ -109,7 +108,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   });
 
   // 完了点「サーバー応答」の追加は応答でダイアログが閉じるので、再取得完了までの pending は
-  // 一覧の先頭に出すこの行だけが伝える (ADR-0017)。mutation はダイアログ側にあるため
+  // 一覧の先頭に出すこの行だけが伝える (ADR-0017)。mutation は追加の route のダイアログ側にあるため
   // mutationKey 経由で読む。submittedAt は同時に走る追加を React の key で区別するのに使う
   const pendingCreateStates = useMutationState({
     filters: { ...noteMutationFilters.create, status: "pending" },
@@ -169,9 +168,16 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
               onValueChange={handleTextChange}
               onSubmit={handleSubmit}
             />
-            <DialogTrigger ref={createTrigger} handle={noteCreateDialogHandle} render={<Button />}>
+            <ButtonLink
+              ref={createLink}
+              from="/notes"
+              to="/notes/new"
+              // 一覧の絞り込みを保ったまま開き、閉じたら同じ一覧へ戻る
+              search={(prev) => prev}
+              {...noteCreateLinkProps()}
+            >
               ＋ {NOTE_ENTITY_LABEL}を追加
-            </DialogTrigger>
+            </ButtonLink>
           </>
         }
       />
@@ -215,13 +221,11 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
         </StaleContent>
       </div>
 
-      <NoteCreateDialog />
-
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}
         entityLabel={NOTE_ENTITY_LABEL}
         onConfirm={confirmDelete}
-        fallbackFocusRef={createTrigger}
+        fallbackFocusRef={createLink}
       />
     </div>
   );

@@ -44,7 +44,7 @@ async function renderDialog() {
       <h1>{NOTES_PAGE_TITLE}</h1>
       <Suspense fallback={null}>
         {/* 本番では編集の route の中で描くので、route は表示されている扱いにする */}
-        <NoteEditDialog noteId={NOTE.id} onClosed={onClosed} isEditRouteActive={() => true} />
+        <NoteEditDialog noteId={NOTE.id} onClosed={onClosed} isDialogRouteShown={() => true} />
       </Suspense>
       <Toaster />
     </QueryClientProvider>,

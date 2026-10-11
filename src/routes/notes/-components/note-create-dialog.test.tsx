@@ -5,8 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { Button } from "@/components/ui/button";
-import { DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/toast";
 import { createNote } from "@/features/notes/functions";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
@@ -15,17 +13,13 @@ import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
-import {
-  expectDialogOpen,
-  expectEmptyTextboxes,
-  expectText,
-} from "@/test/assert/screen-assertions";
+import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
 
-import { NoteCreateDialog, noteCreateDialogHandle } from "./note-create-dialog";
-import { NOTE_CREATE_TRIGGER_LABEL, openNoteCreateDialog } from "./note-create-dialog.test-helpers";
+import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
+import { NoteCreateDialog } from "./note-create-dialog";
 import {
   bodyTextbox,
   dueDateTrigger,
@@ -35,23 +29,23 @@ import {
 } from "./note-form.test-helpers";
 
 /**
- * Root (NoteCreateDialog) と detached trigger を handle で結ぶ本番と同じ配線で描画する。
- * trigger は本番では route の PageHeader にあるので、ここでは同じ handle を渡した最小の
- * ボタンで代用する。
+ * 追加の route の component が描くのと同じく、開いた状態で描く。route の出入りは ../route.test.tsx が持つ。
+ * ダイアログは一覧のページの上に開くので、閉じたときの focus の移し先になるページの見出しを置く
  */
 async function renderDialog() {
   const queryClient = createTestQueryClient();
   const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+  const onClosed = vi.fn();
   const screen = await render(
     <QueryClientProvider client={queryClient}>
-      <DialogTrigger handle={noteCreateDialogHandle} render={<Button />}>
-        {NOTE_CREATE_TRIGGER_LABEL}
-      </DialogTrigger>
-      <NoteCreateDialog />
+      <h1>{NOTES_PAGE_TITLE}</h1>
+      {/* 本番では追加の route の中で描くので、route は表示されている扱いにする */}
+      <NoteCreateDialog onClosed={onClosed} isDialogRouteShown={() => true} />
       <Toaster />
     </QueryClientProvider>,
   );
-  return { screen, invalidateSpy, queryClient };
+  await expect.element(titleTextbox(screen)).toBeInTheDocument();
+  return { screen, invalidateSpy, queryClient, onClosed };
 }
 
 describe("NoteCreateDialog", () => {
@@ -66,12 +60,12 @@ describe("NoteCreateDialog", () => {
     warnSpy.mockRestore();
   });
 
-  it("トリガーを押すとタイトルと本文の入力が現れる", async () => {
+  it("見出しと、空のタイトルと本文の入力で開く", async () => {
     const { screen } = await renderDialog();
 
-    await openNoteCreateDialog(screen);
-
-    await expect.element(bodyTextbox(screen)).toBeInTheDocument();
+    await expect.element(screen.getByRole("heading", { name: "メモを追加" })).toBeInTheDocument();
+    await expect.element(titleTextbox(screen)).toHaveValue("");
+    await expect.element(bodyTextbox(screen)).toHaveValue("");
   });
 
   it("開いた直後のフォーカスが先頭の入力にある", async () => {
@@ -79,14 +73,11 @@ describe("NoteCreateDialog", () => {
     // 途中に tabbable な要素が挟まると先頭入力から外れるため、位置を固定する
     const { screen } = await renderDialog();
 
-    await openNoteCreateDialog(screen);
-
     await expect.element(titleTextbox(screen)).toHaveFocus();
   });
 
   it("空のまま保存すると日本語の必須メッセージが出て createNote を呼ばない", async () => {
     const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
 
     await saveButton(screen).click();
 
@@ -96,7 +87,6 @@ describe("NoteCreateDialog", () => {
 
   it("上限超過のタイトルで保存すると文字数上限のメッセージが出て createNote を呼ばない", async () => {
     const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("あ".repeat(NOTE_TITLE_MAX_LENGTH + 1));
 
     await saveButton(screen).click();
@@ -110,7 +100,6 @@ describe("NoteCreateDialog", () => {
 
   it("初回 submit 前はタイトルを空にしてもエラーが出ない (dynamic validation)", async () => {
     const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
 
     await titleTextbox(screen).fill("あ");
     await titleTextbox(screen).fill("");
@@ -125,7 +114,6 @@ describe("NoteCreateDialog", () => {
   it("入力して保存すると createNote が前後空白を除いた値で呼ばれる", async () => {
     vi.mocked(createNote).mockResolvedValue({ id: 1 });
     const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("  買い物リスト  ");
     await bodyTextbox(screen).fill("牛乳とパン");
 
@@ -146,7 +134,6 @@ describe("NoteCreateDialog", () => {
     const target = new Date(now.getFullYear(), now.getMonth(), 15);
     const expectedDueDate = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-15`;
     const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
     await expect
@@ -175,10 +162,9 @@ describe("NoteCreateDialog", () => {
       });
   });
 
-  it("保存に成功すると notes クエリを invalidate してダイアログを閉じる", async () => {
+  it("保存に成功すると notes クエリを invalidate してダイアログを閉じ、閉じ終わってから route を離れる", async () => {
     vi.mocked(createNote).mockResolvedValue({ id: 1 });
-    const { screen, invalidateSpy } = await renderDialog();
-    await openNoteCreateDialog(screen);
+    const { screen, invalidateSpy, onClosed } = await renderDialog();
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
@@ -186,39 +172,23 @@ describe("NoteCreateDialog", () => {
     await expectNoteDialogClosed(screen);
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
+    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
   });
 
-  it("保存に成功して再度開くとフォームが初期値に戻る", async () => {
-    vi.mocked(createNote).mockResolvedValue({ id: 1 });
-    const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
-    await titleTextbox(screen).fill("買い物リスト");
-    await bodyTextbox(screen).fill("牛乳とパン");
-
-    await saveButton(screen).click();
-    await expectNoteDialogClosed(screen);
-    await openNoteCreateDialog(screen);
-
-    await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
-  });
-
-  it("キャンセルで閉じて再度開くとフォームが初期値に戻る", async () => {
-    const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
+  it("キャンセルで閉じると route を離れる", async () => {
+    const { screen, onClosed } = await renderDialog();
     await titleTextbox(screen).fill("一時入力");
 
     await screen.getByRole("button", { name: "キャンセル" }).click();
-    await expectNoteDialogClosed(screen);
-    await openNoteCreateDialog(screen);
 
-    await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
+    await expectNoteDialogClosed(screen);
+    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
   });
 
   it("保存に失敗すると固定文言を toast に出し、server の raw message は表示しない", async () => {
     const rawMessage = "ノートを作成しましたが id を取得できませんでした";
     vi.mocked(createNote).mockRejectedValue(new Error(rawMessage));
-    const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
+    const { screen, onClosed } = await renderDialog();
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
@@ -227,7 +197,8 @@ describe("NoteCreateDialog", () => {
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする
-    await expect.element(titleTextbox(screen)).toBeInTheDocument();
+    await expect.element(titleTextbox(screen)).toHaveValue("買い物リスト");
+    expect(onClosed).not.toHaveBeenCalled();
   });
 
   it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
@@ -239,7 +210,6 @@ describe("NoteCreateDialog", () => {
     // renderDialog が spy を張った queryClient と同じインスタンスを Provider が持つので、
     // onSuccess の invalidateQueries にこの差し替えが効く
     invalidateSpy.mockImplementation(() => invalidate.promise);
-    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
@@ -266,7 +236,6 @@ describe("NoteCreateDialog", () => {
     // 追加は再取得を待つ間に開き直して保存でき並行しうるので、完了の文言に対象名を載せる (ADR-0026)
     const create = deferMock(createNote);
     const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
@@ -282,7 +251,6 @@ describe("NoteCreateDialog", () => {
   it("検証に失敗したときは開始の通知を出さない", async () => {
     // 開始の announce は検証を通った後に置く。空のまま押しても「保存しています」は出ない
     const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
 
     await saveButton(screen).click();
 
@@ -291,13 +259,10 @@ describe("NoteCreateDialog", () => {
   });
 
   it("保存の応答前はキャンセルできず Escape でも閉じない", async () => {
-    // handle を複数の対象で共有しないダイアログは、閉じる前に対象を比べられない。pending 中に
-    // 閉じて開き直すと DialogContent がアンマウントされてフォームが作り直され、先行 save の
-    // 応答が届いた時点で新しい入力ごと閉じる。pending 中はユーザー起点の close を止める
-    // (`docs/guides/react/updates.md`「完了点ごとに Transition を終える」のサーバー応答)
+    // 完了点「サーバー応答」: 応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない
+    // (ADR-0017)。pending の間は利用者の close を止める
     const create = deferMock(createNote);
-    const { screen } = await renderDialog();
-    await openNoteCreateDialog(screen);
+    const { screen, onClosed } = await renderDialog();
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
@@ -308,11 +273,13 @@ describe("NoteCreateDialog", () => {
     await userEvent.keyboard("{Escape}");
 
     await expectDialogOpen(screen, "dialog");
-    await expect.element(titleTextbox(screen)).toBeInTheDocument();
+    await expect.element(titleTextbox(screen)).toHaveValue("買い物リスト");
+    expect(onClosed).not.toHaveBeenCalled();
 
     create.resolve({ id: 1 });
 
-    // 応答 (imperative-action) での close は止めない
+    // 応答での close は止めない
     await expectNoteDialogClosed(screen);
+    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
   });
 });

@@ -11,6 +11,7 @@ import {
   NoteEditNotFoundDialog,
   NoteEditPendingDialog,
 } from "./-components/note-edit-status-dialogs";
+import { isNoteDialogRouteShown } from "./-lib/note-dialog-focus";
 import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
 import { NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
@@ -66,13 +67,12 @@ function useEditDialogProps() {
   function onClosed() {
     void navigate({ to: "/notes", search: (prev) => prev });
   }
-  // ダイアログが unmount する時点で、この route がまだ表示されているか。`router.state` は描画の値ではなく
-  // 読んだ時点の状態を返す (Router docs「useRouter hook」)。hook で読んだ値は最後の描画のもので、
-  // unmount の時点の遷移先を映さない
-  function isEditRouteActive() {
-    return router.state.matches.some((match) => match.routeId === Route.id);
+  // `router.state` は描画の値ではなく読んだ時点の状態を返す (Router docs「useRouter hook」)。hook で読んだ値は
+  // 最後の描画のもので、unmount の時点の遷移先を映さない
+  function isDialogRouteShown() {
+    return isNoteDialogRouteShown(router.state.matches);
   }
-  return { noteId, onClosed, isEditRouteActive };
+  return { noteId, onClosed, isDialogRouteShown };
 }
 
 /** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */

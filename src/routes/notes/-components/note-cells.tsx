@@ -9,7 +9,7 @@ import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
-import { noteEditLinkProps } from "../-lib/note-edit-focus";
+import { noteEditLinkProps } from "../-lib/note-dialog-focus";
 import type { NoteRow } from "../-lib/note-rows";
 import { isNoteRowBusy, noteInputOf } from "../-lib/note-rows";
 
