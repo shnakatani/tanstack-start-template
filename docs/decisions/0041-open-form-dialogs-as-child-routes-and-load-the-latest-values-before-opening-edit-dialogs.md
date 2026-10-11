@@ -1,10 +1,26 @@
-# ADR-0041: 既存の値を編集するダイアログは子 route にし、loader が最新の値を取り終えてから開く
+# ADR-0041: フォームのダイアログは子 route にし、既存の値を編集するものは loader が最新の値を取り終えてから開く
 
 - Status: Accepted
-- Date: 2026-10-10
-- 関連: ADR-0017 (完了点とブロック範囲)、ADR-0026 (状態の通知)、ADR-0033 (loader と Query)、ADR-0035 (遷移の後の focus と title)、ADR-0040 (View Transitions)
+- Date: 2026-10-11
+- 関連: ADR-0017 (完了点とブロック範囲)、ADR-0026 (状態の通知)、ADR-0029 (既定の pending 表示)、ADR-0033 (loader と Query)、ADR-0035 (遷移の後の focus と title)、ADR-0040 (View Transitions)
 
 ## Context
+
+ページの上に重ねて、入力を保存するフォームのダイアログ (追加、編集) には、開き方に由来する問題が 2 つある。
+
+### 開いたまま mount し続けるダイアログの pending
+
+detached trigger の handle で開くダイアログは、閉じても mount したまま残り、1 つの mutation を持ち続ける。完了点「サーバー応答」(ADR-0017) では、閉じたあとも pending が続く。
+
+| 事実                                                                                                                                                      | 出典                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `onSuccess` が返す再取得の Promise を TanStack Query が待つので、応答のあとも再取得の完了まで `isPending` が続く                                          | `docs/guides/react/updates.md`「mutation の書き方」の再取得と close |
+| handle の close は、どの保存の `onSuccess` から呼んでも、そのとき開いているダイアログを閉じる。入力フォームは開き直すと別の入力になり、対象を比べられない | `docs/guides/react/updates.md`「完了点ごとに Transition を終える」  |
+| TanStack Query は「応答は届いたが `onSuccess` の途中」を公開の状態で持たない                                                                              | `docs/guides/react/updates.md`「完了点ごとに Transition を終える」  |
+
+閉じて開き直したダイアログを、先行する保存の `onSuccess` の close が入力ごと閉じないようにするには、pending の間は利用者の close を止めるしかない。止めると、応答のあと再取得が終わるまでの間に開き直したダイアログも閉じられない。
+
+### 開く前の値の古さ
 
 一覧の行から開く編集ダイアログが、一覧のキャッシュの値をフォームの初期値にすると、別のタブや別の利用者が保存した変更より古い値で編集が始まる。
 
@@ -20,56 +36,74 @@
 
 ## Decision
 
-**既存の値を編集するダイアログは、開く元のページの route の子 route にする。loader は `staleReloadMode: "blocking"` にし、`queryClient.query({ ...options, staleTime: 0 })` を待ってから開く。**
+**入力を保存するフォームのダイアログは、開く元のページの route の子 route にする。既存の値を編集するダイアログは、loader を `staleReloadMode: "blocking"` にし、`queryClient.query({ ...options, staleTime: 0 })` を待ってから開く。**
+
+子 route にすると、ダイアログは開くたびに mount し直し、mutation もダイアログごとに別になる。先行する保存の pending は後から開いたダイアログの close を止めず、先行する `onSuccess` の close は自分のダイアログだけを閉じる。URL で共有でき、戻るで閉じる。
+
+### フォームのダイアログ全体
+
+| 対象               | 決定                                                                                                                                                                                                                                                                                                                       |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| route              | 開く元のページを layout route に置き、`<Outlet />` の位置にダイアログの route を描く (TanStack Router の example `location-masking` の形)。URL はマスクしない                                                                                                                                                              |
+| 開くリンク         | 開く元のページの search を保つ。loader を持たないダイアログのリンクは router の既定の preload (`defaultPreload: "intent"`) のままにする。preload は route の chunk を先に読むだけになる                                                                                                                                    |
+| 開閉               | ダイアログは `open` を state で持つ。閉じる操作では `open` を false にし、閉じるアニメーションの後で開く元のページへ `navigate` する。先に離れると route ごと unmount して閉じるアニメーションが出ない。開く元のページへは新しい履歴で戻り、戻るで開き直せる                                                               |
+| close の停止       | 保存の pending の間は、利用者の close (キャンセル、Escape、外側の押下) を止める。応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない。止めるのはそのダイアログ自身の mutation の pending だけ                                                                                                     |
+| 保存の完了点       | 「サーバー応答」(ADR-0017)。`onSuccess` の先頭で `open` を false にし、再取得を待ってから完了を通知する。閉じると route は unmount するが、`useMutation` に渡した callback はそのあとも走る (`mutate` に渡す callback は "won't run if your component unmounts before the mutation finishes"。TanStack Query「Mutations」) |
+| 閉じたときの focus | 下の「閉じたときの focus」の表。`finalFocus` に関数を渡して分ける                                                                                                                                                                                                                                                          |
+| 遷移の伝え方       | ページとの行き来も、ほかの遷移と同じく伝える。開くとダイアログの title、閉じると開く元のページの title を読み上げる。開いたときは focus を背後のページの見出しへ移さず、Base UI がダイアログの中へ移す (ADR-0035)                                                                                                          |
+| View Transition    | 既定のまま (ADR-0040)。戻る・進むで閉じるときは route がすぐ unmount され、閉じるアニメーションが出ない。クロスフェードがその消え方を和らげる                                                                                                                                                                              |
+
+### 既存の値を編集するダイアログだけに当てるもの
 
 | 対象                      | 決定                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| route                     | 開く元のページを layout route に置き、`<Outlet />` の位置にダイアログの route を描く (TanStack Router の example `location-masking` の形)。URL はマスクしない                                                                                                                                                                                                                                                                                                                            |
 | loader                    | object の形で `staleReloadMode: "blocking"`。キャッシュがあっても取り直し (`staleTime: 0`)、取り終えるまで開かない。`background` では、戻るで入ったときに前に取った値のまま開き、新しい値が届くと、触れていないフォームは値が替わり、打ち始めたフォームは古い値のまま残る                                                                                                                                                                                                                |
 | 1 件の query              | 一覧の query の先頭キーの下に置かない。保存後の一覧の invalidate が前方一致で当たり、閉じかけのダイアログの 1 件まで取り直す。observer の再取得は止める (`staleTime: Infinity`)。開いている間に裏で取り直すと、触れていないフォームは利用者の目の前で値が替わり、触れたフォームには届かない                                                                                                                                                                                              |
-| 開くリンク                | `preload={false}`。開くたびに取り直すので、preload は捨てる取得になる。一覧の search は保つ                                                                                                                                                                                                                                                                                                                                                                                              |
+| 開くリンク                | `preload={false}`。開くたびに取り直すので、preload は捨てる取得になる                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 読み込み中                | 押したリンクに `Spinner` (`aria-hidden`) を出す。pending の照合は `useMatchRoute` の `pending` で、route だけで照合して返った params を文字列で比べる。`params.parse` した値を渡すと URL の文字列と比べて一致しない (TanStack/router#2450)                                                                                                                                                                                                                                               |
 | 長い読み込み              | `pendingMs` を超えたら、`pendingComponent` にダイアログの形の読み込み中を出す。開く行のリンクが一覧に無いとき (戻る・進む、URL を直接開いた) も状況が見える                                                                                                                                                                                                                                                                                                                              |
 | 読み込み開始の読み上げ    | 出さない。`pendingMs` の間に本物か読み込み中のダイアログが開き、focus がその中へ移る。ADR-0026 の mutation の開始の通知とは扱いが違う                                                                                                                                                                                                                                                                                                                                                    |
+| 読み込み中のダイアログ    | 閉じる操作の時点で開く元のページへ戻り、閉じるアニメーションを待たない。待つ間に取得が終わると、本物のダイアログが替わって開く                                                                                                                                                                                                                                                                                                                                                           |
 | 行が操作中のリンク        | 操作中は Link に `disabled` を渡し、`tabIndex={0}` は操作中かに関わらず渡す。Link は `disabled` で href を外し `role="link"` と `aria-disabled` を付けるので、tabindex が無いと focus できず、閉じたときに focus を戻せない。操作中だけ渡すと、操作が終わるとき React が tabindex を外してから href を付けるので、focus を持ったリンクがその間に blur し、React が focus を戻し直す。href を持つ `<a>` に `aria-disabled` を付ける形は採らない (WAI-ARIA 1.2 の `aria-disabled` の Note) |
 | 背後の一覧                | loader は 1 件を取り終えたら、一覧のキャッシュにある同じ項目と更新日時を比べ、違えば一覧を invalidate する。1 件が見つからず (削除された)、一覧のキャッシュに同じ項目が残っていれば、同じく invalidate してから not found を投げる。ダイアログは一覧の取得を待たず、進行中の一覧の取得があればそれを使う (`cancelRefetch: false`)。取り直した値を一覧のキャッシュへ書き込まない。比べずに開くと、ダイアログは新しい値、背後の行は古い値のまま並ぶ。選択肢は下の「背後の一覧をそろえる」  |
-| 開閉                      | ダイアログは `open` を state で持つ。閉じる操作では `open` を false にし、閉じるアニメーションの後で一覧へ `navigate` する。先に離れると route ごと unmount して閉じるアニメーションが出ない。読み込み中のダイアログ (`pendingComponent`) だけは閉じる操作の時点で一覧へ戻る。アニメーションを待つ間に取得が終わると、本物のダイアログが替わって開く。一覧へは新しい履歴で戻り、戻るで開き直せる                                                                                         |
 | 別の値の URL へ移る       | route に `remountDeps: ({ params }) => params` を付ける。router は既定で、params だけが変わる遷移では component を作り直さない。打ち始めたフォームが前の値のまま残り、保存は移った先の値へ書く                                                                                                                                                                                                                                                                                           |
-| 閉じたときの focus        | 下の表。`finalFocus` に関数を渡して分ける                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | 見つからない / 取得の失敗 | `notFoundComponent` と `errorComponent` もダイアログの形で出す。例外の文言は出さず固定の文言にする                                                                                                                                                                                                                                                                                                                                                                                       |
-| 遷移の伝え方              | ページとの行き来も、ほかの遷移と同じく伝える。開くとダイアログの title、閉じると開く元のページの title を読み上げる。開いたときは focus を背後のページの見出しへ移さず、Base UI がダイアログの中へ移す (ADR-0035)                                                                                                                                                                                                                                                                        |
-| View Transition           | 既定のまま (ADR-0040)。戻る・進むで閉じるときは route がすぐ unmount され、閉じるアニメーションが出ない。クロスフェードがその消え方を和らげる                                                                                                                                                                                                                                                                                                                                            |
-| 保存の完了点              | 「サーバー応答」(ADR-0017)。閉じると route は unmount するが、`useMutation` に渡した callback はそのあとも走る (`mutate` に渡す callback は "won't run if your component unmounts before the mutation finishes"。TanStack Query「Mutations」)                                                                                                                                                                                                                                            |
+
+### 対象の外
+
+確認ダイアログ (行の削除) は route にせず、handle で開く。フォームの入力を持たず、完了点「確定操作の直後」で閉じるので、閉じたあとの pending が次に開いたダイアログを止めない。対象を id で持つので、開いている対象と mutation の対象を比べられる (`docs/guides/react/updates.md`「完了点ごとに Transition を終える」「操作の型ごとの当て方」)。
 
 ### 閉じたときの focus
 
 Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま unmount したときにも呼ぶ。開いたまま unmount するのは次の 2 つで、どちらも閉じる操作を経ない。
 
-- 戻る・進むで route を離れた
-- 別の編集のダイアログに替わった。読み込み中のダイアログ (`pendingComponent`) が本物に替わったときと、開いたまま別の値の URL へ移ったとき (`remountDeps`) である
+- 戻る・進むでダイアログの route を離れた
+- 別のダイアログに替わった。読み込み中のダイアログ (`pendingComponent`) が本物に替わったとき、開いたまま別の値の URL へ移ったとき (`remountDeps`)、追加と編集のように別のダイアログの URL へ移ったときである
 
-2 つは、`finalFocus` が呼ばれた時点の `router.state.matches` にダイアログの route が残っているかで分ける。`router.state` は呼んだ時点の状態を返す (TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない。利用者が閉じた時点でも route は残っているので、利用者が閉じたかを先に見る。
+2 つは、`finalFocus` が呼ばれた時点の `router.state.matches` に、開く元のページの上に重ねるダイアログの route のどれかが残っているかで分ける。`router.state` は呼んだ時点の状態を返す (TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない。利用者が閉じた時点でも route は残っているので、利用者が閉じたかを先に見る。
 
-- route を離れたとき、開いた行のリンクへ戻さないと、focus はダイアログと一緒に外れ、route の announcer が見出しへ移す (ADR-0035)。利用者は一覧の中の位置を失う
+- route を離れたとき、開いた元のリンク (行の編集リンク、追加のリンク) へ戻さないと、focus はダイアログと一緒に外れ、route の announcer が見出しへ移す (ADR-0035)。利用者は一覧の中の位置を失う
 - リンクへ戻した focus は、announcer が動く前に戻り終えるので、見出しへ移らない (2026-10-10 に実測、ADR-0035)
 - 替わったときにリンクを返すと、替わる側のダイアログが入力欄へ focus を移すまでの 1 frame だけ、リンクが focus を受ける。消える側の戻し先へ移す処理が microtask で走り、替わる側の初期 focus は次の animation frame で走るからである。消える側の戻し先が替わる側の初期 focus より先に当たる仕組みは floating-ui/floating-ui#3509 (2026-10-10 時点で open) と同じ。`finalFocus` に `false` を返すと focus を動かさない (Base UI「Dialog」の Custom focus management)
 
-| 閉じ方                                                   | 開いた行のリンクがある                               | 開いた行のリンクが無い (URL を直接開いた、絞り込みで外れた)    |
-| -------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------- |
-| 利用者が閉じた                                           | そのリンクへ戻す                                     | ページの見出しへ、枠を出さずに移す (ADR-0035)                  |
-| 開いたまま unmount した (戻る・進むで離れた)             | そのリンクへ戻す                                     | focus に触れない。route の announcer が見出しへ移す (ADR-0035) |
-| 開いたまま unmount した (別の編集のダイアログに替わった) | focus に触れない (`false`)。替わる側が自分の中へ移す | 同左                                                           |
+| 閉じ方                                             | 開いた元のリンクがある                               | 開いた元のリンクが無い (URL を直接開いた行が絞り込みで外れた)  |
+| -------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------- |
+| 利用者が閉じた                                     | そのリンクへ戻す                                     | ページの見出しへ、枠を出さずに移す (ADR-0035)                  |
+| 開いたまま unmount した (戻る・進むで離れた)       | そのリンクへ戻す                                     | focus に触れない。route の announcer が見出しへ移す (ADR-0035) |
+| 開いたまま unmount した (別のダイアログに替わった) | focus に触れない (`false`)。替わる側が自分の中へ移す | 同左                                                           |
+
+URL を直接開いたときは Base UI の既定の戻し先 (開く前に focus していた要素) が無いので、開いた元のリンクを探して返す。
 
 | 替わったときの案                                                                                         | 評価                                                                                                                                                                                                                                                                                                | 採否     |
 | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| route が残っていれば `false` を返す                                                                      | リンクを経ずに替わる側の入力欄へ移る。戻る・進むと利用者が閉じたときの戻し先は変わらない。替わる間の 1 frame は focus が body にある                                                                                                                                                                | **採用** |
+| ダイアログの route のどれかが残っていれば `false` を返す                                                 | リンクを経ずに替わる側の入力欄へ移る。戻る・進むと利用者が閉じたときの戻し先は変わらない。替わる間の 1 frame は focus が body にある                                                                                                                                                                | **採用** |
 | Dialog の Root を読み込み中と本物で 1 つに保つ (Root を開く元の route に上げ、Popup の中に `<Outlet />`) | unmount が起きない見込み。開いたまま別の値の URL へ移ると中身だけが作り直され、新しい入力欄へは手で移すことになる見込み。TanStack Router の example `location-masking` の骨格 (状態ごとに別のダイアログ) から外れる。未実測                                                                         | 却下     |
 | `finalFocus` を渡さず Base UI の既定に任せる                                                             | unmount の時点で focus は body にあり、既定の戻し先 (開く前に focus していた要素) へ戻る見込み。URL を直接開いたときは戻し先が無い (`@base-ui/react` 1.8.0 のコードの読みで、未実測)                                                                                                                | 却下     |
 | 上流の修正を待つ                                                                                         | floating-ui/floating-ui#3510 (2026-10-10 時点で open) は、microtask の時点で focus が body 以外へ移っていれば戻さない形で、替わる側の初期 focus が後から来るこの場面には効かない見込み。関数を渡した `finalFocus` はそのガードを通らない (どちらも `@base-ui/react` 1.8.0 のコードの読みで、未実測) | 却下     |
 
 ### 背後の一覧をそろえる
 
-ダイアログは開くたびに最新の値を取るが、背後の一覧はキャッシュの値のまま描かれている。別のタブで保存してから戻り、一覧の `staleTime` の間に開くと、ダイアログは新しい値、背後の行は古い値になる。同じタブの中でダイアログを開いても `visibilitychange` は起きないので、`refetchOnWindowFocus` は動かない (TanStack Query「Migrating to TanStack Query v5」の Window focus refetching no longer listens to the `focus` event)。
+編集のダイアログは開くたびに最新の値を取るが、背後の一覧はキャッシュの値のまま描かれている。別のタブで保存してから戻り、一覧の `staleTime` の間に開くと、ダイアログは新しい値、背後の行は古い値になる。同じタブの中でダイアログを開いても `visibilitychange` は起きないので、`refetchOnWindowFocus` は動かない (TanStack Query「Migrating to TanStack Query v5」の Window focus refetching no longer listens to the `focus` event)。
 
 | 案                                                                         | 評価                                                                                                                                                                                                                                                                  | 採否     |
 | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -84,19 +118,38 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 
 ### 検討した選択肢
 
-| 案                                                                                                                                             | 評価                                                                                                                                                                                                         | 採否     |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| 子 route にし、loader で取ってから開く                                                                                                         | URL で共有でき、戻るで閉じる。loader と Query の連携 (ADR-0033) の形に乗る                                                                                                                                   | **採用** |
-| ダイアログは detached trigger のまま、開いてから中で取り直す                                                                                   | キャッシュの値を見せないための `isFetchedAfterMount` の分岐が要る。URL での共有と戻るで閉じる操作は得られない                                                                                                | 却下     |
-| キャッシュを即表示し、サーバーとずれた項目を強調する (TkDodo「React Query and Forms」の、触れた項目だけを手元に持ち、他はサーバーの値を出す形) | フォームの部品の作りから変わり、最新の値で始めるという目的に対して大きい                                                                                                                                     | 却下     |
-| `broadcastQueryClient` でタブ間のキャッシュをそろえる                                                                                          | experimental。invalidate が同期されるかは docs に無い。別の利用者の変更には届かない                                                                                                                          | 却下     |
-| URL を一覧にマスクする                                                                                                                         | 共有するとマスクが外れる ("URLs are automatically unmasked when they are shared")。Start の SSR でハードリロードすると実際の route を失う不具合が open (TanStack/router#7115、`unmaskOnReload: true` の場合) | 却下     |
-| 閉じるときに `useCanGoBack` と `router.history.back()` で戻る                                                                                  | "currently _experimental_"。判定は履歴の先頭かどうかだけで、1 つ前が一覧かは分からない。別のページから来ると、閉じてそのページへ戻る                                                                         | 却下     |
+フォームのダイアログの開き方:
+
+| 案                                                                 | 評価                                                                                                                                                                                                                                                | 採否     |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 子 route にする                                                    | 開くたびに mount し、mutation がダイアログごとに別になる。URL で共有でき、戻るで閉じる。追加と編集の開き方が 1 つになる                                                                                                                             | **採用** |
+| handle のまま、mutation を開くたびに作り直す子コンポーネントへ移す | pending はダイアログごとに別になる。フォームのダイアログの開き方が handle と route の 2 つになる。URL での共有と戻るで閉じる操作は得られない                                                                                                        | 却下     |
+| search param で開く modal                                          | TanStack Router「Route Masking」の docs は使い道の例に、`?showLogin=true` の search param を持つ route へ移り、URL からはその param を隠す形を挙げる。開くたびに mount し直すための key を自前で持つことになり、編集の path の route と形が分かれる | 却下     |
+
+Next.js の docs「Parallel Routes」の Modals の節は、login のフォームの modal を route にする例を示す。利点に "Making the modal content shareable through a URL." と "Closing the modal on backwards navigation rather than going to the previous route." を挙げる (Next.js 16.4.0 の docs、2026-10-11 に確認)。
+
+既存の値を編集するダイアログの値の取り方:
+
+| 案                                                                                                                                             | 評価                                                                                | 採否     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------- |
+| loader で取ってから開く                                                                                                                        | loader と Query の連携 (ADR-0033) の形に乗る                                        | **採用** |
+| 開いてから中で取り直す                                                                                                                         | キャッシュの値を見せないための `isFetchedAfterMount` の分岐が要る                   | 却下     |
+| キャッシュを即表示し、サーバーとずれた項目を強調する (TkDodo「React Query and Forms」の、触れた項目だけを手元に持ち、他はサーバーの値を出す形) | フォームの部品の作りから変わり、最新の値で始めるという目的に対して大きい            | 却下     |
+| `broadcastQueryClient` でタブ間のキャッシュをそろえる                                                                                          | experimental。invalidate が同期されるかは docs に無い。別の利用者の変更には届かない | 却下     |
+
+route の URL と閉じ方:
+
+| 案                                                            | 評価                                                                                                                                                                                                         | 採否 |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
+| URL を一覧にマスクする                                        | 共有するとマスクが外れる ("URLs are automatically unmasked when they are shared")。Start の SSR でハードリロードすると実際の route を失う不具合が open (TanStack/router#7115、`unmaskOnReload: true` の場合) | 却下 |
+| 閉じるときに `useCanGoBack` と `router.history.back()` で戻る | "currently _experimental_"。判定は履歴の先頭かどうかだけで、1 つ前が一覧かは分からない。別のページから来ると、閉じてそのページへ戻る                                                                         | 却下 |
 
 ## Consequences
 
-- 開いた状態は SSR の HTML に入らない。ダイアログは Base UI のポータルの中にあり、hydration の後に開く。編集のフォームは JS が無いと送信できないので受け入れる (2026-10-09、`@base-ui/react` 1.8.0 で実測)
-- 開くたびに 1 件を取得し、取り終えるまで開かない
+- 開いた状態は SSR の HTML に入らない。ダイアログは Base UI のポータルの中にあり、hydration の後に開く。フォームは JS が無いと送信できないので受け入れる (2026-10-09、`@base-ui/react` 1.8.0 で実測)
+- ダイアログの component は route ごとに別の chunk に分かれる。loader を持たないダイアログの route は、chunk を読み終えるまで開かず、`pendingMs` を超えると router の既定の pending 表示 (ADR-0029) が開く元のページの `<Outlet />` の位置 (一覧の下) に出る。開くリンクの preload が hover と focus で chunk を読み始めるので、押す前に読み終えていれば待たない (2026-10-11 に実測)
+- 保存の応答の前に戻る・進むで route を離れると、close の停止を通らずに unmount する。保存はそのまま続き、失敗すると toast だけが残り、入力は残らない
+- 既存の値を編集するダイアログは、開くたびに 1 件を取得し、取り終えるまで開かない
 - 開いた後で別のタブや別の利用者が保存すると、開いた時点の値は古くなる。保存は後から保存した側が先の変更を上書きする。この決定は開く時点の古さだけを防ぐ
 - 背後の一覧は、開いた項目が食い違ったときだけ取り直す。開かずに一覧だけを見ている間、一覧の古さはタブへ戻ったときの再取得 (`staleTime` を過ぎていれば走る) に任せる。このタブを見たまま別の利用者が保存した変更は、その項目を開くか、タブを離れて戻るまで一覧に出ない
 - `cancelRefetch: false` では、別のタブが保存するより前に始まった一覧の取得が進行中だと、invalidate はその取得に吸収される。その取得の結果は保存より古いことがあり、そのときは一覧が古いまま残る
@@ -108,7 +161,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 
 ## 実測
 
-2026-10-09 に、`@tanstack/react-router` 1.170.41 (router-core 1.171.34)、`@tanstack/react-query` 5.104.1、`@tanstack/react-form` 1.33.5 (form-core 1.33.5)、`@base-ui/react` 1.8.0、Playwright の Chromium (playwright-cli と、Vitest の browser mode) で測った。Safari と Firefox は測っていない。
+2026-10-09 から 2026-10-11 に、`@tanstack/react-router` 1.170.41 (router-core 1.171.34)、`@tanstack/react-query` 5.104.1、`@tanstack/react-form` 1.33.5 (form-core 1.33.5)、`@base-ui/react` 1.8.0、Playwright の Chromium (playwright-cli と、Vitest の browser mode) で測った。Safari と Firefox は測っていない。
 
 | 確かめたこと                                                                                                                                                                               | 結果                                                                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -120,10 +173,14 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 | 取得に 2.5 秒かかる場合                                                                                                                                                                    | リンクに `Spinner`、約 1 秒後に読み込み中のダイアログ、取り終えてフォーム。focus は読み込み中のダイアログの「閉じる」から入力欄へ移った |
 | 別のページから編集の URL へ `navigate` する (2026-10-10、Vitest の browser mode)                                                                                                           | 背後のページの見出しを経ずに、ダイアログの中の最初の入力欄へ focus が移った                                                             |
 | 替わるときに `finalFocus` が開いた行のリンクを返す形で、読み込み中のダイアログを本物に替える、開いたまま別の id の編集の URL へ移る (2026-10-10、Vitest の browser mode。`focusin` を記録) | どちらもリンクが focusin を受け、その後に替わった側の入力欄へ移った。`false` を返す形ではリンクは focusin を受けなかった                |
+| 替わったかの判定に追加の route を含めない形で、編集のダイアログを開いたまま追加の URL へ移る (2026-10-11、Vitest の browser mode。`focusin` を記録)                                        | 編集の行のリンクが focusin を受けた                                                                                                     |
 | focus を持った行のリンクの操作中が解ける。操作中だけ `tabIndex={0}` を渡す形 (2026-10-10、Vitest の browser mode。blur と `focusin` を記録)                                                | リンクが blur し、同じリンクが 2 回目の focusin を受けた。常に渡す形では、どちらも起きなかった                                          |
 | 別のタブで更新日時が進んだ値を取り直して開く (2026-10-10、Vitest の browser mode)                                                                                                          | ダイアログは一覧の取得を待たずに開き、一覧の取得が決着すると、開いている間に背後の行が新しい値になった                                  |
 | 別のタブで削除された値を開き、1 件の取得が not found になる (2026-10-10、Vitest の browser mode)                                                                                           | 見つからないダイアログが一覧の取得を待たずに開き、一覧の取得が決着すると、背後から削除された行が消えた                                  |
 | 一覧の取得が進行中に、待たない invalidate を重ねる (2026-10-10、Node で `@tanstack/query-core` 5.104.1 を直接動かした)                                                                     | `cancelRefetch: true` では一覧の取得が 2 回走り、進行中の取得を待っていた側は 2 回目の決着まで待った。`false` では 1 回だった           |
+| 追加の保存の応答のあと、一覧の再取得が未決着の間に追加のダイアログを開き直す (2026-10-11、Vitest の browser mode)                                                                          | キャンセルは押せ、押すと閉じた                                                                                                          |
+| 追加の保存の応答の前に戻るで一覧へ戻り、開き直して打ってから先行の応答を返す (2026-10-11、Vitest の browser mode)                                                                          | 先行の完了の通知が出たあとも、開き直したダイアログは打った入力のまま開いていた                                                          |
+| `vp build` の成果物で、追加の route の chunk の応答を 3 秒遅らせ、リンクに focus して Enter を押す (2026-10-11、Playwright の Chromium)                                                    | focus の時点で chunk の取得が始まった。約 1 秒後に一覧の下に「読み込み中」が出て、約 3 秒後にダイアログが開き、focus は入力欄へ移った   |
 
 ## 出典
 
@@ -135,6 +192,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - TanStack Router「useCanGoBack hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useCanGoBack
 - TanStack Router「useRouter hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useRouterHook
 - TanStack Router「RouterState type」(`matches`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouterStateType
+- Next.js「Parallel Routes」(Modals): https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes#modals
 - Base UI「Dialog」(Custom focus management、Popup の `finalFocus`): https://base-ui.com/react/components/dialog
 - TanStack Query「Query Invalidation」: https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation
 - TanStack Query「InvalidateOptions」: https://tanstack.com/query/latest/docs/framework/react/reference/interfaces/InvalidateOptions
@@ -155,4 +213,4 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - TanStack/router#7115: https://github.com/TanStack/router/issues/7115
 - TanStack/router#7776: https://github.com/TanStack/router/pull/7776
 
-Router の docs は `@tanstack/react-router@1.170.41`、Query の docs は `@tanstack/react-query@5.104.1`、Form のガイドは `@tanstack/form-core@1.33.5` のタグで、Base UI の docs は `@base-ui/react` 1.8.0 の同梱の docs で確かめた (2026-10-10)。
+Router の docs は `@tanstack/react-router@1.170.41`、Query の docs は `@tanstack/react-query@5.104.1`、Form のガイドは `@tanstack/form-core@1.33.5` のタグで、Base UI の docs は `@base-ui/react` 1.8.0 の同梱の docs で確かめた (2026-10-10)。Route Masking の docs と Next.js の docs は 2026-10-11 に公開中の版で確かめた。
