@@ -1,4 +1,4 @@
-import { createFileRoute, isNotFound, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, isNotFound, notFound } from "@tanstack/react-router";
 import * as v from "valibot";
 
 import { noteQueryOptions } from "@/features/notes/queries";
@@ -7,10 +7,12 @@ import { pageTitle } from "@/lib/page-title";
 
 import { NoteEditDialog } from "./-components/note-edit-dialog";
 import {
-  NoteEditErrorDialog,
-  NoteEditNotFoundDialog,
-  NoteEditPendingDialog,
-} from "./-components/note-edit-status-dialogs";
+  NoteNotFoundDialog,
+  NoteRouteErrorDialog,
+  NoteRoutePendingDialog,
+} from "./-components/note-route-status-dialogs";
+import { useNoteDialogNavigation } from "./-hooks/use-note-dialog-navigation";
+import { findNoteEditLink } from "./-lib/note-dialog-focus";
 import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
 import { NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
@@ -56,38 +58,27 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
 });
 
 /**
- * Route hooks を吸収し、ダイアログへ渡す値とハンドラを返す (ADR-0010)。閉じたら一覧へ戻る。一覧の絞り込み
- * (search) を保ち、新しい履歴を積むので、戻るで開き直せる
+ * Route hooks を吸収し、ダイアログへ渡すハンドラを返す。ダイアログは値とハンドラを props で受ける (ADR-0010)。
+ * 閉じたときの focus の戻し先は、開いたメモの行の編集リンク
  */
-function useEditDialogProps() {
+function useEditDialogNavigation() {
   const { noteId } = Route.useParams();
-  const navigate = Route.useNavigate();
-  const router = useRouter();
-  function onClosed() {
-    void navigate({ to: "/notes", search: (prev) => prev });
-  }
-  // ダイアログが unmount する時点で、この route がまだ表示されているか。`router.state` は描画の値ではなく
-  // 読んだ時点の状態を返す (Router docs「useRouter hook」)。hook で読んだ値は最後の描画のもので、
-  // unmount の時点の遷移先を映さない
-  function isEditRouteActive() {
-    return router.state.matches.some((match) => match.routeId === Route.id);
-  }
-  return { noteId, onClosed, isEditRouteActive };
+  return useNoteDialogNavigation(() => findNoteEditLink(noteId));
 }
 
-/** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */
 function EditRoute() {
-  return <NoteEditDialog {...useEditDialogProps()} />;
+  const { noteId } = Route.useParams();
+  return <NoteEditDialog noteId={noteId} {...useEditDialogNavigation()} />;
 }
 
 function EditPending() {
-  return <NoteEditPendingDialog {...useEditDialogProps()} />;
+  return <NoteRoutePendingDialog title={NOTE_EDIT_DIALOG_TITLE} {...useEditDialogNavigation()} />;
 }
 
 function EditNotFound() {
-  return <NoteEditNotFoundDialog {...useEditDialogProps()} />;
+  return <NoteNotFoundDialog {...useEditDialogNavigation()} />;
 }
 
 function EditError() {
-  return <NoteEditErrorDialog {...useEditDialogProps()} />;
+  return <NoteRouteErrorDialog title="メモを読み込めませんでした" {...useEditDialogNavigation()} />;
 }

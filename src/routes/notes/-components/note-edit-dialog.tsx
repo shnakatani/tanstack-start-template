@@ -8,8 +8,8 @@ import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
+import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
 import { useRouteDialog } from "../-hooks/use-route-dialog";
-import { focusAfterNoteEditClosed } from "../-lib/note-edit-focus";
 import { NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
 
@@ -17,18 +17,13 @@ import { NoteFormContent } from "./note-form";
  * メモの編集ダイアログ。編集の route (`$noteId.edit.tsx`) の component が描き、loader が取り直した
  * 1 件をフォームの初期値にする (ADR-0041)。一覧から route に入ると mount し、開いたまま別のメモの URL へ
  * 移ると route の `remountDeps` が作り直すので、フォームも mutation も開くメモごとに別になる。閉じたら
- * `onClosed` で一覧の route へ戻る。`isEditRouteActive` は focus の戻し先を決めるときに呼ぶ
- * (`focusAfterNoteEditClosed`)
+ * `onClosed` で一覧の route へ戻る
  */
 export function NoteEditDialog({
   noteId,
   onClosed,
-  isEditRouteActive,
-}: {
-  noteId: Note["id"];
-  onClosed: () => void;
-  isEditRouteActive: () => boolean;
-}) {
+  finalFocus,
+}: { noteId: Note["id"] } & NoteDialogNavigation) {
   const queryClient = useQueryClient();
   const { data: note } = useSuspenseQuery(noteQueryOptions(noteId));
 
@@ -41,7 +36,7 @@ export function NoteEditDialog({
     },
     // 完了点「サーバー応答」: 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
     // 閉じると route を離れて unmount するが、useMutation に渡した callback はそのあとも走る
-    // (`mutate` に渡す callback は走らない。TanStack Query「Mutations」)
+    // (unmount のあとに走らないのは `mutate` に渡す callback。TanStack Query「Mutations」)
     onSuccess: async (_data, update) => {
       setOpen(false);
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
@@ -67,9 +62,7 @@ export function NoteEditDialog({
         onSubmit={(input) => updateMutation.runAction({ id: note.id, ...input })}
         blocksClose={blocksClose}
         // open が false なのは利用者が閉じたとき。route を離れて開いたまま unmount したときは true のまま
-        finalFocus={() =>
-          focusAfterNoteEditClosed(note.id, { closedByUser: !open, isEditRouteActive })
-        }
+        finalFocus={() => finalFocus(!open)}
       />
     </Dialog>
   );

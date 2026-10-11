@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 
-import { createDialogHandle, Dialog } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { createNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY } from "@/features/notes/queries";
 import type { NoteInput } from "@/features/notes/schema";
@@ -8,27 +8,20 @@ import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
-import { useSubmitBlockingDialog } from "../-hooks/use-submit-blocking-dialog";
+import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
+import { useRouteDialog } from "../-hooks/use-route-dialog";
+import { NOTE_CREATE_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
 
 /** フォームの初期値 (作成は常に空)。`NoteFormContent` の `defaultValues` に渡す */
 const EMPTY_NOTE_INPUT = { title: "", body: "", dueDate: null } satisfies NoteInput;
 
 /**
- * 追加ボタン (route の PageHeader) と Root (このファイル) を結ぶ detached trigger の handle。
- * Root は 1 handle につき 1 つなので、`NoteCreateDialog` は同時に 1 箇所でだけ描画する。
+ * メモの追加ダイアログ。追加の route (`new.tsx`) の component が描く (ADR-0041)。開くたびに route が mount
+ * し直すので、フォームも mutation も開いたダイアログごとに別になる。閉じたら `onClosed` で一覧の route へ
+ * 戻る
  */
-export const noteCreateDialogHandle = createDialogHandle<undefined>();
-
-/**
- * メモの追加ダイアログ。内部スクロール方式 (`ActionDialogContent` + `DialogScrollBody`) で、
- * ヘッダーとフッターを固定したまま入力領域だけをスクロールさせる。
- *
- * mutation はここが持ち、フォームの状態は開くたびに作り直す。フォームの submit は
- * `ActionDialogContent` に渡すので、フォームの状態を持つ `NoteFormContent` は Portal の外に居続ける。
- * 閉じ終わったら key を替えて作り直し、「前回の入力が残った状態で開く」を起こさない。
- */
-export function NoteCreateDialog() {
+export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation) {
   const queryClient = useQueryClient();
 
   const createMutation = useActionMutation({
@@ -41,9 +34,11 @@ export function NoteCreateDialog() {
     },
     // 完了点「サーバー応答」: 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
     // 一覧側は useMutationState でこの pending を読み、新しい行を先に出す。
-    // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる
+    // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる。
+    // 閉じると route を離れて unmount するが、useMutation に渡した callback はそのあとも走る
+    // (unmount のあとに走らないのは `mutate` に渡す callback。TanStack Query「Mutations」)
     onSuccess: async (_data, input) => {
-      noteCreateDialogHandle.close();
+      setOpen(false);
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
       // 一覧への行の追加は読み上げに出ないので、完了を通知する。追加は再取得を待つ間に開き直して
       // 保存でき並行しうるので、どれが終わったかを対象名で区別する (ADR-0026)
@@ -54,26 +49,20 @@ export function NoteCreateDialog() {
     onError: toastMutationError,
   });
 
-  const { blocksClose, formKey, onOpenChange, onOpenChangeComplete } = useSubmitBlockingDialog({
+  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete } = useRouteDialog({
+    onClosed,
     isPending: createMutation.isPending,
   });
 
   return (
-    <Dialog
-      handle={noteCreateDialogHandle}
-      onOpenChange={onOpenChange}
-      onOpenChangeComplete={onOpenChangeComplete}
-    >
-      {/* pending 表示は ActionFormSubmit が Action 層から取る。ここで渡すのは表示ではなく
-          close の可否で、onOpenChange と同じ源 (useSubmitBlockingDialog) から取らないと「押せるのに閉じない」ずれが
-          出る (ADR-0017 の完了点: サーバーの応答で閉じる) */}
+    <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
       <NoteFormContent
-        // 閉じ終わるたびに作り直す (useSubmitBlockingDialog の formKey)
-        key={formKey}
-        heading="メモを追加"
+        heading={NOTE_CREATE_DIALOG_TITLE}
         defaultValues={EMPTY_NOTE_INPUT}
         onSubmit={createMutation.runAction}
         blocksClose={blocksClose}
+        // open が false なのは利用者が閉じたとき。route を離れて開いたまま unmount したときは true のまま
+        finalFocus={() => finalFocus(!open)}
       />
     </Dialog>
   );

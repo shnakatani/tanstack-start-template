@@ -2,8 +2,6 @@ import { useState, type ComponentProps } from "react";
 
 import type { Dialog } from "@/components/ui/dialog";
 
-import { blocksUserClose } from "../-lib/dialog-close-blocking";
-
 /**
  * route として開くダイアログの開閉。開いた状態で mount し、閉じる操作では open を false にするだけにする。
  * route を離れる (onClosed) のは閉じるアニメーションが終わってから。先に離れると route ごと unmount して、
@@ -22,7 +20,7 @@ export function useRouteDialog({
 }) {
   const [open, setOpen] = useState(true);
 
-  // 保存の mutation が pending の間は、ユーザー起点の close を止める。応答の前に閉じると route ごと
+  // 保存の mutation が pending の間は、利用者の close を止める。応答の前に閉じると route ごと
   // unmount し、保存に失敗したときに入力が残らない (完了点「サーバー応答」、ADR-0017)。止めるのは
   // このダイアログだけで、一覧の操作は止めない (ADR-0017「ブロック範囲」)
   const blocksClose = isPending;
@@ -33,7 +31,7 @@ export function useRouteDialog({
     details,
   ) => {
     // 止めたときは open を変えない。保存の onSuccess は setOpen(false) で閉じ、ここを通らない
-    if (blocksUserClose(nextOpen, details, blocksClose)) {
+    if (!nextOpen && blocksClose) {
       details.cancel();
       return;
     }
