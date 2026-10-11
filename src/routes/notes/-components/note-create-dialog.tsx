@@ -5,11 +5,11 @@ import { createNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY } from "@/features/notes/queries";
 import type { NoteInput } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
+import { useRouteDialog } from "@/hooks/use-route-dialog";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
 import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
-import { useRouteDialog } from "../-hooks/use-route-dialog";
 import { NOTE_CREATE_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
 

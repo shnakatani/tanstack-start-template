@@ -22,7 +22,7 @@ export function useRouteDialog({
 
   // 保存の mutation が pending の間は、利用者の close を止める。応答の前に閉じると route ごと
   // unmount し、保存に失敗したときに入力が残らない (完了点「サーバー応答」、ADR-0017)。止めるのは
-  // このダイアログだけで、一覧の操作は止めない (ADR-0017「ブロック範囲」)
+  // このダイアログだけで、開く元のページの操作は止めない (ADR-0017「ブロック範囲」)
   const blocksClose = isPending;
 
   // 型は転送先の props から導出する (再宣言すると転送先の型変更に追随しない)

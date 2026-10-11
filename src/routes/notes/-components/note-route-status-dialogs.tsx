@@ -10,10 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useRouteDialog } from "@/hooks/use-route-dialog";
 import { useRouteRetry } from "@/hooks/use-route-retry";
 
 import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
-import { useRouteDialog } from "../-hooks/use-route-dialog";
 
 /** 一覧の上に重ねるダイアログの route が、フォームを出せない間に出すダイアログの props */
 interface NoteRouteStatusDialogProps extends NoteDialogNavigation {
