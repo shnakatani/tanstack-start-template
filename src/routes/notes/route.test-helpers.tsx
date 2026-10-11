@@ -123,8 +123,9 @@ export function serveNotes(notes: Note[]) {
 }
 
 /**
- * `recordFocusins` (`@/test/assert/focusin`) で記録した要素の aria-label。行の編集リンクはモーダルの背後で aria-hidden になり locator で引けないので、
- * 名前を持つ aria-label の値 (`noteEditTriggerName`) で見分ける
+ * `recordFocusins` (`@/test/assert/focusin`) で記録した要素の aria-label。行の編集リンクは
+ * モーダルの背後で aria-hidden になり locator で引けないので、名前を持つ aria-label の値
+ * (`noteEditTriggerName`) で見分ける
  */
 export function ariaLabelsOf(targets: Element[]): (string | null)[] {
   return targets.map((target) => target.getAttribute("aria-label"));

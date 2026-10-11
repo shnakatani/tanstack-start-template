@@ -94,7 +94,12 @@ export function RoutePendingDialog({
   }
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <RouteStatusDialogContent {...props} closedBeforeUnmount={!open} description="読み込み中" />
+      <RouteStatusDialogContent
+        {...props}
+        // 閉じる操作の時点で route を離れるので、閉じるアニメーションの後で離れる useRouteDialog は使わない
+        closedBeforeUnmount={!open}
+        description="読み込み中"
+      />
     </Dialog>
   );
 }
