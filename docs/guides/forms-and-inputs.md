@@ -131,15 +131,15 @@ export function useItemDialogNavigation(findReturnTarget: () => HTMLElement | nu
 }
 ```
 
-| 書く場所                                                                    | 配線                                                                                                                                                                                                                                   |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ダイアログの route の `component`                                           | アダプターの `onClosed` と `finalFocus` をダイアログへ props で渡す                                                                                                                                                                    |
-| ダイアログの route の `pendingComponent`                                    | `RoutePendingDialog` に、`title` と、アダプターの `onClosed` を `onClose` として、`finalFocus` を渡す                                                                                                                                  |
-| ダイアログの route の `errorComponent`、`notFoundComponent`                 | `RouteStatusDialog` に、見出しと説明とアダプターの返り値を渡す。失敗のダイアログは `action` に、`useRouteRetry` (`src/hooks/use-route-retry.ts`) を呼ぶ再試行のボタンを渡す                                                            |
-| ダイアログ                                                                  | `useRouteDialog({ onClosed, isPending: <保存の mutation>.isPending })` を呼び、返る `open`、`onOpenChange`、`onOpenChangeComplete` を Dialog の Root へ渡す                                                                            |
-| 保存の mutation の `onSuccess`                                              | 先頭で `useRouteDialog` の返り値の `setOpen(false)` を呼ぶ。`setOpen` は `onOpenChange` を通らないので、pending の間の close の停止に止められない                                                                                      |
-| ダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) | `finalFocus={() => finalFocus(closedBeforeUnmount)}` を渡す。`closedBeforeUnmount` は `useRouteDialog` の返り値を使い、`open` から手で作らない。`false` や `open` を渡しても型は通り、閉じる操作で閉じたときに開いた元の要素へ戻らない |
-| キャンセルの `DialogClose`                                                  | `disabled` に `useRouteDialog` の返り値の `blocksClose` を渡す                                                                                                                                                                         |
+| 書く場所                                                                    | 配線                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ダイアログの route の `component`                                           | アダプターの `onClosed` と `finalFocus` をダイアログへ props で渡す                                                                                                                                                                                  |
+| ダイアログの route の `pendingComponent`                                    | `RoutePendingDialog` に、`title` と、アダプターの `onClosed` を `onClose` として、`finalFocus` を渡す                                                                                                                                                |
+| ダイアログの route の `errorComponent`、`notFoundComponent`                 | `RouteStatusDialog` に、見出しと説明とアダプターの返り値を渡す。失敗のダイアログは `action` に、`useRouteRetry` (`src/hooks/use-route-retry.ts`) を呼ぶ再試行のボタンを渡す                                                                          |
+| ダイアログ                                                                  | `useRouteDialog({ onClosed, isPending: <保存の mutation>.isPending })` を呼び、返る `open`、`onOpenChange`、`onOpenChangeComplete` を Dialog の Root へ渡す                                                                                          |
+| 保存の mutation の `onSuccess`                                              | 先頭で `useRouteDialog` の返り値の `setOpen(false)` を呼ぶ。`setOpen` は `onOpenChange` を通らないので、pending の間の close の停止に止められない                                                                                                    |
+| ダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) | `finalFocus={() => finalFocus(closedBeforeUnmount)}` を渡す。`closedBeforeUnmount` は `useRouteDialog` の返り値を使い、`open` から手で作らない。`false` や `open` を渡しても型は通り、閉じたとき (閉じる操作、保存の応答) に開いた元の要素へ戻らない |
+| キャンセルの `DialogClose`                                                  | `disabled` に `useRouteDialog` の返り値の `blocksClose` を渡す                                                                                                                                                                                       |
 
 - `isDialogShown` は、呼ばれた時点の `router.state.matches` を読む。`useMatches` などの hook で描画の時点に読んだ値を閉じ込めない。描画の時点の値は unmount の時点の遷移先を映さず、戻るで離れたときも表示されていると判定して、開いた元の要素へ focus を戻さない ([TanStack Router docs「useRouter hook」][])
 - 自分の route の match より後ろに match があるかで判定するのは、`<Outlet />` がダイアログの route だけを描くページに限る
@@ -149,7 +149,7 @@ export function useItemDialogNavigation(findReturnTarget: () => HTMLElement | nu
   - 戻るで離れたら、開いた元の要素へ focus が戻る
   - 別のダイアログに替わったとき (読み込み中から本物へ、別の値の URL へ、別のダイアログの URL へ)、開いた元の要素が focus を受けない
 - 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめる。開くリンクを押して開くと、`finalFocus` を渡し忘れても Base UI の既定の戻し先 (開く前に focus していた要素) でリンクへ戻り、テストが通る ([Base UI docs「Dialog」][])
-- 替わったときに開いた元の要素が focus を受けるのは 1 frame だけなので、`toHaveFocus` の retry では捉えられない。替わる前に `recordFocusins` (`src/test/assert/focusin.ts`) で focusin の記録を始め、替わる側の入力欄の `toHaveFocus` を待ってから、記録に開いた元の要素が無いことを見る。替わる側のダイアログが開くと背後の要素は aria-hidden になり locator で引けないので、記録の要素は可視の文字か aria-label で見分ける
+- 替わったときに開いた元の要素が focus を受けるのは 1 frame だけなので、`toHaveFocus` の retry では捉えられない。替わる前に `recordFocusins` (`src/test/assert/focusin.ts`) で focusin の記録を始め、替わる側の入力欄の `toHaveFocus` を待ってから、記録に開いた元の要素が無いことを見る。ダイアログが開いている間は背後の要素が aria-hidden になり、`getByRole` は既定でそれを引かないので ([Vitest docs「Locators」][] の getByRole の `includeHidden`)、記録の要素は可視の文字か aria-label で見分ける
 
 ### 入力欄の周りに要素を置く
 
@@ -293,6 +293,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [TanStack Form docs「Form Composition」]: https://tanstack.com/form/latest/docs/framework/react/guides/form-composition
 [TanStack Form docs「Side effects for event triggers」]: https://tanstack.com/form/latest/docs/framework/react/guides/listeners
 [Base UI docs「Dialog」]: https://base-ui.com/react/components/dialog
+[Vitest docs「Locators」]: https://github.com/vitest-dev/vitest/blob/v5.0.3/docs/api/browser/locators.md
 [shadcn docs「Dialog」]: https://ui.shadcn.com/docs/components/base/dialog
 [shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/df1752dfe092957f84aa467d2270436139e3ecc7/apps/v4/registry/bases/base/examples/dialog-example.tsx
 [ARIA in HTML「form」]: https://www.w3.org/TR/html-aria/#el-form

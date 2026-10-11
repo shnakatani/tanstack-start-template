@@ -94,7 +94,7 @@ lint では見ないのでレビューで見る。
 - ダイアログは汎用の部品 (`useRouteDialog`、`createRouteDialogFinalFocus`、`RouteStatusDialog`、`RoutePendingDialog`) で組み、戻り先と `isDialogShown` は、ダイアログを持つページごとに 1 つのアダプターに書く (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 開いた元の要素を探す関数は、ダイアログの route からアダプターへ渡す (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 汎用の部品に route tree を読む処理を足さず、ダイアログの route が表示されているかの判定はアダプターの `isDialogShown` に書く。汎用の部品がダイアログの route の親に子の match があるかで判定すると、index route を置くページでは戻るで離れたときも替わったと判定する (ADR-0041)
-- 利用者が書くフォームのダイアログの Popup には `finalFocus={() => finalFocus(closedBeforeUnmount)}` を渡し、`closedBeforeUnmount` は `useRouteDialog` の返り値を使って `open` から手で作らない。`false` や `open` を渡しても型は通り、閉じる操作で閉じたときに開いた元の要素へ戻らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
+- ページごとに書くダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) には `finalFocus={() => finalFocus(closedBeforeUnmount)}` を渡し、`closedBeforeUnmount` は `useRouteDialog` の返り値を使って `open` から手で作らない。`false` や `open` を渡しても型は通り、閉じたとき (閉じる操作、保存の応答) に開いた元の要素へ戻らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - `isDialogShown` は呼ばれた時点の `router.state.matches` を読み、描画の時点に hook で読んだ値を閉じ込めない。描画の時点の値は unmount の時点の遷移先を映さず、戻るで離れたときに開いた元の要素へ focus を戻さない (ADR-0041)
 - `<Outlet />` にダイアログでない子 route (index route など) を置くページは、`isDialogShown` でその route の match を除く。index route の routeId は末尾に `/` が付く (`/items/`)。除かないと、ページを表示しているだけで表示されていると判定する (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - アダプターを書いたら、そのページの route のテストで、閉じる操作で閉じたときと戻るで離れたときに開いた元の要素へ focus が移ることと、別のダイアログに替わったときに開いた元の要素が focus を受けないことを確かめる。汎用の部品はアダプターの誤りに気付かない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
