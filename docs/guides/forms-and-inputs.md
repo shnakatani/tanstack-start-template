@@ -100,16 +100,16 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 
 ### フォームのダイアログを子 route で組む
 
-入力を保存するフォームのダイアログは、開く元のページの route の子 route にする (ADR-0041)。どのページでも同じ部分は次の汎用の部品が持ち、route tree の形に依る部分はページごとのアダプターが持つ。
+ADR-0041 に沿ってダイアログを組む手順。使う汎用の部品は次の表のとおり。
 
-| 部品                                                                     | 持つもの                                                                                                                     |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `src/hooks/use-route-dialog.ts` の `useRouteDialog`                      | 開閉の state、保存の pending の間の close の停止、閉じるアニメーションの後の `onClosed`                                      |
-| `src/lib/route-dialog-final-focus.ts` の `createRouteDialogFinalFocus`   | Base UI の `finalFocus` に渡す関数。呼ばれた時点で受け取った関数を呼び、`src/lib/route-dialog-focus.ts` の表で移し先を決める |
-| `src/components/screens/route-status-dialog.tsx` の `RouteStatusDialog`  | 失敗と見つからないのダイアログ。閉じるアニメーションの後で `onClosed` を呼ぶ                                                 |
-| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。閉じる操作の時点で `onClose` を呼び、閉じるアニメーションを待たない                                  |
+| 部品                                                                     | 持つもの                                                                                                                                                                                          |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/hooks/use-route-dialog.ts` の `useRouteDialog`                      | 開閉の state、保存の pending の間の close の停止、閉じるアニメーションの後の `onClosed`、閉じたか (`closedBeforeUnmount`。閉じる操作か保存の応答で閉じたら true、開いたまま unmount したら false) |
+| `src/lib/route-dialog-final-focus.ts` の `createRouteDialogFinalFocus`   | Base UI の `finalFocus` から呼ぶ関数 (`RouteDialogFinalFocus`) を作る。作った関数は、呼ばれた時点で受け取った関数を呼び、`src/lib/route-dialog-focus.ts` の表で移し先を決める                     |
+| `src/components/screens/route-status-dialog.tsx` の `RouteStatusDialog`  | 失敗と見つからないのダイアログ。閉じるアニメーションの後で `onClosed` を呼ぶ                                                                                                                      |
+| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。閉じる操作の時点で `onClose` を呼び、閉じるアニメーションを待たない                                                                                                       |
 
-アダプターは、ダイアログを持つページごとに 1 つ、そのページの `-hooks/` に書く。持つのは、戻り先、`isDialogShown` (そのページの `<Outlet />` にダイアログの route が表示されているか)、開いた元の要素を探す関数の 3 つで、汎用の部品へ渡して `onClosed` と `finalFocus` を作る。
+アダプターは、ダイアログを持つページごとに 1 つ、そのページの `-hooks/` に書く。アダプターは戻り先と `isDialogShown` (そのページの `<Outlet />` にダイアログの route が表示されているか) を持ち、開いた元の要素を探す関数をダイアログの route から受け取る。これらを汎用の部品へ渡して `onClosed` と `finalFocus` を作る。
 
 ```ts
 // routes/items/-hooks/use-item-dialog-navigation.ts
@@ -138,13 +138,18 @@ export function useItemDialogNavigation(findReturnTarget: () => HTMLElement | nu
 | ダイアログの route の `errorComponent`、`notFoundComponent`                 | `RouteStatusDialog` に、見出しと説明とアダプターの返り値を渡す。失敗のダイアログは `action` に、`useRouteRetry` (`src/hooks/use-route-retry.ts`) を呼ぶ再試行のボタンを渡す |
 | ダイアログ                                                                  | `useRouteDialog({ onClosed, isPending: <保存の mutation>.isPending })` を呼び、返る `open`、`onOpenChange`、`onOpenChangeComplete` を Dialog の Root へ渡す                 |
 | 保存の mutation の `onSuccess`                                              | 先頭で `useRouteDialog` の返り値の `setOpen(false)` を呼ぶ。`setOpen` は `onOpenChange` を通らないので、pending の間の close の停止に止められない                           |
-| ダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) | `finalFocus={() => finalFocus(!open)}` を渡す。`open` が false なのは閉じる操作か保存の応答で閉じたときで、開いたまま unmount したときは true のまま残る                    |
+| ダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) | `finalFocus={() => finalFocus(closedBeforeUnmount)}` を渡す。`closedBeforeUnmount` は `useRouteDialog` の返り値を使い、`open` から手で作らない                              |
 | キャンセルの `DialogClose`                                                  | `disabled` に `useRouteDialog` の返り値の `blocksClose` を渡す                                                                                                              |
 
 - `isDialogShown` は、呼ばれた時点の `router.state.matches` を読む。`useMatches` などの hook で描画の時点に読んだ値を閉じ込めない。描画の時点の値は unmount の時点の遷移先を映さず、戻るで離れたときも表示されていると判定して、開いた元の要素へ focus を戻さない ([TanStack Router docs「useRouter hook」][])
-- 自分の route の match より後ろに match があるかで判定するのは、`<Outlet />` がダイアログの route だけを描くページに限る。ダイアログでない子 route (index route など) を置くページは、その route の match を除いて判定する。除かないと、ページを表示しているだけで表示されていると判定する
-- 汎用の部品は route tree を読まないので、アダプターの誤りに気付かない。アダプターを書いたら、そのページの route のテスト (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) で、戻るで離れたら開いた元の要素へ focus が戻ることと、別のダイアログに替わったとき (読み込み中から本物へ、別の値の URL へ、別のダイアログの URL へ) に開いた元の要素が focus を受けないことを確かめる。順序は、router の更新、消える側の unmount と `finalFocus`、替わる側の初期 focus、route の announcer の順に進む
-- 替わったときに開いた元の要素が focus を受けるのは 1 frame だけなので、`toHaveFocus` の retry では捉えられない。`focusin` を記録して見る
+- 自分の route の match より後ろに match があるかで判定するのは、`<Outlet />` がダイアログの route だけを描くページに限る
+- ダイアログでない子 route (index route など) を置くページは、その route の match を除いて判定する。除かないと、ページを表示しているだけで表示されていると判定する。上の例なら、返す式を `pageIndex !== -1 && matches.slice(pageIndex + 1).some((match) => match.routeId !== "/items/")` にする。index route の routeId は末尾に `/` が付く ([TanStack Router docs「Routing Concepts」][] の Index Routes。`/items` を開いたときの matches の実測は ADR-0041)
+- 汎用の部品は route tree を読まないので、アダプターの誤りに気付かない。アダプターを書いたら、そのページの route のテスト (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) で次の 3 つを確かめる
+  - 閉じる操作で閉じたら、開いた元の要素へ focus が移る (無ければページの見出しへ)
+  - 戻るで離れたら、開いた元の要素へ focus が戻る
+  - 別のダイアログに替わったとき (読み込み中から本物へ、別の値の URL へ、別のダイアログの URL へ)、開いた元の要素が focus を受けない
+- 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめる。開くリンクを押して開くと、`finalFocus` を渡し忘れても Base UI の既定の戻し先 (開く前に focus していた要素) でリンクへ戻り、テストが通る
+- 替わったときに開いた元の要素が focus を受けるのは 1 frame だけなので、`toHaveFocus` の retry では捉えられない。替わる前に `recordFocusins` (`src/test/assert/focusin.ts`) で focusin の記録を始め、替わる側の入力欄の `toHaveFocus` を待ってから、記録に開いた元の要素が無いことを見る
 
 ### 入力欄の周りに要素を置く
 
@@ -312,3 +317,4 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [shadcn docs「Select」]: https://ui.shadcn.com/docs/components/base/select
 [TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240
 [TanStack Router docs「useRouter hook」]: https://tanstack.com/router/latest/docs/framework/react/api/router/useRouterHook
+[TanStack Router docs「Routing Concepts」]: https://tanstack.com/router/latest/docs/routing/routing-concepts

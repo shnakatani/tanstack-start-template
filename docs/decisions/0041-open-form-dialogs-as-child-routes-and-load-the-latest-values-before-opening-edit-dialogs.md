@@ -86,7 +86,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - 戻る・進むでダイアログの route を離れた
 - 別のダイアログに替わった。読み込み中のダイアログ (`pendingComponent`) が本物や失敗・見つからないのダイアログ (`errorComponent`、`notFoundComponent`) に替わったとき、開いたまま別の値の URL へ移ったとき (`remountDeps`)、追加と編集のように別のダイアログの URL へ移ったときである
 
-2 つを分ける判定は、ダイアログを持つページ (開く元のページ) が持つ。ページは、`finalFocus` が呼ばれた時点の router の状態で、自分の `<Outlet />` にダイアログの route が表示されているかを判定する関数を書き、閉じたときの focus を決める部品へ渡す。閉じたときの focus を決める部品、ダイアログの開閉、読み込み中・失敗・見つからないのダイアログは、どのページでも同じ汎用の部品で組む。汎用の部品は route tree の形を読まず、判定を受け取るだけにする。
+2 つを分ける判定は、ダイアログを持つページ (開く元のページ) が持つ。ページごとに 1 つ置くアダプター (そのページの route tree の形を知り、汎用の部品へ渡す hook) が、`finalFocus` が呼ばれた時点の router の状態で、ページの `<Outlet />` にダイアログの route が表示されているかを判定する関数を書き、閉じたときの focus を決める部品へ渡す。閉じたときの focus を決める部品、ダイアログの開閉、読み込み中・失敗・見つからないのダイアログは、どのページでも同じ汎用の部品で組む。汎用の部品は route tree の形を読まず、判定を受け取るだけにする。
 
 - 判定は呼ばれた時点の `router.state.matches` を読む。`router.state` は呼んだ時点の状態を返す (TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない
 - `<Outlet />` がダイアログの route だけを描くページは、`matches` の中で自分の route の match より後ろに match があるかで判定できる。`matches` は root から leaf の順に並ぶ (`useChildMatches` は子の match を "from the closest match down to the leaf-most match" で返す。TanStack Router「useChildMatches hook」)。ダイアログの route の一覧を別に持つと、足したときに一覧へ足し忘れても気付けない
@@ -119,7 +119,8 @@ URL を直接開いたときは Base UI の既定の戻し先 (開く前に focu
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | ダイアログを持つページが、呼ばれた時点の router の状態で、自分の `<Outlet />` にダイアログの route が表示されているかを判定して渡す                      | 判定に要る route tree の形を知っているのはそのページだけである。汎用の部品は呼ぶ側の構造を前提にしない                                                                                                                                             | **採用** |
 | 汎用の部品が、route tree でダイアログの route の直接の親 (`useParentMatches` の最後の match) を開く元のページとみなし、その子の match があるかで判定する | 開く元のページに index route を置く形 (layout route の `items/route.tsx` と `items/index.tsx`) では、ページを表示しているだけで親の子の match があり、戻るで離れたときも「替わった」と判定して開いた元のリンクへ戻さない。前提が崩れても黙って誤る | 却下     |
-| `finalFocus` が呼ばれた時点で、DOM にほかのダイアログが開いているかを見る                                                                                | `finalFocus` は Base UI の layout effect の後始末で同期に評価され、その時点では替わる側のダイアログも消える側のダイアログも DOM に無い (下の「実測」)。替わったときと離れたときを区別できない                                                      | 却下     |
+| 全部のダイアログの route に `staticData` で印を付け、汎用の部品が router 全体の match から印の付いた route を探す                                        | 呼ぶ側の全部のダイアログの route に印を付ける規約を課し、汎用の部品が router の状態の形を前提にする。印を付け忘れた route に替わると、黙って「離れた」と判定する                                                                                   | 却下     |
+| `finalFocus` が呼ばれた時点で、DOM にほかのダイアログが開いているかを見る                                                                                | `finalFocus` は Base UI の layout effect の後始末で同期に評価され (`@base-ui/react` 1.8.0 のコードの読み)、その時点では替わる側のダイアログも消える側のダイアログも DOM に無い (下の「実測」)。替わったときと離れたときを区別できない              | 却下     |
 
 ### 背後の一覧をそろえる
 
@@ -207,6 +208,7 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 | `vp build` のクライアントの出力で、loader を持たないダイアログの route と、既存の値を編集するダイアログの route の property がどの chunk に入るかを見る (2026-10-11)                                                                                                                                                                                        | `pendingComponent` は route の本体と同じ chunk に入った。`component`、`errorComponent`、`notFoundComponent` は、route に置いたものがそれぞれ別の chunk になり、本体から動的 import で指されていた                      |
 | loader を持たないダイアログの route の component の chunk の応答を 3 秒遅らせ、リンクに focus して 0.5 秒後に Enter を押す (2026-10-11、Chromium 153)                                                                                                                                                                                                       | focus の時点で chunk の取得が始まった。Enter の約 1 秒後に読み込み中のダイアログが開き、focus はその「閉じる」へ移った。ダイアログの外に読み込み中は出なかった。chunk が届くとフォームに替わり、focus は入力欄へ移った |
 | `finalFocus` が呼ばれた時点の DOM を、読み込み中のダイアログが本物に替わる、編集から追加の URL へ移る、開いたまま別の id の編集の URL へ移る、戻るで一覧へ離れるの 4 通りで見る。アニメーションを止めた形と戻した形で 3 回ずつ (2026-10-12、Vitest の browser mode。`MutationObserver` で popup の出入りを記録し、`finalFocus` の中で `takeRecords()` した) | 4 通り × 2 形 × 3 回の 24 回のどれでも、`finalFocus` の時点でダイアログは DOM に 1 つも無かった。替わる側の popup は `finalFocus` の後に足された                                                                       |
+| code-based の route tree (layout route の `/items` の下に index route の `/` とダイアログの route の `/new`) を `createRouter` に渡し、`/items` と `/items/new` を `router.load()` で開いて `router.state.matches` の routeId を見る (2026-10-12、Node)                                                                                                     | `/items` では `__root__`、`/items`、`/items/` の順に並び、`/items/new` では `__root__`、`/items`、`/items/new` の順に並んだ。index route の routeId は末尾に `/` が付いた                                              |
 
 ## 出典
 
