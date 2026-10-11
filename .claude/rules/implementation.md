@@ -82,7 +82,8 @@ lint では見ないのでレビューで見る。
 
 - 入力を保存するフォームのダイアログ (追加、編集) は、開く元のページの route の子 route にし、detached trigger の handle で開かない。handle のダイアログは mount したまま 1 つの mutation を持ち、再取得の完了まで続く pending が、開き直したダイアログの close まで止める (ADR-0041)
 - 保存の pending の間は利用者の close を止め、止める条件はそのダイアログ自身の mutation の pending だけにする。応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない (ADR-0041)
-- ダイアログの route には、ダイアログの形の `pendingComponent` と `errorComponent` を置く。loader を持たない route も component の chunk を待つ。無いと、読み込み中と失敗が router の既定の表示になり、開く元のページの `<Outlet />` の位置に出る。`errorComponent` は既定で別の chunk になり、その取得まで失敗すると、置いても失敗は開く元のページの route の境界に出る (ADR-0041)
+- ダイアログの route には、ダイアログの形の `pendingComponent` と `errorComponent` を置く。loader を持たない route も component の chunk を待つ。無いと、読み込み中と失敗が router の既定の表示になり、開く元のページの `<Outlet />` の位置に出る (ADR-0041)
+- ダイアログの route の `errorComponent` と `notFoundComponent` は、Automatic Code Splitting の既定のまま component と別の chunk に置き、route ごとの `codeSplitGroupings` で本体に残さない。component の chunk だけが取れないときはダイアログの形の `errorComponent` が出るが、`errorComponent` の chunk も取れないときは、開く元のページの route の境界がページの中身ごと置き換える (ADR-0041)
 
 閉じる操作で route を離れる時点は、ダイアログの種類で分ける (ADR-0041)。
 
