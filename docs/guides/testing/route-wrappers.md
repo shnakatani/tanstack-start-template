@@ -35,12 +35,14 @@ pending 表示が route の読み込み中に出ることを検証するテス�
 
 ### component の chunk の読み込みを握る
 
-loader を持たない route の読み込み中と読み込みの失敗を検証するテストは、対象 route の `component` を `lazyRouteComponent` で包み直し、importer の決着をテストで握る。build では automatic code splitting が `component` を遅延読み込みの wrapper で包み ([TanStack Router docs「Automatic Code Splitting」][])、chunk を読み終えるまで route は pending になる。テストは route ファイルを直接 import するので chunk に分かれず、包み直さないと読み込み中も失敗も起きない。
+loader を持たない route の読み込み中と読み込みの失敗を検証するテストは、対象 route の `component` を `lazyRouteComponent` で包み直し、importer の決着をテストで握る。dev と build では automatic code splitting が `component` を遅延読み込みの wrapper で包み ([TanStack Router docs「Automatic Code Splitting」][])、chunk を読み終えるまで route は pending になる。テストでは root の plugin を外すので (`docs/guides/testing/configuration.md`「テストの分岐で plugin を外す理由」) chunk に分かれず、包み直さないと読み込み中も失敗も起きない。
 
 | 手順                                                                                                                                                                                                                           | 守らないと                                                                               |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | `Route.update({ component: lazyRouteComponent(async () => { await loadChunk(); return { default: component }; }) })` で包み直す。`loadChunk` は `vi.fn` にし、`deferMock` で決着を握るか、`mockRejectedValueOnce` で失敗させる | `pendingComponent` と `errorComponent` を、route の読み込みを通して観測できない          |
 | `onTestFinished` で元の `component` へ戻す                                                                                                                                                                                     | テストが同じ `Route` インスタンスを使い回すので、後続のテストまで chunk の読み込みを踏む |
+
+失敗させる importer は、`Failed to fetch dynamically imported module`、`error loading dynamically imported module`、`Importing a module script failed` のどれでも始まらない文言で reject する。これらで始まる文言は `lazyRouteComponent` がブラウザの module の取得の失敗とみなし ([`@tanstack/router-core` 1.171.34 の `isModuleNotFoundError`][])、テストを動かしているページを読み込み直そうとする ([`@tanstack/react-router` 1.170.41 の `lazyRouteComponent`][])。
 
 失敗させた importer は、再試行で呼び直せば読み直せる。本物の dynamic import は、ブラウザが失敗を module map に残すと、呼び直しても取り直さない (ADR-0041)。テストが確かめられるのは、再試行が chunk の読み込みをもう 1 回呼ぶところまでである。
 
@@ -68,3 +70,5 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 [TanStack/router#4569]: https://github.com/TanStack/router/issues/4569
 [TanStack Router docs「How to Test Router with File-Based Routing」]: https://tanstack.com/router/latest/docs/how-to/test-file-based-routing
 [TanStack Router docs「Automatic Code Splitting」]: https://tanstack.com/router/latest/docs/guide/automatic-code-splitting
+[`@tanstack/router-core` 1.171.34 の `isModuleNotFoundError`]: https://github.com/TanStack/router/blob/57e126e99dbd86f735ead2ba98ba5e98ef0cc668/packages/router-core/src/utils.ts#L507-L517
+[`@tanstack/react-router` 1.170.41 の `lazyRouteComponent`]: https://github.com/TanStack/router/blob/57e126e99dbd86f735ead2ba98ba5e98ef0cc668/packages/react-router/src/lazyRouteComponent.tsx#L53-L70
