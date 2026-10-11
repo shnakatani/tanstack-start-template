@@ -25,23 +25,21 @@ export function findNoteCreateLink(): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[${NOTE_CREATE_LINK_ATTRIBUTE}]`);
 }
 
-/**
- * 一覧の上に重ねるダイアログの route。ダイアログが開いたまま unmount した時点でどれかが表示されていれば、
- * そのダイアログは別のダイアログに替わった。
- * ダイアログの route を足したらここにも足す。漏れると、そのダイアログとの間を移るときに、消える側の戻し先へ
- * focus が 1 frame だけ寄り道する
- */
-const NOTE_DIALOG_ROUTE_IDS: ReadonlySet<string> = new Set([
-  "/notes/new",
-  "/notes/$noteId/edit",
-] satisfies RouteIds<RegisteredRouter["routeTree"]>[]);
+/** 一覧の route。一覧の上に重ねるダイアログの route は、この子 route として一覧の `<Outlet />` に描く (ADR-0041) */
+const NOTES_ROUTE_ID = "/notes" satisfies RouteIds<RegisteredRouter["routeTree"]>;
 
 /**
- * 一覧の上に重ねるダイアログの route のどれかが表示されているか。描画の時点の値ではなく、呼んだ時点の
- * `router.state.matches` を渡す。描画の時点の値は、unmount の時点の遷移先を映さない
+ * 一覧の上に重ねるダイアログの route が表示されているか。`matches` の中で、一覧の route の match より後ろ (子) に
+ * match があるかで見る。一覧の `<Outlet />` がダイアログの子 route だけを描く前提で、ダイアログでない子 route を
+ * 足すと、それが表示されているときも true を返す。
+ * `matches` は root から leaf の順に並ぶ (Router docs「useChildMatches hook」は、子の match を
+ * "from the closest match down to the leaf-most match" で返す)。
+ * 描画の時点の値ではなく、呼んだ時点の `router.state.matches` を渡す。描画の時点の値は、unmount の時点の遷移先を
+ * 映さない
  */
-export function isNoteDialogRouteShown(matches: readonly { routeId: string }[]): boolean {
-  return matches.some((match) => NOTE_DIALOG_ROUTE_IDS.has(match.routeId));
+export function hasNotesChildMatch(matches: readonly { routeId: string }[]): boolean {
+  const notesIndex = matches.findIndex((match) => match.routeId === NOTES_ROUTE_ID);
+  return notesIndex !== -1 && notesIndex < matches.length - 1;
 }
 
 /**

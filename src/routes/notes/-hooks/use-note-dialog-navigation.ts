@@ -1,6 +1,6 @@
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
-import { isNoteDialogRouteShown } from "../-lib/note-dialog-focus";
+import { hasNotesChildMatch } from "../-lib/note-dialog-focus";
 
 /**
  * 一覧の上に重ねるダイアログの route が、ダイアログへ渡す値とハンドラ (ADR-0010)。
@@ -20,7 +20,7 @@ export function useNoteDialogNavigation(): {
   // `router.state` は描画の値ではなく読んだ時点の状態を返す (Router docs「useRouter hook」)。hook で読んだ値は
   // 最後の描画のもので、unmount の時点の遷移先を映さない
   function isDialogRouteShown() {
-    return isNoteDialogRouteShown(router.state.matches);
+    return hasNotesChildMatch(router.state.matches);
   }
   return { onClosed, isDialogRouteShown };
 }

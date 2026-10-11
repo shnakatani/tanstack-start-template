@@ -86,7 +86,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - 戻る・進むでダイアログの route を離れた
 - 別のダイアログに替わった。読み込み中のダイアログ (`pendingComponent`) が本物や失敗・見つからないのダイアログ (`errorComponent`、`notFoundComponent`) に替わったとき、開いたまま別の値の URL へ移ったとき (`remountDeps`)、追加と編集のように別のダイアログの URL へ移ったときである
 
-2 つは、`finalFocus` が呼ばれた時点の `router.state.matches` に、開く元のページの上に重ねるダイアログの route のどれかが残っているかで分ける。`router.state` は呼んだ時点の状態を返す (TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない。利用者が閉じた時点でも route は残っているので、利用者が閉じたかを先に見る。
+2 つは、`finalFocus` が呼ばれた時点の `router.state.matches` に、開く元のページの route の子の match が残っているかで分ける。開く元のページの `<Outlet />` はダイアログの route だけを描くので、子の match はダイアログの route である。ダイアログの route の一覧を別に持つと、足したときに一覧へ足し忘れても気付けない。`matches` は root から leaf の順に並び (`useChildMatches` は子の match を "from the closest match down to the leaf-most match" で返す。TanStack Router「useChildMatches hook」)、子の match は開く元のページの match より後ろにある。`router.state` は呼んだ時点の状態を返す (TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない。利用者が閉じた時点でも route は残っているので、利用者が閉じたかを先に見る。
 
 - route を離れたとき、開いた元のリンク (行の編集リンク、追加のリンク) へ戻さないと、focus はダイアログと一緒に外れ、route の announcer が見出しへ移す (ADR-0035)。利用者は一覧の中の位置を失う
 - リンクへ戻した focus は、announcer が動く前に戻り終えるので、見出しへ移らない (2026-10-10 に実測、ADR-0035)
@@ -201,6 +201,7 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 - TanStack Router「RouteOptions type」(`remountDeps`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouteOptionsType
 - TanStack Router「useCanGoBack hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useCanGoBack
 - TanStack Router「useRouter hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useRouterHook
+- TanStack Router「useChildMatches hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useChildMatchesHook
 - TanStack Router「RouterState type」(`matches`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouterStateType
 - Next.js「Parallel Routes」(Modals): https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes#modals
 - Base UI「Dialog」(Custom focus management、Popup の `finalFocus`): https://base-ui.com/react/components/dialog
