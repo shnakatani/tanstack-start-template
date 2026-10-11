@@ -65,7 +65,8 @@ function RouteStatusDialogContent({
  * 閉じる操作のあと、閉じるアニメーションが終わってから `returnTo` へ離れる。文言と、閉じる以外の操作
  * (再試行のボタンなど) は呼ぶ側が渡す。
  * 公開の signature を generic にするのは、`returnTo` を TanStack Router の Type Utilities の
- * `ValidateNavigateOptions` で検査するため (同ガイドの `HeadingLink` の形)
+ * `ValidateNavigateOptions` で検査するため (同ガイドの `HeadingLink` の形)。`TRouter` の制約は `useRouteDialog`
+ * と同じく `AnyRouter` にする
  */
 export function RouteStatusDialog<TRouter extends AnyRouter = RegisteredRouter, TOptions = unknown>(
   props: RouteStatusDialogProps<TRouter, TOptions>,

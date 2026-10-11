@@ -4,7 +4,8 @@ import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 
 /**
- * 一覧ページの本体 (`notes-page.tsx`) と pending 表示 (`notes-page-pending.tsx`) が共有する値。
+ * 一覧ページの本体 (`notes-page.tsx`) と pending 表示 (`notes-page-pending.tsx`)、一覧の上に重ねるダイアログの
+ * route が共有する値。
  * pending は code-split されず main bundle に入るので、ここにはセルの描画や列定義を import しない (ADR-0010)
  */
 

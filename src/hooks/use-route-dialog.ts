@@ -51,7 +51,8 @@ export interface RouteDialog {
  * ごと unmount して、閉じるアニメーションが出ない。
  * `returnTo` の型は TanStack Router の Type Utilities の `ValidateNavigateOptions` で検査する。公開の
  * signature を generic にし、実装の signature を generic にしない形は、Type Utilities のガイドの
- * `useConditionalNavigate` に倣う
+ * `useConditionalNavigate` に倣う。`TRouter` の制約はガイドの例の `RegisteredRouter` ではなく、
+ * `ValidateNavigateOptions` 自身と同じ `AnyRouter` にする。テストが自分で組んだ router の型を渡せる
  */
 export function useRouteDialog<TRouter extends AnyRouter = RegisteredRouter, TOptions = unknown>(
   options: RouteDialogOptions<TRouter, TOptions>,
