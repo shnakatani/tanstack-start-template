@@ -86,10 +86,11 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - 戻る・進むでダイアログの route を離れた
 - 別のダイアログに替わった。読み込み中のダイアログ (`pendingComponent`) が本物や失敗・見つからないのダイアログ (`errorComponent`、`notFoundComponent`) に替わったとき、開いたまま別の値の URL へ移ったとき (`remountDeps`)、追加と編集のように別のダイアログの URL へ移ったときである
 
-2 つを分ける判定は、ダイアログを持つページ (開く元のページ) が持つ。ページごとに 1 つ置くアダプター (そのページの route tree の形を知り、汎用の部品へ渡す hook) に、`finalFocus` が呼ばれた時点の router の状態で、ページの `<Outlet />` にダイアログの route が表示されているかを判定する関数を書き、閉じたときの focus を決める部品へ渡す。閉じたときの focus を決める部品、ダイアログの開閉、読み込み中・失敗・見つからないのダイアログは、どのページでも同じ汎用の部品で組む。汎用の部品は route tree の形を読まず、判定を受け取るだけにする。
+2 つを分ける判定は、ダイアログの route が明示した戻り先 (閉じたときに離れる先。開く元のページ) に、`finalFocus` が呼ばれた時点の router がいるかで行う。いれば戻る・進むで離れた、いなければ別のダイアログに替わったとみなす。戻り先はダイアログの route が明示する。TanStack Router の example `location-masking` も、閉じるときは `navigate({ to: photosLayoutRoute.to })` で戻り先を名指す。判定と閉じたときの focus はダイアログの開閉を持つ汎用の hook が持ち、ダイアログの route は戻り先と開いた元の要素の探し方を渡す。route tree の形は読まない。
 
-- 判定は呼ばれた時点の `router.state.matches` を読む。`router.state` は呼んだ時点の状態を返す (TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない
-- `<Outlet />` がダイアログの route だけを描くページは、`matches` の中で自分の route の match より後ろに match があるかで判定できる。`matches` は root から leaf の順に並ぶ (`useChildMatches` は子の match を "from the closest match down to the leaf-most match" で返す。TanStack Router「useChildMatches hook」)。ダイアログの route の一覧を別に持つと、足したときに一覧へ足し忘れても気付けない
+- 比べるのは pathname で、`router.state.location.pathname` と、戻り先から `router.buildLocation` で組んだ pathname が一致するかを見る。どちらも呼んだ時点の location を読む (TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない
+- 戻り先の pathname も呼ばれた時点に組む。戻り先が params を今の値から引き継ぐ形なら、戻った先の params で組むので、別の値の開く元のページへ戻ったときも離れたと判定する
+- 戻り先でないページへ離れたときは、替わったときと同じく focus に触れない。開いた元の要素はそのページに無く、route の announcer が見出しへ移す (ADR-0035)
 - 閉じた時点でも route は残っているので、閉じたか (閉じる操作か保存の応答で、unmount の前に閉じ始めていたか) を先に見る
 
 下の表の行は、次の事情で決めた。
@@ -108,19 +109,21 @@ URL を直接開いたときは Base UI の既定の戻し先 (開く前に focu
 
 | 替わったときの案                                                                                         | 評価                                                                                                                                                                                                                                                                                                | 採否     |
 | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| ダイアログの route のどれかが残っていれば `false` を返す                                                 | リンクを経ずに替わる側の入力欄へ移る。戻る・進むと閉じたときの戻し先は変わらない。替わる間の 1 frame は focus が body にある                                                                                                                                                                        | **採用** |
+| 替わったと判定したら `false` を返す                                                                      | リンクを経ずに替わる側の入力欄へ移る。戻る・進むと閉じたときの戻し先は変わらない。替わる間の 1 frame は focus が body にある                                                                                                                                                                        | **採用** |
 | Dialog の Root を読み込み中と本物で 1 つに保つ (Root を開く元の route に上げ、Popup の中に `<Outlet />`) | unmount が起きない見込み。開いたまま別の値の URL へ移ると中身だけが作り直され、新しい入力欄へは手で移すことになる見込み。TanStack Router の example `location-masking` の骨格 (状態ごとに別のダイアログ) から外れる。未実測                                                                         | 却下     |
 | `finalFocus` を渡さず Base UI の既定に任せる                                                             | unmount の時点で focus は body にあり、既定の戻し先 (開く前に focus していた要素) へ戻る見込み。URL を直接開いたときは戻し先が無い (`@base-ui/react` 1.8.0 のコードの読みで、未実測)                                                                                                                | 却下     |
 | 上流の修正を待つ                                                                                         | floating-ui/floating-ui#3510 (2026-10-10 時点で open) は、microtask の時点で focus が body 以外へ移っていれば戻さない形で、替わる側の初期 focus が後から来るこの場面には効かない見込み。関数を渡した `finalFocus` はそのガードを通らない (どちらも `@base-ui/react` 1.8.0 のコードの読みで、未実測) | 却下     |
 
 替わったかの判定の置き場所:
 
-| 案                                                                                                                                                       | 評価                                                                                                                                                                                                                                                                                              | 採否     |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| ダイアログを持つページが、呼ばれた時点の router の状態で、自分の `<Outlet />` にダイアログの route が表示されているかを判定して渡す                      | 判定に要る route tree の形を知っているのはそのページだけである。汎用の部品は呼ぶ側の構造を前提にしない                                                                                                                                                                                            | **採用** |
-| 汎用の部品が、route tree でダイアログの route の直接の親 (`useParentMatches` の最後の match) を開く元のページとみなし、その子の match があるかで判定する | 開く元のページに index route を置く形 (layout route の `items/route.tsx` と `items/index.tsx`) では、ページを表示しているだけで親の子の match があり、戻るで離れたときも「替わった」と判定して開いた元のリンクへ戻さない。前提が崩れても黙って誤る                                                | 却下     |
-| 全部のダイアログの route に `staticData` で印を付け、汎用の部品が router 全体の match から印の付いた route を探す                                        | 印の付け忘れは、`StaticDataRouteOption` を declaration merging で必須にすれば型エラーで止まる (TanStack Router「Static Route Data」の Enforcing Static Data)。必須にすると、ダイアログでない route を含むアプリの全部の route に印の宣言を課す。汎用の部品が router 全体の match の形を前提にする | 却下     |
-| `finalFocus` が呼ばれた時点で、DOM にほかのダイアログが開いているかを見る                                                                                | `finalFocus` は Base UI の layout effect の後始末で同期に評価され (`@base-ui/react` 1.8.0 のコードの読み)、その時点では替わる側のダイアログも消える側のダイアログも DOM に無い (下の「実測」)。替わったときと離れたときを区別できない                                                             | 却下     |
+| 案                                                                                                                                                       | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | 採否     |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| ダイアログの route が明示した戻り先から組んだ pathname と、呼ばれた時点で router がいる pathname を比べる                                                | route tree の形を読まない。戻り先は閉じたときに離れる先として、ダイアログの route が持っている。下の「実測」の 2026-10-12 の比較で、戻るで離れたときと替わったときを、index route を置くページも含めて分けた                                                                                                                                                                                                                                                                                  | **採用** |
+| 開く元のページごとのアダプターが、そのページの `<Outlet />` にダイアログの route が表示されているかを判定して渡す                                        | 汎用の hook が route の責務を持たず、ページごとに戻り先への `navigate` と `router.state` を読む判定の同じアダプターを書かせる。判定の式はページの route tree の形に依存し、index route を置くページでは index route の match を除く式を足す。誤っても汎用の部品は気付けない                                                                                                                                                                                                                   | 却下     |
+| 汎用の部品が、route tree でダイアログの route の直接の親 (`useParentMatches` の最後の match) を開く元のページとみなし、その子の match があるかで判定する | 開く元のページに index route を置く形 (layout route の `items/route.tsx` と `items/index.tsx`) では、ページを表示しているだけで親の子の match があり、戻るで離れたときも「替わった」と判定して開いた元のリンクへ戻さない。前提が崩れても黙って誤る                                                                                                                                                                                                                                            | 却下     |
+| 全部のダイアログの route に `staticData` で印を付け、汎用の部品が router 全体の match から印の付いた route を探す                                        | 印の付け忘れは、`StaticDataRouteOption` を declaration merging で必須にすれば型エラーで止まる (TanStack Router「Static Route Data」の Enforcing Static Data)。必須にすると、ダイアログでない route を含むアプリの全部の route に印の宣言を課す。汎用の部品が router 全体の match の形を前提にする                                                                                                                                                                                             | 却下     |
+| `finalFocus` が呼ばれた時点で、DOM にほかのダイアログが開いているかを見る                                                                                | `finalFocus` は Base UI の layout effect の後始末で同期に評価され (`@base-ui/react` 1.8.0 のコードの読み)、その時点では替わる側のダイアログも消える側のダイアログも DOM に無い (下の「実測」)。替わったときと離れたときを区別できない                                                                                                                                                                                                                                                         | 却下     |
+| `router.matchRoute` で戻り先と照合する                                                                                                                   | `pending` を省くと、遷移中 (status が pending) は遷移前の location (`resolvedLocation`) と照合し、戻るで離れたときと替わったときを逆に判定する (下の「実測」)。`pending: true` は status が pending でないとき常に false を返す。params を関数で渡す戻り先は、関数をそのまま照合した params と比べるので一致しない (どちらも `@tanstack/router-core` 1.171.34 のコードの読み)。2026-10-12 の比較の 11 通りは、どれも status が pending で、`pending: true` は pathname の比較と同じ結果だった | 却下     |
 
 ### 背後の一覧をそろえる
 
@@ -176,7 +179,7 @@ route の URL と閉じ方:
 - 背後の一覧は、開いた項目が食い違ったときだけ取り直す。開かずに一覧だけを見ている間、一覧の古さはタブへ戻ったときの再取得 (`staleTime` を過ぎていれば走る) に任せる。このタブを見たまま別の利用者が保存した変更は、その項目を開くか、タブを離れて戻るまで一覧に出ない
 - `cancelRefetch: false` では、別のタブが保存するより前に始まった一覧の取得が進行中だと、invalidate はその取得に吸収される。その取得の結果は保存より古いことがあり、そのときは一覧が古いまま残る
 - 既存の値を編集するダイアログは、開く行のリンクが一覧に無いと (戻る・進む、URL を直接開いた)、リンクの `Spinner` が出ないので、`pendingMs` までは何も見えない
-- ダイアログを持つページごとに、戻り先、`<Outlet />` にダイアログの route が表示されているかの判定、開いた元の要素の探し方を書く。判定を誤っても汎用の部品は気付けないので、戻る・替わるときの focus はそのページの route のテストで確かめることになる
+- ダイアログの route ごとに、戻り先と開いた元の要素の探し方を渡す。探し方を誤っても汎用の hook は気付けないので、閉じたときと戻るで離れたときの focus は、そのページの route のテストで確かめることになる
 
 ### 再評価の条件
 
@@ -210,6 +213,22 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 | `finalFocus` が呼ばれた時点の DOM を、読み込み中のダイアログが本物に替わる、編集から追加の URL へ移る、開いたまま別の id の編集の URL へ移る、戻るで一覧へ離れるの 4 通りで見る。アニメーションを止めた形と戻した形で 3 回ずつ (2026-10-12、Vitest の browser mode。`MutationObserver` で popup の出入りを記録し、`finalFocus` の中で `takeRecords()` した) | 4 通り × 2 形 × 3 回の 24 回のどれでも、`finalFocus` の時点でダイアログは DOM に 1 つも無かった。替わる側の popup は `finalFocus` の後に足された                                                                       |
 | code-based の route tree (layout route の `/items` の下に index route の `/` とダイアログの route の `/new`) を `createRouter` に渡し、`/items` と `/items/new` を `router.load()` で開いて `router.state.matches` の routeId を見る (2026-10-12、Node)                                                                                                     | `/items` では `__root__`、`/items`、`/items/` の順に並び、`/items/new` では `__root__`、`/items`、`/items/new` の順に並んだ。index route の routeId は末尾に `/` が付いた                                              |
 
+`finalFocus` が呼ばれた時点で、戻り先との pathname の比較、`router.matchRoute` (`pending` を省く形と `pending: true`)、開く元のページの route の match の後ろに match があるか、の 3 つの判定がどう分けるかを、11 通りで 3 回ずつ見た (2026-10-12、Vitest の browser mode。一覧のページの子に追加と編集のダイアログの route を置いた route tree と、layout route の下に index route とダイアログの route を並べた route tree)。3 回とも同じ結果で、どの回も `finalFocus` の時点の status は pending だった。閉じた行は、閉じたかを先に見るので判定を使わない。
+
+| 閉じ方                                                     | 求める判定     | pathname の比較 | `matchRoute` (`pending` を省く) | `matchRoute` (`pending: true`) | 後ろに match があるか |
+| ---------------------------------------------------------- | -------------- | --------------- | ------------------------------- | ------------------------------ | --------------------- |
+| 編集のダイアログから戻るで一覧へ                           | 離れた         | 離れた          | 替わった                        | 離れた                         | 離れた                |
+| 一覧に search がある形で、編集のダイアログから戻るで一覧へ | 離れた         | 離れた          | 替わった                        | 離れた                         | 離れた                |
+| 編集の読み込み中のダイアログが本物に替わる                 | 替わった       | 替わった        | 離れた                          | 替わった                       | 替わった              |
+| 編集から追加の URL へ移る                                  | 替わった       | 替わった        | 替わった                        | 替わった                       | 替わった              |
+| 編集から別の id の編集の URL へ移る                        | 替わった       | 替わった        | 替わった                        | 替わった                       | 替わった              |
+| 別のページから編集の URL へ移り、戻るでそのページへ        | 戻り先にいない | 替わった        | 替わった                        | 替わった                       | 離れた                |
+| index route を置くページで、追加から戻るで離れる           | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
+| index route を置くページで、追加の読み込み中が本物に替わる | 替わった       | 替わった        | 離れた                          | 替わった                       | 替わった              |
+| 編集を閉じる操作で閉じる                                   | 閉じた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
+| 編集の読み込み中を閉じる操作で閉じる                       | 閉じた         | 離れた          | 離れた                          | 離れた                         | 替わった              |
+| index route を置くページで、追加を閉じる操作で閉じる       | 閉じた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
+
 ## 出典
 
 - TanStack Router example `location-masking`: https://github.com/TanStack/router/tree/main/examples/react/location-masking
@@ -219,7 +238,6 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 - TanStack Router「RouteOptions type」(`remountDeps`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouteOptionsType
 - TanStack Router「useCanGoBack hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useCanGoBack
 - TanStack Router「useRouter hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useRouterHook
-- TanStack Router「useChildMatches hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useChildMatchesHook
 - TanStack Router「RouterState type」(`matches`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouterStateType
 - TanStack Router「Static Route Data」(Enforcing Static Data): https://tanstack.com/router/latest/docs/framework/react/guide/static-route-data
 - Next.js「Parallel Routes」(Modals): https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes#modals
