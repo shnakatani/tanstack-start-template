@@ -1,13 +1,14 @@
 # フォームと入力部品
 
-入力スキーマ、フォームの部品、Select と数値の入力欄、高さのあるダイアログ、placeholder を書くときの手順と落とし穴を持つ。
+入力スキーマ、フォームの部品、Select と数値の入力欄、高さのあるダイアログ、子 route のフォームのダイアログ、placeholder を書くときの手順と落とし穴を持つ。
 
-| 決定                                                                                     | ADR      |
-| ---------------------------------------------------------------------------------------- | -------- |
-| ドメイン型は valibot スキーマから導出する                                                | ADR-0013 |
-| 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる                      | ADR-0021 |
-| placeholder には例示だけを置き、色を専用トークンへ切る                                   | ADR-0025 |
-| フロントで使うスキーマはテーブル定義から作らず、テーブル定義の型と型テストで突き合わせる | ADR-0034 |
+| 決定                                                                                                | ADR      |
+| --------------------------------------------------------------------------------------------------- | -------- |
+| ドメイン型は valibot スキーマから導出する                                                           | ADR-0013 |
+| 数値入力に `type="number"` を使わず Base UI の NumberField に寄せる                                 | ADR-0021 |
+| placeholder には例示だけを置き、色を専用トークンへ切る                                              | ADR-0025 |
+| フロントで使うスキーマはテーブル定義から作らず、テーブル定義の型と型テストで突き合わせる            | ADR-0034 |
+| フォームのダイアログは子 route にし、既存の値を編集するものは loader が最新の値を取り終えてから開く | ADR-0041 |
 
 ## how-to
 
@@ -96,6 +97,54 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 
 - `DialogContent` の padding を変えたら、`DialogScrollBody` の `-mx-6` / `px-6` も変える
 - 組み忘れても、registry の Dialog が持つ backstop (`popupOverflowBackstop`) で Popup ごと流れるので、内容は読める。ただし見出しと X ボタンも流れる
+
+### フォームのダイアログを子 route で組む
+
+入力を保存するフォームのダイアログは、開く元のページの route の子 route にする (ADR-0041)。どのページでも同じ部分は次の汎用の部品が持ち、route tree の形に依る部分はページごとのアダプターが持つ。
+
+| 部品                                                                     | 持つもの                                                                                                                     |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `src/hooks/use-route-dialog.ts` の `useRouteDialog`                      | 開閉の state、保存の pending の間の close の停止、閉じるアニメーションの後の `onClosed`                                      |
+| `src/lib/route-dialog-final-focus.ts` の `createRouteDialogFinalFocus`   | Base UI の `finalFocus` に渡す関数。呼ばれた時点で受け取った関数を呼び、`src/lib/route-dialog-focus.ts` の表で移し先を決める |
+| `src/components/screens/route-status-dialog.tsx` の `RouteStatusDialog`  | 失敗と見つからないのダイアログ。閉じるアニメーションの後で `onClosed` を呼ぶ                                                 |
+| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。閉じる操作の時点で `onClose` を呼び、閉じるアニメーションを待たない                                  |
+
+アダプターは、ダイアログを持つページごとに 1 つ、そのページの `-hooks/` に書く。持つのは、戻り先、`isDialogShown` (そのページの `<Outlet />` にダイアログの route が表示されているか)、開いた元の要素を探す関数の 3 つで、汎用の部品へ渡して `onClosed` と `finalFocus` を作る。
+
+```ts
+// routes/items/-hooks/use-item-dialog-navigation.ts
+export function useItemDialogNavigation(findReturnTarget: () => HTMLElement | null) {
+  const navigate = useNavigate({ from: "/items" });
+  const router = useRouter();
+  function onClosed() {
+    void navigate({ to: "/items", search: (prev) => prev });
+  }
+  const finalFocus = createRouteDialogFinalFocus({
+    isDialogShown: () => {
+      const { matches } = router.state;
+      const pageIndex = matches.findIndex((match) => match.routeId === "/items");
+      return pageIndex !== -1 && pageIndex < matches.length - 1;
+    },
+    findReturnTarget,
+  });
+  return { onClosed, finalFocus };
+}
+```
+
+| 書く場所                                                                    | 配線                                                                                                                                                                        |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ダイアログの route の `component`                                           | アダプターの `onClosed` と `finalFocus` をダイアログへ props で渡す                                                                                                         |
+| ダイアログの route の `pendingComponent`                                    | `RoutePendingDialog` に、`title` と、アダプターの `onClosed` を `onClose` として、`finalFocus` を渡す                                                                       |
+| ダイアログの route の `errorComponent`、`notFoundComponent`                 | `RouteStatusDialog` に、見出しと説明とアダプターの返り値を渡す。失敗のダイアログは `action` に、`useRouteRetry` (`src/hooks/use-route-retry.ts`) を呼ぶ再試行のボタンを渡す |
+| ダイアログ                                                                  | `useRouteDialog({ onClosed, isPending: <保存の mutation>.isPending })` を呼び、返る `open`、`onOpenChange`、`onOpenChangeComplete` を Dialog の Root へ渡す                 |
+| 保存の mutation の `onSuccess`                                              | 先頭で `useRouteDialog` の返り値の `setOpen(false)` を呼ぶ。`setOpen` は `onOpenChange` を通らないので、pending の間の close の停止に止められない                           |
+| ダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) | `finalFocus={() => finalFocus(!open)}` を渡す。`open` が false なのは閉じる操作か保存の応答で閉じたときで、開いたまま unmount したときは true のまま残る                    |
+| キャンセルの `DialogClose`                                                  | `disabled` に `useRouteDialog` の返り値の `blocksClose` を渡す                                                                                                              |
+
+- `isDialogShown` は、呼ばれた時点の `router.state.matches` を読む。`useMatches` などの hook で描画の時点に読んだ値を閉じ込めない。描画の時点の値は unmount の時点の遷移先を映さず、戻るで離れたときも表示されていると判定して、開いた元の要素へ focus を戻さない ([TanStack Router docs「useRouter hook」][])
+- 自分の route の match より後ろに match があるかで判定するのは、`<Outlet />` がダイアログの route だけを描くページに限る。ダイアログでない子 route (index route など) を置くページは、その route の match を除いて判定する。除かないと、ページを表示しているだけで表示されていると判定する
+- 汎用の部品は route tree を読まないので、アダプターの誤りに気付かない。アダプターを書いたら、そのページの route のテスト (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) で、戻るで離れたら開いた元の要素へ focus が戻ることと、別のダイアログに替わったとき (読み込み中から本物へ、別の値の URL へ、別のダイアログの URL へ) に開いた元の要素が focus を受けないことを確かめる。順序は、router の更新、消える側の unmount と `finalFocus`、替わる側の初期 focus、route の announcer の順に進む
+- 替わったときに開いた元の要素が focus を受けるのは 1 frame だけなので、`toHaveFocus` の retry では捉えられない。`focusin` を記録して見る
 
 ### 入力欄の周りに要素を置く
 
@@ -262,3 +311,4 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [shadcn skill「Base vs Radix」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/base-vs-radix.md
 [shadcn docs「Select」]: https://ui.shadcn.com/docs/components/base/select
 [TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240
+[TanStack Router docs「useRouter hook」]: https://tanstack.com/router/latest/docs/framework/react/api/router/useRouterHook

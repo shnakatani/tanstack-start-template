@@ -91,8 +91,10 @@ lint では見ないのでレビューで見る。
 | フォームのダイアログ、失敗と見つからないのダイアログ | 閉じる操作では `open` を false にするだけにし、`onOpenChangeComplete` で離れる。先に離れると閉じるアニメーションが出ない |
 | 読み込み中のダイアログ (`pendingComponent`)          | 閉じる操作の時点で離れ、閉じるアニメーションを待たない。待つ間に読み込みが終わると、本物のダイアログが開く               |
 
-- `finalFocus` は、利用者が閉じたときだけでなく、戻る・進むで開いたまま unmount したときにも開いた元のリンク (行の編集リンク、追加のリンク) を返す。閉じる操作のときだけ返すと、戻るで一覧へ移ったときに focus がダイアログと一緒に外れて見出しへ移り、一覧の中の位置を失う (ADR-0041)
-- 開いたまま unmount した時点で、開く元のページの上に重ねるダイアログの route のどれかがまだ表示されていれば (読み込み中のダイアログが本物や失敗・見つからないのダイアログに替わった、別のダイアログの URL へ移った)、`finalFocus` は `false` を返す。判定は `finalFocus` の中で `router.state.matches` を読み、描画の時点の hook の値を使わない。利用者が閉じたかを先に見る。リンクを返すと、替わったダイアログが入力欄へ移すまでの間リンクが focus を受ける (ADR-0041)
+- ダイアログは汎用の部品 (`useRouteDialog`、`createRouteDialogFinalFocus`、`RouteStatusDialog`、`RoutePendingDialog`) で組み、戻り先、`isDialogShown`、開いた元の要素の探し方は、ダイアログを持つページごとに 1 つのアダプターに書く。汎用の部品に route tree を読む処理を足さない (ADR-0041)
+- `isDialogShown` は呼ばれた時点の `router.state.matches` を読み、描画の時点に hook で読んだ値を閉じ込めない。描画の時点の値は unmount の時点の遷移先を映さず、戻るで離れたときに開いた元の要素へ focus を戻さない (ADR-0041)
+- `<Outlet />` にダイアログでない子 route (index route など) を置くページは、`isDialogShown` でその route の match を除く。除かないと、ページを表示しているだけで表示されていると判定する (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
+- アダプターを書いたら、そのページの route のテストで、戻るで離れたときに開いた元の要素へ focus が戻ることと、別のダイアログに替わったときに開いた元の要素が focus を受けないことを確かめる。汎用の部品はアダプターの誤りに気付かない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 
 ## 既存の値を編集するダイアログは最新の値を取ってから開く
 
