@@ -100,56 +100,56 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 
 ### フォームのダイアログを子 route で組む
 
-ADR-0041 に沿ってダイアログを組む手順。使う汎用の部品は次の表のとおり。
+ADR-0041 に沿ってダイアログを組む手順。使う部品は次の表のとおり。
 
-| 部品                                                                     | 持つもの                                                                                                                                                                                          |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/hooks/use-route-dialog.ts` の `useRouteDialog`                      | 開閉の state、保存の pending の間の close の停止、閉じるアニメーションの後の `onClosed`、閉じたか (`closedBeforeUnmount`。閉じる操作か保存の応答で閉じたら true、開いたまま unmount したら false) |
-| `src/lib/route-dialog-final-focus.ts` の `createRouteDialogFinalFocus`   | Base UI の `finalFocus` から呼ぶ関数 (`RouteDialogFinalFocus`) を作る。作った関数は、呼ばれた時点で受け取った関数を呼び、`src/lib/route-dialog-focus.ts` の表で移し先を決める                     |
-| `src/components/screens/route-status-dialog.tsx` の `RouteStatusDialog`  | 失敗と見つからないのダイアログ。閉じるアニメーションの後で `onClosed` を呼ぶ                                                                                                                      |
-| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。閉じる操作の時点で `onClose` を呼び、閉じるアニメーションを待たない                                                                                                       |
+| 部品                                                                     | 持つもの                                                                                                                                               |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/hooks/use-route-dialog.ts` の `useRouteDialog`                      | 開閉の state、保存の pending の間の close の停止、閉じるアニメーションの後で戻り先へ新しい履歴で離れること、閉じたときの focus の移し先 (`finalFocus`) |
+| `src/components/screens/route-status-dialog.tsx` の `RouteStatusDialog`  | 失敗と見つからないのダイアログ。中で `useRouteDialog` を使い、閉じるアニメーションの後で戻り先へ離れる                                                 |
+| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。中で `useRouteDialog` を `waitForCloseAnimation: false` で使い、閉じる操作の時点で戻り先へ離れ、閉じるアニメーションを待たない |
 
-アダプターは、ダイアログを持つページごとに 1 つ、そのページの `-hooks/` に書く。アダプターは戻り先と `isDialogShown` (そのページの `<Outlet />` にダイアログの route が表示されているか) を持ち、開いた元の要素を探す関数をダイアログの route から受け取る。これらを汎用の部品へ渡して `onClosed` と `finalFocus` を作る。
+どの部品にも、ダイアログの route ごとに次の 2 つを渡す。戻るで離れたか別のダイアログに替わったかは、`useRouteDialog` が戻り先から判定する (ADR-0041)。開く元のページの route tree の形 (index route の有無、親の path params) によって書き分けるものは無い。
+
+| 渡すもの           | 書き方                                                                                                                                                                                                                                                                                                     |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `returnTo`         | 閉じたときに離れる先 (開く元のページ) を `navigate` の options の形で書く。`useRouteDialog` はそのまま `navigate` に渡すので、開く元のページの search を保つなら `search: (prev) => prev` を書く。型は `ValidateNavigateOptions` が route tree と突き合わせる ([TanStack Router docs「Type Utilities」][]) |
+| `findReturnTarget` | 開いた元の要素 (開くリンク) を探す関数。リンクに data 属性を付けて `document.querySelector` で探す。URL を直接開いたときは Base UI の既定の戻し先 (開く前に focus していた要素) が無いので、この関数で戻す                                                                                                 |
+
+同じ戻り先は、ダイアログと読み込み中・失敗・見つからないのダイアログの全部が使うので、`linkOptions` で検査した定数を開く元のページの `-lib/` に 1 つ置く ([TanStack Router docs「Link Options」][])。`{ to: "/items", search: (prev) => prev }` を型の無い定数にすると、`prev` の型が決まらず型検査を通らない。
 
 ```ts
-// routes/items/-hooks/use-item-dialog-navigation.ts
-export function useItemDialogNavigation(findReturnTarget: () => HTMLElement | null) {
-  const navigate = useNavigate({ from: "/items" });
-  const router = useRouter();
-  function onClosed() {
-    void navigate({ to: "/items", search: (prev) => prev });
-  }
-  const finalFocus = createRouteDialogFinalFocus({
-    isDialogShown: () => {
-      const { matches } = router.state;
-      const pageIndex = matches.findIndex((match) => match.routeId === "/items");
-      return pageIndex !== -1 && pageIndex < matches.length - 1;
-    },
-    findReturnTarget,
-  });
-  return { onClosed, finalFocus };
+// routes/items/-lib/item-dialog-route.ts
+export const ITEM_DIALOG_RETURN_TO = linkOptions({ to: "/items", search: (prev) => prev });
+
+export function findItemCreateLink() {
+  return document.querySelector<HTMLElement>("[data-item-create-link]");
 }
+
+// routes/items/-components/item-create-dialog.tsx
+const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete, finalFocus } =
+  useRouteDialog({
+    returnTo: ITEM_DIALOG_RETURN_TO,
+    findReturnTarget: findItemCreateLink,
+    isPending: createMutation.isPending,
+  });
 ```
 
-| 書く場所                                                                    | 配線                                                                                                                                                                                                                                                 |
-| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ダイアログの route の `component`                                           | アダプターの `onClosed` と `finalFocus` をダイアログへ props で渡す                                                                                                                                                                                  |
-| ダイアログの route の `pendingComponent`                                    | `RoutePendingDialog` に、`title` と、アダプターの `onClosed` を `onClose` として、`finalFocus` を渡す                                                                                                                                                |
-| ダイアログの route の `errorComponent`、`notFoundComponent`                 | `RouteStatusDialog` に、見出しと説明とアダプターの返り値を渡す。失敗のダイアログは `action` に、`useRouteRetry` (`src/hooks/use-route-retry.ts`) を呼ぶ再試行のボタンを渡す                                                                          |
-| ダイアログ                                                                  | `useRouteDialog({ onClosed, isPending: <保存の mutation>.isPending })` を呼び、返る `open`、`onOpenChange`、`onOpenChangeComplete` を Dialog の Root へ渡す                                                                                          |
-| 保存の mutation の `onSuccess`                                              | 先頭で `useRouteDialog` の返り値の `setOpen(false)` を呼ぶ。`setOpen` は `onOpenChange` を通らないので、pending の間の close の停止に止められない                                                                                                    |
-| ダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) | `finalFocus={() => finalFocus(closedBeforeUnmount)}` を渡す。`closedBeforeUnmount` は `useRouteDialog` の返り値を使い、`open` から手で作らない。`false` や `open` を渡しても型は通り、閉じたとき (閉じる操作、保存の応答) に開いた元の要素へ戻らない |
-| キャンセルの `DialogClose`                                                  | `disabled` に `useRouteDialog` の返り値の `blocksClose` を渡す                                                                                                                                                                                       |
+| 書く場所                                                                    | 配線                                                                                                                                                                                    |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ダイアログ                                                                  | `useRouteDialog` に `returnTo`、`findReturnTarget`、保存の mutation の `isPending` を渡し、返る `open`、`onOpenChange`、`onOpenChangeComplete` を Dialog の Root へ渡す                 |
+| 保存の mutation の `onSuccess`                                              | 先頭で返り値の `setOpen(false)` を呼ぶ。`setOpen` は `onOpenChange` を通らないので、pending の間の close の停止に止められない                                                           |
+| ダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) | 返り値の `finalFocus` をそのまま渡す                                                                                                                                                    |
+| キャンセルの `DialogClose`                                                  | `disabled` に返り値の `blocksClose` を渡す                                                                                                                                              |
+| ダイアログの route の `pendingComponent`                                    | `RoutePendingDialog` に `title`、`returnTo`、`findReturnTarget` を渡す                                                                                                                  |
+| ダイアログの route の `errorComponent`、`notFoundComponent`                 | `RouteStatusDialog` に見出しと説明と `returnTo`、`findReturnTarget` を渡す。失敗のダイアログは `action` に、`useRouteRetry` (`src/hooks/use-route-retry.ts`) を呼ぶ再試行のボタンを渡す |
 
-- `isDialogShown` は、呼ばれた時点の `router.state.matches` を読む。`useMatches` などの hook で描画の時点に読んだ値を閉じ込めない。描画の時点の値は unmount の時点の遷移先を映さず、戻るで離れたときも表示されていると判定して、開いた元の要素へ focus を戻さない ([TanStack Router docs「useRouter hook」][])
-- 自分の route の match より後ろに match があるかで判定するのは、`<Outlet />` がダイアログの route だけを描くページに限る
-- ダイアログでない子 route (index route など) を置くページは、その route の match を除いて判定する。除かないと、ページを表示しているだけで表示されていると判定する。上の例なら、返す式を `pageIndex !== -1 && matches.slice(pageIndex + 1).some((match) => match.routeId !== "/items/")` にする。index route の routeId は末尾に `/` が付く ([TanStack Router docs「Routing Concepts」][] の Index Routes。`/items` を開いたときの matches の実測は ADR-0041)
-- 汎用の部品は route tree を読まないので、アダプターの誤りに気付かない。アダプターを書いたら、そのページの route のテスト (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) で次の 3 つを確かめる
+- `findReturnTarget` が開いた元の要素を見つけられなくても、`useRouteDialog` は気付かない。ダイアログの route を足したら、そのページの route のテスト (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) で次の 3 つを確かめる
   - 閉じる操作で閉じたら、開いた元の要素へ focus が移る (無ければページの見出しへ)
   - 戻るで離れたら、開いた元の要素へ focus が戻る
   - 別のダイアログに替わったとき (読み込み中から本物へ、別の値の URL へ、別のダイアログの URL へ)、開いた元の要素が focus を受けない
 - 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめる。開くリンクを押して開くと、`finalFocus` を渡し忘れても Base UI の既定の戻し先 (開く前に focus していた要素) でリンクへ戻り、テストが通る ([Base UI docs「Dialog」][])
 - 替わったときに開いた元の要素が focus を受けるのは 1 frame だけなので、`toHaveFocus` の retry では捉えられない。替わる前に `recordFocusins` (`src/test/assert/focusin.ts`) で focusin の記録を始め、替わる側の入力欄の `toHaveFocus` を待ってから、記録に開いた元の要素が無いことを見る。ダイアログが開いている間は背後の要素が aria-hidden になり、`getByRole` は既定でそれを引かないので ([Vitest docs「Locators」][] の getByRole の `includeHidden`)、記録の要素は可視の文字か aria-label で見分ける
+- `useRouteDialog` を呼ぶダイアログの部品のテストは、`createTestRouter` (`src/test/app/create-test-router.tsx`) の route に描く。閉じたあとに離れたことは `router.state.location.pathname` で見る
 
 ### 入力欄の周りに要素を置く
 
@@ -317,5 +317,5 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [shadcn skill「Base vs Radix」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/base-vs-radix.md
 [shadcn docs「Select」]: https://ui.shadcn.com/docs/components/base/select
 [TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240
-[TanStack Router docs「useRouter hook」]: https://tanstack.com/router/latest/docs/framework/react/api/router/useRouterHook
-[TanStack Router docs「Routing Concepts」]: https://tanstack.com/router/latest/docs/routing/routing-concepts
+[TanStack Router docs「Type Utilities」]: https://tanstack.com/router/latest/docs/guide/type-utilities
+[TanStack Router docs「Link Options」]: https://tanstack.com/router/latest/docs/guide/link-options
