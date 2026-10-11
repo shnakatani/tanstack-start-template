@@ -37,7 +37,9 @@ export interface RouteDialogOptions<
 /**
  * `open`、`onOpenChange`、`onOpenChangeComplete` は Dialog の Root へ、`finalFocus` は Popup
  * (`DialogContent`、`ActionDialogContent`) へ、`blocksClose` はキャンセルの `DialogClose` の `disabled` へ渡す。
- * `setOpen(false)` は保存の応答で閉じるときに呼ぶ。`onOpenChange` を通らないので、close の停止に止められない
+ * `setOpen(false)` は保存の応答で閉じるときに呼ぶ。`onOpenChange` を通らないので、close の停止に止められない。
+ * ダイアログの route にいる間に呼ぶ。`waitForCloseAnimation` が false だと、戻るなどで route を離れたあとに
+ * 呼んでも `returnTo` へ離れ、利用者がいるページから動かしてしまう
  */
 export interface RouteDialog {
   open: boolean;
