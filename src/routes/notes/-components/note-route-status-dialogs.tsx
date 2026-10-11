@@ -2,12 +2,18 @@ import { RouteStatusDialog } from "@/components/screens/route-status-dialog";
 import { Button } from "@/components/ui/button";
 import { useRouteRetry } from "@/hooks/use-route-retry";
 
-import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
+import { NOTE_DIALOG_RETURN_TO } from "../-lib/notes-page-constants";
 
-export function NoteNotFoundDialog(props: NoteDialogNavigation) {
+/** findReturnTarget: 開いた元の要素 (行の編集リンク、追加のリンク) を探す。閉じたらそこへ focus を戻す */
+interface NoteRouteStatusDialogProps {
+  findReturnTarget: () => HTMLElement | null;
+}
+
+export function NoteNotFoundDialog({ findReturnTarget }: NoteRouteStatusDialogProps) {
   return (
     <RouteStatusDialog
-      {...props}
+      returnTo={NOTE_DIALOG_RETURN_TO}
+      findReturnTarget={findReturnTarget}
       title="メモが見つかりません"
       description="削除されたか、URL が誤っています。"
     />
@@ -19,11 +25,16 @@ export function NoteNotFoundDialog(props: NoteDialogNavigation) {
  * 描くのは `RouteErrorContent` に限り (`docs/guides/server-errors.md`「詳細を出す環境を変える」)、
  * `RouteErrorContent` は自分の h1 を持つのでダイアログの中に置けない
  */
-export function NoteRouteErrorDialog(props: NoteDialogNavigation & { title: string }) {
+export function NoteRouteErrorDialog({
+  findReturnTarget,
+  title,
+}: NoteRouteStatusDialogProps & { title: string }) {
   const handleRetry = useRouteRetry();
   return (
     <RouteStatusDialog
-      {...props}
+      returnTo={NOTE_DIALOG_RETURN_TO}
+      findReturnTarget={findReturnTarget}
+      title={title}
       description="時間をおいて再試行してください。"
       action={<Button onClick={handleRetry}>再試行</Button>}
     />

@@ -9,8 +9,8 @@ import { useRouteDialog } from "@/hooks/use-route-dialog";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
-import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
-import { NOTE_CREATE_DIALOG_TITLE } from "../-lib/notes-page-constants";
+import { findNoteCreateLink } from "../-lib/note-dialog-focus";
+import { NOTE_CREATE_DIALOG_TITLE, NOTE_DIALOG_RETURN_TO } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
 
 /** フォームの初期値 (作成は常に空)。`NoteFormContent` の `defaultValues` に渡す */
@@ -18,10 +18,10 @@ const EMPTY_NOTE_INPUT = { title: "", body: "", dueDate: null } satisfies NoteIn
 
 /**
  * メモの追加ダイアログ。追加の route (`new.tsx`) の component が描く (ADR-0041)。開くたびに route が mount
- * し直すので、フォームも mutation も開いたダイアログごとに別になる。閉じたら `onClosed` で一覧の route へ
- * 戻る
+ * し直すので、フォームも mutation も開いたダイアログごとに別になる。閉じたら一覧の route へ戻り、追加のリンクへ
+ * focus を戻す
  */
-export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation) {
+export function NoteCreateDialog() {
   const queryClient = useQueryClient();
 
   const createMutation = useActionMutation({
@@ -49,9 +49,10 @@ export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation)
     onError: toastMutationError,
   });
 
-  const { open, setOpen, blocksClose, closedBeforeUnmount, onOpenChange, onOpenChangeComplete } =
+  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete, finalFocus } =
     useRouteDialog({
-      onClosed,
+      returnTo: NOTE_DIALOG_RETURN_TO,
+      findReturnTarget: findNoteCreateLink,
       isPending: createMutation.isPending,
     });
 
@@ -62,7 +63,7 @@ export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation)
         defaultValues={EMPTY_NOTE_INPUT}
         onSubmit={createMutation.runAction}
         blocksClose={blocksClose}
-        finalFocus={() => finalFocus(closedBeforeUnmount)}
+        finalFocus={finalFocus}
       />
     </Dialog>
   );

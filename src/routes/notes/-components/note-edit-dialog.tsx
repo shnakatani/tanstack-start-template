@@ -9,21 +9,17 @@ import { useRouteDialog } from "@/hooks/use-route-dialog";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
-import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
-import { NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
+import { findNoteEditLink } from "../-lib/note-dialog-focus";
+import { NOTE_DIALOG_RETURN_TO, NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
 
 /**
  * メモの編集ダイアログ。編集の route (`$noteId.edit.tsx`) の component が描き、loader が取り直した
  * 1 件をフォームの初期値にする (ADR-0041)。一覧から route に入ると mount し、開いたまま別のメモの URL へ
  * 移ると route の `remountDeps` が作り直すので、フォームも mutation も開くメモごとに別になる。閉じたら
- * `onClosed` で一覧の route へ戻る
+ * 一覧の route へ戻り、開いたメモの行の編集リンクへ focus を戻す
  */
-export function NoteEditDialog({
-  noteId,
-  onClosed,
-  finalFocus,
-}: { noteId: Note["id"] } & NoteDialogNavigation) {
+export function NoteEditDialog({ noteId }: { noteId: Note["id"] }) {
   const queryClient = useQueryClient();
   const { data: note } = useSuspenseQuery(noteQueryOptions(noteId));
 
@@ -49,9 +45,10 @@ export function NoteEditDialog({
     onError: toastMutationError,
   });
 
-  const { open, setOpen, blocksClose, closedBeforeUnmount, onOpenChange, onOpenChangeComplete } =
+  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete, finalFocus } =
     useRouteDialog({
-      onClosed,
+      returnTo: NOTE_DIALOG_RETURN_TO,
+      findReturnTarget: () => findNoteEditLink(noteId),
       isPending: updateMutation.isPending,
     });
 
@@ -62,7 +59,7 @@ export function NoteEditDialog({
         defaultValues={{ title: note.title, body: note.body, dueDate: note.dueDate }}
         onSubmit={(input) => updateMutation.runAction({ id: note.id, ...input })}
         blocksClose={blocksClose}
-        finalFocus={() => finalFocus(closedBeforeUnmount)}
+        finalFocus={finalFocus}
       />
     </Dialog>
   );

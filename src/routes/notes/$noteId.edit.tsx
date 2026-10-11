@@ -8,10 +8,9 @@ import { pageTitle } from "@/lib/page-title";
 
 import { NoteEditDialog } from "./-components/note-edit-dialog";
 import { NoteNotFoundDialog, NoteRouteErrorDialog } from "./-components/note-route-status-dialogs";
-import { useNoteDialogNavigation } from "./-hooks/use-note-dialog-navigation";
 import { findNoteEditLink } from "./-lib/note-dialog-focus";
 import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
-import { NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
+import { NOTE_DIALOG_RETURN_TO, NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
 export const Route = createFileRoute("/notes/$noteId/edit")({
   // URL の noteId は数値の id。id の形でない値は loader が見つからないものとして扱う
@@ -54,31 +53,33 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   component: EditRoute,
 });
 
-/**
- * Route hooks を吸収し、ダイアログへ渡すハンドラを返す。ダイアログは値とハンドラを props で受ける (ADR-0010)。
- * 閉じたときの focus の戻し先は、開いたメモの行の編集リンク
- */
-function useEditDialogNavigation() {
+/** Route hooks を吸収し、閉じたときに focus を戻す、開いたメモの行の編集リンクを探す関数を返す (ADR-0010) */
+function useFindEditLink() {
   const { noteId } = Route.useParams();
-  return useNoteDialogNavigation(() => findNoteEditLink(noteId));
+  return () => findNoteEditLink(noteId);
 }
 
 function EditRoute() {
   const { noteId } = Route.useParams();
-  return <NoteEditDialog noteId={noteId} {...useEditDialogNavigation()} />;
+  return <NoteEditDialog noteId={noteId} />;
 }
 
 function EditPending() {
-  const { onClosed, finalFocus } = useEditDialogNavigation();
   return (
-    <RoutePendingDialog title={NOTE_EDIT_DIALOG_TITLE} onClose={onClosed} finalFocus={finalFocus} />
+    <RoutePendingDialog
+      title={NOTE_EDIT_DIALOG_TITLE}
+      returnTo={NOTE_DIALOG_RETURN_TO}
+      findReturnTarget={useFindEditLink()}
+    />
   );
 }
 
 function EditNotFound() {
-  return <NoteNotFoundDialog {...useEditDialogNavigation()} />;
+  return <NoteNotFoundDialog findReturnTarget={useFindEditLink()} />;
 }
 
 function EditError() {
-  return <NoteRouteErrorDialog title="メモを読み込めませんでした" {...useEditDialogNavigation()} />;
+  return (
+    <NoteRouteErrorDialog title="メモを読み込めませんでした" findReturnTarget={useFindEditLink()} />
+  );
 }

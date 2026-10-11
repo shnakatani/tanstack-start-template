@@ -1,4 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "@tanstack/react-router";
 import { format } from "date-fns/format";
 import { ja } from "date-fns/locale/ja";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -9,6 +10,7 @@ import { Toaster } from "@/components/ui/toast";
 import { createNote } from "@/features/notes/functions";
 import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
@@ -32,21 +34,21 @@ import {
 } from "./note-form.test-helpers";
 
 /**
- * 追加の route の component が描くのと同じく、開いた状態で描く。route の出入りと閉じたときの focus は
- * ../new.test.tsx が持つ
+ * 追加の route の component が描くのと同じく、追加の URL で開いた状態で描く。閉じると一覧の URL へ移り、
+ * `pathname` が変わる。一覧と、閉じたときの focus は ../new.test.tsx が持つ
  */
 async function renderDialog() {
   const queryClient = createTestQueryClient();
   const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-  const onClosed = vi.fn();
+  const router = createTestRouter("/notes/new", () => <NoteCreateDialog />);
   const screen = await render(
     <QueryClientProvider client={queryClient}>
-      <NoteCreateDialog onClosed={onClosed} finalFocus={() => false} />
+      <RouterProvider router={router} />
       <Toaster />
     </QueryClientProvider>,
   );
   await expect.element(titleTextbox(screen)).toBeInTheDocument();
-  return { screen, invalidateSpy, queryClient, onClosed };
+  return { screen, invalidateSpy, queryClient, pathname: () => router.state.location.pathname };
 }
 
 describe("NoteCreateDialog", () => {
@@ -164,7 +166,7 @@ describe("NoteCreateDialog", () => {
 
   it("保存に成功すると notes クエリを invalidate してダイアログを閉じ、閉じ終わってから route を離れる", async () => {
     vi.mocked(createNote).mockResolvedValue({ id: 1 });
-    const { screen, invalidateSpy, onClosed } = await renderDialog();
+    const { screen, invalidateSpy, pathname } = await renderDialog();
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
@@ -172,23 +174,23 @@ describe("NoteCreateDialog", () => {
     await expectNoteDialogClosed(screen);
     // 一覧の再取得は invalidateQueries に委ねる。キーがずれると保存後に一覧が古いままになる
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
-    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
+    await expect.poll(pathname).toBe("/notes");
   });
 
   it("キャンセルで閉じると route を離れる", async () => {
-    const { screen, onClosed } = await renderDialog();
+    const { screen, pathname } = await renderDialog();
     await titleTextbox(screen).fill("一時入力");
 
     await screen.getByRole("button", { name: "キャンセル" }).click();
 
     await expectNoteDialogClosed(screen);
-    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
+    await expect.poll(pathname).toBe("/notes");
   });
 
   it("保存に失敗すると固定文言を toast に出し、server の raw message は表示しない", async () => {
     const rawMessage = "ノートを作成しましたが id を取得できませんでした";
     vi.mocked(createNote).mockRejectedValue(new Error(rawMessage));
-    const { screen, onClosed } = await renderDialog();
+    const { screen, pathname } = await renderDialog();
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
@@ -198,7 +200,7 @@ describe("NoteCreateDialog", () => {
     await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     // 失敗時はダイアログを開いたまま保ち、入力をやり直せるようにする
     await expect.element(titleTextbox(screen)).toHaveValue("買い物リスト");
-    expect(onClosed).not.toHaveBeenCalled();
+    expect(pathname()).toBe("/notes/new");
   });
 
   it("createNote の応答でダイアログが閉じ、一覧の再取得の完了は待たない", async () => {
@@ -262,7 +264,7 @@ describe("NoteCreateDialog", () => {
     // 完了点「サーバー応答」: 応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない
     // (ADR-0017)。pending の間は利用者の close を止める
     const create = deferMock(createNote);
-    const { screen, onClosed } = await renderDialog();
+    const { screen, pathname } = await renderDialog();
     await titleTextbox(screen).fill("買い物リスト");
 
     await saveButton(screen).click();
@@ -274,12 +276,12 @@ describe("NoteCreateDialog", () => {
 
     await expectDialogOpen(screen, "dialog");
     await expect.element(titleTextbox(screen)).toHaveValue("買い物リスト");
-    expect(onClosed).not.toHaveBeenCalled();
+    expect(pathname()).toBe("/notes/new");
 
     create.resolve({ id: 1 });
 
     // 応答での close は止めない
     await expectNoteDialogClosed(screen);
-    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
+    await expect.poll(pathname).toBe("/notes");
   });
 });

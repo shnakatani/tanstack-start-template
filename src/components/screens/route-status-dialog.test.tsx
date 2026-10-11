@@ -1,27 +1,116 @@
-import { describe, expect, it, vi } from "vite-plus/test";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+  type AnyRouter,
+} from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
-import type { RouteDialogFinalFocus } from "@/lib/route-dialog-final-focus";
 import { slowDownClosingDialogs } from "@/test/browser/closing-dialogs";
 
-import { RoutePendingDialog, RouteStatusDialog } from "./route-status-dialog";
+import {
+  RoutePendingDialog,
+  RouteStatusDialog,
+  type RoutePendingDialogProps,
+  type RouteStatusDialogProps,
+} from "./route-status-dialog";
 
-function finalFocusSpy() {
-  return vi.fn<RouteDialogFinalFocus>(() => false);
+// 戻り先の型はアプリの router ではなく、この router で検査する。部品の公開の signature と同じく、router の型を
+// 型引数の既定にする
+function TestStatusDialog<TRouter extends AnyRouter = TestRouter, TOptions = unknown>(
+  props: RouteStatusDialogProps<TRouter, TOptions>,
+): ReactNode {
+  return <RouteStatusDialog<TRouter, TOptions> {...props} />;
+}
+
+function TestPendingDialog<TRouter extends AnyRouter = TestRouter, TOptions = unknown>(
+  props: RoutePendingDialogProps<TRouter, TOptions>,
+): ReactNode {
+  return <RoutePendingDialog<TRouter, TOptions> {...props} />;
+}
+
+function findCreateButton() {
+  return document.querySelector<HTMLElement>("[data-return-mark]");
+}
+
+const rootRoute = createRootRoute({ component: () => <Outlet /> });
+const itemsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/items",
+  component: ItemsPage,
+});
+const missingRoute = createRoute({
+  getParentRoute: () => itemsRoute,
+  path: "/missing",
+  component: MissingDialog,
+});
+const loadingRoute = createRoute({
+  getParentRoute: () => itemsRoute,
+  path: "/loading",
+  component: LoadingDialog,
+});
+
+function ItemsPage(): ReactNode {
+  return (
+    <>
+      <h1>項目</h1>
+      <button type="button" data-return-mark="">
+        項目を追加
+      </button>
+      <Outlet />
+    </>
+  );
+}
+
+function MissingDialog(): ReactNode {
+  return (
+    <TestStatusDialog
+      title="項目が見つかりません"
+      description="削除されたか、URL が誤っています。"
+      action={<Button>再試行</Button>}
+      returnTo={{ to: "/items" }}
+      findReturnTarget={findCreateButton}
+    />
+  );
+}
+
+function LoadingDialog(): ReactNode {
+  return (
+    <TestPendingDialog
+      title="項目を追加"
+      returnTo={{ to: "/items" }}
+      findReturnTarget={findCreateButton}
+    />
+  );
+}
+
+const routeTree = rootRoute.addChildren([itemsRoute.addChildren([missingRoute, loadingRoute])]);
+
+function createStatusRouter(initialEntries: string[]) {
+  return createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
+    defaultPendingMinMs: 0,
+  });
+}
+
+type TestRouter = ReturnType<typeof createStatusRouter>;
+
+async function renderStatusRouter(initialEntries: string[]) {
+  const router = createStatusRouter(initialEntries);
+  const screen = await render(<RouterProvider router={router} />);
+  return { router, screen };
 }
 
 describe("RouteStatusDialog", () => {
   it("見出しと説明をダイアログの名前と説明にし、渡した操作を閉じるの隣に並べる", async () => {
-    const screen = await render(
-      <RouteStatusDialog
-        title="項目が見つかりません"
-        description="削除されたか、URL が誤っています。"
-        action={<Button>再試行</Button>}
-        onClosed={() => {}}
-        finalFocus={finalFocusSpy()}
-      />,
-    );
+    const { screen } = await renderStatusRouter(["/items/missing"]);
 
     const dialog = screen.getByRole("dialog", { name: "項目が見つかりません" });
     await expect.element(dialog).toHaveAccessibleDescription("削除されたか、URL が誤っています。");
@@ -29,95 +118,59 @@ describe("RouteStatusDialog", () => {
     await expect.element(dialog.getByRole("button", { name: "再試行" })).toBeVisible();
   });
 
-  it("閉じる操作のあと、閉じるアニメーションの間は onClosed を呼ばない", async () => {
+  it("閉じる操作のあと、閉じるアニメーションの間は戻り先へ離れない", async () => {
     const slowedWhileClosing = slowDownClosingDialogs();
-    const onClosed = vi.fn<() => void>();
-    const screen = await render(
-      <RouteStatusDialog
-        title="項目が見つかりません"
-        description="削除されたか、URL が誤っています。"
-        onClosed={onClosed}
-        finalFocus={finalFocusSpy()}
-      />,
-    );
+    const { router, screen } = await renderStatusRouter(["/items/missing"]);
 
     await screen.getByRole("button", { name: "閉じる" }).click();
 
     await expect.poll(slowedWhileClosing).toBe(true);
-    expect(onClosed).not.toHaveBeenCalled();
+    expect(router.state.location.pathname).toBe("/items/missing");
   });
 
-  it("閉じ終えたら onClosed を 1 回呼ぶ", async () => {
-    const onClosed = vi.fn<() => void>();
-    const screen = await render(
-      <RouteStatusDialog
-        title="項目が見つかりません"
-        description="削除されたか、URL が誤っています。"
-        onClosed={onClosed}
-        finalFocus={finalFocusSpy()}
-      />,
-    );
+  it("閉じ終えたら戻り先へ離れる", async () => {
+    const { router, screen } = await renderStatusRouter(["/items/missing"]);
 
     await screen.getByRole("button", { name: "閉じる" }).click();
 
-    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
+    await expect.poll(() => router.state.location.pathname).toBe("/items");
   });
 });
 
 describe("RoutePendingDialog", () => {
-  it("閉じる操作の時点で、閉じるアニメーションを待たずに onClose を呼ぶ", async () => {
+  it("閉じる操作の時点で、閉じるアニメーションを待たずに戻り先へ離れる", async () => {
     const slowedWhileClosing = slowDownClosingDialogs();
-    const onClose = vi.fn<() => void>();
-    const screen = await render(
-      <RoutePendingDialog title="項目を編集" onClose={onClose} finalFocus={finalFocusSpy()} />,
-    );
+    const { router, screen } = await renderStatusRouter(["/items/loading"]);
     await expect
-      .element(screen.getByRole("dialog", { name: "項目を編集" }))
+      .element(screen.getByRole("dialog", { name: "項目を追加" }))
       .toHaveAccessibleDescription("読み込み中");
 
     await screen.getByRole("button", { name: "閉じる" }).click();
 
-    // 閉じるアニメーションは 60 秒に延ばしてあるので、呼ばれたならアニメーションの終わりを待っていない
-    await expect.poll(() => onClose).toHaveBeenCalledOnce();
+    // 閉じるアニメーションは 60 秒に延ばしてあるので、離れたならアニメーションの終わりを待っていない
+    await expect.poll(() => router.state.location.pathname).toBe("/items");
     expect(slowedWhileClosing()).toBe(true);
   });
 });
 
 describe.each([
-  {
-    dialog: "RouteStatusDialog",
-    renderDialog: (finalFocus: RouteDialogFinalFocus) => (
-      <RouteStatusDialog
-        title="項目が見つかりません"
-        description="削除されたか、URL が誤っています。"
-        onClosed={() => {}}
-        finalFocus={finalFocus}
-      />
-    ),
-  },
-  {
-    dialog: "RoutePendingDialog",
-    renderDialog: (finalFocus: RouteDialogFinalFocus) => (
-      <RoutePendingDialog title="項目を編集" onClose={() => {}} finalFocus={finalFocus} />
-    ),
-  },
-])("$dialog の finalFocus", ({ renderDialog }) => {
-  it("閉じる操作で閉じたら、closedBeforeUnmount に true を渡す", async () => {
-    const finalFocus = finalFocusSpy();
-    const screen = await render(renderDialog(finalFocus));
+  { dialog: "RouteStatusDialog", path: "/items/missing" },
+  { dialog: "RoutePendingDialog", path: "/items/loading" },
+])("$dialog の閉じたときの focus", ({ path }) => {
+  it("閉じる操作で閉じたら、開いた元の要素へ focus を移す", async () => {
+    const { screen } = await renderStatusRouter([path]);
 
     await screen.getByRole("button", { name: "閉じる" }).click();
 
-    await expect.poll(() => finalFocus).toHaveBeenCalledExactlyOnceWith(true);
+    await expect.element(screen.getByRole("button", { name: "項目を追加" })).toHaveFocus();
   });
 
-  it("開いたまま unmount したら、closedBeforeUnmount に false を渡す", async () => {
-    const finalFocus = finalFocusSpy();
-    const screen = await render(renderDialog(finalFocus));
+  it("戻るで離れたら、開いた元の要素へ focus を戻す", async () => {
+    const { router, screen } = await renderStatusRouter(["/items", path]);
     await expect.element(screen.getByRole("dialog")).toBeVisible();
 
-    await screen.unmount();
+    router.history.back();
 
-    await expect.poll(() => finalFocus).toHaveBeenCalledExactlyOnceWith(false);
+    await expect.element(screen.getByRole("button", { name: "項目を追加" })).toHaveFocus();
   });
 });
