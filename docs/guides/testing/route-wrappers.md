@@ -2,6 +2,10 @@
 
 Route hooks を使う wrapper を、実 router で描いて検証する手順と、その形にしている理由を持つ。
 
+| 決定                                                                                                | ADR      |
+| --------------------------------------------------------------------------------------------------- | -------- |
+| フォームのダイアログは子 route にし、既存の値を編集するものは loader が最新の値を取り終えてから開く | ADR-0041 |
+
 ## how-to
 
 ### route の wrapper をテストする
@@ -29,6 +33,17 @@ pending 表示が route の読み込み中に出ることを検証するテス�
 | 対象 route の `Route.options.pendingMs` を 0 にする | 既定の `pendingMs` のままだと、pending が出る前に読み込みが終わり、pending 表示を観測できない |
 | `afterEach` で `pendingMs` を元の値へ戻す           | テストが同じ `Route` インスタンスを使い回すので、後続のテストまで pending を踏む              |
 
+### component の chunk の読み込みを握る
+
+loader を持たない route の読み込み中と読み込みの失敗を検証するテストは、対象 route の `component` を `lazyRouteComponent` で包み直し、importer の決着をテストで握る。build では automatic code splitting が `component` を遅延読み込みの wrapper で包み ([TanStack Router docs「Automatic Code Splitting」][])、chunk を読み終えるまで route は pending になる。テストは route ファイルを直接 import するので chunk に分かれず、包み直さないと読み込み中も失敗も起きない。
+
+| 手順                                                                                                                                                                                                                           | 守らないと                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `Route.update({ component: lazyRouteComponent(async () => { await loadChunk(); return { default: component }; }) })` で包み直す。`loadChunk` は `vi.fn` にし、`deferMock` で決着を握るか、`mockRejectedValueOnce` で失敗させる | `pendingComponent` と `errorComponent` を、route の読み込みを通して観測できない          |
+| `onTestFinished` で元の `component` へ戻す                                                                                                                                                                                     | テストが同じ `Route` インスタンスを使い回すので、後続のテストまで chunk の読み込みを踏む |
+
+失敗させた importer は、再試行で呼び直せば読み直せる。本物の dynamic import は、ブラウザが失敗を module map に残すと、呼び直しても取り直さない (ADR-0041)。テストが確かめられるのは、再試行が chunk の読み込みをもう 1 回呼ぶところまでである。
+
 ## explanation
 
 ### route の wrapper を実 router で描く理由
@@ -52,3 +67,4 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 [TanStack Router docs「How to Set Up Testing with Code-Based Routing」]: https://tanstack.com/router/latest/docs/how-to/setup-testing
 [TanStack/router#4569]: https://github.com/TanStack/router/issues/4569
 [TanStack Router docs「How to Test Router with File-Based Routing」]: https://tanstack.com/router/latest/docs/how-to/test-file-based-routing
+[TanStack Router docs「Automatic Code Splitting」]: https://tanstack.com/router/latest/docs/guide/automatic-code-splitting

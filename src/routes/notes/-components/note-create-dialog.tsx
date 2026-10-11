@@ -42,7 +42,7 @@ export function NoteCreateDialog({
     // 一覧側は useMutationState でこの pending を読み、新しい行を先に出す。
     // 一覧の再取得は queryKey の前方一致に委ねる。別キーを渡すと保存後の一覧が古いままになる。
     // 閉じると route を離れて unmount するが、useMutation に渡した callback はそのあとも走る
-    // (`mutate` に渡す callback は走らない。TanStack Query「Mutations」)
+    // (unmount のあとに走らないのは `mutate` に渡す callback。TanStack Query「Mutations」)
     onSuccess: async (_data, input) => {
       setOpen(false);
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });

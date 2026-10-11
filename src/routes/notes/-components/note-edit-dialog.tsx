@@ -41,7 +41,7 @@ export function NoteEditDialog({
     },
     // 完了点「サーバー応答」: 応答で閉じ、再取得を await して pending を再取得完了まで保つ (ADR-0017)。
     // 閉じると route を離れて unmount するが、useMutation に渡した callback はそのあとも走る
-    // (`mutate` に渡す callback は走らない。TanStack Query「Mutations」)
+    // (unmount のあとに走らないのは `mutate` に渡す callback。TanStack Query「Mutations」)
     onSuccess: async (_data, update) => {
       setOpen(false);
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
