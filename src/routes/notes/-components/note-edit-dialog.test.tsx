@@ -31,7 +31,7 @@ import {
 } from "./note-form.test-helpers";
 
 /**
- * route の loader が 1 件を取り直した状態 (キャッシュに 1 件がある) で描く。route の出入りは ../route.test.tsx が持つ。
+ * route の loader が 1 件を取り直した状態 (キャッシュに 1 件がある) で描く。route の出入りは ../$noteId.edit.test.tsx が持つ。
  * ダイアログは一覧のページの上に開くので、閉じたときの focus の移し先になるページの見出しを置く
  */
 async function renderDialog() {

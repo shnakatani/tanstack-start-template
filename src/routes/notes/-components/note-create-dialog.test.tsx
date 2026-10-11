@@ -29,7 +29,7 @@ import {
 } from "./note-form.test-helpers";
 
 /**
- * 追加の route の component が描くのと同じく、開いた状態で描く。route の出入りは ../route.test.tsx が持つ。
+ * 追加の route の component が描くのと同じく、開いた状態で描く。route の出入りは ../new.test.tsx が持つ。
  * ダイアログは一覧のページの上に開くので、閉じたときの focus の移し先になるページの見出しを置く
  */
 async function renderDialog() {
