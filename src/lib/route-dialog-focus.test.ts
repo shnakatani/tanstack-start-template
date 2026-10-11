@@ -5,13 +5,13 @@ import { focusAfterRouteDialogClosed } from "./route-dialog-focus";
 describe("focusAfterRouteDialogClosed", () => {
   const link = { name: "開いた元のリンク" };
 
-  // 閉じた時点でもダイアログの route は表示されたままなので、dialogShown は true で渡す
-  const closed = { closedBy: "閉じた", closedBeforeUnmount: true, dialogShown: true };
-  const left = { closedBy: "戻る・進むで離れた", closedBeforeUnmount: false, dialogShown: false };
+  // 閉じたときは atReturnTo を見ない。hook と同じく false で渡し、atReturnTo より先に閉じたかを見ることを確かめる
+  const closed = { closedBy: "閉じた", closedBeforeUnmount: true, atReturnTo: false };
+  const left = { closedBy: "戻る・進むで離れた", closedBeforeUnmount: false, atReturnTo: true };
   const replaced = {
     closedBy: "別のダイアログに替わった",
     closedBeforeUnmount: false,
-    dialogShown: true,
+    atReturnTo: false,
   };
 
   it.each([
@@ -23,8 +23,8 @@ describe("focusAfterRouteDialogClosed", () => {
     { ...replaced, target: "無い", returnTarget: null, expected: false },
   ])(
     "$closedBy とき、戻し先が$target なら $expected を返す",
-    ({ closedBeforeUnmount, dialogShown, returnTarget, expected }) => {
-      expect(focusAfterRouteDialogClosed({ closedBeforeUnmount, dialogShown, returnTarget })).toBe(
+    ({ closedBeforeUnmount, atReturnTo, returnTarget, expected }) => {
+      expect(focusAfterRouteDialogClosed({ closedBeforeUnmount, atReturnTo, returnTarget })).toBe(
         expected,
       );
     },

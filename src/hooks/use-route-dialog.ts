@@ -125,7 +125,7 @@ export function useRouteDialog({
     const target = focusAfterRouteDialogClosed({
       closedBeforeUnmount,
       // 閉じたときは戻り先を組まない。判定に使わず、戻り先の search の関数などが throw すると巻き添えになる
-      dialogShown: closedBeforeUnmount || !isAtReturnTo(),
+      atReturnTo: !closedBeforeUnmount && isAtReturnTo(),
       returnTarget: findReturnTarget(),
     });
     if (target === "page-heading") {
