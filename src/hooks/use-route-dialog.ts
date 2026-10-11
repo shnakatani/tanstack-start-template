@@ -20,8 +20,7 @@ import { focusAfterRouteDialogClosed } from "@/lib/route-dialog-focus";
  * - findReturnTarget: 開いた元の要素を探す。URL を直接開いたときは Base UI の既定の戻し先 (開く前に focus して
  *   いた要素) が無いので、要素を探して返す
  * - isPending: 保存の mutation の pending。保存しないダイアログは渡さない
- * - waitForCloseAnimation: false なら閉じる操作の時点で離れる。読み込み中のダイアログに渡す。`setOpen(false)` で
- *   閉じたときは離れないので、閉じる操作でしか閉じないダイアログに限る
+ * - waitForCloseAnimation: false なら閉じる操作か `setOpen(false)` の時点で離れる。読み込み中のダイアログに渡す
  */
 export interface RouteDialogOptions<
   TRouter extends AnyRouter = RegisteredRouter,
@@ -71,7 +70,7 @@ export function useRouteDialog({
   const dialogPath = useMatch({ strict: false }).fullPath;
   const navigate = useNavigate({ from: dialogPath });
   const router = useRouter();
-  const [open, setOpen] = useState(true);
+  const [open, setOpenState] = useState(true);
 
   // 保存の mutation が pending の間は、利用者の close を止める。応答の前に閉じると route ごと
   // unmount し、保存に失敗したときに入力が残らない (完了点「サーバー応答」、ADR-0017)。止めるのは
@@ -82,6 +81,13 @@ export function useRouteDialog({
     void navigate(returnTo);
   }
 
+  function setOpen(nextOpen: boolean) {
+    setOpenState(nextOpen);
+    if (!nextOpen && !waitForCloseAnimation) {
+      leave();
+    }
+  }
+
   const onOpenChange: RouteDialog["onOpenChange"] = (nextOpen, details) => {
     // 止めたときは open を変えない。保存の onSuccess は setOpen(false) で閉じ、ここを通らない
     if (!nextOpen && blocksClose) {
@@ -89,9 +95,6 @@ export function useRouteDialog({
       return;
     }
     setOpen(nextOpen);
-    if (!nextOpen && !waitForCloseAnimation) {
-      leave();
-    }
   };
 
   function onOpenChangeComplete(nextOpen: boolean) {
@@ -100,17 +103,29 @@ export function useRouteDialog({
     }
   }
 
+  // `router.state` は常に最新の値を持ち (TanStack Router「useRouter hook」)、`buildLocation` は params と search の
+  // 関数へ呼んだ時点の値を渡す (TanStack Router「RouterType」の `.buildLocation`)。描画の時点に読んだ値は、
+  // unmount の時点の遷移先を映さない
+  function isAtReturnTo() {
+    const here = router.state.location.pathname;
+    const returnPath = router.buildLocation({
+      ...returnTo,
+      from: returnTo.from ?? dialogPath,
+    }).pathname;
+    // router の既定は大文字小文字を区別しない (`caseSensitive: false`)。route ごとの `caseSensitive` は読まない
+    return router.options.caseSensitive
+      ? here === returnPath
+      : here.toLowerCase() === returnPath.toLowerCase();
+  }
+
   // Base UI は finalFocus を、閉じたときだけでなく、開いたまま unmount したときにも呼ぶ
   function finalFocus() {
-    // `router.state` と `buildLocation` は呼んだ時点の location を読む (TanStack Router「useRouter hook」)。
-    // 描画の時点の値は、unmount の時点の遷移先を映さない
-    const atReturnTo =
-      router.state.location.pathname ===
-      router.buildLocation({ ...returnTo, from: returnTo.from ?? dialogPath }).pathname;
+    // 閉じる操作か保存の応答で閉じたら false になっている。開いたまま unmount したときは true のまま
+    const closedBeforeUnmount = !open;
     const target = focusAfterRouteDialogClosed({
-      // 閉じる操作か保存の応答で閉じたら false になっている。開いたまま unmount したときは true のまま
-      closedBeforeUnmount: !open,
-      dialogShown: !atReturnTo,
+      closedBeforeUnmount,
+      // 閉じたときは戻り先を組まない。判定に使わず、戻り先の search の関数などが throw すると巻き添えになる
+      dialogShown: closedBeforeUnmount || !isAtReturnTo(),
       returnTarget: findReturnTarget(),
     });
     if (target === "page-heading") {

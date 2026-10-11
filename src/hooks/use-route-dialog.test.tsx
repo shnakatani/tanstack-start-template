@@ -321,6 +321,18 @@ describe("useRouteDialog の開閉", () => {
     expect(slowedWhileClosing()).toBe(true);
   });
 
+  it("waitForCloseAnimation が false なら、setOpen(false) で閉じた時点でも離れる", async () => {
+    const slowedWhileClosing = slowDownClosingDialogs();
+    loadItem.mockReturnValueOnce(Promise.withResolvers<undefined>().promise);
+    const { router, screen } = await renderDialogRouter(["/items", "/items/1/edit"]);
+    await expect.element(screen.getByRole("dialog", { name: "項目 1 を読み込み中" })).toBeVisible();
+
+    await screen.getByRole("button", { name: "保存の応答で閉じる" }).click();
+
+    await expect.poll(() => router.state.location.pathname).toBe("/items");
+    expect(slowedWhileClosing()).toBe(true);
+  });
+
   it("保存の pending の間は Escape で閉じず、pending が終わると閉じて離れる", async () => {
     const { router, screen } = await renderDialogRouter(["/items/new"]);
     await screen.getByRole("button", { name: "保存を始める" }).click();
@@ -425,6 +437,17 @@ describe("useRouteDialog の閉じたときの focus", () => {
     router.history.back();
 
     await expect.element(screen.getByRole("button", { name: "g2 に追加" })).toHaveFocus();
+  });
+
+  it("router が大文字小文字を区別しないとき、大文字小文字の違う URL の開く元のページへ戻るで離れても、開いた元の要素へ focus を戻す", async () => {
+    const { router, screen } = await renderDialogRouter(["/Items", "/Items/new"]);
+    await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
+
+    router.history.back();
+
+    await expect.element(screen.getByRole("button", { name: "項目を追加" })).toHaveFocus();
+    // 比べる 2 つの pathname が、大文字小文字だけ違う形で並んでいたことを示す
+    expect(router.state.location.pathname).toBe("/Items");
   });
 
   it("戻り先の path params を持たない別のページへ離れたら、focus に触れない", async () => {
