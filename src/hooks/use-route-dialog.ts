@@ -2,6 +2,7 @@ import {
   useMatch,
   useNavigate,
   useRouter,
+  trimPathRight,
   type AnyRouter,
   type RegisteredRouter,
   type ValidateNavigateOptions,
@@ -107,11 +108,15 @@ export function useRouteDialog({
   // 関数へ呼んだ時点の値を渡す (TanStack Router「RouterType」の `.buildLocation`)。描画の時点に読んだ値は、
   // unmount の時点の遷移先を映さない
   function isAtReturnTo() {
-    const here = router.state.location.pathname;
-    const returnPath = router.buildLocation({
-      ...returnTo,
-      from: returnTo.from ?? dialogPath,
-    }).pathname;
+    // 戻り先は `buildLocation` が router の `trailingSlash` に合わせて組み、履歴の pathname は開いた URL のまま
+    // なので、末尾の `/` を外して比べる
+    const here = trimPathRight(router.state.location.pathname);
+    const returnPath = trimPathRight(
+      router.buildLocation({
+        ...returnTo,
+        from: returnTo.from ?? dialogPath,
+      }).pathname,
+    );
     // router の既定は大文字小文字を区別しない (`caseSensitive: false`)。route ごとの `caseSensitive` は読まない
     return router.options.caseSensitive
       ? here === returnPath

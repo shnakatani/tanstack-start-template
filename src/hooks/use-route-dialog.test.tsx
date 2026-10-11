@@ -265,18 +265,25 @@ const routeTree = rootRoute.addChildren([
   itemsRoute.addChildren([itemNewRoute, itemImportRoute, itemEditRoute]),
 ]);
 
-function createDialogRouter(initialEntries: string[]) {
+function createDialogRouter(
+  initialEntries: string[],
+  trailingSlash: "always" | "never" | "preserve" = "never",
+) {
   return createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
     defaultPendingMinMs: 0,
+    trailingSlash,
   });
 }
 
 type TestRouter = ReturnType<typeof createDialogRouter>;
 
-async function renderDialogRouter(initialEntries: string[]) {
-  const router = createDialogRouter(initialEntries);
+async function renderDialogRouter(
+  initialEntries: string[],
+  trailingSlash?: "always" | "never" | "preserve",
+) {
+  const router = createDialogRouter(initialEntries, trailingSlash);
   const screen = await render(<RouterProvider router={router} />);
   return { router, screen };
 }
@@ -449,6 +456,32 @@ describe("useRouteDialog の閉じたときの focus", () => {
     // 比べる 2 つの pathname が、大文字小文字だけ違う形で並んでいたことを示す
     expect(router.state.location.pathname).toBe("/Items");
   });
+
+  it.each([
+    {
+      trailingSlash: "never",
+      // 戻り先は末尾の `/` を外して組まれ、履歴の pathname は `/` を持つ
+      entries: ["/items/", "/items/new"],
+      here: "/items/",
+    },
+    {
+      trailingSlash: "always",
+      // 戻り先は末尾に `/` を付けて組まれ、履歴の pathname は `/` を持たない
+      entries: ["/items", "/items/new/"],
+      here: "/items",
+    },
+  ] as const)(
+    "trailingSlash が $trailingSlash のとき、末尾の `/` だけ違う URL の開く元のページへ戻るで離れても、開いた元の要素へ focus を戻す",
+    async ({ trailingSlash, entries, here }) => {
+      const { router, screen } = await renderDialogRouter([...entries], trailingSlash);
+      await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
+
+      router.history.back();
+
+      await expect.element(screen.getByRole("button", { name: "項目を追加" })).toHaveFocus();
+      expect(router.state.location.pathname).toBe(here);
+    },
+  );
 
   it("戻り先の path params を持たない別のページへ離れたら、focus に触れない", async () => {
     const { router, screen } = await renderDialogRouter(["/", "/groups/g1/items/new"]);
