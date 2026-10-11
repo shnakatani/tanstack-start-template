@@ -4,7 +4,6 @@ import {
   useRouter,
   trimPathRight,
   type AnyRouter,
-  type MakeRouteMatchUnion,
   type RegisteredRouter,
   type ValidateNavigateOptions,
 } from "@tanstack/react-router";
@@ -71,13 +70,7 @@ export function useRouteDialog({
   // 相対の `to` (`..`) を、どの時点で組んでもこのダイアログの route から解く。`from` が無いと、組んだ時点の
   // location から解く (TanStack Router「RouterType」の `.buildLocation`)。戻るで離れたあとの `finalFocus` では
   // 戻った先から解いてしまい、戻り先と食い違う
-  // `select` で fullPath だけを選び、match のほかの値が変わっても描き直さない (TanStack Router「useMatch hook」)。
-  // `strict: false` で `from` が無いと、`select` の引数の `fullPath` が `never` に推論されるので、返り値の型を書く
-  // (2026-10-12、`@tanstack/react-router` 1.170.41)
-  const dialogPath = useMatch({
-    strict: false,
-    select: (match): MakeRouteMatchUnion["fullPath"] => match.fullPath,
-  });
+  const dialogPath = useMatch({ strict: false }).fullPath;
   const navigate = useNavigate({ from: dialogPath });
   const router = useRouter();
   const [open, setOpenState] = useState(true);
