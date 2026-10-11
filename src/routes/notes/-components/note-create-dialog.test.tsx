@@ -22,7 +22,6 @@ import {
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
 
-import { NOTE_CREATE_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteCreateDialog } from "./note-create-dialog";
 import {
   bodyTextbox,
@@ -65,9 +64,7 @@ describe("NoteCreateDialog", () => {
   it("見出しと、空のタイトルと本文の入力で開く", async () => {
     const { screen } = await renderDialog();
 
-    await expect
-      .element(screen.getByRole("heading", { name: NOTE_CREATE_DIALOG_TITLE }))
-      .toBeInTheDocument();
+    await expect.element(screen.getByRole("heading", { name: "メモを追加" })).toBeInTheDocument();
     await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
   });
 
