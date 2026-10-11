@@ -16,6 +16,7 @@ import {
   expectText,
 } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
+import { slowDownClosingDialogs } from "@/test/browser/closing-dialogs";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -35,13 +36,7 @@ import {
 } from "./-components/note-form.test-helpers";
 import { NOTE_CREATE_DIALOG_TITLE, NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route as NoteCreateRoute } from "./new";
-import {
-  ariaLabelsOf,
-  recordFocusins,
-  renderRoute,
-  serveNotes,
-  slowDownClosingDialogs,
-} from "./route.test-helpers";
+import { ariaLabelsOf, recordFocusins, renderRoute, serveNotes } from "./route.test-helpers";
 
 /** 追加のリンクから追加ダイアログを開いて 1 件分を入力し、保存を確定する (応答の決着は呼び出し側が握る)。 */
 const submitCreate = vi.defineHelper(async (screen: Screen, note: Pick<Note, "title" | "body">) => {

@@ -15,6 +15,7 @@ import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
+import { slowDownClosingDialogs } from "@/test/browser/closing-dialogs";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -27,13 +28,7 @@ import {
   titleTextbox,
 } from "./-components/note-form.test-helpers";
 import { NOTE_EDIT_DIALOG_TITLE, NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
-import {
-  ariaLabelsOf,
-  recordFocusins,
-  renderRoute,
-  serveNotes,
-  slowDownClosingDialogs,
-} from "./route.test-helpers";
+import { ariaLabelsOf, recordFocusins, renderRoute, serveNotes } from "./route.test-helpers";
 
 /** 一覧の見出しに、枠を出さずに focus があること。見出しは操作できる要素ではないので枠を出さない (ADR-0035) */
 const expectNotesHeadingFocused = vi.defineHelper(async (screen: Screen) => {
