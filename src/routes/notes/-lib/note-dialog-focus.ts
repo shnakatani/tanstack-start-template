@@ -25,7 +25,11 @@ export function findNoteCreateLink(): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[${NOTE_CREATE_LINK_ATTRIBUTE}]`);
 }
 
-/** 一覧の上に重ねるダイアログの route。どれかが表示されている間は、閉じたダイアログが別のダイアログに替わった */
+/**
+ * 一覧の上に重ねるダイアログの route。どれかが表示されている間は、閉じたダイアログが別のダイアログに替わった。
+ * ダイアログの route を足したらここにも足す。漏れると、そのダイアログとの間を移るときに、消える側の戻し先へ
+ * focus が 1 frame だけ寄り道する
+ */
 const NOTE_DIALOG_ROUTE_IDS: ReadonlySet<string> = new Set([
   "/notes/new",
   "/notes/$noteId/edit",
