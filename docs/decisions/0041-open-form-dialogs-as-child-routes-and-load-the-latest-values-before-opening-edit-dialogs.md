@@ -90,7 +90,7 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 
 - 比べるのは pathname で、`router.state.location.pathname` と、戻り先から `router.buildLocation` で組んだ pathname が一致するかを見る。`router.state` は常に最新の値を持つ ("`router.state` is always up to date"。TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない
 - 戻り先の pathname も呼ばれた時点に組む。`buildLocation` は `params` の関数を呼んだ時点の params で呼ぶ ("it will be called with the current params"。TanStack Router「RouterType」の `.buildLocation`)。戻り先が params を今の値から引き継ぐ形なら、戻った先の params で組むので、別の値の開く元のページへ戻ったときも離れたと判定する
-- 戻り先に `from` が無ければ、ダイアログの route の `fullPath` を `from` にして `navigate` と `buildLocation` に渡す。`buildLocation` は `from` が無いと呼んだ時点の path から組むので ("If not provided, the current path will be used."。TanStack Router「RouterType」の `.buildLocation`)、相対の `to` (`..`) は戻るで離れたあとに戻った先から解かれ、戻り先と食い違う。hook はダイアログの route を自分の match (`useMatch`) から得て、親の階層は読まない
+- 戻り先に `from` が無ければ、ダイアログの route の `fullPath` を `from` にして `navigate` と `buildLocation` に渡す。`buildLocation` は `from` が無いと呼んだ時点の path から組むので ("If not provided, the current path will be used."。TanStack Router「RouterType」の `.buildLocation`)、相対の `to` (`..`) は戻るで離れたあとに戻った先から解かれ、戻り先と食い違う。hook はダイアログの route を、部品の木の中の自分の match から得て (`useMatch` を `strict: false` で呼ぶ。TanStack Router「useMatch hook」)、親の階層は読まない
 - router の `caseSensitive` が false (既定。TanStack Router「RouterOptions type」) なら、pathname を大文字小文字を区別せずに比べる。router は `/Items` を `/items` の route に照合し、`router.state.location.pathname` は `/Items` のまま残る (2026-10-12、Vitest の browser mode)。route ごとの `caseSensitive` は読まない
 - 戻り先でないページへ離れたときは、替わったときと同じく focus に触れない。開いた元の要素はそのページに無く、route の announcer が見出しへ移す (ADR-0035)
 - 閉じた時点でも route は残っているので、閉じたか (閉じる操作か保存の応答で、unmount の前に閉じ始めていたか) を先に見る。閉じたときは戻り先を組まない
@@ -239,6 +239,7 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 - TanStack Router「RouteOptions type」(`remountDeps`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouteOptionsType
 - TanStack Router「useCanGoBack hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useCanGoBack
 - TanStack Router「useRouter hook」: https://tanstack.com/router/latest/docs/framework/react/api/router/useRouterHook
+- TanStack Router「useMatch hook」(`strict`): https://tanstack.com/router/latest/docs/framework/react/api/router/useMatchHook
 - TanStack Router「RouterType」(`.buildLocation`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouterType
 - TanStack Router「RouterOptions type」(`caseSensitive`): https://tanstack.com/router/latest/docs/framework/react/api/router/RouterOptionsType
 - TanStack Router「Static Route Data」(Enforcing Static Data): https://tanstack.com/router/latest/docs/framework/react/guide/static-route-data
