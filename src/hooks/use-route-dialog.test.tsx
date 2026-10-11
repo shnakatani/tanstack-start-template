@@ -11,22 +11,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { RouteDialogFinalFocus } from "@/lib/route-dialog-final-focus";
 import { slowDownClosingDialogs } from "@/test/browser/closing-dialogs";
 
 import { useRouteDialog } from "./use-route-dialog";
+
+const keepFocus: RouteDialogFinalFocus = () => false;
 
 /**
  * hook の返り値を Dialog の Root へ渡す。「保存を終える」は保存の `onSuccess` が `setOpen(false)` で閉じるのを
  * 模す。キャンセルには `blocksClose` を渡さず、止める判定が hook の `onOpenChange` にあることを見る
  */
-function RouteDialogHarness({ onClosed, isPending }: { onClosed: () => void; isPending: boolean }) {
-  const { open, setOpen, onOpenChange, onOpenChangeComplete } = useRouteDialog({
-    onClosed,
-    isPending,
-  });
+function RouteDialogHarness({
+  onClosed,
+  isPending,
+  finalFocus = keepFocus,
+}: {
+  onClosed: () => void;
+  isPending: boolean;
+  finalFocus?: RouteDialogFinalFocus;
+}) {
+  const { open, setOpen, closedBeforeUnmount, onOpenChange, onOpenChangeComplete } = useRouteDialog(
+    { onClosed, isPending },
+  );
   return (
     <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
-      <DialogContent>
+      <DialogContent finalFocus={() => finalFocus(closedBeforeUnmount)}>
         <DialogHeader>
           <DialogTitle>項目を編集</DialogTitle>
         </DialogHeader>
@@ -81,5 +91,31 @@ describe("useRouteDialog", () => {
     await screen.getByRole("button", { name: "保存を終える" }).click();
 
     await expect.poll(() => onClosed).toHaveBeenCalledOnce();
+  });
+
+  it.each(["キャンセル", "保存を終える"])(
+    "%s で閉じたら、finalFocus に closedBeforeUnmount の true を渡す",
+    async (button) => {
+      const finalFocus = vi.fn<RouteDialogFinalFocus>(() => false);
+      const screen = await render(
+        <RouteDialogHarness onClosed={() => {}} isPending={false} finalFocus={finalFocus} />,
+      );
+
+      await screen.getByRole("button", { name: button }).click();
+
+      await expect.poll(() => finalFocus).toHaveBeenCalledExactlyOnceWith(true);
+    },
+  );
+
+  it("開いたまま unmount したら、finalFocus に closedBeforeUnmount の false を渡す", async () => {
+    const finalFocus = vi.fn<RouteDialogFinalFocus>(() => false);
+    const screen = await render(
+      <RouteDialogHarness onClosed={() => {}} isPending={false} finalFocus={finalFocus} />,
+    );
+    await expect.element(screen.getByRole("dialog")).toBeVisible();
+
+    await screen.unmount();
+
+    await expect.poll(() => finalFocus).toHaveBeenCalledExactlyOnceWith(false);
   });
 });

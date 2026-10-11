@@ -7,6 +7,8 @@ import type { Dialog } from "@/components/ui/dialog";
  * route を離れる (onClosed) のは閉じるアニメーションが終わってから。先に離れると route ごと unmount して、
  * 閉じるアニメーションが出ない。
  * 返り値の `onOpenChange` と `onOpenChangeComplete` は Dialog の Root へ、`blocksClose` はフォームへ渡す。
+ * `closedBeforeUnmount` は、Popup の `finalFocus` から `RouteDialogFinalFocus` (`@/lib/route-dialog-final-focus`)
+ * へ渡す。閉じる操作か保存の応答で閉じたら true になり、route を離れて開いたまま unmount したときは false のまま残る
  *
  * - onClosed: route を離れる
  * - isPending: 保存の mutation の pending。保存しないダイアログは渡さない
@@ -44,5 +46,12 @@ export function useRouteDialog({
     }
   }
 
-  return { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete };
+  return {
+    open,
+    setOpen,
+    blocksClose,
+    closedBeforeUnmount: !open,
+    onOpenChange,
+    onOpenChangeComplete,
+  };
 }

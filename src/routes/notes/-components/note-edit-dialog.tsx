@@ -49,10 +49,11 @@ export function NoteEditDialog({
     onError: toastMutationError,
   });
 
-  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete } = useRouteDialog({
-    onClosed,
-    isPending: updateMutation.isPending,
-  });
+  const { open, setOpen, blocksClose, closedBeforeUnmount, onOpenChange, onOpenChangeComplete } =
+    useRouteDialog({
+      onClosed,
+      isPending: updateMutation.isPending,
+    });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
@@ -61,8 +62,7 @@ export function NoteEditDialog({
         defaultValues={{ title: note.title, body: note.body, dueDate: note.dueDate }}
         onSubmit={(input) => updateMutation.runAction({ id: note.id, ...input })}
         blocksClose={blocksClose}
-        // open が false なのは閉じたとき (閉じる操作、保存の応答)。route を離れて開いたまま unmount したときは true のまま
-        finalFocus={() => finalFocus(!open)}
+        finalFocus={() => finalFocus(closedBeforeUnmount)}
       />
     </Dialog>
   );

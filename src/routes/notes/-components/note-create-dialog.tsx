@@ -49,10 +49,11 @@ export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation)
     onError: toastMutationError,
   });
 
-  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete } = useRouteDialog({
-    onClosed,
-    isPending: createMutation.isPending,
-  });
+  const { open, setOpen, blocksClose, closedBeforeUnmount, onOpenChange, onOpenChangeComplete } =
+    useRouteDialog({
+      onClosed,
+      isPending: createMutation.isPending,
+    });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
@@ -61,8 +62,7 @@ export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation)
         defaultValues={EMPTY_NOTE_INPUT}
         onSubmit={createMutation.runAction}
         blocksClose={blocksClose}
-        // open が false なのは閉じたとき (閉じる操作、保存の応答)。route を離れて開いたまま unmount したときは true のまま
-        finalFocus={() => finalFocus(!open)}
+        finalFocus={() => finalFocus(closedBeforeUnmount)}
       />
     </Dialog>
   );

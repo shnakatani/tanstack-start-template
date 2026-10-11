@@ -60,10 +60,12 @@ export function RouteStatusDialog({
   onClosed: () => void;
   finalFocus: RouteDialogFinalFocus;
 }) {
-  const { open, onOpenChange, onOpenChangeComplete } = useRouteDialog({ onClosed });
+  const { open, closedBeforeUnmount, onOpenChange, onOpenChangeComplete } = useRouteDialog({
+    onClosed,
+  });
   return (
     <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
-      <RouteStatusDialogContent {...props} closedBeforeUnmount={!open} />
+      <RouteStatusDialogContent {...props} closedBeforeUnmount={closedBeforeUnmount} />
     </Dialog>
   );
 }
