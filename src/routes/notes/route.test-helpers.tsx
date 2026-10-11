@@ -168,6 +168,7 @@ export function slowDownClosingDialogs(): () => boolean {
     const closing = document.querySelector(CLOSING_DIALOG_SELECTOR);
     if (closing && getComputedStyle(closing).animationDuration === "60s") {
       slowedWhileClosing = true;
+      watchClosing.disconnect();
     }
   });
   watchClosing.observe(document.body, { attributes: true, subtree: true });
