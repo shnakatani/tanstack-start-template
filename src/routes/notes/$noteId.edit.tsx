@@ -1,4 +1,4 @@
-import { createFileRoute, isNotFound, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, isNotFound, notFound } from "@tanstack/react-router";
 import * as v from "valibot";
 
 import { noteQueryOptions } from "@/features/notes/queries";
@@ -11,7 +11,7 @@ import {
   NoteEditNotFoundDialog,
   NoteEditPendingDialog,
 } from "./-components/note-edit-status-dialogs";
-import { isNoteDialogRouteShown } from "./-lib/note-dialog-focus";
+import { useNoteDialogRoute } from "./-hooks/use-note-dialog-route";
 import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
 import { NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
@@ -56,23 +56,10 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   component: EditRoute,
 });
 
-/**
- * Route hooks を吸収し、ダイアログへ渡す値とハンドラを返す (ADR-0010)。閉じたら一覧へ戻る。一覧の絞り込み
- * (search) を保ち、新しい履歴を積むので、戻るで開き直せる
- */
+/** Route hooks を吸収し、ダイアログへ渡す値とハンドラを返す (ADR-0010) */
 function useEditDialogProps() {
   const { noteId } = Route.useParams();
-  const navigate = Route.useNavigate();
-  const router = useRouter();
-  function onClosed() {
-    void navigate({ to: "/notes", search: (prev) => prev });
-  }
-  // `router.state` は描画の値ではなく読んだ時点の状態を返す (Router docs「useRouter hook」)。hook で読んだ値は
-  // 最後の描画のもので、unmount の時点の遷移先を映さない
-  function isDialogRouteShown() {
-    return isNoteDialogRouteShown(router.state.matches);
-  }
-  return { noteId, onClosed, isDialogRouteShown };
+  return { noteId, ...useNoteDialogRoute() };
 }
 
 /** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */
