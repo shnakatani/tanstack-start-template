@@ -41,7 +41,7 @@ import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
-import { expectText } from "@/test/assert/screen-assertions";
+import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
 import { enableAnimations } from "@/test/browser/animations";
 import { parkMouse } from "@/test/browser/park-mouse";
@@ -989,6 +989,8 @@ describe("/notes/$noteId/edit route", () => {
     await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
+    // 入力が残っていることだけでは、閉じるアニメーションの途中でも通る
+    await expectDialogOpen(screen, "dialog");
     await expect.element(titleTextbox(screen)).toHaveValue(otherUpdate.title);
 
     secondResponse.resolve(undefined);
@@ -1439,6 +1441,8 @@ describe("/notes/new route", () => {
     await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
+    // 入力が残っていることだけでは、閉じるアニメーションの途中でも通る
+    await expectDialogOpen(screen, "dialog");
     await expect.element(titleTextbox(screen)).toHaveValue(second.title);
 
     secondResponse.resolve({ id: 4 });
