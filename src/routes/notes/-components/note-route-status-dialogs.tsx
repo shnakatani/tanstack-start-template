@@ -12,16 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import { useRouteRetry } from "@/hooks/use-route-retry";
 
+import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
 import { useRouteDialog } from "../-hooks/use-route-dialog";
-import { focusAfterRouteDialogClosed } from "../-lib/note-dialog-focus";
 
 /** 一覧の上に重ねるダイアログの route が、フォームを出せない間に出すダイアログの props */
-interface NoteRouteStatusDialogProps {
-  onClosed: () => void;
-  /** focus の戻し先を決めるときに呼ぶ (`focusAfterRouteDialogClosed`) */
-  isDialogRouteShown: () => boolean;
-  /** 開いた元のリンクを探す (`focusAfterRouteDialogClosed`) */
-  findReturnTarget: () => HTMLElement | null;
+interface NoteRouteStatusDialogProps extends NoteDialogNavigation {
   title: string;
 }
 
@@ -31,8 +26,7 @@ interface NoteRouteStatusDialogProps {
  * したときは false のまま
  */
 function NoteRouteStatusDialogContent({
-  isDialogRouteShown,
-  findReturnTarget,
+  finalFocus,
   closedByUser,
   title,
   description,
@@ -43,11 +37,7 @@ function NoteRouteStatusDialogContent({
   action?: ReactNode;
 }) {
   return (
-    <DialogContent
-      finalFocus={() =>
-        focusAfterRouteDialogClosed({ closedByUser, isDialogRouteShown, findReturnTarget })
-      }
-    >
+    <DialogContent finalFocus={() => finalFocus(closedByUser)}>
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>

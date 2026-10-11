@@ -8,8 +8,8 @@ import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
+import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
 import { useRouteDialog } from "../-hooks/use-route-dialog";
-import { findNoteCreateLink, focusAfterRouteDialogClosed } from "../-lib/note-dialog-focus";
 import { NOTE_CREATE_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
 
@@ -19,15 +19,9 @@ const EMPTY_NOTE_INPUT = { title: "", body: "", dueDate: null } satisfies NoteIn
 /**
  * メモの追加ダイアログ。追加の route (`new.tsx`) の component が描く (ADR-0041)。開くたびに route が mount
  * し直すので、フォームも mutation も開いたダイアログごとに別になる。閉じたら `onClosed` で一覧の route へ
- * 戻る。`isDialogRouteShown` は focus の戻し先を決めるときに呼ぶ (`focusAfterRouteDialogClosed`)
+ * 戻る
  */
-export function NoteCreateDialog({
-  onClosed,
-  isDialogRouteShown,
-}: {
-  onClosed: () => void;
-  isDialogRouteShown: () => boolean;
-}) {
+export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation) {
   const queryClient = useQueryClient();
 
   const createMutation = useActionMutation({
@@ -68,13 +62,7 @@ export function NoteCreateDialog({
         onSubmit={createMutation.runAction}
         blocksClose={blocksClose}
         // open が false なのは利用者が閉じたとき。route を離れて開いたまま unmount したときは true のまま
-        finalFocus={() =>
-          focusAfterRouteDialogClosed({
-            closedByUser: !open,
-            isDialogRouteShown,
-            findReturnTarget: findNoteCreateLink,
-          })
-        }
+        finalFocus={() => finalFocus(!open)}
       />
     </Dialog>
   );

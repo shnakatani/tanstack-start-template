@@ -20,27 +20,26 @@ export const Route = createFileRoute("/notes/new")({
   component: CreateRoute,
 });
 
-/** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */
+/**
+ * Route hooks を吸収し、ダイアログへ渡すハンドラを返す。ダイアログは値とハンドラを props で受ける (ADR-0010)。
+ * 閉じたときの focus の戻し先は追加のリンク
+ */
+function useCreateDialogNavigation() {
+  return useNoteDialogNavigation(findNoteCreateLink);
+}
+
 function CreateRoute() {
-  return <NoteCreateDialog {...useNoteDialogNavigation()} />;
+  return <NoteCreateDialog {...useCreateDialogNavigation()} />;
 }
 
 function CreatePending() {
   return (
-    <NoteRoutePendingDialog
-      title={NOTE_CREATE_DIALOG_TITLE}
-      findReturnTarget={findNoteCreateLink}
-      {...useNoteDialogNavigation()}
-    />
+    <NoteRoutePendingDialog title={NOTE_CREATE_DIALOG_TITLE} {...useCreateDialogNavigation()} />
   );
 }
 
 function CreateError() {
   return (
-    <NoteRouteErrorDialog
-      title="フォームを読み込めませんでした"
-      findReturnTarget={findNoteCreateLink}
-      {...useNoteDialogNavigation()}
-    />
+    <NoteRouteErrorDialog title="フォームを読み込めませんでした" {...useCreateDialogNavigation()} />
   );
 }

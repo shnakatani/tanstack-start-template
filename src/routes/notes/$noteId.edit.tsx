@@ -57,28 +57,28 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   component: EditRoute,
 });
 
-/** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */
-function EditRoute() {
+/**
+ * Route hooks を吸収し、ダイアログへ渡すハンドラを返す。ダイアログは値とハンドラを props で受ける (ADR-0010)。
+ * 閉じたときの focus の戻し先は、開いたメモの行の編集リンク
+ */
+function useEditDialogNavigation() {
   const { noteId } = Route.useParams();
-  return <NoteEditDialog noteId={noteId} {...useNoteDialogNavigation()} />;
+  return useNoteDialogNavigation(() => findNoteEditLink(noteId));
 }
 
-/** Route hooks を吸収し、フォームを出せない間のダイアログへ渡す値とハンドラを返す (ADR-0010) */
-function useEditStatusDialogProps() {
+function EditRoute() {
   const { noteId } = Route.useParams();
-  return { ...useNoteDialogNavigation(), findReturnTarget: () => findNoteEditLink(noteId) };
+  return <NoteEditDialog noteId={noteId} {...useEditDialogNavigation()} />;
 }
 
 function EditPending() {
-  return <NoteRoutePendingDialog title={NOTE_EDIT_DIALOG_TITLE} {...useEditStatusDialogProps()} />;
+  return <NoteRoutePendingDialog title={NOTE_EDIT_DIALOG_TITLE} {...useEditDialogNavigation()} />;
 }
 
 function EditNotFound() {
-  return <NoteNotFoundDialog {...useEditStatusDialogProps()} />;
+  return <NoteNotFoundDialog {...useEditDialogNavigation()} />;
 }
 
 function EditError() {
-  return (
-    <NoteRouteErrorDialog title="メモを読み込めませんでした" {...useEditStatusDialogProps()} />
-  );
+  return <NoteRouteErrorDialog title="メモを読み込めませんでした" {...useEditDialogNavigation()} />;
 }

@@ -18,7 +18,6 @@ import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
 
-import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NoteCreateDialog } from "./note-create-dialog";
 import {
   bodyTextbox,
@@ -29,8 +28,8 @@ import {
 } from "./note-form.test-helpers";
 
 /**
- * 追加の route の component が描くのと同じく、開いた状態で描く。route の出入りは ../new.test.tsx が持つ。
- * ダイアログは一覧のページの上に開くので、閉じたときの focus の移し先になるページの見出しを置く
+ * 追加の route の component が描くのと同じく、開いた状態で描く。route の出入りと閉じたときの focus は
+ * ../new.test.tsx が持つ
  */
 async function renderDialog() {
   const queryClient = createTestQueryClient();
@@ -38,9 +37,7 @@ async function renderDialog() {
   const onClosed = vi.fn();
   const screen = await render(
     <QueryClientProvider client={queryClient}>
-      <h1>{NOTES_PAGE_TITLE}</h1>
-      {/* 本番では追加の route の中で描くので、route は表示されている扱いにする */}
-      <NoteCreateDialog onClosed={onClosed} isDialogRouteShown={() => true} />
+      <NoteCreateDialog onClosed={onClosed} finalFocus={() => false} />
       <Toaster />
     </QueryClientProvider>,
   );
