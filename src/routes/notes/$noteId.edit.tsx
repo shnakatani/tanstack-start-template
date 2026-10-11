@@ -1,16 +1,13 @@
 import { createFileRoute, isNotFound, notFound } from "@tanstack/react-router";
 import * as v from "valibot";
 
+import { RoutePendingDialog } from "@/components/screens/route-status-dialog";
 import { noteQueryOptions } from "@/features/notes/queries";
 import { noteIdSchema } from "@/features/notes/schema";
 import { pageTitle } from "@/lib/page-title";
 
 import { NoteEditDialog } from "./-components/note-edit-dialog";
-import {
-  NoteNotFoundDialog,
-  NoteRouteErrorDialog,
-  NoteRoutePendingDialog,
-} from "./-components/note-route-status-dialogs";
+import { NoteNotFoundDialog, NoteRouteErrorDialog } from "./-components/note-route-status-dialogs";
 import { useNoteDialogNavigation } from "./-hooks/use-note-dialog-navigation";
 import { findNoteEditLink } from "./-lib/note-dialog-focus";
 import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
@@ -72,7 +69,10 @@ function EditRoute() {
 }
 
 function EditPending() {
-  return <NoteRoutePendingDialog title={NOTE_EDIT_DIALOG_TITLE} {...useEditDialogNavigation()} />;
+  const { onClosed, finalFocus } = useEditDialogNavigation();
+  return (
+    <RoutePendingDialog title={NOTE_EDIT_DIALOG_TITLE} onClose={onClosed} finalFocus={finalFocus} />
+  );
 }
 
 function EditNotFound() {

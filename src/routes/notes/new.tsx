@@ -1,12 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { RoutePendingDialog } from "@/components/screens/route-status-dialog";
 import { pageTitle } from "@/lib/page-title";
 
 import { NoteCreateDialog } from "./-components/note-create-dialog";
-import {
-  NoteRouteErrorDialog,
-  NoteRoutePendingDialog,
-} from "./-components/note-route-status-dialogs";
+import { NoteRouteErrorDialog } from "./-components/note-route-status-dialogs";
 import { useNoteDialogNavigation } from "./-hooks/use-note-dialog-navigation";
 import { findNoteCreateLink } from "./-lib/note-dialog-focus";
 import { NOTE_CREATE_DIALOG_TITLE } from "./-lib/notes-page-constants";
@@ -33,8 +31,13 @@ function CreateRoute() {
 }
 
 function CreatePending() {
+  const { onClosed, finalFocus } = useCreateDialogNavigation();
   return (
-    <NoteRoutePendingDialog title={NOTE_CREATE_DIALOG_TITLE} {...useCreateDialogNavigation()} />
+    <RoutePendingDialog
+      title={NOTE_CREATE_DIALOG_TITLE}
+      onClose={onClosed}
+      finalFocus={finalFocus}
+    />
   );
 }
 
