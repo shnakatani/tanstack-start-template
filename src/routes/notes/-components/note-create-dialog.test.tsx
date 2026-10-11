@@ -13,7 +13,11 @@ import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
-import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
+import {
+  expectDialogOpen,
+  expectEmptyTextboxes,
+  expectText,
+} from "@/test/assert/screen-assertions";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
@@ -61,8 +65,7 @@ describe("NoteCreateDialog", () => {
     const { screen } = await renderDialog();
 
     await expect.element(screen.getByRole("heading", { name: "メモを追加" })).toBeInTheDocument();
-    await expect.element(titleTextbox(screen)).toHaveValue("");
-    await expect.element(bodyTextbox(screen)).toHaveValue("");
+    await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
   });
 
   it("開いた直後のフォーカスが先頭の入力にある", async () => {

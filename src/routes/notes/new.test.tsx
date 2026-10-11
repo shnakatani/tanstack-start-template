@@ -3,14 +3,18 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from "vite-plus/
 import { userEvent } from "vite-plus/test/browser";
 
 import { createNote, listNotes } from "@/features/notes/functions";
-import type { Note } from "@/features/notes/schema";
+import { NOTE_FIELD_LABELS, type Note } from "@/features/notes/schema";
 import { CREATED_NOTE, NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { deferMock } from "@/test/app/defer-mock";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
-import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
+import {
+  expectDialogOpen,
+  expectEmptyTextboxes,
+  expectText,
+} from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
 import { parkMouse } from "@/test/browser/park-mouse";
 
@@ -311,8 +315,7 @@ describe("/notes/new route", () => {
 
     await openNoteCreateDialog(screen);
 
-    await expect.element(titleTextbox(screen)).toHaveValue("");
-    await expect.element(bodyTextbox(screen)).toHaveValue("");
+    await expectEmptyTextboxes(screen, [NOTE_FIELD_LABELS.title, NOTE_FIELD_LABELS.body]);
   });
 
   it(

@@ -1,5 +1,5 @@
 import { notFound } from "@tanstack/react-router";
-import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import type { Locator } from "vite-plus/test/browser/context";
 
@@ -99,20 +99,13 @@ describe("/notes/$noteId/edit route", () => {
       const fetching = serveNotes([NOTE]);
       const { screen } = await renderRoute("/notes");
       await expect.element(rowEditLink(screen, NOTE.title)).toBeInTheDocument();
-      const focusedHeadings: Element[] = [];
-      const recordHeadingFocus = (event: FocusEvent) => {
-        if (event.target instanceof Element && event.target.matches("h1")) {
-          focusedHeadings.push(event.target);
-        }
-      };
-      document.addEventListener("focusin", recordHeadingFocus);
-      onTestFinished(() => document.removeEventListener("focusin", recordHeadingFocus));
+      const focused = recordFocusins();
 
       await open(rowEditLink(screen, NOTE.title));
 
       await expect.element(titleTextbox(screen)).toHaveFocus();
       await expectAnnouncements([`${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`]);
-      expect(focusedHeadings).toEqual([]);
+      expect(focused.filter((target) => target.matches("h1"))).toEqual([]);
       expect(fetching).toHaveBeenExhausted();
     },
   );
@@ -292,10 +285,7 @@ describe("/notes/$noteId/edit route", () => {
     await userEvent.keyboard("{Escape}");
 
     await expectNoteDialogClosed(screen);
-    const heading = screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 });
-    await expect.element(heading).toHaveFocus();
-    // 見出しは操作できる要素ではないので枠を出さない (ADR-0035)
-    await expect.poll(() => heading.element().matches(":focus-visible")).toBe(false);
+    await expectNotesHeadingFocused(screen);
   });
 
   it("一覧に無い行のダイアログからブラウザの戻るで一覧へ戻ると、遷移の読み上げが見出しへ focus を移す", async () => {
