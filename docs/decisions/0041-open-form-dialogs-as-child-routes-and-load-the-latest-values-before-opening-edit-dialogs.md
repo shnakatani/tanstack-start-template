@@ -154,7 +154,7 @@ route の URL と閉じ方:
 
 - 開いた状態は SSR の HTML に入らない。ダイアログは Base UI のポータルの中にあり、hydration の後に開く。フォームは JS が無いと送信できないので受け入れる (2026-10-09、`@base-ui/react` 1.8.0 で実測)
 - ダイアログの component は route ごとに別の chunk に分かれ、loader を持たないダイアログの route も chunk を読み終えるまで開かない。開くリンクの preload が hover と focus で chunk を読み始めるので、押す前に読み終えていれば待たない。読み終えていなければ、押してから `pendingMs` までは何も見えない (2026-10-11 に実測)
-- `pendingMs` を超えると、component の chunk を読む間もダイアログの形の読み込み中が出る。Automatic Code Splitting の既定のまとめ方は `[['component'], ['errorComponent'], ['notFoundComponent']]` で (TanStack Router「Automatic Code Splitting」の What gets code split?)、`pendingComponent` は route の本体に残り、component の chunk を待たずに描ける (2026-10-11 に `vp build` の出力で確認)。pending 表示をページ本体と別のファイルに置く ADR-0010 の決定も、この分割されない挙動を前提にしている
+- `pendingMs` を超えると、component の chunk を読む間もダイアログの形の読み込み中が出る。Automatic Code Splitting の既定のまとめ方は `[['component'], ['errorComponent'], ['notFoundComponent']]` で (TanStack Router「Automatic Code Splitting」の What gets code split?)、`pendingComponent` は route の本体に残り (2026-10-11 に `vp build` の出力で確認)、component の chunk を待たずに描ける (下の「実測」)。pending 表示をページ本体と別のファイルに置く ADR-0010 の決定も、この分割されない挙動を前提にしている
 - 保存の応答の前に戻る・進むで route を離れると、close の停止を通らずに unmount する。保存はそのまま続き、失敗すると toast だけが残り、入力は残らない
 - 既存の値を編集するダイアログは、開くたびに 1 件を取得し、取り終えるまで開かない
 - 開いた後で別のタブや別の利用者が保存すると、開いた時点の値は古くなる。保存は後から保存した側が先の変更を上書きする。この決定は開く時点の古さだけを防ぐ
