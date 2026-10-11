@@ -27,8 +27,7 @@ export function findNoteCreateLink(): HTMLElement | null {
 
 /**
  * 一覧の上に重ねるダイアログの route。ダイアログが開いたまま unmount した時点でどれかが表示されていれば、
- * そのダイアログは別のダイアログに替わった。利用者が閉じた時点でも route は表示されたままなので、閉じ方の
- * 判定 (`closeKindOf`) は利用者が閉じたかを先に見る。
+ * そのダイアログは別のダイアログに替わった。
  * ダイアログの route を足したらここにも足す。漏れると、そのダイアログとの間を移るときに、消える側の戻し先へ
  * focus が 1 frame だけ寄り道する
  */
@@ -52,7 +51,7 @@ export function isNoteDialogRouteShown(matches: readonly { routeId: string }[]):
  * - closed-by-user: 利用者が閉じた (保存の応答で閉じたときも含む)
  * - left: 開いたまま unmount し、ダイアログの route を離れた (戻る・進む)
  * - replaced: 開いたまま unmount し、別のダイアログの route が表示されている (読み込み中のダイアログが
- *   本物に替わった、開いたまま別のダイアログの URL へ移った)
+ *   本物や失敗・見つからないのダイアログに替わった、開いたまま別のダイアログの URL へ移った)
  */
 type RouteDialogCloseKind = "closed-by-user" | "left" | "replaced";
 

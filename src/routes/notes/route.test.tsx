@@ -1079,9 +1079,10 @@ function createInputOf(note: Pick<Note, "title" | "body">) {
 
 /**
  * 追加の route の component の chunk の読み込みを握る。返す mock が決着するまで component を読み込み中にし、
- * reject すると読み込みの失敗にする。build では automatic code splitting が component を
- * `lazyRouteComponent` で包み、chunk を読み終えるまで route は pending になる。テストは route ファイルを
- * 直接 import するので chunk に分かれず、同じ包み方で作る
+ * reject すると読み込みの失敗にする。dev と build では automatic code splitting が component を
+ * `lazyRouteComponent` で包み、chunk を読み終えるまで route は pending になる。テストでは root の plugin を
+ * 外すので chunk に分かれず (docs/guides/testing/configuration.md「テストの分岐で plugin を外す理由」)、
+ * 同じ包み方で作る
  */
 function mockCreateRouteChunk() {
   const { component } = NoteCreateRoute.options;
