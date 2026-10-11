@@ -9,6 +9,7 @@ import { APP_NAME } from "@/lib/app-name";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { deferMock } from "@/test/app/defer-mock";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
+import { recordFocusins } from "@/test/assert/focusin";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import {
   expectDialogOpen,
@@ -36,7 +37,7 @@ import {
 } from "./-components/note-form.test-helpers";
 import { NOTE_CREATE_DIALOG_TITLE, NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route as NoteCreateRoute } from "./new";
-import { ariaLabelsOf, recordFocusins, renderRoute, serveNotes } from "./route.test-helpers";
+import { ariaLabelsOf, renderRoute, serveNotes } from "./route.test-helpers";
 
 /** 追加のリンクから追加ダイアログを開いて 1 件分を入力し、保存を確定する (応答の決着は呼び出し側が握る)。 */
 const submitCreate = vi.defineHelper(async (screen: Screen, note: Pick<Note, "title" | "body">) => {

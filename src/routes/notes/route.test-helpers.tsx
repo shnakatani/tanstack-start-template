@@ -8,7 +8,7 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { onTestFinished, vi } from "vite-plus/test";
+import { vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { RouterInnerWrap } from "@/components/router-inner-wrap";
@@ -123,23 +123,7 @@ export function serveNotes(notes: Note[]) {
 }
 
 /**
- * これから focusin を受けた要素を順に記録する。1 frame だけ focus が通った要素は、`toHaveFocus` の
- * retry の間隔では捉えられない
- */
-export function recordFocusins(): Element[] {
-  const targets: Element[] = [];
-  const record = (event: FocusEvent) => {
-    if (event.target instanceof Element) {
-      targets.push(event.target);
-    }
-  };
-  document.addEventListener("focusin", record);
-  onTestFinished(() => document.removeEventListener("focusin", record));
-  return targets;
-}
-
-/**
- * 記録した要素の aria-label。行の編集リンクはモーダルの背後で aria-hidden になり locator で引けないので、
+ * `recordFocusins` (`@/test/assert/focusin`) で記録した要素の aria-label。行の編集リンクはモーダルの背後で aria-hidden になり locator で引けないので、
  * 名前を持つ aria-label の値 (`noteEditTriggerName`) で見分ける
  */
 export function ariaLabelsOf(targets: Element[]): (string | null)[] {
