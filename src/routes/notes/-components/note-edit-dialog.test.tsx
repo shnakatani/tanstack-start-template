@@ -20,6 +20,7 @@ import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
 
+import { NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteEditDialog } from "./note-edit-dialog";
 import {
   bodyTextbox,
@@ -54,7 +55,9 @@ describe("NoteEditDialog", () => {
   it("見出しと、取り直した 1 件の値が入ったフォームで開く", async () => {
     const { screen } = await renderDialog();
 
-    await expect.element(screen.getByRole("heading", { name: "メモを編集" })).toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("heading", { name: NOTE_EDIT_DIALOG_TITLE }))
+      .toBeInTheDocument();
     await expect.element(bodyTextbox(screen)).toHaveValue(NOTE.body);
     expect.assert(NOTE.dueDate !== null);
     await expect
