@@ -180,6 +180,11 @@ const itemNewRoute = createRoute({
   path: "/new",
   component: ItemNewDialog,
 });
+const itemImportRoute = createRoute({
+  getParentRoute: () => itemsRoute,
+  path: "/import",
+  component: ItemImportDialog,
+});
 const itemEditRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/$itemId/edit",
@@ -197,6 +202,9 @@ function ItemsPage(): ReactNode {
       <button type="button" data-return-mark="item-new">
         項目を追加
       </button>
+      <button type="button" data-return-mark="item-import">
+        項目を取り込む
+      </button>
       {ITEM_IDS.map((itemId) => (
         <button key={itemId} type="button" data-return-mark={`item-edit-${itemId}`}>
           項目 {itemId} を編集
@@ -213,6 +221,16 @@ function ItemNewDialog(): ReactNode {
       title="項目を追加"
       returnTo={{ to: "/items", search: (prev) => prev }}
       findReturnTarget={findByReturnMark("item-new")}
+    />
+  );
+}
+
+function ItemImportDialog(): ReactNode {
+  return (
+    <RouteDialogHarness
+      title="項目を取り込む"
+      returnTo={{ to: ".." }}
+      findReturnTarget={findByReturnMark("item-import")}
     />
   );
 }
@@ -244,7 +262,7 @@ const routeTree = rootRoute.addChildren([
   homeRoute,
   boardRoute.addChildren([boardIndexRoute, boardNewRoute]),
   groupItemsRoute.addChildren([groupItemNewRoute]),
-  itemsRoute.addChildren([itemNewRoute, itemEditRoute]),
+  itemsRoute.addChildren([itemNewRoute, itemImportRoute, itemEditRoute]),
 ]);
 
 function createDialogRouter(initialEntries: string[]) {
@@ -344,6 +362,12 @@ const ROUTE_SHAPES = [
     page: "/items",
     dialog: "/items/1/edit",
     returnTarget: "項目 1 を編集",
+  },
+  {
+    shape: "戻り先を相対の to (`..`) で書く形",
+    page: "/items",
+    dialog: "/items/import",
+    returnTarget: "項目を取り込む",
   },
 ];
 

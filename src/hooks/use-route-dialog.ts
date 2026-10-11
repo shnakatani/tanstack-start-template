@@ -1,4 +1,5 @@
 import {
+  useMatch,
   useNavigate,
   useRouter,
   type AnyRouter,
@@ -13,7 +14,8 @@ import { focusAfterRouteDialogClosed } from "@/lib/route-dialog-focus";
 
 /**
  * - returnTo: 閉じたときに離れる先 (開く元のページ)。`navigate` にそのまま渡すので、search を保つなら
- *   `search: (prev) => prev` を書く。閉じたときの focus を決めるときは、呼ばれた時点の router がここにいるかで、
+ *   `search: (prev) => prev` を書く。`from` が無ければ、相対の `to` はダイアログの route から解く。
+ *   閉じたときの focus を決めるときは、呼ばれた時点の router がここにいるかで、
  *   戻る・進むで離れたか別のダイアログに替わったかを分ける
  * - findReturnTarget: 開いた元の要素を探す。URL を直接開いたときは Base UI の既定の戻し先 (開く前に focus して
  *   いた要素) が無いので、要素を探して返す
@@ -63,7 +65,11 @@ export function useRouteDialog({
   isPending = false,
   waitForCloseAnimation = true,
 }: RouteDialogOptions): RouteDialog {
-  const navigate = useNavigate();
+  // 相対の `to` (`..`) を、どの時点で組んでもこのダイアログの route から解く。`from` が無いと、組んだ時点の
+  // location から解く (TanStack Router「RouterType」の `.buildLocation`)。戻るで離れたあとの `finalFocus` では
+  // 戻った先から解いてしまい、戻り先と食い違う
+  const dialogPath = useMatch({ strict: false }).fullPath;
+  const navigate = useNavigate({ from: dialogPath });
   const router = useRouter();
   const [open, setOpen] = useState(true);
 
@@ -98,7 +104,9 @@ export function useRouteDialog({
   function finalFocus() {
     // `router.state` と `buildLocation` は呼んだ時点の location を読む (TanStack Router「useRouter hook」)。
     // 描画の時点の値は、unmount の時点の遷移先を映さない
-    const atReturnTo = router.state.location.pathname === router.buildLocation(returnTo).pathname;
+    const atReturnTo =
+      router.state.location.pathname ===
+      router.buildLocation({ ...returnTo, from: returnTo.from ?? dialogPath }).pathname;
     const target = focusAfterRouteDialogClosed({
       // 閉じる操作か保存の応答で閉じたら false になっている。開いたまま unmount したときは true のまま
       closedBeforeUnmount: !open,
