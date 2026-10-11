@@ -7,7 +7,7 @@ import {
   NoteRouteErrorDialog,
   NoteRoutePendingDialog,
 } from "./-components/note-route-status-dialogs";
-import { useNoteDialogRoute } from "./-hooks/use-note-dialog-route";
+import { useNoteDialogNavigation } from "./-hooks/use-note-dialog-navigation";
 import { findNoteCreateLink } from "./-lib/note-dialog-focus";
 import { NOTE_CREATE_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/notes/new")({
 
 /** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */
 function CreateRoute() {
-  return <NoteCreateDialog {...useNoteDialogRoute()} />;
+  return <NoteCreateDialog {...useNoteDialogNavigation()} />;
 }
 
 function CreatePending() {
@@ -30,7 +30,7 @@ function CreatePending() {
     <NoteRoutePendingDialog
       title={NOTE_CREATE_DIALOG_TITLE}
       findReturnTarget={findNoteCreateLink}
-      {...useNoteDialogRoute()}
+      {...useNoteDialogNavigation()}
     />
   );
 }
@@ -40,7 +40,7 @@ function CreateError() {
     <NoteRouteErrorDialog
       title="フォームを読み込めませんでした"
       findReturnTarget={findNoteCreateLink}
-      {...useNoteDialogRoute()}
+      {...useNoteDialogNavigation()}
     />
   );
 }

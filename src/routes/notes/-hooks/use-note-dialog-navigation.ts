@@ -8,7 +8,7 @@ import { isNoteDialogRouteShown } from "../-lib/note-dialog-focus";
  * - onClosed: 一覧へ戻る。一覧の絞り込み (search) を保ち、新しい履歴を積むので、戻るで開き直せる
  * - isDialogRouteShown: focus の戻し先を決めるときに呼ぶ (`focusAfterRouteDialogClosed`)
  */
-export function useNoteDialogRoute(): {
+export function useNoteDialogNavigation(): {
   onClosed: () => void;
   isDialogRouteShown: () => boolean;
 } {
