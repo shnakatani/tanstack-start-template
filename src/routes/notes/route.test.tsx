@@ -5,6 +5,7 @@ import {
   createRootRouteWithContext,
   createRouter,
   HeadContent,
+  lazyRouteComponent,
   notFound,
   Outlet,
   RouterProvider,
@@ -357,6 +358,31 @@ function ariaLabelsOf(targets: Element[]): (string | null)[] {
 /** 閉じかけのダイアログの本体。閉じるアニメーションを遅らせる style と、それが効いたかを見る observer が共有する */
 const CLOSING_DIALOG_SELECTOR = "[data-slot=dialog-content][data-closed]";
 
+/**
+ * 閉じるアニメーションを 60 秒に延ばす。読み込み中のダイアログを閉じたあと、アニメーションが終わってから
+ * 戻る実装 (退行) では、その窓の間に読み込みが終わると本物のダイアログが替わって開く。その退行で落ちるよう、
+ * 窓を読み込みの決着より長く保つ。
+ * 返す関数は、閉じる途中の要素に style が効いていたか。掴めなくなるとアニメーションが即座に終わり、退行でも通る
+ */
+function slowDownClosingDialogs(): () => boolean {
+  enableAnimations();
+  const slowClose = document.createElement("style");
+  slowClose.textContent = `${CLOSING_DIALOG_SELECTOR} { animation-duration: 60s !important; }`;
+  document.head.append(slowClose);
+  onTestFinished(() => slowClose.remove());
+  let slowedWhileClosing = false;
+  const watchClosing = new MutationObserver(() => {
+    // locator は使えない: 戻る実装では閉じかけの要素は直ちに外れ、retry の間隔では捉えられない
+    const closing = document.querySelector(CLOSING_DIALOG_SELECTOR);
+    if (closing && getComputedStyle(closing).animationDuration === "60s") {
+      slowedWhileClosing = true;
+    }
+  });
+  watchClosing.observe(document.body, { attributes: true, subtree: true });
+  onTestFinished(() => watchClosing.disconnect());
+  return () => slowedWhileClosing;
+}
+
 describe("/notes/$noteId/edit route", () => {
   it("編集リンクで開くと、一覧のキャッシュではなく取り直した値でフォームを作り、背後の一覧も取り直す", async () => {
     // 一覧を描いたあとで別のタブが保存した、という状態。更新日時も進む
@@ -489,24 +515,7 @@ describe("/notes/$noteId/edit route", () => {
   });
 
   it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に取得が終わってもフォームを開かない", async () => {
-    // 閉じる操作の時点で戻る実装では、閉じるアニメーションの窓が無い。アニメーションが終わってから戻る
-    // 実装 (退行) ではその窓の間に取得が終わると、本物のダイアログが読み込み中のダイアログに替わって開く。
-    // その退行で落ちるよう、閉じるアニメーションを取得の決着より長く保つ
-    enableAnimations();
-    const slowClose = document.createElement("style");
-    slowClose.textContent = `${CLOSING_DIALOG_SELECTOR} { animation-duration: 60s !important; }`;
-    document.head.append(slowClose);
-    onTestFinished(() => slowClose.remove());
-    let slowedWhileClosing = false;
-    const watchClosing = new MutationObserver(() => {
-      // locator は使えない: 戻る実装では閉じかけの要素は直ちに外れ、retry の間隔では捉えられない
-      const closing = document.querySelector(CLOSING_DIALOG_SELECTOR);
-      if (closing && getComputedStyle(closing).animationDuration === "60s") {
-        slowedWhileClosing = true;
-      }
-    });
-    watchClosing.observe(document.body, { attributes: true, subtree: true });
-    onTestFinished(() => watchClosing.disconnect());
+    const slowedWhileClosing = slowDownClosingDialogs();
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const fetching = deferMock(getNote);
     const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
@@ -525,8 +534,7 @@ describe("/notes/$noteId/edit route", () => {
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
     await expectRemoved(screen.getByRole("dialog"));
     await expectAbsent(titleTextbox(screen));
-    // 閉じる途中の要素に style が効いていたこと。掴めなくなるとアニメーションが即座に終わり、上の退行でも通る
-    expect(slowedWhileClosing).toBe(true);
+    expect(slowedWhileClosing()).toBe(true);
   });
 
   it("リンクを押さずに開いた読み込み中のダイアログを閉じると、取得が終わる前でもその行の編集リンクへ focus を移し、取得が終わってもフォームは開かない", async () => {
@@ -1067,9 +1075,122 @@ function createInputOf(note: Pick<Note, "title" | "body">) {
   return { title: note.title, body: note.body, dueDate: null };
 }
 
+/**
+ * 追加の route の component の chunk の読み込みを握る。返す mock が決着するまで component を読み込み中にし、
+ * reject すると読み込みの失敗にする。build では automatic code splitting が component を
+ * `lazyRouteComponent` で包み、chunk を読み終えるまで route は pending になる。テストは route ファイルを
+ * 直接 import するので chunk に分かれず、同じ包み方で作る
+ */
+function mockCreateRouteChunk() {
+  const { component } = NoteCreateRoute.options;
+  if (component === undefined) {
+    throw new Error("追加の route に component がない");
+  }
+  const loadChunk = vi.fn<() => Promise<void>>();
+  NoteCreateRoute.update({
+    component: lazyRouteComponent(async () => {
+      await loadChunk();
+      return { default: component };
+    }),
+  });
+  // テストが同じ Route インスタンスを使い回すので、後続のテストまで chunk の読み込みを踏む
+  onTestFinished(() => {
+    NoteCreateRoute.update({ component });
+  });
+  return loadChunk;
+}
+
 describe("/notes/new route", () => {
   beforeEach(() => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
+  });
+
+  it("chunk の読み込みが pendingMs を超えると、読み込み中のダイアログを出してからフォームに替える", async () => {
+    const chunk = deferMock(mockCreateRouteChunk());
+    const { screen } = await renderRoute("/notes", { pendingMs: 0 });
+
+    await noteCreateLink(screen).click();
+
+    await expect
+      .element(
+        screen.getByRole("dialog", { name: NOTE_CREATE_DIALOG_TITLE }).getByText("読み込み中"),
+      )
+      .toBeInTheDocument();
+    const focused = recordFocusins();
+
+    chunk.resolve();
+
+    await expect.element(titleTextbox(screen)).toHaveFocus();
+    // 替わる間に追加のリンクを経ない。focus は直前の toHaveFocus で落ち着いている
+    expect(focused.map((target) => target.textContent)).not.toContain(NOTE_CREATE_LINK_LABEL);
+  });
+
+  it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に chunk が届いてもフォームを開かない", async () => {
+    const slowedWhileClosing = slowDownClosingDialogs();
+    const loadChunk = mockCreateRouteChunk();
+    const chunk = deferMock(loadChunk);
+    const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
+    await noteCreateLink(screen).click();
+    await expect.element(screen.getByRole("dialog").getByText("読み込み中")).toBeInTheDocument();
+
+    await screen.getByRole("button", { name: "閉じる", exact: true }).click();
+    chunk.resolve();
+
+    // chunk の決着が届いたこと (不在を確かめる前の肯定 anchor)
+    await expect.poll(() => loadChunk).toHaveResolved();
+    await expect.poll(() => router.state.location.pathname).toBe("/notes");
+    await expectRemoved(screen.getByRole("dialog"));
+    await expectAbsent(titleTextbox(screen));
+    expect(slowedWhileClosing()).toBe(true);
+  });
+
+  it("リンクを押さずに開いた読み込み中のダイアログを閉じると、追加のリンクへ focus を移す", async () => {
+    // リンクを押して開くと Base UI の既定 (開く前に focus していた要素) でもリンクへ戻り、finalFocus が
+    // 効いていなくても通ってしまう。router.navigate で開くと既定の戻し先が無いので、finalFocus だけが決める
+    deferMock(mockCreateRouteChunk());
+    const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
+    await expect.element(noteCreateLink(screen)).toBeInTheDocument();
+    void router.navigate({ to: "/notes/new" });
+    await expect.element(screen.getByRole("dialog").getByText("読み込み中")).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    await expect.poll(() => router.state.location.pathname).toBe("/notes");
+    await expectRemoved(screen.getByRole("dialog"));
+    await expect.element(noteCreateLink(screen)).toHaveFocus();
+  });
+
+  it("chunk の読み込みに失敗するとダイアログで伝え、再試行で読み直してフォームを出す", async () => {
+    mockCreateRouteChunk()
+      .mockRejectedValueOnce(new Error("chunk の読み込みの失敗"))
+      .mockResolvedValueOnce(undefined);
+    const { screen } = await renderRoute("/notes/new");
+
+    await expect
+      .element(screen.getByRole("dialog", { name: "フォームを読み込めませんでした" }))
+      .toBeInTheDocument();
+    // ページの見出しはダイアログの外の 1 つだけ (RouteErrorContent を置くと 2 つになる)
+    await expect
+      .element(screen.getByRole("heading", { level: 1, includeHidden: true }))
+      .toHaveLength(1);
+
+    await screen.getByRole("button", { name: "再試行" }).click();
+
+    await expect.element(titleTextbox(screen)).toHaveFocus();
+  });
+
+  it("chunk の読み込みの失敗のダイアログを閉じると、一覧へ戻り追加のリンクへ focus を移す", async () => {
+    mockCreateRouteChunk().mockRejectedValue(new Error("chunk の読み込みの失敗"));
+    const { screen, router } = await renderRoute("/notes/new");
+    await expect
+      .element(screen.getByRole("dialog", { name: "フォームを読み込めませんでした" }))
+      .toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    await expect.poll(() => router.state.location.pathname).toBe("/notes");
+    await expectRemoved(screen.getByRole("dialog"));
+    await expect.element(noteCreateLink(screen)).toHaveFocus();
   });
 
   it("追加のリンクで開くと、遷移の title を読み上げ、一覧の見出しを経由せずにダイアログの入力欄へ focus を移す", async () => {

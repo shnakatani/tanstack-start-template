@@ -7,11 +7,12 @@ import { pageTitle } from "@/lib/page-title";
 
 import { NoteEditDialog } from "./-components/note-edit-dialog";
 import {
-  NoteEditErrorDialog,
-  NoteEditNotFoundDialog,
-  NoteEditPendingDialog,
-} from "./-components/note-edit-status-dialogs";
+  NoteNotFoundDialog,
+  NoteRouteErrorDialog,
+  NoteRoutePendingDialog,
+} from "./-components/note-route-status-dialogs";
 import { useNoteDialogRoute } from "./-hooks/use-note-dialog-route";
+import { findNoteEditLink } from "./-lib/note-dialog-focus";
 import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
 import { NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
@@ -56,25 +57,28 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   component: EditRoute,
 });
 
-/** Route hooks を吸収し、ダイアログへ渡す値とハンドラを返す (ADR-0010) */
-function useEditDialogProps() {
-  const { noteId } = Route.useParams();
-  return { noteId, ...useNoteDialogRoute() };
-}
-
 /** Route hooks を吸収する薄い wrapper。ダイアログは値とハンドラを props で受ける (ADR-0010) */
 function EditRoute() {
-  return <NoteEditDialog {...useEditDialogProps()} />;
+  const { noteId } = Route.useParams();
+  return <NoteEditDialog noteId={noteId} {...useNoteDialogRoute()} />;
+}
+
+/** Route hooks を吸収し、フォームを出せない間のダイアログへ渡す値とハンドラを返す (ADR-0010) */
+function useEditStatusDialogProps() {
+  const { noteId } = Route.useParams();
+  return { ...useNoteDialogRoute(), findReturnTarget: () => findNoteEditLink(noteId) };
 }
 
 function EditPending() {
-  return <NoteEditPendingDialog {...useEditDialogProps()} />;
+  return <NoteRoutePendingDialog title={NOTE_EDIT_DIALOG_TITLE} {...useEditStatusDialogProps()} />;
 }
 
 function EditNotFound() {
-  return <NoteEditNotFoundDialog {...useEditDialogProps()} />;
+  return <NoteNotFoundDialog {...useEditStatusDialogProps()} />;
 }
 
 function EditError() {
-  return <NoteEditErrorDialog {...useEditDialogProps()} />;
+  return (
+    <NoteRouteErrorDialog title="メモを読み込めませんでした" {...useEditStatusDialogProps()} />
+  );
 }
