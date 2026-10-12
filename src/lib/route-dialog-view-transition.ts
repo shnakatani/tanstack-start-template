@@ -1,5 +1,7 @@
 import type { AnyRouteMatch, ParsedLocation } from "@tanstack/react-router";
 
+import { skipViewTransitionAfterUATransition } from "./skip-view-transition-after-ua-transition";
+
 declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
     /**
@@ -76,5 +78,22 @@ export function withRouteDialogViewTransitionTypes(
       });
       return baseTypes;
     }
+  };
+}
+
+/**
+ * router の `defaultViewTransition` に渡す値を返す。ブラウザが自分で遷移のアニメーションを出した戻る・進むでは
+ * View Transition を飛ばし (ADR-0040)、ダイアログの route を閉じる遷移には type を足す (ADR-0041)。
+ * `target` は router が戻る・進むで聞く `popstate` を出すもの (ブラウザでは `window`)
+ */
+export function createDefaultViewTransition(
+  target: EventTarget,
+  getRouter: () => RouteDialogMatchSource,
+): { types: ViewTransitionTypes } {
+  return {
+    types: withRouteDialogViewTransitionTypes(
+      skipViewTransitionAfterUATransition(target),
+      getRouter,
+    ),
   };
 }

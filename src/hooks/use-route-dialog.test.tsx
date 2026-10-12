@@ -23,8 +23,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  createDefaultViewTransition,
   ROUTE_DIALOG_CLOSE_TYPE,
-  withRouteDialogViewTransitionTypes,
   type RouteDialogMatchSource,
 } from "@/lib/route-dialog-view-transition";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
@@ -308,9 +308,7 @@ function createViewTransitionRouter(initialEntries: string[]) {
   const router = createRouterWithTestDefaults({
     routeTree,
     history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
-    defaultViewTransition: {
-      types: withRouteDialogViewTransitionTypes(() => [], currentRouter),
-    },
+    defaultViewTransition: createDefaultViewTransition(new EventTarget(), currentRouter),
   });
   return router;
 

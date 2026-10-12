@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 
 import {
+  createDefaultViewTransition,
   ROUTE_DIALOG_CLOSE_TYPE,
   routeDialogViewTransitionTypes,
   withRouteDialogViewTransitionTypes,
@@ -146,5 +147,25 @@ describe("router の match から閉じる遷移を見分ける", () => {
     { from: "/board", to: "/groups/g1/items", expected: [] },
   ])("$from から $to へ移ると $expected", async ({ from, to, expected }) => {
     expect(await typesFrom(from, to)).toEqual(expected);
+  });
+});
+
+describe("createDefaultViewTransition", () => {
+  it("UA の遷移の直後は、ダイアログを閉じる遷移でも View Transition ごと飛ばす", async () => {
+    const target = new EventTarget();
+    const router = createTreeRouter("/board/new");
+    await router.load();
+    const { types } = createDefaultViewTransition(target, () => router);
+    target.dispatchEvent(popstate(true));
+
+    expect(types({ toLocation: parsedLocation("/board") })).toBe(false);
+  });
+
+  it("今の画面のダイアログが行き先で無くなる遷移に、閉じる遷移の type を付ける", async () => {
+    const router = createTreeRouter("/board/new");
+    await router.load();
+    const { types } = createDefaultViewTransition(new EventTarget(), () => router);
+
+    expect(types({ toLocation: parsedLocation("/board") })).toEqual([ROUTE_DIALOG_CLOSE_TYPE]);
   });
 });

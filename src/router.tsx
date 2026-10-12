@@ -9,10 +9,9 @@ import { RouteErrorContent } from "@/components/screens/route-error";
 import { toast } from "@/components/ui/toast";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
 import {
-  withRouteDialogViewTransitionTypes,
+  createDefaultViewTransition,
   type RouteDialogMatchSource,
 } from "@/lib/route-dialog-view-transition";
-import { skipViewTransitionAfterUATransition } from "@/lib/skip-view-transition-after-ua-transition";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -35,18 +34,11 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
-    // ナビゲーションを View Transitions のクロスフェードにし、ブラウザが自分でアニメーションを出した
-    // 戻る・進むでは飛ばす。route として開くダイアログを閉じる遷移には type を足す (ADR-0041)。
+    // ナビゲーションを View Transitions のクロスフェードにする。飛ばす遷移と type を足す遷移は
+    // createDefaultViewTransition が決める (ADR-0040、ADR-0041)。
     // サーバーでは判定せず true を渡す (View Transition はサーバーでは動かない。ADR-0040)
     defaultViewTransition:
-      typeof window === "undefined"
-        ? true
-        : {
-            types: withRouteDialogViewTransitionTypes(
-              skipViewTransitionAfterUATransition(window),
-              currentRouter,
-            ),
-          },
+      typeof window === "undefined" ? true : createDefaultViewTransition(window, currentRouter),
     // loader / useSuspenseQuery のエラーを失敗 route の境界で受ける (周囲のレイアウトを
     // 保ったまま日本語 UI + 再試行を出す。未設定だと SSR は英語の組み込み UI、client は
     // root の全画面エラーに落ちる)
