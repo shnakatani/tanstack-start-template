@@ -2,7 +2,6 @@ import {
   createMemoryHistory,
   createRootRoute,
   createRoute,
-  createRouter,
   HeadContent,
   notFound,
   Outlet,
@@ -18,7 +17,7 @@ import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
 import { pageTitle } from "@/lib/page-title";
-import { TEST_ROUTER_DEFAULTS } from "@/test/app/test-router-defaults";
+import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 
 import { RouteAnnouncer } from "./route-announcer";
@@ -134,8 +133,7 @@ function createAnnouncedRouter(
       </>
     ),
   });
-  return createRouter({
-    ...TEST_ROUTER_DEFAULTS,
+  return createRouterWithTestDefaults({
     routeTree: rootRoute.addChildren([
       a,
       b,

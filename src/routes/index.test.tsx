@@ -1,7 +1,6 @@
 import {
   createMemoryHistory,
   createRootRoute,
-  createRouter,
   HeadContent,
   Outlet,
   RouterProvider,
@@ -10,7 +9,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
-import { TEST_ROUTER_DEFAULTS } from "@/test/app/test-router-defaults";
+import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 
 import { Route } from "./index";
 
@@ -42,8 +41,7 @@ describe("/ route", () => {
   it("title をアプリ名にする", async () => {
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
-    const router = createRouter({
-      ...TEST_ROUTER_DEFAULTS,
+    const router = createRouterWithTestDefaults({
       routeTree,
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });

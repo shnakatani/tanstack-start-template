@@ -3,7 +3,6 @@ import {
   createMemoryHistory,
   createRootRoute,
   createRoute,
-  createRouter,
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
@@ -11,9 +10,9 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { THROWN_VALUE_UNPRINTABLE } from "@/lib/thrown-value-message";
+import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { createTestQueryClient } from "@/test/app/query-client";
-import { TEST_ROUTER_DEFAULTS } from "@/test/app/test-router-defaults";
 import { expectAbsent } from "@/test/assert/absent";
 import { expectText } from "@/test/assert/screen-assertions";
 
@@ -49,8 +48,7 @@ async function renderFailingOnceRoute({ loaderAwaits }: { loaderAwaits: boolean 
       return <p>{data}</p>;
     },
   });
-  const router = createRouter({
-    ...TEST_ROUTER_DEFAULTS,
+  const router = createRouterWithTestDefaults({
     routeTree: rootRoute.addChildren([pageRoute]),
     history: createMemoryHistory({ initialEntries: ["/"] }),
     defaultErrorComponent: RouteErrorContent,

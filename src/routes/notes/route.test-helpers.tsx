@@ -3,7 +3,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import {
   createMemoryHistory,
   createRootRouteWithContext,
-  createRouter,
   HeadContent,
   Outlet,
   RouterProvider,
@@ -17,8 +16,8 @@ import { toast, Toaster } from "@/components/ui/toast";
 import { getNote, listNotes } from "@/features/notes/functions";
 import type { Note } from "@/features/notes/schema";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
+import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { createTestQueryClient } from "@/test/app/query-client";
-import { TEST_ROUTER_DEFAULTS } from "@/test/app/test-router-defaults";
 import { enableAnimations } from "@/test/browser/animations";
 
 import { Route as NoteEditRoute } from "./$noteId.edit";
@@ -87,8 +86,7 @@ export async function renderRoute(
       ),
     }),
   });
-  const router = createRouter({
-    ...TEST_ROUTER_DEFAULTS,
+  const router = createRouterWithTestDefaults({
     routeTree,
     context: { queryClient },
     history: createMemoryHistory({ initialEntries: [initialLocation] }),
