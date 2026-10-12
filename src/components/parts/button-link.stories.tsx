@@ -36,3 +36,16 @@ export const Link: Story = {
 export const Disabled: Story = {
   args: { variant: "outline", disabled: true },
 };
+
+/**
+ * 遷移の読み込み中 (`isPending`)。label の幅を保ったまま Spinner を重ねる (ADR-0042)。
+ * 一覧の行の編集リンクが使う組み合わせ
+ */
+export const Pending: Story = {
+  args: { variant: "outline", size: "sm", children: "編集", isPending: true },
+};
+
+/** `isPending` を渡した link variant。pending でない間は下線が label に出る */
+export const PendingLink: Story = {
+  args: { variant: "link", size: "sm", children: "新規登録する", isPending: false },
+};

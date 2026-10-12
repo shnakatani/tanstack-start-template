@@ -15,10 +15,64 @@ import { ButtonLink } from "./button-link";
  * story に play が無い以上、ここでしか固定できない
  * (docs/guides/storybook.md「カタログと play の範囲」「story とブラウザテストの分担」)。
  *
- * 寸法は測らない。寸法は registry の size 目盛りが決め、上流が決める値なので、測ると上流が変えただけで落ちる。
- * 消費側が縮められないことは層の規則 (ADR-0011 / ADR-0022) が止める。
+ * 寸法の絶対値は測らない。寸法は registry の size 目盛りが決め、上流が決める値なので、測ると上流が変えただけで落ちる。
+ * 消費側が縮められないことは層の規則 (ADR-0011 / ADR-0022) が止める。`isPending` の前後の幅は 2 回の観測の
+ * 比較で、目盛りを pin しない。
  */
 describe("ButtonLink", () => {
+  // 幅を保つ仕組みは PendingLabel が持つ (pending-label.test.tsx)。ここで見るのは、`isPending` が children を
+  // その仕組みへ通すことと、名前が pending 中も保たれること
+  it("isPending の間も幅と children からの名前を保つ (ADR-0042)", async () => {
+    const router = createTestRouter("/", () => (
+      <>
+        <ButtonLink to="/notes" variant="outline" size="sm" isPending={false}>
+          編集
+        </ButtonLink>
+        <ButtonLink to="/notes" variant="outline" size="sm" isPending>
+          編集
+        </ButtonLink>
+      </>
+    ));
+    const screen = await render(<RouterProvider router={router} />);
+    const idle = screen.getByRole("link", { name: "編集" }).nth(0);
+    const pending = screen.getByRole("link", { name: "編集" }).nth(1);
+    // `aria-label` が無いので、不可視の label を部品が `aria-labelledby` で指す。外れると pending 側の名前が空になり、
+    // この locator が 2 つ目を見つけられない
+    await expect.element(pending.getBySlot("spinner")).toHaveAttribute("aria-hidden", "true");
+    const widthIdle = idle.element().getBoundingClientRect().width;
+
+    await expect
+      .poll(() => pending.element().getBoundingClientRect().width)
+      .toBeCloseTo(widthIdle, 0);
+  });
+
+  it("aria-label を渡した isPending のリンクはその名前を持ち、isPending を a の属性に流さない", async () => {
+    const router = createTestRouter("/", () => (
+      <ButtonLink to="/notes" aria-label="メモを編集" isPending>
+        編集
+      </ButtonLink>
+    ));
+    const screen = await render(<RouterProvider router={router} />);
+
+    const link = screen.getByRole("link", { name: "メモを編集" });
+    await expect.element(link).toBeInTheDocument();
+    await expect.element(link).not.toHaveAttribute("aria-labelledby");
+    // createLink は router の option 以外の prop を描く要素へ流す (`link.js` の collectElementProps)。
+    // 部品で受け止めないと `ispending` 属性が a に付き、React が unknown prop の warn を出す
+    await expect.element(link).not.toHaveAttribute("ispending");
+  });
+
+  it("isPending を渡さない呼び出しでは children をそのまま描く", async () => {
+    const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
+    const screen = await render(<RouterProvider router={router} />);
+
+    const link = screen.getByRole("link", { name: "メモ一覧へ" });
+    await expect.element(link).toHaveTextContent("メモ一覧へ");
+    await expect.element(link).not.toHaveAttribute("aria-labelledby");
+    // 包む span が無く、文字が a の直下にある。利用者が icon と文字を並べたとき buttonVariants の gap が効く
+    await expect.poll(() => link.element().childElementCount).toBe(0);
+  });
+
   it("リンクテキストが表示される", async () => {
     const router = createTestRouter("/", () => <ButtonLink to="/notes">メモ一覧へ</ButtonLink>);
     const screen = await render(<RouterProvider router={router} />);
