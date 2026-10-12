@@ -617,6 +617,20 @@ function exitShape(animation: Animation | undefined) {
   };
 }
 
+/**
+ * 要素で始まった CSS animation の形を、始まった時点で読んで記録する。閉じるアニメーションは 100ms なので、
+ * 操作の往復が遅いと、操作のあとに読む前に終わる。要素が外れたあとの keyframes は CSS 変数が解決されない
+ */
+function recordStartedShapes(element: Element): ReturnType<typeof exitShape>[] {
+  const started: ReturnType<typeof exitShape>[] = [];
+  element.addEventListener("animationstart", (event) => {
+    if (event.target === element) {
+      started.push(...element.getAnimations().map(exitShape));
+    }
+  });
+  return started;
+}
+
 function pseudoElementAnimation(pseudoElement: string) {
   return document
     .getAnimations()
@@ -735,10 +749,14 @@ describe("useRouteDialog の閉じる遷移", () => {
     const overlay = document.querySelector("[data-slot=dialog-overlay]");
     expect.assert(overlay);
     await Promise.all(popup.getAnimations().map((animation) => animation.finished));
+    const popupExits = recordStartedShapes(popup);
+    const overlayExits = recordStartedShapes(overlay);
     await registry.getByRole("button", { name: "Close" }).click();
-    await expect.poll(() => popup.getAnimations()).toHaveLength(1);
-    const popupExit = exitShape(popup.getAnimations()[0]);
-    const overlayDuration = exitShape(overlay.getAnimations()[0]).duration;
+    await expect.poll(() => popupExits).toHaveLength(1);
+    await expect.poll(() => overlayExits).toHaveLength(1);
+    const [popupExit] = popupExits;
+    const [overlayExit] = overlayExits;
+    expect.assert(overlayExit);
     await registry.unmount();
 
     const transitionOf = recordViewTransitions();
@@ -754,7 +772,7 @@ describe("useRouteDialog の閉じる遷移", () => {
       popupExit,
     );
     expect(exitShape(pseudoElementAnimation("::view-transition-group(root)")).duration).toBe(
-      overlayDuration,
+      overlayExit.duration,
     );
     await transition.finished;
   });
