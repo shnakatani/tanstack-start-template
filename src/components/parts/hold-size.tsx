@@ -10,8 +10,8 @@ type HoldSizeOverlay = Exclude<ReactNode, boolean | undefined>;
 interface HoldSizeProps {
   /**
    * 寸法を決める下敷き。`overlay` があるときは `invisible` (visibility: hidden) になり、箱の寸法だけを残す。
-   * accessibility tree からも外れ、`aria-labelledby` で直接指された要素だけが名前に残る
-   * (accname 1.2「Hidden Not Referenced」。ADR-0042)
+   * accessibility tree からも外れ、name from content に入らない。名前に使うときは、この要素を `aria-labelledby` で指す
+   * (accname 1.2 の 2A「Hidden Not Referenced」。ADR-0042)
    */
   children: ReactNode;
   /** 下敷きの上に重ねるもの。`null` なら下敷きをそのまま見せる。重ねる側の `aria-hidden` は渡す側が決める */
