@@ -58,7 +58,6 @@ paths:
 
 - テストで既定にしたい router の options は、各テストに書かずに `createRouterWithTestDefaults` (`src/test/app/create-router-with-test-defaults.ts`) の既定に足す (`docs/guides/testing/route-wrappers.md`「テスト用の router の既定をそろえる」)
 - `createRouterWithTestDefaults` の既定に本番の設定 (`src/router.tsx`) の値を写さない。本番と同じ部品を通したいテストは、その option を自分で渡す (`docs/guides/testing/route-wrappers.md`「テスト用の router の既定をそろえる」)
-- テストで `await import("@tanstack/react-router")` から router を組まない。lint は dynamic import の `createRouter` を止めない (`docs/guides/testing/route-wrappers.md`「テスト用の router の既定をそろえる」)
 
 ## a11y の検査は tag で分ける
 

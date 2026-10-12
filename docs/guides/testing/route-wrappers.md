@@ -25,7 +25,7 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 - テストのファイル (`*.test.ts(x)`、`*.test-helpers.ts(x)`、`src/test/**`) で `@tanstack/react-router` の `createRouter` と `Router` を import すると、lint (`no-restricted-imports`) が止める。別名の import と、テストのファイルからの再 export も止まる。型だけの import (`import type { Router }` と `import { type Router }`) は止めない
 - 名前空間の import (`import * as Router from "@tanstack/react-router"`) は、`createRouter` を使わなくても丸ごと止まる。テストでは必要な名前を個別に import する
-- 止まらない形が 2 つある。`await import("@tanstack/react-router")` から取り出した `createRouter` と、テストのファイルでないファイルが再 export した `createRouter` である (oxlint 1.87.0、2026-10-12 に確認)。テストでは dynamic import から router を組まず、`createRouter` を再 export しない
+- 止まらない形が 2 つある。`await import("@tanstack/react-router")` から取り出した `createRouter` と、テストのファイルでないファイルが再 export した `createRouter` である (oxlint 1.87.0、2026-10-12 に確認)。テストでは dynamic import から router を組まない。アプリのコード (テストでないファイル) から `createRouter` を再 export しない
 - `createTestRouter` (`src/test/app/create-test-router.tsx`) は内部で `createRouterWithTestDefaults` を呼ぶので、呼ぶ側は何もしなくてよい
 - テストで既定にしたい router の options は、各テストに書かずに `createRouterWithTestDefaults` の既定に足す。各テストに書くと、足し漏れたテストだけが別の既定で走る
 - 本番の設定 (`src/router.tsx`) の値を既定に写さない。片方だけ変えたときに、テストだけが古い既定で緑になる。本番と同じ部品を通したいテストは、その option を自分で渡す (`defaultErrorComponent` など)
