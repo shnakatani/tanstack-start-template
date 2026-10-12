@@ -286,11 +286,65 @@ const itemUnmarkedRoute = createRoute({
   ),
 });
 
+// ダイアログの route の子にダイアログの route を置き、片方にだけ印を付けた形
+function NestingDialog({ title }: { title: string }): ReactNode {
+  return (
+    <>
+      <RouteDialogHarness
+        title={title}
+        returnTo={{ to: "/items" }}
+        findReturnTarget={findByReturnMark("item-new")}
+      />
+      <Outlet />
+    </>
+  );
+}
+
+function NestedDialog({ title }: { title: string }): ReactNode {
+  return (
+    <RouteDialogHarness
+      title={title}
+      returnTo={{ to: ".." }}
+      findReturnTarget={findByReturnMark("item-new")}
+    />
+  );
+}
+
+const markedParentRoute = createRoute({
+  getParentRoute: () => itemsRoute,
+  path: "/marked-parent",
+  staticData: { routeDialog: true },
+  component: () => <NestingDialog title="印の有る親" />,
+});
+const unmarkedChildRoute = createRoute({
+  getParentRoute: () => markedParentRoute,
+  path: "/unmarked-child",
+  component: () => <NestedDialog title="印の無い子" />,
+});
+const unmarkedParentRoute = createRoute({
+  getParentRoute: () => itemsRoute,
+  path: "/unmarked-parent",
+  component: () => <NestingDialog title="印の無い親" />,
+});
+const markedChildRoute = createRoute({
+  getParentRoute: () => unmarkedParentRoute,
+  path: "/marked-child",
+  staticData: { routeDialog: true },
+  component: () => <NestedDialog title="印の有る子" />,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   boardRoute.addChildren([boardIndexRoute, boardNewRoute]),
   groupItemsRoute.addChildren([groupItemNewRoute]),
-  itemsRoute.addChildren([itemNewRoute, itemImportRoute, itemEditRoute, itemUnmarkedRoute]),
+  itemsRoute.addChildren([
+    itemNewRoute,
+    itemImportRoute,
+    itemEditRoute,
+    itemUnmarkedRoute,
+    markedParentRoute.addChildren([unmarkedChildRoute]),
+    unmarkedParentRoute.addChildren([markedChildRoute]),
+  ]),
 ]);
 
 interface DialogRouterOptions {
@@ -818,6 +872,41 @@ describe("useRouteDialog の閉じる遷移", () => {
     expect(popupTransition).toEqual(popupExit);
     expect(pageTransition.duration).toBe(overlayExit.duration);
     await transition.finished;
+  });
+
+  it.each([
+    {
+      shown:
+        "印の有るダイアログの子に印の無いダイアログを開いた画面から、両方を閉じて開く元のページへ戻る",
+      entries: ["/items", "/items/marked-parent/unmarked-child"],
+      page: "/items",
+    },
+    {
+      shown: "印の無いダイアログの子に印の有るダイアログを開いた画面から、子だけを閉じる",
+      entries: ["/items/unmarked-parent", "/items/unmarked-parent/marked-child"],
+      page: "/items/unmarked-parent",
+    },
+  ])("$shown とき、印の有るダイアログの Popup だけが退場する", async ({ entries, page }) => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const transitionOf = recordViewTransitions();
+    const { router } = await renderDialogRouter(entries, { viewTransition: true });
+    // 2 つの Popup が開いた画面では、どちらの Popup も role で引けなかった。Popup の data-slot を数える
+    await expect
+      .poll(() => document.querySelectorAll("[data-slot=dialog-content]"))
+      .toHaveLength(2);
+    await document.activeViewTransition?.finished;
+    const exits = recordStartedTransitionShapes("::view-transition-old(route-dialog)");
+
+    const { types, transition } = await transitionOf(() => {
+      router.history.back();
+    });
+
+    expect(types).toEqual([ROUTE_DIALOG_CLOSE_TYPE]);
+    // 名前 route-dialog が 2 つの Popup に付くと、ready が InvalidStateError で reject する
+    await transition.ready;
+    await expect.poll(() => exits).toHaveLength(1);
+    await transition.finished;
+    expect(router.state.location.pathname).toBe(page);
   });
 
   it("route の staticData に印が無いと警告する", async () => {

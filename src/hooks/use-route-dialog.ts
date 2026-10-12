@@ -43,9 +43,10 @@ export interface RouteDialog {
   /**
    * Popup (`DialogContent`、`ActionDialogContent`) に spread する。
    * - finalFocus: 閉じたときの focus の移し先 (ADR-0041「閉じたときの focus」)
-   * - data-route-dialog: 閉じる遷移で Popup に View Transition の名前を付ける印 (ADR-0041「閉じる遷移の見せ方」)
+   * - data-route-dialog: 閉じる遷移で Popup に View Transition の名前を付ける印 (ADR-0041「閉じる遷移の見せ方」)。
+   *   route の `staticData.routeDialog` が `true` のときだけ付く
    */
-  popupProps: { finalFocus: () => HTMLElement | false; "data-route-dialog": "" };
+  popupProps: { finalFocus: () => HTMLElement | false; "data-route-dialog"?: "" };
 }
 
 /**
@@ -74,8 +75,11 @@ export function useRouteDialog({
   const navigate = useNavigate({ from: dialogPath });
   const router = useRouter();
 
-  // 印が無いと、閉じる遷移の type が付かず、ダイアログは退場を見せずにクロスフェードで消える。見え方が変わる
-  // だけなので throw しない。throw すると同じ route の errorComponent も throw し、ページごと壊れる
+  // 印が無いと、Popup に data-route-dialog を付けず、ダイアログは退場を見せずにクロスフェードで消える。見え方が
+  // 変わるだけなので throw しない。throw すると同じ route の errorComponent も throw し、ページごと壊れる。
+  // data-route-dialog を印に合わせるのは、閉じる遷移の type の関数が数える Popup と、名前を付ける Popup を
+  // そろえるため。印の無い Popup にも付けると、片方だけに印があるダイアログの route が入れ子で開いた画面で、
+  // 閉じる遷移が 2 つの Popup に同じ名前を付け、遷移が飛ばされる (ADR-0041「閉じる遷移の見せ方」)
   const { routeId } = match;
   const markedAsRouteDialog = match.staticData.routeDialog === true;
   useEffect(() => {
@@ -160,6 +164,6 @@ export function useRouteDialog({
     close,
     blocksClose,
     onOpenChange,
-    popupProps: { finalFocus, "data-route-dialog": "" },
+    popupProps: markedAsRouteDialog ? { finalFocus, "data-route-dialog": "" } : { finalFocus },
   };
 }
