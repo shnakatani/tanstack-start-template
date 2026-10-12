@@ -2,6 +2,7 @@ import { createMemoryHistory, createRootRoute, createRoute } from "@tanstack/rea
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
+import { createPopstateEvent } from "@/test/app/popstate-event";
 
 import {
   createDefaultViewTransition,
@@ -85,10 +86,6 @@ function staticRouter(shown: number, next: number): RouteDialogMatchSource {
   return { state: { matches: matches(shown) }, matchRoutes: () => matches(next) };
 }
 
-function popstate(hasUAVisualTransition: boolean): Event {
-  return Object.assign(new Event("popstate"), { hasUAVisualTransition });
-}
-
 describe("createDefaultViewTransition", () => {
   it.each([
     { shown: 1, next: 0 },
@@ -98,7 +95,7 @@ describe("createDefaultViewTransition", () => {
     ({ shown, next }) => {
       const target = new EventTarget();
       const { types } = createDefaultViewTransition(target, () => staticRouter(shown, next));
-      target.dispatchEvent(popstate(true));
+      target.dispatchEvent(createPopstateEvent({ hasUAVisualTransition: true }));
 
       expect(types({ toLocation: location })).toBe(false);
       expect(types({ toLocation: location })).not.toBe(false);

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { RouterInnerWrap } from "@/components/router-inner-wrap";
 import { PendingContent } from "@/components/screens/pending";
 import { ROUTE_DIALOG_CLOSE_TYPE } from "@/lib/route-dialog-view-transition";
+import { createPopstateEvent } from "@/test/app/popstate-event";
 
 import { getRouter } from "./router";
 
@@ -39,7 +40,7 @@ describe("defaultViewTransition", () => {
 
   it("ブラウザが遷移のアニメーションを出した戻る・進むでは View Transition を飛ばす", () => {
     const { target, evaluate } = clientRouter();
-    target.dispatchEvent(Object.assign(new Event("popstate"), { hasUAVisualTransition: true }));
+    target.dispatchEvent(createPopstateEvent({ hasUAVisualTransition: true }));
 
     expect(evaluate()).toBe(false);
   });
