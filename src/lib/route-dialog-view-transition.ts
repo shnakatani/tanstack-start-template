@@ -4,10 +4,7 @@ import { skipViewTransitionAfterUATransition } from "./skip-view-transition-afte
 
 declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
-    /**
-     * route として開くダイアログの印 (ADR-0041「閉じる遷移の見せ方」)。ダイアログでない route には書かない。
-     * View Transition の type の判定と、`useRouteDialog` の付け忘れの警告が読む
-     */
+    /** route として開くダイアログの route にだけ `true` を書く (ADR-0041「閉じる遷移の見せ方」) */
     routeDialog?: true;
   }
 }

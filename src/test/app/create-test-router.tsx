@@ -16,8 +16,8 @@ import { createRouterWithTestDefaults } from "./create-router-with-test-defaults
  * **意図的に持たない**。既定値を写すと router.tsx との二重管理になり、片方だけ変えたときに
  * テストだけが古い既定で緑になる。既定値そのものを検証したいテストは router.tsx を直接使う。
  * テスト用の既定だけは、ほかのテストの router と同じく `createRouterWithTestDefaults` で入れる。
- * `staticData` は描く route に付ける。ダイアログの部品を描くなら、アプリのダイアログの route と同じく
- * `{ routeDialog: true }` を渡す
+ * `staticData` は描く route に付ける。ダイアログの部品を描くなら `{ routeDialog: true }` を渡す
+ * (ADR-0041「閉じる遷移の見せ方」)
  */
 export function createTestRouter(
   initialPath: string,

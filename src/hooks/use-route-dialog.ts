@@ -52,7 +52,7 @@ export interface RouteDialog {
  * route として開くダイアログの閉じ方と、閉じたあとの focus (ADR-0041)。閉じる操作と `close` の時点で、
  * `returnTo` へ新しい履歴で離れる。開閉の state は持たず、ダイアログは route から離れて unmount するまで開いて
  * いる (TanStack Router の example `location-masking` と同じ形)。呼ぶ route には `staticData: { routeDialog: true }`
- * を書く。
+ * を書く (ADR-0041「閉じる遷移の見せ方」)。
  * `returnTo` の型は TanStack Router の Type Utilities の `ValidateNavigateOptions` で検査する。公開の
  * signature を generic にし、実装の signature を generic にしない形は、Type Utilities のガイドの
  * `useConditionalNavigate` に倣う。`TRouter` の制約はガイドの例の `RegisteredRouter` ではなく、
