@@ -49,7 +49,7 @@ const RESTRICTED_TEST_ROUTER_IMPORTS = [
     // 型 (`Router<…>`) は router を組まないので許す
     allowTypeImports: true,
     message:
-      "テストの router は createRouterWithTestDefaults (src/test/app/create-router-with-test-defaults.ts) で組む。createRouter で直接組むと、テスト用の既定 (defaultPendingMinMs: 0 など) が入らない (docs/guides/testing/route-wrappers.md「テスト用の router の既定をそろえる」)",
+      "テストの router は createRouterWithTestDefaults (src/test/app/create-router-with-test-defaults.ts) で組む。createRouter で直接組むと、テスト用の既定 (defaultPendingMinMs: 0 など) が入らない (docs/guides/testing/route-wrappers.md「テスト用の router の既定をそろえる」)。Router は型でもあり、型だけが要るなら import type { Router } か import { type Router } と書けば止まらない",
   },
 ];
 

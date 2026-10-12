@@ -23,7 +23,7 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 テストで router を組むときは、`createRouter` の代わりに `createRouterWithTestDefaults` (`src/test/app/create-router-with-test-defaults.ts`) を呼ぶ (`createRouterWithTestDefaults({ routeTree, history })`)。型は `createRouter` と同じで、options もそのまま渡す。呼ぶ側が渡した options が既定に勝つ。理由は「テスト用の router の既定を factory で入れる理由」にある。
 
-- テストのファイル (`*.test.ts(x)`、`*.test-helpers.ts(x)`、`src/test/**`) で `@tanstack/react-router` の `createRouter` と `Router` を import すると、lint (`no-restricted-imports`) が止める。別名の import と、テストのファイルからの再 export も止まる。型だけの import (`import type { Router }`) は止めない
+- テストのファイル (`*.test.ts(x)`、`*.test-helpers.ts(x)`、`src/test/**`) で `@tanstack/react-router` の `createRouter` と `Router` を import すると、lint (`no-restricted-imports`) が止める。別名の import と、テストのファイルからの再 export も止まる。型だけの import (`import type { Router }` と `import { type Router }`) は止めない
 - 名前空間の import (`import * as Router from "@tanstack/react-router"`) は、`createRouter` を使わなくても丸ごと止まる。テストでは必要な名前を個別に import する
 - 止まらない形が 2 つある。`await import("@tanstack/react-router")` から取り出した `createRouter` と、テストのファイルでないファイルが再 export した `createRouter` である (oxlint 1.87.0、2026-10-12 に確認)。テストでは dynamic import から router を組まず、`createRouter` を再 export しない
 - `createTestRouter` (`src/test/app/create-test-router.tsx`) は内部で `createRouterWithTestDefaults` を呼ぶので、呼ぶ側は何もしなくてよい
