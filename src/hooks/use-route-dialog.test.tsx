@@ -360,7 +360,8 @@ describe("useRouteDialog の閉じ方", () => {
 
     closeBeforeLeaving();
 
-    // navigate は blocker が無いと履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
+    // memory history では、navigate は blocker が無いと履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の
+    // `commitLocation`)。browser history は積むのを microtask へまとめる (`@tanstack/history` 1.162.4)
     expect(router.history.location.pathname).toBe("/items/new");
   });
 });

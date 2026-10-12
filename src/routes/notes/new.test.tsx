@@ -433,8 +433,8 @@ describe("/notes/new route", () => {
     await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
-    // 離れても unmount するまでは開いたまま描かれるので、離れていないことは URL で見る。navigate は blocker が
-    // 無いと履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
+    // 離れても unmount するまでは開いたまま描かれるので、離れていないことは URL で見る。memory history では、
+    // navigate は blocker が無いと履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
     expect(router.history.location.pathname).toBe("/notes/new");
     await expectDialogOpen(screen, "dialog");
     await expect.element(titleTextbox(screen)).toHaveValue(second.title);
