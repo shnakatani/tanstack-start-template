@@ -5,12 +5,12 @@ import { HoldSize } from "./hold-size";
 
 /**
  * 状態のカタログは `hold-size.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。
- * ここに残すのは、重ねるものの出入りで箱の幅が変わらないこと (2 回の観測の比較) と、下敷きが
+ * ここに残すのは、重ねるものの出入りで箱の寸法が変わらないこと (2 回の観測の比較) と、下敷きが
  * `visibility: hidden` で寸法だけを残すことで、args だけで状態が決まる部品なので story に play が無く、
  * ここでしか固定できない。
  */
 describe("HoldSize", () => {
-  it("重ねるものを出しても箱の幅は下敷きのまま", async () => {
+  it("重ねるものを出しても箱の寸法は下敷きのまま", async () => {
     const screen = await render(
       <div>
         <HoldSize overlay={null}>2026/08/17 09:30</HoldSize>
@@ -18,12 +18,16 @@ describe("HoldSize", () => {
       </div>,
     );
     await expect.element(screen.getByText("更新中")).toBeVisible();
-    const idle = screen.getByText("2026/08/17 09:30").nth(0);
-    const held = screen.getByText("2026/08/17 09:30").nth(1);
-    const widthIdle = idle.element().getBoundingClientRect().width;
+    const idle = screen.getBySlot("hold-size").nth(0).element().getBoundingClientRect();
+    const held = screen.getBySlot("hold-size").nth(1);
 
-    // 重ねた「更新中」は下敷きより狭いが、箱は下敷きの幅を保つ
-    await expect.poll(() => held.element().getBoundingClientRect().width).toBeCloseTo(widthIdle, 0);
+    // 重ねた「更新中」は下敷きより狭い。下敷きが流れの外へ出ると幅が縮み、重ねるものが別の行へ回ると高さが伸びる
+    await expect
+      .poll(() => held.element().getBoundingClientRect().width)
+      .toBeCloseTo(idle.width, 0);
+    await expect
+      .poll(() => held.element().getBoundingClientRect().height)
+      .toBeCloseTo(idle.height, 0);
   });
 
   it("重ねている間、下敷きは寸法だけを残して見えない", async () => {

@@ -29,7 +29,7 @@ interface HoldSizeProps {
  */
 export function HoldSize({ children, overlay, align = "start", id }: HoldSizeProps): ReactNode {
   return (
-    <span className="inline-grid">
+    <span data-slot="hold-size" className="inline-grid">
       <span id={id} className={cn("col-start-1 row-start-1", overlay !== null && "invisible")}>
         {children}
       </span>
