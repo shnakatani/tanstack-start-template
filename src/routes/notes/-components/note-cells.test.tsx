@@ -169,9 +169,15 @@ describe("NoteUpdatedAtCell", () => {
   it("更新中の行は日時の位置に「更新中」を描き、他の行は日時のまま", async () => {
     const screen = await renderCells({ updatingNotes: [NOTE_UPDATE] });
 
-    // 更新中の行は編集後の title で描く (noteInputOf)。作成日時は変わらない
-    // 日時を並べて出さないことも見るので、cell の文字列全体と比べる
-    await expect.element(updatedAtCell(screen, UPDATED_NOTE)).toHaveTextContent("更新中");
+    // 更新中の行は編集後の title で描く (noteInputOf)。作成日時は変わらない。
+    // 再取得前の日時は列幅を保つ下敷きとして DOM に残るので (ADR-0042)、「更新中」だけが見えることは
+    // textContent ではなく、見えるものと下敷きの visibility で見る
+    const updating = updatedAtCell(screen, UPDATED_NOTE);
+    await expect.element(updating.getByText("更新中")).toBeVisible();
+    // 下敷きは再取得前の日時 (NOTE.updatedAt)。再取得後の UPDATED_NOTE.updatedAt はまだ無い
+    await expect
+      .element(updating.getByText(formatDateTime(NOTE.updatedAt)))
+      .toHaveStyle("visibility: hidden");
     await expect
       .element(createdAtCell(screen, UPDATED_NOTE))
       .toHaveTextContent(NOTE_CREATED_AT_TEXT);

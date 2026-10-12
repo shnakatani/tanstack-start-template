@@ -2,11 +2,11 @@ import { useMatchRoute } from "@tanstack/react-router";
 
 import { ButtonLink } from "@/components/parts/button-link";
 import type { DataTableCellContext } from "@/components/parts/data-table-features";
+import { DateTimeText } from "@/components/parts/date-time-text";
+import { HoldSize } from "@/components/parts/hold-size";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
-import { formatDateTime } from "@/lib/format-date-time";
 
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { noteEditLinkProps } from "../-lib/note-dialog-focus";
@@ -29,15 +29,16 @@ export function NoteDueDateCell({ row }: NoteCellContext) {
   return dueDate === null ? "—" : formatCalendarDateLabel(dueDate, "short");
 }
 
-/** 作成日時の cell。保存中の行はまだ日時を持たないので、その位置で保存中を伝える。 */
+/**
+ * 作成日時の cell。保存中の行はまだ日時を持たないので、その位置で保存中を伝える。
+ * 保存中の行は日時の幅を持たないが、列幅は他の行の日時が決める (0 件からの追加は Empty から table への切り替えで、列の移動ではない)
+ */
 export function NoteCreatedAtCell({ row }: NoteCellContext) {
   if (row.original.kind !== "saved") {
     // このテキストは仮想カーソルで行を読んだとき用。通知は announcer (ADR-0026)
     return "保存中";
   }
-  // 整形は必ずタイムゾーンを明示した formatDateTime を通す。ローカル TZ 依存の整形は
-  // SSR と hydration で文字列が食い違う (format-date-time.ts)
-  return formatDateTime(row.original.note.createdAt);
+  return <DateTimeText value={row.original.note.createdAt} />;
 }
 
 /**
@@ -48,11 +49,13 @@ export function NoteUpdatedAtCell({ row }: NoteCellContext) {
   if (row.original.kind !== "saved") {
     return null;
   }
-  if (row.original.pendingUpdate !== null) {
-    // 位置づけは保存中の行の「保存中」と同じ (NoteCreatedAtCell)。通知は announcer (ADR-0026)
-    return "更新中";
-  }
-  return formatDateTime(row.original.note.updatedAt);
+  // 「更新中」は再取得前の日時の場所に重ね、列幅を保つ (ADR-0042)。下敷きの旧い日時は寸法だけを残して見えず、
+  // 読み上げにも入らない。文言の位置づけは保存中の行の「保存中」と同じ (NoteCreatedAtCell)。通知は announcer (ADR-0026)
+  return (
+    <HoldSize overlay={row.original.pendingUpdate === null ? null : "更新中"}>
+      <DateTimeText value={row.original.note.updatedAt} />
+    </HoldSize>
+  );
 }
 
 /**
@@ -69,7 +72,7 @@ export function NoteActionsCell({ row }: NoteCellContext) {
   // 判定は行の半透明と同じ isNoteRowBusy から取る。別々に書くと、条件を足したときに
   // 行の見た目とトリガーの無効化がずれる
   const isBusy = isNoteRowBusy(row.original);
-  // 押した行の編集の route を読み込んでいる間、リンクに Spinner を出す (Router「Navigation」の useMatchRoute の pending)。
+  // 押した行の編集の route を読み込んでいる間、リンクを pending にする (Router「Navigation」の useMatchRoute の pending)。
   // params を渡して照合すると、params.parse した数値と URL の文字列を比べて一致しない (TanStack/router#2450)。
   // route だけで照合し、返った params を文字列で比べる
   const pendingEdit = matchRoute({ to: "/notes/$noteId/edit", pending: true });
@@ -102,9 +105,10 @@ export function NoteActionsCell({ row }: NoteCellContext) {
         // 間でリンクが focus できなくなり、focus を持っていれば blur してから React が focus を戻し直す
         disabled={isBusy}
         tabIndex={0}
+        // 読み込み中は幅を保ったまま Spinner を重ねる (ADR-0042)。children に Spinner を並べると列幅が動く
+        isPending={isEditPending}
       >
         編集
-        {isEditPending && <Spinner aria-hidden />}
       </ButtonLink>
       <AlertDialogTrigger
         handle={noteDeleteDialogHandle}
