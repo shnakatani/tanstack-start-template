@@ -1,6 +1,6 @@
-# route の wrapper のテスト
+# 実 router で描くテスト
 
-Route hooks を使う wrapper を、実 router で描いて検証する手順と、その形にしている理由を持つ。
+テストで実 router を組んで描くときの手順 (route の wrapper の検証、テスト用の router の既定、pending 表示の時間、component の chunk の読み込み) と、その形にしている理由を持つ。
 
 ## how-to
 
