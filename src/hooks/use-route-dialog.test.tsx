@@ -9,7 +9,7 @@ import {
   type ValidateNavigateOptions,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render, type RenderResult } from "vitest-browser-react";
 
@@ -22,9 +22,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  ROUTE_DIALOG_CLOSE_TYPE,
+  withRouteDialogViewTransitionTypes,
+  type RouteDialogMatchSource,
+} from "@/lib/route-dialog-view-transition";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { recordFocusins } from "@/test/assert/focusin";
+import { enableAnimations } from "@/test/browser/animations";
 
 import { useRouteDialog } from "./use-route-dialog";
 
@@ -266,11 +272,24 @@ function ItemEditPendingDialog(): ReactNode {
   );
 }
 
+// staticData の印を付け忘れたダイアログの route
+const itemUnmarkedRoute = createRoute({
+  getParentRoute: () => itemsRoute,
+  path: "/unmarked",
+  component: () => (
+    <RouteDialogHarness
+      title="印の無いダイアログ"
+      returnTo={{ to: "/items" }}
+      findReturnTarget={findByReturnMark("item-new")}
+    />
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   boardRoute.addChildren([boardIndexRoute, boardNewRoute]),
   groupItemsRoute.addChildren([groupItemNewRoute]),
-  itemsRoute.addChildren([itemNewRoute, itemImportRoute, itemEditRoute]),
+  itemsRoute.addChildren([itemNewRoute, itemImportRoute, itemEditRoute, itemUnmarkedRoute]),
 ]);
 
 function createDialogRouter(
@@ -282,6 +301,22 @@ function createDialogRouter(
     history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
     trailingSlash,
   });
+}
+
+/** `src/router.tsx` と同じく、ダイアログを閉じる遷移の type を View Transition に渡す router */
+function createViewTransitionRouter(initialEntries: string[]) {
+  const router = createRouterWithTestDefaults({
+    routeTree,
+    history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
+    defaultViewTransition: {
+      types: withRouteDialogViewTransitionTypes(() => [], currentRouter),
+    },
+  });
+  return router;
+
+  function currentRouter(): RouteDialogMatchSource {
+    return router;
+  }
 }
 
 type TestRouter = ReturnType<typeof createDialogRouter>;
@@ -543,5 +578,194 @@ describe("useRouteDialog の閉じたときの focus", () => {
       .element(screen.getByRole("textbox", { name: "項目 2 の編集の入力" }))
       .toHaveFocus();
     expect(textsOf(focused)).not.toContain("項目 2 を編集");
+  });
+});
+
+/**
+ * `document.startViewTransition` の呼び出しを記録する。router は返った ViewTransition の `updateCallbackDone`
+ * を待つので、元の実装をそのまま呼ぶ
+ */
+function recordViewTransitions() {
+  const spy = vi.spyOn(document, "startViewTransition");
+  onTestFinished(() => {
+    spy.mockRestore();
+  });
+  /** `action` が始めた View Transition の types と ViewTransition を返す */
+  return async function transitionOf(action: () => Promise<void> | void) {
+    const before = spy.mock.calls.length;
+    await action();
+    await expect.poll(() => spy.mock.calls.length).toBeGreaterThan(before);
+    const [options] = spy.mock.calls[before] ?? [];
+    const result = spy.mock.results[before];
+    expect.assert(result?.type === "return");
+    return {
+      types: typeof options === "object" ? options.types : undefined,
+      transition: result.value,
+    };
+  };
+}
+
+/** 閉じ方を比べる値。fill は旧画像が戻らないように変えているので比べない */
+function exitShape(animation: Animation | undefined) {
+  const effect = animation?.effect;
+  expect.assert(effect instanceof KeyframeEffect);
+  const keyframes = effect.getKeyframes();
+  const last = keyframes.at(-1);
+  return {
+    duration: effect.getComputedTiming().duration,
+    easing: keyframes.map((keyframe) => keyframe.easing),
+    opacity: last?.opacity,
+    transform: last?.transform,
+  };
+}
+
+function pseudoElementAnimation(pseudoElement: string) {
+  return document
+    .getAnimations()
+    .find(
+      (animation) =>
+        animation.effect instanceof KeyframeEffect &&
+        animation.effect.pseudoElement === pseudoElement,
+    );
+}
+
+describe("useRouteDialog の閉じる遷移", () => {
+  it.each([
+    {
+      leftBy: "閉じる操作",
+      leave: async (_router: AnyRouter, screen: RenderResult) => {
+        await screen.getByRole("button", { name: "キャンセル" }).click();
+      },
+    },
+    {
+      leftBy: "保存の応答",
+      leave: async (_router: AnyRouter, screen: RenderResult) => {
+        await screen.getByRole("button", { name: "保存の応答で閉じる" }).click();
+      },
+    },
+    {
+      leftBy: "戻る",
+      leave: (router: AnyRouter) => {
+        router.history.back();
+      },
+    },
+  ])("$leftBy で閉じると、閉じる遷移の type を付ける", async ({ leave }) => {
+    const transitionOf = recordViewTransitions();
+    const router = createViewTransitionRouter(["/items", "/items/new"]);
+    const screen = await render(<RouterProvider router={router} />);
+    await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
+
+    const { types, transition } = await transitionOf(() => leave(router, screen));
+
+    expect(types).toEqual([ROUTE_DIALOG_CLOSE_TYPE]);
+    await transition.finished;
+  });
+
+  it("読み込み中のダイアログを閉じても、閉じる遷移の type を付ける", async () => {
+    const load = Promise.withResolvers<undefined>();
+    loadItem.mockReturnValueOnce(load.promise);
+    const transitionOf = recordViewTransitions();
+    const router = createViewTransitionRouter(["/items", "/items/1/edit"]);
+    const screen = await render(<RouterProvider router={router} />);
+    await expect.element(screen.getByRole("dialog", { name: "項目 1 を読み込み中" })).toBeVisible();
+
+    const { types, transition } = await transitionOf(() =>
+      screen.getByRole("button", { name: "キャンセル" }).click(),
+    );
+
+    expect(types).toEqual([ROUTE_DIALOG_CLOSE_TYPE]);
+    await transition.finished;
+    load.resolve(undefined);
+  });
+
+  it.each([
+    { change: "開く", entries: ["/items"], next: "/items/new", opened: "項目を追加" },
+    {
+      change: "別のダイアログに替わる",
+      entries: ["/items", "/items/1/edit"],
+      next: "/items/new",
+      opened: "項目を追加",
+    },
+    {
+      change: "別の値の URL へ移る",
+      entries: ["/items", "/items/1/edit"],
+      next: "/items/2/edit",
+      opened: "項目 2 の編集",
+    },
+  ])("$change ときは type を付けない", async ({ entries, next, opened }) => {
+    const transitionOf = recordViewTransitions();
+    const router = createViewTransitionRouter(entries);
+    const screen = await render(<RouterProvider router={router} />);
+    await expect.poll(() => router.state.status).toBe("idle");
+
+    const { types, transition } = await transitionOf(() => {
+      router.history.push(next);
+    });
+
+    expect(types).toEqual([]);
+    await transition.finished;
+    await expect.element(screen.getByRole("dialog", { name: opened })).toBeVisible();
+  });
+
+  it("読み込み中のダイアログが本物に替わるときは type を付けない", async () => {
+    const load = Promise.withResolvers<undefined>();
+    loadItem.mockReturnValueOnce(load.promise);
+    const transitionOf = recordViewTransitions();
+    const router = createViewTransitionRouter(["/items", "/items/2/edit"]);
+    const screen = await render(<RouterProvider router={router} />);
+    await expect.element(screen.getByRole("dialog", { name: "項目 2 を読み込み中" })).toBeVisible();
+
+    const { types, transition } = await transitionOf(() => {
+      load.resolve(undefined);
+    });
+
+    expect(types).toEqual([]);
+    await transition.finished;
+    await expect.element(screen.getByRole("dialog", { name: "項目 2 の編集" })).toBeVisible();
+  });
+
+  it("閉じる遷移で、Popup は registry の Dialog を閉じたときと同じ閉じ方で消え、ページは Overlay と同じ時間で切り替わる", async () => {
+    enableAnimations();
+    const registry = await render(
+      <Dialog defaultOpen>
+        <DialogContent>
+          <DialogTitle>registry の Dialog</DialogTitle>
+        </DialogContent>
+      </Dialog>,
+    );
+    const popup = registry.getByRole("dialog", { name: "registry の Dialog" }).element();
+    const overlay = document.querySelector("[data-slot=dialog-overlay]");
+    expect.assert(overlay);
+    await Promise.all(popup.getAnimations().map((animation) => animation.finished));
+    await registry.getByRole("button", { name: "Close" }).click();
+    await expect.poll(() => popup.getAnimations()).toHaveLength(1);
+    const popupExit = exitShape(popup.getAnimations()[0]);
+    const overlayDuration = exitShape(overlay.getAnimations()[0]).duration;
+    await registry.unmount();
+
+    const transitionOf = recordViewTransitions();
+    const router = createViewTransitionRouter(["/items", "/items/new"]);
+    const screen = await render(<RouterProvider router={router} />);
+    await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
+    const { transition } = await transitionOf(() =>
+      screen.getByRole("button", { name: "キャンセル" }).click(),
+    );
+    await transition.ready;
+
+    expect(exitShape(pseudoElementAnimation("::view-transition-old(route-dialog)"))).toEqual(
+      popupExit,
+    );
+    expect(exitShape(pseudoElementAnimation("::view-transition-group(root)")).duration).toBe(
+      overlayDuration,
+    );
+    await transition.finished;
+  });
+
+  it("route の staticData に印が無いと警告する", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { screen } = await renderDialogRouter(["/items", "/items/unmarked"]);
+    await expect.element(screen.getByRole("dialog", { name: "印の無いダイアログ" })).toBeVisible();
+
+    expect(warn).toHaveBeenCalledWith(expect.any(String), { routeId: "/items/unmarked" });
   });
 });
