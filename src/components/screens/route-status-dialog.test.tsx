@@ -47,11 +47,13 @@ const itemsRoute = createRoute({
 const missingRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/missing",
+  staticData: { routeDialog: true },
   component: MissingDialog,
 });
 const loadingRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/loading",
+  staticData: { routeDialog: true },
   component: LoadingDialog,
 });
 

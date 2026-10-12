@@ -51,7 +51,7 @@ function RouteDialogHarness<TRouter extends AnyRouter = TestRouter, TOptions = u
   findReturnTarget: () => HTMLElement | null;
 }): ReactNode {
   const [savePending, setSavePending] = useState(false);
-  const { close, onOpenChange, finalFocus } = useRouteDialog<TRouter, TOptions>({
+  const { close, onOpenChange, popupProps } = useRouteDialog<TRouter, TOptions>({
     ...options,
     isPending: savePending,
   });
@@ -60,7 +60,7 @@ function RouteDialogHarness<TRouter extends AnyRouter = TestRouter, TOptions = u
   });
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent finalFocus={finalFocus}>
+      <DialogContent {...popupProps}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -100,6 +100,7 @@ const boardIndexRoute = createRoute({
 const boardNewRoute = createRoute({
   getParentRoute: () => boardRoute,
   path: "/new",
+  staticData: { routeDialog: true },
   component: BoardNewDialog,
 });
 
@@ -134,6 +135,7 @@ const groupItemsRoute = createRoute({
 const groupItemNewRoute = createRoute({
   getParentRoute: () => groupItemsRoute,
   path: "/new",
+  staticData: { routeDialog: true },
   component: GroupItemNewDialog,
 });
 
@@ -182,16 +184,19 @@ const itemsRoute = createRoute({
 const itemNewRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/new",
+  staticData: { routeDialog: true },
   component: ItemNewDialog,
 });
 const itemImportRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/import",
+  staticData: { routeDialog: true },
   component: ItemImportDialog,
 });
 const itemEditRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/$itemId/edit",
+  staticData: { routeDialog: true },
   loader: ({ params }) => loadItem(params.itemId),
   remountDeps: ({ params }) => params,
   pendingMs: 0,

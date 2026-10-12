@@ -47,6 +47,8 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   // 保存先だけが移った先のメモになる (ADR-0041)
   remountDeps: ({ params }) => params,
   head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTE_EDIT_DIALOG_TITLE) }] }),
+  // ダイアログの route の印。閉じる遷移でダイアログの退場を見せる (ADR-0041)
+  staticData: { routeDialog: true },
   pendingComponent: EditPending,
   notFoundComponent: EditNotFound,
   errorComponent: EditError,

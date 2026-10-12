@@ -45,7 +45,7 @@ export function NoteEditDialog({ noteId }: { noteId: Note["id"] }) {
     onError: toastMutationError,
   });
 
-  const { close, blocksClose, onOpenChange, finalFocus } = useRouteDialog({
+  const { close, blocksClose, onOpenChange, popupProps } = useRouteDialog({
     returnTo: NOTE_DIALOG_RETURN_TO,
     findReturnTarget: () => findNoteEditLink(noteId),
     isPending: updateMutation.isPending,
@@ -58,7 +58,7 @@ export function NoteEditDialog({ noteId }: { noteId: Note["id"] }) {
         defaultValues={{ title: note.title, body: note.body, dueDate: note.dueDate }}
         onSubmit={(input) => updateMutation.runAction({ id: note.id, ...input })}
         blocksClose={blocksClose}
-        finalFocus={finalFocus}
+        popupProps={popupProps}
       />
     </Dialog>
   );
