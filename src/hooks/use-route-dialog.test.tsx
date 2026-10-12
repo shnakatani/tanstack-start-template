@@ -606,20 +606,34 @@ function readExitShape(effect: KeyframeEffect) {
  * 呼んだ時点で style の変更を反映するので、属性が付いた直後の microtask でも閉じるアニメーションを返し、
  * 要素もまだ外れていない。`animationstart` で読まない理由は
  * docs/guides/testing/user-interactions.md「animation を戻すテストを書く」
+ *
+ * `closed` は `data-closed` が付いたのを見たかを返す。`shapes` は `closed` が `true` になるのと同時に埋まり、
+ * そのあと増えない。形が 0 件のとき、閉じる操作が届かなかったのか、閉じるアニメーションが作られなかったのかを
+ * `closed` で分ける
  */
-function recordClosingShapes(element: Element): ReturnType<typeof readExitShape>[] {
-  const closing: ReturnType<typeof readExitShape>[] = [];
+function recordClosingShapes(element: Element): {
+  readonly closed: boolean;
+  shapes: ReturnType<typeof readExitShape>[];
+} {
+  let closed = false;
+  const shapes: ReturnType<typeof readExitShape>[] = [];
   const observer = new MutationObserver(() => {
     if (element.hasAttribute("data-closed")) {
       observer.disconnect();
-      closing.push(...keyframeEffectsOf(element.getAnimations()).map(readExitShape));
+      closed = true;
+      shapes.push(...keyframeEffectsOf(element.getAnimations()).map(readExitShape));
     }
   });
   observer.observe(element, { attributeFilter: ["data-closed"] });
   onTestFinished(() => {
     observer.disconnect();
   });
-  return closing;
+  return {
+    get closed() {
+      return closed;
+    },
+    shapes,
+  };
 }
 
 /**
@@ -761,13 +775,25 @@ describe("useRouteDialog の閉じる遷移", () => {
     const overlay = document.querySelector("[data-slot=dialog-overlay]");
     expect.assert(overlay);
     await Promise.all(popup.getAnimations().map((animation) => animation.finished));
-    const popupExits = recordClosingShapes(popup);
-    const overlayExits = recordClosingShapes(overlay);
+    const popupClosing = recordClosingShapes(popup);
+    const overlayClosing = recordClosingShapes(overlay);
     await registry.getByRole("button", { name: "Close" }).click();
-    await expect.poll(() => popupExits).toHaveLength(1);
-    await expect.poll(() => overlayExits).toHaveLength(1);
-    const [popupExit] = popupExits;
-    const [overlayExit] = overlayExits;
+    await expect
+      .poll(() => popupClosing.closed, { message: "Popup に data-closed が付く" })
+      .toBe(true);
+    await expect
+      .poll(() => popupClosing.shapes, { message: "Popup の閉じるアニメーションが 1 つ作られる" })
+      .toHaveLength(1);
+    await expect
+      .poll(() => overlayClosing.closed, { message: "Overlay に data-closed が付く" })
+      .toBe(true);
+    await expect
+      .poll(() => overlayClosing.shapes, {
+        message: "Overlay の閉じるアニメーションが 1 つ作られる",
+      })
+      .toHaveLength(1);
+    const [popupExit] = popupClosing.shapes;
+    const [overlayExit] = overlayClosing.shapes;
     expect.assert(popupExit);
     expect.assert(overlayExit);
     await registry.unmount();
