@@ -248,7 +248,7 @@ route の URL と閉じ方:
 - 閉じる遷移の退場は、`:active-view-transition-type()` に対応するブラウザ (Chrome 125、Safari 18.2、Firefox 147 から。mdn/browser-compat-data の `:active-view-transition-type`、2026-10-12 に確認) でだけ出る。対応しないブラウザでは router が type を渡さず、ADR-0040 のクロスフェードになる。View Transitions に対応しないブラウザでは、ダイアログは即座に消える (コードの読み)
 - 戻り先のページの読み込みが `pendingMs` を超えて pending の表示を出すと、表示は View Transition の外で切り替わり、ダイアログは退場を見せずに先に消える見込み (`@tanstack/router-core` 1.171.34 の `load-client.ts` の `offerPending` のコードの読み、未実測)
 - ダイアログから戻り先でない別のページへ離れても閉じる遷移の type が付き、ページのクロスフェードが 100ms になる
-- ダイアログの route の子にダイアログの route を置き、子の `<Outlet />` を親の Dialog の外に描いて両方を開くと、2 つの Popup の portal がどちらも `aria-hidden` になる (下の「実測」)。Base UI の Dialog は、自分の floating tree の外の要素に `aria-hidden` を付ける (`@base-ui/react` 1.8.0 の `FloatingFocusManager` の `markOthers` のコードの読み)。子を親の Popup の中に描く形は測っていない
+- ダイアログの route の子にダイアログの route を置き、子の `<Outlet />` を親の Dialog の外に描いて両方を開くと、2 つの Popup の portal がどちらも `aria-hidden` になる (下の「実測」)。Base UI の Dialog は、modal のとき (既定) に、自分の floating tree の外の要素に `aria-hidden` を付ける (`@base-ui/react` 1.8.0 の `FloatingFocusManager` の `markOthers` のコードの読み)。子を親の Popup の中に描く形は測っていない
 - 退場の値は `ui/dialog.tsx` の `duration-100`、`data-closed:fade-out-0`、`data-closed:zoom-out-95` を `src/styles.css` に写したもので、registry を取り直しても追随しない。突き合わせの条件は `docs/registry-deviations.md`「registry の値を複製したファイル」が持ち、値がずれると `src/hooks/use-route-dialog.test.tsx` が落ちる
 
 ### 再評価の条件
