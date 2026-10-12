@@ -24,6 +24,7 @@ paths:
 - 一覧テーブルは `DataTable` (`parts/`) に列定義と data を渡す。列定義は `createColumnHelper` で `-lib/<画面>-columns.ts` に書き、cell は `-components/` の名前付きの部品を参照で渡す (`docs/guides/lists-and-search.md`「cell を部品の参照で渡す理由」)
 - 一覧テーブルの `DataTable` と読み込み中の `TableSkeleton` には、同じ `caption` (見た目に出さない table の名前) を渡す (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
 - cell の部品が Table のメソッド (`row.getIsSelected()`、`cell.getValue()` など) で表の状態を読むなら、その部品の中で `Subscribe` する。同じ `row` / `cell` の object が渡り続け、Compiler が前の描画を使い回すとメソッドの結果が古いまま残る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
+- 一覧テーブルの列幅は中身に任せ (`table-layout: auto`)、列ごとの `size`・`table-fixed`・`colgroup` を持たない。操作中に列が動くときは、列幅を固定せず、操作中の表示が中身の幅を保つ側で直す (ADR-0042)
 - ドメイン固有の共有部品を `routes/` 側へ置かない。`routes/` の階層は URL の設計で、ドメインの区切りではない (ADR-0010)
 - route ファイルを rename / 移動しても `createFileRoute` のパス文字列は plugin が更新する。手で書き換えない (`docs/guides/placement.md`「route ファイルを組む」)
 - story は部品と同じディレクトリに `<部品>.stories.tsx` で置き、`title` を書かない。見出しはファイルパスから決まり、手で書くとファイルを動かしたときに title だけが古いパスを指す (`docs/guides/storybook.md`「story に `title` を書かない理由」)
