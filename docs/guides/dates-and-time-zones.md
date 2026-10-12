@@ -6,6 +6,7 @@
 | ------------------------------------------------------------------------------------------- | -------- |
 | 日付と日時の値は意味で分類し、瞬間は UTC で、暦の日付は TZ を持たない日付で持つ             | ADR-0031 |
 | テストの import を重くする依存のバレルは使わず、個別エントリポイントから引き、lint で止める | ADR-0032 |
+| 操作中の表示は置き換える中身の場所を取り、一覧の列幅は中身に任せる                          | ADR-0042 |
 
 ## how-to
 
@@ -26,6 +27,7 @@
 ### 画面に日時を出す
 
 - 日時は `formatDateTime` (`src/lib/format-date-time.ts`) を通して整形する。`APP_TIME_ZONE` を `Intl.DateTimeFormat` の `timeZone` に渡すので、サーバーとブラウザで同じタイムゾーンの壁時計になる。書式は画面の言語 (`<html lang="ja">`) のロケールに任せる
+- JSX で瞬間を描くときは `DateTimeText` (`src/components/parts/date-time-text.tsx`) を使う。中で `formatDateTime` を通し、`tabular-nums` で数字の幅をそろえるので、時刻が替わっても幅が変わらない (ADR-0042)。`formatDateTime` を直接呼ぶのは、文字列が要る所 (title、announce の文言、テストの期待値) に限る
 - 別の書式が要るときも `timeZone: APP_TIME_ZONE` を渡した `Intl.DateTimeFormat` で組み、`src/lib/format-date-time.ts` に並べる。並びや区切りはオプション (`dateStyle`、`month: "long"` など) で選び、ロケールを別の言語に替えて並びを得ない (「書式をロケールに任せる理由」)
 - ロケールに無い並びがどうしても要るときは、`formatToParts()` で部品を取り出して組み立てる。[MDN「Intl.DateTimeFormat.prototype.formatToParts()」][] は "useful for building custom strings from the locale-specific tokens" と書く
 - 描画する値を、実行環境のローカル TZ で組み立てない。`Date#toLocaleString` 系、`Date#getHours` 系、`timeZone` を渡さない `Intl.DateTimeFormat` が当たる。`timeZone` の既定は "the runtime's time zone" ([MDN「Intl.DateTimeFormat() constructor」][] の `timeZone`)

@@ -111,7 +111,10 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - 項目 (行、`StaleContent`、ボタン) に `aria-busy` を付けない。JAWS が要素ごと読み飛ばす (ADR-0026)
 - 列見出しなど skeleton と本体で合わせる値は、両方が参照する定数に置く。別々に持つと、読み込みが終わって本体へ置き換わるときにレイアウトがずれる (`docs/guides/data-loading.md`「読み込み中の表示を出す」)
 - 表の skeleton の列見出しは列見出しの定数から採り、列定義からは採らない。`pendingComponent` は code-split されず、列定義を import すると cell 部品ごと main bundle に入る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
-- ボタン内の送信中表示は `Spinner` (Skeleton にしない)。使う側は必ず `aria-hidden` を渡し、状態は `aria-disabled` で持つ (ADR-0026)
+- ボタンの pending (送信中、遷移の読み込み中) は Action 層の部品か `ButtonLink` の `isPending` に任せ、children に `Spinner` を並べない。並べると Spinner と gap の分だけボタンが広がり、隣のボタンと一覧の列が動く (ADR-0042)
+- ボタンの pending の表示は `Spinner` (Skeleton にしない)。`PendingLabel` の外で使うなら必ず `aria-hidden` を渡し、状態は `aria-disabled` で持つ (ADR-0026)
+- cell の値を操作中の文言 (「更新中」) に替えるときは、置き換える前の値を `HoldSize` の下敷きにして文言を `overlay` に渡す。素の文字列に替えると、その値が列でいちばん幅の広い中身のときに列が縮む (ADR-0042)
+- 日時は `DateTimeText` で描く。`formatDateTime` の文字列を直接置くと、比例数字の分だけ時刻ごとに幅が変わる (ADR-0042)
 - データなしは `Empty` で組み、何が無いか (`EmptyTitle`) と次に取れる操作 (`EmptyContent` のボタンか、`EmptyDescription` で操作の場所を案内) をそろえる (`docs/guides/lists-and-search.md`「空状態を出す」)
 - 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら手段を「部品の見た目を変える」の表で選び、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
 

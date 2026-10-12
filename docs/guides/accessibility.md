@@ -11,6 +11,7 @@ axe の検査の置き場所と読み方、抑制の書き方、読み上げの�
 | a11y の自動検査は story を `error` でテーマごとに走らせ、`incomplete` はどちらの層でも合否に入れない                              | ADR-0028 |
 | ページのデータは Query から読み、欠かせない query だけを loader で待ち、副次的な query は待たずに Suspense の中で読む             | ADR-0033 |
 | クライアント遷移は、新しいページの見出しへの focus と title の読み上げで伝える                                                    | ADR-0035 |
+| 操作中の表示は置き換える中身の場所を取り、一覧の列幅は中身に任せる                                                                | ADR-0042 |
 
 ## explanation
 
@@ -276,6 +277,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - 入力欄を popup の中に置くと、Combobox の trigger は combobox になる (`combobox/trigger/ComboboxTrigger.js` の `inputInsidePopup`)。このリポジトリの `ComboboxTrigger` は既定で `aria-label="候補を開く"` を持つので、この形では欄の名前を `aria-label` か `aria-labelledby` で渡す。popup の中の `ComboboxInput` は既定 (`showTrigger`) で名前を渡せない trigger を内に持ち、それも combobox になるので、`showTrigger={false}` にする。`aria-labelledby` は `aria-label` より先に名前に使われる ([accname 1.2][] の 2B LabelledBy と 2D AriaLabel)
 - Base UI 1.8.0 の Select と Combobox の listbox (Combobox の `grid` では grid) は、Select.Label や Combobox.Label を置いても名前を持たない (`select/list/SelectList.js`、`combobox/list/ComboboxList.js`)。listbox には欄の名前を付ける。[APG「Providing Accessible Names and Descriptions」][] の表の listbox と grid の行は名前を Required とし、APG の [Select-Only Combobox の例][APG「Select-Only Combobox Example」] は listbox に欄のラベルを `aria-labelledby` で指し、[Editable Combobox With List Autocomplete の例][APG「Editable Combobox With List Autocomplete Example」] は listbox に `aria-label` で名前 ("States") を付ける。このリポジトリの `SelectContent` と `ComboboxList` は名前の属性を型で必須にする (空文字までは止めない。`SelectContent` は受けた名前を listbox へ渡し、`FormSelectField` は見える label を `aria-labelledby` で指す)。axe-core 4.14.0 は combobox の popup の listbox を名前の検査から外し (`no-naming-method-matches`)、grid は名前を必須のロールとして扱わない (`accessibleNameRequired: false`) ので、story の axe では名前の欠けを検出できない
 - registry の `Spinner` は `role="status"` と `aria-label="Loading"` だけを持ち、中身の文字を持たない。`aria-hidden` にして見た目だけに使い、読み込み中であることは「読み込み中の表示を組む」の形で伝える
+- label を `visibility: hidden` (Tailwind の `invisible`) にして Spinner を重ねたボタン (ADR-0042) は、label が name from content から外れる。名前は `aria-labelledby` で label を指すか、`aria-label` で与える。[accname 1.2][] の「Hidden Not Referenced」は、`aria-labelledby` で直接参照された hidden のノードだけを名前に含める。2026-10-13 に Playwright 1.63.0 の Chromium 153 で、`inline-grid` に重ねた `visibility: hidden` の label は、`aria-labelledby` で指すと名前に残り、指さないと名前が空になった。`opacity: 0` は hidden に入らず名前に残るが、このリポジトリでは下敷きが読み上げに混ざらないよう `visibility: hidden` にそろえる
 - `status` に、中身と同じ文言の名前を付けない。[APG「Providing Accessible Names and Descriptions」][] の表の status の行は "Some screen readers announce the name of a status element before announcing the content of the status element." と書く
 - 名前の文字を、inline でない子要素 (flex や grid の item、block、inline-block) へ分けない。2026-10-06 に Playwright 1.63.0 の Chromium 153.0.8010.12 で、button に `<span>Ab</span><span>cd</span>` を置くと、子が inline なら名前は `Abcd`、親が flex か grid、または子が block か inline-block なら `Ab cd` だった。子の境界で空白を入れるかは仕様で決まっていない ([accname 1.2][] の 2F の注記、[w3c/accname#225][])
 - 略記と全文を出し分けるときは、可視の側を `aria-hidden` にし、全文を 1 つの `sr-only` に置く

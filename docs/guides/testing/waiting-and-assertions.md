@@ -6,6 +6,7 @@
 | ------------------------------------------------------------------------------------------------- | -------- |
 | ブラウザテストの規範は jsPlugins の自前ルール (`browser-test/*`) で止める                         | ADR-0009 |
 | 状態の通知は常時 mount の live region に集約し、項目の状態は静的テキストと `aria-disabled` で持つ | ADR-0026 |
+| 操作中の表示は置き換える中身の場所を取り、一覧の列幅は中身に任せる                                | ADR-0042 |
 
 ## how-to
 
@@ -93,6 +94,11 @@ assert の予算をテストの予算と分けて宣言する。`tooling/test/br
 
 - レイアウトの回帰は、要素の className に class が含まれるかではなく、描いた結果の寸法 (`getBoundingClientRect()`) と computed style を測って確かめる。class の文字列が在っても、その CSS が生成されて効いているかは分からない
 - ブラウザで走る project は Tailwind の plugin を通す (`tooling/test/chromium-project.ts`) ので、class は実際の CSS に解決されて測れる。style の比べ方は「否定を肯定で書く」にある
+- 寸法を比べるテストは、`src/test/browser/browser-setup.tsx` が web font を読み込んでから描く。代替フォントと Geist で同じ中身の幅が違うので、1 回目と 2 回目で font が替わると比較にならない
+- 寸法の絶対値は pin しない。registry の size の目盛りが決める値で、上流が変えただけで落ちる。2 回の観測 (pending の前後、数字の違う 2 つの日時) を比べる形にする。実例は `src/components/action/button.test.tsx` と `src/components/parts/date-time-text.test.tsx`
+- 操作の途中で一瞬だけ動く列幅 (ADR-0042) は、`src/test/assert/column-widths.ts` の `recordColumnWidths(headers, whileRunning)` で `requestAnimationFrame` ごとに記録し、`expectStableColumnWidths(frames)` で判定する。操作の前後の 2 点では、戻ってしまった移動を捕まえられない。判定は `src/test/assert/column-width-drift.ts` の純粋関数が持ち、失敗文に動いた列と px と frame が残る
+- `recordColumnWidths` は矩形の読みを `expect.poll` の外で行う例外である (「同期読みを書き換える」)。rAF の記録は retry の対象ではなく、判定は記録を閉じたあとに 1 回だけ行う。要素は呼んだ時点で 1 回だけ解決する。ダイアログが開くと一覧が `aria-hidden` の下に入り、`getByRole("columnheader")` は要素を返さなくなる
+- 記録の中では pending の状態を肯定で待ち (`getBySlot("spinner")` が在る、「更新中」が在る)、`frame()` でその状態が 1 frame 記録されるのを待ってから決着させる。待たずに決着させると、操作中の frame が 1 つも記録に入らずに通ることがある
 
 ### viewport に収まることを測る
 
