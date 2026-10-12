@@ -139,7 +139,7 @@ column sizing が強いのは「日時以外の値を操作中の文言に替え
 
 本文の出典の名前はリンクで、名前と URL の対応は下のリンクの定義にある。先行例の表は、2026-10-13 に各ライブラリの docs とソースを読んだ結果による。
 
-[React Aria Components の Button]: https://react-spectrum.adobe.com/react-aria/Button.html
+[React Aria Components の Button]: https://react-aria.adobe.com/Button
 [Primer の `ButtonBase`]: https://github.com/primer/react/blob/main/packages/react/src/Button/ButtonBase.tsx
 [Radix Themes の Button]: https://www.radix-ui.com/themes/docs/components/button
 [MUI の Button]: https://mui.com/material-ui/react-button/
