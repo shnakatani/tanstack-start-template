@@ -10,6 +10,8 @@ import { NOTE_CREATE_DIALOG_TITLE, NOTE_DIALOG_RETURN_TO } from "./-lib/notes-pa
 
 export const Route = createFileRoute("/notes/new")({
   head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTE_CREATE_DIALOG_TITLE) }] }),
+  // ダイアログの route の印。閉じる遷移でダイアログの退場を見せる (ADR-0041)
+  staticData: { routeDialog: true },
   // loader は無く、待つのは component の chunk だけ。無いと、chunk の読み込み中と失敗が router の既定の
   // 表示になり、一覧の下 (`<Outlet />` の位置) に出る
   pendingComponent: CreatePending,

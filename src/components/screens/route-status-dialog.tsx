@@ -51,10 +51,10 @@ export function RouteStatusDialog({
   description,
   action,
 }: RouteStatusDialogProps) {
-  const { onOpenChange, finalFocus } = useRouteDialog({ returnTo, findReturnTarget });
+  const { onOpenChange, popupProps } = useRouteDialog({ returnTo, findReturnTarget });
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent finalFocus={finalFocus}>
+      <DialogContent {...popupProps}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

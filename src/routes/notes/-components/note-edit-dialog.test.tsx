@@ -39,11 +39,15 @@ async function renderDialog() {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(noteQueryOptions(NOTE.id).queryKey, NOTE);
   const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-  const router = createTestRouter(`/notes/${NOTE.id}/edit`, () => (
-    <Suspense fallback={null}>
-      <NoteEditDialog noteId={NOTE.id} />
-    </Suspense>
-  ));
+  const router = createTestRouter(
+    `/notes/${NOTE.id}/edit`,
+    () => (
+      <Suspense fallback={null}>
+        <NoteEditDialog noteId={NOTE.id} />
+      </Suspense>
+    ),
+    { routeDialog: true },
+  );
   const screen = await render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

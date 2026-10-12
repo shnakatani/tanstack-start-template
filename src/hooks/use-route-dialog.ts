@@ -31,8 +31,8 @@ export interface RouteDialogOptions<
 }
 
 /**
- * Dialog の Root には `open` を固定で渡し、`onOpenChange` を渡す。`finalFocus` は Popup (`DialogContent`、
- * `ActionDialogContent`) へ、`blocksClose` はキャンセルの `DialogClose` の `disabled` へ渡す。
+ * Dialog の Root には `open` を固定で渡し、`onOpenChange` を渡す。`popupProps` は Popup へ spread し、
+ * `blocksClose` はキャンセルの `DialogClose` の `disabled` へ渡す。
  * `close` は保存の応答で閉じるときに呼ぶ。`onOpenChange` を通らないので、close の停止に止められない。
  * ダイアログが unmount したあとに呼んでも何もしない
  */
@@ -40,13 +40,20 @@ export interface RouteDialog {
   close: () => void;
   blocksClose: boolean;
   onOpenChange: NonNullable<ComponentProps<typeof Dialog>["onOpenChange"]>;
-  finalFocus: () => HTMLElement | false;
+  /**
+   * Popup (`DialogContent`、`ActionDialogContent`) に spread する。
+   * - finalFocus: 閉じたときの focus の移し先 (ADR-0041「閉じたときの focus」)
+   * - data-route-dialog: 閉じる遷移で Popup に View Transition の名前を付ける印 (ADR-0041「閉じる遷移の見せ方」)。
+   *   route の `staticData.routeDialog` が `true` のときだけ付く
+   */
+  popupProps: { finalFocus: () => HTMLElement | false; "data-route-dialog"?: "" };
 }
 
 /**
  * route として開くダイアログの閉じ方と、閉じたあとの focus (ADR-0041)。閉じる操作と `close` の時点で、
  * `returnTo` へ新しい履歴で離れる。開閉の state は持たず、ダイアログは route から離れて unmount するまで開いて
- * いる (TanStack Router の example `location-masking` と同じ形)。
+ * いる (TanStack Router の example `location-masking` と同じ形)。呼ぶ route には `staticData: { routeDialog: true }`
+ * を書く (ADR-0041「閉じる遷移の見せ方」)。
  * `returnTo` の型は TanStack Router の Type Utilities の `ValidateNavigateOptions` で検査する。公開の
  * signature を generic にし、実装の signature を generic にしない形は、Type Utilities のガイドの
  * `useConditionalNavigate` に倣う。`TRouter` の制約はガイドの例の `RegisteredRouter` ではなく、
@@ -63,9 +70,23 @@ export function useRouteDialog({
   // 相対の `to` (`..`) を、どの時点で組んでもこのダイアログの route から解く。`from` が無いと、組んだ時点の
   // location から解く (TanStack Router「RouterType」の `.buildLocation`)。戻るで離れたあとの `finalFocus` では
   // 戻った先から解いてしまい、戻り先と食い違う
-  const dialogPath = useMatch({ strict: false }).fullPath;
+  const match = useMatch({ strict: false });
+  const dialogPath = match.fullPath;
   const navigate = useNavigate({ from: dialogPath });
   const router = useRouter();
+
+  // 印が無いと、Popup に data-route-dialog を付けず、ダイアログは退場を見せずにクロスフェードで消える。見え方が
+  // 変わるだけなので throw しない。throw すると同じ route の errorComponent も throw し、ページごと壊れる。
+  // data-route-dialog を印に合わせるのは、閉じる遷移の type の関数が数える Popup と、名前を付ける Popup を
+  // そろえるため。印の無い Popup にも付けると、片方だけに印があるダイアログの route が入れ子で開いた画面で、
+  // 閉じる遷移が 2 つの Popup に同じ名前を付け、遷移が飛ばされる (ADR-0041「閉じる遷移の見せ方」)
+  const { routeId } = match;
+  const markedAsRouteDialog = match.staticData.routeDialog === true;
+  useEffect(() => {
+    if (!markedAsRouteDialog) {
+      console.warn("[useRouteDialog] route の staticData に routeDialog: true が無い", { routeId });
+    }
+  }, [markedAsRouteDialog, routeId]);
 
   // 保存の onSuccess は useMutation に渡す callback で、ダイアログが unmount したあとも走る。保存の途中に戻るで
   // 離れ、同じダイアログを開き直していると、先行する応答の close が開き直したダイアログごと離れてしまう。
@@ -139,5 +160,10 @@ export function useRouteDialog({
     return false;
   }
 
-  return { close, blocksClose, onOpenChange, finalFocus };
+  return {
+    close,
+    blocksClose,
+    onOpenChange,
+    popupProps: markedAsRouteDialog ? { finalFocus, "data-route-dialog": "" } : { finalFocus },
+  };
 }

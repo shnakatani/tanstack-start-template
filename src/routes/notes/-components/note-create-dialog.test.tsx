@@ -40,7 +40,7 @@ import {
 async function renderDialog() {
   const queryClient = createTestQueryClient();
   const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-  const router = createTestRouter("/notes/new", () => <NoteCreateDialog />);
+  const router = createTestRouter("/notes/new", () => <NoteCreateDialog />, { routeDialog: true });
   const screen = await render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

@@ -8,7 +8,10 @@ import { PendingContent } from "@/components/screens/pending";
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { toast } from "@/components/ui/toast";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
-import { skipViewTransitionAfterUATransition } from "@/lib/skip-view-transition-after-ua-transition";
+import {
+  createDefaultViewTransition,
+  type RouteDialogMatchSource,
+} from "@/lib/route-dialog-view-transition";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -31,10 +34,11 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
-    // ナビゲーションを View Transitions のクロスフェードにし、ブラウザが自分でアニメーションを出した
-    // 戻る・進むでは飛ばす。サーバーでは判定せず true を渡す (View Transition はサーバーでは動かない。ADR-0040)
+    // ナビゲーションを View Transitions のクロスフェードにする。飛ばす遷移と type を足す遷移は
+    // createDefaultViewTransition が決める (ADR-0040、ADR-0041)。
+    // サーバーでは判定せず true を渡す (View Transition はサーバーでは動かない。ADR-0040)
     defaultViewTransition:
-      typeof window === "undefined" ? true : { types: skipViewTransitionAfterUATransition(window) },
+      typeof window === "undefined" ? true : createDefaultViewTransition(window, currentRouter),
     // loader / useSuspenseQuery のエラーを失敗 route の境界で受ける (周囲のレイアウトを
     // 保ったまま日本語 UI + 再試行を出す。未設定だと SSR は英語の組み込み UI、client は
     // root の全画面エラーに落ちる)
@@ -50,6 +54,12 @@ export function getRouter() {
   setupRouterSsrQueryIntegration({ router, queryClient });
 
   return router;
+
+  // types の関数が遷移の時点で router を読む。router 自身の初期化子から参照するので、戻り値の型を注釈した
+  // 関数宣言で受ける。推論させると router の型が自分の初期化子に依存する
+  function currentRouter(): RouteDialogMatchSource {
+    return router;
+  }
 }
 
 declare module "@tanstack/react-router" {

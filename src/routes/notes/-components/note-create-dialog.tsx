@@ -49,7 +49,7 @@ export function NoteCreateDialog() {
     onError: toastMutationError,
   });
 
-  const { close, blocksClose, onOpenChange, finalFocus } = useRouteDialog({
+  const { close, blocksClose, onOpenChange, popupProps } = useRouteDialog({
     returnTo: NOTE_DIALOG_RETURN_TO,
     findReturnTarget: findNoteCreateLink,
     isPending: createMutation.isPending,
@@ -62,7 +62,7 @@ export function NoteCreateDialog() {
         defaultValues={EMPTY_NOTE_INPUT}
         onSubmit={createMutation.runAction}
         blocksClose={blocksClose}
-        finalFocus={finalFocus}
+        popupProps={popupProps}
       />
     </Dialog>
   );

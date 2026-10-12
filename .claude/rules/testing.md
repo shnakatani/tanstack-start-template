@@ -185,6 +185,7 @@ paths:
 - `getComputedStyle` を `expect.poll` で読むのは、2 回の観測の比較・数値の大小・擬似要素・期待値側の要素にも当たる `!important` (`*` など) の 4 つだけ (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 操作前から在る要素は `element()` で読んでよい。`render()` が `act` で flush する (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 - animation は `browser-setup.tsx` が毎テスト止める。窓を検証するテストだけ冒頭で `enableAnimations()` を呼ぶ (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
+- View Transition の擬似要素は停止用の CSS で止まらず、本番の時間で流れる。擬似要素の animation は `ready` の後に `document.getAnimations()` を `effect.pseudoElement` で選んで読む (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - `enableAnimations()` を呼んだテストに戻す処理を書かない。テストの終わりに `enableAnimations()` が登録した `onTestFinished` が戻す (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - animation を戻すテストは `.concurrent` を付けずに書き、並行の `describe` の外に置く。page 全体に効き、並行する別のテストの animation も戻る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
 - animation を戻したテストでは、変化する側の値を先に待ってから「変化しないこと」を見る (`docs/guides/testing/user-interactions.md`「animation を戻すテストを書く」)
