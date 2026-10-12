@@ -1,13 +1,7 @@
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-} from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { TEST_ROUTER_DEFAULTS } from "./test-router-defaults";
+import { createRouterWithTestDefaults } from "./create-router-with-test-defaults";
 
 /**
  * 単一 route を描くだけの最小 router (TanStack Router の how-to「How to Set Up Testing with Code-Based Routing」の `createTestRouter` と
@@ -15,7 +9,7 @@ import { TEST_ROUTER_DEFAULTS } from "./test-router-defaults";
  * 足場で、アプリの router 設定 (`src/router.tsx` の defaultPreload / defaultErrorComponent 等) は
  * **意図的に持たない**。既定値を写すと router.tsx との二重管理になり、片方だけ変えたときに
  * テストだけが古い既定で緑になる。既定値そのものを検証したいテストは router.tsx を直接使う。
- * テスト用の router の既定 (`TEST_ROUTER_DEFAULTS`) だけは、ほかのテストの router と同じく spread する。
+ * テスト用の既定だけは、ほかのテストの router と同じく `createRouterWithTestDefaults` で入れる。
  */
 export function createTestRouter(initialPath: string, component: () => ReactNode) {
   const rootRoute = createRootRoute({ component: () => <Outlet /> });
@@ -29,8 +23,7 @@ export function createTestRouter(initialPath: string, component: () => ReactNode
     path: "$",
     component: () => null,
   });
-  return createRouter({
-    ...TEST_ROUTER_DEFAULTS,
+  return createRouterWithTestDefaults({
     routeTree: rootRoute.addChildren([testRoute, catchAllRoute]),
     history: createMemoryHistory({ initialEntries: [initialPath] }),
   });
