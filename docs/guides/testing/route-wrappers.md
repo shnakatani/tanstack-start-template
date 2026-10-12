@@ -23,8 +23,9 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 テストで router を組むときは、`createRouter` の代わりに `createRouterWithTestDefaults` (`src/test/app/create-router-with-test-defaults.ts`) を呼ぶ (`createRouterWithTestDefaults({ routeTree, history })`)。型は `createRouter` と同じで、options もそのまま渡す。呼ぶ側が渡した options が既定に勝つ。理由は「テスト用の router の既定を factory で入れる理由」にある。
 
-- テストのファイル (`*.test.ts(x)`、`*.test-helpers.ts(x)`、`src/test/**`) で `@tanstack/react-router` の `createRouter` と `Router` を import すると、lint (`no-restricted-imports`) が止める。型だけの import (`import type { Router }`) は止めない
-- lint が止めるのは静的な import だけである。`await import("@tanstack/react-router")` から取り出した `createRouter` は止まらない (oxlint 1.87.0、2026-10-12 に確認)。テストでは dynamic import から router を組まない
+- テストのファイル (`*.test.ts(x)`、`*.test-helpers.ts(x)`、`src/test/**`) で `@tanstack/react-router` の `createRouter` と `Router` を import すると、lint (`no-restricted-imports`) が止める。別名の import と、テストのファイルからの再 export も止まる。型だけの import (`import type { Router }`) は止めない
+- 名前空間の import (`import * as Router from "@tanstack/react-router"`) は、`createRouter` を使わなくても丸ごと止まる。テストでは必要な名前を個別に import する
+- 止まらない形が 2 つある。`await import("@tanstack/react-router")` から取り出した `createRouter` と、テストのファイルでないファイルが再 export した `createRouter` である (oxlint 1.87.0、2026-10-12 に確認)。テストでは dynamic import から router を組まず、`createRouter` を再 export しない
 - `createTestRouter` (`src/test/app/create-test-router.tsx`) は内部で `createRouterWithTestDefaults` を呼ぶので、呼ぶ側は何もしなくてよい
 - テストで既定にしたい router の options は、各テストに書かずに `createRouterWithTestDefaults` の既定に足す。各テストに書くと、足し漏れたテストだけが別の既定で走る
 - 本番の設定 (`src/router.tsx`) の値を既定に写さない。片方だけ変えたときに、テストだけが古い既定で緑になる。本番と同じ部品を通したいテストは、その option を自分で渡す (`defaultErrorComponent` など)
@@ -92,7 +93,7 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 | 描画までする helper ([TanStack Router docs「How to Set Up Testing with Code-Based Routing」][] の Alternative の `renderWithRouter`、[TanStack Router docs「How to Test Router with File-Based Routing」][] の `renderWithFileRoutes` の形) | factory と同じ。helper を通るテストには既定が入り、迂回を止めるには lint が別に要る                               | router の options に加えて provider の包み方も、helper の引数として運ぶ                           | helper の 1 か所            | 却下     |
 
 - 採用案は、[TanStack Router docs「How to Set Up Testing with Code-Based Routing」][] が Recommended とする形から 1 点外れる。テストは `createRouter` を直接呼ばず、factory を呼ぶ。それでも採るのは、Recommended の形が持つ 2 つの性質 (テストが options をそのまま書けることと、route tree からの型の推論) を factory が保ったまま、既定の忘れを lint で止められるからである。定数の spread も同じ 2 つを保つが、spread の忘れを止める手段が無い
-- 型の推論は実測で確かめた (2026-10-12、`@tanstack/react-router` 1.170.41)。`const f: typeof createRouter = (options) => createRouter({ defaultPendingMinMs: 0, ...options });` は、`createRouter` を直接呼ぶのと同じく route tree から型を推論した。tree にあるパスの `router.routesByPath["/b"]` は通り、tree に無いパスの `router.routesByPath["/zzz"]` はどちらの呼び方でも TS7053 になった。`trailingSlash: "always"` を渡しても同じだった
+- 型の推論は実測で確かめた (2026-10-12、`@tanstack/react-router` 1.170.41)。`typeof createRouter` で注釈した factory (`createRouterWithTestDefaults`) は、`createRouter` を直接呼ぶのと同じく route tree から型を推論した。tree にあるパスの `router.routesByPath["/b"]` は通り、tree に無いパスの `router.routesByPath["/zzz"]` はどちらの呼び方でも TS7053 になった。`trailingSlash: "always"` を渡しても同じだった
 - 単一の component を描くだけのテストは、route tree も options も固定で運ぶものが無いので、`createTestRouter` (`src/test/app/create-test-router.tsx`) を呼ぶ。[TanStack Router docs「How to Set Up Testing with Code-Based Routing」][] が Alternative を「For Simpler Cases」とする範囲に当たる
 
 ## 出典
