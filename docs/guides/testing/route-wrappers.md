@@ -72,7 +72,7 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 
 ### テスト用の router の既定を factory で入れる理由
 
-上流は router の組み立て方を 2 つ示し、どちらもテスト用の既定には触れない。
+[TanStack Router docs「How to Set Up Testing with Code-Based Routing」][] は、テストでの router の組み立て方を 2 つ示す。
 
 - [TanStack Router docs「How to Set Up Testing with Code-Based Routing」][] は、テストごとに `createRouter` を組む形を「TanStack Router Internal Pattern (Recommended)」として示す。挙げる理由は "The TanStack Router team uses this pattern internally" だけである
 - 同じ [TanStack Router docs「How to Set Up Testing with Code-Based Routing」][] は、`src/test/router-utils.tsx` の `createTestRouter(routes: any[], initialLocation = '/')` と `renderWithRouter` に router の組み立てを集める形を「Alternative: Router Test Utilities (For Simpler Cases)」として示す。上流の `createTestRouter` は `createRouter` に `routeTree` と `history` だけを渡し、ほかの options を受ける口を持たない。`routes: any[]` を受けるので、route tree から推論される型は呼ぶ側に届かない
