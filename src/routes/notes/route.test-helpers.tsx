@@ -3,7 +3,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import {
   createMemoryHistory,
   createRootRouteWithContext,
-  createRouter,
   HeadContent,
   Outlet,
   RouterProvider,
@@ -17,6 +16,7 @@ import { toast, Toaster } from "@/components/ui/toast";
 import { getNote, listNotes } from "@/features/notes/functions";
 import type { Note } from "@/features/notes/schema";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
+import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { createTestQueryClient } from "@/test/app/query-client";
 
 import { Route as NoteEditRoute } from "./$noteId.edit";
@@ -25,7 +25,7 @@ import { Route as NotesRoute } from "./route";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
- * `<html>` を描くので browser test では使えない (docs/guides/testing/route-wrappers.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
+ * `<html>` を描くので browser test では使えない (docs/guides/testing/real-router.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
  * 一覧と追加と編集の `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
  * `HeadContent` は本番の root と同じく、route の `head()` の title を `document.title` へ反映させるために置く。
  * `Toaster` は本番の root と同じく、保存の失敗の toast を描くために置く。
@@ -85,7 +85,7 @@ export async function renderRoute(
       ),
     }),
   });
-  const router = createRouter({
+  const router = createRouterWithTestDefaults({
     routeTree,
     context: { queryClient },
     history: createMemoryHistory({ initialEntries: [initialLocation] }),
@@ -96,8 +96,6 @@ export async function renderRoute(
     // (既定値の同一性は測らない)。無いと root の外まで抜けて組み込みの ErrorComponent が描き、
     // "wasn't caught by any route" の warn が出る (2026-09-23 に実測)
     defaultErrorComponent: RouteErrorContent,
-    // pending 表示の最小表示時間 (既定 500ms) を打ち消す (src/test/app/create-test-router.tsx と同じ)
-    defaultPendingMinMs: 0,
     // undefined を渡すと Router の既定 (1000ms) を上書きするので、指定したときだけ渡す
     ...(pendingMs === undefined ? {} : { defaultPendingMs: pendingMs }),
   });

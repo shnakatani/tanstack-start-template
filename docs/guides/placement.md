@@ -31,7 +31,7 @@
 ADR-0010 に沿って、次の順で組む。
 
 1. ページ本体を `-components/` に書き、Route hooks を使わずに props で値を受ける。Route hooks を混ぜると、ページのテストが router 無しで描けなくなる
-2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは `docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」 の形で書く
+2. route ファイルに export しない wrapper を置き、Route hooks の値をページ本体の props へ渡す。wrapper のテストは `docs/guides/testing/real-router.md`「route の wrapper をテストする」 の形で書く
 3. loader は `createFileRoute` の options に直接書く。関数に切り出すと `context` と `deps` の型を手で書くことになる
 4. pending 表示は、ページ本体と別のファイルに置く
 5. loader と `validateSearch` とページ本体が共有する定数は `-lib/` に置き、ページ本体の module に置かない
@@ -69,12 +69,12 @@ registry 由来でない付随ファイル (テスト・story とその helper) 
 
 ドメインを跨ぐテストの helper は、そのファイルが何を作るかで `src/test/` の下のディレクトリを選ぶ。誰が呼ぶかと、ファイル名の prefix (`a11y-*`、`viewport-*`) では選ばない。理由は「`src/test/` の helper を何を作るかで分ける理由」。
 
-| 何を作るか                                                            | ディレクトリ        | 例                                                                |
-| --------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------- |
-| browser project の実行環境 (setup、config が読む定数)                 | `src/test/browser/` | `browser-setup.tsx`、`park-mouse.ts`、`viewport-sizes.ts`         |
-| テスト本文が呼ぶ assert と実測、その引数の型                          | `src/test/assert/`  | `absent.ts`、`viewport.ts`、`screen-assertions.ts`                |
-| axe の実行と結果の整形                                                | `src/test/a11y/`    | `a11y.ts`、`a11y-message.ts`                                      |
-| アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場 | `src/test/app/`     | `create-test-router.tsx`、`query-client.ts`、`settling-action.ts` |
+| 何を作るか                                                            | ディレクトリ        | 例                                                                                                       |
+| --------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
+| browser project の実行環境 (setup、config が読む定数)                 | `src/test/browser/` | `browser-setup.tsx`、`park-mouse.ts`、`viewport-sizes.ts`                                                |
+| テスト本文が呼ぶ assert と実測、その引数の型                          | `src/test/assert/`  | `absent.ts`、`viewport.ts`、`screen-assertions.ts`                                                       |
+| axe の実行と結果の整形                                                | `src/test/a11y/`    | `a11y.ts`、`a11y-message.ts`                                                                             |
+| アプリの依存 (router・QueryClient・mock・action) をテスト用に作る足場 | `src/test/app/`     | `create-test-router.tsx`、`create-router-with-test-defaults.ts`、`query-client.ts`、`settling-action.ts` |
 
 - config が読む定数は、テスト本文が使うものでも `browser/` に置く。assert の helper と同じファイルにすると、config が browser mode の import (`vite-plus/test/browser`) を引いて落ちる (`viewport-sizes.ts` の docstring)
 - 1 つのファイルに役割が 2 つ混ざったら、ファイルを分けてそれぞれのディレクトリへ置く。混ざったファイルが残ると、次の helper を置くときの手本が 2 通りになる

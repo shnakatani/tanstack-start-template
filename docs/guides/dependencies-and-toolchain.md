@@ -113,7 +113,7 @@ pnpm peers check
 8. 一時的に置いたテストと reporter を消す
 
 - 依存の中の import (ある依存が別の依存のバレルを読む経路) は lint が届かない。テストを遅くしているかは、その依存を描くテストを同じ手順で測る
-- `RESTRICTED_BARREL_IMPORTS` はトップレベルとテスト専用コードの import 禁止の override の両方へ渡っている。片方だけに書き足さない (`docs/guides/lint/configuration.md`「設定の落とし穴」)
+- `RESTRICTED_BARREL_IMPORTS` はトップレベルと、`no-restricted-imports` を書くすべての override へ渡っている。定数に足し、どれか 1 つの `paths` にだけ書き足さない。`no-restricted-imports` を書く override を足したら、その override にも渡す (`docs/guides/lint/configuration.md`「設定の落とし穴」)
 
 ### Vite+ を上げる
 

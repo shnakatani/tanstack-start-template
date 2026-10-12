@@ -29,7 +29,7 @@ schema を 1 つにする、既定値を URL から落とす、`loaderDeps` で 
 
 ## Consequences
 
-- 検索欄を持つ一覧の route ファイルは、`Route` と、export しない wrapper だけを持つ (ADR-0010)。入力欄と一覧の描画は `docs/guides/lists-and-search.md`「検索の入力欄を組む」にある。テストは `docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」、サーバ側の LIKE は `src/server/db/like-pattern.ts`
+- 検索欄を持つ一覧の route ファイルは、`Route` と、export しない wrapper だけを持つ (ADR-0010)。入力欄と一覧の描画は `docs/guides/lists-and-search.md`「検索の入力欄を組む」にある。テストは `docs/guides/testing/real-router.md`「route の wrapper をテストする」、サーバ側の LIKE は `src/server/db/like-pattern.ts`
 - 切り詰めの action は valibot にも主な schema ライブラリにも無い (ADR-0036)。上限の判定は valibot の `maxCodePoints` に任せ、切るのは `truncateCodePoints` だけにする
 - `v.fallback` の値は valibot が検証しないので、切った値が同じ判定を通ることは `truncateCodePoints` のテストが確かめる
 - 切り詰めは warn しない。入力欄は上限で止めないので、上限を超えて打つのは通常の入力で、warn にすると誤検知になる

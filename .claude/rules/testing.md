@@ -54,6 +54,11 @@ paths:
 - テストの中で `vi.stubEnv("TZ", …)` で TZ を切り替えず、TZ ごとの実行はスクリプト (`scripts/time-zones/run-tests.ts`) に任せる。threads / vmThreads の pool ではテストの中の切り替えが `Date` に効かず、無言で通る (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
 - ブラウザテストの TZ の切り替えは CDP の `Emulation.setTimezoneOverride` で行い、`afterEach` で `timezoneId: ""` を送って戻す。`vi.stubEnv` はブラウザの TZ を変えない (`docs/guides/testing/time-zones.md`「ブラウザテストで切り替える」)
 
+## テスト用の router
+
+- テストで既定にしたい router の options は、各テストに書かずに `createRouterWithTestDefaults` (`src/test/app/create-router-with-test-defaults.ts`) の既定に足す (`docs/guides/testing/real-router.md`「テスト用の router の既定をそろえる」)
+- `createRouterWithTestDefaults` の既定に本番の設定 (`src/router.tsx`) の値を写さない。本番と同じ部品を通したいテストは、その option を自分で渡す (`docs/guides/testing/real-router.md`「テスト用の router の既定をそろえる」)
+
 ## a11y の検査は tag で分ける
 
 - `axe` で「アクセシブルか」を問うテストに `{ tags: ["a11y"] }` を付ける。単独実行は `--tags-filter a11y`。`--tags-filter '!a11y'` で外しても、挙動テストに相乗りした assert は走る (`docs/guides/accessibility.md`「a11y の tag を付ける」)

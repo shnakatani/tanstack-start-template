@@ -3,7 +3,6 @@ import {
   createMemoryHistory,
   createRootRoute,
   createRoute,
-  createRouter,
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
@@ -11,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { THROWN_VALUE_UNPRINTABLE } from "@/lib/thrown-value-message";
+import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent } from "@/test/assert/absent";
@@ -48,12 +48,10 @@ async function renderFailingOnceRoute({ loaderAwaits }: { loaderAwaits: boolean 
       return <p>{data}</p>;
     },
   });
-  const router = createRouter({
+  const router = createRouterWithTestDefaults({
     routeTree: rootRoute.addChildren([pageRoute]),
     history: createMemoryHistory({ initialEntries: ["/"] }),
     defaultErrorComponent: RouteErrorContent,
-    // pending 表示の最小表示時間 (既定 500ms) を打ち消す (src/test/app/create-test-router.tsx と同じ)
-    defaultPendingMinMs: 0,
   });
   return render(
     <QueryClientProvider client={queryClient}>
