@@ -422,7 +422,7 @@ describe("/notes/new route", () => {
       .thenResolve({ id: CREATED_NOTE.id })
       .calledWith({ data: createInputOf(second) })
       .thenReturn(secondResponse.promise);
-    const { screen } = await renderRoute("/notes");
+    const { screen, router } = await renderRoute("/notes");
 
     await submitCreate(screen, CREATED_NOTE);
     // 先行の応答で閉じる。再取得は未決着のまま
@@ -433,7 +433,9 @@ describe("/notes/new route", () => {
     await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
-    // 入力が残っていることだけでは、閉じるアニメーションの途中でも通る
+    // 離れても unmount するまでは開いたまま描かれるので、離れていないことは URL で見る。navigate は blocker が
+    // 無いと履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
+    expect(router.history.location.pathname).toBe("/notes/new");
     await expectDialogOpen(screen, "dialog");
     await expect.element(titleTextbox(screen)).toHaveValue(second.title);
 

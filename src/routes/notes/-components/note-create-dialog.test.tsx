@@ -164,7 +164,7 @@ describe("NoteCreateDialog", () => {
       });
   });
 
-  it("保存に成功すると notes クエリを invalidate してダイアログを閉じ、閉じ終わってから route を離れる", async () => {
+  it("保存に成功すると notes クエリを invalidate し、応答の時点でダイアログを閉じて route を離れる", async () => {
     vi.mocked(createNote).mockResolvedValue({ id: 1 });
     const { screen, invalidateSpy, pathname } = await renderDialog();
     await titleTextbox(screen).fill("買い物リスト");

@@ -89,7 +89,7 @@ describe("NoteEditDialog", () => {
       });
   });
 
-  it("updateNote の応答で閉じ、一覧のクエリだけを invalidate し、閉じ終わってから route を離れる", async () => {
+  it("updateNote の応答の時点で閉じて route を離れ、一覧のクエリだけを invalidate する", async () => {
     // 完了点「サーバー応答」: 応答前は開いたまま、応答で閉じる (ADR-0017)
     const update = deferMock(updateNote);
     const { screen, invalidateSpy, pathname } = await renderDialog();

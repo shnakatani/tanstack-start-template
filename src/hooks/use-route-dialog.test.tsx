@@ -346,6 +346,8 @@ describe("useRouteDialog の閉じ方", () => {
   });
 
   it("戻るで離れて開き直したあと、前のダイアログの close を呼んでも離れない", async () => {
+    // 前のテストで描いたダイアログの close を取り出さない
+    closesByTitle.clear();
     const { router, screen } = await renderDialogRouter(["/items", "/items/new"]);
     const dialog = screen.getByRole("dialog", { name: "項目を追加" });
     await expect.element(dialog).toBeVisible();
@@ -358,7 +360,7 @@ describe("useRouteDialog の閉じ方", () => {
 
     closeBeforeLeaving();
 
-    // navigate は履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
+    // navigate は blocker が無いと履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
     expect(router.history.location.pathname).toBe("/items/new");
   });
 });
