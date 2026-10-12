@@ -281,8 +281,9 @@ describe("/notes/$noteId/edit route", () => {
     await expectNotesHeadingFocused(screen);
   });
 
-  it("一覧に無い行のダイアログからブラウザの戻るで一覧へ戻ると、遷移の読み上げが見出しへ focus を移す", async () => {
-    // 戻るでは finalFocus が返すリンクが無く、ダイアログと一緒に focus が外れる
+  it("一覧に無い行のダイアログからブラウザの戻るで一覧へ戻ると、ページの見出しへ focus を移す", async () => {
+    // 戻り先にいて開いた元のリンクが無いので、useRouteDialog の finalFocus が見出しへ移す。route の announcer は
+    // focus が見出しに移っているので動かさず、読み上げだけをする
     vi.mocked(listNotes).mockResolvedValue([]);
     vi.mocked(getNote).mockResolvedValue(NOTE);
     const { screen, router } = await renderRoute("/notes");
