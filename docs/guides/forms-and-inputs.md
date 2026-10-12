@@ -143,7 +143,7 @@ const { close, blocksClose, onOpenChange, finalFocus } = useRouteDialog({
 | ダイアログの route の `errorComponent`、`notFoundComponent`                 | `RouteStatusDialog` に見出しと説明と `returnTo`、`findReturnTarget` を渡す。失敗のダイアログは `action` に、`useRouteRetry` (`src/hooks/use-route-retry.ts`) を呼ぶ再試行のボタンを渡す                                                                                    |
 | path params を持つダイアログの route の `findReturnTarget`                  | route ファイルの wrapper で `Route.useParams` を読み、params から開いた元の要素を探す関数を作って、ダイアログと `pendingComponent`・`errorComponent`・`notFoundComponent` に渡す。Route hooks を wrapper に吸収する形 (`docs/guides/placement.md`「route ファイルを組む」) |
 
-- `findReturnTarget` が開いた元の要素を見つけられなくても、Popup へ `finalFocus` を渡し忘れても (Base UI の既定の戻し先へ戻る)、型検査も `useRouteDialog` も気付かない。ダイアログの route を足したら、そのページの route のテスト (`docs/guides/testing/route-wrappers.md`「route の wrapper をテストする」) で次の 3 つを確かめる
+- `findReturnTarget` が開いた元の要素を見つけられなくても、Popup へ `finalFocus` を渡し忘れても (Base UI の既定の戻し先へ戻る)、型検査も `useRouteDialog` も気付かない。ダイアログの route を足したら、そのページの route のテスト (`docs/guides/testing/real-router.md`「route の wrapper をテストする」) で次の 3 つを確かめる
   - 閉じる操作で閉じたら、開いた元の要素へ focus が移る (無ければページの見出しへ)
   - 戻るで離れたら、開いた元の要素へ focus が戻る
   - 別のダイアログに替わったとき (読み込み中から本物へ、別の値の URL へ、別のダイアログの URL へ)、開いた元の要素が focus を受けない

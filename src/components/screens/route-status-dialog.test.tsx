@@ -2,7 +2,6 @@ import {
   createMemoryHistory,
   createRootRoute,
   createRoute,
-  createRouter,
   Outlet,
   RouterProvider,
   type AnyRouter,
@@ -12,6 +11,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
+import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 
 import {
   RoutePendingDialog,
@@ -92,10 +92,9 @@ function LoadingDialog(): ReactNode {
 const routeTree = rootRoute.addChildren([itemsRoute.addChildren([missingRoute, loadingRoute])]);
 
 function createStatusRouter(initialEntries: string[]) {
-  return createRouter({
+  return createRouterWithTestDefaults({
     routeTree,
     history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
-    defaultPendingMinMs: 0,
   });
 }
 
