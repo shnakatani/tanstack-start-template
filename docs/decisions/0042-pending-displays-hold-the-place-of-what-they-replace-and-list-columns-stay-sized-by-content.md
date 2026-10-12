@@ -41,7 +41,7 @@ label を見えなくして Spinner を重ねると、名前の計算に影響�
 
 ### 先行例
 
-ボタンの loading / pending を持つライブラリは、どれも label を DOM に残したまま見えなくし、Spinner を上に重ねて幅を保つ (2026-10-13 に確認)。違いは label の消し方と、名前の保ち方にある。
+pending / loading を prop で持つ Button 部品 (React Aria、Primer、Radix Themes、MUI、Mantine、Atlassian) は、どれも label を DOM に残したまま見えなくし、Spinner を上に重ねて幅を保つ (2026-10-13 に確認)。違いは label の消し方と、名前の保ち方にある。TanStack Router の kitchen-sink は label を隠さずに Spinner の場所を常に取り、shadcn と Base UI は幅を保たない。
 
 | ライブラリ                                     | 保ち方                                                                                                                                 | 名前                                                                                                          |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -123,7 +123,7 @@ column sizing が強いのは「日時以外の値を操作中の文言に替え
 ## Consequences
 
 - 行のリンクを押してからダイアログが開くまでと、1 行の一覧で保存してから再取得が終わるまで、列見出しの幅は 0.5px 未満しか動かない。列見出しの幅を `requestAnimationFrame` ごとに記録する helper (`src/test/assert/column-widths.ts`) で見る。書き方は `docs/guides/testing/waiting-and-assertions.md`「レイアウトを実測で確かめる」
-- pending 中のボタンは label が見えず、Spinner だけが見える。先行例のどれも pending で label を隠すので、幅を保つことと引き換えに受け入れる
+- pending 中のボタンは label が見えず、Spinner だけが見える。label に Spinner を重ねて幅を保つ先行例は、どれも pending で label を隠すので、幅を保つことと引き換えに受け入れる
 - Action 層の `aria-labelledby` が外れると、pending 中の名前が空になり `toHaveAccessibleName` が落ちる。pending 中の名前を確かめるテストが、名前の固定の退行を捕まえる
 - `isPending` を渡した呼び出しのリンクは、children が 1 つの `<span>` に入る。icon と文字を children に並べると `buttonVariants` の `gap-*` が効かない。渡さない呼び出しは変わらない
 - `size="icon*"` のボタンの pending は、Spinner が icon の場所に重なり正方形から溢れない (`src/components/action/button-shell.stories.tsx`)
