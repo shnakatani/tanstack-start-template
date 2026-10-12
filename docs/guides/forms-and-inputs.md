@@ -106,7 +106,7 @@ ADR-0041 に沿ってダイアログを組む手順。使う部品は次の表�
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/hooks/use-route-dialog.ts` の `useRouteDialog`                      | 保存の pending の間の close の停止、閉じる操作と保存の応答 (`close`) の時点で戻り先へ新しい履歴で離れること、離れたときの focus の移し先 (`finalFocus`) |
 | `src/components/screens/route-status-dialog.tsx` の `RouteStatusDialog`  | 失敗と見つからないのダイアログ。中で `useRouteDialog` を使う                                                                                            |
-| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。中で `useRouteDialog` を使う                                                                                                    |
+| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。`RouteStatusDialog` に説明「読み込み中」を渡す                                                                                  |
 
 どの部品にも、ダイアログの route ごとに次の 2 つを渡す。開く元のページへ離れたか別のダイアログに替わったかは、`useRouteDialog` が戻り先から判定する (ADR-0041)。この判定のために、開く元のページの route tree の形 (index route の有無、親の path params) で書き分けるものは無い。
 

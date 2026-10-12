@@ -34,32 +34,6 @@ export interface RouteStatusDialogProps<
   action?: ReactNode;
 }
 
-/** フォームを出せない間のダイアログの中身 */
-function RouteStatusDialogContent({
-  title,
-  description,
-  action,
-  finalFocus,
-}: {
-  title: string;
-  description: string;
-  action?: ReactNode;
-  finalFocus: () => HTMLElement | false;
-}) {
-  return (
-    <DialogContent finalFocus={finalFocus}>
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
-      <DialogFooter>
-        <DialogClose render={<Button variant="outline" />}>閉じる</DialogClose>
-        {action}
-      </DialogFooter>
-    </DialogContent>
-  );
-}
-
 /**
  * ダイアログの route が、フォームを出せない間 (見つからない、読み込みの失敗) に出すダイアログ (ADR-0041)。
  * 閉じる操作の時点で `returnTo` へ離れる。文言と、閉じる以外の操作 (再試行のボタンなど) は呼ぶ側が渡す。
@@ -73,12 +47,23 @@ export function RouteStatusDialog<TRouter extends AnyRouter = RegisteredRouter, 
 export function RouteStatusDialog({
   returnTo,
   findReturnTarget,
-  ...content
+  title,
+  description,
+  action,
 }: RouteStatusDialogProps) {
   const { onOpenChange, finalFocus } = useRouteDialog({ returnTo, findReturnTarget });
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <RouteStatusDialogContent {...content} finalFocus={finalFocus} />
+      <DialogContent finalFocus={finalFocus}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>閉じる</DialogClose>
+          {action}
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 }
@@ -92,11 +77,6 @@ export function RoutePendingDialog<
   TRouter extends AnyRouter = RegisteredRouter,
   TOptions = unknown,
 >(props: RoutePendingDialogProps<TRouter, TOptions>): ReactNode;
-export function RoutePendingDialog({ returnTo, findReturnTarget, title }: RoutePendingDialogProps) {
-  const { onOpenChange, finalFocus } = useRouteDialog({ returnTo, findReturnTarget });
-  return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <RouteStatusDialogContent title={title} description="読み込み中" finalFocus={finalFocus} />
-    </Dialog>
-  );
+export function RoutePendingDialog(props: RoutePendingDialogProps) {
+  return <RouteStatusDialog {...props} description="読み込み中" />;
 }

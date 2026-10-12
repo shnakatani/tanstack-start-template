@@ -65,21 +65,24 @@ function EditRoute() {
 }
 
 function EditPending() {
+  const findReturnTarget = useFindEditLink();
   return (
     <RoutePendingDialog
       title={NOTE_EDIT_DIALOG_TITLE}
       returnTo={NOTE_DIALOG_RETURN_TO}
-      findReturnTarget={useFindEditLink()}
+      findReturnTarget={findReturnTarget}
     />
   );
 }
 
 function EditNotFound() {
-  return <NoteNotFoundDialog findReturnTarget={useFindEditLink()} />;
+  const findReturnTarget = useFindEditLink();
+  return <NoteNotFoundDialog findReturnTarget={findReturnTarget} />;
 }
 
 function EditError() {
+  const findReturnTarget = useFindEditLink();
   return (
-    <NoteRouteErrorDialog title="メモを読み込めませんでした" findReturnTarget={useFindEditLink()} />
+    <NoteRouteErrorDialog title="メモを読み込めませんでした" findReturnTarget={findReturnTarget} />
   );
 }
