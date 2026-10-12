@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { useId } from "react";
+import { useId, type ComponentProps } from "react";
 
 import { Button } from "@/components/ui/button";
 import { BUTTON_SIZES, BUTTON_VARIANTS } from "@/components/ui/button.story-helpers";
@@ -14,8 +14,7 @@ function LabelledButton({
   isPending,
   children,
   ...button
-}: React.ComponentProps<typeof PendingLabel> &
-  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+}: ComponentProps<typeof PendingLabel> & Pick<ComponentProps<typeof Button>, "variant" | "size">) {
   const labelId = useId();
   return (
     <Button {...button} aria-labelledby={labelId} disabled={isPending} focusableWhenDisabled>
@@ -27,7 +26,6 @@ function LabelledButton({
 }
 
 const meta = {
-  component: PendingLabel,
   args: { children: "保存", isPending: false },
   argTypes: {
     variant: { control: "select", options: BUTTON_VARIANTS },
