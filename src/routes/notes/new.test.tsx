@@ -9,6 +9,7 @@ import { APP_NAME } from "@/lib/app-name";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { deferMock } from "@/test/app/defer-mock";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
+import { recordFocusins } from "@/test/assert/focusin";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import {
   expectDialogOpen,
@@ -35,13 +36,7 @@ import {
 } from "./-components/note-form.test-helpers";
 import { NOTE_CREATE_DIALOG_TITLE, NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route as NoteCreateRoute } from "./new";
-import {
-  ariaLabelsOf,
-  recordFocusins,
-  renderRoute,
-  serveNotes,
-  slowDownClosingDialogs,
-} from "./route.test-helpers";
+import { ariaLabelsOf, renderRoute, serveNotes } from "./route.test-helpers";
 
 /** 追加のリンクから追加ダイアログを開いて 1 件分を入力し、保存を確定する (応答の決着は呼び出し側が握る)。 */
 const submitCreate = vi.defineHelper(async (screen: Screen, note: Pick<Note, "title" | "body">) => {
@@ -125,8 +120,7 @@ describe("/notes/new route", () => {
     expect(focused.map((target) => target.textContent)).not.toContain(NOTE_CREATE_LINK_LABEL);
   });
 
-  it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に chunk が届いてもフォームを開かない", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
+  it("読み込み中のダイアログを閉じると一覧へ戻り、その後に chunk が届いてもフォームを開かない", async () => {
     const loadChunk = mockCreateRouteChunk();
     const chunk = deferMock(loadChunk);
     const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
@@ -141,7 +135,6 @@ describe("/notes/new route", () => {
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
     await expectRemoved(screen.getByRole("dialog"));
     await expectAbsent(titleTextbox(screen));
-    expect(slowedWhileClosing()).toBe(true);
   });
 
   it("リンクを押さずに開いた読み込み中のダイアログを閉じると、追加のリンクへ focus を移す", async () => {
@@ -429,7 +422,7 @@ describe("/notes/new route", () => {
       .thenResolve({ id: CREATED_NOTE.id })
       .calledWith({ data: createInputOf(second) })
       .thenReturn(secondResponse.promise);
-    const { screen } = await renderRoute("/notes");
+    const { screen, router } = await renderRoute("/notes");
 
     await submitCreate(screen, CREATED_NOTE);
     // 先行の応答で閉じる。再取得は未決着のまま
@@ -440,7 +433,9 @@ describe("/notes/new route", () => {
     await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
-    // 入力が残っていることだけでは、閉じるアニメーションの途中でも通る
+    // 離れても unmount するまでは開いたまま描かれるので、離れていないことは URL で見る。memory history では、
+    // navigate は blocker が無いと履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
+    expect(router.history.location.pathname).toBe("/notes/new");
     await expectDialogOpen(screen, "dialog");
     await expect.element(titleTextbox(screen)).toHaveValue(second.title);
 

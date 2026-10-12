@@ -8,7 +8,7 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { onTestFinished, vi } from "vite-plus/test";
+import { vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { RouterInnerWrap } from "@/components/router-inner-wrap";
@@ -18,7 +18,6 @@ import { getNote, listNotes } from "@/features/notes/functions";
 import type { Note } from "@/features/notes/schema";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
 import { createTestQueryClient } from "@/test/app/query-client";
-import { enableAnimations } from "@/test/browser/animations";
 
 import { Route as NoteEditRoute } from "./$noteId.edit";
 import { Route as NoteCreateRoute } from "./new";
@@ -124,54 +123,10 @@ export function serveNotes(notes: Note[]) {
 }
 
 /**
- * これから focusin を受けた要素を順に記録する。1 frame だけ focus が通った要素は、`toHaveFocus` の
- * retry の間隔では捉えられない
- */
-export function recordFocusins(): Element[] {
-  const targets: Element[] = [];
-  const record = (event: FocusEvent) => {
-    if (event.target instanceof Element) {
-      targets.push(event.target);
-    }
-  };
-  document.addEventListener("focusin", record);
-  onTestFinished(() => document.removeEventListener("focusin", record));
-  return targets;
-}
-
-/**
- * 記録した要素の aria-label。行の編集リンクはモーダルの背後で aria-hidden になり locator で引けないので、
- * 名前を持つ aria-label の値 (`noteEditTriggerName`) で見分ける
+ * `recordFocusins` (`@/test/assert/focusin`) で記録した要素の aria-label。行の編集リンクは
+ * モーダルの背後で aria-hidden になり locator で引けないので、名前を持つ aria-label の値
+ * (`noteEditTriggerName`) で見分ける
  */
 export function ariaLabelsOf(targets: Element[]): (string | null)[] {
   return targets.map((target) => target.getAttribute("aria-label"));
-}
-
-/** 閉じかけのダイアログの本体。閉じるアニメーションを遅らせる style と、それが効いたかを見る observer が共有する */
-const CLOSING_DIALOG_SELECTOR = "[data-slot=dialog-content][data-closed]";
-
-/**
- * 閉じるアニメーションを 60 秒に延ばす。読み込み中のダイアログを閉じたあと、アニメーションが終わってから
- * 戻る実装 (退行) では、その窓の間に読み込みが終わると本物のダイアログが替わって開く。その退行で落ちるよう、
- * 窓を読み込みの決着より長く保つ。
- * 返す関数は、閉じる途中の要素に style が効いていたか。掴めなくなるとアニメーションが即座に終わり、退行でも通る
- */
-export function slowDownClosingDialogs(): () => boolean {
-  enableAnimations();
-  const slowClose = document.createElement("style");
-  slowClose.textContent = `${CLOSING_DIALOG_SELECTOR} { animation-duration: 60s !important; }`;
-  document.head.append(slowClose);
-  onTestFinished(() => slowClose.remove());
-  let slowedWhileClosing = false;
-  const watchClosing = new MutationObserver(() => {
-    // locator は使えない: 戻る実装では閉じかけの要素は直ちに外れ、retry の間隔では捉えられない
-    const closing = document.querySelector(CLOSING_DIALOG_SELECTOR);
-    if (closing && getComputedStyle(closing).animationDuration === "60s") {
-      slowedWhileClosing = true;
-      watchClosing.disconnect();
-    }
-  });
-  watchClosing.observe(document.body, { attributes: true, subtree: true });
-  onTestFinished(() => watchClosing.disconnect());
-  return () => slowedWhileClosing;
 }

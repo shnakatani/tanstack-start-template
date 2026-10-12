@@ -1,5 +1,4 @@
 import { revalidateLogic } from "@tanstack/react-form";
-import type { ComponentProps } from "react";
 import * as v from "valibot";
 
 import { ActionDialogContent } from "@/components/action/dialog";
@@ -16,6 +15,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { NOTE_FIELD_LABELS, noteInputSchema } from "@/features/notes/schema";
 import type { NoteInput } from "@/features/notes/schema";
 import { useAppForm } from "@/hooks/use-app-form";
+import type { RouteDialog } from "@/hooks/use-route-dialog";
 
 /**
  * 入力フォームとそれを包むダイアログの中身。submit にフォームの状態が要るので、見出しを含む
@@ -43,8 +43,8 @@ export function NoteFormContent({
    * 止める判定と同じ値を渡す。キャンセルをこの値で無効化し、押せるのに閉じないずれを防ぐ
    */
   blocksClose: boolean;
-  /** 閉じたときの focus の移し先 (Base UI の `finalFocus`)。省くと Base UI の既定 (開いたトリガー) */
-  finalFocus?: ComponentProps<typeof ActionDialogContent>["finalFocus"];
+  /** 閉じたときの focus の移し先。`useRouteDialog` の返り値の `finalFocus` をそのまま渡す (ADR-0041) */
+  finalFocus: RouteDialog["finalFocus"];
 }) {
   const form = useAppForm({
     defaultValues,

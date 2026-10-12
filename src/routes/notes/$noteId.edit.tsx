@@ -1,20 +1,16 @@
 import { createFileRoute, isNotFound, notFound } from "@tanstack/react-router";
 import * as v from "valibot";
 
+import { RoutePendingDialog } from "@/components/screens/route-status-dialog";
 import { noteQueryOptions } from "@/features/notes/queries";
 import { noteIdSchema } from "@/features/notes/schema";
 import { pageTitle } from "@/lib/page-title";
 
 import { NoteEditDialog } from "./-components/note-edit-dialog";
-import {
-  NoteNotFoundDialog,
-  NoteRouteErrorDialog,
-  NoteRoutePendingDialog,
-} from "./-components/note-route-status-dialogs";
-import { useNoteDialogNavigation } from "./-hooks/use-note-dialog-navigation";
+import { NoteNotFoundDialog, NoteRouteErrorDialog } from "./-components/note-route-status-dialogs";
 import { findNoteEditLink } from "./-lib/note-dialog-focus";
 import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
-import { NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
+import { NOTE_DIALOG_RETURN_TO, NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
 export const Route = createFileRoute("/notes/$noteId/edit")({
   // URL の noteId は数値の id。id の形でない値は loader が見つからないものとして扱う
@@ -57,28 +53,36 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   component: EditRoute,
 });
 
-/**
- * Route hooks を吸収し、ダイアログへ渡すハンドラを返す。ダイアログは値とハンドラを props で受ける (ADR-0010)。
- * 閉じたときの focus の戻し先は、開いたメモの行の編集リンク
- */
-function useEditDialogNavigation() {
+/** Route hooks を吸収し、閉じたときに focus を戻す、開いたメモの行の編集リンクを探す関数を返す (ADR-0010) */
+function useFindEditLink() {
   const { noteId } = Route.useParams();
-  return useNoteDialogNavigation(() => findNoteEditLink(noteId));
+  return () => findNoteEditLink(noteId);
 }
 
 function EditRoute() {
   const { noteId } = Route.useParams();
-  return <NoteEditDialog noteId={noteId} {...useEditDialogNavigation()} />;
+  return <NoteEditDialog noteId={noteId} />;
 }
 
 function EditPending() {
-  return <NoteRoutePendingDialog title={NOTE_EDIT_DIALOG_TITLE} {...useEditDialogNavigation()} />;
+  const findReturnTarget = useFindEditLink();
+  return (
+    <RoutePendingDialog
+      title={NOTE_EDIT_DIALOG_TITLE}
+      returnTo={NOTE_DIALOG_RETURN_TO}
+      findReturnTarget={findReturnTarget}
+    />
+  );
 }
 
 function EditNotFound() {
-  return <NoteNotFoundDialog {...useEditDialogNavigation()} />;
+  const findReturnTarget = useFindEditLink();
+  return <NoteNotFoundDialog findReturnTarget={findReturnTarget} />;
 }
 
 function EditError() {
-  return <NoteRouteErrorDialog title="メモを読み込めませんでした" {...useEditDialogNavigation()} />;
+  const findReturnTarget = useFindEditLink();
+  return (
+    <NoteRouteErrorDialog title="メモを読み込めませんでした" findReturnTarget={findReturnTarget} />
+  );
 }

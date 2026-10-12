@@ -1,15 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { RoutePendingDialog } from "@/components/screens/route-status-dialog";
 import { pageTitle } from "@/lib/page-title";
 
 import { NoteCreateDialog } from "./-components/note-create-dialog";
-import {
-  NoteRouteErrorDialog,
-  NoteRoutePendingDialog,
-} from "./-components/note-route-status-dialogs";
-import { useNoteDialogNavigation } from "./-hooks/use-note-dialog-navigation";
+import { NoteRouteErrorDialog } from "./-components/note-route-status-dialogs";
 import { findNoteCreateLink } from "./-lib/note-dialog-focus";
-import { NOTE_CREATE_DIALOG_TITLE } from "./-lib/notes-page-constants";
+import { NOTE_CREATE_DIALOG_TITLE, NOTE_DIALOG_RETURN_TO } from "./-lib/notes-page-constants";
 
 export const Route = createFileRoute("/notes/new")({
   head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTE_CREATE_DIALOG_TITLE) }] }),
@@ -20,26 +17,25 @@ export const Route = createFileRoute("/notes/new")({
   component: CreateRoute,
 });
 
-/**
- * Route hooks を吸収し、ダイアログへ渡すハンドラを返す。ダイアログは値とハンドラを props で受ける (ADR-0010)。
- * 閉じたときの focus の戻し先は追加のリンク
- */
-function useCreateDialogNavigation() {
-  return useNoteDialogNavigation(findNoteCreateLink);
-}
-
 function CreateRoute() {
-  return <NoteCreateDialog {...useCreateDialogNavigation()} />;
+  return <NoteCreateDialog />;
 }
 
 function CreatePending() {
   return (
-    <NoteRoutePendingDialog title={NOTE_CREATE_DIALOG_TITLE} {...useCreateDialogNavigation()} />
+    <RoutePendingDialog
+      title={NOTE_CREATE_DIALOG_TITLE}
+      returnTo={NOTE_DIALOG_RETURN_TO}
+      findReturnTarget={findNoteCreateLink}
+    />
   );
 }
 
 function CreateError() {
   return (
-    <NoteRouteErrorDialog title="フォームを読み込めませんでした" {...useCreateDialogNavigation()} />
+    <NoteRouteErrorDialog
+      title="フォームを読み込めませんでした"
+      findReturnTarget={findNoteCreateLink}
+    />
   );
 }

@@ -1,4 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
@@ -11,6 +12,7 @@ import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 import { NOTE } from "@/features/notes/schema.test-helpers";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent } from "@/test/assert/absent";
@@ -30,24 +32,26 @@ import {
 } from "./note-form.test-helpers";
 
 /**
- * route の loader が 1 件を取り直した状態 (キャッシュに 1 件がある) で描く。route の出入りと閉じたときの focus は
- * ../$noteId.edit.test.tsx が持つ
+ * route の loader が 1 件を取り直した状態 (キャッシュに 1 件がある) で、編集の URL で描く。閉じると一覧の URL へ
+ * 移り、`pathname` が変わる。route の出入りと閉じたときの focus は ../$noteId.edit.test.tsx が持つ
  */
 async function renderDialog() {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(noteQueryOptions(NOTE.id).queryKey, NOTE);
   const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-  const onClosed = vi.fn();
+  const router = createTestRouter(`/notes/${NOTE.id}/edit`, () => (
+    <Suspense fallback={null}>
+      <NoteEditDialog noteId={NOTE.id} />
+    </Suspense>
+  ));
   const screen = await render(
     <QueryClientProvider client={queryClient}>
-      <Suspense fallback={null}>
-        <NoteEditDialog noteId={NOTE.id} onClosed={onClosed} finalFocus={() => false} />
-      </Suspense>
+      <RouterProvider router={router} />
       <Toaster />
     </QueryClientProvider>,
   );
   await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
-  return { screen, invalidateSpy, onClosed };
+  return { screen, invalidateSpy, pathname: () => router.state.location.pathname };
 }
 
 describe("NoteEditDialog", () => {
@@ -85,29 +89,29 @@ describe("NoteEditDialog", () => {
       });
   });
 
-  it("updateNote の応答で閉じ、一覧のクエリだけを invalidate し、閉じ終わってから route を離れる", async () => {
+  it("updateNote の応答の時点で閉じて route を離れ、一覧のクエリだけを invalidate する", async () => {
     // 完了点「サーバー応答」: 応答前は開いたまま、応答で閉じる (ADR-0017)
     const update = deferMock(updateNote);
-    const { screen, invalidateSpy, onClosed } = await renderDialog();
+    const { screen, invalidateSpy, pathname } = await renderDialog();
     await titleTextbox(screen).fill("変えた見出し");
 
     await saveButton(screen).click();
 
     await expect.element(saveButton(screen)).toBeDisabled();
     await expectDialogOpen(screen, "dialog");
-    expect(onClosed).not.toHaveBeenCalled();
+    expect(pathname()).toBe(`/notes/${NOTE.id}/edit`);
 
     update.resolve(undefined);
 
     await expectNoteDialogClosed(screen);
     // 1 件のクエリは一覧の先頭キーの下に無いので、閉じかけのダイアログの 1 件は取り直さない
     expect(invalidateSpy).toHaveBeenCalledExactlyOnceWith({ queryKey: ["notes"] });
-    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
+    await expect.poll(pathname).toBe("/notes");
   });
 
   it("送信中は Escape で閉じず、応答が届いてから閉じる", async () => {
     const update = deferMock(updateNote);
-    const { screen, onClosed } = await renderDialog();
+    const { screen, pathname } = await renderDialog();
     await titleTextbox(screen).fill("変えた見出し");
     await saveButton(screen).click();
     // close を止めていることを描画で確かめてから Escape を送る
@@ -116,21 +120,21 @@ describe("NoteEditDialog", () => {
     await userEvent.keyboard("{Escape}");
 
     await expect.element(titleTextbox(screen)).toHaveValue("変えた見出し");
-    expect(onClosed).not.toHaveBeenCalled();
+    expect(pathname()).toBe(`/notes/${NOTE.id}/edit`);
 
     update.resolve(undefined);
 
     await expectNoteDialogClosed(screen);
-    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
+    await expect.poll(pathname).toBe("/notes");
   });
 
   it("キャンセルで閉じると route を離れる", async () => {
-    const { screen, onClosed } = await renderDialog();
+    const { screen, pathname } = await renderDialog();
 
     await screen.getByRole("button", { name: "キャンセル" }).click();
 
     await expectNoteDialogClosed(screen);
-    await expect.poll(() => onClosed).toHaveBeenCalledOnce();
+    await expect.poll(pathname).toBe("/notes");
   });
 
   it("保存に失敗すると固定文言を toast に出し、server の raw message は出さず、開いたまま入力を保つ", async () => {
@@ -138,7 +142,7 @@ describe("NoteEditDialog", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const rawMessage = "更新対象のノートが見つかりません: id=1";
     vi.mocked(updateNote).mockRejectedValue(new Error(rawMessage));
-    const { screen, onClosed } = await renderDialog();
+    const { screen, pathname } = await renderDialog();
     await titleTextbox(screen).fill("変えた見出し");
 
     await saveButton(screen).click();
@@ -147,7 +151,7 @@ describe("NoteEditDialog", () => {
     await expectText(screen, MUTATION_ERROR_FALLBACK_MESSAGE);
     await expectAbsent(screen.getByText(rawMessage, { exact: false }));
     await expect.element(titleTextbox(screen)).toHaveValue("変えた見出し");
-    expect(onClosed).not.toHaveBeenCalled();
+    expect(pathname()).toBe(`/notes/${NOTE.id}/edit`);
     expect(warn).toHaveBeenCalledExactlyOnceWith("[mutation] failed", expect.anything());
   });
 

@@ -5,12 +5,12 @@ import { createNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY } from "@/features/notes/queries";
 import type { NoteInput } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
+import { useRouteDialog } from "@/hooks/use-route-dialog";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
-import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
-import { useRouteDialog } from "../-hooks/use-route-dialog";
-import { NOTE_CREATE_DIALOG_TITLE } from "../-lib/notes-page-constants";
+import { findNoteCreateLink } from "../-lib/note-dialog-focus";
+import { NOTE_CREATE_DIALOG_TITLE, NOTE_DIALOG_RETURN_TO } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
 
 /** フォームの初期値 (作成は常に空)。`NoteFormContent` の `defaultValues` に渡す */
@@ -18,10 +18,10 @@ const EMPTY_NOTE_INPUT = { title: "", body: "", dueDate: null } satisfies NoteIn
 
 /**
  * メモの追加ダイアログ。追加の route (`new.tsx`) の component が描く (ADR-0041)。開くたびに route が mount
- * し直すので、フォームも mutation も開いたダイアログごとに別になる。閉じたら `onClosed` で一覧の route へ
- * 戻る
+ * し直すので、フォームも mutation も開いたダイアログごとに別になる。閉じたら一覧の route へ戻り、追加のリンクへ
+ * focus を戻す
  */
-export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation) {
+export function NoteCreateDialog() {
   const queryClient = useQueryClient();
 
   const createMutation = useActionMutation({
@@ -38,7 +38,7 @@ export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation)
     // 閉じると route を離れて unmount するが、useMutation に渡した callback はそのあとも走る
     // (unmount のあとに走らないのは `mutate` に渡す callback。TanStack Query「Mutations」)
     onSuccess: async (_data, input) => {
-      setOpen(false);
+      close();
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
       // 一覧への行の追加は読み上げに出ないので、完了を通知する。追加は再取得を待つ間に開き直して
       // 保存でき並行しうるので、どれが終わったかを対象名で区別する (ADR-0026)
@@ -49,20 +49,20 @@ export function NoteCreateDialog({ onClosed, finalFocus }: NoteDialogNavigation)
     onError: toastMutationError,
   });
 
-  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete } = useRouteDialog({
-    onClosed,
+  const { close, blocksClose, onOpenChange, finalFocus } = useRouteDialog({
+    returnTo: NOTE_DIALOG_RETURN_TO,
+    findReturnTarget: findNoteCreateLink,
     isPending: createMutation.isPending,
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
+    <Dialog open onOpenChange={onOpenChange}>
       <NoteFormContent
         heading={NOTE_CREATE_DIALOG_TITLE}
         defaultValues={EMPTY_NOTE_INPUT}
         onSubmit={createMutation.runAction}
         blocksClose={blocksClose}
-        // open が false なのは利用者が閉じたとき。route を離れて開いたまま unmount したときは true のまま
-        finalFocus={() => finalFocus(!open)}
+        finalFocus={finalFocus}
       />
     </Dialog>
   );

@@ -5,25 +5,21 @@ import { updateNoteMutation } from "@/features/notes/mutations";
 import { NOTES_QUERY_KEY, noteQueryOptions } from "@/features/notes/queries";
 import type { Note } from "@/features/notes/schema";
 import { useActionMutation } from "@/hooks/use-action-mutation";
+import { useRouteDialog } from "@/hooks/use-route-dialog";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
-import type { NoteDialogNavigation } from "../-hooks/use-note-dialog-navigation";
-import { useRouteDialog } from "../-hooks/use-route-dialog";
-import { NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
+import { findNoteEditLink } from "../-lib/note-dialog-focus";
+import { NOTE_DIALOG_RETURN_TO, NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteFormContent } from "./note-form";
 
 /**
  * メモの編集ダイアログ。編集の route (`$noteId.edit.tsx`) の component が描き、loader が取り直した
  * 1 件をフォームの初期値にする (ADR-0041)。一覧から route に入ると mount し、開いたまま別のメモの URL へ
  * 移ると route の `remountDeps` が作り直すので、フォームも mutation も開くメモごとに別になる。閉じたら
- * `onClosed` で一覧の route へ戻る
+ * 一覧の route へ戻り、開いたメモの行の編集リンクへ focus を戻す
  */
-export function NoteEditDialog({
-  noteId,
-  onClosed,
-  finalFocus,
-}: { noteId: Note["id"] } & NoteDialogNavigation) {
+export function NoteEditDialog({ noteId }: { noteId: Note["id"] }) {
   const queryClient = useQueryClient();
   const { data: note } = useSuspenseQuery(noteQueryOptions(noteId));
 
@@ -38,7 +34,7 @@ export function NoteEditDialog({
     // 閉じると route を離れて unmount するが、useMutation に渡した callback はそのあとも走る
     // (unmount のあとに走らないのは `mutate` に渡す callback。TanStack Query「Mutations」)
     onSuccess: async (_data, update) => {
-      setOpen(false);
+      close();
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
       // 行の値の変化は読み上げに出ないので、完了を通知する。更新は再取得を待つ間に別の行でも
       // 保存でき並行しうるので、どれが終わったかを対象名 (更新後の title) で区別する (ADR-0026)
@@ -49,20 +45,20 @@ export function NoteEditDialog({
     onError: toastMutationError,
   });
 
-  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete } = useRouteDialog({
-    onClosed,
+  const { close, blocksClose, onOpenChange, finalFocus } = useRouteDialog({
+    returnTo: NOTE_DIALOG_RETURN_TO,
+    findReturnTarget: () => findNoteEditLink(noteId),
     isPending: updateMutation.isPending,
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
+    <Dialog open onOpenChange={onOpenChange}>
       <NoteFormContent
         heading={NOTE_EDIT_DIALOG_TITLE}
         defaultValues={{ title: note.title, body: note.body, dueDate: note.dueDate }}
         onSubmit={(input) => updateMutation.runAction({ id: note.id, ...input })}
         blocksClose={blocksClose}
-        // open が false なのは利用者が閉じたとき。route を離れて開いたまま unmount したときは true のまま
-        finalFocus={() => finalFocus(!open)}
+        finalFocus={finalFocus}
       />
     </Dialog>
   );

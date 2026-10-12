@@ -12,6 +12,7 @@ import { BACKGROUND_REFETCH_ERROR_MESSAGE } from "@/lib/query-cache-handlers";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { deferMock } from "@/test/app/defer-mock";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
+import { recordFocusins } from "@/test/assert/focusin";
 import { expectAnnouncements } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
@@ -27,13 +28,7 @@ import {
   titleTextbox,
 } from "./-components/note-form.test-helpers";
 import { NOTE_EDIT_DIALOG_TITLE, NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
-import {
-  ariaLabelsOf,
-  recordFocusins,
-  renderRoute,
-  serveNotes,
-  slowDownClosingDialogs,
-} from "./route.test-helpers";
+import { ariaLabelsOf, renderRoute, serveNotes } from "./route.test-helpers";
 
 /** 一覧の見出しに、枠を出さずに focus があること。見出しは操作できる要素ではないので枠を出さない (ADR-0035) */
 const expectNotesHeadingFocused = vi.defineHelper(async (screen: Screen) => {
@@ -166,8 +161,7 @@ describe("/notes/$noteId/edit route", () => {
     expect(ariaLabelsOf(focused)).not.toContain(noteEditTriggerName(NOTE));
   });
 
-  it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に取得が終わってもフォームを開かない", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
+  it("読み込み中のダイアログを閉じると一覧へ戻り、その後に取得が終わってもフォームを開かない", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const fetching = deferMock(getNote);
     const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
@@ -186,7 +180,6 @@ describe("/notes/$noteId/edit route", () => {
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
     await expectRemoved(screen.getByRole("dialog"));
     await expectAbsent(titleTextbox(screen));
-    expect(slowedWhileClosing()).toBe(true);
   });
 
   it("リンクを押さずに開いた読み込み中のダイアログを閉じると、取得が終わる前でもその行の編集リンクへ focus を移し、取得が終わってもフォームは開かない", async () => {
@@ -617,7 +610,7 @@ describe("/notes/$noteId/edit route", () => {
       .thenResolve(undefined)
       .calledWith({ data: otherUpdate })
       .thenReturn(secondResponse.promise);
-    const { screen } = await renderRoute("/notes");
+    const { screen, router } = await renderRoute("/notes");
 
     await rowEditLink(screen, NOTE.title).click();
     await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
@@ -638,7 +631,9 @@ describe("/notes/$noteId/edit route", () => {
     await expect.element(screen.getByRole("button", { name: "キャンセル" })).toBeDisabled();
     await userEvent.keyboard("{Escape}");
 
-    // 入力が残っていることだけでは、閉じるアニメーションの途中でも通る
+    // 離れても unmount するまでは開いたまま描かれるので、離れていないことは URL で見る。memory history では、
+    // navigate は blocker が無いと履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
+    expect(router.history.location.pathname).toBe(`/notes/${OTHER_NOTE.id}/edit`);
     await expectDialogOpen(screen, "dialog");
     await expect.element(titleTextbox(screen)).toHaveValue(otherUpdate.title);
 
