@@ -11,7 +11,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
-import { render, type RenderResult } from "vitest-browser-react";
+import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -292,23 +292,23 @@ const routeTree = rootRoute.addChildren([
   itemsRoute.addChildren([itemNewRoute, itemImportRoute, itemEditRoute, itemUnmarkedRoute]),
 ]);
 
-function createDialogRouter(
-  initialEntries: string[],
-  trailingSlash: "always" | "never" | "preserve" = "never",
-) {
-  return createRouterWithTestDefaults({
-    routeTree,
-    history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
-    trailingSlash,
-  });
+interface DialogRouterOptions {
+  trailingSlash?: "always" | "never" | "preserve";
+  /** `src/router.tsx` と同じく、ダイアログを閉じる遷移の type を View Transition に渡す */
+  viewTransition?: boolean;
 }
 
-/** `src/router.tsx` と同じく、ダイアログを閉じる遷移の type を View Transition に渡す router */
-function createViewTransitionRouter(initialEntries: string[]) {
+function createDialogRouter(
+  initialEntries: string[],
+  { trailingSlash, viewTransition = false }: DialogRouterOptions = {},
+) {
   const router = createRouterWithTestDefaults({
     routeTree,
     history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
-    defaultViewTransition: createDefaultViewTransition(new EventTarget(), currentRouter),
+    trailingSlash,
+    defaultViewTransition: viewTransition
+      ? createDefaultViewTransition(new EventTarget(), currentRouter)
+      : undefined,
   });
   return router;
 
@@ -319,11 +319,14 @@ function createViewTransitionRouter(initialEntries: string[]) {
 
 type TestRouter = ReturnType<typeof createDialogRouter>;
 
-async function renderDialogRouter(
-  initialEntries: string[],
-  trailingSlash?: "always" | "never" | "preserve",
-) {
-  const router = createDialogRouter(initialEntries, trailingSlash);
+/** `it.each` の表に並べる、開いたダイアログから離れる操作 */
+interface LeaveDialog {
+  leftBy: string;
+  leave: (rendered: Awaited<ReturnType<typeof renderDialogRouter>>) => Promise<void> | void;
+}
+
+async function renderDialogRouter(initialEntries: string[], options?: DialogRouterOptions) {
+  const router = createDialogRouter(initialEntries, options);
   const screen = await render(<RouterProvider router={router} />);
   return { router, screen };
 }
@@ -455,27 +458,27 @@ describe("useRouteDialog の閉じたときの focus", () => {
     },
   );
 
-  it.each([
+  it.each<LeaveDialog>([
     {
       leftBy: "閉じる操作",
-      leave: async (_router: TestRouter, screen: RenderResult) => {
+      leave: async ({ screen }) => {
         await screen.getByRole("button", { name: "キャンセル" }).click();
       },
     },
     {
       leftBy: "戻る",
-      leave: (router: TestRouter) => {
+      leave: ({ router }) => {
         router.history.back();
-        return Promise.resolve();
       },
     },
   ])("$leftBy で離れたとき、開いた元の要素が無ければ、ページの見出しへ移す", async ({ leave }) => {
     // この router には route の announcer (ADR-0035) を置いていないので、移すのは hook である
-    const { router, screen } = await renderDialogRouter(["/items", "/items/9/edit"]);
+    const rendered = await renderDialogRouter(["/items", "/items/9/edit"]);
+    const { router, screen } = rendered;
     const dialog = screen.getByRole("dialog", { name: "項目 9 の編集" });
     await expect.element(dialog).toBeVisible();
 
-    await leave(router, screen);
+    await leave(rendered);
 
     await expect.element(screen.getByRole("heading", { name: "項目" })).toHaveFocus();
     expect(router.state.location.pathname).toBe("/items");
@@ -520,7 +523,7 @@ describe("useRouteDialog の閉じたときの focus", () => {
   ] as const)(
     "trailingSlash が $trailingSlash のとき、末尾の `/` だけ違う URL の開く元のページへ戻るで離れても、開いた元の要素へ focus を戻す",
     async ({ trailingSlash, entries, here }) => {
-      const { router, screen } = await renderDialogRouter([...entries], trailingSlash);
+      const { router, screen } = await renderDialogRouter([...entries], { trailingSlash });
       await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
 
       router.history.back();
@@ -655,32 +658,31 @@ function recordStartedShapes(
 }
 
 describe("useRouteDialog の閉じる遷移", () => {
-  it.each([
+  it.each<LeaveDialog>([
     {
       leftBy: "閉じる操作",
-      leave: async (_router: AnyRouter, screen: RenderResult) => {
+      leave: async ({ screen }) => {
         await screen.getByRole("button", { name: "キャンセル" }).click();
       },
     },
     {
       leftBy: "保存の応答",
-      leave: async (_router: AnyRouter, screen: RenderResult) => {
+      leave: async ({ screen }) => {
         await screen.getByRole("button", { name: "保存の応答で閉じる" }).click();
       },
     },
     {
       leftBy: "戻る",
-      leave: (router: AnyRouter) => {
+      leave: ({ router }) => {
         router.history.back();
       },
     },
   ])("$leftBy で閉じると、閉じる遷移の type を付ける", async ({ leave }) => {
     const transitionOf = recordViewTransitions();
-    const router = createViewTransitionRouter(["/items", "/items/new"]);
-    const screen = await render(<RouterProvider router={router} />);
-    await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
+    const rendered = await renderDialogRouter(["/items", "/items/new"], { viewTransition: true });
+    await expect.element(rendered.screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
 
-    const { types, transition } = await transitionOf(() => leave(router, screen));
+    const { types, transition } = await transitionOf(() => leave(rendered));
 
     expect(types).toEqual([ROUTE_DIALOG_CLOSE_TYPE]);
     await transition.finished;
@@ -690,8 +692,9 @@ describe("useRouteDialog の閉じる遷移", () => {
     const load = Promise.withResolvers<undefined>();
     loadItem.mockReturnValueOnce(load.promise);
     const transitionOf = recordViewTransitions();
-    const router = createViewTransitionRouter(["/items", "/items/1/edit"]);
-    const screen = await render(<RouterProvider router={router} />);
+    const { screen } = await renderDialogRouter(["/items", "/items/1/edit"], {
+      viewTransition: true,
+    });
     await expect.element(screen.getByRole("dialog", { name: "項目 1 を読み込み中" })).toBeVisible();
 
     const { types, transition } = await transitionOf(() =>
@@ -719,8 +722,7 @@ describe("useRouteDialog の閉じる遷移", () => {
     },
   ])("$change ときは type を付けない", async ({ entries, next, opened }) => {
     const transitionOf = recordViewTransitions();
-    const router = createViewTransitionRouter(entries);
-    const screen = await render(<RouterProvider router={router} />);
+    const { router, screen } = await renderDialogRouter(entries, { viewTransition: true });
     await expect.poll(() => router.state.status).toBe("idle");
 
     const { types, transition } = await transitionOf(() => {
@@ -736,8 +738,9 @@ describe("useRouteDialog の閉じる遷移", () => {
     const load = Promise.withResolvers<undefined>();
     loadItem.mockReturnValueOnce(load.promise);
     const transitionOf = recordViewTransitions();
-    const router = createViewTransitionRouter(["/items", "/items/2/edit"]);
-    const screen = await render(<RouterProvider router={router} />);
+    const { screen } = await renderDialogRouter(["/items", "/items/2/edit"], {
+      viewTransition: true,
+    });
     await expect.element(screen.getByRole("dialog", { name: "項目 2 を読み込み中" })).toBeVisible();
 
     const { types, transition } = await transitionOf(() => {
@@ -774,8 +777,7 @@ describe("useRouteDialog の閉じる遷移", () => {
     await registry.unmount();
 
     const transitionOf = recordViewTransitions();
-    const router = createViewTransitionRouter(["/items", "/items/new"]);
-    const screen = await render(<RouterProvider router={router} />);
+    const { screen } = await renderDialogRouter(["/items", "/items/new"], { viewTransition: true });
     await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
     // 開いたときの遷移の擬似要素を記録しない
     await document.activeViewTransition?.finished;
