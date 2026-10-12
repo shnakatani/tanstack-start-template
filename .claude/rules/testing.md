@@ -56,8 +56,8 @@ paths:
 
 ## テスト用の router
 
-- テストで router を組むときは、`createRouter` の options の先頭で `TEST_ROUTER_DEFAULTS` (`src/test/app/test-router-defaults.ts`) を spread する。spread の忘れは型も lint も止めない (`docs/guides/testing/route-wrappers.md`「pending 表示の時間を扱う」)
-- テストで既定にしたい router の options は、各テストに書かずに `TEST_ROUTER_DEFAULTS` に足す。本番の設定 (`src/router.tsx`) の値は写さない (`docs/guides/testing/route-wrappers.md`「pending 表示の時間を扱う」)
+- テストで router を組むときは、`createRouter` の options の先頭で `TEST_ROUTER_DEFAULTS` (`src/test/app/test-router-defaults.ts`) を spread する。spread の忘れは型も lint も止めない (`docs/guides/testing/route-wrappers.md`「テスト用の router の既定をそろえる」)
+- テストで既定にしたい router の options は、各テストに書かずに `TEST_ROUTER_DEFAULTS` に足す。本番の設定 (`src/router.tsx`) の値は写さない (`docs/guides/testing/route-wrappers.md`「テスト用の router の既定をそろえる」)
 
 ## a11y の検査は tag で分ける
 

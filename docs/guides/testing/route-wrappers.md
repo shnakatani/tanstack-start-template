@@ -14,22 +14,24 @@ Route hooks を使う wrapper は、root だけをテスト用に差し替えた
 | 組み方                                                                                                                                                                                                                                                                                                                                                                                                                  | 守らないと                                                                                                                                                                                                         |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | root は `createRootRouteWithContext<{ queryClient }>()({ component: () => <Outlet /> })` で本番と同じ context 型を持たせ ([TanStack Router docs「How to Set Up Testing with Code-Based Routing」][] の Test with Context)、実 `Route` を生成コードと同じ `update({ id, path, getParentRoute })` で付ける。`update` の公開型に id / path / getParentRoute が無いので (生成コードは `as any`)、交差型で注釈した変数を渡す | 生成済みの `routeTree` は browser test で描けない。`createTestRouter` (`src/test/app/create-test-router.tsx`) は component から自前の route を作るので、`validateSearch` や loader を持つ実 `Route` を付けられない |
-| router は `createRouter` の options の先頭で `TEST_ROUTER_DEFAULTS` (`src/test/app/test-router-defaults.ts`) を spread して組む (「pending 表示の時間を扱う」)                                                                                                                                                                                                                                                          | pending 表示の最小表示時間がテストの待ちになる。定数に既定を足したときに、そのテストだけが取り残される                                                                                                             |
+| router は `TEST_ROUTER_DEFAULTS` を spread して組む (「テスト用の router の既定をそろえる」)                                                                                                                                                                                                                                                                                                                            | pending 表示の最小表示時間がテストの待ちになる。定数に既定を足したときに、そのテストだけが取り残される                                                                                                             |
 | router には本番と同じ `defaultErrorComponent` (`RouteErrorContent`) を渡す                                                                                                                                                                                                                                                                                                                                              | 無いと、検証の失敗が root の外まで抜けて組み込みの `ErrorComponent` が描き、"wasn't caught by any route" の warn が出る                                                                                            |
 
 browser test は DEV で走るので、search の検証に失敗すると `RouteErrorContent` が例外の文言を出す。文言は `thrownValueMessage` (`src/lib/thrown-value-message.ts`) が作り、検証の失敗では `error.message` (Standard Schema の issues の JSON) になる。テストは schema の文言が含まれることを見る。
 
-### pending 表示の時間を扱う
+### テスト用の router の既定をそろえる
 
 テストで router を組むときは、`createRouter` の options の先頭で `TEST_ROUTER_DEFAULTS` (`src/test/app/test-router-defaults.ts`) を spread する (`createRouter({ ...TEST_ROUTER_DEFAULTS, routeTree, history })`)。後に書いた options が定数の値に勝つ。理由は「テスト用の router の既定を定数で持つ理由」にある。
 
-| 定数に置く options       | 理由                                                                                                                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `defaultPendingMinMs: 0` | pending 表示がいったん出ると、最小表示時間 (既定 500ms) がそのままテストの待ちになる ([TanStack/router#4569][]。テストの案内に `defaultPendingMinMs` が欠けていることを上流が認めた) |
-
+- spread の忘れは型も lint も止めない。router を組むテストを足したら、spread しているかを見る
+- `createTestRouter` (`src/test/app/create-test-router.tsx`) は内部で定数を spread しているので、呼ぶ側は書かない
 - テストで既定にしたい router の options は、各テストに書かずに定数に足す。各テストに書くと、足し漏れたテストだけが別の既定で走る
 - 本番の設定 (`src/router.tsx`) の値を定数に写さない。片方だけ変えたときに、テストだけが古い既定で緑になる。本番と同じ部品を通したいテストは、その option を自分で渡す (`defaultErrorComponent` など)
-- `defaultPendingMs` は定数に足さず、既定のまま置く。0 にすると毎回 pending を踏む
+- 定数に置いた option の理由は、その option が扱う挙動の節に書く (`defaultPendingMinMs` は「pending 表示の時間を扱う」)
+
+### pending 表示の時間を扱う
+
+`TEST_ROUTER_DEFAULTS` は `defaultPendingMinMs: 0` を持つ。pending 表示がいったん出ると、最小表示時間 (既定 500ms) がそのままテストの待ちになる ([TanStack/router#4569][]。テストの案内に `defaultPendingMinMs` が欠けていることを上流が認めた)。`defaultPendingMs` は定数に足さず、既定のまま置く。0 にすると毎回 pending を踏む。
 
 pending 表示が route の読み込み中に出ることを検証するテストは、対象 route の `pendingMs` を下げる。表示を部品として描くだけなら、`createTestRouter` で `pendingComponent` を直接描く。
 
