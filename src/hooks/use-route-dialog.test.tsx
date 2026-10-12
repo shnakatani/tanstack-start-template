@@ -2,7 +2,6 @@ import {
   createMemoryHistory,
   createRootRoute,
   createRoute,
-  createRouter,
   Outlet,
   RouterProvider,
   useParams,
@@ -23,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { recordFocusins } from "@/test/assert/focusin";
 
@@ -272,10 +272,9 @@ function createDialogRouter(
   initialEntries: string[],
   trailingSlash: "always" | "never" | "preserve" = "never",
 ) {
-  return createRouter({
+  return createRouterWithTestDefaults({
     routeTree,
     history: createMemoryHistory({ initialEntries, initialIndex: initialEntries.length - 1 }),
-    defaultPendingMinMs: 0,
     trailingSlash,
   });
 }
