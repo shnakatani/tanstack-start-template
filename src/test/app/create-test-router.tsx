@@ -7,15 +7,15 @@ import {
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
+import { TEST_ROUTER_DEFAULTS } from "./test-router-defaults";
+
 /**
  * 単一 route を描くだけの最小 router (TanStack Router の how-to「How to Set Up Testing with Code-Based Routing」の `createTestRouter` と
  * 同じ形: 最小の route + memory history)。`Link` / `useRouter` を使う部品を単体で描画するための
  * 足場で、アプリの router 設定 (`src/router.tsx` の defaultPreload / defaultErrorComponent 等) は
  * **意図的に持たない**。既定値を写すと router.tsx との二重管理になり、片方だけ変えたときに
  * テストだけが古い既定で緑になる。既定値そのものを検証したいテストは router.tsx を直接使う。
- * ただし `defaultPendingMinMs` だけは 0 で打ち消す。本番の値を写すのではなく、pending 表示が出た
- * ときの最小表示時間 (既定 500ms) がテストの待ちに化けるのを防ぐ (TanStack/router#4569:
- * https://github.com/TanStack/router/issues/4569)。
+ * テスト用の router の既定 (`TEST_ROUTER_DEFAULTS`) だけは、ほかのテストの router と同じく spread する。
  */
 export function createTestRouter(initialPath: string, component: () => ReactNode) {
   const rootRoute = createRootRoute({ component: () => <Outlet /> });
@@ -30,8 +30,8 @@ export function createTestRouter(initialPath: string, component: () => ReactNode
     component: () => null,
   });
   return createRouter({
+    ...TEST_ROUTER_DEFAULTS,
     routeTree: rootRoute.addChildren([testRoute, catchAllRoute]),
     history: createMemoryHistory({ initialEntries: [initialPath] }),
-    defaultPendingMinMs: 0,
   });
 }
