@@ -18,6 +18,7 @@ import { getNote, listNotes } from "@/features/notes/functions";
 import type { Note } from "@/features/notes/schema";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
 import { createTestQueryClient } from "@/test/app/query-client";
+import { TEST_ROUTER_DEFAULTS } from "@/test/app/test-router-defaults";
 import { enableAnimations } from "@/test/browser/animations";
 
 import { Route as NoteEditRoute } from "./$noteId.edit";
@@ -87,6 +88,7 @@ export async function renderRoute(
     }),
   });
   const router = createRouter({
+    ...TEST_ROUTER_DEFAULTS,
     routeTree,
     context: { queryClient },
     history: createMemoryHistory({ initialEntries: [initialLocation] }),
@@ -97,8 +99,6 @@ export async function renderRoute(
     // (既定値の同一性は測らない)。無いと root の外まで抜けて組み込みの ErrorComponent が描き、
     // "wasn't caught by any route" の warn が出る (2026-09-23 に実測)
     defaultErrorComponent: RouteErrorContent,
-    // pending 表示の最小表示時間 (既定 500ms) を打ち消す (src/test/app/create-test-router.tsx と同じ)
-    defaultPendingMinMs: 0,
     // undefined を渡すと Router の既定 (1000ms) を上書きするので、指定したときだけ渡す
     ...(pendingMs === undefined ? {} : { defaultPendingMs: pendingMs }),
   });

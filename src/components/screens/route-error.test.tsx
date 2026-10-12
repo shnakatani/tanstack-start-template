@@ -13,6 +13,7 @@ import { render } from "vitest-browser-react";
 import { THROWN_VALUE_UNPRINTABLE } from "@/lib/thrown-value-message";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { createTestQueryClient } from "@/test/app/query-client";
+import { TEST_ROUTER_DEFAULTS } from "@/test/app/test-router-defaults";
 import { expectAbsent } from "@/test/assert/absent";
 import { expectText } from "@/test/assert/screen-assertions";
 
@@ -49,11 +50,10 @@ async function renderFailingOnceRoute({ loaderAwaits }: { loaderAwaits: boolean 
     },
   });
   const router = createRouter({
+    ...TEST_ROUTER_DEFAULTS,
     routeTree: rootRoute.addChildren([pageRoute]),
     history: createMemoryHistory({ initialEntries: ["/"] }),
     defaultErrorComponent: RouteErrorContent,
-    // pending 表示の最小表示時間 (既定 500ms) を打ち消す (src/test/app/create-test-router.tsx と同じ)
-    defaultPendingMinMs: 0,
   });
   return render(
     <QueryClientProvider client={queryClient}>

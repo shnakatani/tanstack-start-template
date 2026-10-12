@@ -18,6 +18,7 @@ import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
 import { pageTitle } from "@/lib/page-title";
+import { TEST_ROUTER_DEFAULTS } from "@/test/app/test-router-defaults";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 
 import { RouteAnnouncer } from "./route-announcer";
@@ -134,6 +135,7 @@ function createAnnouncedRouter(
     ),
   });
   return createRouter({
+    ...TEST_ROUTER_DEFAULTS,
     routeTree: rootRoute.addChildren([
       a,
       b,
@@ -147,7 +149,6 @@ function createAnnouncedRouter(
     // 本番 (src/router.tsx) と同じ配線を通す
     InnerWrap: options.innerWrap ?? RouterInnerWrap,
     defaultViewTransition: true,
-    defaultPendingMinMs: 0,
   });
 }
 
