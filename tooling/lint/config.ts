@@ -39,7 +39,7 @@ const RESTRICTED_BARREL_IMPORTS = [
 
 /**
  * テストに router を `createRouter` で直接組ませない。テスト用の既定は `createRouterWithTestDefaults` が入れるので、
- * 直接組んだテストだけが上流の既定で走る (`docs/guides/testing/route-wrappers.md`「テスト用の router の既定をそろえる」)。
+ * 直接組んだテストだけが上流の既定で走る (`docs/guides/testing/real-router.md`「テスト用の router の既定をそろえる」)。
  * `Router` は `new Router(options)` で同じ router を組めるので、合わせて止める
  */
 const RESTRICTED_TEST_ROUTER_IMPORTS = [
@@ -49,7 +49,7 @@ const RESTRICTED_TEST_ROUTER_IMPORTS = [
     // 型 (`Router<…>`) は router を組まないので許す
     allowTypeImports: true,
     message:
-      "テストの router は createRouterWithTestDefaults (src/test/app/create-router-with-test-defaults.ts) で組む。createRouter で直接組むと、テスト用の既定 (defaultPendingMinMs: 0 など) が入らない (docs/guides/testing/route-wrappers.md「テスト用の router の既定をそろえる」)。Router は型でもあり、型だけが要るなら import type { Router } か import { type Router } と書けば止まらない",
+      "テストの router は createRouterWithTestDefaults (src/test/app/create-router-with-test-defaults.ts) で組む。createRouter で直接組むと、テスト用の既定 (defaultPendingMinMs: 0 など) が入らない (docs/guides/testing/real-router.md「テスト用の router の既定をそろえる」)。Router は型でもあり、型だけが要るなら import type { Router } か import { type Router } と書けば止まらない",
   },
 ];
 

@@ -26,7 +26,7 @@ import { Route as NotesRoute } from "./route";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
- * `<html>` を描くので browser test では使えない (docs/guides/testing/route-wrappers.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
+ * `<html>` を描くので browser test では使えない (docs/guides/testing/real-router.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
  * 一覧と追加と編集の `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
  * `HeadContent` は本番の root と同じく、route の `head()` の title を `document.title` へ反映させるために置く。
  * `Toaster` は本番の root と同じく、保存の失敗の toast を描くために置く。

@@ -15,7 +15,7 @@ import { Route } from "./index";
 
 /**
  * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と `<html>` を描くので
- * browser test では使えない (docs/guides/testing/route-wrappers.md「route の wrapper をテストする」)。
+ * browser test では使えない (docs/guides/testing/real-router.md「route の wrapper をテストする」)。
  * root に `head()` を持たせないので、`document.title` に出るのはホームの route の `head()` の値だけになる。
  */
 const testRootRoute = createRootRoute({

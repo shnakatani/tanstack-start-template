@@ -128,7 +128,7 @@ const EXPECTED_OVERRIDES = [
   {
     // テストに router を createRouter で直接組ませる import の禁止。適用先から外すと、外した先の
     // テストが createRouter で組めてテスト用の既定を受け取り損ねる。除外を広げても同じ
-    // (docs/guides/testing/route-wrappers.md「テスト用の router の既定をそろえる」)
+    // (docs/guides/testing/real-router.md「テスト用の router の既定をそろえる」)
     files: [
       "**/*.test.ts",
       "**/*.test.tsx",
