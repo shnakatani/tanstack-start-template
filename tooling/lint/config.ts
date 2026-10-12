@@ -20,9 +20,9 @@ const DESIGN_SYSTEM_COMPONENT_LAYERS = ["ui", "action", "parts"] as const;
 /**
  * バレルがテストの import を重くするので、個別エントリポイントから引かせる依存 (ADR-0032)。
  * 足す手順は docs/guides/dependencies-and-toolchain.md「依存をバレルの禁止の対象に足す」。
- * `paths` は specifier の完全一致で、`date-fns/format` や `date-fns/locale/ja` は止めない。トップレベルの rules と、テスト専用コードの
- * import 禁止の override の両方へ渡す。override は同じルールのオプションを丸ごと置き換えるので、
- * 片方だけだと override の範囲 (src/ と scripts/ のアプリのコード) でバレルが素通りする
+ * `paths` は specifier の完全一致で、`date-fns/format` や `date-fns/locale/ja` は止めない。トップレベルの rules と、
+ * `no-restricted-imports` を書くすべての override へ渡す。override は同じルールのオプションを丸ごと置き換えるので、
+ * 渡し忘れた override の範囲でバレルが素通りする
  */
 const RESTRICTED_BARREL_IMPORTS = [
   {
@@ -34,6 +34,22 @@ const RESTRICTED_BARREL_IMPORTS = [
     name: "date-fns/locale",
     message:
       "date-fns/locale はバレルから引かない。テストの import が重くなる。ロケールごとの個別エントリポイント (date-fns/locale/ja など) から import する (ADR-0032)",
+  },
+];
+
+/**
+ * テストに router を `createRouter` で直接組ませない。テスト用の既定は `createRouterWithTestDefaults` が入れるので、
+ * 直接組んだテストだけが上流の既定で走る (`docs/guides/testing/route-wrappers.md`「テスト用の router の既定をそろえる」)。
+ * `Router` は `new Router(options)` で同じ router を組めるので、合わせて止める
+ */
+const RESTRICTED_TEST_ROUTER_IMPORTS = [
+  {
+    name: "@tanstack/react-router",
+    importNames: ["createRouter", "Router"],
+    // 型 (`Router<…>`) は router を組まないので許す
+    allowTypeImports: true,
+    message:
+      "テストの router は createRouterWithTestDefaults (src/test/app/create-router-with-test-defaults.ts) で組む。createRouter で直接組むと、テスト用の既定 (defaultPendingMinMs: 0 など) が入らない (docs/guides/testing/route-wrappers.md「テスト用の router の既定をそろえる」)",
   },
 ];
 
@@ -76,7 +92,7 @@ export const lintConfig = {
     "typescript/consistent-type-assertions": ["error", { assertionStyle: "never" }],
     "react/no-unstable-nested-components": "error",
 
-    // バレルの禁止 (ADR-0032)。下の import 禁止の override にも同じ paths を渡す
+    // バレルの禁止 (ADR-0032)。下の no-restricted-imports を書く override にも同じ paths を渡す
     "no-restricted-imports": ["error", { paths: RESTRICTED_BARREL_IMPORTS }],
 
     // -- eslint コア: @eslint/js の recommended (ADR-0007) --
@@ -387,6 +403,18 @@ export const lintConfig = {
               },
             ],
           },
+        ],
+      },
+    },
+    {
+      // テストに router を createRouter で直接組ませない。テスト用の既定を入れる factory 自身は外す
+      files: ["**/*.test.ts", "**/*.test.tsx", "src/test/**", ...testHelperGlobs("**/")],
+      excludeFiles: ["src/test/app/create-router-with-test-defaults.ts"],
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          // トップレベルの paths をここでも渡す。渡さないと、この override の範囲でバレルの禁止が外れる
+          { paths: [...RESTRICTED_BARREL_IMPORTS, ...RESTRICTED_TEST_ROUTER_IMPORTS] },
         ],
       },
     },

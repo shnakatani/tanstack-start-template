@@ -125,6 +125,20 @@ const EXPECTED_OVERRIDES = [
     excludeFiles: ["src/test/**"],
     rules: { "no-restricted-imports": "deny" },
   },
+  {
+    // テストに router を createRouter で直接組ませる import の禁止。適用先から外すと、外した先の
+    // テストが createRouter で組めてテスト用の既定を受け取り損ねる。除外を広げても同じ
+    // (docs/guides/testing/route-wrappers.md「テスト用の router の既定をそろえる」)
+    files: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "src/test/**",
+      "**/*.test-helpers.ts",
+      "**/*.test-helpers.tsx",
+    ],
+    excludeFiles: ["src/test/app/create-router-with-test-defaults.ts"],
+    rules: { "no-restricted-imports": "deny" },
+  },
 ];
 
 /** 期待値から差し引く付随ファイルの glob。唯一の定義は scripts/lib/companion-files.ts */

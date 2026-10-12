@@ -17,7 +17,7 @@ lint が止めるのはアプリのコードが書く specifier で、依存の�
 - 依存を import するときは、個別エントリポイントがあればそちらから引き、バレルを使わない
 - 実測でバレルがテストの import を重くする依存を、`tooling/lint/config.ts` の `RESTRICTED_BARREL_IMPORTS` に名指しで足し、`no-restricted-imports` の `paths` で止める。メッセージで個別エントリポイントを案内する。足す手順は `docs/guides/dependencies-and-toolchain.md`「依存をバレルの禁止の対象に足す」にある
 - 最初の対象は date-fns の `date-fns` と `date-fns/locale` である
-- `RESTRICTED_BARREL_IMPORTS` はトップレベルの `rules` と、テスト専用コードの import 禁止の override (ADR-0008) の両方へ渡す。override は同じルールのオプションを置き換える (「調査結果」)
+- `RESTRICTED_BARREL_IMPORTS` はトップレベルの `rules` と、`no-restricted-imports` を書くすべての override (テスト専用コードの import 禁止 (ADR-0008) など) へ渡す。override は同じルールのオプションを置き換える (「調査結果」)
 - 型だけの import も止まる (`allowTypeImports` の既定は `false`)。型が要るときは、依存先の型 (react-day-picker の `DayPickerLocale`) か関数の引数の型から取る
 
 ### 検討した選択肢
@@ -34,7 +34,7 @@ lint が止めるのはアプリのコードが書く specifier で、依存の�
 
 - 依存を足すか使い始めたときに、バレルしか使っていなければ測って判断する手間が増える。測り方はガイドにある
 - `paths` は specifier の完全一致なので、`date-fns/locale` のバレルを再 export する `react-day-picker/locale` は止まらない。Calendar の locale は `react-day-picker/locale/<locale>` から引く
-- `RESTRICTED_BARREL_IMPORTS` をトップレベルか override の片方からだけ外すと、外した側の範囲で無言で効かなくなる。`scripts/checks/integrity/lint-config.test.ts` はルールのオプションの中身を見ないので、この外し方を捕まえない (「調査結果」の、トップレベルだけに `paths` を置いた設定)
+- `RESTRICTED_BARREL_IMPORTS` をトップレベルかどれかの override から外すと、外した設定の範囲で無言で効かなくなる。`scripts/checks/integrity/lint-config.test.ts` はルールのオプションの中身を見ないので、この外し方を捕まえない (「調査結果」の、トップレベルだけに `paths` を置いた設定)
 - 残った課題: 同じ測り方で測る候補は、lucide-react など、テンプレートのコードがルートから import している依存。測って重ければ `RESTRICTED_BARREL_IMPORTS` に足す
 
 ## 調査結果
