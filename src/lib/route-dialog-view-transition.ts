@@ -15,9 +15,6 @@ declare module "@tanstack/react-router" {
 /** View Transition の type。`src/styles.css` の `:active-view-transition-type()` と同じ字面にする */
 export const ROUTE_DIALOG_CLOSE_TYPE = "route-dialog-close";
 
-/** Popup に付ける印の属性。`src/styles.css` が閉じる遷移の間だけ、この属性の要素に名前を付ける */
-export const ROUTE_DIALOG_POPUP_ATTRIBUTE = "data-route-dialog";
-
 type StaticDataCarrier = Pick<AnyRouteMatch, "staticData">;
 
 /** router のうち、types の関数が読む部分 */

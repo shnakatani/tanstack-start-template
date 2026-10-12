@@ -11,7 +11,6 @@ import { useEffect, useRef, type ComponentProps } from "react";
 
 import type { Dialog } from "@/components/ui/dialog";
 import { moveFocusToPageHeading } from "@/lib/focus-page-heading";
-import { ROUTE_DIALOG_POPUP_ATTRIBUTE } from "@/lib/route-dialog-view-transition";
 
 /**
  * - returnTo: 閉じたときに離れる先 (開く元のページ)。`navigate` にそのまま渡すので、search を保つなら
@@ -32,16 +31,6 @@ export interface RouteDialogOptions<
 }
 
 /**
- * Popup (`DialogContent`、`ActionDialogContent`) にそのまま spread する props。
- * - finalFocus: 閉じたときの focus の移し先 (ADR-0041「閉じたときの focus」)
- * - data-route-dialog: 閉じる遷移で Popup に View Transition の名前を付ける印 (ADR-0041「閉じる遷移の見せ方」)
- */
-export interface RouteDialogPopupProps {
-  finalFocus: () => HTMLElement | false;
-  [ROUTE_DIALOG_POPUP_ATTRIBUTE]: "";
-}
-
-/**
  * Dialog の Root には `open` を固定で渡し、`onOpenChange` を渡す。`popupProps` は Popup へ spread し、
  * `blocksClose` はキャンセルの `DialogClose` の `disabled` へ渡す。
  * `close` は保存の応答で閉じるときに呼ぶ。`onOpenChange` を通らないので、close の停止に止められない。
@@ -51,7 +40,12 @@ export interface RouteDialog {
   close: () => void;
   blocksClose: boolean;
   onOpenChange: NonNullable<ComponentProps<typeof Dialog>["onOpenChange"]>;
-  popupProps: RouteDialogPopupProps;
+  /**
+   * Popup (`DialogContent`、`ActionDialogContent`) に spread する。
+   * - finalFocus: 閉じたときの focus の移し先 (ADR-0041「閉じたときの focus」)
+   * - data-route-dialog: 閉じる遷移で Popup に View Transition の名前を付ける印 (ADR-0041「閉じる遷移の見せ方」)
+   */
+  popupProps: { finalFocus: () => HTMLElement | false; "data-route-dialog": "" };
 }
 
 /**
@@ -166,6 +160,6 @@ export function useRouteDialog({
     close,
     blocksClose,
     onOpenChange,
-    popupProps: { finalFocus, [ROUTE_DIALOG_POPUP_ATTRIBUTE]: "" },
+    popupProps: { finalFocus, "data-route-dialog": "" },
   };
 }
