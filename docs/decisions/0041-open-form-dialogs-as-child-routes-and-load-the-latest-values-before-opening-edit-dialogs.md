@@ -42,20 +42,30 @@ detached trigger の handle で開くダイアログは、閉じても mount し
 
 ### フォームのダイアログ全体
 
-| 対象                   | 決定                                                                                                                                                                                                                                                                                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| route                  | 開く元のページを layout route に置き、`<Outlet />` の位置にダイアログの route を描く (TanStack Router の example `location-masking` の形)。URL はマスクしない                                                                                                                                                              |
-| 開くリンク             | 開く元のページの search を保つ。loader を持たないダイアログのリンクは router の既定の preload (`defaultPreload: "intent"`) のままにする。preload は route の chunk を先に読むだけになる                                                                                                                                    |
-| 開閉                   | ダイアログは `open` を state で持つ。閉じる操作では `open` を false にし、閉じるアニメーションの後で開く元のページへ `navigate` する。先に離れると route ごと unmount して閉じるアニメーションが出ない。開く元のページへは新しい履歴で戻り、戻るで開き直せる                                                               |
-| close の停止           | 保存の pending の間は、利用者の close (キャンセル、Escape、外側の押下) を止める。応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない。止めるのはそのダイアログ自身の mutation の pending だけ                                                                                                     |
-| 保存の完了点           | 「サーバー応答」(ADR-0017)。`onSuccess` の先頭で `open` を false にし、再取得を待ってから完了を通知する。閉じると route は unmount するが、`useMutation` に渡した callback はそのあとも走る (`mutate` に渡す callback は "won't run if your component unmounts before the mutation finishes"。TanStack Query「Mutations」) |
-| 読み込み中             | route の読み込み (loader の取得、component の chunk) が `pendingMs` を超えたら、`pendingComponent` にダイアログの形の読み込み中を出す。無いと router の既定の pending 表示 (ADR-0029) が、開く元のページの `<Outlet />` の位置に出る                                                                                       |
-| 読み込み中のダイアログ | 閉じる操作の時点で開く元のページへ戻り、閉じるアニメーションを待たない。待つ間に読み込みが終わると、本物のダイアログが替わって開く                                                                                                                                                                                         |
-| 読み込み開始の読み上げ | 出さない。`pendingMs` の間に本物か読み込み中のダイアログが開き、focus がその中へ移る。ADR-0026 の mutation の開始の通知とは扱いが違う                                                                                                                                                                                      |
-| 読み込みの失敗         | `errorComponent` もダイアログの形で出す。例外の文言は出さず固定の文言にし、再試行は `router.invalidate()` を呼ぶ                                                                                                                                                                                                           |
-| 閉じたときの focus     | 下の「閉じたときの focus」の表。`finalFocus` に関数を渡して分ける                                                                                                                                                                                                                                                          |
-| 遷移の伝え方           | ページとの行き来も、ほかの遷移と同じく伝える。開くとダイアログの title、閉じると開く元のページの title を読み上げる。開いたときは focus を背後のページの見出しへ移さず、Base UI がダイアログの中へ移す (ADR-0035)                                                                                                          |
-| View Transition        | 既定のまま (ADR-0040)。戻る・進むで閉じるときは route がすぐ unmount され、閉じるアニメーションが出ない。クロスフェードがその消え方を和らげる                                                                                                                                                                              |
+| 対象                   | 決定                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| route                  | 開く元のページを layout route に置き、`<Outlet />` の位置にダイアログの route を描く (TanStack Router の example `location-masking` の形)。URL はマスクしない                                                                                                                                                                                                                                                                                              |
+| 開くリンク             | 開く元のページの search を保つ。loader を持たないダイアログのリンクは router の既定の preload (`defaultPreload: "intent"`) のままにする。preload は route の chunk を先に読むだけになる                                                                                                                                                                                                                                                                    |
+| 開閉                   | ダイアログは開閉の state を持たず、Dialog の Root に `open` を固定で渡す。閉じる操作 (キャンセル、Escape、外側の押下) と保存の応答の時点で、開く元のページへ新しい履歴で `navigate` し、route ごと unmount する (TanStack Router の example `location-masking` の形)。戻るで開き直せる。比べた案は下の「閉じる時点」                                                                                                                                       |
+| close の停止           | 保存の pending の間は、利用者の close (キャンセル、Escape、外側の押下) を止める。応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない。止めるのはそのダイアログ自身の mutation の pending だけ                                                                                                                                                                                                                                     |
+| 保存の完了点           | 「サーバー応答」(ADR-0017)。`onSuccess` の先頭で開く元のページへ離れ、再取得を待ってから完了を通知する。閉じると route は unmount するが、`useMutation` に渡した callback はそのあとも走る (`mutate` に渡す callback は "won't run if your component unmounts before the mutation finishes"。TanStack Query「Mutations」)。unmount のあとに走った `onSuccess` では離れない。離れると、保存の途中に戻るで離れて開き直したダイアログを、先行する応答が閉じる |
+| 読み込み中             | route の読み込み (loader の取得、component の chunk) が `pendingMs` を超えたら、`pendingComponent` にダイアログの形の読み込み中を出す。無いと router の既定の pending 表示 (ADR-0029) が、開く元のページの `<Outlet />` の位置に出る                                                                                                                                                                                                                       |
+| 読み込み開始の読み上げ | 出さない。`pendingMs` の間に本物か読み込み中のダイアログが開き、focus がその中へ移る。ADR-0026 の mutation の開始の通知とは扱いが違う                                                                                                                                                                                                                                                                                                                      |
+| 読み込みの失敗         | `errorComponent` もダイアログの形で出す。例外の文言は出さず固定の文言にし、再試行は `router.invalidate()` を呼ぶ                                                                                                                                                                                                                                                                                                                                           |
+| 閉じたときの focus     | 下の「閉じたときの focus」の表。`finalFocus` に関数を渡して分ける                                                                                                                                                                                                                                                                                                                                                                                          |
+| 遷移の伝え方           | ページとの行き来も、ほかの遷移と同じく伝える。開くとダイアログの title、閉じると開く元のページの title を読み上げる。開いたときは focus を背後のページの見出しへ移さず、Base UI がダイアログの中へ移す (ADR-0035)                                                                                                                                                                                                                                          |
+| View Transition        | 既定のまま (ADR-0040)。どの閉じ方でも route がすぐ unmount するので、Base UI の閉じるアニメーションは出ない。クロスフェードが消え方を和らげる                                                                                                                                                                                                                                                                                                              |
+
+### 閉じる時点
+
+閉じる操作の時点で離れ、閉じるアニメーションの後まで待たない。Base UI が閉じかけの popup を閉じるアニメーションの終わりまで描くのは、Root が mount されている間である ("the popup stays rendered in a closing phase until its closing animation finishes"。Base UI「Animation」)。ダイアログの route を離れると、開く元のページの `<Outlet />` は子の match が無くなって何も描かず (`@tanstack/react-router` 1.170.41 の `Match.tsx` のコードの読み)、Root ごと外れる。router 自身は route を離れるときの退場のアニメーションを持たない (TanStack/router#2635、2026-10-12 時点で open)。
+
+| 案                                                                                                                      | 評価                                                                                                                                                                                                                                             | 採否     |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 閉じる操作の時点で離れる (TanStack Router の example `location-masking` の形)                                           | 本物、読み込み中、失敗、見つからないのダイアログが同じ閉じ方になる。読み込み中に閉じると、読み込みの結果は router が捨てる。閉じるアニメーションは出ず、クロスフェード (ADR-0040) で消える                                                       | **採用** |
+| 閉じるアニメーションの後で離れる (`onOpenChangeComplete` で `navigate`)                                                 | 読み込み中のダイアログでは、アニメーションの間に読み込みが終わると本物のダイアログが開き、URL はダイアログのまま残る (下の「実測」)。読み込み中のダイアログだけ待たない例外が要り、閉じ方が 2 つになる                                           | 却下     |
+| Dialog の Root を開く元のページに上げ、Popup の中に `<Outlet />` を置く                                                 | Root が残るので Base UI は閉じるアニメーションを流せるが、`<Outlet />` は子の match が無くなると何も描かないので、中身の無い枠が閉じる見込み (コードの読み、未実測)。example の骨格 (状態ごとに別のダイアログ) から外れる                        | 却下     |
+| 閉じる操作の時点で離れ、Popup に `view-transition-name` を付けて `::view-transition-old` に閉じるアニメーションを当てる | View Transition の旧画面の snapshot で退場を見せる。名前を付ける場所 (registry の部品か、ダイアログの route の側か)、別のダイアログに替わるときに新旧の同じ名前が形を移すアニメーションになること、reduced motion の扱いが決まっていない。未実測 | 未決     |
 
 ### 既存の値を編集するダイアログだけに当てるもの
 
@@ -81,12 +91,12 @@ detached trigger の handle で開くダイアログは、閉じても mount し
 
 ### 閉じたときの focus
 
-Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま unmount したときにも呼ぶ。開いたまま unmount するのは次の 2 つで、どちらも閉じる操作を経ない。
+Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま unmount したときにも呼ぶ。ダイアログは閉じる操作でも開いたまま route ごと unmount するので、`finalFocus` はどの閉じ方でも unmount の時点で呼ばれる。分けるのは次の 2 つである。
 
-- 戻る・進むでダイアログの route を離れた
+- 開く元のページへ離れた。閉じる操作、保存の応答、戻る・進むのどれでも同じ
 - 別のダイアログに替わった。読み込み中のダイアログ (`pendingComponent`) が本物や失敗・見つからないのダイアログ (`errorComponent`、`notFoundComponent`) に替わったとき、開いたまま別の値の URL へ移ったとき (`remountDeps`)、追加と編集のように別のダイアログの URL へ移ったときである
 
-2 つを分ける判定は、ダイアログの route が明示した戻り先 (閉じたときに離れる先。開く元のページ) に、`finalFocus` が呼ばれた時点の router がいるかで行う。いれば戻る・進むで離れた、いなければ別のダイアログに替わったとみなす。戻り先はダイアログの route が明示する。TanStack Router の example `location-masking` も、閉じるときは `navigate({ to: photosLayoutRoute.to })` で戻り先を名指す。判定と閉じたときの focus はダイアログの開閉を持つ汎用の hook が持ち、ダイアログの route は戻り先と開いた元の要素の探し方を渡す。route tree の形は読まない。
+2 つを分ける判定は、ダイアログの route が明示した戻り先 (閉じたときに離れる先。開く元のページ) に、`finalFocus` が呼ばれた時点の router がいるかで行う。いれば離れた、いなければ別のダイアログに替わったとみなす。戻り先はダイアログの route が明示する。TanStack Router の example `location-masking` も、閉じるときは `navigate({ to: photosLayoutRoute.to })` で戻り先を名指す。判定と閉じたときの focus はダイアログの開閉を持つ汎用の hook が持ち、ダイアログの route は戻り先と開いた元の要素の探し方を渡す。route tree の形は読まない。
 
 - 比べるのは pathname で、`router.state.location.pathname` と、戻り先から `router.buildLocation` で組んだ pathname が一致するかを見る。`router.state` は常に最新の値を持つ ("`router.state` is always up to date"。TanStack Router「useRouter hook」)。描画の時点に読んだ値は、unmount の時点の遷移先を映さない
 - 戻り先の pathname も呼ばれた時点に組む。`buildLocation` は `params` の関数を呼んだ時点の params で呼ぶ ("it will be called with the current params"。TanStack Router「RouterType」の `.buildLocation`)。戻り先が params を今の値から引き継ぐ形なら、戻った先の params で組むので、別の値の開く元のページへ戻ったときも離れたと判定する
@@ -94,19 +104,18 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 - router の `caseSensitive` が false (既定。TanStack Router「RouterOptions type」) なら、pathname を大文字小文字を区別せずに比べる。router は `/Items` を `/items` の route に照合し、`router.state.location.pathname` は `/Items` のまま残る (2026-10-12、Vitest の browser mode)。router は大文字小文字を問わず同じ route に照合し、path params の値 (`/groups/G1` と `/groups/g1` の `G1` と `g1`) は区別して取り出すが、pathname 全体を比べるので params の値の違いも区別しなくなる (`@tanstack/router-core` 1.171.34 の `new-process-route-tree.ts` のコードの読み)。戻り先が params を今の値から引き継ぐ形なら、両側が同じ値を持つので結果は変わらない。route ごとの `caseSensitive` は読まない
 - 比べる両側の pathname から、末尾の `/` を外す。戻り先は `buildLocation` が router の `trailingSlash` (既定は `never`。TanStack Router「RouterOptions type」) に合わせて末尾の `/` を付け外しして組み、`router.state.location.pathname` は履歴の URL のまま残る。`/items/` を直接開いてからダイアログを開いて戻ると、外さずに比べれば「替わった」と判定する (2026-10-12、Vitest の browser mode)。外すのは `@tanstack/react-router` が export する `trimPathRight` で、router 自身も読み込みの時点の URL を組み直した URL と比べるときに両側へ通す (`@tanstack/react-router` 1.170.41 の `Transitioner.tsx` のコードの読み)
 - 戻り先でないページへ離れたときは、替わったときと同じく focus に触れない。開いた元の要素はそのページに無く、route の announcer が見出しへ移す (ADR-0035)
-- 閉じた時点でも route は残っているので、閉じたか (閉じる操作か保存の応答で、unmount の前に閉じ始めていたか) を先に見る。閉じたときは戻り先を組まない
 
 下の表の行は、次の事情で決めた。
 
 - route を離れたとき、開いた元のリンク (行の編集リンク、追加のリンク) へ戻さないと、focus はダイアログと一緒に外れ、route の announcer が見出しへ移す (ADR-0035)。利用者は一覧の中の位置を失う
 - リンクへ戻した focus は、announcer が動く前に戻り終えるので、見出しへ移らない (2026-10-10 に実測、ADR-0035)
+- 開いた元のリンクが無いときは、見出しへ移すのを announcer に任せず、汎用の hook が移す。読み込み中のダイアログから離れると、router が確定した location は開く元のページのままで、announcer はページが変わったと見ず、focus が body に残る (2026-10-12、Vitest の browser mode)
 - 替わったときにリンクを返すと、替わる側のダイアログが入力欄へ focus を移すまでの 1 frame だけ、リンクが focus を受ける。消える側の戻し先へ移す処理が microtask で走り、替わる側の初期 focus は次の animation frame で走るからである。消える側の戻し先が替わる側の初期 focus より先に当たる仕組みは floating-ui/floating-ui#3509 (2026-10-10 時点で open) と同じ。`finalFocus` に `false` を返すと focus を動かさない (Base UI「Dialog」の Custom focus management)
 
-| 閉じ方                                             | 開いた元のリンクがある                               | 開いた元のリンクが無い (行が絞り込みで外れた、削除された)      |
-| -------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------- |
-| 閉じた (閉じる操作、保存の応答)                    | そのリンクへ戻す                                     | ページの見出しへ、枠を出さずに移す (ADR-0035)                  |
-| 開いたまま unmount した (戻る・進むで離れた)       | そのリンクへ戻す                                     | focus に触れない。route の announcer が見出しへ移す (ADR-0035) |
-| 開いたまま unmount した (別のダイアログに替わった) | focus に触れない (`false`)。替わる側が自分の中へ移す | 同左                                                           |
+| 閉じ方                                                      | 開いた元のリンクがある                               | 開いた元のリンクが無い (行が絞り込みで外れた、削除された) |
+| ----------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
+| 開く元のページへ離れた (閉じる操作、保存の応答、戻る・進む) | そのリンクへ戻す                                     | ページの見出しへ、枠を出さずに移す (ADR-0035)             |
+| 別のダイアログに替わった                                    | focus に触れない (`false`)。替わる側が自分の中へ移す | 同左                                                      |
 
 URL を直接開いたときは Base UI の既定の戻し先 (開く前に focus していた要素) が無いので、開いた元のリンクを探して返す。
 
@@ -215,7 +224,7 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 | `finalFocus` が呼ばれた時点の DOM を、読み込み中のダイアログが本物に替わる、編集から追加の URL へ移る、開いたまま別の id の編集の URL へ移る、戻るで一覧へ離れるの 4 通りで見る。アニメーションを止めた形と戻した形で 3 回ずつ (2026-10-12、Vitest の browser mode。`MutationObserver` で popup の出入りを記録し、`finalFocus` の中で `takeRecords()` した) | 4 通り × 2 形 × 3 回の 24 回のどれでも、`finalFocus` の時点でダイアログは DOM に 1 つも無かった。替わる側の popup は `finalFocus` の後に足された                                                                       |
 | code-based の route tree (layout route の `/items` の下に index route の `/` とダイアログの route の `/new`) を `createRouter` に渡し、`/items` と `/items/new` を `router.load()` で開いて `router.state.matches` の routeId を見る (2026-10-12、Node)                                                                                                     | `/items` では `__root__`、`/items`、`/items/` の順に並び、`/items/new` では `__root__`、`/items`、`/items/new` の順に並んだ                                                                                            |
 
-`finalFocus` が呼ばれた時点で、戻り先との pathname の比較、`router.matchRoute` (`pending` を省く形と `pending: true`)、開く元のページの route の match の後ろに match があるか、の 4 つの判定がどう分けるかを、11 通りで 3 回ずつ見た (2026-10-12、Vitest の browser mode。一覧のページの子に追加と編集のダイアログの route を置いた route tree と、layout route の下に index route とダイアログの route を並べた route tree)。3 回とも同じ結果で、どの回も `finalFocus` の時点の status は pending だった。閉じた行は、閉じたかを先に見るので判定を使わない。
+`finalFocus` が呼ばれた時点で、戻り先との pathname の比較、`router.matchRoute` (`pending` を省く形と `pending: true`)、開く元のページの route の match の後ろに match があるか、の 4 つの判定がどう分けるかを、11 通りで 3 回ずつ見た (2026-10-12、Vitest の browser mode。一覧のページの子に追加と編集のダイアログの route を置いた route tree と、layout route の下に index route とダイアログの route を並べた route tree)。3 回とも同じ結果で、どの回も `finalFocus` の時点の status は pending だった。閉じる操作の 3 行は、閉じるアニメーションの後で離れる形で測った。閉じる操作の時点で離れる形でも、`finalFocus` の時点で router は戻り先にいて、開いた元の要素へ focus が移る (2026-10-12、Vitest の browser mode)。
 
 | 閉じ方                                                     | 求める判定     | pathname の比較 | `matchRoute` (`pending` を省く) | `matchRoute` (`pending: true`) | 後ろに match があるか |
 | ---------------------------------------------------------- | -------------- | --------------- | ------------------------------- | ------------------------------ | --------------------- |
@@ -227,13 +236,14 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 | 別のページから編集の URL へ移り、戻るでそのページへ        | 戻り先にいない | 替わった        | 替わった                        | 替わった                       | 離れた                |
 | index route を置くページで、追加から戻るで離れる           | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
 | index route を置くページで、追加の読み込み中が本物に替わる | 替わった       | 替わった        | 離れた                          | 替わった                       | 替わった              |
-| 編集を閉じる操作で閉じる                                   | 閉じた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
-| 編集の読み込み中を閉じる操作で閉じる                       | 閉じた         | 離れた          | 離れた                          | 離れた                         | 替わった              |
-| index route を置くページで、追加を閉じる操作で閉じる       | 閉じた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
+| 編集を閉じる操作で閉じる                                   | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
+| 編集の読み込み中を閉じる操作で閉じる                       | 離れた         | 離れた          | 離れた                          | 離れた                         | 替わった              |
+| index route を置くページで、追加を閉じる操作で閉じる       | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
 
 ## 出典
 
 - TanStack Router example `location-masking` (`@tanstack/react-router` 1.170.41): https://github.com/TanStack/router/tree/@tanstack/react-router@1.170.41/examples/react/location-masking
+- Base UI「Animation」: https://base-ui.com/react/handbook/animation
 - TanStack Router「Data Loading」: https://tanstack.com/router/latest/docs/framework/react/guide/data-loading
 - TanStack Router「Route Masking」: https://tanstack.com/router/latest/docs/framework/react/guide/route-masking
 - TanStack Router「Navigation」(`useMatchRoute` and `<MatchRoute>`): https://tanstack.com/router/latest/docs/framework/react/guide/navigation

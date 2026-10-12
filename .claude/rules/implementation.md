@@ -83,18 +83,11 @@ lint では見ないのでレビューで見る。
 - 入力を保存するフォームのダイアログ (追加、編集) は、開く元のページの route の子 route にし、detached trigger の handle で開かない。handle のダイアログは mount したまま 1 つの mutation を持ち、再取得の完了まで続く pending が、開き直したダイアログの close まで止める (ADR-0041)
 - 保存の pending の間は利用者の close を止め、止める条件はそのダイアログ自身の mutation の pending だけにする。応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない (ADR-0041)
 - ダイアログの route には、ダイアログの形の `pendingComponent` と `errorComponent` を置く。loader を持たない route も component の chunk を待つ。無いと、読み込み中と失敗が router の既定の表示になり、開く元のページの `<Outlet />` の位置に出る (ADR-0041)
-
-閉じる操作で route を離れる時点は、ダイアログの種類で分ける (ADR-0041)。
-
-| ダイアログ                                           | route を離れる時点                                                                                                                                                         |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| フォームのダイアログ、失敗と見つからないのダイアログ | 閉じるアニメーションの後で離れる (`useRouteDialog` の既定)。先に離れると route ごと unmount し、閉じるアニメーションが出ない                                               |
-| 読み込み中のダイアログ (`pendingComponent`)          | 閉じる操作の時点で離れ、閉じるアニメーションを待たない (`RoutePendingDialog` が `waitForCloseAnimation: false` を渡す)。待つ間に読み込みが終わると、本物のダイアログが開く |
-
-- ダイアログは `useRouteDialog`、`RouteStatusDialog`、`RoutePendingDialog` で組み、どれにも戻り先 (`returnTo`) と開いた元の要素を探す関数 (`findReturnTarget`) を渡す。戻るで離れたか替わったかは `useRouteDialog` が戻り先から判定する (ADR-0041)
+- Dialog の Root には `open` を固定で渡し、閉じる操作と保存の応答の時点で開く元のページへ離れる。閉じるアニメーションの後まで待たない。待つと、読み込み中のダイアログで待つ間に読み込みが終わり、閉じたはずのダイアログが開く (ADR-0041)
+- ダイアログは `useRouteDialog`、`RouteStatusDialog`、`RoutePendingDialog` で組み、どれにも戻り先 (`returnTo`) と開いた元の要素を探す関数 (`findReturnTarget`) を渡す。離れたか替わったかは `useRouteDialog` が戻り先から判定する (ADR-0041)
 - `returnTo` は `useRouteDialog` が `navigate` にそのまま渡す。開く元のページの search を保つなら `search: (prev) => prev` を書く (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 同じ戻り先は `linkOptions` で検査した定数にし、開く元のページの `-lib/` に 1 つ置く。型の無い定数にすると `prev` の型が決まらず型検査を通らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
-- `ActionDialogContent` (フォームを持たないなら `DialogContent`) には `useRouteDialog` の返り値の `finalFocus` をそのまま渡す。`false` や自前の関数を渡しても型は通り、閉じたとき (閉じる操作、保存の応答) に開いた元の要素へ戻らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
+- `ActionDialogContent` (フォームを持たないなら `DialogContent`) には `useRouteDialog` の返り値の `finalFocus` をそのまま渡す。`false` や自前の関数を渡しても型は通り、離れたときに開いた元の要素へ戻らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - ダイアログの route を足したら、そのページの route のテストで、閉じる操作で閉じたときと戻るで離れたときに開いた元の要素へ focus が移ることと、別のダイアログに替わったときに開いた元の要素が focus を受けないことを確かめる。`findReturnTarget` が要素を見つけられなくても、`finalFocus` を渡し忘れても (Base UI の既定の戻し先へ戻る)、型検査も `useRouteDialog` も気付かない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめ、開くリンクを押して開かない。リンクを押して開くと、`finalFocus` を渡し忘れても Base UI の既定の戻し先でリンクへ戻り、テストが通る (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 

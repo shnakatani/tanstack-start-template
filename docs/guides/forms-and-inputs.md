@@ -102,13 +102,13 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 
 ADR-0041 に沿ってダイアログを組む手順。使う部品は次の表のとおり。
 
-| 部品                                                                     | 持つもの                                                                                                                                               |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/hooks/use-route-dialog.ts` の `useRouteDialog`                      | 開閉の state、保存の pending の間の close の停止、閉じるアニメーションの後で戻り先へ新しい履歴で離れること、閉じたときの focus の移し先 (`finalFocus`) |
-| `src/components/screens/route-status-dialog.tsx` の `RouteStatusDialog`  | 失敗と見つからないのダイアログ。中で `useRouteDialog` を使い、閉じるアニメーションの後で戻り先へ離れる                                                 |
-| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。中で `useRouteDialog` を `waitForCloseAnimation: false` で使い、閉じる操作の時点で戻り先へ離れ、閉じるアニメーションを待たない |
+| 部品                                                                     | 持つもの                                                                                                                                                |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/hooks/use-route-dialog.ts` の `useRouteDialog`                      | 保存の pending の間の close の停止、閉じる操作と保存の応答 (`close`) の時点で戻り先へ新しい履歴で離れること、離れたときの focus の移し先 (`finalFocus`) |
+| `src/components/screens/route-status-dialog.tsx` の `RouteStatusDialog`  | 失敗と見つからないのダイアログ。中で `useRouteDialog` を使う                                                                                            |
+| `src/components/screens/route-status-dialog.tsx` の `RoutePendingDialog` | 読み込み中のダイアログ。中で `useRouteDialog` を使う                                                                                                    |
 
-どの部品にも、ダイアログの route ごとに次の 2 つを渡す。戻るで離れたか別のダイアログに替わったかは、`useRouteDialog` が戻り先から判定する (ADR-0041)。この判定のために、開く元のページの route tree の形 (index route の有無、親の path params) で書き分けるものは無い。
+どの部品にも、ダイアログの route ごとに次の 2 つを渡す。開く元のページへ離れたか別のダイアログに替わったかは、`useRouteDialog` が戻り先から判定する (ADR-0041)。この判定のために、開く元のページの route tree の形 (index route の有無、親の path params) で書き分けるものは無い。
 
 | 渡すもの           | 書き方                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -126,18 +126,17 @@ export function findItemCreateLink() {
 }
 
 // routes/items/-components/item-create-dialog.tsx
-const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete, finalFocus } =
-  useRouteDialog({
-    returnTo: ITEM_DIALOG_RETURN_TO,
-    findReturnTarget: findItemCreateLink,
-    isPending: createMutation.isPending,
-  });
+const { close, blocksClose, onOpenChange, finalFocus } = useRouteDialog({
+  returnTo: ITEM_DIALOG_RETURN_TO,
+  findReturnTarget: findItemCreateLink,
+  isPending: createMutation.isPending,
+});
 ```
 
 | 書く場所                                                                    | 配線                                                                                                                                                                                                                                                                       |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ダイアログ                                                                  | `useRouteDialog` に `returnTo`、`findReturnTarget`、保存の mutation の `isPending` を渡し、返る `open`、`onOpenChange`、`onOpenChangeComplete` を Dialog の Root へ渡す                                                                                                    |
-| 保存の mutation の `onSuccess`                                              | 先頭で返り値の `setOpen(false)` を呼ぶ。`setOpen` は `onOpenChange` を通らないので、pending の間の close の停止に止められない                                                                                                                                              |
+| ダイアログ                                                                  | `useRouteDialog` に `returnTo`、`findReturnTarget`、保存の mutation の `isPending` を渡す。Dialog の Root には `open` を固定で渡し、返る `onOpenChange` を渡す                                                                                                             |
+| 保存の mutation の `onSuccess`                                              | 先頭で返り値の `close()` を呼ぶ。`close` は `onOpenChange` を通らないので、pending の間の close の停止に止められない。ダイアログが unmount したあとに呼ばれると何もしない                                                                                                  |
 | ダイアログの `ActionDialogContent` (フォームを持たないなら `DialogContent`) | 返り値の `finalFocus` をそのまま渡す                                                                                                                                                                                                                                       |
 | キャンセルの `DialogClose`                                                  | `disabled` に返り値の `blocksClose` を渡す                                                                                                                                                                                                                                 |
 | ダイアログの route の `pendingComponent`                                    | `RoutePendingDialog` に `title`、`returnTo`、`findReturnTarget` を渡す                                                                                                                                                                                                     |
