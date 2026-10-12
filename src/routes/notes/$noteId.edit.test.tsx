@@ -16,7 +16,6 @@ import { recordFocusins } from "@/test/assert/focusin";
 import { expectAnnouncements } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
-import { slowDownClosingDialogs } from "@/test/browser/closing-dialogs";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -162,8 +161,7 @@ describe("/notes/$noteId/edit route", () => {
     expect(ariaLabelsOf(focused)).not.toContain(noteEditTriggerName(NOTE));
   });
 
-  it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に取得が終わってもフォームを開かない", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
+  it("読み込み中のダイアログを閉じると一覧へ戻り、その後に取得が終わってもフォームを開かない", async () => {
     vi.mocked(listNotes).mockResolvedValue([NOTE]);
     const fetching = deferMock(getNote);
     const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
@@ -182,7 +180,6 @@ describe("/notes/$noteId/edit route", () => {
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
     await expectRemoved(screen.getByRole("dialog"));
     await expectAbsent(titleTextbox(screen));
-    expect(slowedWhileClosing()).toBe(true);
   });
 
   it("リンクを押さずに開いた読み込み中のダイアログを閉じると、取得が終わる前でもその行の編集リンクへ focus を移し、取得が終わってもフォームは開かない", async () => {

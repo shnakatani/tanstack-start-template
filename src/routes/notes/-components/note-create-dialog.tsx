@@ -38,7 +38,7 @@ export function NoteCreateDialog() {
     // 閉じると route を離れて unmount するが、useMutation に渡した callback はそのあとも走る
     // (unmount のあとに走らないのは `mutate` に渡す callback。TanStack Query「Mutations」)
     onSuccess: async (_data, input) => {
-      setOpen(false);
+      close();
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
       // 一覧への行の追加は読み上げに出ないので、完了を通知する。追加は再取得を待つ間に開き直して
       // 保存でき並行しうるので、どれが終わったかを対象名で区別する (ADR-0026)
@@ -49,15 +49,14 @@ export function NoteCreateDialog() {
     onError: toastMutationError,
   });
 
-  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete, finalFocus } =
-    useRouteDialog({
-      returnTo: NOTE_DIALOG_RETURN_TO,
-      findReturnTarget: findNoteCreateLink,
-      isPending: createMutation.isPending,
-    });
+  const { close, blocksClose, onOpenChange, finalFocus } = useRouteDialog({
+    returnTo: NOTE_DIALOG_RETURN_TO,
+    findReturnTarget: findNoteCreateLink,
+    isPending: createMutation.isPending,
+  });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
+    <Dialog open onOpenChange={onOpenChange}>
       <NoteFormContent
         heading={NOTE_CREATE_DIALOG_TITLE}
         defaultValues={EMPTY_NOTE_INPUT}

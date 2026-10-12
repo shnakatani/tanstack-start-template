@@ -34,7 +34,7 @@ export function NoteEditDialog({ noteId }: { noteId: Note["id"] }) {
     // 閉じると route を離れて unmount するが、useMutation に渡した callback はそのあとも走る
     // (unmount のあとに走らないのは `mutate` に渡す callback。TanStack Query「Mutations」)
     onSuccess: async (_data, update) => {
-      setOpen(false);
+      close();
       await queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
       // 行の値の変化は読み上げに出ないので、完了を通知する。更新は再取得を待つ間に別の行でも
       // 保存でき並行しうるので、どれが終わったかを対象名 (更新後の title) で区別する (ADR-0026)
@@ -45,15 +45,14 @@ export function NoteEditDialog({ noteId }: { noteId: Note["id"] }) {
     onError: toastMutationError,
   });
 
-  const { open, setOpen, blocksClose, onOpenChange, onOpenChangeComplete, finalFocus } =
-    useRouteDialog({
-      returnTo: NOTE_DIALOG_RETURN_TO,
-      findReturnTarget: () => findNoteEditLink(noteId),
-      isPending: updateMutation.isPending,
-    });
+  const { close, blocksClose, onOpenChange, finalFocus } = useRouteDialog({
+    returnTo: NOTE_DIALOG_RETURN_TO,
+    findReturnTarget: () => findNoteEditLink(noteId),
+    isPending: updateMutation.isPending,
+  });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
+    <Dialog open onOpenChange={onOpenChange}>
       <NoteFormContent
         heading={NOTE_EDIT_DIALOG_TITLE}
         defaultValues={{ title: note.title, body: note.body, dueDate: note.dueDate }}

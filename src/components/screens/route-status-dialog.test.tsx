@@ -12,7 +12,6 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
-import { slowDownClosingDialogs } from "@/test/browser/closing-dialogs";
 
 import {
   RoutePendingDialog,
@@ -118,17 +117,7 @@ describe("RouteStatusDialog", () => {
     await expect.element(dialog.getByRole("button", { name: "再試行" })).toBeVisible();
   });
 
-  it("閉じる操作のあと、閉じるアニメーションの間は戻り先へ離れない", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
-    const { router, screen } = await renderStatusRouter(["/items/missing"]);
-
-    await screen.getByRole("button", { name: "閉じる" }).click();
-
-    await expect.poll(slowedWhileClosing).toBe(true);
-    expect(router.state.location.pathname).toBe("/items/missing");
-  });
-
-  it("閉じ終えたら戻り先へ離れる", async () => {
+  it("閉じる操作の時点で戻り先へ離れる", async () => {
     const { router, screen } = await renderStatusRouter(["/items/missing"]);
 
     await screen.getByRole("button", { name: "閉じる" }).click();
@@ -138,8 +127,7 @@ describe("RouteStatusDialog", () => {
 });
 
 describe("RoutePendingDialog", () => {
-  it("閉じる操作の時点で、閉じるアニメーションを待たずに戻り先へ離れる", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
+  it("説明を「読み込み中」にし、閉じる操作の時点で戻り先へ離れる", async () => {
     const { router, screen } = await renderStatusRouter(["/items/loading"]);
     await expect
       .element(screen.getByRole("dialog", { name: "項目を追加" }))
@@ -147,9 +135,7 @@ describe("RoutePendingDialog", () => {
 
     await screen.getByRole("button", { name: "閉じる" }).click();
 
-    // 閉じるアニメーションは 60 秒に延ばしてあるので、離れたならアニメーションの終わりを待っていない
     await expect.poll(() => router.state.location.pathname).toBe("/items");
-    expect(slowedWhileClosing()).toBe(true);
   });
 });
 

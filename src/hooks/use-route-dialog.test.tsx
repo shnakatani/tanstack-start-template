@@ -9,10 +9,10 @@ import {
   type AnyRouter,
   type ValidateNavigateOptions,
 } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
-import { render } from "vitest-browser-react";
+import { render, type RenderResult } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,9 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { expectRemoved } from "@/test/assert/absent";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { recordFocusins } from "@/test/assert/focusin";
-import { slowDownClosingDialogs } from "@/test/browser/closing-dialogs";
 
 import { useRouteDialog } from "./use-route-dialog";
 
@@ -36,8 +35,9 @@ function findByReturnMark(mark: string) {
 
 /**
  * hook の返り値を Dialog の Root と Popup へ渡す。「保存を始める」「保存に失敗する」は保存の mutation の pending を、
- * 「保存の応答で閉じる」は保存の `onSuccess` の `setOpen(false)` を模す。キャンセルには `blocksClose` を渡さず、
- * 止める判定が hook の `onOpenChange` にあることを見る。
+ * 「保存の応答で閉じる」は保存の `onSuccess` の `close()` を模す。キャンセルには `blocksClose` を渡さず、
+ * 止める判定が hook の `onOpenChange` にあることを見る。描いた `close` は `closesByTitle` に残し、unmount の
+ * あとに走る保存の `onSuccess` を模す。
  * 戻り先はこのファイルの router の route で検査する。router の型を固定せず型引数の既定にするのは、hook の公開の
  * signature と同じ形にするため。固定すると `search: (prev) => prev` が型検査を通らない (2026-10-12、
  * `@tanstack/react-router` 1.170.41)
@@ -49,15 +49,17 @@ function RouteDialogHarness<TRouter extends AnyRouter = TestRouter, TOptions = u
   title: string;
   returnTo: ValidateNavigateOptions<TRouter, TOptions>;
   findReturnTarget: () => HTMLElement | null;
-  waitForCloseAnimation?: boolean;
 }): ReactNode {
   const [savePending, setSavePending] = useState(false);
-  const { open, setOpen, onOpenChange, onOpenChangeComplete, finalFocus } = useRouteDialog<
-    TRouter,
-    TOptions
-  >({ ...options, isPending: savePending });
+  const { close, onOpenChange, finalFocus } = useRouteDialog<TRouter, TOptions>({
+    ...options,
+    isPending: savePending,
+  });
+  useEffect(() => {
+    closesByTitle.set(title, close);
+  });
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent finalFocus={finalFocus}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -65,7 +67,7 @@ function RouteDialogHarness<TRouter extends AnyRouter = TestRouter, TOptions = u
         <input aria-label={`${title}の入力`} />
         <Button onClick={() => setSavePending(true)}>保存を始める</Button>
         <Button onClick={() => setSavePending(false)}>保存に失敗する</Button>
-        <Button onClick={() => setOpen(false)}>保存の応答で閉じる</Button>
+        <Button onClick={close}>保存の応答で閉じる</Button>
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>キャンセル</DialogClose>
         </DialogFooter>
@@ -73,6 +75,8 @@ function RouteDialogHarness<TRouter extends AnyRouter = TestRouter, TOptions = u
     </Dialog>
   );
 }
+
+const closesByTitle = new Map<string, () => void>();
 
 const rootRoute = createRootRoute({ component: () => <Outlet /> });
 
@@ -253,7 +257,6 @@ function ItemEditPendingDialog(): ReactNode {
       title={`項目 ${itemId} を読み込み中`}
       returnTo={{ to: "/items", search: (prev) => prev }}
       findReturnTarget={findByReturnMark(`item-edit-${itemId}`)}
-      waitForCloseAnimation={false}
     />
   );
 }
@@ -293,18 +296,8 @@ function textsOf(targets: Element[]) {
   return targets.map((target) => target.textContent);
 }
 
-describe("useRouteDialog の開閉", () => {
-  it("閉じる操作のあと、閉じるアニメーションの間は戻り先へ離れない", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
-    const { router, screen } = await renderDialogRouter(["/items/new"]);
-
-    await screen.getByRole("button", { name: "キャンセル" }).click();
-
-    await expect.poll(slowedWhileClosing).toBe(true);
-    expect(router.state.location.pathname).toBe("/items/new");
-  });
-
-  it("閉じ終えたら、戻り先へ search を保って新しい履歴で離れる", async () => {
+describe("useRouteDialog の閉じ方", () => {
+  it("閉じる操作の時点で、戻り先へ search を保って新しい履歴で離れる", async () => {
     const { router, screen } = await renderDialogRouter(["/items?q=a", "/items/new?q=a"]);
 
     await screen.getByRole("button", { name: "キャンセル" }).click();
@@ -315,29 +308,19 @@ describe("useRouteDialog の開閉", () => {
     await expect.poll(() => router.state.location.href).toBe("/items/new?q=a");
   });
 
-  it("waitForCloseAnimation が false なら、閉じる操作の時点で離れる", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
-    loadItem.mockReturnValueOnce(Promise.withResolvers<undefined>().promise);
+  it("読み込み中のダイアログを閉じると離れ、その後に読み込みが終わっても本物のダイアログを開かない", async () => {
+    const load = Promise.withResolvers<undefined>();
+    loadItem.mockReturnValueOnce(load.promise);
     const { router, screen } = await renderDialogRouter(["/items", "/items/1/edit"]);
     await expect.element(screen.getByRole("dialog", { name: "項目 1 を読み込み中" })).toBeVisible();
 
     await screen.getByRole("button", { name: "キャンセル" }).click();
-
-    // 閉じるアニメーションは 60 秒に延ばしてあるので、離れたならアニメーションの終わりを待っていない
     await expect.poll(() => router.state.location.pathname).toBe("/items");
-    expect(slowedWhileClosing()).toBe(true);
-  });
+    load.resolve(undefined);
 
-  it("waitForCloseAnimation が false なら、setOpen(false) で閉じた時点でも離れる", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
-    loadItem.mockReturnValueOnce(Promise.withResolvers<undefined>().promise);
-    const { router, screen } = await renderDialogRouter(["/items", "/items/1/edit"]);
-    await expect.element(screen.getByRole("dialog", { name: "項目 1 を読み込み中" })).toBeVisible();
-
-    await screen.getByRole("button", { name: "保存の応答で閉じる" }).click();
-
-    await expect.poll(() => router.state.location.pathname).toBe("/items");
-    expect(slowedWhileClosing()).toBe(true);
+    await expect.poll(() => router.state.status).toBe("idle");
+    expect(router.state.location.pathname).toBe("/items");
+    await expectAbsent(screen.getByRole("dialog"));
   });
 
   it("保存の pending の間は Escape で閉じず、pending が終わると閉じて離れる", async () => {
@@ -353,13 +336,30 @@ describe("useRouteDialog の開閉", () => {
     await expect.poll(() => router.state.location.pathname).toBe("/items");
   });
 
-  it("保存の pending の間でも、保存の応答の setOpen(false) では閉じて離れる", async () => {
+  it("保存の pending の間でも、保存の応答の close では離れる", async () => {
     const { router, screen } = await renderDialogRouter(["/items/new"]);
     await screen.getByRole("button", { name: "保存を始める" }).click();
 
     await screen.getByRole("button", { name: "保存の応答で閉じる" }).click();
 
     await expect.poll(() => router.state.location.pathname).toBe("/items");
+  });
+
+  it("戻るで離れて開き直したあと、前のダイアログの close を呼んでも離れない", async () => {
+    const { router, screen } = await renderDialogRouter(["/items", "/items/new"]);
+    const dialog = screen.getByRole("dialog", { name: "項目を追加" });
+    await expect.element(dialog).toBeVisible();
+    const closeBeforeLeaving = closesByTitle.get("項目を追加");
+    expect.assert(closeBeforeLeaving);
+    router.history.back();
+    await expectRemoved(dialog);
+    router.history.push("/items/new");
+    await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
+
+    closeBeforeLeaving();
+
+    // navigate は履歴へ同期で積む (`@tanstack/router-core` 1.171.34 の `commitLocation`)
+    expect(router.history.location.pathname).toBe("/items/new");
   });
 });
 
@@ -415,23 +415,30 @@ describe("useRouteDialog の閉じたときの focus", () => {
     },
   );
 
-  it("閉じたとき、開いた元の要素が無ければ、ページの見出しへ移す", async () => {
-    const { screen } = await renderDialogRouter(["/items/9/edit"]);
-
-    await screen.getByRole("button", { name: "キャンセル" }).click();
-
-    await expect.element(screen.getByRole("heading", { name: "項目" })).toHaveFocus();
-  });
-
-  it("戻るで離れたとき、開いた元の要素が無ければ、focus に触れない", async () => {
+  it.each([
+    {
+      leftBy: "閉じる操作",
+      leave: async (_router: TestRouter, screen: RenderResult) => {
+        await screen.getByRole("button", { name: "キャンセル" }).click();
+      },
+    },
+    {
+      leftBy: "戻る",
+      leave: (router: TestRouter) => {
+        router.history.back();
+        return Promise.resolve();
+      },
+    },
+  ])("$leftBy で離れたとき、開いた元の要素が無ければ、ページの見出しへ移す", async ({ leave }) => {
+    // この router には route の announcer (ADR-0035) を置いていないので、移すのは hook である
     const { router, screen } = await renderDialogRouter(["/items", "/items/9/edit"]);
     const dialog = screen.getByRole("dialog", { name: "項目 9 の編集" });
     await expect.element(dialog).toBeVisible();
 
-    router.history.back();
+    await leave(router, screen);
 
-    await expectRemoved(dialog);
-    expect(document.activeElement).toBe(document.body);
+    await expect.element(screen.getByRole("heading", { name: "項目" })).toHaveFocus();
+    expect(router.state.location.pathname).toBe("/items");
   });
 
   it("戻り先の path params を今の値から引き継ぐので、別の値の開く元のページへ戻っても、離れたとしてそのページの要素へ移す", async () => {

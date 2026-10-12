@@ -17,7 +17,6 @@ import {
   expectText,
 } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
-import { slowDownClosingDialogs } from "@/test/browser/closing-dialogs";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -121,8 +120,7 @@ describe("/notes/new route", () => {
     expect(focused.map((target) => target.textContent)).not.toContain(NOTE_CREATE_LINK_LABEL);
   });
 
-  it("読み込み中のダイアログを閉じると、アニメーションを待たず直ちに一覧へ戻り、その後に chunk が届いてもフォームを開かない", async () => {
-    const slowedWhileClosing = slowDownClosingDialogs();
+  it("読み込み中のダイアログを閉じると一覧へ戻り、その後に chunk が届いてもフォームを開かない", async () => {
     const loadChunk = mockCreateRouteChunk();
     const chunk = deferMock(loadChunk);
     const { screen, router } = await renderRoute("/notes", { pendingMs: 0 });
@@ -137,7 +135,6 @@ describe("/notes/new route", () => {
     await expect.poll(() => router.state.location.pathname).toBe("/notes");
     await expectRemoved(screen.getByRole("dialog"));
     await expectAbsent(titleTextbox(screen));
-    expect(slowedWhileClosing()).toBe(true);
   });
 
   it("リンクを押さずに開いた読み込み中のダイアログを閉じると、追加のリンクへ focus を移す", async () => {
