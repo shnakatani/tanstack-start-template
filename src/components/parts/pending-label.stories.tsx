@@ -25,7 +25,10 @@ function LabelledButton({
   );
 }
 
+// 描くのは LabelledButton でも、component は部品の PendingLabel を指す。外すと
+// agent 向けの `storybook tools docs show` から説明と Props が消える
 const meta = {
+  component: PendingLabel,
   args: { children: "保存", isPending: false },
   argTypes: {
     variant: { control: "select", options: BUTTON_VARIANTS },
