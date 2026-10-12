@@ -21,8 +21,10 @@ export const SHORT_VIEWPORT: Viewport = { width: 1280, height: 420 };
 
 /**
  * 一覧の table が余白を持たず、列が中身の幅へ詰まる中間の幅。auto layout の列幅は viewport の余りの配分で
- * 決まるので、既定の幅だけで測ると、詰まった幅で中身の変化が列へ別の量で伝わることを見逃す
- * (2026-10-12 の実測で、操作の列の中身の変化が 1280px では +34px、760px では +20px の列の移動になった)
+ * 決まるので、既定の幅だけで測ると、詰まった幅で中身の変化が列へ別の量で伝わることを見逃す。
+ * 操作の列のボタンが 50px から 70px になったときの列の移動は、1280px では +34px (2026-10-12、dev server を
+ * Playwright の page で開いて測った) と +26.2px (2026-10-13、テストの iframe)、760px では +20px
+ * (2026-10-13、テストの iframe) だった
  */
 export const MEDIUM_VIEWPORT: Viewport = { width: 760, height: 720 };
 
