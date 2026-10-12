@@ -7,10 +7,8 @@ import {
   createDefaultViewTransition,
   ROUTE_DIALOG_CLOSE_TYPE,
   routeDialogViewTransitionTypes,
-  withRouteDialogViewTransitionTypes,
   type RouteDialogMatchSource,
 } from "./route-dialog-view-transition";
-import { skipViewTransitionAfterUATransition } from "./skip-view-transition-after-ua-transition";
 
 const rootRoute = createRootRoute();
 // 開く元のページを layout route に置き、その下に index route とダイアログの route を並べる形
@@ -64,16 +62,19 @@ function matches(dialogs: number) {
 
 describe("routeDialogViewTransitionTypes", () => {
   it.each([
-    { shown: 0, next: 0, expected: [] },
-    { shown: 0, next: 1, expected: [] },
-    { shown: 1, next: 0, expected: [ROUTE_DIALOG_CLOSE_TYPE] },
-    { shown: 1, next: 1, expected: [] },
-    { shown: 2, next: 0, expected: [] },
-    { shown: 0, next: 2, expected: [] },
+    { shown: 0, next: 0, expected: [], matched: false },
+    { shown: 0, next: 1, expected: [], matched: false },
+    { shown: 1, next: 0, expected: [ROUTE_DIALOG_CLOSE_TYPE], matched: true },
+    { shown: 1, next: 1, expected: [], matched: true },
+    { shown: 2, next: 0, expected: [], matched: false },
+    { shown: 0, next: 2, expected: [], matched: false },
   ])(
-    "今の画面に $shown 個、行き先に $next 個のダイアログがあると $expected",
-    ({ shown, next, expected }) => {
-      expect(routeDialogViewTransitionTypes(matches(shown), matches(next))).toEqual(expected);
+    "今の画面に $shown 個、行き先に $next 個のダイアログがあると $expected (行き先の照合: $matched)",
+    ({ shown, next, expected, matched }) => {
+      const matchNext = vi.fn(() => matches(next));
+
+      expect(routeDialogViewTransitionTypes(matches(shown), matchNext)).toEqual(expected);
+      expect(matchNext).toHaveBeenCalledTimes(matched ? 1 : 0);
     },
   );
 });
@@ -88,53 +89,40 @@ function popstate(hasUAVisualTransition: boolean): Event {
   return Object.assign(new Event("popstate"), { hasUAVisualTransition });
 }
 
-describe("withRouteDialogViewTransitionTypes", () => {
-  it("UA の遷移の直後の戻るでダイアログを閉じても、View Transition ごと飛ばす", () => {
-    const target = new EventTarget();
-    const types = withRouteDialogViewTransitionTypes(
-      skipViewTransitionAfterUATransition(target),
-      () => staticRouter(1, 0),
-    );
-    target.dispatchEvent(popstate(true));
+describe("createDefaultViewTransition", () => {
+  it.each([
+    { shown: 1, next: 0 },
+    { shown: 0, next: 1 },
+  ])(
+    "UA の遷移の直後は、今の画面に $shown 個、行き先に $next 個のダイアログがあっても View Transition ごと飛ばし、次の遷移では飛ばさない",
+    ({ shown, next }) => {
+      const target = new EventTarget();
+      const { types } = createDefaultViewTransition(target, () => staticRouter(shown, next));
+      target.dispatchEvent(popstate(true));
 
-    expect(types({ toLocation: location })).toBe(false);
-  });
+      expect(types({ toLocation: location })).toBe(false);
+      expect(types({ toLocation: location })).not.toBe(false);
+    },
+  );
 
-  it("base の type の後ろにダイアログの type を足す", () => {
-    const types = withRouteDialogViewTransitionTypes(
-      () => ["slide"],
-      () => staticRouter(1, 0),
-    );
-
-    expect(types({ toLocation: location })).toEqual(["slide", ROUTE_DIALOG_CLOSE_TYPE]);
-  });
-
-  it("行き先の照合に失敗したら、警告を残して base の type だけを返す", () => {
+  it("行き先の照合に失敗したら、警告を残してダイアログの type を付けない", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const error = new Error("照合に失敗");
-    const types = withRouteDialogViewTransitionTypes(
-      () => [],
-      () => ({
-        state: { matches: matches(1) },
-        matchRoutes: () => {
-          throw error;
-        },
-      }),
-    );
+    const { types } = createDefaultViewTransition(new EventTarget(), () => ({
+      state: { matches: matches(1) },
+      matchRoutes: () => {
+        throw error;
+      },
+    }));
 
     expect(types({ toLocation: location })).toEqual([]);
     expect(warn).toHaveBeenCalledWith(expect.any(String), { href: "/board", error });
   });
-});
 
-describe("router の match から閉じる遷移を見分ける", () => {
   async function typesFrom(from: string, to: string) {
     const router = createTreeRouter(from);
     await router.load();
-    const types = withRouteDialogViewTransitionTypes(
-      () => [],
-      () => router,
-    );
+    const { types } = createDefaultViewTransition(new EventTarget(), () => router);
     return types({ toLocation: parsedLocation(to) });
   }
 
@@ -145,27 +133,7 @@ describe("router の match から閉じる遷移を見分ける", () => {
     { from: "/board", to: "/board/new", expected: [] },
     { from: "/board/new", to: "/board/c1/edit", expected: [] },
     { from: "/board", to: "/groups/g1/items", expected: [] },
-  ])("$from から $to へ移ると $expected", async ({ from, to, expected }) => {
+  ])("router の match で、$from から $to へ移ると $expected", async ({ from, to, expected }) => {
     expect(await typesFrom(from, to)).toEqual(expected);
-  });
-});
-
-describe("createDefaultViewTransition", () => {
-  it("UA の遷移の直後は、ダイアログを閉じる遷移でも View Transition ごと飛ばす", async () => {
-    const target = new EventTarget();
-    const router = createTreeRouter("/board/new");
-    await router.load();
-    const { types } = createDefaultViewTransition(target, () => router);
-    target.dispatchEvent(popstate(true));
-
-    expect(types({ toLocation: parsedLocation("/board") })).toBe(false);
-  });
-
-  it("今の画面のダイアログが行き先で無くなる遷移に、閉じる遷移の type を付ける", async () => {
-    const router = createTreeRouter("/board/new");
-    await router.load();
-    const { types } = createDefaultViewTransition(new EventTarget(), () => router);
-
-    expect(types({ toLocation: parsedLocation("/board") })).toEqual([ROUTE_DIALOG_CLOSE_TYPE]);
   });
 });
