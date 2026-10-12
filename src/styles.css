@@ -188,18 +188,9 @@ html:active-view-transition-type(route-dialog-close)::view-transition-group(root
 }
 
 /* fill-mode-both は、退場の animation が終わってから遷移の擬似要素が外れるまでの間に、旧画像が元の濃さで
-   戻らないように付ける */
+   戻らないように付ける。reduced motion では、足した拡大縮小だけを外して fade だけにする */
 html:active-view-transition-type(route-dialog-close)::view-transition-old(route-dialog):only-child {
-  @apply animate-out fade-out-0 zoom-out-95 duration-100 fill-mode-both;
-}
-
-/* motion-reduce: を上の @apply に書くと入れ子の @media で出力されるので、完全なセレクタで書く */
-@media (prefers-reduced-motion: reduce) {
-  html:active-view-transition-type(
-      route-dialog-close
-    )::view-transition-old(route-dialog):only-child {
-    --tw-exit-scale: 1;
-  }
+  @apply animate-out fade-out-0 zoom-out-95 duration-100 fill-mode-both motion-reduce:zoom-out-100;
 }
 
 @layer base {
