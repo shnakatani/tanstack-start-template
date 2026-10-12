@@ -50,6 +50,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 - 本文の先頭で `enableAnimations()` を呼ぶ。テストが終わった時点で、`enableAnimations()` が登録した `onTestFinished` が既定へ戻すので、戻す処理は書かない (「animation を戻す経路」)
 - animation を戻すテストは `.concurrent` を付けずに書き、並行の `describe` の外に置く。フラグと停止用の CSS は page 全体に効き、並行して走る別のテストでも animation が戻る
+- 停止用の CSS は `*`、`*::before`、`*::after` に当たり、View Transition の擬似要素 (`::view-transition-old(…)` など) には当たらない。View Transition は既定でも本番の時間で流れる (停止用の CSS を入れたまま、root の擬似要素の animation が 250ms だった。2026-10-12、Chromium 153)。擬似要素の animation は、`ready` の後に `document.getAnimations()` を `effect.pseudoElement` で選んで読む。registry の部品の animation と比べるときは、比べる側のテストで `enableAnimations()` を呼ぶ
 - 無限アニメーション (Spinner) も既定では時間が 0 秒になり、描画の時点で終わっている (`getAnimations()` が空、2026-09-27 に実測)
 - 既定では閉じた popup が次の描画で unmount するので、`data-ending-style` は観測できない
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。既定では窓が無いが、animation を戻したテストでも同じ形で書く

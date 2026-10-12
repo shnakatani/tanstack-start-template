@@ -87,9 +87,10 @@ lint では見ないのでレビューで見る。
 - ダイアログは `useRouteDialog`、`RouteStatusDialog`、`RoutePendingDialog` で組み、どれにも戻り先 (`returnTo`) と開いた元の要素を探す関数 (`findReturnTarget`) を渡す。離れたか替わったかは `useRouteDialog` が戻り先から判定する (ADR-0041)
 - `returnTo` は `useRouteDialog` が `navigate` にそのまま渡す。開く元のページの search を保つなら `search: (prev) => prev` を書く (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 同じ戻り先は `linkOptions` で検査した定数にし、開く元のページの `-lib/` に 1 つ置く。型の無い定数にすると `prev` の型が決まらず型検査を通らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
-- `ActionDialogContent` (フォームを持たないなら `DialogContent`) には `useRouteDialog` の返り値の `finalFocus` をそのまま渡す。`false` や自前の関数を渡しても型は通り、離れたときに開いた元の要素へ戻らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
-- ダイアログの route を足したら、そのページの route のテストで、閉じる操作で閉じたときと戻るで離れたときに開いた元の要素へ focus が移ることと、別のダイアログに替わったときに開いた元の要素が focus を受けないことを確かめる。`findReturnTarget` が要素を見つけられなくても、`finalFocus` を渡し忘れても (Base UI の既定の戻し先へ戻る)、型検査も `useRouteDialog` も気付かない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
-- 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめ、開くリンクを押して開かない。リンクを押して開くと、`finalFocus` を渡し忘れても Base UI の既定の戻し先でリンクへ戻り、テストが通る (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
+- `ActionDialogContent` (フォームを持たないなら `DialogContent`) には `useRouteDialog` の返り値の `popupProps` を spread する。spread しなくても型は通り、離れたときに開いた元の要素へ戻らず、閉じる遷移の退場も出ない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
+- ダイアログの route に `staticData: { routeDialog: true }` を書く。無いと閉じる遷移の type が付かず、ダイアログは退場を見せずにクロスフェードで消える。`useRouteDialog` の警告は console に出るだけで、テストは落ちない (ADR-0041)
+- ダイアログの route を足したら、そのページの route のテストで、閉じる操作で閉じたときと戻るで離れたときに開いた元の要素へ focus が移ることと、別のダイアログに替わったときに開いた元の要素が focus を受けないことを確かめる。`findReturnTarget` が要素を見つけられなくても、`popupProps` を spread し忘れても (Base UI の既定の戻し先へ戻る)、型検査も `useRouteDialog` も気付かない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
+- 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめ、開くリンクを押して開かない。リンクを押して開くと、`popupProps` を spread し忘れても Base UI の既定の戻し先でリンクへ戻り、テストが通る (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 
 ## 既存の値を編集するダイアログは最新の値を取ってから開く
 
