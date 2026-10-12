@@ -174,6 +174,34 @@
   @apply has-[>[data-slot=scroll-area-viewport]:focus-visible]:outline-2 has-[>[data-slot=scroll-area-viewport]:focus-visible]:-outline-offset-2 has-[>[data-slot=scroll-area-viewport]:focus-visible]:outline-ring/50;
 }
 
+/* route として開くダイアログを閉じる遷移の退場 (ADR-0041「閉じる遷移の見せ方」)。ダイアログは route ごとすぐ
+   unmount するので、旧画面の snapshot の Popup に ui/dialog.tsx の閉じ方 (data-closed: の fade-out-0 と
+   zoom-out-95、duration-100) を当て直す。type は src/lib/route-dialog-view-transition.ts が返し、
+   data-route-dialog は useRouteDialog の popupProps が付ける。Overlay は root の snapshot に残し、root の
+   クロスフェードを Overlay の duration-100 にそろえる */
+html:active-view-transition-type(route-dialog-close) [data-route-dialog] {
+  view-transition-name: route-dialog;
+}
+
+html:active-view-transition-type(route-dialog-close)::view-transition-group(root) {
+  animation-duration: 100ms;
+}
+
+/* fill-mode-both は、退場の animation が終わってから遷移の擬似要素が外れるまでの間に、旧画像が元の濃さで
+   戻らないように付ける */
+html:active-view-transition-type(route-dialog-close)::view-transition-old(route-dialog):only-child {
+  @apply animate-out fade-out-0 zoom-out-95 duration-100 fill-mode-both;
+}
+
+/* motion-reduce: を上の @apply に書くと入れ子の @media で出力されるので、完全なセレクタで書く */
+@media (prefers-reduced-motion: reduce) {
+  html:active-view-transition-type(
+      route-dialog-close
+    )::view-transition-old(route-dialog):only-child {
+    --tw-exit-scale: 1;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
