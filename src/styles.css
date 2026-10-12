@@ -177,8 +177,8 @@
 /* route として開くダイアログを閉じる遷移の退場 (ADR-0041「閉じる遷移の見せ方」)。ダイアログは route ごとすぐ
    unmount するので、旧画面の snapshot の Popup に ui/dialog.tsx の閉じ方 (data-closed: の fade-out-0 と
    zoom-out-95、duration-100) を当て直す。type は src/lib/route-dialog-view-transition.ts が返し、
-   data-route-dialog は useRouteDialog の popupProps が付ける。Overlay は root の snapshot に残し、root の
-   クロスフェードを Overlay の duration-100 にそろえる */
+   data-route-dialog は useRouteDialog の popupProps が、route の staticData に印があるときだけ付ける。
+   Overlay は root の snapshot に残し、root のクロスフェードを Overlay の duration-100 にそろえる */
 html:active-view-transition-type(route-dialog-close) [data-route-dialog] {
   view-transition-name: route-dialog;
 }
