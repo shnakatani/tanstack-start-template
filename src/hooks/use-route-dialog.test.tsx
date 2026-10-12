@@ -603,10 +603,14 @@ function recordViewTransitions() {
   };
 }
 
+function keyframeEffectsOf(animations: Animation[]): KeyframeEffect[] {
+  return animations
+    .map((animation) => animation.effect)
+    .filter((effect): effect is KeyframeEffect => effect instanceof KeyframeEffect);
+}
+
 /** 閉じ方を比べる値。fill は旧画像が戻らないように変えているので比べない */
-function exitShape(animation: Animation | undefined) {
-  const effect = animation?.effect;
-  expect.assert(effect instanceof KeyframeEffect);
+function readExitShape(effect: KeyframeEffect) {
   const keyframes = effect.getKeyframes();
   const last = keyframes.at(-1);
   return {
@@ -618,27 +622,36 @@ function exitShape(animation: Animation | undefined) {
 }
 
 /**
- * 要素で始まった CSS animation の形を、始まった時点で読んで記録する。閉じるアニメーションは 100ms なので、
- * 操作の往復が遅いと、操作のあとに読む前に終わる。要素が外れたあとの keyframes は CSS 変数が解決されない
+ * 要素か、要素の擬似要素で始まった CSS animation の形を、始まった時点で読んで記録する。閉じるアニメーションは
+ * 100ms なので、操作の往復が遅いと、操作のあとに読む前に終わる。要素が外れたあとの keyframes は CSS 変数が
+ * 解決されない。View Transition の擬似要素の animation は、html に `pseudoElement` を付けた event で届く
  */
-function recordStartedShapes(element: Element): ReturnType<typeof exitShape>[] {
-  const started: ReturnType<typeof exitShape>[] = [];
-  element.addEventListener("animationstart", (event) => {
-    if (event.target === element) {
-      started.push(...element.getAnimations().map(exitShape));
+function recordStartedShapes(
+  element: Element,
+  pseudoElement = "",
+): ReturnType<typeof readExitShape>[] {
+  const started: ReturnType<typeof readExitShape>[] = [];
+  // Element の addEventListener は animationstart の型を持たないので、受けた event を AnimationEvent に絞る
+  const record = (event: Event) => {
+    if (
+      event instanceof AnimationEvent &&
+      event.target === element &&
+      event.pseudoElement === pseudoElement
+    ) {
+      started.push(
+        ...keyframeEffectsOf(document.getAnimations())
+          .filter(
+            (effect) => effect.target === element && (effect.pseudoElement ?? "") === pseudoElement,
+          )
+          .map(readExitShape),
+      );
     }
+  };
+  element.addEventListener("animationstart", record);
+  onTestFinished(() => {
+    element.removeEventListener("animationstart", record);
   });
   return started;
-}
-
-function pseudoElementAnimation(pseudoElement: string) {
-  return document
-    .getAnimations()
-    .find(
-      (animation) =>
-        animation.effect instanceof KeyframeEffect &&
-        animation.effect.pseudoElement === pseudoElement,
-    );
 }
 
 describe("useRouteDialog の閉じる遷移", () => {
@@ -756,6 +769,7 @@ describe("useRouteDialog の閉じる遷移", () => {
     await expect.poll(() => overlayExits).toHaveLength(1);
     const [popupExit] = popupExits;
     const [overlayExit] = overlayExits;
+    expect.assert(popupExit);
     expect.assert(overlayExit);
     await registry.unmount();
 
@@ -763,17 +777,28 @@ describe("useRouteDialog の閉じる遷移", () => {
     const router = createViewTransitionRouter(["/items", "/items/new"]);
     const screen = await render(<RouterProvider router={router} />);
     await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
+    // 開いたときの遷移の擬似要素を記録しない
+    await document.activeViewTransition?.finished;
+    const popupTransitions = recordStartedShapes(
+      document.documentElement,
+      "::view-transition-old(route-dialog)",
+    );
+    const pageTransitions = recordStartedShapes(
+      document.documentElement,
+      "::view-transition-group(root)",
+    );
     const { transition } = await transitionOf(() =>
       screen.getByRole("button", { name: "キャンセル" }).click(),
     );
-    await transition.ready;
+    await expect.poll(() => popupTransitions).toHaveLength(1);
+    await expect.poll(() => pageTransitions).toHaveLength(1);
+    const [popupTransition] = popupTransitions;
+    const [pageTransition] = pageTransitions;
+    expect.assert(popupTransition);
+    expect.assert(pageTransition);
 
-    expect(exitShape(pseudoElementAnimation("::view-transition-old(route-dialog)"))).toEqual(
-      popupExit,
-    );
-    expect(exitShape(pseudoElementAnimation("::view-transition-group(root)")).duration).toBe(
-      overlayExit.duration,
-    );
+    expect(popupTransition).toEqual(popupExit);
+    expect(pageTransition.duration).toBe(overlayExit.duration);
     await transition.finished;
   });
 
