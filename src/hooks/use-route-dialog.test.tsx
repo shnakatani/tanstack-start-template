@@ -602,14 +602,32 @@ function readExitShape(effect: KeyframeEffect) {
 }
 
 /**
- * 要素か、要素の擬似要素で始まった CSS animation の形を、始まった時点で読んで記録する。閉じるアニメーションは
- * 100ms なので、操作の往復が遅いと、操作のあとに読む前に終わる。要素が外れたあとの keyframes は CSS 変数が
- * 解決されない。View Transition の擬似要素の animation は、html に `pseudoElement` を付けた event で届く
+ * 要素に `data-closed` が付いた時点で、その要素の閉じるアニメーションの形を読んで記録する。属性が付いた直後の
+ * microtask では、アニメーションはまだ始まっておらず、要素も外れていない。`animationstart` で読まない理由は
+ * docs/guides/testing/user-interactions.md「animation を戻すテストを書く」
  */
-function recordStartedShapes(
-  element: Element,
-  pseudoElement = "",
-): ReturnType<typeof readExitShape>[] {
+function recordClosingShapes(element: Element): ReturnType<typeof readExitShape>[] {
+  const closing: ReturnType<typeof readExitShape>[] = [];
+  const observer = new MutationObserver(() => {
+    if (element.hasAttribute("data-closed")) {
+      observer.disconnect();
+      closing.push(...keyframeEffectsOf(element.getAnimations()).map(readExitShape));
+    }
+  });
+  observer.observe(element, { attributeFilter: ["data-closed"] });
+  onTestFinished(() => {
+    observer.disconnect();
+  });
+  return closing;
+}
+
+/**
+ * View Transition の擬似要素で始まった animation の形を、始まった時点で読んで記録する。操作の往復が遅いと、
+ * 操作のあとに読む前に終わる。擬似要素の animation は、html に `pseudoElement` を付けた event で届く。
+ * `ready` の直後にメインスレッドを 300ms 塞いでも、event の時点で読めた (2026-10-12、Chromium 153)
+ */
+function recordStartedTransitionShapes(pseudoElement: string): ReturnType<typeof readExitShape>[] {
+  const element = document.documentElement;
   const started: ReturnType<typeof readExitShape>[] = [];
   // Element の addEventListener は animationstart の型を持たないので、受けた event を AnimationEvent に絞る
   const record = (event: Event) => {
@@ -742,8 +760,8 @@ describe("useRouteDialog の閉じる遷移", () => {
     const overlay = document.querySelector("[data-slot=dialog-overlay]");
     expect.assert(overlay);
     await Promise.all(popup.getAnimations().map((animation) => animation.finished));
-    const popupExits = recordStartedShapes(popup);
-    const overlayExits = recordStartedShapes(overlay);
+    const popupExits = recordClosingShapes(popup);
+    const overlayExits = recordClosingShapes(overlay);
     await registry.getByRole("button", { name: "Close" }).click();
     await expect.poll(() => popupExits).toHaveLength(1);
     await expect.poll(() => overlayExits).toHaveLength(1);
@@ -758,14 +776,8 @@ describe("useRouteDialog の閉じる遷移", () => {
     await expect.element(screen.getByRole("dialog", { name: "項目を追加" })).toBeVisible();
     // 開いたときの遷移の擬似要素を記録しない
     await document.activeViewTransition?.finished;
-    const popupTransitions = recordStartedShapes(
-      document.documentElement,
-      "::view-transition-old(route-dialog)",
-    );
-    const pageTransitions = recordStartedShapes(
-      document.documentElement,
-      "::view-transition-group(root)",
-    );
+    const popupTransitions = recordStartedTransitionShapes("::view-transition-old(route-dialog)");
+    const pageTransitions = recordStartedTransitionShapes("::view-transition-group(root)");
     const { transition } = await transitionOf(() =>
       screen.getByRole("button", { name: "キャンセル" }).click(),
     );

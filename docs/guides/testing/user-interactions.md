@@ -51,6 +51,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 - 本文の先頭で `enableAnimations()` を呼ぶ。テストが終わった時点で、`enableAnimations()` が登録した `onTestFinished` が既定へ戻すので、戻す処理は書かない (「animation を戻す経路」)
 - animation を戻すテストは `.concurrent` を付けずに書き、並行の `describe` の外に置く。フラグと停止用の CSS は page 全体に効き、並行して走る別のテストでも animation が戻る
 - 停止用の CSS は `*`、`*::before`、`*::after` に当たり、View Transition の擬似要素 (`::view-transition-old(…)` など) には当たらない。View Transition は既定でも本番の時間で流れる (停止用の CSS を入れたまま、root の擬似要素の animation が 250ms だった。2026-10-12、Chromium 153)。擬似要素の animation は、`ready` の後に `document.getAnimations()` を `effect.pseudoElement` で選んで読む。registry の部品の animation と比べるときは、比べる側のテストで `enableAnimations()` を呼ぶ
+- popup の閉じるアニメーションの形は、`data-closed` が付いた時点に `MutationObserver` の中で `getAnimations()` から読む。`animationstart` で読まない。event は次のフレームで、`finished` を解決して microtask を流したあとに送られる ([Web Animations「update animations and send events」][])。そのフレームが閉じるアニメーションの時間以上遅れると、event が届く前に Base UI が popup を外している (2026-10-12、Chromium 153)
 - 無限アニメーション (Spinner) も既定では時間が 0 秒になり、描画の時点で終わっている (`getAnimations()` が空、2026-09-27 に実測)
 - 既定では閉じた popup が次の描画で unmount するので、`data-ending-style` は観測できない
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。既定では窓が無いが、animation を戻したテストでも同じ形で書く
@@ -223,6 +224,7 @@ Base UI 1.8.0 の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Sel
 [React docs「useFormStatus」]: https://react.dev/reference/react-dom/hooks/useFormStatus
 [`playwright-core` の `server/dom.ts`]: https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/src/server/dom.ts
 [Base UI docs「Animation」]: https://base-ui.com/react/handbook/animation
+[Web Animations「update animations and send events」]: https://www.w3.org/TR/web-animations-1/#update-animations-and-send-events
 [mui/base-ui#5519]: https://github.com/mui/base-ui/issues/5519
 [mui/base-ui#5537]: https://github.com/mui/base-ui/pull/5537
 [dequelabs/axe-core#4832]: https://github.com/dequelabs/axe-core/issues/4832
