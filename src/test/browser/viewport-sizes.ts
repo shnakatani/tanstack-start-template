@@ -19,5 +19,12 @@ export const TABLET_VIEWPORT: Viewport = { width: 1280, height: 853 };
 /** 極端に低い viewport (ブラウザ UI 領域が大きい環境の下限想定) */
 export const SHORT_VIEWPORT: Viewport = { width: 1280, height: 420 };
 
+/**
+ * 一覧の table が余白を持たず、列が中身の幅へ詰まる中間の幅。auto layout の列幅は viewport の余りの配分で
+ * 決まるので、既定の幅だけで測ると、詰まった幅で中身の変化が列へ別の量で伝わることを見逃す
+ * (2026-10-12 の実測で、操作の列の中身の変化が 1280px では +34px、760px では +20px の列の移動になった)
+ */
+export const MEDIUM_VIEWPORT: Viewport = { width: 760, height: 720 };
+
 /** 対応する最小画面幅。ここでレイアウトが崩壊しないことを下限として固定する */
 export const NARROW_VIEWPORT: Viewport = { width: 375, height: 667 };

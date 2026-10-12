@@ -1,5 +1,5 @@
 import { notFound } from "@tanstack/react-router";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import type { Locator } from "vite-plus/test/browser/context";
 
@@ -7,15 +7,23 @@ import { getNote, listNotes, updateNote } from "@/features/notes/functions";
 import { noteQueryOptions } from "@/features/notes/queries";
 import { NOTE, NOTE_UPDATE, OTHER_NOTE, UPDATED_NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
+import { formatDateTime } from "@/lib/format-date-time";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { BACKGROUND_REFETCH_ERROR_MESSAGE } from "@/lib/query-cache-handlers";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { deferMock } from "@/test/app/defer-mock";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
+import { expectStableColumnWidths, recordColumnWidths } from "@/test/assert/column-widths";
 import { recordFocusins } from "@/test/assert/focusin";
 import { expectAnnouncements } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
+import {
+  DEFAULT_VIEWPORT,
+  MEDIUM_VIEWPORT,
+  restoreDefaultViewport,
+  setViewport,
+} from "@/test/assert/viewport";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -688,5 +696,79 @@ describe("/notes/$noteId/edit route", () => {
     // focus は直前の toHaveFocus で落ち着いている
     expect(ariaLabelsOf(focused)).not.toContain(noteEditTriggerName(NOTE));
     expect(fetching).toHaveBeenExhausted();
+  });
+
+  /**
+   * 操作中の表示 (押したリンクの Spinner、保存後の「更新中」) で一覧の列が動かないこと (ADR-0042)。
+   * table は auto layout なので、cell の中身の幅が変わると列幅が変わり、View Transition のクロスフェードで
+   * 2 重の像に見える。列見出しの幅を frame ごとに記録し、記録の間に動かなかったことを見る。
+   * 中身そのものの変化 (title を長く編集した) で列が動くのは対象外なので、保存のテストは値を変えずに保存する
+   */
+  describe("一覧の列幅", () => {
+    afterEach(restoreDefaultViewport);
+
+    // 列幅の配分は viewport の余りで決まる。既定の幅と、列が中身の幅へ詰まる幅の両方で見る
+    it.each([
+      ["既定", DEFAULT_VIEWPORT],
+      ["中間", MEDIUM_VIEWPORT],
+    ])(
+      "%s の幅で、編集を押してからダイアログが開くまで、列見出しの幅が動かない",
+      async (_, viewport) => {
+        await setViewport(viewport);
+        vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
+        const fetching = deferMock(getNote);
+        const { screen } = await renderRoute("/notes");
+        await expect.element(rowEditLink(screen, NOTE.title)).toBeInTheDocument();
+
+        const frames = await recordColumnWidths(
+          screen.getByRole("columnheader"),
+          async ({ frame }) => {
+            await rowEditLink(screen, NOTE.title).click();
+            // 取得を握っている間の Spinner を frame に入れてから決着させる
+            await expect
+              .element(rowEditLink(screen, NOTE.title).getBySlot("spinner"))
+              .toBeInTheDocument();
+            await frame();
+            fetching.resolve(NOTE);
+            await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+            await frame();
+          },
+        );
+
+        expectStableColumnWidths(frames);
+      },
+    );
+
+    it("1 行の一覧で保存してから再取得が終わるまで、列見出しの幅が動かない", async () => {
+      // 1 行の一覧では、その行の日時が更新日時の列でいちばん幅の広い中身になる。「更新中」に替わると列が中身に合わせて縮む
+      const refetched = { ...NOTE, updatedAt: UPDATED_NOTE.updatedAt };
+      vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
+      const refetch = deferMock(listNotes);
+      vi.mocked(getNote).mockResolvedValue(NOTE);
+      vi.mocked(updateNote).mockResolvedValue(undefined);
+      const { screen } = await renderRoute("/notes");
+      await rowEditLink(screen, NOTE.title).click();
+      await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+
+      const frames = await recordColumnWidths(
+        // モーダル表示中は一覧が aria-hidden なので includeHidden
+        screen.getByRole("columnheader", { includeHidden: true }),
+        async ({ frame }) => {
+          await saveButton(screen).click();
+          await parkMouse();
+          await expectNoteDialogClosed(screen);
+          // 再取得を握っている間の「更新中」を frame に入れてから決着させる
+          await expect.element(noteRow(screen, NOTE).getByText("更新中")).toBeInTheDocument();
+          await frame();
+          refetch.resolve([refetched]);
+          await expect
+            .element(noteRow(screen, NOTE).getByText(formatDateTime(refetched.updatedAt)))
+            .toBeInTheDocument();
+          await frame();
+        },
+      );
+
+      expectStableColumnWidths(frames);
+    });
   });
 });
