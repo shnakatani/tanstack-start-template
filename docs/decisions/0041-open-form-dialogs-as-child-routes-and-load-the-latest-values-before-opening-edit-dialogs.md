@@ -53,19 +53,19 @@ detached trigger の handle で開くダイアログは、閉じても mount し
 | 読み込み開始の読み上げ | 出さない。`pendingMs` の間に本物か読み込み中のダイアログが開き、focus がその中へ移る。ADR-0026 の mutation の開始の通知とは扱いが違う                                                                                                                                                                                                                                                                                                                      |
 | 読み込みの失敗         | `errorComponent` もダイアログの形で出す。例外の文言は出さず固定の文言にし、再試行は `router.invalidate()` を呼ぶ                                                                                                                                                                                                                                                                                                                                           |
 | 閉じたときの focus     | 下の「閉じたときの focus」の表。`finalFocus` に関数を渡して分ける                                                                                                                                                                                                                                                                                                                                                                                          |
-| 遷移の伝え方           | ページとの行き来も、ほかの遷移と同じく伝える。開くとダイアログの title、閉じると開く元のページの title を読み上げる。開いたときは focus を背後のページの見出しへ移さず、Base UI がダイアログの中へ移す (ADR-0035)                                                                                                                                                                                                                                          |
+| 遷移の伝え方           | ページとの行き来も、ほかの遷移と同じく伝える。開くとダイアログの title、閉じると開く元のページの title を読み上げる。読み込み中のダイアログを閉じたときは読み上げない。router が確定した location は開く元のページのままで、ページは変わっていない。開いたときは focus を背後のページの見出しへ移さず、Base UI がダイアログの中へ移す (ADR-0035)                                                                                                           |
 | View Transition        | 既定のまま (ADR-0040)。どの閉じ方でも route がすぐ unmount するので、Base UI の閉じるアニメーションは出ない。クロスフェードが消え方を和らげる                                                                                                                                                                                                                                                                                                              |
 
 ### 閉じる時点
 
-閉じる操作の時点で離れ、閉じるアニメーションの後まで待たない。Base UI が閉じかけの popup を閉じるアニメーションの終わりまで描くのは、Root が mount されている間である ("the popup stays rendered in a closing phase until its closing animation finishes"。Base UI「Animation」)。ダイアログの route を離れると、開く元のページの `<Outlet />` は子の match が無くなって何も描かず (`@tanstack/react-router` 1.170.41 の `Match.tsx` のコードの読み)、Root ごと外れる。router 自身は route を離れるときの退場のアニメーションを持たない (TanStack/router#2635、2026-10-12 時点で open)。
+閉じる操作の時点で離れ、閉じるアニメーションの後まで待たない。Base UI は閉じたあと、アニメーションの終わりを `element.getAnimations()` で見届けてから unmount する ("Base UI automatically waits for the animation finish before unmounting the component"。`@base-ui/react` 1.8.0 の同梱の docs の Base UI「Animation」)。見届けるのは Dialog の部品自身なので、親が部品ごと外すと待てない (推論)。ダイアログの route を離れると、開く元のページの `<Outlet />` は子の match が無くなって何も描かず (`@tanstack/react-router` 1.170.41 の `Match.tsx` のコードの読み)、Root ごと外れる。router 自身は route を離れるときの退場のアニメーションを持たない。maintainer は TanStack/router#2804 で "Router replaces the active Outlet match before transition libraries can retain the previous route element for an exit animation." として TanStack/router#2635 (2026-10-12 時点で open) へまとめ、TanStack/router#1831 で tannerlinsley は "Animations would require simultaneously rendering the states for both the previous and next trees." と書く。route を離れるときに要素へ退場の見せ方を当てる公式の形は、View Transition の名前を要素に付けて `::view-transition-old` にアニメーションを当てる形である (TanStack Router の example `view-transitions`)。
 
-| 案                                                                                                                      | 評価                                                                                                                                                                                                                                             | 採否     |
-| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| 閉じる操作の時点で離れる (TanStack Router の example `location-masking` の形)                                           | 本物、読み込み中、失敗、見つからないのダイアログが同じ閉じ方になる。読み込み中に閉じると、読み込みの結果は router が捨てる。閉じるアニメーションは出ず、クロスフェード (ADR-0040) で消える                                                       | **採用** |
-| 閉じるアニメーションの後で離れる (`onOpenChangeComplete` で `navigate`)                                                 | 読み込み中のダイアログでは、アニメーションの間に読み込みが終わると本物のダイアログが開き、URL はダイアログのまま残る (下の「実測」)。読み込み中のダイアログだけ待たない例外が要り、閉じ方が 2 つになる                                           | 却下     |
-| Dialog の Root を開く元のページに上げ、Popup の中に `<Outlet />` を置く                                                 | Root が残るので Base UI は閉じるアニメーションを流せるが、`<Outlet />` は子の match が無くなると何も描かないので、中身の無い枠が閉じる見込み (コードの読み、未実測)。example の骨格 (状態ごとに別のダイアログ) から外れる                        | 却下     |
-| 閉じる操作の時点で離れ、Popup に `view-transition-name` を付けて `::view-transition-old` に閉じるアニメーションを当てる | View Transition の旧画面の snapshot で退場を見せる。名前を付ける場所 (registry の部品か、ダイアログの route の側か)、別のダイアログに替わるときに新旧の同じ名前が形を移すアニメーションになること、reduced motion の扱いが決まっていない。未実測 | 未決     |
+| 案                                                                                                                      | 評価                                                                                                                                                                                                                                                                               | 採否     |
+| ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 閉じる操作の時点で離れる (TanStack Router の example `location-masking` の形)                                           | 本物、読み込み中、失敗、見つからないのダイアログが同じ閉じ方になる。読み込み中に閉じると、読み込みの結果は router が捨てる。閉じるアニメーションは出ず、クロスフェード (ADR-0040) で消える                                                                                         | **採用** |
+| 閉じるアニメーションの後で離れる (`onOpenChangeComplete` で `navigate`)                                                 | 読み込み中のダイアログでは、アニメーションの間に読み込みが終わると本物のダイアログが開き、URL はダイアログのまま残る (下の「実測」)。読み込み中のダイアログだけ待たない例外が要り、閉じ方が 2 つになる                                                                             | 却下     |
+| Dialog の Root を開く元のページに上げ、Popup の中に `<Outlet />` を置く                                                 | Root が残るので Base UI は閉じるアニメーションを流せるが、`<Outlet />` は子の match が無くなると何も描かないので、中身の無い枠が閉じる見込み (コードの読み、未実測)。example の骨格 (状態ごとに別のダイアログ) から外れる                                                          | 却下     |
+| 閉じる操作の時点で離れ、Popup に `view-transition-name` を付けて `::view-transition-old` に閉じるアニメーションを当てる | View Transition の旧画面の snapshot で退場を見せる (example `view-transitions` の形)。名前を付ける場所 (registry の部品か、ダイアログの route の側か)、別のダイアログに替わるときに新旧の同じ名前が形を移すアニメーションになること、reduced motion の扱いが決まっていない。未実測 | 未決     |
 
 ### 既存の値を編集するダイアログだけに当てるもの
 
@@ -107,9 +107,9 @@ Base UI は `finalFocus` を、閉じたときだけでなく、開いたまま 
 
 下の表の行は、次の事情で決めた。
 
-- route を離れたとき、開いた元のリンク (行の編集リンク、追加のリンク) へ戻さないと、focus はダイアログと一緒に外れ、route の announcer が見出しへ移す (ADR-0035)。利用者は一覧の中の位置を失う
+- route を離れたとき、開いた元のリンク (行の編集リンク、追加のリンク) へ戻さないと、focus はダイアログと一緒に外れる。利用者は一覧の中の位置を失う
 - リンクへ戻した focus は、announcer が動く前に戻り終えるので、見出しへ移らない (2026-10-10 に実測、ADR-0035)
-- 開いた元のリンクが無いときは、見出しへ移すのを announcer に任せず、汎用の hook が移す。読み込み中のダイアログから離れると、router が確定した location は開く元のページのままで、announcer はページが変わったと見ず、focus が body に残る (2026-10-12、Vitest の browser mode)
+- 開いた元のリンクが無いときは、汎用の hook が見出しへ移す。route の announcer (ADR-0035) にも見出しへ移す働きはあるが、任せない。読み込み中のダイアログから離れると、router が確定した location は開く元のページのままで、announcer はページが変わったと見ず、focus が body に残る (2026-10-12、Vitest の browser mode)
 - 替わったときにリンクを返すと、替わる側のダイアログが入力欄へ focus を移すまでの 1 frame だけ、リンクが focus を受ける。消える側の戻し先へ移す処理が microtask で走り、替わる側の初期 focus は次の animation frame で走るからである。消える側の戻し先が替わる側の初期 focus より先に当たる仕組みは floating-ui/floating-ui#3509 (2026-10-10 時点で open) と同じ。`finalFocus` に `false` を返すと focus を動かさない (Base UI「Dialog」の Custom focus management)
 
 | 閉じ方                                                      | 開いた元のリンクがある                               | 開いた元のリンクが無い (行が絞り込みで外れた、削除された) |
@@ -224,26 +224,28 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 | `finalFocus` が呼ばれた時点の DOM を、読み込み中のダイアログが本物に替わる、編集から追加の URL へ移る、開いたまま別の id の編集の URL へ移る、戻るで一覧へ離れるの 4 通りで見る。アニメーションを止めた形と戻した形で 3 回ずつ (2026-10-12、Vitest の browser mode。`MutationObserver` で popup の出入りを記録し、`finalFocus` の中で `takeRecords()` した) | 4 通り × 2 形 × 3 回の 24 回のどれでも、`finalFocus` の時点でダイアログは DOM に 1 つも無かった。替わる側の popup は `finalFocus` の後に足された                                                                       |
 | code-based の route tree (layout route の `/items` の下に index route の `/` とダイアログの route の `/new`) を `createRouter` に渡し、`/items` と `/items/new` を `router.load()` で開いて `router.state.matches` の routeId を見る (2026-10-12、Node)                                                                                                     | `/items` では `__root__`、`/items`、`/items/` の順に並び、`/items/new` では `__root__`、`/items`、`/items/new` の順に並んだ                                                                                            |
 
-`finalFocus` が呼ばれた時点で、戻り先との pathname の比較、`router.matchRoute` (`pending` を省く形と `pending: true`)、開く元のページの route の match の後ろに match があるか、の 4 つの判定がどう分けるかを、11 通りで 3 回ずつ見た (2026-10-12、Vitest の browser mode。一覧のページの子に追加と編集のダイアログの route を置いた route tree と、layout route の下に index route とダイアログの route を並べた route tree)。3 回とも同じ結果で、どの回も `finalFocus` の時点の status は pending だった。閉じる操作の 3 行は、閉じるアニメーションの後で離れる形で測った。閉じる操作の時点で離れる形でも、`finalFocus` の時点で router は戻り先にいて、開いた元の要素へ focus が移る (2026-10-12、Vitest の browser mode)。
+`finalFocus` が呼ばれた時点で、戻り先との pathname の比較、`router.matchRoute` (`pending` を省く形と `pending: true`)、開く元のページの route の match の後ろに match があるか、の 4 つの判定がどう分けるかを、11 通りで 3 回ずつ見た (2026-10-12、Vitest の browser mode。一覧のページの子に追加と編集のダイアログの route を置いた route tree と、layout route の下に index route とダイアログの route を並べた route tree)。3 回とも同じ結果で、どの回も `finalFocus` の時点の status は pending だった。閉じる操作の 3 行は、閉じるアニメーションの後で離れる形で測った。閉じる操作の時点で離れる形では、判定の比較を測り直していない。pathname の比較で閉じる操作の後に開いた元の要素へ focus が移ることを、index route を置くページ、親に path params があるページ、開く元のページの直下に平らに置くダイアログ、相対の `to` の戻り先の 4 通りで確かめた (2026-10-12、Vitest の browser mode)。
 
-| 閉じ方                                                     | 求める判定     | pathname の比較 | `matchRoute` (`pending` を省く) | `matchRoute` (`pending: true`) | 後ろに match があるか |
-| ---------------------------------------------------------- | -------------- | --------------- | ------------------------------- | ------------------------------ | --------------------- |
-| 編集のダイアログから戻るで一覧へ                           | 離れた         | 離れた          | 替わった                        | 離れた                         | 離れた                |
-| 一覧に search がある形で、編集のダイアログから戻るで一覧へ | 離れた         | 離れた          | 替わった                        | 離れた                         | 離れた                |
-| 編集の読み込み中のダイアログが本物に替わる                 | 替わった       | 替わった        | 離れた                          | 替わった                       | 替わった              |
-| 編集から追加の URL へ移る                                  | 替わった       | 替わった        | 替わった                        | 替わった                       | 替わった              |
-| 編集から別の id の編集の URL へ移る                        | 替わった       | 替わった        | 替わった                        | 替わった                       | 替わった              |
-| 別のページから編集の URL へ移り、戻るでそのページへ        | 戻り先にいない | 替わった        | 替わった                        | 替わった                       | 離れた                |
-| index route を置くページで、追加から戻るで離れる           | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
-| index route を置くページで、追加の読み込み中が本物に替わる | 替わった       | 替わった        | 離れた                          | 替わった                       | 替わった              |
-| 編集を閉じる操作で閉じる                                   | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
-| 編集の読み込み中を閉じる操作で閉じる                       | 離れた         | 離れた          | 離れた                          | 離れた                         | 替わった              |
-| index route を置くページで、追加を閉じる操作で閉じる       | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
+| 閉じ方                                                                                            | 求める判定     | pathname の比較 | `matchRoute` (`pending` を省く) | `matchRoute` (`pending: true`) | 後ろに match があるか |
+| ------------------------------------------------------------------------------------------------- | -------------- | --------------- | ------------------------------- | ------------------------------ | --------------------- |
+| 編集のダイアログから戻るで一覧へ                                                                  | 離れた         | 離れた          | 替わった                        | 離れた                         | 離れた                |
+| 一覧に search がある形で、編集のダイアログから戻るで一覧へ                                        | 離れた         | 離れた          | 替わった                        | 離れた                         | 離れた                |
+| 編集の読み込み中のダイアログが本物に替わる                                                        | 替わった       | 替わった        | 離れた                          | 替わった                       | 替わった              |
+| 編集から追加の URL へ移る                                                                         | 替わった       | 替わった        | 替わった                        | 替わった                       | 替わった              |
+| 編集から別の id の編集の URL へ移る                                                               | 替わった       | 替わった        | 替わった                        | 替わった                       | 替わった              |
+| 別のページから編集の URL へ移り、戻るでそのページへ                                               | 戻り先にいない | 替わった        | 替わった                        | 替わった                       | 離れた                |
+| index route を置くページで、追加から戻るで離れる                                                  | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
+| index route を置くページで、追加の読み込み中が本物に替わる                                        | 替わった       | 替わった        | 離れた                          | 替わった                       | 替わった              |
+| 編集を閉じる操作で閉じる (閉じるアニメーションの後で離れる形で測った)                             | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
+| 編集の読み込み中を閉じる操作で閉じる (閉じるアニメーションの後で離れる形で測った)                 | 離れた         | 離れた          | 離れた                          | 離れた                         | 替わった              |
+| index route を置くページで、追加を閉じる操作で閉じる (閉じるアニメーションの後で離れる形で測った) | 離れた         | 離れた          | 替わった                        | 離れた                         | 替わった              |
 
 ## 出典
 
 - TanStack Router example `location-masking` (`@tanstack/react-router` 1.170.41): https://github.com/TanStack/router/tree/@tanstack/react-router@1.170.41/examples/react/location-masking
 - Base UI「Animation」: https://base-ui.com/react/handbook/animation
+- TanStack Router example `view-transitions` (`@tanstack/react-router` 1.170.41): https://github.com/TanStack/router/tree/@tanstack/react-router@1.170.41/examples/react/view-transitions
+- TanStack/router#1831 (useOutlet Hook (for animated outlets)): https://github.com/TanStack/router/discussions/1831
 - TanStack Router「Data Loading」: https://tanstack.com/router/latest/docs/framework/react/guide/data-loading
 - TanStack Router「Route Masking」: https://tanstack.com/router/latest/docs/framework/react/guide/route-masking
 - TanStack Router「Navigation」(`useMatchRoute` and `<MatchRoute>`): https://tanstack.com/router/latest/docs/framework/react/guide/navigation
