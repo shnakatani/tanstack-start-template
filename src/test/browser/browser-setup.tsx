@@ -46,10 +46,18 @@ beforeEach(async () => {
  * 1 回目を代替フォント、2 回目を Geist で読むと、同じ中身でも幅が違う (2026-10-13 に `DateTimeText` の幅の比較で
  * 121px と 139px を観測)。`document.fonts.ready` だけでは足りない。font は最初に使う要素が描かれるまで要求されず、
  * 要求の前の `ready` は待たずに解決する。`load()` でルートの font-family を名指しして要求する。
- * 読み込みは page に 1 回で、2 ファイル目からは待ちが無い
+ * `load()` の `text` の既定は空白 1 文字なので、unicode-range が空白を含む latin の subset だけを読む
+ * (MDN「FontFaceSet: load() method」)。数字と ASCII は latin の subset に入る。
+ * 合う face が 1 つも無いと `load()` は空の配列で解決し、代替フォントのまま黙って通るので、ここで落とす
  */
 beforeEach(async () => {
-  await document.fonts.load(`1em ${getComputedStyle(document.documentElement).fontFamily}`);
+  const fontFamily = getComputedStyle(document.documentElement).fontFamily;
+  const faces = await document.fonts.load(`1em ${fontFamily}`);
+  if (faces.length === 0) {
+    throw new Error(
+      `browser-setup: font-family "${fontFamily}" に合う web font の face が無い。src/styles.css の font の import を確かめる`,
+    );
+  }
 });
 
 /**

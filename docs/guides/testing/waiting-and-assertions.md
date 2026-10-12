@@ -95,6 +95,7 @@ assert の予算をテストの予算と分けて宣言する。`tooling/test/br
 - レイアウトの回帰は、要素の className に class が含まれるかではなく、描いた結果の寸法 (`getBoundingClientRect()`) と computed style を測って確かめる。class の文字列が在っても、その CSS が生成されて効いているかは分からない
 - ブラウザで走る project は Tailwind の plugin を通す (`tooling/test/chromium-project.ts`) ので、class は実際の CSS に解決されて測れる。style の比べ方は「否定を肯定で書く」にある
 - 寸法を比べるテストは、`src/test/browser/browser-setup.tsx` が web font を読み込んでから描く。代替フォントと Geist で同じ中身の幅が違うので、1 回目と 2 回目で font が替わると比較にならない
+- setup は `document.fonts.load()` に `text` を渡さない。`text` の既定は空白 1 文字なので ([MDN「FontFaceSet: load() method」][])、unicode-range が空白を含む latin の subset だけを読む。ほかの subset の文字 (latin-ext、cyrillic など) の幅を比べるテストは、その文字を `text` に渡して `load()` を待ってから測る。合う face が 1 つも無いと、`load()` は空の配列で解決するので、setup がそのテストを落とす
 - 寸法の絶対値は pin しない。registry の size の目盛りが決める値で、上流が変えただけで落ちる。2 回の観測 (pending の前後、数字の違う 2 つの日時) を比べる形にする。実例は `src/components/action/button.test.tsx` と `src/components/parts/date-time-text.test.tsx`
 - 操作の途中で一瞬だけ動く列幅 (ADR-0042) は、`src/test/assert/column-widths.ts` の `recordColumnWidths(headers, whileRunning)` で `requestAnimationFrame` ごとに記録し、`expectStableColumnWidths(frames)` で判定する。操作の前後の 2 点では、戻ってしまった移動を捕まえられない。判定は `src/test/assert/column-width-drift.ts` の純粋関数が持ち、失敗文に動いた列と px と frame が残る
 - `recordColumnWidths` は矩形の読みを `expect.poll` の外で行う例外である (「同期読みを書き換える」)。rAF の記録は retry の対象ではなく、判定は記録を閉じたあとに 1 回だけ行う。要素は呼んだ時点で 1 回だけ解決する。ダイアログが開くと一覧が `aria-hidden` の下に入り、`getByRole("columnheader")` は要素を返さなくなる
@@ -336,7 +337,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。Base UI docs は 1.8.0 の docs のソースと、Testing Library docs、Oxlint docs、MDN、CSS Flexbox Level 1 は 2026-10-05 の内容と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。Base UI docs は 1.8.0 の docs のソースと、Testing Library docs、Oxlint docs、MDN、CSS Flexbox Level 1 は 2026-10-05 の内容と照らした。MDN「FontFaceSet: load() method」は 2026-10-13 の内容と照らした。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -383,4 +384,5 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 [Oxlint docs「vitest/expect-expect」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/expect-expect.html
 [Vitest docs のレシピ「Type Narrowing in Tests」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/recipes/type-narrowing.md
 [MDN「flex-shrink」]: https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/flex-shrink
+[MDN「FontFaceSet: load() method」]: https://developer.mozilla.org/en-US/docs/Web/API/FontFaceSet/load
 [CSS Flexbox Level 1]: https://www.w3.org/TR/css-flexbox-1/
