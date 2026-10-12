@@ -602,8 +602,9 @@ function readExitShape(effect: KeyframeEffect) {
 }
 
 /**
- * 要素に `data-closed` が付いた時点で、その要素の閉じるアニメーションの形を読んで記録する。属性が付いた直後の
- * microtask では、アニメーションはまだ始まっておらず、要素も外れていない。`animationstart` で読まない理由は
+ * 要素に `data-closed` が付いた時点で、その要素の閉じるアニメーションの形を読んで記録する。`getAnimations()` は
+ * 呼んだ時点で style の変更を反映するので、属性が付いた直後の microtask でも閉じるアニメーションを返し、
+ * 要素もまだ外れていない。`animationstart` で読まない理由は
  * docs/guides/testing/user-interactions.md「animation を戻すテストを書く」
  */
 function recordClosingShapes(element: Element): ReturnType<typeof readExitShape>[] {
