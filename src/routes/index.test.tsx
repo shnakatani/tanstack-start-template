@@ -10,6 +10,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
+import { TEST_ROUTER_DEFAULTS } from "@/test/app/test-router-defaults";
 
 import { Route } from "./index";
 
@@ -42,6 +43,7 @@ describe("/ route", () => {
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
     const router = createRouter({
+      ...TEST_ROUTER_DEFAULTS,
       routeTree,
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });
