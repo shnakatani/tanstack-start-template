@@ -30,6 +30,7 @@ import {
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { recordFocusins } from "@/test/assert/focusin";
+import { recordViewTransitions } from "@/test/assert/view-transitions";
 import { enableAnimations } from "@/test/browser/animations";
 
 import { useRouteDialog } from "./use-route-dialog";
@@ -581,30 +582,6 @@ describe("useRouteDialog の閉じたときの focus", () => {
     expect(textsOf(focused)).not.toContain("項目 2 を編集");
   });
 });
-
-/**
- * `document.startViewTransition` の呼び出しを記録する。router は返った ViewTransition の `updateCallbackDone`
- * を待つので、元の実装をそのまま呼ぶ
- */
-function recordViewTransitions() {
-  const spy = vi.spyOn(document, "startViewTransition");
-  onTestFinished(() => {
-    spy.mockRestore();
-  });
-  /** `action` が始めた View Transition の types と ViewTransition を返す */
-  return async function transitionOf(action: () => Promise<void> | void) {
-    const before = spy.mock.calls.length;
-    await action();
-    await expect.poll(() => spy.mock.calls.length).toBeGreaterThan(before);
-    const [options] = spy.mock.calls[before] ?? [];
-    const result = spy.mock.results[before];
-    expect.assert(result?.type === "return");
-    return {
-      types: typeof options === "object" ? options.types : undefined,
-      transition: result.value,
-    };
-  };
-}
 
 function keyframeEffectsOf(animations: Animation[]): KeyframeEffect[] {
   return animations
