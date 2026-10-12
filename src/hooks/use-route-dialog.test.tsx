@@ -889,11 +889,10 @@ describe("useRouteDialog の閉じる遷移", () => {
   ])("$shown とき、印の有るダイアログの Popup だけが退場する", async ({ entries, page }) => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const transitionOf = recordViewTransitions();
-    const { router } = await renderDialogRouter(entries, { viewTransition: true });
-    // 2 つの Popup が開いた画面では、どちらの Popup も role で引けなかった。Popup の data-slot を数える
-    await expect
-      .poll(() => document.querySelectorAll("[data-slot=dialog-content]"))
-      .toHaveLength(2);
+    const { router, screen } = await renderDialogRouter(entries, { viewTransition: true });
+    // 2 つの Popup は Base UI の floating tree で入れ子でなく、それぞれが相手の portal を aria-hidden にする。
+    // 開いた画面では両方の portal が aria-hidden なので、getByRole に includeHidden を付ける
+    await expect.element(screen.getByRole("dialog", { includeHidden: true })).toHaveLength(2);
     await document.activeViewTransition?.finished;
     const exits = recordStartedTransitionShapes("::view-transition-old(route-dialog)");
 
