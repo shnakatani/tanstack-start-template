@@ -10,7 +10,7 @@ export function recordViewTransitions() {
     spy.mockRestore();
   });
   /** `action` が始めた View Transition の types と ViewTransition を返す */
-  return async function transitionOf(action: () => Promise<void> | void) {
+  return vi.defineHelper(async (action: () => Promise<void> | void) => {
     const before = spy.mock.calls.length;
     await action();
     await expect.poll(() => spy.mock.calls.length).toBeGreaterThan(before);
@@ -21,5 +21,5 @@ export function recordViewTransitions() {
       types: typeof options === "object" ? options.types : undefined,
       transition: result.value,
     };
-  };
+  });
 }
