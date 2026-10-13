@@ -53,7 +53,7 @@ Testing Library も同じ理由で、`wrapper` の中の StrictMode では React
 
 - 描画中の副作用が回数の検証で落ちる。2026-10-04 に、warn を描画中に出す実装で `CheckboxValidatorsWarn` の story が「2 回呼ばれた」で落ち、`useEffect` の実装では通ることを確かめた。React は 18 から 2 回目の描画の `console` を抑えない (React docs「React 18 Upgrade Guide」の「No suppression of console logs」)
 - mount 直後の effect を setup → cleanup → setup の順に走らせるのは、ブラウザテストだけである。story では StrictMode が root にないので setup の 1 回で終わり、cleanup の欠けた effect は story では見つからない
-- 2026-10-04 に `vp run verify` で、light と dark の全 story とブラウザテストが StrictMode の下で通った
+- 2026-10-04 にマージ前検証の `vp test run` で、light と dark の全 story とブラウザテストが StrictMode の下で通った
 - Storybook の画面も同じ decorator で包むので、描画は 2 回走り、mount 直後の effect は付け直さない (Context の 2 つ目の表)
 - 再評価の条件: addon-vitest が main.ts の `framework.options.strictMode` を vitest 経由の story へ渡し、`@storybook/tanstack-react` の `FrameworkOptions` が `strictMode` を持つようになったら、main.ts の口へ移すかを見直す。root から包めるので、story でも mount 直後の effect を付け直せる
 

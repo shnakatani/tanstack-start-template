@@ -33,13 +33,13 @@
 - mise の値は、`mise exec` で打ったコマンド、mise のタスク、mise を activate したシェルに届く (mise v2026.9.18 の docs/environments/index.md の冒頭: "mise supplies them to commands run with `mise exec`, tasks, and activated interactive shells.")。mise のタスクなら mise が必ず値を入れるが、Vite Task のタスクには、呼んだシェルが mise の環境を読んでいるときだけ届く
 - mise の値を読むタスクは、値が届いていなければ止まる形にする。黙って別の port や別の DB で動くと、worktree ごとに分けた port と DB が混ざる
 
-| タスク                                  | 読む mise の値                                       | 届いていないとき (2026-10-14、vite-plus 1.1.0 で実測)                                                     |
-| --------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `serve`、`storybook`                    | daemons の自動 port (`SERVE_PORT`、`STORYBOOK_PORT`) | command の `${SERVE_PORT:?…}` を `/bin/sh` が解釈し、`/bin/sh: SERVE_PORT: mise の環境が要る。…` で止まる |
-| `db:generate`、`db:migrate`、`db:seed`  | `[env]` の `DB_FILE_NAME`                            | `drizzle.config.ts` と `createDb()` が `DB_FILE_NAME is not set.` で throw する                           |
-| `verify`、`contrast`、`a11y:incomplete` | 無い                                                 | 該当しない                                                                                                |
+| タスク                                  | 読む mise の値                                                                                            | 届いていないとき (2026-10-14、vite-plus 1.1.0 で実測)                                                     |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `serve`、`storybook`                    | daemons の自動 port (`SERVE_PORT`、`STORYBOOK_PORT`)。dev server は `createDb()` で `DB_FILE_NAME` も読む | command の `${SERVE_PORT:?…}` を `/bin/sh` が解釈し、`/bin/sh: SERVE_PORT: mise の環境が要る。…` で止まる |
+| `db:generate`、`db:migrate`、`db:seed`  | `[env]` の `DB_FILE_NAME`                                                                                 | `drizzle.config.ts` と `createDb()` が `DB_FILE_NAME is not set.` で throw する                           |
+| `verify`、`contrast`、`a11y:incomplete` | 無い                                                                                                      | 該当しない                                                                                                |
 
-- 代償として、mise の hook が走らないシェル (エージェントのシェル、hook の無い IDE のタスク) からは、mise の値を読むタスクを `mise x -- vp run <タスク>` で打つことになる。2026-10-14 に、hook の無いシェルで `vp run serve` が止まり、`mise x -- vp run serve` が daemons の port で起動した
+- 代償として、mise の hook が走らないシェル (エージェントのシェル、hook の無い IDE のタスク) からは、mise の値を読むタスクを `mise x -- vp run <タスク>` で打つことになる。2026-10-14 に mise 2026.10.3 で、hook の無いシェルでは `vp run serve` が止まり、`mise x -- vp run serve` が daemons の port で起動した。hook が読み込む値 (`mise hook-env` の出力) には、`DB_FILE_NAME` に加えて `SERVE_PORT` と `STORYBOOK_PORT` も入っていた
 
 | 案                                                                                                 | 評価                                                                                                                                                                                                                                                 | 採否     |
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -96,7 +96,7 @@ CI は mise を要さず、`vp run verify` を打つ。手順を workflow に写
 
 ### dev server と Storybook の port は mise の daemons の自動 port で worktree ごとに決める
 
-`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の Vite Task のタスクを `run = "exec vp run serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise v2026.9.18 の docs/daemons.md「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、mise の環境を読んだシェルから `vp run serve` で前面に起動できる。docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した。`mise daemons stop` は手元の pitchfork の shim の版が決まらず失敗したので、常駐を止める経路は確かめていない。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (同「Per-daemon proxy settings」)。
+`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の Vite Task のタスクを `run = "exec vp run serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise v2026.9.18 の docs/daemons.md「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、mise の環境を読んだシェルから `vp run serve` で前面に起動できる。docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した。`mise daemons stop` は手元の pitchfork の shim の版が決まらず失敗したので、常駐を止める経路は確かめていない。同じ日に、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動したプロセスの pid にだけ SIGTERM を送ると dev server が port を持ったまま残った (global の `vp` が node の子を起こすため)。プロセスグループ全体への SIGINT (端末の Ctrl-C) では止まった。pitchfork が stop でどちらに送るかは確かめていない。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (同「Per-daemon proxy settings」)。
 
 2026-10-09 に mise 2026.9.18 で確かめた振る舞いは次のとおりである。
 
@@ -117,7 +117,7 @@ CI は mise を要さず、`vp run verify` を打つ。手順を workflow に写
 
 自動 port は別の worktree や別のプロジェクトの port と重なりうる。mise も重なった port をずらさない (mise v2026.9.18 の docs/daemons.md「Port conflicts」)。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
 Vite は使用中なら次の空き port へずらし (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")、Storybook も環境変数 `CI` があると尋ねずにずらす (2026-10-04 に storybook@10.6.0 で実測)。
-ずれると、worktree ごとに決まった port を指す側が別のサーバーへつながる。2026-10-09 に vite-plus 1.0.0 で、同じ port での 2 つ目の `vp run serve` が `Port 3129 is already in use` で終わることを確かめた。
+ずれると、worktree ごとに決まった port を指す側が別のサーバーへつながる。2026-10-09 に vite-plus 1.0.0 で、同じ port での 2 つ目の `vp dev --port 3129 --strictPort` が `Port 3129 is already in use` で終わることを確かめた。
 
 | 案                                                                 | 評価                                                                                                                      | 採否     |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -204,7 +204,7 @@ bundler (Vite / Rolldown)、linter (oxlint)、formatter (oxfmt)、test runner (V
 Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scripts を `package.json` に置くことを、global の CLI と併用する場合も含めて勧める ("whether you use both CLIs or only the project-local CLI")。例は `dev` / `check` / `test` / `build` の 4 つで、どれも中身が `vp <name>` である。script の中の `vp` は `node_modules/.bin` から解決する。
 勧める利点は、例のコードブロックのあとに置かれた、節の最後の段落にある: "After installing the project's dependencies, contributors can run these scripts through their package manager, such as `pnpm run dev` or `npm run dev`, without being required to install the global CLI." global の CLI を入れていない環境でも、package manager から走らせられることである。
 
-- 開発者の入口 (`check` / `test` / `dev`) は足さない。このリポジトリの開発者は README のセットアップで global の `vp` を入れ、`vp install` も `.mise.toml` のタスクもそれを前提にするので、上の利点が当てはまらない。足すと `vp <name>` を打つたびに stderr に note が出る (Consequences)
+- 開発者の入口 (`check` / `test` / `dev`) は足さない。このリポジトリの開発者は README のセットアップで global の `vp` を入れ、`vp install` も `vp run` のタスクも `.mise.toml` の daemons の `run` もそれを前提にするので、上の利点が当てはまらない。足すと `vp <name>` を打つたびに stderr に note が出る (Consequences)
 - `dev` には別の理由もある。起動の入口は worktree ごとに port を導出する `vp run serve` である。`"dev": "vp dev"` は Vite の既定の port で起動し、使用中なら Vite が次の空き port へずらす (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")。`vp run serve` が worktree ごとに決める port から外れ、起動した順で port が変わる
 - `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す。global の `vp` を入れない環境 (本番の Node サーバーなど) がこの 2 つで走らせる。公式が勧める利点がそのまま当てはまる場面である。代償として、`vp build` を打つたびに note が出る (Consequences)
 

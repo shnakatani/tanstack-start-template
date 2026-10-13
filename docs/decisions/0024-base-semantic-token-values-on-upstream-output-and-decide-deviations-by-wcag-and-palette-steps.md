@@ -70,7 +70,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 `bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
 
-下の表は 2026-09-21 の `tailwindcss@4.3.3` の palette を `vp run contrast` で測ったもので、9 色が該当した。hue を変えるときの測り方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
+下の表は 2026-09-21 の `tailwindcss@4.3.3` の palette を `scripts/contrast/report.ts` で測ったもので、9 色が該当した。hue を変えるときの測り方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
 
 | hue                     | `<hue>-800` のまま | `<hue>-900` へ下げた後 |
 | ----------------------- | ------------------ | ---------------------- |
@@ -95,7 +95,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 | tint の面とその上の文字  | `--destructive` (`text-X`) | `--destructive-surface` (`bg-X/N`) | 本 ADR   |
 | 通常の文字と例示テキスト | `--muted-foreground`       | `--placeholder` (`::placeholder`)  | ADR-0025 |
 
-破壊色は「満たす段では広い側の用途が損なわれる」に当たる。テンプレートの部品には無いが、利用者が dark で不透明な `--muted` / `--secondary` / `--accent` の面に破壊ボタンを置くと、hover の `bg-destructive/30` が 1 つのトークン (`red-300`) では 4.00〜4.02 になり、4.5:1 を割る。満たす `red-200` (4.61〜4.62) は彩度 (oklch の C) が 0.062 で `red-300` の 0.114 の約半分になり、破壊を示す赤として弱いと目視で判断した。比では決まらない判断である。面を上流の値 (light `red-600`、dark `red-400`) へ切ると 4.88〜4.89 になる (2026-10-09 に `vp run contrast --theme dark --bg '<下地>' --bg '<面>/30' --fg '--destructive'` で測定。`red-200` は `src/styles.css` の dark の `--destructive` へ置いて測った)。
+破壊色は「満たす段では広い側の用途が損なわれる」に当たる。テンプレートの部品には無いが、利用者が dark で不透明な `--muted` / `--secondary` / `--accent` の面に破壊ボタンを置くと、hover の `bg-destructive/30` が 1 つのトークン (`red-300`) では 4.00〜4.02 になり、4.5:1 を割る。満たす `red-200` (4.61〜4.62) は彩度 (oklch の C) が 0.062 で `red-300` の 0.114 の約半分になり、破壊を示す赤として弱いと目視で判断した。比では決まらない判断である。面を上流の値 (light `red-600`、dark `red-400`) へ切ると 4.88〜4.89 になる (2026-10-09 に `scripts/contrast/report.ts` へ `--theme dark --bg '<下地>' --bg '<面>/30' --fg '--destructive'` を渡して測定。`red-200` は `src/styles.css` の dark の `--destructive` へ置いて測った)。
 
 切り出した側が緩い閾値を持つとは限らない。`--placeholder` は SC 1.4.3 を割る側を意図して選んでおり、その判断は ADR-0025 が持つ。
 

@@ -19,10 +19,12 @@ TanStack Start と Vite+ で組んだ Web アプリケーションの template r
 curl -fsSL https://vite.plus | bash
 ```
 
+mise のシェル hook を入れる (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)。`DB_FILE_NAME` と dev server・Storybook の port は、hook を読み込んだシェルから打った `vp run` にだけ届く。hook の走らないシェルでは `mise x -- vp run <タスク>` で打つ。
+
 以降はリポジトリ直下で実行する。
 
 ```bash
-mise trust && mise install                        # ツールと環境変数と port を有効にする
+mise trust && mise install                        # ツールを入れる
 vp install                                        # 依存パッケージ
 vp exec playwright install chromium --only-shell  # vp install では入らない。無いと browser project のテストが落ちる
 vp run db:migrate                                 # drizzle/ の migration を DB へ適用する
