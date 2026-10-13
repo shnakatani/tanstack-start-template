@@ -1,10 +1,14 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { describe, expect, it } from "vite-plus/test";
+import type { Row } from "@tanstack/react-table";
+import { createColumnHelper, Subscribe } from "@tanstack/react-table";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { expectRemoved } from "@/test/assert/absent";
+import type { Screen } from "@/test/assert/screen-assertions";
+
 import { DataTable } from "./data-table";
-import type { DataTableFeatures } from "./data-table-features";
-import { columnHeaderWidths } from "./data-table.test-helpers";
+import type { DataTableCellContext, DataTableFeatures } from "./data-table-features";
+import { columnHeaderWidths, expectDetailWithinTableContainer } from "./data-table.test-helpers";
 
 type Fruit = { id: number; name: string; price: number };
 
@@ -18,14 +22,19 @@ const FRUITS: Fruit[] = [
   { id: 2, name: "みかん", price: 80 },
 ];
 
+/** 詳細の行の中身。部品と同じ形の関数を渡し、React Compiler が memo の cache を差し込んだ形で呼ぶ */
+function FruitDetail({ row }: { row: Row<DataTableFeatures, Fruit> }) {
+  return <p>{`${row.original.name}は${row.original.price}円`}</p>;
+}
+
 /**
  * 状態のカタログは `data-table.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは構造の契約で、
  * 列見出しの順と `scope=col`、列見出しの幅が列の `size` で決まること、`rowProps` の busy 行だけが半透明になること、
- * 空表示の `colSpan` である。
+ * 空表示の `colSpan`、行を開いたときの詳細の行と、その中身の幅である。
  *
- * この部品は args だけで状態が決まるので story に play を書かない (docs/guides/storybook.md「カタログと play の範囲」)。play の無い
- * story は描画と axe しか走らせないため、上の契約はここでしか固定できない (docs/guides/storybook.md「story とブラウザテストの分担」の
- * 役割分担)。
+ * story の play は行を開くところだけを持つ。ほかの状態は args だけで決まる (docs/guides/storybook.md「カタログと play の範囲」)。
+ * 開閉のうち、実イベントで開いて閉じること、data を描き直したとき、開けなくなったとき、列幅は、play の合成イベントと
+ * story の args では作れない状態なのでここで固定する (docs/guides/storybook.md「story とブラウザテストの分担」の役割分担)。
  */
 describe("DataTable", () => {
   // table は名前が必須のロール (WAI-ARIA 1.2)。HTML の table には caption で名前を付ける
@@ -93,5 +102,132 @@ describe("DataTable", () => {
       .element(screen.getByRole("cell", { name: "データがありません" }))
       .toHaveAttribute("colspan", String(columns.length));
     await expect.element(screen.getByRole("columnheader")).toHaveLength(2);
+  });
+
+  describe("行を開く", () => {
+    // 開く cell は表の状態を Table のメソッドの裏で読むので、部品の中で Subscribe する (docs/guides/lists-and-search.md「一覧テーブルを組む」)
+    function ToggleCell({ row }: DataTableCellContext<Fruit>) {
+      if (!row.getCanExpand()) {
+        return null;
+      }
+      return (
+        <Subscribe source={row.table.atoms.expanded} selector={() => row.getIsExpanded()}>
+          {(isExpanded) => (
+            <button
+              type="button"
+              aria-expanded={isExpanded}
+              onClick={row.getToggleExpandedHandler()}
+            >
+              {`${row.original.name}の詳細`}
+            </button>
+          )}
+        </Subscribe>
+      );
+    }
+
+    const expandable = helper.columns([
+      helper.display({ id: "toggle", header: "詳細", size: 120, cell: ToggleCell }),
+      helper.accessor("name", { header: "名前", size: 200 }),
+      helper.accessor("price", { header: "価格", size: 120 }),
+    ]);
+
+    function fruitTable(data: Fruit[], canExpand: (fruit: Fruit) => boolean = () => true) {
+      return (
+        <div style={{ width: 160 }}>
+          <DataTable
+            tableKey="fruits-expandable"
+            caption="果物の一覧"
+            columns={expandable}
+            data={data}
+            getRowId={(fruit) => String(fruit.id)}
+            getRowCanExpand={({ original }) => canExpand(original)}
+            renderSubComponent={FruitDetail}
+          />
+        </div>
+      );
+    }
+
+    function toggle(screen: Screen, name: string) {
+      return screen.getByRole("button", { name: `${name}の詳細` });
+    }
+
+    it("押すと全列をまたぐ詳細の行を出し、もう一度押すと閉じる", async () => {
+      const screen = await render(fruitTable(FRUITS));
+      await expect.element(toggle(screen, "りんご")).toHaveAttribute("aria-expanded", "false");
+
+      await toggle(screen, "りんご").click();
+
+      await expect.element(toggle(screen, "りんご")).toHaveAttribute("aria-expanded", "true");
+      const detail = screen.getByRole("cell", { name: "りんごは120円" });
+      await expect.element(detail).toHaveAttribute("colspan", String(expandable.length));
+      await expect.element(toggle(screen, "みかん")).toHaveAttribute("aria-expanded", "false");
+
+      await toggle(screen, "りんご").click();
+
+      await expectRemoved(detail);
+      await expect.element(toggle(screen, "りんご")).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("同じ id の行を持つ data で描き直しても、開いた行は開いたまま", async () => {
+      // 詳細は関数として呼ぶ。Compiler が差し込む memo の cache が行ごとにずれても、React が警告しないことも見る
+      const error = vi.spyOn(console, "error");
+      const screen = await render(fruitTable(FRUITS));
+      await toggle(screen, "りんご").click();
+      await toggle(screen, "みかん").click();
+      await toggle(screen, "りんご").click();
+      await expect.element(screen.getByRole("cell", { name: "みかんは80円" })).toBeInTheDocument();
+
+      await screen.rerender(fruitTable(FRUITS.map((fruit) => ({ ...fruit }))));
+
+      await expect.element(screen.getByRole("cell", { name: "みかんは80円" })).toBeInTheDocument();
+      await expect.element(toggle(screen, "みかん")).toHaveAttribute("aria-expanded", "true");
+      expect(error).not.toHaveBeenCalled();
+    });
+
+    it("開いたあとに開けなくなった行は、詳細の行を描かない", async () => {
+      const screen = await render(fruitTable(FRUITS));
+      await toggle(screen, "りんご").click();
+      const detail = screen.getByRole("cell", { name: "りんごは120円" });
+      await expect.element(detail).toBeInTheDocument();
+
+      // 開く手段 (ボタン) が消えた行に詳細が残ると、閉じられなくなる
+      await screen.rerender(fruitTable(FRUITS, (fruit) => fruit.id !== 1));
+
+      await expectRemoved(detail);
+      await expect.element(toggle(screen, "みかん")).toBeInTheDocument();
+    });
+
+    // 詳細の中身は表の幅ではなく器の見えている幅で折り返し、表を横に送っても見えている範囲に留まる (ADR-0043)。
+    // 親を flex row にするのは、器の幅を測る container が中身の幅を 0 として扱い、flex item のままだと潰れるため
+    it("列の合計より狭い器では、詳細の中身を器の見えている幅に収める", async () => {
+      const screen = await render(
+        <div style={{ display: "flex", width: 160 }}>
+          <DataTable
+            tableKey="fruits-expandable"
+            caption="果物の一覧"
+            columns={expandable}
+            data={FRUITS}
+            getRowId={(fruit) => String(fruit.id)}
+            getRowCanExpand={() => true}
+            renderSubComponent={FruitDetail}
+          />
+        </div>,
+      );
+
+      await toggle(screen, "りんご").click();
+
+      await expectDetailWithinTableContainer(screen.getByText("りんごは120円"));
+    });
+
+    // 詳細の cell は列見出しより後の行にあり、fixed layout の列幅に効かない (ADR-0042)
+    it("開いても列見出しの幅を変えない", async () => {
+      const screen = await render(fruitTable(FRUITS));
+      await expect.poll(() => columnHeaderWidths(screen)).toEqual([120, 200, 120]);
+
+      await toggle(screen, "りんご").click();
+
+      await expect.element(screen.getByRole("cell", { name: "りんごは120円" })).toBeInTheDocument();
+      await expect.poll(() => columnHeaderWidths(screen)).toEqual([120, 200, 120]);
+    });
   });
 });

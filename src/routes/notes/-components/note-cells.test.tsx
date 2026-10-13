@@ -1,6 +1,7 @@
 import { RouterProvider } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
 import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { DataTable } from "@/components/parts/data-table";
@@ -24,17 +25,21 @@ import {
   UPDATED_NOTE,
 } from "@/features/notes/schema.test-helpers";
 import { formatDateTime } from "@/lib/format-date-time";
+import { expectNoA11yViolations } from "@/test/a11y/a11y";
 import { createTestRouter } from "@/test/app/create-test-router";
-import { expectAbsent } from "@/test/assert/absent";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import type { Screen } from "@/test/assert/screen-assertions";
 
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
-import { getNoteRowId, toNoteRows } from "../-lib/note-rows";
+import { canExpandNoteRow, getNoteRowId, toNoteRows } from "../-lib/note-rows";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
+import { NoteBodyDetail } from "./note-cells";
 import {
+  noteBodyDetailRow,
   noteDeleteTriggerName,
   noteEditTriggerName,
+  noteExpandTriggerName,
   noteRow,
   rowDeleteButton,
   rowEditLink,
@@ -101,6 +106,8 @@ function cells({
         columns={noteColumns}
         data={rows}
         getRowId={getNoteRowId}
+        getRowCanExpand={({ original }) => canExpandNoteRow(original)}
+        renderSubComponent={NoteBodyDetail}
       />
       <DeleteConfirmDialog
         handle={noteDeleteDialogHandle}
@@ -111,6 +118,94 @@ function cells({
     </>
   );
 }
+
+/** 行を開くボタン (`NoteExpandCell`)。開閉の状態で絞る */
+function expandTrigger(screen: Screen, note: Pick<Note, "title">, expanded: boolean) {
+  return screen.getByRole("button", { name: noteExpandTriggerName(note), expanded });
+}
+
+describe("NoteExpandCell", () => {
+  it("押すと aria-expanded を true にして、本体の行の直後に本文の全文の行を出し、もう一度押すと閉じる", async () => {
+    const screen = await renderCells();
+    await expect.element(expandTrigger(screen, NOTE, false)).toBeInTheDocument();
+
+    await expandTrigger(screen, NOTE, false).click();
+
+    // 名前は開閉で変えない。状態は aria-expanded が持つ (APG「Disclosure (Show/Hide) Pattern」)
+    await expect.element(expandTrigger(screen, NOTE, true)).toBeInTheDocument();
+    const detail = noteBodyDetailRow(screen, NOTE);
+    await expect.element(detail).toHaveTextContent(NOTE.body);
+    await expect
+      .poll(() => noteRow(screen, NOTE).element().nextElementSibling?.textContent)
+      .toBe(NOTE.body);
+    await expect.element(expandTrigger(screen, OTHER_NOTE, false)).toBeInTheDocument();
+
+    await expandTrigger(screen, NOTE, true).click();
+
+    await expectRemoved(detail);
+    await expect.element(expandTrigger(screen, NOTE, false)).toBeInTheDocument();
+  });
+
+  it("Enter と Space で開閉する", async () => {
+    const screen = await renderCells();
+    expandTrigger(screen, NOTE, false).element().focus();
+
+    await userEvent.keyboard("{Enter}");
+    await expect.element(expandTrigger(screen, NOTE, true)).toHaveFocus();
+    await expect.element(noteBodyDetailRow(screen, NOTE)).toBeInTheDocument();
+
+    await userEvent.keyboard(" ");
+    await expect.element(expandTrigger(screen, NOTE, false)).toHaveFocus();
+    await expectRemoved(noteBodyDetailRow(screen, NOTE));
+  });
+
+  it("開けない行 (本文が空) にはボタンを出さない", async () => {
+    // どの行が開けないかの分岐は note-rows.test.ts が持つ。ここは、開けない行に cell が何も描かないことを見る
+    const screen = await renderCells({ notes: [NOTE, { ...OTHER_NOTE, body: "" }] });
+
+    await expect.element(expandTrigger(screen, NOTE, false)).toBeInTheDocument();
+    await expectAbsent(
+      screen.getByRole("button", { name: noteExpandTriggerName(OTHER_NOTE), exact: false }),
+    );
+  });
+
+  it("更新中と削除中の行でも開ける", async () => {
+    // 止めるのはデータを変える操作で、開閉はデータを変えない (ADR-0017)
+    const screen = await renderCells({
+      updatingNotes: [NOTE_UPDATE],
+      deletingIds: [OTHER_NOTE.id],
+    });
+
+    await expandTrigger(screen, UPDATED_NOTE, false).click();
+    await expandTrigger(screen, OTHER_NOTE, false).click();
+
+    await expect.element(noteBodyDetailRow(screen, UPDATED_NOTE)).toBeInTheDocument();
+    await expect.element(noteBodyDetailRow(screen, OTHER_NOTE)).toBeInTheDocument();
+  });
+
+  it("開いたまま、ほかの行が削除中になっても、その行が更新中になっても閉じない", async () => {
+    const { screen, update } = await renderUpdatableCells();
+    await expandTrigger(screen, NOTE, false).click();
+    await expect.element(noteBodyDetailRow(screen, NOTE)).toBeInTheDocument();
+
+    update({ deletingIds: [OTHER_NOTE.id] });
+    await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toBeDisabled();
+    await expect.element(expandTrigger(screen, NOTE, true)).toBeInTheDocument();
+
+    update({ updatingNotes: [NOTE_UPDATE] });
+    await expect.element(rowDeleteButton(screen, UPDATED_NOTE.title)).toBeDisabled();
+    await expect.element(expandTrigger(screen, UPDATED_NOTE, true)).toBeInTheDocument();
+    await expect.element(noteBodyDetailRow(screen, UPDATED_NOTE)).toBeInTheDocument();
+  });
+
+  it("開いた状態に a11y 違反が無い", { tags: ["a11y", "axe"] }, async (context) => {
+    const screen = await renderCells();
+    await expandTrigger(screen, NOTE, false).click();
+    await expect.element(noteBodyDetailRow(screen, NOTE)).toBeInTheDocument();
+
+    await expectNoA11yViolations(document.body, context);
+  });
+});
 
 describe("NoteDueDateCell", () => {
   it("期日のある行は短い書式で、無い行は「—」で描く", async () => {
@@ -228,14 +323,18 @@ describe("NoteActionsCell", () => {
     await expect.element(edit).toHaveAttribute("href", `/notes/${NOTE.id}/edit`);
     await expect.element(edit).not.toHaveAttribute("aria-disabled");
     await expect.element(rowEditLink(screen, OTHER_NOTE.title)).toBeInTheDocument();
-    // 並びは「編集」「削除」の順。cell の中のリンクとボタンを文書順で読む
+    // 並びは先頭の列の「本文を表示」のあとに「編集」「削除」の順。行の中のリンクとボタンを文書順で読む
     await expect
       .poll(() =>
         [...noteRow(screen, NOTE).element().querySelectorAll("a, button")].map((element) =>
           element.getAttribute("aria-label"),
         ),
       )
-      .toEqual([noteEditTriggerName(NOTE), noteDeleteTriggerName(NOTE)]);
+      .toEqual([
+        noteExpandTriggerName(NOTE),
+        noteEditTriggerName(NOTE),
+        noteDeleteTriggerName(NOTE),
+      ]);
   });
 
   it("削除中の行は編集リンクも無効にし、focus できるまま残す", async () => {

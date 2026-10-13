@@ -23,9 +23,10 @@ import { toastMutationError } from "@/lib/mutation-error";
 import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { noteCreateLinkProps } from "../-lib/note-dialog-focus";
-import { getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
+import { canExpandNoteRow, getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
 import { NOTE_SEARCH_DEBOUNCE_MS, noteSearchResultMessage } from "../-lib/note-search";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
+import { NoteBodyDetail } from "./note-cells";
 import { NoteSearchField } from "./note-search-field";
 
 /** URL / server function と同じ schema で正規化する (trim / 上限)。 */
@@ -216,6 +217,8 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
                 const isBusy = isNoteRowBusy(original);
                 return { "data-busy": isBusy };
               }}
+              getRowCanExpand={({ original }) => canExpandNoteRow(original)}
+              renderSubComponent={NoteBodyDetail}
             />
           )}
         </StaleContent>

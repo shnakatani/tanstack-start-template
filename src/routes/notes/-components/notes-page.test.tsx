@@ -49,7 +49,7 @@ vi.mock(import("../-lib/note-search"), async (importOriginal) => ({
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
-import { noteRow, rowDeleteButton } from "./note-cells.test-helpers";
+import { noteExpandTriggerName, noteRow, rowDeleteButton } from "./note-cells.test-helpers";
 import { noteCreateLink } from "./note-create-dialog.test-helpers";
 import { noteSearchbox } from "./note-search-field.test-helpers";
 import { NotesPage } from "./notes-page";
@@ -292,6 +292,19 @@ describe("NotesPage", () => {
     await expect
       .element(cellInColumn(screen, row, NOTE_FIELD_LABELS.updatedAt))
       .toHaveTextContent(formatDateTime(UPDATED_NOTE.updatedAt));
+  });
+
+  // 開閉の振る舞いは note-cells.test.tsx が持つ。ここではページが行を開ける条件を DataTable へ渡していることを見る
+  it("本文のある行にだけ、本文の全文を出すボタンを出す", async () => {
+    vi.mocked(listNotes).mockResolvedValue([NOTE, { ...OTHER_NOTE, body: "" }]);
+    const screen = await renderPage();
+
+    await expect
+      .element(screen.getByRole("button", { name: noteExpandTriggerName(NOTE) }))
+      .toBeInTheDocument();
+    await expectAbsent(
+      screen.getByRole("button", { name: noteExpandTriggerName(OTHER_NOTE), exact: false }),
+    );
   });
 
   it("削除を確認すると removeNote が number の id で呼ばれ、一覧が再取得され、追加ボタンへフォーカスが移る", async () => {

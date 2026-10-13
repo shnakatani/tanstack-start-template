@@ -16,6 +16,7 @@ export {
   DEFAULT_VIEWPORT,
   MEDIUM_VIEWPORT,
   NARROW_VIEWPORT,
+  REFLOW_VIEWPORT,
   SHORT_VIEWPORT,
   TABLET_VIEWPORT,
 } from "../browser/viewport-sizes";
