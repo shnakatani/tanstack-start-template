@@ -18,12 +18,7 @@ import { recordFocusins } from "@/test/assert/focusin";
 import { expectAnnouncements } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
-import {
-  DEFAULT_VIEWPORT,
-  MEDIUM_VIEWPORT,
-  restoreDefaultViewport,
-  setViewport,
-} from "@/test/assert/viewport";
+import { MEDIUM_VIEWPORT, restoreDefaultViewport, setViewport } from "@/test/assert/viewport";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -703,16 +698,13 @@ describe("/notes/$noteId/edit route", () => {
   });
 
   // 操作中の表示 (押したリンクの Spinner、保存後の「更新中」) で一覧の列が動かないこと。列が動くと、
-  // 遷移のクロスフェードが旧い像と新しい像の列の差を 2 重に見せる (ADR-0042)。列幅の配り方は viewport の
-  // 余りで変わるので、2 つの幅で見る
-  describe.each([
-    ["1280px", DEFAULT_VIEWPORT],
-    ["760px", MEDIUM_VIEWPORT],
-  ])("%s の幅の一覧の列見出し", (_, viewport) => {
+  // 遷移のクロスフェードが旧い像と新しい像の列の差を 2 重に見せる (ADR-0042)。列の合計より狭い幅で見る。
+  // 余りの幅が列へ配られない状態でないと、`table-fixed` や size の幅を外しても列は動かない
+  describe("760px の幅の一覧の列見出し", () => {
     afterEach(restoreDefaultViewport);
 
     it("編集を押してからダイアログが開くまで、幅が変わらない", async () => {
-      await setViewport(viewport);
+      await setViewport(MEDIUM_VIEWPORT);
       vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
       const fetching = deferMock(getNote);
       const { screen } = await renderRoute("/notes");
@@ -732,7 +724,7 @@ describe("/notes/$noteId/edit route", () => {
     it("1 行の一覧で保存してから再取得が終わるまで、幅が変わらない", async () => {
       // 1 行の一覧では、その行の日時が列でいちばん幅の広い中身になる。値を変えずに保存し、中身の変化で
       // 列が動く分を除く
-      await setViewport(viewport);
+      await setViewport(MEDIUM_VIEWPORT);
       vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
       const refetch = deferMock(listNotes);
       vi.mocked(getNote).mockResolvedValue(NOTE);
