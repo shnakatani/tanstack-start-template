@@ -6,7 +6,7 @@
 
 ## Context
 
-registry の `Table` は `table-layout: auto` で、列幅は cell の中身の幅で決まる。auto layout の列幅の算出は UA に任されている ([CSS 2.1][] の 17.5.2.2: "UAs are not required to implement this algorithm")。Chromium は列見出しに `width` を当てても、table の幅が足りないと列をその幅より狭く詰めた (Consequences の `table-fixed` を外した観測)。操作中の表示が中身の幅を変えると、その間だけ列が動く。遷移のクロスフェード (ADR-0040) は、旧い像と新しい像の列の差を 2 重の像として見せる。
+registry の `Table` は `table-layout: auto` で、列幅は cell の中身の幅で決まる。auto layout の列幅の算出は UA に任されている ([CSS 2.1][] の 17.5.2.2: "UAs are not required to implement this algorithm")。Chromium は列見出しに `width` を当てても、table の幅が足りないと列をその幅より狭く詰めた (`size` が 200 と 120 の 2 列を 160px の器に入れると、`table-fixed` が無いとき 95.8px と 64.2px。2026-10-13、`DataTable` の部品のテスト)。操作中の表示が中身の幅を変えると、その間だけ列が動く。遷移のクロスフェード (ADR-0040) は、旧い像と新しい像の列の差を 2 重の像として見せる。
 
 操作中の表示が中身の幅を変える場面と、列見出しの幅の移動は次のとおり。
 
@@ -56,7 +56,7 @@ dev server の値は Playwright 1.63.0 の Chromium で dev server を開き、v
 
 ## Consequences
 
-- 列見出しの幅は列の `size` のまま、中身で変わらない。`DataTable` と `TableSkeleton` の部品のテストが、列の合計より狭い器の中で列見出しの幅が `size` と等しいことを見る。`table-fixed` を外すと auto layout が列を詰め、`style` の幅を外すと fixed layout が列を均等に割るので、どちらも落ちる (2026-10-13 に確かめた)
+- 列見出しの幅は列の `size` と、器の余りの幅の配分で決まり、中身で変わらない。`DataTable` と `TableSkeleton` の部品のテストが、列の合計より狭い器の中で列見出しの幅が `size` と等しいことを見る。`table-fixed` を外すと auto layout が列を詰め、`style` の幅を外すと fixed layout が列を均等に割るので、どちらも落ちる (2026-10-13 に確かめた)
 - 列を足すときは `size` を決める。見出しと幅の定数は `DataTableColumnBase` の型で幅を必須にしている。値は中身に合わせて決め、実測で 1 行に収まることを見る
 - 列の合計より狭い viewport では表が横に scroll する。auto layout のように中身の最小幅まで列を詰めない
 - `table-fixed` だけを外すと、1280px の 2 つの場面、760px の編集の場面、読み込み中からの置き換えでは列は動かなかった。760px では列が `size` より狭く詰められ (タイトルの列が 87.6px)、保存の場面で日時の列が -42.6px 動いた (2026-10-13、ブラウザテスト)。`size` だけでは、列の合計が table の幅を超えたときに列が動く
