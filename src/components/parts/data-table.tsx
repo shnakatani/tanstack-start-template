@@ -51,8 +51,8 @@ type DataTableExpandingProps<TData extends RowData> =
   | { getRowCanExpand?: undefined; renderSubComponent?: undefined }
   | (Required<Pick<TableOptions<DataTableFeatures, TData>, "getRowCanExpand" | "getRowId">> & {
       /**
-       * 開いた行の直後に、全列をまたぐ 1 つの cell の中へ描く。JSX の子としては描かず関数として呼ぶので、
-       * hook を呼ばない関数を渡す
+       * 開いた行の直後に、全列をまたぐ 1 つの cell の中へ描く。中身の幅は表の器の見えている幅で、`DataTable` が
+       * 決める (ADR-0043)。JSX の子としては描かず関数として呼ぶので、hook を呼ばない関数を渡す
        */
       renderSubComponent: (props: { row: Row<DataTableFeatures, TData> }) => ReactNode;
     });
@@ -90,61 +90,72 @@ export function DataTable<TData extends RowData>({
   const rows = table.getRowModel().rows;
 
   return (
-    // 列の幅は列定義の size で決め、中身で変えない。操作中の表示で中身の幅が変わっても列が動かない (ADR-0042)。
-    // fixed layout は最初の行の cell から列幅を採るので、幅は列見出しにだけ当てる
-    <Table className="table-fixed">
-      <TableCaption className="sr-only">{caption}</TableCaption>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead
-                key={header.id}
-                scope="col"
-                style={{ width: columnWidthFrom(header.getSize()) }}
-              >
-                {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {rows.length > 0 ? (
-          rows.map((row) => {
-            // 受け取った値から data-busy だけを取り出して渡す。spread にすると、返り値の型に
-            // 無い className がリテラルでない経路 (const props = {...}; () => props) で載って
-            // しまい、JSX の後勝ちで静かに落ちる
-            const busy = rowProps?.(row)["data-busy"];
-            return (
-              <Fragment key={row.id}>
-                <TableRow data-busy={busy}>
-                  {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      <table.FlexRender cell={cell} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-                {/* 開けなくなった行 (開いたあとに中身が消えたなど) は、閉じるボタンも消えるので詳細を描かない */}
-                {renderSubComponent !== undefined && row.getCanExpand() && row.getIsExpanded() && (
-                  // 本体の行と同じ busy を持たせ、半透明をそろえる
+    // 詳細の行の中身の幅を、横に scroll する器の見えている幅から採る (ADR-0043)。器は registry の Table が描き、className は
+    // table に付くので、器と同じ幅の外側の div を container にする。container は自分の中身の幅を 0 として扱うので、
+    // flex row の親の中でも潰れないよう w-full を当てる
+    <div className="@container w-full">
+      {/* 列の幅は列定義の size で決め、中身で変えない。操作中の表示で中身の幅が変わっても列が動かない (ADR-0042)。
+          fixed layout は最初の行の cell から列幅を採るので、幅は列見出しにだけ当てる */}
+      <Table className="table-fixed">
+        <TableCaption className="sr-only">{caption}</TableCaption>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  scope="col"
+                  style={{ width: columnWidthFrom(header.getSize()) }}
+                >
+                  {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {rows.length > 0 ? (
+            rows.map((row) => {
+              // 受け取った値から data-busy だけを取り出して渡す。spread にすると、返り値の型に
+              // 無い className がリテラルでない経路 (const props = {...}; () => props) で載って
+              // しまい、JSX の後勝ちで静かに落ちる
+              const busy = rowProps?.(row)["data-busy"];
+              return (
+                <Fragment key={row.id}>
                   <TableRow data-busy={busy}>
-                    <TableCell colSpan={row.getAllCells().length}>
-                      {renderSubComponent({ row })}
-                    </TableCell>
+                    {row.getAllCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        <table.FlexRender cell={cell} />
+                      </TableCell>
+                    ))}
                   </TableRow>
-                )}
-              </Fragment>
-            );
-          })
-        ) : (
-          <TableRow>
-            <TableCell colSpan={table.getAllLeafColumns().length} className="h-24 text-center">
-              {emptyText}
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+                  {/* 開けなくなった行 (開いたあとに中身が消えたなど) は、閉じるボタンも消えるので詳細を描かない */}
+                  {renderSubComponent !== undefined &&
+                    row.getCanExpand() &&
+                    row.getIsExpanded() && (
+                      // 本体の行と同じ busy を持たせ、半透明をそろえる
+                      <TableRow data-busy={busy}>
+                        <TableCell colSpan={row.getAllCells().length}>
+                          {/* 表の幅ではなく器の見えている幅で折り返し、表を横に送っても見えている範囲に留める (ADR-0043)。
+                              left-2 と --spacing(4) は registry の TableCell の p-2 の左と左右の和に合わせた値で、p-2 が変わるとずれる */}
+                          <div className="sticky left-2 w-[calc(100cqi-(--spacing(4)))]">
+                            {renderSubComponent({ row })}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                </Fragment>
+              );
+            })
+          ) : (
+            <TableRow>
+              <TableCell colSpan={table.getAllLeafColumns().length} className="h-24 text-center">
+                {emptyText}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
