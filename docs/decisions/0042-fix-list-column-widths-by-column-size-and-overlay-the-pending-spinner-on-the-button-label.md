@@ -6,7 +6,7 @@
 
 ## Context
 
-registry の `Table` は `table-layout: auto` で、列幅は cell の中身の幅で決まる ([CSS 2.1][] の 17.5.2.2 は、cell の `width` を "the minimum cell width" としか扱わない)。操作中の表示が中身の幅を変えると、その間だけ列が動く。遷移のクロスフェード (ADR-0040) は、旧い像と新しい像の列の差を 2 重の像として見せる。
+registry の `Table` は `table-layout: auto` で、列幅は cell の中身の幅で決まる。auto layout の列幅の算出は UA に任されている ([CSS 2.1][] の 17.5.2.2: "UAs are not required to implement this algorithm")。Chromium は列見出しに `width` を当てても、table の幅が足りないと列をその幅より狭く詰めた (Consequences の `table-fixed` を外した観測)。操作中の表示が中身の幅を変えると、その間だけ列が動く。遷移のクロスフェード (ADR-0040) は、旧い像と新しい像の列の差を 2 重の像として見せる。
 
 操作中の表示が中身の幅を変える場面と、列見出しの幅の移動は次のとおり。
 
@@ -33,7 +33,7 @@ dev server の値は Playwright 1.63.0 の Chromium で dev server を開き、v
 | `td` の幅        | 当てない。fixed layout は列幅を `col` か最初の行の cell の `width` から決め ([CSS 2.1][] の 17.5.2.1)、最初の行は thead の列見出しになる                                                                                                                                                                                                                  |
 | 幅を超えた中身   | cell の部品の中の素の要素で扱う。長くなる列は折り返し (`whitespace-normal` と区切りの無い文字列を折る `wrap-break-word`)、1 行に保つ列は切り詰める (`truncate`)。日時や操作の列は、中身が 1 行に収まる `size` を持たせる。列の合計より狭い viewport では、registry の table-container の `overflow-x-auto` で横に scroll する                             |
 | ボタンの pending | `PendingLabel` (`src/components/parts/pending-label.tsx`) が、素の span の `inline-grid` の同じ領域に label と `Spinner` (`aria-hidden`、`data-icon` なし) を重ね、pending の間だけ label を `opacity-0` にする。`ActionButtonShell` と、`isPending` を渡した `ButtonLink` が使う                                                                         |
-| pending 中の名前 | `opacity: 0` の label は名前に残る ([accname 1.2][] の「Hidden Not Referenced」は `opacity: 0` を hidden に数えない)。名前を補う配線は足さない。状態は今までどおり `aria-disabled` と announce で伝える (ADR-0026)                                                                                                                                        |
+| pending 中の名前 | `opacity: 0` の label は名前に残る ([accname 1.2][] の「Hidden Not Referenced」は `opacity: 0` を hidden に数えない)。名前を補う配線は足さない。状態は `aria-disabled` と announce で伝える (ADR-0026)                                                                                                                                                    |
 
 ### 列幅の決め方
 
@@ -47,23 +47,23 @@ dev server の値は Playwright 1.63.0 の Chromium で dev server を開き、v
 
 ### ボタンの幅の保ち方
 
-| 案                                                                                                  | 評価                                                                                                                                                                                                                                               | 採否     |
-| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| label を `opacity: 0` にして Spinner を重ねる ([React Aria Components の Button][]「Pending」)      | "To reserve space for the button's label while pending, either set it to `visibility: hidden` ... or set it to `opacity: 0`"。`opacity: 0` の label は名前に残るので、名前の配線が要らない。Spinner は `aria-hidden` なので名前は label だけになる | 採る     |
-| label を `visibility: hidden` にして `aria-labelledby` で指す ([Primer の `ButtonBase`][])          | hidden の label は名前から外れるので ("the accessible name becomes unset when the button is in a loading state")、`aria-labelledby` で直接指して名前を補う配線が部品ごとに要る                                                                     | 採らない |
-| `<Spinner data-icon="inline-start" />` を label の前に並べる ([shadcn docs「Spinner」][])           | 公式の例だが、pending の間だけ幅が広がる                                                                                                                                                                                                           | 採らない |
-| Spinner を常に描き、`opacity-0` と `opacity-100` を切り替える ([TanStack Router の kitchen-sink][]) | 幅は保つが、pending でないときも全ボタンが Spinner の分だけ広く、label の横に空きが残る                                                                                                                                                            | 採らない |
+| 案                                                                                                  | 評価                                                                                                                                                                                                                                                                                                                                                                                                                       | 採否     |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| label を `opacity: 0` にして Spinner を重ねる ([React Aria Components の Button][]「Pending」)      | "To reserve space for the button's label while pending, either set it to `visibility: hidden` ... or set it to `opacity: 0`"。`opacity: 0` の label は名前に残るので、名前の配線が要らない。Spinner は `aria-hidden` なので名前は label だけになる。原文は label と ProgressBar の `aria-label` を合わせて名前にする前提だが、ここでは Spinner を `aria-hidden` にし、状態は `aria-disabled` と announce で持つ (ADR-0026) | 採る     |
+| label を `visibility: hidden` にして `aria-labelledby` で指す ([Primer の `ButtonBase`][])          | hidden の label は名前から外れるので ("the accessible name becomes unset when the button is in a loading state")、`aria-labelledby` で直接指して名前を補う配線が部品ごとに要る                                                                                                                                                                                                                                             | 採らない |
+| `<Spinner data-icon="inline-start" />` を label の前に並べる ([shadcn docs「Spinner」][])           | 公式の例だが、pending の間だけ幅が広がる                                                                                                                                                                                                                                                                                                                                                                                   | 採らない |
+| Spinner を常に描き、`opacity-0` と `opacity-100` を切り替える ([TanStack Router の kitchen-sink][]) | 幅は保つが、pending でないときも全ボタンが Spinner の分だけ広く、label の横に空きが残る                                                                                                                                                                                                                                                                                                                                    | 採らない |
 
 ## Consequences
 
-- 一覧の列見出しの幅は、行のリンクを押してからダイアログが開くまでと、1 行の一覧で保存してから再取得が終わるまで、1280px と 760px のどちらでも変わらない。読み込み中の `TableSkeleton` から本体へ替わるときも変わらない。どれもブラウザテストが操作の前と pending の間の列見出しの幅を比べる
+- 列見出しの幅は列の `size` のまま、中身で変わらない。`DataTable` と `TableSkeleton` の部品のテストが、列の合計より狭い器の中で列見出しの幅が `size` と等しいことを見る。`table-fixed` を外すと auto layout が列を詰め、`style` の幅を外すと fixed layout が列を均等に割るので、どちらも落ちる (2026-10-13 に確かめた)
 - 列を足すときは `size` を決める。見出しと幅の定数は `DataTableColumnBase` の型で幅を必須にしている。値は中身に合わせて決め、実測で 1 行に収まることを見る
 - 列の合計より狭い viewport では表が横に scroll する。auto layout のように中身の最小幅まで列を詰めない
 - `table-fixed` だけを外すと、1280px の 2 つの場面、760px の編集の場面、読み込み中からの置き換えでは列は動かなかった。760px では列が `size` より狭く詰められ (タイトルの列が 87.6px)、保存の場面で日時の列が -42.6px 動いた (2026-10-13、ブラウザテスト)。`size` だけでは、列の合計が table の幅を超えたときに列が動く
 - pending 中のボタンは label が見えず、Spinner だけが見える。幅を保つことと引き換えに受け入れる
 - `isPending` を渡した `ButtonLink` は、children が 1 つの span に入る。icon と文字を children に並べると、`buttonVariants` の `gap-*` が間に効かない。渡さない呼び出しの DOM は変わらない
 - `ActionButtonShell` は名前を `aria-labelledby` で children に固定している (ADR-0016)。指す span は label の中にあるので、label を `visibility: hidden` に変えても名前は残る (直接指された hidden のノードは名前に入る)。label の隠し方の退行は、`aria-labelledby` を持たない `ButtonLink` のテストが名前の空で捕まえる
-- 再評価の条件: 列幅の変更 (`columnResizingFeature`) をユーザーに開くときは、`size` を state の初期値に回し、`table.getTotalSize()` で table の幅を持つ形を比べ直す。Base UI か shadcn が Button の pending を出荷したら、`PendingLabel` をそちらへ寄せられるかを見る
+- 再評価の条件: 列幅の変更 (`columnResizingFeature`) をユーザーに開くときは、`size` を state の初期値に回し、`table.getTotalSize()` で table の幅を持つ形を比べ直す。列の固定 (`columnPinningFeature`) を足すときは、描かれる幅が `size` と一致しない (`w-full` の余りが列に配られる) ので、offset の計算と合うかを確かめる。Base UI か shadcn が Button の pending を出荷したら、`PendingLabel` をそちらへ寄せられるかを見る
 
 ## 出典
 

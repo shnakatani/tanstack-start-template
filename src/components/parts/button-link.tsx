@@ -14,7 +14,7 @@ type ButtonLinkBaseProps = ComponentProps<"a"> &
   VariantProps<typeof buttonVariants> & {
     /**
      * 押したあとの読み込み中。渡すと children を `PendingLabel` で包み、pending の間 label に `Spinner` を重ねて
-     * 幅を保つ (ADR-0042)。状態は `aria-disabled` と announce で伝える (ADR-0026)。渡さない呼び出しの DOM は変わらない
+     * 幅を保つ (ADR-0042)。変えるのは見た目だけで、状態の伝え方は呼び出し側が決める (ADR-0026)。渡さない呼び出しの DOM は変わらない
      */
     isPending?: boolean;
   };
