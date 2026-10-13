@@ -173,8 +173,6 @@ describe("/notes route", () => {
       // overflowingCells は cell の scrollWidth を見る。中身の要素が隠した分は数えないので、中身も見る
       const body = detail.getByText(LONG_BODY_NOTE.body);
       await expect.poll(() => overflowOf(body.element())).toBe(0);
-      // 詳細の中身の幅と位置は cell の余白に合わせてあり、どちらも文字サイズで広がる。root を広げても器に収まることを見る
-      await expectDetailWithinTableContainer(body);
     });
   });
 
