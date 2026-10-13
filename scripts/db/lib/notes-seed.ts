@@ -7,6 +7,7 @@ import type { SeededTable, SeedTransaction } from "./seed-all.ts";
 
 /**
  * dev server で一覧を確かめるための見本。id の昇順に作成日時を進め、一覧の新しい順の並びを読めるようにする。
+ * 長いタイトル・空の本文・期日の有無のような確かめたい見た目を持つ行に、一覧の並びと行の高さを見比べられる件数の行を足す。
  * 未来の期日は、テンプレートを使う間に過去にならない年に置く
  */
 export const NOTE_SEEDS: readonly Note[] = [
