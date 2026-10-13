@@ -8,7 +8,7 @@ import type { Screen } from "@/test/assert/screen-assertions";
 
 import { DataTable } from "./data-table";
 import type { DataTableCellContext, DataTableFeatures } from "./data-table-features";
-import { columnHeaderWidths } from "./data-table.test-helpers";
+import { columnHeaderWidths, expectDetailWithinTableContainer } from "./data-table.test-helpers";
 
 type Fruit = { id: number; name: string; price: number };
 
@@ -30,7 +30,7 @@ function FruitDetail({ row }: { row: Row<DataTableFeatures, Fruit> }) {
 /**
  * 状態のカタログは `data-table.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは構造の契約で、
  * 列見出しの順と `scope=col`、列見出しの幅が列の `size` で決まること、`rowProps` の busy 行だけが半透明になること、
- * 空表示の `colSpan`、行を開いたときの詳細の行である。
+ * 空表示の `colSpan`、行を開いたときの詳細の行と、その中身の幅である。
  *
  * story の play は行を開くところだけを持つ。ほかの状態は args だけで決まる (docs/guides/storybook.md「カタログと play の範囲」)。
  * 開閉のうち、実イベントで開いて閉じること、data を描き直したとき、開けなくなったとき、列幅は、play の合成イベントと
@@ -198,6 +198,28 @@ describe("DataTable", () => {
 
       await expectRemoved(detail);
       await expect.element(toggle(screen, "みかん")).toBeInTheDocument();
+    });
+
+    // 詳細の中身は表の幅ではなく器の見えている幅で折り返し、表を横に送っても見えている範囲に留まる (ADR-0043)。
+    // 親を flex row にするのは、器の幅を測る container が中身の幅を 0 として扱い、flex item のままだと潰れるため
+    it("列の合計より狭い器では、詳細の中身を器の見えている幅に収める", async () => {
+      const screen = await render(
+        <div style={{ display: "flex", width: 160 }}>
+          <DataTable
+            tableKey="fruits-expandable"
+            caption="果物の一覧"
+            columns={expandable}
+            data={FRUITS}
+            getRowId={(fruit) => String(fruit.id)}
+            getRowCanExpand={() => true}
+            renderSubComponent={FruitDetail}
+          />
+        </div>,
+      );
+
+      await toggle(screen, "りんご").click();
+
+      await expectDetailWithinTableContainer(screen.getByText("りんごは120円"));
     });
 
     // 詳細の cell は列見出しより後の行にあり、fixed layout の列幅に効かない (ADR-0042)

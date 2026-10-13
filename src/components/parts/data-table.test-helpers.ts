@@ -1,3 +1,4 @@
+import { expect, vi } from "vite-plus/test";
 import type { Locator } from "vite-plus/test/browser/context";
 
 import type { Screen } from "@/test/assert/screen-assertions";
@@ -46,3 +47,50 @@ export function columnHeaderWidths(
     .elements()
     .map((header) => header.getBoundingClientRect().width);
 }
+
+/** 箱 `box` が、器 `container` の見えている幅 (器の左端から `clientWidth`) からはみ出した辺と px。幅 0 の箱も数える */
+function overflowsOfVisibleWidth(box: DOMRect, container: Element): string[] {
+  const left = container.getBoundingClientRect().left + container.clientLeft;
+  const right = left + container.clientWidth;
+  const overflows: string[] = [];
+  if (box.width <= 0) overflows.push("width 0");
+  if (box.left < left) overflows.push(`left -${left - box.left}px`);
+  if (box.right > right) overflows.push(`right +${box.right - right}px`);
+  return overflows;
+}
+
+/**
+ * 開いた詳細の行の中身 `content` が、表を横に送っても器 (registry の `Table` の table-container) の見えている幅に
+ * 収まることを確かめる (ADR-0043)。器を左端、中間、右端へ送るたびに、`content` の箱の左右の辺を器の見えている幅と比べ、
+ * 違反を送った位置と一緒に返して空配列と比べる。幅 0 に潰れた箱は収まりを自明に満たすので違反に数える。
+ *
+ * - 器は role を持たず locator で引けないので、`content` から `data-slot` で辿る
+ * - 器が横に scroll できないと送っても何も確かめないので、それも確かめる。列の合計より狭い器で呼ぶ
+ * - `scrollLeft` は代入した値に届いたことを確かめてから測る。届かないと、送ったつもりの位置で測らない
+ */
+export const expectDetailWithinTableContainer = vi.defineHelper(
+  async (content: Locator): Promise<void> => {
+    await expect.element(content).toBeInTheDocument();
+    const container = content.element().closest('[data-slot="table-container"]');
+    if (container === null) {
+      throw new Error("content が registry の Table の table-container の中にありません");
+    }
+    const maxScrollLeft = () => container.scrollWidth - container.clientWidth;
+    await expect.poll(maxScrollLeft).toBeGreaterThan(0);
+
+    const expectWithinAt = async (scrollLeft: number) => {
+      container.scrollLeft = scrollLeft;
+      await expect.poll(() => container.scrollLeft).toBe(scrollLeft);
+      await expect
+        .poll(() =>
+          overflowsOfVisibleWidth(content.element().getBoundingClientRect(), container).map(
+            (overflow) => `scrollLeft ${scrollLeft}: ${overflow}`,
+          ),
+        )
+        .toEqual([]);
+    };
+    await expectWithinAt(0);
+    await expectWithinAt(Math.floor(maxScrollLeft() / 2));
+    await expectWithinAt(maxScrollLeft());
+  },
+);

@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { cellInColumn, columnHeaderWidths } from "@/components/parts/data-table.test-helpers";
+import {
+  cellInColumn,
+  columnHeaderWidths,
+  expectDetailWithinTableContainer,
+} from "@/components/parts/data-table.test-helpers";
 import { listNotes } from "@/features/notes/functions";
 import { NOTE_FIELD_LABELS, NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import type { Note } from "@/features/notes/schema";
@@ -13,7 +17,12 @@ import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import type { Screen } from "@/test/assert/screen-assertions";
-import { MEDIUM_VIEWPORT, restoreDefaultViewport, setViewport } from "@/test/assert/viewport";
+import {
+  MEDIUM_VIEWPORT,
+  REFLOW_VIEWPORT,
+  restoreDefaultViewport,
+  setViewport,
+} from "@/test/assert/viewport";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
@@ -162,7 +171,31 @@ describe("/notes route", () => {
       await expect.element(detail.getByRole("cell")).toHaveTextContent(LONG_BODY_NOTE.body);
       await expect.poll(() => overflowingCells(screen)).toEqual([]);
       // overflowingCells は cell の scrollWidth を見る。中身の要素が隠した分は数えないので、中身も見る
-      await expect.poll(() => overflowOf(detail.getByText(LONG_BODY_NOTE.body).element())).toBe(0);
+      const body = detail.getByText(LONG_BODY_NOTE.body);
+      await expect.poll(() => overflowOf(body.element())).toBe(0);
+      // 詳細の中身の幅と位置は cell の余白に合わせてあり、どちらも文字サイズで広がる。root を広げても器に収まることを見る
+      await expectDetailWithinTableContainer(body);
+    });
+  });
+
+  // WCAG 1.4.10 は表を 2 次元の配置の例外に入れるが、cell は例外に入れない (Understanding 1.4.10 の
+  // Tabular data and grid-based UI)。詳細の行が表の幅で折り返すと、本文を 1 行ごとに横へ送らないと読めない (ADR-0043)
+  describe("幅 320px の一覧", () => {
+    afterEach(async () => {
+      await restoreDefaultViewport();
+    });
+
+    it("行を開いた詳細の本文は、表を横に送っても器の見えている幅で折り返す", async () => {
+      await setViewport(REFLOW_VIEWPORT);
+      vi.mocked(listNotes).mockResolvedValue([LONG_BODY_NOTE, NOTE]);
+      const { screen } = await renderRoute("/notes");
+      await expect.element(noteRow(screen, LONG_BODY_NOTE)).toBeInTheDocument();
+
+      await screen.getByRole("button", { name: noteExpandTriggerName(LONG_BODY_NOTE) }).click();
+
+      const body = noteBodyDetailRow(screen, LONG_BODY_NOTE).getByText(LONG_BODY_NOTE.body);
+      await expectDetailWithinTableContainer(body);
+      await expect.poll(() => overflowOf(body.element())).toBe(0);
     });
   });
 
