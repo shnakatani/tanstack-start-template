@@ -131,8 +131,8 @@ export function DataTable<TData extends RowData>({
                   </TableRow>
                   {/* 開けなくなった行 (開いたあとに中身が消えたなど) は、閉じるボタンも消えるので詳細を描かない */}
                   {renderSubComponent !== undefined &&
-                    row.getCanExpand() &&
-                    row.getIsExpanded() && (
+                    row.getIsExpanded() &&
+                    row.getCanExpand() && (
                       // 本体の行と同じ busy を持たせ、半透明をそろえる
                       <TableRow data-busy={busy}>
                         <TableCell colSpan={row.getAllCells().length}>
