@@ -1,6 +1,6 @@
 # データベース
 
-SQLite のファイルへ drizzle で接続し、migration を適用する手順と、パスと migration の扱いをその形にしている理由を持つ。
+SQLite のファイルへ drizzle で接続し、migration を適用し、dev 用の見本のデータを入れる手順と、パスと migration と見本のデータの扱いをその形にしている理由を持つ。
 
 | 決定                                                                                     | ADR      |
 | ---------------------------------------------------------------------------------------- | -------- |
@@ -24,6 +24,21 @@ SQLite のファイルへ drizzle で接続し、migration を適用する手順
 - `mise run db:migrate` は drizzle-kit (devDependencies)、`drizzle.config.ts`、`drizzle/` を使う。ビルド成果物の `.output/` はどれも持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
 - migration のフォルダは `src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` を `drizzle.config.ts` の `out` と `migrateDb()` の両方が読む。片方だけ変えると、テストが古い migration を当てたまま通る
 - テーブルを足したら、テーブル定義とフロントのスキーマの型を突き合わせる型テストを書く (ADR-0034)
+
+### 見本のデータを入れる
+
+- `mise run db:seed` で、`DB_FILE_NAME` の DB に dev server で確かめるための見本を入れる。タスクは `depends` で先に `db:migrate` を走らせる ([mise docs「Task Configuration」][] の `depends`) ので、DB のファイルが無い状態からも 1 回で入る
+- 打つたびに、見本を持つテーブルの行を全部消して入れ直す。dev server の画面から作った行も消える。何度打っても、行と、次に作る行の id は同じになる (「見本のデータを消して入れ直す理由」)
+- dev server を開いたまま打ったら、ブラウザを再読み込みする。query のキャッシュが新鮮なうちは、focus でも遷移で戻っても DB から読み直さない ([TanStack Query docs「Important Defaults」][])。再読み込みでは、SSR がリクエストごとに `getRouter()` (`src/router.tsx`) で新しい `QueryClient` を作り、DB から読む
+- 実行口は `scripts/db/seed.ts` の 1 つで、`createDb()` で DB を開き、`scripts/db/lib/seed-all.ts` の `seedAll()` を呼ぶ。`seedAll()` はトランザクションを 1 回だけ開き、その中でドメインごとの入れ方を呼ぶ。`createDb()` を通さずに `new Database()` で開かない。直接開くと、無い DB のファイルを作る (「DB のファイルをアプリで作らない理由」)
+- ドメインに見本を足すときは、見本の配列と入れ方を `scripts/db/lib/<domain>-seed.ts` に置き、`seedAll()` から呼ぶ。`src/` に置かない (「見本のデータを `scripts/db/` に置く理由」)。置き場の決め方は `docs/guides/placement.md`「`scripts/` に関数と fixture を置く」
+- `scripts/db/` から `src/` のテーブル定義・接続・ドメインの型は `@/` で import してよい。アプリのコード (`src/`) から `scripts/db/` は import しない。import すると、見本が出荷する bundle に入る
+- 見本の配列には、テーブルの insert の型 (`$inferInsert`) ではなく、ドメインの読み出しの型 (`src/features/<domain>/schema.ts`) を付け、見本が読み出しの形と合うことを `vp check` で確かめる。insert の型は既定値を持つ列を省けるので、`createdAt` を書き忘れても型エラーにならず、打つたびに実行時刻が入る
+- ドメインの入れ方は `seedAll()` が渡すトランザクションを受け、その中でテーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、insert を打ち、入れたテーブルと行の数を返す。自分でトランザクションを開かない。開くと、ドメインごとに別のトランザクションになり、後のドメインが落ちたときに前のドメインだけが入れ直された状態で残る
+- 外部キーで別のテーブルを指すテーブルに見本を足すときは、`seedAll()` の初めに `PRAGMA defer_foreign_keys = ON` を打つか、削除を子のテーブルから、insert を親のテーブルから打つ順に分ける ([SQLite「Pragma statements supported by SQLite」][] の `defer_foreign_keys`)。`createDb()` の接続は better-sqlite3 の同梱の SQLite の既定で外部キーを検査し (`db.$client.pragma("foreign_keys")` が 1、better-sqlite3 13.0.3、2026-10-14 に実測)、トランザクションの中で `PRAGMA foreign_keys = OFF` を打っても効かない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
+- 見本の id と作成日時・更新日時は固定の値で書く。日時を既定値に任せると、打つたびに実行時刻が入る
+- 見本の各行がそのドメインの読み出しのスキーマを通ることを、同じディレクトリの `<domain>-seed.test.ts` で確かめる。`scripts-tools` project が集める。スキーマを変えたときに、見本が古くなったことにテストで気付ける
+- ドメインを消すときは、`scripts/db/lib/<domain>-seed.ts` とそのテストを消し、`seedAll()` から import と呼び出しを外す。見本を持つドメインが無くなったら、`scripts/db/seed.ts`、`scripts/db/lib/seed-all.ts`、`.mise.toml` の `db:seed`、`README.md` のコマンド一覧の行も消す。タスクとその行は検査に掛からないので、消し忘れても気付けない
 
 ### 起動時に migration を適用する形に変える
 
@@ -91,6 +106,59 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 | Option 3: `drizzle-kit migrate` で適用する        | 適用する経路が drizzle-kit の 1 か所になる。スキーマを変える手順も `db:generate` と `db:migrate` で閉じる | **採用** |
 | Option 4: アプリの起動時に `migrate()` で適用する | 適用する経路が drizzle-kit とアプリの 2 か所になる                                                        | 却下     |
 
+### seed を tsx で走らせる理由
+
+実行口は `createDb()` を通すので、`src/` のモジュールを読める走らせ方が要る。`src/` は `@/` の alias と、拡張子の無い相対 import で書かれている。
+
+| 案                                 | 評価                                                                                                                                                                                                                                                                                                 | 採否     |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `vp exec tsx`                      | [tsx docs][] は "It also supports `tsconfig.json` paths" と書く。`src/server/db/index.ts` も `src/` のドメインのモジュールも読めた (2026-10-14、tsx 4.23.15)                                                                                                                                         | **採用** |
+| `vp node` (Node の type stripping) | [Node.js docs「Modules: TypeScript」][] は "features that depend on settings within `tsconfig.json`, such as paths ... are intentionally unsupported" と書き、import の拡張子を "mandatory" とする。`src/server/db/index.ts` の import で `ERR_MODULE_NOT_FOUND` になった (2026-10-14、Node 24.21.0) | 却下     |
+| Vite の `runnerImport`             | `src/` を読めたが、型定義で `@experimental` とされている。入口を拡張子つきの import だけで別に書くことになる (2026-10-14、Vite+ 1.1.0 同梱の Vite 8.3.3)                                                                                                                                             | 却下     |
+
+### seed に drizzle-seed を使わない理由
+
+[drizzle docs「Seed Overview」][] は、見本のデータを作るライブラリとして drizzle-seed を案内する。
+
+| 案                                                                        | 評価                                                                                                                                    | 採否     |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 固定の配列を drizzle の `insert` で入れる                                 | 長いタイトルや空の本文のような、確かめたい値をそのまま書ける。どの値が入力のスキーマと CHECK を通るかを、配列の単体テストで確かめられる | **採用** |
+| drizzle-seed                                                              | 下の表の制約があり、確かめたい値を作るには、どのみち全列を値の配列で渡すことになる                                                      | 却下     |
+| custom migration に INSERT を書く ([drizzle docs「Custom migrations」][]) | 見本が migration の経路に乗り、本番の DB にも入る                                                                                       | 却下     |
+
+drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、drizzle-orm 0.45.4、better-sqlite3 13.0.3 で実測)。
+
+| 項目           | 振る舞い                                                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 版             | drizzle-orm 0.45 系と組めるのは 0.3.1 だけ。0.4.0 の peer は `drizzle-orm >=1.0.0-beta.1` ([drizzle-seed の npm][])        |
+| CHECK          | 読まない。TEXT の列に英数字の乱数を入れ、暦の日付の CHECK を持つ列で `CHECK constraint failed` になって 1 行も入らなかった |
+| 既定値を持つ列 | 型ごとの乱数で上書きする。作成日時と更新日時は 2022〜2026 年の乱数になり、更新日時が作成日時より前の行も出た               |
+| 日本語         | 生成器が作るのは英数字の乱数と、英語の名前・地名・lorem ipsum だけ。日本語は `valuesFromArray` で値の配列を渡すしかない    |
+| `reset`        | 行を消すだけで `sqlite_sequence` を戻さない。次にアプリが作る行の id は、消す前の最大値から続く                            |
+
+### 見本のデータを `scripts/db/` に置く理由
+
+見本の配列と入れ方は、出荷するアプリのコードではなく、dev server で確かめるための開発の道具である。
+
+| 案                                                                                   | 評価                                                                                                                                                                     | 採否     |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 実行口と見本を `scripts/db/` に置く                                                  | 開発の道具が出荷物のディレクトリの外にまとまる。どの build の入口からも辿られず、`vp build` の成果物に入らない (2026-10-14 に `.output/` を見本の文字列で grep して実測) | **採用** |
+| 見本をドメインのディレクトリの `seed.server.ts` に、実行口を `src/server/db/` に置く | ドメインと一緒に消せるが、出荷しない道具がプロダクトコードの層に混ざる。`.server.` は実行環境の宣言で、開発用であることの目印にならない                                  | 却下     |
+
+### 見本のデータを消して入れ直す理由
+
+`mise run db:seed` は、何度打っても同じ状態に戻す。dev server で一覧を確かめる前に打つので、前回の確認で作った行が残ると、画面の見え方が打つたびに変わる。
+
+| 案                                                                                              | 評価                                                                                                                                                                                 | 採否     |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 1 つのトランザクションで、行を全部消し、`sqlite_sequence` の行を消し、id と日時を明示して入れる | 行も、次に作る行の id も、打つたびに同じになる。手で作った行も消える                                                                                                                 | **採用** |
+| 行を全部消し、id と日時を既定値に任せて入れる                                                   | id が前の最大値の続きになり、日時が実行時刻になる。打つたびに中身が変わる (2026-10-14 に実測)                                                                                        | 却下     |
+| 行を全部消し、id と日時を明示して入れる (`sqlite_sequence` に触らない)                          | 行は同じになるが、`sqlite_sequence` が消した行の最大の id を覚えたままになり、seed のあとに作る行の id が飛ぶ (2026-10-14 に実測)                                                    | 却下     |
+| DB のファイルを消し、`db:migrate` で作り直してから入れる                                        | 削除の順も `sqlite_sequence` も一度に片付くが、dev server は開いた接続を持ち続けるので消したファイルを読み続け、再読み込みしても新しいファイルの行が画面に出ない (2026-10-14 に実測) | 却下     |
+| 固定の id で upsert し、消さない                                                                | 手で作った行が残り、決めた状態に戻らない。drizzle の `$onUpdate` を持つ列は、`set` に書かなくても実行時刻に書き換わる (2026-10-14 に実測)                                            | 却下     |
+
+- `sqlite_sequence` は AUTOINCREMENT の列が使った最大の id を持つ表で、通常の DELETE で書き換えられる ([SQLite「SQLite Autoincrement」][])。同じ節は、書き換えると採番を乱しうると注意する。採用の形では、表の行を全部消したあとに消すので、採番は入れ直した見本の最大の id から続く
+
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
@@ -106,3 +174,12 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 [Nitro docs「Database」]: https://nitro.build/docs/database
 [Nitro の `database.ts`]: https://github.com/nitrojs/nitro/blob/main/src/config/resolvers/database.ts
 [db0 の `node-sqlite.ts`]: https://github.com/unjs/db0/blob/main/src/connectors/node-sqlite.ts
+[TanStack Query docs「Important Defaults」]: https://tanstack.com/query/v5/docs/framework/react/guides/important-defaults
+[tsx docs]: https://tsx.is/
+[Node.js docs「Modules: TypeScript」]: https://nodejs.org/docs/latest-v24.x/api/typescript.html
+[drizzle docs「Seed Overview」]: https://orm.drizzle.team/docs/seed-overview
+[drizzle docs「Custom migrations」]: https://orm.drizzle.team/docs/kit-custom-migrations
+[drizzle-seed の npm]: https://www.npmjs.com/package/drizzle-seed
+[SQLite「SQLite Autoincrement」]: https://www.sqlite.org/autoinc.html
+[SQLite「SQLite Foreign Key Support」]: https://www.sqlite.org/foreignkeys.html
+[SQLite「Pragma statements supported by SQLite」]: https://www.sqlite.org/pragma.html
