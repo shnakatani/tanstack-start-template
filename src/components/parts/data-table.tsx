@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { columnWidthFrom } from "./data-table-columns";
 import type { DataTableFeatures } from "./data-table-features";
 import { dataTableFeatures } from "./data-table-features";
 
@@ -65,7 +66,11 @@ export function DataTable<TData extends RowData>({
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>
             {headerGroup.headers.map((header) => (
-              <TableHead key={header.id} scope="col" style={{ width: header.getSize() }}>
+              <TableHead
+                key={header.id}
+                scope="col"
+                style={{ width: columnWidthFrom(header.getSize()) }}
+              >
                 {header.isPlaceholder ? null : <table.FlexRender header={header} />}
               </TableHead>
             ))}

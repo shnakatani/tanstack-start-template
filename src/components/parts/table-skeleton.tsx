@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 
 import type { DataTableColumnBase } from "./data-table-columns";
+import { columnWidthFrom } from "./data-table-columns";
 
 /**
  * 一覧テーブルのローディング表示。
@@ -38,7 +39,7 @@ export function TableSkeleton({
         <TableRow>
           {columns.map(({ header, size }) => (
             // 実テーブルと同じく scope="col" (列見出しとして数えられる)
-            <TableHead key={header} scope="col" style={{ width: size }}>
+            <TableHead key={header} scope="col" style={{ width: columnWidthFrom(size) }}>
               {header}
             </TableHead>
           ))}

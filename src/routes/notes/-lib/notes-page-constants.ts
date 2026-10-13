@@ -26,7 +26,7 @@ export const NOTE_EDIT_DIALOG_TITLE = "メモを編集";
 export const NOTE_DIALOG_RETURN_TO = linkOptions({ to: "/notes", search: (prev) => prev });
 
 /**
- * 一覧の列の id と見出しと幅 (px)。列の順もここが持つ。列定義 (`note-columns.ts`) と `TableSkeleton` の両方がここから採る。
+ * 一覧の列の id と見出しと幅 (既定の文字サイズのときの px)。列の順もここが持つ。列定義 (`note-columns.ts`) と `TableSkeleton` の両方がここから採る。
  * 日時と操作の列は、中身が 1 行に収まる幅にする。タイトルは折り返し、本文は切り詰める (`note-cells.tsx`)
  */
 export const NOTE_COLUMNS = {

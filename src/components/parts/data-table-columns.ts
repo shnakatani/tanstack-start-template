@@ -2,7 +2,10 @@ import type { ColumnDef_ColumnSizing, IdIdentifier, RowData } from "@tanstack/re
 
 import type { DataTableFeatures } from "./data-table-features";
 
-/** 列の見出しと幅 (px)。`DataTable` と読み込み中の `TableSkeleton` が、同じ値を列見出しの幅に当てる */
+/**
+ * 列の見出しと幅。幅は既定の文字サイズのときの px で持つ。`DataTable` と読み込み中の `TableSkeleton` が、
+ * `columnWidthFrom` で rem に換算して列見出しに当てる
+ */
 export interface DataTableColumnBase {
   header: string;
   size: number;
@@ -22,4 +25,15 @@ export function columnBaseFrom<
       header: columns[id].header,
       size: columns[id].size,
     }) satisfies IdIdentifier<DataTableFeatures, RowData> & ColumnDef_ColumnSizing;
+}
+
+/** 1rem は root の文字サイズ (CSS Values 4 の `rem`) で、ブラウザの既定は 16px (MDN「font-size」の Ems) */
+const DEFAULT_ROOT_FONT_SIZE_PX = 16;
+
+/**
+ * 列の `size` を、列見出しの `style` の width に当てる rem の値にする。文字だけを拡大しても、列が文字と
+ * 一緒に広がる (ADR-0042)。TanStack Table の size はただの数値で、DOM への当て方は描画側が決める
+ */
+export function columnWidthFrom(size: number): string {
+  return `${size / DEFAULT_ROOT_FONT_SIZE_PX}rem`;
 }
