@@ -97,9 +97,8 @@ export const NOTE_SEEDS: readonly Note[] = [
 /** notes の行を全部消して見本を入れ直す。何度打っても、行と次に振られる id が同じになる */
 export function seedNotes(tx: SeedTransaction): SeededTable {
   tx.delete(notes).run();
-  // 消した行の id を sqlite_sequence が覚えたままだと、seed のあとに作る行の id が見本の続きから飛ぶ。
-  // sqlite_sequence の書き換えは採番を乱しうる (SQLite「SQLite Autoincrement」) が、表の行を消した
-  // あとなので、採番は入れ直した見本の最大の id から続く
+  // sqlite_sequence が消した行の id を覚えたままだと、seed のあとに作る行の id が見本の続きから飛ぶ。
+  // 書き換えても採番が乱れない理由は `docs/guides/database.md`「見本のデータを消して入れ直す理由」
   tx.run(sql`delete from sqlite_sequence where name = ${getTableName(notes)}`);
   const { changes } = tx
     .insert(notes)
