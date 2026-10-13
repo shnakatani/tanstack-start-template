@@ -1,6 +1,8 @@
 import type { Row, RowData, TableOptions } from "@tanstack/react-table";
 import { useTable } from "@tanstack/react-table";
 import { useTanStackTableDevtools } from "@tanstack/react-table-devtools";
+import type { ReactNode } from "react";
+import { Fragment } from "react";
 
 import {
   Table,
@@ -17,7 +19,7 @@ import type { DataTableFeatures } from "./data-table-features";
 import { dataTableFeatures } from "./data-table-features";
 
 /** 転送する option の型は `useTable` の options から導出する (再宣言すると転送先の型変更に追随しない) */
-interface DataTableProps<TData extends RowData> extends Pick<
+interface DataTableBaseProps<TData extends RowData> extends Pick<
   TableOptions<DataTableFeatures, TData>,
   "columns" | "data" | "getRowId"
 > {
@@ -41,6 +43,24 @@ interface DataTableProps<TData extends RowData> extends Pick<
 }
 
 /**
+ * 行を開いて詳細の行を出す 2 つの prop。片方だけでは、開いても何も出ないか、開く手段が無いので対で渡す。
+ * 開いた状態は row id をキーに持ち、data を描き直しても戻さない (下の `autoResetExpanded`)。index の id だと、
+ * 行が消えたときに開いた状態が隣の行へ移るので、対で渡すときは `getRowId` も要る (ADR-0043)
+ */
+type DataTableExpandingProps<TData extends RowData> =
+  | { getRowCanExpand?: undefined; renderSubComponent?: undefined }
+  | (Required<Pick<TableOptions<DataTableFeatures, TData>, "getRowCanExpand" | "getRowId">> & {
+      /**
+       * 開いた行の直後に、全列をまたぐ 1 つの cell の中へ描く。JSX の子としては描かず関数として呼ぶので、
+       * hook を呼ばない関数を渡す
+       */
+      renderSubComponent: (props: { row: Row<DataTableFeatures, TData> }) => ReactNode;
+    });
+
+type DataTableProps<TData extends RowData> = DataTableBaseProps<TData> &
+  DataTableExpandingProps<TData>;
+
+/**
  * 列定義 (TanStack Table v9) を registry の `Table` 部品に描く共有部品 (ADR-0018)。
  * 列見出しの `scope="col"` の理由も ADR-0018。
  */
@@ -52,8 +72,20 @@ export function DataTable<TData extends RowData>({
   getRowId,
   rowProps,
   emptyText = "データがありません",
+  getRowCanExpand,
+  renderSubComponent,
 }: DataTableProps<TData>) {
-  const table = useTable({ key: tableKey, features: dataTableFeatures, columns, data, getRowId });
+  const table = useTable({
+    key: tableKey,
+    features: dataTableFeatures,
+    columns,
+    data,
+    getRowId,
+    getRowCanExpand,
+    // 既定では data の参照が変わるたびに開いた行を閉じる。一覧は操作中の行の表示のために data を組み直すので、
+    // 戻さない (TanStack Table の guide「Expanding」の Auto Reset Expanded State)
+    autoResetExpanded: false,
+  });
   useTanStackTableDevtools(table);
   const rows = table.getRowModel().rows;
 
@@ -85,13 +117,24 @@ export function DataTable<TData extends RowData>({
             // しまい、JSX の後勝ちで静かに落ちる
             const busy = rowProps?.(row)["data-busy"];
             return (
-              <TableRow key={row.id} data-busy={busy}>
-                {row.getAllCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    <table.FlexRender cell={cell} />
-                  </TableCell>
-                ))}
-              </TableRow>
+              <Fragment key={row.id}>
+                <TableRow data-busy={busy}>
+                  {row.getAllCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+                {/* 開けなくなった行 (開いたあとに中身が消えたなど) は、閉じるボタンも消えるので詳細を描かない */}
+                {renderSubComponent !== undefined && row.getCanExpand() && row.getIsExpanded() && (
+                  // 本体の行と同じ busy を持たせ、半透明をそろえる
+                  <TableRow data-busy={busy}>
+                    <TableCell colSpan={row.getAllCells().length}>
+                      {renderSubComponent({ row })}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </Fragment>
             );
           })
         ) : (
