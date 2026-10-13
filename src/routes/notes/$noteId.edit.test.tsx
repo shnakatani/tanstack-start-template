@@ -1,12 +1,14 @@
 import { notFound } from "@tanstack/react-router";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import type { Locator } from "vite-plus/test/browser/context";
 
+import { columnHeaderWidths } from "@/components/parts/data-table.test-helpers";
 import { getNote, listNotes, updateNote } from "@/features/notes/functions";
 import { noteQueryOptions } from "@/features/notes/queries";
 import { NOTE, NOTE_UPDATE, OTHER_NOTE, UPDATED_NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
+import { formatDateTime } from "@/lib/format-date-time";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { BACKGROUND_REFETCH_ERROR_MESSAGE } from "@/lib/query-cache-handlers";
 import { expectNoA11yViolations } from "@/test/a11y/a11y";
@@ -16,6 +18,7 @@ import { recordFocusins } from "@/test/assert/focusin";
 import { expectAnnouncements } from "@/test/assert/live-announcer";
 import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 import type { Screen } from "@/test/assert/screen-assertions";
+import { MEDIUM_VIEWPORT, restoreDefaultViewport, setViewport } from "@/test/assert/viewport";
 import { parkMouse } from "@/test/browser/park-mouse";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -36,6 +39,10 @@ const expectNotesHeadingFocused = vi.defineHelper(async (screen: Screen) => {
   await expect.element(heading).toHaveFocus();
   await expect.poll(() => heading.element().matches(":focus-visible")).toBe(false);
 });
+
+/** 一覧の列見出しの幅。モーダル表示中は一覧が aria-hidden なので includeHidden で引く */
+const listColumnHeaderWidths = (screen: Screen) =>
+  columnHeaderWidths(screen, { includeHidden: true });
 
 describe("/notes/$noteId/edit route", () => {
   it("編集リンクで開くと、一覧のキャッシュではなく取り直した値でフォームを作り、背後の一覧も取り直す", async () => {
@@ -688,5 +695,56 @@ describe("/notes/$noteId/edit route", () => {
     // focus は直前の toHaveFocus で落ち着いている
     expect(ariaLabelsOf(focused)).not.toContain(noteEditTriggerName(NOTE));
     expect(fetching).toHaveBeenExhausted();
+  });
+
+  // 操作中の表示 (押したリンクの Spinner、保存後の「更新中」) で一覧の列が動かないこと。列が動くと、
+  // 遷移のクロスフェードが旧い像と新しい像の列の差を 2 重に見せる (ADR-0042)。列の合計より狭い幅で見る。
+  // 余りの幅が列へ配られない状態でないと、`table-fixed` や size の幅を外しても列は動かない
+  describe("760px の幅の一覧の列見出し", () => {
+    afterEach(restoreDefaultViewport);
+
+    it("編集を押してからダイアログが開くまで、幅が変わらない", async () => {
+      await setViewport(MEDIUM_VIEWPORT);
+      vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
+      const fetching = deferMock(getNote);
+      const { screen } = await renderRoute("/notes");
+      await expect.element(rowEditLink(screen, NOTE.title)).toBeInTheDocument();
+      const before = listColumnHeaderWidths(screen);
+
+      await rowEditLink(screen, NOTE.title).click();
+      await expect
+        .element(rowEditLink(screen, NOTE.title).getBySlot("spinner"))
+        .toBeInTheDocument();
+
+      await expect.poll(() => listColumnHeaderWidths(screen)).toEqual(before);
+      fetching.resolve(NOTE);
+      await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    });
+
+    it("1 行の一覧で保存してから再取得が終わるまで、幅が変わらない", async () => {
+      // 1 行の一覧では、その行の日時が列でいちばん幅の広い中身になる。値を変えずに保存し、中身の変化で
+      // 列が動く分を除く
+      await setViewport(MEDIUM_VIEWPORT);
+      vi.mocked(listNotes).mockResolvedValueOnce([NOTE]);
+      const refetch = deferMock(listNotes);
+      vi.mocked(getNote).mockResolvedValue(NOTE);
+      vi.mocked(updateNote).mockResolvedValue(undefined);
+      const { screen } = await renderRoute("/notes");
+      await rowEditLink(screen, NOTE.title).click();
+      await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+      const before = listColumnHeaderWidths(screen);
+
+      await saveButton(screen).click();
+      await parkMouse();
+      await expectNoteDialogClosed(screen);
+      await expect.element(noteRow(screen, NOTE).getByText("更新中")).toBeInTheDocument();
+
+      await expect.poll(() => listColumnHeaderWidths(screen)).toEqual(before);
+      const refetched = { ...NOTE, updatedAt: UPDATED_NOTE.updatedAt };
+      refetch.resolve([refetched]);
+      await expect
+        .element(noteRow(screen, NOTE).getByText(formatDateTime(refetched.updatedAt)))
+        .toBeInTheDocument();
+    });
   });
 });

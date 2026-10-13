@@ -36,3 +36,8 @@ export const Link: Story = {
 export const Disabled: Story = {
   args: { variant: "outline", disabled: true },
 };
+
+/** 押したあとの読み込み中。label の場所に Spinner を重ね、幅は変えない */
+export const Pending: Story = {
+  args: { variant: "outline", isPending: true },
+};

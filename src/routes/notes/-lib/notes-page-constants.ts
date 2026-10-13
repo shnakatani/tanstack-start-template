@@ -1,5 +1,6 @@
 import { linkOptions } from "@tanstack/react-router";
 
+import type { DataTableColumnBase } from "@/components/parts/data-table-columns";
 import type { Note } from "@/features/notes/schema";
 import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
 
@@ -24,12 +25,17 @@ export const NOTE_EDIT_DIALOG_TITLE = "メモを編集";
  */
 export const NOTE_DIALOG_RETURN_TO = linkOptions({ to: "/notes", search: (prev) => prev });
 
-/** 一覧の列の id と見出し。列の順もここが持つ。列定義 (`note-columns.ts`) と `TableSkeleton` の両方がここから採る */
-export const NOTE_COLUMN_HEADERS = {
-  title: NOTE_FIELD_LABELS.title,
-  body: NOTE_FIELD_LABELS.body,
-  dueDate: NOTE_FIELD_LABELS.dueDate,
-  createdAt: NOTE_FIELD_LABELS.createdAt,
-  updatedAt: NOTE_FIELD_LABELS.updatedAt,
-  actions: "操作",
-} as const satisfies Partial<Record<keyof Note, string>> & { actions: string };
+/**
+ * 一覧の列の id と見出しと幅 (既定の文字サイズのときの px)。列の順もここが持つ。列定義 (`note-columns.ts`) と `TableSkeleton` の両方がここから採る。
+ * 日時と操作の列は、中身が 1 行に収まる幅にする。タイトルは折り返し、本文は切り詰める (`note-cells.tsx`)
+ */
+export const NOTE_COLUMNS = {
+  title: { header: NOTE_FIELD_LABELS.title, size: 200 },
+  body: { header: NOTE_FIELD_LABELS.body, size: 200 },
+  dueDate: { header: NOTE_FIELD_LABELS.dueDate, size: 112 },
+  createdAt: { header: NOTE_FIELD_LABELS.createdAt, size: 152 },
+  updatedAt: { header: NOTE_FIELD_LABELS.updatedAt, size: 152 },
+  actions: { header: "操作", size: 136 },
+} as const satisfies Partial<Record<keyof Note, DataTableColumnBase>> & {
+  actions: DataTableColumnBase;
+};

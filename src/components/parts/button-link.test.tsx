@@ -15,8 +15,8 @@ import { ButtonLink } from "./button-link";
  * story に play が無い以上、ここでしか固定できない
  * (docs/guides/storybook.md「カタログと play の範囲」「story とブラウザテストの分担」)。
  *
- * 寸法は測らない。寸法は registry の size 目盛りが決め、上流が決める値なので、測ると上流が変えただけで落ちる。
- * 消費側が縮められないことは層の規則 (ADR-0011 / ADR-0022) が止める。
+ * 寸法の値は測らない。寸法は registry の size 目盛りが決め、上流が決める値なので、測ると上流が変えただけで落ちる。
+ * 消費側が縮められないことは層の規則 (ADR-0011 / ADR-0022) が止める。測るのは、pending の前後で幅が同じことだけ。
  */
 describe("ButtonLink", () => {
   it("リンクテキストが表示される", async () => {
@@ -81,6 +81,27 @@ describe("ButtonLink", () => {
     await expect.element(link).toHaveAttribute("aria-disabled", "true");
     await expect.element(link).toHaveAttribute("data-disabled", "");
     await expect.element(link).not.toHaveAttribute("href");
+  });
+
+  it("isPending の間も幅と名前を変えず、Spinner を見せる", async () => {
+    const router = createTestRouter("/", () => (
+      <>
+        <ButtonLink to="/notes" isPending={false}>
+          メモ一覧へ
+        </ButtonLink>
+        <ButtonLink to="/notes" isPending>
+          メモ一覧へ
+        </ButtonLink>
+      </>
+    ));
+    const screen = await render(<RouterProvider router={router} />);
+    const idle = screen.getByRole("link").first();
+    const pending = screen.getByRole("link").last();
+
+    await expect.element(pending.getBySlot("spinner")).toBeVisible();
+    await expect.element(pending).toHaveAccessibleName("メモ一覧へ");
+    const idleWidth = idle.element().getBoundingClientRect().width;
+    await expect.poll(() => pending.element().getBoundingClientRect().width).toBe(idleWidth);
   });
 
   it("有効なときは data-disabled を持たない", async () => {

@@ -1,7 +1,7 @@
 import { useId, useTransition, type ComponentProps, type ReactNode } from "react";
 
+import { PendingLabel } from "@/components/parts/pending-label";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 
 type ActionButtonShellProps = Omit<
   ComponentProps<typeof Button>,
@@ -25,6 +25,7 @@ type ActionButtonShellProps = Omit<
  *   完全一致の locator が揺れる。`aria-label` を渡した部品はそちらが名前になる
  * - 名前の与え方は children か `aria-label` に限る。`aria-labelledby` は内部で使うため prop から
  *   外してある (受け付けたまま `{...props}` の後で上書きすると、渡した側から見て黙って消える)
+ * - pending 中は `PendingLabel` が label を見えなくして `Spinner` を重ね、ボタンの幅を保つ (ADR-0042)
  * - 状態は要素自身の `aria-disabled` で持つ。`Spinner` は視覚専用 (`aria-hidden`)。
  *   WAI-ARIA 1.2 §5.2.9 により button の子孫はユーザーエージェントが accessibility API に
  *   露出すべきでないので、子の `role="status"` に頼らない。通知は feature 側が `announce()`
@@ -46,8 +47,9 @@ function ActionButtonShell({
       disabled={isPending}
       focusableWhenDisabled
     >
-      {isPending && <Spinner aria-hidden />}
-      <span id={labelId}>{children}</span>
+      <PendingLabel isPending={isPending}>
+        <span id={labelId}>{children}</span>
+      </PendingLabel>
     </Button>
   );
 }

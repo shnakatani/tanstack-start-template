@@ -1,17 +1,25 @@
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { columnHeaderWidths } from "./data-table.test-helpers";
 import { TableSkeleton } from "./table-skeleton";
 
 /**
  * 状態のカタログは `table-skeleton.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは、
- * 支援技術に見せる形の契約だけ。表は列見出しを持つ table として露出し、本文は「読み込み中」の 1 行だけが読まれ、
- * skeleton の行は隠れる。
+ * 支援技術に見せる形の契約と、列見出しの幅。表は列見出しを持つ table として露出し、本文は「読み込み中」の 1 行だけが読まれ、
+ * skeleton の行は隠れる。列見出しの幅は本体の `DataTable` と同じく列の `size` で決まる。
  */
 describe("TableSkeleton", () => {
   it("列見出しを持つ table として露出し、本文は読み込み中の 1 行だけを見せる", async () => {
     const screen = await render(
-      <TableSkeleton caption="メモの一覧" headers={["タイトル", "本文"]} rows={3} />,
+      <TableSkeleton
+        caption="メモの一覧"
+        columns={[
+          { header: "タイトル", size: 200 },
+          { header: "本文", size: 240 },
+        ]}
+        rows={3}
+      />,
     );
 
     // 名前は本体の DataTable と同じ caption で付け、読み込み中から置き換わっても変わらない
@@ -23,8 +31,52 @@ describe("TableSkeleton", () => {
     await expect.element(table.getByRole("row")).toHaveLength(2);
   });
 
+  // 本体の DataTable と同じく、列幅は列の size で決まる (ADR-0042)。列の合計より狭い器に入れて測る
+  it("列見出しを列の size の幅で描く", async () => {
+    const screen = await render(
+      <div style={{ width: 160 }}>
+        <TableSkeleton
+          caption="メモの一覧"
+          columns={[
+            { header: "タイトル", size: 200 },
+            { header: "本文", size: 120 },
+          ]}
+        />
+      </div>,
+    );
+
+    await expect.poll(() => columnHeaderWidths(screen)).toEqual([200, 120]);
+  });
+
+  // size は既定の文字サイズ (16px) のときの px で、rem に換算して当てる。root を 200% にすると列見出しも 2 倍になる。
+  // px のまま当てると 200 / 120 のままで、本体の DataTable と幅が食い違う (ADR-0042)
+  describe("root の文字サイズを 200% にしたとき", () => {
+    afterEach(() => {
+      document.documentElement.style.fontSize = "";
+    });
+
+    it("列見出しを列の size の 2 倍の幅で描く", async () => {
+      document.documentElement.style.fontSize = "32px";
+      const screen = await render(
+        <div style={{ width: 160 }}>
+          <TableSkeleton
+            caption="メモの一覧"
+            columns={[
+              { header: "タイトル", size: 200 },
+              { header: "本文", size: 120 },
+            ]}
+          />
+        </div>,
+      );
+
+      await expect.poll(() => columnHeaderWidths(screen)).toEqual([400, 240]);
+    });
+  });
+
   it("どの要素にも aria-busy を載せない", async () => {
-    const screen = await render(<TableSkeleton caption="メモの一覧" headers={["タイトル"]} />);
+    const screen = await render(
+      <TableSkeleton caption="メモの一覧" columns={[{ header: "タイトル", size: 200 }]} />,
+    );
 
     await expect.element(screen.getByRole("table")).toBeInTheDocument();
     await expect.poll(() => screen.container.querySelectorAll("[aria-busy]").length).toBe(0);

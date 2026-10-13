@@ -4,7 +4,6 @@ import { ButtonLink } from "@/components/parts/button-link";
 import type { DataTableCellContext } from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 import { formatDateTime } from "@/lib/format-date-time";
 
@@ -15,9 +14,17 @@ import { isNoteRowBusy, noteInputOf } from "../-lib/note-rows";
 
 type NoteCellContext = DataTableCellContext<NoteRow>;
 
-/** 本文の cell。長い本文で列が広がらないよう、1 行に切り詰める */
+/**
+ * タイトルの cell。列の幅は固定なので、長いタイトルは列の中で折り返す。registry の `TableCell` の
+ * `whitespace-nowrap` を素の要素で戻し、区切りの無い長い文字列も列の幅で折る
+ */
+export function NoteTitleCell({ row }: NoteCellContext) {
+  return <div className="wrap-break-word whitespace-normal">{noteInputOf(row.original).title}</div>;
+}
+
+/** 本文の cell。長い本文は列の幅で 1 行に切り詰める */
 export function NoteBodyCell({ row }: NoteCellContext) {
-  return <div className="max-w-xs truncate">{noteInputOf(row.original).body}</div>;
+  return <div className="truncate">{noteInputOf(row.original).body}</div>;
 }
 
 /**
@@ -102,9 +109,9 @@ export function NoteActionsCell({ row }: NoteCellContext) {
         // 間でリンクが focus できなくなり、focus を持っていれば blur してから React が focus を戻し直す
         disabled={isBusy}
         tabIndex={0}
+        isPending={isEditPending}
       >
         編集
-        {isEditPending && <Spinner aria-hidden />}
       </ButtonLink>
       <AlertDialogTrigger
         handle={noteDeleteDialogHandle}

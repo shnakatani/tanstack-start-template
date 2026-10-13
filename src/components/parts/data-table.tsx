@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { columnWidthFrom } from "./data-table-columns";
 import type { DataTableFeatures } from "./data-table-features";
 import { dataTableFeatures } from "./data-table-features";
 
@@ -57,13 +58,19 @@ export function DataTable<TData extends RowData>({
   const rows = table.getRowModel().rows;
 
   return (
-    <Table>
+    // 列の幅は列定義の size で決め、中身で変えない。操作中の表示で中身の幅が変わっても列が動かない (ADR-0042)。
+    // fixed layout は最初の行の cell から列幅を採るので、幅は列見出しにだけ当てる
+    <Table className="table-fixed">
       <TableCaption className="sr-only">{caption}</TableCaption>
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>
             {headerGroup.headers.map((header) => (
-              <TableHead key={header.id} scope="col">
+              <TableHead
+                key={header.id}
+                scope="col"
+                style={{ width: columnWidthFrom(header.getSize()) }}
+              >
                 {header.isPlaceholder ? null : <table.FlexRender header={header} />}
               </TableHead>
             ))}

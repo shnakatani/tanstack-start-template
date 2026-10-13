@@ -4,6 +4,7 @@ import { render } from "vitest-browser-react";
 
 import { DataTable } from "./data-table";
 import type { DataTableFeatures } from "./data-table-features";
+import { columnHeaderWidths } from "./data-table.test-helpers";
 
 type Fruit = { id: number; name: string; price: number };
 
@@ -19,8 +20,8 @@ const FRUITS: Fruit[] = [
 
 /**
  * 状態のカタログは `data-table.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは構造の契約で、
- * 列見出しの順と `scope=col`、`rowProps` の busy 行だけが半透明になること、空表示の `colSpan`
- * である。
+ * 列見出しの順と `scope=col`、列見出しの幅が列の `size` で決まること、`rowProps` の busy 行だけが半透明になること、
+ * 空表示の `colSpan` である。
  *
  * この部品は args だけで状態が決まるので story に play を書かない (docs/guides/storybook.md「カタログと play の範囲」)。play の無い
  * story は描画と axe しか走らせないため、上の契約はここでしか固定できない (docs/guides/storybook.md「story とブラウザテストの分担」の
@@ -35,6 +36,21 @@ describe("DataTable", () => {
     );
 
     await expect.element(screen.getByRole("table", { name: "果物の一覧" })).toBeInTheDocument();
+  });
+
+  // 列幅は中身でなく列の size で決まる (ADR-0042)。列の合計より狭い器に入れ、余りの幅が列へ配られない状態で測る
+  it("列見出しを列の size の幅で描く", async () => {
+    const sized = helper.columns([
+      helper.accessor("name", { header: "名前", size: 200 }),
+      helper.accessor("price", { header: "価格", size: 120 }),
+    ]);
+    const screen = await render(
+      <div style={{ width: 160 }}>
+        <DataTable tableKey="fruits-sized" caption="果物の一覧" columns={sized} data={FRUITS} />
+      </div>,
+    );
+
+    await expect.poll(() => columnHeaderWidths(screen)).toEqual([200, 120]);
   });
 
   it("列定義の順に列見出しを scope=col で描き、行はセル単位で描く", async () => {
