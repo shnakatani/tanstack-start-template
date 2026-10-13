@@ -5,8 +5,10 @@ import { render } from "vitest-browser-react";
 
 import { listNotes } from "@/features/notes/functions";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
+import { NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
 import { createTestRouter } from "@/test/app/create-test-router";
+import { deferMock } from "@/test/app/defer-mock";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
@@ -27,6 +29,7 @@ vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
+import { noteRow } from "./-components/note-cells.test-helpers";
 import { noteSearchbox } from "./-components/note-search-field.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
@@ -50,7 +53,7 @@ describe("/notes route", () => {
     const screen = await render(<RouterProvider router={router} />);
 
     await expect.element(screen.getByRole("cell", { name: "読み込み中" })).toBeInTheDocument();
-    // skeleton は NOTE_COLUMN_HEADERS の見出しを全部描く。列定義がそれと過不足なく同じ順に並ぶことをここで見る。
+    // skeleton は NOTE_COLUMNS の見出しを全部描く。列定義がそれと過不足なく同じ順に並ぶことをここで見る。
     // ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
     await expect
       .poll(() =>
@@ -60,6 +63,23 @@ describe("/notes route", () => {
           .map((header) => header.textContent),
       )
       .toEqual(noteColumns.map((column) => column.header));
+  });
+
+  it("読み込み中の skeleton から本体に替わっても、列見出しの幅が変わらない", async () => {
+    const fetching = deferMock(listNotes);
+    const { screen } = await renderRoute("/notes", { pendingMs: 0 });
+    await expect.element(screen.getByRole("cell", { name: "読み込み中" })).toBeInTheDocument();
+    const widths = () =>
+      screen
+        .getByRole("columnheader")
+        .elements()
+        .map((header) => header.getBoundingClientRect().width);
+    const pending = widths();
+
+    fetching.resolve([NOTE, OTHER_NOTE]);
+    await expect.element(noteRow(screen, NOTE)).toBeInTheDocument();
+
+    await expect.poll(widths).toEqual(pending);
   });
 
   it("title をページ名とアプリ名で組む", async () => {

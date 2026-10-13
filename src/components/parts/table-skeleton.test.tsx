@@ -11,7 +11,14 @@ import { TableSkeleton } from "./table-skeleton";
 describe("TableSkeleton", () => {
   it("列見出しを持つ table として露出し、本文は読み込み中の 1 行だけを見せる", async () => {
     const screen = await render(
-      <TableSkeleton caption="メモの一覧" headers={["タイトル", "本文"]} rows={3} />,
+      <TableSkeleton
+        caption="メモの一覧"
+        columns={[
+          { header: "タイトル", size: 200 },
+          { header: "本文", size: 240 },
+        ]}
+        rows={3}
+      />,
     );
 
     // 名前は本体の DataTable と同じ caption で付け、読み込み中から置き換わっても変わらない
@@ -24,7 +31,9 @@ describe("TableSkeleton", () => {
   });
 
   it("どの要素にも aria-busy を載せない", async () => {
-    const screen = await render(<TableSkeleton caption="メモの一覧" headers={["タイトル"]} />);
+    const screen = await render(
+      <TableSkeleton caption="メモの一覧" columns={[{ header: "タイトル", size: 200 }]} />,
+    );
 
     await expect.element(screen.getByRole("table")).toBeInTheDocument();
     await expect.poll(() => screen.container.querySelectorAll("[aria-busy]").length).toBe(0);

@@ -14,6 +14,7 @@ import { viewportOverflows } from "./viewport-overflows";
 
 export {
   DEFAULT_VIEWPORT,
+  MEDIUM_VIEWPORT,
   NARROW_VIEWPORT,
   SHORT_VIEWPORT,
   TABLET_VIEWPORT,

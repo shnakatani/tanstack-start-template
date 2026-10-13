@@ -19,5 +19,8 @@ export const TABLET_VIEWPORT: Viewport = { width: 1280, height: 853 };
 /** 極端に低い viewport (ブラウザ UI 領域が大きい環境の下限想定) */
 export const SHORT_VIEWPORT: Viewport = { width: 1280, height: 420 };
 
+/** 既定と最小の間の幅。一覧の table のように、余りの幅の配り方が viewport で変わる部品を既定の幅と並べて測る */
+export const MEDIUM_VIEWPORT: Viewport = { width: 760, height: 720 };
+
 /** 対応する最小画面幅。ここでレイアウトが崩壊しないことを下限として固定する */
 export const NARROW_VIEWPORT: Viewport = { width: 375, height: 667 };
