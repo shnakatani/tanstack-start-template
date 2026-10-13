@@ -190,6 +190,21 @@ describe("NoteExpandCell", () => {
     await expect.element(noteBodyDetailRow(screen, OTHER_NOTE)).toBeInTheDocument();
   });
 
+  it("開いたまま、ほかの行が削除中になっても、その行が更新中になっても閉じない", async () => {
+    const { screen, update } = await renderUpdatableCells();
+    await expandTrigger(screen, NOTE, false).click();
+    await expect.element(noteBodyDetailRow(screen, NOTE)).toBeInTheDocument();
+
+    update({ deletingIds: [OTHER_NOTE.id] });
+    await expect.element(rowDeleteButton(screen, OTHER_NOTE.title)).toBeDisabled();
+    await expect.element(expandTrigger(screen, NOTE, true)).toBeInTheDocument();
+
+    update({ updatingNotes: [NOTE_UPDATE] });
+    await expect.element(rowDeleteButton(screen, UPDATED_NOTE.title)).toBeDisabled();
+    await expect.element(expandTrigger(screen, UPDATED_NOTE, true)).toBeInTheDocument();
+    await expect.element(noteBodyDetailRow(screen, UPDATED_NOTE)).toBeInTheDocument();
+  });
+
   it("開いた状態に a11y 違反が無い", { tags: ["a11y", "axe"] }, async (context) => {
     const screen = await renderCells();
     await expandTrigger(screen, NOTE, false).click();

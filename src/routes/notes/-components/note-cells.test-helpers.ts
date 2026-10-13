@@ -10,7 +10,7 @@ function escapeRegExp(text: string) {
  * メモの行。モーダル表示中は行が aria-hidden 配下に入るので、その間に取るときは includeHidden を
  * 渡す。閉じた後は不要 (Base UI の animation は無効で、close の次の描画で unmount する。docs/guides/testing/user-interactions.md「animation を無効にして走らせる理由」)。
  * 行の名前は中身を文書順に並べたもので、行を開くボタンの名前もタイトルの cell もタイトルで始まる。名前の先頭で
- * 引き、本文がタイトルを含む行で、開いた詳細の行 (名前は本文) に当たらないようにする
+ * 引き、開いた詳細の行 (名前は本文) に当たらないようにする。本文がタイトルで始まる行を開くと、詳細の行にも当たる
  */
 export function noteRow(screen: Screen, note: Pick<Note, "title">, { includeHidden = false } = {}) {
   return screen.getByRole("row", {

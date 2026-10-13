@@ -32,9 +32,9 @@ function FruitDetail({ row }: { row: Row<DataTableFeatures, Fruit> }) {
  * 列見出しの順と `scope=col`、列見出しの幅が列の `size` で決まること、`rowProps` の busy 行だけが半透明になること、
  * 空表示の `colSpan`、行を開いたときの詳細の行である。
  *
- * story の play は行の開閉だけを持つ。ほかの状態は args だけで決まる (docs/guides/storybook.md「カタログと play の範囲」)。開閉のうち、
- * data を描き直したとき・開けなくなったとき・列幅は、story の args では作れないのでここで固定する
- * (docs/guides/storybook.md「story とブラウザテストの分担」の役割分担)。
+ * story の play は行を開くところだけを持つ。ほかの状態は args だけで決まる (docs/guides/storybook.md「カタログと play の範囲」)。
+ * 開閉のうち、実イベントで開いて閉じること、詳細の cell の `colSpan`、data を描き直したとき、開けなくなったとき、列幅は、
+ * play の合成イベントと story の args では固定できないのでここで固定する (docs/guides/storybook.md「story とブラウザテストの分担」の役割分担)。
  */
 describe("DataTable", () => {
   // table は名前が必須のロール (WAI-ARIA 1.2)。HTML の table には caption で名前を付ける

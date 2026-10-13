@@ -10,7 +10,7 @@ ADR-0042 は、cell の中身を 1 行に切り詰める (`truncate`) のを、[
 
 > truncation is acceptable if the component's full content is available on focus or after user activation and an indication that this information can be accessed, is provided to the user in some way besides the fact that it is truncated.
 
-切り詰めた cell は focus できず、全文を読む手段も、読めることを示すものも行に無かった。切り詰める列を持つ一覧には、2 つの条件を一覧の上で満たす手段が要る。
+切り詰めた cell は focus できず、cell を見ても全文を読む手段と、読めることを示すものが無い。切り詰める列を持つ一覧には、2 つの条件を一覧の上で満たす手段が要る。
 
 形を決める制約は次のとおり。
 
@@ -75,10 +75,11 @@ ADR-0042 は、cell の中身を 1 行に切り詰める (`truncate`) のを、[
 
 - 一覧の列が 1 つ増え、既定の文字サイズで表の幅がその列の `size` だけ広がる
 - ボタンの列の `size` は、root の文字サイズを 32px にした 760px の一覧で、cell の `scrollWidth - clientWidth` がどの cell も 0 になることで決めた。56 でも 48 でも 0 だった。48 はボタン (`icon-sm` の 2rem) と cell の左右の余白 (1rem) の和にちょうど等しく、余りが無いので 56 にした (2026-10-13、vitest の browser project の Chromium)
-- 開いた行には、registry の `TableRow` の `has-aria-expanded:bg-muted/50` で背景が付く。同じ行の中で `aria-expanded="true"` を持つ要素 (確認ダイアログを開いている間の削除のトリガーなど) があるときも同じ背景が付く
+- 開いた行には、registry の `TableRow` の `has-aria-expanded:bg-muted/50` で背景が付き、詳細の行には付かない。同じ行の中で `aria-expanded="true"` を持つ要素 (確認ダイアログを開いている間の削除のトリガーなど) があるときも同じ背景が付く (2026-10-13、dev server を Playwright の Chromium で開いて `backgroundColor` を読んだ)
+- 列の合計より狭い viewport では、表は横に scroll し (ADR-0042)、詳細の行は表の幅で折り返す。全文は読めるが、1 行が viewport より長くなり、横に scroll して読む。760px で root の文字サイズを 32px にした一覧では、表の幅は約 2100px だった (同じ日、同じ環境)
 - 確定すると row id が変わる行は開けない。開いた行が消えると、その id が開いた状態に残る。表示には出ず、閉じる操作は常に許される (`row.toggleExpanded` は閉じる側を止めない)
 - `renderSubComponent` は `DataTable` が関数として呼ぶ。hook を呼ぶ関数を渡すと、開いた行の数で hook の数が変わる
-- 本文のような長い中身が切れていない行にもボタンが出る。切れているかの計測は足さない
+- 中身が短く切れていない行にもボタンが出る。切れているかの計測は足さない
 - 再評価の条件: 木構造の行 (subRows) を開く表を足すときは、`expandedRowModel` が子の行を挿入するので、詳細の行と同じ表で両立するかを比べ直す。sorting や pagination を足すときは、行の並びが変わっても開いた状態が row id で保たれることを確かめる
 
 ## 出典
