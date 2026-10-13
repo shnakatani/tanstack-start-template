@@ -111,10 +111,7 @@ describe("DataTable", () => {
         return null;
       }
       return (
-        <Subscribe
-          source={row.table.atoms.expanded}
-          selector={(expanded) => expanded === true || expanded[row.id] === true}
-        >
+        <Subscribe source={row.table.atoms.expanded} selector={() => row.getIsExpanded()}>
           {(isExpanded) => (
             <button
               type="button"

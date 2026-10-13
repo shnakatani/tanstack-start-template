@@ -31,10 +31,7 @@ export function NoteExpandCell({ row }: NoteCellContext) {
   }
   const { title } = noteInputOf(row.original);
   return (
-    <Subscribe
-      source={row.table.atoms.expanded}
-      selector={(expanded) => expanded === true || expanded[row.id] === true}
-    >
+    <Subscribe source={row.table.atoms.expanded} selector={() => row.getIsExpanded()}>
       {(isExpanded) => (
         <Button
           variant="ghost"

@@ -48,10 +48,7 @@ function ToggleCell({ row }: DataTableCellContext<Fruit>) {
     return null;
   }
   return (
-    <Subscribe
-      source={row.table.atoms.expanded}
-      selector={(expanded) => expanded === true || expanded[row.id] === true}
-    >
+    <Subscribe source={row.table.atoms.expanded} selector={() => row.getIsExpanded()}>
       {(isExpanded) => (
         <button type="button" aria-expanded={isExpanded} onClick={row.getToggleExpandedHandler()}>
           {`${row.original.name}の詳細`}
