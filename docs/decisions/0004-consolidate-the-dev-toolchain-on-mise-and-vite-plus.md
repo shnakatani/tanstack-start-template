@@ -30,7 +30,7 @@
 タスクはすべて `vite.config.ts` の `run.tasks` に置き、`.mise.toml` に `[tasks.*]` を置かない。mise は、Node.js と pnpm 以外のツール (`[tools]`)、環境変数 (`[env]`)、dev server と Storybook の port (`[daemons.*]`) を持つ。
 
 - 入口が `vp run` の 1 つになる。CI は mise を入れずに同じタスクを `vp run verify` で走らせられ、検証の手順を足したときに CI へ写し忘れることがない
-- mise の値は、`mise exec` で打ったコマンド、mise のタスク、mise を activate したシェルに届く (mise v2026.9.18 の docs/environments/index.md の冒頭: "mise supplies them to commands run with `mise exec`, tasks, and activated interactive shells.")。mise のタスクなら mise が必ず値を入れるが、Vite Task のタスクには、呼んだシェルが mise の環境を読んでいるときだけ届く
+- mise の値は、`mise exec` で打ったコマンド、mise のタスク、mise を activate したシェルに届く (mise v2026.9.18 の docs/environments/index.md の冒頭: "mise supplies them to commands run with `mise exec`, tasks, and activated interactive shells.")。mise のタスクなら mise が必ず値を入れるが、Vite Task のタスクには、mise の環境を読んだシェルか `mise x --` から打ったときに届く
 - mise の値を読むタスクは、値が届いていなければ止まる形にする。黙って別の port や別の DB で動くと、worktree ごとに分けた port と DB が混ざる
 
 | タスク                                  | 読む mise の値                                                                                            | 届いていないとき (2026-10-14、vite-plus 1.1.0 で実測)                                                     |
@@ -96,7 +96,7 @@ CI は mise を要さず、`vp run verify` を打つ。手順を workflow に写
 
 ### dev server と Storybook の port は mise の daemons の自動 port で worktree ごとに決める
 
-`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の Vite Task のタスクを `run = "exec vp run serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise v2026.9.18 の docs/daemons.md「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、mise の環境を読んだシェルから `vp run serve` で前面に起動できる。docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した。`mise daemons stop` は手元の pitchfork の shim の版が決まらず失敗したので、常駐を止める経路は確かめていない。同じ日に、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動したプロセスの pid にだけ SIGTERM を送ると dev server が port を持ったまま残った (port を持っていたのは、起動した `vp` の子の node のプロセスだった)。プロセスグループ全体への SIGINT (端末の Ctrl-C) では止まった。pitchfork が stop でどちらに送るかは確かめていない。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (同「Per-daemon proxy settings」)。
+`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の Vite Task のタスクを `run = "exec vp run serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise v2026.9.18 の docs/daemons.md「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、mise の環境を読んだシェルから `vp run serve` で前面に起動できる。docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した。`mise daemons stop` は手元の pitchfork の shim の版が決まらず失敗したので、常駐を止める経路は確かめていない。同じ日に、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動したプロセスの pid にだけ SIGTERM を送ると dev server が port を持ったまま残った (port を持っていたのは、起動した `vp` の pid ではなく、その子孫の node のプロセス (vite の `cli.js`) だった)。プロセスグループ全体への SIGINT (端末の Ctrl-C) では止まった。pitchfork が stop でどちらに送るかは確かめていない。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (同「Per-daemon proxy settings」)。
 
 2026-10-09 に mise 2026.9.18 で確かめた振る舞いは次のとおりである。
 
