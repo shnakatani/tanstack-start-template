@@ -16,7 +16,7 @@ function requireDbFileName(): string {
   return requireEnv(
     "DB_FILE_NAME",
     process.env.DB_FILE_NAME,
-    "In development, load mise's env (a shell with the mise hook, or `mise x -- vp run <task>`). Elsewhere, pass an absolute path, or pass a path / ':memory:' explicitly to createDb().",
+    "In development, load mise's env (a shell with the mise hook, or `mise x -- vp run <task>`). Elsewhere, set DB_FILE_NAME to an absolute path, or pass a path / ':memory:' explicitly to createDb().",
   );
 }
 

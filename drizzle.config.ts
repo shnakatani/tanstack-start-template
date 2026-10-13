@@ -10,7 +10,7 @@ import { MIGRATIONS_FOLDER } from "./src/server/db/migrations-folder";
 const dbFileName = requireEnv(
   "DB_FILE_NAME",
   process.env.DB_FILE_NAME,
-  "In development, load mise's env (a shell with the mise hook, or `mise x -- vp run <task>`). Elsewhere, pass an absolute path.",
+  "In development, load mise's env (a shell with the mise hook, or `mise x -- vp run <task>`). Elsewhere, set DB_FILE_NAME to an absolute path.",
 );
 
 // DB のファイルを作るのは drizzle-kit だけ (docs/guides/database.md「DB のファイルをアプリで作らない理由」)。

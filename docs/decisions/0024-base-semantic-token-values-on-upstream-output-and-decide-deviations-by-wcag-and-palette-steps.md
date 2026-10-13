@@ -70,7 +70,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 `bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
 
-下の表は 2026-09-21 の `tailwindcss@4.3.3` の palette を `scripts/contrast/report.ts` で測ったもので、9 色が該当した。hue を変えるときの測り方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
+下の表は 2026-09-21 に `tailwindcss@4.3.3` の palette を測ったもので、9 色が該当した。hue を変えるときの測り方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
 
 | hue                     | `<hue>-800` のまま | `<hue>-900` へ下げた後 |
 | ----------------------- | ------------------ | ---------------------- |
