@@ -39,7 +39,7 @@ grep に出ない `src/lib/app-name.ts` の `APP_NAME` も替える。
 | デプロイ | `vite.config.ts` の `nitro()` の `preset`                                                                                                    |
 
 サンプル機能 (`/notes`) は `src/features/notes/` と `src/routes/notes/` にある。
-`mise run db:seed` が入れる見本のデータは `scripts/db/lib/notes-seed.ts` にあり、実行口の `scripts/db/seed.ts` が呼ぶ。サンプル機能を消すときは、`docs/guides/database.md`「見本のデータを入れる」の手順で、見本とそのテスト、実行口、`.mise.toml` のタスクも外す。
+サンプル機能を消すときは、`mise run db:seed` が入れる見本も `docs/guides/database.md`「見本のデータを入れる」の手順に従って消す。
 
 ## 後始末
 
