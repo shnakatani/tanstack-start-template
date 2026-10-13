@@ -116,8 +116,6 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 | `vp node` (Node の type stripping) | [Node.js docs「Modules: TypeScript」][] は "features that depend on settings within `tsconfig.json`, such as paths ... are intentionally unsupported" と書き、import の拡張子を "mandatory" とする。`src/server/db/index.ts` の import で `ERR_MODULE_NOT_FOUND` になった (2026-10-14、Node 24.21.0) | 却下     |
 | Vite の `runnerImport`             | `src/` を読めたが、型定義で `@experimental` とされている。入口を拡張子つきの import だけで別に書くことになる (2026-10-14、Vite+ 1.1.0 同梱の Vite 8.3.3)                                                                                                                                             | 却下     |
 
-TypeScript の seed を持つ先行例も、多くが tsx で走らせる。2026-10-14 に調べた 7 件のうち、tsx は 6 件 ([TanStack/cli の prisma の add-on][]、[Prisma docs「Seeding」][]、[create-t3-app docs「Prisma」][]、[next.js の `prisma-postgres` の example][]、[next.js の `with-mysql` の example][]、[epic-stack の `package.json`][])、ts-node は 1 件だった。
-
 ### seed に drizzle-seed を使わない理由
 
 [drizzle docs「Seed Overview」][] は、見本のデータを作るライブラリとして drizzle-seed を案内する。
@@ -130,14 +128,13 @@ TypeScript の seed を持つ先行例も、多くが tsx で走らせる。2026
 
 drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、drizzle-orm 0.45.4、better-sqlite3 13.0.3 で実測)。
 
-| 項目           | 振る舞い                                                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 版             | drizzle-orm 0.45 系と組めるのは 0.3.1 だけ。0.4.0 の peer は `drizzle-orm >=1.0.0-beta.1` ([drizzle-seed の npm][])                      |
-| CHECK          | 読まない。TEXT の列に英数字の乱数を入れ、暦の日付の CHECK を持つ列で `CHECK constraint failed` になって 1 行も入らなかった               |
-| 既定値を持つ列 | 型ごとの乱数で上書きする。作成日時と更新日時は 2022〜2026 年の乱数になり、更新日時が作成日時より前の行も出た                             |
-| 日本語         | 生成器が作るのは英数字の乱数と、英語の名前・地名・lorem ipsum だけ。日本語は `valuesFromArray` で値の配列を渡すしかない                  |
-| `reset`        | 行を消すだけで `sqlite_sequence` を戻さない。次にアプリが作る行の id は、消す前の最大値から続く                                          |
-| docs           | サイトは 0.4.0 以降の挙動で書かれ、0.3.1 で動かない記述が混ざる。refine で列を `false` にして外す書き方は、0.3.1 で `TypeError` になった |
+| 項目           | 振る舞い                                                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 版             | drizzle-orm 0.45 系と組めるのは 0.3.1 だけ。0.4.0 の peer は `drizzle-orm >=1.0.0-beta.1` ([drizzle-seed の npm][])        |
+| CHECK          | 読まない。TEXT の列に英数字の乱数を入れ、暦の日付の CHECK を持つ列で `CHECK constraint failed` になって 1 行も入らなかった |
+| 既定値を持つ列 | 型ごとの乱数で上書きする。作成日時と更新日時は 2022〜2026 年の乱数になり、更新日時が作成日時より前の行も出た               |
+| 日本語         | 生成器が作るのは英数字の乱数と、英語の名前・地名・lorem ipsum だけ。日本語は `valuesFromArray` で値の配列を渡すしかない    |
+| `reset`        | 行を消すだけで `sqlite_sequence` を戻さない。次にアプリが作る行の id は、消す前の最大値から続く                            |
 
 ### 見本のデータを `scripts/db/` に置く理由
 
@@ -147,8 +144,6 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
 | 実行口と見本を `scripts/db/` に置く                                                  | 開発の道具が出荷物のディレクトリの外にまとまる。どの build の入口からも辿られず、`vp build` の成果物に入らない (2026-10-14 に `.output/` を見本の文字列で grep して実測) | **採用** |
 | 見本をドメインのディレクトリの `seed.server.ts` に、実行口を `src/server/db/` に置く | ドメインと一緒に消せるが、出荷しない道具がプロダクトコードの層に混ざる。`.server.` は実行環境の宣言で、開発用であることの目印にならない                                  | 却下     |
-
-- `scripts/db/` が `src/` を import する向きは、開発の道具が製品を使う向きである。`scripts/checks/runtime/security-headers.ts` が期待値を写しで持って避けているのは、製品の設定が `scripts/` を import する逆の向きである
 
 ### 見本のデータを消して入れ直す理由
 
@@ -163,7 +158,6 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 | 固定の id で upsert し、消さない                                                                | 手で作った行が残り、決めた状態に戻らない。drizzle の `$onUpdate` を持つ列は、`set` に書かなくても実行時刻に書き換わる (2026-10-14 に実測)                                            | 却下     |
 
 - `sqlite_sequence` は AUTOINCREMENT の列が使った最大の id を持つ表で、通常の DELETE で書き換えられる ([SQLite「SQLite Autoincrement」][])。同じ節は、書き換えると採番を乱しうると注意する。採用の形では、表の行を全部消したあとに消すので、採番は入れ直した見本の最大の id から続く
-- 行を消して入れ直す先行例には、[TanStack/cli の prisma の add-on][] (全件を消して入れる) と、[next.js の `with-mysql` の example][] (全件を消し、AUTO_INCREMENT を 1 に戻して入れる) がある
 
 ## 出典
 
@@ -183,12 +177,6 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 [TanStack Query docs「Important Defaults」]: https://tanstack.com/query/v5/docs/framework/react/guides/important-defaults
 [tsx docs]: https://tsx.is/
 [Node.js docs「Modules: TypeScript」]: https://nodejs.org/docs/latest-v24.x/api/typescript.html
-[TanStack/cli の prisma の add-on]: https://github.com/TanStack/cli/tree/3f2d3d32e0bc745a9b892ce767555a7f7b4dd591/packages/create/src/frameworks/react/add-ons/prisma
-[Prisma docs「Seeding」]: https://www.prisma.io/docs/orm/prisma-migrate/workflows/seeding
-[create-t3-app docs「Prisma」]: https://github.com/t3-oss/create-t3-app/blob/4709861f7e67a15564c0460c13e7b4b6cfcae40d/www/src/pages/en/usage/prisma.md
-[next.js の `prisma-postgres` の example]: https://github.com/vercel/next.js/tree/d6fdc60af46baf7a548bb2d7c85524d3488016e4/examples/prisma-postgres
-[next.js の `with-mysql` の example]: https://github.com/vercel/next.js/tree/d6fdc60af46baf7a548bb2d7c85524d3488016e4/examples/with-mysql
-[epic-stack の `package.json`]: https://github.com/epicweb-dev/epic-stack/blob/64ca647630e15f71e6782b622ab0112c4b428f1f/package.json
 [drizzle docs「Seed Overview」]: https://orm.drizzle.team/docs/seed-overview
 [drizzle docs「Custom migrations」]: https://orm.drizzle.team/docs/kit-custom-migrations
 [drizzle-seed の npm]: https://www.npmjs.com/package/drizzle-seed
