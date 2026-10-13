@@ -66,8 +66,8 @@ function overflowingCells(screen: Screen) {
     .getByRole("cell")
     .elements()
     .flatMap((cell) => {
-      const overflow = cell.scrollWidth - cell.clientWidth;
-      if (overflow <= 0) {
+      const overflow = overflowOf(cell);
+      if (overflow === 0) {
         return [];
       }
       if (!(cell instanceof HTMLTableCellElement)) {
