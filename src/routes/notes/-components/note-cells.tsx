@@ -1,7 +1,13 @@
 import { useMatchRoute } from "@tanstack/react-router";
+import type { Row } from "@tanstack/react-table";
+import { Subscribe } from "@tanstack/react-table";
+import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 
 import { ButtonLink } from "@/components/parts/button-link";
-import type { DataTableCellContext } from "@/components/parts/data-table-features";
+import type {
+  DataTableCellContext,
+  DataTableFeatures,
+} from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
@@ -15,6 +21,44 @@ import { isNoteRowBusy, noteInputOf } from "../-lib/note-rows";
 type NoteCellContext = DataTableCellContext<NoteRow>;
 
 /**
+ * 行を開いて本文の全文を出すボタンの cell。開いた状態は表の state なので、この部品の中で Subscribe して読む
+ * (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)。状態は aria-expanded が持ち、名前は開閉で変えない
+ * (APG「Disclosure (Show/Hide) Pattern」)。対象を名前に含めるのは、同じ行の編集と削除と同じ理由
+ */
+export function NoteExpandCell({ row }: NoteCellContext) {
+  if (!row.getCanExpand()) {
+    return null;
+  }
+  const { title } = noteInputOf(row.original);
+  return (
+    <Subscribe
+      source={row.table.atoms.expanded}
+      selector={(expanded) => expanded === true || expanded[row.id] === true}
+    >
+      {(isExpanded) => (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-expanded={isExpanded}
+          aria-label={`${title}の本文を表示`}
+          onClick={row.getToggleExpandedHandler()}
+        >
+          {isExpanded ? <ChevronDownIcon aria-hidden /> : <ChevronRightIcon aria-hidden />}
+        </Button>
+      )}
+    </Subscribe>
+  );
+}
+
+/**
+ * 開いた行の直後に出す、本文の全文。`DataTable` が関数として呼ぶので hook を呼ばない。本文は 1 行の入力欄で
+ * 書くので改行を持たない。registry の `TableCell` の `whitespace-nowrap` を素の要素で戻して折り返す
+ */
+export function NoteBodyDetail({ row }: { row: Row<DataTableFeatures, NoteRow> }) {
+  return <div className="wrap-break-word whitespace-normal">{noteInputOf(row.original).body}</div>;
+}
+
+/**
  * タイトルの cell。列の幅は固定なので、長いタイトルは列の中で折り返す。registry の `TableCell` の
  * `whitespace-nowrap` を素の要素で戻し、区切りの無い長い文字列も列の幅で折る
  */
@@ -22,7 +66,7 @@ export function NoteTitleCell({ row }: NoteCellContext) {
   return <div className="wrap-break-word whitespace-normal">{noteInputOf(row.original).title}</div>;
 }
 
-/** 本文の cell。長い本文は列の幅で 1 行に切り詰める */
+/** 本文の cell。長い本文は列の幅で 1 行に切り詰める。全文は行を開いて出す (`NoteBodyDetail`) */
 export function NoteBodyCell({ row }: NoteCellContext) {
   return <div className="truncate">{noteInputOf(row.original).body}</div>;
 }

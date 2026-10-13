@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { columnHeaderWidths } from "@/components/parts/data-table.test-helpers";
+import { cellInColumn, columnHeaderWidths } from "@/components/parts/data-table.test-helpers";
 import { listNotes } from "@/features/notes/functions";
-import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
+import { NOTE_FIELD_LABELS, NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
+import type { Note } from "@/features/notes/schema";
 import { NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
 import { createTestRouter } from "@/test/app/create-test-router";
@@ -32,7 +33,11 @@ vi.mock(import("./-lib/note-search"), async (importOriginal) => ({
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
-import { noteRow } from "./-components/note-cells.test-helpers";
+import {
+  noteBodyDetailRow,
+  noteExpandTriggerName,
+  noteRow,
+} from "./-components/note-cells.test-helpers";
 import { noteSearchbox } from "./-components/note-search-field.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
@@ -62,6 +67,19 @@ function overflowingCells(screen: Screen) {
       return [{ header: headers[cell.cellIndex], text: cell.textContent, overflow }];
     });
 }
+
+/** 要素の中身が要素の幅を超えた px。超えていなければ 0 */
+function overflowOf(element: Element) {
+  return Math.max(0, element.scrollWidth - element.clientWidth);
+}
+
+/** 本文が列の幅で切れる 1 件。区切りの無い英字列は、折り返しが単語の途中で折ることも求める */
+const LONG_BODY_NOTE: Note = {
+  ...OTHER_NOTE,
+  id: 4,
+  title: "長い本文のメモ",
+  body: `${"列の幅を超える長さの本文を書く。".repeat(6)}${"x".repeat(80)}`,
+};
 
 /**
  * route の定義と、wrapper (Route hooks と通知) の実 router での往復。
@@ -122,6 +140,29 @@ describe("/notes route", () => {
       await expect.element(noteRow(screen, OTHER_NOTE)).toBeInTheDocument();
 
       await expect.poll(() => overflowingCells(screen)).toEqual([]);
+    });
+
+    // 本文の列は切り詰める。WCAG 2.2 Understanding 1.4.4 は、全文を操作で得られ、得られることを切れていること
+    // 以外の手段で示すなら切り詰めを許す (ADR-0042)。行を開くボタンで全文を出す (ADR-0043)
+    it("切り詰めた本文は、行を開くと詳細の行に折り返して全文を出し、はみ出さない", async () => {
+      await setViewport(MEDIUM_VIEWPORT);
+      document.documentElement.style.fontSize = "32px";
+      vi.mocked(listNotes).mockResolvedValue([LONG_BODY_NOTE, NOTE]);
+      const { screen } = await renderRoute("/notes");
+      const row = noteRow(screen, LONG_BODY_NOTE);
+      await expect.element(row).toBeInTheDocument();
+      const truncated = cellInColumn(screen, row, NOTE_FIELD_LABELS.body).getByText(
+        LONG_BODY_NOTE.body,
+      );
+      await expect.poll(() => overflowOf(truncated.element())).toBeGreaterThan(0);
+
+      await screen.getByRole("button", { name: noteExpandTriggerName(LONG_BODY_NOTE) }).click();
+
+      const detail = noteBodyDetailRow(screen, LONG_BODY_NOTE);
+      await expect.element(detail.getByRole("cell")).toHaveTextContent(LONG_BODY_NOTE.body);
+      await expect.poll(() => overflowingCells(screen)).toEqual([]);
+      // overflowingCells は cell の scrollWidth を見る。中身の要素が隠した分は数えないので、中身も見る
+      await expect.poll(() => overflowOf(detail.getByText(LONG_BODY_NOTE.body).element())).toBe(0);
     });
   });
 

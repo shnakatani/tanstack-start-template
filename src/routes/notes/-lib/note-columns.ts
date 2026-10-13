@@ -8,6 +8,7 @@ import {
   NoteBodyCell,
   NoteCreatedAtCell,
   NoteDueDateCell,
+  NoteExpandCell,
   NoteTitleCell,
   NoteUpdatedAtCell,
 } from "../-components/note-cells";
@@ -27,6 +28,7 @@ const base = columnBaseFrom(NOTE_COLUMNS);
  * props にして描く。TanStack Table「Flex Render」)。JSX はこのファイルに書かない
  */
 export const noteColumns = helper.columns([
+  helper.display({ ...base("expander"), cell: NoteExpandCell }),
   helper.accessor((row) => noteInputOf(row).title, { ...base("title"), cell: NoteTitleCell }),
   helper.accessor((row) => noteInputOf(row).body, { ...base("body"), cell: NoteBodyCell }),
   helper.accessor((row) => noteInputOf(row).dueDate, { ...base("dueDate"), cell: NoteDueDateCell }),

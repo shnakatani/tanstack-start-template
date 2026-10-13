@@ -25,6 +25,15 @@ export function isNoteRowBusy(row: NoteRow): boolean {
 }
 
 /**
+ * 行を開いて本文の全文を出せる行。本文が空の行には出すものが無い。保存中の行は、確定すると row id が変わって
+ * 開いた状態ごとボタンが消え、focus が body へ落ちるので開かせない。更新中と削除中の行は開ける。止めるのは
+ * データを変える操作で、開閉はデータを変えない (ADR-0017)
+ */
+export function canExpandNoteRow(row: NoteRow): boolean {
+  return row.kind === "saved" && noteInputOf(row).body !== "";
+}
+
+/**
  * 入力項目 (NoteInput) がどちらの行にも載っている場所。テキスト列はここから読む。更新中の確定行は
  * 再取得前の note ではなく編集後の値を返す
  */

@@ -3,7 +3,13 @@ import { describe, expect, it } from "vite-plus/test";
 import { CREATING_ROW, NOTE, NOTE_UPDATE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 
 import type { NoteRow } from "./note-rows";
-import { getNoteRowId, isNoteRowBusy, noteInputOf, toNoteRows } from "./note-rows";
+import {
+  canExpandNoteRow,
+  getNoteRowId,
+  isNoteRowBusy,
+  noteInputOf,
+  toNoteRows,
+} from "./note-rows";
 
 type SavedNoteRow = Extract<NoteRow, { kind: "saved" }>;
 
@@ -98,5 +104,25 @@ describe("getNoteRowId", () => {
     expect(saved).toBe("saved-1");
     expect(creating).toBe("creating-1");
     expect(saved).not.toBe(creating);
+  });
+});
+
+describe("canExpandNoteRow", () => {
+  it("本文のある確定行は、削除中でも更新中でも開ける", () => {
+    expect(canExpandNoteRow(savedRow())).toBe(true);
+    expect(canExpandNoteRow(savedRow({ isDeleting: true }))).toBe(true);
+    expect(canExpandNoteRow(savedRow({ pendingUpdate: NOTE_UPDATE }))).toBe(true);
+  });
+
+  it("本文が空の行は開けない。更新中は編集後の本文で決める", () => {
+    expect(canExpandNoteRow(savedRow({ note: { ...NOTE, body: "" } }))).toBe(false);
+    expect(canExpandNoteRow(savedRow({ pendingUpdate: { ...NOTE_UPDATE, body: "" } }))).toBe(false);
+    expect(
+      canExpandNoteRow(savedRow({ note: { ...NOTE, body: "" }, pendingUpdate: NOTE_UPDATE })),
+    ).toBe(true);
+  });
+
+  it("保存中の行は本文があっても開けない", () => {
+    expect(canExpandNoteRow({ kind: "creating", ...CREATING_ROW })).toBe(false);
   });
 });

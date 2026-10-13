@@ -27,9 +27,11 @@ export const NOTE_DIALOG_RETURN_TO = linkOptions({ to: "/notes", search: (prev) 
 
 /**
  * 一覧の列の id と見出しと幅 (既定の文字サイズのときの px)。列の順もここが持つ。列定義 (`note-columns.ts`) と `TableSkeleton` の両方がここから採る。
- * 日時と操作の列は、中身が 1 行に収まる幅にする。タイトルは折り返し、本文は切り詰める (`note-cells.tsx`)
+ * 行を開くボタン・日時・操作の列は、中身が 1 行に収まる幅にする。タイトルは折り返し、本文は切り詰めて、全文は行を開いて出す (`note-cells.tsx`)。
+ * 行を開くボタンの列も見出しを文字で持つ。空の見出しは axe の empty-table-header に当たる
  */
 export const NOTE_COLUMNS = {
+  expander: { header: "詳細", size: 56 },
   title: { header: NOTE_FIELD_LABELS.title, size: 200 },
   body: { header: NOTE_FIELD_LABELS.body, size: 200 },
   dueDate: { header: NOTE_FIELD_LABELS.dueDate, size: 112 },
@@ -37,5 +39,6 @@ export const NOTE_COLUMNS = {
   updatedAt: { header: NOTE_FIELD_LABELS.updatedAt, size: 152 },
   actions: { header: "操作", size: 136 },
 } as const satisfies Partial<Record<keyof Note, DataTableColumnBase>> & {
+  expander: DataTableColumnBase;
   actions: DataTableColumnBase;
 };
