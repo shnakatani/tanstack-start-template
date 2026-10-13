@@ -159,20 +159,13 @@ describe("NoteExpandCell", () => {
     await expectRemoved(noteBodyDetailRow(screen, NOTE));
   });
 
-  it("本文が空の行と保存中の行にはボタンを出さない", async () => {
-    const screen = await renderCells({
-      notes: [NOTE, { ...OTHER_NOTE, body: "" }],
-      creatingRows: [CREATING_ROW],
-    });
+  it("開けない行 (本文が空) にはボタンを出さない", async () => {
+    // どの行が開けないかの分岐は note-rows.test.ts が持つ。ここは、開けない行に cell が何も描かないことを見る
+    const screen = await renderCells({ notes: [NOTE, { ...OTHER_NOTE, body: "" }] });
 
     await expect.element(expandTrigger(screen, NOTE, false)).toBeInTheDocument();
     await expectAbsent(
       screen.getByRole("button", { name: noteExpandTriggerName(OTHER_NOTE), exact: false }),
-    );
-    // 保存中の行は確定で row id が変わり、開いた状態ごとボタンが消えて focus が body へ落ちる
-    await expect.element(noteRow(screen, CREATED_NOTE)).toBeInTheDocument();
-    await expectAbsent(
-      screen.getByRole("button", { name: noteExpandTriggerName(CREATED_NOTE), exact: false }),
     );
   });
 
