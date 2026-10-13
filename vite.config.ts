@@ -25,6 +25,12 @@ export default defineConfig({
     // `vp run --cache` はこの設定を外すので、gate には付けない
     cache: false,
     tasks: {
+      // port は .mise.toml の daemons が worktree ごとに導出し、mise の環境を読んだシェルにだけ届く。
+      // 届いていなければ別の port で起動せずに止める (ADR-0004)
+      serve:
+        "vp dev --port ${SERVE_PORT:?mise の環境が要る。mise x -- vp run serve で打つ} --strictPort",
+      storybook:
+        "vp exec storybook dev --port ${STORYBOOK_PORT:?mise の環境が要る。mise x -- vp run storybook で打つ} --no-open --exact-port",
       verify: {
         command: [
           // 素の pnpm で打つ。vp pm は peers を中継しない (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
@@ -37,6 +43,9 @@ export default defineConfig({
         ],
       },
       contrast: "node scripts/contrast/report.ts",
+      "db:generate": "vp exec drizzle-kit generate",
+      "db:migrate": "vp exec drizzle-kit migrate",
+      "db:seed": { command: "vp exec tsx scripts/db/seed.ts", dependsOn: ["db:migrate"] },
       "a11y:incomplete":
         "vp test run --project browser --tags-filter axe --reporter=verbose --hide-skipped-tests",
     },

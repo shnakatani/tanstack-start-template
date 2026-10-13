@@ -19,7 +19,8 @@ paths:
 
 ## script とタスク
 
-- mise の機能 (`[daemons.*]` の port、`[env]`) を読むタスクは `.mise.toml` に、読まないタスクは `vite.config.ts` の `run.tasks` に置く (ADR-0004)
+- タスクは `vite.config.ts` の `run.tasks` に置き、`.mise.toml` に `[tasks.*]` を置かない (ADR-0004)
+- mise の値 (`[env]`、daemons の port) を読むタスクは、値が届いていなければ止まる形にする。command の中で読むなら `${NAME:?…}`、コードで読むなら `requireEnv` を使う (`docs/guides/vite-configuration.md`「タスクを足す」)
 - `vite.config.ts` の `run.cache: false` を外さず、gate を `vp run --cache` で打たない。キャッシュが効くと gate がリプレイで済まされ、親の環境変数が子へ届かない (ADR-0004)
 - `run.tasks` の command では `vp node` ではなく `node` を打つ。タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `Command 'node' not found` で落ちる (`docs/guides/vite-configuration.md`「タスクを足す」)
 - CI は `vp run verify` を打ち、verify の手順を workflow に写さない (ADR-0004)

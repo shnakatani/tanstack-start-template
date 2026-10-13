@@ -12,7 +12,7 @@ import { createDb, migrateDb } from "./index";
 
 /** createDb がファイルの無いときに投げる文言。開こうとしたパスを含む */
 function missingDbMessage(path: string): string {
-  return `[db] DB のファイルが無い (${path})。mise run db:migrate で作るか、DB_FILE_NAME を確かめる`;
+  return `[db] DB のファイルが無い (${path})。vp run db:migrate で作るか、DB_FILE_NAME を確かめる`;
 }
 
 describe("createDb", () => {

@@ -22,7 +22,7 @@ function requireDbFileName(): string {
 
 /**
  * DB へ接続する。fileName を省略すると DB_FILE_NAME 環境変数を使う (未設定は throw)。
- * 相対パスは drizzle-kit と同じく cwd を基準に解決する。DB のファイルは作らない (`mise run db:migrate` が作る)。
+ * 相対パスは drizzle-kit と同じく cwd を基準に解決する。DB のファイルは作らない (`vp run db:migrate` が作る)。
  * テストからは ":memory:" を引数で渡す。
  */
 export function createDb(fileName: string = requireDbFileName()) {
@@ -32,7 +32,7 @@ export function createDb(fileName: string = requireDbFileName()) {
   // 例外はここで catch せず、server のログに残す口に任せる (ADR-0038)
   if (fileName !== ":memory:" && !statSync(fileName, { throwIfNoEntry: false })?.isFile()) {
     throw new Error(
-      `[db] DB のファイルが無い (${resolve(fileName)})。mise run db:migrate で作るか、DB_FILE_NAME を確かめる`,
+      `[db] DB のファイルが無い (${resolve(fileName)})。vp run db:migrate で作るか、DB_FILE_NAME を確かめる`,
     );
   }
   const sqlite = new Database(fileName, { fileMustExist: true });

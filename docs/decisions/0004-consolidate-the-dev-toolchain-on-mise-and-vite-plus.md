@@ -15,36 +15,38 @@
 
 ### 採用するツール
 
-| ツール      | 役割                                                                                                                             | 宣言する場所                                                                           |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| mise        | mise の機能を読むタスク、環境変数、dev server と Storybook の port                                                               | `.mise.toml` の `[tasks.*]` と `[env]` と `[daemons.*]`                                |
-| Vite+       | Node.js と pnpm の解決、dev server / build / lint / format / test / パッケージ操作の統一 CLI (`vp`)、mise の機能を読まないタスク | `package.json` と `pnpm-workspace.yaml` の `catalog:`、`vite.config.ts` の `run.tasks` |
-| pnpm        | パッケージマネージャ                                                                                                             | `package.json` の `packageManager`                                                     |
-| drizzle-kit | スキーマからの migration 生成と適用                                                                                              | `package.json` と `mise run db:generate` / `db:migrate`                                |
+| ツール      | 役割                                                                                                                    | 宣言する場所                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| mise        | Node.js と pnpm 以外のツール、環境変数、dev server と Storybook の port                                                 | `.mise.toml` の `[tools]` と `[env]` と `[daemons.*]`                                  |
+| Vite+       | Node.js と pnpm の解決、dev server / build / lint / format / test / パッケージ操作の統一 CLI (`vp`)、タスク (Vite Task) | `package.json` と `pnpm-workspace.yaml` の `catalog:`、`vite.config.ts` の `run.tasks` |
+| pnpm        | パッケージマネージャ                                                                                                    | `package.json` の `packageManager`                                                     |
+| drizzle-kit | スキーマからの migration 生成と適用                                                                                     | `package.json` と `vp run db:generate` / `db:migrate`                                  |
 
 クローン後の手順は `mise trust && mise install` と `vp install` の 2 段で閉じる。
-起動と検証は `mise run serve` と `vp run verify` を入口にする。
+起動と検証は `vp run serve` と `vp run verify` を入口にする。
 
-### タスクの置き場所は、mise の機能を読むかで分ける
+### タスクは Vite Task に置き、mise は JS の外とのつなぎを持つ
 
-mise の機能を読むタスクは `.mise.toml` の `[tasks.*]` に置き、読まないタスクは `vite.config.ts` の `run.tasks` (Vite Task) に置く。
+タスクはすべて `vite.config.ts` の `run.tasks` に置き、`.mise.toml` に `[tasks.*]` を置かない。mise は、Node.js と pnpm 以外のツール (`[tools]`)、環境変数 (`[env]`)、dev server と Storybook の port (`[daemons.*]`) を持つ。
 
-| タスク                                  | 読む mise の機能                                                                       | 置き場所         |
-| --------------------------------------- | -------------------------------------------------------------------------------------- | ---------------- |
-| `serve`、`storybook`                    | `[daemons.*]` の自動 port (`SERVE_PORT`、`STORYBOOK_PORT`)                             | `.mise.toml`     |
-| `db:generate`、`db:migrate`、`db:seed`  | `[env]` の `DB_FILE_NAME`。`drizzle.config.ts` と `createDb()` は未設定なら throw する | `.mise.toml`     |
-| `verify`、`contrast`、`a11y:incomplete` | 無い                                                                                   | `vite.config.ts` |
+- 入口が `vp run` の 1 つになる。CI は mise を入れずに同じタスクを `vp run verify` で走らせられ、検証の手順を足したときに CI へ写し忘れることがない
+- mise の値は、`mise exec` で打ったコマンド、mise のタスク、mise を activate したシェルに届く (mise v2026.9.18 の docs/environments/index.md の冒頭: "mise supplies them to commands run with `mise exec`, tasks, and activated interactive shells.")。mise のタスクなら mise が必ず値を入れるが、Vite Task のタスクには、呼んだシェルが mise の環境を読んでいるときだけ届く
+- mise の値を読むタスクは、値が届いていなければ止まる形にする。黙って別の port や別の DB で動くと、worktree ごとに分けた port と DB が混ざる
 
-- `verify` を Vite Task に置くと、CI は mise を入れずに同じタスクを `vp run verify` で走らせられる。手順の正本が 1 つになり、検証の手順を足したときに CI へ写し忘れることがなくなる
-- db のタスクは、`DB_FILE_NAME` を `.mise.toml` の外へ移せば Vite Task に置ける。移すと「値の置き場所を 3 つに分ける」の表が変わる。そこまで変えて得る利点が見えていないので、移さない
-- 代償として、タスクの入口が `mise run` と `vp run` の 2 つに分かれる。どちらで打つかは README のコマンド一覧が持つ
+| タスク                                  | 読む mise の値                                       | 届いていないとき (2026-10-14、vite-plus 1.1.0 で実測)                                                     |
+| --------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `serve`、`storybook`                    | daemons の自動 port (`SERVE_PORT`、`STORYBOOK_PORT`) | command の `${SERVE_PORT:?…}` を `/bin/sh` が解釈し、`/bin/sh: SERVE_PORT: mise の環境が要る。…` で止まる |
+| `db:generate`、`db:migrate`、`db:seed`  | `[env]` の `DB_FILE_NAME`                            | `drizzle.config.ts` と `createDb()` が `DB_FILE_NAME is not set.` で throw する                           |
+| `verify`、`contrast`、`a11y:incomplete` | 無い                                                 | 該当しない                                                                                                |
 
-| 案                                                                                               | 評価                                                                                                                                                                                                                                                 | 採否     |
-| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| mise の機能を読まないタスクを `vite.config.ts` の `run.tasks` に置く                             | CI と手元が同じタスクを走らせる。タスクごとにコメントを書ける                                                                                                                                                                                        | **採用** |
-| すべてのタスクを `.mise.toml` に置く                                                             | CI は mise を要さないために、`verify` の手順を workflow へ写して持つ。写し忘れは検出されない                                                                                                                                                         | 却下     |
-| `package.json` の script に置く (Vite+ の `docs/guide/local-cli.md`「Best Practices」が勧める形) | global の `vp` が無くても `pnpm run verify` で走る。この利点は、global の `vp` を入れる前提のこのリポジトリには当てはまらない (「built-in と同名の script は `start` と対の `build` だけを置く」)。JSON はコメントを持てず、手順ごとの理由を書けない | 却下     |
-| `DB_FILE_NAME` も移し、すべてを Vite Task に置く                                                 | daemons の自動 port は Vite Task に無いので、`serve` と `storybook` は残る。入口は 2 つのまま、値の置き場所が変わる                                                                                                                                  | 却下     |
+- 代償として、mise の hook が走らないシェル (エージェントのシェル、hook の無い IDE のタスク) からは、mise の値を読むタスクを `mise x -- vp run <タスク>` で打つことになる。2026-10-14 に、hook の無いシェルで `vp run serve` が止まり、`mise x -- vp run serve` が daemons の port で起動した
+
+| 案                                                                                                 | 評価                                                                                                                                                                                                                                                 | 採否     |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| すべてのタスクを `vite.config.ts` の `run.tasks` に置き、mise の値を読むタスクは値が無ければ止める | 入口が `vp run` の 1 つになり、CI と手元が同じタスクを走らせる。hook の無いシェルからは `mise x --` が要る                                                                                                                                           | **採用** |
+| mise の値を読むタスクだけ `.mise.toml` に置く                                                      | hook が無くても `mise run` で値が届く。入口が `mise run` と `vp run` の 2 つに分かれ、タスクが mise の値を読み始めるたびに置き場所が変わる                                                                                                           | 却下     |
+| すべてのタスクを `.mise.toml` に置く                                                               | CI は mise を要さないために、`verify` の手順を workflow へ写して持つ。写し忘れは検出されない                                                                                                                                                         | 却下     |
+| `package.json` の script に置く (Vite+ の `docs/guide/local-cli.md`「Best Practices」が勧める形)   | global の `vp` が無くても `pnpm run verify` で走る。この利点は、global の `vp` を入れる前提のこのリポジトリには当てはまらない (「built-in と同名の script は `start` と対の `build` だけを置く」)。JSON はコメントを持てず、手順ごとの理由を書けない | 却下     |
 
 ### Vite Task のキャッシュは `run.cache: false` で切る
 
@@ -90,11 +92,11 @@ CI は mise を要さず、`vp run verify` を打つ。手順を workflow に写
 アプリ名のように環境ごとに値が変わらないものは環境変数にしない。
 `VITE_APP_NAME` を `.mise.toml` の `[env]` に置くと、値の定義・型宣言・未設定の検出・CI への受け渡しが芋づるで要り、CI が mise に依存する原因になる。
 
-毎回の解決にコストがかかる値も `[env]` へ置かず、読むタスクの `env` に置く。`[env]` に置くと、mise が env を解決するたび (シェル hook の下ではディレクトリへ入るたび) にその処理が走る。2026-09-20 に、git のサブプロセスで値を導出する処理をトップレベルの `[env]` に置くと `mise hook-env` は 70ms、タスクの `env` に置くと 28ms だった。
+毎回の解決にコストがかかる値も `[env]` へ置かず、読むタスクの command かスクリプトの中で導出する。`[env]` に置くと、mise が env を解決するたび (シェル hook の下ではディレクトリへ入るたび) にその処理が走る。2026-09-20 に、git のサブプロセスで値を導出する処理をトップレベルの `[env]` に置くと `mise hook-env` は 70ms、`[env]` から外すと 28ms だった。
 
 ### dev server と Storybook の port は mise の daemons の自動 port で worktree ごとに決める
 
-`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名のタスクを走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise v2026.9.18 の docs/daemons.md「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、`mise run serve` で前面に起動できる。docs は daemon の環境にも同じ変数が入ると書くので、`mise daemons start serve` で常駐させても同じ port になる (常駐の経路は試していない)。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (同「Per-daemon proxy settings」)。
+`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の Vite Task のタスクを `run = "exec vp run serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise v2026.9.18 の docs/daemons.md「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、mise の環境を読んだシェルから `vp run serve` で前面に起動できる。docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した。`mise daemons stop` は手元の pitchfork の shim の版が決まらず失敗したので、常駐を止める経路は確かめていない。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (同「Per-daemon proxy settings」)。
 
 2026-10-09 に mise 2026.9.18 で確かめた振る舞いは次のとおりである。
 
@@ -115,7 +117,7 @@ CI は mise を要さず、`vp run verify` を打つ。手順を workflow に写
 
 自動 port は別の worktree や別のプロジェクトの port と重なりうる。mise も重なった port をずらさない (mise v2026.9.18 の docs/daemons.md「Port conflicts」)。使用中なら次の port へずらさず終了させる (`serve` は `--strictPort`、`storybook` は `--exact-port`)。
 Vite は使用中なら次の空き port へずらし (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")、Storybook も環境変数 `CI` があると尋ねずにずらす (2026-10-04 に storybook@10.6.0 で実測)。
-ずれると、worktree ごとに決まった port を指す側が別のサーバーへつながる。2026-10-09 に vite-plus 1.0.0 で、同じ port での 2 つ目の `mise run serve` が `Port 3129 is already in use` で終わることを確かめた。
+ずれると、worktree ごとに決まった port を指す側が別のサーバーへつながる。2026-10-09 に vite-plus 1.0.0 で、同じ port での 2 つ目の `vp run serve` が `Port 3129 is already in use` で終わることを確かめた。
 
 | 案                                                                 | 評価                                                                                                                      | 採否     |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -177,7 +179,7 @@ pnpm を exact にするのは、minor で解決挙動そのものが変わり�
 
 | 候補      | 対象ツールの網羅       | 学習コスト      | クローン後の手順                    | 備考                                     |
 | --------- | ---------------------- | --------------- | ----------------------------------- | ---------------------------------------- |
-| **mise**  | ○                      | 低 (TOML)       | `mise trust && mise install`        | タスクランナーを兼ねる                   |
+| **mise**  | ○                      | 低 (TOML)       | `mise trust && mise install`        | 環境変数と daemons を兼ねる              |
 | asdf      | △ プラグイン追加が要る | 低              | プラグイン手動追加 + `asdf install` | mise の下位互換                          |
 | proto     | ×                      | 低              | `proto install`                     | moonrepo エコシステム前提                |
 | volta     | × Node.js のみ         | 低              | `volta install`                     | pnpm の版を宣言できない                  |
@@ -185,7 +187,7 @@ pnpm を exact にするのは、minor で解決挙動そのものが変わり�
 | nix flake | ○                      | 最高 (Nix 言語) | `nix develop`                       | 再現性は最も高いが属人化のリスクが大きい |
 
 この表は 2026-08-17 に、版の pin も mise に持たせる前提で比べたものである。
-版の解決は Vite+ が持つが、タスクランナーと `[env]` の担い手としての比較はそのまま成り立つ。
+版の解決は Vite+、タスクは Vite Task が持つが、Node.js と pnpm 以外のツールと `[env]` の担い手としての比較はそのまま成り立つ。
 
 宣言だけでは効かないので、mise のシェル hook を導入手順に含める (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)。
 
@@ -203,7 +205,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 勧める利点は、例のコードブロックのあとに置かれた、節の最後の段落にある: "After installing the project's dependencies, contributors can run these scripts through their package manager, such as `pnpm run dev` or `npm run dev`, without being required to install the global CLI." global の CLI を入れていない環境でも、package manager から走らせられることである。
 
 - 開発者の入口 (`check` / `test` / `dev`) は足さない。このリポジトリの開発者は README のセットアップで global の `vp` を入れ、`vp install` も `.mise.toml` のタスクもそれを前提にするので、上の利点が当てはまらない。足すと `vp <name>` を打つたびに stderr に note が出る (Consequences)
-- `dev` には別の理由もある。起動の入口は worktree ごとに port を導出する `mise run serve` である。`"dev": "vp dev"` は Vite の既定の port で起動し、使用中なら Vite が次の空き port へずらす (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")。`mise run serve` が worktree ごとに決める port から外れ、起動した順で port が変わる
+- `dev` には別の理由もある。起動の入口は worktree ごとに port を導出する `vp run serve` である。`"dev": "vp dev"` は Vite の既定の port で起動し、使用中なら Vite が次の空き port へずらす (Vite docs の `server.port`: "if the port is already being used, Vite will automatically try the next available port")。`vp run serve` が worktree ごとに決める port から外れ、起動した順で port が変わる
 - `build` は `start` と対の入口 (`pnpm run build` → `pnpm start`) として残す。global の `vp` を入れない環境 (本番の Node サーバーなど) がこの 2 つで走らせる。公式が勧める利点がそのまま当てはまる場面である。代償として、`vp build` を打つたびに note が出る (Consequences)
 
 | 案                                                   | 評価                                                                                                                                                                                                                                                                                                           | 採否     |
@@ -211,7 +213,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 | 開発者の入口は足さず、`build` を `start` と対で残す  | global の `vp` の無い環境は `pnpm run build` → `pnpm start` で走らせられる。開発者は `vp check` / `vp test` をそのまま打つ。note は `vp build` でだけ出る                                                                                                                                                      | **採用** |
 | built-in と同名の script を置かない (`build` も外す) | `vp build` の note も消えるが、`pnpm start` と対の `pnpm run build` が無くなる。global の `vp` の無い環境は `pnpm exec vp build` と打つことになる (`docs/guide/local-cli.md` の "Without the global CLI, prefix interactive commands with your package manager's local-binary executor, such as `pnpm exec`.") | 却下     |
 | 公式の例のうち `check` / `test` も足す               | `pnpm run check` のように package manager からも打てるが、開発者は global の `vp` を入れるので使い道が無い。`vp check` / `vp test` を打つたびに note が出る                                                                                                                                                    | 却下     |
-| 公式の例の 4 つをすべて置く                          | 上に加え、`pnpm run dev` が `mise run serve` の port から外れ、起動した順で port が変わる                                                                                                                                                                                                                      | 却下     |
+| 公式の例の 4 つをすべて置く                          | 上に加え、`pnpm run dev` が `vp run serve` の port から外れ、起動した順で port が変わる                                                                                                                                                                                                                        | 却下     |
 
 ### 検討した選択肢
 
@@ -244,6 +246,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - キャッシュを切ったタスクの環境変数 (`plan_task_as_execution_node` と `effective_cache_config`、vite-plus 1.1.0 の `Cargo.toml` が pin する rev): https://github.com/voidzero-dev/vite-task/blob/7d69d6577ecf6bd83deee32186de59918a712873/crates/vt_plan/src/plan.rs
 - キャッシュを切ったタスクの stdio: https://github.com/voidzero-dev/vite-task/blob/7d69d6577ecf6bd83deee32186de59918a712873/docs/stdio.md
 - ジョブごとの課金の切り上げ: https://docs.github.com/en/billing/reference/actions-runner-pricing
+- mise の `[env]` の値が届く経路: https://github.com/jdx/mise/blob/v2026.9.18/docs/environments/index.md
 - mise の daemons (experimental の要件、自動 port、port の変数、port の重なり、proxy): https://github.com/jdx/mise/blob/v2026.9.18/docs/daemons.md
 - mise の `experimental` の設定: https://github.com/jdx/mise/blob/v2026.9.18/settings.toml
 - mise の `min_version` (「Minimum mise version」): https://github.com/jdx/mise/blob/v2026.9.18/docs/configuration.md

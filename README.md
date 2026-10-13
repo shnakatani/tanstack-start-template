@@ -22,26 +22,26 @@ curl -fsSL https://vite.plus | bash
 以降はリポジトリ直下で実行する。
 
 ```bash
-mise trust && mise install                        # tasks と環境変数を有効にする
+mise trust && mise install                        # ツールと環境変数と port を有効にする
 vp install                                        # 依存パッケージ
 vp exec playwright install chromium --only-shell  # vp install では入らない。無いと browser project のテストが落ちる
-mise run db:migrate                               # drizzle/ の migration を DB へ適用する
-mise run serve                                    # dev server。port は worktree ごとに変わる (.mise.toml)
-mise run storybook                                # 部品とデザイントークンのカタログ (docs/guides/storybook.md)
+vp run db:migrate                                 # drizzle/ の migration を DB へ適用する
+vp run serve                                      # dev server。port は worktree ごとに変わる (.mise.toml の daemons)
+vp run storybook                                  # 部品とデザイントークンのカタログ (docs/guides/storybook.md)
 ```
 
 ## コマンド一覧
 
 | コマンド                       | 内容                                                                                                      |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `mise run serve`               | dev server を起動する                                                                                     |
-| `mise run storybook`           | 部品とデザイントークンのカタログを起動する (`docs/guides/storybook.md`)                                   |
+| `vp run serve`                 | dev server を起動する                                                                                     |
+| `vp run storybook`             | 部品とデザイントークンのカタログを起動する (`docs/guides/storybook.md`)                                   |
 | `vp run verify`                | マージ前の検証をまとめて実行する。手順は `vite.config.ts` の `run.tasks.verify` が持つ                    |
 | `vp run contrast`              | トークンからコントラスト比を測る。引数は `docs/guides/styling-and-tokens.md`「比を測る」                  |
 | `vp run a11y:incomplete`       | axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む                               |
-| `mise run db:generate`         | `src/server/db/schema.ts` から `drizzle/` へ migration を生成する                                         |
-| `mise run db:migrate`          | `drizzle/` の migration を `DB_FILE_NAME` の DB へ適用する                                                |
-| `mise run db:seed`             | migration を当ててから、DB の行を消して `scripts/db/` の見本のデータを入れ直す                            |
+| `vp run db:generate`           | `src/server/db/schema.ts` から `drizzle/` へ migration を生成する                                         |
+| `vp run db:migrate`            | `drizzle/` の migration を `DB_FILE_NAME` の DB へ適用する                                                |
+| `vp run db:seed`               | migration を当ててから、DB の行を消して `scripts/db/` の見本のデータを入れ直す                            |
 | `vp test run --project <名前>` | project 単位で実行する。`unit` / `browser` / `browser-no-compiler` / `checks-integrity` / `scripts-tools` |
 | `vp check --fix`               | コミット前に format・lint・型検査を通す                                                                   |
 | `vp build`                     | 本番ビルド。出力は `.output/`、起動は `vp run start`                                                      |

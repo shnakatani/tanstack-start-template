@@ -13,21 +13,21 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 
 - 接続先は環境変数 `DB_FILE_NAME` で決まる。既定は `.mise.toml` の `[env]` が `config_root` から組む絶対パスで、どのディレクトリから起動しても同じ DB を指す (ADR-0004)
 - アプリは `src/server/db/index.ts` の `createDb()` で開く。`DB_FILE_NAME` が未設定なら throw する
-- `createDb()` は DB のファイルを作らない。無ければ開こうとした絶対パスを示して throw する。作るのは `mise run db:migrate` (「DB のファイルをアプリで作らない理由」)
+- `createDb()` は DB のファイルを作らない。無ければ開こうとした絶対パスを示して throw する。作るのは `vp run db:migrate` (「DB のファイルをアプリで作らない理由」)
 - mise の `[env]` が読まれない環境 (本番の起動など) では、`DB_FILE_NAME` を絶対パスで渡す。相対パスは起動した cwd を基準に解決される (「パスを cwd 基準にする理由」)
 - 相対パスをコードでルートを探して補わない。drizzle-kit は cwd 基準のままなので、アプリだけが別の場所を指す
 
 ### スキーマを変える
 
-- `src/server/db/schema.ts` を変えたら、`mise run db:generate` の後に `mise run db:migrate` を打つ。各タスクのコマンドは `.mise.toml` にある
-- アプリは起動時に migration を適用せず、`migrateDb()` もアプリの経路から呼ばない。デプロイの手順に `mise run db:migrate` を入れる (「migration を起動時に適用しない理由」)
-- `mise run db:migrate` は drizzle-kit (devDependencies)、`drizzle.config.ts`、`drizzle/` を使う。ビルド成果物の `.output/` はどれも持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
+- `src/server/db/schema.ts` を変えたら、`vp run db:generate` の後に `vp run db:migrate` を打つ。各タスクのコマンドは `.mise.toml` にある
+- アプリは起動時に migration を適用せず、`migrateDb()` もアプリの経路から呼ばない。デプロイの手順に `vp run db:migrate` を入れる (「migration を起動時に適用しない理由」)
+- `vp run db:migrate` は drizzle-kit (devDependencies)、`drizzle.config.ts`、`drizzle/` を使う。ビルド成果物の `.output/` はどれも持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
 - migration のフォルダは `src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` を `drizzle.config.ts` の `out` と `migrateDb()` の両方が読む。片方だけ変えると、テストが古い migration を当てたまま通る
 - テーブルを足したら、テーブル定義とフロントのスキーマの型を突き合わせる型テストを書く (ADR-0034)
 
 ### 見本のデータを入れる
 
-- `mise run db:seed` で、`DB_FILE_NAME` の DB に dev server で確かめるための見本を入れる。タスクは `depends` で先に `db:migrate` を走らせる ([mise docs「Task Configuration」][] の `depends`) ので、DB のファイルが無い状態からも 1 回で入る
+- `vp run db:seed` で、`DB_FILE_NAME` の DB に dev server で確かめるための見本を入れる。タスクは `dependsOn` で先に `db:migrate` を走らせる ([Vite+ docs「Run Config」][] の `dependsOn`) ので、DB のファイルが無い状態からも 1 回で入る
 - 打つたびに、見本を持つテーブルの行を全部消して入れ直す。dev server の画面から作った行も消える。何度打っても、行と、次に作る行の id は同じになる (「見本のデータを消して入れ直す理由」)
 - dev server を開いたまま打ったら、ブラウザを再読み込みする。query のキャッシュが新鮮なうちは、focus でも遷移で戻っても DB から読み直さない ([TanStack Query docs「Important Defaults」][])。再読み込みでは、SSR がリクエストごとに `getRouter()` (`src/router.tsx`) で新しい `QueryClient` を作り、DB から読む
 - 実行口は `scripts/db/seed.ts` の 1 つで、`createDb()` で DB を開き、`scripts/db/lib/seed-all.ts` の `seedAll()` を呼ぶ。`seedAll()` はトランザクションを 1 回だけ開き、その中でドメインごとの入れ方を呼ぶ。`createDb()` を通さずに `new Database()` で開かない。直接開くと、無い DB のファイルを作る (「DB のファイルをアプリで作らない理由」)
@@ -38,7 +38,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - 外部キーで別のテーブルを指すテーブルに見本を足すときは、`seedAll()` の初めに `PRAGMA defer_foreign_keys = ON` を打つか、削除を子のテーブルから、insert を親のテーブルから打つ順に分ける ([SQLite「Pragma statements supported by SQLite」][] の `defer_foreign_keys`)。`createDb()` の接続は better-sqlite3 の同梱の SQLite の既定で外部キーを検査し (`db.$client.pragma("foreign_keys")` が 1、better-sqlite3 13.0.3、2026-10-14 に実測)、トランザクションの中で `PRAGMA foreign_keys = OFF` を打っても効かない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
 - 見本の id と作成日時・更新日時は固定の値で書く。日時を既定値に任せると、打つたびに実行時刻が入る
 - 見本の各行がそのドメインの読み出しのスキーマを通ることを、同じディレクトリの `<domain>-seed.test.ts` で確かめる。`scripts-tools` project が集める。スキーマを変えたときに、見本が古くなったことにテストで気付ける
-- ドメインを消すときは、`scripts/db/lib/<domain>-seed.ts` とそのテストを消し、`seedAll()` から import と呼び出しを外す。見本を持つドメインが無くなったら、`scripts/db/seed.ts`、`scripts/db/lib/seed-all.ts`、`.mise.toml` の `db:seed`、`README.md` のコマンド一覧の行も消す。タスクとその行は検査に掛からないので、消し忘れても気付けない
+- ドメインを消すときは、`scripts/db/lib/<domain>-seed.ts` とそのテストを消し、`seedAll()` から import と呼び出しを外す。見本を持つドメインが無くなったら、`scripts/db/seed.ts`、`scripts/db/lib/seed-all.ts`、`vite.config.ts` の `db:seed`、`README.md` のコマンド一覧の行も消す。タスクとその行は検査に掛からないので、消し忘れても気付けない
 
 ### 起動時に migration を適用する形に変える
 
@@ -50,7 +50,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 | `createDb()` の `fileMustExist` と、無いときの throw を外す                                                   | 初回の起動では DB のファイルがまだ無い。作らないと起動の時点で落ちる                                                                                          |
 | `drizzle/` をサーバーに置き、`src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` をその絶対パスにする | `.output/` は `drizzle/` を持たない。相対パスのままだと起動した cwd を基準に探す                                                                              |
 | 開く前に DB のディレクトリを作る (`mkdirSync(dirname(<DB のパス>), { recursive: true })`)                     | better-sqlite3 はディレクトリを作らず、無いと `Cannot open database because the directory does not exist` で落ちる (better-sqlite3 13.0.3、2026-09-29 に実測) |
-| デプロイの手順から `mise run db:migrate` を外す                                                               | 適用の経路が 2 か所に分かれる                                                                                                                                 |
+| デプロイの手順から `vp run db:migrate` を外す                                                                 | 適用の経路が 2 か所に分かれる                                                                                                                                 |
 
 ### テストで使う
 
@@ -91,7 +91,7 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 
 | 入口                            | 根拠                                                                                                                                                                                                                                                           |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mise run <タスク>`             | タスクの `dir` の既定は `{{ config_root }}` ([mise docs「Task Configuration」][] の `dir`)                                                                                                                                                                     |
+| `vp run <タスク>`               | タスクの `cwd` の既定はパッケージのルート ([Vite+ docs「Run Config」][] の `cwd`)                                                                                                                                                                              |
 | `vp run <script>`               | サブディレクトリから打ってもパッケージのルートで走る (2026-09-29 に vp 1.0.0 で実測)                                                                                                                                                                           |
 | `vp test run`                   | Vitest 5 は親のディレクトリの設定を探さない ([Vite+ docs「Upgrade to Vitest 5」][])。サブディレクトリで打つと設定が読まれず、`@/` の import が解決できない。`--config` で渡しても project の設定のパスが解決できず、起動しない (2026-09-29 に vp 1.0.0 で実測) |
 | `node .output/server/index.mjs` | 起動した cwd がそのまま基準になる。[TanStack Start docs「Hosting」][] は `start` script から起動する形を示す                                                                                                                                                   |
@@ -147,7 +147,7 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 
 ### 見本のデータを消して入れ直す理由
 
-`mise run db:seed` は、何度打っても同じ状態に戻す。dev server で一覧を確かめる前に打つので、前回の確認で作った行が残ると、画面の見え方が打つたびに変わる。
+`vp run db:seed` は、何度打っても同じ状態に戻す。dev server で一覧を確かめる前に打つので、前回の確認で作った行が残ると、画面の見え方が打つたびに変わる。
 
 | 案                                                                                              | 評価                                                                                                                                                                                 | 採否     |
 | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -168,7 +168,7 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 [drizzle docs「Node.js + Railway」]: https://orm.drizzle.team/docs/tutorials/node-railway-pg
 [drizzle-orm の `migrator.ts`]: https://github.com/drizzle-team/drizzle-orm/blob/0.45.2/drizzle-orm/src/migrator.ts
 [mise docs「Templates」]: https://mise.jdx.dev/templates.html
-[mise docs「Task Configuration」]: https://mise.jdx.dev/tasks/task-configuration.html
+[Vite+ docs「Run Config」]: https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/config/run.md
 [Vite+ docs「Upgrade to Vitest 5」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/vitest-v5.md
 [TanStack Start docs「Hosting」]: https://tanstack.com/start/latest/docs/framework/react/guide/hosting
 [Nitro docs「Database」]: https://nitro.build/docs/database
