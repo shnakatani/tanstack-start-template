@@ -21,8 +21,8 @@ paths:
 
 - mise の機能 (`[daemons.*]` の port、`[env]`) を読むタスクは `.mise.toml` に、読まないタスクは `vite.config.ts` の `run.tasks` に置く (ADR-0004)
 - `vite.config.ts` の `run.cache: false` を外さず、gate を `vp run --cache` で打たない。キャッシュが効くと gate がリプレイで済まされ、親の環境変数が子へ届かない (ADR-0004)
-- `run.tasks` の command では `vp node` ではなく `node` を打つ。タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `Command 'node' not found` で落ちる (ADR-0004)
-- CI は `vp run verify` を打ち、手順を workflow に写さない (ADR-0004)
+- `run.tasks` の command では `vp node` ではなく `node` を打つ。タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `Command 'node' not found` で落ちる (`docs/guides/vite-configuration.md`「タスクを足す」)
+- CI は `vp run verify` を打ち、verify の手順を workflow に写さない (ADR-0004)
 - built-in と同名の script は、`start` と対の入口 (`pnpm run build` → `pnpm start`) の `build` だけを置き、開発者の入口 (`check` / `test` / `dev`) は足さない。開発者は global の `vp` を入れるので公式が script を勧める利点が当てはまらず、同名の script があると `vp <name>` のたびに stderr に note が出る (ADR-0004)
 - ビルド成果物を起動する検査は、`run.tasks.verify` の command で `vp build` の後に置く (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 

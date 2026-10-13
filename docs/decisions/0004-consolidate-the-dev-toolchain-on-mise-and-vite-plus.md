@@ -48,7 +48,7 @@ mise の機能を読むタスクは `.mise.toml` の `[tasks.*]` に置き、読
 
 ### Vite Task のキャッシュは `run.cache: false` で切る
 
-Vite Task は `vite.config.ts` のタスクを既定でキャッシュする (Vite+ の `docs/guide/cache.md`「When Is Caching Enabled?」)。キャッシュが効くと、マージ前の gate が入力の変わらない 2 回目にリプレイで済まされ、親の環境変数のうち `PATH`・`HOME`・`CI` などの既定の組と `untrackedEnv` に挙げたもの以外が子へ届かない (同「Environment Variables」)。
+Vite Task は `vite.config.ts` のタスクを既定でキャッシュする (Vite+ の `docs/guide/cache.md`「When Is Caching Enabled?」)。キャッシュが効くと、マージ前の gate が入力の変わらない 2 回目にリプレイで済まされ、親の環境変数のうち `PATH`・`HOME`・`CI` などの既定の組と `cache.env`・`cache.untrackedEnv` に挙げたもの以外が子へ届かない (同「Environment Variables」)。
 `vite.config.ts` の `run.cache` を `false` にし、すべてのタスクのキャッシュを切る。
 
 | 切り方                        | 書き忘れ                                                   | `vp run --cache <task>`                                                                                | 採否     |
@@ -70,11 +70,6 @@ Vite Task は `vite.config.ts` のタスクを既定でキャッシュする (Vi
 - キャッシュを切ったタスクに親の環境変数がすべて届くことは、Vite+ の docs に書かれていない。vite-plus 1.1.0 が pin する vite-task の `plan_task_as_execution_node` は、子の環境を親の環境の全体から作り、キャッシュの設定があるときだけ絞る。キャッシュを切ると、`effective_cache_config` がキャッシュの設定を持たせない
 - キャッシュを切ったタスクは stdin・stdout・stderr を親から継ぐ (vite-task の `docs/stdio.md`「stdio by Mode」)。各コマンドの前に `$ <command> ⊘ cache disabled` の行が出る
 - `command` の配列は `&&` でつないだのと同じに順に走る (Vite+ の `docs/config/run.md` の `command`)。途中のコマンドが落ちると後続は走らず、`vp run` は非 0 で終わる (2026-10-14、vite-plus 1.1.0 で `["echo one", "false", "echo three"]` を打ち、exit code 1)
-
-### タスクの中では `vp node` ではなく `node` を打つ
-
-`vp node` は `vp env exec node` の短縮形で、`vp env` は global の CLI に属し、project-local の `vite-plus` には無い (Vite+ の `docs/guide/env.md` の冒頭と「Execute」の例)。`vp run` は `node_modules/.bin` を `PATH` の先頭に置くので、タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `error: Command 'node' not found` で落ちる (2026-10-14、vite-plus 1.1.0)。
-タスクの中の `node` は、global の `vp run` が `PATH` に足した Vite+ の管理する runtime に解決される (2026-10-14 に、`vp node --version` と同じ `v24.21.0` を観測)。Vite+ のメンテナも、Vite+ が Node.js を管理する前提では `node` を直接打つほうが分かりやすいと答えている (voidzero-dev/vite-plus#1325)。
 
 ### CI は `vp run verify` を 1 つの step で走らせる
 
@@ -246,10 +241,8 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - ブラウザが接続を拒む bad port の表: https://fetch.spec.whatwg.org/#port-blocking
 - Vite Task のタスクの定義、`command` の配列、`cache`、`run.cache`: `node_modules/vite-plus/docs/config/run.md` (https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/config/run.md)
 - キャッシュの有効化の優先順位と、キャッシュが効くタスクの環境変数: `node_modules/vite-plus/docs/guide/cache.md`「When Is Caching Enabled?」「Environment Variables」(https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/cache.md)
-- タスクに渡す引数: `node_modules/vite-plus/docs/guide/run.md`「Additional Arguments」
 - キャッシュを切ったタスクの環境変数 (`plan_task_as_execution_node` と `effective_cache_config`、vite-plus 1.1.0 の `Cargo.toml` が pin する rev): https://github.com/voidzero-dev/vite-task/blob/7d69d6577ecf6bd83deee32186de59918a712873/crates/vt_plan/src/plan.rs
 - キャッシュを切ったタスクの stdio: https://github.com/voidzero-dev/vite-task/blob/7d69d6577ecf6bd83deee32186de59918a712873/docs/stdio.md
-- `vp node` と `vp env` の CLI の別: `node_modules/vite-plus/docs/guide/env.md`、タスクの中で `node` を打つことへのメンテナの回答: voidzero-dev/vite-plus#1325
 - ジョブごとの課金の切り上げ: https://docs.github.com/en/billing/reference/actions-runner-pricing
 - mise の daemons (experimental の要件、自動 port、port の変数、port の重なり、proxy): https://github.com/jdx/mise/blob/v2026.9.18/docs/daemons.md
 - mise の `experimental` の設定: https://github.com/jdx/mise/blob/v2026.9.18/settings.toml

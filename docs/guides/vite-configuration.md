@@ -1,6 +1,6 @@
 # vite.config.ts の組み立て
 
-`vite.config.ts` に集める設定の置き方と、長くなった block を別のファイルへ切り出す手順、重い依存を遅らせて読み込む手順、その形にした理由を持つ。block ごとの中身の書き方は、テストの設定を `docs/guides/testing/configuration.md`、lint の設定を `docs/guides/lint/configuration.md` が持つ。
+`vite.config.ts` に集める設定の置き方と、長くなった block を別のファイルへ切り出す手順、重い依存を遅らせて読み込む手順、タスクを足す手順、その形にした理由を持つ。block ごとの中身の書き方は、テストの設定を `docs/guides/testing/configuration.md`、lint の設定を `docs/guides/lint/configuration.md` が持つ。
 
 | 決定                                                                                              | ADR      |
 | ------------------------------------------------------------------------------------------------- | -------- |
@@ -18,6 +18,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 | `test`                                                | `tooling/test/config.ts` の `testConfig` (ADR-0037)。project の組み方は `docs/guides/testing/configuration.md`                                                                                                                     |
 | `lint`                                                | `tooling/lint/config.ts` の `lintConfig`。ルールとプラグインの足し方は `docs/guides/lint/configuration.md`                                                                                                                         |
 | `fmt`、`staged`、`resolve`、`envDir`、`plugins`       | `vite.config.ts`                                                                                                                                                                                                                   |
+| `run`                                                 | `vite.config.ts`。タスクの足し方は「タスクを足す」、置き場所の決定は ADR-0004                                                                                                                                                      |
 | `plugins` の React の plugin (`@vitejs/plugin-react`) | `tooling/plugins/react.ts` の `reactPlugin`。アプリの `plugins` と、ブラウザで走る project の `chromiumProjectBase` が同じ factory から作る。分岐の書き方は `docs/guides/testing/configuration.md`「テストでだけ plugin を変える」 |
 
 ### block を別のファイルへ切り出す
@@ -36,6 +37,14 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 | `plugins` 以外で使う依存 (Vitest の project が使う provider や plugin) | その依存を使う設定を関数にし、関数の中で外部のパッケージを `import()` する。project の例は `tooling/test/browser-project.ts`。root の `plugins` と同じパッケージ (`chromiumProjectBase` の `tailwindcss`) は先頭で import する (「plugin を先頭で import する理由」)                                        |
 
 `import()` するのは外部のパッケージそのものにする。`tooling/` のモジュールを `import()` しても遅れない (「重い依存を遅らせる理由」)。
+
+### タスクを足す
+
+1. `vite.config.ts` の `run.tasks` に足す (ADR-0004)
+2. タスクに `cache` を書かない。`run.cache: false` がすべてのタスクのキャッシュを切っている。gate を `vp run --cache` で打たない。`--cache` は全体の設定を外し、2 回目をリプレイで済ませる (ADR-0004)
+3. command の中で Node.js のスクリプトを走らせるときは、`vp node` ではなく `node` を打つ。タスクの中の `vp node` は `error: Command 'node' not found` で落ちる (「タスクの中で `node` を打つ理由」)
+4. 引数は `vp run <task> <引数>` で渡し、`--` を挟まない。`--` もそのままコマンドに渡る ([Vite+ docs「Run」][] の Additional Arguments: "Arguments after the task name are passed through to the task command")。2026-10-14 に vite-plus 1.1.0 で `vp run contrast -- --theme dark …` を打つと、`scripts/contrast/report.ts` が `知らない引数: --` で落ちた
+5. README のコマンド一覧に行を足す
 
 ## explanation
 
@@ -88,9 +97,16 @@ Vite+ は、重い plugin を `lazyPlugins` に渡す async の関数の中で `
 
 async の関数でも `vp exec storybook build` が通るようになったら (`@storybook/tanstack-react` が Promise の plugin を解決してから外すようになるなど)、関数を async にして plugin を `import()` へ移せる。この節の計測は、そのときに移す plugin を選ぶ材料になる。
 
+### タスクの中で `node` を打つ理由
+
+- `vp node` は `vp env exec node` の短縮形で、`vp env` は global の CLI に属し、project-local の `vite-plus` には無い ([Vite+ docs「Environment」][] の冒頭と Execute の例)
+- `vp run` は `node_modules/.bin` を `PATH` の先頭に置くので、タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `error: Command 'node' not found` で落ちる (2026-10-14、vite-plus 1.1.0)
+- タスクの中の `node` は、global の `vp run` が `PATH` に足した Vite+ の管理する runtime に解決される。2026-10-14 に、`PATH` の上で `node` が mise の Node.js 24.20.0 に解決されるシェルから打っても、タスクの中の `node` は `vp node --version` と同じ 24.21.0 だった
+- `vp node` を足す前、メンテナは project の中で `node` を使う手段を "The current solution is defining a `package.json` script or a task." と書いている ([voidzero-dev/vite-plus#1325][]、2026-04-09)。`vp node` は、script やタスクを定義せずに打つための短縮形として足された
+
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0 (「タスクを足す」と「タスクの中で `node` を打つ理由」の出典は 1.1.0)、Vitest は 5.0.1 に固定した版を指す。
 
 [Vite+ docs「Configuring Vite+」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/config/index.md
 [Vite+ docs「Test」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/test.md
@@ -104,3 +120,6 @@ async の関数でも `vp exec storybook build` が通るようになったら (
 [oxlint 1.85.0 の configuration_schema.json]: https://github.com/oxc-project/oxc/blob/oxlint_v1.85.0/npm/oxlint/configuration_schema.json
 [voidzero-dev/vite-plus#1215]: https://github.com/voidzero-dev/vite-plus/pull/1215
 [voidzero-dev/vite-plus#1769]: https://github.com/voidzero-dev/vite-plus/issues/1769
+[Vite+ docs「Run」]: https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/run.md
+[Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/env.md
+[voidzero-dev/vite-plus#1325]: https://github.com/voidzero-dev/vite-plus/issues/1325

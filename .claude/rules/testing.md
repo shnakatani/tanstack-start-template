@@ -45,7 +45,7 @@ paths:
 - `src/` 全体へ当てるソース検査は、先に lint (必要なら `jsPlugins`) で表せないかを見る。字面走査より対象の実体に近い (ADR-0023)
 - ソース検査を作るなら `scripts/checks/source/` と `checks-source` project を対で作り、判定は `scripts/lib/` に置いて単体テストを別に持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 落ちたときに判断が要らない検査は作らない。期待値の書き換えしか選択肢が無い検査は上流更新のたびに鳴り、判断を鈍らせる (`docs/guides/testing/check-scripts.md`「検査スクリプトを分けて置く理由」)
-- ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
+- ビルド成果物が要る検査は vitest の project にせず、`vite.config.ts` の `run.tasks.verify` の command で `vp build` の後に置く。project は build との順序を持てない (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - テスト全体の TZ は root の globalSetup (`tooling/test/global-setup.ts`) で決め、`APP_TIME_ZONE` と違う値にする。一致すると、ローカル TZ に依存する実装を壁時計の値のテストが見逃す (`docs/guides/testing/time-zones.md`「基準のタイムゾーンを決める理由」)
