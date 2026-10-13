@@ -35,6 +35,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - `scripts/db/` から `src/` のテーブル定義・接続・ドメインの型は `@/` で import してよい。アプリのコード (`src/`) から `scripts/db/` は import しない。import すると、見本が出荷する bundle に入る
 - 見本の配列には、ドメインの読み出しの型 (`src/features/<domain>/schema.ts`) を付ける。ドメインのディレクトリかテーブル定義を消すと、見本の import が切れて `vp check` が落ちる
 - ドメインの入れ方は `seedAll()` が渡すトランザクションを受け、その中でテーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、insert を打ち、入れたテーブルと行の数を返す。自分でトランザクションを開かない。開くと、ドメインごとに別のトランザクションになり、後のドメインが落ちたときに前のドメインだけが入れ直された状態で残る
+- 外部キーで別のテーブルを指すテーブルに見本を足すときは、`seedAll()` の初めに `PRAGMA defer_foreign_keys = ON` を打つか、削除を子のテーブルから、insert を親のテーブルから打つ順に分ける ([SQLite「Pragma statements supported by SQLite」][] の `defer_foreign_keys`)。`createDb()` の接続は better-sqlite3 の同梱の SQLite の既定で外部キーを検査し (`db.$client.pragma("foreign_keys")` が 1、better-sqlite3 13.0.3、2026-10-14 に実測)、トランザクションの中で `PRAGMA foreign_keys = OFF` を打っても効かない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
 - 見本の id と作成日時・更新日時は固定の値で書く。日時を既定値に任せると、打つたびに実行時刻が入る
 - 見本の各行がそのドメインの読み出しのスキーマを通ることを、同じディレクトリの `<domain>-seed.test.ts` で確かめる。`scripts-tools` project が集める。スキーマを変えたときに、見本が古くなったことにテストで気付ける
 - ドメインを消すときは、`scripts/db/lib/<domain>-seed.ts` とそのテストを消し、`seedAll()` から import と呼び出しを外す。見本を持つドメインが無くなったら、`scripts/db/seed.ts`、`scripts/db/lib/seed-all.ts`、`.mise.toml` の `db:seed`、`README.md` のコマンド一覧の行も消す。タスクとその行は検査に掛からないので、消し忘れても気付けない
@@ -191,3 +192,5 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 [drizzle docs「Custom migrations」]: https://orm.drizzle.team/docs/kit-custom-migrations
 [drizzle-seed の npm]: https://www.npmjs.com/package/drizzle-seed
 [SQLite「SQLite Autoincrement」]: https://www.sqlite.org/autoinc.html
+[SQLite「SQLite Foreign Key Support」]: https://www.sqlite.org/foreignkeys.html
+[SQLite「Pragma statements supported by SQLite」]: https://www.sqlite.org/pragma.html
