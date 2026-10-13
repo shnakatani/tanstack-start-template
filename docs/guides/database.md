@@ -33,7 +33,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - 実行口は `scripts/db/seed.ts` の 1 つで、`createDb()` で DB を開き、`scripts/db/lib/seed-all.ts` の `seedAll()` を呼ぶ。`seedAll()` はトランザクションを 1 回だけ開き、その中でドメインごとの入れ方を呼ぶ。`createDb()` を通さずに `new Database()` で開かない。直接開くと、無い DB のファイルを作る (「DB のファイルをアプリで作らない理由」)
 - ドメインに見本を足すときは、見本の配列と入れ方を `scripts/db/lib/<domain>-seed.ts` に置き、`seedAll()` から呼ぶ。`src/` に置かない (「見本のデータを `scripts/db/` に置く理由」)。置き場の決め方は `docs/guides/placement.md`「`scripts/` に関数と fixture を置く」
 - `scripts/db/` から `src/` のテーブル定義・接続・ドメインの型は `@/` で import してよい。アプリのコード (`src/`) から `scripts/db/` は import しない。import すると、見本が出荷する bundle に入る
-- 見本の配列には、ドメインの読み出しの型 (`src/features/<domain>/schema.ts`) を付ける。ドメインのディレクトリかテーブル定義を消すと、見本の import が切れて `vp check` が落ちる
+- 見本の配列には、テーブルの insert の型 (`$inferInsert`) ではなく、ドメインの読み出しの型 (`src/features/<domain>/schema.ts`) を付け、見本が読み出しの形と合うことを `vp check` で確かめる。insert の型は既定値を持つ列を省けるので、`createdAt` を書き忘れても型エラーにならず、打つたびに実行時刻が入る
 - ドメインの入れ方は `seedAll()` が渡すトランザクションを受け、その中でテーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、insert を打ち、入れたテーブルと行の数を返す。自分でトランザクションを開かない。開くと、ドメインごとに別のトランザクションになり、後のドメインが落ちたときに前のドメインだけが入れ直された状態で残る
 - 外部キーで別のテーブルを指すテーブルに見本を足すときは、`seedAll()` の初めに `PRAGMA defer_foreign_keys = ON` を打つか、削除を子のテーブルから、insert を親のテーブルから打つ順に分ける ([SQLite「Pragma statements supported by SQLite」][] の `defer_foreign_keys`)。`createDb()` の接続は better-sqlite3 の同梱の SQLite の既定で外部キーを検査し (`db.$client.pragma("foreign_keys")` が 1、better-sqlite3 13.0.3、2026-10-14 に実測)、トランザクションの中で `PRAGMA foreign_keys = OFF` を打っても効かない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
 - 見本の id と作成日時・更新日時は固定の値で書く。日時を既定値に任せると、打つたびに実行時刻が入る
