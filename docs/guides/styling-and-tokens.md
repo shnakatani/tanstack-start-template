@@ -132,10 +132,10 @@ ui 部品の見た目を変えたいときは、上の行から順に当ては�
 
 ### 比を測る
 
-比は `mise run contrast` で測る。測り方を置き、数値を書き写さない理由は「比の測り方を置いた理由」にある。
+比は `vp run contrast` で測る。測り方を置き、数値を書き写さない理由は「比の測り方を置いた理由」にある。
 
 ```bash
-mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--placeholder'
+vp run contrast --theme dark --bg '--popover' --bg '--input/30' --fg '--placeholder'
 ```
 
 - `--bg` は下から順に重ねる。`--fg` と `--bg` は `--input/30` の形で不透明度を付ける。出力は解決後の色、比、SC 1.4.3 と SC 1.4.11 の充足である
@@ -144,8 +144,8 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 - opacity variant (`bg-primary/10` など) が下地にある対は、その面も `--bg` に重ねて測る。下地との合成で比が変わる
 - 比を書いた箇所を触るときは測り直す。[Understanding SC 1.4.3][] と [Understanding SC 1.4.11][] は計算値を丸めるなと地の文に書いており (WCAG 2.2 本体に記述は無い)、`3.70:1` と書いた時点で 3.7049 か 3.6951 かは復元できない
 - 表示は切り捨てなので、2 桁の値が実際の比を上回ることはない。`4.59` と出た値が 4.6 を満たすことはない
-- `--primary` の hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置き、`mise run contrast -- --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。4.6 を下回る hue は light を `<hue>-900` にする (ADR-0024「有彩色のアクセントは light と dark で役割を反転させる」)
-- placeholder の帯の上端 (入力値との 3:1) は `mise run contrast` では出せない。入力値 (`--foreground`) と 3:1 になる輝度を解いてから、背景との比へ直す。light は例示が入力値より明るいので `Lp = 3 * (L入力値 + 0.05) - 0.05`、dark は暗いので `Lp = (L入力値 + 0.05) / 3 - 0.05` を解き、`Lp` と背景の輝度で比を取る。輝度の式は `scripts/contrast/lib/contrast.ts` にある
+- `--primary` の hue を変えるときは、候補の段を `src/styles.css` の `--primary` と `--primary-foreground` へ置き、`vp run contrast --theme light --bg '--background' --bg '--primary/80' --fg '--primary-foreground'` で測る。4.6 を下回る hue は light を `<hue>-900` にする (ADR-0024「有彩色のアクセントは light と dark で役割を反転させる」)
+- placeholder の帯の上端 (入力値との 3:1) は `vp run contrast` では出せない。入力値 (`--foreground`) と 3:1 になる輝度を解いてから、背景との比へ直す。light は例示が入力値より明るいので `Lp = 3 * (L入力値 + 0.05) - 0.05`、dark は暗いので `Lp = (L入力値 + 0.05) / 3 - 0.05` を解き、`Lp` と背景の輝度で比を取る。輝度の式は `scripts/contrast/lib/contrast.ts` にある
 - 比を計算できない入力は黙って通さず throw する。silent に通すと、画面に存在しない比が文書へ写る。throw する入力は次のとおり
 
 | 入力                                                                                                                   | 扱い  |
@@ -167,7 +167,7 @@ mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--pla
 
 ### axe の比と突き合わせる
 
-`mise run contrast` の比は、同じ色を渡せば axe の `getContrast` と一致する (「測り方の限界」)。突き合わせるときは、`measurePair` の結果を `toHex` で渡して次と比べる。継続して検査はしない。
+`vp run contrast` の比は、同じ色を渡せば axe の `getContrast` と一致する (「測り方の限界」)。突き合わせるときは、`measurePair` の結果を `toHex` で渡して次と比べる。継続して検査はしない。
 
 ```js
 const { Color, getContrast } = (await import("axe-core")).default.commons.color;
@@ -227,7 +227,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 | トークンの SSOT のパス                         | `scripts/contrast/lib/styles-css.ts`        |
 | 例外の連鎖を 1 行にする                        | `scripts/contrast/lib/describe-error.ts`    |
 | ファイル読みと終了コード                       | `scripts/contrast/report.ts`                |
-| 呼び出し口                                     | `.mise.toml` の `[tasks.contrast]`          |
+| 呼び出し口                                     | `vite.config.ts` の `run.tasks.contrast`    |
 
 - テストは `scripts-tools` project が拾う。`include` を拒否リストにしている理由は `docs/guides/testing/check-scripts.md`「検査スクリプトを分けて置く理由」にある
 - 検査は作らない。トークンを動かしても何も落ちない。a11y の合否は `src/components/contrast.stories.tsx` の axe が持つ (ADR-0024「リポジトリが持つ検算は実描画と axe で行い、比を計算する story を持たない」)。この変換器は story ではなく合否も持たないので、その決定と両立する。単体テストが落ちるのは変換器が壊れたときで、配色の可否を判定しているのではない。測るのは文書へ書く値を人が選ぶためである

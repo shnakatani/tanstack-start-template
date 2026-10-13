@@ -5,8 +5,8 @@
 ## コマンド（クイックリファレンス）
 
 ```bash
-mise run serve    # dev server を起動する
-mise run verify   # マージ前に通す。手順は .mise.toml の [tasks.verify] が持つ
+mise run serve   # dev server を起動する
+vp run verify    # マージ前に通す。手順は vite.config.ts の run.tasks.verify が持ち、CI も同じタスクを走らせる
 ```
 
 ## 開発上の注意

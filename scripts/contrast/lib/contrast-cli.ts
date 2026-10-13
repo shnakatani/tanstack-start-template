@@ -7,7 +7,7 @@ import {
 } from "./contrast.ts";
 
 /**
- * `mise run contrast` の引数と出力の組み立て。
+ * `vp run contrast` の引数と出力の組み立て。
  *
  * 実行口 (`scripts/contrast/report.ts`) から分けているのは、`process.argv` も CSS も
  * 要らない純粋関数だからである。ここに置くと境界条件を単体テストで固定できる

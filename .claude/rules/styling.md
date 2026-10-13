@@ -16,7 +16,7 @@ palette 色・任意値・SVG 属性への色の直書きは lint (`shadcn/no-ra
 - `var(--...)` だけを材料にした `color-mix()` は、行単位で `no-arbitrary-values` を抑制して書き、`ui/` で rule を off にしない。off にすると `ui/` に入る任意値の色を拾う経路が無くなる (ADR-0023)
 - 破壊操作のボタンは、テキストでもアイコンでも `variant="destructive"` にし、アイコンだけなら `size="icon*"` を合わせる。hover だけの着色は touch 環境で出ない (`docs/guides/styling-and-tokens.md`「色を当てる」)
 - `src/styles.css` の `@theme` (`--color-*: initial`) は import より後ろ、`@theme inline` より前に置く。後ろへ動かすと semantic token まで消える (`docs/guides/styling-and-tokens.md`「色を当てる」)
-- 比を測るときは `mise run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)
+- 比を測るときは `vp run contrast` を使う。トークンで動く比は文書やコメントへ書き写さない (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)
 - コントラストは文字 4.5:1 (大きな文字は 3:1)、UI 部品と状態を見分けるのに要る部分と、内容の理解に要る図形の部分は 3:1。対象外は各 SC の例外に限る。dark は light と別に測る。opacity variant は下地との合成で比が変わるので、下地ごと重ねて測る (`docs/guides/styling-and-tokens.md`「比を測る」)
 - トークンの値を変えるときは palette の段 (`node_modules/tailwindcss/theme.css`) に乗せる。閾値を跨ぐ最小値は採らない (ADR-0024)
 - 色だけで情報を伝えない。アイコンかテキストを併用し、アイコンだけが伝えるなら `aria-hidden` にして `sr-only` の文字を添える (`docs/guides/accessibility.md`「色以外の手がかりを併せる」)

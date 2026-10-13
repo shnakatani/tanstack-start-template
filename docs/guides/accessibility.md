@@ -194,7 +194,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 1. axe で「アクセシブルか」を問うテストに `it(名前, { tags: ["a11y"] }, fn)` を付ける ([Vitest docs「Test Tags」][])。tag の定義は `tooling/test/browser-project.ts` の `test.tags` にある。定義に無い tag を付けたテストは、エラーで落ちる ([Vitest docs「strictTags」][] の既定 `true`)
 2. 単独で走らせるときは `vp test run --tags-filter a11y`、外すときは `--tags-filter '!a11y'` ([Vitest docs「Test Tags」][])
 3. 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。その状態は操作の途中にしか無く、専用のテストへ降ろすと操作の再現が重複する。assert の近くに、`a11y` の tag を付けない理由を書く
-4. `expectNoA11yViolations` を呼ぶテストには、専用のテストか挙動テストかを問わず `axe` の tag を付ける。`mise run a11y:incomplete` がこの tag で絞る。付け忘れると helper が落ちる
+4. `expectNoA11yViolations` を呼ぶテストには、専用のテストか挙動テストかを問わず `axe` の tag を付ける。`vp run a11y:incomplete` がこの tag で絞る。付け忘れると helper が落ちる
 
 - `--tags-filter '!a11y'` で外しても、挙動テストに相乗りした axe の検査は走る。`'!axe'` なら axe の検査は全部外れるが、その挙動テストも一緒に外れる
 - tag の定義は browser project にしかない。他の project で使うなら、その project の `test.tags` へ足す
@@ -237,7 +237,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 ### ブラウザテストの `incomplete` を読む
 
 - `expectNoA11yViolations` (`src/test/a11y/a11y.ts`) は `incomplete` を合否に入れず、warning の注釈で残す (ADR-0028)
-- 手元では `mise run a11y:incomplete` で読み、PR では該当テストの行に warning の注釈が付く。読み方は `docs/guides/testing/annotations.md`「注釈を読む」、位置の決まり方は `docs/guides/testing/annotations.md`「注釈の位置を読む」
+- 手元では `vp run a11y:incomplete` で読み、PR では該当テストの行に warning の注釈が付く。読み方は `docs/guides/testing/annotations.md`「注釈を読む」、位置の決まり方は `docs/guides/testing/annotations.md`「注釈の位置を読む」
 - 注釈の位置は `expectNoA11yViolations` を呼んだテストの行で、どの要素がなぜ判定できなかったかは本文で見る。本文の形は `src/test/a11y/a11y-message.ts` の `describeA11yIncomplete`
 
 ### axe を上げたとき

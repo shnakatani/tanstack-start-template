@@ -14,8 +14,6 @@ import { type ExpectedHeader, findHeaderViolations } from "../../lib/response-he
  * エラーを出さないまま緑で通る。
  *
  * 整合検査 (`scripts/checks/integrity/`) に置かないのは、`vp build` の成果物が要るため。
- * vitest の project は build との順序を持てないので、`mise run verify` と CI の
- * `vp build` の直後に独立した step として置く。
  */
 
 /**

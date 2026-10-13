@@ -19,14 +19,14 @@ import { describeError } from "./lib/describe-error.ts";
 import { STYLES_CSS } from "./lib/styles-css.ts";
 
 const USAGE = `使い方:
-  mise run contrast -- --theme <light|dark> --bg <トークン> [--bg <トークン>...] --fg <トークン>
+  vp run contrast --theme <light|dark> --bg <トークン> [--bg <トークン>...] --fg <トークン>
 
   トークンは src/styles.css の :root / .dark が宣言している --background の形。
   不透明度は --input/30 のように百分率で付ける。
   --bg は下から順に重ねる。--theme と --fg は 1 つだけ。
 
 例:
-  mise run contrast -- --theme dark --bg '--popover' --bg '--input/30' --fg '--placeholder'
+  vp run contrast --theme dark --bg '--popover' --bg '--input/30' --fg '--placeholder'
 `;
 
 function main(): void {

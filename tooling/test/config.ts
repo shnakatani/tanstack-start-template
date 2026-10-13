@@ -23,7 +23,7 @@ const STORYBOOK_VARIANTS: readonly StorybookVariant[] = [
 
 /**
  * story の project を並べる。Storybook 経由の実行だけ light の Compiler を通す 1 つに絞り、
- * `vp test run` と `mise run verify` は全部を回す (ADR-0028、storybookjs/storybook#32427)
+ * `vp test run` と `vp run verify` は全部を回す (ADR-0028、storybookjs/storybook#32427)
  */
 function storybookProjects(): TestProjectConfiguration[] {
   const storybookRun = isStorybookRun(process.env.VITEST_STORYBOOK);
@@ -58,8 +58,8 @@ export const testConfig = {
   unstubGlobals: true,
   // vi.fn・vi.spyOn・vi.mock の mock に張った実装と戻り値を各テストの前に戻す (docs/guides/testing/mocking.md「差し替えた実装を戻す」)
   mockReset: true,
-  // 既定の組を残し、GitHub Actions でだけ 1 ファイルの HTML report を .vitest/index.html に書く。CI が落ちた
-  // テストの report を artifact に上げる (.github/workflows/ci.yml、Vitest docs「Vitest UI」の View Reports from CI)
+  // 既定の組を残し、GitHub Actions でだけ 1 ファイルの HTML report を .vitest/index.html に書く。CI は verify が
+  // 落ちた run の report を artifact に上げる (.github/workflows/ci.yml、Vitest docs「Vitest UI」の View Reports from CI)
   reporters:
     process.env.GITHUB_ACTIONS === "true"
       ? [...configDefaults.reporters, ["html", { singleFile: true }]]

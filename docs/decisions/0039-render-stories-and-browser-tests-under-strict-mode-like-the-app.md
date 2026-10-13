@@ -43,7 +43,7 @@ Testing Library も同じ理由で、`wrapper` の中の StrictMode では React
 | 案                                                                               | 評価                                                                                                                                                                                                                                                                                     | 採否     |
 | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | story は preview の decorator、ブラウザテストは `configure` で StrictMode にする | 公開された API (decorator と `configure`) だけで、Storybook の画面・vitest 経由の story・ブラウザテストの 3 経路で描画が 2 回走る。代わりに、mount 直後の effect の二重実行は story では起きず、ブラウザテストだけが確かめる。decorator は story の部品の中で包み、root から包めないため | **採用** |
-| story は main.ts の `framework.options.strictMode` で StrictMode にする          | 公式の口で、Storybook の画面では root から包めるので mount 直後の effect も付け直す。ただし vitest 経由の story に届かず、`mise run verify` と CI では何も検出しない。`@storybook/tanstack-react` の型に無く、書くには型を握りつぶすことになる                                           | 却下     |
+| story は main.ts の `framework.options.strictMode` で StrictMode にする          | 公式の口で、Storybook の画面では root から包めるので mount 直後の effect も付け直す。ただし vitest 経由の story に届かず、`vp run verify` と CI では何も検出しない。`@storybook/tanstack-react` の型に無く、書くには型を握りつぶすことになる                                             | 却下     |
 | main.ts に加え、vitest の setup で `globalThis.FRAMEWORK_OPTIONS` を書く         | 内部の global に頼る。`@storybook/react` がモジュールを読んだ時点で読むので、setup の読み込み順にも依存する                                                                                                                                                                              | 却下     |
 | 回数を確かめる story やテストにだけ `<StrictMode>` を足す                        | 書いた所しか見ない。描画が純粋でないことは、どの部品のどの story で表に出るか前もって分からない                                                                                                                                                                                          | 却下     |
 | 親の state を変えて部品を描き直す専用の story を組む                             | 部品が読む値を変えずに描き直させることはできるが、Storybook の慣習ではない自前の仕組みで、部品ごとに組むことになる。StrictMode は React が描画の純粋さを確かめるために用意した仕組みで、全 story に一度に効く                                                                            | 却下     |
@@ -53,7 +53,7 @@ Testing Library も同じ理由で、`wrapper` の中の StrictMode では React
 
 - 描画中の副作用が回数の検証で落ちる。2026-10-04 に、warn を描画中に出す実装で `CheckboxValidatorsWarn` の story が「2 回呼ばれた」で落ち、`useEffect` の実装では通ることを確かめた。React は 18 から 2 回目の描画の `console` を抑えない (React docs「React 18 Upgrade Guide」の「No suppression of console logs」)
 - mount 直後の effect を setup → cleanup → setup の順に走らせるのは、ブラウザテストだけである。story では StrictMode が root にないので setup の 1 回で終わり、cleanup の欠けた effect は story では見つからない
-- 2026-10-04 に `mise run verify` で、light と dark の全 story とブラウザテストが StrictMode の下で通った
+- 2026-10-04 に `vp run verify` で、light と dark の全 story とブラウザテストが StrictMode の下で通った
 - Storybook の画面も同じ decorator で包むので、描画は 2 回走り、mount 直後の effect は付け直さない (Context の 2 つ目の表)
 - 再評価の条件: addon-vitest が main.ts の `framework.options.strictMode` を vitest 経由の story へ渡し、`@storybook/tanstack-react` の `FrameworkOptions` が `strictMode` を持つようになったら、main.ts の口へ移すかを見直す。root から包めるので、story でも mount 直後の effect を付け直せる
 

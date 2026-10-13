@@ -20,15 +20,6 @@ run = "vp dev --port $SERVE_PORT --strictPort"
 description = "Storybook を起動する"
 run = "vp exec storybook dev --port $STORYBOOK_PORT --no-open --exact-port"
 
-[tasks.contrast]
-description = "トークンからコントラスト比を測る"
-run = "vp node scripts/contrast/report.ts"
-
-# 読み方は docs/guides/testing/annotations.md「注釈を読む」、tag とフラグは docs/guides/accessibility.md「a11y の tag を付ける」
-[tasks."a11y:incomplete"]
-description = "axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む"
-run = "vp test run --project browser --tags-filter axe --reporter=verbose --hide-skipped-tests"
-
 [tasks."db:generate"]
 description = "Drizzle スキーマから migration を生成する"
 run = "vp exec drizzle-kit generate"
@@ -42,20 +33,6 @@ run = "vp exec drizzle-kit migrate"
 description = "migration を当ててから、ローカル DB の行を消して見本のデータを入れ直す"
 depends = ["db:migrate"]
 run = "vp exec tsx scripts/db/seed.ts"
-
-[tasks.verify]
-description = "マージ前検証をまとめて実行する"
-run = [
-  # peer の食い違いを数える。lockfile を書き換えない (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
-  "pnpm peers check",
-  "vp check",
-  "vp test run",
-  # *.tz.test.ts を TZ ごとに別のプロセスで走らせる (docs/guides/testing/time-zones.md「Node で動くテストを TZ ごとに走らせる」)
-  "vp node scripts/time-zones/run-tests.ts",
-  "vp build",
-  # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
-  "vp node scripts/checks/runtime/security-headers.ts",
-]
 
 # 自動 port を SERVE_PORT / STORYBOOK_PORT として出す。タスクは mise run で前面でも動く。
 # proxy を使わないので URL の変数を出さない (ADR-0004)

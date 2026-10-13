@@ -35,8 +35,8 @@ mise run storybook                                # 部品とデザイントー�
 | コマンド                       | 内容                                                                                                      |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | `mise run serve`               | dev server を起動する                                                                                     |
-| `mise run verify`              | マージ前の検証をまとめて実行する。手順は `.mise.toml` の `[tasks.verify]` が持つ                          |
-| `mise run a11y:incomplete`     | axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む                               |
+| `vp run verify`                | マージ前の検証をまとめて実行する。手順は `vite.config.ts` の `run.tasks.verify` が持つ                    |
+| `vp run a11y:incomplete`       | axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む                               |
 | `mise run db:generate`         | `src/server/db/schema.ts` から `drizzle/` へ migration を生成する                                         |
 | `mise run db:migrate`          | `drizzle/` の migration を `DB_FILE_NAME` の DB へ適用する                                                |
 | `mise run db:seed`             | migration を当ててから、DB の行を消して `scripts/db/` の見本のデータを入れ直す                            |

@@ -20,6 +20,27 @@ export default defineConfig({
     ],
     "*.md": ["vp fmt --write --no-error-on-unmatched-pattern"],
   },
+  run: {
+    // キャッシュすると、gate がリプレイで済まされ、親の環境変数が子へ届かない (ADR-0004)。
+    // `vp run --cache` はこの設定を外すので、gate には付けない
+    cache: false,
+    tasks: {
+      verify: {
+        command: [
+          // 素の pnpm で打つ。vp pm は peers を中継しない (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
+          "pnpm peers check",
+          "vp check",
+          "vp test run",
+          "node scripts/time-zones/run-tests.ts",
+          "vp build",
+          "node scripts/checks/runtime/security-headers.ts",
+        ],
+      },
+      contrast: "node scripts/contrast/report.ts",
+      "a11y:incomplete":
+        "vp test run --project browser --tags-filter axe --reporter=verbose --hide-skipped-tests",
+    },
+  },
   lint: lintConfig,
   fmt: {
     sortImports: true,

@@ -32,48 +32,18 @@ jobs:
       # chromium は vp install では入らない (playwright が install スクリプトを持たない)
       - run: vp exec playwright install chromium --only-shell
 
-      # .mise.toml の [tasks.verify] と同じ順序で並べ、vp run のタスクにまとめない (ADR-0004)
       # PR の差分に lint の注釈は出ない (voidzero-dev/vite-plus#925、docs/guides/lint/configuration.md「PR の差分に lint の注釈を出す」)
-      - run: vp check
-      - run: vp test run
-        id: test
-      # テストが落ちたら、GitHub Actions でだけ書く 1 ファイルの HTML report (tooling/test/config.ts の reporters) を
-      # 上げ、ブラウザで開くリンクを run の notice に出す。report は失敗したテストに失敗時のスクリーンショットを付ける
-      # (Vitest docs「Vitest UI」の View Reports from CI)
-      # テストが通った run では上げない。private のリポジトリでは artifact が容量 (Free で 500MB) を使う。保持期間は
-      # リポジトリの設定 (既定 90 日) に任せる。失敗した job を再実行すると、前の試行の artifact は取れなくなる
-      # (actions/upload-artifact#585)。再実行の前に開く
-      - if: failure() && steps.test.conclusion == 'failure'
+      - run: vp run verify
+      # private のリポジトリでは artifact が容量 (Free で 500MB) を使うので、落ちた run でだけ上げる
+      # 失敗した job を再実行すると、前の試行の artifact は取れなくなる (actions/upload-artifact#585)。再実行の前に開く
+      - if: failure() && hashFiles('.vitest/index.html') != ''
         id: upload-report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: .vitest/index.html
           # zip にせず上げると、GitHub がブラウザでそのまま開く (GitHub Changelog 2026-02-26)
           archive: false
-      # report が書かれる前に落ちると、upload は警告だけ出して成功し、artifact-url を持たない
       - if: failure() && steps.upload-report.outputs.artifact-url != ''
         run: echo "::notice title=Vitest HTML report::$REPORT_URL"
         env:
           REPORT_URL: ${{ steps.upload-report.outputs.artifact-url }}
-      - run: vp node scripts/time-zones/run-tests.ts
-      - run: vp build
-
-      # ビルド成果物を起動して実レスポンスを見るため build のあとに置く
-      - run: vp node scripts/checks/runtime/security-headers.ts
-
-  # peer の食い違いを数え、install が要らないので verify と並列に走らせる (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」、ADR-0004)
-  # 変更の有無で飛ばさない。課金はジョブごとに分単位で切り上がり、飛ばしても 1 分として数えられる (GitHub Docs「Actions runner pricing」)
-  peers:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      # 依存の構造は lockfile から読み、node_modules は使わないので install しない
-      - uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
-        with:
-          run-install: false
-
-      - run: pnpm peers check
