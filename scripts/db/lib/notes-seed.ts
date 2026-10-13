@@ -1,8 +1,9 @@
 import { getTableName, sql } from "drizzle-orm";
 
 import type { Note } from "@/features/notes/schema";
-import type { createDb } from "@/server/db";
 import { notes } from "@/server/db/schema";
+
+import type { SeededTable, SeedTransaction } from "./seed-all.ts";
 
 /**
  * dev server で一覧を確かめるための見本。id の昇順に作成日時を進め、一覧の新しい順の並びを読めるようにする。
@@ -93,15 +94,15 @@ export const NOTE_SEEDS: readonly Note[] = [
 ];
 
 /** notes の行を全部消して見本を入れ直す。何度打っても、行と次に振られる id が同じになる */
-export function seedNotes(db: ReturnType<typeof createDb>): void {
-  db.transaction((tx) => {
-    tx.delete(notes).run();
-    // 消した行の id を sqlite_sequence が覚えたままだと、seed のあとに作る行の id が見本の続きから飛ぶ。
-    // sqlite_sequence の書き換えは採番を乱しうる (SQLite「SQLite Autoincrement」) が、表の行を消した
-    // あとなので、採番は入れ直した見本の最大の id から続く
-    tx.run(sql`delete from sqlite_sequence where name = ${getTableName(notes)}`);
-    tx.insert(notes)
-      .values([...NOTE_SEEDS])
-      .run();
-  });
+export function seedNotes(tx: SeedTransaction): SeededTable {
+  tx.delete(notes).run();
+  // 消した行の id を sqlite_sequence が覚えたままだと、seed のあとに作る行の id が見本の続きから飛ぶ。
+  // sqlite_sequence の書き換えは採番を乱しうる (SQLite「SQLite Autoincrement」) が、表の行を消した
+  // あとなので、採番は入れ直した見本の最大の id から続く
+  tx.run(sql`delete from sqlite_sequence where name = ${getTableName(notes)}`);
+  const { changes } = tx
+    .insert(notes)
+    .values([...NOTE_SEEDS])
+    .run();
+  return { table: getTableName(notes), rows: changes };
 }

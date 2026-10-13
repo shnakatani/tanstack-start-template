@@ -5,9 +5,10 @@ import { noteSchema } from "@/features/notes/schema";
 import { createDb, migrateDb } from "@/server/db";
 import { notes } from "@/server/db/schema";
 
-import { NOTE_SEEDS, seedNotes } from "./notes-seed";
+import { NOTE_SEEDS } from "./notes-seed";
+import { seedAll } from "./seed-all";
 
-describe("seedNotes", () => {
+describe("seedAll", () => {
   let db: ReturnType<typeof createDb>;
 
   function readRows() {
@@ -30,17 +31,21 @@ describe("seedNotes", () => {
   });
 
   it("2 回続けて入れても、見本の行が同じ id・日時・中身で並ぶ", () => {
-    seedNotes(db);
+    seedAll(db);
     expect(readRows()).toEqual(NOTE_SEEDS);
 
-    seedNotes(db);
+    seedAll(db);
     expect(readRows()).toEqual(NOTE_SEEDS);
+  });
+
+  it("入れたテーブルと行の数を返す", () => {
+    expect(seedAll(db)).toEqual([{ table: "notes", rows: NOTE_SEEDS.length }]);
   });
 
   it("手で足した行を消し、見本の行だけを残す", () => {
     db.insert(notes).values({ id: 50, title: "手で足した行" }).run();
 
-    seedNotes(db);
+    seedAll(db);
 
     expect(readRows()).toEqual(NOTE_SEEDS);
   });
@@ -53,14 +58,14 @@ describe("seedNotes", () => {
       `create trigger reject_last_seed before insert on notes when new.id = ${lastSeedId} begin select raise(abort, 'rejected'); end`,
     );
 
-    expect(() => seedNotes(db)).toThrow("rejected");
+    expect(() => seedAll(db)).toThrow("rejected");
     expect(readRows().map((row) => row.title)).toEqual(["手で足した行"]);
   });
 
   it("入れたあとに作る行の id は、見本の最大の id の続きになる", () => {
     db.insert(notes).values({ id: 50, title: "手で足した行" }).run();
 
-    seedNotes(db);
+    seedAll(db);
     const [created] = db.insert(notes).values({ title: "新しい行" }).returning().all();
 
     expect(created?.id).toBe(Math.max(...NOTE_SEEDS.map((seed) => seed.id)) + 1);

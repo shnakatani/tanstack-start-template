@@ -21,5 +21,5 @@ paths:
 
 ## 見本のデータ
 
-- 見本の配列と入れ方は `scripts/db/lib/<domain>-seed.ts` に置き、`scripts/db/seed.ts` から呼ぶ。`src/` に置かず、アプリのコードから import しない。import すると見本が出荷する bundle に入る (`docs/guides/database.md`「見本のデータを `scripts/db/` に置く理由」)
-- ドメインの見本の入れ方は、テーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、id と日時を明示した insert を 1 つのトランザクションで打つ。日時を既定値に任せると打つたびに中身が変わり、`sqlite_sequence` を残すと seed のあとに作る行の id が飛ぶ (`docs/guides/database.md`「見本のデータを入れる」)
+- 見本の配列と入れ方は `scripts/db/lib/<domain>-seed.ts` に置き、`scripts/db/lib/seed-all.ts` の `seedAll()` から呼ぶ。`src/` に置かず、アプリのコードから import しない。import すると見本が出荷する bundle に入る (`docs/guides/database.md`「見本のデータを `scripts/db/` に置く理由」)
+- ドメインの見本の入れ方は、`seedAll()` が渡すトランザクションの中で、テーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、id と日時を明示した insert を打つ。自分でトランザクションを開かない。日時を既定値に任せると打つたびに中身が変わり、`sqlite_sequence` を残すと seed のあとに作る行の id が飛ぶ (`docs/guides/database.md`「見本のデータを入れる」)

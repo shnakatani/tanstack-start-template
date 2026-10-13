@@ -30,13 +30,14 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - `mise run db:seed` で、`DB_FILE_NAME` の DB に dev server で確かめるための見本を入れる。タスクは `depends` で先に `db:migrate` を走らせる ([mise docs「Task Configuration」][] の `depends`) ので、DB のファイルが無い状態からも 1 回で入る
 - 打つたびに、見本を持つテーブルの行を全部消して入れ直す。dev server の画面から作った行も消える。何度打っても、行と、次に作る行の id は同じになる (「見本のデータを消して入れ直す理由」)
 - dev server を開いたまま打ったら、ブラウザを再読み込みする。query のキャッシュが新鮮なうちは、focus でも遷移で戻っても DB から読み直さない ([TanStack Query docs「Important Defaults」][])。再読み込みでは、SSR がリクエストごとに `getRouter()` (`src/router.tsx`) で新しい `QueryClient` を作り、DB から読む
-- 実行口は `scripts/db/seed.ts` の 1 つで、`createDb()` で DB を開き、ドメインごとの入れ方を呼ぶ。`createDb()` を通さずに `new Database()` で開かない。直接開くと、無い DB のファイルを作る (「DB のファイルをアプリで作らない理由」)
-- ドメインに見本を足すときは、見本の配列と入れ方を `scripts/db/lib/<domain>-seed.ts` に置き、実行口から呼ぶ。`src/` に置かない (「見本のデータを `scripts/db/` に置く理由」)。置き場の決め方は `docs/guides/placement.md`「`scripts/` に関数と fixture を置く」
+- 実行口は `scripts/db/seed.ts` の 1 つで、`createDb()` で DB を開き、`scripts/db/lib/seed-all.ts` の `seedAll()` を呼ぶ。`seedAll()` はトランザクションを 1 回だけ開き、その中でドメインごとの入れ方を呼ぶ。`createDb()` を通さずに `new Database()` で開かない。直接開くと、無い DB のファイルを作る (「DB のファイルをアプリで作らない理由」)
+- ドメインに見本を足すときは、見本の配列と入れ方を `scripts/db/lib/<domain>-seed.ts` に置き、`seedAll()` から呼ぶ。`src/` に置かない (「見本のデータを `scripts/db/` に置く理由」)。置き場の決め方は `docs/guides/placement.md`「`scripts/` に関数と fixture を置く」
 - `scripts/db/` から `src/` のテーブル定義・接続・ドメインの型は `@/` で import してよい。アプリのコード (`src/`) から `scripts/db/` は import しない。import すると、見本が出荷する bundle に入る
 - 見本の配列には、ドメインの読み出しの型 (`src/features/<domain>/schema.ts`) を付ける。ドメインのディレクトリかテーブル定義を消すと、見本の import が切れて `vp check` が落ちる
-- 入れ方は、テーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、insert を 1 つのトランザクションで打つ。見本の id と作成日時・更新日時は固定の値で書く。日時を既定値に任せると、打つたびに実行時刻が入る
+- ドメインの入れ方は `seedAll()` が渡すトランザクションを受け、その中でテーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、insert を打ち、入れたテーブルと行の数を返す。自分でトランザクションを開かない。開くと、ドメインごとに別のトランザクションになり、後のドメインが落ちたときに前のドメインだけが入れ直された状態で残る
+- 見本の id と作成日時・更新日時は固定の値で書く。日時を既定値に任せると、打つたびに実行時刻が入る
 - 見本の各行がそのドメインの読み出しのスキーマを通ることを、同じディレクトリの `<domain>-seed.test.ts` で確かめる。`scripts-tools` project が集める。スキーマを変えたときに、見本が古くなったことにテストで気付ける
-- ドメインを消すときは、`scripts/db/lib/<domain>-seed.ts` とそのテストを消し、実行口から import と呼び出しを外す。見本を持つドメインが無くなったら、`scripts/db/seed.ts`、`.mise.toml` の `db:seed`、`README.md` のコマンド一覧の行も消す。タスクとその行は検査に掛からないので、消し忘れても気付けない
+- ドメインを消すときは、`scripts/db/lib/<domain>-seed.ts` とそのテストを消し、`seedAll()` から import と呼び出しを外す。見本を持つドメインが無くなったら、`scripts/db/seed.ts`、`scripts/db/lib/seed-all.ts`、`.mise.toml` の `db:seed`、`README.md` のコマンド一覧の行も消す。タスクとその行は検査に掛からないので、消し忘れても気付けない
 
 ### 起動時に migration を適用する形に変える
 

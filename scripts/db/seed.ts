@@ -5,11 +5,10 @@
  */
 import { createDb } from "@/server/db";
 
-import { NOTE_SEEDS, seedNotes } from "./lib/notes-seed.ts";
+import { seedAll } from "./lib/seed-all.ts";
 
 const db = createDb();
-seedNotes(db);
-console.log(
-  `[db:seed] ${db.$client.name} の notes の行を消し、見本の ${NOTE_SEEDS.length} 件を入れ直した`,
-);
+for (const { table, rows } of seedAll(db)) {
+  console.log(`[db:seed] ${db.$client.name} の ${table} の行を消し、見本の ${rows} 件を入れ直した`);
+}
 db.$client.close();
