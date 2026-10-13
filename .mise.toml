@@ -41,7 +41,7 @@ run = "vp exec drizzle-kit migrate"
 [tasks."db:seed"]
 description = "migration を当ててから、ローカル DB の行を消して見本のデータを入れ直す"
 depends = ["db:migrate"]
-run = "vp exec tsx src/server/db/seed.ts"
+run = "vp exec tsx scripts/db/seed.ts"
 
 [tasks.verify]
 description = "マージ前検証をまとめて実行する"

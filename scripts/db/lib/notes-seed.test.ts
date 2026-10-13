@@ -1,11 +1,11 @@
 import * as v from "valibot";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
+import { noteSchema } from "@/features/notes/schema";
 import { createDb, migrateDb } from "@/server/db";
 import { notes } from "@/server/db/schema";
 
-import { noteSchema } from "./schema";
-import { NOTE_SEEDS, seedNotes } from "./seed.server";
+import { NOTE_SEEDS, seedNotes } from "./notes-seed.ts";
 
 describe("seedNotes", () => {
   let db: ReturnType<typeof createDb>;
