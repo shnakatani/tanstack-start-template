@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { columnHeaderWidths } from "./data-table.test-helpers";
 import { TableSkeleton } from "./table-skeleton";
 
 /**
@@ -44,14 +45,7 @@ describe("TableSkeleton", () => {
       </div>,
     );
 
-    await expect
-      .poll(() =>
-        screen
-          .getByRole("columnheader")
-          .elements()
-          .map((header) => header.getBoundingClientRect().width),
-      )
-      .toEqual([200, 120]);
+    await expect.poll(() => columnHeaderWidths(screen)).toEqual([200, 120]);
   });
 
   it("どの要素にも aria-busy を載せない", async () => {

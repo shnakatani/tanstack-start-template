@@ -4,6 +4,7 @@ import { render } from "vitest-browser-react";
 
 import { DataTable } from "./data-table";
 import type { DataTableFeatures } from "./data-table-features";
+import { columnHeaderWidths } from "./data-table.test-helpers";
 
 type Fruit = { id: number; name: string; price: number };
 
@@ -49,14 +50,7 @@ describe("DataTable", () => {
       </div>,
     );
 
-    await expect
-      .poll(() =>
-        screen
-          .getByRole("columnheader")
-          .elements()
-          .map((header) => header.getBoundingClientRect().width),
-      )
-      .toEqual([200, 120]);
+    await expect.poll(() => columnHeaderWidths(screen)).toEqual([200, 120]);
   });
 
   it("列定義の順に列見出しを scope=col で描き、行はセル単位で描く", async () => {

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import type { Locator } from "vite-plus/test/browser/context";
 
+import { columnHeaderWidths } from "@/components/parts/data-table.test-helpers";
 import { getNote, listNotes, updateNote } from "@/features/notes/functions";
 import { noteQueryOptions } from "@/features/notes/queries";
 import { NOTE, NOTE_UPDATE, OTHER_NOTE, UPDATED_NOTE } from "@/features/notes/schema.test-helpers";
@@ -45,12 +46,8 @@ const expectNotesHeadingFocused = vi.defineHelper(async (screen: Screen) => {
 });
 
 /** 一覧の列見出しの幅。モーダル表示中は一覧が aria-hidden なので includeHidden で引く */
-function columnHeaderWidths(screen: Screen) {
-  return screen
-    .getByRole("columnheader", { includeHidden: true })
-    .elements()
-    .map((header) => header.getBoundingClientRect().width);
-}
+const listColumnHeaderWidths = (screen: Screen) =>
+  columnHeaderWidths(screen, { includeHidden: true });
 
 describe("/notes/$noteId/edit route", () => {
   it("編集リンクで開くと、一覧のキャッシュではなく取り直した値でフォームを作り、背後の一覧も取り直す", async () => {
@@ -720,14 +717,14 @@ describe("/notes/$noteId/edit route", () => {
       const fetching = deferMock(getNote);
       const { screen } = await renderRoute("/notes");
       await expect.element(rowEditLink(screen, NOTE.title)).toBeInTheDocument();
-      const before = columnHeaderWidths(screen);
+      const before = listColumnHeaderWidths(screen);
 
       await rowEditLink(screen, NOTE.title).click();
       await expect
         .element(rowEditLink(screen, NOTE.title).getBySlot("spinner"))
         .toBeInTheDocument();
 
-      await expect.poll(() => columnHeaderWidths(screen)).toEqual(before);
+      await expect.poll(() => listColumnHeaderWidths(screen)).toEqual(before);
       fetching.resolve(NOTE);
       await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
     });
@@ -743,14 +740,14 @@ describe("/notes/$noteId/edit route", () => {
       const { screen } = await renderRoute("/notes");
       await rowEditLink(screen, NOTE.title).click();
       await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
-      const before = columnHeaderWidths(screen);
+      const before = listColumnHeaderWidths(screen);
 
       await saveButton(screen).click();
       await parkMouse();
       await expectNoteDialogClosed(screen);
       await expect.element(noteRow(screen, NOTE).getByText("更新中")).toBeInTheDocument();
 
-      await expect.poll(() => columnHeaderWidths(screen)).toEqual(before);
+      await expect.poll(() => listColumnHeaderWidths(screen)).toEqual(before);
       const refetched = { ...NOTE, updatedAt: UPDATED_NOTE.updatedAt };
       refetch.resolve([refetched]);
       await expect

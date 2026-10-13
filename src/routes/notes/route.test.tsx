@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { columnHeaderWidths } from "@/components/parts/data-table.test-helpers";
 import { listNotes } from "@/features/notes/functions";
 import { NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import { NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
@@ -69,11 +70,7 @@ describe("/notes route", () => {
     const fetching = deferMock(listNotes);
     const { screen } = await renderRoute("/notes", { pendingMs: 0 });
     await expect.element(screen.getByRole("cell", { name: "読み込み中" })).toBeInTheDocument();
-    const widths = () =>
-      screen
-        .getByRole("columnheader")
-        .elements()
-        .map((header) => header.getBoundingClientRect().width);
+    const widths = () => columnHeaderWidths(screen);
     const pending = widths();
 
     fetching.resolve([NOTE, OTHER_NOTE]);
