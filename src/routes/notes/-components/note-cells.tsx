@@ -4,7 +4,6 @@ import { ButtonLink } from "@/components/parts/button-link";
 import type { DataTableCellContext } from "@/components/parts/data-table-features";
 import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { formatCalendarDateLabel } from "@/lib/format-calendar-date-label";
 import { formatDateTime } from "@/lib/format-date-time";
 
@@ -110,9 +109,9 @@ export function NoteActionsCell({ row }: NoteCellContext) {
         // 間でリンクが focus できなくなり、focus を持っていれば blur してから React が focus を戻し直す
         disabled={isBusy}
         tabIndex={0}
+        isPending={isEditPending}
       >
         編集
-        {isEditPending && <Spinner aria-hidden />}
       </ButtonLink>
       <AlertDialogTrigger
         handle={noteDeleteDialogHandle}

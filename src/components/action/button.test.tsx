@@ -6,7 +6,7 @@ import { ActionButton } from "./button";
 
 /**
  * 振る舞いのカタログは `button.stories.tsx` の play が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは
- * 決着前の二重発火を CDP 経由の実イベントで塞ぐ 1 case だけである。
+ * 決着前の二重発火を CDP 経由の実イベントで塞ぐ case と、pending の前後の幅を実測で比べる case である。
  *
  * 実イベントでの発火の規律 (docs/guides/testing/user-interactions.md「クリックを発火する」) はブラウザテスト側が持ち、play へは移さない
  * (docs/guides/storybook.md「story とブラウザテストの分担」)。play は Storybook の UI 上でも走るため CDP を
@@ -35,6 +35,20 @@ describe("ActionButton", () => {
     await userEvent.keyboard("{Enter}");
 
     expect(action).toHaveBeenCalledOnce();
+    pending.resolve(undefined);
+  });
+
+  it("pending の間も幅と名前を変えず、Spinner を見せる", async () => {
+    const pending = Promise.withResolvers<undefined>();
+    const screen = await render(<ActionButton action={() => pending.promise}>保存</ActionButton>);
+    const button = screen.getByRole("button");
+    const idleWidth = button.element().getBoundingClientRect().width;
+
+    await button.click();
+
+    await expect.element(button.getBySlot("spinner")).toBeVisible();
+    await expect.poll(() => button.element().getBoundingClientRect().width).toBe(idleWidth);
+    await expect.element(button).toHaveAccessibleName("保存");
     pending.resolve(undefined);
   });
 });
