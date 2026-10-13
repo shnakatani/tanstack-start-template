@@ -5,7 +5,7 @@ import { noteSchema } from "@/features/notes/schema";
 import { createDb, migrateDb } from "@/server/db";
 import { notes } from "@/server/db/schema";
 
-import { NOTE_SEEDS, seedNotes } from "./notes-seed.ts";
+import { NOTE_SEEDS, seedNotes } from "./notes-seed";
 
 describe("seedNotes", () => {
   let db: ReturnType<typeof createDb>;
