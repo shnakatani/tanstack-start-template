@@ -17,3 +17,7 @@ paths:
 
 - `migrateDb()` をアプリの経路から呼ばない (`docs/guides/database.md`「migration を起動時に適用しない理由」)
 - 起動時の適用に変えるときは、`migrateDb()` の呼び出しだけを足さず、DB を作らない前提・migration のフォルダの置き場所・DB のディレクトリの作成・デプロイの手順を一緒に変える。揃えないと、初回の起動で落ちるか、適用の経路が 2 か所に分かれる (`docs/guides/database.md`「起動時に migration を適用する形に変える」)
+
+## 見本のデータ
+
+- ドメインの見本の入れ方は、テーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、id と日時を明示した insert を 1 つのトランザクションで打つ。日時を既定値に任せると打つたびに中身が変わり、`sqlite_sequence` を残すと seed のあとに作る行の id が飛ぶ (`docs/guides/database.md`「見本のデータを入れる」)
