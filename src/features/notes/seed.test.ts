@@ -45,6 +45,18 @@ describe("seedNotes", () => {
     expect(readRows()).toEqual(NOTE_SEEDS);
   });
 
+  it("見本の insert が落ちたら、消した行を戻す", () => {
+    db.insert(notes).values({ id: 50, title: "手で足した行" }).run();
+    // 見本の最後の行で insert を落とす。削除はその前の文なので、1 つのトランザクションでなければ残らない
+    const lastSeedId = Math.max(...NOTE_SEEDS.map((seed) => seed.id));
+    db.$client.exec(
+      `create trigger reject_last_seed before insert on notes when new.id = ${lastSeedId} begin select raise(abort, 'rejected'); end`,
+    );
+
+    expect(() => seedNotes(db)).toThrow("rejected");
+    expect(readRows().map((row) => row.title)).toEqual(["手で足した行"]);
+  });
+
   it("入れたあとに作る行の id は、見本の最大の id の続きになる", () => {
     db.insert(notes).values({ id: 50, title: "手で足した行" }).run();
 
