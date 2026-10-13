@@ -1,5 +1,5 @@
 import { RouterProvider } from "@tanstack/react-router";
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
@@ -11,6 +11,8 @@ import { APP_NAME } from "@/lib/app-name";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
+import type { Screen } from "@/test/assert/screen-assertions";
+import { MEDIUM_VIEWPORT, restoreDefaultViewport, setViewport } from "@/test/assert/viewport";
 
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
@@ -36,6 +38,30 @@ import { noteColumns } from "./-lib/note-columns";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route as NotesRoute } from "./route";
 import { renderRoute } from "./route.test-helpers";
+
+/**
+ * 中身が cell の幅を超えた cell を、列見出しと超えた px で返す。`truncate` で切り詰めた中身は
+ * 内側の要素が隠すので、cell の `scrollWidth` に入らない
+ */
+function overflowingCells(screen: Screen) {
+  const headers = screen
+    .getByRole("columnheader")
+    .elements()
+    .map((header) => header.textContent);
+  return screen
+    .getByRole("cell")
+    .elements()
+    .flatMap((cell) => {
+      const overflow = cell.scrollWidth - cell.clientWidth;
+      if (overflow <= 0) {
+        return [];
+      }
+      if (!(cell instanceof HTMLTableCellElement)) {
+        throw new Error(`cell のロールが td 以外に付いています: ${cell.outerHTML}`);
+      }
+      return [{ header: headers[cell.cellIndex], text: cell.textContent, overflow }];
+    });
+}
 
 /**
  * route の定義と、wrapper (Route hooks と通知) の実 router での往復。
@@ -77,6 +103,26 @@ describe("/notes route", () => {
     await expect.element(noteRow(screen, NOTE)).toBeInTheDocument();
 
     await expect.poll(widths).toEqual(pending);
+  });
+
+  // WCAG 1.4.4 は文字だけの拡大も範囲に入れ、200% で文字が隠れることを失敗に数える (F69)。列の幅が文字と
+  // 一緒に広がらないと、1 行に保つ日時と操作の cell の中身が右隣の列へはみ出す (ADR-0042)。列の合計より狭い幅で見る
+  describe("760px で root の文字サイズを 200% にした一覧", () => {
+    afterEach(async () => {
+      document.documentElement.style.fontSize = "";
+      await restoreDefaultViewport();
+    });
+
+    it("cell の中身が cell からはみ出さない", async () => {
+      await setViewport(MEDIUM_VIEWPORT);
+      document.documentElement.style.fontSize = "32px";
+      vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER_NOTE]);
+      const { screen } = await renderRoute("/notes");
+      await expect.element(noteRow(screen, NOTE)).toBeInTheDocument();
+      await expect.element(noteRow(screen, OTHER_NOTE)).toBeInTheDocument();
+
+      await expect.poll(() => overflowingCells(screen)).toEqual([]);
+    });
   });
 
   it("title をページ名とアプリ名で組む", async () => {
