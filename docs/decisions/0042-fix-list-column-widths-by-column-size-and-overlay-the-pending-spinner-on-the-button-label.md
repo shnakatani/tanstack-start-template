@@ -21,19 +21,30 @@ dev server の値は Playwright 1.63.0 の Chromium で dev server を開き、v
 
 ボタンの幅は、どの列の幅の決め方を選んでも残る。固定の幅の cell の中で広がったボタンは cell からはみ出し、table の外のボタンは隣を押しのける。
 
+列の幅を px で固定すると、文字だけを拡大しても列は広がらない。[WCAG 2.2 Understanding 1.4.4][] は、利用者が文字の大きさを変える手段に "text-only resizing" を挙げ、200% まで拡大できることを基準にする。失敗例の [F69][] は、拡大で文字が "clipped, truncated, or obscured" になる場合である。列見出しに `size` を px のまま当てると、日時と操作の cell の中身が cell の幅を超え、右隣の列へはみ出した。
+
+| root の文字サイズ | 1280px の viewport | 760px の viewport   |
+| ----------------- | ------------------ | ------------------- |
+| 16px (既定)       | 0 / 0 / 0 / 0      | 0 / 0 / 0 / 0       |
+| 20px              | 0 / 0 / 0 / 0      | 2 / 10 / 10 / 8     |
+| 24px              | 0 / 0 / 0 / 0      | 24 / 43 / 43 / 36   |
+| 32px (200%)       | 39 / 66 / 66 / 54  | 70 / 108 / 108 / 92 |
+
+値は期日 / 作成日時 / 更新日時 / 操作の列の cell の `scrollWidth - clientWidth` (px) で、2 行のうち大きい方である。vitest の browser project (Playwright 1.63.0 の Chromium) で root の `font-size` を変えて測った (2026-10-13)。1280px で 24px まで 0 なのは、列の合計 (952px) を超える幅が列に配られ、その余りに収まったためである。`size` を rem に換算して当てると、どの組でも 0 になった (同じ日、同じ環境)。
+
 ## Decision
 
-**一覧の列は、列ごとに数値の `size` を持ち、`DataTable` が `table-fixed` の `Table` の列見出しにその幅を当てる。中身の幅で列を変えない。ボタンの pending は、label を `opacity-0` で隠して同じ場所に `Spinner` を重ね、label の幅を保つ。**
+**一覧の列は、列ごとに数値の `size` を持ち、`DataTable` が `table-fixed` の `Table` の列見出しにその幅を当てる。中身の幅で列を変えない。`size` は既定の文字サイズのときの px で持ち、rem に換算して当てる (文字だけを拡大しても列が文字と一緒に広がる)。ボタンの pending は、label を `opacity-0` で隠して同じ場所に `Spinner` を重ね、label の幅を保つ。**
 
-| 対象             | 形                                                                                                                                                                                                                                                                                                                                                        |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| features         | `dataTableFeatures` に `columnSizingFeature` を登録する。列幅は数値の state で、DOM への当て方は描画側が決める (同梱 skill `@tanstack/table-core#table-features` の column sizing の reference: "Sizing is numeric state; translating it to layout is a renderer decision.")                                                                              |
-| 列の幅           | 列ごとに `size` (px の数値) を持つ。見出しと幅を列の id ごとに 1 つの定数に置き、列定義は `columnBaseFrom`、読み込み中の `TableSkeleton` は同じ定数から受ける                                                                                                                                                                                             |
-| 描画             | `<Table className="table-fixed">` にし、`TableHead` に `style={{ width: header.getSize() }}` を当てる ([TanStack Table docs「Column Sizing」][] と example の [`column-sizing`][] の当て方)。registry の `Table` の `w-full` は残し、列の合計を超える幅は列に配られる ([CSS 2.1][] の 17.5.2.1: "the extra space should be distributed over the columns") |
-| `td` の幅        | 当てない。fixed layout は列幅を `col` か最初の行の cell の `width` から決め ([CSS 2.1][] の 17.5.2.1)、最初の行は thead の列見出しになる                                                                                                                                                                                                                  |
-| 幅を超えた中身   | cell の部品の中の素の要素で扱う。長くなる列は折り返し (`whitespace-normal` と区切りの無い文字列を折る `wrap-break-word`)、1 行に保つ列は切り詰める (`truncate`)。日時や操作の列は、中身が 1 行に収まる `size` を持たせる。列の合計より狭い viewport では、registry の table-container の `overflow-x-auto` で横に scroll する                             |
-| ボタンの pending | `PendingLabel` (`src/components/parts/pending-label.tsx`) が、素の span の `inline-grid` の同じ領域に label と `Spinner` (`aria-hidden`、`data-icon` なし) を重ね、pending の間だけ label を `opacity-0` にする。`ActionButtonShell` と、`isPending` を渡した `ButtonLink` が使う                                                                         |
-| pending 中の名前 | `opacity: 0` の label は名前に残る ([accname 1.2][] の「Hidden Not Referenced」は `opacity: 0` を hidden に数えない)。名前を補う配線は足さない。状態は `aria-disabled` と announce で伝える (ADR-0026)                                                                                                                                                    |
+| 対象             | 形                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| features         | `dataTableFeatures` に `columnSizingFeature` を登録する。列幅は数値の state で、DOM への当て方は描画側が決める (同梱 skill `@tanstack/table-core#table-features` の column sizing の reference: "Sizing is numeric state; translating it to layout is a renderer decision.")                                                                                                                                                                                                                                                                    |
+| 列の幅           | 列ごとに `size` (既定の文字サイズ 16px のときの px の数値) を持つ。見出しと幅を列の id ごとに 1 つの定数に置き、列定義は `columnBaseFrom`、読み込み中の `TableSkeleton` は同じ定数から受ける                                                                                                                                                                                                                                                                                                                                                    |
+| 描画             | `<Table className="table-fixed">` にし、`TableHead` に `style={{ width: columnWidthFrom(header.getSize()) }}` を当てる ([TanStack Table docs「Column Sizing」][] と example の [`column-sizing`][] の当て方)。`columnWidthFrom` (`src/components/parts/data-table-columns.ts`) が `size` を rem に換算し、`TableSkeleton` も同じ関数で当てる (「文字だけを拡大したときの列の幅」)。registry の `Table` の `w-full` は残し、列の合計を超える幅は列に配られる ([CSS 2.1][] の 17.5.2.1: "the extra space should be distributed over the columns") |
+| `td` の幅        | 当てない。fixed layout は列幅を `col` か最初の行の cell の `width` から決め ([CSS 2.1][] の 17.5.2.1)、最初の行は thead の列見出しになる                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 幅を超えた中身   | cell の部品の中の素の要素で扱う。長くなる列は折り返し (`whitespace-normal` と区切りの無い文字列を折る `wrap-break-word`)、1 行に保つ列は切り詰める (`truncate`)。日時や操作の列は、中身が 1 行に収まる `size` を持たせる。列の合計より狭い viewport では、registry の table-container の `overflow-x-auto` で横に scroll する                                                                                                                                                                                                                   |
+| ボタンの pending | `PendingLabel` (`src/components/parts/pending-label.tsx`) が、素の span の `inline-grid` の同じ領域に label と `Spinner` (`aria-hidden`、`data-icon` なし) を重ね、pending の間だけ label を `opacity-0` にする。`ActionButtonShell` と、`isPending` を渡した `ButtonLink` が使う                                                                                                                                                                                                                                                               |
+| pending 中の名前 | `opacity: 0` の label は名前に残る ([accname 1.2][] の「Hidden Not Referenced」は `opacity: 0` を hidden に数えない)。名前を補う配線は足さない。状態は `aria-disabled` と announce で伝える (ADR-0026)                                                                                                                                                                                                                                                                                                                                          |
 
 ### 列幅の決め方
 
@@ -44,6 +55,17 @@ dev server の値は Playwright 1.63.0 の Chromium で dev server を開き、v
 | 1 列だけ幅を当てずに伸ばし、残りに `size` を当てる                               | 伸ばす列を指す概念が TanStack Table に無く、列定義に自前の印が要る                                                                                                                                                                                  | 採らない |
 | auto layout のまま、操作中の cell ごとに旧い中身の幅を保つ                       | 操作中の表示を出す cell ごとに当てる必要があり、当て忘れた cell で揺れる。読み込み中からの置き換えや検索で行が替わるときの列の移動は止まらない                                                                                                      | 採らない |
 | 列ごとの幅を `'auto'` (中身の幅) にする ([Primer の DataTable の column][])      | Primer 自身が "Not intended for use with columns who’s content length varies a lot because a layout shift will occur when the content changes" と警告する。今の auto layout と同じ揺れが残る                                                        | 採らない |
+
+### 文字だけを拡大したときの列の幅
+
+`columnWidthFrom` は `size` を 16 で割った rem を返す。1rem は root の文字サイズで ([CSS Values 4][] の `rem`)、ブラウザの既定は 16px ([MDN「font-size」][] の Ems) なので、既定の文字サイズでは `size` の px と同じ幅になる。TanStack Table は size の数値を "usually interpreted as pixel unit values, but you can hook up these column sizing values to your css styles however you see fit" とし ([TanStack Table docs「Column Sizing」][])、CSS への当て方を描画側に任せる。
+
+| 案                                     | 評価                                                                                                                                                                                        | 採否     |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `size` を rem に換算して当てる         | 列が文字と同じ比で広がり、Context の実測のどの組でも中身が cell に収まった。列の合計が viewport を超えた分は横に scroll する。`size` は既定の文字サイズのときの px のまま書ける             | 採る     |
+| `size` を px のまま当てる              | TanStack Table の example の形だが、文字だけを拡大すると日時と操作の中身が右隣の列へはみ出す (Context の実測)                                                                               | 採らない |
+| 日時の cell を折り返す                 | 拡大したときに日時が 2 行に割れる。日時を持たない行 (保存中の行の更新日時は空) と行の高さがそろわない                                                                                       | 採らない |
+| 日時の cell を `truncate` で切り詰める | [WCAG 2.2 Understanding 1.4.4][] は、切り詰めてよいのを "full content is available on focus or after user activation" のときに限る。日時の cell は focus できず、切った残りを読む手段が無い | 採らない |
 
 ### ボタンの幅の保ち方
 
@@ -57,6 +79,7 @@ dev server の値は Playwright 1.63.0 の Chromium で dev server を開き、v
 ## Consequences
 
 - 列見出しの幅は列の `size` と、器の余りの幅の配分で決まり、中身で変わらない。`DataTable` と `TableSkeleton` の部品のテストが、列の合計より狭い器の中で列見出しの幅が `size` と等しいことを見る。`table-fixed` を外すと auto layout が列を詰め、`style` の幅を外すと fixed layout が列を均等に割るので、どちらも落ちる (2026-10-13 に確かめた)
+- 列の幅は root の文字サイズに比例する。文字を拡大すると列の合計も広がり、狭い viewport ほど早く横に scroll する
 - 列を足すときは `size` を決める。見出しと幅の定数は `DataTableColumnBase` の型で幅を必須にしている。値は中身に合わせて決め、実測で 1 行に収まることを見る
 - 列の合計より狭い viewport では表が横に scroll する。auto layout のように中身の最小幅まで列を詰めない
 - `table-fixed` だけを外すと、1280px の 2 つの場面、760px の編集の場面、読み込み中からの置き換えでは列は動かなかった。760px では列が `size` より狭く詰められ (タイトルの列が 87.6px)、保存の場面で日時の列が -42.6px 動いた (2026-10-13、ブラウザテスト)。`size` だけでは、列の合計が table の幅を超えたときに列が動く
@@ -68,6 +91,10 @@ dev server の値は Playwright 1.63.0 の Chromium で dev server を開き、v
 ## 出典
 
 [CSS 2.1]: https://www.w3.org/TR/CSS21/tables.html#width-layout
+[CSS Values 4]: https://www.w3.org/TR/css-values-4/#rem
+[MDN「font-size」]: https://developer.mozilla.org/en-US/docs/Web/CSS/font-size
+[WCAG 2.2 Understanding 1.4.4]: https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html
+[F69]: https://www.w3.org/WAI/WCAG22/Techniques/failures/F69
 [TanStack Table docs「Column Sizing」]: https://tanstack.com/table/latest/docs/framework/react/guide/column-sizing
 [`column-sizing`]: https://github.com/TanStack/table/blob/95c4768496c07b45b1e65d8e33c3291ac66eae9b/examples/react/column-sizing/src/main.tsx
 [Primer の DataTable の column]: https://github.com/primer/react/blob/7f5303d803986887187d86dcebaeda22a4dc6823/packages/react/src/DataTable/column.ts
