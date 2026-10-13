@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { columnHeaderWidths } from "./data-table.test-helpers";
@@ -46,6 +46,31 @@ describe("TableSkeleton", () => {
     );
 
     await expect.poll(() => columnHeaderWidths(screen)).toEqual([200, 120]);
+  });
+
+  // size は既定の文字サイズ (16px) のときの px で、rem に換算して当てる。root を 200% にすると列見出しも 2 倍になる。
+  // px のまま当てると 200 / 120 のままで、本体の DataTable と幅が食い違う (ADR-0042)
+  describe("root の文字サイズを 200% にしたとき", () => {
+    afterEach(() => {
+      document.documentElement.style.fontSize = "";
+    });
+
+    it("列見出しを列の size の 2 倍の幅で描く", async () => {
+      document.documentElement.style.fontSize = "32px";
+      const screen = await render(
+        <div style={{ width: 160 }}>
+          <TableSkeleton
+            caption="メモの一覧"
+            columns={[
+              { header: "タイトル", size: 200 },
+              { header: "本文", size: 120 },
+            ]}
+          />
+        </div>,
+      );
+
+      await expect.poll(() => columnHeaderWidths(screen)).toEqual([400, 240]);
+    });
   });
 
   it("どの要素にも aria-busy を載せない", async () => {
