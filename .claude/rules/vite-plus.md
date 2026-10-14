@@ -20,7 +20,7 @@ paths:
 ## script とタスク
 
 - タスクは `vite.config.ts` の `run.tasks` に置き、daemons の port (`SERVE_PORT` など) を読まない。`.mise.toml` の `[tasks.*]` は `interactive = true` を置き、worktree の port を `exec vp run <task> --port ${<NAME>_PORT:?…}` で渡すだけにし、コマンドを持たせない (ADR-0004)
-- 起動のしかたに関わらず `--port` より `PORT` を先に読むツール (nitro) のタスクは、`PORT=${<NAME>_PORT:?…}` も前に付ける。Claude のプレビューから起動されたときだけ `PORT` を先に読むツール (Storybook) には付けない。付けるとプレビューが選んだ port を上書きする (ADR-0004)
+- 起動のしかたに関わらず `--port` より `PORT` を先に読むツール (nitro) のタスクは、`PORT=${<NAME>_PORT:?…} exec vp run <task> --port $<NAME>_PORT` の形にし、ガードを前の代入に置く。Claude のプレビューから起動されたときだけ `PORT` を先に読むツール (Storybook) には付けない。付けるとプレビューが選んだ port を上書きする (ADR-0004)
 - mise の `[env]` の値を読むタスクは、値が届いていなければ止まる形にする。command の中で読むなら `${NAME:?…}`、コードで読むなら `requireEnv` を使う (`docs/guides/vite-configuration.md`「タスクを足す」)
 - `vite.config.ts` の `run.cache: false` を外さず、gate を `vp run --cache` で打たない。キャッシュが効くと gate がリプレイで済まされ、親の環境変数が子へ届かない (ADR-0004)
 - `run.tasks` の command では `vp node` ではなく `node` を打つ。タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `Command 'node' not found` で落ちる (`docs/guides/vite-configuration.md`「タスクを足す」)
