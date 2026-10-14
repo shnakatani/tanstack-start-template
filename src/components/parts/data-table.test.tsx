@@ -29,7 +29,7 @@ function FruitDetail({ row }: { row: Row<DataTableFeatures, Fruit> }) {
 
 const LONG_DETAIL = `https://example.com/${"a".repeat(80)}`;
 
-/** 器の幅を超え、改行できる位置を持たない詳細。折り返しを書かない素の要素で返す */
+/** 器の幅を超え、間で改行できない文字の連なりを含む詳細。折り返しを書かない素の要素で返す */
 function LongDetail() {
   return <p>{LONG_DETAIL}</p>;
 }
