@@ -42,7 +42,7 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 ### 複数行の入力欄を組む
 
 - 段落に区切って書く長さの文字列 (本文、説明) は改行を許し、`FormTextareaField` (`src/components/parts/form-fields.tsx`) で受ける。改行が無いと長い文が 1 つの塊になり、読み返しにくい。`type="text"` の `input` は値から改行を取り除く ([HTML Standard「Text (type=text) state and Search state」][] の "Strip newlines from the value."。2026-10-15 に確認) ので、改行を許す項目に使えない
-- 欄に高さの上限 (`max-h-*`) と `rows` を足さない。registry の `Textarea` は `field-sizing-content` で中身の高さまで伸び、ダイアログの中では `DialogScrollBody` が本文のスクロールを持つ。上限を付けると、欄の中とダイアログの本文のスクロールが入れ子になる
+- 欄に高さの上限 (`max-h-*`) を足さない。registry の `Textarea` は `field-sizing-content` で中身の高さまで伸び、ダイアログの中では `DialogScrollBody` が本文のスクロールを持つ。上限を付けると、欄の中とダイアログの本文のスクロールが入れ子になる
 
 ### `fieldComponents` の部品を書く
 

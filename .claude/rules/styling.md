@@ -99,7 +99,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - フッターは `DialogScrollBody` の後ろに置き、本文の中へ入れない (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 見出しと X ボタンを sticky にしない。内部スクロールと 2 つの固定機構が重なり、どちらが効いているか実測しないと分からなくなる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
 - 本文の余白は `DialogScrollBody` が持つ。消費側で padding を足さない。スクロール領域の内側に余白が無いと、端の要素の ring が境界で切れる (`docs/guides/forms-and-inputs.md`「高さのあるダイアログを組む」)
-- `Textarea` に高さの上限 (`max-h-*`) と `rows` を足さない。中身の高さまで伸ばし、スクロールは `DialogScrollBody` に任せる。上限を付けると欄の中と本文のスクロールが入れ子になる (`docs/guides/forms-and-inputs.md`「複数行の入力欄を組む」)
+- `Textarea` に高さの上限 (`max-h-*`) を足さない。中身の高さまで伸ばし、スクロールは `DialogScrollBody` に任せる。上限を付けると欄の中と本文のスクロールが入れ子になる (`docs/guides/forms-and-inputs.md`「複数行の入力欄を組む」)
 
 ## 状態表示
 
