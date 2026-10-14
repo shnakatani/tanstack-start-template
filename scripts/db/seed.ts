@@ -1,5 +1,5 @@
 /**
- * `mise run db:seed` の実行口。ドメインの見本を DB_FILE_NAME の DB へ入れ直す
+ * `vp run db:seed` の実行口。ドメインの見本を DB_FILE_NAME の DB へ入れ直す
  * (`docs/guides/database.md`「見本のデータを入れる」)。
  * `scripts/db/` は開発の道具が製品のテーブル定義と接続を import する向きで、製品のコードは `scripts/` を import しない
  */

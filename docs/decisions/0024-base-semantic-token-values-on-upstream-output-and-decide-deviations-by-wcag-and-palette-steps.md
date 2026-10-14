@@ -31,7 +31,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 計測は生成した `styles.css` を oklch から sRGB へ変換し、alpha を持つ値は下地へ合成してから比を取ったものである。変換器は `scripts/contrast/lib/contrast.ts` (`docs/guides/styling-and-tokens.md`「比の測り方を置いた理由」)。
 
-この表は 2026-09-21 の観測として凍結する。8 色 17 テーマぶんの生成物が残っておらず、`mise run contrast` は `src/styles.css` のトークンしか読まないので測り直せない。
+この表は 2026-09-21 の観測として凍結する。8 色 17 テーマぶんの生成物が残っておらず、`vp run contrast` は `src/styles.css` のトークンしか読まないので測り直せない。
 
 | 対                                                           | 範囲                   | 比                                                                                                          |
 | ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -70,7 +70,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 
 `bg-primary/80` の上の `--primary-foreground` が 4.6 を下回る hue は light を `<hue>-900` にする。この規則は `text-primary` (文字)、solid の面、`bg-primary/80` (hover) の 3 役をすべて 4.5:1 以上にする。
 
-下の表は 2026-09-21 の `tailwindcss@4.3.3` の palette を `mise run contrast` で測ったもので、9 色が該当した。hue を変えるときの測り方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
+下の表は 2026-09-21 に `tailwindcss@4.3.3` の palette を測ったもので、9 色が該当した。hue を変えるときの測り方は `docs/guides/styling-and-tokens.md`「比を測る」にある。
 
 | hue                     | `<hue>-800` のまま | `<hue>-900` へ下げた後 |
 | ----------------------- | ------------------ | ---------------------- |
@@ -95,7 +95,7 @@ slate の値を持ち続けても壊れてはいなかった。動かしたの�
 | tint の面とその上の文字  | `--destructive` (`text-X`) | `--destructive-surface` (`bg-X/N`) | 本 ADR   |
 | 通常の文字と例示テキスト | `--muted-foreground`       | `--placeholder` (`::placeholder`)  | ADR-0025 |
 
-破壊色は「満たす段では広い側の用途が損なわれる」に当たる。テンプレートの部品には無いが、利用者が dark で不透明な `--muted` / `--secondary` / `--accent` の面に破壊ボタンを置くと、hover の `bg-destructive/30` が 1 つのトークン (`red-300`) では 4.00〜4.02 になり、4.5:1 を割る。満たす `red-200` (4.61〜4.62) は彩度 (oklch の C) が 0.062 で `red-300` の 0.114 の約半分になり、破壊を示す赤として弱いと目視で判断した。比では決まらない判断である。面を上流の値 (light `red-600`、dark `red-400`) へ切ると 4.88〜4.89 になる (2026-10-09 に `mise run contrast -- --theme dark --bg '<下地>' --bg '<面>/30' --fg '--destructive'` で測定。`red-200` は `src/styles.css` の dark の `--destructive` へ置いて測った)。
+破壊色は「満たす段では広い側の用途が損なわれる」に当たる。テンプレートの部品には無いが、利用者が dark で不透明な `--muted` / `--secondary` / `--accent` の面に破壊ボタンを置くと、hover の `bg-destructive/30` が 1 つのトークン (`red-300`) では 4.00〜4.02 になり、4.5:1 を割る。満たす `red-200` (4.61〜4.62) は彩度 (oklch の C) が 0.062 で `red-300` の 0.114 の約半分になり、破壊を示す赤として弱いと目視で判断した。比では決まらない判断である。面を上流の値 (light `red-600`、dark `red-400`) へ切ると 4.88〜4.89 になる (2026-10-09 に `scripts/contrast/report.ts` へ `--theme dark --bg '<下地>' --bg '<面>/30' --fg '--destructive'` を渡して測定。`red-200` は `src/styles.css` の dark の `--destructive` へ置いて測った)。
 
 切り出した側が緩い閾値を持つとは限らない。`--placeholder` は SC 1.4.3 を割る側を意図して選んでおり、その判断は ADR-0025 が持つ。
 
@@ -149,7 +149,7 @@ hover の状態を作って測る形は、ポインタを当てる形も擬似�
 
 - 生成物と `src/styles.css` の差分が、そのまま意図的乖離の一覧になる。突き合わせと、上流が preset の値を変えたときの手順は `docs/guides/registry.md`「baseline と突き合わせる」にある
 - **残した比率は人が書き写したもので、トークンを動かしても自動では追随しない。** 2026-09-21 のトークン刷新でも `segmented-radio-group.tsx` と `data-table.tsx` の 3 箇所が古いまま残り、レビューで見つかった
-- 測り直す手段は `mise run contrast` が持つ。比を書いた箇所を触るときは測り直す (手順は `docs/guides/styling-and-tokens.md`「比を測る」)
+- 測り直す手段は `vp run contrast` が持つ。比を書いた箇所を触るときは測り直す (手順は `docs/guides/styling-and-tokens.md`「比を測る」)
 - 「有彩色のアクセントは light と dark で役割を反転させる」の反転規則は上流の生成物と必ず食い違う。hue を変えても同じ 4 つのトークンを上書きし続ける
 - 非テキストの 3:1 (WCAG 1.4.11) のうち、`--border` / `--input` と focus 指標の `/50` はこの決定で解かない。この対は light dark とも 3:1 を大きく下回る。base color とテーマの選択では動かせず、registry のクラスの判断になる。axe に対応ルールがないため検出もされない
 - focus 指標の不足は `--ring` を `--primary` と同値にしても残る。`--background` の上で、`ring-ring/50` は light が 3:1 を割り dark は満たす。不透明で使う `border-ring` / `outline-ring` は light dark とも満たす

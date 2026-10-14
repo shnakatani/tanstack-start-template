@@ -18,11 +18,11 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 
 根拠は [Vitest docs「Test Annotations」][] の "The `default` reporter prints annotations only if the test has failed" と "The `verbose` reporter is the only terminal reporter that reports annotations when the test doesn't fail" である。
 
-| 場面                         | 出るか                                       | 読み方                                                                         |
-| ---------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
-| 手元で、失敗したテストの注釈 | default reporter がエラーの近くに出す        | 普段の `vp test run` で足りる                                                  |
-| 手元で、通ったテストの注釈   | default reporter は出さない                  | `--reporter=verbose` を付ける。a11y の注釈は `mise run a11y:incomplete` で読む |
-| PR (GitHub Actions) の注釈   | `github-actions` reporter が成否を問わず出す | 該当テストの行に、type のとおりの注釈が付く                                    |
+| 場面                         | 出るか                                       | 読み方                                                                       |
+| ---------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------- |
+| 手元で、失敗したテストの注釈 | default reporter がエラーの近くに出す        | 普段の `vp test run` で足りる                                                |
+| 手元で、通ったテストの注釈   | default reporter は出さない                  | `--reporter=verbose` を付ける。a11y の注釈は `vp run a11y:incomplete` で読む |
+| PR (GitHub Actions) の注釈   | `github-actions` reporter が成否を問わず出す | 該当テストの行に、type のとおりの注釈が付く                                  |
 
 - `github-actions` reporter は、`reporters` を設定していなければ、CI (`GITHUB_ACTIONS` が `true`) で Vitest が自動で足す ([Vitest docs「Reporters」][] の Default Configuration)
 - `reporters` を書くと既定の組が置き換わり、PR に注釈が出なくなる。足すときは `configDefaults.reporters` を展開する ([Vitest docs「Reporters」][] の Default Configuration: "the configured list replaces the default list")

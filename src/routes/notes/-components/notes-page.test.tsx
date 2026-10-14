@@ -38,7 +38,7 @@ import { parkMouse } from "@/test/browser/park-mouse";
 vi.mock(import("@/features/notes/functions"));
 
 /**
- * debounce の待ちを 1500ms に広げる。実値 (`NOTE_SEARCH_DEBOUNCE_MS`) だと、`mise run verify` の負荷で
+ * debounce の待ちを 1500ms に広げる。実値 (`NOTE_SEARCH_DEBOUNCE_MS`) だと、マージ前検証の負荷で
  * 1 文字ずつの打鍵の間隔が待ちを超え、途中の文字列で取得が走る (2026-09-23 に実測: "a" "ab" の取得が
  * 混ざって落ちた)。見たいのは「打鍵が止まってから 1 回」であって実値ではない。待ちは assert の
  * 予算 (`ASSERT_TIMEOUT_MS`) より短く保つ。取得の開始をその予算で待つため。

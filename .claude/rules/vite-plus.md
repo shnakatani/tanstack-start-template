@@ -19,9 +19,13 @@ paths:
 
 ## script とタスク
 
-- マージ前検証を `vp run` のタスクへまとめない。Vite Task は親の環境変数を素通しせず、結果をキャッシュして gate がリプレイされる (ADR-0004)
+- タスクは `vite.config.ts` の `run.tasks` に置き、`.mise.toml` に `[tasks.*]` を置かない (ADR-0004)
+- mise の値 (`[env]`、daemons の port) を読むタスクは、値が届いていなければ止まる形にする。command の中で読むなら `${NAME:?…}`、コードで読むなら `requireEnv` を使う (`docs/guides/vite-configuration.md`「タスクを足す」)
+- `vite.config.ts` の `run.cache: false` を外さず、gate を `vp run --cache` で打たない。キャッシュが効くと gate がリプレイで済まされ、親の環境変数が子へ届かない (ADR-0004)
+- `run.tasks` の command では `vp node` ではなく `node` を打つ。タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `Command 'node' not found` で落ちる (`docs/guides/vite-configuration.md`「タスクを足す」)
+- verify の手順は `vite.config.ts` の `verifySteps` にタスクとして足し、`.github/workflows/ci.yml` にも同じ位置に `vp run <タスク>` の step を足す。コマンドは workflow に写さない。step を足し忘れても CI は落ちず、その手順が CI で走らないだけになる (ADR-0004)
 - built-in と同名の script は、`start` と対の入口 (`pnpm run build` → `pnpm start`) の `build` だけを置き、開発者の入口 (`check` / `test` / `dev`) は足さない。開発者は global の `vp` を入れるので公式が script を勧める利点が当てはまらず、同名の script があると `vp <name>` のたびに stderr に note が出る (ADR-0004)
-- ビルド成果物を起動する検査は `vp build` の後に置く。CI も同じ順序で workflow に並べる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
+- ビルド成果物を起動する検査は、`verifySteps` で `verify:build` の後に置く (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 
 ## 型検査
 
@@ -41,7 +45,7 @@ paths:
 - block を切り出すときは `tooling/<block>/` に置き、`vite.config.ts` から import して組み立てる (`docs/guides/vite-configuration.md`「別のファイルから組み立てる理由」)
 - ツールごとの設定ファイル (`vitest.config.ts`、`oxlint.config.ts`、`.oxlintrc.json`) に分けない。併用するとどちらが効くかがツールごとに違い、`vitest.config.ts` があると `vite.config.ts` が丸ごと黙って無視される (`docs/guides/vite-configuration.md`「1 つの `vite.config.ts` に集める理由」)
 - `vite.config.ts` が import するモジュールに、読み込むだけで起きる副作用 (警告の出力、環境変数の書き換え) を持たせない。`vite.config.ts` は `vp lint` / `vp fmt` / `vp build` のたびに読まれる (`docs/guides/vite-configuration.md`「読み込むだけで起きる副作用を持たせない理由」)
-- `lazyPlugins` には同期の関数を渡し、plugin は先頭で import する。async にすると `@storybook/tanstack-react` が TanStack Start の plugin を外せず `storybook build` が落ち、`mise run verify` はそれを捕まえない (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
+- `lazyPlugins` には同期の関数を渡し、plugin は先頭で import する。async にすると `@storybook/tanstack-react` が TanStack Start の plugin を外せず `storybook build` が落ち、`vp run verify` はそれを捕まえない (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 - project が使う重い依存 (playwright の provider、`@storybook/addon-vitest` の plugin) は、project を作る関数の中で動的 import する。先頭で import すると `vp lint` / `vp fmt` のたびに評価される (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
 - root の `plugins` と同じパッケージ (`chromiumProjectBase` の `tailwindcss`) は、project でも先頭で import する。root が先頭で import している間は、遅らせても同じ module が読まれる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 - 動的 import で遅らせるのは外部のパッケージそのものにする。`tooling/` のモジュールを動的 import しても、Vite が config を 1 ファイルへ bundle するので遅れない (`docs/guides/vite-configuration.md`「重い依存を遅らせる理由」)
@@ -59,5 +63,5 @@ paths:
 
 ## 依存の patch (`pnpm-workspace.yaml` の `patchedDependencies`)
 
-- patch のコメントには、理由と撤去条件と、効いていることの確かめ方を書く。`mise run verify` が捕まえない patch は、確かめ方が無いと壊れても気づけない (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
+- patch のコメントには、理由と撤去条件と、効いていることの確かめ方を書く。`vp run verify` が捕まえない patch は、確かめ方が無いと壊れても気づけない (`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
 - キーはパッケージ名だけ (`"<pkg>"`) にする。版や範囲を付けたキーは外れた版で使われず、Dependabot の lockfile の更新が落ちて、その依存だけが同じグループの PR から黙って外れる (`docs/guides/dependencies-and-toolchain.md`「patch のキーをパッケージ名だけにする理由」)

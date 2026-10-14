@@ -45,7 +45,7 @@ paths:
 - `src/` 全体へ当てるソース検査は、先に lint (必要なら `jsPlugins`) で表せないかを見る。字面走査より対象の実体に近い (ADR-0023)
 - ソース検査を作るなら `scripts/checks/source/` と `checks-source` project を対で作り、判定は `scripts/lib/` に置いて単体テストを別に持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 落ちたときに判断が要らない検査は作らない。期待値の書き換えしか選択肢が無い検査は上流更新のたびに鳴り、判断を鈍らせる (`docs/guides/testing/check-scripts.md`「検査スクリプトを分けて置く理由」)
-- ビルド成果物が要る検査は vitest の project にせず、`vp build` の後の独立した step にする。project は build との順序を持てない (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
+- ビルド成果物が要る検査は vitest の project にせず、`vite.config.ts` の `verifySteps` で `verify:build` の後に置き、CI の step にも足す。project は build との順序を持てない (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - テスト全体の TZ は root の globalSetup (`tooling/test/global-setup.ts`) で決め、`APP_TIME_ZONE` と違う値にする。一致すると、ローカル TZ に依存する実装を壁時計の値のテストが見逃す (`docs/guides/testing/time-zones.md`「基準のタイムゾーンを決める理由」)
@@ -65,7 +65,7 @@ paths:
 - tag が効くのは browser project だけ。story の a11y は `addon-a11y` が当てるので、`--tags-filter a11y` は story を走らせない (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 - tag の定義は `tooling/test/browser-project.ts` の `test.tags`。定義に無い tag はエラーで落ちる (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 - 挙動テストの途中の状態を測る `expectNoA11yViolations` には `a11y` の tag を付けない。専用テストへ降ろすと操作の再現が重複する (`docs/guides/accessibility.md`「a11y の tag を付ける」)
-- `expectNoA11yViolations` を呼ぶテストには `{ tags: ["axe"] }` を付ける。`mise run a11y:incomplete` がこの tag で絞り、付け忘れると helper が落ちる (`docs/guides/accessibility.md`「a11y の tag を付ける」)
+- `expectNoA11yViolations` を呼ぶテストには `{ tags: ["axe"] }` を付ける。`vp run a11y:incomplete` がこの tag で絞り、付け忘れると helper が落ちる (`docs/guides/accessibility.md`「a11y の tag を付ける」)
 
 ## 境界値
 
@@ -97,7 +97,7 @@ paths:
 - ヘルパーが受け取る引数の前提検査は `throw` のままにする。テストが測る値ではなくヘルパーの誤用を止めるガード (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - テストの中で残す注意 (合否に入れないが読ませたいもの) は、テストの文脈の `annotate(message, "warning")` で残し、`console.warn` に出さない。`console.warn` は PR の画面に出ない (`docs/guides/testing/annotations.md`「`console.warn` ではなく注釈で残す理由」)
 - 注釈を残す helper はテストの文脈を引数で受ける。`TestRunner.getCurrentTest()` は並行するテストで別のテストを指す (`docs/guides/testing/annotations.md`「helper にテストの文脈を渡す理由」)
-- 手元の default reporter は通ったテストの注釈を出さない。a11y の注釈は `mise run a11y:incomplete` で読み、ほかは `--reporter=verbose` を付けて走らせる (`docs/guides/testing/annotations.md`「注釈を読む」)
+- 手元の default reporter は通ったテストの注釈を出さない。a11y の注釈は `vp run a11y:incomplete` で読み、ほかは `--reporter=verbose` を付けて走らせる (`docs/guides/testing/annotations.md`「注釈を読む」)
 - Storybook の画面でも動く story の helper は、テストの文脈が無いので `console.warn` だけで残す (`docs/guides/testing/annotations.md`「注釈を残す」)
 - テスト内の型ナローイングは `expect.assert` を使う。`toBeTruthy()` / `toBeDefined()` は型を絞らない (`docs/guides/testing/waiting-and-assertions.md`「assert の helper を書き、型を絞る」)
 - announcer の通知は `expectAnnouncements` / `readAnnouncements` で呼び出しの履歴を読み、配列を丸ごと比べる。live region のノードは寿命で消え、region を読むと後から出た同じ文言の通知と取り違える (`docs/guides/testing/waiting-and-assertions.md`「状態と通知を検証する」)
@@ -127,7 +127,7 @@ paths:
 - ブラウザテストは `src/test/browser/browser-setup.tsx` の `configure({ reactStrictMode: true })` を外さない (ADR-0039)
 - story は `.storybook/preview.tsx` の StrictMode の decorator を外さない (ADR-0039)
 - StrictMode の decorator は preview の decorators の最後に置く。前に置くと、後ろの decorator が StrictMode の外に出る (ADR-0039)
-- story の StrictMode を `.storybook/main.ts` の `framework.options.strictMode` で代えない。vitest 経由の story に届かず、`mise run verify` と CI では効かない (ADR-0039)
+- story の StrictMode を `.storybook/main.ts` の `framework.options.strictMode` で代えない。vitest 経由の story に届かず、`vp run verify` と CI では効かない (ADR-0039)
 - 描画中の副作用の回数が StrictMode で 2 回になったら、期待値を 2 に合わせず、副作用をイベントハンドラか effect へ移す (`docs/guides/testing/configuration.md`「StrictMode の下で描く」)
 - cleanup の欠けた effect はブラウザテストで確かめる。story だけで確かめると、mount 直後の effect が付け直されないので cleanup の欠けが黙って通る (ADR-0039)
 

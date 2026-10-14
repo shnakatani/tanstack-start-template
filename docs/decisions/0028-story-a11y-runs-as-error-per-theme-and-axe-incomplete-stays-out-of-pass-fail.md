@@ -85,11 +85,11 @@ AbsaOSS/cps-shared-ui#857 は、pa11y が `incomplete` で落ちる一方 Playwr
 
 a11y を light と dark の両方へ当てるため、`tooling/test/storybook-project.ts` の `storybookProject()` を `initialGlobals` のテーマ違いで 2 つ作る。これは `@storybook/addon-vitest` の型が名指しで勧める形で、「define one Vitest project per theme, each with a different value」と書いてある。
 
-その形のまま Storybook 経由で走らせると、project 名が衝突して起動しない (storybookjs/storybook#32427、2025-09-07 から open)。`VITEST_STORYBOOK` が真のときだけ light の 1 つに絞る。判定の正本は `mise run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。衝突の仕組みと真偽の読み方は `scripts/lib/storybook-env.ts` の docstring にある。
+その形のまま Storybook 経由で走らせると、project 名が衝突して起動しない (storybookjs/storybook#32427、2025-09-07 から open)。`VITEST_STORYBOOK` が真のときだけ light の 1 つに絞る。判定の正本は `vp run verify` が回す `vp test run` で、そこは両テーマのまま変わらない。test panel は書いている最中の確認に使うもので、dark を落としても正本は痩せない。衝突の仕組みと真偽の読み方は `scripts/lib/storybook-env.ts` の docstring にある。
 
 | 経路                                       | テーマ        |
 | ------------------------------------------ | ------------- |
-| `vp test run` / `mise run verify` / CI     | light と dark |
+| `vp test run` / `vp run verify` / CI       | light と dark |
 | Storybook の test panel / `tools test run` | light のみ    |
 
 ### `incomplete` を合否に入れない

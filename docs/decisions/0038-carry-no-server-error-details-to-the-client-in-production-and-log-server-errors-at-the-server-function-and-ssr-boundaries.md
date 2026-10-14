@@ -52,7 +52,7 @@ drizzle の `DrizzleQueryError` は、文言に SQL と params を入れる (`Fa
 
 2026-10-01 に、この ADR の決定どおりに組んだテンプレートを動かして測った。
 
-- 起動: 本番ビルド (`vp build` の後に `node .output/server/index.mjs`) と開発サーバー (`mise run serve`)
+- 起動: 本番ビルド (`vp build` の後に `node .output/server/index.mjs`) と開発サーバー (`vp dev`)
 - 本番ビルドの `DB_FILE_NAME`: テーブルの無い空の SQLite、migration を当てて INSERT を trigger で失敗させる SQLite、存在しないパスの 3 つを順に渡した
 - 版: @tanstack/react-start 1.168.58、@tanstack/react-router 1.170.39、@tanstack/router-core 1.171.32、@tanstack/start-client-core 1.170.32、@tanstack/start-server-core 1.169.37、seroval 1.6.4、react / react-dom 19.3.0、nitro 3.0.260610-beta、drizzle-orm 0.45.3、better-sqlite3 13.0.3、vite-plus 1.0.0、Node.js v24.21.0
 

@@ -14,7 +14,7 @@
 ### Node で動くテストを TZ ごとに走らせる
 
 - Node で動くテスト (unit project) のうち、`Date` のローカルの getter や TZ を指定しない date-fns を直接呼ぶモジュールと、ローカルの TZ に依存しないことを保証するモジュールのテストは、ファイルごと `src/**/*.tz.test.ts` にする。1 件ずつ TZ に依存するかで分けると、分け損ねたテストが基準の TZ でしか走らない
-- 基準の TZ では `vp test run` (unit project) が、基準以外の TZ では `vp node scripts/time-zones/run-tests.ts` が走らせる。`.mise.toml` の verify タスクと CI は、この順に両方を呼ぶ
+- 基準の TZ では `vp test run` (unit project) が、基準以外の TZ では `vp node scripts/time-zones/run-tests.ts` が走らせる。`vite.config.ts` の `verifySteps` は、この順に両方を呼ぶ
 - スクリプトは TZ ごとに `TEST_TIME_ZONE` を渡したプロセスを並列に走らせる (「TZ ごとの実行を並列にする理由」)。落ちた TZ があれば、その TZ だけを走らせ直すコマンドを出して非ゼロで終える
 - 1 つの TZ だけを走らせるときは、そのコマンド (`TEST_TIME_ZONE=<IANA 名> vp test run --project unit .tz.test.ts`) を打つ。`TEST_TIME_ZONE` はスクリプトとこのコマンドでだけ使う
 - 止めるときは Ctrl-C を使う。親のプロセスだけを kill すると子が残る
@@ -58,13 +58,13 @@
 
 Node.js は、メインスレッドで設定した `TZ` だけを反映する。worker thread からの変更は `process.env` には見えるが、`Date` には効かない ([Vitest docs「Common Errors」][] の Time Zone Does Not Change in Worker Threads)。基準は worker が起動する前に、メインプロセスで決める必要がある。
 
-| 置き場所                                                  | 効く範囲                                                                                        | 採否                                                                                                                                          |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| root の `test.globalSetup`                                | worker の起動前にメインプロセスで走る。[Vitest docs「Common Errors」][] は "work in every pool" | 採用。実行前の準備のための hook で、用途が一致する                                                                                            |
-| `tooling/test/config.ts` の先頭で `process.env.TZ` に代入 | 効く範囲は root の globalSetup と同じ。ただし `vite.config.ts` を読む lint と build でも走る    | 却下。用途の合う hook があるので、config は設定の宣言に留め、読み込みに副作用を持たせない                                                     |
-| package.json の script (`TZ=… vitest`)                    | script を通した起動だけ                                                                         | 却下。`vp test run`、`.mise.toml` の verify タスク、CI は script を通らない。エディタの拡張も通らない ([vitest-dev/vitest#1575][] のコメント) |
-| project の `test.globalSetup`                             | その project のテストを含む実行でだけ走る                                                       | 却下。走ると他の project の TZ も変わるので、ブラウザテストの TZ が選んだファイルで変わる                                                     |
-| project の `test.env`                                     | forks と vmForks でだけ効く                                                                     | 却下。pool への依存が残る。[Vitest docs「env」][] は "`TZ` set here does not change the time zone in `threads` and `vmThreads` pools"         |
+| 置き場所                                                  | 効く範囲                                                                                        | 採否                                                                                                                                    |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| root の `test.globalSetup`                                | worker の起動前にメインプロセスで走る。[Vitest docs「Common Errors」][] は "work in every pool" | 採用。実行前の準備のための hook で、用途が一致する                                                                                      |
+| `tooling/test/config.ts` の先頭で `process.env.TZ` に代入 | 効く範囲は root の globalSetup と同じ。ただし `vite.config.ts` を読む lint と build でも走る    | 却下。用途の合う hook があるので、config は設定の宣言に留め、読み込みに副作用を持たせない                                               |
+| package.json の script (`TZ=… vitest`)                    | script を通した起動だけ                                                                         | 却下。`vp test run`、`vp run verify`、CI の step は script を通らない。エディタの拡張も通らない ([vitest-dev/vitest#1575][] のコメント) |
+| project の `test.globalSetup`                             | その project のテストを含む実行でだけ走る                                                       | 却下。走ると他の project の TZ も変わるので、ブラウザテストの TZ が選んだファイルで変わる                                               |
+| project の `test.env`                                     | forks と vmForks でだけ効く                                                                     | 却下。pool への依存が残る。[Vitest docs「env」][] は "`TZ` set here does not change the time zone in `threads` and `vmThreads` pools"   |
 
 2026-09-27 に vitest 4.1.11 で、各 project に `getHours()` を読むテストを置き、選ぶファイルを変えて測った。
 

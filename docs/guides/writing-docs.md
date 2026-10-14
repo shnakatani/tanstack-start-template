@@ -121,7 +121,7 @@ done
 
 ### 文書に書いた比を数え直す
 
-コントラスト比は書き写さず、`mise run contrast` で測る (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)。文書とソースに比が残っていないかは次で洗う。
+コントラスト比は書き写さず、`vp run contrast` で測る (`docs/guides/styling-and-tokens.md`「残す数値と落とす数値」)。文書とソースに比が残っていないかは次で洗う。
 
 ```bash
 grep -rnE '\b[0-9]{1,2}\.[0-9]{2}\b|[0-9]+(\.[0-9]+)?\s*[:対]\s*1\b' \

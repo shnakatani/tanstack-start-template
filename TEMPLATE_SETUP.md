@@ -32,14 +32,14 @@ grep に出ない `src/lib/app-name.ts` の `APP_NAME` も替える。
 
 ## 置き換える箇所
 
-| 対象     | 場所                                                                                                                                         |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| DB       | `src/server/db/`、`scripts/db/`、`drizzle.config.ts`、`.mise.toml` の `DB_FILE_NAME`、`docs/guides/database.md`、`.claude/rules/database.md` |
-| 認証     | `src/start.ts` の `createStart`、保護する route の `beforeLoad` (ADR-0012)                                                                   |
-| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                                                                                    |
+| 対象     | 場所                                                                                                                                                                              |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DB       | `src/server/db/`、`scripts/db/`、`drizzle.config.ts`、`.mise.toml` の `DB_FILE_NAME`、`vite.config.ts` の `db:*` のタスク、`docs/guides/database.md`、`.claude/rules/database.md` |
+| 認証     | `src/start.ts` の `createStart`、保護する route の `beforeLoad` (ADR-0012)                                                                                                        |
+| デプロイ | `vite.config.ts` の `nitro()` の `preset`                                                                                                                                         |
 
 サンプル機能 (`/notes`) は `src/features/notes/` と `src/routes/notes/` にある。
-サンプル機能を消すときは、`mise run db:seed` が入れる見本も `docs/guides/database.md`「見本のデータを入れる」の手順に従って消す。
+サンプル機能を消すときは、`vp run db:seed` が入れる見本も `docs/guides/database.md`「見本のデータを入れる」の手順に従って消す。
 
 ## 後始末
 
