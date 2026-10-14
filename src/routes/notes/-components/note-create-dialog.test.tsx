@@ -135,9 +135,7 @@ describe("NoteCreateDialog", () => {
   it("上限の長さの本文も、本文の欄は横にも縦にもはみ出さず、ダイアログの本文を縦に送ると末尾まで見える", async () => {
     const { screen } = await renderDialog();
     const body = bodyTextbox(screen);
-    await body.fill(
-      "牛乳とパンを買う。".repeat(NOTE_BODY_MAX_LENGTH).slice(0, NOTE_BODY_MAX_LENGTH),
-    );
+    await body.fill("あ".repeat(NOTE_BODY_MAX_LENGTH));
 
     await expect
       .poll(() => {

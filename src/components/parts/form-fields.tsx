@@ -62,7 +62,7 @@ interface FormTextFieldProps
 }
 
 /**
- * Text / Textarea / Number / Select / Date フィールドが共有する状態導出。
+ * `FormCheckboxField` 以外のフィールドが共有する状態導出。
  * id 2 つと invalid の計算を 1 箇所に集め、フィールド種別を増やすときの写し漏れを防ぐ。
  * (FormCheckboxField は FieldError 非対応の別形なので使わない)。errors と invalid の取り方は
  * `docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」
