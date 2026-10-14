@@ -34,16 +34,17 @@ export default defineConfig({
   },
   run: {
     // キャッシュすると、gate の 2 回目がリプレイで済まされる。キャッシュが効くタスクには、既定の組に無い
-    // 親の環境変数 (mise の port や DB_FILE_NAME) が 1 回目から届かない (ADR-0004)。
+    // 親の環境変数 (mise の DB_FILE_NAME) が 1 回目から届かない (ADR-0004)。
     // `vp run --cache` はこの設定を外すので、gate には付けない
     cache: false,
     tasks: {
-      // port は .mise.toml の daemons が worktree ごとに導出し、mise の環境を読んだシェルか mise x から打つと届く。
-      // 届いていなければ別の port で起動せずに止める (ADR-0004)
+      // worktree を知らず、既定の port で起動する。worktree ごとの port は .mise.toml の
+      // 同名のタスクが引数で足す。使用中なら次の port へずらさずに止める (ADR-0004)。
+      // serve は DB_FILE_NAME が無ければ起動の前に止める。代入の形で書く (docs/guides/vite-configuration.md
+      // 「タスクを足す」)
       serve:
-        "vp dev --port ${SERVE_PORT:?mise の環境が要る。mise daemons start serve か mise x -- vp run serve で打つ} --strictPort",
-      storybook:
-        "vp exec storybook dev --port ${STORYBOOK_PORT:?mise の環境が要る。mise daemons start storybook か mise x -- vp run storybook で打つ} --no-open --exact-port",
+        "DB_FILE_NAME=${DB_FILE_NAME:?mise の環境が要る。mise run serve で打つ} vp dev --strictPort",
+      storybook: "vp exec storybook dev --no-open --exact-port",
       ...verifySteps,
       verify: Object.keys(verifySteps).map((task) => `vp run ${task}`),
       contrast: "node scripts/contrast/report.ts",
