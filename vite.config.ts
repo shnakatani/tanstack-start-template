@@ -41,9 +41,9 @@ export default defineConfig({
       // port は .mise.toml の daemons が worktree ごとに導出し、mise の環境を読んだシェルか mise x から打つと届く。
       // 届いていなければ別の port で起動せずに止める (ADR-0004)
       serve:
-        "vp dev --port ${SERVE_PORT:?mise の環境が要る。mise x -- vp run serve で打つ} --strictPort",
+        "vp dev --port ${SERVE_PORT:?mise の環境が要る。mise daemons start serve か mise x -- vp run serve で打つ} --strictPort",
       storybook:
-        "vp exec storybook dev --port ${STORYBOOK_PORT:?mise の環境が要る。mise x -- vp run storybook で打つ} --no-open --exact-port",
+        "vp exec storybook dev --port ${STORYBOOK_PORT:?mise の環境が要る。mise daemons start storybook か mise x -- vp run storybook で打つ} --no-open --exact-port",
       ...verifySteps,
       verify: Object.keys(verifySteps).map((task) => `vp run ${task}`),
       contrast: "node scripts/contrast/report.ts",

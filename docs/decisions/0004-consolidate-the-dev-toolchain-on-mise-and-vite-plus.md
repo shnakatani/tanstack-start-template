@@ -39,7 +39,7 @@
 | `db:generate`、`db:migrate`、`db:seed`  | `[env]` の `DB_FILE_NAME`                                                                                 | `drizzle.config.ts` と `createDb()` が `DB_FILE_NAME is not set.` で throw する                           |
 | `verify`、`contrast`、`a11y:incomplete` | 無い                                                                                                      | 該当しない                                                                                                |
 
-- 代償として、mise の hook が走らないシェル (エージェントのシェル、hook の無い IDE のタスク) からは、mise の値を読むタスクを `mise x -- vp run <タスク>` で打つことになる。2026-10-14 に mise 2026.10.3 で、hook の無いシェルでは `vp run serve` が止まり、`mise x -- vp run serve` が daemons の port で起動した。hook が読み込む値 (`mise hook-env` の出力) には、`DB_FILE_NAME` に加えて `SERVE_PORT` と `STORYBOOK_PORT` も入っていた
+- 代償として、mise の hook が走らないシェル (エージェントのシェル、hook の無い IDE のタスク) からは、mise の値を読むタスクを `mise x -- vp run <タスク>` で打つことになる。前面でサーバーを持ち続けられないエージェントのシェルでは、dev server と Storybook を `mise daemons start` で起動する。2026-10-14 に mise 2026.10.3 で、hook の無いシェルでは `vp run serve` が止まり、`mise x -- vp run serve` が daemons の port で起動した。hook が読み込む値 (`mise hook-env` の出力) には、`DB_FILE_NAME` に加えて `SERVE_PORT` と `STORYBOOK_PORT` も入っていた
 
 | 案                                                                                                 | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | 採否     |
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -112,8 +112,18 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 
 - mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (同「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、mise の環境を読んだシェルから `vp run serve` で前面に起動できる
 - docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した
-- 2026-10-14 に vite-plus 1.1.0 で、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動したプロセスの pid にだけ SIGTERM を送ると dev server が port を持ったまま残った。port を持っていたのは、起動した `vp` の pid ではなく、その子孫の node のプロセス (vite の `cli.js`) だった。プロセスグループ全体への SIGINT (端末の Ctrl-C) では止まった
-- 常駐を止める経路は確かめていない。2026-10-14 に mise 2026.10.3 で、`mise daemons stop` は手元の pitchfork の shim の版が決まらず失敗した。pitchfork が stop で signal を pid とプロセスグループのどちらへ送るかも確かめていない
+- 常駐は `mise daemons stop <name>` で止まる。2026-10-14 に mise 2026.10.3、pitchfork 2.30.1、vite-plus 1.1.0 で、`mise daemons start` で起動した `serve` と `storybook` に `mise daemons stop` を打つと、exit 0 で終わり、5 秒後にはその port を LISTEN するソケットも、テンプレートの node と esbuild のプロセスも残っていなかった (起動中は `serve` が 3 つ、`storybook` が 6 つ)
+- pitchfork は `.mise.toml` の `[tools]` に major まで (`2`) で宣言する。mise の daemons の docs は pitchfork を先に入れておく前提で書かれている (mise v2026.10.3 の docs/daemons.md の冒頭)。宣言を外すと、mise の shim のディレクトリが PATH にあるシェルから打った `mise daemons stop` が失敗する (2026-10-14 に mise 2026.10.3 で、`No version is set for shim: pitchfork` で終わった)。仕組みは次の 2 点である
+  - mise は、設定が pitchfork を宣言していなければ、`start`・`restart`・`register` のときだけ pitchfork を toolset に足し、`stop` では足さない (mise v2026.10.3 の `src/cli/daemons.rs` の `install` と、`src/daemons/runtime.rs` の `toolset_resolved`)
+  - mise は pitchfork の実体を PATH から探し、見つからないときだけ起動時に記録した実体へ戻る (同 `src/daemons/runtime.rs` の `Runtime::from_toolset`)。mise の shim のディレクトリが PATH にあると、`stop` は shim を拾い、shim は版を決める宣言が無いので失敗する
+- `2` の宣言は pitchfork の下限を表せない。mise は `start` のときに、プロジェクトの設定を pitchfork の外部の設定として登録する (mise v2026.10.3 の `src/daemons/runtime.rs` の `supports_external_config` と `prepare`)。pitchfork がこの機能を持ったのは 2.25.0 からで (pitchfork の CHANGELOG の 2.25.0: "attach external config files to projects")、それより古い 2.x では `start` が失敗する。mise の版の書き方は前方一致だけで、下限を書けない (mise v2026.10.3 の docs/configuration.md)。`2` には手元にある最新の 2.x が選ばれるので、それが 2.25.0 より古いと `start` が失敗する。ここまでの仕組み (`install` の判定、`toolset_resolved`、`Runtime::from_toolset`、`supports_external_config`) は、`min_version` の mise v2026.9.18 のソースでも同じである
+
+| 案                                                     | 評価                                                                                                                                                           | 採否     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `[tools]` に major まで (`pitchfork = "2"`) で宣言する | `mise install` で入り、`stop` も宣言した版を PATH から引く。major を上げるときは宣言を書き換える。手元にある最新の 2.x が 2.25.0 より古いと `start` が失敗する | **採用** |
+| 宣言せず、`mise daemons start` が入れるのに任せる      | `start` は動くが、shim のディレクトリが PATH にある環境では `stop` が失敗する                                                                                  | 却下     |
+| `[tools]` に `latest` で宣言する                       | `stop` は動く。pitchfork が入っていない環境や `mise upgrade` では、pitchfork の major が上がると、daemons との組み合わせを確かめないまま新しい major が入る    | 却下     |
+| `[tools]` に exact で宣言する                          | `stop` は動く。patch の版が出るたびに宣言を書き換える                                                                                                          | 却下     |
 
 2026-10-09 に mise 2026.9.18 で確かめた振る舞いは次のとおりである。
 
@@ -270,6 +280,11 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - private のリポジトリで artifact がプランの枠を使うこと: https://docs.github.com/en/billing/concepts/product-billing/github-actions
 - mise の `[env]` の値が届く経路: https://github.com/jdx/mise/blob/v2026.9.18/docs/environments/index.md
 - mise の daemons (experimental の要件、自動 port、port の変数、port の重なり、proxy): https://github.com/jdx/mise/blob/v2026.9.18/docs/daemons.md
+- mise の daemons の前に pitchfork を入れておくこと: https://github.com/jdx/mise/blob/v2026.10.3/docs/daemons.md
+- mise の daemons が pitchfork を toolset に足すサブコマンドを `start`・`restart`・`register` に絞る判定 (`install`): https://github.com/jdx/mise/blob/v2026.10.3/src/cli/daemons.rs
+- mise の daemons が pitchfork を toolset に足す条件 (`toolset_resolved`)、PATH から実体を探す順序 (`Runtime::from_toolset`)、pitchfork の下限 (`supports_external_config`): https://github.com/jdx/mise/blob/v2026.10.3/src/daemons/runtime.rs
+- mise のツールの版の書き方 (前方一致と `prefix:`): https://github.com/jdx/mise/blob/v2026.10.3/docs/configuration.md
+- pitchfork が外部の設定の登録を持った版: https://github.com/jdx/pitchfork/blob/v2.25.0/CHANGELOG.md
 - mise の `experimental` の設定: https://github.com/jdx/mise/blob/v2026.9.18/settings.toml
 - mise の `min_version` (「Minimum mise version」): https://github.com/jdx/mise/blob/v2026.9.18/docs/configuration.md
 - npm の `devEngines` 仕様: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines

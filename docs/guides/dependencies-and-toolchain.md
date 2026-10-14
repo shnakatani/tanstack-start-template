@@ -13,10 +13,16 @@
 
 ### 手元の環境を用意する
 
-- mise のシェル hook を入れる。`[env]` の値 (`DB_FILE_NAME`) と daemons の自動 port (`SERVE_PORT`、`STORYBOOK_PORT`) は、hook が読み込んだシェルか `mise x --` から打った `vp run` のタスクに届く。hook が走らないシェル (エージェントのシェル、hook の無い IDE のタスク) では、それらを読むタスク (`serve`、`storybook`、`db:*`) が未設定で止まるので、`mise x -- vp run <タスク>` で打つ (ADR-0004)
+- mise のシェル hook を入れる。`[env]` の値 (`DB_FILE_NAME`) と daemons の自動 port (`SERVE_PORT`、`STORYBOOK_PORT`) は、hook が読み込んだシェルか `mise x --` から打った `vp run` のタスクに届く。hook が走らないシェル (エージェントのシェル、hook の無い IDE のタスク) では、それらを読むタスクが未設定で止まる (ADR-0004)。`db:*` は `mise x -- vp run <タスク>` で打つ。`serve` と `storybook` は、前面で動かせるシェルなら `mise x -- vp run <タスク>`、エージェントのシェルなら「dev server と Storybook を止める」のとおり `mise daemons start` で起動する
 - mise は `.mise.toml` の `min_version` 以上にする。古い mise は設定の読み込みで止まる (ADR-0004)
 - 素の `pnpm` は corepack などで別に入れない。Vite+ の shim が `packageManager` の版の `pnpm` を用意する ([Vite+ docs「Environment」][]。確かめた結果は「入口を `vp` にそろえる理由」)
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
+
+### dev server と Storybook を止める
+
+- 前面で起動した `vp run serve` と `vp run storybook` は、端末の Ctrl-C で止める。Ctrl-C は前面のプロセスグループ全体に SIGINT を送る
+- background で動かすときは `&` ではなく `mise daemons start serve` (Storybook は `storybook`) で起動し、`mise daemons stop <同じ名前>` で止める。`mise daemons stop` は port を持つ子孫まで止める (ADR-0004)
+- 起動したプロセスの pid にだけ SIGTERM を送らない。port を持つのは起動したプロセスではなく子孫の node なので、サーバーが残って worktree の port を持ち続け、次の `vp run serve` は別の port へずれずに終わる (使用中の port で終わらせる理由は ADR-0004)。2026-10-14 に vite-plus 1.1.0 で、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動した pid への SIGTERM では vite の `cli.js` を走らせる node が port を持ったまま残った。`vp dev` を直に起動して `bin.js` の node に SIGTERM を送ると、子の vite の node が親を失って残った
 
 ### commit hook を扱う
 
