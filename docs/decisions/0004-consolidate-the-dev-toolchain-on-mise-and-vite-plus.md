@@ -28,8 +28,7 @@
 ### タスクは Vite Task に置き、worktree の port は mise のタスクが渡す
 
 タスクは `vite.config.ts` の `run.tasks` に置く。Vite Task のタスクは worktree を知らず、`serve` と `storybook` は既定の port で起動する。
-worktree ごとの port は、`.mise.toml` の同名のタスク (`[tasks.serve]`、`[tasks.storybook]`) が `vp run serve --port $SERVE_PORT` のように引数で足す。mise のタスクは port のほかにコマンドを持たない。
-mise は、Node.js と pnpm 以外のツール (`[tools]`)、環境変数 (`[env]`)、dev server と Storybook の port (`[daemons.*]` と、それを渡す `[tasks.*]`) を持つ。
+worktree ごとの port は、`.mise.toml` の同名のタスク (`[tasks.serve]`、`[tasks.storybook]`) が `vp run serve --port $SERVE_PORT` のように引数で足す。
 
 - コマンドは `vite.config.ts` だけが持つ。CI は mise を入れずに、手元と同じタスクを `vp run` で走らせられる
 - mise の値は、`mise exec` で打ったコマンド、mise のタスク、mise を activate したシェルに届く (mise v2026.9.18 の docs/environments/index.md の冒頭: "mise supplies them to commands run with `mise exec`, tasks, and activated interactive shells.")。Vite Task のタスクには、mise の環境を読んだシェルか `mise x --` か `mise run` から打ったときに届く
@@ -123,14 +122,13 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 
 `.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の mise のタスクを `task = "serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く (mise v2026.10.3 の docs/daemons.md「Daemons that run a task」: "Use `task` when the long-running command is already defined as a mise task")。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (mise v2026.9.18 の docs/daemons.md「Per-daemon proxy settings」)。
 
-- mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (同「Ports across git worktrees」「Port environment variables」)。mise のタスクがこの値を `--port` で `vp run` に渡し、`serve` は `PORT` にも入れる (「タスクは Vite Task に置き、worktree の port は mise のタスクが渡す」)。daemon と前面の `mise run serve` が同じタスクを走らせるので、port の引数は 1 か所にしか書かない
+- mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (同「Ports across git worktrees」「Port environment variables」)。mise のタスクがこの値を渡す (「タスクは Vite Task に置き、worktree の port は mise のタスクが渡す」)。daemon と前面の `mise run serve` が同じタスクを走らせるので、port の引数は 1 か所にしか書かない
 - docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した
 - 常駐は `mise daemons stop <name>` で止まる。2026-10-14 に mise 2026.10.3、pitchfork 2.30.1、vite-plus 1.1.0 で、`mise daemons start` で起動した `serve` と `storybook` に `mise daemons stop` を打つと、exit 0 で終わり、5 秒後にはその port を LISTEN するソケットも、テンプレートのプロセスも残っていなかった (起動中は `serve` が 2 つ、`storybook` が 6 つ)。タスクの `interactive = true` は、tty の無い pitchfork の下でも起動と停止を変えなかった
 - pitchfork は `.mise.toml` の `[tools]` に major まで (`2`) で宣言する。mise の daemons の docs は pitchfork を先に入れておく前提で書かれている (mise v2026.10.3 の docs/daemons.md の冒頭)。宣言を外すと、mise の shim のディレクトリが PATH にあるシェルから打った `mise daemons stop` が失敗する (2026-10-14 に mise 2026.10.3 で、`No version is set for shim: pitchfork` で終わった)。仕組みは次の 2 点である
   - mise は、設定が pitchfork を宣言していなければ、`start`・`restart`・`register` のときだけ pitchfork を toolset に足し、`stop` では足さない (mise v2026.10.3 の `src/cli/daemons.rs` の `install` と、`src/daemons/runtime.rs` の `toolset_resolved`)
   - mise は pitchfork の実体を PATH から探し、見つからないときだけ起動時に記録した実体へ戻る (同 `src/daemons/runtime.rs` の `Runtime::from_toolset`)。mise の shim のディレクトリが PATH にあると、`stop` は shim を拾い、shim は版を決める宣言が無いので失敗する
-- `2` の宣言は pitchfork の下限を表せない。mise は `start` のときに、プロジェクトの設定を pitchfork の外部の設定として登録する (mise v2026.10.3 の `src/daemons/runtime.rs` の `supports_external_config` と `prepare`)。pitchfork がこの機能を持ったのは 2.25.0 からで (pitchfork の CHANGELOG の 2.25.0: "attach external config files to projects")、それより古い 2.x では `start` が失敗する
-- mise v2026.10.3 は、タスクを走らせる daemon をシェルを通さずに起動し、それに pitchfork 2.28.0 以上を求める (同 `src/daemons/runtime.rs` の `supports_argv_run`: "runs a task, which needs pitchfork 2.28.0 or later"。pitchfork の CHANGELOG の 2.28.0: "accept an argv array for run to start a daemon without a shell")。mise の版の書き方は前方一致だけで、下限を書けない (mise v2026.10.3 の docs/configuration.md)。`2` には手元にある最新の 2.x が選ばれるので、それが 2.28.0 より古いと `start` が失敗する
+- `2` の宣言は pitchfork の下限を表せない。mise v2026.10.3 の `start` は、プロジェクトの設定を pitchfork の外部の設定として登録し (`src/daemons/runtime.rs` の `supports_external_config` と `prepare`。pitchfork の CHANGELOG の 2.25.0: "attach external config files to projects")、タスクを走らせる daemon をシェルを通さずに起動する (同 `supports_argv_run`: "runs a task, which needs pitchfork 2.28.0 or later"。pitchfork の CHANGELOG の 2.28.0: "accept an argv array for run to start a daemon without a shell")。mise の版の書き方は前方一致だけで、下限を書けない (mise v2026.10.3 の docs/configuration.md)。`2` には手元にある最新の 2.x が選ばれるので、それが 2.28.0 より古いと `start` が失敗する
 
 | 案                                                     | 評価                                                                                                                                                           | 採否     |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -147,7 +145,7 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 | linked worktree         | パスから決まる別の値 (`3001`〜`3511` / `6007`〜`6517`) |
 
 - daemons は experimental で、`[settings]` の `experimental = true` が要る (mise v2026.9.18 の docs/daemons.md の冒頭)。このフラグは daemons のほかに、試験中の振る舞いも有効にする (mise v2026.9.18 の settings の `experimental`: "New functionality that I want to test with a smaller subset of users I will often push out under experimental mode even if it's not related to an experimental feature.")
-- 自動 port は mise v2026.9.12 から使える。`min_version` は、`task =` の daemon の起動と停止を確かめた版の `2026.10.3` にし、それより古い mise を設定の読み込みで止める
+- `min_version` は、`task =` の daemon の起動と停止を確かめた版の `2026.10.3` にし、それより古い mise を設定の読み込みで止める
 - mise は bad port を避けない。ブラウザは WHATWG Fetch の bad port への接続を拒むが、server は起動するので、使用中かを見るフラグでは気づけない (2026-10-04 に port 3659 で起動した dev server へ、curl は 200 を返し、Playwright 1.63.0 の Chromium は `net::ERR_UNSAFE_PORT` で開けなかった)。`base` を変えるときは、`base` から `base + 511` に bad port が入らない値を選ぶ。`3000`〜`3511` と `6006`〜`6517` には無い (whatwg/fetch の e9460d1、2026-10-06)
 
 | 案                                                      | 評価                                                                                                                                                                         | 採否     |

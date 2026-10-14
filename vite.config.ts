@@ -40,8 +40,8 @@ export default defineConfig({
     tasks: {
       // worktree を知らず、既定の port で起動する。worktree ごとの port は .mise.toml の
       // 同名のタスクが引数で足す。使用中なら次の port へずらさずに止める (ADR-0004)。
-      // serve は DB_FILE_NAME が無ければ起動の前に止める。`${…:?}` を引数に置くと vp dev の root になり、
-      // `&&` は Vite Task が別のタスクに分けるので、変数の代入の形で書く
+      // serve は DB_FILE_NAME が無ければ起動の前に止める。`&&` は Vite Task が別のタスクに分けるので、
+      // 代入の形で書く (docs/guides/vite-configuration.md「タスクを足す」)
       serve:
         "DB_FILE_NAME=${DB_FILE_NAME:?mise の環境が要る。mise run serve で打つ} vp dev --strictPort",
       storybook: "vp exec storybook dev --no-open --exact-port",
