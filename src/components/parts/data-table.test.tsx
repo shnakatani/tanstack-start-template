@@ -27,11 +27,9 @@ function FruitDetail({ row }: { row: Row<DataTableFeatures, Fruit> }) {
   return <p>{`${row.original.name}は${row.original.price}円`}</p>;
 }
 
-const LONG_DETAIL = "りんごは秋から冬にかけて出回り、品種ごとに甘さと酸味の釣り合いが違う。".repeat(
-  3,
-);
+const LONG_DETAIL = `https://example.com/${"a".repeat(80)}`;
 
-/** 器の幅を超える長さの詳細。折り返しを書かない素の要素で返す */
+/** 器の幅を超え、改行できる位置を持たない詳細。折り返しを書かない素の要素で返す */
 function LongDetail() {
   return <p>{LONG_DETAIL}</p>;
 }
