@@ -58,7 +58,7 @@ export const testConfig = {
   unstubGlobals: true,
   // vi.fn・vi.spyOn・vi.mock の mock に張った実装と戻り値を各テストの前に戻す (docs/guides/testing/mocking.md「差し替えた実装を戻す」)
   mockReset: true,
-  // 既定の組を残し、GitHub Actions でだけ 1 ファイルの HTML report を .vitest/index.html に書く。CI はテストの
+  // 既定の組を残し、GitHub Actions でだけ 1 ファイルの HTML report を .vitest/index.html に書く。CI は verify:test の
   // step が落ちた run の report を artifact に上げる (.github/workflows/ci.yml、Vitest docs「Vitest UI」の View Reports from CI)
   reporters:
     process.env.GITHUB_ACTIONS === "true"

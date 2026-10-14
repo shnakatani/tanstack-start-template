@@ -136,7 +136,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 
 `vp check` は GitHub Actions の上でも、PR の差分に載る注釈 (`::error` の行) を出さない。`vp check` は oxlint の出力の要約を読んで成否を決めるので、oxlint に `--format=default` を渡している ([voidzero-dev/vite-plus#925][]。2026-09-30 時点で open)。
 
-- 注釈が要るなら、workflow の `vp run verify:check` の後に `vp lint -f github` のステップを足す。注釈を出すためだけの step なので、`vite.config.ts` の `verifySteps` には足さない (ADR-0004)
+- 注釈が要るなら、workflow の `vp run verify:check` の step に `id: check` を付け、その後ろに `if: failure() && steps.check.conclusion == 'failure'` を付けた `vp lint -f github` のステップを足す。`if` を書かない step は前の step が落ちると走らないので、lint が落ちた run で注釈が出ない ([GitHub Docs「Evaluate expressions in workflows and actions」][] の Status check functions: "A default status check of `success()` is applied unless you include one of these functions.")。注釈を出すためだけの step なので、`vite.config.ts` の `verifySteps` には足さない (ADR-0004)
 - 2026-09-30 に vite-plus 1.0.0 (oxlint 1.85.0) で確かめた。違反を 1 つ置いた probe を `GITHUB_ACTIONS=true` で渡すと、`vp check` は既定の形式で出し、`vp lint -f github` は `::error file=...` の行を出した
 - [voidzero-dev/vite-plus#925][] が close されたとき、または `--format=default` を強制した [voidzero-dev/vite-plus#914][] が revert されたときは、同じ probe で `vp check` が注釈を出すかを確かめ直す。oxlint 側の前提 (GitHub 形式に `vp check` が読む要約の行を足す [oxc-project/oxc#20404][]) は 2026-03-16 に merge 済み
 
@@ -287,6 +287,7 @@ eslint-plugin-react-hooks が既定で off にするルールのうち、oxlint 
 [Oxlint docs「vitest/expect-expect」]: https://oxc.rs/docs/guide/usage/linter/rules/vitest/expect-expect.html
 [voidzero-dev/vite-plus#925]: https://github.com/voidzero-dev/vite-plus/issues/925
 [voidzero-dev/vite-plus#914]: https://github.com/voidzero-dev/vite-plus/pull/914
+[GitHub Docs「Evaluate expressions in workflows and actions」]: https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions
 [oxc-project/oxc#20404]: https://github.com/oxc-project/oxc/pull/20404
 [oxc-project/oxc#7379]: https://github.com/oxc-project/oxc/pull/7379
 [Oxlint docs「overrides」]: https://oxc.rs/docs/guide/usage/linter/config-file-reference.html#overrides
