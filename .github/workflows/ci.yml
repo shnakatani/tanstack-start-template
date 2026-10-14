@@ -32,11 +32,15 @@ jobs:
       # chromium は vp install では入らない (playwright が install スクリプトを持たない)
       - run: vp exec playwright install chromium --only-shell
 
+      # vite.config.ts の verifySteps を同じ順に 1 つずつ打つ。手順を足したらここにも足す (ADR-0004)
+      - run: vp run verify:peers
       # PR の差分に lint の注釈は出ない (voidzero-dev/vite-plus#925、docs/guides/lint/configuration.md「PR の差分に lint の注釈を出す」)
-      - run: vp run verify
-      # private のリポジトリでは artifact が容量 (Free で 500MB) を使うので、落ちた run でだけ上げる
+      - run: vp run verify:check
+      - run: vp run verify:test
+        id: test
+      # private のリポジトリでは artifact が容量 (Free で 500MB) を使うので、テストが落ちた run でだけ上げる
       # 失敗した job を再実行すると、前の試行の artifact は取れなくなる (actions/upload-artifact#585)。再実行の前に開く
-      - if: failure() && hashFiles('.vitest/index.html') != ''
+      - if: failure() && steps.test.conclusion == 'failure'
         id: upload-report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -47,3 +51,6 @@ jobs:
         run: echo "::notice title=Vitest HTML report::$REPORT_URL"
         env:
           REPORT_URL: ${{ steps.upload-report.outputs.artifact-url }}
+      - run: vp run verify:time-zones
+      - run: vp run verify:build
+      - run: vp run verify:security-headers

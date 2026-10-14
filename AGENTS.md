@@ -6,7 +6,7 @@
 
 ```bash
 vp run serve     # dev server を起動する。mise の hook が走らないシェルでは mise x -- vp run serve
-vp run verify    # マージ前に通す。手順は vite.config.ts の run.tasks.verify が持ち、CI も同じタスクを走らせる
+vp run verify    # マージ前に通す。手順は vite.config.ts の verifySteps が持ち、CI は手順ごとに step を分けて同じタスクを走らせる
 ```
 
 ## 開発上の注意

@@ -38,7 +38,7 @@ vp run storybook                                  # 部品とデザイントー�
 | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | `vp run serve`                 | dev server を起動する                                                                                     |
 | `vp run storybook`             | 部品とデザイントークンのカタログを起動する (`docs/guides/storybook.md`)                                   |
-| `vp run verify`                | マージ前の検証をまとめて実行する。手順は `vite.config.ts` の `run.tasks.verify` が持つ                    |
+| `vp run verify`                | マージ前の検証をまとめて実行する。手順は `vite.config.ts` の `verifySteps` が持つ                         |
 | `vp run contrast`              | トークンからコントラスト比を測る。引数は `docs/guides/styling-and-tokens.md`「比を測る」                  |
 | `vp run a11y:incomplete`       | axe を回すテストを verbose で走らせ、axe が判定できなかった項目の注釈を読む                               |
 | `vp run db:generate`           | `src/server/db/schema.ts` から `drizzle/` へ migration を生成する                                         |

@@ -29,7 +29,7 @@
 
 タスクはすべて `vite.config.ts` の `run.tasks` に置き、`.mise.toml` に `[tasks.*]` を置かない。mise は、Node.js と pnpm 以外のツール (`[tools]`)、環境変数 (`[env]`)、dev server と Storybook の port (`[daemons.*]`) を持つ。
 
-- 入口が `vp run` の 1 つになる。CI は mise を入れずに同じタスクを `vp run verify` で走らせられ、検証の手順を足したときに CI へ写し忘れることがない
+- 入口が `vp run` の 1 つになる。CI は mise を入れずに、手元と同じタスクを `vp run` で走らせられる
 - mise の値は、`mise exec` で打ったコマンド、mise のタスク、mise を activate したシェルに届く (mise v2026.9.18 の docs/environments/index.md の冒頭: "mise supplies them to commands run with `mise exec`, tasks, and activated interactive shells.")。mise のタスクなら mise が必ず値を入れるが、Vite Task のタスクには、mise の環境を読んだシェルか `mise x --` から打ったときに届く
 - mise の値を読むタスクは、値が届いていなければ止まる形にする。黙って別の port や別の DB で動くと、worktree ごとに分けた port と DB が混ざる
 
@@ -45,7 +45,7 @@
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | すべてのタスクを `vite.config.ts` の `run.tasks` に置き、mise の値を読むタスクは値が無ければ止める | 入口が `vp run` の 1 つになり、CI と手元が同じタスクを走らせる。hook の無いシェルからは `mise x --` が要る                                                                                                                                           | **採用** |
 | mise の値を読むタスクだけ `.mise.toml` に置く                                                      | hook が無くても `mise run` で値が届く。入口が `mise run` と `vp run` の 2 つに分かれ、タスクが mise の値を読み始めるたびに置き場所が変わる                                                                                                           | 却下     |
-| すべてのタスクを `.mise.toml` に置く                                                               | CI は mise を要さないために、`verify` の手順を workflow へ写して持つ。写し忘れは検出されない                                                                                                                                                         | 却下     |
+| すべてのタスクを `.mise.toml` に置く                                                               | CI は mise を要さないために、`verify` の各コマンドを workflow へ写して持つ。手元と CI でコマンドが食い違っても検出されない                                                                                                                           | 却下     |
 | `package.json` の script に置く (Vite+ の `docs/guide/local-cli.md`「Best Practices」が勧める形)   | global の `vp` が無くても `pnpm run verify` で走る。この利点は、global の `vp` を入れる前提のこのリポジトリには当てはまらない (「built-in と同名の script は `start` と対の `build` だけを置く」)。JSON はコメントを持てず、手順ごとの理由を書けない | 却下     |
 
 ### Vite Task のキャッシュは `run.cache: false` で切る
@@ -71,15 +71,26 @@ Vite Task は `vite.config.ts` のタスクを既定でキャッシュする (Vi
 
 - キャッシュを切ったタスクに親の環境変数がすべて届くことは、Vite+ の docs に書かれていない。vite-plus 1.1.0 が pin する vite-task の `plan_task_as_execution_node` は、子の環境を親の環境の全体から作り、キャッシュの設定があるときだけ絞る。キャッシュを切ると、`effective_cache_config` がキャッシュの設定を持たせない
 - キャッシュを切ったタスクは stdin・stdout・stderr を親から継ぐ (vite-task の `docs/stdio.md`「stdio by Mode」)。各コマンドの前に `$ <command> ⊘ cache disabled` の行が出る
-- `command` の配列は `&&` でつないだのと同じに順に走る (Vite+ の `docs/config/run.md` の `command`)。途中のコマンドが落ちると後続は走らず、`vp run` は非 0 で終わる (2026-10-14、vite-plus 1.1.0 で `["echo one", "false", "echo three"]` を打ち、exit code 1)
 
-### CI は `vp run verify` を 1 つの step で走らせる
+### CI は `verify` の手順を 1 つずつ別の step で打つ
 
-CI は mise を要さず、`vp run verify` を打つ。手順を workflow に写さない。
+`vite.config.ts` は `verify` の手順を `verify:peers` などのタスクとして `verifySteps` に持ち、`verify` はそれを `vp run <タスク>` の配列で順に打つ。
+CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の step で `vp run` する。コマンドは `vite.config.ts` だけが持ち、workflow にはタスクの名前と順序だけが写る。
 
-- `pnpm peers check` も `verify` の中で走らせ、別のジョブに分けない。分けると、install を待たずに並列で走る代わりに、`verify` と CI の手順が食い違う。課金はジョブごとに分単位で切り上がる (GitHub Docs「Actions runner pricing」) ので、分けたジョブは 1 分として数えられる
-- Vitest の HTML report は、`verify` が落ちて `.vitest/index.html` があるときに上げる。どの手順で落ちたかを step で見分けられないので、テストのあとの手順 (TZ ごとのテスト、build、セキュリティヘッダ) で落ちた run も、最後に走ったテストの report を上げる。TZ ごとのテストは並列に走り、どれも同じ report を書き直すので、TZ のテストで落ちた run に上がる report は、落ちた TZ のものとは限らない
-- step が 1 つになるので、GitHub の画面で手順ごとの所要時間と折り畳みは出ない。手順の区切りは `$ <command>` の行で読む
+- GitHub は失敗した step を自動で開き、ログの検索も開いた step だけを対象にする (GitHub Docs「Using workflow run logs」: "Any failed steps are automatically expanded to display the results." と "When you search logs, only expanded steps are included in the results.")。step が 1 つだと、全手順の出力が開いた中から落ちた手順を探すことになる
+- Vite+ の docs の CI の例も、コマンドやタスクごとに step を分ける (`docs/guide/ci.md` の `- run: vp check`・`- run: vp test`・`- run: vp build`、`docs/guide/github-actions-cache.md` の `- run: vp run lint`・`- run: vp run build`)
+- 代償として、`verifySteps` に手順を足したら workflow にも step を足す。足し忘れても CI は落ちず、その手順が CI で走らないだけになる
+- `command` の配列は `&&` でつないだのと同じに順に走り (Vite+ の `docs/config/run.md` の `command`)、Vite Task は command の中の `vp run` を別のタスクとして展開する (Vite+ の `docs/guide/run.md`「Nested `vp run`」)。途中の手順が落ちると後続は走らず、`vp run verify` は非 0 で終わる (2026-10-14 に vite-plus 1.1.0 で、2 つ目が exit 3 で落ちる 3 手順の一時のタスクを配列と `&&` の両方で打ち、どちらも exit code 3)
+- 手順を `dependsOn` で並べない。`dependsOn` に並べたタスクは順序を持たずに並列で走る (Vite+ の `docs/guide/run.md`「Concurrency」。2026-10-14 に vite-plus 1.1.0 で、2 つの 2 秒のタスクが 5ms 差で始まった)。順序を付けるために各手順へ 1 つ前の手順を `dependsOn` させると、CI の step の `vp run verify:build` が前の手順まで走らせ直す
+- `pnpm peers check` も `verify` の手順に入れ、別のジョブに分けない。分けると、install を待たずに並列で走る代わりに、`verify` と CI の手順が食い違う。課金はジョブごとに分単位で切り上がる (GitHub Docs「Actions runner pricing」) ので、分けたジョブは 1 分として数えられる
+- Vitest の HTML report は、`verify:test` の step が落ちたときだけ上げる。TZ ごとのテストは並列に走り、どれも同じ report を書き直すので、TZ のテストで落ちた run の report は落ちた TZ のものとは限らない
+
+| 案                                                                                                   | 落ちた手順の見え方                                                                                                                | 手順の持ち方                                                                              | 採否     |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------- |
+| 手順ごとのタスクを、別の step で `vp run` する                                                       | 落ちた step を GitHub が開き、step の名前で分かる                                                                                 | コマンドは `vite.config.ts` だけが持つ。workflow はタスクの名前と順序を写す               | **採用** |
+| `vp run verify` を 1 つの step で打つ                                                                | 全手順の出力が 1 つの step に開く。`vp run -v` なら末尾の要約で落ちたコマンドに `✗` が付く (2026-10-14 に vite-plus 1.1.0 で実測) | `vite.config.ts` だけが持つ                                                               | 却下     |
+| コマンドを workflow に直に並べる                                                                     | 採用案と同じ                                                                                                                      | コマンドが `vite.config.ts` と workflow の 2 か所に入り、食い違っても検出されない         | 却下     |
+| 1 つの step のまま、手順ごとにログを折り畳む (GitHub Docs「Workflow commands」の `::group::{title}`) | GitHub は失敗した step を開くが、その中の折り畳みを開くかは GitHub Docs に書かれていない                                          | Vite Task は `::group::` を出さない (vite-task 7d69d657 に無い)。各コマンドを包む形が要る | 却下     |
 
 ### 値の置き場所を 3 つに分ける
 
@@ -237,6 +248,10 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - Vite+ の runtime 解決順と `packageManager` による package manager shim、`vp env pin` の書き込み先: `node_modules/vite-plus/docs/guide/env.md`
 - Vite+ が勧める `package.json` の scripts の形: `node_modules/vite-plus/docs/guide/local-cli.md`「Best Practices」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/local-cli.md#best-practices)
 - built-in と `vp run` の script の違い: `node_modules/vite-plus/docs/guide/run.md`「Built-in Commands vs Scripts」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/run.md)
+- command の中の `vp run` の展開と、タスクの並列: `node_modules/vite-plus/docs/guide/run.md`「Nested `vp run`」「Concurrency」(https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/run.md)
+- Vite+ の CI の例: `node_modules/vite-plus/docs/guide/ci.md`「GitHub Actions」(https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/ci.md)、`node_modules/vite-plus/docs/guide/github-actions-cache.md` (https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/github-actions-cache.md)
+- 失敗した step が自動で開くこと: https://docs.github.com/en/actions/how-tos/monitor-workflows/use-workflow-run-logs
+- ログを折り畳む `::group::`: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands
 - 使用中の port を Vite が次の空き port へずらすこと: https://vite.dev/config/server-options#server-port
 - 使用中の port なら Vite を終了させる `server.strictPort`: https://vite.dev/config/server-options#server-strictport
 - 使用中の port なら Storybook を終了させる `--exact-port`: https://storybook.js.org/docs/api/cli-options

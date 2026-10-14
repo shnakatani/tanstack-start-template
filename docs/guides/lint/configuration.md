@@ -136,7 +136,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 
 `vp check` は GitHub Actions の上でも、PR の差分に載る注釈 (`::error` の行) を出さない。`vp check` は oxlint の出力の要約を読んで成否を決めるので、oxlint に `--format=default` を渡している ([voidzero-dev/vite-plus#925][]。2026-09-30 時点で open)。
 
-- 注釈が要るなら、workflow の `vp run verify` の後に `vp lint -f github` のステップを足す。注釈を出すためだけの step で、verify の手順の写しにはならない (ADR-0004)
+- 注釈が要るなら、workflow の `vp run verify:check` の後に `vp lint -f github` のステップを足す。注釈を出すためだけの step なので、`vite.config.ts` の `verifySteps` には足さない (ADR-0004)
 - 2026-09-30 に vite-plus 1.0.0 (oxlint 1.85.0) で確かめた。違反を 1 つ置いた probe を `GITHUB_ACTIONS=true` で渡すと、`vp check` は既定の形式で出し、`vp lint -f github` は `::error file=...` の行を出した
 - [voidzero-dev/vite-plus#925][] が close されたとき、または `--format=default` を強制した [voidzero-dev/vite-plus#914][] が revert されたときは、同じ probe で `vp check` が注釈を出すかを確かめ直す。oxlint 側の前提 (GitHub 形式に `vp check` が読む要約の行を足す [oxc-project/oxc#20404][]) は 2026-03-16 に merge 済み
 

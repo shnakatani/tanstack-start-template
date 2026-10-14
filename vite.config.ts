@@ -9,6 +9,17 @@ import { lintConfig } from "./tooling/lint/config";
 import { reactPlugin } from "./tooling/plugins/react";
 import { testConfig } from "./tooling/test/config";
 
+// マージ前の検証の手順。verify はこの順に打ち、CI は 1 つずつ別の step で同じ順に打つ (ADR-0004)
+const verifySteps = {
+  // 素の pnpm で打つ。vp pm は peers を中継しない (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
+  "verify:peers": "pnpm peers check",
+  "verify:check": "vp check",
+  "verify:test": "vp test run",
+  "verify:time-zones": "node scripts/time-zones/run-tests.ts",
+  "verify:build": "vp build",
+  "verify:security-headers": "node scripts/checks/runtime/security-headers.ts",
+};
+
 export default defineConfig({
   // Vite の .env 読み込みを切る (ADR-0004、vitejs/vite#19373)
   envDir: false,
@@ -31,17 +42,8 @@ export default defineConfig({
         "vp dev --port ${SERVE_PORT:?mise の環境が要る。mise x -- vp run serve で打つ} --strictPort",
       storybook:
         "vp exec storybook dev --port ${STORYBOOK_PORT:?mise の環境が要る。mise x -- vp run storybook で打つ} --no-open --exact-port",
-      verify: {
-        command: [
-          // 素の pnpm で打つ。vp pm は peers を中継しない (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
-          "pnpm peers check",
-          "vp check",
-          "vp test run",
-          "node scripts/time-zones/run-tests.ts",
-          "vp build",
-          "node scripts/checks/runtime/security-headers.ts",
-        ],
-      },
+      ...verifySteps,
+      verify: Object.keys(verifySteps).map((task) => `vp run ${task}`),
       contrast: "node scripts/contrast/report.ts",
       "db:generate": "vp exec drizzle-kit generate",
       "db:migrate": "vp exec drizzle-kit migrate",
