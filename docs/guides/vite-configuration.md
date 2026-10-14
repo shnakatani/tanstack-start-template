@@ -46,7 +46,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 4. command の中で Node.js のスクリプトを走らせるときは、`vp node` ではなく `node` を打つ。タスクの中の `vp node` は `error: Command 'node' not found` で落ちる (「タスクの中で `node` を打つ理由」)
 5. 引数は `vp run <task> <引数>` で渡し、`--` を挟まない。`--` もそのままコマンドに渡る ([Vite+ docs「Run」][] の Additional Arguments: "Arguments after the task name are passed through to the task command")。2026-10-14 に vite-plus 1.1.0 で `vp run contrast -- --theme dark …` を打つと、`scripts/contrast/report.ts` が `知らない引数: --` で落ちた
 6. マージ前の検証の手順なら、`verifySteps` に `verify:<名前>` で足し、`.github/workflows/ci.yml` にも同じ位置に `vp run verify:<名前>` の step を足す。足し忘れても CI は落ちない (ADR-0004)
-7. README のコマンド一覧に行を足す
+7. README のコマンド一覧に行を足す。`verify:<名前>` は `vp run verify` から走るので足さない
 
 ## explanation
 

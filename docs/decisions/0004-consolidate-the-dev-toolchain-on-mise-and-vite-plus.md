@@ -80,10 +80,10 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 - GitHub は失敗した step を自動で開き、ログの検索も開いた step だけを対象にする (GitHub Docs「Using workflow run logs」: "Any failed steps are automatically expanded to display the results." と "When you search logs, only expanded steps are included in the results.")。step が 1 つだと、全手順の出力が開いた中から落ちた手順を探すことになる
 - Vite+ の docs の CI の例も、コマンドやタスクごとに step を分ける (`docs/guide/ci.md` の `- run: vp check`・`- run: vp test`・`- run: vp build`、`docs/guide/github-actions-cache.md` の `- run: vp run lint`・`- run: vp run build`)
 - 代償として、`verifySteps` に手順を足したら workflow にも step を足す。足し忘れても CI は落ちず、その手順が CI で走らないだけになる
-- `command` の配列は `&&` でつないだのと同じに順に走り (Vite+ の `docs/config/run.md` の `command`)、Vite Task は command の中の `vp run` を別のタスクとして展開する (Vite+ の `docs/guide/run.md`「Nested `vp run`」)。途中の手順が落ちると後続は走らず、`vp run verify` は非 0 で終わる (2026-10-14 に vite-plus 1.1.0 で、2 つ目が exit 3 で落ちる 3 手順の一時のタスクを配列と `&&` の両方で打ち、どちらも exit code 3)
-- 手順を `dependsOn` で並べない。`dependsOn` に並べたタスクは順序を持たずに並列で走る (Vite+ の `docs/guide/run.md`「Concurrency」。2026-10-14 に vite-plus 1.1.0 で、2 つの 2 秒のタスクが 5ms 差で始まった)。順序を付けるために各手順へ 1 つ前の手順を `dependsOn` させると、CI の step の `vp run verify:build` が前の手順まで走らせ直す
+- `command` の配列は `&&` でつないだのと同じに順に走り (Vite+ の `docs/config/run.md` の `command`)、Vite Task は command の中の `vp run` を別のタスクとして展開する (Vite+ の `docs/guide/run.md`「Nested `vp run`」)。途中の手順が落ちると後続は走らず、`vp run verify` は非 0 で終わる (2026-10-14 に vite-plus 1.1.0 で、`vp run <タスク>` を 3 つ並べて 2 つ目を exit 3 で落とす一時のタスクを、配列と `&&` の両方で打った。どちらも 3 つ目は走らず、exit code 3 で終わった)
+- 手順を `dependsOn` で並べない。`dependsOn` に並べたタスクは順序を持たずに並列で走る (2026-10-14 に vite-plus 1.1.0 で、`dependsOn` に並べた 2 つの 2 秒のタスクが 5ms 差で始まった。同時に走る数の既定の上限は 4 で、Vite+ の `docs/guide/run.md`「Concurrency」にある)。順序を付けるために各手順へ 1 つ前の手順を `dependsOn` させると、CI の step の `vp run verify:build` が前の手順まで走らせ直す
 - `pnpm peers check` も `verify` の手順に入れ、別のジョブに分けない。分けると、install を待たずに並列で走る代わりに、`verify` と CI の手順が食い違う。課金はジョブごとに分単位で切り上がる (GitHub Docs「Actions runner pricing」) ので、分けたジョブは 1 分として数えられる
-- Vitest の HTML report は、`verify:test` の step が落ちたときだけ上げる。TZ ごとのテストは並列に走り、どれも同じ report を書き直すので、TZ のテストで落ちた run の report は落ちた TZ のものとは限らない
+- Vitest の HTML report は、`verify:test` の step が落ちたときだけ上げる。テンプレートから作ったリポジトリが private だと、artifact は持ち主のストレージの枠を使う (GitHub Docs「How use of GitHub Actions is measured」: "If the workflow generates a 10 MB artifact, then you'll also use 10 MB of the repository owner's artifact storage allowance.")。`verify:time-zones` の step では上げない。TZ ごとのテストは並列に走り、どれも同じ report を書き直すので、上げても落ちた TZ のものとは限らない
 
 | 案                                                                                                   | 落ちた手順の見え方                                                                                                                | 手順の持ち方                                                                              | 採否     |
 | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------- |
@@ -261,6 +261,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - キャッシュを切ったタスクの環境変数 (`plan_task_as_execution_node` と `effective_cache_config`、vite-plus 1.1.0 の `Cargo.toml` が pin する rev): https://github.com/voidzero-dev/vite-task/blob/7d69d6577ecf6bd83deee32186de59918a712873/crates/vt_plan/src/plan.rs
 - キャッシュを切ったタスクの stdio: https://github.com/voidzero-dev/vite-task/blob/7d69d6577ecf6bd83deee32186de59918a712873/docs/stdio.md
 - ジョブごとの課金の切り上げ: https://docs.github.com/en/billing/reference/actions-runner-pricing
+- artifact がストレージの枠を使うこと: https://docs.github.com/en/billing/concepts/product-billing/github-actions
 - mise の `[env]` の値が届く経路: https://github.com/jdx/mise/blob/v2026.9.18/docs/environments/index.md
 - mise の daemons (experimental の要件、自動 port、port の変数、port の重なり、proxy): https://github.com/jdx/mise/blob/v2026.9.18/docs/daemons.md
 - mise の `experimental` の設定: https://github.com/jdx/mise/blob/v2026.9.18/settings.toml

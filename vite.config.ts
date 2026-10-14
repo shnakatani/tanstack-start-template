@@ -9,7 +9,6 @@ import { lintConfig } from "./tooling/lint/config";
 import { reactPlugin } from "./tooling/plugins/react";
 import { testConfig } from "./tooling/test/config";
 
-// マージ前の検証の手順。verify はこの順に打ち、CI は 1 つずつ別の step で同じ順に打つ (ADR-0004)
 const verifySteps = {
   // 素の pnpm で打つ。vp pm は peers を中継しない (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
   "verify:peers": "pnpm peers check",
