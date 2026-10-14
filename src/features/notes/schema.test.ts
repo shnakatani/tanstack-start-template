@@ -47,6 +47,25 @@ describe("noteInputSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it.each([
+    ["空白と改行だけの body は空文字になる", " \n\t\n ", ""],
+    [
+      "body の前後の空白と改行を落とし、中の改行は残す",
+      "\n  一行目\n\n三行目  \n",
+      "一行目\n\n三行目",
+    ],
+  ])("%s", (_, body, expected) => {
+    const result = v.safeParse(noteInputSchema, { ...valid, body });
+    expect.assert(result.success, "safeParse が失敗した");
+    expect(result.output.body).toBe(expected);
+  });
+
+  // 上限は trim の後の長さで数える。前後の空白で上限を超えても落とさない
+  it("前後の空白を除いて上限ちょうどの body を受け付ける", () => {
+    const body = ` ${"い".repeat(NOTE_BODY_MAX_LENGTH)}\n`;
+    expect(v.safeParse(noteInputSchema, { ...valid, body }).success).toBe(true);
+  });
+
   // 上限の境界: cap - 1 / cap は受け付け、cap + 1 は落とす。数える単位は code point (ADR-0036) で、
   // 𠮷 は 2 code unit・1 code point。code unit で数えると cap / 2 + 1 文字で落ちる
   it.each([
@@ -189,6 +208,17 @@ describe("noteSchema", () => {
 
   it("空白だけの title を reject する", () => {
     const result = v.safeParse(noteSchema, { ...valid, title: "   " });
+    expect(result.success).toBe(false);
+  });
+
+  it("中に改行を持つ body をそのまま返す", () => {
+    const result = v.safeParse(noteSchema, { ...valid, body: "一行目\n二行目" });
+    expect.assert(result.success, "safeParse が失敗した");
+    expect(result.output.body).toBe("一行目\n二行目");
+  });
+
+  it.each(["本文\n", "  本文", "\n"])("前後に空白が残る body %j を reject する", (body) => {
+    const result = v.safeParse(noteSchema, { ...valid, body });
     expect(result.success).toBe(false);
   });
 

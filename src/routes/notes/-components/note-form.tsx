@@ -51,7 +51,7 @@ export function NoteFormContent({
     // 初回 submit までは検証エラーを表示せず、submit 後は変更毎に再検証する
     // (revalidateLogic のデフォルト: mode:"submit", modeAfterSubmission:"change")
     validationLogic: revalidateLogic(),
-    // TanStack Form は validator のスキーマの変換 (title の trim) を value に反映しない。
+    // TanStack Form は validator のスキーマの変換 (title と body の trim) を value に反映しない。
     // 送信前にスキーマへ通し、送信値と保存値を一致させる。各項目は同じスキーマで検証済みなので、
     // ここで throw するのは項目の validator とスキーマがずれたときだけ。
     // Promise を返すので form.handleSubmit() の Promise が mutation の決着まで続く
