@@ -18,6 +18,18 @@
 - 素の `pnpm` は corepack などで別に入れない。Vite+ の shim が `packageManager` の版の `pnpm` を用意する ([Vite+ docs「Environment」][]。確かめた結果は「入口を `vp` にそろえる理由」)
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
 
+### dev server と Storybook を止める
+
+- 前面で起動した `vp run serve` と `vp run storybook` は、端末の Ctrl-C で止める。Ctrl-C は前面のプロセスグループ全体に SIGINT を送る
+- background で動かすときは `mise daemons start serve` (Storybook は `storybook`) で起動し、`mise daemons stop <同じ名前>` で止める (ADR-0004)
+- 起動したプロセスの pid にだけ signal を送らない。port を持つのは起動したプロセスではなく子孫の node なので、サーバーが残って worktree の port を持ち続け、次の `vp run serve` は別の port へずれずに終わる (ADR-0004)。2026-10-14 に vite-plus 1.1.0 で、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動した pid への SIGTERM では vite の `cli.js` を走らせる node が port を持ったまま残った。`vp dev` を直に起動して `bin.js` の node に SIGTERM を送ると、子の vite の node が親を失って残った
+- signal で止めるしかないときは、プロセスグループへ送り、port を LISTEN するプロセスが残っていないことを確かめる。非対話のシェルから `&` で起動したサーバーは、起動したシェルと同じグループに入る (2026-10-14 に bash で確認) ので、そのシェルも止まる
+
+  ```bash
+  kill -INT -"$(ps -o pgid= -p <pid> | tr -d ' ')"
+  lsof -nP -iTCP:<port> -sTCP:LISTEN  # 何も出なければ止まっている。port は SERVE_PORT か STORYBOOK_PORT
+  ```
+
 ### commit hook を扱う
 
 commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマンドを staged のファイルへ当てる。`vp staged` は `.vite-hooks/pre-commit` から呼び、hook のディスパッチャ (`.vite-hooks/_`) は `package.json` の `prepare` の `vp config` が入れる ([Vite+ docs「Commit Hooks」][])。
