@@ -23,7 +23,7 @@
 
 - 前面で起動した `mise run serve` と `mise run storybook` は、端末の Ctrl-C で止める。Ctrl-C は前面のプロセスグループ全体に SIGINT を送る
 - background で動かすときは `&` ではなく `mise daemons start serve` (Storybook は `storybook`) で起動し、`mise daemons stop <同じ名前>` で止める。`mise daemons stop` は port を持つ子孫まで止める (ADR-0004)
-- 起動したプロセスの pid にだけ SIGTERM を送らない。port を持つのは起動したプロセスではなく子孫の node なので、サーバーが残って worktree の port を持ち続け、次の `mise run serve` は別の port へずれずに終わる (使用中の port で終わらせる理由は ADR-0004)。2026-10-14 に vite-plus 1.1.0 で、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動した pid への SIGTERM では vite の `cli.js` を走らせる node が port を持ったまま残った。`vp dev` を直に起動して `bin.js` の node に SIGTERM を送ると、子の vite の node が親を失って残った
+- 起動したプロセスの pid にだけ SIGTERM を送らない。port を持つのは起動したプロセスではなく子孫の node なので、サーバーが残って worktree の port を持ち続け、次の `mise run serve` は別の port へずれずに終わる (使用中の port で終わらせる理由は ADR-0004)。2026-10-14 に mise 2026.10.3、vite-plus 1.1.0 で、`mise run serve` の pid にだけ SIGTERM を送ると、mise は終わったが、vite の node が port を持ったまま残った
 
 ### commit hook を扱う
 
