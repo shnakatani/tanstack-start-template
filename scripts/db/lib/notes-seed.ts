@@ -7,7 +7,7 @@ import type { SeededTable, SeedTransaction } from "./seed-all.ts";
 
 /**
  * dev server で一覧を確かめるための見本。id の昇順に作成日時を進め、一覧の新しい順の並びを読めるようにする。
- * 長いタイトル・空の本文・期日の有無のような確かめたい見た目を持つ行に、一覧の並びと行の高さを見比べられる件数の行を足す。
+ * 長いタイトル・空の本文・改行を含む本文・期日の有無のような確かめたい見た目を持つ行に、一覧の並びと行の高さを見比べられる件数の行を足す。
  * 未来の期日は、テンプレートを使う間に過去にならない年に置く
  */
 export const NOTE_SEEDS: readonly Note[] = [
@@ -91,6 +91,14 @@ export const NOTE_SEEDS: readonly Note[] = [
     dueDate: null,
     createdAt: new Date("2026-10-12T01:00:00Z"),
     updatedAt: new Date("2026-10-12T01:00:00Z"),
+  },
+  {
+    id: 11,
+    title: "会議の持ち物",
+    body: "ノート PC と電源\n前回の議事録\n名刺",
+    dueDate: "2030-01-15",
+    createdAt: new Date("2026-10-13T05:00:00Z"),
+    updatedAt: new Date("2026-10-13T05:00:00Z"),
   },
 ];
 
