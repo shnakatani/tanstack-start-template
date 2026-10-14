@@ -2,6 +2,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
 import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
+import type { Locator } from "vite-plus/test/browser/context";
 import { render } from "vitest-browser-react";
 
 import { DataTable } from "@/components/parts/data-table";
@@ -204,6 +205,32 @@ describe("NoteExpandCell", () => {
     await expect.element(noteBodyDetailRow(screen, NOTE)).toBeInTheDocument();
 
     await expectNoA11yViolations(document.body, context);
+  });
+});
+
+/** 描かれた文字列。`innerText` は描画の改行を写し、white-space が潰した改行は空白になる */
+function renderedText(locator: Locator): string {
+  const element = locator.element();
+  if (!(element instanceof HTMLElement)) {
+    throw new Error("[renderedText] HTML の要素ではない");
+  }
+  return element.innerText;
+}
+
+describe("改行を持つ本文", () => {
+  const multiLineNote: Note = { ...NOTE, body: "牛乳\nパン\n卵" };
+
+  it("開いた詳細の行は改行を保って描き、一覧の cell は 1 行に並べる", async () => {
+    const screen = await renderCells({ notes: [multiLineNote] });
+    const cell = cellInColumn(screen, noteRow(screen, multiLineNote), NOTE_FIELD_LABELS.body);
+
+    await expect.poll(() => renderedText(cell)).toBe("牛乳 パン 卵");
+
+    await expandTrigger(screen, multiLineNote, false).click();
+
+    await expect
+      .poll(() => renderedText(noteBodyDetailRow(screen, multiLineNote)))
+      .toBe(multiLineNote.body);
   });
 });
 

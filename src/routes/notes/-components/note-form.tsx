@@ -79,7 +79,7 @@ export function NoteFormContent({
           </form.AppField>
           <form.AppField name="body" validators={{ onDynamic: noteInputSchema.entries.body }}>
             {(field) => (
-              <field.FormTextField
+              <field.FormTextareaField
                 label={NOTE_FIELD_LABELS.body}
                 fieldValue={field.state.value}
                 placeholder="牛乳とパンを買う"
