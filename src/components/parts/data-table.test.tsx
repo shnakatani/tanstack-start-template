@@ -27,6 +27,15 @@ function FruitDetail({ row }: { row: Row<DataTableFeatures, Fruit> }) {
   return <p>{`${row.original.name}は${row.original.price}円`}</p>;
 }
 
+const LONG_DETAIL = "りんごは秋から冬にかけて出回り、品種ごとに甘さと酸味の釣り合いが違う。".repeat(
+  3,
+);
+
+/** 器の幅を超える長さの詳細。折り返しを書かない素の要素で返す */
+function LongDetail() {
+  return <p>{LONG_DETAIL}</p>;
+}
+
 /**
  * 状態のカタログは `data-table.stories.tsx` が持つ (docs/guides/storybook.md「カタログと play の範囲」)。ここに残すのは構造の契約で、
  * 列見出しの順と `scope=col`、列見出しの幅が列の `size` で決まること、`rowProps` の busy 行だけが半透明になること、
@@ -217,6 +226,33 @@ describe("DataTable", () => {
       await toggle(screen, "りんご").click();
 
       await expectDetailWithinTableContainer(screen.getByText("りんごは120円"));
+    });
+
+    // registry の TableCell の whitespace-nowrap は中身へ継承される。折り返しに戻すのは DataTable で、渡す側は書かない (ADR-0043)
+    it("詳細の中身の長い文を、器の見えている幅で折り返す", async () => {
+      const screen = await render(
+        <div style={{ display: "flex", width: 160 }}>
+          <DataTable
+            tableKey="fruits-expandable"
+            caption="果物の一覧"
+            columns={expandable}
+            data={FRUITS}
+            getRowId={(fruit) => String(fruit.id)}
+            getRowCanExpand={() => true}
+            renderSubComponent={LongDetail}
+          />
+        </div>,
+      );
+
+      await toggle(screen, "りんご").click();
+
+      const detail = screen.getByText(LONG_DETAIL);
+      await expect
+        .poll(() => {
+          const element = detail.element();
+          return element.scrollWidth - element.clientWidth;
+        })
+        .toBe(0);
     });
 
     // 詳細の cell は列見出しより後の行にあり、fixed layout の列幅に効かない (ADR-0042)

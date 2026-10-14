@@ -137,8 +137,9 @@ export function DataTable<TData extends RowData>({
                       <TableRow data-busy={busy}>
                         <TableCell colSpan={row.getAllCells().length}>
                           {/* 表の幅ではなく器の見えている幅で折り返し、表を横に送っても見えている範囲に留める (ADR-0043)。
-                              left-2 と --spacing(4) は registry の TableCell の p-2 の左と左右の和に合わせた値で、p-2 が変わるとずれる */}
-                          <div className="sticky left-2 w-[calc(100cqi-(--spacing(4)))]">
+                              left-2 と --spacing(4) は registry の TableCell の p-2 の左と左右の和に合わせた値で、p-2 が変わるとずれる。
+                              TableCell の whitespace-nowrap は中身へ継承されるので、ここで折り返しに戻す */}
+                          <div className="sticky left-2 w-[calc(100cqi-(--spacing(4)))] wrap-break-word whitespace-normal">
                             {renderSubComponent({ row })}
                           </div>
                         </TableCell>

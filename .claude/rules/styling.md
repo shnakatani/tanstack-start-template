@@ -119,7 +119,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 
 ## 操作できる要素の組み方
 
-- 段落に区切って書く長さの文字列 (本文、説明) は改行を許し、`FormTextareaField` (`form-fields.tsx`) で受ける。`type="text"` の input は値から改行を取り除く (`docs/guides/forms-and-inputs.md`「複数行の入力欄を組む」)
+- 段落に区切って書く長さの文字列 (本文、説明) は改行を許し、`FormTextareaField` (`form-fields.tsx`) で受け、表示では `whitespace-pre-wrap` で改行を保つ。`type="text"` の input は値から改行を取り除き、`whitespace-normal` は改行を空白にまとめる (`docs/guides/forms-and-inputs.md`「複数行の入力欄を組む」)
 - input の上に疑似要素や別の要素を重ねて hit 領域を広げない。重なった要素が pointer を受け、本体がクリックを受け取れなくなる (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - checkbox 行を素の `<label>` や手書きの `role="group"` で組まない。複数選択の既定は `FieldSet` + `FieldLegend` の中の `FieldGroup data-slot="checkbox-group"` に `Field orientation="horizontal"` の行を並べる形。`FieldLegend` がまとまりの名前になり、行間は registry の間隔に寄る (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
 - 選択肢ごとに補足 (状態のバッジなど) を添える場面と、選択が画面の主役の場面は、`ChoiceCardList` / `ChoiceCard` (`choice-card.tsx`) でカード状の選択面を組み、`FieldLabel` で `Field` を包む形を手書きしない。説明文は `description` に、補足は `trailing` に渡し、行を見分ける識別子は `label` に含める。補足の表示の条件は呼び出し側で書き、条件で null を返す部品を渡さない。`id` の採番、disabled の行の cursor、checkbox の名前をタイトルに絞り説明文と補足を説明に結ぶことを部品が持つ (`docs/guides/forms-and-inputs.md`「入力欄の周りに要素を置く」)
