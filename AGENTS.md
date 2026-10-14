@@ -5,7 +5,7 @@
 ## コマンド（クイックリファレンス）
 
 ```bash
-vp run serve     # dev server を前面で起動する。エージェントのシェルでは mise daemons start serve で起動する
+vp run serve     # dev server を前面で起動する。エージェントのシェルでは mise daemons start serve で起動し、mise daemons stop serve で止める
 vp run verify    # マージ前に通す。手順は vite.config.ts の verifySteps が持ち、CI は手順ごとに step を分けて同じタスクを走らせる
 ```
 
