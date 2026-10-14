@@ -21,17 +21,8 @@
 ### dev server と Storybook を止める
 
 - 前面で起動した `vp run serve` と `vp run storybook` は、端末の Ctrl-C で止める。Ctrl-C は前面のプロセスグループ全体に SIGINT を送る
-- background で動かすときは `mise daemons start serve` (Storybook は `storybook`) で起動し、`mise daemons stop <同じ名前>` で止める (ADR-0004)
+- background で動かすときは `mise daemons start serve` (Storybook は `storybook`) で起動し、`mise daemons stop <同じ名前>` で止める (ADR-0004)。`&` で起動しない。job control の無いシェル (tty の無いエージェントのシェルなど) では、background の job が SIGINT を無視し ([POSIX「Shell Command Language」][] の 2.12: "the commands in the list shall inherit from the shell a signal action of ignored (SIG_IGN) for the SIGINT and SIGQUIT signals")、`set -m` も効かない (2026-10-14 に、tty の無い zsh で `can't change option: -m`) ので、job をプロセスグループごと止める手段が残らない
 - 起動したプロセスの pid にだけ SIGTERM を送らない。port を持つのは起動したプロセスではなく子孫の node なので、サーバーが残って worktree の port を持ち続け、次の `vp run serve` は別の port へずれずに終わる (ADR-0004)。2026-10-14 に vite-plus 1.1.0 で、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動した pid への SIGTERM では vite の `cli.js` を走らせる node が port を持ったまま残った。`vp dev` を直に起動して `bin.js` の node に SIGTERM を送ると、子の vite の node が親を失って残った
-- signal で止めるなら、`set -m` を付けたシェルから `&` で起動し、そのプロセスグループへ SIGINT を送る。`set -m` が無いと、非対話のシェルの background job は親から受け継いだグループに入るので、グループへ送ると起動したシェルとその親まで止まる (2026-10-14 に bash で、`set -m` が無いと job の pgid は親の zsh のものになり、`set -m` を付けると job が自分のグループを持って `kill -INT -<pid>` で job だけが終わった)。送ったあとは port を LISTEN するプロセスが残っていないことを確かめる
-
-  ```bash
-  set -m
-  vp run serve &  # mise の hook が走らないシェルでは mise x -- vp run serve &
-  pid=$!
-  kill -INT -"$pid"
-  lsof -nP -iTCP:<port> -sTCP:LISTEN  # 何も出なければ止まっている。port は SERVE_PORT か STORYBOOK_PORT
-  ```
 
 ### commit hook を扱う
 
@@ -244,4 +235,5 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [dotenvx README]: https://github.com/dotenvx/dotenvx/blob/v2.32.3/README.md
 [Vite+ docs「Package Management」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/install.md
 [Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/env.md
+[POSIX「Shell Command Language」]: https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html
 [Vite+ docs「Commit Hooks」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/commit-hooks.md
