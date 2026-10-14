@@ -29,6 +29,22 @@ function maxLengthMessage(label: string, maxLength: number): string {
   return `${label}は ${maxLength} 文字以内で入力してください`;
 }
 
+const titleMaxLength = v.maxCodePoints<string, typeof NOTE_TITLE_MAX_LENGTH, string>(
+  NOTE_TITLE_MAX_LENGTH,
+  maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH),
+);
+const bodyMaxLength = v.maxCodePoints<string, typeof NOTE_BODY_MAX_LENGTH, string>(
+  NOTE_BODY_MAX_LENGTH,
+  maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH),
+);
+
+function trimmedCheck(label: string) {
+  return v.check<string, string>(
+    (value) => value === value.trim(),
+    `${label}の前後に空白が残っています`,
+  );
+}
+
 /**
  * 入力の 1 件。server function の validator とフォームのフィールド検証が同じ定義を使う。
  *
@@ -41,15 +57,10 @@ export const noteInputSchema = v.object({
     v.string(),
     v.trim(),
     v.minLength(1, requiredMessage(TITLE_LABEL)),
-    v.maxCodePoints(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
+    titleMaxLength,
     titleLabel,
   ),
-  body: v.pipe(
-    v.string(),
-    v.trim(),
-    v.maxCodePoints(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
-    bodyLabel,
-  ),
+  body: v.pipe(v.string(), v.trim(), bodyMaxLength, bodyLabel),
   /**
    * 暦の日付 (ADR-0031)。期日なしは null。`Date` を経由せず `YYYY-MM-DD` のまま持つ。
    * `isoDate()` は形式だけを見て 2023-06-31 を通すので、暦に存在するかを `v.check` で足す
@@ -92,17 +103,12 @@ const noteIdValueSchema = v.pipe(
 const storedTitleSchema = v.pipe(
   v.string(),
   v.minLength(1, requiredMessage(TITLE_LABEL)),
-  v.maxCodePoints(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
-  v.check((value) => value === value.trim(), `${TITLE_LABEL}の前後に空白が残っています`),
+  titleMaxLength,
+  trimmedCheck(TITLE_LABEL),
   titleLabel,
 );
 
-const storedBodySchema = v.pipe(
-  v.string(),
-  v.maxCodePoints(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
-  v.check((value) => value === value.trim(), `${BODY_LABEL}の前後に空白が残っています`),
-  bodyLabel,
-);
+const storedBodySchema = v.pipe(v.string(), bodyMaxLength, trimmedCheck(BODY_LABEL), bodyLabel);
 
 /** 保存済みの 1 件。DB からの読み出し結果を検証するゲートも兼ねる。 */
 export const noteSchema = v.object({
