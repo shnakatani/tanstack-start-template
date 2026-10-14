@@ -124,7 +124,7 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 - pitchfork は `.mise.toml` の `[tools]` に major まで (`2`) で宣言する。mise の daemons の docs は pitchfork を先に入れておく前提で書かれている (mise v2026.10.3 の docs/daemons.md の冒頭)。宣言を外すと、mise の shim のディレクトリが PATH にあるシェルから打った `mise daemons stop` が失敗する (2026-10-14 に mise 2026.10.3 で、`No version is set for shim: pitchfork` で終わった)。仕組みは次の 2 点である
   - mise は、設定が pitchfork を宣言していなければ、`start`・`restart`・`register` のときだけ pitchfork を toolset に足し、`stop` では足さない (mise v2026.10.3 の `src/cli/daemons.rs` の `install` と、`src/daemons/runtime.rs` の `toolset_resolved`)
   - mise は pitchfork の実体を PATH から探し、見つからないときだけ起動時に記録した実体へ戻る (同 `src/daemons/runtime.rs` の `Runtime::from_toolset`)。mise の shim のディレクトリが PATH にあると、`stop` は shim を拾い、shim は版を決める宣言が無いので失敗する
-- `2` の宣言は pitchfork の下限を表せない。mise は `start` のときに、プロジェクトの設定を pitchfork の外部の設定として登録する (mise v2026.10.3 の `src/daemons/runtime.rs` の `supports_external_config` と `prepare`)。pitchfork がこの機能を持ったのは 2.25.0 からで (pitchfork の CHANGELOG の 2.25.0: "attach external config files to projects")、それより古い 2.x では `start` が失敗する。ここまでの仕組み (`install` の判定、`toolset_resolved`、`Runtime::from_toolset`、`supports_external_config`) は、`min_version` の mise v2026.9.18 のソースでも同じである
+- `2` の宣言は pitchfork の下限を表せない。mise は `start` のときに、プロジェクトの設定を pitchfork の外部の設定として登録する (mise v2026.10.3 の `src/daemons/runtime.rs` の `supports_external_config` と `prepare`)。pitchfork がこの機能を持ったのは 2.25.0 からで (pitchfork の CHANGELOG の 2.25.0: "attach external config files to projects")、それより古い 2.x では `start` が失敗する
 - mise v2026.10.3 は、タスクを走らせる daemon をシェルを通さずに起動し、それに pitchfork 2.28.0 以上を求める (同 `src/daemons/runtime.rs` の `supports_argv_run`: "runs a task, which needs pitchfork 2.28.0 or later"。pitchfork の CHANGELOG の 2.28.0: "accept an argv array for run to start a daemon without a shell")。mise の版の書き方は前方一致だけで、下限を書けない (mise v2026.10.3 の docs/configuration.md)。`2` には手元にある最新の 2.x が選ばれるので、それが 2.28.0 より古いと `start` が失敗する
 
 | 案                                                     | 評価                                                                                                                                                           | 採否     |
@@ -142,7 +142,7 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 | linked worktree         | パスから決まる別の値 (`3001`〜`3511` / `6007`〜`6517`) |
 
 - daemons は experimental で、`[settings]` の `experimental = true` が要る (mise v2026.9.18 の docs/daemons.md の冒頭)。このフラグは daemons のほかに、試験中の振る舞いも有効にする (mise v2026.9.18 の settings の `experimental`: "New functionality that I want to test with a smaller subset of users I will often push out under experimental mode even if it's not related to an experimental feature.")
-- 自動 port は mise v2026.9.12 から使える。`min_version` は確かめた版の `2026.9.18` にし、それより古い mise を設定の読み込みで止める
+- 自動 port は mise v2026.9.12 から使える。`min_version` は、`task =` の daemon の起動と停止を確かめた版の `2026.10.3` にし、それより古い mise を設定の読み込みで止める
 - mise は bad port を避けない。ブラウザは WHATWG Fetch の bad port への接続を拒むが、server は起動するので、使用中かを見るフラグでは気づけない (2026-10-04 に port 3659 で起動した dev server へ、curl は 200 を返し、Playwright 1.63.0 の Chromium は `net::ERR_UNSAFE_PORT` で開けなかった)。`base` を変えるときは、`base` から `base + 511` に bad port が入らない値を選ぶ。`3000`〜`3511` と `6006`〜`6517` には無い (whatwg/fetch の e9460d1、2026-10-06)
 
 | 案                                                      | 評価                                                                                                                                                                         | 採否     |
