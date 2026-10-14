@@ -2,7 +2,8 @@
 min_version = "2026.9.18"
 
 [tools]
-# 下の daemons は pitchfork が動かす。宣言が無いと mise daemons stop が版の決まらない shim を拾って止まる (ADR-0004)
+# 下の daemons は pitchfork が動かす。宣言が無いと、mise の shim が PATH にあるシェルの mise daemons stop が
+# 版の決まらない shim を拾って止まる (ADR-0004)
 pitchfork = "2"
 
 [settings]
