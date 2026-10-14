@@ -8,7 +8,7 @@
 
 1. `vite.config.ts` の `nitro()` の `routeRules["/**"].headers` を書き換える
 2. `scripts/checks/runtime/security-headers.ts` の `EXPECTED_HEADERS` を同じ値に揃える。定数を共有せず写しで持つ理由は、そのファイルの docstring にある
-3. `vp build` のあとに `vp node scripts/checks/runtime/security-headers.ts` を走らせ、全件が `/` の応答に乗ることを見る。`vite.config.ts` の `verifySteps` も同じ順で走らせ、CI はその手順を step ごとに走らせる
+3. `vp run verify:build` のあとに `vp run verify:security-headers` を走らせ、全件が `/` の応答に乗ることを見る
 
 | 対象                                               | 起きること                                                                                                                    | 対処                                               |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |

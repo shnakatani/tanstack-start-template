@@ -29,10 +29,11 @@ jobs:
         with:
           cache: true
 
+      - run: vp run verify:peers
+
       # chromium は vp install では入らない (playwright が install スクリプトを持たない)
       - run: vp exec playwright install chromium --only-shell
 
-      - run: vp run verify:peers
       # PR の差分に lint の注釈は出ない (voidzero-dev/vite-plus#925、docs/guides/lint/configuration.md「PR の差分に lint の注釈を出す」)
       - run: vp run verify:check
       - run: vp run verify:test
@@ -45,6 +46,7 @@ jobs:
           path: .vitest/index.html
           # zip にせず上げると、GitHub がブラウザでそのまま開く (GitHub Changelog 2026-02-26)
           archive: false
+      # report が書かれる前に落ちると、upload は警告だけ出して成功し、artifact-url を持たない
       - if: failure() && steps.upload-report.outputs.artifact-url != ''
         run: echo "::notice title=Vitest HTML report::$REPORT_URL"
         env:

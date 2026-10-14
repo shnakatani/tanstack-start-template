@@ -14,7 +14,7 @@
 ### Node で動くテストを TZ ごとに走らせる
 
 - Node で動くテスト (unit project) のうち、`Date` のローカルの getter や TZ を指定しない date-fns を直接呼ぶモジュールと、ローカルの TZ に依存しないことを保証するモジュールのテストは、ファイルごと `src/**/*.tz.test.ts` にする。1 件ずつ TZ に依存するかで分けると、分け損ねたテストが基準の TZ でしか走らない
-- 基準の TZ では `vp test run` (unit project) が、基準以外の TZ では `vp node scripts/time-zones/run-tests.ts` が走らせる。`vite.config.ts` の `verifySteps` は、この順に両方を呼ぶ。CI も同じ順に step で走らせる
+- 基準の TZ では `vp test run` (unit project) が、基準以外の TZ では `vp node scripts/time-zones/run-tests.ts` が走らせる。`vite.config.ts` の `verifySteps` は、この順に両方を呼ぶ
 - スクリプトは TZ ごとに `TEST_TIME_ZONE` を渡したプロセスを並列に走らせる (「TZ ごとの実行を並列にする理由」)。落ちた TZ があれば、その TZ だけを走らせ直すコマンドを出して非ゼロで終える
 - 1 つの TZ だけを走らせるときは、そのコマンド (`TEST_TIME_ZONE=<IANA 名> vp test run --project unit .tz.test.ts`) を打つ。`TEST_TIME_ZONE` はスクリプトとこのコマンドでだけ使う
 - 止めるときは Ctrl-C を使う。親のプロセスだけを kill すると子が残る

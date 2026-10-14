@@ -9,6 +9,8 @@ import { lintConfig } from "./tooling/lint/config";
 import { reactPlugin } from "./tooling/plugins/react";
 import { testConfig } from "./tooling/test/config";
 
+// CI はこの手順を 1 つずつ別の step で打つ。足したら .github/workflows/ci.yml にも step を足す。
+// 足し忘れても CI は落ちず、その手順が CI で走らないだけになる (ADR-0004)
 const verifySteps = {
   // 素の pnpm で打つ。vp pm は peers を中継しない (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
   "verify:peers": "pnpm peers check",
@@ -31,7 +33,8 @@ export default defineConfig({
     "*.md": ["vp fmt --write --no-error-on-unmatched-pattern"],
   },
   run: {
-    // キャッシュすると、gate がリプレイで済まされ、親の環境変数が子へ届かない (ADR-0004)。
+    // キャッシュすると、gate の 2 回目がリプレイで済まされ、既定の組に無い親の環境変数 (mise の port や
+    // DB_FILE_NAME) が子へ届かない (ADR-0004)。
     // `vp run --cache` はこの設定を外すので、gate には付けない
     cache: false,
     tasks: {

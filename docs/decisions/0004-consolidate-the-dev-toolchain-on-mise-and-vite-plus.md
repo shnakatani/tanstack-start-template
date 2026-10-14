@@ -107,7 +107,12 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 
 ### dev server と Storybook の port は mise の daemons の自動 port で worktree ごとに決める
 
-`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の Vite Task のタスクを `run = "exec vp run serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (mise v2026.9.18 の docs/daemons.md「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、mise の環境を読んだシェルから `vp run serve` で前面に起動できる。docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した。`mise daemons stop` は手元の pitchfork の shim の版が決まらず失敗したので、常駐を止める経路は確かめていない。同じ日に、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動したプロセスの pid にだけ SIGTERM を送ると dev server が port を持ったまま残った (port を持っていたのは、起動した `vp` の pid ではなく、その子孫の node のプロセス (vite の `cli.js`) だった)。プロセスグループ全体への SIGINT (端末の Ctrl-C) では止まった。pitchfork が stop でどちらに送るかは確かめていない。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (同「Per-daemon proxy settings」)。
+`.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の Vite Task のタスクを `run = "exec vp run serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (mise v2026.9.18 の docs/daemons.md「Per-daemon proxy settings」)。
+
+- mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (同「Ports across git worktrees」「Port environment variables」)。タスクはこの値を `--port` に渡すので、mise の環境を読んだシェルから `vp run serve` で前面に起動できる
+- docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した
+- 常駐を止める経路は確かめていない。2026-10-14 に mise 2026.10.3 で、`mise daemons stop` は手元の pitchfork の shim の版が決まらず失敗した。pitchfork が stop で signal をどこへ送るかも確かめていない
+- 同じ日に、`exec vp run serve` と `exec vp dev …` のどちらで起動しても、起動したプロセスの pid にだけ SIGTERM を送ると dev server が port を持ったまま残った。port を持っていたのは、起動した `vp` の pid ではなく、その子孫の node のプロセス (vite の `cli.js`) だった。プロセスグループ全体への SIGINT (端末の Ctrl-C) では止まった
 
 2026-10-09 に mise 2026.9.18 で確かめた振る舞いは次のとおりである。
 
