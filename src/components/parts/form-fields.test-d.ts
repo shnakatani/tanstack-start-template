@@ -6,14 +6,16 @@ import type {
   FormDateField,
   FormNumberField,
   FormSelectField,
+  FormTextareaField,
   FormTextField,
 } from "@/components/parts/form-fields";
 
 // 部品が期待するフィールド値型を固定する (docs/guides/forms-and-inputs.md「`fieldComponents` の部品を書く」)。
 // 検査のされ方は (docs/guides/testing/type-tests.md「型テストを置く」)
 describe("fieldValue の型契約", () => {
-  it("5 部品の期待するフィールド値型を固定する", () => {
+  it("6 部品の期待するフィールド値型を固定する", () => {
     expectTypeOf<ComponentProps<typeof FormTextField>["fieldValue"]>().toEqualTypeOf<string>();
+    expectTypeOf<ComponentProps<typeof FormTextareaField>["fieldValue"]>().toEqualTypeOf<string>();
     // 数値フィールドは「空」を表せる必要があるため null を含む (Number("") の 0 に潰さない)
     expectTypeOf<ComponentProps<typeof FormNumberField>["fieldValue"]>().toEqualTypeOf<
       number | null

@@ -11,7 +11,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 既定。`min-h-16` の高さから始まる */
+/** 既定。`min-h-16` の高さから始まる。フォームの中では `FormTextareaField` (parts) を通す */
 export const Default: Story = {};
 
 /** 複数行が入っている状態 */
