@@ -80,7 +80,7 @@ export default defineConfig({
     return [
       // devtools のサーバ (既定の port は 4206) を起こさない。認証の無いメッセージで、dev server の上で
       // パッケージの install をシェル越しに走らせる (TanStack/devtools#464)。画面はこのサーバにつながない
-      // (<TanStackDevtools> の connectToServerBus は既定で false) ので、止めても失う機能は無い
+      // (<TanStackDevtools> の eventBusConfig.connectToServerBus は既定で false) ので、止めても失う機能は無い
       devtools({ eventBusConfig: { enabled: false } }),
       tailwindcss(),
       tanstackStart({
