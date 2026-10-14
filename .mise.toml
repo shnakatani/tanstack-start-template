@@ -17,13 +17,14 @@ experimental = true
 DB_FILE_NAME = "{{ [config_root, '.data/dev.sqlite'] | join_path }}"
 
 # vite.config.ts の同名のタスクは worktree を知らない。worktree ごとの port は、下の daemons が出す
-# SERVE_PORT / STORYBOOK_PORT を、このタスクが引数で足す (ADR-0004)
-# interactive は stdin をつなぐ。mise のタスクは既定でつながず、Vite のキーボードのショートカットが効かない。
-# interactive のタスクは mise の I/O の lock を取るので、serve と storybook を 1 つの mise run (depends など) で
-# 束ねない。後の方が待ち続ける。両方を動かすときは daemons を使う (ADR-0004)
+# SERVE_PORT / STORYBOOK_PORT を、このタスクが引数で足す。serve は PORT にも入れる。nitro が --port より
+# PORT を先に読むので、シェルに PORT があると別の port で起動する (ADR-0004)
+# interactive は stdin を確実につなぎ、Vite のキーボードのショートカットを効かせる。interactive のタスクは
+# mise の I/O の lock を取るので、serve と storybook を 1 つの mise run (depends など) で束ねない。一方が
+# 待ち続ける。両方を動かすときは daemons を使う (ADR-0004)
 [tasks.serve]
 interactive = true
-run = "exec vp run serve --port ${SERVE_PORT:?mise の daemons の port が届いていない}"
+run = "PORT=${SERVE_PORT:?mise の daemons の port が届いていない} exec vp run serve --port $SERVE_PORT"
 
 [tasks.storybook]
 interactive = true

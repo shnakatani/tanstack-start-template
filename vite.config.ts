@@ -38,7 +38,7 @@ export default defineConfig({
     // `vp run --cache` はこの設定を外すので、gate には付けない
     cache: false,
     tasks: {
-      // worktree を知らず、Vite と Storybook の既定の port で起動する。worktree ごとの port は .mise.toml の
+      // worktree を知らず、既定の port で起動する。worktree ごとの port は .mise.toml の
       // 同名のタスクが引数で足す。使用中なら次の port へずらさずに止める (ADR-0004)。
       // serve は DB_FILE_NAME が無ければ起動の前に止める。`${…:?}` を引数に置くと vp dev の root になり、
       // `&&` は Vite Task が別のタスクに分けるので、変数の代入の形で書く

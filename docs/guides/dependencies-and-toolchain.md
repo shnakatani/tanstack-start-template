@@ -14,7 +14,7 @@
 ### 手元の環境を用意する
 
 - mise のシェル hook を入れる。`[env]` の値 (`DB_FILE_NAME`) は、hook が読み込んだシェルか `mise x --` から打った `vp run` のタスクに届く。hook が走らないシェル (エージェントのシェル、hook の無い IDE のタスク) では、それを読むタスクが未設定で止まる (ADR-0004)。`db:*` は `mise x -- vp run <タスク>` で打つ
-- dev server と Storybook は `mise run serve` と `mise run storybook` で起動する。mise のタスクが worktree ごとの port を渡すので、hook の無いシェルからも同じ port で起動する。`vp run serve` を直に打つと、worktree の中でも既定の port で起動する (ADR-0004)。エージェントのシェルでは「dev server と Storybook を止める」のとおり `mise daemons start` で起動する
+- dev server と Storybook は `mise run serve` と `mise run storybook` で起動する。mise のタスクが worktree ごとの port を渡すので、hook の無いシェルからも同じ port で起動する。hook を読んだシェルで `vp run serve` を直に打つと、worktree の中でも既定の port で起動する (ADR-0004)。エージェントのシェルでは「dev server と Storybook を止める」のとおり `mise daemons start` で起動する
 - mise は `.mise.toml` の `min_version` 以上にする。古い mise は設定の読み込みで止まる (ADR-0004)
 - 素の `pnpm` は corepack などで別に入れない。Vite+ の shim が `packageManager` の版の `pnpm` を用意する ([Vite+ docs「Environment」][]。確かめた結果は「入口を `vp` にそろえる理由」)
 - Node.js と pnpm 以外のツールを足すときは、`.mise.toml` の `[tools]` へ宣言する。手元でグローバルに入れたものに依存しない
