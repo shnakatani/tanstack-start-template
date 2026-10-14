@@ -78,7 +78,10 @@ export default defineConfig({
     // docs/guides/testing/configuration.md「テストの分岐で plugin を外す理由」「判定を `process.env.VITEST` で書く理由」
     if (process.env.VITEST === "true") return [];
     return [
-      devtools(),
+      // devtools のサーバ (既定の port は 4206) を起こさない。認証の無いメッセージで、dev server の上で
+      // パッケージの install をシェル越しに走らせる (TanStack/devtools#464)。画面はこのサーバにつながない
+      // (<TanStackDevtools> の eventBusConfig.connectToServerBus は既定で false) ので、止めても失う機能は無い
+      devtools({ eventBusConfig: { enabled: false } }),
       tailwindcss(),
       tanstackStart({
         // テストとテスト専用ヘルパーを route から外す。外さないと generator が毎ビルド警告する
