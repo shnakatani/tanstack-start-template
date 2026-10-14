@@ -12,7 +12,7 @@ vp run verify    # マージ前に通す。手順は vite.config.ts の verifySt
 ## 開発上の注意
 
 - mise の hook が走らないシェル (エージェントの Bash など) では、mise の値を読むタスク (`serve`、`storybook`、`db:*`) を `mise x -- vp run <タスク>` で打つ。`vp run` だけだと `SERVE_PORT` や `DB_FILE_NAME` が届かず止まる (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
-- dev server と Storybook を background で動かすときは `mise daemons start serve` (`storybook`) で起動し、`mise daemons stop` で止める。起動した pid にだけ SIGTERM を送らない。port を持つ子孫の node が残り、次の `vp run serve` が port を取れずに終わる。signal で止めたら `lsof` で port の LISTEN が残っていないことを確かめる (`docs/guides/dependencies-and-toolchain.md`「dev server と Storybook を止める」)
+- dev server と Storybook を background で動かすときは `mise daemons start serve` (`storybook`) で起動し、`mise daemons stop <同じ名前>` で止める。起動した pid にだけ SIGTERM を送ると、port を持つ子孫の node が残り、次の `vp run serve` が port を取れずに終わる (`docs/guides/dependencies-and-toolchain.md`「dev server と Storybook を止める」)
 - 依存は `vp add` / `vp remove` で足し外し、pnpm / npm / yarn で足し外さない。入口を `vp` にそろえる (`npm` はこのリポジトリの `catalog:` を読めず `EUNSUPPORTEDPROTOCOL` で止まる)。`vp` が中継しないサブコマンドは素の `pnpm` で打つ (`pnpm peers check`)。出典は `docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
 - **worktree のパスに `+` を含めない**。story の project が、事前バンドルのキャッシュが無い初回の実行で落ちる (`docs/guides/testing/configuration.md`「テストを走らせる」)
 - `EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
