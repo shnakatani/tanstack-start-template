@@ -11,7 +11,7 @@ import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "@/lib/field-errors";
 
 /**
  * `form.AppField` の内側でしか動かない配線部品なので、story も TanStack Form の
- * harness ごと組む。カタログの本体は `FieldsForm` で、6 種のフィールドを 1 つのフォームへ
+ * harness ごと組む。カタログの本体は `FieldsForm` で、全種のフィールドを 1 つのフォームへ
  * 並べる。
  *
  * ラベルの色 (`fieldLabelClassName` の合成順) は `getComputedStyle` で固定する回帰として
@@ -58,7 +58,7 @@ function captureConsoleWarn() {
 interface StoryArgs {
   /** 検証の発火モード。`blur` はフォーカスが外れた時点で検証する */
   validationMode: "submit" | "blur";
-  /** `FieldsForm` の全フィールド (text / textarea / number / select / date / checkbox) を無効にする */
+  /** `FieldsForm` の全フィールドを無効にする */
   disabled: boolean;
   /** `FormSelectField` の候補 */
   options: readonly { value: string; label: string }[];
@@ -79,7 +79,7 @@ interface CatalogValues {
   canEdit: boolean;
 }
 
-/** 6 種のフィールドを 1 つのフォームへ並べたカタログ本体 */
+/** 全種のフィールドを 1 つのフォームへ並べたカタログ本体 */
 function FieldsForm({
   validationMode,
   disabled,
@@ -444,7 +444,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 既定。text / textarea / number / select / date / checkbox の 6 種が並ぶ */
+/** 既定。全種のフィールドが並ぶ */
 export const Default: Story = {};
 
 /**
@@ -479,7 +479,7 @@ export const Invalid: Story = {
   },
 };
 
-/** 無効表示。6 部品とも正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が付く */
+/** 無効表示。全部品に正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が付く */
 export const Disabled: Story = {
   args: { disabled: true },
   play: async () => {
