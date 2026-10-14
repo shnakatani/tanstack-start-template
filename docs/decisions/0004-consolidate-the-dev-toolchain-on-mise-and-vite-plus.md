@@ -28,7 +28,7 @@
 ### タスクは Vite Task に置き、worktree の port は mise のタスクが渡す
 
 タスクは `vite.config.ts` の `run.tasks` に置く。Vite Task のタスクは worktree を知らず、`serve` と `storybook` は既定の port で起動する。
-worktree ごとの port は、`.mise.toml` の同名のタスク (`[tasks.serve]`、`[tasks.storybook]`) が `vp run serve --port $SERVE_PORT` のように引数で足し、`PORT` にも入れる。mise のタスクは port のほかにコマンドを持たない。
+worktree ごとの port は、`.mise.toml` の同名のタスク (`[tasks.serve]`、`[tasks.storybook]`) が `vp run serve --port $SERVE_PORT` のように引数で足す。mise のタスクは port のほかにコマンドを持たない。
 mise は、Node.js と pnpm 以外のツール (`[tools]`)、環境変数 (`[env]`)、dev server と Storybook の port (`[daemons.*]` と、それを渡す `[tasks.*]`) を持つ。
 
 - コマンドは `vite.config.ts` だけが持つ。CI は mise を入れずに、手元と同じタスクを `vp run` で走らせられる
@@ -37,9 +37,9 @@ mise は、Node.js と pnpm 以外のツール (`[tools]`)、環境変数 (`[env
 - port は引数で渡すので、hook の無いシェルからも `mise run serve` で worktree の port に起動する。`vp run` は、タスク名の後ろの引数をコマンドに渡す (Vite+ の `docs/guide/run.md`「Additional Arguments」: "Arguments after the task name are passed through to the task command")。2026-10-14 に mise 2026.10.3、vite-plus 1.1.0 で、hook の無いシェルから打った `mise run serve` と `mise run storybook` が、vite と storybook の引数に `--port 3465` と `--port 6471` を付けて、その port で起動した
 - mise の値を読むタスクは、値が届いていなければ止まる形にする。黙って既定の port や別の DB で動くと、worktree ごとに分けた port と DB が混ざる
 - `vp run serve` と `vp run storybook` を直に打つと、worktree の中でも既定の port (3000 / 6006) で起動する。使用中なら、次の port へずれずに止まる (「dev server と Storybook の port は mise の daemons の自動 port で worktree ごとに決める」)。代償として、この port は primary の checkout の daemons の `base` と同じなので、primary で起動していなければ、linked worktree のサーバーが primary の URL に応答する (2026-10-14 に vite-plus 1.1.0 で、`DB_FILE_NAME` を渡した `vp run serve` が 3000 で起動した。hook の無いシェルでは `serve` は `DB_FILE_NAME` のガードで止まる)。README と AGENTS.md の入口は、worktree でも `mise run` を案内する
-- mise のタスクは、port を `--port` と `PORT` の両方で渡す。`--port` より `PORT` を先に読む経路が 2 つある
-  - nitro の vite plugin は、dev server の port を `PORT` から先に読む (nitro 3.0.260610-beta の `dist/vite.mjs`: `Number.parseInt(process.env.PORT || "") || userConfig.server?.port || …`)。2026-10-14 に、`PORT=4999` を export したシェルから `--port` だけを渡すと、worktree の port ではなく 4999 で起動した
-  - Storybook は、Claude のプレビューから起動されたとき (`CLAUDE_AGENT_SDK_VERSION` があり `AI_AGENT` が無い) だけ、`PORT` を `--port` より先に読む (storybookjs/storybook#35259 の本文: "Claude-preview precedence `PORT > --port > SBCONFIG_PORT`"。storybook 10.6.1 の `resolveDevCommandOptions` も同じ)。2026-10-14 に storybook 10.6.1 で、`CLAUDE_AGENT_SDK_VERSION` と `PORT=4999` を export したシェルから `--port` だけを渡すと、4999 で起動した
+- `serve` の mise のタスクは、port を `PORT` にも入れる。nitro の vite plugin は、dev server の port を `PORT` から先に読み、`--port` より優先する (nitro 3.0.260610-beta の `dist/vite.mjs`: `Number.parseInt(process.env.PORT || "") || userConfig.server?.port || …`)。2026-10-14 に、`PORT=4999` を export したシェルから `--port` だけを渡すと、worktree の port ではなく 4999 で起動した
+  - 代償として、呼び出し側が `PORT` で渡す port も上書きする。Claude のプレビューは、`.claude/launch.json` の `autoPort` で選び直した port を `PORT` で渡す (Claude Code docs の Desktop「Port conflicts」: "When Claude picks a different port, it passes the assigned port to your server via the `PORT` environment variable.")
+  - `storybook` には入れない。Storybook が `PORT` を `--port` より先に読むのは Claude のプレビューから起動されたとき (`CLAUDE_AGENT_SDK_VERSION` があり `AI_AGENT` が無い) だけで (storybook 10.6.1 の `resolveDevCommandOptions`)、プレビューが選んだ port で listen させるための振る舞いである (storybookjs/storybook#35257 の本文: "Claude can report one port while Storybook binds another")。入れると、プレビューの下でこのずれを作り直す。プレビューの外では `--port` が先に読まれるので、シェルの `PORT` は効かない
 - mise のタスクに `interactive = true` を置き、stdin をつなぐ。mise は既定でタスクに stdin をつながず、端末が要るタスクには `interactive = true` を求める (mise v2026.10.3 の docs/tasks/running-tasks.md「Interactive input」: "Stdin is not connected by default. Set `interactive = true` for a task that needs the terminal")。Vite のキーボードのショートカットに要る。2026-10-14 に tty のある端末で、`mise run serve` の下で `h` が効いた。`interactive` が無くても、1 つだけ走らせたタスクに stdin がつながることがあるが、docs に無い振る舞いで、`[env]` に伏せる値 (`redact = true`、`redactions`、age で復号した値) が 1 つでもあるとつながらない (同日に mise 2026.10.3 で、擬似端末の下で実測。mise v2026.10.3 の `src/task/task_executor.rs` も、`interactive` の無いタスクの stdin を、伏せる値が無いときだけつなぐ)。docs が書く interactive の排他の lock は、別のプロセスの `mise run` を止めなかった (同日に mise 2026.10.3 で、前面の `mise run serve` と `mise run storybook`、`serve` の daemon と前面の `mise run storybook` が、それぞれ同時に起動した)。1 つの `mise run` の中では一方が待ち続けるので (mise v2026.10.3 の docs/tasks/task-configuration.md「interactive」: "while an interactive task is running, all other tasks (both interactive and non-interactive) are blocked"。同日に `mise run serve ::: storybook` は 25 秒たっても storybook の port しか開かなかった)、serve と storybook を `depends` などで束ねず、両方を動かすときは daemons を使う
 - 前面の `mise run serve` は Ctrl-C で止まる。2026-10-14 に mise 2026.10.3、vite-plus 1.1.0 で、`mise run serve` と `mise run storybook` を job として起動し、job のプロセスグループに SIGINT を送ると (Ctrl-C と同じ届き方)、5 秒後にはその port を LISTEN するソケットも、テンプレートのプロセスも残っていなかった
 
@@ -122,7 +122,7 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 
 `.mise.toml` の `[daemons.serve]` と `[daemons.storybook]` を、同名の mise のタスクを `task = "serve"` で走らせる daemon として宣言し、`port = { auto = true, base = 3000 }` (Storybook は `6006`) を置く (mise v2026.10.3 の docs/daemons.md「Daemons that run a task」: "Use `task` when the long-running command is already defined as a mise task")。pitchfork の proxy は使わないので、`proxy = false` で URL の変数 (`SERVE_URL` など) を出さない (mise v2026.9.18 の docs/daemons.md「Per-daemon proxy settings」)。
 
-- mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (同「Ports across git worktrees」「Port environment variables」)。mise のタスクがこの値を `--port` と `PORT` で `vp run` に渡す (「タスクは Vite Task に置き、worktree の port は mise のタスクが渡す」)。daemon と前面の `mise run serve` が同じタスクを走らせるので、port の引数は 1 か所にしか書かない
+- mise は設定を読む時点で port を決め、`SERVE_PORT` と `STORYBOOK_PORT` として出す (同「Ports across git worktrees」「Port environment variables」)。mise のタスクがこの値を `--port` で `vp run` に渡す (`serve` は `PORT` にも入れる) (「タスクは Vite Task に置き、worktree の port は mise のタスクが渡す」)。daemon と前面の `mise run serve` が同じタスクを走らせるので、port の引数は 1 か所にしか書かない
 - docs は daemon の環境にも同じ変数が入ると書く (同「Port environment variables」の "the daemon's mise environment")。2026-10-14 に mise 2026.10.3 で、`mise daemons start serve` で起動した dev server が同じ port で応答した
 - 常駐は `mise daemons stop <name>` で止まる。2026-10-14 に mise 2026.10.3、pitchfork 2.30.1、vite-plus 1.1.0 で、`mise daemons start` で起動した `serve` と `storybook` に `mise daemons stop` を打つと、exit 0 で終わり、5 秒後にはその port を LISTEN するソケットも、テンプレートのプロセスも残っていなかった (起動中は `serve` が 2 つ、`storybook` が 6 つ)。タスクの `interactive = true` は、tty の無い pitchfork の下でも起動と停止を変えなかった
 - pitchfork は `.mise.toml` の `[tools]` に major まで (`2`) で宣言する。mise の daemons の docs は pitchfork を先に入れておく前提で書かれている (mise v2026.10.3 の docs/daemons.md の冒頭)。宣言を外すと、mise の shim のディレクトリが PATH にあるシェルから打った `mise daemons stop` が失敗する (2026-10-14 に mise 2026.10.3 で、`No version is set for shim: pitchfork` で終わった)。仕組みは次の 2 点である
@@ -297,7 +297,8 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - mise が既定でタスクに stdin をつながないこと (「Interactive input」): https://github.com/jdx/mise/blob/v2026.10.3/docs/tasks/running-tasks.md
 - mise のタスクの `interactive`: https://github.com/jdx/mise/blob/v2026.10.3/docs/tasks/task-configuration.md
 - `interactive` の無いタスクの stdin を、伏せる値が無いときだけつなぐ分岐: https://github.com/jdx/mise/blob/v2026.10.3/src/task/task_executor.rs
-- Storybook が Claude のプレビューからの起動で `PORT` を `--port` より先に読むこと: https://github.com/storybookjs/storybook/pull/35259
+- Storybook が Claude のプレビューからの起動で `PORT` を `--port` より先に読む理由: https://github.com/storybookjs/storybook/issues/35257
+- Claude のプレビューが選び直した port を `PORT` で渡すこと (「Port conflicts」): https://code.claude.com/docs/en/desktop
 - mise の daemons が pitchfork を toolset に足すサブコマンドを `start`・`restart`・`register` に絞る判定 (`install`): https://github.com/jdx/mise/blob/v2026.10.3/src/cli/daemons.rs
 - mise の daemons が pitchfork を toolset に足す条件 (`toolset_resolved`)、PATH から実体を探す順序 (`Runtime::from_toolset`)、pitchfork の下限 (`supports_external_config`、`supports_argv_run`): https://github.com/jdx/mise/blob/v2026.10.3/src/daemons/runtime.rs
 - mise のツールの版の書き方 (前方一致と `prefix:`): https://github.com/jdx/mise/blob/v2026.10.3/docs/configuration.md
