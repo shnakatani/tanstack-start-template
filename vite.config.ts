@@ -33,8 +33,8 @@ export default defineConfig({
     "*.md": ["vp fmt --write --no-error-on-unmatched-pattern"],
   },
   run: {
-    // キャッシュすると、gate の 2 回目がリプレイで済まされ、既定の組に無い親の環境変数 (mise の port や
-    // DB_FILE_NAME) が子へ届かない (ADR-0004)。
+    // キャッシュすると、gate の 2 回目がリプレイで済まされる。キャッシュが効くタスクには、既定の組に無い
+    // 親の環境変数 (mise の port や DB_FILE_NAME) が 1 回目から届かない (ADR-0004)。
     // `vp run --cache` はこの設定を外すので、gate には付けない
     cache: false,
     tasks: {
