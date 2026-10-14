@@ -60,7 +60,6 @@ describe("noteInputSchema", () => {
     expect(result.output.body).toBe(expected);
   });
 
-  // 上限は trim の後の長さで数える。前後の空白で上限を超えても落とさない
   it("前後の空白を除いて上限ちょうどの body を受け付ける", () => {
     const body = ` ${"い".repeat(NOTE_BODY_MAX_LENGTH)}\n`;
     expect(v.safeParse(noteInputSchema, { ...valid, body }).success).toBe(true);

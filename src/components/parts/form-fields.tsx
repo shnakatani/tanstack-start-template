@@ -138,10 +138,7 @@ interface FormTextareaFieldProps
   label: string;
 }
 
-/**
- * 複数行の文字列フィールド。高さは registry の `Textarea` の `field-sizing-content` で中身に合わせて伸ばし、
- * 上限を付けない。ダイアログの中ではスクロールを `DialogScrollBody` が持つので、上限を付けると入れ子のスクロールになる
- */
+/** 複数行の文字列フィールド */
 export function FormTextareaField({ label, placeholder, disabled }: FormTextareaFieldProps) {
   const { field, id, errorId, errors, invalid } = useFormFieldState<string>();
 

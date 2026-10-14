@@ -139,7 +139,6 @@ describe("NoteCreateDialog", () => {
       "牛乳とパンを買う。".repeat(NOTE_BODY_MAX_LENGTH).slice(0, NOTE_BODY_MAX_LENGTH),
     );
 
-    // 欄の中にスクロールが無いことを、中身の寸法と見えている寸法の差で見る
     await expect
       .poll(() => {
         const element = body.element();

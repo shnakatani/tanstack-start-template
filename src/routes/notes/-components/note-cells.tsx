@@ -65,7 +65,7 @@ export function NoteTitleCell({ row }: NoteCellContext) {
   return <div className="wrap-break-word whitespace-normal">{noteInputOf(row.original).title}</div>;
 }
 
-/** 本文の cell。長い本文は列の幅で 1 行に切り詰め、改行も空白として 1 行に並べる。全文は行を開いて出す (`NoteBodyDetail`) */
+/** 本文の cell。長い本文は列の幅で 1 行に切り詰める。全文は行を開いて出す (`NoteBodyDetail`) */
 export function NoteBodyCell({ row }: NoteCellContext) {
   return <div className="truncate">{noteInputOf(row.original).body}</div>;
 }
