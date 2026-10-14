@@ -40,7 +40,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 
 ### タスクを足す
 
-1. `vite.config.ts` の `run.tasks` に足す。worktree ごとの port で起動するサーバーなら、タスクは port を読まずに使用中の port で止まるフラグ (Vite は `--strictPort`) を付け、`.mise.toml` に同名のタスクを足して `interactive = true` を置き、`exec vp run <task> --port ${<NAME>_PORT:?…}` で渡す。ツールが `--port` より `PORT` の環境変数を先に読むなら (nitro の dev server)、`PORT=${<NAME>_PORT:?…}` も付ける。daemon は `task =` でそのタスクを指す (ADR-0004)
+1. `vite.config.ts` の `run.tasks` に足す。worktree ごとの port で起動するサーバーなら、タスクは port を読まずに使用中の port で止まるフラグ (Vite は `--strictPort`) を付け、`.mise.toml` に同名のタスクを足して `interactive = true` を置き、`exec vp run <task> --port ${<NAME>_PORT:?…}` で渡す。ツールが起動元に関わらず `--port` より `PORT` の環境変数を先に読むなら (nitro の dev server)、`PORT=${<NAME>_PORT:?…}` も付ける。起動元 (Claude のプレビュー) が渡したときだけ先に読むツール (Storybook) には付けない。daemon は `task =` でそのタスクを指す (ADR-0004)
 2. mise の `[env]` の値を読むなら、値が届いていなければ止まる形にする。mise の値は、呼んだシェルが mise の環境を読んでいるときだけタスクに届く (ADR-0004)。command の中で読むなら `${NAME:?mise の環境が要る。…}` のように書く。Vite Task は command を `/bin/sh` で解釈し、未設定なら `/bin/sh: NAME: …` を出して止まる (2026-10-14 に vite-plus 1.1.0 で確かめた)。値をコマンドの引数に使わないなら、`NAME=${NAME:?…} <コマンド>` と代入の形で書く。`${NAME:?…}` だけを置くと、値がコマンドの位置引数 (`vp dev` なら root) になる。コードで読むなら `src/lib/require-env.ts` の `requireEnv` を使う
 3. タスクに `cache` を書かない。`run.cache: false` がすべてのタスクのキャッシュを切っている。gate を `vp run --cache` で打たない。`--cache` は全体の設定を外し、2 回目をリプレイで済ませる (ADR-0004)
 4. command の中で Node.js のスクリプトを走らせるときは、`vp node` ではなく `node` を打つ。タスクの中の `vp node` は `error: Command 'node' not found` で落ちる (「タスクの中で `node` を打つ理由」)

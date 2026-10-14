@@ -18,7 +18,7 @@ DB_FILE_NAME = "{{ [config_root, '.data/dev.sqlite'] | join_path }}"
 
 # vite.config.ts の同名のタスクは worktree を知らない。worktree ごとの port は、下の daemons が出す
 # SERVE_PORT / STORYBOOK_PORT を、このタスクが引数で足す。serve は PORT にも入れる。nitro が --port より
-# PORT を先に読むので、シェルに PORT があると別の port で起動する。storybook には入れない (ADR-0004)
+# PORT を先に読むので、入れないとシェルの PORT で別の port に起動する。storybook には入れない (ADR-0004)
 # mise は既定でタスクに stdin をつながない。interactive でつなぎ、Vite のキーボードのショートカットを
 # 効かせる。interactive のタスクは mise の I/O の lock を取るので、serve と storybook を 1 つの mise run
 # (depends など) で束ねない。一方が待ち続ける。両方を動かすときは daemons を使う (ADR-0004)
