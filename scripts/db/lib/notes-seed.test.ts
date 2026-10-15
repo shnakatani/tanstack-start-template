@@ -12,7 +12,7 @@ const MAX_SEED_ID = Math.max(...NOTE_SEEDS.map((seed) => seed.id));
 
 describe("NOTE_SEEDS", () => {
   // 一覧の読み出しは保存済みの 1 件のスキーマで行を検証し、通らない行が 1 つでもあると一覧ごと落ちる。
-  // noteSchema は入力のスキーマの項目に、保存済みの title の検証 (前後の空白を許さない) を重ねたもの
+  // noteSchema は入力のスキーマの項目に、保存済みの title と body の検証 (前後の空白を許さない) を重ねたもの
   it.each(NOTE_SEEDS)("見本の「$title」が保存済みの 1 件のスキーマを通る", (seed) => {
     expect(v.safeParse(noteSchema, seed).issues).toBeUndefined();
   });

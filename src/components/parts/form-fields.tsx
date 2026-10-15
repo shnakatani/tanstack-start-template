@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useFieldContext } from "@/hooks/form-context";
 import { formatCalendarDate, parseCalendarDate } from "@/lib/calendar-date";
 import { normalizeFieldErrors } from "@/lib/field-errors";
@@ -61,9 +62,8 @@ interface FormTextFieldProps
 }
 
 /**
- * Text / Number / Select / Date フィールドが共有する状態導出。
- * id 2 つと invalid の計算を 1 箇所に集め、フィールド種別を増やすときの写し漏れを防ぐ。
- * (FormCheckboxField は FieldError 非対応の別形なので使わない)。errors と invalid の取り方は
+ * `FormCheckboxField` (FieldError 非対応の別形) 以外のフィールドが共有する状態導出。
+ * id 2 つと invalid の計算を 1 箇所に集め、フィールド種別を増やすときの写し漏れを防ぐ。errors と invalid の取り方は
  * `docs/guides/forms-and-inputs.md`「`fieldComponents` の部品を書く」
  */
 function useFormFieldState<T>() {
@@ -121,6 +121,35 @@ export function FormTextField({
         onChange={(event) =>
           field.handleChange(sanitize ? sanitize(event.target.value) : event.target.value)
         }
+        onBlur={field.handleBlur}
+        aria-invalid={invalid}
+        aria-describedby={invalid ? errorId : undefined}
+      />
+      <FieldError id={errorId} errors={errors} />
+    </Field>
+  );
+}
+
+interface FormTextareaFieldProps
+  extends
+    Pick<ComponentProps<typeof Textarea>, "disabled" | "placeholder">,
+    FieldValueTypeCheckProps<string> {
+  label: string;
+}
+
+/** 複数行の文字列フィールド */
+export function FormTextareaField({ label, placeholder, disabled }: FormTextareaFieldProps) {
+  const { field, id, errorId, errors, invalid } = useFormFieldState<string>();
+
+  return (
+    <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Textarea
+        id={id}
+        disabled={disabled}
+        placeholder={placeholder}
+        value={field.state.value}
+        onChange={(event) => field.handleChange(event.target.value)}
         onBlur={field.handleBlur}
         aria-invalid={invalid}
         aria-describedby={invalid ? errorId : undefined}

@@ -47,12 +47,9 @@ export function NoteExpandCell({ row }: NoteCellContext) {
   );
 }
 
-/**
- * 開いた行の直後に出す、本文の全文。`DataTable` が関数として呼ぶので hook を呼ばない。本文は 1 行の入力欄で
- * 書くので改行を持たない。registry の `TableCell` の `whitespace-nowrap` を素の要素で戻して折り返す
- */
+/** 開いた行の直後に出す、本文の全文。`DataTable` が関数として呼ぶので hook を呼ばない。本文の改行を保つ */
 export function NoteBodyDetail({ row }: { row: Row<DataTableFeatures, NoteRow> }) {
-  return <div className="wrap-break-word whitespace-normal">{noteInputOf(row.original).body}</div>;
+  return <div className="whitespace-pre-wrap">{noteInputOf(row.original).body}</div>;
 }
 
 /**

@@ -1,6 +1,6 @@
 # フォームと入力部品
 
-入力スキーマ、フォームの部品、Select と数値の入力欄、高さのあるダイアログ、子 route のフォームのダイアログ、placeholder を書くときの手順と落とし穴を持つ。
+入力スキーマ、フォームの部品、Select と数値と複数行の入力欄、高さのあるダイアログ、子 route のフォームのダイアログ、placeholder を書くときの手順と落とし穴を持つ。
 
 | 決定                                                                                                | ADR      |
 | --------------------------------------------------------------------------------------------------- | -------- |
@@ -38,6 +38,11 @@ expectTypeOf<Item["done"]>().toEqualTypeOf<boolean>();
 
 `NumberField` を使う (ADR-0021)。`Field` / `FieldLabel` / `FieldError` の構成と見た目は他の入力欄と同じにし、`NumberField.Input` に `render={<Input />}` を渡して registry の `Input` の意匠をそのまま使う。
 テストの取り方は `docs/guides/testing/user-interactions.md`「入力部品を操作する」にある。
+
+### 複数行の入力欄を組む
+
+- 段落に区切って書く長さの文字列 (本文、説明) は改行を許し、`FormTextareaField` (`src/components/parts/form-fields.tsx`) で受ける。改行が無いと長い文が 1 つの塊になり、読み返しにくい。`type="text"` の `input` は値から改行を取り除く ([HTML Standard「Text (type=text) state and Search state」][] の "Strip newlines from the value."。2026-10-15 に確認) ので、改行を許す項目に使えない。値を表示するときは `whitespace-pre-wrap` で改行を保つ。`whitespace-normal` は改行を空白にまとめる
+- 欄に高さの上限 (`max-h-*`) を足さない。registry の `Textarea` は `field-sizing-content` で中身の高さまで伸び、ダイアログの中では `DialogScrollBody` が本文のスクロールを持つ。上限を付けると、欄の中とダイアログの本文のスクロールが入れ子になる
 
 ### `fieldComponents` の部品を書く
 
@@ -295,6 +300,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [TanStack Form docs「Form Composition」]: https://tanstack.com/form/latest/docs/framework/react/guides/form-composition
 [TanStack Form docs「Side effects for event triggers」]: https://tanstack.com/form/latest/docs/framework/react/guides/listeners
 [Base UI docs「Dialog」]: https://base-ui.com/react/components/dialog
+[HTML Standard「Text (type=text) state and Search state」]: https://html.spec.whatwg.org/multipage/input.html#text-(type=text)-state-and-search-state-(type=search)
 [Vitest docs「Locators」]: https://github.com/vitest-dev/vitest/blob/v5.0.3/docs/api/browser/locators.md
 [shadcn docs「Dialog」]: https://ui.shadcn.com/docs/components/base/dialog
 [shadcn の `apps/v4/registry/bases/base/examples/dialog-example.tsx`]: https://github.com/shadcn-ui/ui/blob/df1752dfe092957f84aa467d2270436139e3ecc7/apps/v4/registry/bases/base/examples/dialog-example.tsx

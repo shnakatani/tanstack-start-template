@@ -8,7 +8,7 @@ import { useAppForm } from "@/hooks/use-app-form";
 import { expectRemoved } from "@/test/assert/absent";
 
 /**
- * 5 部品の配線 (正典ペア、aria-describedby ⇄ FieldError、sanitize、検証エラーの正規化、
+ * 各部品の配線 (正典ペア、aria-describedby ⇄ FieldError、sanitize、検証エラーの正規化、
  * Select の候補入れ替え、blur 検証、期日の選択・解除・クリア) は `form-fields.stories.tsx` の play が持つ (docs/guides/storybook.md「カタログと play の範囲」)。
  * 検証エラーでラベルが destructive 色になるのは registry の Field が `data-[invalid=true]` で
  * 当てる継承で、`Invalid` story が正典ペアの付与を play で固定する。色は測らない。

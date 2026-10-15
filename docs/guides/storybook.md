@@ -154,7 +154,7 @@ play は Storybook の UI 上でも実行されるため CDP を使えない。s
 「import 0 件の部品には story を書かない」という基準は成立しない。理由は 3 つで、いずれも 2026-09-20 の実測による。
 
 - 消費者の数は画面の追加と削除で動く。画面を消すと `empty` のように消費者が 0 件へ落ちる部品が出るが、次の画面で使われうる。「今どの画面が使っているか」はカタログの価値と無関係である
-- 基準が推移的に閉じない。`sheet` / `tooltip` は `sidebar` からのみ、`textarea` / `input-group` は `combobox` からのみ参照され、その参照元自体に消費者がいない。`ui/` の外で数えると 0 件になるが、素朴に数えると 1 件以上になる。同じ状態の部品が数え方だけで両側へ分かれる
+- 基準が推移的に閉じない。`sheet` / `tooltip` は `sidebar` からのみ参照され、その参照元自体に消費者がいない。`ui/` の外で数えると 0 件になるが、素朴に数えると 1 件以上になる。同じ状態の部品が数え方だけで両側へ分かれる
 - 検査の穴が残る。story も test も持たない部品は axe が一度も当たらないまま利用者へ配られる。全件カタログ化すると light / dark の 2 テーマぶんの a11y 検査が全部品に掛かる (ADR-0028)
 
 上流の `write-story` skill ([Storybook の `storybook-story-instructions.md`][]) は「ALWAYS write a Storybook story for any component written」と書いており、この方針はその既定値に沿う。vendor した registry を対象外と読む余地はあるが、テンプレートは registry を配ることが役目なので対象に含める。

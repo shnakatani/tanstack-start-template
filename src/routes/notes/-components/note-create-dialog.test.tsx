@@ -8,7 +8,11 @@ import { render } from "vitest-browser-react";
 
 import { Toaster } from "@/components/ui/toast";
 import { createNote } from "@/features/notes/functions";
-import { NOTE_FIELD_LABELS, NOTE_TITLE_MAX_LENGTH } from "@/features/notes/schema";
+import {
+  NOTE_BODY_MAX_LENGTH,
+  NOTE_FIELD_LABELS,
+  NOTE_TITLE_MAX_LENGTH,
+} from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
@@ -125,6 +129,53 @@ describe("NoteCreateDialog", () => {
       .poll(() => vi.mocked(createNote))
       .toHaveBeenCalledExactlyOnceWith({
         data: { title: "買い物リスト", body: "牛乳とパン", dueDate: null },
+      });
+  });
+
+  it("上限の長さの本文も、本文の欄は横にも縦にもはみ出さず、ダイアログの本文を縦に送ると末尾まで見える", async () => {
+    const { screen } = await renderDialog();
+    const body = bodyTextbox(screen);
+    await body.fill("あ".repeat(NOTE_BODY_MAX_LENGTH));
+
+    await expect
+      .poll(() => {
+        const element = body.element();
+        return {
+          horizontal: element.scrollWidth - element.clientWidth,
+          vertical: element.scrollHeight - element.clientHeight,
+        };
+      })
+      .toEqual({ horizontal: 0, vertical: 0 });
+    const scrollBody = screen.getByRole("dialog").getBySlot("dialog-scroll-body");
+    await expect.element(scrollBody).toHaveAttribute("data-has-overflow-y");
+
+    const viewport = scrollBody.getBySlot("scroll-area-viewport").element();
+    viewport.scrollTop = viewport.scrollHeight;
+    await expect
+      .poll(
+        () =>
+          body.element().getBoundingClientRect().bottom <= viewport.getBoundingClientRect().bottom,
+      )
+      .toBe(true);
+  });
+
+  it("本文の欄で Enter を押すと送信せずに改行が入り、保存すると改行を保った本文が送られる", async () => {
+    vi.mocked(createNote).mockResolvedValue({ id: 1 });
+    const { screen } = await renderDialog();
+    await titleTextbox(screen).fill("買い物リスト");
+    await bodyTextbox(screen).click();
+
+    await userEvent.keyboard("牛乳{Enter}パン");
+
+    await expect.element(bodyTextbox(screen)).toHaveValue("牛乳\nパン");
+    expect(vi.mocked(createNote)).not.toHaveBeenCalled();
+
+    await saveButton(screen).click();
+
+    await expect
+      .poll(() => vi.mocked(createNote))
+      .toHaveBeenCalledExactlyOnceWith({
+        data: { title: "買い物リスト", body: "牛乳\nパン", dueDate: null },
       });
   });
 

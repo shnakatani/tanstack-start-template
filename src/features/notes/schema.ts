@@ -11,10 +11,11 @@ const TITLE_LABEL = "タイトル";
 const BODY_LABEL = "本文";
 const DUE_DATE_LABEL = "期日";
 /**
- * 入力用と保存用で pipe が分かれる title は、同じ action を両方に渡す。pipe の外で作る action は
+ * 入力用と保存用で pipe が分かれる title と body は、同じ action を両方に渡す。pipe の外で作る action は
  * `TInput` を型引数で与える。無いと `unknown` に推論され、`v.pipe` の overload に合わない。
  */
 const titleLabel = v.metadata<string, { label: typeof TITLE_LABEL }>({ label: TITLE_LABEL });
+const bodyLabel = v.metadata<string, { label: typeof BODY_LABEL }>({ label: BODY_LABEL });
 
 /** 制約値はメッセージにも埋まるため、制約とメッセージが別々の数値を持たないよう定数で束ねる。 */
 export const NOTE_TITLE_MAX_LENGTH = 100;
@@ -26,6 +27,22 @@ function requiredMessage(label: string): string {
 
 function maxLengthMessage(label: string, maxLength: number): string {
   return `${label}は ${maxLength} 文字以内で入力してください`;
+}
+
+const titleMaxLength = v.maxCodePoints<string, typeof NOTE_TITLE_MAX_LENGTH, string>(
+  NOTE_TITLE_MAX_LENGTH,
+  maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH),
+);
+const bodyMaxLength = v.maxCodePoints<string, typeof NOTE_BODY_MAX_LENGTH, string>(
+  NOTE_BODY_MAX_LENGTH,
+  maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH),
+);
+
+function trimmedCheck(label: string) {
+  return v.check<string, string>(
+    (value) => value === value.trim(),
+    `${label}の前後に空白が残っています`,
+  );
 }
 
 /**
@@ -40,14 +57,10 @@ export const noteInputSchema = v.object({
     v.string(),
     v.trim(),
     v.minLength(1, requiredMessage(TITLE_LABEL)),
-    v.maxCodePoints(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
+    titleMaxLength,
     titleLabel,
   ),
-  body: v.pipe(
-    v.string(),
-    v.maxCodePoints(NOTE_BODY_MAX_LENGTH, maxLengthMessage(BODY_LABEL, NOTE_BODY_MAX_LENGTH)),
-    v.metadata({ label: BODY_LABEL }),
-  ),
+  body: v.pipe(v.string(), v.trim(), bodyMaxLength, bodyLabel),
   /**
    * 暦の日付 (ADR-0031)。期日なしは null。`Date` を経由せず `YYYY-MM-DD` のまま持つ。
    * `isoDate()` は形式だけを見て 2023-06-31 を通すので、暦に存在するかを `v.check` で足す
@@ -80,7 +93,7 @@ const noteIdValueSchema = v.pipe(
 );
 
 /**
- * 保存済み title の制約。入力側と同じ長さ制約を課すが、**変換は持たない**。
+ * 保存済み title と body の制約。入力側と同じ長さ制約を課すが、**変換は持たない**。
  *
  * 読み出しゲートの目的は out-of-band の書き込み (手書き SQL、別経路のアプリ、schema 変更前の
  * 残存行) との乖離を顕在化させること。入力側と同じ `v.trim()` を掛けると、未 trim で入った行を
@@ -90,16 +103,19 @@ const noteIdValueSchema = v.pipe(
 const storedTitleSchema = v.pipe(
   v.string(),
   v.minLength(1, requiredMessage(TITLE_LABEL)),
-  v.maxCodePoints(NOTE_TITLE_MAX_LENGTH, maxLengthMessage(TITLE_LABEL, NOTE_TITLE_MAX_LENGTH)),
-  v.check((value) => value === value.trim(), `${TITLE_LABEL}の前後に空白が残っています`),
+  titleMaxLength,
+  trimmedCheck(TITLE_LABEL),
   titleLabel,
 );
+
+const storedBodySchema = v.pipe(v.string(), bodyMaxLength, trimmedCheck(BODY_LABEL), bodyLabel);
 
 /** 保存済みの 1 件。DB からの読み出し結果を検証するゲートも兼ねる。 */
 export const noteSchema = v.object({
   ...noteInputSchema.entries,
-  // 入力側の title は trim 変換を持つため、変換なしの読み出し用へ差し替える
+  // 入力側の title と body は trim 変換を持つため、変換なしの読み出し用へ差し替える
   title: storedTitleSchema,
+  body: storedBodySchema,
   id: noteIdValueSchema,
   createdAt: v.pipe(v.date(), v.metadata({ label: "作成日時" })),
   updatedAt: v.pipe(v.date(), v.metadata({ label: "更新日時" })),

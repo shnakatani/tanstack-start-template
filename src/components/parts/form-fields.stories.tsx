@@ -11,7 +11,7 @@ import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "@/lib/field-errors";
 
 /**
  * `form.AppField` の内側でしか動かない配線部品なので、story も TanStack Form の
- * harness ごと組む。カタログの本体は `FieldsForm` で、5 種のフィールドを 1 つのフォームへ
+ * harness ごと組む。カタログの本体は `FieldsForm` で、全種のフィールドを 1 つのフォームへ
  * 並べる。
  *
  * ラベルの色 (`fieldLabelClassName` の合成順) は `getComputedStyle` で固定する回帰として
@@ -20,6 +20,7 @@ import { UNRENDERABLE_FIELD_ERROR_MESSAGE } from "@/lib/field-errors";
  */
 
 const nameSchema = v.pipe(v.string(), v.trim(), v.minLength(1, "名前を入力してください"));
+const memoSchema = v.pipe(v.string(), v.trim(), v.minLength(1, "メモを入力してください"));
 const sortOrderSchema = v.pipe(v.number(), v.minValue(2, "並び順は2以上で入力してください"));
 const statusSchema = v.pipe(
   v.string(),
@@ -57,7 +58,7 @@ function captureConsoleWarn() {
 interface StoryArgs {
   /** 検証の発火モード。`blur` はフォーカスが外れた時点で検証する */
   validationMode: "submit" | "blur";
-  /** `FieldsForm` の全フィールド (text / number / select / date / checkbox) を無効にする */
+  /** `FieldsForm` の全フィールドを無効にする */
   disabled: boolean;
   /** `FormSelectField` の候補 */
   options: readonly { value: string; label: string }[];
@@ -71,13 +72,14 @@ interface StoryArgs {
 
 interface CatalogValues {
   name: string;
+  memo: string;
   sortOrder: number | null;
   type: string;
   dueDate: string | null;
   canEdit: boolean;
 }
 
-/** 5 種のフィールドを 1 つのフォームへ並べたカタログ本体 */
+/** 全種のフィールドを 1 つのフォームへ並べたカタログ本体 */
 function FieldsForm({
   validationMode,
   disabled,
@@ -88,6 +90,7 @@ function FieldsForm({
 }: StoryArgs) {
   const defaultValues: CatalogValues = {
     name: "",
+    memo: "",
     sortOrder: 1,
     type: "inactive",
     dueDate: null,
@@ -115,6 +118,16 @@ function FieldsForm({
               label="名前"
               fieldValue={field.state.value}
               placeholder="氏名を入力"
+              disabled={disabled}
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="memo" validators={{ onDynamic: memoSchema }}>
+          {(field) => (
+            <field.FormTextareaField
+              label="メモ"
+              fieldValue={field.state.value}
+              placeholder="連絡事項を入力"
               disabled={disabled}
             />
           )}
@@ -358,10 +371,10 @@ function DateForm({ onChangeValue }: StoryArgs) {
   );
 }
 
-function textbox(name: string): HTMLInputElement {
+function textbox(name: string): HTMLInputElement | HTMLTextAreaElement {
   const element = screen.getByRole("textbox", { name });
-  if (!(element instanceof HTMLInputElement)) {
-    throw new Error(`[story] ${name} の textbox が input ではない`);
+  if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+    throw new Error(`[story] ${name} の textbox が input でも textarea でもない`);
   }
   return element;
 }
@@ -371,7 +384,10 @@ function textbox(name: string): HTMLInputElement {
  * 追記になる。値を置き換えるので全選択してから打つ。Vitest の locator の `fill()` は既存の値を
  * 置き換えるので、テストではこの手順は要らない
  */
-async function replaceValue(element: HTMLInputElement, keys: string): Promise<void> {
+async function replaceValue(
+  element: HTMLInputElement | HTMLTextAreaElement,
+  keys: string,
+): Promise<void> {
   element.focus();
   element.select();
   await userEvent.keyboard(keys);
@@ -428,7 +444,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 既定。text / number / select / date / checkbox の 5 種が並ぶ */
+/** 既定。全種のフィールドが並ぶ */
 export const Default: Story = {};
 
 /**
@@ -444,6 +460,11 @@ export const Invalid: Story = {
     await expect(name.closest("[data-slot=field]")).toHaveAttribute("data-invalid", "true");
     await expect(name).toHaveAccessibleDescription(/名前を入力してください/);
 
+    const memo = textbox("メモ");
+    await expect(memo).toBeInvalid();
+    await expect(memo.closest("[data-slot=field]")).toHaveAttribute("data-invalid", "true");
+    await expect(memo).toHaveAccessibleDescription(/メモを入力してください/);
+
     const sortOrder = textbox("並び順");
     await expect(sortOrder).toBeInvalid();
     await expect(sortOrder).toHaveAccessibleDescription(/並び順は2以上で入力してください/);
@@ -458,13 +479,17 @@ export const Invalid: Story = {
   },
 };
 
-/** 無効表示。5 部品とも正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が付く */
+/** 無効表示。全部品に正典ペア (`Field` の `data-disabled` + 入力の `disabled`) が付く */
 export const Disabled: Story = {
   args: { disabled: true },
   play: async () => {
     const name = textbox("名前");
     await expect(name).toBeDisabled();
     await expect(name.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
+
+    const memo = textbox("メモ");
+    await expect(memo).toBeDisabled();
+    await expect(memo.closest("[data-slot=field]")).toHaveAttribute("data-disabled", "true");
 
     const sortOrder = textbox("並び順");
     await expect(sortOrder).toBeDisabled();
@@ -494,6 +519,10 @@ export const ValidatesOnBlur: Story = {
     const name = textbox("名前");
     blurTo(name);
     await waitFor(() => expect(name).toBeInvalid());
+
+    const memo = textbox("メモ");
+    blurTo(memo);
+    await waitFor(() => expect(memo).toBeInvalid());
 
     const sortOrder = textbox("並び順");
     blurTo(sortOrder);

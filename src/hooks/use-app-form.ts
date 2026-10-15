@@ -5,6 +5,7 @@ import {
   FormDateField,
   FormNumberField,
   FormSelectField,
+  FormTextareaField,
   FormTextField,
 } from "@/components/parts/form-fields";
 import { fieldContext, formContext } from "@/hooks/form-context";
@@ -21,6 +22,7 @@ import { fieldContext, formContext } from "@/hooks/form-context";
 export const { useAppForm } = createFormHook({
   fieldComponents: {
     FormTextField,
+    FormTextareaField,
     FormNumberField,
     FormSelectField,
     FormCheckboxField,
