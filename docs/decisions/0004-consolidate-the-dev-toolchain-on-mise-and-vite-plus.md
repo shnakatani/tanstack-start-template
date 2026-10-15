@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-10-14
+- Date: 2026-10-15
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -97,6 +97,8 @@ CI は mise を要さず、同じタスクを同じ順に、1 つずつ別の st
 - 手順を `dependsOn` で並べない。`dependsOn` に並べたタスクは並列で走る (2026-10-14 に vite-plus 1.1.0 で、`dependsOn` に並べた 2 つの 2 秒のタスクが 5ms 差で始まった。同時に走る数の既定の上限は 4 で、Vite+ の `docs/guide/run.md`「Concurrency」にある)。順序を付けるために各手順へ 1 つ前の手順を `dependsOn` させると、CI の step の `vp run verify:build` が前の手順まで走らせ直す
 - `pnpm peers check` も `verify` の手順に入れ、別のジョブに分けない。分けると、install を待たずに並列で走る代わりに、`verify` と CI の手順が食い違う。課金はジョブごとに分単位で切り上がる (GitHub Docs「Actions runner pricing」) ので、分けたジョブは 1 分として数えられる
 - Vitest の HTML report は、`verify:test` の step が落ちたときだけ上げる。テンプレートから作ったリポジトリが private だと、artifact はプランごとの枠を使う (GitHub Docs「GitHub Actions billing」の「How use of GitHub Actions is measured」: "For **private repositories**, each GitHub account receives a quota of free minutes, artifact storage, and cache storage for use with GitHub-hosted runners, depending on the account's plan.")。`verify:time-zones` の step では上げない。TZ ごとのテストは並列に走り、どれも同じ report を書き直すので、上げても落ちた TZ のものとは限らない
+- 依存キャッシュ (setup-vp の `cache: true`) を保存するのは、main への push の run だけにする (`cache-save`)。pull request の run が保存したキャッシュは merge ref に紐づき、"It cannot be restored by the base branch or other pull requests targeting that base branch." (GitHub Docs「Dependency caching reference」の「Restrictions for accessing a cache」)。それでもリポジトリのキャッシュの容量を使い、容量を超えると最後に使われた日の古いキャッシュから消される (同「Usage limits and eviction policy」)。setup-vp の README「Control cache saving」の例と同じ条件である
+- 保存しない pull request の run も、キャッシュの復元はする。lockfile を変えた pull request では hash が一致しないが、setup-vp は hash を外した prefix を restore key に持つ (v1.21.2 の `src/cache-restore.ts`) ので、main の最新のキャッシュを復元する
 
 | 案                                                                                                   | 落ちた手順の見え方                                                                                                                | 手順の持ち方                                                                              | 採否     |
 | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------- |
@@ -290,6 +292,9 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - キャッシュを切ったタスクの stdio: https://github.com/voidzero-dev/vite-task/blob/7d69d6577ecf6bd83deee32186de59918a712873/docs/stdio.md
 - ジョブごとの課金の切り上げ: https://docs.github.com/en/billing/reference/actions-runner-pricing
 - private のリポジトリで artifact がプランの枠を使うこと: https://docs.github.com/en/billing/concepts/product-billing/github-actions
+- pull request の run のキャッシュの範囲、キャッシュの容量と消される順: https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching
+- setup-vp の `cache-save` (「Control cache saving」): https://github.com/voidzero-dev/setup-vp/blob/v1.21.2/README.md
+- setup-vp の依存キャッシュの key と restore key: https://github.com/voidzero-dev/setup-vp/blob/v1.21.2/src/cache-restore.ts
 - mise の `[env]` の値が届く経路: https://github.com/jdx/mise/blob/v2026.9.18/docs/environments/index.md
 - mise の daemons (experimental の要件、自動 port、port の変数、port の重なり、proxy): https://github.com/jdx/mise/blob/v2026.9.18/docs/daemons.md
 - mise の daemons の前に pitchfork を入れておくこと、タスクを走らせる daemon (「Daemons that run a task」)、port の変数が届く先 (「Port environment variables」): https://github.com/jdx/mise/blob/v2026.10.3/docs/daemons.md

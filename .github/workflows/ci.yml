@@ -28,6 +28,8 @@ jobs:
       - uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
         with:
           cache: true
+          # 依存キャッシュを保存するのは main への push だけ。PR の run が保存したキャッシュはほかから使えない (ADR-0004)
+          cache-save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       - run: vp run verify:peers
 
