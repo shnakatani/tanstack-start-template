@@ -320,7 +320,7 @@ popup の全体が viewport に収まることは、`src/test/assert/viewport.ts
 
 - [Vitest docs「Assertion API」][] の toBeDisabled は `disabled` 属性による判定だけを書き、`aria-disabled` に触れない (5.0.1)。docs に書かれていない挙動に頼ることになるが、判定は Playwright の関数そのもので、fork を入れた [vitest-dev/vitest#7605][] は "We can also reuse PW's locator methods that can already work with accessibility" と書く
 - 2026-10-02 に vitest 5.0.1 で測った。`aria-disabled="true"` の button、Base UI の `Checkbox disabled` (露出する要素は span で `aria-disabled` を持ち、native の `disabled` は a11y tree に出ない隠し input が持つ)、`focusableWhenDisabled` の `Button disabled` (native の `disabled` が付かない) で `toBeDisabled()` が通り、無効でない対照では落ちた
-- 同日に、`src/routes/notes/-components/note-cells.tsx` のトリガーの `disabled={isBusy}` を `false` にした mutant は `toBeDisabled()` で、`true` にした mutant は `toBeEnabled()` で落ちた
+- 同日に、行の処理中は削除の確認ダイアログのトリガー (`AlertDialogTrigger`) を無効にする部品で、トリガーの `disabled` を常に `false` にした mutant は `toBeDisabled()` で、常に `true` にした mutant は `toBeEnabled()` で落ちた
 
 | 案                                           | 評価                                                                                                                                                                                 | 採否                                                                            |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |

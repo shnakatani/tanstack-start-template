@@ -239,7 +239,7 @@ Compiler がかかる範囲と、診断の扱いは次のとおり。
 
 | 観測日     | 走らせたテスト                                                     | 症状                                                                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-08-17 | notes 画面のテスト                                                 | 2 回起きた。1 回は 9 case が全滅し、もう 1 回は `dependency optimized: date-fns` と Vitest の `please add mentioned dependencies to your config's optimizeDeps.include field` の警告が出た |
+| 2026-08-17 | date-fns を使う画面のテスト                                        | 2 回起きた。1 回は 9 case が全滅し、もう 1 回は `dependency optimized: date-fns` と Vitest の `please add mentioned dependencies to your config's optimizeDeps.include field` の警告が出た |
 | 2026-09-27 | `src/components/parts/form-fields.tsx` の `FormDateField` のテスト | `@base-ui/react/popover` と `react-day-picker` に初めて到達したところで `dependencies optimized` と reload が出た                                                                          |
 
 `include` に `@base-ui/react/popover` と `react-day-picker` があるのは、2026-09-27 の観測のとおり、`FormDateField` のテストが実行中に初めて到達する依存だからである。
