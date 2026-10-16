@@ -46,7 +46,7 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 
 ## 調査結果
 
-2026-10-09 に dev server と Playwright 1.63.0 の Chromium で、トップから `/notes` へのリンクと戻るを繰り返し、unhandled rejection を数えた。
+2026-10-09 に dev server と Playwright 1.63.0 の Chromium で、トップから loader で DB を読む route へのリンクを押すことと、戻ることを繰り返し、unhandled rejection を数えた。
 
 | 操作                                                           | unhandled rejection |
 | -------------------------------------------------------------- | ------------------- |
