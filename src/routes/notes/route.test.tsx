@@ -278,35 +278,11 @@ describe("/notes route", () => {
 
     await expect.element(screen.getByText("確定後の結果", { exact: true })).toBeVisible();
     await expectAbsent(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
-    // 回復した語の件数まで待つ。待たずに終えると、遅れて届いた通知が次のテストの履歴に入る
+    // 区画の失敗の読み上げに続けて、回復した語の件数を読む。結果の部分が作り直されても、通知済みの語は引き継ぐ。
+    // 件数まで待たずに終えると、遅れて届いた通知が次のテストの履歴に入る
     await expectAnnouncements([
       sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
       "『abc』に一致するメモは 1 件です",
-    ]);
-  });
-
-  it("失敗した語を Enter で確定して回復すると、その語の件数を読み上げる", async () => {
-    let abcFetches = 0;
-    vi.mocked(listNotes).mockImplementation(({ data }) => {
-      if (data.q !== "abc") {
-        return Promise.resolve([]);
-      }
-      abcFetches += 1;
-      return abcFetches === 1 ? Promise.reject(new Error("取得の失敗")) : Promise.resolve([]);
-    });
-    const { screen } = await renderRoute("/notes");
-    await noteSearchbox(screen).fill("abc");
-    await expect
-      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
-      .toBeVisible();
-
-    await userEvent.keyboard("{Enter}");
-
-    await expectRemoved(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
-    // 区画の失敗の読み上げに続けて、回復した結果の件数を読む。結果の部分が作り直されても、通知済みの語は引き継ぐ
-    await expectAnnouncements([
-      sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
-      "『abc』に一致するメモは 0 件です",
     ]);
   });
 
