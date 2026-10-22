@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
-import { focusPageHeading } from "./focus-page-heading";
+import { focusPageHeading, moveFocusToPageHeading, statusHeadingProps } from "./focus-page-heading";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -60,6 +60,35 @@ describe("focusPageHeading", () => {
     input.element().focus();
     focusPageHeading(link);
     await expect.element(input).toHaveFocus();
+  });
+
+  // 失敗の画面では、ページの名前の h1 の下に失敗の見出しが出る。h1 へ移すと失敗が focus で伝わらない
+  it("状態の見出しの印があれば、文書順で先の h1 より先にそこへ移す", async () => {
+    const screen = await render(
+      <>
+        <h1>ページ</h1>
+        <h2 {...statusHeadingProps}>エラーが発生しました</h2>
+      </>,
+    );
+    focusPageHeading(null);
+    const statusHeading = screen.getByRole("heading", { name: "エラーが発生しました" });
+    await expect.element(statusHeading).toHaveFocus();
+    await expect.element(statusHeading).toHaveAttribute("tabindex", "-1");
+  });
+
+  // 隠れているかは移し先で判定する。見える h1 があっても、隠れた印の要素へも h1 へも移さない
+  it("状態の見出しが支援技術から隠れているとき、見える h1 があっても移さない", async () => {
+    await render(
+      <>
+        <h1>ページ</h1>
+        <div aria-hidden="true">
+          <h2 {...statusHeadingProps}>エラーが発生しました</h2>
+        </div>
+      </>,
+    );
+    focusPageHeading(null);
+    expect(document.activeElement).toBe(document.body);
+    expect(document.querySelector("h1")?.hasAttribute("tabindex")).toBe(false);
   });
 
   it.each([
@@ -122,7 +151,7 @@ describe("focusPageHeading", () => {
     focusPageHeading(button);
     expect(document.activeElement).toBe(document.body);
     expect(document.body.hasAttribute("tabindex")).toBe(false);
-    expect(warn).toHaveBeenCalledWith("[focusPageHeading] h1 が無い", expect.anything());
+    expect(warn).toHaveBeenCalledWith("[focusPageHeading] 移し先の見出しが無い", expect.anything());
   });
 
   it("h1 が無いとき、キーボード操作の後に呼んでも body は :focus-visible にならない", async () => {
@@ -175,5 +204,20 @@ describe("focusPageHeading", () => {
     window.scrollTo(0, 0);
     focusPageHeading(null);
     expect(window.scrollY).toBe(0);
+  });
+});
+
+describe("moveFocusToPageHeading", () => {
+  it("状態の見出しの印があれば、文書順で先の h1 より先にそこへ移す", async () => {
+    const screen = await render(
+      <>
+        <h1>ページ</h1>
+        <h2 {...statusHeadingProps}>ページが見つかりません</h2>
+      </>,
+    );
+    moveFocusToPageHeading();
+    await expect
+      .element(screen.getByRole("heading", { name: "ページが見つかりません" }))
+      .toHaveFocus();
   });
 });
