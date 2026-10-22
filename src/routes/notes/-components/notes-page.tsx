@@ -61,8 +61,9 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
 
   const createLink = useRef<HTMLAnchorElement>(null);
   // 直前に件数を通知した検索語 (ADR-0027)。結果の部分は失敗からの回復で作り直されるので、ref はこちらが持つ。
-  // 初期値が URL の q なので、初期表示は通知されない
-  const announcedQ = useRef(q);
+  // 初期値が URL の q なので、初期表示は通知されない。区画の失敗の読み上げもその時点で最後に伝えたことなので、
+  // 失敗したら null に戻し、回復後に表示された語を必ず通知する (ADR-0027)
+  const announcedQ = useRef<string | null>(q);
   function claimAnnouncement(term: string): boolean {
     if (announcedQ.current === term) {
       return false;
@@ -147,6 +148,9 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
         <SectionErrorBoundary
           resetKey={JSON.stringify([q, deferredQ])}
           message={NOTES_RESULTS_ERROR_MESSAGE}
+          onCatch={() => {
+            announcedQ.current = null;
+          }}
         >
           {/* 入る時は loader が待ち、条件の変化は useDeferredValue が前の結果を残すので、fallback が出るのは
               前の結果が無いまま suspend したときだけ */}

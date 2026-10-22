@@ -132,13 +132,49 @@ describe("SectionErrorBoundary", () => {
     await expect.element(screen.getBySlot("section-error-boundary")).not.toHaveFocus();
   });
 
+  it("再試行の後に focus が外へ移ったら、外枠の tabindex を外し、中身の click で focus を受けない", async () => {
+    const fetchText = vi
+      .fn<(key: string) => Promise<string>>()
+      .mockRejectedValueOnce(new Error("取得の失敗"))
+      .mockResolvedValueOnce("取り直した中身")
+      .mockResolvedValue("条件 b の中身");
+    const screen = await renderHarness(fetchText);
+    await expect.element(screen.getByText(MESSAGE, { exact: true })).toBeVisible();
+    await screen.getByRole("button", { name: "再試行" }).click();
+    const container = screen.getBySlot("section-error-boundary");
+    await expect.element(container).toHaveFocus();
+
+    // focus を区画の外へ移してから、結果の中身を click する
+    await screen.getByRole("button", { name: "条件を変える" }).click();
+    await screen.getByText("条件 b の中身", { exact: true }).click();
+
+    await expect.element(container).not.toHaveFocus();
+    await expect.element(container).not.toHaveAttribute("tabindex");
+  });
+
+  it("onCatch は失敗を捕まえたとき 1 回だけ、そのエラーで呼ばれる", async () => {
+    const failure = new Error("取得の失敗");
+    const onCatch = vi.fn<(error: unknown) => void>();
+    const screen = await render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <SectionErrorBoundary resetKey="a" message={MESSAGE} onCatch={onCatch}>
+          <Reader resetKey="a" fetchText={() => Promise.reject(failure)} />
+        </SectionErrorBoundary>
+      </QueryClientProvider>,
+    );
+
+    await expect.element(screen.getByText(MESSAGE, { exact: true })).toBeVisible();
+    expect(onCatch).toHaveBeenCalledExactlyOnceWith(failure);
+  });
+
   it("子が notFound() を投げたら受けずに外へ投げ直し、読み上げない", async () => {
     function ThrowsNotFound(): never {
       throw notFound();
     }
+    const onCatch = vi.fn<(error: unknown) => void>();
     const screen = await render(
       <CatchBoundary getResetKey={() => "outer"} errorComponent={() => <p>外の境界</p>}>
-        <SectionErrorBoundary resetKey="a" message={MESSAGE}>
+        <SectionErrorBoundary resetKey="a" message={MESSAGE} onCatch={onCatch}>
           <ThrowsNotFound />
         </SectionErrorBoundary>
       </CatchBoundary>,
@@ -147,6 +183,7 @@ describe("SectionErrorBoundary", () => {
     await expect.element(screen.getByText("外の境界", { exact: true })).toBeVisible();
     await expectAbsent(screen.getByText(MESSAGE, { exact: true }));
     expect(readAnnouncements()).toEqual([]);
+    expect(onCatch).not.toHaveBeenCalled();
   });
 
   it("resetKey が変わると境界が戻り、新しい条件で描き直す", async () => {

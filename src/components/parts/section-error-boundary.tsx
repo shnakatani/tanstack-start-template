@@ -26,15 +26,17 @@ const SectionErrorContainerContext = createContext<RefObject<HTMLDivElement | nu
  * `<Suspense>` は含めない。読み込み中の表示は区画ごとに違うので、使う側が子に並べる。
  * `resetKey` が変わると境界は戻る。再試行は `docs/guides/data-loading.md`「読み込みに失敗した画面から再試行する」。
  * `notFound()` は受けずに外へ投げ直す。route の not found の境界が受けるもので、取得の失敗として出さない
- * (Router の route の境界も同じく投げ直す)
+ * (Router の route の境界も同じく投げ直す)。`onCatch` は notFound 以外の失敗を捕まえて読み上げた後に呼ぶ
  */
 export function SectionErrorBoundary({
   resetKey,
   message,
+  onCatch,
   children,
 }: {
   resetKey: string;
   message: string;
+  onCatch?: (error: unknown) => void;
   children: ReactNode;
 }) {
   // 再試行でボタンが消えると focus が body へ落ちるので、区画の外枠で受ける
@@ -51,6 +53,7 @@ export function SectionErrorBoundary({
             onCatch={(error) => {
               if (!isNotFound(error)) {
                 announce(sectionErrorAnnouncement(message));
+                onCatch?.(error);
               }
             }}
           >

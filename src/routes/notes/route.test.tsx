@@ -305,6 +305,29 @@ describe("/notes route", () => {
     ]);
   });
 
+  it("失敗した語から通知済みの語へ打ち戻すと、回復した結果の件数を読み上げる", async () => {
+    vi.mocked(listNotes).mockImplementation(({ data }) =>
+      data.q === "abcd" ? Promise.reject(new Error("取得の失敗")) : Promise.resolve([]),
+    );
+    const { screen } = await renderRoute("/notes");
+    await noteSearchbox(screen).fill("abc");
+    await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
+    await noteSearchbox(screen).fill("abcd");
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+
+    await noteSearchbox(screen).fill("abc");
+
+    await expectRemoved(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+    // 失敗の読み上げが最後に伝えたことなので、戻った「abc」の件数はもう一度読む
+    await expectAnnouncements([
+      "『abc』に一致するメモは 0 件です",
+      sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
+      "『abc』に一致するメモは 0 件です",
+    ]);
+  });
+
   it.each(["/notes", "/notes?q=xyz"])(
     "一覧を開いたとき (%s) の取得の失敗は、route の errorComponent が受ける (loader の cause が enter)",
     async (location) => {
