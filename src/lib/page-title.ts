@@ -13,7 +13,8 @@ export interface PageTitleContext {
  * (WCAG 2.4.2)。ページ名を先に置き、タブが狭くても区別できるようにする。
  *
  * 名前は自分の route の `staticData.pageName`。読み込んだデータで決まる名前は引数の `pageName` で渡す (ADR-0033)。
- * その route も `staticData.pageName` にページの一般の名前を書く。読み込み中と失敗の画面の見出しの行はそちらを使い、
+ * その route も `pageRouteOptions(<ページの一般の名前>)` を spread し、その後ろに自分の `head` を書いて title を
+ * 上書きする。読み込み中と失敗の画面の見出しの行は `staticData.pageName` の一般の名前を使い、
  * 引数に `undefined` を渡すと title もそちらになる (ADR-0035)。
  * 名前が `APP_NAME` と同じなら重ねない (ホーム)。
  *
