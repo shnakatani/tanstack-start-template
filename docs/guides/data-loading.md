@@ -25,16 +25,16 @@
 
 ### 読み込みに失敗した画面から再試行する
 
-再試行の組み方は、失敗を受ける場所で分かれる。route の errorComponent と、ページの中の区画 (`SectionErrorBoundary`) である。
+再試行の組み方は、失敗を受ける場所で分かれる。
 
-route の errorComponent の再試行は、[TanStack Router docs「External Data Loading」][] の Error handling with TanStack Query の例の形に合わせる。組み方は `src/hooks/use-route-retry.ts` の `useRouteRetry` が持ち、errorComponent はこの hook から再試行のハンドラを取る。
+| 失敗を受ける場所                                                                             | 再試行で呼ぶもの                                                                                                                                     | Query の失敗を戻す時点                                                                                                                                                               | 形の出典                                                                                |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| route の errorComponent                                                                      | `router.invalidate()` だけ。組み方は `src/hooks/use-route-retry.ts` の `useRouteRetry` が持ち、errorComponent はこの hook から再試行のハンドラを取る | errorComponent を表示した時点の effect で `useQueryErrorResetBoundary().reset()` を呼ぶ (`useRouteRetry` の中)。理由は「再試行で Query の error boundary を表示時に reset する理由」 | [TanStack Router docs「External Data Loading」][] の Error handling with TanStack Query |
+| ページの中の区画 (`SectionErrorBoundary`、`src/components/parts/section-error-boundary.tsx`) | 境界の `reset()`。子を描き直し、子の `useSuspenseQuery` が取り直す。`router.invalidate()` は呼ばない                                                 | 再試行の click の中で、境界の `reset()` の前に `useQueryErrorResetBoundary().reset()` を呼ぶ。表示した時点では戻さない                                                               | [TanStack Query docs「Suspense」][] の Resetting Error Boundaries                       |
 
-| 対象                    | 組み方                                                                                                                                                                                                                                                                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 再試行のボタン          | `router.invalidate()` だけを呼ぶ。loader の再実行と route の error boundary の reset は Router がまとめて行う ([TanStack Router docs「Data Loading」][] の Handling Errors with `routeOptions.errorComponent`)。`startTransition` を自分で書かず、Router の読み込みは Router に任せる (ADR-0015 の「ナビゲーション、GET」の行) |
-| Query の error boundary | errorComponent を表示した時点の effect で Query の失敗を戻す。この表示時の reset は `src/hooks/use-reset-query-errors-on-show.ts` の `useResetQueryErrorsOnShow` が持ち、`useRouteRetry` はそれを呼ぶ。理由は「再試行で Query の error boundary を表示時に reset する理由」                                                    |
-
-ページの中の区画の失敗は `SectionErrorBoundary` (`src/components/parts/section-error-boundary.tsx`) が受ける。再試行は境界の `reset()` で子を描き直し、子の `useSuspenseQuery` が取り直す。`router.invalidate()` は呼ばない。`CatchBoundary` は `reset()` か `getResetKey` の値の変化でだけ戻るので ([TanStack Router docs「CatchBoundary component」][])、route の読み込みをやり直しても区画のエラーは残る。表示した時点で Query の error boundary を戻すのは route の errorComponent と同じ `useResetQueryErrorsOnShow` で、部品が呼ぶ。区画の再試行は、境界の `reset()` の前に、この hook が返す reset も呼ぶ。表示中に別の `useSuspenseQuery` が mount すると戻した状態が取り消され、`reset()` だけでは子が同じ失敗を投げ直すためである ([TanStack Query docs「Suspense」][] の Resetting Error Boundaries は再試行の時点で reset する)。
+- route の再試行で `startTransition` を自分で書かない。loader の再実行と route の error boundary の reset は Router がまとめて行う ([TanStack Router docs「Data Loading」][] の Handling Errors with `routeOptions.errorComponent`)。Router の読み込みは Router に任せる (ADR-0015 の「ナビゲーション、GET」の行)
+- 区画の再試行を `router.invalidate()` に任せない。`CatchBoundary` は `reset()` か `getResetKey` の値の変化でだけ戻るので ([TanStack Router docs「CatchBoundary component」][])、route の読み込みをやり直しても区画のエラーは残る
+- 区画の Query の失敗は、子を描き直す直前に戻す。戻してから描き直すまでの間に別の `useSuspenseQuery` が mount すると、戻した状態が取り消され、子は取り直さずに同じ失敗を投げ直す
 
 ## explanation
 

@@ -1,9 +1,9 @@
+import { useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { CatchBoundary, type ErrorComponentProps, isNotFound } from "@tanstack/react-router";
 import { createContext, type ReactNode, use } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { useResetQueryErrorsOnShow } from "@/hooks/use-reset-query-errors-on-show";
 import { announce } from "@/lib/live-announcer";
 
 /**
@@ -86,8 +86,8 @@ function moveFocusTo(element: Element | null) {
 
 function SectionError({ error, reset }: ErrorComponentProps) {
   const message = use(SectionErrorMessageContext);
-  // 表示した時点で Query の失敗を戻し、再試行の時点でもう一度戻す
-  const resetQueryErrors = useResetQueryErrorsOnShow();
+  // Query の失敗は再試行の時点で戻す (Query「Suspense」の Resetting Error Boundaries)
+  const { reset: resetQueryErrors } = useQueryErrorResetBoundary();
 
   // hook の呼び出しより後ろで投げる。前に置くと、hook が条件付きで呼ばれる形になる
   if (message === null) {
