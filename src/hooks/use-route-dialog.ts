@@ -75,27 +75,24 @@ export function useRouteDialog({
   const navigate = useNavigate({ from: dialogPath });
   const router = useRouter();
 
-  // 印が無いと、Popup に data-route-dialog を付けず、ダイアログは退場を見せずにクロスフェードで消える。見え方が
-  // 変わるだけなので throw しない。throw すると同じ route の errorComponent も throw し、ページごと壊れる。
+  // 印 (`routeDialog`) が無いと、Popup に data-route-dialog を付けず、ダイアログは退場を見せずにクロスフェードで
+  // 消える。名前 (`pageName`) が無いと、`dialogRouteOptions` の `head` の title がアプリ名だけになり、遷移の読み上げで
+  // 開く元のページと区別できない (ADR-0035)。どちらも見え方と読み上げが変わるだけなので throw しない。throw すると
+  // 同じ route の errorComponent も throw し、ページごと壊れる。
   // data-route-dialog を印に合わせるのは、閉じる遷移の type の関数が数える Popup と、名前を付ける Popup を
   // そろえるため。印の無い Popup にも付けると、片方だけに印があるダイアログの route が入れ子で開いた画面で、
   // 閉じる遷移が 2 つの Popup に同じ名前を付け、遷移が飛ばされる (ADR-0041「閉じる遷移の見せ方」)
   const { routeId } = match;
   const markedAsRouteDialog = match.staticData.routeDialog === true;
+  const named = match.staticData.pageName !== undefined;
   useEffect(() => {
     if (!markedAsRouteDialog) {
       console.warn("[useRouteDialog] route の staticData に routeDialog: true が無い", { routeId });
     }
-  }, [markedAsRouteDialog, routeId]);
-
-  // 名前が無いと、`dialogRouteOptions` の `head` の title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない
-  // (ADR-0035)。title と読み上げが変わるだけなので、上の印と同じ理由で throw しない
-  const named = match.staticData.pageName !== undefined;
-  useEffect(() => {
     if (!named) {
       console.warn("[useRouteDialog] route の staticData に pageName が無い", { routeId });
     }
-  }, [named, routeId]);
+  }, [markedAsRouteDialog, named, routeId]);
 
   // 保存の onSuccess は useMutation に渡す callback で、ダイアログが unmount したあとも走る。保存の途中に戻るで
   // 離れ、同じダイアログを開き直していると、先行する応答の close が開き直したダイアログごと離れてしまう。
