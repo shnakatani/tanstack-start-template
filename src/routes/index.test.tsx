@@ -38,25 +38,16 @@ const attachment: Parameters<typeof Route.update>[0] & {
 const routeTree = testRootRoute.addChildren([Route.update(attachment)]);
 
 describe("/ route", () => {
-  it("title をアプリ名にする", async () => {
+  it("title をアプリ名にし、見出しの行にアプリ名を h1 で描く", async () => {
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
     const router = createRouterWithTestDefaults({
       routeTree,
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });
-    await render(<RouterProvider router={router} />);
-
-    await expect.poll(() => document.title).toBe(APP_NAME);
-  });
-
-  it("見出しの行にアプリ名を h1 で描く", async () => {
-    const router = createRouterWithTestDefaults({
-      routeTree,
-      history: createMemoryHistory({ initialEntries: ["/"] }),
-    });
     const screen = await render(<RouterProvider router={router} />);
 
+    await expect.poll(() => document.title).toBe(APP_NAME);
     await expect
       .element(screen.getByRole("heading", { name: APP_NAME, level: 1 }))
       .toBeInTheDocument();

@@ -6,9 +6,10 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { dialogRouteOptions } from "@/lib/page-title";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAbsent } from "@/test/assert/absent";
 
@@ -49,7 +50,7 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
   const itemCreateRoute = createRoute({
     getParentRoute: () => itemsRoute,
     path: "/new",
-    staticData: { pageName: "項目を追加", routeDialog: true },
+    staticData: dialogRouteOptions("項目を追加").staticData,
     loader: () => {
       throw new Error("ダイアログの読み込みの失敗");
     },
@@ -112,6 +113,11 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
 
 /** 1 画面の h1 は 1 つ。名前の付いたページの位置で失敗したら、ページの名前を h1 に、失敗を h2 にする (ADR-0035) */
 describe("RouteFailureScreen", () => {
+  beforeEach(() => {
+    // React と router は描画中の throw と route の失敗を console.error に出す。期待した失敗なので出力を抑える
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -148,8 +154,6 @@ describe("RouteFailureScreen", () => {
       h2: "エラーが発生しました",
     },
   ])("$scene では、ページの名前の h1 が 1 つで、失敗の見出しは h2", async ({ path, h1, h2 }) => {
-    // React と router は描画中の throw と route の失敗を console.error に出す。期待した失敗なので出力を抑える
-    vi.spyOn(console, "error").mockImplementation(() => {});
     const screen = await renderFailure(path);
 
     await expect.element(screen.getByRole("heading", { name: h2, level: 2 })).toBeInTheDocument();
@@ -179,7 +183,6 @@ describe("RouteFailureScreen", () => {
   ])(
     "$scene では、失敗の見出しが h1 で、見出しの行を描かない",
     async ({ path, h1, rootBeforeLoadThrows }) => {
-      vi.spyOn(console, "error").mockImplementation(() => {});
       const screen = await renderFailure(path, { rootBeforeLoadThrows });
 
       await expect.element(screen.getByRole("heading", { name: h1, level: 1 })).toBeInTheDocument();

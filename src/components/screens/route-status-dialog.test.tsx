@@ -11,6 +11,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { Button } from "@/components/ui/button";
+import { dialogRouteOptions } from "@/lib/page-title";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 
 import {
@@ -47,13 +48,13 @@ const itemsRoute = createRoute({
 const missingRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/missing",
-  staticData: { pageName: "項目を編集", routeDialog: true },
+  staticData: dialogRouteOptions("項目を編集").staticData,
   component: MissingDialog,
 });
 const loadingRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/loading",
-  staticData: { pageName: "項目を追加", routeDialog: true },
+  staticData: dialogRouteOptions("項目を追加").staticData,
   component: LoadingDialog,
 });
 

@@ -83,9 +83,11 @@ it("pageRouteOptions の head は、match の pageName から組んだ title を
   });
 });
 
-it("dialogRouteOptions は staticData に routeDialog の印を足し、head はページの route と同じものを使う", () => {
+it("dialogRouteOptions は staticData に routeDialog の印を足し、head は staticData の pageName から title を組む", () => {
   expect(pageRouteOptions("項目一覧").staticData).toEqual({ pageName: "項目一覧" });
   const dialog = dialogRouteOptions("項目を追加");
   expect(dialog.staticData).toEqual({ pageName: "項目を追加", routeDialog: true });
-  expect(dialog.head).toBe(pageRouteOptions("項目一覧").head);
+  expect(dialog.head(headContext({ staticData: dialog.staticData }))).toEqual({
+    meta: [{ title: `項目を追加 — ${APP_NAME}` }],
+  });
 });

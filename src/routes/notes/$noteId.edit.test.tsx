@@ -31,7 +31,12 @@ import {
   titleTextbox,
 } from "./-components/note-form.test-helpers";
 import { NOTE_EDIT_DIALOG_TITLE, NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
-import { ariaLabelsOf, renderRoute, serveNotes } from "./route.test-helpers";
+import {
+  ariaLabelsOf,
+  expectNotesHeadingBehindDialog,
+  renderRoute,
+  serveNotes,
+} from "./route.test-helpers";
 
 /** 一覧の見出しに、枠を出さずに focus があること。見出しは操作できる要素ではないので枠を出さない (ADR-0035) */
 const expectNotesHeadingFocused = vi.defineHelper(async (screen: Screen) => {
@@ -491,15 +496,7 @@ describe("/notes/$noteId/edit route", () => {
     const { screen } = await renderRoute(`/notes/${NOTE.id}/edit`);
 
     await expect.poll(() => document.title).toBe(`${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`);
-    // モーダルのダイアログが外側を aria-hidden で隠すので、includeHidden で引く
-    await expect
-      .element(
-        screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1, includeHidden: true }),
-      )
-      .toBeInTheDocument();
-    await expect
-      .element(screen.getByRole("heading", { level: 1, includeHidden: true }))
-      .toHaveLength(1);
+    await expectNotesHeadingBehindDialog(screen);
     expect(fetching).toHaveBeenExhausted();
   });
 

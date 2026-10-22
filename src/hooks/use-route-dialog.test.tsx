@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { dialogRouteOptions } from "@/lib/page-title";
 import {
   createDefaultViewTransition,
   ROUTE_DIALOG_CLOSE_TYPE,
@@ -107,7 +108,7 @@ const boardIndexRoute = createRoute({
 const boardNewRoute = createRoute({
   getParentRoute: () => boardRoute,
   path: "/new",
-  staticData: { pageName: "ボードに追加", routeDialog: true },
+  staticData: dialogRouteOptions("ボードに追加").staticData,
   component: BoardNewDialog,
 });
 
@@ -142,7 +143,7 @@ const groupItemsRoute = createRoute({
 const groupItemNewRoute = createRoute({
   getParentRoute: () => groupItemsRoute,
   path: "/new",
-  staticData: { pageName: "グループに追加", routeDialog: true },
+  staticData: dialogRouteOptions("グループに追加").staticData,
   component: GroupItemNewDialog,
 });
 
@@ -191,19 +192,19 @@ const itemsRoute = createRoute({
 const itemNewRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/new",
-  staticData: { pageName: "項目を追加", routeDialog: true },
+  staticData: dialogRouteOptions("項目を追加").staticData,
   component: ItemNewDialog,
 });
 const itemImportRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/import",
-  staticData: { pageName: "項目を取り込む", routeDialog: true },
+  staticData: dialogRouteOptions("項目を取り込む").staticData,
   component: ItemImportDialog,
 });
 const itemEditRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/$itemId/edit",
-  staticData: { pageName: "項目を編集", routeDialog: true },
+  staticData: dialogRouteOptions("項目を編集").staticData,
   loader: ({ params }) => loadItem(params.itemId),
   remountDeps: ({ params }) => params,
   pendingMs: 0,
@@ -328,7 +329,7 @@ function NestedDialog({ title }: { title: string }): ReactNode {
 const markedParentRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/marked-parent",
-  staticData: { pageName: "印の有る親", routeDialog: true },
+  staticData: dialogRouteOptions("印の有る親").staticData,
   component: () => <NestingDialog title="印の有る親" />,
 });
 const unmarkedChildRoute = createRoute({
@@ -346,7 +347,7 @@ const unmarkedParentRoute = createRoute({
 const markedChildRoute = createRoute({
   getParentRoute: () => unmarkedParentRoute,
   path: "/marked-child",
-  staticData: { pageName: "印の有る子", routeDialog: true },
+  staticData: dialogRouteOptions("印の有る子").staticData,
   component: () => <NestedDialog title="印の有る子" />,
 });
 
