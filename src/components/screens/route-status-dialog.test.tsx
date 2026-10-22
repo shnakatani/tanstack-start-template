@@ -47,13 +47,13 @@ const itemsRoute = createRoute({
 const missingRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/missing",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "項目を編集", routeDialog: true },
   component: MissingDialog,
 });
 const loadingRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/loading",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "項目を追加", routeDialog: true },
   component: LoadingDialog,
 });
 

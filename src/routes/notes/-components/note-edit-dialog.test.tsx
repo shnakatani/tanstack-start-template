@@ -22,6 +22,7 @@ import { expectDialogOpen, expectText } from "@/test/assert/screen-assertions";
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
 
+import { NOTE_EDIT_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteEditDialog } from "./note-edit-dialog";
 import {
   bodyTextbox,
@@ -46,7 +47,7 @@ async function renderDialog() {
         <NoteEditDialog noteId={NOTE.id} />
       </Suspense>
     ),
-    { routeDialog: true },
+    { pageName: NOTE_EDIT_DIALOG_TITLE, routeDialog: true },
   );
   const screen = await render(
     <QueryClientProvider client={queryClient}>

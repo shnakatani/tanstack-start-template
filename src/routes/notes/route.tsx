@@ -4,7 +4,7 @@ import * as v from "valibot";
 
 import { notesQueryOptions } from "@/features/notes/queries";
 import { noteListFilterSchema } from "@/features/notes/schema";
-import { pageTitle } from "@/lib/page-title";
+import { pageHead } from "@/lib/page-title";
 
 import { NotesPage } from "./-components/notes-page";
 import { NotesPagePending } from "./-components/notes-page-pending";
@@ -32,7 +32,8 @@ export const Route = createFileRoute("/notes")({
     }
     await fetching;
   },
-  head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTES_PAGE_TITLE) }] }),
+  staticData: { pageName: NOTES_PAGE_TITLE },
+  head: pageHead,
   pendingComponent: NotesPagePending,
   component: NotesRoute,
 });

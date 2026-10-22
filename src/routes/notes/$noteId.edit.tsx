@@ -4,7 +4,7 @@ import * as v from "valibot";
 import { RoutePendingDialog } from "@/components/screens/route-status-dialog";
 import { noteQueryOptions } from "@/features/notes/queries";
 import { noteIdSchema } from "@/features/notes/schema";
-import { pageTitle } from "@/lib/page-title";
+import { pageHead } from "@/lib/page-title";
 
 import { NoteEditDialog } from "./-components/note-edit-dialog";
 import { NoteNotFoundDialog, NoteRouteErrorDialog } from "./-components/note-route-status-dialogs";
@@ -45,9 +45,10 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
   // params だけが変わる遷移でも component を作り直す。既定では使い回し、前のメモに打った入力が残ったまま
   // 保存先だけが移った先のメモになる (ADR-0041)
   remountDeps: ({ params }) => params,
-  head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTE_EDIT_DIALOG_TITLE) }] }),
-  // ダイアログの route の印。閉じる遷移でダイアログの退場を見せる (ADR-0041)
-  staticData: { routeDialog: true },
+  // pageName はダイアログの名前で、title のページ名になる。routeDialog はダイアログの route の印で、閉じる遷移で
+  // ダイアログの退場を見せ、背後のページの見出しの行に名前を出さない (ADR-0035、ADR-0041)
+  staticData: { pageName: NOTE_EDIT_DIALOG_TITLE, routeDialog: true },
+  head: pageHead,
   pendingComponent: EditPending,
   notFoundComponent: EditNotFound,
   errorComponent: EditError,

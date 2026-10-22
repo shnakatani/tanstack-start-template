@@ -28,6 +28,7 @@ import {
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
 
+import { NOTE_CREATE_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteCreateDialog } from "./note-create-dialog";
 import {
   bodyTextbox,
@@ -44,7 +45,10 @@ import {
 async function renderDialog() {
   const queryClient = createTestQueryClient();
   const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-  const router = createTestRouter("/notes/new", () => <NoteCreateDialog />, { routeDialog: true });
+  const router = createTestRouter("/notes/new", () => <NoteCreateDialog />, {
+    pageName: NOTE_CREATE_DIALOG_TITLE,
+    routeDialog: true,
+  });
   const screen = await render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

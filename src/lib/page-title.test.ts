@@ -1,23 +1,71 @@
-import { notFound } from "@tanstack/react-router";
+import { notFound, type AnyRouteMatch, type StaticDataRouteOption } from "@tanstack/react-router";
 import { expect, it } from "vite-plus/test";
 
 import { APP_NAME } from "./app-name";
-import { pageTitle } from "./page-title";
+import { pageHead, pageTitle, type PageTitleContext } from "./page-title";
 
-it("ページ名を渡すと、アプリ名と ` — ` でつなぐ", () => {
-  expect(pageTitle({ matches: [{ error: undefined }] }, "メモ一覧")).toBe(`メモ一覧 — ${APP_NAME}`);
+/** route の head() が受ける ctx のうち、pageTitle が読む部分を組む */
+function headContext({
+  staticData = {},
+  status = "success",
+  errors = [undefined],
+}: {
+  staticData?: StaticDataRouteOption;
+  status?: AnyRouteMatch["status"];
+  errors?: unknown[];
+} = {}): PageTitleContext {
+  return { match: { status, staticData }, matches: errors.map((error) => ({ error })) };
+}
+
+it("route の staticData.pageName を、アプリ名と ` — ` でつなぐ", () => {
+  expect(pageTitle(headContext({ staticData: { pageName: "項目一覧" } }))).toBe(
+    `項目一覧 — ${APP_NAME}`,
+  );
 });
 
-it("ページ名を渡さないと、アプリ名だけになる", () => {
-  expect(pageTitle({ matches: [{ error: undefined }] })).toBe(APP_NAME);
+it("名前がアプリ名と同じなら、アプリ名を重ねない", () => {
+  expect(pageTitle(headContext({ staticData: { pageName: APP_NAME } }))).toBe(APP_NAME);
 });
 
-it("matches のどれかが notFound() を error に持てば、ページ名を渡しても not found の title にする", () => {
-  const matches = [{ error: undefined }, { error: notFound() }];
-  expect(pageTitle({ matches }, "メモ一覧")).toBe(`ページが見つかりません — ${APP_NAME}`);
+it("名前が無ければ、アプリ名だけになる", () => {
+  expect(pageTitle(headContext())).toBe(APP_NAME);
+});
+
+// 読み込んだデータで決まる名前は staticData に書けないので、route の head() が渡す
+it("2 つ目の引数の名前は、staticData.pageName より優先する", () => {
+  expect(pageTitle(headContext({ staticData: { pageName: "項目" } }), "項目 1")).toBe(
+    `項目 1 — ${APP_NAME}`,
+  );
+});
+
+it("matches のどれかが notFound() を error に持てば、名前があっても not found の title にする", () => {
+  const ctx = headContext({
+    staticData: { pageName: "項目一覧" },
+    errors: [undefined, notFound()],
+  });
+  expect(pageTitle(ctx)).toBe(`ページが見つかりません — ${APP_NAME}`);
 });
 
 it("error が notFound() 以外 (Error) なら not found 扱いしない", () => {
-  const matches = [{ error: new Error("失敗") }];
-  expect(pageTitle({ matches }, "メモ一覧")).toBe(`メモ一覧 — ${APP_NAME}`);
+  const ctx = headContext({ staticData: { pageName: "項目一覧" }, errors: [new Error("失敗")] });
+  expect(pageTitle(ctx)).toBe(`項目一覧 — ${APP_NAME}`);
+});
+
+it("自分の match の status が error (route の読み込みの失敗) なら、前に「エラー: 」を足す", () => {
+  const ctx = headContext({
+    staticData: { pageName: "項目一覧" },
+    status: "error",
+    errors: [undefined, new Error("失敗")],
+  });
+  expect(pageTitle(ctx)).toBe(`エラー: 項目一覧 — ${APP_NAME}`);
+});
+
+it("名前の無い route の失敗では、アプリ名の前に「エラー: 」を足す", () => {
+  expect(pageTitle(headContext({ status: "error" }))).toBe(`エラー: ${APP_NAME}`);
+});
+
+it("pageHead は pageTitle の結果を meta の title に入れる", () => {
+  expect(pageHead(headContext({ staticData: { pageName: "項目一覧" } }))).toEqual({
+    meta: [{ title: `項目一覧 — ${APP_NAME}` }],
+  });
 });

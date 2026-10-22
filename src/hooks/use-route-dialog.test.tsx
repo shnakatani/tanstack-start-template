@@ -107,7 +107,7 @@ const boardIndexRoute = createRoute({
 const boardNewRoute = createRoute({
   getParentRoute: () => boardRoute,
   path: "/new",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "ボードに追加", routeDialog: true },
   component: BoardNewDialog,
 });
 
@@ -142,7 +142,7 @@ const groupItemsRoute = createRoute({
 const groupItemNewRoute = createRoute({
   getParentRoute: () => groupItemsRoute,
   path: "/new",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "グループに追加", routeDialog: true },
   component: GroupItemNewDialog,
 });
 
@@ -191,19 +191,19 @@ const itemsRoute = createRoute({
 const itemNewRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/new",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "項目を追加", routeDialog: true },
   component: ItemNewDialog,
 });
 const itemImportRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/import",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "項目を取り込む", routeDialog: true },
   component: ItemImportDialog,
 });
 const itemEditRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/$itemId/edit",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "項目を編集", routeDialog: true },
   loader: ({ params }) => loadItem(params.itemId),
   remountDeps: ({ params }) => params,
   pendingMs: 0,
@@ -273,13 +273,28 @@ function ItemEditPendingDialog(): ReactNode {
   );
 }
 
-// staticData の印を付け忘れたダイアログの route
+// staticData の印 (routeDialog) を付け忘れたダイアログの route。名前は書いてあるので、印の警告だけが出る
 const itemUnmarkedRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/unmarked",
+  staticData: { pageName: "印の無いダイアログ" },
   component: () => (
     <RouteDialogHarness
       title="印の無いダイアログ"
+      returnTo={{ to: "/items" }}
+      findReturnTarget={findByReturnMark("item-new")}
+    />
+  ),
+});
+
+// staticData の名前 (pageName) を書き忘れたダイアログの route。印は付いているので、名前の警告だけが出る
+const itemUnnamedRoute = createRoute({
+  getParentRoute: () => itemsRoute,
+  path: "/unnamed",
+  staticData: { routeDialog: true },
+  component: () => (
+    <RouteDialogHarness
+      title="名前の無いダイアログ"
       returnTo={{ to: "/items" }}
       findReturnTarget={findByReturnMark("item-new")}
     />
@@ -313,23 +328,25 @@ function NestedDialog({ title }: { title: string }): ReactNode {
 const markedParentRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/marked-parent",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "印の有る親", routeDialog: true },
   component: () => <NestingDialog title="印の有る親" />,
 });
 const unmarkedChildRoute = createRoute({
   getParentRoute: () => markedParentRoute,
   path: "/unmarked-child",
+  staticData: { pageName: "印の無い子" },
   component: () => <NestedDialog title="印の無い子" />,
 });
 const unmarkedParentRoute = createRoute({
   getParentRoute: () => itemsRoute,
   path: "/unmarked-parent",
+  staticData: { pageName: "印の無い親" },
   component: () => <NestingDialog title="印の無い親" />,
 });
 const markedChildRoute = createRoute({
   getParentRoute: () => unmarkedParentRoute,
   path: "/marked-child",
-  staticData: { routeDialog: true },
+  staticData: { pageName: "印の有る子", routeDialog: true },
   component: () => <NestedDialog title="印の有る子" />,
 });
 
@@ -342,6 +359,7 @@ const routeTree = rootRoute.addChildren([
     itemImportRoute,
     itemEditRoute,
     itemUnmarkedRoute,
+    itemUnnamedRoute,
     markedParentRoute.addChildren([unmarkedChildRoute]),
     unmarkedParentRoute.addChildren([markedChildRoute]),
   ]),
@@ -913,6 +931,30 @@ describe("useRouteDialog の閉じる遷移", () => {
     const { screen } = await renderDialogRouter(["/items", "/items/unmarked"]);
     await expect.element(screen.getByRole("dialog", { name: "印の無いダイアログ" })).toBeVisible();
 
-    expect(warn).toHaveBeenCalledWith(expect.any(String), { routeId: "/items/unmarked" });
+    expect(warn).toHaveBeenCalledWith(
+      "[useRouteDialog] route の staticData に routeDialog: true が無い",
+      { routeId: "/items/unmarked" },
+    );
+    expect(warn).not.toHaveBeenCalledWith(
+      "[useRouteDialog] route の staticData に pageName が無い",
+      expect.anything(),
+    );
+  });
+
+  // 名前が無いと、head: pageHead の title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない
+  it("route の staticData に名前が無いと、印の警告とは別に警告する", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { screen } = await renderDialogRouter(["/items", "/items/unnamed"]);
+    await expect
+      .element(screen.getByRole("dialog", { name: "名前の無いダイアログ" }))
+      .toBeVisible();
+
+    expect(warn).toHaveBeenCalledWith("[useRouteDialog] route の staticData に pageName が無い", {
+      routeId: "/items/unnamed",
+    });
+    expect(warn).not.toHaveBeenCalledWith(
+      "[useRouteDialog] route の staticData に routeDialog: true が無い",
+      expect.anything(),
+    );
   });
 });

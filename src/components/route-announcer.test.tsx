@@ -16,7 +16,7 @@ import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
-import { pageTitle } from "@/lib/page-title";
+import { pageHead, pageTitle } from "@/lib/page-title";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 
@@ -68,7 +68,8 @@ function createAnnouncedRouter(
   const b = createRoute({
     getParentRoute: () => rootRoute,
     path: "/b",
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "B") }] }),
+    staticData: { pageName: "B" },
+    head: pageHead,
     component: () => <h1>B</h1>,
   });
   const err = createRoute({
@@ -77,7 +78,8 @@ function createAnnouncedRouter(
     loader: () => {
       throw new Error("loader");
     },
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "Err") }] }),
+    staticData: { pageName: "Err" },
+    head: pageHead,
     errorComponent: () => <h1>エラーが発生しました</h1>,
   });
   // notFound({ routeId: rootRouteId }) で root を境界に指定する。/missing は head を持たないので、
@@ -89,7 +91,7 @@ function createAnnouncedRouter(
       throw notFound({ routeId: rootRouteId });
     },
   });
-  // 自分の notFoundComponent を持つ子 route が境界になる。/gone の head は自分のページ名を渡すので、
+  // 自分の notFoundComponent を持つ子 route が境界になる。/gone の head は自分のページ名で title を組むので、
   // 判定を通らなければ「Gone — アプリ名」になる
   const gone = createRoute({
     getParentRoute: () => rootRoute,
@@ -97,7 +99,8 @@ function createAnnouncedRouter(
     loader: () => {
       throw notFound();
     },
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "Gone") }] }),
+    staticData: { pageName: "Gone" },
+    head: pageHead,
     component: () => <h1>Gone</h1>,
     notFoundComponent: () => <h1>項目が見つかりません</h1>,
   });
@@ -105,7 +108,8 @@ function createAnnouncedRouter(
   const hiddenBehindDialog = createRoute({
     getParentRoute: () => rootRoute,
     path: "/hidden-behind-dialog",
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "外を隠すダイアログ") }] }),
+    staticData: { pageName: "外を隠すダイアログ" },
+    head: pageHead,
     component: () => (
       <>
         <div aria-hidden="true">
@@ -122,7 +126,8 @@ function createAnnouncedRouter(
   const ariaModalDialog = createRoute({
     getParentRoute: () => rootRoute,
     path: "/aria-modal-dialog",
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "aria-modal のダイアログ") }] }),
+    staticData: { pageName: "aria-modal のダイアログ" },
+    head: pageHead,
     component: () => (
       <>
         <h1>背後のページ</h1>
@@ -210,13 +215,13 @@ it("検索条件だけの変化では focus を動かさず、読み上げない
   expect(readAnnouncements()).toEqual([`B — ${APP_NAME}`]);
 });
 
-it("子 route のエラー画面へ移ると、エラー画面の h1 へ移す", async () => {
+it("子 route のエラー画面へ移ると、エラー画面の h1 へ移し、「エラー: 」を付けた title を読み上げる", async () => {
   const router = createAnnouncedRouter();
   const screen = await render(<RouterProvider router={router} />);
   await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
   router.history.push("/err");
   await expect.element(screen.getByRole("heading", { name: "エラーが発生しました" })).toHaveFocus();
-  expect(readAnnouncements()).toEqual([`Err — ${APP_NAME}`]);
+  expect(readAnnouncements()).toEqual([`エラー: Err — ${APP_NAME}`]);
 });
 
 it("root のエラー画面に置き換わっても購読は外れず、root のエラー画面の h1 へ移す", async () => {

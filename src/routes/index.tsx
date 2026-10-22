@@ -3,10 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ButtonLink } from "@/components/parts/button-link";
 import { PageHeader } from "@/components/parts/page-header";
 import { APP_NAME } from "@/lib/app-name";
-import { pageTitle } from "@/lib/page-title";
+import { pageHead } from "@/lib/page-title";
 
 export const Route = createFileRoute("/")({
-  head: (ctx) => ({ meta: [{ title: pageTitle(ctx) }] }),
+  // ホームのページ名はアプリ名。title はアプリ名を重ねず、アプリ名だけになる (pageTitle)
+  staticData: { pageName: APP_NAME },
+  head: pageHead,
   component: IndexPage,
 });
 

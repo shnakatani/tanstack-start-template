@@ -52,8 +52,8 @@ export interface RouteDialog {
 /**
  * route として開くダイアログの閉じ方と、閉じたあとの focus (ADR-0041)。閉じる操作と `close` の時点で、
  * `returnTo` へ新しい履歴で離れる。開閉の state は持たず、ダイアログは route から離れて unmount するまで開いて
- * いる (TanStack Router の example `location-masking` と同じ形)。呼ぶ route には `staticData: { routeDialog: true }`
- * を書く (ADR-0041「閉じる遷移の見せ方」)。
+ * いる (TanStack Router の example `location-masking` と同じ形)。呼ぶ route には
+ * `staticData: { pageName: <ダイアログの名前>, routeDialog: true }` を書く (ADR-0035、ADR-0041「閉じる遷移の見せ方」)。
  * `returnTo` の型は TanStack Router の Type Utilities の `ValidateNavigateOptions` で検査する。公開の
  * signature を generic にし、実装の signature を generic にしない形は、Type Utilities のガイドの
  * `useConditionalNavigate` に倣う。`TRouter` の制約はガイドの例の `RegisteredRouter` ではなく、
@@ -87,6 +87,15 @@ export function useRouteDialog({
       console.warn("[useRouteDialog] route の staticData に routeDialog: true が無い", { routeId });
     }
   }, [markedAsRouteDialog, routeId]);
+
+  // 名前が無いと、`head: pageHead` の title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない
+  // (ADR-0035)。title と読み上げが変わるだけなので、上の印と同じ理由で throw しない
+  const named = match.staticData.pageName !== undefined;
+  useEffect(() => {
+    if (!named) {
+      console.warn("[useRouteDialog] route の staticData に pageName が無い", { routeId });
+    }
+  }, [named, routeId]);
 
   // 保存の onSuccess は useMutation に渡す callback で、ダイアログが unmount したあとも走る。保存の途中に戻るで
   // 離れ、同じダイアログを開き直していると、先行する応答の close が開き直したダイアログごと離れてしまう。
