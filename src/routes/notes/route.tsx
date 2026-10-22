@@ -23,14 +23,14 @@ export const Route = createFileRoute("/notes")({
   // stay (同じ route に留まる読み込み) では待たずに流し、失敗はページの中の境界が結果の部分で受ける
   // (ADR-0033)。この一覧の query は head の値・notFound・redirect・認可のどれも決めないので、待たなくてよい。
   // staleTime: "static" はこの呼び出しだけに効く (キャッシュがあれば返し、無ければ取得する)。
-  // queryOptions 側に書くと observer の再取得まで止まる
-  loader: ({ context, deps, cause }) => {
+  // queryOptions 側に書くと observer の再取得まで止まる。値は head が使わないので返さない
+  loader: async ({ context, deps, cause }) => {
     const fetching = context.queryClient.query({ ...notesQueryOptions(deps), staleTime: "static" });
     if (cause === "stay") {
       void fetching.catch(noop);
       return;
     }
-    return fetching;
+    await fetching;
   },
   head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTES_PAGE_TITLE) }] }),
   pendingComponent: NotesPagePending,
