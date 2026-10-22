@@ -10,7 +10,7 @@ paths:
 lint (`react/set-state-in-effect`、`react/no-deriving-state-in-effects`) が止める。代替のうち lint が案内しないもの:
 
 - 外部ストアの値を読む購読は `useSyncExternalStore`。lint では検出できないのでレビューで見る (`docs/guides/react/effects.md`「effect に書くかを判定する」)
-- データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })` (既存の値を編集するダイアログの route は `staleTime: 0`。ADR-0041)。副次的な query まで待つと、遷移と SSR の応答がそれを待つ。同じ route に留まって条件が変わる読み込み (loader の `cause` が `"stay"`) では欠かせない query も待たずに流し、読む部分を `SectionErrorBoundary` で囲む。待つと失敗が検索欄ごとページを置き換える (ADR-0033)
+- データ取得は TanStack Query で行い、loader が取得を待つのは、欠かせない query (主要な中身・タイトル・認可・リダイレクト・存在を決める) だけにする。書き方は `queryClient.query({ ...options, staleTime: "static" })` (既存の値を編集するダイアログの route は `staleTime: 0`。ADR-0041)。副次的な query まで待つと、遷移と SSR の応答がそれを待つ。同じ route に留まる読み込み (loader の `cause` が `"stay"`) では、head の値・notFound・redirect・認可を決めない query に限り待たずに流し、読む部分を `<Suspense>` と `SectionErrorBoundary` で囲む。決める query は stay でも待つ。待つと失敗が検索欄ごとページを置き換える (ADR-0033)
 - 副次的な query は loader で `void queryClient.query(...).catch(noop)` (`noop` は `@tanstack/react-query` の export) として流し、読む側を `<Suspense>` と `SectionErrorBoundary` (`src/components/parts/section-error-boundary.tsx`) で囲む。囲まないと、読み込み中と失敗がページ全体の pending 表示とエラー表示に置き換わる (ADR-0033)
 
 ## effect かイベントハンドラかを原因で決める

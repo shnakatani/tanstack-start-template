@@ -12,18 +12,20 @@
 
 ### 読み込み中の表示を出す
 
-| 対象                                                   | 組み方                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 欠かせない query                                       | loader で取得を待ち、ページは `useSuspenseQuery` で読む。読み込み中は route の `pendingComponent` が出し、無ければ router の `defaultPendingComponent` が受ける (ADR-0033、ADR-0029)                                                                                                                                                           |
-| 副次的な query                                         | loader で取得を流し、ページの中の `<Suspense>` で読み、`SectionErrorBoundary` で囲む (ADR-0033)                                                                                                                                                                                                                                                |
-| 条件が変わる読み込み (loader の `cause` が `"stay"`)   | 欠かせない query も待たずに流し、読む部分を `<Suspense>` と `SectionErrorBoundary` で囲む。失敗は区画の中に出て、条件を変えた欄は残る (ADR-0033)                                                                                                                                                                                               |
-| pending 表示の閾値と最小表示時間                       | 既定では、loader が 1 秒より長くかかったときに pending 表示を出し、出したら 500ms は出し続ける。変えるときは router の `defaultPendingMs` / `defaultPendingMinMs` か、route の `pendingMs` / `pendingMinMs` で設定する ([TanStack Router docs「Data Loading」][] の Showing a pending component と Avoiding Pending Component Flash。1.170.39) |
-| `useQuery` の `isPending` / `isLoading`                | 見て skeleton を出す分岐を書かない。理由は「`isPending` の分岐で読み込み中を出さない理由」                                                                                                                                                                                                                                                     |
-| skeleton と本体で合わせる値 (表の列見出しと列の幅など) | skeleton と本体の両方が参照する定数に置き、片方へ書き写さない。別々に持つと、読み込みが終わって skeleton が本体へ置き換わるときにレイアウトがずれる。表の列見出しの置き方は `docs/guides/lists-and-search.md`「一覧テーブルを組む」にある                                                                                                      |
+| 対象                                                                                                                                | 組み方                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 欠かせない query (ページに入るとき。`enter`・`preload`)                                                                             | loader で取得を待ち、ページは `useSuspenseQuery` で読む。読み込み中は route の `pendingComponent` が出し、無ければ router の `defaultPendingComponent` が受ける (ADR-0033、ADR-0029)                                                                                                                                                           |
+| 副次的な query                                                                                                                      | loader で取得を流し、ページの中の `<Suspense>` で読み、`SectionErrorBoundary` で囲む (ADR-0033)                                                                                                                                                                                                                                                |
+| 同じ route に留まる読み込み (loader の `cause` が `"stay"`。検索条件・path params の変化、`router.invalidate()`、子 route から戻る) | head の値・notFound・redirect・認可を決めない query は、欠かせない query も待たずに流し、読む部分を `<Suspense>` と `SectionErrorBoundary` で囲む。失敗は区画の中に出て、条件を変えた欄は残る。決める query は stay でも待つ (ADR-0033)                                                                                                        |
+| pending 表示の閾値と最小表示時間                                                                                                    | 既定では、loader が 1 秒より長くかかったときに pending 表示を出し、出したら 500ms は出し続ける。変えるときは router の `defaultPendingMs` / `defaultPendingMinMs` か、route の `pendingMs` / `pendingMinMs` で設定する ([TanStack Router docs「Data Loading」][] の Showing a pending component と Avoiding Pending Component Flash。1.170.39) |
+| `useQuery` の `isPending` / `isLoading`                                                                                             | 見て skeleton を出す分岐を書かない。理由は「`isPending` の分岐で読み込み中を出さない理由」                                                                                                                                                                                                                                                     |
+| skeleton と本体で合わせる値 (表の列見出しと列の幅など)                                                                              | skeleton と本体の両方が参照する定数に置き、片方へ書き写さない。別々に持つと、読み込みが終わって skeleton が本体へ置き換わるときにレイアウトがずれる。表の列見出しの置き方は `docs/guides/lists-and-search.md`「一覧テーブルを組む」にある                                                                                                      |
 
 - 支援技術への見せ方は `docs/guides/accessibility.md`「読み込み中の表示を組む」にある
 
 ### 読み込みに失敗した画面から再試行する
+
+再試行の組み方は、失敗を受ける場所で分かれる。route の errorComponent と、ページの中の区画 (`SectionErrorBoundary`) である。
 
 route の errorComponent の再試行は、[TanStack Router docs「External Data Loading」][] の Error handling with TanStack Query の例の形に合わせる。組み方は `src/hooks/use-route-retry.ts` の `useRouteRetry` が持ち、errorComponent はこの hook から再試行のハンドラを取る。
 
@@ -60,7 +62,7 @@ TanStack Query 単体の基本形は、`useQuery` の `isPending` を見て読�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。TanStack Router は 1.170.39 を見た (2026-10-02。「TanStack Query Integration」は 2026-10-04)。TanStack Query は 5.104.0 を見た (2026-10-04)。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。TanStack Router は 1.170.39 を見た (2026-10-02。「TanStack Query Integration」は 2026-10-04)。「CatchBoundary component」は 1.170.41 を見た (2026-10-18)。TanStack Query は 5.104.0 を見た (2026-10-04)。
 
 [TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/guide/data-loading
 [TanStack Router docs「TanStack Query Integration」]: https://tanstack.com/router/latest/docs/integrations/query
