@@ -72,9 +72,9 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 
 lint では見ないのでレビューで見る。
 
-- ルートを足したら `head()` で `pageTitle(ctx, <ページ名>)` の title を持たせる。ページの上に重ねるダイアログの route も、ダイアログの名前で持つ。無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
-- title は `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
-- ページの見出しは `PageHeader` の `h1` で持つ。遷移の後の focus は h1 へ移り、無いと body に落ちて利用者がページの先頭から探し直す (ADR-0035)
+- ルートを足したら、`staticData.pageName` にページ名を書き、`head: pageHead` を書く。ページの上に重ねるダイアログの route も、ダイアログの名前で書く。`head` が無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
+- title は `pageHead` か `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
+- ページの見出しは `RoutePageHeader` で描く。`pageName` が無いと throw する。`PageHeader` の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 
 ## フォームのダイアログは子 route にする
 
@@ -88,7 +88,7 @@ lint では見ないのでレビューで見る。
 - `returnTo` は `useRouteDialog` が `navigate` にそのまま渡す。開く元のページの search を保つなら `search: (prev) => prev` を書く (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 同じ戻り先は `linkOptions` で検査した定数にし、開く元のページの `-lib/` に 1 つ置く。型の無い定数にすると `prev` の型が決まらず型検査を通らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - `ActionDialogContent` (フォームを持たないなら `DialogContent`) には `useRouteDialog` の返り値の `popupProps` を spread する。spread しなくても型は通り、離れたときに開いた元の要素へ戻らず、閉じる遷移の退場も出ない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
-- ダイアログの route に `staticData: { routeDialog: true }` を書く。無いと閉じる遷移の type も `popupProps` の `data-route-dialog` も付かず、ダイアログは退場を見せずにクロスフェードで消える。`useRouteDialog` の警告は console に出るだけで、テストは落ちない (ADR-0041)
+- ダイアログの route に `staticData: { pageName: <ダイアログの名前>, routeDialog: true }` を書く。`routeDialog` が無いと閉じる遷移の type も `popupProps` の `data-route-dialog` も付かず、ダイアログは退場を見せずにクロスフェードで消える。`pageName` が無いと title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない。どちらも `useRouteDialog` の警告は console に出るだけで、テストは落ちない (ADR-0041)
 - ダイアログの route を足したら、そのページの route のテストで、閉じる操作で閉じたときと戻るで離れたときに開いた元の要素へ focus が移ることと、別のダイアログに替わったときに開いた元の要素が focus を受けないことを確かめる。`findReturnTarget` が要素を見つけられなくても、`popupProps` を spread し忘れても (Base UI の既定の戻し先へ戻る)、型検査も `useRouteDialog` も気付かない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめ、開くリンクを押して開かない。リンクを押して開くと、`popupProps` を spread し忘れても Base UI の既定の戻し先でリンクへ戻り、テストが通る (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 

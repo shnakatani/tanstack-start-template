@@ -1,39 +1,41 @@
 # ADR-0035: クライアント遷移は、新しいページの見出しへの focus と title の読み上げで伝える
 
 - Status: Accepted
-- Date: 2026-10-10
-- 関連: ADR-0026 (読み上げは `announce()` の polite の region に流す)、ADR-0027 (検索条件の変化は件数の通知で伝える)、ADR-0029 (route の pending 表示は `announce()` で通知しない)、ADR-0041 (ページの上に重ねるダイアログの route)
+- Date: 2026-10-22
+- 関連: ADR-0026 (読み上げは `announce()` の polite の region に流す)、ADR-0027 (検索条件の変化は件数の通知で伝える)、ADR-0029 (route の pending 表示は `announce()` で通知しない)、ADR-0041 (ページの上に重ねるダイアログの route)、ADR-0033 (読み込んだデータで決まる名前は route の head() が組む)
 
 ## Context
 
 クライアント遷移では文書が読み込み直されない。スクリーンリーダーは新しいページを読み始めず、focus は押したリンクに残るか、リンクが消えれば `<body>` に落ちる (下の「調査結果」)。スクリーンリーダー・キーボード・拡大鏡の利用者には、ページが変わったことが届かない。
 
-| 前提                         | 中身                                                                                                                                                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| router が持つもの            | TanStack Router は route announcer も遷移後の focus 管理も持たない。TanStack/router#918 ("Accessibility"、2024-01-04 起票) は 2026-09-28 時点で open                                             |
-| 規格が求めるもの             | WCAG の Understanding 2.4.2 は "the title of the page should also be changed dynamically" と title の更新を求める。focus の移し先を定める SC は無い                                              |
-| 利用者での検証               | 見つかったユーザーテストは Gatsby と Fable Tech Labs の 1 件 (2019-07-11、5 セッション) だけ。スクリーンリーダーの利用者では "Focusing on a heading was found to be the best experience"         |
-| 拡大鏡の利用者               | 同じテストで、読み上げに頼る試作は "quite useless as they relied on screen reader announcements" だった。読み上げだけでは届かない                                                                |
-| 見出しへ移す前提             | Kitty Giraudel (2020-12-07) は、ローディング中やエラーでも関係する `<h1>` が必ずあると保証できるなら、隠した要素を置かずに `<h1>` へ `tabindex="-1"` で focus してよいとする                     |
-| テンプレートが保証できること | ページの見出しは `PageHeader` (`src/components/parts/page-header.tsx`) が `<h1>` で描き、エラー画面と not found の画面も `<h1>` を持つ。本文は root の `<main>` (`src/routes/__root.tsx`) に入る |
+| 前提                         | 中身                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| router が持つもの            | TanStack Router は route announcer も遷移後の focus 管理も持たない。TanStack/router#918 ("Accessibility"、2024-01-04 起票) は 2026-09-28 時点で open                                                                                                                                                                                                                                                                                                                           |
+| 規格が求めるもの             | WCAG の Understanding 2.4.2 は "the title of the page should also be changed dynamically" と title の更新を求める。focus の移し先を定める SC は無い                                                                                                                                                                                                                                                                                                                            |
+| 利用者での検証               | 見つかったユーザーテストは Gatsby と Fable Tech Labs の 1 件 (2019-07-11、5 セッション) だけ。スクリーンリーダーの利用者では "Focusing on a heading was found to be the best experience"                                                                                                                                                                                                                                                                                       |
+| 拡大鏡の利用者               | 同じテストで、読み上げに頼る試作は "quite useless as they relied on screen reader announcements" だった。読み上げだけでは届かない                                                                                                                                                                                                                                                                                                                                              |
+| 見出しへ移す前提             | Kitty Giraudel (2020-12-07) は、ローディング中やエラーでも関係する `<h1>` が必ずあると保証できるなら、隠した要素を置かずに `<h1>` へ `tabindex="-1"` で focus してよいとする                                                                                                                                                                                                                                                                                                   |
+| テンプレートが保証できること | ページ名は route の `staticData.pageName` に 1 回だけ書き、ページの見出しは `RoutePageHeader` (`src/components/screens/route-page-header.tsx`) がそこから `<h1>` で描く。読み込み中・エラー・not found の画面も、名前の付いたページの位置なら名前の `<h1>` の行を残す。エラーと not found の画面の失敗の見出しは、名前の `<h1>` の下では `<h2>`、名前の付いたページが無ければ `<h1>` になる。1 画面の `<h1>` は 1 つ。本文は root の `<main>` (`src/routes/__root.tsx`) に入る |
 
 この ADR が決めるのは、path の変わる遷移の後に新しいページを伝えることだけである。route の pending 表示 (読み込み中) の見せ方と通知は決めない。pending 表示は `announce()` で通知しない (ADR-0029)。その見せ方は `docs/guides/accessibility.md`「読み込み中の表示の見せ方を選んだ理由」にある。遷移の後の title の読み上げは、ページが変わったことを伝えるもので、読み込みの完了の告知ではない。
 
 ## Decision
 
-| 項目               | 決定                                                                                                                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 伝え方             | 見出しへの focus 移動と、title の読み上げを併用する                                                                                                                                                                       |
-| focus の移し先     | ページの `<h1>`。`tabindex="-1"` を付けて `focus({ preventScroll: true, focusVisible: false })` を呼ぶ。`<h1>` が無ければ `<body>`                                                                                        |
-| focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                                |
-| 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移と、ページとその上に重ねたダイアログの route の行き来も同じに扱う                                                          |
-| 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                         |
-| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                           |
-| モーダルの下       | 遷移の後に、移し先の `<h1>` の祖先か自身が `aria-hidden="true"` か `inert` のとき、または `aria-modal="true"` の `role="dialog"` か `role="alertdialog"` が表示されているときは、focus を移さない。title の読み上げは行う |
-| 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                     |
-| title              | 各ルートの `head()` で `pageTitle(ctx, <ページ名>)` (`src/lib/page-title.ts`) を通して持つ。形は `<ページ名> — <APP_NAME>`、ページ名が無ければ `<APP_NAME>`                                                               |
-| not found の title | `head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら `ページが見つかりません — <APP_NAME>`                                                                                                                 |
-| 実装の置き場       | `createRouter` の `InnerWrap` に渡す部品 (`src/components/router-inner-wrap.tsx`) の中に、購読だけを持つ部品 (`src/components/route-announcer.tsx`) を置く。部品は effect で `router.subscribe` を購読し、DOM を描かない  |
+| 項目               | 決定                                                                                                                                                                                                                                                                                     |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 伝え方             | 見出しへの focus 移動と、title の読み上げを併用する                                                                                                                                                                                                                                      |
+| focus の移し先     | 失敗の画面の見出し (`StatusHeading` が付ける印 `data-status-heading` の要素)、無ければページの `<h1>`。`tabindex="-1"` を付けて `focus({ preventScroll: true, focusVisible: false })` を呼ぶ。どちらも無ければ `<body>`                                                                  |
+| focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                                                                                               |
+| 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移と、ページとその上に重ねたダイアログの route の行き来も同じに扱う                                                                                                                         |
+| 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                                                                                        |
+| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                                                                                          |
+| モーダルの下       | 遷移の後に、移し先の祖先か自身が `aria-hidden="true"` か `inert` のとき、または `aria-modal="true"` の `role="dialog"` か `role="alertdialog"` が表示されているときは、focus を移さない。title の読み上げは行う                                                                          |
+| 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                                                                                    |
+| title              | 各ルートの `staticData.pageName` にページ名を書き、`head: pageHead` (`src/lib/page-title.ts`) で title を組む。形は `<ページ名> — <APP_NAME>`、ページ名が無いか `APP_NAME` と同じなら `<APP_NAME>`。読み込んだデータで決まる名前の route は、`head()` で `pageTitle(ctx, <名前>)` を返す |
+| not found の title | `head()` に渡る `matches` のどれかが `isNotFound(match.error)` なら `ページが見つかりません — <APP_NAME>`                                                                                                                                                                                |
+| 失敗の title       | `head()` の `match` の `status` が `"error"` (route の読み込みの失敗。loader・beforeLoad・component の chunk) なら、title の前に `エラー: ` を足す。描画中の throw は `status` を変えないので付かない                                                                                    |
+| 見出しの行         | ページ・読み込み中・エラー・not found の画面は、名前の付いたページの位置なら `staticData.pageName` の `<h1>` の行を持つ。ダイアログの route (`staticData.routeDialog`) の名前は見出しの行に使わず、title にだけ使う                                                                      |
+| 実装の置き場       | `createRouter` の `InnerWrap` に渡す部品 (`src/components/router-inner-wrap.tsx`) の中に、購読だけを持つ部品 (`src/components/route-announcer.tsx`) を置く。部品は effect で `router.subscribe` を購読し、DOM を描かない                                                                 |
 
 ### focus を移す目的と、枠を出さない理由
 
@@ -98,7 +100,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 
 ### ダイアログで見せる route
 
-ページとその上に重ねたダイアログの route (ADR-0041) の行き来も、ほかの遷移と同じく伝える。伝えるかは、行き先をページで見せるかダイアログで見せるかに依らない。ダイアログの route はその画面をダイアログで見せたもので、同じ画面を単独のページにしても同じ規則が成り立つべきだからである。ダイアログの route も `head()` で `pageTitle` を通した title を持ち、開いたときはその title を読み上げる。
+ページとその上に重ねたダイアログの route (ADR-0041) の行き来も、ほかの遷移と同じく伝える。伝えるかは、行き先をページで見せるかダイアログで見せるかに依らない。ダイアログの route はその画面をダイアログで見せたもので、同じ画面を単独のページにしても同じ規則が成り立つべきだからである。ダイアログの route も `staticData.pageName` にダイアログの名前を書いて `head: pageHead` で title を持ち、開いたときはその title を読み上げる。背後のページの見出しの行は変えない。
 
 | 候補                                                                       | 評価                                                                                                                                                                                                                                                         | 採否     |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -132,7 +134,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 
 | 条件                                                                                                  | 当たるダイアログ                                                                                                          | 理由                                                                                                                                                                                                                                   |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 移し先の `<h1>` の祖先か自身が `aria-hidden="true"` か `inert`                                        | Base UI のモーダルのダイアログ。開いている間、外側を `aria-hidden="true"` で隠す (`FloatingFocusManager` の `markOthers`) | WAI-ARIA 1.2 は `aria-hidden` の `true` を "The element is hidden from the accessibility API." とする。ダイアログかどうかに依らず、隠れた要素へは focus を移さない                                                                     |
+| 移し先の祖先か自身が `aria-hidden="true"` か `inert`                                                  | Base UI のモーダルのダイアログ。開いている間、外側を `aria-hidden="true"` で隠す (`FloatingFocusManager` の `markOthers`) | WAI-ARIA 1.2 は `aria-hidden` の `true` を "The element is hidden from the accessibility API." とする。ダイアログかどうかに依らず、隠れた要素へは focus を移さない                                                                     |
 | `aria-modal="true"` の `role="dialog"` か `role="alertdialog"` が表示されている (`checkVisibility()`) | 外側を隠さず、`aria-modal` だけでモーダルを表すダイアログ                                                                 | Base UI 1.8.0 の Dialog の popup は `aria-modal` を付けない (`DialogPopup` が渡す props)。mui/base-ui#4843 (open) は Dialog に `aria-modal` を使う提案で、Base UI が `aria-modal` を付けて外側を隠さなくなっても、この条件で判定が続く |
 
 - 2026-10-10 に Vitest の browser mode (Chromium、`@base-ui/react` 1.8.0) で、ダイアログの route を開く 4 通り (行のリンク、進む、別のページからの `navigate`、`pendingMs: 0` の読み込み中のダイアログを経る) の `onRendered` の時点を測った。4 通りとも、popup は `role="dialog"` で `aria-modal` を持たず、背後のページの `<h1>` は `aria-hidden="true"` の祖先の下にあった
@@ -146,6 +148,55 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 | JAWS + Chrome                  | 背後の見出しが読まれうる                                                 | 入力欄への focus でダイアログの名前と中身を読み、live region は focus の読み上げの後に回す。後に回した title が残るなら、ダイアログの名前を二度聞く。残るかは未検証               | 公式 (focus を優先する)、第三者 (ダイアログの名前)、未検証 (二度聞くか)                                                                                              | FreedomScientific/standards-support#721 (2023-06-01)、a11ysupport.io (2023-01-13)                 |
 | VoiceOver macOS / iOS + Safari | 未検証                                                                   | 入力欄への focus でダイアログの名前を読まない。title の読み上げが届くかは未検証                                                                                                   | 第三者 (ダイアログの名前)、未検証 (title が届くか)                                                                                                                   | a11ysupport.io (2023-01-13)                                                                       |
 | TalkBack + Chrome              | 背後の見出しの発話は、入力欄への focus で切られる                        | ダイアログの名前を読まない。live region の通知が届けば、polite の title は新しい発話に割り込まれず最後まで読む見込み。region に子の要素を足す形 (ADR-0026) の通知が届くかは未検証 | ソース (発話の待ち行列)、第三者 (ダイアログの名前)、未検証 (live region の通知が届くか。公開のソースでは `enableOnlyAnnounceChangedLiveRegionNodes` が false を返す) | google/talkback の 229212f (`FeatureFlagReader` を含む)、a11ysupport.io (2023-01-13)              |
+
+### ページ名の置き場所
+
+ページ名は route の `staticData.pageName` に書き、title と見出しの行の両方をそこから作る。TanStack Router「Static Route Data」は、route ごとの静的な値を `staticData` に置き、`StaticDataRouteOption` の declaration merging で型を足す形を案内し、key を `?` で省略可能にする書き方も示す (2026-10-22 に確認)。
+
+| 候補                                                                                                                | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | 採否     |
+| ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 省略できる `staticData.pageName` に書く。ページは `RoutePageHeader` で自分の match の名前を描き、操作はページが渡す | 名前を書く場所が 1 つになる。見出しの行の操作はページが描くので、ページの state と SSR の HTML はそのまま                                                                                                                                                                                                                                                                                                                                                             | **採用** |
+| `pageName` を必須の key にする                                                                                      | 必須の key が 1 つでもあると、root・pathless layout・テストの `Route.update` を含む全 route に `staticData` を課す (router-core 1.171.34 の `route.ts` の `UpdatableStaticRouteOption`)。ADR-0041 が必須の印を却下した理由と同じ                                                                                                                                                                                                                                      | 却下     |
+| 見出しの行を root のレイアウトに置き、ページの操作を portal で差し込む                                              | 操作が SSR の HTML に入らない (react-dom 19.3.0 のサーバーの描画は portal で throw する。facebook/react#13097 は open)。差し込み口を `useState` で持ち、context の value を hydration の直後に変えると、失敗する URL を直接開いたときに React が回復可能なエラーを報告した (2026-10-22 の試作で再現。`useSyncExternalStore` で避けられることも確かめた)。レイアウトの `<h1>` は遷移をまたいで同じ要素になり、戻るで focus が移らない。エラー画面で `<h1>` が 2 つ並ぶ | 却下     |
+| 差し込み口が無い間はページの中に描き、あとで portal へ移す                                                          | hydration の後に作り直し、ページの本体が 71px 上がり (CLS 0.0167)、hydration の前に見出しの行に置いた入力欄へ打った語が消えた (2026-10-22 の試作)                                                                                                                                                                                                                                                                                                                     | 却下     |
+| 操作の部品を `staticData` に宣言し、レイアウトが描く                                                                | ページの state (打鍵中の語、入力欄の同期、操作の要素の ref) を共有できない。保つには state を URL か外部のストアへ移す作り直しが要る                                                                                                                                                                                                                                                                                                                                  | 却下     |
+| SSR を止めて (`ssr: false`) レイアウトと portal を使う                                                              | SSR の既定を変える判断になる。ページ名の置き場所の前提にしない                                                                                                                                                                                                                                                                                                                                                                                                        | 却下     |
+| `PageHeader` 自身が `useMatch` で名前を読む                                                                         | 汎用の部品が router に依存し、story とテストに router が要る。router を読む `RoutePageHeader` を `src/components/screens/` に置き、`PageHeader` は `src/components/parts/` の汎用の部品のまま残す                                                                                                                                                                                                                                                                     | 却下     |
+| 名前の無いページをアプリ名に倒す                                                                                    | 書き忘れたページが黙ってアプリ名を名乗る。`RoutePageHeader` は名前が無ければ throw する                                                                                                                                                                                                                                                                                                                                                                               | 却下     |
+
+### title の組み方
+
+各 route は名前を含まない共通の `head: pageHead` を書き、`pageHead` は自分の match の `staticData.pageName` から title を組む。深い route の title が勝つことと、エラー・not found の境界で切ることは router に任せる。
+
+| 候補                                             | 評価                                                                                                                                                                                                                                                                                                                                                         | 採否     |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 各 route に `head: pageHead` を書く              | 境界の判定を router (`HeadContent`) が持つ。`head` を書き忘れると親の title になる                                                                                                                                                                                                                                                                           | **採用** |
+| root の `head()` 1 か所で `ctx.matches` から組む | `ctx.matches` は境界で切られていない。公開の `status` で切り直すと、祖先が `notFoundComponent` を持ち、loader の無い route まで部分一致した URL で取り違える (router-core 1.171.34 の `router.ts` は loader の無い match を success で作り、`load-client.ts` は `_notFound` を浅い境界へ移す。2026-10-22 に確認)。塞ぐには非公開の `_getAssetMatches` に乗る | 却下     |
+
+route の読み込み (loader・beforeLoad・component の chunk) の失敗の title は、前に `エラー: ` を足す。router-core 1.171.34 の `load-client.ts` は、component の chunk の読み込みの失敗も loader の失敗と同じ失敗として扱い、境界の match の `status` を `"error"` にする (2026-10-22 に確認)。GOV.UK Design System「Error summary」の "adding ‘Error: ’ to the beginning of the page `<title>` so screen readers read it out as soon as possible" に倣う (2026-10-22 に確認)。描画中の throw では付かない。`head()` は描画より前に走り終え、描画中の throw は match の `status` を変えない。この場面の失敗は、失敗の見出しへの focus で伝える。
+
+### 失敗の画面の見出しと focus
+
+名前の付いたページの位置で失敗したら、見出しの行にページの名前の `<h1>` を残し、失敗の見出しを `<h2>` で下に置き、遷移の後の focus を失敗の見出しへ移す。GOV.UK Design System「Error summary」は、ページの見出しを残したまま "move keyboard focus to the error summary" とする (2026-10-22 に確認)。描画中の throw とモーダルの下では title から失敗が伝わらないので、focus が要る。
+
+失敗の画面 (`RouteFailureScreen`) は、`useMatches()` の並びと自分の `routeId` から見出しの形を決める (`src/lib/page-name.ts` の `failureScreenLayout`)。失敗が自分の route の component を置き換えて出たか (error の画面と、自分の match が `status: "notFound"` の not found の画面)、自分の `<Outlet />` の中に出たか (自分の match が success の not found の画面) で分ける。自分の match だけで足りないのは、error を祖先の `errorComponent` が受けると、自分の match と失敗したページが別の match になるためである。
+
+| 場面                                                                                                         | 見出しの行                      | 失敗の見出し      |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------- | ----------------- |
+| ページの loader の失敗を、そのページの境界が受ける                                                           | ページ名                        | `<h2>`            |
+| 同じ失敗を祖先 (root を含む) の `errorComponent` で受ける                                                    | 失敗したページの名前            | `<h2>`            |
+| ページの描画中の throw                                                                                       | ページ名                        | `<h2>`            |
+| ページの `<Outlet />` の中の not found                                                                       | 描かない (ページの行が上に残る) | `<h2>`            |
+| 名前の付いたページが無い (どこにも当たらない URL、root の beforeLoad の失敗、root を境界にする `notFound()`) | 無し                            | `<h1>` (画面全体) |
+| ダイアログの route が既定の `errorComponent` で落ちる                                                        | 描かない (ページの行が上に残る) | `<h2>`            |
+
+| 候補                                                                     | 評価                                                                                         | 採否     |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | -------- |
+| 名前の `<h1>` を残し、失敗の見出しを `<h2>` にして印を付け、focus を移す | 見出しジャンプでページ名に辿り着け、失敗は focus で届く                                      | **採用** |
+| 失敗の画面でもページ名の `<h1>` へ focus を移す                          | 描画中の throw とモーダルの下では、失敗がどこにも出ない                                      | 却下     |
+| 失敗の画面でページ名を `<p>` にし、失敗を `<h1>` に残す                  | 見出しジャンプでページ名に辿り着けない。名前の見出しの行が失敗の間も残る、という形から外れる | 却下     |
+| 失敗の見出しに `role="alert"`                                            | 条件付きで mount する live region を使わない (ADR-0026)。title の読み上げと二重に読まれる    | 却下     |
+| focus の移し先の印に `autofocus` 属性                                    | 最初の読み込みでもブラウザが focus を動かす                                                  | 却下     |
 
 ### 読み上げの文言と強さ
 
@@ -163,20 +214,23 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 | `isNotFound(match.error)`     | root が受け持つときも root 以外が受け持つときも true になる (2026-09-28、@tanstack/react-router 1.170.32 で実測)                                                                                                                                                                                    | **採用** |
 | `match.status === 'notFound'` | router の changelog (TanStack/router#7950、2026-08-04) は `globalNotFound` を非公開の `_notFound` に改め "Use `match.status === 'notFound'` instead" とする。ただし root が受け持つとき `status` は `'success'` のままで (router-core 1.171.27 の `src/load-client.ts` 1168〜1183 行)、判定できない | 却下     |
 
-- `head()` は not found の境界の route まで走り、深い route の title が勝つ。判定を `pageTitle` にまとめて全 route の `head()` が通すので、境界がどこでも同じ判定になる。2026-09-28 に @tanstack/react-router 1.170.32 で、root が受け持つ、`notFoundComponent` を持つ route 自身が受け持つ、`head()` を持つ親が受け持つ、`head()` を持たない親が受け持つ、の 4 通りで not found の title になることを実測した
+- `head()` は not found の境界の route まで走り、深い route の title が勝つ。判定を `pageTitle` にまとめて全 route の `head` (`pageHead`) が通すので、境界がどこでも同じ判定になる。2026-09-28 に @tanstack/react-router 1.170.32 で、root が受け持つ、`notFoundComponent` を持つ route 自身が受け持つ、`head()` を持つ親が受け持つ、`head()` を持たない親が受け持つ、の 4 通りで not found の title になることを実測した
 - どこにも当たらない URL (手で打った URL など) は扱わず、アプリ名の title のままにする。どの route が受け持っても `_notFound` にしか印が付かず、`match.error` は入らない (router-core 1.171.27 の `src/load-client.ts` 1289〜1299 行)。型の付いた `<Link>` と `navigate` ではアプリの中から到達しない
-- 区画ごとの文言 (「〜が見つかりません」) にしない。title と見出しを同じ定義から作る仕組みが要る。区画の文脈は `notFoundComponent` の見出しが伝える
+- 区画ごとの文言 (「〜が見つかりません」) にしない。区画の文脈は `notFoundComponent` の見出しが伝える
 
 ## Consequences
 
-- 各ルートは `head()` で `pageTitle` を通した title を持つ必要がある。持たないと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない。title を直接書くと、not found の画面でもそのページの名前になる
-- 各ページは `<h1>` を持つ必要がある。無いと focus は `<body>` に落ち、`focusPageHeading` (`src/lib/focus-page-heading.ts`) が `console.warn` を出す
+- 各ページの route と、ページの上に重ねるダイアログの route は、`staticData.pageName` と `head: pageHead` を持つ必要がある。`head` を書き忘れると親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない。ページの route の `pageName` を書き忘れると `RoutePageHeader` が throw する。ダイアログの route の `pageName` を書き忘れると title がアプリ名だけになり、`useRouteDialog` が console に警告する (ADR-0041)。title を直接書くと、not found の画面でもそのページの名前になる
+- 各ページは `RoutePageHeader` で `<h1>` を描く必要がある。無いと focus は `<body>` に落ち、`focusPageHeading` (`src/lib/focus-page-heading.ts`) が `console.warn` を出す
 - 各ページの見出しを含む本体は、loader が待った query で描く必要がある (欠かせない query を loader で待つのは ADR-0033)。`onRendered` の契機は route の Suspense 境界の外側の layout effect で、route の Suspense 境界 (`pendingComponent` を fallback に持つ) はその内側にある。本体が loader の後に suspend すると、focus は pending 表示の中の最初の `<h1>` (無ければレイアウトの最初の `<h1>`、それも無ければ `<body>`) へ移り、pending 表示の `<h1>` へ移った場合は本体に置き換わると `<body>` へ落ちる (@tanstack/react-router 1.170.32 の `src/Matches.tsx` 97〜101 行と `src/Match.tsx` 106〜112 行・128 行を読んだ推論、未実測)
 - 遷移の直後は、Tab を押すまで focus の位置が目では見えない。Gatsby 2019 の拡大鏡の被験者は枠が位置をつかむのに役立つと答えており、この利用者には手がかりが減る。枠の有無を比べたテストは見つかっていない
 - 入れない改善: 戻った先で、前に focus していた要素へ focus を戻す。MPA で bfcache から戻ったときと揃う形で (whatwg/html#6696、2021-10-14 マージ。"the focused element stays the same/not reset")、Navigation API の explainer も traverse の例に挙げる。ただし explainer 自身が "the notion of \"the same element\" is not generally stable" とし、要素を識別子で覚える仕組みが要る。ブラウザの実装も揃っていない (下の「調査結果」)
-- 見出しの focus と title の読み上げの聞こえ方は、一次資料で決着していない。2026-09-28 に macOS 27.0 の VoiceOver と Chrome 153.0.8010.53 で、2 つのページの間の遷移と戻るを聞き、見出しの読み上げの後に title の読み上げが順に、途切れずに聞こえた。エラー画面へ移ったとき (失敗したルートの title と、focus の移った見出し「エラーが発生しました」の組み合わせ)、ダイアログの route を開いたとき (ダイアログの中へ移る focus と、ダイアログの title の組み合わせ)、NVDA・JAWS では確かめていない。聞こえ方が悪ければ文言と強さを見直す
+- 見出しの focus と title の読み上げの聞こえ方は、一次資料で決着していない。2026-09-28 に macOS 27.0 の VoiceOver と Chrome 153.0.8010.53 で、2 つのページの間の遷移と戻るを聞き、見出しの読み上げの後に title の読み上げが順に、途切れずに聞こえた。名前の付いたページの位置の失敗の画面へ移ったとき (`エラー: ` を付けた title と、ページの `<h1>` の下の `<h2>` の失敗の見出しへ移る focus の組み合わせ)、ダイアログの route を開いたとき (ダイアログの中へ移る focus と、ダイアログの title の組み合わせ)、NVDA・JAWS では確かめていない。聞こえ方が悪ければ文言と強さを見直す
+- 描画中の throw では title に `エラー: ` が付かない。失敗は失敗の見出しへの focus だけで伝わる
+- 読み込み中の画面の見出しの行は行き先のページの名前で、`<title>` は読み込みが終わるまで前のページのまま
+- 読み込んだデータで決まる名前 (読み込んだ項目のタイトルなど) は `staticData` に書けない。その route は `head()` で `pageTitle(ctx, <名前>)` を返し、`PageHeader` の `title` に同じ名前を渡す (ADR-0033)
 - ページの `<h1>` を `aria-hidden="true"` か `inert` の下に置くと、遷移の後に focus はそこへ移らない。focus を失った遷移では `<body>` に残る
-- 遷移の後の focus と読み上げは `src/components/route-announcer.test.tsx`、伝えるかの判定は `src/lib/route-announcement.test.ts`、focus の移し方は `src/lib/focus-page-heading.test.tsx`、title は `src/lib/page-title.test.ts` が見る
+- 遷移の後の focus と読み上げは `src/components/route-announcer.test.tsx`、伝えるかの判定は `src/lib/route-announcement.test.ts`、focus の移し方は `src/lib/focus-page-heading.test.tsx`、title は `src/lib/page-title.test.ts`、失敗の画面の見出しの形は `src/lib/page-name.test.ts` と `src/components/screens/route-failure-screen.test.tsx` が見る
 - ルート遷移は View Transitions を通る (ADR-0040)。`src/components/route-announcer.test.tsx` は View Transitions を有効にした router (`defaultViewTransition: true`) で、遷移の後の focus と title を確かめる。2026-10-09 に、テストで `document.startViewTransition` を包んで呼び出しを数え、呼ばれて `ready` がすべて resolve したうえで全件が通ることを確かめた (router-core 1.171.34)
 
 ## 調査結果
@@ -253,3 +307,6 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - MDN `HTMLElement.focus()`: https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus
 - MDN browser-compat-data (`api/HTMLElement.json` の `focus` の `options_focusVisible_parameter`): https://github.com/mdn/browser-compat-data/blob/main/api/HTMLElement.json
 - wpt.fyi の `back-forward-cache/focus.html`: https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/focus.html
+- GOV.UK Design System「Error summary」: https://design-system.service.gov.uk/components/error-summary/
+- TanStack Router docs「Static Route Data」: https://tanstack.com/router/latest/docs/framework/react/guide/static-route-data
+- facebook/react#13097: https://github.com/facebook/react/issues/13097

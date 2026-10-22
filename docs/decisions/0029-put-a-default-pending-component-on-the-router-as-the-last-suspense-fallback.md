@@ -1,8 +1,8 @@
 # ADR-0029: router に既定の pending 表示を置き、Suspense の最後の受け皿にする
 
 - Status: Accepted
-- Date: 2026-09-26
-- 関連: ADR-0026 (状態の通知。route の pending 表示の例外)
+- Date: 2026-10-22
+- 関連: ADR-0026 (状態の通知。route の pending 表示の例外)、ADR-0035 (ページの見出しの行)
 
 ## Context
 
@@ -20,7 +20,7 @@ route の pending 表示 (`pendingComponent`) は、表示のためだけでな�
 
 ## Decision
 
-`src/router.tsx` の `defaultPendingComponent` に `PendingContent` (`src/components/screens/pending.tsx`) を置く。中身は Spinner と「読み込み中」を中央に置いた汎用の表示で、レイアウトを模倣しない。
+`src/router.tsx` の `defaultPendingComponent` に `PendingContent` (`src/components/screens/pending.tsx`) を置く。中身は Spinner と「読み込み中」を中央に置いた汎用の表示で、レイアウトを模倣しない。読み込み中の route が名前の付いたページの route (`staticData.pageName` を持ち、ダイアログの route でない) なら、前に名前だけの見出しの行 (`PageHeader`、操作なし) を置く。
 
 ページ固有の skeleton は各 route の `pendingComponent` が持つ。route の値が優先される。
 
@@ -28,12 +28,13 @@ ADR-0026 の例外 (状態を `announce()` で通知しない) を `PendingConte
 
 ### 検討した選択肢
 
-| 案                                           | 評価                                                                                     | 採否     |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
-| `defaultPendingComponent` に汎用の表示を置く | route が増えても受け皿が漏れない                                                         | **採用** |
-| route ごとに `pendingComponent` を足す       | route を足すたびに漏れる。root の `Outlet` の fallback は route を引数に取らず埋まらない | 却下     |
-| 既定にレイアウトを模倣する skeleton を置く   | 置かれる位置が route ごとに違い、模倣する対象が定まらない                                | 却下     |
-| 何も置かない                                 | 上流の docs が "no fallback will be rendered" と書く状態のまま                           | 却下     |
+| 案                                                              | 評価                                                                                                               | 採否     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------- |
+| `defaultPendingComponent` に汎用の表示を置く                    | route が増えても受け皿が漏れない                                                                                   | **採用** |
+| route ごとに `pendingComponent` を足す                          | route を足すたびに漏れる。root の `Outlet` の fallback は route を引数に取らず埋まらない                           | 却下     |
+| 既定にレイアウトを模倣する skeleton を置く                      | 置かれる位置が route ごとに違い、模倣する対象が定まらない                                                          | 却下     |
+| 名前の付いたページの route では、名前だけの見出しの行を前に置く | 名前は読み込み中の route の `staticData` から取れ、置かれる位置に依らない。操作はページの state を持つので描かない | **採用** |
+| 何も置かない                                                    | 上流の docs が "no fallback will be rendered" と書く状態のまま                                                     | 却下     |
 
 公式の例 `start-basic-react-query` はこの設定を持たない。一律の推奨ではなく、docs と実装が示す帰結で決めた。
 

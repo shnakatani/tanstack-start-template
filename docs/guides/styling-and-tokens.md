@@ -82,7 +82,7 @@ ui 部品の見た目を変えたいときは、上の行から順に当ては�
 | 本文・フォームのラベル       | `text-base` / `text-sm`   |
 | 補足・タイムスタンプ・バッジ | `text-xs` も使える        |
 
-- ページ見出しは `PageHeader` (`src/components/parts/page-header.tsx`) の `title` で描き、カードの中に置くページ見出しは `CardPageTitle` (`src/components/parts/page-title.tsx`) で描く。どちらも寸法を `ui/card.tsx` の `cardTitleVariants` の `size="page"` から取るので、見出しの class を書き直さない
+- ページ見出しは `RoutePageHeader` (`src/components/screens/route-page-header.tsx`) で描く。名前は route の `staticData.pageName` から取り、中で `PageHeader` (`src/components/parts/page-header.tsx`) の `<h1>` を描く。カードの中に置くページ見出しは `CardPageTitle` (`src/components/parts/page-title.tsx`) で描く。どちらも寸法を `ui/card.tsx` の `cardTitleVariants` の `size="page"` から取るので、見出しの class を書き直さない
 - 本文に `text-xs` を使わない。タブレットで読みにくくなる
 - ページ見出しとセクション見出しを同じ大きさにしない。階層が見た目から読めなくなる
 
