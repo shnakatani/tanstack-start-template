@@ -14,19 +14,24 @@ import { render } from "vitest-browser-react";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAbsent } from "@/test/assert/absent";
 
+import { PageOutlet } from "./page-outlet";
 import { PendingContent } from "./pending";
+import { RoutePageHeader } from "./route-page-header";
 
 /**
  * `buildRouteTree` が組んだ route tree を、router の既定の pending 表示 (`defaultPendingComponent`) で描く。
  * `buildRouteTree` には決着しない `loading` を渡す。route はそれを loader で待つか描画中に `use` し、読み込み中のまま残る
  */
-async function renderPendingTree(buildRouteTree: (loading: Promise<undefined>) => AnyRoute) {
+async function renderPendingTree(
+  buildRouteTree: (loading: Promise<undefined>) => AnyRoute,
+  initialPath = "/",
+) {
   const loading = Promise.withResolvers<undefined>();
   // 決着しないまま残さない。テストの後も router が読み込みを待ち続ける
   onTestFinished(() => loading.resolve(undefined));
   const router = createRouterWithTestDefaults({
     routeTree: buildRouteTree(loading.promise),
-    history: createMemoryHistory({ initialEntries: ["/"] }),
+    history: createMemoryHistory({ initialEntries: [initialPath] }),
     defaultPendingComponent: PendingContent,
     defaultPendingMs: 0,
   });
@@ -92,6 +97,39 @@ it("root の <Outlet /> の fallback に出たときは、見出しの行を描�
 
   await expect.element(screen.getByRole("status")).toHaveTextContent("読み込み中");
   await expectAbsent(screen.getByRole("heading"));
+});
+
+// 子に名前の付いたページを置く形は規範が禁じるが、ダイアログの route は pageHeadingNameOf が名前を外すので、
+// PageOutlet の中かどうかで結果が変わるのはこの形だけになる
+it("ページの PageOutlet の中の読み込み中は、見出しの行を描かない", async () => {
+  const screen = await renderPendingTree((loading) => {
+    const rootRoute = createRootRoute({ component: () => <Outlet /> });
+    const itemsRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/items",
+      staticData: { pageName: "項目一覧" },
+      component: () => (
+        <>
+          <RoutePageHeader />
+          <PageOutlet />
+        </>
+      ),
+    });
+    const itemRoute = createRoute({
+      getParentRoute: () => itemsRoute,
+      path: "/detail",
+      staticData: { pageName: "項目の詳細" },
+      loader: () => loading,
+      component: () => <p>読み込んだ</p>,
+    });
+    return rootRoute.addChildren([itemsRoute.addChildren([itemRoute])]);
+  }, "/items/detail");
+
+  await expect.element(screen.getByRole("status")).toHaveTextContent("読み込み中");
+  await expect
+    .element(screen.getByRole("heading", { name: "項目一覧", level: 1 }))
+    .toBeInTheDocument();
+  await expect.element(screen.getByRole("heading", { level: 1 })).toHaveLength(1);
 });
 
 // ダイアログの名前は title にだけ使う。ダイアログの route の pending の書き忘れで既定が出ても、h1 を増やさない

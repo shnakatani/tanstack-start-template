@@ -5,9 +5,8 @@ declare module "@tanstack/react-router" {
     /**
      * ページの名前。`<title>` と、見出しの行の h1 (`RoutePageHeader`、既定の pending と失敗の画面) になる。
      * ページの route (自分の component が `RoutePageHeader` を描く route) と、ページの上に重ねるダイアログの route
-     * に、title を組む `head` と 1 組で書く (`pageRouteOptions`、`dialogRouteOptions`)。
-     * root と、`<Outlet />` だけを描くレイアウトの route には、path の有無に関わらず書かない。書くと
-     * `failureScreenLayout` がその名前の h1 が画面にあると判断し、`<Outlet />` の中の not found の画面が h2 だけになる。
+     * に、title を組む `head` と 1 組で書く (`pageRouteOptions`、`dialogRouteOptions`)。ページの route は子の route を
+     * `<Outlet />` でなく `PageOutlet` で描く。
      * 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない (h1 が 2 つ並ぶ)。
      * 省略できる key にする。必須にすると root とテストの route まで `staticData` を課す (ADR-0035)
      */
@@ -28,7 +27,7 @@ export type RouteFailureKind = "error" | "notFound";
 export interface FailureScreenLayout {
   /** 失敗の画面が自分で描く見出しの行の名前。ページの見出しの行が上に残るか、名前の付いたページが無ければ undefined */
   headingRowName: string | undefined;
-  /** 失敗の見出しの level。名前の付いたページの見出し (h1) が画面にあれば 2、無ければ 1 */
+  /** 失敗の見出しの level。ページの名前の見出しの行 (h1) が画面にあれば 2、無ければ 1 */
   failureHeadingLevel: 1 | 2;
 }
 
@@ -36,23 +35,32 @@ type PageNameMatch = Pick<AnyRouteMatch, "id" | "status" | "staticData">;
 
 /**
  * 失敗の画面 (`ownMatchId` の match の route の errorComponent か notFoundComponent) の見出しの形を決める。
- * - 置き換え: error の画面と、自分の match が `status: "notFound"` の not found の画面。自分の route の component を
- *   置き換えて出る。名前は最初の success でない match (境界) まで、無ければ全部 (描画中の throw) から選ぶ
- * - Outlet の中: 自分の match が success の not found の画面。自分の route の component は描かれたままで、その
- *   `<Outlet />` の位置に出る。名前は自分の match までから選ぶ
- * その範囲で最も深い名前 (ダイアログの route を飛ばす) を N とする。見出しの行は、置き換えで N が自分の match 以深の
- * ときだけ描く (N の component が消えているため)。level は N があれば 2、無ければ 1。
- * 自分の match だけでは足りない。error を祖先の errorComponent が受けると、自分の match と失敗したページが別になる。
+ * - `underPageHeading` が true: 名前の付いたページの `PageOutlet` の中に出た画面で、ページの見出しの行が上に残る。
+ *   見出しの行を描かず、失敗の見出しを h2 にする
+ * - false: ページの見出しの行は画面に無い。名前の範囲で最も深い名前 (ダイアログの route を飛ばす) を N とし、
+ *   N があれば N の見出しの行を描いて失敗の見出しを h2 に、無ければ見出しの行を描かずに h1 にする
  *
- * 扱わない場面: 描画中に投げた `notFound()` を自分の route の notFoundComponent が受けると、component は置き換わるが
- * match の `status` は success のままで、公開の状態からは Outlet の中の not found と分けられない。名前の付いたページ
- * では見出しの行が描かれず、h1 が無くなる。`notFound()` は loader か beforeLoad で投げる (ADR-0035)
+ * 名前の範囲は、自分の match の状態で決める。
+ * - error の画面と、自分の match が `status: "notFound"` の not found の画面: 最初の success でない match (境界)
+ *   まで、無ければ全部 (描画中の throw)。error を祖先の errorComponent が受けると、自分の match と失敗したページが
+ *   別になるので、自分の match だけでは足りない
+ * - 自分の match が success の not found の画面: 自分の match まで。自分の `<Outlet />` の中の not found と、描画中の
+ *   `notFound()` を自分の notFoundComponent が受けた画面がこれに当たる
+ *
+ * ページの見出しの行が上にあるかは引数で受け、matches から推し量らない。上の 2 つの not found は同じ matches になり、
+ * `<Outlet />` だけを描くレイアウトは `pageName` を持っても h1 を描かない。分けられるのは、失敗の画面が React の木の
+ * どこに描かれたか (`PageOutlet` の context) だけである (ADR-0035)
  */
 export function failureScreenLayout(
   matches: ReadonlyArray<PageNameMatch>,
   ownMatchId: string,
   kind: RouteFailureKind,
+  underPageHeading: boolean,
 ): FailureScreenLayout {
+  // matches を読まずに決まる。自分の match が matches に無くても、ページの見出しの行が上にあることは変わらない
+  if (underPageHeading) {
+    return { headingRowName: undefined, failureHeadingLevel: 2 };
+  }
   const ownIndex = matches.findIndex((match) => match.id === ownMatchId);
   const own = matches[ownIndex];
   if (own === undefined) {
@@ -63,21 +71,19 @@ export function failureScreenLayout(
     });
     return { headingRowName: undefined, failureHeadingLevel: 1 };
   }
-  const replaces = replacesOwnComponent(own, kind);
-  const range = replaces ? matchesUpToBoundary(matches) : matches.slice(0, ownIndex + 1);
-  const names = range.map((match) => pageHeadingNameOf(match.staticData));
-  const namedIndex = names.findLastIndex((name) => name !== undefined);
-  if (namedIndex === -1) {
-    return { headingRowName: undefined, failureHeadingLevel: 1 };
-  }
-  const name = names[namedIndex];
-  return {
-    headingRowName: replaces && namedIndex >= ownIndex ? name : undefined,
-    failureHeadingLevel: 2,
-  };
+  const range = readsUpToBoundary(own, kind)
+    ? matchesUpToBoundary(matches)
+    : matches.slice(0, ownIndex + 1);
+  const name = range.map((match) => pageHeadingNameOf(match.staticData)).findLast(isDefined);
+  return { headingRowName: name, failureHeadingLevel: name === undefined ? 1 : 2 };
 }
 
-function replacesOwnComponent(own: PageNameMatch, kind: RouteFailureKind): boolean {
+function isDefined(name: string | undefined): name is string {
+  return name !== undefined;
+}
+
+/** 名前の範囲を境界まで取るか (error の画面と、自分の match が `status: "notFound"` の not found の画面) */
+function readsUpToBoundary(own: PageNameMatch, kind: RouteFailureKind): boolean {
   switch (kind) {
     case "error":
       return true;

@@ -43,6 +43,7 @@ interface LayoutCase {
   matches: Match[];
   own: string;
   kind: RouteFailureKind;
+  underPageHeading: boolean;
   expected: FailureScreenLayout;
 }
 
@@ -51,14 +52,14 @@ describe("failureScreenLayout", () => {
     vi.restoreAllMocks();
   });
 
-  // spec の「見出しの行」の場面の表の各行。置き換え = 自分の route の component を置き換えて出た画面、
-  // Outlet の中 = 自分の route の component が描かれたまま、その <Outlet /> の位置に出た画面
+  // underPageHeading = 失敗の画面がページの PageOutlet の中に描かれ、ページの見出しの行 (h1) が上に残る
   it.each<LayoutCase>([
     {
       scene: "ページの loader の失敗を、そのページの境界が受ける",
       matches: [root, { ...items, status: "error" }],
       own: items.id,
       kind: "error",
+      underPageHeading: false,
       expected: { headingRowName: "項目一覧", failureHeadingLevel: 2 },
     },
     {
@@ -66,6 +67,7 @@ describe("failureScreenLayout", () => {
       matches: [root, { ...items, status: "error" }],
       own: root.id,
       kind: "error",
+      underPageHeading: false,
       expected: { headingRowName: "項目一覧", failureHeadingLevel: 2 },
     },
     {
@@ -73,6 +75,7 @@ describe("failureScreenLayout", () => {
       matches: [root, items],
       own: items.id,
       kind: "error",
+      underPageHeading: false,
       expected: { headingRowName: "項目一覧", failureHeadingLevel: 2 },
     },
     {
@@ -80,6 +83,7 @@ describe("failureScreenLayout", () => {
       matches: [root, items, itemCreate],
       own: items.id,
       kind: "error",
+      underPageHeading: false,
       expected: { headingRowName: "項目一覧", failureHeadingLevel: 2 },
     },
     {
@@ -87,13 +91,32 @@ describe("failureScreenLayout", () => {
       matches: [root, { ...items, status: "notFound" }],
       own: items.id,
       kind: "notFound",
+      underPageHeading: false,
       expected: { headingRowName: "項目一覧", failureHeadingLevel: 2 },
     },
     {
-      scene: "ページの <Outlet /> の中の not found (ページの見出しの行が上に残る)",
+      // match の status は success のままで、Outlet の中の not found と同じ matches になる
+      scene: "ページの notFoundComponent が、自分の描画中の notFound() を受ける",
       matches: [root, items],
       own: items.id,
       kind: "notFound",
+      underPageHeading: false,
+      expected: { headingRowName: "項目一覧", failureHeadingLevel: 2 },
+    },
+    {
+      scene: "ページの PageOutlet の中の not found",
+      matches: [root, items],
+      own: items.id,
+      kind: "notFound",
+      underPageHeading: true,
+      expected: { headingRowName: undefined, failureHeadingLevel: 2 },
+    },
+    {
+      scene: "ダイアログの route が既定の errorComponent で、ページの PageOutlet の中に落ちる",
+      matches: [root, items, { ...itemCreate, status: "error" }],
+      own: itemCreate.id,
+      kind: "error",
+      underPageHeading: true,
       expected: { headingRowName: undefined, failureHeadingLevel: 2 },
     },
     {
@@ -101,15 +124,28 @@ describe("failureScreenLayout", () => {
       matches: [root],
       own: root.id,
       kind: "notFound",
+      underPageHeading: false,
       expected: { headingRowName: undefined, failureHeadingLevel: 1 },
     },
     {
-      // <Outlet /> だけを描くレイアウトは pageName を持たない。持つと、画面に無い h1 を前提に level 2 になる
       scene: "名前の無いレイアウトの <Outlet /> の中の not found",
       matches: [root, { id: "/groups/groups", status: "success", staticData: {} }],
       own: "/groups/groups",
       kind: "notFound",
+      underPageHeading: false,
       expected: { headingRowName: undefined, failureHeadingLevel: 1 },
+    },
+    {
+      // レイアウトは h1 を描かないので、失敗の画面がレイアウトの名前の行を描く
+      scene: "名前の付いたレイアウトの <Outlet /> の中の not found",
+      matches: [
+        root,
+        { id: "/groups/groups", status: "success", staticData: { pageName: "グループ" } },
+      ],
+      own: "/groups/groups",
+      kind: "notFound",
+      underPageHeading: false,
+      expected: { headingRowName: "グループ", failureHeadingLevel: 2 },
     },
     {
       // 境界 (root) より深い match の状態と名前は読まない
@@ -120,6 +156,7 @@ describe("failureScreenLayout", () => {
       ],
       own: root.id,
       kind: "error",
+      underPageHeading: false,
       expected: { headingRowName: undefined, failureHeadingLevel: 1 },
     },
     {
@@ -128,23 +165,17 @@ describe("failureScreenLayout", () => {
       matches: [root, { ...items, status: "notFound" }],
       own: root.id,
       kind: "notFound",
+      underPageHeading: false,
       expected: { headingRowName: undefined, failureHeadingLevel: 1 },
     },
-    {
-      scene: "ダイアログの route が既定の errorComponent で落ちる (ページの見出しの行が上に残る)",
-      matches: [root, items, { ...itemCreate, status: "error" }],
-      own: itemCreate.id,
-      kind: "error",
-      expected: { headingRowName: undefined, failureHeadingLevel: 2 },
-    },
-  ])("$scene", ({ matches, own, kind, expected }) => {
-    expect(failureScreenLayout(matches, own, kind)).toEqual(expected);
+  ])("$scene", ({ matches, own, kind, underPageHeading, expected }) => {
+    expect(failureScreenLayout(matches, own, kind, underPageHeading)).toEqual(expected);
   });
 
   it("自分の match の id が matches に無ければ、名前の無い全画面の形にし、警告を残す", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    expect(failureScreenLayout([root, items], "/other/other", "error")).toEqual({
+    expect(failureScreenLayout([root, items], "/other/other", "error", false)).toEqual({
       headingRowName: undefined,
       failureHeadingLevel: 1,
     });

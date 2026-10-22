@@ -14,15 +14,18 @@ import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test
 import { expectAbsent } from "@/test/assert/absent";
 
 import { NotFoundContent } from "./not-found";
+import { PageOutlet } from "./page-outlet";
 import { RouteErrorContent } from "./route-error";
 import { RoutePageHeader } from "./route-page-header";
 
 /**
  * 失敗の画面を、本番と同じ既定の errorComponent と notFoundComponent を置いた route tree で描く。
- * `/items` は名前の付いたページで、子を持つ。router-core は子を持つ最も深い route を未一致の URL の境界にするので
- * (`findGlobalNotFoundRouteId`)、`/items/<未定義>` の not found は `/items` の `<Outlet />` の中に出る。
+ * `/items` は名前の付いたページで、子を `PageOutlet` で描く。router-core は子を持つ最も深い route を未一致の URL の
+ * 境界にするので (`findGlobalNotFoundRouteId`)、`/items/<未定義>` の not found は `/items` の `PageOutlet` の中に出る。
  * `/missing-item` は loader が `notFound()` を投げる名前の付いたページで、not found はその component を置き換えて出る。
- * `/groups` は `<Outlet />` だけを描く名前の無いレイアウトで、子を持つので `/groups/<未定義>` の境界になる
+ * `/vanishing-item` は描画中に `notFound()` を投げる名前の付いたページで、同じく component を置き換えて出る。
+ * `/groups` は `<Outlet />` だけを描く名前の無いレイアウト、`/sections` は同じ形の名前の付いたレイアウトで、
+ * どちらも子を持つので `/<レイアウト>/<未定義>` の境界になる
  */
 function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {}) {
   const rootRoute = createRootRoute({
@@ -41,12 +44,12 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
     component: () => (
       <>
         <RoutePageHeader />
-        <Outlet />
+        <PageOutlet />
       </>
     ),
   });
   // ダイアログの形の errorComponent を書き忘れたダイアログの route。既定の errorComponent が背後のページの
-  // <Outlet /> の位置に出る
+  // PageOutlet の位置に出る
   const itemCreateRoute = createRoute({
     getParentRoute: () => itemsRoute,
     path: "/new",
@@ -55,8 +58,6 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
       throw new Error("ダイアログの読み込みの失敗");
     },
   });
-  // <Outlet /> だけを描くレイアウトの route には pageName を書かない。書くと、その <Outlet /> の中の not found の
-  // 画面が、画面に無いレイアウトの名前の h1 を前提に失敗の見出しを h2 にし、画面に h1 が無くなる
   const groupsRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/groups",
@@ -66,6 +67,19 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
     getParentRoute: () => groupsRoute,
     path: "/",
     staticData: { pageName: "グループ一覧" },
+    component: () => <RoutePageHeader />,
+  });
+  // レイアウトは h1 を描かないので、子を PageOutlet でなく <Outlet /> で描く
+  const sectionsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/sections",
+    staticData: { pageName: "区画" },
+    component: () => <Outlet />,
+  });
+  const sectionsIndexRoute = createRoute({
+    getParentRoute: () => sectionsRoute,
+    path: "/",
+    staticData: { pageName: "区画一覧" },
     component: () => <RoutePageHeader />,
   });
   const brokenRoute = createRoute({
@@ -95,13 +109,26 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
     },
     notFoundComponent: NotFoundContent,
   });
+  // 描画中の notFound() は、自分の route の notFoundComponent (`CatchNotFound`) が受ける。match の status は
+  // success のまま
+  const vanishingItemRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/vanishing-item",
+    staticData: { pageName: "消えた項目" },
+    component: () => {
+      throw notFound();
+    },
+    notFoundComponent: NotFoundContent,
+  });
   const router = createRouterWithTestDefaults({
     routeTree: rootRoute.addChildren([
       itemsRoute.addChildren([itemCreateRoute]),
       groupsRoute.addChildren([groupsIndexRoute]),
+      sectionsRoute.addChildren([sectionsIndexRoute]),
       brokenRoute,
       throwsRoute,
       missingItemRoute,
+      vanishingItemRoute,
     ]),
     history: createMemoryHistory({ initialEntries: [initialPath] }),
     // 本番 (`src/router.tsx`) と同じ部品を通す
@@ -142,16 +169,28 @@ describe("RouteFailureScreen", () => {
       h2: "ページが見つかりません",
     },
     {
-      scene: "ページの <Outlet /> の中の not found",
+      scene: "ページの描画中の notFound()",
+      path: "/vanishing-item",
+      h1: "消えた項目",
+      h2: "ページが見つかりません",
+    },
+    {
+      scene: "ページの PageOutlet の中の not found",
       path: "/items/missing",
       h1: "項目一覧",
       h2: "ページが見つかりません",
     },
     {
-      scene: "既定の errorComponent で落ちたダイアログの route",
+      scene: "既定の errorComponent で、ページの PageOutlet の中に落ちたダイアログの route",
       path: "/items/new",
       h1: "項目一覧",
       h2: "エラーが発生しました",
+    },
+    {
+      scene: "名前の付いたレイアウトの <Outlet /> の中の not found",
+      path: "/sections/missing",
+      h1: "区画",
+      h2: "ページが見つかりません",
     },
   ])("$scene では、ページの名前の h1 が 1 つで、失敗の見出しは h2", async ({ path, h1, h2 }) => {
     const screen = await renderFailure(path);
