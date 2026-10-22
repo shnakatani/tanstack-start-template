@@ -1,3 +1,4 @@
+import { noop } from "@tanstack/react-query";
 import { Outlet, createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import * as v from "valibot";
 
@@ -19,10 +20,19 @@ export const Route = createFileRoute("/notes")({
   // loader が読む search は deps として宣言する。deps が変わると loader が走り直し、条件ごとに
   // 別のキャッシュになる (Router docs「Using loaderDeps to access search params」)
   loaderDeps: ({ search }) => ({ q: search.q }),
+  // ページに入るとき (cause が enter と preload) は欠かせない query を待つ。同じ route に留まって条件が
+  // 変わるとき (stay) は待たずに流し、失敗はページの中の境界が結果の部分で受ける。待つと失敗が route の
+  // エラーになり、検索欄ごとページが置き換わる (ADR-0033)。
   // staleTime: "static" はこの呼び出しだけに効く (キャッシュがあれば返し、無ければ取得する)。
   // queryOptions 側に書くと observer の再取得まで止まる
-  loader: ({ context, deps }) =>
-    context.queryClient.query({ ...notesQueryOptions(deps), staleTime: "static" }),
+  loader: async ({ context, deps, cause }) => {
+    const fetching = context.queryClient.query({ ...notesQueryOptions(deps), staleTime: "static" });
+    if (cause === "stay") {
+      void fetching.catch(noop);
+      return;
+    }
+    await fetching;
+  },
   head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTES_PAGE_TITLE) }] }),
   pendingComponent: NotesPagePending,
   component: NotesRoute,

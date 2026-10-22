@@ -50,6 +50,7 @@ import {
 } from "./-components/note-cells.test-helpers";
 import { noteSearchbox } from "./-components/note-search-field.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
+import { NOTES_RESULTS_ERROR_MESSAGE } from "./-lib/note-search";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route as NotesRoute } from "./route";
 import { renderRoute } from "./route.test-helpers";
@@ -230,6 +231,54 @@ describe("/notes route", () => {
     await expectAnnouncements(["『xyz』に一致するメモは 0 件です"]);
     // 入力欄は作り直されず、フォーカスが残る (key={q} でページを作り直すと body へ落ちる)
     await expect.element(noteSearchbox(screen)).toHaveFocus();
+  });
+
+  it("確定した検索語の取得が失敗すると、検索欄の語を残したまま結果の部分にエラーを出す (loader の cause が stay)", async () => {
+    vi.mocked(listNotes).mockImplementation(({ data }) =>
+      data.q === "xyz" ? Promise.reject(new Error("取得の失敗")) : Promise.resolve([]),
+    );
+    const { screen, router } = await renderRoute("/notes");
+
+    await noteSearchbox(screen).fill("xyz");
+    await userEvent.keyboard("{Enter}");
+
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+    await expect.element(noteSearchbox(screen)).toHaveValue("xyz");
+    expect(router.state.location.search).toEqual({ q: "xyz" });
+    // loader が待つと match が error になり、route の errorComponent がページごと置き換える
+    expect(router.state.matches.map((match) => match.status)).toEqual(["success", "success"]);
+    await expectAbsent(screen.getByRole("heading", { name: "エラーが発生しました" }));
+  });
+
+  it.each(["/notes", "/notes?q=xyz"])(
+    "一覧を開いたとき (%s) の取得の失敗は、route の errorComponent が受ける (loader の cause が enter)",
+    async (location) => {
+      vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
+      const { screen } = await renderRoute(location);
+
+      await expect
+        .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
+        .toBeVisible();
+      await expectAbsent(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+    },
+  );
+
+  it("開いたときの失敗から再試行してまた失敗すると、検索欄を出したまま結果の部分にエラーを出す (再試行の再読み込みは stay)", async () => {
+    vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
+    const { screen } = await renderRoute("/notes");
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
+      .toBeVisible();
+
+    // RouteErrorContent の再試行は router.invalidate() を呼ぶ。同じ location の再読み込みなので cause は stay
+    await screen.getByRole("button", { name: "再試行" }).click();
+
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+    await expect.element(noteSearchbox(screen)).toBeVisible();
   });
 
   it("確定した後に URL の q が元の値へ戻っても、確定済みの編集は復活せず入力欄も一覧も q に揃う", async () => {
