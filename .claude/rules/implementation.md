@@ -74,11 +74,11 @@ lint では見ないのでレビューで見る。
 
 - ページの route (自分の component が `RoutePageHeader` を描く route) を足したら、`pageRouteOptions(<ページ名>)` (`src/lib/page-title.ts`) を route の外で const に受け、options の先頭に spread する。`staticData.pageName` と、そこから title を組む `head` が 1 組で入る。ページの上に重ねるダイアログの route は `dialogRouteOptions(<ダイアログの名前>)` を spread する。`head` が無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
 - 呼び出しを options の中で直接 spread しない (`...pageRouteOptions(<ページ名>)`)。`tanstack-router/create-route-property-order` が Identifier でない spread で throw し、lint ごと止まる (TanStack/router#8673)
-- `<Outlet />` だけを描くレイアウトの route には、path の有無に関わらず `pageName` を書かない。書くと、その `<Outlet />` の中の not found の画面が `<h2>` だけになり、`<h1>` が無くなる (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
-- 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない。表示中も読み込み中も `<h1>` が 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
+- ページの component は子の route を `<Outlet />` でなく `PageOutlet` (`src/components/screens/page-outlet.tsx`) で描く。`<Outlet />` のままだと、その中の失敗の画面がページ名の行を描き直し、`<h1>` が 2 つになる。`<h1>` を描かないレイアウトは `<Outlet />` のままにする (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
+- 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない。表示中は `<h1>` が 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 - title は `pageRouteOptions` と `dialogRouteOptions` の `head` か `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
 - ページの見出しは `RoutePageHeader` で描く。`pageName` が無いと throw する。`PageHeader` の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
-- 読み込んだデータで名前が決まる route は、`pageRouteOptions(<ページの一般の名前>)` を spread し、その後ろに自分の `head` を書いて、`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする。後ろの `head` が spread の `head` を上書きする。spread を省くと、読み込み中と失敗の画面に名前の行が出ず、`<Outlet />` の中の失敗の画面が `<h1>` になってページの `<h1>` と 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
+- 読み込んだデータで名前が決まる route は、`pageRouteOptions(<ページの一般の名前>)` を spread し、その後ろに自分の `head` を書いて、`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする。後ろの `head` が spread の `head` を上書きする。spread を省くと、読み込み中の画面と、ページの component を置き換えて出る失敗の画面に名前の行が出ない (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 
 ## フォームのダイアログは子 route にする
 
