@@ -72,12 +72,13 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 
 lint では見ないのでレビューで見る。
 
-- ページの route (自分の component が `RoutePageHeader` を描く route) を足したら、`staticData.pageName` にページ名を書き、`head: pageHead` を書く。読み込んだデータで名前が決まる route は、`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする。ページの上に重ねるダイアログの route も、ダイアログの名前で書く。`head` が無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
+- ページの route (自分の component が `RoutePageHeader` を描く route) を足したら、`pageRouteOptions(<ページ名>)` (`src/lib/page-title.ts`) を route の外で const に受け、options の先頭に spread する。`staticData.pageName` と、そこから title を組む `head` が 1 組で入る。ページの上に重ねるダイアログの route は `dialogRouteOptions(<ダイアログの名前>)` を spread する。`head` が無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
+- 呼び出しを options の中で直接 spread しない (`...pageRouteOptions(<ページ名>)`)。`tanstack-router/create-route-property-order` が Identifier でない spread で throw し、lint ごと止まる (TanStack/router#8673)
 - `<Outlet />` だけを描くレイアウトの route には、path の有無に関わらず `pageName` を書かない。書くと、その `<Outlet />` の中の not found の画面が `<h2>` だけになり、`<h1>` が無くなる (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 - 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない。表示中も読み込み中も `<h1>` が 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
-- title は `pageHead` か `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
+- title は `pageRouteOptions` と `dialogRouteOptions` の `head` か `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
 - ページの見出しは `RoutePageHeader` で描く。`pageName` が無いと throw する。`PageHeader` の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
-- 読み込んだデータで名前が決まる route も `staticData.pageName` にページの一般の名前を書く。省くと、読み込み中と失敗の画面に名前の行が出ず、`<Outlet />` の中の失敗の画面が `<h1>` になってページの `<h1>` と 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
+- 読み込んだデータで名前が決まる route は、`pageRouteOptions(<ページの一般の名前>)` を spread し、その後ろに自分の `head` を書いて、`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする。後ろの `head` が spread の `head` を上書きする。spread を省くと、読み込み中と失敗の画面に名前の行が出ず、`<Outlet />` の中の失敗の画面が `<h1>` になってページの `<h1>` と 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 
 ## フォームのダイアログは子 route にする
 
@@ -91,7 +92,7 @@ lint では見ないのでレビューで見る。
 - `returnTo` は `useRouteDialog` が `navigate` にそのまま渡す。開く元のページの search を保つなら `search: (prev) => prev` を書く (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 同じ戻り先は `linkOptions` で検査した定数にし、開く元のページの `-lib/` に 1 つ置く。型の無い定数にすると `prev` の型が決まらず型検査を通らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - `ActionDialogContent` (フォームを持たないなら `DialogContent`) には `useRouteDialog` の返り値の `popupProps` を spread する。spread しなくても型は通り、離れたときに開いた元の要素へ戻らず、閉じる遷移の退場も出ない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
-- ダイアログの route に `staticData: { pageName: <ダイアログの名前>, routeDialog: true }` を書く。`routeDialog` が無いと閉じる遷移の type も `popupProps` の `data-route-dialog` も付かず、ダイアログは退場を見せずにクロスフェードで消える。`pageName` が無いと title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない。どちらも `useRouteDialog` の警告は console に出るだけで、テストは落ちない (ADR-0041)
+- ダイアログの route の options には `dialogRouteOptions(<ダイアログの名前>)` を const に受けて spread し、`staticData` の `pageName` と `routeDialog: true` を `head` と 1 組で持たせる。`staticData` を手で書いて `routeDialog` が抜けると閉じる遷移の type も `popupProps` の `data-route-dialog` も付かず、ダイアログは退場を見せずにクロスフェードで消える。`pageName` が抜けると title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない。どちらも `useRouteDialog` の警告は console に出るだけで、テストは落ちない (ADR-0041)
 - ダイアログの route を足したら、そのページの route のテストで、閉じる操作で閉じたときと戻るで離れたときに開いた元の要素へ focus が移ることと、別のダイアログに替わったときに開いた元の要素が focus を受けないことを確かめる。`findReturnTarget` が要素を見つけられなくても、`popupProps` を spread し忘れても (Base UI の既定の戻し先へ戻る)、型検査も `useRouteDialog` も気付かない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめ、開くリンクを押して開かない。リンクを押して開くと、`popupProps` を spread し忘れても Base UI の既定の戻し先でリンクへ戻り、テストが通る (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 
