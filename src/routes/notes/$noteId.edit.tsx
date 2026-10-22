@@ -39,7 +39,6 @@ export const Route = createFileRoute("/notes/$noteId/edit")({
           throw error;
         });
       invalidateNoteListsIfStale(queryClient, note.id, note.updatedAt);
-      return note;
     },
     staleReloadMode: "blocking",
   },
