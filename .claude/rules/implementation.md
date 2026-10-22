@@ -75,6 +75,7 @@ lint では見ないのでレビューで見る。
 - ルートを足したら、`staticData.pageName` にページ名を書き、`head: pageHead` を書く。ページの上に重ねるダイアログの route も、ダイアログの名前で書く。`head` が無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
 - title は `pageHead` か `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
 - ページの見出しは `RoutePageHeader` で描く。`pageName` が無いと throw する。`PageHeader` の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
+- 読み込んだデータで名前が決まる route も `staticData.pageName` にページの一般の名前を書く。省くと、読み込み中と失敗の画面に名前の行が出ず、`<Outlet />` の中の失敗の画面が `<h1>` になってページの `<h1>` と 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 
 ## フォームのダイアログは子 route にする
 

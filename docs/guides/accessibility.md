@@ -130,7 +130,7 @@ focus は奪わない。`src/lib/focus-page-heading.ts` の `focusPageHeading` �
 - どちらも無いと focus は `<body>` に落ち、`console.warn` が出る
 - 見出しに focus の枠は出さない (`focusVisible: false`)。理由は ADR-0035 にある
 
-not found の画面の title は `src/lib/page-title.ts` の `pageTitle` が決める。全 route が `head: pageHead` で `pageTitle` を通していれば、どの route が not found を受け持っても同じ title になる。route の読み込み (loader・beforeLoad・component の chunk) の失敗では、title の前に `エラー: ` が付く。判定の仕方と、扱わない URL は ADR-0035 にある。
+not found の画面の title は `src/lib/page-title.ts` の `pageTitle` が決める。全 route の `head` が `pageTitle` を通していれば (ページとダイアログの route は `head: pageHead` で)、どの route が not found を受け持っても同じ title になる。route の読み込み (loader・beforeLoad・component の chunk) の失敗では、title の前に `エラー: ` が付く。判定の仕方と、扱わない URL は ADR-0035 にある。
 
 ### 読み込み中の表示の見せ方を選んだ理由
 
@@ -265,7 +265,8 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - title を文字列で直接書かない。not found の判定を通らず、not found の画面でもそのページの名前が title になる
 - `head: pageHead` を省かない。省くと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない
 - ページの route の `pageName` を省かない。省くと `RoutePageHeader` が throw し、ページはエラーの画面になる
-- `PageHeader` (`src/components/parts/page-header.tsx`) の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする。その route は `head()` で `pageTitle(ctx, <名前>)` を返し、同じ名前を `PageHeader` に渡す (ADR-0033)。静的な名前を渡すと `pageName` と二重になり、title と見出しがずれても気付けない
+- `PageHeader` (`src/components/parts/page-header.tsx`) の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする。名前が静的な route で渡すと `pageName` と二重になり、title と見出しがずれても気付けない
+- 読み込んだデータで名前が決まる route も、`staticData.pageName` にページの一般の名前を書く。`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にし、同じ名前を `PageHeader` に渡す (ADR-0033、ADR-0035)。`pageName` を省くと、読み込み中と失敗の画面に名前の行が出ず、そのページの `<Outlet />` の中の失敗の画面が `<h1>` になって、ページの `<h1>` と 2 つ並ぶ
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
 
