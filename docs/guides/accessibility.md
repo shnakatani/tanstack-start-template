@@ -257,19 +257,19 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### ページを足すときに title と見出しを持たせる
 
-遷移の読み上げは title を、遷移の後の focus は見出しを使う (「クライアント遷移を伝える仕組み」)。ページ名は route の `staticData.pageName` に 1 回だけ書き、title と見出しの行をそこから作る。ページの route (自分の component が `RoutePageHeader` を描く route) を足したら次の 2 つを持たせる。
+遷移の読み上げは title を、遷移の後の focus は見出しを使う (「クライアント遷移を伝える仕組み」)。ページ名は route の `staticData.pageName` に 1 回だけ書き、title と見出しの行をそこから作る。ページの route (自分の component が `<h1>` を描く route。`RoutePageHeader` か、読み込んだ名前を渡した `PageHeader` で描く) を足したら次の 2 つを持たせる。
 
 1. `pageRouteOptions(<ページ名>)` (`src/lib/page-title.ts`) を route の外で const に受け、route の options の先頭に spread する。`staticData.pageName` と、そこから title を組む `head` が 1 組で入る。ページ名は他のページと区別できる名前にする。ページの上に重ねるダイアログの route は、ダイアログの名前で `dialogRouteOptions` を spread する
-2. ページの component の先頭で `RoutePageHeader` (`src/components/screens/route-page-header.tsx`) を描く。名前は route の `pageName` から取るので渡さず、操作だけを `actions` に渡す。route の `pendingComponent` を書くなら、その中でも描く。書かなければ、router の既定の pending 表示が名前だけの見出しの行を描く
+2. ページの component の先頭で `RoutePageHeader` (`src/components/screens/route-page-header.tsx`) を描く。名前は route の `pageName` から取るので渡さず、操作だけを `actions` に渡す。route の `pendingComponent` を書くなら、その中でも描く。書かなければ、router の既定の pending 表示が名前だけの見出しの行を描く。読み込んだデータで名前が決まる route は、`RoutePageHeader` の代わりに `PageHeader` に名前を渡す (この節の、読み込んだデータで名前が決まる route の項目)
 
 - title を文字列で直接書かない。not found の判定を通らず、not found の画面でもそのページの名前が title になる
 - `pageRouteOptions` を使わずに `staticData` を手で書かない。書いて `head` を省くと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない
 - `...pageRouteOptions(<ページ名>)` のように呼び出しを options の中で直接 spread しない。`tanstack-router/create-route-property-order` が Identifier でない spread で throw し、lint ごと止まる (TanStack/router#8673)
 - ページの route の `pageName` を省かない。省くと `RoutePageHeader` が throw し、ページはエラーの画面になる
-- ページの component は子の route を `<Outlet />` でなく `PageOutlet` (`src/components/screens/page-outlet.tsx`) で描く。失敗の画面と router の既定の pending 表示は、`PageOutlet` の中ではページの `<h1>` が上にあるとして名前の行を描かない。`<Outlet />` のままだと、その中の失敗の画面 (`/<ページ>/<未定義>` の not found、ダイアログの route の既定の失敗) がページ名の行を描き直し、`<h1>` が 2 つになる。`<h1>` を描かないレイアウトの route は `<Outlet />` のままにする (ADR-0035)
+- `<h1>` を描くページの component (`RoutePageHeader` も、読み込んだ名前を渡した `PageHeader` も) は、子の route を `<Outlet />` でなく `PageOutlet` (`src/components/screens/page-outlet.tsx`) で描く。失敗の画面と router の既定の pending 表示は、`PageOutlet` の中ではページの `<h1>` が上にあるとして名前の行を描かない。`<Outlet />` のままだと、その中の失敗の画面 (`/<ページ>/<未定義>` の not found、ダイアログの route の既定の失敗) がページ名の行を描き直し、`<h1>` が 2 つになる。`<h1>` を描かないレイアウトの route は `<Outlet />` のままにする (ADR-0035)
 - 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない。親のページの `<h1>` の下の `PageOutlet` に子のページの `<h1>` が描かれ、表示中は `<h1>` が 2 つ並ぶ
 - `PageHeader` (`src/components/parts/page-header.tsx`) の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする。名前が静的な route で渡すと `pageName` と二重になり、title と見出しがずれても気付けない
-- 読み込んだデータで名前が決まる route も、ページの一般の名前で `pageRouteOptions` を spread する。その後ろに自分の `head` を書いて spread の `head` を上書きし、`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にし、同じ名前を `PageHeader` に渡す (ADR-0033、ADR-0035)。spread を省くと、読み込み中の画面と、ページの component を置き換えて出る失敗の画面 (loader の失敗、描画中の throw) に名前の行が出ない
+- 読み込んだデータで名前が決まる route も、ページの一般の名前で `pageRouteOptions` を spread する。その後ろに自分の `head` を書いて spread の `head` を上書きし、`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にし、同じ名前を `PageHeader` に渡す (ADR-0033、ADR-0035)。spread を省くと、読み込み中の画面と、ページの component を置き換えて出る失敗の画面 (loader の失敗、描画中の throw) に名前の行が出ない。子の route は `PageOutlet` で描く。`<Outlet />` のままだと、その中の失敗の画面が spread した一般の名前の行を描き、`PageHeader` の `<h1>` と 2 つになる
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)
 - ページを足したら、または見出しか title を変えたら、VoiceOver で見出しの focus と title の読み上げの聞こえ方を確かめる。自動テストでは聞こえ方を見られない (ADR-0035)
 

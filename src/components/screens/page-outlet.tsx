@@ -3,7 +3,8 @@ import { Outlet } from "@tanstack/react-router";
 import { PageHeadingAboveContext } from "@/hooks/page-heading-context";
 
 /**
- * 名前の付いたページ (自分の component が `RoutePageHeader` を描く route) が子の route を描く `<Outlet />`。
+ * `<h1>` を描くページ (自分の component が `RoutePageHeader` か、読み込んだ名前を渡した `PageHeader` を描く route)
+ * が子の route を描く `<Outlet />`。
  * 子の位置に出る失敗の画面と既定の pending 表示に、ページの h1 が上にあることを context で伝え、名前の行と h1 を
  * 重ねさせない (ADR-0035)。
  *

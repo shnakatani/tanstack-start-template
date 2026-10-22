@@ -4,9 +4,9 @@ declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
     /**
      * ページの名前。`<title>` と、見出しの行の h1 (`RoutePageHeader`、既定の pending と失敗の画面) になる。
-     * ページの route (自分の component が `RoutePageHeader` を描く route) と、ページの上に重ねるダイアログの route
-     * に、title を組む `head` と 1 組で書く (`pageRouteOptions`、`dialogRouteOptions`)。ページの route は子の route を
-     * `<Outlet />` でなく `PageOutlet` で描く。
+     * ページの route (自分の component が `RoutePageHeader` か、読み込んだ名前を渡した `PageHeader` で h1 を描く
+     * route) と、ページの上に重ねるダイアログの route に、title を組む `head` と 1 組で書く (`pageRouteOptions`、
+     * `dialogRouteOptions`)。ページの route は子の route を `<Outlet />` でなく `PageOutlet` で描く。
      * 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない (h1 が 2 つ並ぶ)。
      * 省略できる key にする。必須にすると root とテストの route まで `staticData` を課す (ADR-0035)
      */
