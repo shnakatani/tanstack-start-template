@@ -102,13 +102,17 @@ describe("/notes route", () => {
     vi.mocked(listNotes).mockResolvedValue([]);
   });
 
-  it("route に loader が定義され、pendingComponent で skeleton が表示される", async () => {
+  it("route に loader が定義され、pendingComponent で見出しの行と skeleton が表示される", async () => {
     expect(typeof NotesRoute.options.loader).toBe("function");
 
     const Pending = NotesRoute.options.pendingComponent!;
-    const router = createTestRouter("/notes", () => <Pending />);
+    // 見出しの行は route の staticData.pageName を読むので、描く route に同じ staticData を付ける
+    const router = createTestRouter("/notes", () => <Pending />, NotesRoute.options.staticData);
     const screen = await render(<RouterProvider router={router} />);
 
+    await expect
+      .element(screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 }))
+      .toBeInTheDocument();
     await expect.element(screen.getByRole("cell", { name: "読み込み中" })).toBeInTheDocument();
     // skeleton は NOTE_COLUMNS の見出しを全部描く。列定義がそれと過不足なく同じ順に並ぶことをここで見る。
     // ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)

@@ -1,6 +1,5 @@
-import { PageHeader } from "@/components/parts/page-header";
+import { RoutePageHeader } from "@/components/screens/route-page-header";
 
-import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NotesTableSkeleton } from "./notes-table-skeleton";
 
 /**
@@ -11,7 +10,7 @@ import { NotesTableSkeleton } from "./notes-table-skeleton";
 export function NotesPagePending() {
   return (
     <div>
-      <PageHeader title={NOTES_PAGE_TITLE} />
+      <RoutePageHeader />
       <div className="p-4">
         <NotesTableSkeleton />
       </div>

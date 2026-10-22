@@ -51,6 +51,7 @@ vi.mock(import("../-lib/note-search"), async (importOriginal) => ({
 }));
 
 import { NOTES_RESULTS_ERROR_MESSAGE } from "../-lib/note-search";
+import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { noteExpandTriggerName, noteRow, rowDeleteButton } from "./note-cells.test-helpers";
 import { noteCreateLink } from "./note-create-dialog.test-helpers";
 import { noteSearchbox } from "./note-search-field.test-helpers";
@@ -66,14 +67,19 @@ async function renderPage({
   onQueryChange?: (q: string) => void;
   queryClient?: QueryClient;
 } = {}) {
-  const router = createTestRouter("/notes", () => (
-    <QueryClientProvider client={queryClient}>
-      <Suspense fallback={null}>
-        <NotesPage q={q} onQueryChange={onQueryChange} />
-      </Suspense>
-      <Toaster />
-    </QueryClientProvider>
-  ));
+  const router = createTestRouter(
+    "/notes",
+    () => (
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={null}>
+          <NotesPage q={q} onQueryChange={onQueryChange} />
+        </Suspense>
+        <Toaster />
+      </QueryClientProvider>
+    ),
+    // 見出しの行は描く route の staticData.pageName を読む
+    { pageName: NOTES_PAGE_TITLE },
+  );
   return render(<RouterProvider router={router} />);
 }
 

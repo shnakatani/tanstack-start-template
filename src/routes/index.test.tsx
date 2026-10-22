@@ -49,4 +49,16 @@ describe("/ route", () => {
 
     await expect.poll(() => document.title).toBe(APP_NAME);
   });
+
+  it("見出しの行にアプリ名を h1 で描く", async () => {
+    const router = createRouterWithTestDefaults({
+      routeTree,
+      history: createMemoryHistory({ initialEntries: ["/"] }),
+    });
+    const screen = await render(<RouterProvider router={router} />);
+
+    await expect
+      .element(screen.getByRole("heading", { name: APP_NAME, level: 1 }))
+      .toBeInTheDocument();
+  });
 });

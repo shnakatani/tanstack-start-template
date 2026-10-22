@@ -482,13 +482,24 @@ describe("/notes/$noteId/edit route", () => {
     );
   });
 
-  it("title をダイアログの名前とアプリ名で組む", async () => {
+  it("title をダイアログの名前とアプリ名で組み、ページの見出しは一覧の名前のまま残す", async () => {
+    // 受け入れ条件の確認。見出しの行は一覧の route の match から読む。ダイアログの名前が見出しの行に漏れる経路
+    // (既定の pending 表示と失敗の画面) は pending.test.tsx と page-name.test.ts が見る
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
     const fetching = serveNotes([NOTE]);
-    await renderRoute(`/notes/${NOTE.id}/edit`);
+    const { screen } = await renderRoute(`/notes/${NOTE.id}/edit`);
 
     await expect.poll(() => document.title).toBe(`${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`);
+    // モーダルのダイアログが外側を aria-hidden で隠すので、includeHidden で引く
+    await expect
+      .element(
+        screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1, includeHidden: true }),
+      )
+      .toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("heading", { level: 1, includeHidden: true }))
+      .toHaveLength(1);
     expect(fetching).toHaveBeenExhausted();
   });
 
