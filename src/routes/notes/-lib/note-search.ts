@@ -12,6 +12,9 @@ export const NOTE_SEARCH_LABEL = `${NOTE_ENTITY_LABEL}を検索`;
  */
 export const NOTE_SEARCH_DEBOUNCE_MS: number = 300;
 
+/** 一覧の取得が結果の部分で失敗したときの見出し (`SectionErrorBoundary` の `message`)。例外の文言は出さない */
+export const NOTES_RESULTS_ERROR_MESSAGE = `${NOTE_ENTITY_LABEL}の一覧を取得できませんでした。`;
+
 /**
  * 絞り込みの結果が入れ替わったときの通知文 (ADR-0027)。
  * 件数は楽観行を含めない (取得した一覧の件数)。
