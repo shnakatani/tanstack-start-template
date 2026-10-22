@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vite-plus/test";
+import * as v from "valibot";
+import { describe, expect, it, vi } from "vite-plus/test";
 
-import { noteSearchResultMessage } from "./note-search";
+import { noteListSearchSchema, noteSearchResultMessage } from "./note-search";
 
 describe("noteSearchResultMessage", () => {
   it("検索語が空なら解除の文言", () => {
@@ -11,4 +12,28 @@ describe("noteSearchResultMessage", () => {
     expect(noteSearchResultMessage("abc", 0)).toBe("『abc』に一致するメモは 0 件です");
     expect(noteSearchResultMessage("abc", 2)).toBe("『abc』に一致するメモは 2 件です");
   });
+});
+
+describe("noteListSearchSchema", () => {
+  it("文字列の q はそのまま通す", () => {
+    expect(v.parse(noteListSearchSchema, { q: "abc" })).toEqual({ q: "abc" });
+  });
+
+  it("q が無ければ既定の空文字", () => {
+    expect(v.parse(noteListSearchSchema, {})).toEqual({ q: "" });
+  });
+
+  // URL の q は Router の既定の search パーサが JSON として先に読むので、手で書いた ?q=123 は number になる
+  it.each([123, true, null, [1], { a: 1 }])(
+    "文字列でない q (%o) は既定の空文字に落とし、受け取った値を warn に残す",
+    (raw) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        expect(v.parse(noteListSearchSchema, { q: raw })).toEqual({ q: "" });
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining("[notes]"), { rawInput: raw });
+      } finally {
+        warn.mockRestore();
+      }
+    },
+  );
 });

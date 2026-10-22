@@ -15,6 +15,7 @@ import { NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
+import { expectAbsent } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import type { Screen } from "@/test/assert/screen-assertions";
 import {
@@ -294,17 +295,17 @@ describe("/notes route", () => {
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: capped } });
   });
 
-  it("文字列以外の q (JSON パースで number になる) は route の error component に落ちる", async () => {
-    const { screen } = await renderRoute("/notes?q=123");
+  it("文字列以外の q (JSON パースで number になる) は既定の空文字に落とし、エラーにしない (Router の search-params ガイドの fallback)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const { screen } = await renderRoute("/notes?q=123");
 
-    // Router は Standard Schema の issues を JSON にして SearchParamError を投げ、RouteErrorContent が
-    // DEV では error.message をそのまま出す。schema の文言が含まれることを見る
-    await expect
-      .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
-      .toBeVisible();
-    await expect
-      .element(screen.getByText("検索語は文字列で指定してください", { exact: false }))
-      .toBeInTheDocument();
-    expect(vi.mocked(listNotes)).not.toHaveBeenCalled();
+      await expect.element(noteSearchbox(screen)).toHaveValue("");
+      expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "" } });
+      await expectAbsent(screen.getByRole("heading", { name: "エラーが発生しました" }));
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("[notes]"), { rawInput: 123 });
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

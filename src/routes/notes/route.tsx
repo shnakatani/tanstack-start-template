@@ -7,11 +7,13 @@ import { pageTitle } from "@/lib/page-title";
 
 import { NotesPage } from "./-components/notes-page";
 import { NotesPagePending } from "./-components/notes-page-pending";
+import { noteListSearchSchema } from "./-lib/note-search";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 
 export const Route = createFileRoute("/notes")({
-  // URL の search を schema で検証する。valibot 1.x は Standard Schema なので adapter 不要
-  validateSearch: noteListFilterSchema,
+  // URL の search を schema で検証する。valibot 1.x は Standard Schema なので adapter 不要。
+  // 文字列でない q は既定に落とす (ADR-0019)
+  validateSearch: noteListSearchSchema,
   // 既定値は URL に書かない。/notes と /notes?q= を同じ場所にする。既定は schema から導く
   search: { middlewares: [stripSearchParams(v.getDefaults(noteListFilterSchema))] },
   // loader が読む search は deps として宣言する。deps が変わると loader が走り直し、条件ごとに
