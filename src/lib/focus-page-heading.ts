@@ -74,7 +74,8 @@ export function moveFocusToPageHeading(): void {
 
 function focusTargetOrBody(target: HTMLElement | null): void {
   if (target === null) {
-    // どのページも RoutePageHeader で h1 を持つ。無いのはページの組み方の漏れなので残す
+    // どのページも h1 を持つ (RoutePageHeader か、読み込んだ名前を渡した PageHeader)。無いのはページの組み方の
+    // 漏れなので残す
     console.warn("[focusPageHeading] 移し先の見出しが無い", { pathname: window.location.pathname });
     focusBody();
     return;
