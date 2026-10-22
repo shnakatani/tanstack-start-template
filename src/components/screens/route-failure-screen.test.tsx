@@ -2,6 +2,7 @@ import {
   createMemoryHistory,
   createRootRoute,
   createRoute,
+  notFound,
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
@@ -18,7 +19,8 @@ import { RoutePageHeader } from "./route-page-header";
 /**
  * 失敗の画面を、本番と同じ既定の errorComponent と notFoundComponent を置いた route tree で描く。
  * `/items` は名前の付いたページで、子を持つ。router-core は子を持つ最も深い route を未一致の URL の境界にするので
- * (`findGlobalNotFoundRouteId`)、`/items/<未定義>` の not found は `/items` の `<Outlet />` の中に出る
+ * (`findGlobalNotFoundRouteId`)、`/items/<未定義>` の not found は `/items` の `<Outlet />` の中に出る。
+ * `/missing-item` は loader が `notFound()` を投げる名前の付いたページで、not found はその component を置き換えて出る
  */
 function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {}) {
   const rootRoute = createRootRoute({
@@ -67,11 +69,23 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
       throw new Error("描画の失敗");
     },
   });
+  // router-core は notFoundComponent を持つ最も近い route を notFound() の境界にする (`getNotFoundBoundary`)。
+  // router の defaultNotFoundComponent は境界を決めないので、自分の route に置かないと root が受ける
+  const missingItemRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/missing-item",
+    staticData: { pageName: "項目の詳細" },
+    loader: () => {
+      throw notFound();
+    },
+    notFoundComponent: NotFoundContent,
+  });
   const router = createRouterWithTestDefaults({
     routeTree: rootRoute.addChildren([
       itemsRoute.addChildren([itemCreateRoute]),
       brokenRoute,
       throwsRoute,
+      missingItemRoute,
     ]),
     history: createMemoryHistory({ initialEntries: [initialPath] }),
     // 本番 (`src/router.tsx`) と同じ部品を通す
@@ -99,6 +113,12 @@ describe("RouteFailureScreen", () => {
       path: "/throws",
       h1: "描けない一覧",
       h2: "エラーが発生しました",
+    },
+    {
+      scene: "ページの loader の notFound()",
+      path: "/missing-item",
+      h1: "項目の詳細",
+      h2: "ページが見つかりません",
     },
     {
       scene: "ページの <Outlet /> の中の not found",

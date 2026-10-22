@@ -38,6 +38,13 @@ it("2 つ目の引数の名前は、staticData.pageName より優先する", () 
   );
 });
 
+// 読み込みに失敗してデータが無いときも、ページの一般の名前の title になる
+it("2 つ目の引数が undefined なら、staticData.pageName を使う", () => {
+  expect(pageTitle(headContext({ staticData: { pageName: "項目" } }), undefined)).toBe(
+    `項目 — ${APP_NAME}`,
+  );
+});
+
 it("matches のどれかが notFound() を error に持てば、名前があっても not found の title にする", () => {
   const ctx = headContext({
     staticData: { pageName: "項目一覧" },

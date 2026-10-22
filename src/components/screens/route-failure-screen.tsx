@@ -31,8 +31,8 @@ export function RouteFailureScreen({
   /** カードの本文 (説明と、次に取れる操作) */
   children: ReactNode;
 }) {
-  // strict: false の select に渡る match は root の型で、routeId が undefined 型になる (select なしの戻り値では string)。
-  // 実行時は string なので String() で型だけを揃える (`RoutePageHeader` と同じ)
+  // from を省くと select に渡る match の routeId が undefined 型になる。実行時は route の id の string なので
+  // String() で型だけを揃える (理由は `RoutePageHeader` のコメント)
   const ownRouteId = useMatch({ strict: false, select: (match) => String(match.routeId) });
   const matches = useMatches();
   const { headingRowName, failureHeadingLevel } = failureScreenLayout(matches, ownRouteId, kind);

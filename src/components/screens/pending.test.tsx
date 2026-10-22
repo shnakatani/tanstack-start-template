@@ -6,6 +6,7 @@ import {
   RouterProvider,
   type StaticDataRouteOption,
 } from "@tanstack/react-router";
+import { use } from "react";
 import { expect, it, onTestFinished } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
@@ -59,6 +60,36 @@ it("名前の付いたページの読み込み中は、名前だけの見出し�
 
 it("名前の無い route の読み込み中は、見出しの行を描かない", async () => {
   const screen = await renderPending({});
+
+  await expect.element(screen.getByRole("status")).toHaveTextContent("読み込み中");
+  await expectAbsent(screen.getByRole("heading"));
+});
+
+// route が自分の Suspense を持たない (`wrapInSuspense: false`) と、描画中の suspend は root の <Outlet /> の
+// Suspense が受け、既定の pending 表示は root の match を読む。root は名前を持たないので、ページの名前を描かない
+it("root の <Outlet /> の fallback に出たときは、見出しの行を描かない", async () => {
+  const loading = Promise.withResolvers<undefined>();
+  onTestFinished(() => loading.resolve(undefined));
+  function SuspendingPage() {
+    use(loading.promise);
+    return <p>読み込んだ</p>;
+  }
+  const rootRoute = createRootRoute({ component: () => <Outlet /> });
+  const pageRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    // ページの名前を持たせる。fallback がページの match を読めば、名前の見出しが出る
+    staticData: { pageName: "項目一覧" },
+    wrapInSuspense: false,
+    component: SuspendingPage,
+  });
+  const router = createRouterWithTestDefaults({
+    routeTree: rootRoute.addChildren([pageRoute]),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+    defaultPendingComponent: PendingContent,
+    defaultPendingMs: 0,
+  });
+  const screen = await render(<RouterProvider router={router} />);
 
   await expect.element(screen.getByRole("status")).toHaveTextContent("読み込み中");
   await expectAbsent(screen.getByRole("heading"));

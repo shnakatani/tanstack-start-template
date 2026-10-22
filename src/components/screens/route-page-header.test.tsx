@@ -8,6 +8,7 @@ import {
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { thrownValueMessage } from "@/lib/thrown-value-message";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { expectText } from "@/test/assert/screen-assertions";
@@ -41,9 +42,7 @@ it("route に pageName が無ければ throw し、route の errorComponent が�
     getParentRoute: () => rootRoute,
     path: "/",
     component: () => <RoutePageHeader />,
-    errorComponent: ({ error }) => (
-      <p>{error instanceof Error ? error.message : "Error ではない値が throw された"}</p>
-    ),
+    errorComponent: ({ error }) => <p>{thrownValueMessage(error)}</p>,
   });
   const router = createRouterWithTestDefaults({
     routeTree: rootRoute.addChildren([pageRoute]),

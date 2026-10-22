@@ -1,4 +1,4 @@
-/** 状態の見出しの印の属性。`StatusHeading` (`src/components/parts/status-heading.tsx`) だけが付ける */
+/** 状態の見出しの印の属性。アプリの中では `StatusHeading` (`src/components/parts/status-heading.tsx`) だけが付ける */
 const STATUS_HEADING_ATTRIBUTE = "data-status-heading";
 
 /**

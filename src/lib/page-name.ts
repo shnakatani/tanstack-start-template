@@ -5,7 +5,7 @@ declare module "@tanstack/react-router" {
     /**
      * ページの名前。`<title>` (`pageHead`) と、見出しの行の h1 (`RoutePageHeader`、既定の pending と失敗の画面) になる。
      * ページの route と、ページの上に重ねるダイアログの route に書き、root と pathless layout には書かない。
-     * 省略できる key にする。必須にすると root とテストの route まで `staticData` を課す (ADR-0041)
+     * 省略できる key にする。必須にすると root とテストの route まで `staticData` を課す (ADR-0035)
      */
     pageName?: string;
   }
@@ -39,7 +39,11 @@ type PageNameMatch = Pick<AnyRouteMatch, "status" | "staticData"> & { routeId: s
  *   `<Outlet />` の位置に出る。名前は自分の match までから選ぶ
  * その範囲で最も深い名前 (ダイアログの route を飛ばす) を N とする。見出しの行は、置き換えで N が自分の match 以深の
  * ときだけ描く (N の component が消えているため)。level は N があれば 2、無ければ 1。
- * 自分の match だけでは足りない。error を祖先の errorComponent が受けると、自分の match と失敗したページが別になる
+ * 自分の match だけでは足りない。error を祖先の errorComponent が受けると、自分の match と失敗したページが別になる。
+ *
+ * 扱わない場面: 描画中に投げた `notFound()` を自分の route の notFoundComponent が受けると、component は置き換わるが
+ * match の `status` は success のままで、公開の状態からは Outlet の中の not found と分けられない。名前の付いたページ
+ * では見出しの行が描かれず、h1 が無くなる。`notFound()` は loader か beforeLoad で投げる (ADR-0035)
  */
 export function failureScreenLayout(
   matches: ReadonlyArray<PageNameMatch>,
