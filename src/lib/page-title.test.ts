@@ -76,18 +76,19 @@ it("名前の無い route の失敗では、アプリ名の前に「エラー: �
   expect(pageTitle(headContext({ status: "error" }))).toBe(`エラー: ${APP_NAME}`);
 });
 
+// head が引数の名前を閉じ込めず match の staticData を読むことを見るため、引数と違う名前の match を渡す
 it("pageRouteOptions の head は、match の pageName から組んだ title を meta に入れる", () => {
   const { head } = pageRouteOptions("項目一覧");
-  expect(head(headContext({ staticData: { pageName: "項目一覧" } }))).toEqual({
-    meta: [{ title: `項目一覧 — ${APP_NAME}` }],
+  expect(head(headContext({ staticData: { pageName: "別のページ" } }))).toEqual({
+    meta: [{ title: `別のページ — ${APP_NAME}` }],
   });
 });
 
-it("dialogRouteOptions は staticData に routeDialog の印を足し、head は staticData の pageName から title を組む", () => {
+it("dialogRouteOptions は staticData に routeDialog の印を足し、head は match の pageName から title を組む", () => {
   expect(pageRouteOptions("項目一覧").staticData).toEqual({ pageName: "項目一覧" });
   const dialog = dialogRouteOptions("項目を追加");
   expect(dialog.staticData).toEqual({ pageName: "項目を追加", routeDialog: true });
-  expect(dialog.head(headContext({ staticData: dialog.staticData }))).toEqual({
-    meta: [{ title: `項目を追加 — ${APP_NAME}` }],
-  });
+  expect(
+    dialog.head(headContext({ staticData: { pageName: "別のダイアログ", routeDialog: true } })),
+  ).toEqual({ meta: [{ title: `別のダイアログ — ${APP_NAME}` }] });
 });
