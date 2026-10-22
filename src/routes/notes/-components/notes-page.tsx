@@ -7,7 +7,6 @@ import { ButtonLink } from "@/components/parts/button-link";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
 import { PageHeader } from "@/components/parts/page-header";
 import { SectionErrorBoundary } from "@/components/parts/section-error-boundary";
-import { TableSkeleton } from "@/components/parts/table-skeleton";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
@@ -20,9 +19,10 @@ import { toastMutationError } from "@/lib/mutation-error";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { noteCreateLinkProps } from "../-lib/note-dialog-focus";
 import { NOTE_SEARCH_DEBOUNCE_MS, NOTES_RESULTS_ERROR_MESSAGE } from "../-lib/note-search";
-import { NOTE_COLUMNS, NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
+import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NoteSearchField } from "./note-search-field";
 import { NotesResults } from "./notes-results";
+import { NotesTableSkeleton } from "./notes-table-skeleton";
 
 /** URL / server function と同じ schema で正規化する (trim / 上限)。 */
 function normalizeQuery(text: string): string {
@@ -130,15 +130,13 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
       />
 
       <div className="flex flex-1 flex-col p-4">
-        {/* 検索の失敗は結果の部分で受け、検索欄と打った語を残す (ADR-0033)。条件が変われば境界は戻る */}
-        <SectionErrorBoundary resetKey={deferredQ} message={NOTES_RESULTS_ERROR_MESSAGE}>
+        {/* 検索の失敗は結果の部分で受け、検索欄と打った語を残す (ADR-0033)。resetKey は URL の q と
+            deferredQ の両方を含める。打っただけで失敗した語を Enter で確定すると URL の q だけが変わり、
+            deferredQ は同じ値のままなので、deferredQ だけでは境界が戻らず確定後の取得が描かれない */}
+        <SectionErrorBoundary resetKey={`${q}\n${deferredQ}`} message={NOTES_RESULTS_ERROR_MESSAGE}>
           {/* 入る時は loader が待ち、条件の変化は useDeferredValue が前の結果を残すので、fallback が出るのは
               前の結果が無いまま suspend したときだけ */}
-          <Suspense
-            fallback={
-              <TableSkeleton caption={NOTES_PAGE_TITLE} columns={Object.values(NOTE_COLUMNS)} />
-            }
-          >
+          <Suspense fallback={<NotesTableSkeleton />}>
             <NotesResults q={q} deferredQ={deferredQ} isStale={isStale} />
           </Suspense>
         </SectionErrorBoundary>

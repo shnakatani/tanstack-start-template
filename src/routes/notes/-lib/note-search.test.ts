@@ -15,12 +15,24 @@ describe("noteSearchResultMessage", () => {
 });
 
 describe("noteListSearchSchema", () => {
-  it("文字列の q はそのまま通す", () => {
-    expect(v.parse(noteListSearchSchema, { q: "abc" })).toEqual({ q: "abc" });
+  it("文字列の q はそのまま通し、warn を出さない", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(v.parse(noteListSearchSchema, { q: "abc" })).toEqual({ q: "abc" });
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
-  it("q が無ければ既定の空文字", () => {
-    expect(v.parse(noteListSearchSchema, {})).toEqual({ q: "" });
+  it("q が無ければ既定の空文字で、warn を出さない", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(v.parse(noteListSearchSchema, {})).toEqual({ q: "" });
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   // URL の q は Router の既定の search パーサが JSON として先に読むので、手で書いた ?q=123 は number になる

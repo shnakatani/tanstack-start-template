@@ -90,7 +90,7 @@ function SectionError({ error, reset }: ErrorComponentProps) {
         <Button
           variant="outline"
           onClick={() => {
-            containerRef.current?.focus();
+            containerRef.current?.focus({ preventScroll: true, focusVisible: false });
             reset();
           }}
         >

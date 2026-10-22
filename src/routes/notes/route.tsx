@@ -22,7 +22,8 @@ export const Route = createFileRoute("/notes")({
   loaderDeps: ({ search }) => ({ q: search.q }),
   // ページに入るとき (cause が enter と preload) は欠かせない query を待つ。同じ route に留まって条件が
   // 変わるとき (stay) は待たずに流し、失敗はページの中の境界が結果の部分で受ける。待つと失敗が route の
-  // エラーになり、検索欄ごとページが置き換わる (ADR-0033)。
+  // エラーになり、検索欄ごとページが置き換わる (ADR-0033)。待たずに済むのは、この一覧の query が head の値・
+  // notFound・redirect・認可のどれも決めないから。決める query なら stay でも待つ。
   // staleTime: "static" はこの呼び出しだけに効く (キャッシュがあれば返し、無ければ取得する)。
   // queryOptions 側に書くと observer の再取得まで止まる
   loader: async ({ context, deps, cause }) => {

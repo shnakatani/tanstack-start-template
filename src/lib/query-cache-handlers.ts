@@ -16,8 +16,7 @@ type QueryCacheOnError = NonNullable<QueryCacheConfig["onError"]>;
  * ある (query.getObserversCount() > 0) ことをいう。
  *
  * - 初回ロード失敗 (data === undefined) は error boundary (route の errorComponent か、ページの中の
- *   `SectionErrorBoundary`) が扱う。ここで通知すると
- *   二重表示になる
+ *   `SectionErrorBoundary`) が扱う。ここで通知すると二重表示になる
  * - observer の無い query の data は画面に出ていない。失敗は error reducer が isInvalidated を立てるので、
  *   画面に出すときに observer の mount 時の取り直しが改めて取り、その失敗をここで通知する。loader が
  *   await した取得なら、route の errorComponent も伝える。observer の options が enabled: false、

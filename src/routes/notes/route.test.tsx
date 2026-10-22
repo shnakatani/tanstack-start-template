@@ -252,6 +252,33 @@ describe("/notes route", () => {
     await expectAbsent(screen.getByRole("heading", { name: "エラーが発生しました" }));
   });
 
+  it("打っただけで取得が失敗した語を、次の取得が成功する状態で Enter で確定すると、エラーが消えて結果が出る (URL の q だけが変わる再読み込み)", async () => {
+    // "abc" の 1 回目だけ失敗する。空の q の最初の取得は成功させる
+    let abcFetches = 0;
+    vi.mocked(listNotes).mockImplementation(({ data }) => {
+      if (data.q !== "abc") {
+        return Promise.resolve([]);
+      }
+      abcFetches += 1;
+      return abcFetches === 1
+        ? Promise.reject(new Error("取得の失敗"))
+        : Promise.resolve([{ ...NOTE, title: "確定後の結果" }]);
+    });
+    const { screen, router } = await renderRoute("/notes");
+
+    // 打っただけでは URL は変わらず、debounce 後の語 (deferredQ) だけが変わって取得が失敗する
+    await noteSearchbox(screen).fill("abc");
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+    expect(router.state.location.search).toEqual({});
+
+    await userEvent.keyboard("{Enter}");
+
+    await expect.element(screen.getByText("確定後の結果", { exact: true })).toBeVisible();
+    await expectAbsent(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+  });
+
   it.each(["/notes", "/notes?q=xyz"])(
     "一覧を開いたとき (%s) の取得の失敗は、route の errorComponent が受ける (loader の cause が enter)",
     async (location) => {

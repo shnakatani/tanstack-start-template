@@ -60,6 +60,8 @@ describe("SectionErrorBoundary", () => {
     await expect.element(screen.getByText(MESSAGE, { exact: true })).toBeVisible();
     await expect.element(screen.getByRole("button", { name: "再試行" })).toBeVisible();
     await expectAnnouncements([sectionErrorAnnouncement(MESSAGE)]);
+    // 例外の文言は出さない
+    await expectAbsent(screen.getByText("取得の失敗", { exact: true }));
     // 区画の外は残る
     await expect.element(screen.getByRole("button", { name: "条件を変える" })).toBeVisible();
   });
