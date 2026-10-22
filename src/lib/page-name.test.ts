@@ -99,6 +99,14 @@ describe("failureScreenLayout", () => {
       expected: { headingRowName: undefined, failureHeadingLevel: 1 },
     },
     {
+      // <Outlet /> だけを描くレイアウトは pageName を持たない。持つと、画面に無い h1 を前提に level 2 になる
+      scene: "名前の無いレイアウトの <Outlet /> の中の not found",
+      matches: [root, { routeId: "/groups", status: "success", staticData: {} }],
+      own: "/groups",
+      kind: "notFound",
+      expected: { headingRowName: undefined, failureHeadingLevel: 1 },
+    },
+    {
       // 境界 (root) より深い match の状態と名前は読まない
       scene: "root の beforeLoad の失敗",
       matches: [

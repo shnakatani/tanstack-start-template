@@ -102,3 +102,32 @@ it("ダイアログの route の読み込み中は、見出しの行を描かな
   await expect.element(screen.getByRole("status")).toHaveTextContent("読み込み中");
   await expectAbsent(screen.getByRole("heading"));
 });
+
+// root が自分の Suspense を持たない (`wrapInSuspense: false`) と、root の描画中の suspend は router のいちばん外の
+// Suspense (CSR で張られる) が受ける。その fallback はどの match の中にも無いので、既定の pending 表示は match を
+// 読めない。throw させずに、名前の無い読み込み中として描く
+it("どの match の中にも無い fallback に出たときは、throw せずに見出しの行の無い読み込み中を描く", async () => {
+  const loading = Promise.withResolvers<undefined>();
+  onTestFinished(() => loading.resolve(undefined));
+  function SuspendingRoot() {
+    use(loading.promise);
+    return <Outlet />;
+  }
+  const rootRoute = createRootRoute({ wrapInSuspense: false, component: SuspendingRoot });
+  const pageRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    staticData: { pageName: "項目一覧" },
+    component: () => <p>読み込んだ</p>,
+  });
+  const router = createRouterWithTestDefaults({
+    routeTree: rootRoute.addChildren([pageRoute]),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+    defaultPendingComponent: PendingContent,
+    defaultPendingMs: 0,
+  });
+  const screen = await render(<RouterProvider router={router} />);
+
+  await expect.element(screen.getByRole("status")).toHaveTextContent("読み込み中");
+  await expectAbsent(screen.getByRole("heading"));
+});

@@ -72,7 +72,9 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 
 lint では見ないのでレビューで見る。
 
-- ルートを足したら、`staticData.pageName` にページ名を書き、`head: pageHead` を書く。読み込んだデータで名前が決まる route は、`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする。ページの上に重ねるダイアログの route も、ダイアログの名前で書く。`head` が無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
+- ページの route (自分の component が `RoutePageHeader` を描く route) を足したら、`staticData.pageName` にページ名を書き、`head: pageHead` を書く。読み込んだデータで名前が決まる route は、`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする。ページの上に重ねるダイアログの route も、ダイアログの名前で書く。`head` が無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
+- `<Outlet />` だけを描くレイアウトの route には、path の有無に関わらず `pageName` を書かない。書くと、その `<Outlet />` の中の not found の画面が `<h2>` だけになり、`<h1>` が無くなる (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
+- 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない。表示中も読み込み中も `<h1>` が 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 - title は `pageHead` か `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
 - ページの見出しは `RoutePageHeader` で描く。`pageName` が無いと throw する。`PageHeader` の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 - 読み込んだデータで名前が決まる route も `staticData.pageName` にページの一般の名前を書く。省くと、読み込み中と失敗の画面に名前の行が出ず、`<Outlet />` の中の失敗の画面が `<h1>` になってページの `<h1>` と 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)

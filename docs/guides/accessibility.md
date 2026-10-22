@@ -257,7 +257,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### ページを足すときに title と見出しを持たせる
 
-遷移の読み上げは title を、遷移の後の focus は見出しを使う (「クライアント遷移を伝える仕組み」)。ページ名は route の `staticData.pageName` に 1 回だけ書き、title と見出しの行をそこから作る。ルートを足したら次の 2 つを持たせる。
+遷移の読み上げは title を、遷移の後の focus は見出しを使う (「クライアント遷移を伝える仕組み」)。ページ名は route の `staticData.pageName` に 1 回だけ書き、title と見出しの行をそこから作る。ページの route (自分の component が `RoutePageHeader` を描く route) を足したら次の 2 つを持たせる。
 
 1. route に `staticData: { pageName: <ページ名> }` と `head: pageHead` (`src/lib/page-title.ts`) を書く。ページ名は他のページと区別できる名前にする。ページの上に重ねるダイアログの route も、ダイアログの名前を `pageName` に書く
 2. ページの component の先頭で `RoutePageHeader` (`src/components/screens/route-page-header.tsx`) を描く。名前は route の `pageName` から取るので渡さず、操作だけを `actions` に渡す。route の `pendingComponent` を書くなら、その中でも描く。書かなければ、router の既定の pending 表示が名前だけの見出しの行を描く
@@ -265,6 +265,8 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - title を文字列で直接書かない。not found の判定を通らず、not found の画面でもそのページの名前が title になる
 - `head: pageHead` を省かない。省くと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない
 - ページの route の `pageName` を省かない。省くと `RoutePageHeader` が throw し、ページはエラーの画面になる
+- `pageName` を書くのは、ページの route とダイアログの route だけにする。`<Outlet />` だけを描くレイアウトの route には、path の有無に関わらず書かない。失敗の画面は祖先の `pageName` を見て、その名前の `<h1>` が画面にあると判断する。レイアウトに書くと、レイアウトの `<Outlet />` の中の not found (`/<レイアウト>/<未定義>`) は失敗の見出しを `<h2>` にし、画面に `<h1>` が無くなる
+- 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない。親のページの `<h1>` の下の `<Outlet />` に子のページの `<h1>` が描かれ、表示中も読み込み中も `<h1>` が 2 つ並ぶ
 - `PageHeader` (`src/components/parts/page-header.tsx`) の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする。名前が静的な route で渡すと `pageName` と二重になり、title と見出しがずれても気付けない
 - 読み込んだデータで名前が決まる route も、`staticData.pageName` にページの一般の名前を書く。`head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にし、同じ名前を `PageHeader` に渡す (ADR-0033、ADR-0035)。`pageName` を省くと、読み込み中と失敗の画面に名前の行が出ず、そのページの `<Outlet />` の中の失敗の画面が `<h1>` になって、ページの `<h1>` と 2 つ並ぶ
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)

@@ -20,7 +20,8 @@ import { RoutePageHeader } from "./route-page-header";
  * 失敗の画面を、本番と同じ既定の errorComponent と notFoundComponent を置いた route tree で描く。
  * `/items` は名前の付いたページで、子を持つ。router-core は子を持つ最も深い route を未一致の URL の境界にするので
  * (`findGlobalNotFoundRouteId`)、`/items/<未定義>` の not found は `/items` の `<Outlet />` の中に出る。
- * `/missing-item` は loader が `notFound()` を投げる名前の付いたページで、not found はその component を置き換えて出る
+ * `/missing-item` は loader が `notFound()` を投げる名前の付いたページで、not found はその component を置き換えて出る。
+ * `/groups` は `<Outlet />` だけを描く名前の無いレイアウトで、子を持つので `/groups/<未定義>` の境界になる
  */
 function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {}) {
   const rootRoute = createRootRoute({
@@ -53,6 +54,19 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
       throw new Error("ダイアログの読み込みの失敗");
     },
   });
+  // <Outlet /> だけを描くレイアウトの route には pageName を書かない。書くと、その <Outlet /> の中の not found の
+  // 画面が、画面に無いレイアウトの名前の h1 を前提に失敗の見出しを h2 にし、画面に h1 が無くなる
+  const groupsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/groups",
+    component: () => <Outlet />,
+  });
+  const groupsIndexRoute = createRoute({
+    getParentRoute: () => groupsRoute,
+    path: "/",
+    staticData: { pageName: "グループ一覧" },
+    component: () => <RoutePageHeader />,
+  });
   const brokenRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/broken",
@@ -83,6 +97,7 @@ function renderFailure(initialPath: string, { rootBeforeLoadThrows = false } = {
   const router = createRouterWithTestDefaults({
     routeTree: rootRoute.addChildren([
       itemsRoute.addChildren([itemCreateRoute]),
+      groupsRoute.addChildren([groupsIndexRoute]),
       brokenRoute,
       throwsRoute,
       missingItemRoute,
@@ -146,6 +161,12 @@ describe("RouteFailureScreen", () => {
     {
       scene: "名前の付いたページの無い URL",
       path: "/missing",
+      h1: "ページが見つかりません",
+      rootBeforeLoadThrows: false,
+    },
+    {
+      scene: "名前の無いレイアウトの <Outlet /> の中の not found",
+      path: "/groups/missing",
       h1: "ページが見つかりません",
       rootBeforeLoadThrows: false,
     },

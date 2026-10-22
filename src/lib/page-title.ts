@@ -18,9 +18,11 @@ export interface PageTitleContext {
  * 名前が `APP_NAME` と同じなら重ねない (ホーム)。
  *
  * `ctx.matches` のどれか 1 つでも notFound() を error に持てば not found の title にする。
- * root の `head()` の `ctx.matches` には not found を受け持つ route (境界) の match まで含まれ、
- * `head()` は境界まで走って深い route の title が勝つ。全 route の `head()` がこの判定を通せば、
- * 境界がどの route でも not found の title になる。
+ * route が投げた `notFound()` では、root の `head()` の `ctx.matches` には not found を受け持つ route (境界) の
+ * match まで含まれ、`head()` は境界まで走って深い route の title が勝つ。全 route の `head()` がこの判定を通せば、
+ * 境界がどの route でも not found の title になる。どこにも当たらない URL では境界の match が error を持たず、
+ * title は境界までの route の `head()` が組んだまま (名前の付いたページが境界ならその名前、root ならアプリ名) に
+ * なる (ADR-0035「not found の title」)。
  *
  * 自分の match の `status` が `"error"` (route の読み込みの失敗。loader・beforeLoad・component の chunk) なら
  * 前に `エラー: ` を足す (ADR-0035)。
