@@ -186,14 +186,14 @@ route の読み込み (loader・beforeLoad・component の chunk) の失敗の t
 
 失敗の画面 (`RouteFailureScreen`) は、`useMatches()` の並びと自分の `routeId` から見出しの形を決める (`src/lib/page-name.ts` の `failureScreenLayout`)。失敗が自分の route の component を置き換えて出たか (error の画面と、自分の match が `status: "notFound"` の not found の画面)、自分の `<Outlet />` の中に出たか (自分の match が success の not found の画面) で分ける。自分の match だけで足りないのは、error を祖先の `errorComponent` が受けると、自分の match と失敗したページが別の match になるためである。
 
-| 場面                                                                                                         | 見出しの行                      | 失敗の見出し      |
-| ------------------------------------------------------------------------------------------------------------ | ------------------------------- | ----------------- |
-| ページの loader の失敗を、そのページの境界が受ける                                                           | ページ名                        | `<h2>`            |
-| 同じ失敗を祖先 (root を含む) の `errorComponent` で受ける                                                    | 失敗したページの名前            | `<h2>`            |
-| ページの描画中の throw                                                                                       | ページ名                        | `<h2>`            |
-| ページの `<Outlet />` の中の not found                                                                       | 描かない (ページの行が上に残る) | `<h2>`            |
-| 名前の付いたページが無い (どこにも当たらない URL、root の beforeLoad の失敗、root を境界にする `notFound()`) | 無し                            | `<h1>` (画面全体) |
-| ダイアログの route が既定の `errorComponent` で落ちる                                                        | 描かない (ページの行が上に残る) | `<h2>`            |
+| 場面                                                                                                                                      | 見出しの行                      | 失敗の見出し      |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------------- |
+| ページの loader の失敗を、そのページの境界が受ける                                                                                        | ページ名                        | `<h2>`            |
+| 同じ失敗を祖先 (root を含む) の `errorComponent` で受ける                                                                                 | 失敗したページの名前            | `<h2>`            |
+| ページの描画中の throw                                                                                                                    | ページ名                        | `<h2>`            |
+| ページの `<Outlet />` の中の not found (子を持つ名前の付いたページの下のどこにも当たらない URL、`/<ページ>/<未定義>` を含む)              | 描かない (ページの行が上に残る) | `<h2>`            |
+| 名前の付いたページが無い (どこにも当たらない URL のうち root が境界になるもの、root の beforeLoad の失敗、root を境界にする `notFound()`) | 無し                            | `<h1>` (画面全体) |
+| ダイアログの route が既定の `errorComponent` で落ちる                                                                                     | 描かない (ページの行が上に残る) | `<h2>`            |
 
 | 候補                                                                                                                        | 評価                                                                                                                                                                                                                                                                                                             | 採否     |
 | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -225,9 +225,9 @@ route の読み込み (loader・beforeLoad・component の chunk) の失敗の t
 
 ## Consequences
 
-- 各ページの route と、ページの上に重ねるダイアログの route は、`staticData.pageName` と `head: pageHead` を持つ必要がある。`head` を書き忘れると親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない。ページの route の `pageName` を書き忘れると `RoutePageHeader` が throw する。ダイアログの route の `pageName` を書き忘れると title がアプリ名だけになり、`useRouteDialog` が console に警告する (ADR-0041)。title を直接書くと、not found の画面でもそのページの名前になる
+- 各ページの route と、ページの上に重ねるダイアログの route は、`staticData.pageName` を持ち、`head` で `pageTitle` を通す必要がある。名前が固定の route は `head: pageHead` を書き、読み込んだデータで名前が決まる route は下の項目の形にする。`head` を書き忘れると親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない。ページの route の `pageName` を書き忘れると `RoutePageHeader` が throw する。ダイアログの route の `pageName` を書き忘れると title がアプリ名だけになり、`useRouteDialog` が console に警告する (ADR-0041)。title を直接書くと、not found の画面でもそのページの名前になる
 - 各ページは `RoutePageHeader` で `<h1>` を描く必要がある。無いと focus は `<body>` に落ち、`focusPageHeading` (`src/lib/focus-page-heading.ts`) が `console.warn` を出す
-- 各ページの見出しを含む本体は、loader が待った query で描く必要がある (欠かせない query を loader で待つのは ADR-0033)。`onRendered` の契機は route の Suspense 境界の外側の layout effect で、route の Suspense 境界 (`pendingComponent` を fallback に持つ) はその内側にある。本体が loader の後に suspend すると、focus は pending 表示の中の最初の `<h1>` (無ければレイアウトの最初の `<h1>`、それも無ければ `<body>`) へ移り、pending 表示の `<h1>` へ移った場合は本体に置き換わると `<body>` へ落ちる (@tanstack/react-router 1.170.32 の `src/Matches.tsx` 97〜101 行と `src/Match.tsx` 106〜112 行・128 行を読んだ推論、未実測)
+- 各ページの見出しを含む本体は、loader が待った query で描く必要がある (欠かせない query を loader で待つのは ADR-0033)。`onRendered` の契機は route の Suspense 境界の外側の layout effect で、route の Suspense 境界 (`pendingComponent` を fallback に持つ) はその内側にある。本体が loader の後に suspend すると、focus は pending 表示の中の最初の `<h1>` (無ければレイアウトの最初の `<h1>`、それも無ければ `<body>`) へ移り、pending 表示の `<h1>` へ移った場合は本体に置き換わると `<body>` へ落ちる ([@tanstack/react-router 1.170.32 の `Matches` の `useLayoutEffect`](https://github.com/TanStack/router/blob/a5a5bacc8fdf30b7823caf0a94908c3e0db27aa2/packages/react-router/src/Matches.tsx#L97-L101) と [`Match` の `ResolvedSuspenseBoundary`](https://github.com/TanStack/router/blob/a5a5bacc8fdf30b7823caf0a94908c3e0db27aa2/packages/react-router/src/Match.tsx#L106-L128) を読んだ推論、未実測)
 - 遷移の直後は、Tab を押すまで focus の位置が目では見えない。Gatsby 2019 の拡大鏡の被験者は枠が位置をつかむのに役立つと答えており、この利用者には手がかりが減る。枠の有無を比べたテストは見つかっていない
 - 入れない改善: 戻った先で、前に focus していた要素へ focus を戻す。MPA で bfcache から戻ったときと揃う形で (whatwg/html#6696、2021-10-14 マージ。"the focused element stays the same/not reset")、Navigation API の explainer も traverse の例に挙げる。ただし explainer 自身が "the notion of \"the same element\" is not generally stable" とし、要素を識別子で覚える仕組みが要る。ブラウザの実装も揃っていない (下の「調査結果」)
 - 見出しの focus と title の読み上げの聞こえ方は、一次資料で決着していない。2026-09-28 に macOS 27.0 の VoiceOver と Chrome 153.0.8010.53 で、2 つのページの間の遷移と戻るを聞き、見出しの読み上げの後に title の読み上げが順に、途切れずに聞こえた。名前の付いたページの位置の失敗の画面へ移ったとき (`エラー: ` を付けた title と、ページの `<h1>` の下の `<h2>` の失敗の見出しへ移る focus の組み合わせ)、ダイアログの route を開いたとき (ダイアログの中へ移る focus と、ダイアログの title の組み合わせ)、NVDA・JAWS では確かめていない。聞こえ方が悪ければ文言と強さを見直す
@@ -256,7 +256,7 @@ route の読み込み (loader・beforeLoad・component の chunk) の失敗の t
 | root の `errorComponent` への置き換え | —                           | `InnerWrap` の effect は後始末されない                             |
 
 - `onRendered` の時点で title と `<h1>` が新しい値なので、先行例の遅延は入れない。Astro は title を 60ms 後に入れ (`packages/astro/src/transitions/router.ts`、main の 7661f48)、Gatsby は `requestAnimationFrame` で待つ (`packages/gatsby/cache-dir/navigation.js`、master の 1fd967b)
-- SSR の最初のページでは、hydration で `onResolved` が出ない。`onRendered` は `InnerWrap` の effect より先に出るので、購読が間に合わない。間に合ったとしても `getLocationChangeInfo(resolvedLocation, resolvedLocation)` で出るので `pathChanged` は false になり、伝えない遷移に当たる (@tanstack/react-router 1.170.32 の `src/Transitioner.tsx` 76〜88 行を読んだ推論、未実測)
+- SSR の最初のページでは、hydration で `onResolved` が出ない。`onRendered` は `InnerWrap` の effect より先に出るので、購読が間に合わない。間に合ったとしても `getLocationChangeInfo(resolvedLocation, resolvedLocation)` で出るので `pathChanged` は false になり、伝えない遷移に当たる ([@tanstack/react-router 1.170.32 の `Transitioner` の `onRendered` の発火](https://github.com/TanStack/router/blob/a5a5bacc8fdf30b7823caf0a94908c3e0db27aa2/packages/react-router/src/Transitioner.tsx#L76-L88) を読んだ推論、未実測)
 
 ### bfcache から戻ったときの focus
 
@@ -266,7 +266,7 @@ route の読み込み (loader・beforeLoad・component の chunk) の失敗の t
 ### `focusVisible` の対応
 
 - MDN: `focusVisible` は "`false` to prevent visible indication that the element is focused"。対応は Chrome 145、Firefox 104、Safari 18.4 (MDN browser-compat-data 8.1.3、2026-09-28)
-- SvelteKit も focus の起点を移すとき `element.focus({ preventScroll: true, focusVisible: false })` を呼ぶ (`packages/kit/src/runtime/client/focus.js` 29 行、version-3 ブランチの 30d06f5)。同じファイルの関数のコメントは "Sets the sequential focus navigation starting point to `element` without leaving it focused" とする
+- SvelteKit も focus の起点を移すとき `element.focus({ preventScroll: true, focusVisible: false })` を呼ぶ ([`packages/kit/src/runtime/client/focus.js` の `focus_element`、version-3 ブランチの 30d06f5](https://github.com/sveltejs/kit/blob/30d06f5698528cf540899900366fc0cfeb3dc7f6/packages/kit/src/runtime/client/focus.js#L25-L29))。同じファイルの関数のコメントは "Sets the sequential focus navigation starting point to `element` without leaving it focused" とする
 
 ## 出典
 

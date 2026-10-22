@@ -19,7 +19,7 @@ import { PageHeader } from "@/components/parts/page-header";
  */
 export function RoutePageHeader({ actions }: Pick<ComponentProps<typeof PageHeader>, "actions">) {
   // from を省くと TFrom が undefined になり、select に渡る match は MakeRouteMatch<tree, undefined, false>
-  // (= RouteMatch<undefined, …>) で、routeId が undefined 型になる (router-core の Matches.d.ts)。select なしの
+  // (= RouteMatch<undefined, …>) で、routeId が undefined 型になる (router-core 1.171.34 の Matches.d.ts)。select なしの
   // 戻り値は全 route の match の union で、routeId は route の id の union になる。実行時は route の id の string なので
   // String() で型だけを揃える
   const routeId = useMatch({ strict: false, select: (match) => String(match.routeId) });
