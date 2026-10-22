@@ -18,15 +18,11 @@ import { PageHeader } from "@/components/parts/page-header";
  * 見出しの行が描き直される
  */
 export function RoutePageHeader({ actions }: Pick<ComponentProps<typeof PageHeader>, "actions">) {
-  // from を省くと TFrom が undefined になり、select に渡る match は MakeRouteMatch<tree, undefined, false>
-  // (= RouteMatch<undefined, …>) で、routeId が undefined 型になる (router-core 1.171.34 の Matches.d.ts)。select なしの
-  // 戻り値は全 route の match の union で、routeId は route の id の union になる。実行時は route の id の string なので
-  // String() で型だけを揃える
-  const routeId = useMatch({ strict: false, select: (match) => String(match.routeId) });
+  const matchId = useMatch({ strict: false, select: (match) => match.id });
   const pageName = useMatch({ strict: false, select: (match) => match.staticData.pageName });
   if (pageName === undefined) {
     throw new Error(
-      `[RoutePageHeader] route の staticData に pageName が無い (routeId: ${routeId})`,
+      `[RoutePageHeader] route の staticData に pageName が無い (match の id: ${matchId})`,
     );
   }
   return <PageHeader title={pageName} actions={actions} />;

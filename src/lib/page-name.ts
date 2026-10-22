@@ -32,11 +32,10 @@ export interface FailureScreenLayout {
   failureHeadingLevel: 1 | 2;
 }
 
-// AnyRouteMatch の routeId は any なので、string に絞って unsafe な any を持ち込まない
-type PageNameMatch = Pick<AnyRouteMatch, "status" | "staticData"> & { routeId: string };
+type PageNameMatch = Pick<AnyRouteMatch, "id" | "status" | "staticData">;
 
 /**
- * 失敗の画面 (`ownRouteId` の route の errorComponent か notFoundComponent) の見出しの形を決める。
+ * 失敗の画面 (`ownMatchId` の match の route の errorComponent か notFoundComponent) の見出しの形を決める。
  * - 置き換え: error の画面と、自分の match が `status: "notFound"` の not found の画面。自分の route の component を
  *   置き換えて出る。名前は最初の success でない match (境界) まで、無ければ全部 (描画中の throw) から選ぶ
  * - Outlet の中: 自分の match が success の not found の画面。自分の route の component は描かれたままで、その
@@ -51,16 +50,16 @@ type PageNameMatch = Pick<AnyRouteMatch, "status" | "staticData"> & { routeId: s
  */
 export function failureScreenLayout(
   matches: ReadonlyArray<PageNameMatch>,
-  ownRouteId: string,
+  ownMatchId: string,
   kind: RouteFailureKind,
 ): FailureScreenLayout {
-  const ownIndex = matches.findIndex((match) => match.routeId === ownRouteId);
+  const ownIndex = matches.findIndex((match) => match.id === ownMatchId);
   const own = matches[ownIndex];
   if (own === undefined) {
     // 部品の木と router の状態が食い違っている。失敗の画面ごと壊さず、名前の無い形で描く
-    console.warn("[failureScreenLayout] 自分の routeId が matches に無い", {
-      ownRouteId,
-      routeIds: matches.map((match) => match.routeId),
+    console.warn("[failureScreenLayout] 自分の match の id が matches に無い", {
+      ownMatchId,
+      matchIds: matches.map((match) => match.id),
     });
     return { headingRowName: undefined, failureHeadingLevel: 1 };
   }
@@ -68,10 +67,10 @@ export function failureScreenLayout(
   const range = replaces ? matchesUpToBoundary(matches) : matches.slice(0, ownIndex + 1);
   const names = range.map((match) => pageHeadingNameOf(match.staticData));
   const namedIndex = names.findLastIndex((name) => name !== undefined);
-  const name = names[namedIndex];
-  if (name === undefined) {
+  if (namedIndex === -1) {
     return { headingRowName: undefined, failureHeadingLevel: 1 };
   }
+  const name = names[namedIndex];
   return {
     headingRowName: replaces && namedIndex >= ownIndex ? name : undefined,
     failureHeadingLevel: 2,

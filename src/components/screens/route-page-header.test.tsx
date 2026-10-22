@@ -50,5 +50,8 @@ it("route に pageName が無ければ throw し、route の errorComponent が�
   });
   const screen = await render(<RouterProvider router={router} />);
 
-  await expectText(screen, "[RoutePageHeader] route の staticData に pageName が無い (routeId: /)");
+  await expectText(
+    screen,
+    "[RoutePageHeader] route の staticData に pageName が無い (match の id: //)",
+  );
 });
