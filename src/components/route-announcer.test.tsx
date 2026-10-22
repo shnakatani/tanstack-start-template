@@ -17,7 +17,7 @@ import { render } from "vitest-browser-react";
 
 import { RouteErrorContent } from "@/components/screens/route-error";
 import { APP_NAME } from "@/lib/app-name";
-import { pageHead, pageTitle } from "@/lib/page-title";
+import { pageRouteOptions, pageTitle } from "@/lib/page-title";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 
@@ -66,30 +66,30 @@ function createAnnouncedRouter(
     path: "/a",
     component: () => <h1>A</h1>,
   });
+  const bOptions = pageRouteOptions("B");
   const b = createRoute({
+    ...bOptions,
     getParentRoute: () => rootRoute,
     path: "/b",
-    staticData: { pageName: "B" },
-    head: pageHead,
     component: () => <h1>B</h1>,
   });
+  const errOptions = pageRouteOptions("Err");
   const err = createRoute({
+    ...errOptions,
     getParentRoute: () => rootRoute,
     path: "/err",
-    staticData: { pageName: "Err" },
     loader: () => {
       throw new Error("loader");
     },
-    head: pageHead,
     // 本番の既定と同じ部品で受け、見出しの行 (Err の h1) の下に失敗の見出し (h2) を出す
     errorComponent: RouteErrorContent,
   });
   // 描画中に throw する。head() は描画より前に走り終えるので、title に「エラー: 」は付かない
+  const throwsOptions = pageRouteOptions("Throws");
   const throws = createRoute({
+    ...throwsOptions,
     getParentRoute: () => rootRoute,
     path: "/throws",
-    staticData: { pageName: "Throws" },
-    head: pageHead,
     component: () => {
       throw new Error("render");
     },
@@ -106,23 +106,23 @@ function createAnnouncedRouter(
   });
   // 自分の notFoundComponent を持つ子 route が境界になる。/gone の head は自分のページ名で title を組むので、
   // 判定を通らなければ「Gone — アプリ名」になる
+  const goneOptions = pageRouteOptions("Gone");
   const gone = createRoute({
+    ...goneOptions,
     getParentRoute: () => rootRoute,
     path: "/gone",
     loader: () => {
       throw notFound();
     },
-    staticData: { pageName: "Gone" },
-    head: pageHead,
     component: () => <h1>Gone</h1>,
     notFoundComponent: () => <h1>項目が見つかりません</h1>,
   });
   // Base UI のモーダルのダイアログと同じく、開いている間ダイアログの外側を aria-hidden で隠す
+  const hiddenBehindDialogOptions = pageRouteOptions("外を隠すダイアログ");
   const hiddenBehindDialog = createRoute({
+    ...hiddenBehindDialogOptions,
     getParentRoute: () => rootRoute,
     path: "/hidden-behind-dialog",
-    staticData: { pageName: "外を隠すダイアログ" },
-    head: pageHead,
     component: () => (
       <>
         <div aria-hidden="true">
@@ -136,11 +136,11 @@ function createAnnouncedRouter(
     ),
   });
   // 外側を隠さず、aria-modal だけでモーダルを表すダイアログ
+  const ariaModalDialogOptions = pageRouteOptions("aria-modal のダイアログ");
   const ariaModalDialog = createRoute({
+    ...ariaModalDialogOptions,
     getParentRoute: () => rootRoute,
     path: "/aria-modal-dialog",
-    staticData: { pageName: "aria-modal のダイアログ" },
-    head: pageHead,
     component: () => (
       <>
         <h1>背後のページ</h1>

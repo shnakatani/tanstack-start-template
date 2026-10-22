@@ -4,14 +4,17 @@ import * as v from "valibot";
 
 import { notesQueryOptions } from "@/features/notes/queries";
 import { noteListFilterSchema } from "@/features/notes/schema";
-import { pageHead } from "@/lib/page-title";
+import { pageRouteOptions } from "@/lib/page-title";
 
 import { NotesPage } from "./-components/notes-page";
 import { NotesPagePending } from "./-components/notes-page-pending";
 import { noteListSearchSchema } from "./-lib/note-search";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 
+const pageOptions = pageRouteOptions(NOTES_PAGE_TITLE);
+
 export const Route = createFileRoute("/notes")({
+  ...pageOptions,
   // URL の search を schema で検証する。valibot 1.x は Standard Schema なので adapter 不要。
   // 文字列でない q は既定に落とす (ADR-0019)
   validateSearch: noteListSearchSchema,
@@ -32,8 +35,6 @@ export const Route = createFileRoute("/notes")({
     }
     await fetching;
   },
-  staticData: { pageName: NOTES_PAGE_TITLE },
-  head: pageHead,
   pendingComponent: NotesPagePending,
   component: NotesRoute,
 });

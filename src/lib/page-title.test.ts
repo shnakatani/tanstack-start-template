@@ -2,7 +2,12 @@ import { notFound, type AnyRouteMatch, type StaticDataRouteOption } from "@tanst
 import { expect, it } from "vite-plus/test";
 
 import { APP_NAME } from "./app-name";
-import { pageHead, pageTitle, type PageTitleContext } from "./page-title";
+import {
+  dialogRouteOptions,
+  pageRouteOptions,
+  pageTitle,
+  type PageTitleContext,
+} from "./page-title";
 
 /** route の head() が受ける ctx のうち、pageTitle が読む部分を組む */
 function headContext({
@@ -71,8 +76,16 @@ it("名前の無い route の失敗では、アプリ名の前に「エラー: �
   expect(pageTitle(headContext({ status: "error" }))).toBe(`エラー: ${APP_NAME}`);
 });
 
-it("pageHead は pageTitle の結果を meta の title に入れる", () => {
-  expect(pageHead(headContext({ staticData: { pageName: "項目一覧" } }))).toEqual({
+it("pageRouteOptions の head は、match の pageName から組んだ title を meta に入れる", () => {
+  const { head } = pageRouteOptions("項目一覧");
+  expect(head(headContext({ staticData: { pageName: "項目一覧" } }))).toEqual({
     meta: [{ title: `項目一覧 — ${APP_NAME}` }],
   });
+});
+
+it("dialogRouteOptions は staticData に routeDialog の印を足し、head はページの route と同じものを使う", () => {
+  expect(pageRouteOptions("項目一覧").staticData).toEqual({ pageName: "項目一覧" });
+  const dialog = dialogRouteOptions("項目を追加");
+  expect(dialog.staticData).toEqual({ pageName: "項目を追加", routeDialog: true });
+  expect(dialog.head).toBe(pageRouteOptions("項目一覧").head);
 });

@@ -941,7 +941,7 @@ describe("useRouteDialog の閉じる遷移", () => {
     );
   });
 
-  // 名前が無いと、head: pageHead の title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない
+  // 名前が無いと、dialogRouteOptions の head の title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない
   it("route の staticData に名前が無いと、印の警告とは別に警告する", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { screen } = await renderDialogRouter(["/items", "/items/unnamed"]);

@@ -14,6 +14,7 @@ import {
   NOTE_TITLE_MAX_LENGTH,
 } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import { dialogRouteOptions } from "@/lib/page-title";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
@@ -45,10 +46,11 @@ import {
 async function renderDialog() {
   const queryClient = createTestQueryClient();
   const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-  const router = createTestRouter("/notes/new", () => <NoteCreateDialog />, {
-    pageName: NOTE_CREATE_DIALOG_TITLE,
-    routeDialog: true,
-  });
+  const router = createTestRouter(
+    "/notes/new",
+    () => <NoteCreateDialog />,
+    dialogRouteOptions(NOTE_CREATE_DIALOG_TITLE).staticData,
+  );
   const screen = await render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

@@ -3,12 +3,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ButtonLink } from "@/components/parts/button-link";
 import { RoutePageHeader } from "@/components/screens/route-page-header";
 import { APP_NAME } from "@/lib/app-name";
-import { pageHead } from "@/lib/page-title";
+import { pageRouteOptions } from "@/lib/page-title";
+
+// ホームのページ名はアプリ名。title はアプリ名を重ねず、アプリ名だけになる (pageTitle)
+const pageOptions = pageRouteOptions(APP_NAME);
 
 export const Route = createFileRoute("/")({
-  // ホームのページ名はアプリ名。title はアプリ名を重ねず、アプリ名だけになる (pageTitle)
-  staticData: { pageName: APP_NAME },
-  head: pageHead,
+  ...pageOptions,
   component: IndexPage,
 });
 

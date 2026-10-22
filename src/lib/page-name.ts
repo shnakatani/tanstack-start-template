@@ -3,9 +3,9 @@ import type { AnyRouteMatch, StaticDataRouteOption } from "@tanstack/react-route
 declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
     /**
-     * ページの名前。`<title>` (`pageHead`) と、見出しの行の h1 (`RoutePageHeader`、既定の pending と失敗の画面) になる。
+     * ページの名前。`<title>` と、見出しの行の h1 (`RoutePageHeader`、既定の pending と失敗の画面) になる。
      * ページの route (自分の component が `RoutePageHeader` を描く route) と、ページの上に重ねるダイアログの route
-     * に書く。root と、`<Outlet />` だけを描くレイアウトの route には、path の有無に関わらず書かない。書くと
+     * に、title を組む `head` と 1 組で書く (`pageRouteOptions`、`dialogRouteOptions`)。root と、`<Outlet />` だけを描くレイアウトの route には、path の有無に関わらず書かない。書くと
      * `failureScreenLayout` がその名前の h1 が画面にあると判断し、`<Outlet />` の中の not found の画面が h2 だけになる。
      * 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない (h1 が 2 つ並ぶ)。
      * 省略できる key にする。必須にすると root とテストの route まで `staticData` を課す (ADR-0035)

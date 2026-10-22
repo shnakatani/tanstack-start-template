@@ -4,7 +4,7 @@ import type { ComponentProps } from "react";
 import { PageHeader } from "@/components/parts/page-header";
 
 /**
- * ページの見出しの行。名前は自分の route の `staticData.pageName` から取り、`<title>` (`pageHead`) と同じ値にする。
+ * ページの見出しの行。名前は自分の route の `staticData.pageName` から取り、`<title>` (`pageRouteOptions` の `head`) と同じ値にする。
  * ページの component と、route の `pendingComponent` が描く。操作 (`actions`) はページの state を持つので、ページが渡す。
  *
  * 名前が無ければ throw する。名前の無いページをアプリ名で描くと、書き忘れが黙って通る。ページの component の中の
