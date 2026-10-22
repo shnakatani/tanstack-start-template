@@ -1,9 +1,9 @@
-import { useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { CatchBoundary, type ErrorComponentProps, isNotFound } from "@tanstack/react-router";
-import { createContext, type ReactNode, type RefObject, use, useEffect, useRef } from "react";
+import { createContext, type ReactNode, type RefObject, use, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { useResetQueryErrorsOnShow } from "@/hooks/use-reset-query-errors-on-show";
 import { announce } from "@/lib/live-announcer";
 
 /**
@@ -41,7 +41,7 @@ export function SectionErrorBoundary({
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={containerRef} data-slot="section-error-boundary" tabIndex={-1}>
+    <div ref={containerRef} data-slot="section-error-boundary">
       <SectionErrorMessageContext value={message}>
         <SectionErrorContainerContext value={containerRef}>
           <CatchBoundary
@@ -62,16 +62,33 @@ export function SectionErrorBoundary({
   );
 }
 
+/**
+ * 要素へ focus を移す。focus できない要素には `tabindex="-1"` を付けて移し、focus を失ったら外す
+ * (GOV.UK Frontend の `setFocus` と同じ形)。付けたままにすると、中身の click で focus が外枠へ移る
+ */
+function moveFocusTo(element: HTMLElement | null) {
+  if (element === null) {
+    return;
+  }
+  if (!element.hasAttribute("tabindex")) {
+    element.setAttribute("tabindex", "-1");
+    element.addEventListener(
+      "blur",
+      () => {
+        element.removeAttribute("tabindex");
+      },
+      { once: true },
+    );
+  }
+  element.focus({ preventScroll: true, focusVisible: false });
+}
+
 function SectionError({ error, reset }: ErrorComponentProps) {
   const message = use(SectionErrorMessageContext);
   const containerRef = use(SectionErrorContainerContext);
-  const queryErrorResetBoundary = useQueryErrorResetBoundary();
-
-  // 表示した時点で Query の失敗を戻す。戻さないと、子を描き直しても useSuspenseQuery が同じ失敗を投げ直す
-  // (TanStack Router docs「External Data Loading」の Error handling with TanStack Query と同じ形)
-  useEffect(() => {
-    queryErrorResetBoundary.reset();
-  }, [queryErrorResetBoundary]);
+  // 表示した時点で Query の失敗を戻し、再試行の時点でもう一度戻す。route の errorComponent の再試行
+  // (`useRouteRetry`) と同じ表示時の reset を共有する
+  const resetQueryErrors = useResetQueryErrorsOnShow();
 
   // hook の呼び出しより後ろで投げる。前に置くと、hook が条件付きで呼ばれる形になる
   if (message === null || containerRef === null) {
@@ -90,7 +107,8 @@ function SectionError({ error, reset }: ErrorComponentProps) {
         <Button
           variant="outline"
           onClick={() => {
-            containerRef.current?.focus({ preventScroll: true, focusVisible: false });
+            moveFocusTo(containerRef.current);
+            resetQueryErrors();
             reset();
           }}
         >

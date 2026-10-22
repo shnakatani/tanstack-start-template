@@ -82,6 +82,56 @@ describe("SectionErrorBoundary", () => {
     expect(fetchText).toHaveBeenCalledTimes(2);
   });
 
+  it("失敗の表示中に別の区画が読み込みを始めても、再試行は取り直す", async () => {
+    const fetchText = vi
+      .fn<(key: string) => Promise<string>>()
+      .mockRejectedValueOnce(new Error("取得の失敗"))
+      .mockResolvedValueOnce("取り直した中身");
+    function Page() {
+      const [showOther, setShowOther] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setShowOther(true)}>
+            別の区画を出す
+          </button>
+          {showOther ? (
+            <Suspense fallback={<p>別の区画を読み込み中</p>}>
+              <Reader resetKey="other" fetchText={() => Promise.resolve("別の区画の中身")} />
+            </Suspense>
+          ) : null}
+          <SectionErrorBoundary resetKey="a" message={MESSAGE}>
+            <Suspense fallback={<p>読み込み中</p>}>
+              <Reader resetKey="a" fetchText={fetchText} />
+            </Suspense>
+          </SectionErrorBoundary>
+        </>
+      );
+    }
+    const screen = await render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <Page />
+      </QueryClientProvider>,
+    );
+    await expect.element(screen.getByText(MESSAGE, { exact: true })).toBeVisible();
+    // Query の reset 状態を戻すのは、useSuspenseQuery が mount したときの clearReset
+    await screen.getByRole("button", { name: "別の区画を出す" }).click();
+    await expect.element(screen.getByText("別の区画の中身", { exact: true })).toBeVisible();
+
+    await screen.getByRole("button", { name: "再試行" }).click();
+
+    await expect.element(screen.getByText("取り直した中身", { exact: true })).toBeVisible();
+    expect(fetchText).toHaveBeenCalledTimes(2);
+  });
+
+  it("結果の中身を click しても、focus は区画の外枠へ移らない", async () => {
+    const screen = await renderHarness(() => Promise.resolve("結果の中身"));
+    await expect.element(screen.getByText("結果の中身", { exact: true })).toBeVisible();
+
+    await screen.getByText("結果の中身", { exact: true }).click();
+
+    await expect.element(screen.getBySlot("section-error-boundary")).not.toHaveFocus();
+  });
+
   it("子が notFound() を投げたら受けずに外へ投げ直し、読み上げない", async () => {
     function ThrowsNotFound(): never {
       throw notFound();
