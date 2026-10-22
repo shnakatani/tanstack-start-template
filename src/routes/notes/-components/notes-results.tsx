@@ -1,5 +1,5 @@
 import { useMutationState, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 
 import { DataTable } from "@/components/parts/data-table";
 import { StaleContent } from "@/components/parts/stale-content";
@@ -20,32 +20,32 @@ import { NoteBodyDetail } from "./note-cells";
 
 /**
  * 一覧の結果の部分 (表か空の状態)。`deferredQ` で一覧を読む。読み込みの失敗はページの `SectionErrorBoundary`
- * が受け、検索欄はページ側に残る (ADR-0033)。`q` は URL で確定した検索語で、初期表示を通知しないために読む
+ * が受け、検索欄はページ側に残る (ADR-0033)。`claimAnnouncement` は、その検索語の件数をまだ通知していなければ通知済みにして true を返す。
+ * 通知済みの語はページが持つ。失敗からの回復でこの部分が作り直されても引き継ぐためで、初期値が URL の `q` なので
+ * 初期表示は通知されない
  */
 export function NotesResults({
-  q,
+  claimAnnouncement,
   deferredQ,
   isStale,
 }: {
-  q: string;
+  claimAnnouncement: (q: string) => boolean;
   deferredQ: string;
   isStale: boolean;
 }) {
   const notesQuery = useSuspenseQuery(notesQueryOptions({ q: deferredQ }));
 
-  // 結果の入れ替わりの通知 (ADR-0027)。取得中は古い件数を読むので決着まで待ち、直前と同じ条件なら出さない。
-  // ref の初期値が URL の q なので初期表示は通知されない
+  // 結果の入れ替わりの通知 (ADR-0027)。取得中は古い件数を読むので決着まで待ち、直前と同じ条件なら出さない
   const settled = !notesQuery.isFetching;
-  const announcedQ = useRef(q);
   const announceResults = useEffectEvent(() => {
-    announce(noteSearchResultMessage(deferredQ, notesQuery.data.length));
+    if (claimAnnouncement(deferredQ)) {
+      announce(noteSearchResultMessage(deferredQ, notesQuery.data.length));
+    }
   });
   useEffect(() => {
-    if (!settled || announcedQ.current === deferredQ) {
-      return;
+    if (settled) {
+      announceResults();
     }
-    announcedQ.current = deferredQ;
-    announceResults();
   }, [deferredQ, settled]);
 
   // pending な削除の対象 id。mutation ごとに追うので、同時削除でも各行が busy になる (ADR-0017)。

@@ -8,6 +8,7 @@ import {
   columnHeaderWidths,
   expectDetailWithinTableContainer,
 } from "@/components/parts/data-table.test-helpers";
+import { sectionErrorAnnouncement } from "@/components/parts/section-error-boundary";
 import { listNotes } from "@/features/notes/functions";
 import { NOTE_FIELD_LABELS, NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import type { Note } from "@/features/notes/schema";
@@ -15,7 +16,7 @@ import { NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
-import { expectAbsent } from "@/test/assert/absent";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import type { Screen } from "@/test/assert/screen-assertions";
 import {
@@ -277,6 +278,31 @@ describe("/notes route", () => {
 
     await expect.element(screen.getByText("確定後の結果", { exact: true })).toBeVisible();
     await expectAbsent(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+  });
+
+  it("失敗した語を Enter で確定して回復すると、その語の件数を読み上げる", async () => {
+    let abcFetches = 0;
+    vi.mocked(listNotes).mockImplementation(({ data }) => {
+      if (data.q !== "abc") {
+        return Promise.resolve([]);
+      }
+      abcFetches += 1;
+      return abcFetches === 1 ? Promise.reject(new Error("取得の失敗")) : Promise.resolve([]);
+    });
+    const { screen } = await renderRoute("/notes");
+    await noteSearchbox(screen).fill("abc");
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+
+    await userEvent.keyboard("{Enter}");
+
+    await expectRemoved(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+    // 区画の失敗の読み上げに続けて、回復した結果の件数を読む。結果の部分が作り直されても、通知済みの語は引き継ぐ
+    await expectAnnouncements([
+      sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
+      "『abc』に一致するメモは 0 件です",
+    ]);
   });
 
   it.each(["/notes", "/notes?q=xyz"])(

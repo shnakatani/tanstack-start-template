@@ -60,6 +60,16 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
   const isStale = draftQ !== deferredQ;
 
   const createLink = useRef<HTMLAnchorElement>(null);
+  // 直前に件数を通知した検索語 (ADR-0027)。結果の部分は失敗からの回復で作り直されるので、ref はこちらが持つ。
+  // 初期値が URL の q なので、初期表示は通知されない
+  const announcedQ = useRef(q);
+  function claimAnnouncement(term: string): boolean {
+    if (announcedQ.current === term) {
+      return false;
+    }
+    announcedQ.current = term;
+    return true;
+  }
 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
@@ -131,13 +141,21 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
 
       <div className="flex flex-1 flex-col p-4">
         {/* 検索の失敗は結果の部分で受け、検索欄と打った語を残す (ADR-0033)。resetKey は URL の q と
-            deferredQ の両方を含める。打っただけで失敗した語を Enter で確定すると URL の q だけが変わり、
-            deferredQ は同じ値のままなので、deferredQ だけでは境界が戻らず確定後の取得が描かれない */}
-        <SectionErrorBoundary resetKey={`${q}\n${deferredQ}`} message={NOTES_RESULTS_ERROR_MESSAGE}>
+            deferredQ の組。打っただけで失敗した語を Enter で確定すると URL の q だけが変わり、
+            deferredQ は同じ値のままなので、deferredQ だけでは境界が戻らず確定後の取得が描かれない。
+            q は手書きの URL で改行を含み得るので、区切り文字で繋がず JSON にする */}
+        <SectionErrorBoundary
+          resetKey={JSON.stringify([q, deferredQ])}
+          message={NOTES_RESULTS_ERROR_MESSAGE}
+        >
           {/* 入る時は loader が待ち、条件の変化は useDeferredValue が前の結果を残すので、fallback が出るのは
               前の結果が無いまま suspend したときだけ */}
           <Suspense fallback={<NotesTableSkeleton />}>
-            <NotesResults q={q} deferredQ={deferredQ} isStale={isStale} />
+            <NotesResults
+              claimAnnouncement={claimAnnouncement}
+              deferredQ={deferredQ}
+              isStale={isStale}
+            />
           </Suspense>
         </SectionErrorBoundary>
       </div>
