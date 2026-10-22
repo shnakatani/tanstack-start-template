@@ -10,7 +10,10 @@ import { PageHeadingAboveContext } from "@/hooks/page-heading-context";
  * 子の route の境界 (`CatchBoundary`、`CatchNotFound`、Suspense) と、ページ自身の match が `_notFound` のときの
  * not found の画面は、どれも `<Outlet />` の描く木の中にあるので、この context が届く。ページ自身の
  * errorComponent と notFoundComponent はページの component を置き換えて出るので、届かない
- * (`@tanstack/react-router` 1.170.41 の `Match.tsx` の `Outlet` と `MatchView`)
+ * (`@tanstack/react-router` 1.170.41 の `Match.tsx` の `Outlet` と `MatchView`)。
+ *
+ * TanStack Router の `Outlet` は子の木へ値を渡す口 (React Router の `<Outlet context>` にあたるもの) を持たないので、
+ * 自前の context provider で包む (ADR-0035「失敗の画面の見出しと focus」)
  */
 export function PageOutlet() {
   return (
