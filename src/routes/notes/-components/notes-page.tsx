@@ -71,6 +71,9 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     announcedQ.current = term;
     return true;
   }
+  // 境界の reset key は URL の q と deferredQ の組。打っただけで失敗した語を Enter で確定すると、変わるのは
+  // URL の q だけなので、deferredQ だけでは境界が戻らない。q は手書きの URL で改行を含み得るので JSON で繋ぐ
+  const resultsResetKey = JSON.stringify([q, deferredQ]);
 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
@@ -141,12 +144,9 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
       />
 
       <div className="flex flex-1 flex-col p-4">
-        {/* 検索の失敗は結果の部分で受け、検索欄と打った語を残す (ADR-0033)。resetKey は URL の q と
-            deferredQ の組。打っただけで失敗した語を Enter で確定すると URL の q だけが変わり、
-            deferredQ は同じ値のままなので、deferredQ だけでは境界が戻らず確定後の取得が描かれない。
-            q は手書きの URL で改行を含み得るので、区切り文字で繋がず JSON にする */}
+        {/* 検索の失敗は結果の部分で受け、検索欄と打った語を残す (ADR-0033) */}
         <SectionErrorBoundary
-          resetKey={JSON.stringify([q, deferredQ])}
+          resetKey={resultsResetKey}
           message={NOTES_RESULTS_ERROR_MESSAGE}
           onCatch={() => {
             announcedQ.current = null;

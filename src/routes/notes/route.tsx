@@ -20,19 +20,17 @@ export const Route = createFileRoute("/notes")({
   // loader が読む search は deps として宣言する。deps が変わると loader が走り直し、条件ごとに
   // 別のキャッシュになる (Router docs「Using loaderDeps to access search params」)
   loaderDeps: ({ search }) => ({ q: search.q }),
-  // ページに入るとき (cause が enter と preload) は欠かせない query を待つ。同じ route に留まって条件が
-  // 変わるとき (stay) は待たずに流し、失敗はページの中の境界が結果の部分で受ける。待つと失敗が route の
-  // エラーになり、検索欄ごとページが置き換わる (ADR-0033)。待たずに済むのは、この一覧の query が head の値・
-  // notFound・redirect・認可のどれも決めないから。決める query なら stay でも待つ。
+  // stay (同じ route に留まる読み込み) では待たずに流し、失敗はページの中の境界が結果の部分で受ける
+  // (ADR-0033)。この一覧の query は head の値・notFound・redirect・認可のどれも決めないので、待たなくてよい。
   // staleTime: "static" はこの呼び出しだけに効く (キャッシュがあれば返し、無ければ取得する)。
   // queryOptions 側に書くと observer の再取得まで止まる
-  loader: async ({ context, deps, cause }) => {
+  loader: ({ context, deps, cause }) => {
     const fetching = context.queryClient.query({ ...notesQueryOptions(deps), staleTime: "static" });
     if (cause === "stay") {
       void fetching.catch(noop);
       return;
     }
-    await fetching;
+    return fetching;
   },
   head: (ctx) => ({ meta: [{ title: pageTitle(ctx, NOTES_PAGE_TITLE) }] }),
   pendingComponent: NotesPagePending,

@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { noteListSearchSchema, noteSearchResultMessage } from "./note-search";
 
@@ -15,37 +15,30 @@ describe("noteSearchResultMessage", () => {
 });
 
 describe("noteListSearchSchema", () => {
-  it("文字列の q はそのまま通し、warn を出さない", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    try {
-      expect(v.parse(noteListSearchSchema, { q: "abc" })).toEqual({ q: "abc" });
-      expect(warn).not.toHaveBeenCalled();
-    } finally {
-      warn.mockRestore();
-    }
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
-  it("q が無ければ既定の空文字で、warn を出さない", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    try {
-      expect(v.parse(noteListSearchSchema, {})).toEqual({ q: "" });
-      expect(warn).not.toHaveBeenCalled();
-    } finally {
-      warn.mockRestore();
-    }
+  afterEach(() => {
+    warnSpy.mockRestore();
+  });
+
+  it.each([
+    { input: { q: "abc" }, expected: { q: "abc" }, label: "文字列の q はそのまま通す" },
+    { input: {}, expected: { q: "" }, label: "q が無ければ既定の空文字" },
+  ])("$label (warn を出さない)", ({ input, expected }) => {
+    expect(v.parse(noteListSearchSchema, input)).toEqual(expected);
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   // URL の q は Router の既定の search パーサが JSON として先に読むので、手で書いた ?q=123 は number になる
   it.each([123, true, null, [1], { a: 1 }])(
     "文字列でない q (%o) は既定の空文字に落とし、受け取った値を warn に残す",
     (raw) => {
-      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      try {
-        expect(v.parse(noteListSearchSchema, { q: raw })).toEqual({ q: "" });
-        expect(warn).toHaveBeenCalledWith(expect.stringContaining("[notes]"), { rawInput: raw });
-      } finally {
-        warn.mockRestore();
-      }
+      expect(v.parse(noteListSearchSchema, { q: raw })).toEqual({ q: "" });
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[notes]"), { rawInput: raw });
     },
   );
 });

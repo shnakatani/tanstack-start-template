@@ -20,9 +20,8 @@ import { NoteBodyDetail } from "./note-cells";
 
 /**
  * 一覧の結果の部分 (表か空の状態)。`deferredQ` で一覧を読む。読み込みの失敗はページの `SectionErrorBoundary`
- * が受け、検索欄はページ側に残る (ADR-0033)。`claimAnnouncement` は、その検索語の件数をまだ通知していなければ通知済みにして true を返す。
- * 通知済みの語はページが持つ。失敗からの回復でこの部分が作り直されても引き継ぐためで、初期値が URL の `q` なので
- * 初期表示は通知されない
+ * が受け、検索欄はページ側に残る (ADR-0033)。`claimAnnouncement` は、その検索語の件数をまだ通知していなければ
+ * 通知済みにして true を返す
  */
 export function NotesResults({
   claimAnnouncement,

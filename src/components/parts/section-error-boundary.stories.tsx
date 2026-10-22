@@ -1,15 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import {
-  QueryClient,
-  QueryClientProvider,
-  queryOptions,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { QueryClientProvider, queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { type ComponentProps, Suspense, useRef, useState } from "react";
 import { expect, userEvent } from "storybook/test";
 
 import { silenceConsoleError } from "@/components/action/catch-boundary.story-helpers";
 import { LiveRegions } from "@/components/live-regions";
+import { createTestQueryClient } from "@/test/app/query-client";
 
 import { SectionErrorBoundary } from "./section-error-boundary";
 
@@ -49,10 +45,8 @@ const meta = {
   args: { resetKey: "story", message: MESSAGE, children: null },
   decorators: [
     (Story) => {
-      // story ごとに作り直す。retry を切り、1 回目の失敗をそのまま境界へ届ける
-      const [client] = useState(
-        () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
-      );
+      // story ごとに作り直す。retry を切った client で、1 回目の失敗をそのまま境界へ届ける
+      const [client] = useState(() => createTestQueryClient());
       return (
         <QueryClientProvider client={client}>
           <Story />

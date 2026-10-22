@@ -1,5 +1,5 @@
 import { CatchBoundary, type ErrorComponentProps, isNotFound } from "@tanstack/react-router";
-import { createContext, type ReactNode, type RefObject, use, useRef } from "react";
+import { createContext, type ReactNode, use } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
@@ -15,10 +15,10 @@ export function sectionErrorAnnouncement(message: string): string {
 }
 
 // CatchBoundary は errorComponent を createElement で描くので、その場の関数で文言を渡すと親の描画のたびに
-// 別の部品として作り直される。文言と外枠は context で渡す。描画ごとに作る object を値にしないよう、
-// 文字列と ref の 2 つに分ける
+// 別の部品として作り直される。文言は context で渡す
 const SectionErrorMessageContext = createContext<string | null>(null);
-const SectionErrorContainerContext = createContext<RefObject<HTMLDivElement | null> | null>(null);
+
+const SECTION_SLOT = "section-error-boundary";
 
 /**
  * ページの中の区画 (条件を変えて読み直す結果、副次的な query を読む部分) の失敗を、その区画だけで受ける境界
@@ -39,27 +39,23 @@ export function SectionErrorBoundary({
   onCatch?: (error: unknown) => void;
   children: ReactNode;
 }) {
-  // 再試行でボタンが消えると focus が body へ落ちるので、区画の外枠で受ける
-  const containerRef = useRef<HTMLDivElement>(null);
-
   return (
-    <div ref={containerRef} data-slot="section-error-boundary">
+    // 再試行でボタンが消えると focus が body へ落ちるので、区画の外枠で受ける
+    <div data-slot={SECTION_SLOT}>
       <SectionErrorMessageContext value={message}>
-        <SectionErrorContainerContext value={containerRef}>
-          <CatchBoundary
-            getResetKey={() => resetKey}
-            errorComponent={SectionError}
-            // 読み上げは捕まえた時点で 1 回だけ出す。表示の effect に置くと、開発時の二重実行で 2 回読む
-            onCatch={(error) => {
-              if (!isNotFound(error)) {
-                announce(sectionErrorAnnouncement(message));
-                onCatch?.(error);
-              }
-            }}
-          >
-            {children}
-          </CatchBoundary>
-        </SectionErrorContainerContext>
+        <CatchBoundary
+          getResetKey={() => resetKey}
+          errorComponent={SectionError}
+          // 読み上げは捕まえた時点で 1 回だけ出す。表示の effect に置くと、開発時の二重実行で 2 回読む
+          onCatch={(error) => {
+            if (!isNotFound(error)) {
+              announce(sectionErrorAnnouncement(message));
+              onCatch?.(error);
+            }
+          }}
+        >
+          {children}
+        </CatchBoundary>
       </SectionErrorMessageContext>
     </div>
   );
@@ -69,8 +65,10 @@ export function SectionErrorBoundary({
  * 要素へ focus を移す。focus できない要素には `tabindex="-1"` を付けて移し、focus を失ったら外す
  * (GOV.UK Frontend の `setFocus` と同じ形)。付けたままにすると、中身の click で focus が外枠へ移る
  */
-function moveFocusTo(element: HTMLElement | null) {
-  if (element === null) {
+function moveFocusTo(element: Element | null) {
+  if (!(element instanceof HTMLElement)) {
+    // 再試行のボタンは外枠の中にだけ描くので、届かないのは組み方の誤り。focus は body へ落ちる
+    console.warn("[SectionErrorBoundary] 再試行のボタンの外枠が見つからない", { element });
     return;
   }
   if (!element.hasAttribute("tabindex")) {
@@ -88,13 +86,11 @@ function moveFocusTo(element: HTMLElement | null) {
 
 function SectionError({ error, reset }: ErrorComponentProps) {
   const message = use(SectionErrorMessageContext);
-  const containerRef = use(SectionErrorContainerContext);
-  // 表示した時点で Query の失敗を戻し、再試行の時点でもう一度戻す。route の errorComponent の再試行
-  // (`useRouteRetry`) と同じ表示時の reset を共有する
+  // 表示した時点で Query の失敗を戻し、再試行の時点でもう一度戻す
   const resetQueryErrors = useResetQueryErrorsOnShow();
 
   // hook の呼び出しより後ろで投げる。前に置くと、hook が条件付きで呼ばれる形になる
-  if (message === null || containerRef === null) {
+  if (message === null) {
     throw new Error("SectionError は SectionErrorBoundary の中でだけ描く");
   }
   if (isNotFound(error)) {
@@ -109,8 +105,8 @@ function SectionError({ error, reset }: ErrorComponentProps) {
       <EmptyContent>
         <Button
           variant="outline"
-          onClick={() => {
-            moveFocusTo(containerRef.current);
+          onClick={(event) => {
+            moveFocusTo(event.currentTarget.closest(`[data-slot="${SECTION_SLOT}"]`));
             resetQueryErrors();
             reset();
           }}
