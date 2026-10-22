@@ -86,7 +86,7 @@ lint では見ないのでレビューで見る。
 
 - 入力を保存するフォームのダイアログ (追加、編集) は、開く元のページの route の子 route にし、detached trigger の handle で開かない。handle のダイアログは mount したまま 1 つの mutation を持ち、再取得の完了まで続く pending が、開き直したダイアログの close まで止める (ADR-0041)
 - 保存の pending の間は利用者の close を止め、止める条件はそのダイアログ自身の mutation の pending だけにする。応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない (ADR-0041)
-- ダイアログの route には、ダイアログの形の `pendingComponent` と `errorComponent` を置く。loader を持たない route も component の chunk を待つ。無いと、読み込み中と失敗が router の既定の表示になり、開く元のページの `<Outlet />` の位置に出る (ADR-0041)
+- ダイアログの route には、ダイアログの形の `pendingComponent` と `errorComponent` を置く。loader を持たない route も component の chunk を待つ。無いと、読み込み中と失敗が router の既定の表示になり、開く元のページの `PageOutlet` の位置に出る (ADR-0041)
 - Dialog の Root には `open` を固定で渡し、閉じる操作と保存の応答の時点で開く元のページへ離れる。閉じるアニメーションの後まで待たない。待つと、読み込み中のダイアログで待つ間に読み込みが終わり、閉じたはずのダイアログが開く (ADR-0041)
 - ダイアログは `useRouteDialog`、`RouteStatusDialog`、`RoutePendingDialog` で組み、どれにも戻り先 (`returnTo`) と開いた元の要素を探す関数 (`findReturnTarget`) を渡す。離れたか替わったかは `useRouteDialog` が戻り先から判定する (ADR-0041)
 - `returnTo` は `useRouteDialog` が `navigate` にそのまま渡す。開く元のページの search を保つなら `search: (prev) => prev` を書く (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
