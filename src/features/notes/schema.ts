@@ -152,14 +152,16 @@ export type NoteUpdate = v.InferOutput<typeof noteUpdateSchema>;
 export const NOTE_QUERY_MAX_LENGTH = 100;
 
 /**
- * 一覧の絞り込み条件。URL の search param (`/notes?q=`) と `listNotes` の validator が同じ定義を使う。
- * valibot 1.x は Standard Schema なので、Router の `validateSearch` にそのまま渡せる (`docs/guides/lists-and-search.md`「絞り込み条件を URL に置く」)。
+ * 一覧の絞り込み条件。`listNotes` の validator がそのまま使い、route の search の schema
+ * (`src/routes/notes/-lib/note-search.ts` の `noteListSearchSchema`) は各項目をこの定義から取って
+ * `v.fallback` で包む (`docs/guides/lists-and-search.md`「絞り込み条件を URL に置く」)。
  * `q` の既定は空文字 = 絞り込みなし。URL 上では `stripSearchParams` が既定値を落とす。
  *
  * 上限は reject せず切り詰める。search param は malformed でも体験を止めない (Router の search-params
  * ガイド)。入力欄は maxLength で打ち止めにしないので、打ち込んだ値も URL の値もこの切り詰めで同じ値に
- * 収束する (ADR-0019、ADR-0036)。文字列以外 (`?q=123` は Router の JSON パースで number) は
- * 弾き、既定の英語文言を UI に出さない。
+ * 収束する (ADR-0019、ADR-0036)。文字列以外は弾き、
+ * 既定の英語文言を出さない。URL の `?q=123` (Router の JSON パースで number) は route の schema が
+ * `v.fallback` で既定に落とすので、この文言を受けるのは server function の validator の issue になる。
  */
 export const noteListFilterSchema = v.object({
   q: v.optional(

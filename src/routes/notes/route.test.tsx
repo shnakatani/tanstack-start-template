@@ -8,6 +8,7 @@ import {
   columnHeaderWidths,
   expectDetailWithinTableContainer,
 } from "@/components/parts/data-table.test-helpers";
+import { sectionErrorAnnouncement } from "@/components/parts/section-error-boundary";
 import { listNotes } from "@/features/notes/functions";
 import { NOTE_FIELD_LABELS, NOTE_QUERY_MAX_LENGTH } from "@/features/notes/schema";
 import type { Note } from "@/features/notes/schema";
@@ -15,6 +16,7 @@ import { NOTE, OTHER_NOTE } from "@/features/notes/schema.test-helpers";
 import { APP_NAME } from "@/lib/app-name";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
+import { expectAbsent, expectRemoved } from "@/test/assert/absent";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 import type { Screen } from "@/test/assert/screen-assertions";
 import {
@@ -49,6 +51,7 @@ import {
 } from "./-components/note-cells.test-helpers";
 import { noteSearchbox } from "./-components/note-search-field.test-helpers";
 import { noteColumns } from "./-lib/note-columns";
+import { NOTES_RESULTS_ERROR_MESSAGE } from "./-lib/note-search";
 import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route as NotesRoute } from "./route";
 import { renderRoute } from "./route.test-helpers";
@@ -231,6 +234,110 @@ describe("/notes route", () => {
     await expect.element(noteSearchbox(screen)).toHaveFocus();
   });
 
+  it("確定した検索語の取得が失敗すると、検索欄の語を残したまま結果の部分にエラーを出す (loader の cause が stay)", async () => {
+    vi.mocked(listNotes).mockImplementation(({ data }) =>
+      data.q === "xyz" ? Promise.reject(new Error("取得の失敗")) : Promise.resolve([]),
+    );
+    const { screen, router } = await renderRoute("/notes");
+
+    await noteSearchbox(screen).fill("xyz");
+    await userEvent.keyboard("{Enter}");
+
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+    await expect.element(noteSearchbox(screen)).toHaveValue("xyz");
+    expect(router.state.location.search).toEqual({ q: "xyz" });
+    // loader が待つと match が error になり、route の errorComponent がページごと置き換える
+    expect(router.state.matches.map((match) => match.status)).toEqual(["success", "success"]);
+    await expectAbsent(screen.getByRole("heading", { name: "エラーが発生しました" }));
+  });
+
+  it("打っただけで取得が失敗した語を、次の取得が成功する状態で Enter で確定すると、エラーが消えて結果が出る (URL の q だけが変わる再読み込み)", async () => {
+    // "abc" の 1 回目だけ失敗する。空の q の最初の取得は成功させる
+    let abcFetches = 0;
+    vi.mocked(listNotes).mockImplementation(({ data }) => {
+      if (data.q !== "abc") {
+        return Promise.resolve([]);
+      }
+      abcFetches += 1;
+      return abcFetches === 1
+        ? Promise.reject(new Error("取得の失敗"))
+        : Promise.resolve([{ ...NOTE, title: "確定後の結果" }]);
+    });
+    const { screen, router } = await renderRoute("/notes");
+
+    // 打っただけでは URL は変わらず、debounce 後の語 (deferredQ) だけが変わって取得が失敗する
+    await noteSearchbox(screen).fill("abc");
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+    expect(router.state.location.search).toEqual({});
+
+    await userEvent.keyboard("{Enter}");
+
+    await expect.element(screen.getByText("確定後の結果", { exact: true })).toBeVisible();
+    await expectAbsent(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+    // 区画の失敗の読み上げに続けて、回復した語の件数を読む。結果の部分が作り直されても、通知済みの語は引き継ぐ。
+    // 件数まで待たずに終えると、遅れて届いた通知が次のテストの履歴に入る
+    await expectAnnouncements([
+      sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
+      "『abc』に一致するメモは 1 件です",
+    ]);
+  });
+
+  it("失敗した語から通知済みの語へ打ち戻すと、回復した結果の件数を読み上げる", async () => {
+    vi.mocked(listNotes).mockImplementation(({ data }) =>
+      data.q === "abcd" ? Promise.reject(new Error("取得の失敗")) : Promise.resolve([]),
+    );
+    const { screen } = await renderRoute("/notes");
+    await noteSearchbox(screen).fill("abc");
+    await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
+    await noteSearchbox(screen).fill("abcd");
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+
+    await noteSearchbox(screen).fill("abc");
+
+    await expectRemoved(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+    // 失敗の読み上げが最後に伝えたことなので、戻った「abc」の件数はもう一度読む
+    await expectAnnouncements([
+      "『abc』に一致するメモは 0 件です",
+      sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
+      "『abc』に一致するメモは 0 件です",
+    ]);
+  });
+
+  it.each(["/notes", "/notes?q=xyz"])(
+    "一覧を開いたとき (%s) の取得の失敗は、route の errorComponent が受ける (loader の cause が enter)",
+    async (location) => {
+      vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
+      const { screen } = await renderRoute(location);
+
+      await expect
+        .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
+        .toBeVisible();
+      await expectAbsent(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+    },
+  );
+
+  it("開いたときの失敗から再試行してまた失敗すると、検索欄を出したまま結果の部分にエラーを出す (再試行の再読み込みは stay)", async () => {
+    vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
+    const { screen } = await renderRoute("/notes");
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
+      .toBeVisible();
+
+    // RouteErrorContent の再試行は router.invalidate() を呼ぶ。同じ location の再読み込みなので cause は stay
+    await screen.getByRole("button", { name: "再試行" }).click();
+
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+    await expect.element(noteSearchbox(screen)).toBeVisible();
+  });
+
   it("確定した後に URL の q が元の値へ戻っても、確定済みの編集は復活せず入力欄も一覧も q に揃う", async () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
@@ -294,17 +401,17 @@ describe("/notes route", () => {
     expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: capped } });
   });
 
-  it("文字列以外の q (JSON パースで number になる) は route の error component に落ちる", async () => {
-    const { screen } = await renderRoute("/notes?q=123");
+  it("文字列以外の q (JSON パースで number になる) は既定の空文字に落とし、エラーにしない (Router の search-params ガイドの fallback)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const { screen } = await renderRoute("/notes?q=123");
 
-    // Router は Standard Schema の issues を JSON にして SearchParamError を投げ、RouteErrorContent が
-    // DEV では error.message をそのまま出す。schema の文言が含まれることを見る
-    await expect
-      .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
-      .toBeVisible();
-    await expect
-      .element(screen.getByText("検索語は文字列で指定してください", { exact: false }))
-      .toBeInTheDocument();
-    expect(vi.mocked(listNotes)).not.toHaveBeenCalled();
+      await expect.element(noteSearchbox(screen)).toHaveValue("");
+      expect(vi.mocked(listNotes)).toHaveBeenCalledExactlyOnceWith({ data: { q: "" } });
+      await expectAbsent(screen.getByRole("heading", { name: "エラーが発生しました" }));
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("[notes]"), { rawInput: 123 });
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

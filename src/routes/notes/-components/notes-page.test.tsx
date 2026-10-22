@@ -11,6 +11,7 @@ import {
   confirmDeleteButton,
   deleteConfirmDescription,
 } from "@/components/parts/delete-confirm-dialog.test-helpers";
+import { sectionErrorAnnouncement } from "@/components/parts/section-error-boundary";
 import { Toaster } from "@/components/ui/toast";
 import { listNotes, removeNote } from "@/features/notes/functions";
 import { notesQueryOptions } from "@/features/notes/queries";
@@ -49,6 +50,7 @@ vi.mock(import("../-lib/note-search"), async (importOriginal) => ({
   NOTE_SEARCH_DEBOUNCE_MS: 1_500,
 }));
 
+import { NOTES_RESULTS_ERROR_MESSAGE } from "../-lib/note-search";
 import { noteExpandTriggerName, noteRow, rowDeleteButton } from "./note-cells.test-helpers";
 import { noteCreateLink } from "./note-create-dialog.test-helpers";
 import { noteSearchbox } from "./note-search-field.test-helpers";
@@ -142,6 +144,41 @@ describe("NotesPage", () => {
     // 決着した結果を通知する (ADR-0027)
     await expectAnnouncements(["『abc』に一致するメモは 0 件です"]);
     expect(listing).toHaveBeenExhausted();
+  });
+
+  it("打鍵の途中の取得が失敗すると、打った語を残したまま結果の部分にエラーを出し、再試行で取り直す", async () => {
+    let searched = 0;
+    vi.mocked(listNotes).mockImplementation(({ data }) => {
+      if (data.q === "") {
+        return Promise.resolve([NOTE]);
+      }
+      searched += 1;
+      if (searched === 1) {
+        return Promise.reject(new Error("取得の失敗"));
+      }
+      return Promise.resolve([]);
+    });
+    const screen = await renderPage();
+    await expectText(screen, NOTE.title);
+
+    await noteSearchbox(screen).fill("abc");
+
+    await expect
+      .element(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }))
+      .toBeVisible();
+    // 検索欄と打った語は残る。route の境界へ届くとページごと置き換わり、検索欄が消える
+    await expect.element(noteSearchbox(screen)).toHaveValue("abc");
+    await expectAnnouncements([sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE)]);
+
+    await screen.getByRole("button", { name: "再試行" }).click();
+
+    await expectText(screen, "『abc』に一致するメモはありません");
+    await expect.element(noteSearchbox(screen)).toHaveValue("abc");
+    // 回復した語の件数まで待つ。待たずに終えると、遅れて届いた通知が次のテストの履歴に入る
+    await expectAnnouncements([
+      sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
+      "『abc』に一致するメモは 0 件です",
+    ]);
   });
 
   it("検索語を空に戻すと、無効化済みのキャッシュは再取得の決着後に通知する", async () => {

@@ -1,33 +1,28 @@
 import { useDebouncedValue } from "@tanstack/react-pacer";
-import { useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useDeferredValue, useEffect, useEffectEvent, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Suspense, useDeferredValue, useRef, useState } from "react";
 import * as v from "valibot";
 
 import { ButtonLink } from "@/components/parts/button-link";
-import { DataTable } from "@/components/parts/data-table";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
 import { PageHeader } from "@/components/parts/page-header";
-import { StaleContent } from "@/components/parts/stale-content";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { parseCreatingRows } from "@/features/notes/creating-rows";
+import { SectionErrorBoundary } from "@/components/parts/section-error-boundary";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
-import { NOTES_QUERY_KEY, notesQueryOptions } from "@/features/notes/queries";
+import { NOTES_QUERY_KEY } from "@/features/notes/queries";
 import { NOTE_ENTITY_LABEL, noteListFilterSchema } from "@/features/notes/schema";
-import { parseUpdatingNotes } from "@/features/notes/updating-rows";
 import { useActionMutation } from "@/hooks/use-action-mutation";
 import { announce } from "@/lib/live-announcer";
 import { toastMutationError } from "@/lib/mutation-error";
 
-import { noteColumns } from "../-lib/note-columns";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { noteCreateLinkProps } from "../-lib/note-dialog-focus";
-import { canExpandNoteRow, getNoteRowId, isNoteRowBusy, toNoteRows } from "../-lib/note-rows";
-import { NOTE_SEARCH_DEBOUNCE_MS, noteSearchResultMessage } from "../-lib/note-search";
+import { NOTE_SEARCH_DEBOUNCE_MS, NOTES_RESULTS_ERROR_MESSAGE } from "../-lib/note-search";
 import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
-import { NoteBodyDetail } from "./note-cells";
 import { NoteSearchField } from "./note-search-field";
+import { NotesResults } from "./notes-results";
+import { NotesTableSkeleton } from "./notes-table-skeleton";
 
 /** URL / server function と同じ schema で正規化する (trim / 上限)。 */
 function normalizeQuery(text: string): string {
@@ -61,26 +56,24 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
       ? normalizeQuery(debouncedEdit.text)
       : q;
   const deferredQ = useDeferredValue(settledQ);
-  const notesQuery = useSuspenseQuery(notesQueryOptions({ q: deferredQ }));
   const queryClient = useQueryClient();
   const isStale = draftQ !== deferredQ;
 
-  // 結果の入れ替わりの通知 (ADR-0027)。取得中は古い件数を読むので決着まで待ち、直前と同じ条件なら出さない。
-  // ref の初期値が URL の q なので初期表示は通知されない
-  const settled = !notesQuery.isFetching;
-  const announcedQ = useRef(q);
-  const announceResults = useEffectEvent(() => {
-    announce(noteSearchResultMessage(deferredQ, notesQuery.data.length));
-  });
-  useEffect(() => {
-    if (!settled || announcedQ.current === deferredQ) {
-      return;
-    }
-    announcedQ.current = deferredQ;
-    announceResults();
-  }, [deferredQ, settled]);
-
   const createLink = useRef<HTMLAnchorElement>(null);
+  // 直前に件数を通知した検索語 (ADR-0027)。結果の部分は失敗からの回復で作り直されるので、ref はこちらが持つ。
+  // 初期値が URL の q なので、初期表示は通知されない。区画の失敗の読み上げもその時点で最後に伝えたことなので、
+  // 失敗したら null に戻し、回復後に表示された語を必ず通知する (ADR-0027)
+  const announcedQ = useRef<string | null>(q);
+  function claimAnnouncement(term: string): boolean {
+    if (announcedQ.current === term) {
+      return false;
+    }
+    announcedQ.current = term;
+    return true;
+  }
+  // 境界の reset key は URL の q と deferredQ の組。打っただけで失敗した語を Enter で確定すると、変わるのは
+  // URL の q だけなので、deferredQ だけでは境界が戻らない。q は手書きの URL で改行を含み得るので JSON で繋ぐ
+  const resultsResetKey = JSON.stringify([q, deferredQ]);
 
   const deleteMutation = useActionMutation({
     ...removeNoteMutation,
@@ -99,39 +92,6 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
     // server の raw message は開発者向けの文言なので curate を通した固定文言だけを出す
     onError: toastMutationError,
   });
-
-  // pending な削除の対象 id。mutation ごとに追うので、同時削除でも各行が busy になる (ADR-0017)。
-  // `mutation.state.variables` は `unknown` なので、行と突き合わせる前に削除対象へ絞って
-  // id を取り出す (形が違う値は parseDeletingIds が warn を残して除外する)
-  const pendingDeleteVariables = useMutationState({
-    filters: { ...noteMutationFilters.remove, status: "pending" },
-    select: (mutation) => mutation.state.variables,
-  });
-
-  // 完了点「サーバー応答」の追加は応答でダイアログが閉じるので、再取得完了までの pending は
-  // 一覧の先頭に出すこの行だけが伝える (ADR-0017)。mutation は追加の route のダイアログ側にあるため
-  // mutationKey 経由で読む。submittedAt は同時に走る追加を React の key で区別するのに使う
-  const pendingCreateStates = useMutationState({
-    filters: { ...noteMutationFilters.create, status: "pending" },
-    select: (mutation) => ({
-      variables: mutation.state.variables,
-      submittedAt: mutation.state.submittedAt,
-    }),
-  });
-
-  // 更新も完了点「サーバー応答」で、応答でダイアログが閉じるので、再取得完了までの pending は行が伝える
-  // (ADR-0017)。mutation は編集のダイアログ側にあるため mutationKey 経由で読む。variables に
-  // 対象の id と編集後の値が載るので、対象の行だけを busy にして編集後の値で描ける
-  const pendingUpdateVariables = useMutationState({
-    filters: { ...noteMutationFilters.update, status: "pending" },
-    select: (mutation) => mutation.state.variables,
-  });
-
-  // 派生値は hook より後ろで作る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」の data の組み立て行。oxc-transform-react の出力で実測)
-  const deletingIds = parseDeletingIds(pendingDeleteVariables);
-  const creatingRows = parseCreatingRows(pendingCreateStates);
-  const updatingNotes = parseUpdatingNotes(pendingUpdateVariables);
-  const rows = toNoteRows({ notes: notesQuery.data, creatingRows, deletingIds, updatingNotes });
 
   function handleSubmit() {
     // 正規化で値が変わるときだけ入力欄を揃える (trim と切り詰めが見える)
@@ -184,44 +144,24 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
       />
 
       <div className="flex flex-1 flex-col p-4">
-        <StaleContent stale={isStale}>
-          {rows.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                {deferredQ === "" ? (
-                  <>
-                    <EmptyTitle>{NOTE_ENTITY_LABEL}が登録されていません</EmptyTitle>
-                    <EmptyDescription>右上の追加ボタンから登録できます</EmptyDescription>
-                  </>
-                ) : (
-                  <>
-                    <EmptyTitle>
-                      『{deferredQ}』に一致する{NOTE_ENTITY_LABEL}はありません
-                    </EmptyTitle>
-                    <EmptyDescription>
-                      検索語を変えるか、空にして全件を表示できます
-                    </EmptyDescription>
-                  </>
-                )}
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <DataTable
-              tableKey="notes"
-              caption={NOTES_PAGE_TITLE}
-              columns={noteColumns}
-              data={rows}
-              getRowId={getNoteRowId}
-              // busy の判定は行データから (ADR-0017)。通知は announcer が担う (ADR-0026)
-              rowProps={({ original }) => {
-                const isBusy = isNoteRowBusy(original);
-                return { "data-busy": isBusy };
-              }}
-              getRowCanExpand={({ original }) => canExpandNoteRow(original)}
-              renderSubComponent={NoteBodyDetail}
+        {/* 検索の失敗は結果の部分で受け、検索欄と打った語を残す (ADR-0033) */}
+        <SectionErrorBoundary
+          resetKey={resultsResetKey}
+          message={NOTES_RESULTS_ERROR_MESSAGE}
+          onCatch={() => {
+            announcedQ.current = null;
+          }}
+        >
+          {/* 入る時は loader が待ち、条件の変化は useDeferredValue が前の結果を残すので、fallback が出るのは
+              前の結果が無いまま suspend したときだけ */}
+          <Suspense fallback={<NotesTableSkeleton />}>
+            <NotesResults
+              claimAnnouncement={claimAnnouncement}
+              deferredQ={deferredQ}
+              isStale={isStale}
             />
-          )}
-        </StaleContent>
+          </Suspense>
+        </SectionErrorBoundary>
       </div>
 
       <DeleteConfirmDialog

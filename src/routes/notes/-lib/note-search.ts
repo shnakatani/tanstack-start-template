@@ -1,4 +1,6 @@
-import { NOTE_ENTITY_LABEL } from "@/features/notes/schema";
+import * as v from "valibot";
+
+import { NOTE_ENTITY_LABEL, noteListFilterSchema } from "@/features/notes/schema";
 
 /** 検索欄のアクセシブルネーム。placeholder と同じ文言 (見た目と読み上げを揃える)。 */
 export const NOTE_SEARCH_LABEL = `${NOTE_ENTITY_LABEL}を検索`;
@@ -9,6 +11,9 @@ export const NOTE_SEARCH_LABEL = `${NOTE_ENTITY_LABEL}を検索`;
  * literal 型に固めない。ページのテストが `vi.mock` でこの値を広げる (`-components/notes-page.test.tsx` の `vi.mock`)
  */
 export const NOTE_SEARCH_DEBOUNCE_MS: number = 300;
+
+/** 一覧の取得が結果の部分で失敗したときの見出し (`SectionErrorBoundary` の `message`)。例外の文言は出さない */
+export const NOTES_RESULTS_ERROR_MESSAGE = `${NOTE_ENTITY_LABEL}の一覧を取得できませんでした。`;
 
 /**
  * 絞り込みの結果が入れ替わったときの通知文 (ADR-0027)。
@@ -22,3 +27,17 @@ export function noteSearchResultMessage(q: string, count: number): string {
   // live region と見出しの 2 要素に解決する
   return `『${q}』に一致する${NOTE_ENTITY_LABEL}は ${count} 件です`;
 }
+
+/**
+ * route の `validateSearch` に渡す一覧の search の schema。URL の `q` が文字列でないとき (`?q=123` は
+ * Router の JSON パースで number になる) は、エラーにせず既定の空文字に落とし、受け取った値を warn に残す
+ * (ADR-0019)。server function の validator は `noteListFilterSchema` のまま弾く
+ */
+export const noteListSearchSchema = v.object({
+  q: v.fallback(noteListFilterSchema.entries.q, (dataset) => {
+    console.warn("[notes] 検索条件の q を文字列として読めないので既定に落とす", {
+      rawInput: dataset?.value,
+    });
+    return "";
+  }),
+});
