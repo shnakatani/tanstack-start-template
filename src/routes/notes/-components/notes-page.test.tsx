@@ -174,6 +174,11 @@ describe("NotesPage", () => {
 
     await expectText(screen, "『abc』に一致するメモはありません");
     await expect.element(noteSearchbox(screen)).toHaveValue("abc");
+    // 回復した語の件数まで待つ。待たずに終えると、遅れて届いた通知が次のテストの履歴に入る
+    await expectAnnouncements([
+      sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
+      "『abc』に一致するメモは 0 件です",
+    ]);
   });
 
   it("検索語を空に戻すと、無効化済みのキャッシュは再取得の決着後に通知する", async () => {

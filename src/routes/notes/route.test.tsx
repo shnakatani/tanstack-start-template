@@ -278,6 +278,11 @@ describe("/notes route", () => {
 
     await expect.element(screen.getByText("確定後の結果", { exact: true })).toBeVisible();
     await expectAbsent(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
+    // 回復した語の件数まで待つ。待たずに終えると、遅れて届いた通知が次のテストの履歴に入る
+    await expectAnnouncements([
+      sectionErrorAnnouncement(NOTES_RESULTS_ERROR_MESSAGE),
+      "『abc』に一致するメモは 1 件です",
+    ]);
   });
 
   it("失敗した語を Enter で確定して回復すると、その語の件数を読み上げる", async () => {
