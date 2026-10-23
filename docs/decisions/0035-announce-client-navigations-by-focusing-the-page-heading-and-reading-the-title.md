@@ -1,7 +1,7 @@
 # ADR-0035: クライアント遷移は、新しいページの見出しへの focus と title の読み上げで伝える
 
 - Status: Accepted
-- Date: 2026-10-22
+- Date: 2026-10-23
 - 関連: ADR-0026 (読み上げは `announce()` の polite の region に流す)、ADR-0027 (検索条件の変化は件数の通知で伝える)、ADR-0029 (route の pending 表示は `announce()` で通知しない)、ADR-0041 (ページの上に重ねるダイアログの route)、ADR-0033 (読み込んだデータで決まる名前は route の head() が組む)
 
 ## Context

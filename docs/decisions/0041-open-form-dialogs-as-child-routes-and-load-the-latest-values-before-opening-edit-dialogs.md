@@ -1,7 +1,7 @@
 # ADR-0041: フォームのダイアログは子 route にし、既存の値を編集するものは loader が最新の値を取り終えてから開く
 
 - Status: Accepted
-- Date: 2026-10-22
+- Date: 2026-10-23
 - 関連: ADR-0010 (分割されない route の property)、ADR-0017 (完了点とブロック範囲)、ADR-0026 (状態の通知)、ADR-0029 (既定の pending 表示)、ADR-0033 (loader と Query)、ADR-0035 (遷移の後の focus と title)、ADR-0040 (View Transitions)
 
 ## Context
@@ -252,7 +252,7 @@ route の URL と閉じ方:
 - `cancelRefetch: false` では、別のタブが保存するより前に始まった一覧の取得が進行中だと、invalidate はその取得に吸収される。その取得の結果は保存より古いことがあり、そのときは一覧が古いまま残る
 - 既存の値を編集するダイアログは、開く行のリンクが一覧に無いと (戻る・進む、URL を直接開いた)、リンクの `Spinner` が出ないので、`pendingMs` までは何も見えない
 - ダイアログの route ごとに、戻り先と開いた元の要素の探し方を渡す。探し方を誤っても、Popup へ `popupProps` を spread し忘れても、型検査も汎用の hook も気付けない。spread し忘れると、閉じたときの focus と閉じる遷移の退場の両方が効かない。閉じたとき、戻るで離れたとき、別のダイアログに替わったときの focus は、そのページの route のテストで確かめることになる
-- ダイアログの route の options には `dialogRouteOptions(<ダイアログの名前>)` (`src/lib/page-title.ts`) を const に受けて spread する。`staticData: { pageName: <ダイアログの名前>, routeDialog: true }` と title を組む `head` が 1 組で入る (ADR-0035)。`pageName` は title のページ名になり、背後のページの見出しの行は変えない。`staticData` を手で書いて `routeDialog` が抜けると閉じる遷移の type も Popup の `data-route-dialog` も付かず、ダイアログはクロスフェードで消える。`pageName` が抜けると title がアプリ名だけになり、遷移の読み上げで開く元のページと区別できない。`useRouteDialog` はどちらの書き忘れも console に警告し、throw はしない。throw すると、同じ route の `errorComponent` も throw してページごと壊れる
+- ダイアログの route の options には `dialogRouteOptions(<ダイアログの名前>)` (`src/lib/page-title.ts`) を const に受けて spread する。`staticData: { pageName: <ダイアログの名前>, routeDialog: true }` と title を組む `head` が 1 組で入る (ADR-0035)。`pageName` は title のページ名になり、背後のページの見出しの行は変えない。`staticData` を手で書いて `routeDialog` が抜けると閉じる遷移の type も Popup の `data-route-dialog` も付かず、ダイアログはクロスフェードで消える。手で書いた route には `head` も入らず、title は開く元のページのままになり、遷移の読み上げで区別できない。`useRouteDialog` はどちらの書き忘れも console に警告し、throw はしない。throw すると、同じ route の `errorComponent` も throw してページごと壊れる
 - 閉じる遷移の退場は、`:active-view-transition-type()` に対応するブラウザ (Chrome 125、Safari 18.2、Firefox 147 から。mdn/browser-compat-data の `:active-view-transition-type`、2026-10-12 に確認) でだけ出る。対応しないブラウザでは router が type を渡さず、ADR-0040 のクロスフェードになる。View Transitions に対応しないブラウザでは、ダイアログは即座に消える (コードの読み)
 - 戻り先のページの読み込みが `pendingMs` を超えて pending の表示を出すと、表示は View Transition の外で切り替わり、ダイアログは退場を見せずに先に消える見込み (`@tanstack/router-core` 1.171.34 の `load-client.ts` の `offerPending` のコードの読み、未実測)
 - ダイアログから戻り先でない別のページへ離れても閉じる遷移の type が付き、ページのクロスフェードが 100ms になる
