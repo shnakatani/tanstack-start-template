@@ -10,6 +10,12 @@ export type PageTitleTone = NonNullable<VariantProps<typeof cardTitleVariants>["
  * カード内の小見出しの寸法なので、ページ全体の見出しはこの部品を通す。寸法は `CardTitle` の
  * `size="page"` が持ち、`PageHeader` の `<h1>` と共有する。
  *
+ * 見出しの要素 (`<h1>` など) は children として中に入れて組む。shadcn は CardTitle を h3 から div へ変えて
+ * 見出し階層を利用側の裁量にしており (shadcn-ui/ui#8440 / shadcn-ui/ui#10301 は 2026-08-07 時点で
+ * いずれも open、asChild / render は未提供)、この合成が registry を触らずに済む唯一の手段。
+ * Tailwind preflight が見出しの要素の font-size / weight を inherit へ落とすため、見た目は div のときと同一
+ * (`<h1>` で実測: 18px / 600 / lh 28px / margin 0 / 高さ 28px で一致)。data-slot も CardTitle 側に残る。
+ *
  * 器を 1 つの外枠に限らないのは、カードで組む表示が複数あり、占める高さだけが違うため
  * (`CenteredCard` の `fill`)。見出しの所有をどれか 1 つへ寄せると、別の器を使う画面が寸法を手で書く。
  */
