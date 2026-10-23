@@ -35,7 +35,7 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 `createRouterWithTestDefaults` は既定に `defaultPendingMinMs: 0` を入れる。pending 表示がいったん出ると、最小表示時間 (既定 500ms) がそのままテストの待ちになる ([TanStack/router#4569][]。テストの案内に `defaultPendingMinMs` が欠けていることを上流が認めた)。`defaultPendingMs` は既定に足さず、上流の既定のまま置く。0 にすると毎回 pending を踏む。
 
-pending 表示が route の読み込み中に出ることを検証するテストは、対象 route の `pendingMs` を下げる。表示を部品として描くだけなら、`createTestRouter` で `pendingComponent` を直接描く。
+pending 表示が route の読み込み中に出ることを検証するテストは、対象 route の `pendingMs` を下げる。表示を部品として描くだけなら、`createTestRouter` で `pendingComponent` を直接描く。ページの見出しの行を描く表示なら、3 つ目の引数に対象 route の `staticData` (`Route.options.staticData`) を渡す。渡さないと `RoutePageHeader` が throw する。
 
 | 手順                                                | 守らないと                                                                                    |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------- |

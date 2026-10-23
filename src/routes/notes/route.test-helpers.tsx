@@ -7,7 +7,7 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { vi } from "vite-plus/test";
+import { expect, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { RouterInnerWrap } from "@/components/router-inner-wrap";
@@ -18,8 +18,10 @@ import type { Note } from "@/features/notes/schema";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { createTestQueryClient } from "@/test/app/query-client";
+import type { Screen } from "@/test/assert/screen-assertions";
 
 import { Route as NoteEditRoute } from "./$noteId.edit";
+import { NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route as NoteCreateRoute } from "./new";
 import { Route as NotesRoute } from "./route";
 
@@ -128,3 +130,16 @@ export function serveNotes(notes: Note[]) {
 export function ariaLabelsOf(targets: Element[]): (string | null)[] {
   return targets.map((target) => target.getAttribute("aria-label"));
 }
+
+/**
+ * ダイアログの route を開いた画面で、ページの見出しが一覧の名前の h1 1 つのまま残ること。モーダルのダイアログが
+ * 外側を aria-hidden で隠すので、includeHidden で引く
+ */
+export const expectNotesHeadingBehindDialog = vi.defineHelper(async (screen: Screen) => {
+  await expect
+    .element(screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1, includeHidden: true }))
+    .toBeInTheDocument();
+  await expect
+    .element(screen.getByRole("heading", { level: 1, includeHidden: true }))
+    .toHaveLength(1);
+});

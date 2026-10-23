@@ -31,7 +31,12 @@ import {
   titleTextbox,
 } from "./-components/note-form.test-helpers";
 import { NOTE_EDIT_DIALOG_TITLE, NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
-import { ariaLabelsOf, renderRoute, serveNotes } from "./route.test-helpers";
+import {
+  ariaLabelsOf,
+  expectNotesHeadingBehindDialog,
+  renderRoute,
+  serveNotes,
+} from "./route.test-helpers";
 
 /** 一覧の見出しに、枠を出さずに focus があること。見出しは操作できる要素ではないので枠を出さない (ADR-0035) */
 const expectNotesHeadingFocused = vi.defineHelper(async (screen: Screen) => {
@@ -482,13 +487,14 @@ describe("/notes/$noteId/edit route", () => {
     );
   });
 
-  it("title をダイアログの名前とアプリ名で組む", async () => {
+  it("title をダイアログの名前とアプリ名で組み、ページの見出しは一覧の名前のまま残す", async () => {
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
     const fetching = serveNotes([NOTE]);
-    await renderRoute(`/notes/${NOTE.id}/edit`);
+    const { screen } = await renderRoute(`/notes/${NOTE.id}/edit`);
 
     await expect.poll(() => document.title).toBe(`${NOTE_EDIT_DIALOG_TITLE} — ${APP_NAME}`);
+    await expectNotesHeadingBehindDialog(screen);
     expect(fetching).toHaveBeenExhausted();
   });
 

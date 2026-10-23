@@ -36,7 +36,12 @@ import {
 } from "./-components/note-form.test-helpers";
 import { NOTE_CREATE_DIALOG_TITLE, NOTES_PAGE_TITLE } from "./-lib/notes-page-constants";
 import { Route as NoteCreateRoute } from "./new";
-import { ariaLabelsOf, renderRoute, serveNotes } from "./route.test-helpers";
+import {
+  ariaLabelsOf,
+  expectNotesHeadingBehindDialog,
+  renderRoute,
+  serveNotes,
+} from "./route.test-helpers";
 
 /** 追加のリンクから追加ダイアログを開いて 1 件分を入力し、保存を確定する (応答の決着は呼び出し側が握る)。 */
 const submitCreate = vi.defineHelper(async (screen: Screen, note: Pick<Note, "title" | "body">) => {
@@ -203,12 +208,13 @@ describe("/notes/new route", () => {
     expect(focused.filter((target) => target.matches("h1"))).toEqual([]);
   });
 
-  it("title をダイアログの名前とアプリ名で組む", async () => {
+  it("title をダイアログの名前とアプリ名で組み、ページの見出しは一覧の名前のまま残す", async () => {
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
-    await renderRoute("/notes/new");
+    const { screen } = await renderRoute("/notes/new");
 
     await expect.poll(() => document.title).toBe(`${NOTE_CREATE_DIALOG_TITLE} — ${APP_NAME}`);
+    await expectNotesHeadingBehindDialog(screen);
   });
 
   it("閉じると一覧へ新しい履歴で戻り、絞り込みを保ち、開閉の遷移を読み上げ、追加のリンクへ focus を戻す", async () => {

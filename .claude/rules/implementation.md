@@ -40,7 +40,7 @@ lint (`typescript/no-misused-promises`) が止める。直し方 (`docs/guides/r
 - ハンドラは同期関数として宣言し、非同期処理はその内側の関数へ閉じる。JSX の prop に `void` やインラインの `async` を書かない
 - 待たない判断は内側で 1 回だけ表明する。呼び先が失敗を自分で処理するなら `void`、呼び出し側で通知や後始末をするなら `.catch()`
 - 操作の失敗を Error Boundary へ届けない。通知は toast (`src/components/ui/toast.tsx`) か画面内表示で行う。Error Boundary は画面ごと差し替わる (ADR-0016)
-- 実例は `src/hooks/use-route-retry.ts` の `handleRetry`。mutation を伴う操作は次節に従う
+- 実例は `src/hooks/use-route-retry.ts` の `handleRetry`。mutation を伴う操作は「ユーザー操作による更新は Transition の中で行う」に従う
 
 ## ユーザー操作による更新は Transition の中で行う
 
@@ -72,9 +72,11 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 
 lint では見ないのでレビューで見る。
 
-- ルートを足したら `head()` で `pageTitle(ctx, <ページ名>)` の title を持たせる。ページの上に重ねるダイアログの route も、ダイアログの名前で持つ。無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
-- title は `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
-- ページの見出しは `PageHeader` の `h1` で持つ。遷移の後の focus は h1 へ移り、無いと body に落ちて利用者がページの先頭から探し直す (ADR-0035)
+- ページの route (自分の component が `RoutePageHeader` で `<h1>` を描く route) を足したら、`pageRouteOptions(<ページ名>)` (`src/lib/page-title.ts`) を route の外で const に受け、options の先頭に spread する。`staticData.pageName` と、そこから title を組む `head` が 1 組で入る。ページの上に重ねるダイアログの route は `dialogRouteOptions(<ダイアログの名前>)` を spread する。`head` が無いと親の title になり、遷移の読み上げで区別できない (ADR-0035)
+- 呼び出しを options の中で直接 spread しない (`...pageRouteOptions(<ページ名>)`)。`tanstack-router/create-route-property-order` が Identifier でない spread で throw し、lint ごと止まる (TanStack/router#8673)
+- 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない。表示中は `<h1>` が 2 つ並ぶ (`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
+- title は `pageRouteOptions` と `dialogRouteOptions` の `head` か `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
+- ページの見出しは `RoutePageHeader` で描く。`pageName` が無いと throw する。`PageHeader` の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする。その route は自分の `head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする (ADR-0033、`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 
 ## フォームのダイアログは子 route にする
 
@@ -88,7 +90,7 @@ lint では見ないのでレビューで見る。
 - `returnTo` は `useRouteDialog` が `navigate` にそのまま渡す。開く元のページの search を保つなら `search: (prev) => prev` を書く (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 同じ戻り先は `linkOptions` で検査した定数にし、開く元のページの `-lib/` に 1 つ置く。型の無い定数にすると `prev` の型が決まらず型検査を通らない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - `ActionDialogContent` (フォームを持たないなら `DialogContent`) には `useRouteDialog` の返り値の `popupProps` を spread する。spread しなくても型は通り、離れたときに開いた元の要素へ戻らず、閉じる遷移の退場も出ない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
-- ダイアログの route に `staticData: { routeDialog: true }` を書く。無いと閉じる遷移の type も `popupProps` の `data-route-dialog` も付かず、ダイアログは退場を見せずにクロスフェードで消える。`useRouteDialog` の警告は console に出るだけで、テストは落ちない (ADR-0041)
+- ダイアログの route の options には `dialogRouteOptions(<ダイアログの名前>)` を const に受けて spread し、`staticData` の `pageName` と `routeDialog: true` を `head` と 1 組で持たせる。`staticData` を手で書いて `routeDialog` が抜けると閉じる遷移の type も `popupProps` の `data-route-dialog` も付かず、ダイアログは退場を見せずにクロスフェードで消える。手で書いた route には `head` も入らず、title は開く元のページのままになり、遷移の読み上げで区別できない。`routeDialog` と `pageName` の抜けは `useRouteDialog` が console に警告するだけで、テストは落ちない (ADR-0041)
 - ダイアログの route を足したら、そのページの route のテストで、閉じる操作で閉じたときと戻るで離れたときに開いた元の要素へ focus が移ることと、別のダイアログに替わったときに開いた元の要素が focus を受けないことを確かめる。`findReturnTarget` が要素を見つけられなくても、`popupProps` を spread し忘れても (Base UI の既定の戻し先へ戻る)、型検査も `useRouteDialog` も気付かない (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 - 閉じる操作で閉じたときの focus は、URL を直接開くか `router.navigate` で開いてから確かめ、開くリンクを押して開かない。リンクを押して開くと、`popupProps` を spread し忘れても Base UI の既定の戻し先でリンクへ戻り、テストが通る (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
 

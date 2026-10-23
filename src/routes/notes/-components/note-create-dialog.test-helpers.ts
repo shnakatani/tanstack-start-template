@@ -4,7 +4,7 @@ import type { Screen } from "@/test/assert/screen-assertions";
 
 import { titleTextbox } from "./note-form.test-helpers";
 
-/** 追加のリンクの可視ラベル。`src/routes/notes/-components/notes-page.tsx` の PageHeader が描く文言を固定する。 */
+/** 追加のリンクの可視ラベル。`src/routes/notes/-components/notes-page.tsx` の見出しの行 (`RoutePageHeader` の `actions`) が描く文言を固定する。 */
 export const NOTE_CREATE_LINK_LABEL = "＋ メモを追加";
 
 /** 一覧のページの追加のリンク (追加の route を開く) */

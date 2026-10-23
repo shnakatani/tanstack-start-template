@@ -1,20 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ButtonLink } from "@/components/parts/button-link";
-import { PageHeader } from "@/components/parts/page-header";
+import { RoutePageHeader } from "@/components/screens/route-page-header";
 import { APP_NAME } from "@/lib/app-name";
-import { pageTitle } from "@/lib/page-title";
+import { pageRouteOptions } from "@/lib/page-title";
+
+// ホームのページ名はアプリ名。title はアプリ名を重ねず、アプリ名だけになる (pageTitle)
+const pageOptions = pageRouteOptions(APP_NAME);
 
 export const Route = createFileRoute("/")({
-  head: (ctx) => ({ meta: [{ title: pageTitle(ctx) }] }),
+  ...pageOptions,
   component: IndexPage,
 });
 
 function IndexPage() {
   return (
     <div className="flex min-h-full flex-col">
-      {/* 見出しは PageHeader が h1 として描く。画面ごとに書くと寸法と階層が画面間でずれる */}
-      <PageHeader title={APP_NAME} />
+      {/* 見出しは RoutePageHeader が route の pageName から h1 として描く。画面ごとに書くと寸法と階層が画面間でずれる */}
+      <RoutePageHeader />
       {/* landmark は __root.tsx の <main> が 1 つだけ持つ。ここで入れ子にしない */}
       <div className="flex flex-col gap-4 p-4">
         {/* flex-col の既定 (align-items: stretch) を打ち消し、ボタン幅を内容に合わせる */}

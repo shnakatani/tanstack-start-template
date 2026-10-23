@@ -43,7 +43,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 | 本文・フォームラベル         | `text-base` / `text-sm`   |
 | 補足・タイムスタンプ・バッジ | `text-xs` 可              |
 
-- ページ見出しは `PageHeader` (`page-header.tsx`) の `title`、カードの中は `CardPageTitle` (`page-title.tsx`) で描き、class を書き直さない (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)
+- ページ見出しは `RoutePageHeader` (`route-page-header.tsx`)、カードの中は `CardPageTitle` (`page-title.tsx`) で描き、class を書き直さない (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)
 - 本文に `text-xs` を使わない (タブレット可読性)。ページ見出しとセクション見出しを同サイズにしない (階層が消える) (`docs/guides/styling-and-tokens.md`「文字の階層を選ぶ」)
 
 ## spacing 基準
