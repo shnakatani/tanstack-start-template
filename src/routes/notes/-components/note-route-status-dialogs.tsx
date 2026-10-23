@@ -23,7 +23,7 @@ export function NoteNotFoundDialog({ findReturnTarget }: NoteRouteStatusDialogPr
 /**
  * route の読み込み (loader の取得、component の chunk) の失敗。例外の文言は出さない。errorComponent で文言を
  * 描くのは `RouteErrorContent` に限り (`docs/guides/server-errors.md`「詳細を出す環境を変える」)、
- * `RouteErrorContent` は見出しの行と失敗の見出しを持つページの形なので、ダイアログの中に置けない
+ * `RouteErrorContent` は自分の h1 を持つのでダイアログの中に置けない
  */
 export function NoteRouteErrorDialog({
   findReturnTarget,

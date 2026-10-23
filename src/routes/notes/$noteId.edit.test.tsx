@@ -421,7 +421,7 @@ describe("/notes/$noteId/edit route", () => {
     await expect
       .element(screen.getByRole("dialog", { name: "メモを読み込めませんでした" }))
       .toBeInTheDocument();
-    // ページの見出しはダイアログの外の 1 つだけ
+    // ページの見出しはダイアログの外の 1 つだけ (RouteErrorContent を置くと 2 つになる)
     await expect
       .element(screen.getByRole("heading", { level: 1, includeHidden: true }))
       .toHaveLength(1);
@@ -488,8 +488,6 @@ describe("/notes/$noteId/edit route", () => {
   });
 
   it("title をダイアログの名前とアプリ名で組み、ページの見出しは一覧の名前のまま残す", async () => {
-    // 受け入れ条件の確認。見出しの行は一覧の route の match から読む。ダイアログの名前が見出しの行に漏れる経路
-    // (既定の pending 表示と失敗の画面) は pending.test.tsx と page-name.test.ts が見る
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
     const fetching = serveNotes([NOTE]);

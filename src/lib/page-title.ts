@@ -12,11 +12,8 @@ export interface PageTitleContext {
  * ページの `<title>`。遷移の読み上げは `document.title` を読むので、ページごとに違う名前にする
  * (WCAG 2.4.2)。ページ名を先に置き、タブが狭くても区別できるようにする。
  *
- * 名前は自分の route の `staticData.pageName`。読み込んだデータで決まる名前は引数の `pageName` で渡す (ADR-0033)。
- * その route も `pageRouteOptions(<ページの一般の名前>)` を spread し、その後ろに自分の `head` を書いて title を
- * 上書きする。読み込み中と失敗の画面の見出しの行は `staticData.pageName` の一般の名前を使い、
- * 引数に `undefined` を渡すと title もそちらになる (ADR-0035)。
- * 名前が `APP_NAME` と同じなら重ねない (ホーム)。
+ * 名前は自分の route の `staticData.pageName`。読み込んだデータで決まる名前は、その route の `head()` が引数の
+ * `pageName` で渡す (ADR-0033)。名前が `APP_NAME` と同じなら重ねない (ホーム)。
  *
  * `ctx.matches` のどれか 1 つでも notFound() を error に持てば not found の title にする。
  * route が投げた `notFound()` では、root の `head()` の `ctx.matches` には not found を受け持つ route (境界) の

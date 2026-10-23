@@ -9,7 +9,7 @@ import { tableDevtoolsPlugin } from "@tanstack/react-table-devtools";
 import type { ReactNode } from "react";
 
 import { LiveRegions } from "@/components/live-regions";
-import { RouteErrorContent } from "@/components/screens/route-error";
+import { FullScreenRouteError } from "@/components/screens/route-error";
 import { Toaster } from "@/components/ui/toast";
 import { pageTitle } from "@/lib/page-title";
 
@@ -55,11 +55,11 @@ function RootComponent() {
   );
 }
 
-// root で受けたエラーの受け皿。見出しの行と枠は RouteErrorContent が失敗の位置から決める
+// route 境界より上で落ちたエラーの受け皿。全画面の枠は表示側 (route-error.tsx) が持つ
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
     <RootDocument>
-      <RouteErrorContent error={error} reset={reset} />
+      <FullScreenRouteError error={error} reset={reset} />
     </RootDocument>
   );
 }

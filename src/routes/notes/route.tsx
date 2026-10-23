@@ -1,8 +1,7 @@
 import { noop } from "@tanstack/react-query";
-import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
+import { Outlet, createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import * as v from "valibot";
 
-import { PageOutlet } from "@/components/screens/page-outlet";
 import { notesQueryOptions } from "@/features/notes/queries";
 import { noteListFilterSchema } from "@/features/notes/schema";
 import { pageRouteOptions } from "@/lib/page-title";
@@ -49,12 +48,11 @@ function NotesRoute() {
     // 履歴を積まない (replace)。戻るは 1 つ前の画面へ戻る (ADR-0019)
     void navigate({ search: (prev) => ({ ...prev, q: next }), replace: true });
   }
-  // 子 route (一覧の上に重ねるダイアログ) は一覧の後ろに描く。一覧は開閉の間も描いたまま残す。
-  // PageOutlet の中の既定の失敗と読み込み中の画面は、一覧の見出しの行の下に出るので名前の行を描かない (ADR-0035)
+  // 子 route (一覧の上に重ねるダイアログ) は一覧の後ろに描く。一覧は開閉の間も描いたまま残す
   return (
     <>
       <NotesPage q={q} onQueryChange={handleQueryChange} />
-      <PageOutlet />
+      <Outlet />
     </>
   );
 }
