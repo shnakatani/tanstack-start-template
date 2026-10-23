@@ -326,15 +326,19 @@ describe("/notes route", () => {
     },
   );
 
-  it("一覧を開いたときの取得の失敗では、title に「エラー: 」を付ける", async () => {
+  it("一覧を開いたときの取得の失敗では、見出しの行に一覧の名前を残し、title に「エラー: 」を付ける", async () => {
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
     vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
     const { screen } = await renderRoute("/notes");
 
     await expect
-      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 1 }))
+      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 2 }))
       .toBeVisible();
+    await expect
+      .element(screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 }))
+      .toBeVisible();
+    await expect.element(screen.getByRole("heading", { level: 1 })).toHaveLength(1);
     await expect.poll(() => document.title).toBe(`エラー: ${NOTES_PAGE_TITLE} — ${APP_NAME}`);
   });
 

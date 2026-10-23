@@ -13,7 +13,7 @@ import { invalidateNoteListsIfStale } from "./-lib/note-list-staleness";
 import { NOTE_DIALOG_RETURN_TO, NOTE_EDIT_DIALOG_TITLE } from "./-lib/notes-page-constants";
 
 // pageName はダイアログの名前で、title のページ名になる。routeDialog はダイアログの route の印で、閉じる遷移で
-// ダイアログの退場を見せる (ADR-0035、ADR-0041)
+// ダイアログの退場を見せ、背後のページの見出しの行に名前を出さない (ADR-0035、ADR-0041)
 const pageOptions = dialogRouteOptions(NOTE_EDIT_DIALOG_TITLE);
 
 export const Route = createFileRoute("/notes/$noteId/edit")({
