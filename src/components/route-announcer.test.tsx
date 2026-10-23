@@ -82,6 +82,16 @@ function createAnnouncedRouter(
     },
     errorComponent: () => <h1>エラーが発生しました</h1>,
   });
+  const throwsOptions = pageRouteOptions("Throws");
+  const throws = createRoute({
+    ...throwsOptions,
+    getParentRoute: () => rootRoute,
+    path: "/throws",
+    component: () => {
+      throw new Error("render");
+    },
+    errorComponent: () => <h1>エラーが発生しました</h1>,
+  });
   // notFound({ routeId: rootRouteId }) で root を境界に指定する。/missing は head を持たないので、
   // title は root の pageTitle(ctx) からしか来ない。not found の判定を通らなければ APP_NAME になる
   const missing = createRoute({
@@ -143,6 +153,7 @@ function createAnnouncedRouter(
       a,
       b,
       err,
+      throws,
       missing,
       gone,
       hiddenBehindDialog,
@@ -222,6 +233,16 @@ it("子 route のエラー画面へ移ると、エラー画面の h1 へ移し�
   router.history.push("/err");
   await expect.element(screen.getByRole("heading", { name: "エラーが発生しました" })).toHaveFocus();
   expect(readAnnouncements()).toEqual([`エラー: Err — ${APP_NAME}`]);
+});
+
+// head() は描画より前に走り終え、描画中の throw は match の status を変えない。失敗は focus でだけ伝わる
+it("描画中の throw でエラー画面へ移ると、エラー画面の h1 へ移し、title は「エラー: 」を付けずに読み上げる", async () => {
+  const router = createAnnouncedRouter();
+  const screen = await render(<RouterProvider router={router} />);
+  await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+  router.history.push("/throws");
+  await expect.element(screen.getByRole("heading", { name: "エラーが発生しました" })).toHaveFocus();
+  expect(readAnnouncements()).toEqual([`Throws — ${APP_NAME}`]);
 });
 
 it("root のエラー画面に置き換わっても購読は外れず、root のエラー画面の h1 へ移す", async () => {
