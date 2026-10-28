@@ -349,7 +349,7 @@ describe("/notes route", () => {
         .element(screen.getByRole("heading", { name: "ページが見つかりません", level: 1 }))
         .toBeVisible();
       await expect.element(screen.getByRole("heading", { level: 1 })).toHaveLength(1);
-      await expectAbsent(screen.getByRole("heading", { name: NOTES_PAGE_TITLE }));
+      await expectAbsent(screen.getByRole("heading", { name: NOTES_PAGE_TITLE, exact: false }));
     },
   );
 
