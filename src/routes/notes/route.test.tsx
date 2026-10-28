@@ -338,6 +338,21 @@ describe("/notes route", () => {
     await expect.poll(() => document.title).toBe(`エラー: ${NOTES_PAGE_TITLE} — ${APP_NAME}`);
   });
 
+  // ページの下の存在しない URL も、どこにも当たらない URL と同じく root の not found で受ける。既定の fuzzy では
+  // 一覧が境界になり、一覧の <Outlet /> の中に出る (ADR-0044)
+  it.each(["/xyz", "/notes/xyz"])(
+    "どの route にも当たらない URL (%s) は、root の not found の画面で受ける",
+    async (location) => {
+      const { screen } = await renderRoute(location);
+
+      await expect
+        .element(screen.getByRole("heading", { name: "ページが見つかりません", level: 1 }))
+        .toBeVisible();
+      await expect.element(screen.getByRole("heading", { level: 1 })).toHaveLength(1);
+      await expectAbsent(screen.getByRole("heading", { name: NOTES_PAGE_TITLE }));
+    },
+  );
+
   it("開いたときの失敗から再試行してまた失敗すると、検索欄を出したまま結果の部分にエラーを出す (再試行の再読み込みは stay)", async () => {
     vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
     const { screen } = await renderRoute("/notes");

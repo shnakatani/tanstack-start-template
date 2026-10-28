@@ -2,8 +2,9 @@ import { type ElementType, isValidElement, type ReactElement, type ReactNode } f
 import { describe, expect, it } from "vite-plus/test";
 
 import { LiveRegions } from "@/components/live-regions";
+import { NotFoundContent } from "@/components/screens/not-found";
 
-import { RootDocument } from "./__root";
+import { RootDocument, Route } from "./__root";
 
 /**
  * 文書レベルの landmark を押さえる。
@@ -59,5 +60,14 @@ describe("RootDocument", () => {
     const tree = RootDocument({ children: "本文マーカー" });
 
     expect(hasElement(tree, (element) => element.type === LiveRegions)).toBe(true);
+  });
+});
+
+// root は失敗の最後の受け手。外れると、受ける route の無い失敗が組み込みの英語の画面になる (ADR-0044)。
+// ブラウザテストはテストの root を組むので、本番の root の部品はここで見る
+describe("root の route", () => {
+  it("not found の部品とエラーの部品を持つ", () => {
+    expect(Route.options.notFoundComponent).toBe(NotFoundContent);
+    expect(Route.options.errorComponent).toBeTypeOf("function");
   });
 });

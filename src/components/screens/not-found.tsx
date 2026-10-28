@@ -2,8 +2,8 @@ import { ButtonLink } from "@/components/parts/button-link";
 import { FullScreenNotice } from "@/components/parts/centered-card";
 
 /**
- * router の既定 404 表示。`RouteErrorContent` と対にして router.tsx から切り出してある
- * (inline 定義のままだと export されずレイアウトの回帰ガードを書けないため)。
+ * root の not found の表示 (root の `notFoundComponent`)。どの route にも当たらない URL と、`notFoundComponent` を
+ * 持つ祖先が無い loader・beforeLoad の `notFound()` を受け、root の component の `<Outlet />` の位置に描かれる (ADR-0044)
  */
 export function NotFoundContent() {
   return (

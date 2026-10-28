@@ -3,9 +3,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
 import { RouterInnerWrap } from "@/components/router-inner-wrap";
-import { NotFoundContent } from "@/components/screens/not-found";
 import { PendingContent } from "@/components/screens/pending";
-import { RouteErrorContent } from "@/components/screens/route-error";
 import { toast } from "@/components/ui/toast";
 import { createBackgroundRefetchErrorHandler } from "@/lib/query-cache-handlers";
 import {
@@ -39,11 +37,11 @@ export function getRouter() {
     // サーバーでは判定せず true を渡す (View Transition はサーバーでは動かない。ADR-0040)
     defaultViewTransition:
       typeof window === "undefined" ? true : createDefaultViewTransition(window, currentRouter),
-    // loader / useSuspenseQuery のエラーを失敗 route の境界で受ける (周囲のレイアウトを
-    // 保ったまま日本語 UI + 再試行を出す。未設定だと SSR は英語の組み込み UI、client は
-    // root の全画面エラーに落ちる)
-    defaultErrorComponent: RouteErrorContent,
-    defaultNotFoundComponent: NotFoundContent,
+    // どの route にも当たらない URL は、ページの下の URL も含めて root の notFoundComponent が受ける。既定の
+    // fuzzy では、子を持つページが境界になり、ページの <Outlet /> の中に出る。
+    // エラーの部品の既定は置かない。置くと、どの route もその部品で境界を張り、部品を置いた祖先へ失敗が上がらない。
+    // not found の部品の既定も置かない。not found の最後の受け手は root の notFoundComponent が担う (ADR-0044)
+    notFoundMode: "root",
     // route の pendingComponent が無いときの Suspense の受け皿。未設定だと境界が張られず、
     // suspend が root の Outlet まで巻き上がって何も描かれない (ADR-0029)
     defaultPendingComponent: PendingContent,

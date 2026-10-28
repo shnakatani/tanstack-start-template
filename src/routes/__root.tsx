@@ -9,6 +9,7 @@ import { tableDevtoolsPlugin } from "@tanstack/react-table-devtools";
 import type { ReactNode } from "react";
 
 import { LiveRegions } from "@/components/live-regions";
+import { NotFoundContent } from "@/components/screens/not-found";
 import { FullScreenRouteError } from "@/components/screens/route-error";
 import { Toaster } from "@/components/ui/toast";
 import { pageTitle } from "@/lib/page-title";
@@ -26,6 +27,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   component: RootComponent,
   errorComponent: ErrorComponent,
+  // どの route にも当たらない URL と、notFoundComponent を持つ祖先が無い loader・beforeLoad の notFound() を受ける。
+  // この 2 つでは root の component の <Outlet /> の位置 (<main> の中) に描かれるので、errorComponent と違い
+  // 文書の骨格を描かない (@tanstack/react-router の Match.tsx の Outlet)。描画中に投げた notFound() を受けると
+  // root の component ごと置き換わるので、notFound() は描画中に投げない (ADR-0044)
+  notFoundComponent: NotFoundContent,
 });
 
 function RootComponent() {
@@ -55,7 +61,8 @@ function RootComponent() {
   );
 }
 
-// route 境界より上で落ちたエラーの受け皿。全画面の枠は表示側 (route-error.tsx) が持つ
+// root の失敗と、どの route の部品も受けなかった失敗の受け皿 (ADR-0044)。root の component を置き換えて描かれるので、
+// 文書の骨格を自分で描く。全画面の枠は表示側 (route-error.tsx) が持つ
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
     <RootDocument>
