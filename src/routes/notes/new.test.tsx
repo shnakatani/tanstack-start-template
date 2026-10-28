@@ -169,7 +169,7 @@ describe("/notes/new route", () => {
     await expect
       .element(screen.getByRole("dialog", { name: "フォームを読み込めませんでした" }))
       .toBeInTheDocument();
-    // ページの見出しはダイアログの外の 1 つだけ (RouteErrorContent を置くと 2 つになる)
+    // ページの見出しは背後の一覧の h1 の 1 つだけで、ダイアログの中に h1 を足さない
     await expect
       .element(screen.getByRole("heading", { level: 1, includeHidden: true }))
       .toHaveLength(1);

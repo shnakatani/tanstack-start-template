@@ -326,16 +326,40 @@ describe("/notes route", () => {
     },
   );
 
-  it("一覧を開いたときの取得の失敗では、title に「エラー: 」を付ける", async () => {
+  it("一覧を開いたときの取得の失敗では、見出しの行に一覧の名前の h1 を残して失敗の見出しを h2 にし、title に「エラー: 」を付ける", async () => {
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
     document.title = "";
     vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
     const { screen } = await renderRoute("/notes");
 
     await expect
-      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 1 }))
+      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 2 }))
       .toBeVisible();
+    await expect
+      .element(screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 }))
+      .toBeVisible();
+    await expect.element(screen.getByRole("heading", { level: 1 })).toHaveLength(1);
     await expect.poll(() => document.title).toBe(`エラー: ${NOTES_PAGE_TITLE} — ${APP_NAME}`);
+  });
+
+  // 遷移の後の focus は、ページ名の h1 ではなく失敗の見出しへ移る (ADR-0035)。遷移は history の API で起こす。
+  // 確かめる対象は遷移の伝え方で、遷移の引き金ではない
+  it("別の画面から一覧へ移って取得に失敗すると、失敗の見出し (h2) へ focus を移し、「エラー: 」を付けた title を読み上げる", async () => {
+    vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
+    const { screen, router } = await renderRoute("/xyz");
+    await expect
+      .element(screen.getByRole("heading", { name: "ページが見つかりません" }))
+      .toBeVisible();
+
+    router.history.push("/notes");
+
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 2 }))
+      .toHaveFocus();
+    await expect
+      .element(screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 }))
+      .toBeVisible();
+    await expectAnnouncements([`エラー: ${NOTES_PAGE_TITLE} — ${APP_NAME}`]);
   });
 
   // ページの下の存在しない URL も、どこにも当たらない URL と同じく root の not found で受ける。既定の fuzzy では
@@ -360,7 +384,7 @@ describe("/notes route", () => {
       .element(screen.getByRole("heading", { name: "エラーが発生しました" }))
       .toBeVisible();
 
-    // RouteErrorContent の再試行は router.invalidate() を呼ぶ。同じ location の再読み込みなので cause は stay
+    // PageRouteError の再試行は router.invalidate() を呼ぶ。同じ location の再読み込みなので cause は stay
     await screen.getByRole("button", { name: "再試行" }).click();
 
     await expect

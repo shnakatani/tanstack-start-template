@@ -11,8 +11,9 @@ import { PageHeader } from "@/components/parts/page-header";
  * throw は、その route の errorComponent が受ける。pendingComponent の中の throw は、描かれた経路で受ける route が
  * 変わる。route の Suspense の fallback として描かれたときは、fallback がその route の境界の外にあるので親の route の
  * errorComponent が、読み込み中の match を描く `MatchInner` が直接描いたときは、その route の errorComponent が受ける
- * (`@tanstack/react-router` の `Match.tsx` の `MatchView` と `MatchInner`)。失敗の画面はこの部品を使わないので、
- * throw は連鎖しない。
+ * (`@tanstack/react-router` の `Match.tsx` の `MatchView` と `MatchInner`)。ページの位置で受けるエラーの画面
+ * (`PageRouteError`) もこの部品を描く。そこでの throw はその route の境界の外なので、祖先 (無ければ root) の
+ * errorComponent が受ける。
  *
  * match からはプリミティブだけを select で読む。match 全体を読むと、loader のデータや取得中の状態が変わるたびに
  * 見出しの行が描き直される

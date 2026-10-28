@@ -15,6 +15,7 @@ import { expect, it } from "vite-plus/test";
 import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { PageRouteError } from "@/components/screens/route-error";
 import { APP_NAME } from "@/lib/app-name";
 import { pageRouteOptions, pageTitle } from "@/lib/page-title";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
@@ -80,8 +81,10 @@ function createAnnouncedRouter(
     loader: () => {
       throw new Error("loader");
     },
-    errorComponent: () => <h1>エラーが発生しました</h1>,
+    // ページの位置で受ける部品で受け、見出しの行 (Err の h1) の下に失敗の見出し (h2) を出す
+    errorComponent: PageRouteError,
   });
+  // 描画中に throw する。head() は描画より前に走り終えるので、title に「エラー: 」は付かない
   const throwsOptions = pageRouteOptions("Throws");
   const throws = createRoute({
     ...throwsOptions,
@@ -90,7 +93,7 @@ function createAnnouncedRouter(
     component: () => {
       throw new Error("render");
     },
-    errorComponent: () => <h1>エラーが発生しました</h1>,
+    errorComponent: PageRouteError,
   });
   // notFound({ routeId: rootRouteId }) で root を境界に指定する。/missing は head を持たないので、
   // title は root の pageTitle(ctx) からしか来ない。not found の判定を通らなければ APP_NAME になる
@@ -226,22 +229,30 @@ it("検索条件だけの変化では focus を動かさず、読み上げない
   expect(readAnnouncements()).toEqual([`B — ${APP_NAME}`]);
 });
 
-it("子 route のエラー画面へ移ると、エラー画面の h1 へ移し、「エラー: 」を付けた title を読み上げる", async () => {
+it("子 route のエラー画面へ移ると、ページ名の見出しの下の失敗の見出しへ移し、「エラー: 」を付けた title を読み上げる", async () => {
   const router = createAnnouncedRouter();
   const screen = await render(<RouterProvider router={router} />);
   await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
   router.history.push("/err");
-  await expect.element(screen.getByRole("heading", { name: "エラーが発生しました" })).toHaveFocus();
+  await expect
+    .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 2 }))
+    .toHaveFocus();
+  await expect.element(screen.getByRole("heading", { name: "Err", level: 1 })).toBeInTheDocument();
   expect(readAnnouncements()).toEqual([`エラー: Err — ${APP_NAME}`]);
 });
 
-// head() は描画より前に走り終え、描画中の throw は match の status を変えない。失敗は focus でだけ伝わる
-it("描画中の throw でエラー画面へ移ると、エラー画面の h1 へ移し、title は「エラー: 」を付けずに読み上げる", async () => {
+// title から失敗が伝わらない場面。h1 (ページ名) へ移すと、失敗がどこにも出ない
+it("描画中の throw でエラー画面へ移ると、失敗の見出しへ移し、title は「エラー: 」を付けずに読み上げる", async () => {
   const router = createAnnouncedRouter();
   const screen = await render(<RouterProvider router={router} />);
   await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
   router.history.push("/throws");
-  await expect.element(screen.getByRole("heading", { name: "エラーが発生しました" })).toHaveFocus();
+  await expect
+    .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 2 }))
+    .toHaveFocus();
+  await expect
+    .element(screen.getByRole("heading", { name: "Throws", level: 1 }))
+    .toBeInTheDocument();
   expect(readAnnouncements()).toEqual([`Throws — ${APP_NAME}`]);
 });
 
