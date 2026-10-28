@@ -122,6 +122,21 @@ route tree: root (component は root のレイアウトの印と `<Outlet />` �
 | ページ自身の loader の `notFound()` (自分の `notFoundComponent` を持たない) | root の not found                                                    |
 | ページの下の存在しない URL、どこにも当たらない URL                          | root の not found                                                    |
 
+### dev server (2026-10-28、TanStack Start の dev server、`@tanstack/react-start` 1.168.60、`@tanstack/react-router` 1.170.41)
+
+URL を直接開き、server の HTML と HTTP の status を見て、hydration の後の DOM と console をブラウザで見た。ページの loader の失敗と root の beforeLoad の失敗は、一時的に throw を足して作った。ページは `errorComponent` に `PageRouteError` を持つ route で測った。
+
+| 場面                       | status | server の HTML の `<title>`                    | server の HTML の見出し                                          | hydration の後                |
+| -------------------------- | ------ | ---------------------------------------------- | ---------------------------------------------------------------- | ----------------------------- |
+| どこにも当たらない URL     | 404    | `TanStack Start Template`                      | `<h1>ページが見つかりません`                                     | 同じ。`<h1>` は `<main>` の中 |
+| ページの下の存在しない URL | 404    | `TanStack Start Template`                      | `<h1>ページが見つかりません`                                     | 同じ。`<h1>` は `<main>` の中 |
+| ページの loader の失敗     | 500    | `エラー: <ページ名> — TanStack Start Template` | `<h1><ページ名>`、`<h2 data-status-heading>エラーが発生しました` | 同じ                          |
+| root の beforeLoad の失敗  | 500    | `エラー: TanStack Start Template`              | `<h1>エラーが発生しました` (`<h2>` は無い)                       | 同じ                          |
+
+- どの場面でも、server の HTML に組み込みの画面の文言 (`Something went wrong!`、`Not Found`) は無かった
+- 4 つの場面とも、console に `hydrat`、`Recoverable`、`did not match` を含むメッセージは無かった。ページの loader の失敗と root の beforeLoad の失敗で出たのは、投げた Error の React のログと router の `Error in route match` の warn だけだった
+- `/` からリンクを押してページの loader の失敗へクライアント遷移で移ると、focus は `<h2 data-status-heading tabindex="-1">エラーが発生しました</h2>` に移った
+
 ## 出典
 
 - TanStack Router docs「Not Found Errors」(「Throwing your own notFound errors」と「Throwing Not Found Errors in Components」を含む): https://tanstack.com/router/latest/docs/framework/react/guide/not-found-errors
