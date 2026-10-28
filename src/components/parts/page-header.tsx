@@ -9,6 +9,10 @@ import { cardTitleVariants } from "@/components/ui/card";
  * 画面ごとに h1 を手書きすると、PageHeader を使う画面に h1 が無い状態が生まれる
  * (見出しジャンプで移動する支援技術が主題に辿り着けない)。見出し階層はこの部品が持ち、
  * 消費側は `title` を渡すだけにする。
+ *
+ * router を読まない汎用の部品にする。ページは `RoutePageHeader` (`src/components/screens/route-page-header.tsx`) を
+ * 通して、route の `staticData.pageName` を `title` に渡す。文字列を直接渡すのは、読み込んだデータで名前が決まる
+ * ページだけにする
  */
 export function PageHeader({ title, actions }: { title: string; actions?: ReactNode }) {
   return (

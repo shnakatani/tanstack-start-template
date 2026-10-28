@@ -14,6 +14,7 @@ import {
   NOTE_TITLE_MAX_LENGTH,
 } from "@/features/notes/schema";
 import { MUTATION_ERROR_FALLBACK_MESSAGE } from "@/lib/mutation-error";
+import { dialogRouteOptions } from "@/lib/page-title";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { deferMock } from "@/test/app/defer-mock";
 import { createTestQueryClient } from "@/test/app/query-client";
@@ -28,6 +29,7 @@ import {
 // 差し替え先は src/features/notes/__mocks__/functions.ts
 vi.mock(import("@/features/notes/functions"));
 
+import { NOTE_CREATE_DIALOG_TITLE } from "../-lib/notes-page-constants";
 import { NoteCreateDialog } from "./note-create-dialog";
 import {
   bodyTextbox,
@@ -44,7 +46,11 @@ import {
 async function renderDialog() {
   const queryClient = createTestQueryClient();
   const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-  const router = createTestRouter("/notes/new", () => <NoteCreateDialog />, { routeDialog: true });
+  const router = createTestRouter(
+    "/notes/new",
+    () => <NoteCreateDialog />,
+    dialogRouteOptions(NOTE_CREATE_DIALOG_TITLE).staticData,
+  );
   const screen = await render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

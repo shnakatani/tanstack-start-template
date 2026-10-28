@@ -102,13 +102,17 @@ describe("/notes route", () => {
     vi.mocked(listNotes).mockResolvedValue([]);
   });
 
-  it("route に loader が定義され、pendingComponent で skeleton が表示される", async () => {
+  it("route に loader が定義され、pendingComponent で見出しの行と skeleton が表示される", async () => {
     expect(typeof NotesRoute.options.loader).toBe("function");
 
     const Pending = NotesRoute.options.pendingComponent!;
-    const router = createTestRouter("/notes", () => <Pending />);
+    // 見出しの行は route の staticData.pageName を読むので、描く route に同じ staticData を付ける
+    const router = createTestRouter("/notes", () => <Pending />, NotesRoute.options.staticData);
     const screen = await render(<RouterProvider router={router} />);
 
+    await expect
+      .element(screen.getByRole("heading", { name: NOTES_PAGE_TITLE, level: 1 }))
+      .toBeInTheDocument();
     await expect.element(screen.getByRole("cell", { name: "読み込み中" })).toBeInTheDocument();
     // skeleton は NOTE_COLUMNS の見出しを全部描く。列定義がそれと過不足なく同じ順に並ぶことをここで見る。
     // ずれるとロード完了時にレイアウトシフトが出る (`docs/guides/lists-and-search.md`「一覧テーブルを組む」)
@@ -321,6 +325,18 @@ describe("/notes route", () => {
       await expectAbsent(screen.getByText(NOTES_RESULTS_ERROR_MESSAGE, { exact: true }));
     },
   );
+
+  it("一覧を開いたときの取得の失敗では、title に「エラー: 」を付ける", async () => {
+    // 前のテストが反映した title で通らないよう、描く前に空へ戻す
+    document.title = "";
+    vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));
+    const { screen } = await renderRoute("/notes");
+
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 1 }))
+      .toBeVisible();
+    await expect.poll(() => document.title).toBe(`エラー: ${NOTES_PAGE_TITLE} — ${APP_NAME}`);
+  });
 
   it("開いたときの失敗から再試行してまた失敗すると、検索欄を出したまま結果の部分にエラーを出す (再試行の再読み込みは stay)", async () => {
     vi.mocked(listNotes).mockRejectedValue(new Error("取得の失敗"));

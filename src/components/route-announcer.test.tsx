@@ -16,7 +16,7 @@ import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
 import { APP_NAME } from "@/lib/app-name";
-import { pageTitle } from "@/lib/page-title";
+import { pageRouteOptions, pageTitle } from "@/lib/page-title";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 import { expectAnnouncements, readAnnouncements } from "@/test/assert/live-announcer";
 
@@ -65,19 +65,31 @@ function createAnnouncedRouter(
     path: "/a",
     component: () => <h1>A</h1>,
   });
+  const bOptions = pageRouteOptions("B");
   const b = createRoute({
+    ...bOptions,
     getParentRoute: () => rootRoute,
     path: "/b",
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "B") }] }),
     component: () => <h1>B</h1>,
   });
+  const errOptions = pageRouteOptions("Err");
   const err = createRoute({
+    ...errOptions,
     getParentRoute: () => rootRoute,
     path: "/err",
     loader: () => {
       throw new Error("loader");
     },
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "Err") }] }),
+    errorComponent: () => <h1>エラーが発生しました</h1>,
+  });
+  const throwsOptions = pageRouteOptions("Throws");
+  const throws = createRoute({
+    ...throwsOptions,
+    getParentRoute: () => rootRoute,
+    path: "/throws",
+    component: () => {
+      throw new Error("render");
+    },
     errorComponent: () => <h1>エラーが発生しました</h1>,
   });
   // notFound({ routeId: rootRouteId }) で root を境界に指定する。/missing は head を持たないので、
@@ -89,23 +101,25 @@ function createAnnouncedRouter(
       throw notFound({ routeId: rootRouteId });
     },
   });
-  // 自分の notFoundComponent を持つ子 route が境界になる。/gone の head は自分のページ名を渡すので、
+  // 自分の notFoundComponent を持つ子 route が境界になる。/gone の head は自分のページ名で title を組むので、
   // 判定を通らなければ「Gone — アプリ名」になる
+  const goneOptions = pageRouteOptions("Gone");
   const gone = createRoute({
+    ...goneOptions,
     getParentRoute: () => rootRoute,
     path: "/gone",
     loader: () => {
       throw notFound();
     },
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "Gone") }] }),
     component: () => <h1>Gone</h1>,
     notFoundComponent: () => <h1>項目が見つかりません</h1>,
   });
   // Base UI のモーダルのダイアログと同じく、開いている間ダイアログの外側を aria-hidden で隠す
+  const hiddenBehindDialogOptions = pageRouteOptions("外を隠すダイアログ");
   const hiddenBehindDialog = createRoute({
+    ...hiddenBehindDialogOptions,
     getParentRoute: () => rootRoute,
     path: "/hidden-behind-dialog",
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "外を隠すダイアログ") }] }),
     component: () => (
       <>
         <div aria-hidden="true">
@@ -119,10 +133,11 @@ function createAnnouncedRouter(
     ),
   });
   // 外側を隠さず、aria-modal だけでモーダルを表すダイアログ
+  const ariaModalDialogOptions = pageRouteOptions("aria-modal のダイアログ");
   const ariaModalDialog = createRoute({
+    ...ariaModalDialogOptions,
     getParentRoute: () => rootRoute,
     path: "/aria-modal-dialog",
-    head: (ctx) => ({ meta: [{ title: pageTitle(ctx, "aria-modal のダイアログ") }] }),
     component: () => (
       <>
         <h1>背後のページ</h1>
@@ -138,6 +153,7 @@ function createAnnouncedRouter(
       a,
       b,
       err,
+      throws,
       missing,
       gone,
       hiddenBehindDialog,
@@ -210,13 +226,23 @@ it("検索条件だけの変化では focus を動かさず、読み上げない
   expect(readAnnouncements()).toEqual([`B — ${APP_NAME}`]);
 });
 
-it("子 route のエラー画面へ移ると、エラー画面の h1 へ移す", async () => {
+it("子 route のエラー画面へ移ると、エラー画面の h1 へ移し、「エラー: 」を付けた title を読み上げる", async () => {
   const router = createAnnouncedRouter();
   const screen = await render(<RouterProvider router={router} />);
   await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
   router.history.push("/err");
   await expect.element(screen.getByRole("heading", { name: "エラーが発生しました" })).toHaveFocus();
-  expect(readAnnouncements()).toEqual([`Err — ${APP_NAME}`]);
+  expect(readAnnouncements()).toEqual([`エラー: Err — ${APP_NAME}`]);
+});
+
+// head() は描画より前に走り終え、描画中の throw は match の status を変えない。失敗は focus でだけ伝わる
+it("描画中の throw でエラー画面へ移ると、エラー画面の h1 へ移し、title は「エラー: 」を付けずに読み上げる", async () => {
+  const router = createAnnouncedRouter();
+  const screen = await render(<RouterProvider router={router} />);
+  await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+  router.history.push("/throws");
+  await expect.element(screen.getByRole("heading", { name: "エラーが発生しました" })).toHaveFocus();
+  expect(readAnnouncements()).toEqual([`Throws — ${APP_NAME}`]);
 });
 
 it("root のエラー画面に置き換わっても購読は外れず、root のエラー画面の h1 へ移す", async () => {

@@ -5,8 +5,8 @@ import * as v from "valibot";
 
 import { ButtonLink } from "@/components/parts/button-link";
 import { DeleteConfirmDialog } from "@/components/parts/delete-confirm-dialog";
-import { PageHeader } from "@/components/parts/page-header";
 import { SectionErrorBoundary } from "@/components/parts/section-error-boundary";
+import { RoutePageHeader } from "@/components/screens/route-page-header";
 import { parseDeletingIds } from "@/features/notes/deleting-ids";
 import type { NoteDeleteTarget } from "@/features/notes/mutations";
 import { noteMutationFilters, removeNoteMutation } from "@/features/notes/mutations";
@@ -19,7 +19,6 @@ import { toastMutationError } from "@/lib/mutation-error";
 import { noteDeleteDialogHandle } from "../-lib/note-delete-dialog-handle";
 import { noteCreateLinkProps } from "../-lib/note-dialog-focus";
 import { NOTE_SEARCH_DEBOUNCE_MS, NOTES_RESULTS_ERROR_MESSAGE } from "../-lib/note-search";
-import { NOTES_PAGE_TITLE } from "../-lib/notes-page-constants";
 import { NoteSearchField } from "./note-search-field";
 import { NotesResults } from "./notes-results";
 import { NotesTableSkeleton } from "./notes-table-skeleton";
@@ -120,8 +119,7 @@ export function NotesPage({ q, onQueryChange }: { q: string; onQueryChange: (q: 
 
   return (
     <div className="flex min-h-full flex-col">
-      <PageHeader
-        title={NOTES_PAGE_TITLE}
+      <RoutePageHeader
         actions={
           <>
             <NoteSearchField

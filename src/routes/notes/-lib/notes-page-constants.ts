@@ -10,13 +10,13 @@ import { NOTE_FIELD_LABELS } from "@/features/notes/schema";
  * pending は code-split されず main bundle に入るので、ここにはセルの描画や列定義を import しない (ADR-0010)
  */
 
-/** 一覧ページの見出し。一覧の table の名前 (本体の `DataTable` と pending の `TableSkeleton` の caption) にも使う */
+/** 一覧ページの名前 (route の `staticData.pageName`)。一覧の table の名前 (本体の `DataTable` と pending の `TableSkeleton` の caption) にも使う */
 export const NOTES_PAGE_TITLE = "メモ一覧";
 
-/** 追加ダイアログの見出しと、追加の route の title のページ名 */
+/** 追加ダイアログの見出しと、追加の route の `staticData.pageName` (title のページ名) */
 export const NOTE_CREATE_DIALOG_TITLE = "メモを追加";
 
-/** 編集ダイアログの見出しと、編集の route の title のページ名 */
+/** 編集ダイアログの見出しと、編集の route の `staticData.pageName` (title のページ名) */
 export const NOTE_EDIT_DIALOG_TITLE = "メモを編集";
 
 /**
