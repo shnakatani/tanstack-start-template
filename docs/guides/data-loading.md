@@ -1,12 +1,13 @@
 # ページのデータの読み込み
 
-ページのデータを読み、読み込み中の表示と失敗からの再試行を出すときの手順と、その形にしている理由を持つ。
+ページのデータを読み、読み込み中の表示を出し、読み込みの失敗を受けて再試行させるときの手順と、その形にしている理由を持つ。
 
 | 決定                                                                                                                  | ADR      |
 | --------------------------------------------------------------------------------------------------------------------- | -------- |
 | ユーザー操作による更新は Transition を既定にし、query 由来の楽観表示は mutation の variables で出す                   | ADR-0015 |
 | router に既定の pending 表示を置き、Suspense の最後の受け皿にする                                                     | ADR-0029 |
 | ページのデータは Query から読み、欠かせない query だけを loader で待ち、副次的な query は待たずに Suspense の中で読む | ADR-0033 |
+| route の失敗は部品を置いた route が受け、router には既定の失敗の部品を置かない                                        | ADR-0044 |
 
 ## how-to
 
@@ -22,6 +23,24 @@
 | skeleton と本体で合わせる値 (表の列見出しと列の幅など)                                                                              | skeleton と本体の両方が参照する定数に置き、片方へ書き写さない。別々に持つと、読み込みが終わって skeleton が本体へ置き換わるときにレイアウトがずれる。表の列見出しの置き方は `docs/guides/lists-and-search.md`「一覧テーブルを組む」にある                                                                                                      |
 
 - 支援技術への見せ方は `docs/guides/accessibility.md`「読み込み中の表示を組む」にある
+
+### 読み込みの失敗を受ける部品を置く
+
+route の読み込みの失敗と描画中の例外は、`errorComponent` を置いた route が受ける。置いていない route の失敗は近い祖先の部品が受け、無ければ root が受ける (ADR-0044)。
+
+| route                                                     | 置く部品                                                                                                                              | 受けたときの画面                                                           |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| ページの route (`RoutePageHeader` で `<h1>` を描く route) | ページの位置で受けるなら、`errorComponent` に `PageRouteError` (`src/components/screens/route-error.tsx`) を自分で置く                | ページを置き換え、ページ名の `<h1>` の行の下に `<h2>` の失敗の見出しを出す |
+| 子を描くレイアウトの route                                | 子の失敗をレイアウトの位置で受けるなら、その route に `errorComponent` を置く                                                         | レイアウトの component を置き換える                                        |
+| ページの上に重ねるダイアログの route                      | ダイアログの形の `errorComponent` と `notFoundComponent` (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」) | 開く元のページの上のダイアログ                                             |
+| root                                                      | `src/routes/__root.tsx` が `errorComponent` と `notFoundComponent` を持つ。足さない                                                   | 画面全体                                                                   |
+
+- router に `defaultErrorComponent` を置かない。置くと、どの route もその部品で境界を張り、部品を置いた祖先へ失敗が上がらない (ADR-0044)
+- router に `defaultNotFoundComponent` を置かない。not found の最後の受け手は root の `notFoundComponent` が担う (ADR-0044)
+- `PageRouteError` を `pageRouteOptions` に束ねない。受ける必要の無いページまで受け、祖先へ上がる道が塞がる (ADR-0044)
+- `PageRouteError` は `pageName` を持つ route にだけ置く。名前の無い route では見出しの行が throw し、祖先 (無ければ root) のエラーの画面になる
+- SSR で描く route が server で失敗し、その route が部品を持たないと、server は祖先へ遡らずにその位置へ組み込みの英語の画面を描き、hydration で client が近い祖先の部品に描き直す。`ssr: false` の配下と、自分の部品を持つ route では起きない (ADR-0044)
+- `notFound()` は loader か beforeLoad で投げ、描画中 (component) には投げない。描画中に投げると、部品の置き方によって、どの route にも受けられずアプリ全体が組み込みの英語の画面になるか、root の not found が root の component ごと置き換える (ADR-0044)
 
 ### 読み込みに失敗した画面から再試行する
 

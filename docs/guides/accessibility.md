@@ -101,20 +101,20 @@ a11y の検査は、ブラウザテストの中に 2 種類が混ざっている
 
 | 行うこと                                      | 利用者に起きること                                                                    |
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 新しいページの `<h1>` へ focus を移す         | スクリーンリーダーは見出しを読み、キーボードの次の Tab は新しいページの先頭から始まる |
+| 新しいページの見出しへ focus を移す           | スクリーンリーダーは見出しを読み、キーボードの次の Tab は新しいページの先頭から始まる |
 | `document.title` を `announce()` で読み上げる | focus の届かない場面の補いになる                                                      |
 
 `RouteAnnouncer` は DOM を描かず購読だけを持つ部品で、`createRouter` の `InnerWrap` に渡す `RouterInnerWrap` (`src/components/router-inner-wrap.tsx`) の中に置く。root route の error boundary の外にあるので、root のエラー画面に置き換わっても購読が続く (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)。
 
 伝える遷移と伝えない遷移は次のとおり。判定は `src/lib/route-announcement.ts` の `shouldAnnounceNavigation` が持つ。
 
-| 遷移                                  | 伝えるか | 理由                                                                                                                                                        |
-| ------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| path の変化                           | 伝える   | ページが変わった                                                                                                                                            |
-| 検索条件だけの変化                    | 伝えない | focus を動かすと検索の入力欄から外れる。結果の件数は ADR-0027 の通知が伝える                                                                                |
-| 最初のページ                          | 伝えない | ブラウザとスクリーンリーダーが読む                                                                                                                          |
-| 戻る・進む                            | 伝える   | path の変化として通常の遷移と同じに扱う                                                                                                                     |
-| ルートのエラー画面、root のエラー画面 | 伝える   | エラー画面の `<h1>` へ移る。読み上げは失敗したルートの title で、route の読み込み (loader・beforeLoad・component の chunk) の失敗では前に `エラー: ` が付く |
+| 遷移                                  | 伝えるか | 理由                                                                                                                                                                                                                                                               |
+| ------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| path の変化                           | 伝える   | ページが変わった                                                                                                                                                                                                                                                   |
+| 検索条件だけの変化                    | 伝えない | focus を動かすと検索の入力欄から外れる。結果の件数は ADR-0027 の通知が伝える                                                                                                                                                                                       |
+| 最初のページ                          | 伝えない | ブラウザとスクリーンリーダーが読む                                                                                                                                                                                                                                 |
+| 戻る・進む                            | 伝える   | path の変化として通常の遷移と同じに扱う                                                                                                                                                                                                                            |
+| ルートのエラー画面、root のエラー画面 | 伝える   | ページの位置で受けたエラーの画面ではページ名の `<h1>` の下の失敗の見出し (`<h2>`) へ、root のエラーの画面では失敗の `<h1>` へ移る。読み上げは失敗したルートの title で、route の読み込み (loader・beforeLoad・component の chunk) の失敗では前に `エラー: ` が付く |
 
 focus は奪わない。`src/lib/focus-page-heading.ts` の `focusPageHeading` は、遷移の直前 (`onBeforeNavigate`) の `document.activeElement` を受け取り、描画の後 (`onRendered`) の focus で移すかを決める。
 
@@ -125,9 +125,9 @@ focus は奪わない。`src/lib/focus-page-heading.ts` の `focusPageHeading` �
 | 遷移の直前と同じ要素                      | 移す     | 押したリンクが残るレイアウトにある、戻る・進む                                                                                                                                                                                        |
 | それ以外の要素                            | 移さない | 遷移中にアプリか利用者が別の要素へ focus を動かした。メニューの項目から遷移すると、閉じたメニューが trigger へ focus を戻すので見出しへ移らず、title の読み上げだけになる (Base UI の Menu の `finalFocus` の既定、2026-09-28 に実測) |
 
-- 上の表で移す場面でも、遷移の後にモーダルのダイアログが開いていれば移さず、title の読み上げだけを行う。移し先の `<h1>` の祖先か自身が `aria-hidden="true"` か `inert` のとき (Base UI のモーダルは外側を `aria-hidden` で隠す) と、`role="dialog"` か `role="alertdialog"` を属性で持つ `aria-modal="true"` のダイアログが表示されているときに当たる。`showModal()` で開いたネイティブの `<dialog>` には当たらない。モーダルのダイアログは focus を自分の中へ移す (ADR-0035)
-- 移し先は文書順で最初の `<h1>` である。レイアウトに `<h1>` を置くと、遷移のたびにそちらへ移る
-- `<h1>` が無いと focus は `<body>` に落ち、`console.warn` が出る
+- 上の表で移す場面でも、遷移の後にモーダルのダイアログが開いていれば移さず、title の読み上げだけを行う。移し先の見出しの祖先か自身が `aria-hidden="true"` か `inert` のとき (Base UI のモーダルは外側を `aria-hidden` で隠す) と、`role="dialog"` か `role="alertdialog"` を属性で持つ `aria-modal="true"` のダイアログが表示されているときに当たる。`showModal()` で開いたネイティブの `<dialog>` には当たらない。モーダルのダイアログは focus を自分の中へ移す (ADR-0035)
+- 移し先は、失敗の見出しの印 (`data-status-heading`。`src/components/parts/status-heading.tsx` の `StatusHeading` が付ける) を持つ要素、無ければ文書順で最初の `<h1>` である。レイアウトに `<h1>` を置くと、遷移のたびにそちらへ移る (ADR-0035)
+- 印の要素も `<h1>` も無いと focus は `<body>` に落ち、`console.warn` が出る
 - 見出しに focus の枠は出さない (`focusVisible: false`)。理由は ADR-0035 にある
 
 not found の画面の title は `src/lib/page-title.ts` の `pageTitle` が決める。全 route の `head` が `pageTitle` を通していれば (ページとダイアログの route は `pageRouteOptions` か `dialogRouteOptions` の `head` で)、どの route が not found を受け持っても同じ title になる。route の読み込み (loader・beforeLoad・component の chunk) の失敗では、title の前に `エラー: ` が付く。判定の仕方と、扱わない URL は ADR-0035 にある。
@@ -257,7 +257,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### ページを足すときに title と見出しを持たせる
 
-遷移の読み上げは title を、遷移の後の focus は `<h1>` を使う (「クライアント遷移を伝える仕組み」)。ページ名は route の `staticData.pageName` に 1 回だけ書き、title と見出しの行をそこから作る。ページの route (自分の component が `RoutePageHeader` で `<h1>` を描く route) を足したら次の 2 つを持たせる。
+遷移の読み上げは title を、遷移の後の focus は `<h1>` (ページの位置で受けた失敗の画面では、その下の失敗の見出し) を使う (「クライアント遷移を伝える仕組み」)。ページ名は route の `staticData.pageName` に 1 回だけ書き、title と見出しの行をそこから作る。ページの route (自分の component が `RoutePageHeader` で `<h1>` を描く route) を足したら次の 2 つを持たせる。
 
 1. `pageRouteOptions(<ページ名>)` (`src/lib/page-title.ts`) を route の外で const に受け、route の options の先頭に spread する。`staticData.pageName` と、そこから title を組む `head` が 1 組で入る。ページ名は他のページと区別できる名前にする。ページの上に重ねるダイアログの route は、ダイアログの名前で `dialogRouteOptions` を spread する
 2. ページの component の先頭で `RoutePageHeader` (`src/components/screens/route-page-header.tsx`) を描く。名前は route の `pageName` から取るので渡さず、操作だけを `actions` に渡す。route の `pendingComponent` を書くなら、その中でも描く。読み込んだデータで名前が決まる route は、`RoutePageHeader` の代わりに `PageHeader` に名前を渡す (この節の `PageHeader` の項目)
@@ -266,6 +266,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 - `pageRouteOptions` を使わずに `staticData` を手で書かない。書いて `head` を省くと親の route の title になり、同じ親の下のページと遷移の読み上げで区別できない
 - `...pageRouteOptions(<ページ名>)` のように呼び出しを options の中で直接 spread しない。`tanstack-router/create-route-property-order` が Identifier でない spread で throw し、lint ごと止まる (TanStack/router#8673)
 - ページの route の `pageName` を省かない。省くと `RoutePageHeader` が throw し、ページはエラーの画面になる
+- ページの位置で読み込みの失敗と描画中の例外を受けるなら、route の `errorComponent` に `PageRouteError` を置く。ページ名の `<h1>` の行が残り、失敗の見出しは `<h2>` になる (`docs/guides/data-loading.md`「読み込みの失敗を受ける部品を置く」)
 - 名前の付いたページの route の子に、ダイアログでない名前の付いたページの route を置かない。親のページの `<h1>` の下の `<Outlet />` に子のページの `<h1>` が描かれ、表示中は `<h1>` が 2 つ並ぶ
 - `PageHeader` (`src/components/parts/page-header.tsx`) の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする。その route は `head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にし、同じ名前を `PageHeader` に渡す (ADR-0033)。名前が静的な route で渡すと `pageName` と二重になり、title と見出しがずれても気付けない
 - ページの見出しを含む本体は、loader が待った query で描く。本体が loader の後に suspend すると、focus は本体ではなく pending 表示かレイアウトの `<h1>` (無ければ `<body>`) へ移る (ADR-0033、ADR-0035)

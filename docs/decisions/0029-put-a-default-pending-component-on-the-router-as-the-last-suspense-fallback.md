@@ -1,8 +1,8 @@
 # ADR-0029: router に既定の pending 表示を置き、Suspense の最後の受け皿にする
 
 - Status: Accepted
-- Date: 2026-09-26
-- 関連: ADR-0026 (状態の通知。route の pending 表示の例外)
+- Date: 2026-10-28
+- 関連: ADR-0026 (状態の通知。route の pending 表示の例外)、ADR-0044 (router に既定の失敗の部品を置かない)
 
 ## Context
 
@@ -14,7 +14,7 @@ route の pending 表示 (`pendingComponent`) は、表示のためだけでな�
 | 巻き上がった先が root の `Outlet`                               | root の `Outlet` は子を `<Suspense fallback={renderPending(router)}>` で包み、既定が無いと fallback は `null` になる | 同 `Match.tsx`、TanStack/router#2026                                                    |
 | `ssr: false` / `data-only` の route                             | サーバーは pending 表示を fallback として描く。どちらも無いと何も描かない                                            | Start の Selective SSR ガイド "If neither is configured, no fallback will be rendered." |
 
-`defaultPendingComponent` には既定値が無い (`RouterOptionsType`)。`defaultErrorComponent` と違い、未設定のときに安全側へ倒れない。
+`defaultPendingComponent` には既定値が無い (`RouterOptionsType`)。失敗は root の `errorComponent` を最後の受け手にできるが (ADR-0044)、root の `Outlet` の Suspense の fallback は route の options から決められず、`defaultPendingComponent` だけが埋める (上の表の「巻き上がった先が root の `Outlet`」の行)。
 
 ページ固有の skeleton を書いていない route には `pendingComponent` が無く、境界は既定に頼るしかない。
 

@@ -78,13 +78,22 @@ lint では見ないのでレビューで見る。
 - title は `pageRouteOptions` と `dialogRouteOptions` の `head` か `pageTitle` を通し、文字列を直接書かない。直接書くと not found の画面でもそのページの名前になる (ADR-0035)
 - ページの見出しは `RoutePageHeader` で描く。`pageName` が無いと throw する。`PageHeader` の `title` に名前を渡すのは、読み込んだデータで名前が決まる route だけにする。その route は自分の `head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする (ADR-0033、`docs/guides/accessibility.md`「ページを足すときに title と見出しを持たせる」)
 
+## route の失敗の部品は受ける route に置く
+
+lint では見ないのでレビューで見る。
+
+- router に `defaultErrorComponent` を置かない。置くと、どの route もその部品で境界を張り、部品を置いた祖先へ失敗が上がらない。`defaultNotFoundComponent` も置かない。not found の最後の受け手は root の `notFoundComponent` が担う (ADR-0044)
+- ページの位置で読み込みの失敗と描画中の例外を受ける route は、`errorComponent` に `PageRouteError` (`src/components/screens/route-error.tsx`) を自分で置き、`pageRouteOptions` に束ねない。束ねると、受ける必要の無いページまで受け、祖先へ上がる道が塞がる (ADR-0044)
+- `PageRouteError` は `pageName` を持つ route にだけ置く。名前の無い route では見出しの行が throw し、祖先 (無ければ root) のエラーの画面になる (ADR-0044)
+- `notFound()` は loader か beforeLoad で投げ、描画中 (component) には投げない。描画中に投げると、部品の置き方によって、どの route にも受けられずアプリ全体が組み込みの英語の画面になるか、root の not found が root の component ごと置き換える (ADR-0044)
+
 ## フォームのダイアログは子 route にする
 
 lint では見ないのでレビューで見る。
 
 - 入力を保存するフォームのダイアログ (追加、編集) は、開く元のページの route の子 route にし、detached trigger の handle で開かない。handle のダイアログは mount したまま 1 つの mutation を持ち、再取得の完了まで続く pending が、開き直したダイアログの close まで止める (ADR-0041)
 - 保存の pending の間は利用者の close を止め、止める条件はそのダイアログ自身の mutation の pending だけにする。応答の前に閉じると route ごと unmount し、保存に失敗したときに入力が残らない (ADR-0041)
-- ダイアログの route には、ダイアログの形の `pendingComponent` と `errorComponent` を置く。loader を持たない route も component の chunk を待つ。無いと、読み込み中と失敗が router の既定の表示になり、開く元のページの `<Outlet />` の位置に出る (ADR-0041)
+- ダイアログの route には、ダイアログの形の `pendingComponent` と `errorComponent` を置く。loader を持たない route も component の chunk を待つ。無いと、読み込み中は router の既定の表示が開く元のページの `<Outlet />` の位置に出て、失敗は近い祖先の route のエラーの部品が開く元のページごと置き換える (ADR-0041)
 - Dialog の Root には `open` を固定で渡し、閉じる操作と保存の応答の時点で開く元のページへ離れる。閉じるアニメーションの後まで待たない。待つと、読み込み中のダイアログで待つ間に読み込みが終わり、閉じたはずのダイアログが開く (ADR-0041)
 - ダイアログは `useRouteDialog`、`RouteStatusDialog`、`RoutePendingDialog` で組み、どれにも戻り先 (`returnTo`) と開いた元の要素を探す関数 (`findReturnTarget`) を渡す。離れたか替わったかは `useRouteDialog` が戻り先から判定する (ADR-0041)
 - `returnTo` は `useRouteDialog` が `navigate` にそのまま渡す。開く元のページの search を保つなら `search: (prev) => prev` を書く (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)
