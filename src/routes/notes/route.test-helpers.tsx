@@ -43,7 +43,7 @@ const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()
     </>
   ),
   // 本番の root (`src/routes/__root.tsx`) と同じ失敗の部品を置く。無いと、どの route も受けない失敗が root の外まで
-  // 抜けて組み込みの ErrorComponent が描き、"wasn't caught by any route" の warn が出る (2026-09-23 に実測)
+  // 抜けて組み込みの ErrorComponent が描き、"wasn't caught by any route" の warn が出る (ADR-0044)
   errorComponent: TestRootError,
   notFoundComponent: NotFoundContent,
 });

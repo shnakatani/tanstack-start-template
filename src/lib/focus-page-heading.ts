@@ -1,17 +1,13 @@
 /** 状態の見出しの印の属性。アプリの中では `StatusHeading` (`src/components/parts/status-heading.tsx`) だけが付ける */
 const STATUS_HEADING_ATTRIBUTE = "data-status-heading";
 
-/**
- * 状態の見出し (失敗の画面の見出し) に spread する印。遷移の後の focus は、これがあれば文書順で先の h1 より
- * 先にここへ移る (ADR-0035)
- */
+/** 状態の見出し (失敗の画面の見出し) に spread する印。遷移の後の focus の移し先の選び方は `findFocusTarget` が持つ */
 export const statusHeadingProps = { [STATUS_HEADING_ATTRIBUTE]: "" } as const;
 
 /**
  * クライアント遷移の後、新しいページの見出しへ focus を移す。スクリーンリーダーは見出しを読み、
  * キーボードの次の Tab は新しいページの先頭から始まる。
- * 移し先は状態の見出しの印 (`statusHeadingProps`) の付いた要素、無ければ文書順で最初の h1。
- * レイアウトに h1 を置くと、遷移のたびにそちらへ移る。
+ * 移し先は `findFocusTarget` が選ぶ。レイアウトに h1 を置くと、遷移のたびにそちらへ移る。
  *
  * 遷移中にアプリが別の要素へ focus を移していたら奪わない (Navigation API の focusReset の既定と同じ条件)。
  * 移すのは、focus が body にある (focus していた要素が消えた) ときと、遷移前の要素に残っているときだけ。
@@ -34,8 +30,9 @@ export function focusPageHeading(focusedBeforeNavigation: Element | null): void 
 }
 
 /**
- * 遷移の後の focus の移し先。ページの位置の失敗の画面では、ページの名前の h1 の下に失敗の見出しが出る。h1 へ移すと、
- * 描画中の throw では失敗が title にも focus にも出ない (ADR-0035)
+ * 遷移の後の focus の移し先。状態の見出しの印 (`statusHeadingProps`) の付いた要素を、文書順で先の h1 より先に選び、
+ * 無ければ文書順で最初の h1 を選ぶ。ページの位置の失敗の画面では、ページの名前の h1 の下に失敗の見出しが出る。
+ * h1 へ移すと、描画中の throw では失敗が title にも focus にも出ない (ADR-0035)
  */
 function findFocusTarget(): HTMLElement | null {
   return (
@@ -65,7 +62,7 @@ function hasOpenModalDialog(): boolean {
 }
 
 /**
- * ページの見出し (`focusPageHeading` と同じ移し先) へ、枠を出さずに focus を移す。無ければ body へ。
+ * `findFocusTarget` が選ぶ見出しへ、枠を出さずに focus を移す。無ければ body へ。
  * focus を奪ってよいかの判定は呼び出し側が持つ
  */
 export function moveFocusToPageHeading(): void {
