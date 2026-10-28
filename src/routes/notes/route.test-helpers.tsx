@@ -114,7 +114,7 @@ export async function renderRoute(
     // 閉じたあとの focus と通知に加わる
     InnerWrap: RouterInnerWrap,
     // 本番 (`src/router.tsx`) と同じく、どの route にも当たらない URL を root の notFoundComponent で受ける。
-    // 無いと、一覧の下の存在しない URL が一覧の <Outlet /> の中で組み込みの not found になる
+    // 無いと、自分の notFoundComponent を持つページの下の存在しない URL を、そのページが <Outlet /> の中で受ける
     notFoundMode: "root",
     // undefined を渡すと Router の既定 (1000ms) を上書きするので、指定したときだけ渡す
     ...(pendingMs === undefined ? {} : { defaultPendingMs: pendingMs }),

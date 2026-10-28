@@ -362,8 +362,7 @@ describe("/notes route", () => {
     await expectAnnouncements([`エラー: ${NOTES_PAGE_TITLE} — ${APP_NAME}`]);
   });
 
-  // ページの下の存在しない URL も、どこにも当たらない URL と同じく root の not found で受ける。既定の fuzzy では
-  // 一覧が境界になり、一覧の <Outlet /> の中に出る (ADR-0044)
+  // ページの下の存在しない URL も、どこにも当たらない URL と同じく root の not found で受ける (ADR-0044)
   it.each(["/xyz", "/notes/xyz"])(
     "どの route にも当たらない URL (%s) は、root の not found の画面で受ける",
     async (location) => {

@@ -21,7 +21,7 @@ router に既定の部品を置くと、次のことが起きる。
 - `defaultErrorComponent` があると、どの route もその部品で境界を張るので、失敗はその route の位置で受けられる。layout や祖先の route に `errorComponent` を置いても、子の失敗はそこまで上がらない (`Match.tsx` の `MatchView`)
 - 既定のエラーの部品は、どの位置に描かれても同じ形で、自分の上にページの `<h1>` があるかを知らない。ページ自身の読み込みの失敗ではページ名の見出しの行が消え、失敗の `<h1>` だけが出る
 - `defaultNotFoundComponent` があり、`notFoundComponent` を持つ route が無いと、子の loader の `notFound()` は既定の部品がページの中に描き、ページの `<h1>` が残る (下の「調査結果」の「`notFound()` を投げる場所と部品の構成」)
-- 既定の `notFoundMode` (`fuzzy`) は、`notFoundComponent` を持つ最も深い route、無ければ子を持つ最も深い route を境界にする (router-core 1.171.34 の `router.ts` の `findGlobalNotFoundRouteId`)。ページの下の存在しない URL (`/<ページ>/<未定義>`) では、ページの `<Outlet />` の中に not found の `<h1>` が出て、`<h1>` が 2 つ並ぶ
+- 既定の `notFoundMode` (`fuzzy`) は、`notFoundComponent` を持つ最も深い route、無ければ子を持つ最も深い route を境界にする (router-core 1.171.34 の `router.ts` の `findGlobalNotFoundRouteId`)。ページの下の存在しない URL (`/<ページ>/<未定義>`) は、ページが自分の `notFoundComponent` を持つとき、またはどの route も `notFoundComponent` を持たないとき、ページの `<Outlet />` の中に not found の `<h1>` が出て、`<h1>` が 2 つ並ぶ。root だけが `notFoundComponent` を持つなら、`fuzzy` でも root が境界になる
 
 ## Decision
 
@@ -61,10 +61,10 @@ router に既定の部品を置くと、次のことが起きる。
 
 not found の分け方は、TanStack Router docs「Not Found Errors」の "There are 2 uses for not-found errors in TanStack Router" に倣う。どの route にも当たらない URL は router が投げ、`notFoundMode` が受け手を決める。リソースが無いときの `notFound()` は開発者が投げ、`notFoundMode` に関わらず近い `notFoundComponent` の route が受ける。loader の `notFound()` は、下の「調査結果」の client の表で、自分の `notFoundComponent` を持つページでは `"root"` と `fuzzy` で同じだった。beforeLoad の `notFound()` は測っていない。docs「Throwing your own notFound errors」の注記は beforeLoad の受け手を "based on the router's mode and matching rules" とするが、router-core 1.171.34 の `load-client.ts` の `getNotFoundBoundary` は `notFoundMode` を読まない (2026-10-28 のコードの読み)。
 
-| 案                     | 評価                                                                                                                                                                                                                                                           | 採否     |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `notFoundMode: "root"` | どの route にも当たらない URL を、ページの下の URL も含めて root の `notFoundComponent` で受ける ("all not-found errors will be handled by the root route's `notFoundComponent`"、docs「Not Found Errors」の「notFoundMode: 'root'」)                          | **採用** |
-| 既定の `fuzzy` のまま  | 親のレイアウトを残す側 ("The router will intelligently find the closest matching suitable route and display the `notFoundComponent`")。ページの下の存在しない URL がページの `<Outlet />` の中に出て、not found の画面が上の `<h1>` の有無を判定することになる | 却下     |
+| 案                     | 評価                                                                                                                                                                                                                                                                                                                                                                                                                       | 採否     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `notFoundMode: "root"` | どの route にも当たらない URL を、ページの下の URL も含めて、ページが自分の `notFoundComponent` を持っても root の `notFoundComponent` で受ける ("all not-found errors will be handled by the root route's `notFoundComponent`"、docs「Not Found Errors」の「notFoundMode: 'root'」)                                                                                                                                       | **採用** |
+| 既定の `fuzzy` のまま  | 親のレイアウトを残す側 ("The router will intelligently find the closest matching suitable route and display the `notFoundComponent`")。root だけが `notFoundComponent` を持つ間は root が受けるが、ページが自分の `notFoundComponent` を置くと (その部品の形は Decision が決める)、ページの下の存在しない URL はそのページの not found がページの `<Outlet />` の中に描き、上にページの `<h1>` が残って `<h1>` が 2 つ並ぶ | 却下     |
 
 ## Consequences
 

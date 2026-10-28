@@ -38,7 +38,7 @@ export function getRouter() {
     defaultViewTransition:
       typeof window === "undefined" ? true : createDefaultViewTransition(window, currentRouter),
     // どの route にも当たらない URL は、ページの下の URL も含めて root の notFoundComponent が受ける。既定の
-    // fuzzy では、子を持つページが境界になり、ページの <Outlet /> の中に出る。
+    // fuzzy では、自分の notFoundComponent を持つページが境界になり、ページの <Outlet /> の中に出る。
     // エラーの部品の既定は置かない。置くと、どの route もその部品で境界を張り、部品を置いた祖先へ失敗が上がらない。
     // not found の部品の既定も置かない。not found の最後の受け手は root の notFoundComponent が担う (ADR-0044)
     notFoundMode: "root",
