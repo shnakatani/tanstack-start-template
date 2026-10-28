@@ -191,21 +191,24 @@ describe("focusPageHeading", () => {
     focusPageHeading(null);
     expect(window.scrollY).toBe(0);
   });
-});
 
-// 失敗の画面では、ページの名前の h1 の下に失敗の見出しが出る。h1 へ移すと失敗が focus で伝わらない
-it.each([
-  ["focusPageHeading", () => focusPageHeading(null)],
-  ["moveFocusToPageHeading", moveFocusToPageHeading],
-])("%s は、状態の見出しの印があれば、文書順で先の h1 より先にそこへ移す", async (_, moveFocus) => {
-  const screen = await render(
-    <>
-      <h1>ページ</h1>
-      <h2 {...statusHeadingProps}>エラーが発生しました</h2>
-    </>,
+  // 失敗の画面では、ページの名前の h1 の下に失敗の見出しが出る。h1 へ移すと失敗が focus で伝わらない
+  it.each([
+    ["focusPageHeading", () => focusPageHeading(null)],
+    ["moveFocusToPageHeading", moveFocusToPageHeading],
+  ])(
+    "%s は、状態の見出しの印があれば、文書順で先の h1 より先にそこへ移す",
+    async (_, moveFocus) => {
+      const screen = await render(
+        <>
+          <h1>ページ</h1>
+          <h2 {...statusHeadingProps}>エラーが発生しました</h2>
+        </>,
+      );
+      moveFocus();
+      const statusHeading = screen.getByRole("heading", { name: "エラーが発生しました" });
+      await expect.element(statusHeading).toHaveFocus();
+      await expect.element(statusHeading).toHaveAttribute("tabindex", "-1");
+    },
   );
-  moveFocus();
-  const statusHeading = screen.getByRole("heading", { name: "エラーが発生しました" });
-  await expect.element(statusHeading).toHaveFocus();
-  await expect.element(statusHeading).toHaveAttribute("tabindex", "-1");
 });

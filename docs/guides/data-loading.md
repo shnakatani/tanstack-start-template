@@ -28,12 +28,12 @@
 
 route の読み込みの失敗と描画中の例外は、`errorComponent` を置いた route が受ける。置いていない route の失敗は近い祖先の部品が受け、無ければ root が受ける (ADR-0044)。
 
-| route                                                     | 置く部品                                                                                                                              | 受けたときの画面                                                           |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| ページの route (`RoutePageHeader` で `<h1>` を描く route) | ページの位置で受けるなら、`errorComponent` に `PageRouteError` (`src/components/screens/route-error.tsx`) を自分で置く                | ページを置き換え、ページ名の `<h1>` の行の下に `<h2>` の失敗の見出しを出す |
-| 子を描くレイアウトの route                                | 子の失敗をレイアウトの位置で受けるなら、その route に `errorComponent` を置く                                                         | レイアウトの component を置き換える                                        |
-| ページの上に重ねるダイアログの route                      | ダイアログの形の `errorComponent` と `notFoundComponent` (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」) | 開く元のページの上のダイアログ                                             |
-| root                                                      | `src/routes/__root.tsx` が `errorComponent` と `notFoundComponent` を持つ。足さない                                                   | 画面全体                                                                   |
+| route                                                     | 置く部品                                                                                                                                                                                                                   | 受けたときの画面                                                           |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| ページの route (`RoutePageHeader` で `<h1>` を描く route) | ページの位置で受けるなら、`errorComponent` に `PageRouteError` (`src/components/screens/route-error.tsx`) を自分で置く                                                                                                     | ページを置き換え、ページ名の `<h1>` の行の下に `<h2>` の失敗の見出しを出す |
+| 子を描くレイアウトの route                                | 子の失敗をレイアウトの位置で受けるなら、その route に `errorComponent` を置く。`RouteErrorContent` を描く関数にし、レイアウト自身が失敗の上に `<h1>` を描くなら `headingLevel={2}`、描かないなら `headingLevel={1}` にする | レイアウトの component を置き換える                                        |
+| ページの上に重ねるダイアログの route                      | ダイアログの形の `errorComponent` と `notFoundComponent` (`docs/guides/forms-and-inputs.md`「フォームのダイアログを子 route で組む」)                                                                                      | 開く元のページの上のダイアログ                                             |
+| root                                                      | `src/routes/__root.tsx` が `errorComponent` と `notFoundComponent` を持つ。足さない                                                                                                                                        | 画面全体                                                                   |
 
 - router に `defaultErrorComponent` を置かない。置くと、どの route もその部品で境界を張り、部品を置いた祖先へ失敗が上がらない (ADR-0044)
 - router に `defaultNotFoundComponent` を置かない。not found の最後の受け手は root の `notFoundComponent` が担う (ADR-0044)
