@@ -2,30 +2,39 @@ import {
   createMemoryHistory,
   createRootRoute,
   HeadContent,
-  Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { describe, expect, it } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
+import { NotFoundContent } from "@/components/screens/not-found";
+import { FullScreenRouteError } from "@/components/screens/route-error";
 import { APP_NAME } from "@/lib/app-name";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
 
 import { Route } from "./index";
 
 /**
- * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と `<html>` を描くので
+ * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` の shell が devtools と `<html>` を描くので
  * browser test では使えない (docs/guides/testing/real-router.md「route の wrapper をテストする」)。
+ * shell と失敗の部品は本番の root (`src/routes/__root.tsx`) と同じ置き方にする。
  * root に `head()` を持たせないので、`document.title` に出るのはホームの route の `head()` の値だけになる。
  */
 const testRootRoute = createRootRoute({
-  component: () => (
+  shellComponent: TestRootShell,
+  errorComponent: FullScreenRouteError,
+  notFoundComponent: NotFoundContent,
+});
+
+function TestRootShell({ children }: { children: ReactNode }) {
+  return (
     <>
       <HeadContent />
-      <Outlet />
+      {children}
     </>
-  ),
-});
+  );
+}
 
 // `update` の公開型は id / path / getParentRoute を持たない (生成コードは `as any` で渡す)。
 // 型アサーションを書かずに済むよう、交差型で注釈した変数を渡す
@@ -44,6 +53,8 @@ describe("/ route", () => {
     const router = createRouterWithTestDefaults({
       routeTree,
       history: createMemoryHistory({ initialEntries: ["/"] }),
+      // 本番 (`src/router.tsx`) と同じく、どの route にも当たらない URL を root の notFoundComponent で受ける
+      notFoundMode: "root",
     });
     const screen = await render(<RouterProvider router={router} />);
 

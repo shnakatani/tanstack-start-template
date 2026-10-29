@@ -86,7 +86,7 @@ lint では見ないのでレビューで見る。
 - router に `defaultNotFoundComponent` を置かない。not found の最後の受け手は root の `notFoundComponent` が担う (ADR-0044)
 - ページの位置で読み込みの失敗と描画中の例外を受ける route は、`errorComponent` に `PageRouteError` (`src/components/screens/route-error.tsx`) を自分で置き、`pageRouteOptions` に束ねない。束ねると、受ける必要の無いページまで受け、祖先へ上がる道が塞がる (ADR-0044)
 - `PageRouteError` は `pageName` を持つ route にだけ置く。名前の無い route では見出しの行が throw し、祖先 (無ければ root) のエラーの画面になる (ADR-0044)
-- `notFound()` は loader か beforeLoad で投げ、描画中 (component) には投げない。描画中に投げると、部品の置き方によって、どの route にも受けられずアプリ全体が組み込みの英語の画面になるか、root の not found が root の component ごと置き換える (ADR-0044)
+- `notFound()` は loader か beforeLoad で投げ、描画中 (component) には投げない。描画中に投げると、部品の置き方によって、どの route にも受けられずアプリ全体が組み込みの英語の画面になるか、title がページの名前のまま root の not found が出る (ADR-0044)
 
 ## フォームのダイアログは子 route にする
 

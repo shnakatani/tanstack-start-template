@@ -58,7 +58,7 @@ paths:
 
 - テストで既定にしたい router の options は、各テストに書かずに `createRouterWithTestDefaults` (`src/test/app/create-router-with-test-defaults.ts`) の既定に足す (`docs/guides/testing/real-router.md`「テスト用の router の既定をそろえる」)
 - `createRouterWithTestDefaults` の既定に本番の設定 (`src/router.tsx`) の値を写さない。本番と同じ設定を通したいテストは、その option (`notFoundMode` など) を自分で渡す (`docs/guides/testing/real-router.md`「テスト用の router の既定をそろえる」)
-- route の wrapper のテストで route tree の root を差し替えるなら、root に本番の root と同じ失敗の部品を持たせ (`errorComponent` は `<HeadContent />` と `FullScreenRouteError` を描く関数、`notFoundComponent` は `NotFoundContent`)、router に `notFoundMode: "root"` を渡す。部品が無いと、どの route も受けない失敗で組み込みの部品と warn が出る。`HeadContent` が無いと、root が受けた失敗で title が変わらない (`docs/guides/testing/real-router.md`「route の wrapper をテストする」)
+- route の wrapper のテストで route tree の root を差し替えるなら、root に本番の root と同じ shell と失敗の部品を持たせ (`shellComponent` は `<HeadContent />` と children を描く関数、`errorComponent` は `FullScreenRouteError`、`notFoundComponent` は `NotFoundContent`)、router に `notFoundMode: "root"` を渡す。部品が無いと、どの route も受けない失敗で組み込みの部品と warn が出る。`HeadContent` が無いと、root が受けた失敗で title が変わらない (`docs/guides/testing/real-router.md`「route の wrapper をテストする」)
 
 ## a11y の検査は tag で分ける
 
