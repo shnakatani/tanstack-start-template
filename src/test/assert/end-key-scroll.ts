@@ -8,8 +8,10 @@ import type { TestContext } from "vite-plus/test";
  *
  * テストファイルの中に書かないのは、ファイルの大きさが変わると、結果のキャッシュの無い CI での実行順が変わり、
  * 失敗が起きた順番 (同じページで、似た End のテストの直後) が崩れるからである (Vitest の `BaseSequencer` は、
- * キャッシュが無いと大きいファイルから走らせる)。End の前には同期のレイアウトを強いる読み出しを減らし、
- * scroll できる状態は End の既定の動作の後に、位置は失敗の時点に読む
+ * キャッシュが無いと大きいファイルから走らせる)。
+ *
+ * End の前には同期のレイアウトを強いる読み出しを減らし、scroll できる状態は End の既定の動作の後に、位置は
+ * 失敗の時点に読む
  */
 export async function recordEndKeyScroll(
   { annotate }: Pick<TestContext, "annotate">,
