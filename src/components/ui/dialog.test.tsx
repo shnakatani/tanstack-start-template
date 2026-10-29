@@ -63,10 +63,7 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     await expectWithinViewport(screen.getByRole("dialog"));
   });
 
-  it("キーボードで最下部コンテンツまで到達できる（backstop 挙動）", async ({
-    annotate,
-    onTestFinished,
-  }) => {
+  it("キーボードで最下部コンテンツまで到達できる（backstop 挙動）", async (context) => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
@@ -76,21 +73,17 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
     await expect.element(marker).not.toBeInViewport();
 
     await expect.element(screen.getByRole("button", { name: "Close" })).toHaveFocus();
-    const popup = screen.getByRole("dialog").element();
-    const record = recordEndKeyScroll(popup, marker.element(), onTestFinished);
-    try {
-      await userEvent.keyboard("{End}");
-      await expect.element(marker).toBeInViewport();
-    } catch (error) {
-      await annotate(record.report(), "error");
-      throw error;
-    }
+    await recordEndKeyScroll(
+      context,
+      { scroller: screen.getByRole("dialog").element(), marker: marker.element() },
+      async () => {
+        await userEvent.keyboard("{End}");
+        await expect.element(marker).toBeInViewport();
+      },
+    );
   });
 
-  it("極端に低い viewport でも popup 全体が viewport 内に収まり、最下部へ到達できる", async ({
-    annotate,
-    onTestFinished,
-  }) => {
+  it("極端に低い viewport でも popup 全体が viewport 内に収まり、最下部へ到達できる", async (context) => {
     await setViewport(SHORT_VIEWPORT);
     const screen = await renderTallDialog();
     await screen.getByText("開く").first().click();
@@ -100,14 +93,13 @@ describe("DialogContent（viewport 溢れ backstop）", () => {
 
     await expect.element(screen.getByRole("button", { name: "Close" })).toHaveFocus();
     const marker = screen.getByText(BOTTOM_MARKER);
-    const popup = screen.getByRole("dialog").element();
-    const record = recordEndKeyScroll(popup, marker.element(), onTestFinished);
-    try {
-      await userEvent.keyboard("{End}");
-      await expect.element(marker).toBeInViewport();
-    } catch (error) {
-      await annotate(record.report(), "error");
-      throw error;
-    }
+    await recordEndKeyScroll(
+      context,
+      { scroller: screen.getByRole("dialog").element(), marker: marker.element() },
+      async () => {
+        await userEvent.keyboard("{End}");
+        await expect.element(marker).toBeInViewport();
+      },
+    );
   });
 });
