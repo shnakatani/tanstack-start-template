@@ -3,7 +3,7 @@ import { FullScreenNotice } from "@/components/parts/centered-card";
 
 /**
  * root の `notFoundComponent` に置く not found の表示。どの route にも当たらない URL と、`notFoundComponent` を
- * 持つ祖先が無い loader・beforeLoad の `notFound()` では、root の component の `<Outlet />` の位置に描かれる
+ * 持つ祖先が無い loader・beforeLoad の `notFound()` では、root の `<Outlet />` の位置 (shell の `<main>` の中) に描かれる
  * (`routes/__root.tsx`、ADR-0044)
  */
 export function NotFoundContent() {

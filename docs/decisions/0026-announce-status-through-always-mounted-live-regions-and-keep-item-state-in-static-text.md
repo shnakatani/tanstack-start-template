@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-08
-- 関連: ADR-0016 (Action 層の pending 行は本 ADR に従う)、ADR-0017 (行の busy 表現の読み上げを本 ADR が引き取る)、ADR-0027 (取得結果の通知はページの effect が決着で出す)
+- 関連: ADR-0016 (Action 層の pending 行は本 ADR に従う)、ADR-0017 (行の busy 表現の読み上げを本 ADR が引き取る)、ADR-0027 (取得結果の通知はページの effect が決着で出す)、ADR-0045 (live region を置く root の骨格は shell が描く)
 
 ## Context
 

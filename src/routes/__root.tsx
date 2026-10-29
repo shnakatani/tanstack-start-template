@@ -35,7 +35,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 /**
- * 文書の骨格。root の shell に置く (ADR-0045)。children には root の component か、root の失敗と not found の部品が来る。
+ * 文書の骨格。root の shell に置く (ADR-0045)。children には root の `<Outlet />` か、root の失敗と not found の部品が来る。
  * landmark を押さえるテストから直接呼べるよう named export にする
  */
 export function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
