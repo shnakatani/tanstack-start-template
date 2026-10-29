@@ -72,7 +72,7 @@ export default defineConfig({
   // config をメタデータとしてだけ読む経路で plugin の factory を呼ばない (先頭の import は遅れない)。
   // 関数は同期のままにする (docs/guides/vite-configuration.md「plugin を先頭で import する理由」)
   plugins: lazyPlugins(() => {
-    // Vitest の中では root の plugin を全部外す (tanstackStart() は TanStack/router#6246 の回避で外す)。
+    // Vitest の中では root の plugin を全部外す (tanstackStart() は、Start の code splitting がテストを壊すので外す)。
     // React の変換はブラウザで走る project が Compiler の有無ごとに足す。外す plugin ごとの理由と、
     // 判定を process.env.VITEST で書く理由は
     // docs/guides/testing/configuration.md「テストの分岐で plugin を外す理由」「判定を `process.env.VITEST` で書く理由」
