@@ -30,7 +30,7 @@
 | query の失敗は `useQueryErrorResetBoundary` で戻す。例は `react-error-boundary` を使うが、それが必須とは書かない                                                                                                   | Query「Suspense」の Resetting Error Boundaries                                                       |
 | 失敗は起きた場所の近くに出し、利用者の入力を残し、深刻さに合わせて伝える                                                                                                                                           | NN/g「Error-Message Guidelines」                                                                     |
 
-Router「Deferred Data Loading」の例は、待たない取得をまだ `prefetchQuery` で書いている (2026-09-28 に確認)。
+Router「Deferred Data Loading」の例も、待たない取得を `void queryClient.query(...).catch(noop)`、待つ取得を `await queryClient.query({ ...options, staleTime: 'static' })` で書く (2026-10-30 に確認)。
 
 ## Decision
 

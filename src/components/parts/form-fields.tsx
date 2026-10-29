@@ -220,7 +220,8 @@ interface FormSelectFieldProps<T extends string>
  *
  * Base UI の自己リセットは公式 docs の Select に書かれていない (同梱の docs を `reset` /
  * `onValueChange` で検索、2026-09-23、1.8.0)。実装は `select/positioner/SelectPositioner.mjs`
- * の `onMapChange` にあり、1.8.0 のソース上の扱いは次のとおり (読み取りで、挙動は未実測)。
+ * の `onMapChange` にあり、1.9.0 のソース上の扱いは次のとおり (1.8.0 と同じ。読み取りで、挙動は
+ * 未実測。2026-10-30)。
  *
  * | 条件                                                             | ソース上の扱い                        |
  * | ---------------------------------------------------------------- | ------------------------------------- |
