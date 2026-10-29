@@ -185,16 +185,16 @@ Vitest は、`vite.config.ts` の中でテストだけ設定を変える形と�
 
 ### テストの分岐で plugin を外す理由
 
-| plugin                  | テストの分岐での扱い | 理由                                                                                                                                                                                                                                  |
-| ----------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tanstackStart()`       | 外す                 | Start の route の code splitting がテストに入り、React の use() の警告と、chunk を待つダイアログの route のテストの click の timeout が起きる。試行の結果と、[TanStack/router#6246][] を理由にしない根拠は ADR-0037 の Context にある |
-| `devtools()`、`nitro()` | 外す                 | テストの経路で使わない                                                                                                                                                                                                                |
-| `tailwindcss()`         | 外す                 | Node の project には要らない。ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す                                                                                                                                        |
-| `viteReact()`           | 外す                 | ブラウザで走る project が、アプリと同じ `reactPlugin` から Compiler の有無ごとに足す。Node の project には要らない (「テストでも React Compiler を通す理由」)                                                                         |
+| plugin                  | テストの分岐での扱い | 理由                                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tanstackStart()`       | 外す                 | テストに戻すと、React の use() の警告と、ダイアログの route を開くテストの click の timeout が起きた (2026-10-14、`@tanstack/react-start` 1.168.60 と 1.169.1。1.169.4 では測っていない)。どちらも route の code splitting を止めると消えた。試行の結果と、[TanStack/router#6246][] を理由にしない根拠は ADR-0037 の Context にある |
+| `devtools()`、`nitro()` | 外す                 | テストの経路で使わない                                                                                                                                                                                                                                                                                                              |
+| `tailwindcss()`         | 外す                 | Node の project には要らない。ブラウザで走る project の共通部分 (`chromiumProjectBase`) が足す                                                                                                                                                                                                                                      |
+| `viteReact()`           | 外す                 | ブラウザで走る project が、アプリと同じ `reactPlugin` から Compiler の有無ごとに足す。Node の project には要らない (「テストでも React Compiler を通す理由」)                                                                                                                                                                       |
 
 `tanstackStart()` を外している間は、`createIsomorphicFn` などの Start の変換がテストで効かない ([TanStack/router#6246][] のコメント)。
 
-use() の警告を直す [TanStack/router#8549][] (2026-10-30 時点で open) が入った版で警告が消え、click の timeout の原因が分かったら、`tanstackStart()` をテストに戻すかを決め直す。戻すなら root のテストの分岐は空のままにし、`browserProject()` にだけ `tanstackStart()` を足す。root から継承させると story の project にも Start の plugin が入る。`@storybook/tanstack-react` の `viteFinal` が Start の plugin を外す処理は、addon-vitest の経路では効かなかった (2026-10-14)。
+use() の警告を直す [TanStack/router#8549][] (2026-10-30 時点で open) が入った版で警告が消え、click の timeout の原因が分かったら、`tanstackStart()` をテストに戻すかを決め直す。戻すときの形の比較は ADR-0037 の Decision にある。`tanstackStart()` を project に足すときは、`chromiumProjectBase` の設定より前に merge する。後ろに置くと、router-plugin の code splitting の plugin が `'@vitejs/plugin-react' is placed before '@tanstack/router-plugin'` の設定エラーで止める (2026-10-14 の試行。文言は `@tanstack/router-plugin` 1.168.48 の `router-code-splitter-plugin` にある)。
 
 ### テストでも React Compiler を通す理由
 
@@ -246,7 +246,7 @@ Compiler がかかる範囲と、診断の扱いは次のとおり。
 
 `include` に `@base-ui/react/popover` と `react-day-picker` があるのは、2026-09-27 の観測のとおり、`FormDateField` のテストが実行中に初めて到達する依存だからである。
 
-`browser` の `include` は対症療法である。アプリの分岐では `tanstackStart()` が client の environment に事前バンドルの設定を渡すが (`@tanstack/react-start` 1.169.4 の `tanstack-react-start:config` plugin の `configEnvironment` の `needsOptimizeDeps`)、テストの分岐では外している (「テストの分岐で plugin を外す理由」)。テストに `tanstackStart()` を戻すかを決め直すときに、合わせて `include` を外せるかを見る。次の 2 つの issue は、close を出口にしない。状態は 2026-10-30 に確かめた。
+`browser` の `include` は対症療法である。アプリの分岐では `tanstackStart()` が client の environment に事前バンドルの設定を渡すが ([@tanstack/react-start 1.169.4 の plugin][] の `tanstack-react-start:config` plugin の `configEnvironment` の `needsOptimizeDeps`)、テストの分岐では外している (「テストの分岐で plugin を外す理由」)。テストに `tanstackStart()` を戻すかを決め直すときに、合わせて `include` を外せるかを見る。次の 2 つの issue は、close を出口にしない。状態は 2026-10-30 に確かめた。
 
 | issue                       | 中身                                                                                         | 状態                | 出口にするか                                                                                                                                                                                              |
 | --------------------------- | -------------------------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -307,6 +307,7 @@ Vitest は [vitest-dev/vitest#11525][] (2026-10-09 に merge) で、ブラウザ
 [Vitest docs「sharedViteServer」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/sharedviteserver.md
 [TanStack/router#6246]: https://github.com/TanStack/router/issues/6246
 [TanStack/router#8549]: https://github.com/TanStack/router/pull/8549
+[@tanstack/react-start 1.169.4 の plugin]: https://github.com/TanStack/router/blob/%40tanstack/react-start%401.169.4/packages/react-start/src/plugin/vite.ts
 [vitest-dev/vitest#10775]: https://github.com/vitest-dev/vitest/issues/10775
 [vitest-dev/vitest#7871]: https://github.com/vitest-dev/vitest/issues/7871
 [vitest-dev/vitest#11525]: https://github.com/vitest-dev/vitest/pull/11525
