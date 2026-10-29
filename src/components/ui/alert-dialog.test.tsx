@@ -8,6 +8,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { recordEndKeyScroll } from "@/test/assert/end-key-scroll";
 import {
   expectWithinViewport,
   restoreDefaultViewport,
@@ -55,7 +56,7 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     await expectWithinViewport(popup);
   });
 
-  it("キーボードで最下部コンテンツまで到達できる", async ({ annotate }) => {
+  it("キーボードで最下部コンテンツまで到達できる", async ({ annotate, onTestFinished }) => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallAlertDialog();
     const marker = screen.getByText(BOTTOM_MARKER);
@@ -65,91 +66,13 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
 
     const popup = screen.getByRole("alertdialog");
     await expect.element(popup).toHaveFocus();
-    const record = recordEndKeyScroll(popup.element());
-    record.snapshot("End の前");
-    await userEvent.keyboard("{End}");
-    record.snapshot("End の後");
-
+    const record = recordEndKeyScroll(popup.element(), marker.element(), onTestFinished);
     try {
+      await userEvent.keyboard("{End}");
       await expect.element(marker).toBeInViewport();
     } catch (error) {
-      record.snapshot("待ち切った後");
       await annotate(record.report(), "error");
       throw error;
-    } finally {
-      record.stop();
     }
   });
 });
-
-/**
- * End で Popup が scroll しない失敗の原因を調べるための記録。この失敗は CI でだけ起き、手元では macOS でも
- * Linux のコンテナでも再現しなかった (2026-10-29、計 144 回)。End の前後の focus、Popup の scroll の状態、
- * キーと focus の event、描画の回数を時刻つきで集め、到達の assert が落ちたときだけ注釈に残す
- */
-function recordEndKeyScroll(popup: Element) {
-  const startedAt = performance.now();
-  const lines: string[] = [];
-  let scrollEvents = 0;
-  let frames = 0;
-  let frameRequest = requestAnimationFrame(countFrame);
-
-  function countFrame() {
-    frames += 1;
-    frameRequest = requestAnimationFrame(countFrame);
-  }
-  function log(line: string) {
-    lines.push(`${Math.round(performance.now() - startedAt)}ms ${line}`);
-  }
-  // Base UI の Popup は End の keydown の伝播を止めるので、bubble では受けられない。capture で受け、dispatch が
-  // 終わってから既定の動作を止められたかを読む
-  function onKey(event: KeyboardEvent) {
-    log(`${event.type} ${event.key} target=${describeNode(event.target)}`);
-    setTimeout(() => {
-      log(
-        `${event.type} ${event.key} の dispatch 後 defaultPrevented=${String(event.defaultPrevented)}`,
-      );
-    });
-  }
-  function onFocus(event: FocusEvent) {
-    log(`${event.type} target=${describeNode(event.target)}`);
-  }
-  function onScroll() {
-    scrollEvents += 1;
-  }
-  function onScrollEnd() {
-    log(`scrollend scrollTop=${popup.scrollTop}`);
-  }
-
-  window.addEventListener("keydown", onKey, true);
-  document.addEventListener("focusin", onFocus, true);
-  document.addEventListener("focusout", onFocus, true);
-  popup.addEventListener("scroll", onScroll);
-  popup.addEventListener("scrollend", onScrollEnd);
-
-  return {
-    snapshot(label: string) {
-      log(
-        `${label} active=${describeNode(document.activeElement)} hasFocus=${String(document.hasFocus())} visibility=${document.visibilityState} scrollTop=${popup.scrollTop} scrollHeight=${popup.scrollHeight} clientHeight=${popup.clientHeight} overflowY=${getComputedStyle(popup).overflowY} scrollEvents=${scrollEvents} frames=${frames}`,
-      );
-    },
-    report() {
-      return lines.join("\n");
-    },
-    stop() {
-      cancelAnimationFrame(frameRequest);
-      window.removeEventListener("keydown", onKey, true);
-      document.removeEventListener("focusin", onFocus, true);
-      document.removeEventListener("focusout", onFocus, true);
-      popup.removeEventListener("scroll", onScroll);
-      popup.removeEventListener("scrollend", onScrollEnd);
-    },
-  };
-}
-
-function describeNode(node: EventTarget | null) {
-  if (node === null) return "null";
-  if (!(node instanceof Element)) return node.constructor.name;
-  const role = node.getAttribute("role");
-  return role === null ? node.tagName : `${node.tagName}[role=${role}]`;
-}
