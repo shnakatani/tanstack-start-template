@@ -1,7 +1,7 @@
 # ADR-0037: Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる
 
 - Status: Accepted
-- Date: 2026-09-30
+- Date: 2026-10-30
 - 関連: ADR-0004 (ツールチェーンを Vite+ に寄せる)
 
 ## Context
@@ -39,7 +39,7 @@ Vitest の設定は、`vitest.config.ts` に分けても `vite.config.ts` の `t
 | `test` の中身を `vite.config.ts` に直接書く                                                                 | `vite.config.ts` が長くなる。import で組み立てても Vite+ の推奨からは外れない                                                                                                                                                                                                                                                                                                                                                                          | 却下     |
 | `tanstackStart()` をテストでも残し、root から全 project に継承させる                                        | テストでも `createIsomorphicFn` などの Start の変換が効く。2026-10-14 の試行で、Context の 2 つが起きた。story の project にも Start の plugin が入る。Storybook の TanStack 専用の framework が Start の plugin を外す処理 (`viteFinal`) は addon-vitest の経路で効かず、story は Start の plugin を載せたまま走った (Storybook 10.6.1)。story の project は Start を Storybook の TanStack 専用の framework で扱う前提 (storybookjs/storybook#33747) | 却下     |
 | `tanstackStart()` を `browserProject()` にだけ足す                                                          | story と Node の project に Start の plugin が入らない。Context の 2 つはブラウザテストで起きるので残る                                                                                                                                                                                                                                                                                                                                                | 却下     |
-| `tanstackStart()` を戻し、route の code splitting だけを止める (`codeSplittingOptions.defaultBehavior: []`) | 試行では 2 つとも消えた (timeout は 3 回だけの観測)。Router docs「How to Test File-Based Routing」の Vitest の設定例も `tanstackRouter()` を `autoCodeSplitting` なしで使う。テストの route の読み込みが、split する本番と変わる。それを受け入れるかを決める材料 (timeout の原因) がまだ無い                                                                                                                                                           | 見送り   |
+| `tanstackStart()` を戻し、route の code splitting だけを止める (`codeSplittingOptions.defaultBehavior: []`) | 試行では 2 つとも消えた (timeout は 3 回だけの観測)。Router docs「How to Test File-Based Routing」の Vitest の設定例も `tanstackRouter()` を `autoCodeSplitting` なしで使う。テストの route の読み込みが、split する本番と変わる。それを受け入れるかを決める材料 (timeout の原因) がまだ無く、今は採らない                                                                                                                                             | 却下     |
 | plugin の中で `optimizeDeps` の注入だけを止める                                                             | 注入を止める上流の修正は無く (TanStack/router#6074 は plugin を変えない)、採るには `@tanstack/react-start` に patch を当てることになる。試行の 2 つは split を止めると消えたもので、注入を止めても残る見込みである。事前バンドルする依存を手で足す手当ても残る (2026-09-30、`@tanstack/react-start` 1.168.58)                                                                                                                                          | 却下     |
 
 ## Consequences
