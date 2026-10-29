@@ -6,7 +6,7 @@
 
 ## Context
 
-TanStack Start では、文書の骨格 (`<html>`、`<head>` の `HeadContent`、`<body>`、`Scripts`) を root の route の `component` でも `shellComponent` でも描ける。公式の案内は 2 つの形に分かれる (2026-10-30 に確認。同梱の intent skill は `@tanstack/react-start` 1.168.60 と `@tanstack/start-client-core` 1.170.34 のもの)。
+TanStack Start では、文書の骨格 (`<html>`、`<head>` の `HeadContent`、`<body>`、`Scripts`) を root の route の `component` でも `shellComponent` でも描ける。公式の案内は 2 つの形に分かれる (2026-10-29 に確認。同梱の intent skill は `@tanstack/react-start` 1.168.60 と `@tanstack/start-client-core` 1.170.34 のもの)。
 
 | 置き場所                 | 公式の案内                                                                                                                                                                                                                                                                                        | root の失敗と not found の部品との関係 (`@tanstack/react-router` 1.170.41 の `Match.tsx` の `MatchView` の読み)                                                       |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,8 +41,8 @@ TanStack Start では、文書の骨格 (`<html>`、`<head>` の `HeadContent`�
 
 ## Consequences
 
-- root の失敗と描画中の `notFound()` で、`<main>`・live region・`Toaster` が残る。root の失敗で live region が作り直されないので、`announce()` が足したノードも消えない
-- shell の中で throw すると、root の `errorComponent` では受けられない。shell は root の境界の外にあるので、client では router 全体の外側の境界 (`Matches.tsx` の `MatchesInner`) が受ける (コードの読み。測っていない)。shell には描画で throw しない部品だけを置く
+- root の失敗と描画中の `notFound()` で、`<main>`・live region・`Toaster` が残る
+- shell の中か、root の `errorComponent` と `notFoundComponent` 自身で throw すると、root の `errorComponent` では受けられない。shell は root の境界の外にあり、境界の部品自身の throw はその境界では受けられないので、client では router 全体の外側の境界 (`Matches.tsx` の `MatchesInner`) が受ける (コードの読み。測っていない)。shell には描画で throw しない部品だけを置く
 - shell を持つ root は、route の `pendingComponent` か router の `defaultPendingComponent` を fallback にした Suspense で包まれる (`Match.tsx` の `canWrapInSuspense`)。コードを読む限り、root の match が pending になると、前の描画を描き続けずに `PendingContent` (ADR-0029) を shell の中に描く。shell の無い root は Suspense で包まれず、pending の間も前の描画を描き続ける (`MatchInner` のコメント "Replacing an SSR document root with pending UI would remove `<html>`.")
 - root の beforeLoad を遅らせたクライアント遷移では、どちらの形でも pending の表示は出なかった。読み込み直しは shell の形で測り、client は root の beforeLoad を走らせなかった。root が pending になる場面は、ほかに測っていない (下の「調査結果」)
 - ADR-0029 の前提 (root の `<Outlet />` の Suspense の fallback は router の `defaultPendingComponent` が埋める) は変わらない。`Outlet` の root の分岐は shell の有無を見ない
