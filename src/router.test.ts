@@ -19,6 +19,15 @@ it("InnerWrap に RouterInnerWrap を渡す", () => {
   expect(getRouter().options.InnerWrap).toBe(RouterInnerWrap);
 });
 
+// 理由は src/router.tsx のコメントが持つ (ADR-0044)
+it("失敗の既定の部品を置かず、どの route にも当たらない URL を root で受ける", () => {
+  const { options } = getRouter();
+
+  expect(options.notFoundMode).toBe("root");
+  expect(options.defaultErrorComponent).toBeUndefined();
+  expect(options.defaultNotFoundComponent).toBeUndefined();
+});
+
 describe("defaultViewTransition", () => {
   // Node には window が無いので、types の関数を組む側へ通すために popstate を出す相手を置く。
   // document は無いままなので router はサーバーとして動き、history を持たない。TanStack Start の

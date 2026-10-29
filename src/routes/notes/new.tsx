@@ -14,8 +14,8 @@ const pageOptions = dialogRouteOptions(NOTE_CREATE_DIALOG_TITLE);
 
 export const Route = createFileRoute("/notes/new")({
   ...pageOptions,
-  // loader は無く、待つのは component の chunk だけ。無いと、chunk の読み込み中と失敗が router の既定の
-  // 表示になり、一覧の下 (`<Outlet />` の位置) に出る
+  // loader は無く、待つのは component の chunk だけ。無いと、chunk の読み込み中は router の既定の表示が一覧の下
+  // (`<Outlet />` の位置) に出て、失敗は一覧の route のエラーの部品が一覧ごと置き換える
   pendingComponent: CreatePending,
   errorComponent: CreateError,
   component: CreateRoute,

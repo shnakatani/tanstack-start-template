@@ -1,5 +1,6 @@
 import { QueryCache, QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import {
   createMemoryHistory,
   createRootRouteWithContext,
@@ -11,7 +12,8 @@ import { expect, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
 import { RouterInnerWrap } from "@/components/router-inner-wrap";
-import { RouteErrorContent } from "@/components/screens/route-error";
+import { NotFoundContent } from "@/components/screens/not-found";
+import { FullScreenRouteError } from "@/components/screens/route-error";
 import { toast, Toaster } from "@/components/ui/toast";
 import { getNote, listNotes } from "@/features/notes/functions";
 import type { Note } from "@/features/notes/schema";
@@ -40,7 +42,24 @@ const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()
       <Toaster />
     </>
   ),
+  // 本番の root (`src/routes/__root.tsx`) と同じ失敗の部品を置く。無いと、どの route も受けない失敗が root の外まで
+  // 抜けて組み込みの ErrorComponent が描き、"wasn't caught by any route" の warn が出る (ADR-0044)
+  errorComponent: TestRootError,
+  notFoundComponent: NotFoundContent,
 });
+
+/**
+ * テストの root の errorComponent。本番の root の errorComponent は文書の骨格 (`<html>`) で包んで描き、骨格の
+ * `HeadContent` が title を反映する。テストでは骨格を描けないので、`HeadContent` だけを添える
+ */
+function TestRootError(props: ErrorComponentProps) {
+  return (
+    <>
+      <HeadContent />
+      <FullScreenRouteError {...props} />
+    </>
+  );
+}
 
 // `update` の公開型は id / path / getParentRoute を持たない (生成コードは `as any` で渡す)。
 // 型アサーションを書かずに済むよう、交差型で注釈した変数を渡す
@@ -94,10 +113,9 @@ export async function renderRoute(
     // 本番 (`src/router.tsx`) と同じ配線を通す。遷移の読み上げと focus の移動 (ADR-0035) が、ダイアログを
     // 閉じたあとの focus と通知に加わる
     InnerWrap: RouterInnerWrap,
-    // search の検証失敗を route の境界で受けることを、本番 (`src/router.tsx`) と同じ部品を渡して見る
-    // (既定値の同一性は測らない)。無いと root の外まで抜けて組み込みの ErrorComponent が描き、
-    // "wasn't caught by any route" の warn が出る (2026-09-23 に実測)
-    defaultErrorComponent: RouteErrorContent,
+    // 本番 (`src/router.tsx`) と同じく、どの route にも当たらない URL を root の notFoundComponent で受ける。
+    // 無いと、自分の notFoundComponent を持つページの下の存在しない URL を、そのページが <Outlet /> の中で受ける
+    notFoundMode: "root",
     // undefined を渡すと Router の既定 (1000ms) を上書きするので、指定したときだけ渡す
     ...(pendingMs === undefined ? {} : { defaultPendingMs: pendingMs }),
   });

@@ -1,13 +1,16 @@
 import { QueryClientProvider, queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
+  type AnyRootRoute,
+  type AnyRoute,
   createMemoryHistory,
   createRootRoute,
   createRoute,
+  type ErrorRouteComponent,
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { render } from "vitest-browser-react";
+import { type RenderOptions, render } from "vitest-browser-react";
 
 import { THROWN_VALUE_UNPRINTABLE } from "@/lib/thrown-value-message";
 import { createRouterWithTestDefaults } from "@/test/app/create-router-with-test-defaults";
@@ -16,16 +19,48 @@ import { createTestQueryClient } from "@/test/app/query-client";
 import { expectAbsent } from "@/test/assert/absent";
 import { expectText } from "@/test/assert/screen-assertions";
 
-import { ROUTE_ERROR_FALLBACK_MESSAGE, RouteErrorContent } from "./route-error";
+import {
+  FullScreenRouteError,
+  PageRouteError,
+  ROUTE_ERROR_FALLBACK_MESSAGE,
+  RouteErrorContent,
+} from "./route-error";
+import { RoutePageHeader } from "./route-page-header";
 
 async function renderError(error: unknown) {
-  const router = createTestRouter("/", () => <RouteErrorContent error={error} reset={() => {}} />);
+  const router = createTestRouter("/", () => <RouteErrorContent error={error} headingLevel={1} />);
   const screen = await render(<RouterProvider router={router} />);
   return { screen };
 }
 
 /**
- * 1 回目の取得だけが失敗する query を読む route を、本番と同じ `RouteErrorContent` を境界にして描く。
+ * `<Outlet />` だけを描く root の下に `createChildren` の route を組み、`initialPath` から描く。root の
+ * errorComponent はテストごとに渡す。既定を持たせると、部品を外したテストが落ちなくなる
+ */
+async function renderRouteTree({
+  rootErrorComponent,
+  createChildren,
+  initialPath,
+  wrapper,
+}: {
+  rootErrorComponent?: ErrorRouteComponent;
+  createChildren: (rootRoute: AnyRootRoute) => AnyRoute[];
+  initialPath: string;
+  wrapper?: RenderOptions["wrapper"];
+}) {
+  const rootRoute = createRootRoute({
+    component: () => <Outlet />,
+    errorComponent: rootErrorComponent,
+  });
+  const router = createRouterWithTestDefaults({
+    routeTree: rootRoute.addChildren(createChildren(rootRoute)),
+    history: createMemoryHistory({ initialEntries: [initialPath] }),
+  });
+  return render(<RouterProvider router={router} />, { wrapper });
+}
+
+/**
+ * 1 回目の取得だけが失敗する query を読む名前の付いたページの route を、本番と同じ `PageRouteError` を境界にして描く。
  * `loaderAwaits` が真なら loader が取得を待ち (ADR-0033 の欠かせない query)、偽なら loader は取得せず、
  * 描画中の `useSuspenseQuery` だけが取得する
  */
@@ -36,28 +71,27 @@ async function renderFailingOnceRoute({ loaderAwaits }: { loaderAwaits: boolean 
     .mockResolvedValue("取得した本文");
   const pageQueryOptions = queryOptions({ queryKey: ["route-error-test", loaderAwaits], queryFn });
   const queryClient = createTestQueryClient();
-  const rootRoute = createRootRoute({ component: () => <Outlet /> });
-  const pageRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/",
-    loader: async () => {
-      if (loaderAwaits) await queryClient.query({ ...pageQueryOptions, staleTime: "static" });
-    },
-    component: function Page() {
-      const { data } = useSuspenseQuery(pageQueryOptions);
-      return <p>{data}</p>;
-    },
+  return renderRouteTree({
+    createChildren: (rootRoute) => [
+      createRoute({
+        getParentRoute: () => rootRoute,
+        path: "/",
+        staticData: { pageName: "項目一覧" },
+        loader: async () => {
+          if (loaderAwaits) await queryClient.query({ ...pageQueryOptions, staleTime: "static" });
+        },
+        component: function Page() {
+          const { data } = useSuspenseQuery(pageQueryOptions);
+          return <p>{data}</p>;
+        },
+        errorComponent: PageRouteError,
+      }),
+    ],
+    initialPath: "/",
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    ),
   });
-  const router = createRouterWithTestDefaults({
-    routeTree: rootRoute.addChildren([pageRoute]),
-    history: createMemoryHistory({ initialEntries: ["/"] }),
-    defaultErrorComponent: RouteErrorContent,
-  });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
 }
 
 /**
@@ -151,5 +185,128 @@ describe("RouteErrorContent", () => {
     // 既定で閉じた開閉の UI は、ラベルによらず aria-expanded="false" のボタンとして残る
     await expectAbsent(screen.getByRole("button", { expanded: false }));
     await expectAbsent(screen.getByText(/at loader/));
+  });
+});
+
+describe("PageRouteError", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("自分の route の名前を見出しの行の h1 に描き、失敗の見出しを h2 にする", async () => {
+    const router = createTestRouter(
+      "/",
+      () => <PageRouteError error={new Error("取得に失敗しました")} reset={() => {}} />,
+      { pageName: "項目一覧" },
+    );
+    const screen = await render(<RouterProvider router={router} />);
+
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 2 }))
+      .toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("heading", { name: "項目一覧", level: 1 }))
+      .toBeInTheDocument();
+    await expect.element(screen.getByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  // 置き間違いが黙って通らない。名前の無いページをアプリ名で描かない (ADR-0035)
+  it("名前の無い route に置くと、見出しの行の throw を root の errorComponent が受ける", async () => {
+    // React は描画中の throw を console.error に出す。期待した throw なので出力を抑える
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const screen = await renderRouteTree({
+      rootErrorComponent: FullScreenRouteError,
+      createChildren: (rootRoute) => [
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path: "/",
+          loader: () => {
+            throw new Error("取得に失敗しました");
+          },
+          component: () => <p>本文</p>,
+          errorComponent: PageRouteError,
+        }),
+      ],
+      initialPath: "/",
+    });
+
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 1 }))
+      .toBeVisible();
+    await expect
+      .element(
+        screen.getByText("[RoutePageHeader] route の staticData に pageName が無い", {
+          exact: false,
+        }),
+      )
+      .toBeInTheDocument();
+  });
+});
+
+describe("失敗の受け手", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // 部品を持たない route の失敗は、部品を置いた近い祖先が受ける。React Router・Next.js と同じ形 (ADR-0044)
+  it("errorComponent を持たない route の loader の失敗は、errorComponent を持つ祖先の route が受ける", async () => {
+    const screen = await renderRouteTree({
+      rootErrorComponent: FullScreenRouteError,
+      createChildren: (rootRoute) => {
+        const pageRoute = createRoute({
+          getParentRoute: () => rootRoute,
+          path: "/items",
+          staticData: { pageName: "項目一覧" },
+          component: () => (
+            <>
+              <RoutePageHeader />
+              <Outlet />
+            </>
+          ),
+          errorComponent: PageRouteError,
+        });
+        const childRoute = createRoute({
+          getParentRoute: () => pageRoute,
+          path: "/detail",
+          loader: () => {
+            throw new Error("取得に失敗しました");
+          },
+          component: () => <p>詳細</p>,
+        });
+        return [pageRoute.addChildren([childRoute])];
+      },
+      initialPath: "/items/detail",
+    });
+
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 2 }))
+      .toBeVisible();
+    await expect.element(screen.getByRole("heading", { name: "項目一覧", level: 1 })).toBeVisible();
+    await expect.element(screen.getByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  // root にも部品が無いと、router の外側の境界が組み込みの ErrorComponent を描き、warn を出す (ADR-0044)
+  it("どの祖先も errorComponent を持たない route の loader の失敗は、root の errorComponent が受ける", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const screen = await renderRouteTree({
+      rootErrorComponent: FullScreenRouteError,
+      createChildren: (rootRoute) => [
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path: "/",
+          loader: () => {
+            throw new Error("取得に失敗しました");
+          },
+          component: () => <p>本文</p>,
+        }),
+      ],
+      initialPath: "/",
+    });
+
+    await expect
+      .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 1 }))
+      .toBeVisible();
+    await expectAbsent(screen.getByText("Something went wrong!", { exact: false }));
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining("wasn't caught by any route"));
   });
 });

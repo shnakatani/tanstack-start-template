@@ -2,6 +2,7 @@ import { noop } from "@tanstack/react-query";
 import { Outlet, createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import * as v from "valibot";
 
+import { PageRouteError } from "@/components/screens/route-error";
 import { notesQueryOptions } from "@/features/notes/queries";
 import { noteListFilterSchema } from "@/features/notes/schema";
 import { pageRouteOptions } from "@/lib/page-title";
@@ -36,6 +37,9 @@ export const Route = createFileRoute("/notes")({
     await fetching;
   },
   pendingComponent: NotesPagePending,
+  // 開いたときの取得の失敗と描画中の例外を、一覧の見出しの行を残して受ける。子のダイアログの route は
+  // 自分の部品で受ける (ADR-0041、ADR-0044)
+  errorComponent: PageRouteError,
   component: NotesRoute,
 });
 
