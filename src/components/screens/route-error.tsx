@@ -82,7 +82,7 @@ export function PageRouteError({ error }: ErrorComponentProps) {
 
 /**
  * root で受けたエラーの全画面表示。root の component を置き換えて描かれるので、背景から画面いっぱいに組む。
- * 文書の骨格 (`<html>`) は呼ぶ側 (`routes/__root.tsx`) が持つ。
+ * 文書の骨格 (`<html>`) は root の shell (`routes/__root.tsx`) が持つ (ADR-0045)。
  *
  * 枠を持つのはこのファイルの責務にする。消費側 (`routes/__root.tsx`) が中央寄せの
  * class を持つと、枠と中身が別ファイルに分かれて片方だけの変更で崩れる。

@@ -1,13 +1,12 @@
 import { QueryCache, QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
-import type { ErrorComponentProps } from "@tanstack/react-router";
 import {
   createMemoryHistory,
   createRootRouteWithContext,
   HeadContent,
-  Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { expect, vi } from "vite-plus/test";
 import { render } from "vitest-browser-react";
 
@@ -28,35 +27,26 @@ import { Route as NoteCreateRoute } from "./new";
 import { Route as NotesRoute } from "./route";
 
 /**
- * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` が devtools と
- * `<html>` を描くので browser test では使えない (docs/guides/testing/real-router.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
+ * root だけ差し替えた route tree。生成済み `routeTree.gen.ts` は `__root.tsx` の shell が devtools と `<html>` を描くので
+ * browser test では使えない (docs/guides/testing/real-router.md「route の wrapper をテストする」)。root は本番と同じ context 型を持ち、
  * 一覧と追加と編集の `Route` は生成コードと同じ `update({ id, path, getParentRoute })` で付ける。
- * `HeadContent` は本番の root と同じく、route の `head()` の title を `document.title` へ反映させるために置く。
- * `Toaster` は本番の root と同じく、保存の失敗の toast を描くために置く。
+ * shell と失敗の部品は本番の root (`src/routes/__root.tsx`) と同じ置き方にする。shell の `HeadContent` は root の失敗と
+ * not found の間も route の `head()` の title を `document.title` へ反映させ、`Toaster` は保存の失敗の toast を描く。
+ * 失敗の部品が無いと、どの route も受けない失敗が root の外まで抜けて組み込みの ErrorComponent が描き、
+ * "wasn't caught by any route" の warn が出る (ADR-0044)
  */
 const testRootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  component: () => (
-    <>
-      <HeadContent />
-      <Outlet />
-      <Toaster />
-    </>
-  ),
-  // 本番の root (`src/routes/__root.tsx`) と同じ失敗の部品を置く。無いと、どの route も受けない失敗が root の外まで
-  // 抜けて組み込みの ErrorComponent が描き、"wasn't caught by any route" の warn が出る (ADR-0044)
-  errorComponent: TestRootError,
+  shellComponent: TestRootShell,
+  errorComponent: FullScreenRouteError,
   notFoundComponent: NotFoundContent,
 });
 
-/**
- * テストの root の errorComponent。本番の root の errorComponent は文書の骨格 (`<html>`) で包んで描き、骨格の
- * `HeadContent` が title を反映する。テストでは骨格を描けないので、`HeadContent` だけを添える
- */
-function TestRootError(props: ErrorComponentProps) {
+function TestRootShell({ children }: { children: ReactNode }) {
   return (
     <>
       <HeadContent />
-      <FullScreenRouteError {...props} />
+      {children}
+      <Toaster />
     </>
   );
 }

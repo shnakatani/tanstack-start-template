@@ -2,8 +2,7 @@ import { a11yDevtoolsPlugin } from "@tanstack/devtools-a11y/react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import type { ErrorComponentProps } from "@tanstack/react-router";
-import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
+import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { tableDevtoolsPlugin } from "@tanstack/react-table-devtools";
 import type { ReactNode } from "react";
@@ -25,53 +24,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
-  component: RootComponent,
-  errorComponent: ErrorComponent,
-  // どの route にも当たらない URL と、notFoundComponent を持つ祖先が無い loader・beforeLoad の notFound() を受ける。
-  // この 2 つでは root の component の <Outlet /> の位置 (<main> の中) に描かれるので、errorComponent と違い
-  // 文書の骨格を描かない (@tanstack/react-router の Match.tsx の Outlet)。描画中に投げた notFound() を受けると
-  // root の component ごと置き換わるので、notFound() は描画中に投げない (ADR-0044)
+  // 文書の骨格は shell が描く。shell は root の component・errorComponent・notFoundComponent を外から包むので、
+  // root が失敗や not found に置き換わっても骨格と Toaster は残る (ADR-0045)。component は置かず、既定の <Outlet /> を描く
+  shellComponent: RootDocument,
+  // root の失敗と、どの route の部品も受けなかった失敗の受け皿 (ADR-0044)
+  errorComponent: FullScreenRouteError,
+  // どの route にも当たらない URL と、notFoundComponent を持つ祖先が無い loader・beforeLoad の notFound() を受ける
+  // (ADR-0044)
   notFoundComponent: NotFoundContent,
 });
 
-function RootComponent() {
-  return (
-    <RootDocument>
-      <Outlet />
-      <Toaster />
-      <TanStackDevtools
-        plugins={[
-          {
-            name: "TanStack Query",
-            render: <ReactQueryDevtoolsPanel />,
-          },
-          {
-            name: "TanStack Router",
-            render: <TanStackRouterDevtoolsPanel />,
-          },
-          // useTable に key を渡した table が登録される (ADR-0018)
-          tableDevtoolsPlugin(),
-          // axe-core を開発中の画面へ当てる。テスト側の強制 (src/test/a11y/a11y.ts) は書いた
-          // ケースしか見ないため、画面を触りながら気付ける経路を別に持つ。
-          // panel は host から theme と devtoolsOpen を受け取るので plugin 形で渡す
-          a11yDevtoolsPlugin(),
-        ]}
-      />
-    </RootDocument>
-  );
-}
-
-// root の失敗と、どの route の部品も受けなかった失敗の受け皿 (ADR-0044)。root の component を置き換えて描かれるので、
-// 文書の骨格を自分で描く。全画面の枠は表示側 (route-error.tsx) が持つ
-function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  return (
-    <RootDocument>
-      <FullScreenRouteError error={error} reset={reset} />
-    </RootDocument>
-  );
-}
-
-/** 文書の骨格。landmark を押さえるテストから直接呼べるよう named export にする */
+/**
+ * 文書の骨格。root の shell に置く (ADR-0045)。children には root の component か、root の失敗と not found の部品が来る。
+ * landmark を押さえるテストから直接呼べるよう named export にする
+ */
 export function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="ja">
@@ -81,7 +47,28 @@ export function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <body>
         {/* ページ本体を landmark へ入れる。無いと支援技術に本文へ飛ぶ手段が無く、
             axe-core の region ルールが「All page content should be contained by landmarks」で報告する */}
-        <main>{children}</main>
+        <main>
+          {children}
+          <Toaster />
+          <TanStackDevtools
+            plugins={[
+              {
+                name: "TanStack Query",
+                render: <ReactQueryDevtoolsPanel />,
+              },
+              {
+                name: "TanStack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              // useTable に key を渡した table が登録される (ADR-0018)
+              tableDevtoolsPlugin(),
+              // axe-core を開発中の画面へ当てる。テスト側の強制 (src/test/a11y/a11y.ts) は書いた
+              // ケースしか見ないため、画面を触りながら気付ける経路を別に持つ。
+              // panel は host から theme と devtoolsOpen を受け取るので plugin 形で渡す
+              a11yDevtoolsPlugin(),
+            ]}
+          />
+        </main>
         <LiveRegions />
         <Scripts />
       </body>

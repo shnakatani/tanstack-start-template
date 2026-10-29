@@ -3,6 +3,8 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { LiveRegions } from "@/components/live-regions";
 import { NotFoundContent } from "@/components/screens/not-found";
+import { FullScreenRouteError } from "@/components/screens/route-error";
+import { Toaster } from "@/components/ui/toast";
 
 import { RootDocument, Route } from "./__root";
 
@@ -61,13 +63,23 @@ describe("RootDocument", () => {
 
     expect(hasElement(tree, (element) => element.type === LiveRegions)).toBe(true);
   });
+
+  // shell は root の失敗の部品も包むので、root が失敗しても出ている toast は消えない (ADR-0045)
+  it("Toaster を置く", () => {
+    const tree = RootDocument({ children: "本文マーカー" });
+
+    expect(hasElement(tree, (element) => element.type === Toaster)).toBe(true);
+  });
 });
 
 // root は失敗の最後の受け手。外れると、受ける route の無い失敗が組み込みの英語の画面になる (ADR-0044)。
+// 骨格が shell から外れると、root の失敗と not found で文書の骨格が消える (ADR-0045)。
 // ブラウザテストはテストの root を組むので、本番の root の部品はここで見る
 describe("root の route", () => {
-  it("not found の部品とエラーの部品を持つ", () => {
+  it("文書の骨格を shell に置き、not found の部品とエラーの部品を持つ", () => {
+    // options の型は root の option (shellComponent) を持たないので、プロパティとして確かめる
+    expect(Route.options).toHaveProperty("shellComponent", RootDocument);
     expect(Route.options.notFoundComponent).toBe(NotFoundContent);
-    expect(Route.options.errorComponent).toBeTypeOf("function");
+    expect(Route.options.errorComponent).toBe(FullScreenRouteError);
   });
 });
