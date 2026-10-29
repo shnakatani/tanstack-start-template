@@ -8,6 +8,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { recordEndKeyScroll } from "@/test/assert/end-key-scroll";
 import {
   expectWithinViewport,
   restoreDefaultViewport,
@@ -55,7 +56,7 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     await expectWithinViewport(popup);
   });
 
-  it("キーボードで最下部コンテンツまで到達できる", async () => {
+  it("キーボードで最下部コンテンツまで到達できる", async (context) => {
     await setViewport(TABLET_VIEWPORT);
     const screen = await renderTallAlertDialog();
     const marker = screen.getByText(BOTTOM_MARKER);
@@ -63,9 +64,15 @@ describe("AlertDialogContent（viewport 溢れ backstop）", () => {
     await expect.element(screen.getByText("先頭コンテンツ")).toBeInViewport();
     await expect.element(marker).not.toBeInViewport();
 
-    await expect.element(screen.getByRole("alertdialog")).toHaveFocus();
-    await userEvent.keyboard("{End}");
-
-    await expect.element(marker).toBeInViewport();
+    const popup = screen.getByRole("alertdialog");
+    await expect.element(popup).toHaveFocus();
+    await recordEndKeyScroll(
+      context,
+      { scroller: popup.element(), marker: marker.element() },
+      async () => {
+        await userEvent.keyboard("{End}");
+        await expect.element(marker).toBeInViewport();
+      },
+    );
   });
 });
