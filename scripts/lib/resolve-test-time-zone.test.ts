@@ -14,13 +14,13 @@ describe("resolveTestTimeZone", () => {
     });
   });
 
-  test("ホストの TZ が基準と違えば基準にし、TZ ごとに走らせるスクリプトを警告で案内する", () => {
+  test("ホストの TZ が基準と違えば基準にし、TZ ごとに走らせるタスクを警告で案内する", () => {
     const { timeZone, warning } = resolveTestTimeZone({ TZ: "Asia/Tokyo" });
 
     expect(timeZone).toBe("America/New_York");
     expect(warning).toContain("TZ=Asia/Tokyo");
-    expect(warning).toContain("vp node scripts/time-zones/run-tests.ts");
-    // TEST_TIME_ZONE は警告では勧めない。TZ を変えて走らせる口はスクリプトに寄せる
+    expect(warning).toContain("vp run verify:time-zones");
+    // TEST_TIME_ZONE は警告では勧めない。TZ を変えて走らせる口はタスクに寄せる
     expect(warning).not.toContain("TEST_TIME_ZONE");
   });
 
