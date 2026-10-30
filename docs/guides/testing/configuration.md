@@ -132,7 +132,7 @@ StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
 ### テストの並列数を既定に任せる
 
 - `maxWorkers` を書かず、Vitest の既定に任せる。ブラウザで走る project を足しても、値を合わせ直す必要は無い (「並列数を既定に任せる理由」)
-- 書くときは `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない。ある project に root と違う値を書くと、root の値を継承する project と同じ `sequence.groupOrder` で一緒に走る実行で、Vitest がエラーで止まる ([Vitest の `pool.ts`][] の `groupSpecs`)
+- 書くときは `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない。ある project に root と違う値を書くと、root の値を継承する project と同じ `sequence.groupOrder` で一緒に走る実行で、Vitest がエラーで止まる。例外は `isolate` が `true` で `sequence.groupOrder` が 0 の project に `maxWorkers: 1` を書いたときで、その project のファイルは別の group で 1 つずつ順に走り、エラーにならない ([Vitest の `pool.ts`][] の `groupSpecs`)
 - `vp test` を 1 回だけ違う並列数で走らせるときは、CLI の `--maxWorkers` を付ける。CLI の値は project の値より優先される ([Vitest の `resolveProjects.ts`][] の `PROJECT_CLI_OVERRIDES`)
 
 ### 設定の落とし穴
