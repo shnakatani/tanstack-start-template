@@ -44,6 +44,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 2. mise の `[env]` の値を読むなら、値が届いていなければ止まる形にする。mise の値は、呼んだシェルが mise の環境を読んでいるときだけタスクに届く (ADR-0004)。command の中で読むなら `${NAME:?mise の環境が要る。…}` のように書く。Vite Task は command を `/bin/sh` で解釈し、未設定なら `/bin/sh: NAME: …` を出して止まる (2026-10-14 に vite-plus 1.1.0 で確かめた)。値をコマンドの引数に使わないなら、`NAME=${NAME:?…} <コマンド>` と代入の形で書く。`${NAME:?…}` だけを置くと、値がコマンドの位置引数 (`vp dev` なら root) になる。コードで読むなら `src/lib/require-env.ts` の `requireEnv` を使う
 3. タスクに `cache` を書かない。`run.cache: false` がすべてのタスクのキャッシュを切っている。gate を `vp run --cache` で打たない。`--cache` は全体の設定を外し、2 回目をリプレイで済ませる (ADR-0004)
 4. command の中で Node.js のスクリプトを走らせるときは、`vp node` ではなく `node` を打つ。タスクの中の `vp node` は `error: Command 'node' not found` で落ちる (「タスクの中で `node` を打つ理由」)
+   - `src/` を `@/` の alias か拡張子の無い import で読むスクリプトは、`node` ではなく `vpx <file>` で走らせる。Node.js の type stripping は tsconfig の `paths` を読まず、拡張子の無い import は `ERR_MODULE_NOT_FOUND` で落ちる (`docs/guides/database.md`「seed を vpx で走らせる理由」)
 5. 引数は `vp run <task> <引数>` で渡し、`--` を挟まない。`--` もそのままコマンドに渡る ([Vite+ docs「Run」][] の Additional Arguments: "Arguments after the task name are passed through to the task command")。2026-10-14 に vite-plus 1.1.0 で `vp run contrast -- --theme dark …` を打つと、`scripts/contrast/report.ts` が `知らない引数: --` で落ちた
 6. マージ前の検証の手順なら、`verifySteps` に `verify:<名前>` で足し、`.github/workflows/ci.yml` にも同じ位置に `vp run verify:<名前>` の step を足す。足し忘れても CI は落ちない (ADR-0004)
 7. README のコマンド一覧に行を足す。`verify:<名前>` は `vp run verify` から走るので足さない

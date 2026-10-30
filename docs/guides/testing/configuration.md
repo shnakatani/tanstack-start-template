@@ -273,9 +273,9 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 
 ### 並列数を既定に任せる理由
 
-`tooling/test/config.ts` に `maxWorkers` を書かない。Vitest のブラウザの pool は、ブラウザで走る project を 1 つの worker として数え、同時に走る project の数と、それらが開くページの合計を `maxWorkers` に収める ([Vitest docs「maxWorkers」][] の Browser Mode: "every browser instance … is a worker, so at most `maxWorkers` instances run at the same time" と "The same number is the budget of pages shared by the open instances")。この形は [vitest-dev/vitest#11525][] で入り、vitest 5.0.4 から効く。既定は、watch を切った実行で "uses all available parallelism" である ([Vitest docs「maxWorkers」][])。値を書くと、全 project のページの合計がその値に縮む。
+`tooling/test/config.ts` に `maxWorkers` を書かない。Vitest のブラウザの pool は、ブラウザで走る project を 1 つの worker として数え、同時に走る project の数と、それらが開くページの合計を `maxWorkers` に収める ([Vitest docs「maxWorkers」][] の Browser Mode: "every browser instance … is a worker, so at most `maxWorkers` instances run at the same time" と "The same number is the budget of pages shared by the open instances")。この形は [vitest-dev/vitest#11525][] で入り、vitest 5.0.4 から効く。既定は、watch を切った実行で "uses all available parallelism" である ([Vitest docs「maxWorkers」][])。値を書くと、Node で動く project の worker の数と、ブラウザで走る全 project のページの合計が、どちらもその値に縮む。Node で動く project とブラウザで走る project は、同じ group で同時に走る ([Vitest の `pool.ts`][] の `executeTests`)。
 
-2026-10-30 に vitest 5.0.5 (Vite+ 1.4.0) で、8 コアの macOS で `vp test run` を `maxWorkers: "20%"` (8 コアで 2) と既定で交互に 5 回ずつ走らせた。renderer の数は、Playwright の Chromium の renderer のプロセスを 2 秒ごとに数えた最大である。load average は走らせる直前の 1 分の値である。
+2026-10-30 に vitest 5.0.5 (Vite+ 1.4.0) で、8 コアの macOS で `vp test run` を `maxWorkers: "20%"` (8 コアで 2) と既定で交互に 5 回ずつ走らせた。所要は `vp test run` の起動から終了までの秒である。load average は走らせる直前の 1 分の値である。
 
 | 回  | `"20%"` の所要 | `"20%"` の load average | 既定の所要 | 既定の load average |
 | --- | -------------- | ----------------------- | ---------- | ------------------- |
@@ -286,7 +286,6 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 | 5   | 59 秒          | 6.21                    | 42 秒      | 4.62                |
 
 - 落ちたテストと `Timeout` の失敗は、10 回とも 0 件だった
-- renderer の数の最大は、`"20%"` で 5 回とも 3、既定で 5 回とも 15 だった。別に 1 回、既定で 1 秒ごとに数えると、Chromium の本体 (`--type` の無いプロセス) は最大 5 で、ブラウザで走る project の数と同じだった
 - 測ったのは 8 コアの macOS だけである
 
 ## 出典
