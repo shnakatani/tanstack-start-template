@@ -24,6 +24,7 @@ paths:
 - mise の `[env]` の値を読むタスクは、値が届いていなければ止まる形にする。command の中で読むなら `${NAME:?…}`、コードで読むなら `requireEnv` を使う (`docs/guides/vite-configuration.md`「タスクを足す」)
 - `vite.config.ts` の `run.cache: false` を外さず、gate を `vp run --cache` で打たない。キャッシュが効くと gate がリプレイで済まされ、親の環境変数が子へ届かない (ADR-0004)
 - `run.tasks` の command では `vp node` ではなく `node` を打つ。タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `Command 'node' not found` で落ちる (`docs/guides/vite-configuration.md`「タスクを足す」)
+- `src/` を `@/` の alias か拡張子の無い import で読むスクリプトは、`run.tasks` の command で `node` ではなく `vpx <file>` で走らせる。`node` では `ERR_MODULE_NOT_FOUND` で落ちる (`docs/guides/vite-configuration.md`「タスクを足す」)
 - verify の手順は `vite.config.ts` の `verifySteps` にタスクとして足し、`.github/workflows/ci.yml` にも同じ位置に `vp run <タスク>` の step を足す。コマンドは workflow に写さない。step を足し忘れても CI は落ちず、その手順が CI で走らないだけになる (ADR-0004)
 - built-in と同名の script は、`start` と対の入口 (`pnpm run build` → `pnpm start`) の `build` だけを置き、開発者の入口 (`check` / `test` / `dev`) は足さない。開発者は global の `vp` を入れるので公式が script を勧める利点が当てはまらず、同名の script があると `vp <name>` のたびに stderr に note が出る (ADR-0004)
 - ビルド成果物を起動する検査は、`verifySteps` で `verify:build` の後に置く (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
@@ -36,9 +37,8 @@ paths:
 
 - Vitest の設定は `tooling/test/` に書き、`vite.config.ts` の `test` から読ませる。全 project が共有する設定を root の 1 か所に持ち、project が継承する (ADR-0037)
 - project は `test.projects` に inline で並べる。ファイルのパスで並べた project は `vite.config.ts` の設定 (`envDir`、`resolve`、テスト時の `plugins`) を継承しない (`docs/guides/testing/configuration.md`「project を inline に並べる理由」)
-- `maxWorkers` は `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない (`docs/guides/testing/configuration.md`「ブラウザで走る project の並列数を決める」)
-- `maxWorkers` は割合で書き、`1 / ブラウザで走る project の数` に合わせる。vitest 5.0.x はブラウザで走る project ごとに `maxWorkers` 枚のページを開くので、合わせないとページがコア数から外れ、多くなる側に外れると全体の実行で locator の操作が timeout で落ちる (`docs/guides/testing/configuration.md`「ブラウザで走る project の並列数を決める」)
-- `maxWorkers` を外すのは、ページの合計を `maxWorkers` に収める版 (vitest-dev/vitest#11525 を含む版) へ上げたときだけにする (`docs/guides/testing/configuration.md`「ブラウザで走る project の並列数を決める」)
+- `maxWorkers` を書かず、Vitest の既定に任せる。ブラウザの pool が開くページの合計を `maxWorkers` に収めるので、ブラウザで走る project を足しても合わせ直さない (`docs/guides/testing/configuration.md`「テストの並列数を既定に任せる」)
+- `maxWorkers` を書くときは `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない (`docs/guides/testing/configuration.md`「テストの並列数を既定に任せる」)
 - テストでだけ root の plugin を外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST` の分岐で外す。config を分けない (`docs/guides/testing/configuration.md`「判定を `process.env.VITEST` で書く理由」)
 
 ## `vite.config.ts` の組み立て
