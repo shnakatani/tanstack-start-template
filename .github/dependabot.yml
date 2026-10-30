@@ -11,7 +11,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    # グループの PR も 1 本に数える。同時に開きうるグループの PR が既定の 5 を超えるので上げる (ADR-0005)
+    # docs はグループの PR を上限の数から除くと書いていない。同時に開きうるグループの PR が既定の 5 を超えるので上げる (ADR-0005)
     open-pull-requests-limit: 10
     # pnpm-workspace.yaml の minimumReleaseAge と .github/zizmor.yml の下限と対で持つ (ADR-0005)
     cooldown:
@@ -41,7 +41,7 @@ updates:
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
       # 片方だけが上がると peer の食い違いで落ちるか、依存先が 2 つの版で入る組を 1 本の PR にする。
-      # major を見送るときは、組の patterns に update-types が semver-major の ignore を足す (ADR-0005)
+      # major を見送るときは、組の依存ごとに update-types が semver-major の ignore を足し、撤去条件を書く (ADR-0005)
       storybook:
         patterns:
           - "storybook"

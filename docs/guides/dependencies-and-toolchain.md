@@ -88,7 +88,7 @@ pnpm peers check
 - 許可した側を値の range の外へ上げると (1.0.0 以上は major、0.x は minor)、`pnpm peers check` に再び食い違いとして出る。新しい版で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
 - 一緒に上げる依存の組は、`.github/dependabot.yml` の組のグループで 1 本の PR にする (ADR-0005)。組を足すときは、patterns を `minor-and-patch` の `exclude-patterns` にも写す (「Vite+ を上げる」の `minor-and-patch` の項目)
-- 組の major を見送るときは、組の patterns に `update-types: ["version-update:semver-major"]` の `ignore` を足す。グループの PR を閉じても、Dependabot は今の major の中の更新を別に出さない (ADR-0005)
+- 組の major を見送るときは、組の依存ごとに `dependency-name` と `update-types: ["version-update:semver-major"]` の `ignore` を足し、撤去条件をコメントに書く (ADR-0005「pin には出口条件を書く」)。グループの PR を閉じても、Dependabot は今の major の中の更新を別に出さない (ADR-0005)
 - security update の PR は、脆弱な依存だけを上げる (ADR-0005)。`verify:peers` で落ちたら、その PR のブランチで組の相手を peer が求める版へ上げてから取り込む。ブランチに commit を足すと Dependabot は rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。組の version update の PR がその版以上へ上げたなら、そちらを取り込む。依存が修正版に届くと、Dependabot が security update の PR を閉じる (2026-10-30、"Looks like @storybook/addon-vitest is up-to-date now, so this is no longer needed.")
 - `@vitejs/plugin-react` と `oxc-transform-react` は、`.github/dependabot.yml` の `react-compiler` グループで 1 本の PR にする。plugin-react は optional peer の oxc-transform-react を呼び出す。別々の PR に割れると、上流が試していない組み合わせが片方ずつ入る
 - `vite` と `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-09-28、vite-plus 1.0.0 で実測)
