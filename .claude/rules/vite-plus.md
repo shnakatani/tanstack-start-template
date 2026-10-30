@@ -17,10 +17,10 @@ paths:
 - `vp staged` は `.vite-hooks/pre-commit` から呼び、hook は `package.json` の `prepare` の `vp config` が入れる。自前の skip スクリプトを間に挟まない (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
 - hook は止める範囲で手段を選ぶ。環境ごと (CI のビルドコンテナ等) なら `VP_GIT_HOOKS=0`、環境を受け継がないプロセス (デーモン等) ならマシンの init script で `VP_GIT_HOOKS=0`、1 つの clone なら `vp hooks disable` で止める (`docs/guides/dependencies-and-toolchain.md`「commit hook を扱う」)
 
-## Node.js と pnpm の版
+## Node.js の版
 
-- `devEngines.runtime` の Node.js の版は `package.json` を直接書き換えて変え、`vp env pin` を打たない。`vp env pin` は範囲を exact の版に解決して書き、宣言の無い状態から作ると `onFail: "download"` も書く (ADR-0004)
-- `devEngines.runtime` に `onFail` を書かず、`pnpm-workspace.yaml` に `runtimeOnFail` を置かない。`onFail: "download"` は pnpm に Node.js を自前で入れさせ、`runtimeOnFail` は pnpm 11 が `package.json` に書き戻す (ADR-0004)
+- `devEngines.runtime` の Node.js の版は `package.json` を直接書き換えて変え、`vp env pin` で書かない。`vp env pin` は範囲を渡しても exact の版に解決して書く (ADR-0004)
+- `devEngines.runtime` は `name` と `version` だけにし、`onFail` はどの値も書かず、`pnpm-workspace.yaml` に `runtimeOnFail` を置かない。`onFail` があると pnpm が Node.js を入れるか版を検査し、`runtimeOnFail` は pnpm 11 が `package.json` に書き戻す (ADR-0004)
 
 ## script とタスク
 
