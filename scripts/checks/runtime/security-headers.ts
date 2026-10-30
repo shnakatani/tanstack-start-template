@@ -108,7 +108,7 @@ async function waitForServer(): Promise<void> {
  * 2 回目の応答は、1 回目と比べるためだけに取る
  */
 async function checkCspNonce(): Promise<void> {
-  // 上の検査と同じく redirect を追わず、200 の応答だけを比べる
+  // run() のヘッダの検査と同じく redirect を追わず、200 の応答だけを比べる
   const responses = [
     await fetch(ORIGIN, { redirect: "manual" }),
     await fetch(ORIGIN, { redirect: "manual" }),

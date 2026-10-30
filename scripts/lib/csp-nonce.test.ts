@@ -63,6 +63,13 @@ describe("findCspNonceViolations", () => {
     ]);
   });
 
+  it("大文字で書いた <SCRIPT> も数え、nonce を持たなければ報告する", () => {
+    const html = `<script nonce="a"></script><SCRIPT src="/x.js">`;
+    expect(
+      findCspNonceViolations([{ ...sample("a"), html }, sample("b")], EXPECTED_POLICY),
+    ).toEqual(['応答 1: ヘッダの nonce を持たない <script>: <SCRIPT src="/x.js">']);
+  });
+
   it("<script> が 1 つも無い HTML を報告する", () => {
     // nonce の突き合わせが 0 件のまま通ると、HTML を取り違えても緑になる
     const violations = findCspNonceViolations(
