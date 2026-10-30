@@ -107,10 +107,10 @@ async function waitForServer(): Promise<void> {
  * `/` の CSP の nonce が HTML の `<script>` に届き、応答ごとに変わることを確かめる。
  * 2 回目の応答は、1 回目と比べるためだけに取る
  */
-async function checkCspNonce(first: Response): Promise<void> {
-  const second = await fetch(ORIGIN);
+async function checkCspNonce(): Promise<void> {
+  const responses = [await fetch(ORIGIN), await fetch(ORIGIN)];
   const samples = await Promise.all(
-    [first, second].map(async (response) => ({
+    responses.map(async (response) => ({
       policy: response.headers.get("Content-Security-Policy"),
       html: await response.text(),
     })),
@@ -171,7 +171,7 @@ async function run(): Promise<void> {
         ].join("\n"),
       );
     }
-    await checkCspNonce(response);
+    await checkCspNonce();
   } finally {
     server.kill();
   }
