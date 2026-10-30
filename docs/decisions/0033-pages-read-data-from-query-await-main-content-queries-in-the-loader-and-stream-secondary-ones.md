@@ -30,8 +30,6 @@
 | query の失敗は `useQueryErrorResetBoundary` で戻す。例は `react-error-boundary` を使うが、それが必須とは書かない                                                                                                   | Query「Suspense」の Resetting Error Boundaries                                                       |
 | 失敗は起きた場所の近くに出し、利用者の入力を残し、深刻さに合わせて伝える                                                                                                                                           | NN/g「Error-Message Guidelines」                                                                     |
 
-Router「Deferred Data Loading」の例は、待たない取得をまだ `prefetchQuery` で書いている (2026-09-28 に確認)。
-
 ## Decision
 
 **ページのデータは TanStack Query が持ち、コンポーネントは loader の戻り値ではなく `useSuspenseQuery` で読む。loader は、ページの表示に欠かせない query の取得を待ち、副次的な query は待たずに流す。副次的な query は Suspense の境界の中で読む。同じ route に留まる読み込みでは、head の値・notFound・redirect・認可を決めない query に限り、欠かせない query も待たずに流す。ページの中の失敗は `SectionErrorBoundary` で区画の中に出す。**

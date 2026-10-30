@@ -20,7 +20,7 @@ export async function browserProject({ compiler }: { compiler: boolean }) {
     defineProject({
       optimizeDeps: {
         // テストの実行中に初めて到達した依存は、再バンドルと reload をまたいだ React の二重解決で落ちる。
-        // 出口条件 (TanStack/router#6246、vitest-dev/vitest#10775。後者の close は出口ではない) は
+        // 外せるかは症状で判定する (TanStack/router#6246 と vitest-dev/vitest#10775 の close は出口ではない)。理由は
         // docs/guides/testing/configuration.md「project に `optimizeDeps` を書く理由」、足し方と判定の手順は
         // 同「ブラウザと story の project に事前バンドルする依存を足す」
         include: [
