@@ -16,7 +16,7 @@ import { type ExpectedHeader, findHeaderViolations } from "../../lib/response-he
  * 整合検査 (`scripts/checks/integrity/`) に置かないのは、`vp build` の成果物が要るため。
  *
  * `/` に加えて、route の無い path の 404 も見る。h3 は 400 以上の応答に、用意した
- * ヘッダのうち `event.res.errHeaders` だけを合わせる (h3 docs「Response」)。routeRules の
+ * ヘッダのうち `event.res.errHeaders` だけを合わせる (h3 docs「Sending Response」、h3 2.0.2)。routeRules の
  * `headers` がそこへ書かない版では、`/` に乗っても 404 と SSR の 500 には乗らない
  * (nitro 3.0.260610-beta で、2026-10-31 に実測)。500 を見ないのは、必ず失敗する route を
  * 検査のためだけにテンプレートへ置くことになるため。
@@ -110,8 +110,9 @@ async function run(): Promise<void> {
     await waitForServer();
     const violations: string[] = [];
     for (const { path, status } of CHECKED_RESPONSES) {
+      // redirect を追うと、移り先の応答を検査してしまう
       // oxlint-disable-next-line eslint/no-await-in-loop -- 1 つのサーバへ数件を順に聞くだけで、並列にしても得るものが無い
-      const response = await fetch(`${ORIGIN}${path}`);
+      const response = await fetch(`${ORIGIN}${path}`, { redirect: "manual" });
       if (response.status !== status) {
         // 期待と違う status の応答を検査しても、その path の経路を確かめたことにならない
         throw new CheckFailure(

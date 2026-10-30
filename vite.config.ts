@@ -99,7 +99,7 @@ export default defineConfig({
       }),
       nitro({
         builder: "rolldown",
-        // 全レスポンスへ静的なセキュリティヘッダを付ける。足し方と CSP を置かない理由は
+        // route rules が届く応答へ静的なセキュリティヘッダを付ける。足し方と CSP を置かない理由は
         // docs/guides/security-headers.md「ヘッダを足す・変える」「CSP を置かない理由」
         routeRules: {
           "/**": {
