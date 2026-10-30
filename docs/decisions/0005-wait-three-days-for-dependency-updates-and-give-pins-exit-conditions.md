@@ -1,7 +1,7 @@
 # ADR-0005: 依存更新は待機 3 日で統一し、pin には出口条件を書く
 
 - Status: Accepted
-- Date: 2026-09-29
+- Date: 2026-10-30
 - 関連: ADR-0004 (Vite+ が版を管理する制約)、ADR-0014 (React Compiler が要求する依存)
 
 ## Context
@@ -95,7 +95,7 @@ core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert �
 | A      | pin 対象への Dependabot alert | 修正版への追随か pin 撤去の前倒しをその場で判断する             |
 | B      | Dependabot PR の処理時        | pin の出口条件 (上流 issue の状態) を確認し、成立していたら外す |
 
-トリガ A が成立するのは、**alerts は `ignore` と独立に発火する**ためである。`dependency-name` だけで書いた `ignore` は version updates と security updates の PR をどちらも止める (GitHub Docs「Controlling which dependencies are updated」)。`update-types` を付けた `ignore` が security updates に効くかは docs に記述が無い (2026-09-29 時点)。pin 中の修正は alert を見て手で当てる。pin 中でも「既知脆弱性が出たことを知る」経路は生きている。
+トリガ A が成立するのは、**alerts は `ignore` と独立に発火する**ためである。`dependency-name` だけで書いた `ignore` は version updates と security updates の PR をどちらも止める (GitHub Docs「Controlling which dependencies are updated」)。`update-types` を付けた `ignore` は security updates に効かない (dependabot-core の `IgnoreCondition#ignored_versions` は、security update の job では `update-types` を見ない。2026-10-30 に確認)。pin 中の修正は alert を見て手で当てる。pin 中でも「既知脆弱性が出たことを知る」経路は生きている。
 
 独立した定期チェックは設けない。忘れられる運用を作らない。
 
@@ -115,6 +115,25 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 | `*` を維持し `vp update --no-save` を使う | 宣言は守れるが、フラグを付け忘れると壊れる。強制する仕組みが無い                                                               | 却下     |
 | `playwright` を `package.json` から外す   | `@vitest/browser-playwright` の必須 peer なので install はされるが、root から解決できず `vp exec` の経路が上流の仕様に依存する | 却下     |
 | `*` であることを整合検査で固定する        | 根拠 (peer への委任) が成り立っていないものを機械強制することになる                                                            | 却下     |
+
+### 8. 一緒に上げる依存の組は 1 つの version update のグループで束ね、security update のグループは置かない
+
+組の片方だけが上がると、peer の食い違いなら `verify:peers` が `unmet peer` で落ち、exact の依存なら依存先が 2 つの版で入る。`minor-and-patch` は major を束ねないので、組の major は依存ごとの PR に割れる。
+
+`.github/dependabot.yml` に、組ごとに `update-types` を書かないグループを 1 つ置き、その patterns を `minor-and-patch` の `exclude-patterns` にも写す。2026-10-30 に lockfile で確かめた組は、peer で結ばれる storybook、TanStack Router と Start、React、TanStack Query と、exact の依存で結ばれる Tailwind CSS (`@tailwindcss/vite` が `tailwindcss` を exact で依存に持つ) である。TanStack Router と Start は、peer (`@tanstack/router-plugin` と `@tanstack/react-router-devtools`) と exact の依存 (`@tanstack/react-start`) の両方で結ばれる。
+
+グループの PR は、組の major と minor と patch を 1 本に混ぜて上げる。Dependabot はどの依存も最新の版へ上げ、今の major の中の最新の版を別に出さない (dependabot-core の npm の update checker は、`ignore` で外した版を除いた最新の版を 1 つ決める)。組の major を見送るときは、組の依存ごとに `dependency-name` と `update-types: ["version-update:semver-major"]` の `ignore` を足す。`@types/node` の行と同じ形である。外した major は候補から落ちるので、今の major の中の最新の版が届く。この `ignore` は pin なので、「pin には出口条件を書く」のとおり撤去条件を書く。
+
+security update のグループ (`applies-to: security-updates`) は置かない。security update のグループの PR は、job が指す脆弱な依存だけを上げる (GitHub Docs「Dependabot security updates」の「About grouped security updates」: "Dependabot then raises a single pull request to update as many vulnerable dependencies as possible in the group to secure versions at the same time.")。組の相手が脆弱でなければ上げない。2026-10-24 の `@storybook/addon-vitest` と `storybook` の security update は、security update のグループを置いていない構成で、別々の job で来た。後の alert が既存のグループの PR に合流するかは確かめていない。security update の PR が peer で落ちたときの扱いは `docs/guides/dependencies-and-toolchain.md`「peer の食い違いを数える」にある。
+
+version update の PR の上限 (`open-pull-requests-limit`) の既定は 5 である (GitHub Docs「Dependabot options reference」: "If five pull requests with version updates are open, no further pull requests are raised until some of those open requests are merged or closed.")。docs はグループの PR を上限の数から除くと書いておらず、2026-10-30 の設定では同時に開きうるグループの PR が 8 本あるので、10 に上げる。
+
+| 案                                                           | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 採否     |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 組ごとに `update-types` を書かないグループを 1 つ置く        | 組の更新が、major も含めて 1 本の PR にそろう。1 つの依存が 1 つのグループに入るので、docs の書く割り当て ("If a dependency matches more than one rule, it's included in the first group that it matches.") のとおりに動く。代わりに、major と minor と patch が 1 本の PR に混ざり、major を見送るには `ignore` を足す                                                                                                                                                                  | **採用** |
+| 組ごとに、minor と patch のグループと major のグループを置く | 開いている minor と patch の PR が、あとで major を抱え込まない。ただし、同じ依存を 2 つのグループに当てる形は docs の割り当ての記述と食い違い、dependabot-core のコード (`DependencyGroupEngine` の "Groups with update-types rules are complementary, not competing.") に頼る。最新が major なら minor と patch のグループは依存を受け取らず、PR の開いているグループは相手の依存を処理済みにするので (`run_grouped_dependency_updates`)、major を見送っても minor と patch は届かない | 却下     |
+| 組ごとに security update のグループも置く                    | グループの PR は脆弱な依存だけを上げるので、組の相手が脆弱でなければ peer の食い違いは残る。alert で起動する job にグループが渡らないという報告もある (dependabot/dependabot-core#16319、2026-10-30 に open)                                                                                                                                                                                                                                                                             | 却下     |
+| 組のグループを置かず、`minor-and-patch` に任せる             | minor と patch はそろうが、major は依存ごとの PR に割れ、片方ずつ落ちる                                                                                                                                                                                                                                                                                                                                                                                                                  | 却下     |
 
 ### 検討した選択肢
 
@@ -155,5 +174,9 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 - Vite+ が docs に載せる予定の Dependabot の設定例: https://github.com/voidzero-dev/vite-plus/pull/2463
 - Vite+ の CLI が vite の alias との版のずれで止まる変更: https://github.com/voidzero-dev/vite-plus/pull/2462
 - GitHub Docs: Dependabot pull request comment commands: https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-pull-request-comment-commands
+- GitHub Docs「Dependabot security updates」の「About grouped security updates」(グループの PR が脆弱な依存だけを上げること): https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-security-updates
+- GitHub Docs「Dependabot options reference」(グループの割り当てと `open-pull-requests-limit` の既定): https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference
+- dependabot-core: npm の update checker が最新の版を 1 つ決める処理: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker.rb 、`update-types` を持つグループが最新の版の semver の段で依存を受け取る処理: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/updater/semver_grouping_rules.rb 、`update-types` の重ならないグループの割り当て: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/dependency_group_engine.rb 、PR の開いているグループの依存を処理済みにする処理: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/updater/operations/group_update_all_versions.rb
+- dependabot-core: `ignore` の `update-types` が security update で使われないこと: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/common/lib/dependabot/config/ignore_condition.rb
 - GitHub Docs: 設定ファイルで ignore を定義する推奨: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/managing-pull-requests-for-dependency-updates
 - TanStack Start の hosting ガイド (nitro/vite の plugin): https://tanstack.com/start/latest/docs/framework/react/guide/hosting

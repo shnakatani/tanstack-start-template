@@ -11,6 +11,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # docs はグループの PR を上限の数から除くと書いていない。同時に開きうるグループの PR が既定の 5 を超えるので上げる (ADR-0005)
+    open-pull-requests-limit: 10
     # pnpm-workspace.yaml の minimumReleaseAge と .github/zizmor.yml の下限と対で持つ (ADR-0005)
     cooldown:
       default-days: 3
@@ -19,7 +21,7 @@ updates:
       # minor を上げたら package.json の engines.node の下限もその minor まで上げる (ADR-0004)
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
-      # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない (ADR-0005)
+      # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない。dependency-name だけの ignore は security update の PR も止める (ADR-0005)
       # 撤去条件: Vite+ の docs が、単独で先へ進む vitest の PR を作らせない bot の設定例を示したとき (voidzero-dev/vite-plus#2356)
       - dependency-name: "vitest"
       - dependency-name: "@vitest/*"
@@ -38,7 +40,34 @@ updates:
           - "@vitejs/plugin-react"
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
-      # vite-plus と react-compiler のグループの patterns を写し、変えたらここも変える (dependabot/dependabot-core#14576。
+      # 片方だけが上がると peer の食い違いで落ちるか、依存先が 2 つの版で入る組を 1 本の PR にする。
+      # major を見送るときは、組の依存ごとに update-types が semver-major の ignore を足し、撤去条件を書く (ADR-0005)
+      storybook:
+        patterns:
+          - "storybook"
+          - "@storybook/*"
+      tanstack-router:
+        patterns:
+          - "@tanstack/react-router"
+          - "@tanstack/react-start"
+          - "@tanstack/router-plugin"
+          - "@tanstack/react-router-devtools"
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      tanstack-query:
+        patterns:
+          - "@tanstack/react-query"
+          - "@tanstack/react-query-devtools"
+      tailwindcss:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      # patterns を持つほかのグループの依存をすべて除き、グループを変えたらここも変える。写さないと、組の依存が
+      # 組のグループから外れてこの PR に入るか、両方のグループに入る (dependabot/dependabot-core#14576。
       # docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)
       minor-and-patch:
         update-types:
@@ -53,3 +82,17 @@ updates:
           - "@vitejs/plugin-react"
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
+          - "storybook"
+          - "@storybook/*"
+          - "@tanstack/react-router"
+          - "@tanstack/react-start"
+          - "@tanstack/router-plugin"
+          - "@tanstack/react-router-devtools"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "@tanstack/react-query"
+          - "@tanstack/react-query-devtools"
+          - "tailwindcss"
+          - "@tailwindcss/*"
