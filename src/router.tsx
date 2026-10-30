@@ -1,6 +1,7 @@
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
+import { createIsomorphicFn } from "@tanstack/react-start";
 
 import { RouterInnerWrap } from "@/components/router-inner-wrap";
 import { PendingContent } from "@/components/screens/pending";
@@ -12,6 +13,14 @@ import {
 } from "@/lib/route-dialog-view-transition";
 
 import { routeTree } from "./routeTree.gen";
+
+// CSP の nonce を request ごとに作る。root route の headers が同じ値で CSP を返す (ADR-0046)。
+// クライアントでは作らない。router は HeadContent が描く csp-nonce の meta から読む
+const createSsrOptions = createIsomorphicFn().server(() => {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return { nonce: btoa(String.fromCharCode(...bytes)) };
+});
 
 export function getRouter() {
   // mutation 成功後の一覧 refetch 失敗 (background refetch) が無通知で古いデータを残す
@@ -28,6 +37,8 @@ export function getRouter() {
 
   const router = createTanStackRouter({
     routeTree,
+    // router を作るときに渡す。作ったあとに設定した nonce は hydration の script に届かない (ADR-0046)
+    ssr: createSsrOptions(),
     context: { queryClient },
     scrollRestoration: true,
     defaultPreload: "intent",

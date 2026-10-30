@@ -2,12 +2,14 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
+import { findCspNonceViolations } from "../../lib/csp-nonce.ts";
 import { REPO_ROOT } from "../../lib/repo-root.ts";
 import { type ExpectedHeader, findHeaderViolations } from "../../lib/response-headers.ts";
 
 /**
  * `vite.config.ts` の `nitro({ routeRules })` で付けたセキュリティヘッダが、実際の
- * レスポンスに乗っていることをビルド成果物で確かめる。
+ * レスポンスに乗っていることをビルド成果物で確かめる。root route の `headers` が付ける
+ * CSP も、nonce が HTML の `<script>` に届き、応答ごとに変わることと併せて確かめる。
  *
  * 設定値の検査では代替できない。`.output/nitro.json` の `config` は空で routeRules を
  * 含まず、Cloudflare の preset へ移して `nitro()` ごと外す変更は設定にもビルドにも
@@ -36,6 +38,13 @@ const EXPECTED_HEADERS: readonly ExpectedHeader[] = [
   { name: "Cross-Origin-Resource-Policy", value: "same-origin" },
   { name: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
 ];
+
+/**
+ * 期待する CSP。`src/routes/__root.tsx` の `headers` と対で持つ。`{nonce}` には応答ごとの nonce が入る。
+ * 写しで持つ理由は `EXPECTED_HEADERS` と同じ
+ */
+const EXPECTED_CSP =
+  "script-src 'nonce-{nonce}' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 
 const SERVER_ENTRY = join(REPO_ROOT, ".output", "server", "index.mjs");
 const HOST = "127.0.0.1";
@@ -94,6 +103,30 @@ async function waitForServer(): Promise<void> {
   );
 }
 
+/**
+ * `/` の CSP の nonce が HTML の `<script>` に届き、応答ごとに変わることを確かめる。
+ * 2 回目の応答は、1 回目と比べるためだけに取る
+ */
+async function checkCspNonce(first: Response): Promise<void> {
+  const second = await fetch(ORIGIN);
+  const samples = await Promise.all(
+    [first, second].map(async (response) => ({
+      policy: response.headers.get("Content-Security-Policy"),
+      html: await response.text(),
+    })),
+  );
+  const violations = findCspNonceViolations(samples, EXPECTED_CSP);
+  if (violations.length > 0) {
+    throw new CheckFailure(
+      [
+        "CSP の nonce が HTML の応答に届いていない。",
+        "src/router.tsx の ssr と src/routes/__root.tsx の headers を見る。",
+        ...violations.map((violation) => `  - ${violation}`),
+      ].join("\n"),
+    );
+  }
+}
+
 async function run(): Promise<void> {
   if (!existsSync(SERVER_ENTRY)) {
     throw new CheckFailure(`${SERVER_ENTRY} が無い。先に vp build を実行する`);
@@ -135,6 +168,7 @@ async function run(): Promise<void> {
         ].join("\n"),
       );
     }
+    await checkCspNonce(response);
   } finally {
     server.kill();
   }
