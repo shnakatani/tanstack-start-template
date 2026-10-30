@@ -97,6 +97,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - 最初のページはブラウザが読むので伝えない。Next.js の announcer も "not for the first load because screen readers do that automatically" とする (`app-router-announcer.tsx`、canary ブランチ、2026-09-28 に確認)
 - 奪わない条件は Navigation API の explainer の「Focus management」に合わせる: "this focus reset will not take place if the user or developer has manually changed focus while the promise was settling, and that element is still visible and focusable"
 - 遷移中に動いた focus が遷移の前と同じ要素へ戻っても、動いたとみなす。HTML Standard の focus update steps は、focus を受ける要素がその時点で focus している要素と違えば、navigation API の "focus changed during ongoing navigation" を立てる。potentially reset the focus は、これが立っていれば reset しない (whatwg/html の 404b3eb1)
+- 遷移中に動いた focus の先が消えて `<body>` に落ちたら、見出しへ移す。HTML Standard も、focus している要素が取り除かれるか focus できなくなると、この flag を false に戻すので reset する (node の removing steps と、update the rendering の focus fixup。同じ版)
 - 戻る・進むを通常の遷移と区別しない。Reach Router 1.3.1 (`src/lib/history.js`) は popstate を `action: "POP"` で同じ listener に流す。SvelteKit (`packages/kit/src/runtime/client/client.js` の `finish_navigation`、version-3 ブランチの 30d06f5) は popstate の遷移も同じ関数で focus を扱う。Navigation API の既定も traverse を区別しない
 
 ### ダイアログで見せる route
@@ -121,8 +122,15 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 | 別のページからダイアログの URL へ移る           | ダイアログの中の最初の要素。見出しへは移らない          | ダイアログの title |
 
 - 開いた直後の `onRendered` の時点では、Base UI の初期 focus (`requestAnimationFrame` で積まれる) がまだ走っておらず、focus は遷移前のリンクに残る。遷移中に focus が移っていないので移す場面に当たるが、同じ時点で Base UI がダイアログの外側を `aria-hidden="true"` で隠し終えているので、見出しへは移さない
-- 閉じるとき見出しへ移らないのは、Base UI が `onRendered` より前に `finalFocus` の要素へ focus を戻し終え、その移動が遷移中の `focusin` として記録されるからである。開いた直後 (ダイアログの初期 focus の前) に戻ると、focus は入力欄を経て開いたリンクへ戻り、遷移の前と同じ要素にあるが、移ったとみなすので見出しへは移さない (2026-10-31 に dev server で実測。`@base-ui/react` 1.9.0、`@tanstack/router-core` 1.171.39、Chromium 系のブラウザで、ブラウザの版は記録していない)
-- 開いたときの focus が一度も当たらないうちに戻ると (ダイアログが最初に描かれる前の 1 フレームの間)、focus は遷移の間ずっと開いたリンクから動かず、見出しへ移る。HTML Standard の flag も立たない場面で、仕様の reset と同じ結果になる (2026-10-31 に、初期 focus の `requestAnimationFrame` を止めたテストで確認)
+- 閉じるとき見出しへ移らないのは、Base UI が `onRendered` より前に `finalFocus` の要素へ focus を戻し終え、その移動が遷移中の `focusin` として記録されるからである
+- 開いた直後に戻ると、Base UI の初期 focus (`requestAnimationFrame` で積まれる) と、戻る遷移でダイアログが閉じることのどちらが先かで結果が分かれる。初期 focus は、走る時点でダイアログが閉じていれば当てない (`FloatingFocusManager` の `shouldFocus`)
+
+| 先に起きること     | focus の動き                            | 見出しへ                                                       |
+| ------------------ | --------------------------------------- | -------------------------------------------------------------- |
+| 初期 focus         | リンク → 入力欄 → リンク (`finalFocus`) | 移さない。遷移中に動いたので、同じ要素へ戻っても動いたとみなす |
+| ダイアログが閉じる | リンクのまま動かない                    | 移す。HTML Standard でも flag が立たず、reset する場面である   |
+
+- 上の表は 2026-10-31 に、`@base-ui/react` 1.9.0、`@tanstack/react-router` 1.170.46、`@tanstack/router-core` 1.171.39 で確かめた。1 行目は、dev server を Chromium 系のブラウザ (版は記録していない) で開き、スクリプトで開いてすぐ戻して 5 回とも起きた。2 行目は、Vitest の browser mode (Chromium) で初期 focus の `requestAnimationFrame` を止めて起こしたもので、実際のブラウザで起きるかは確かめていない
 
 ### モーダルのダイアログが開いている遷移
 

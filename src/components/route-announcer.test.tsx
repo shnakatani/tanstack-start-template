@@ -204,7 +204,7 @@ it("遷移中に focus が別の要素を経て遷移前の要素へ戻ったら
   await userEvent.click(toB);
   await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
   toB.element().focus();
-  // announcer が記録を始める onBeforeNavigate より後の、読み込みの途中で動かす
+  // announcer が記録を始める onBeforeNavigate の後 (読み込みを始める前の onBeforeLoad) で動かす
   const unsubscribe = router.subscribe("onBeforeLoad", () => {
     search.element().focus();
     toB.element().focus();
