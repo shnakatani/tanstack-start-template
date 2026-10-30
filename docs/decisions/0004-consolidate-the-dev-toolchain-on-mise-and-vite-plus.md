@@ -183,7 +183,7 @@ Vite 公式は「`VITE_*` variables should _not_ contain sensitive information�
 
 Vite+ は managed mode が既定で、`node` / `npm` / package manager の shim をプロジェクトごとに解決する。
 解決順は `.node-version` → `devEngines.runtime` → `engines.node` → `.nvmrc` で、`devEngines.runtime` が上に立つのは、それが開発環境の要求を表すのに対し `engines.node` は利用者向けのサポート範囲だからである (Vite+ の `docs/guide/env.md`)。
-package manager の版は `packageManager` が決める。`vp env pin` が書き込む先も `devEngines.runtime` で、`engines.node` は書き換えない。
+package manager の版は `packageManager` が決める。
 
 | 宣言                 | 決めるもの                      | 形                                                                              |
 | -------------------- | ------------------------------- | ------------------------------------------------------------------------------- |
@@ -192,6 +192,15 @@ package manager の版は `packageManager` が決める。`vp env pin` が書き
 | `packageManager`     | pnpm の版                       | exact                                                                           |
 
 Node.js を major までにするのは、minor 差が解決結果を変えないためである。
+major までの宣言は `package.json` を直接書き換えて変え、`vp env pin` は使わない。
+`vp env pin` は `devEngines.runtime` に書くが、範囲を渡しても exact の版に解決して書く (Vite+ の `rfcs/dev-engines.md`: "Teams that prefer a range in `devEngines.runtime` edit `package.json` directly; Vite+ reads and preserves ranges, it just does not author them through `vp env pin`.")。`engines.node` は書き換えない。
+2026-10-30 に global の Vite+ CLI 1.0.0 で、`24`・`^24`・`24.x`・`^24.0.0`・`>=24 <25`・`~24`・`node@24`・`node@^24` を渡すと、どれも `24.22.2` が書かれた。
+
+| 案 (`devEngines.runtime`)                      | 評価                                                                                                                                                                                   | 採否     |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| major まで (`24`) を `package.json` に直接書く | Vite+ は範囲に合う最新の版を選ぶ (2026-10-30、`vp env current` が 24.22.2)。patch の更新には宣言を書き換えずに追随する                                                                 | **採用** |
+| `vp env pin` で exact の版を書く               | 手元ごとの patch もそろう。代わりに patch のたびに打ち直す。Dependabot は `devEngines` を更新しないので (dependabot/dependabot-core#13722、2026-10-30 に open)、打ち直しは手作業になる | 却下     |
+
 `engines.node` は、`devEngines.runtime` の major (24) のうち Vite+ の CLI が動き、`@types/node` が型を持つ API がある範囲に絞る。下限は、`vite-plus` の `engines` の 24 系の下限 (vite-plus 1.0.0 で `^22.18.0 || ^24.11.0 || >=26.0.0`、2026-09-28 に確認) と `@types/node` の minor の高いほうにする。
 
 | 案 (`engines.node`)                                                              | 評価                                                                                                | 採否     |
@@ -237,7 +246,7 @@ Vite+ の `docs/guide/env.md` は、pnpm と Vite+ の両方が Node.js を管�
 
 | 案                                         | 評価                                                                                                                               | 採否     |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `package.json` を出所にし Vite+ が解決する | Vite+ が既定で見る場所と一致し、宣言が 1 つになる。`vp env pin` の書き込み先でもある                                               | **採用** |
+| `package.json` を出所にし Vite+ が解決する | Vite+ が既定で見る場所と一致し、宣言が 1 つになる                                                                                  | **採用** |
 | `.mise.toml` の `[tools]` を出所にする     | Vite+ は `package.json` を見続けるので二重宣言が残り、食い違いは検出も解消もされない                                               | 却下     |
 | mise に `package.json` を読ませる          | 解決するのが mise と Vite+ の 2 つになる。mise が `node` / `pnpm` を PATH へ注入し直すため、`disable_tools` で止めている衝突が戻る | 却下     |
 | 両方に宣言し、一致を整合検査で強制する     | 宣言が 2 つある状態は変わらず、検査の維持コストだけが増える                                                                        | 却下     |
@@ -302,6 +311,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 ## 出典
 
 - Vite+ の runtime 解決順と `packageManager` による package manager shim、`vp env pin` の書き込み先: `node_modules/vite-plus/docs/guide/env.md`
+- `vp env pin` が範囲を exact の版に解決して書くこと: Vite+ の `rfcs/dev-engines.md`「2.4 `vp env pin` write target」(https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/rfcs/dev-engines.md)、`resolve_version_for_pin` (https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/crates/vp_global_cli/src/commands/env/pin.rs)
 - pnpm に Node.js と pnpm の版を管理させない設定: Vite+ の `docs/guide/env.md`「Node.js Selection」の tip と「Package-Manager Selection」(https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/docs/guide/env.md)
 - `runtimeOnFail` と `pmOnFail` の意味と、manifest の `onFail` との優先: pnpm docs「Settings」の 11.x 版 (https://github.com/pnpm/pnpm.io/blob/7aded9fe30ceb31d4302b4189fcac84c958582b0/versioned_docs/version-11.x/settings/cli.md)
 - Vite+ が勧める `package.json` の scripts の形: `node_modules/vite-plus/docs/guide/local-cli.md`「Best Practices」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/local-cli.md#best-practices)
