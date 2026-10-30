@@ -1,12 +1,12 @@
 # ===== Vite+ が管理 (vp migrate が書く。手で編集しない) =====
 
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@1.1.0
-  vitest: 5.0.3
+  vite: npm:@voidzero-dev/vite-plus-core@1.4.0
+  vitest: 5.0.5
   vite-plus: 1.4.0
-  "@vitest/browser-playwright": 5.0.3
-  "@vitest/coverage-v8": 5.0.3
-  "@vitest/ui": 5.0.3
+  "@vitest/browser-playwright": 5.0.5
+  "@vitest/coverage-v8": 5.0.5
+  "@vitest/ui": 5.0.5
 
 # ===== 両方が書く (1 つのキーに vp migrate の行と手で足す行が同居する) =====
 
