@@ -16,7 +16,7 @@ export function resolveTestTimeZone(env: { TZ?: string; TEST_TIME_ZONE?: string 
   // ホストが自分の都合で TZ を持つこともあるので、渡した意図は決めつけない
   const warning =
     env.TZ && env.TZ !== BASE_TIME_ZONE
-      ? `[time-zones] ホストの TZ=${env.TZ} は使わず、基準の ${BASE_TIME_ZONE} で走らせる。TZ を変えて走らせるなら vp node scripts/time-zones/run-tests.ts を使う`
+      ? `[time-zones] ホストの TZ=${env.TZ} は使わず、基準の ${BASE_TIME_ZONE} で走らせる。TZ を変えて走らせるなら vp run verify:time-zones を使う`
       : undefined;
   return { timeZone: BASE_TIME_ZONE, warning };
 }

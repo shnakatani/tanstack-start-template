@@ -16,15 +16,15 @@
 
 壊れる原因が違うテストを同じ project に混ぜない。project が分かれていると、落ちた project の名前から、直す対象がアプリのコードか、スクリプトか、設定と文書かが分かる。
 
-| 種別                   | 壊れる原因                   | 置き場所                                            | 実行                                                                                                                          |
-| ---------------------- | ---------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                  | `vp test run --project unit`                                                                                                  |
-| TZ ごとの単体テスト    | アプリのコード変更           | `src/**/*.tz.test.ts`                               | `docs/guides/testing/time-zones.md`「Node で動くテストを TZ ごとに走らせる」                                                  |
-| アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                                 | `vp test run --project browser`。`src/components/ui/` のテストは「React Compiler を通さない project を足す」                  |
-| アプリの型テスト       | アプリの型の変更             | `src/**/*.test-d.ts`                                | `vp check` (`docs/guides/testing/type-tests.md`「型テストを置く」)                                                            |
-| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/**/*.test.ts` (`scripts/checks/**` を除く) | `vp test run --project scripts-tools`                                                                                         |
-| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity`                                                                                      |
-| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp build` の後に `vp node scripts/checks/runtime/<name>.ts` (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」) |
+| 種別                   | 壊れる原因                   | 置き場所                                            | 実行                                                                                                         |
+| ---------------------- | ---------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| アプリの単体テスト     | アプリのコード変更           | `src/**/*.test.ts`                                  | `vp test run --project unit`                                                                                 |
+| TZ ごとの単体テスト    | アプリのコード変更           | `src/**/*.tz.test.ts`                               | `docs/guides/testing/time-zones.md`「Node で動くテストを TZ ごとに走らせる」                                 |
+| アプリのブラウザテスト | アプリのコード変更           | `src/**/*.test.tsx`                                 | `vp test run --project browser`。`src/components/ui/` のテストは「React Compiler を通さない project を足す」 |
+| アプリの型テスト       | アプリの型の変更             | `src/**/*.test-d.ts`                                | `vp check` (`docs/guides/testing/type-tests.md`「型テストを置く」)                                           |
+| スクリプトの単体テスト | スクリプト自身の変更         | `scripts/**/*.test.ts` (`scripts/checks/**` を除く) | `vp test run --project scripts-tools`                                                                        |
+| 整合検査               | 設定・ドキュメントの更新漏れ | `scripts/checks/integrity/`                         | `vp test run --project checks-integrity`                                                                     |
+| 成果物の検査           | ビルド結果に現れる挙動の欠落 | `scripts/checks/runtime/`                           | `vp build` の後に `vp run verify:<name>` (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)    |
 
 - `src/` のテストは接尾辞で project が決まる。DOM が要るテストは `*.test.tsx` にして browser project で、DOM が要らないテストは `*.test.ts` にして unit project (Node) で走らせる。テストの helper のテストも同じに分ける。集める範囲は、`tooling/test/config.ts` の `unit` の `include` と、`scripts/lib/companion-files.ts` の `BROWSER_TEST_GLOB` が持つ
 - 種別を足すときは、置き場所と project を対で作る (「project を足す」)

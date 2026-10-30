@@ -48,6 +48,10 @@ peerDependencyRules:
 
 # ===== このテンプレートが追加 (vp migrate が書かない) =====
 
+# Node.js と pnpm の版は Vite+ が package.json の宣言から選ぶ。pnpm には管理させない (ADR-0004)
+runtimeOnFail: ignore
+pmOnFail: ignore
+
 allowBuilds:
   esbuild: true
   lightningcss: true

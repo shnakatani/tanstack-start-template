@@ -16,9 +16,9 @@ const verifySteps = {
   "verify:peers": "pnpm peers check",
   "verify:check": "vp check",
   "verify:test": "vp test run",
-  "verify:time-zones": "node scripts/time-zones/run-tests.ts",
+  "verify:time-zones": "vpx scripts/time-zones/run-tests.ts",
   "verify:build": "vp build",
-  "verify:security-headers": "node scripts/checks/runtime/security-headers.ts",
+  "verify:security-headers": "vpx scripts/checks/runtime/security-headers.ts",
 };
 
 export default defineConfig({
@@ -47,7 +47,7 @@ export default defineConfig({
       storybook: "vp exec storybook dev --no-open --exact-port",
       ...verifySteps,
       verify: Object.keys(verifySteps).map((task) => `vp run ${task}`),
-      contrast: "node scripts/contrast/report.ts",
+      contrast: "vpx scripts/contrast/report.ts",
       "db:generate": "vp exec drizzle-kit generate",
       "db:migrate": "vp exec drizzle-kit migrate",
       "db:seed": { command: "vpx scripts/db/seed.ts", dependsOn: ["db:migrate"] },

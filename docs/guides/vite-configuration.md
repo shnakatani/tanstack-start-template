@@ -43,8 +43,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 1. `vite.config.ts` の `run.tasks` に足す。worktree ごとの port で起動するサーバーなら、タスクは port を読まずに使用中の port で止まるフラグ (Vite は `--strictPort`) を付け、`.mise.toml` に同名のタスクを足して `interactive = true` を置き、`exec vp run <task> --port ${<NAME>_PORT:?…}` で渡す。ツールが起動のしかたに関わらず `--port` より `PORT` の環境変数を先に読むなら (nitro の dev server)、`PORT=${<NAME>_PORT:?…} exec vp run <task> --port $<NAME>_PORT` の形にする。Claude のプレビューから起動されたときだけ `PORT` を先に読むツール (Storybook) には付けない。daemon は `task =` でそのタスクを指す (ADR-0004)
 2. mise の `[env]` の値を読むなら、値が届いていなければ止まる形にする。mise の値は、呼んだシェルが mise の環境を読んでいるときだけタスクに届く (ADR-0004)。command の中で読むなら `${NAME:?mise の環境が要る。…}` のように書く。Vite Task は command を `/bin/sh` で解釈し、未設定なら `/bin/sh: NAME: …` を出して止まる (2026-10-14 に vite-plus 1.1.0 で確かめた)。値をコマンドの引数に使わないなら、`NAME=${NAME:?…} <コマンド>` と代入の形で書く。`${NAME:?…}` だけを置くと、値がコマンドの位置引数 (`vp dev` なら root) になる。コードで読むなら `src/lib/require-env.ts` の `requireEnv` を使う
 3. タスクに `cache` を書かない。`run.cache: false` がすべてのタスクのキャッシュを切っている。gate を `vp run --cache` で打たない。`--cache` は全体の設定を外し、2 回目をリプレイで済ませる (ADR-0004)
-4. command の中で Node.js のスクリプトを走らせるときは、`vp node` ではなく `node` を打つ。タスクの中の `vp node` は `error: Command 'node' not found` で落ちる (「タスクの中で `node` を打つ理由」)
-   - `src/` を `@/` の alias か拡張子の無い import で読むスクリプトは、`node` ではなく `vpx <file>` で走らせる。Node.js の type stripping は tsconfig の `paths` を読まず、拡張子の無い import は `ERR_MODULE_NOT_FOUND` で落ちる (`docs/guides/database.md`「seed を vpx で走らせる理由」)
+4. command の中で TypeScript と JavaScript のスクリプトを走らせるときは `vpx <file>` を打ち、`node` と `vp node` を打たない。タスクの中の `vp node` は `error: Command 'node' not found` で落ち、`node` は tsconfig の `paths` を読まない (「タスクの中で `vpx` を打つ理由」)
 5. 引数は `vp run <task> <引数>` で渡し、`--` を挟まない。`--` もそのままコマンドに渡る ([Vite+ docs「Run」][] の Additional Arguments: "Arguments after the task name are passed through to the task command")。2026-10-14 に vite-plus 1.1.0 で `vp run contrast -- --theme dark …` を打つと、`scripts/contrast/report.ts` が `知らない引数: --` で落ちた
 6. マージ前の検証の手順なら、`verifySteps` に `verify:<名前>` で足し、`.github/workflows/ci.yml` にも同じ位置に `vp run verify:<名前>` の step を足す。足し忘れても CI は落ちない (ADR-0004)
 7. README のコマンド一覧に行を足す。`verify:<名前>` は `vp run verify` から走るので足さない
@@ -100,16 +99,16 @@ Vite+ は、重い plugin を `lazyPlugins` に渡す async の関数の中で `
 
 async の関数でも `vp exec storybook build` が通るようになったら (`@storybook/tanstack-react` が Promise の plugin を解決してから外すようになるなど)、関数を async にして plugin を `import()` へ移せる。この節の計測は、そのときに移す plugin を選ぶ材料になる。
 
-### タスクの中で `node` を打つ理由
+### タスクの中で `vpx` を打つ理由
 
-- `vp node` は `vp env exec node` の短縮形で、`vp env` は global の CLI に属し、project-local の `vite-plus` には無い ([Vite+ docs「Environment」][] の冒頭と Execute の例)
-- `vp run` は `node_modules/.bin` を `PATH` の先頭に置くので、タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `error: Command 'node' not found` で落ちる (2026-10-14、vite-plus 1.1.0)
-- タスクの中の `node` は、global の `vp run` が `PATH` に足した Vite+ の管理する runtime に解決される。2026-10-14 に、`PATH` の上で `node` が mise の Node.js 24.20.0 に解決されるシェルから打っても、タスクの中の `node` は `vp node --version` と同じ 24.21.0 だった
-- `vp node` を足す前、メンテナは project の中で `node` を使う手段を "The current solution is defining a `package.json` script or a task." と書いている ([voidzero-dev/vite-plus#1325][]、2026-04-09)。`vp node` は、script やタスクを定義せずに打つための短縮形として足された
+- [Vite+ docs「Environment」][] は `vp node` を "It runs Node.js as is, so TypeScript files get Node.js type stripping only; `vpx <file>` runs them on the same runtime with full TypeScript support." と書く。Node.js の type stripping は tsconfig の `paths` を読まず、拡張子の無い import は `ERR_MODULE_NOT_FOUND` で落ちる (`docs/guides/database.md`「seed を vpx で走らせる理由」)
+- `vp node` は `vp env exec node` の短縮形で、`vp env` は global の CLI に属し、project-local の `vite-plus` には無い ([Vite+ docs「Environment」][] の冒頭と Examples)。`vp run` は `node_modules/.bin` を `PATH` の先頭に置くので、タスクの中の `vp` は project-local の CLI に解決され、`vp node` は `error: Command 'node' not found` で落ちる (2026-10-30、vite-plus 1.4.0)
+- タスクの中の `vpx` も project-local の `vite-plus` の bin に解決され、global の CLI の版に頼らない。[Vite+ docs「Running Binaries」][] の In `package.json` Scripts は "It runs them on the Node.js that started it, which inside `vp run` and package manager scripts is the project's version." と書く
+- `vpx` が足す起動の時間は小さい。2026-10-30 に vite-plus 1.4.0 と Node.js 24.20.0 で、`scripts/contrast/report.ts` を `node` と project-local の `vpx` で 5 回ずつ交互に走らせ、2 回目以降の差は 0.05 秒以下だった (初回の `vpx` だけが 0.2 秒ほど長い)
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0 (「タスクを足す」と「タスクの中で `node` を打つ理由」の出典は 1.1.0)、Vitest は 5.0.1 に固定した版を指す。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0 (「タスクを足す」の出典は 1.1.0、「タスクの中で `vpx` を打つ理由」の出典は 1.4.0)、Vitest は 5.0.1 に固定した版を指す。
 
 [Vite+ docs「Configuring Vite+」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/config/index.md
 [Vite+ docs「Test」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/test.md
@@ -124,5 +123,5 @@ async の関数でも `vp exec storybook build` が通るようになったら (
 [voidzero-dev/vite-plus#1215]: https://github.com/voidzero-dev/vite-plus/pull/1215
 [voidzero-dev/vite-plus#1769]: https://github.com/voidzero-dev/vite-plus/issues/1769
 [Vite+ docs「Run」]: https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/run.md
-[Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/env.md
-[voidzero-dev/vite-plus#1325]: https://github.com/voidzero-dev/vite-plus/issues/1325
+[Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/docs/guide/env.md
+[Vite+ docs「Running Binaries」]: https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/docs/guide/vpx.md

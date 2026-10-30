@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-10-15
+- Date: 2026-10-30
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -203,7 +203,33 @@ Node.js を major までにするのは、minor 差が解決結果を変えな�
 
 pnpm を exact にするのは、minor で解決挙動そのものが変わり、`minimumReleaseAge` や `peerDependencyRules` の扱いが動くと lockfile が手元ごとに割れるためである (ADR-0005)。
 
-`devEngines.runtime.onFail` は `error` にする。pnpm も同じフィールドを読み、`download` だと宣言した runtime を自前で解決して lockfile へ記録するためで、runtime は Vite+ が同じ宣言から解決して持っているので 2 つ目の実体は要らない。`vp env pin` の後に戻す手順と実測は `docs/guides/dependencies-and-toolchain.md`「Node.js の版を打ち直す」にある。
+pnpm には Node.js と pnpm の版を管理させず、`pnpm-workspace.yaml` に `runtimeOnFail: ignore` と `pmOnFail: ignore` を置く。
+Vite+ の `docs/guide/env.md` は、pnpm と Vite+ の両方が Node.js を管理すると "they can download the same version separately or select different versions, causing inconsistent behavior between commands" と書き、"If your project uses Vite+ to manage Node.js and pnpm versions, add these settings to the project's `pnpm-workspace.yaml` (pnpm 11+)" として 2 つの設定を勧める。
+`runtimeOnFail` は `devEngines.runtime` の `onFail` を上書きする (pnpm docs「Settings」の runtimeOnFail: "Overrides the `onFail` field of `devEngines.runtime` (and `engines.runtime`) in the root project's `package.json`")。そのため `devEngines.runtime` に `onFail` を書かず、pnpm の扱いを manifest の値に頼らない。
+
+| 案 (runtime)                                  | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | 採否     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `runtimeOnFail: ignore` を置く                | Vite+ docs の勧める形。`onFail` が `download` でも、pnpm は runtime を解決しない (下の実測。`pmOnFail: ignore` と同時に置いて測った)。代わりに、`onFail: "error"` のときに pnpm がコマンドの前に走らせる Node.js の版の検査 (`ERR_PNPM_BAD_RUNTIME_VERSION`) も無くなる。依存の操作は `vp` から打ち (`docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」)、Node.js は Vite+ が選ぶ。`devEngines.runtime` に Bun や Deno を足しても、pnpm はそれも入れない (Vite+ docs の同じ tip: "`runtimeOnFail: ignore` also affects other declared runtimes, including Bun and Deno") | **採用** |
+| `devEngines.runtime.onFail` を `error` にする | pnpm は runtime を解決せず、版の検査も残る。ただし公式の勧める形ではなく、manifest の値が変わると pnpm の扱いも変わる。`devEngines.runtime` の無い状態から `vp env pin` で作り直すと `onFail: "download"` が書かれ (下の実測)、手で戻すことになる                                                                                                                                                                                                                                                                                                                                     | 却下     |
+| どちらも置かない                              | `onFail` の無い今の宣言なら、pnpm は runtime を解決しない (pnpm v11.28.0 の `convertEnginesRuntimeToDependencies` は、`onFail` が `download` のときだけ runtime を依存に足す。この組み合わせは測っていない)。ただし宣言を作り直して `onFail: "download"` が入ると (下の実測)、pnpm が宣言の runtime を自前で解決して lockfile へ記録し、`node_modules/.bin/node` を展開する。Vite+ の持つ runtime と 2 つの実体になる                                                                                                                                                                 | 却下     |
+
+`pmOnFail: ignore` は、Vite+ が起動した pnpm が `packageManager` の版へ自分で切り替え直す処理を止める (Vite+ の `docs/guide/env.md`: "pnpm 11+'s `pmOnFail` defaults to `download` and may switch back to the version in `package.json`. To let Vite+ control the pnpm version, set `pmOnFail: ignore` in the project's `pnpm-workspace.yaml`")。
+
+| 案 (package manager)         | 評価                                                                                                                                                                                                                                                                                                                                                | 採否     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `pmOnFail: ignore` を置く    | Vite+ docs の勧める形。Vite+ は `packageManager` の版の pnpm を起動するので、上書きが無ければ pin の版で走る。代わりに、`vp env use pnpm@…` で上書きした pnpm や、`vp env off` で使う system の pnpm は、pin と違う版のまま、切り替わらず警告も出さずに走る。そのとき lockfile が pin の版と違う解き方になりうる (上の「pnpm を exact にする」理由) | **採用** |
+| 置かない (既定の `download`) | pin と違う版の pnpm が起動すると、pnpm が pin の版を取って切り替え直す。Vite+ の上書きを pnpm が打ち消し、Vite+ と pnpm のどちらが版を決めるかが 2 つに分かれる                                                                                                                                                                                     | 却下     |
+
+2026-10-30 に pnpm 11.28.0 と global の Vite+ CLI 1.0.0 で、`vp env pin` と lockfile を確かめた。
+
+| 手順                                                                                        | 結果                                                                         |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `devEngines.runtime` を消してから `vp env pin 24 --force --no-install --target dev-engines` | `{"name":"node","version":"24.22.2","onFail":"download"}` が書かれた         |
+| `onFail` の無い `{"name":"node","version":"24"}` に `vp env pin 24 --force --no-install`    | `{"name":"node","version":"24.22.2"}` になり、`onFail` は足されなかった      |
+| 1 行目のあと、`vp add -D is-number@7.0.0` と `vp remove is-number` (設定なし)               | lockfile に `node@runtime:24.22.2` が入り、`node_modules/.bin/node` ができた |
+| 同じ、`runtimeOnFail: ignore` と `pmOnFail: ignore` を置いて                                | lockfile に runtime の項目は入らず、`node_modules/.bin/node` もできなかった  |
+
+2 つの設定は同時に置いて測った。`pmOnFail` の効き目 (版の切り替え) は測っていない。
 
 同じ版を `.mise.toml` の `[tools]` にも宣言すると、2 つの宣言は別々に解決される。
 2026-09-02 の実測では mise が 24.12.0、Vite+ が 24.20.0 を選び、`vp env doctor` が PATH 上の `node` を「vp shim ではない」と警告した。
@@ -276,6 +302,8 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 ## 出典
 
 - Vite+ の runtime 解決順と `packageManager` による package manager shim、`vp env pin` の書き込み先: `node_modules/vite-plus/docs/guide/env.md`
+- pnpm に Node.js と pnpm の版を管理させない設定: Vite+ の `docs/guide/env.md`「Node.js Selection」の tip と「Package-Manager Selection」(https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/docs/guide/env.md)
+- `runtimeOnFail` と `pmOnFail` の意味と、manifest の `onFail` との優先: pnpm docs「Settings」の 11.x 版 (https://github.com/pnpm/pnpm.io/blob/7aded9fe30ceb31d4302b4189fcac84c958582b0/versioned_docs/version-11.x/settings/cli.md)
 - Vite+ が勧める `package.json` の scripts の形: `node_modules/vite-plus/docs/guide/local-cli.md`「Best Practices」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/local-cli.md#best-practices)
 - built-in と `vp run` の script の違い: `node_modules/vite-plus/docs/guide/run.md`「Built-in Commands vs Scripts」(https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/run.md)
 - command の中の `vp run` の展開、タスクの並列、タスクへの引数: `node_modules/vite-plus/docs/guide/run.md`「Nested `vp run`」「Concurrency」「Additional Arguments」(https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/run.md)
