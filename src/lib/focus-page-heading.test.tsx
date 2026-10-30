@@ -8,12 +8,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// focusPageHeading は遷移前の要素を Element で受け取り同一性で比べるので、渡す要素は querySelector で掴む。
 // focus の移り先は locator の toHaveFocus で見る。body は role で引けないので document.activeElement と比べる
 describe("focusPageHeading", () => {
   it("focus していた要素が消えて body にあるとき、h1 へ移し tabindex=-1 を付ける", async () => {
     const screen = await render(<h1>ページ</h1>);
-    focusPageHeading(null);
+    focusPageHeading(false);
     const heading = screen.getByRole("heading", { name: "ページ" });
     await expect.element(heading).toHaveFocus();
     await expect.element(heading).toHaveAttribute("tabindex", "-1");
@@ -26,10 +25,9 @@ describe("focusPageHeading", () => {
         <h1>ページ</h1>
       </>,
     );
-    // 遷移前の要素を渡し、null が「遷移前の要素に残っている」扱いで通らないようにする
-    const button = document.querySelector("button");
+    // 遷移中に focus が移ったと渡し、null が「移っていない」扱いで通らないようにする
     const activeElement = vi.spyOn(document, "activeElement", "get").mockReturnValue(null);
-    focusPageHeading(button);
+    focusPageHeading(true);
     activeElement.mockRestore();
     await expect.element(screen.getByRole("heading", { name: "ページ" })).toHaveFocus();
   });
@@ -43,7 +41,7 @@ describe("focusPageHeading", () => {
     );
     const link = document.querySelector("a");
     link?.focus();
-    focusPageHeading(link);
+    focusPageHeading(false);
     await expect.element(screen.getByRole("heading", { name: "ページ" })).toHaveFocus();
   });
 
@@ -55,10 +53,9 @@ describe("focusPageHeading", () => {
         <h1>ページ</h1>
       </>,
     );
-    const link = document.querySelector("a");
     const input = screen.getByRole("textbox", { name: "入力" });
     input.element().focus();
-    focusPageHeading(link);
+    focusPageHeading(true);
     await expect.element(input).toHaveFocus();
   });
 
@@ -72,7 +69,7 @@ describe("focusPageHeading", () => {
         </div>
       </>,
     );
-    focusPageHeading(null);
+    focusPageHeading(false);
     expect(document.activeElement).toBe(document.body);
     expect(document.querySelector("h1")?.hasAttribute("tabindex")).toBe(false);
   });
@@ -86,7 +83,7 @@ describe("focusPageHeading", () => {
         <h1>背後のページ</h1>
       </div>,
     );
-    focusPageHeading(null);
+    focusPageHeading(false);
     expect(document.activeElement).toBe(document.body);
     // 隠れた見出しは role で引けないので querySelector で掴む
     expect(document.querySelector("h1")?.hasAttribute("tabindex")).toBe(false);
@@ -102,7 +99,7 @@ describe("focusPageHeading", () => {
         </div>
       </>,
     );
-    focusPageHeading(null);
+    focusPageHeading(false);
     await expect.element(screen.getByRole("dialog", { name: "ダイアログ" })).toBeVisible();
     expect(document.activeElement).toBe(document.body);
   });
@@ -115,7 +112,7 @@ describe("focusPageHeading", () => {
         <div role="alertdialog" aria-modal="true" aria-label="閉じたダイアログ" hidden />
       </>,
     );
-    focusPageHeading(null);
+    focusPageHeading(false);
     await expect.element(screen.getByRole("heading", { name: "ページ" })).toHaveFocus();
   });
 
@@ -125,7 +122,7 @@ describe("focusPageHeading", () => {
     const screen = await render(<h1>ページ</h1>);
     const heading = screen.getByRole("heading", { name: "ページ" });
     heading.element().setAttribute("tabindex", "0");
-    focusPageHeading(null);
+    focusPageHeading(false);
     await expect.element(heading).toHaveAttribute("tabindex", "0");
   });
 
@@ -134,7 +131,7 @@ describe("focusPageHeading", () => {
     await render(<button type="button">遷移前に押したボタン</button>);
     const button = document.querySelector("button");
     button?.focus();
-    focusPageHeading(button);
+    focusPageHeading(false);
     expect(document.activeElement).toBe(document.body);
     expect(document.body.hasAttribute("tabindex")).toBe(false);
     expect(warn).toHaveBeenCalledWith("[focusPageHeading] 移し先の見出しが無い", expect.anything());
@@ -155,7 +152,7 @@ describe("focusPageHeading", () => {
       () => focusVisibleAtFocus.push(document.body.matches(":focus-visible")),
       { once: true },
     );
-    focusPageHeading(button);
+    focusPageHeading(false);
     expect(document.activeElement).toBe(document.body);
     expect(focusVisibleAtFocus).toEqual([false]);
   });
@@ -167,15 +164,13 @@ describe("focusPageHeading", () => {
         <h1>ページ</h1>
       </>,
     );
-    const button = document.querySelector("button");
     // Tab を押してブラウザに「直前の操作はキーボード」と判定させる。この状態のまま
     // 素の .focus() を呼ぶとブラウザの既定判定で :focus-visible になる。
-    // 遷移前と同じ要素 (button) に focus が残っているケースを再現するため、
-    // focusedBeforeNavigation にも同じ要素を渡す (早期 return させない)
+    // 遷移中に focus が移らなかったと渡す (早期 return させない)
     await userEvent.keyboard("{Tab}");
     await expect.element(screen.getByRole("button", { name: "前の要素" })).toHaveFocus();
     const heading = screen.getByRole("heading", { name: "ページ" });
-    focusPageHeading(button);
+    focusPageHeading(false);
     await expect.element(heading).toHaveFocus();
     await expect.poll(() => heading.element().matches(":focus-visible")).toBe(false);
   });
@@ -188,13 +183,13 @@ describe("focusPageHeading", () => {
       </>,
     );
     window.scrollTo(0, 0);
-    focusPageHeading(null);
+    focusPageHeading(false);
     expect(window.scrollY).toBe(0);
   });
 
   // 失敗の画面では、ページの名前の h1 の下に失敗の見出しが出る。h1 へ移すと失敗が focus で伝わらない
   it.each([
-    ["focusPageHeading", () => focusPageHeading(null)],
+    ["focusPageHeading", () => focusPageHeading(false)],
     ["moveFocusToPageHeading", moveFocusToPageHeading],
   ])(
     "%s は、状態の見出しの印があれば、文書順で先の h1 より先にそこへ移す",

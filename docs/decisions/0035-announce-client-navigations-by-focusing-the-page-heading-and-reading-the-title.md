@@ -1,7 +1,7 @@
 # ADR-0035: クライアント遷移は、新しいページの見出しへの focus と title の読み上げで伝える
 
 - Status: Accepted
-- Date: 2026-10-28
+- Date: 2026-10-31
 - 関連: ADR-0026 (読み上げは `announce()` の polite の region に流す)、ADR-0027 (検索条件の変化は件数の通知で伝える)、ADR-0029 (route の pending 表示は `announce()` で通知しない)、ADR-0041 (ページの上に重ねるダイアログの route)、ADR-0033 (読み込んだデータで決まる名前は route の head() が組む)、ADR-0044 (失敗を受ける部品の位置)
 
 ## Context
@@ -28,7 +28,7 @@
 | focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移と、ページとその上に重ねたダイアログの route の行き来も同じに扱う                                                                                                                                                                                                                                                                               |
 | 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                                                                                                                                                                                                                                              |
-| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                                                                                                                                                                                                                                                |
+| focus を奪わない   | `onBeforeNavigate` から `onRendered` までの `focusin` を記録し、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、その間に focus が一度も移らなかったときだけ移す。移った先が遷移の前と同じ要素でも、移ったとみなす                                                                                                                                                                                                          |
 | モーダルの下       | 遷移の後に、移し先の見出しの祖先か自身が `aria-hidden="true"` か `inert` のとき、または `aria-modal="true"` の `role="dialog"` か `role="alertdialog"` が表示されているときは、focus を移さない。title の読み上げは行う                                                                                                                                                                                                                        |
 | 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                                                                                                                                                                                                                                          |
 | title              | ページとダイアログの route は `pageRouteOptions` か `dialogRouteOptions` (`src/lib/page-title.ts`) を spread し、`staticData.pageName` のページ名と、そこから title を組む `head` を 1 組で持つ。root の `head` も `pageTitle` を通す。形は `<ページ名> — <APP_NAME>`、ページ名が無いか `APP_NAME` と同じなら `<APP_NAME>`。読み込んだデータで決まる名前の route は、自分の `head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする |
@@ -119,8 +119,8 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 | 閉じる (Escape、キャンセル、保存)、戻る         | ダイアログの中 → 開いたリンク。見出しへは移らない       | 元のページの title |
 | 別のページからダイアログの URL へ移る           | ダイアログの中の最初の要素。見出しへは移らない          | ダイアログの title |
 
-- 開いた直後の `onRendered` の時点では、Base UI の初期 focus (`requestAnimationFrame` で積まれる) がまだ走っておらず、focus は遷移前のリンクに残る。「覚えた要素のまま」に当たるが、同じ時点で Base UI がダイアログの外側を `aria-hidden="true"` で隠し終えているので、見出しへは移さない
-- 閉じるとき見出しへ移らないのは、Base UI が `onRendered` より前に `finalFocus` の要素へ focus を戻し終えるからである。`onRendered` の時点の focus は、覚えたダイアログの中の要素と違う
+- 開いた直後の `onRendered` の時点では、Base UI の初期 focus (`requestAnimationFrame` で積まれる) がまだ走っておらず、focus は遷移前のリンクに残る。遷移中に focus が移っていないので移す場面に当たるが、同じ時点で Base UI がダイアログの外側を `aria-hidden="true"` で隠し終えているので、見出しへは移さない
+- 閉じるとき見出しへ移らないのは、Base UI が `onRendered` より前に `finalFocus` の要素へ focus を戻し終え、その移動が遷移中の `focusin` として記録されるからである。開いた直後 (ダイアログの初期 focus の前) に戻ると、focus は入力欄を経て開いたリンクへ戻り、遷移の前と同じ要素にあるが、移ったとみなすので見出しへは移さない (2026-10-31 に dev server で実測)
 
 ### モーダルのダイアログが開いている遷移
 

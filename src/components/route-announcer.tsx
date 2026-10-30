@@ -16,21 +16,27 @@ import { shouldAnnounceNavigation } from "@/lib/route-announcement";
 export function RouteAnnouncer() {
   const router = useRouter();
   useEffect(() => {
-    let focusedBeforeNavigation: Element | null = null;
+    // 遷移中に focus がどこかの要素へ移ったか。HTML Standard の navigation API が持つ
+    // "focus changed during ongoing navigation" と同じく、移った先が遷移の前と同じ要素でも移ったとみなす
+    let focusChanged = false;
+    const recordFocusChange = () => {
+      focusChanged = true;
+    };
     const unsubscribeBefore = router.subscribe("onBeforeNavigate", () => {
-      focusedBeforeNavigation = document.activeElement;
+      focusChanged = false;
+      document.addEventListener("focusin", recordFocusChange);
     });
     const unsubscribeRendered = router.subscribe("onRendered", (event) => {
-      // 外れた要素を次の遷移まで持たない。伝えない遷移 (検索条件だけの変化) でも手放す
-      const focusedBefore = focusedBeforeNavigation;
-      focusedBeforeNavigation = null;
+      // 伝えない遷移 (検索条件だけの変化) でも記録を止める
+      document.removeEventListener("focusin", recordFocusChange);
       if (!shouldAnnounceNavigation(event)) {
         return;
       }
-      focusPageHeading(focusedBefore);
+      focusPageHeading(focusChanged);
       announce(document.title);
     });
     return () => {
+      document.removeEventListener("focusin", recordFocusChange);
       unsubscribeBefore();
       unsubscribeRendered();
     };
