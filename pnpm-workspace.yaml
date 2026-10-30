@@ -49,7 +49,7 @@ peerDependencyRules:
 # ===== このテンプレートが追加 (vp migrate が書かない) =====
 
 # pnpm の版は Vite+ が packageManager から選ぶ。pnpm に切り替えさせない (ADR-0004)
-# Node.js は package.json の devEngines.runtime.onFail で止める。runtimeOnFail を置くと pnpm 11 が package.json に書き戻す (ADR-0004)
+# Node.js は devEngines.runtime に onFail を書かずに pnpm に扱わせない。runtimeOnFail を置くと pnpm 11 が package.json に書き戻す (ADR-0004)
 pmOnFail: ignore
 
 allowBuilds:
