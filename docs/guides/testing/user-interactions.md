@@ -68,12 +68,14 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 
 Base UI の popup (Dialog、AlertDialog、Drawer、Popover、Menu、Select、Combobox。どれも `FloatingFocusManager` で開いたときの focus を当てる) を開いた直後に、開いたときの focus が当たる要素へキーを送るときは、`expect.element(<focus を受ける要素>).toHaveFocus()` で focus が届いたのを待ってから送る (「popup の初期 focus が遅れて当たる理由」)。届く前のキーは popup の外 (開く操作をした要素か body) に当たり、スクロールの End や確定の Enter が効かない。
 
-| 開いたあとの操作                                                            | focus を待つか                                                                                                                             |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 開いたときの focus が当たる要素へキーを送る (End でスクロールする、など)    | 待つ                                                                                                                                       |
-| click や `focus()` で popup の中へ focus を移してからキーを送る             | 待たなくてよい。Base UI は、中へ移った focus を開いたときの focus で奪わない                                                               |
-| Escape で閉じる                                                             | 待たなくてよい。Base UI は Escape を document の keydown で受ける                                                                          |
-| route として開くダイアログを閉じるか戻るで離れ、そのあとの focus を確かめる | 待つ。届く前に離れると focus は開く操作をした要素に残り、route の announcer がそれを遷移の前の focus のままとみて、見出しへ移す (ADR-0035) |
+route の announcer (ADR-0035) を置いた router で、開く操作をした要素から route として開いたダイアログを離れ、そのあとの focus を確かめるときも、focus が届いたのを待ってから離れる。届く前に離れると、focus は遷移の間ずっと開く操作をした要素から動かず、announcer が見出しへ移す。
+
+| 開いたあとの操作                                                                                                   | focus を待つか                                                               |
+| ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| 開いたときの focus が当たる要素へキーを送る (End でスクロールする、など)                                           | 待つ                                                                         |
+| click や `focus()` で popup の中へ focus を移してからキーを送る                                                    | 待たなくてよい。Base UI は、中へ移った focus を開いたときの focus で奪わない |
+| Escape で閉じ、閉じたあとの focus は確かめない                                                                     | 待たなくてよい。Base UI は Escape を document の keydown で受ける            |
+| route として開いたダイアログを閉じるか戻るで離れ、そのあとの focus を確かめる (route の announcer を置いた router) | 待つ。届く前に離れると、announcer が見出しへ移す (上の段落)                  |
 
 - focus を受ける要素は部品の `initialFocus` で決まる。Dialog と AlertDialog の既定は、popup の中に tabbable があれば最初の tabbable、無ければ popup 自身である ([Base UI docs「Alert Dialog」][] の `initialFocus`)。閉じるボタンを持つ `DialogContent` では閉じるボタンが受ける
 
