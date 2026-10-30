@@ -37,8 +37,8 @@ paths:
 
 - Vitest の設定は `tooling/test/` に書き、`vite.config.ts` の `test` から読ませる。全 project が共有する設定を root の 1 か所に持ち、project が継承する (ADR-0037)
 - project は `test.projects` に inline で並べる。ファイルのパスで並べた project は `vite.config.ts` の設定 (`envDir`、`resolve`、テスト時の `plugins`) を継承しない (`docs/guides/testing/configuration.md`「project を inline に並べる理由」)
-- `maxWorkers` を書かず、Vitest の既定に任せる。ブラウザの pool が開くページの合計を `maxWorkers` に収めるので、ブラウザで走る project を足しても合わせ直さない (`docs/guides/testing/configuration.md`「ブラウザで走る project の並列数を既定に任せる」)
-- `maxWorkers` を書くときは `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない (`docs/guides/testing/configuration.md`「ブラウザで走る project の並列数を既定に任せる」)
+- `maxWorkers` を書かず、Vitest の既定に任せる。ブラウザの pool が開くページの合計を `maxWorkers` に収めるので、ブラウザで走る project を足しても合わせ直さない (`docs/guides/testing/configuration.md`「テストの並列数を既定に任せる」)
+- `maxWorkers` を書くときは `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない (`docs/guides/testing/configuration.md`「テストの並列数を既定に任せる」)
 - テストでだけ root の plugin を外すときは、`vite.config.ts` の `plugins` の `process.env.VITEST` の分岐で外す。config を分けない (`docs/guides/testing/configuration.md`「判定を `process.env.VITEST` で書く理由」)
 
 ## `vite.config.ts` の組み立て

@@ -1,6 +1,6 @@
 # テストの設定
 
-テストの種別ごとの置き場所と走らせ方、テストの API の import 元、実行環境の制約でテストを止める手順、Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・React Compiler を通さない project の範囲・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定・ブラウザで走る project の並列数、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
+テストの種別ごとの置き場所と走らせ方、テストの API の import 元、実行環境の制約でテストを止める手順、Vitest の設定の置き場所と、project の足し方・テストでだけ plugin を変える手順・React Compiler を通さない project の範囲・ブラウザと story の project に事前バンドルする依存を足す手順・部品を StrictMode の下で描く設定・テストの並列数、その形にした理由を持つ。`vite.config.ts` へ切り出したファイルを組み込む形と、重い依存を遅らせて読み込む手順は `docs/guides/vite-configuration.md` が持つ。検査スクリプトの project の足し方は `docs/guides/testing/check-scripts.md` が持つ。
 
 | 決定                                                                                                 | ADR      |
 | ---------------------------------------------------------------------------------------------------- | -------- |
@@ -129,7 +129,7 @@ StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
 - 部品のテストで、描画中に起こす副作用 (warn、通知、外への書き込み) の回数が StrictMode で 2 回になったら、期待値を 2 に合わせず、副作用をイベントハンドラへ、置けるハンドラが無ければ effect へ移す。純粋な計算は 2 回呼ばれても結果が変わらないので、呼び出しの回数で確かめない ([React docs「Keeping Components Pure」][] の「Detecting impure calculations with StrictMode」と「Where you can cause side effects」)
 - ブラウザテストで StrictMode が効いていることは `src/test/browser/strict-mode.test.tsx` が確かめる
 
-### ブラウザで走る project の並列数を既定に任せる
+### テストの並列数を既定に任せる
 
 - `maxWorkers` を書かず、Vitest の既定に任せる。ブラウザで走る project を足しても、値を合わせ直す必要は無い (「並列数を既定に任せる理由」)
 - 書くときは `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない。ある project に root と違う値を書くと、root の値を継承する project と同じ `sequence.groupOrder` で一緒に走る実行で、Vitest がエラーで止まる ([Vitest の `pool.ts`][] の `groupSpecs`)
@@ -273,7 +273,7 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 
 ### 並列数を既定に任せる理由
 
-`tooling/test/config.ts` に `maxWorkers` を書かない。Vitest のブラウザの pool は、ブラウザで走る project を 1 つの worker として数え、同時に走る project の数と、それらが開くページの合計を `maxWorkers` に収める ([Vitest docs「maxWorkers」][] の Browser Mode: "every browser instance … is a worker, so at most `maxWorkers` instances run at the same time" と "The same number is the budget of pages shared by the open instances")。この形は [vitest-dev/vitest#11525][] で入り、vitest 5.0.4 から効く。既定は、watch を切った実行で "uses all available parallelism" である ([Vitest docs「maxWorkers」][])。値を書くと、Node で動く project の worker の数と、ブラウザで走る全 project のページの合計が、どちらもその値に縮む。Node で動く project とブラウザで走る project は、同じ group で同時に走る ([Vitest の `pool.ts`][] の `executeTests`)。
+`tooling/test/config.ts` に `maxWorkers` を書かない。Vitest のブラウザの pool は、ブラウザで走る project を 1 つの worker として数え、同時に走る project の数と、それらが開くページの合計を `maxWorkers` に収める ([Vitest docs「maxWorkers」][] の Browser Mode: "every browser instance … is a worker, so at most `maxWorkers` instances run at the same time" と "The same number is the budget of pages shared by the open instances")。この形は [vitest-dev/vitest#11525][] で入り、vitest 5.0.4 から効く。既定は、watch を切った実行で "uses all available parallelism" である ([Vitest docs「maxWorkers」][])。値を書くと、Node で動く project の worker の数と、ブラウザで走る全 project のページの合計が、どちらもその値に縮む。`sequence.groupOrder` を書かない限り、Node で動く project とブラウザで走る project は同じ group で同時に走る ([Vitest の `pool.ts`][] の `executeTests`)。
 
 2026-10-30 に vitest 5.0.5 (Vite+ 1.4.0) で、8 コアの macOS で `vp test run` を `maxWorkers: "20%"` (8 コアで 2) と既定で交互に 5 回ずつ走らせた。所要は `vp test run` の起動から終了までの秒である。load average は走らせる直前の 1 分の値である。
 
