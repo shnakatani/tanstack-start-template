@@ -11,6 +11,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # グループの PR も 1 本に数える。同時に開きうるグループの PR が既定の 5 を超えるので上げる (ADR-0005)
+    open-pull-requests-limit: 10
     # pnpm-workspace.yaml の minimumReleaseAge と .github/zizmor.yml の下限と対で持つ (ADR-0005)
     cooldown:
       default-days: 3
@@ -38,69 +40,34 @@ updates:
           - "@vitejs/plugin-react"
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
-      # 一緒に上げないと peer の食い違いで落ちる組を、minor と patch で 1 本、major で 1 本の PR にする。
-      # 2 つのグループの patterns は同じにし、minor-and-patch の exclude-patterns にも写す (ADR-0005)
+      # 片方だけが上がると peer の食い違いで落ちるか、依存先が 2 つの版で入る組を 1 本の PR にする。
+      # major を見送るときは、組の patterns に update-types が semver-major の ignore を足す (ADR-0005)
       storybook:
         patterns:
           - "storybook"
           - "@storybook/*"
-        update-types:
-          - "minor"
-          - "patch"
-      storybook-major:
-        patterns:
-          - "storybook"
-          - "@storybook/*"
-        update-types:
-          - "major"
       tanstack-router:
         patterns:
           - "@tanstack/react-router"
           - "@tanstack/react-start"
           - "@tanstack/router-plugin"
           - "@tanstack/react-router-devtools"
-        update-types:
-          - "minor"
-          - "patch"
-      tanstack-router-major:
-        patterns:
-          - "@tanstack/react-router"
-          - "@tanstack/react-start"
-          - "@tanstack/router-plugin"
-          - "@tanstack/react-router-devtools"
-        update-types:
-          - "major"
       react:
         patterns:
           - "react"
           - "react-dom"
           - "@types/react"
           - "@types/react-dom"
-        update-types:
-          - "minor"
-          - "patch"
-      react-major:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-        update-types:
-          - "major"
       tanstack-query:
         patterns:
           - "@tanstack/react-query"
           - "@tanstack/react-query-devtools"
-        update-types:
-          - "minor"
-          - "patch"
-      tanstack-query-major:
+      tailwindcss:
         patterns:
-          - "@tanstack/react-query"
-          - "@tanstack/react-query-devtools"
-        update-types:
-          - "major"
-      # 上のグループの patterns を写し、変えたらここも変える (dependabot/dependabot-core#14576。
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      # patterns を持つほかのグループの依存をすべて除き、グループを変えたらここも変える。写さないと、組の依存が
+      # 組のグループから外れてこの PR に入るか、両方のグループに入る (dependabot/dependabot-core#14576。
       # docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)
       minor-and-patch:
         update-types:
@@ -127,3 +94,5 @@ updates:
           - "@types/react-dom"
           - "@tanstack/react-query"
           - "@tanstack/react-query-devtools"
+          - "tailwindcss"
+          - "@tailwindcss/*"

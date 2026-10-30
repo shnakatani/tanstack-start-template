@@ -87,8 +87,9 @@ pnpm peers check
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側を値の range の外へ上げると (1.0.0 以上は major、0.x は minor)、`pnpm peers check` に再び食い違いとして出る。新しい版で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
-- peer か exact の依存で結ばれた組 (storybook、TanStack Router と Start、React、TanStack Query) は、`.github/dependabot.yml` の組ごとのグループで、minor と patch で 1 本、major で 1 本の PR にする (ADR-0005)。組を足すときは、2 つのグループに同じ patterns を書き、`minor-and-patch` の `exclude-patterns` にも写す。写さないと、組の依存が両方のグループの PR に載りうる (「Vite+ を上げる」の `minor-and-patch` の項目)
-- security update の PR は、脆弱性のある依存だけを上げ、組の相手を上げない (ADR-0005)。`verify:peers` で落ちたら、その PR のブランチで組の相手を同じ版へ上げてから取り込む。組の version update の PR が同じ版以上へ上げたなら、そちらを取り込む。依存が修正版に届くと、Dependabot が security update の PR を閉じる (2026-10-30、"Looks like @storybook/addon-vitest is up-to-date now, so this is no longer needed.")
+- 一緒に上げる依存の組は、`.github/dependabot.yml` の組のグループで 1 本の PR にする (ADR-0005)。組を足すときは、patterns を `minor-and-patch` の `exclude-patterns` にも写す (「Vite+ を上げる」の `minor-and-patch` の項目)
+- 組の major を見送るときは、組の patterns に `update-types: ["version-update:semver-major"]` の `ignore` を足す。グループの PR を閉じても、Dependabot は今の major の中の更新を別に出さない (ADR-0005)
+- security update の PR は、脆弱な依存だけを上げる (ADR-0005)。`verify:peers` で落ちたら、その PR のブランチで組の相手を peer が求める版へ上げてから取り込む。ブランチに commit を足すと Dependabot は rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。組の version update の PR がその版以上へ上げたなら、そちらを取り込む。依存が修正版に届くと、Dependabot が security update の PR を閉じる (2026-10-30、"Looks like @storybook/addon-vitest is up-to-date now, so this is no longer needed.")
 - `@vitejs/plugin-react` と `oxc-transform-react` は、`.github/dependabot.yml` の `react-compiler` グループで 1 本の PR にする。plugin-react は optional peer の oxc-transform-react を呼び出す。別々の PR に割れると、上流が試していない組み合わせが片方ずつ入る
 - `vite` と `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-09-28、vite-plus 1.0.0 で実測)
 - `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
@@ -140,7 +141,7 @@ git push
 - `pnpm peers check` の食い違いと、`storybook>vite-plus` の許可が頼る `vite-plus/versions` の export は「peer の食い違いを数える」で確かめる
 - push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
 - Dependabot の PR を処理するときは、`vite-plus` の PR が止まっていないかを確かめる (ADR-0005)。`npm view vite-plus time --json` で latest の公開日時を見て、cooldown (`.github/dependabot.yml`) を過ぎたあとの Dependabot の実行 (`gh run list --workflow 'Dependabot Updates'`) で `vite-plus` の PR ができていなければ、その実行のログで判定を見る。`gh run view <run の ID> --log | grep -E "Updating vite-plus from|No update needed for vite-plus"`
-- `minor-and-patch` は `exclude-patterns` で `vite-plus` と `react-compiler` のグループの依存を除く。patterns を持たないグループは、他のグループに入った依存も抱え込む (2026-09-29 時点、[dependabot/dependabot-core#14576][])。2026-09-28 には `vitest` が両方のグループの PR に載った
+- `minor-and-patch` は `exclude-patterns` で、patterns を持つほかのグループの依存をすべて除く。patterns を持たないグループは、他のグループに入った依存も抱え込む (2026-09-29 時点、[dependabot/dependabot-core#14576][])。写さないと、組の依存が組のグループから外れて `minor-and-patch` の PR に入るか、両方のグループに入り、組が 1 本の PR にそろわない。2026-09-28 には `vitest` が両方のグループの PR に載った
 - `vp migrate` が `pnpm-workspace.yaml` の catalog に、`.github/dependabot.yml` の `vite-plus` グループの `patterns` に当たらない依存を足したら、その `patterns` と `minor-and-patch` の `exclude-patterns` にも足す
 - `vp migrate` が catalog に足した依存が、`vitest` のように `vite-plus` と別の日に公開され、既存の `ignore` に当たらないなら、`ignore` にも `dependency-name` だけで足す (ADR-0005)。撤去条件の書き方は「pin を足す」
 
