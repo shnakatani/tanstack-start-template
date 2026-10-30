@@ -125,6 +125,9 @@ async function checkCspNonce(first: Response): Promise<void> {
       ].join("\n"),
     );
   }
+  console.log(
+    `[security-headers] CSP の nonce が ${ORIGIN} の HTML の <script> に届き、応答ごとに変わっている`,
+  );
 }
 
 async function run(): Promise<void> {
