@@ -16,19 +16,20 @@ import { shouldAnnounceNavigation } from "@/lib/route-announcement";
 export function RouteAnnouncer() {
   const router = useRouter();
   useEffect(() => {
-    // 遷移中に focus がどこかの要素へ移ったか。HTML Standard の navigation API が持つ
-    // "focus changed during ongoing navigation" と同じく、移った先が遷移の前と同じ要素でも移ったとみなす
+    // 遷移中に focus がどこかの要素へ移ったか。移った先が遷移の前と同じ要素でも移ったとみなす
+    // (HTML Standard の navigation API の "focus changed during ongoing navigation" と同じ)。
+    // capture で受けるのは、下の要素の listener が stopPropagation しても記録を漏らさないため
     let focusChanged = false;
     const recordFocusChange = () => {
       focusChanged = true;
     };
     const unsubscribeBefore = router.subscribe("onBeforeNavigate", () => {
       focusChanged = false;
-      document.addEventListener("focusin", recordFocusChange);
+      document.addEventListener("focusin", recordFocusChange, { capture: true });
     });
     const unsubscribeRendered = router.subscribe("onRendered", (event) => {
       // 伝えない遷移 (検索条件だけの変化) でも記録を止める
-      document.removeEventListener("focusin", recordFocusChange);
+      document.removeEventListener("focusin", recordFocusChange, { capture: true });
       if (!shouldAnnounceNavigation(event)) {
         return;
       }
@@ -36,7 +37,7 @@ export function RouteAnnouncer() {
       announce(document.title);
     });
     return () => {
-      document.removeEventListener("focusin", recordFocusChange);
+      document.removeEventListener("focusin", recordFocusChange, { capture: true });
       unsubscribeBefore();
       unsubscribeRendered();
     };

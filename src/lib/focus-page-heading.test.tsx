@@ -12,7 +12,8 @@ afterEach(() => {
 describe("focusPageHeading", () => {
   it("focus していた要素が消えて body にあるとき、h1 へ移し tabindex=-1 を付ける", async () => {
     const screen = await render(<h1>ページ</h1>);
-    focusPageHeading(false);
+    // 遷移中に focus が移ったと渡し、body の判定だけで移すことを確かめる
+    focusPageHeading(true);
     const heading = screen.getByRole("heading", { name: "ページ" });
     await expect.element(heading).toHaveFocus();
     await expect.element(heading).toHaveAttribute("tabindex", "-1");
@@ -39,8 +40,7 @@ describe("focusPageHeading", () => {
         <h1>ページ</h1>
       </>,
     );
-    const link = document.querySelector("a");
-    link?.focus();
+    screen.getByRole("link", { name: "リンク" }).element().focus();
     focusPageHeading(false);
     await expect.element(screen.getByRole("heading", { name: "ページ" })).toHaveFocus();
   });
@@ -128,9 +128,8 @@ describe("focusPageHeading", () => {
 
   it("h1 が無いときは body へ移し、警告を残す", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    await render(<button type="button">遷移前に押したボタン</button>);
-    const button = document.querySelector("button");
-    button?.focus();
+    const screen = await render(<button type="button">遷移前に押したボタン</button>);
+    screen.getByRole("button", { name: "遷移前に押したボタン" }).element().focus();
     focusPageHeading(false);
     expect(document.activeElement).toBe(document.body);
     expect(document.body.hasAttribute("tabindex")).toBe(false);
@@ -139,11 +138,10 @@ describe("focusPageHeading", () => {
 
   it("h1 が無いとき、キーボード操作の後に呼んでも body は :focus-visible にならない", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    await render(<button type="button">前の要素</button>);
-    const button = document.querySelector("button");
+    const screen = await render(<button type="button">前の要素</button>);
     // Tab でブラウザに「直前の操作はキーボード」と判定させる (下の見出しのケースと同じ)
     await userEvent.keyboard("{Tab}");
-    expect(document.activeElement).toBe(button);
+    await expect.element(screen.getByRole("button", { name: "前の要素" })).toHaveFocus();
     // focusBody は focus の直後に tabindex を外すので、呼んだ後の body は :focus-visible の判定に
     // かからない。focus を受けた時点 (tabindex がある間) の判定を focus イベントで読む
     const focusVisibleAtFocus: boolean[] = [];

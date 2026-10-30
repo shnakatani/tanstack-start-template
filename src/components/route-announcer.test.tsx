@@ -204,7 +204,8 @@ it("遷移中に focus が別の要素を経て遷移前の要素へ戻ったら
   await userEvent.click(toB);
   await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
   toB.element().focus();
-  const unsubscribe = router.subscribe("onBeforeNavigate", () => {
+  // announcer が記録を始める onBeforeNavigate より後の、読み込みの途中で動かす
+  const unsubscribe = router.subscribe("onBeforeLoad", () => {
     search.element().focus();
     toB.element().focus();
   });
@@ -213,6 +214,10 @@ it("遷移中に focus が別の要素を経て遷移前の要素へ戻ったら
   await expectAnnouncements([`B — ${APP_NAME}`, APP_NAME]);
   unsubscribe();
   await expect.element(toB).toHaveFocus();
+
+  // 次の遷移では記録が空から始まり、focus が動かなければ見出しへ移す
+  await userEvent.click(toB);
+  await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
 });
 
 it.each([
