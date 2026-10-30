@@ -107,15 +107,16 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 | Option 3: `drizzle-kit migrate` で適用する        | 適用する経路が drizzle-kit の 1 か所になる。スキーマを変える手順も `db:generate` と `db:migrate` で閉じる | **採用** |
 | Option 4: アプリの起動時に `migrate()` で適用する | 適用する経路が drizzle-kit とアプリの 2 か所になる                                                        | 却下     |
 
-### seed を tsx で走らせる理由
+### seed を vpx で走らせる理由
 
 実行口は `createDb()` を通すので、`src/` のモジュールを読める走らせ方が要る。`src/` は `@/` の alias と、拡張子の無い相対 import で書かれている。
 
-| 案                                 | 評価                                                                                                                                                                                                                                                                                                 | 採否     |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `vp exec tsx`                      | [tsx docs][] は "It also supports `tsconfig.json` paths" と書く。`src/server/db/index.ts` も `src/` のドメインのモジュールも読めた (2026-10-14、tsx 4.23.15)                                                                                                                                         | **採用** |
-| `vp node` (Node の type stripping) | [Node.js docs「Modules: TypeScript」][] は "features that depend on settings within `tsconfig.json`, such as paths ... are intentionally unsupported" と書き、import の拡張子を "mandatory" とする。`src/server/db/index.ts` の import で `ERR_MODULE_NOT_FOUND` になった (2026-10-14、Node 24.21.0) | 却下     |
-| Vite の `runnerImport`             | `src/` を読めたが、型定義で `@experimental` とされている。入口を拡張子つきの import だけで別に書くことになる (2026-10-14、Vite+ 1.1.0 同梱の Vite 8.3.3)                                                                                                                                             | 却下     |
+| 案                                 | 評価                                                                                                                                                                                                                                                                                                      | 採否     |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `vpx`                              | [Vite+ docs「Running Binaries」][] の Supported Syntax は "tsconfig `paths` for `import`, `.js` imports that point at `.ts` files, and extensionless imports" を挙げる。Vite+ に同梱され、依存を足さずに済む。`src/server/db/index.ts` も `src/` のドメインのモジュールも読めた (2026-10-30、Vite+ 1.4.0) | **採用** |
+| `vp exec tsx`                      | [tsx docs][] は "It also supports `tsconfig.json` paths" と書き、`src/` を読めた (2026-10-14、tsx 4.23.15)。`tsx` を devDependency に足すことになる。[Vite+ docs「Running Binaries」][] の Coming from tsx は、tsx で走るスクリプトの多くが `vpx` でそのまま走ると書く                                    | 却下     |
+| `vp node` (Node の type stripping) | [Node.js docs「Modules: TypeScript」][] は "features that depend on settings within `tsconfig.json`, such as paths ... are intentionally unsupported" と書き、import の拡張子を "mandatory" とする。`src/server/db/index.ts` の import で `ERR_MODULE_NOT_FOUND` になった (2026-10-14、Node 24.21.0)      | 却下     |
+| Vite の `runnerImport`             | `src/` を読めたが、型定義で `@experimental` とされている。入口を拡張子つきの import だけで別に書くことになる (2026-10-14、Vite+ 1.1.0 同梱の Vite 8.3.3)                                                                                                                                                  | 却下     |
 
 ### seed に drizzle-seed を使わない理由
 
@@ -177,6 +178,7 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 [db0 の `node-sqlite.ts`]: https://github.com/unjs/db0/blob/main/src/connectors/node-sqlite.ts
 [TanStack Query docs「Important Defaults」]: https://tanstack.com/query/v5/docs/framework/react/guides/important-defaults
 [tsx docs]: https://tsx.is/
+[Vite+ docs「Running Binaries」]: https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/docs/guide/vpx.md
 [Node.js docs「Modules: TypeScript」]: https://nodejs.org/docs/latest-v24.x/api/typescript.html
 [drizzle docs「Seed Overview」]: https://orm.drizzle.team/docs/seed-overview
 [drizzle docs「Custom migrations」]: https://orm.drizzle.team/docs/kit-custom-migrations

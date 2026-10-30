@@ -50,7 +50,7 @@ export default defineConfig({
       contrast: "node scripts/contrast/report.ts",
       "db:generate": "vp exec drizzle-kit generate",
       "db:migrate": "vp exec drizzle-kit migrate",
-      "db:seed": { command: "vp exec tsx scripts/db/seed.ts", dependsOn: ["db:migrate"] },
+      "db:seed": { command: "vpx scripts/db/seed.ts", dependsOn: ["db:migrate"] },
       "a11y:incomplete":
         "vp test run --project browser --tags-filter axe --reporter=verbose --hide-skipped-tests",
     },
