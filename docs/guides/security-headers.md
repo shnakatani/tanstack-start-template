@@ -30,7 +30,7 @@ TanStack Start の公式の手順のうち、Cloudflare Workers と Netlify は 
 ### `routeRules` に置く理由
 
 - `routeRules` の `headers` は、route の pattern に一致したリクエストの応答にヘッダを付ける ([Nitro docs「Routing」][] の Route rules。`routeRules` は redirect、proxy、cache、認証にも使う)。`"/**"` は全 route に一致する
-- エラーの応答 (404、SSR の 500) にも乗る。h3 は 400 以上の応答に、用意したヘッダのうち `event.res.errHeaders` だけを合わせ ([h3 docs「Sending Response」][])、Nitro の route rules の `headers` はそこにも書く (`nitro` 3.0.260903-beta、2026-10-31 に実測)
+- エラーの応答 (404、SSR の 500) にも乗る。h3 は 400 以上の応答に、用意したヘッダのうち `event.res.errHeaders` だけを合わせ ([h3 docs「Sending Response」][])、Nitro が取り込む h3 の `headers` の rule は、そこにも書く (`nitro` 3.0.260903-beta、2026-10-31 に実測)
 - route rules が届かない応答には乗らない。h3 は percent-encoding の壊れた URL を、routing と middleware より前に 400 で弾く ([h3 の `src/h3.ts`][] の `allowMalformedURL`)。この応答は検査しない
 - `routeRules` は Nitro の設定で、preset ごとの設定ではない。`nitro()` を使う限り、preset を替えても書き換えずに済む。`nitro()` を外す構成へ移るときは付け直す (「`nitro()` を使わない構成へ移す」)
 - 応答に乗ることは、設定値ではなくビルド成果物を起動して確かめる。設定値の検査で代替できない理由は `scripts/checks/runtime/security-headers.ts` の docstring にある
