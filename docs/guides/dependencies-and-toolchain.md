@@ -87,6 +87,8 @@ pnpm peers check
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側を値の range の外へ上げると (1.0.0 以上は major、0.x は minor)、`pnpm peers check` に再び食い違いとして出る。新しい版で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
+- peer か exact の依存で結ばれた組 (storybook、TanStack Router と Start、React、TanStack Query) は、`.github/dependabot.yml` の組ごとのグループで、minor と patch で 1 本、major で 1 本の PR にする (ADR-0005)。組を足すときは、2 つのグループに同じ patterns を書き、`minor-and-patch` の `exclude-patterns` にも写す。写さないと、組の依存が両方のグループの PR に載りうる (「Vite+ を上げる」の `minor-and-patch` の項目)
+- security update の PR は、脆弱性のある依存だけを上げ、組の相手を上げない (ADR-0005)。`verify:peers` で落ちたら、その PR のブランチで組の相手を同じ版へ上げてから取り込む。組の version update の PR が同じ版以上へ上げたなら、そちらを取り込む。依存が修正版に届くと、Dependabot が security update の PR を閉じる (2026-10-30、"Looks like @storybook/addon-vitest is up-to-date now, so this is no longer needed.")
 - `@vitejs/plugin-react` と `oxc-transform-react` は、`.github/dependabot.yml` の `react-compiler` グループで 1 本の PR にする。plugin-react は optional peer の oxc-transform-react を呼び出す。別々の PR に割れると、上流が試していない組み合わせが片方ずつ入る
 - `vite` と `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-09-28、vite-plus 1.0.0 で実測)
 - `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない

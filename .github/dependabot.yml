@@ -19,7 +19,7 @@ updates:
       # minor を上げたら package.json の engines.node の下限もその minor まで上げる (ADR-0004)
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
-      # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない (ADR-0005)
+      # vitest と @vitest/* は vite-plus の同梱の版で決まるので bot に上げさせない。dependency-name だけの ignore は security update の PR も止める (ADR-0005)
       # 撤去条件: Vite+ の docs が、単独で先へ進む vitest の PR を作らせない bot の設定例を示したとき (voidzero-dev/vite-plus#2356)
       - dependency-name: "vitest"
       - dependency-name: "@vitest/*"
@@ -38,7 +38,69 @@ updates:
           - "@vitejs/plugin-react"
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
-      # vite-plus と react-compiler のグループの patterns を写し、変えたらここも変える (dependabot/dependabot-core#14576。
+      # 一緒に上げないと peer の食い違いで落ちる組を、minor と patch で 1 本、major で 1 本の PR にする。
+      # 2 つのグループの patterns は同じにし、minor-and-patch の exclude-patterns にも写す (ADR-0005)
+      storybook:
+        patterns:
+          - "storybook"
+          - "@storybook/*"
+        update-types:
+          - "minor"
+          - "patch"
+      storybook-major:
+        patterns:
+          - "storybook"
+          - "@storybook/*"
+        update-types:
+          - "major"
+      tanstack-router:
+        patterns:
+          - "@tanstack/react-router"
+          - "@tanstack/react-start"
+          - "@tanstack/router-plugin"
+          - "@tanstack/react-router-devtools"
+        update-types:
+          - "minor"
+          - "patch"
+      tanstack-router-major:
+        patterns:
+          - "@tanstack/react-router"
+          - "@tanstack/react-start"
+          - "@tanstack/router-plugin"
+          - "@tanstack/react-router-devtools"
+        update-types:
+          - "major"
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - "minor"
+          - "patch"
+      react-major:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - "major"
+      tanstack-query:
+        patterns:
+          - "@tanstack/react-query"
+          - "@tanstack/react-query-devtools"
+        update-types:
+          - "minor"
+          - "patch"
+      tanstack-query-major:
+        patterns:
+          - "@tanstack/react-query"
+          - "@tanstack/react-query-devtools"
+        update-types:
+          - "major"
+      # 上のグループの patterns を写し、変えたらここも変える (dependabot/dependabot-core#14576。
       # docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」)
       minor-and-patch:
         update-types:
@@ -53,3 +115,15 @@ updates:
           - "@vitejs/plugin-react"
           - "oxc-transform-react"
           - "@oxc-transform-react/*"
+          - "storybook"
+          - "@storybook/*"
+          - "@tanstack/react-router"
+          - "@tanstack/react-start"
+          - "@tanstack/router-plugin"
+          - "@tanstack/react-router-devtools"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "@tanstack/react-query"
+          - "@tanstack/react-query-devtools"

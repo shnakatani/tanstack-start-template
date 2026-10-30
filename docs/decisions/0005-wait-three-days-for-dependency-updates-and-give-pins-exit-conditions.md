@@ -1,7 +1,7 @@
 # ADR-0005: 依存更新は待機 3 日で統一し、pin には出口条件を書く
 
 - Status: Accepted
-- Date: 2026-09-29
+- Date: 2026-10-30
 - 関連: ADR-0004 (Vite+ が版を管理する制約)、ADR-0014 (React Compiler が要求する依存)
 
 ## Context
@@ -95,7 +95,7 @@ core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert �
 | A      | pin 対象への Dependabot alert | 修正版への追随か pin 撤去の前倒しをその場で判断する             |
 | B      | Dependabot PR の処理時        | pin の出口条件 (上流 issue の状態) を確認し、成立していたら外す |
 
-トリガ A が成立するのは、**alerts は `ignore` と独立に発火する**ためである。`dependency-name` だけで書いた `ignore` は version updates と security updates の PR をどちらも止める (GitHub Docs「Controlling which dependencies are updated」)。`update-types` を付けた `ignore` が security updates に効くかは docs に記述が無い (2026-09-29 時点)。pin 中の修正は alert を見て手で当てる。pin 中でも「既知脆弱性が出たことを知る」経路は生きている。
+トリガ A が成立するのは、**alerts は `ignore` と独立に発火する**ためである。`dependency-name` だけで書いた `ignore` は version updates と security updates の PR をどちらも止める (GitHub Docs「Controlling which dependencies are updated」)。`update-types` を付けた `ignore` は security updates に効かない (dependabot-core の `IgnoreCondition#ignored_versions` は、security update の job では `update-types` を見ない。2026-10-30 に確認)。pin 中の修正は alert を見て手で当てる。pin 中でも「既知脆弱性が出たことを知る」経路は生きている。
 
 独立した定期チェックは設けない。忘れられる運用を作らない。
 
@@ -115,6 +115,24 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 | `*` を維持し `vp update --no-save` を使う | 宣言は守れるが、フラグを付け忘れると壊れる。強制する仕組みが無い                                                               | 却下     |
 | `playwright` を `package.json` から外す   | `@vitest/browser-playwright` の必須 peer なので install はされるが、root から解決できず `vp exec` の経路が上流の仕様に依存する | 却下     |
 | `*` であることを整合検査で固定する        | 根拠 (peer への委任) が成り立っていないものを機械強制することになる                                                            | 却下     |
+
+### 8. 一緒に上げる依存の組は version update のグループで束ね、security update のグループは置かない
+
+peer か exact の依存で結ばれた組の片方だけが上がると、`verify:peers` が `unmet peer` で落ちる。2026-10-24 の security update の PR (`@storybook/addon-vitest` だけを 10.6.2) は、peer の `storybook@^10.6.2` を満たさずに落ちた。
+
+`.github/dependabot.yml` に、組ごとに 2 つの version update のグループを置く。minor と patch を束ねるグループと、major を束ねるグループで、patterns は同じにする。組は storybook、TanStack Router と Start、React、TanStack Query の 4 つで、どれも peer か exact の依存で結ばれる (2026-10-30 に lockfile で確認)。
+`update-types` が重ならないグループは依存を奪い合わず、最新の版の semver の段で受け取るグループが決まる (dependabot-core の `DependencyGroupEngine` の "Groups with update-types rules are complementary, not competing." と `SemverGroupingRules`)。
+major を別の PR にするのは Renovate の推奨の既定 (`group:monorepos` と `separateMajorMinor`) と同じ切り分けで、major を見送っても minor と patch の更新は届く。
+
+security update のグループ (`applies-to: security-updates`) は置かない。security update の PR は脆弱性のある依存だけを最低の修正版へ上げ、組の相手は上げない (GitHub Docs「About Dependabot security updates」: "update as many vulnerable dependencies as possible in the group to secure versions")。
+2026-10-24 の 2 件 (`@storybook/addon-vitest` と `storybook`) は別々の job で来ており、グループがあっても 1 本の PR にはならなかった。security update の PR が peer で落ちたときの扱いは `docs/guides/dependencies-and-toolchain.md`「peer の食い違いを数える」にある。
+
+| 案                                                           | 評価                                                                                                                                                                                                                                    | 採否     |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 組ごとに、minor と patch のグループと major のグループを置く | 組の更新が 1 本の PR にそろい、major を見送っても minor と patch は届く。代わりに、組の minor と patch は `minor-and-patch` の PR から外れ、組ごとの PR に分かれる                                                                      | **採用** |
+| 組ごとに `update-types` を書かないグループを 1 つ置く        | major と minor と patch が 1 本の PR に混ざり、major を見送ると minor と patch も止まる。GitHub Docs の例 (「Optimizing the creation of pull requests for Dependabot version updates」の Example 3) も Renovate の既定も major を分ける | 却下     |
+| 組ごとに security update のグループも置く                    | security update の PR は組の相手を上げないので、peer の食い違いを防がない。alert で起動する job にグループが渡らないという報告もある (dependabot/dependabot-core#16319、2026-10-30 に open)                                             | 却下     |
+| 組のグループを置かず、`minor-and-patch` に任せる             | minor と patch はそろうが、major は依存ごとの PR に割れ、片方ずつ peer で落ちる                                                                                                                                                         | 却下     |
 
 ### 検討した選択肢
 
@@ -155,5 +173,10 @@ operator を持たない `*` は operator ごと書き換えられるので、�
 - Vite+ が docs に載せる予定の Dependabot の設定例: https://github.com/voidzero-dev/vite-plus/pull/2463
 - Vite+ の CLI が vite の alias との版のずれで止まる変更: https://github.com/voidzero-dev/vite-plus/pull/2462
 - GitHub Docs: Dependabot pull request comment commands: https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-pull-request-comment-commands
+- GitHub Docs: grouped security updates の PR が脆弱性のある依存だけを上げること: https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-security-updates
+- GitHub Docs: 依存の組をグループで束ねる例 (Example 3 は major を個別の PR に残す): https://docs.github.com/en/code-security/tutorials/secure-your-dependencies/optimizing-pr-creation-version-updates
+- dependabot-core: `update-types` が重ならないグループの割り当て: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/dependency_group_engine.rb 、semver の段で受け取るグループを決める処理: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/updater/semver_grouping_rules.rb
+- dependabot-core: `ignore` の `update-types` が security update で使われないこと: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/common/lib/dependabot/config/ignore_condition.rb
+- Renovate: `group:monorepos` (https://docs.renovatebot.com/presets-group/#groupmonorepos) と `separateMajorMinor` (https://docs.renovatebot.com/configuration-options/#separatemajorminor)
 - GitHub Docs: 設定ファイルで ignore を定義する推奨: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/managing-pull-requests-for-dependency-updates
 - TanStack Start の hosting ガイド (nitro/vite の plugin): https://tanstack.com/start/latest/docs/framework/react/guide/hosting
