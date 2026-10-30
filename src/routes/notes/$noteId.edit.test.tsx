@@ -228,7 +228,7 @@ describe("/notes/$noteId/edit route", () => {
     const fetching = serveNotes([NOTE]);
     const { screen, router } = await renderRoute("/notes?q=abc");
     await rowEditLink(screen, NOTE.title).click();
-    await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    await expect.element(titleTextbox(screen)).toHaveFocus();
 
     await userEvent.keyboard("{Escape}");
 
@@ -265,7 +265,7 @@ describe("/notes/$noteId/edit route", () => {
     const fetching = serveNotes([NOTE]);
     const { screen, router } = await renderRoute("/notes");
     await rowEditLink(screen, NOTE.title).click();
-    await expect.element(titleTextbox(screen)).toHaveValue(NOTE.title);
+    await expect.element(titleTextbox(screen)).toHaveFocus();
 
     router.history.back();
 
