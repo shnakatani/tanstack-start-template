@@ -38,10 +38,6 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 - 依存は `vp add` / `vp remove` で足し外す ([Vite+ docs「Package Management」][] の「Add and Remove」)。素の `pnpm` / `npm` / `yarn` で足し外さない。理由は「入口を `vp` にそろえる理由」にある
 - `vp` が中継しないサブコマンドだけは素の `pnpm` で打つ。`pnpm peers check` がこれに当たる (「peer の食い違いを数える」)
 
-### Node.js の版を打ち直す
-
-`vp env pin` で `devEngines.runtime` を打ち直したら、`devEngines.runtime.onFail` を `error` へ戻す。`vp env pin` が書き込む既定は `download` で、pnpm もこのフィールドを読む。`download` のままだと pnpm が宣言の runtime を自前で解決して lockfile へ記録し、`node_modules/node` を展開する (2026-09-02 に `vp remove` の再解決で、`node@runtime:24.20.0` と全プラットフォーム分の tarball URL が lockfile に入った)。
-
 ### 秘密を足す
 
 秘密が要るようになったら、暗号化した env ファイルと、`dotenvx run --` のような復号の経路を、Vite の env 機構と分けて足す。Vite は既に在る環境変数を `.env` で上書きしないので、復号を先に済ませて `process.env` へ入れる形が噛み合う。Vite の `.env` 読み込みは `envDir: false` で切ってある (ADR-0004)。
