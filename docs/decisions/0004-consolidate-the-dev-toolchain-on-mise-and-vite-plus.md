@@ -211,7 +211,7 @@ Vite+ の `docs/guide/env.md` は、pnpm と Vite+ の両方が Node.js を管�
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `runtimeOnFail: ignore` を置く                | Vite+ docs の勧める形。`onFail` が `download` でも、pnpm は runtime を解決しない (下の実測)。代わりに、`onFail: "error"` のときに pnpm がコマンドの前に走らせる Node.js の版の検査 (`ERR_PNPM_BAD_RUNTIME_VERSION`) も無くなる。依存の操作は `vp` から打ち (`docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」)、Node.js は Vite+ が選ぶ。`devEngines.runtime` に Bun や Deno を足しても、pnpm はそれも入れない (Vite+ docs の同じ tip: "`runtimeOnFail: ignore` also affects other declared runtimes, including Bun and Deno") | **採用** |
 | `devEngines.runtime.onFail` を `error` にする | pnpm は runtime を解決せず、版の検査も残る。ただし公式の勧める形ではなく、manifest の値が変わると pnpm の扱いも変わる。`devEngines.runtime` の無い状態から `vp env pin` で作り直すと `onFail: "download"` が書かれ (下の実測)、手で戻すことになる                                                                                                                                                                                                                                                                                            | 却下     |
-| どちらも置かない                              | `onFail` が `download` だと、pnpm が宣言の runtime を自前で解決して lockfile へ記録し、`node_modules/.bin/node` を展開する。Vite+ の持つ runtime と 2 つの実体になる                                                                                                                                                                                                                                                                                                                                                                         | 却下     |
+| どちらも置かない                              | `onFail` の無い今の宣言なら、pnpm は runtime を解決しない。ただし宣言を作り直して `onFail: "download"` が入ると (下の実測)、pnpm が宣言の runtime を自前で解決して lockfile へ記録し、`node_modules/.bin/node` を展開する。Vite+ の持つ runtime と 2 つの実体になる                                                                                                                                                                                                                                                                          | 却下     |
 
 `pmOnFail: ignore` は、Vite+ が起動した pnpm が `packageManager` の版へ自分で切り替え直す処理を止める (Vite+ の `docs/guide/env.md`: "pnpm 11+'s `pmOnFail` defaults to `download` and may switch back to the version in `package.json`. To let Vite+ control the pnpm version, set `pmOnFail: ignore` in the project's `pnpm-workspace.yaml`")。
 
@@ -227,9 +227,9 @@ Vite+ の `docs/guide/env.md` は、pnpm と Vite+ の両方が Node.js を管�
 | `devEngines.runtime` を消してから `vp env pin 24 --force --no-install --target dev-engines` | `{"name":"node","version":"24.22.2","onFail":"download"}` が書かれた         |
 | `onFail` の無い `{"name":"node","version":"24"}` に `vp env pin 24 --force --no-install`    | `{"name":"node","version":"24.22.2"}` になり、`onFail` は足されなかった      |
 | 1 行目のあと、`vp add -D is-number@7.0.0` と `vp remove is-number` (設定なし)               | lockfile に `node@runtime:24.22.2` が入り、`node_modules/.bin/node` ができた |
-| 同じ、`runtimeOnFail: ignore` を置いて                                                      | lockfile に runtime の項目は入らず、`node_modules/.bin/node` もできなかった  |
+| 同じ、`runtimeOnFail: ignore` と `pmOnFail: ignore` を置いて                                | lockfile に runtime の項目は入らず、`node_modules/.bin/node` もできなかった  |
 
-lockfile の差を生むのは `runtimeOnFail` で、`pmOnFail` の効き目 (版の切り替え) は測っていない。
+2 つの設定は同時に置いて測った。`pmOnFail` の効き目 (版の切り替え) は測っていない。
 
 同じ版を `.mise.toml` の `[tools]` にも宣言すると、2 つの宣言は別々に解決される。
 2026-09-02 の実測では mise が 24.12.0、Vite+ が 24.20.0 を選び、`vp env doctor` が PATH 上の `node` を「vp shim ではない」と警告した。
