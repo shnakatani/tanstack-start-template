@@ -75,7 +75,7 @@ route の announcer (ADR-0035) を置いた router で、開く操作をした�
 | 開いたときの focus が当たる要素へキーを送る (End でスクロールする、など)                                           | 待つ                                                                         |
 | click や `focus()` で popup の中へ focus を移してからキーを送る                                                    | 待たなくてよい。Base UI は、中へ移った focus を開いたときの focus で奪わない |
 | Escape で閉じ、閉じたあとの focus は確かめない                                                                     | 待たなくてよい。Base UI は Escape を document の keydown で受ける            |
-| route として開いたダイアログを閉じるか戻るで離れ、そのあとの focus を確かめる (route の announcer を置いた router) | 待つ。届く前に離れると、announcer が見出しへ移す (上の段落)                  |
+| route として開いたダイアログを閉じるか戻るで離れ、そのあとの focus を確かめる (route の announcer を置いた router) | 待つ。届く前に離れると、announcer が見出しへ移す                             |
 
 - focus を受ける要素は部品の `initialFocus` で決まる。Dialog と AlertDialog の既定は、popup の中に tabbable があれば最初の tabbable、無ければ popup 自身である ([Base UI docs「Alert Dialog」][] の `initialFocus`)。閉じるボタンを持つ `DialogContent` では閉じるボタンが受ける
 
