@@ -7,7 +7,7 @@ export interface CspSample {
 
 const NONCE_PLACEHOLDER = "{nonce}";
 const NONCE_SOURCE = /'nonce-([^']+)'/;
-const SCRIPT_TAG = /<script\b[^>]*>/g;
+const SCRIPT_TAG = /<script\b[^>]*>/gi;
 const NONCE_ATTRIBUTE = /\snonce="([^"]*)"/;
 
 /**

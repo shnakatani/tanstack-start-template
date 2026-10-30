@@ -133,14 +133,14 @@ TanStack Start の公式の手順のうち、Cloudflare Workers と Netlify は 
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Nitro は 3.0.260903-beta、TanStack Start は `@tanstack/react-start` 1.168.58、Base UI は 1.9.0 に固定した版を指す。web.dev と Base UI docs は 2026-10-31 に確かめた。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Nitro は 3.0.260903-beta、TanStack Start は `@tanstack/react-start` 1.169.4 (commit `6b9fe6d29552270836c511bc9b343d73541f4424`) に固定した版を指す。web.dev と Base UI docs は 2026-10-31 に確かめた。Base UI docs の URL は版を持たず、同じ内容が `@base-ui/react` 1.9.0 に同梱の `docs/react/utils/csp-provider.md` にある。
 
 [Nitro docs「Routing」]: https://github.com/nitrojs/nitro/blob/v3.0.260903-beta/docs/1.docs/5.routing.md
 [h3 docs「Sending Response」]: https://github.com/h3js/h3/blob/v2.0.2/docs/1.guide/1.basics/5.response.md
 [h3 の `src/h3.ts`]: https://github.com/h3js/h3/blob/v2.0.2/src/h3.ts
-[TanStack Start docs「Hosting」]: https://github.com/TanStack/router/blob/@tanstack/react-start@1.168.58/docs/start/framework/react/guide/hosting.md
-[TanStack Start docs「CSS Styling」]: https://github.com/TanStack/router/blob/@tanstack/react-start@1.168.58/docs/start/framework/react/guide/css-styling.md
-[TanStack Start docs「Middleware」]: https://github.com/TanStack/router/blob/@tanstack/react-start@1.168.58/docs/start/framework/react/guide/middleware.md
+[TanStack Start docs「Hosting」]: https://github.com/TanStack/router/blob/6b9fe6d29552270836c511bc9b343d73541f4424/docs/start/framework/react/guide/hosting.md
+[TanStack Start docs「CSS Styling」]: https://github.com/TanStack/router/blob/6b9fe6d29552270836c511bc9b343d73541f4424/docs/start/framework/react/guide/css-styling.md
+[TanStack Start docs「Middleware」]: https://github.com/TanStack/router/blob/6b9fe6d29552270836c511bc9b343d73541f4424/docs/start/framework/react/guide/middleware.md
 [MDN「Content Security Policy (CSP)」]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP
 [web.dev「Strict CSP」]: https://web.dev/articles/strict-csp
 [Base UI docs「CSP Provider」]: https://base-ui.com/react/utils/csp-provider

@@ -108,7 +108,18 @@ async function waitForServer(): Promise<void> {
  * 2 回目の応答は、1 回目と比べるためだけに取る
  */
 async function checkCspNonce(): Promise<void> {
-  const responses = [await fetch(ORIGIN), await fetch(ORIGIN)];
+  // 上の検査と同じく redirect を追わず、200 の応答だけを比べる
+  const responses = [
+    await fetch(ORIGIN, { redirect: "manual" }),
+    await fetch(ORIGIN, { redirect: "manual" }),
+  ];
+  for (const response of responses) {
+    if (response.status !== 200) {
+      throw new CheckFailure(
+        `CSP を比べる ${ORIGIN} の status が ${response.status.toString()} で、200 ではない`,
+      );
+    }
+  }
   const samples = await Promise.all(
     responses.map(async (response) => ({
       policy: response.headers.get("Content-Security-Policy"),

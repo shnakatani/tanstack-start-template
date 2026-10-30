@@ -37,7 +37,7 @@ export function getRouter() {
 
   const router = createTanStackRouter({
     routeTree,
-    // router を作るときに渡す。作ったあとに設定した nonce は hydration の script に届かない (ADR-0046)
+    // router を作るときに渡す。SSR の utils が付いたあとに設定した nonce は hydration の script に届かない (ADR-0046)
     ssr: createSsrOptions(),
     context: { queryClient },
     scrollRestoration: true,
