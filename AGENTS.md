@@ -14,6 +14,7 @@ vp run verify    # マージ前に通す。手順は vite.config.ts の verifySt
 - mise の hook が走らないシェル (エージェントの Bash など) では、`DB_FILE_NAME` を読むタスク (`db:*`) を `mise x -- vp run <タスク>` で打つ。`vp run` だけだと `DB_FILE_NAME` が届かず止まる (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
 - dev server と Storybook を background で動かすときは `mise daemons start serve` (`storybook`) で起動し、`mise daemons stop <同じ名前>` で止める。起動した pid にだけ SIGTERM を送ると、port を持つ子孫の node が残り、次の `mise run serve` が port を取れずに終わる (`docs/guides/dependencies-and-toolchain.md`「dev server と Storybook を止める」)
 - 依存は `vp add` / `vp remove` で足し外し、pnpm / npm / yarn で足し外さない。入口を `vp` にそろえる (`npm` はこのリポジトリの `catalog:` を読めず `EUNSUPPORTEDPROTOCOL` で止まる)。`vp` が中継しないサブコマンドは素の `pnpm` で打つ (`pnpm peers check`)。出典は `docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
+- Node.js の版は `package.json` の `devEngines.runtime` を直接書き換えて変え、`vp env pin` を打たない。範囲を exact の版に解決して書き、宣言の無い状態から作ると pnpm に Node.js を入れさせる `onFail: "download"` も書く (ADR-0004)
 - **worktree のパスに `+` を含めない**。story の project が、事前バンドルのキャッシュが無い初回の実行で落ちる (`docs/guides/testing/configuration.md`「テストを走らせる」)
 - `EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
