@@ -8,7 +8,7 @@
 
 1. `vite.config.ts` の `nitro()` の `routeRules["/**"].headers` を書き換える
 2. `scripts/checks/runtime/security-headers.ts` の `EXPECTED_HEADERS` を同じ値に揃える。定数を共有せず写しで持つ理由は、そのファイルの docstring にある
-3. `vp run verify:build` のあとに `vp run verify:security-headers` を走らせ、全件が `/` の応答に乗ることを見る
+3. `vp run verify:build` のあとに `vp run verify:security-headers` を走らせ、全件が `/` の応答と、route の無い path の 404 の応答に乗ることを見る
 
 | 対象                                               | 起きること                                                                                                                    | 対処                                               |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
@@ -21,9 +21,9 @@
 TanStack Start の公式の手順のうち、Cloudflare Workers と Netlify は `nitro()` を使わない ([TanStack Start docs「Hosting」][]。Cloudflare Workers は `@cloudflare/vite-plugin` と `wrangler.jsonc`、Netlify は `@netlify/vite-plugin-tanstack-start` で組む)。そこへ移すときは次の順で付け直す。
 
 1. ヘッダを付け直す先を決める。候補は `src/start.ts` の `requestMiddleware` で、Start が処理するリクエスト (SSR・server route・server function) に掛かる ([TanStack Start docs「Middleware」][] の Global Request Middleware)。静的な asset の応答は Start を通らない可能性があるが、確かめていない。`requestMiddleware` でレスポンスヘッダを付ける形も、このリポジトリで試していない
-2. `scripts/checks/runtime/security-headers.ts` を移した先の起動方法に合わせて書き直す。いまの検査は Nitro のビルド出力 `.output/server/index.mjs` を起動し、`/` (`ORIGIN`) の応答だけを見る
-3. `vite.config.ts` から `nitro()` を外し、書き直した検査で全件が `/` の応答に乗ることを見る
-4. 静的な asset の URL (ビルド出力の JS や CSS) の応答にも全件が乗ることを確かめる。`/` しか見ない検査は、asset に乗っていなくても落ちない
+2. `scripts/checks/runtime/security-headers.ts` を移した先の起動方法に合わせて書き直す。いまの検査は Nitro のビルド出力 `.output/server/index.mjs` を起動し、`/` の応答と、route の無い path の 404 の応答 (`CHECKED_RESPONSES`) だけを見る
+3. `vite.config.ts` から `nitro()` を外し、書き直した検査で全件が `/` と 404 の応答に乗ることを見る
+4. 静的な asset の URL (ビルド出力の JS や CSS) の応答にも全件が乗ることを確かめる。`/` と 404 しか見ない検査は、asset に乗っていなくても落ちない
 
 ## explanation
 
