@@ -144,7 +144,7 @@ Base UI の popup (Dialog、AlertDialog、Drawer、Popover、Menu、Select、Com
 
 ### popup の初期 focus が遅れて当たる理由
 
-Base UI 1.8.0 の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、Combobox の popup が使う) は、開いたときの focus を `enqueueFocus` で `requestAnimationFrame` の次のフレームに当てる (`floating-ui-react/utils/enqueueFocus.js`。2026-10-10 に確認)。`open` を渡して `render()` した直後は、focus はまだ popup に無く body にある (2026-10-10 に実測)。その間に送ったキーは popup の外 (開く操作をした要素か body) に当たる。描画を待つ assert (`expect.element(...).toBeInViewport()` など) を挟んだテストでは、15 回とも、その assert が通った時点で focus は届いていた (2026-10-10、alert-dialog と dialog で実測)。それでも、キーボード操作の前提を assert として書いておけば、focus が届かなかったのか、キーが効かなかったのかを失敗の時点で切り分けられる。
+Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、Combobox の popup が使う) は、開いたときの focus を `enqueueFocus` で `requestAnimationFrame` の次のフレームに当てる (`floating-ui-react/utils/enqueueFocus.js`。1.8.0 は 2026-10-10、1.9.0 は 2026-10-31 に確認)。`open` を渡して `render()` した直後は、focus はまだ popup に無く body にある (2026-10-10 に実測)。その間に送ったキーは popup の外 (開く操作をした要素か body) に当たる。描画を待つ assert (`expect.element(...).toBeInViewport()` など) を挟んだテストでは、15 回とも、その assert が通った時点で focus は届いていた (2026-10-10、alert-dialog と dialog で実測)。CPU を絞ると届かないことがある。テストの process を `taskpolicy -b` で走らせると、ルートのダイアログの入力欄の `toHaveValue` が通った時点で focus がまだ開く操作をした要素にあり、20 回中 2 回、描画から 110〜150ms 経っても届いていなかった (2026-10-31、`@base-ui/react` 1.9.0 で実測)。focus の位置で結果が変わる操作の前には、前提を `toHaveFocus` の assert として書く。
 
 当てる直前に、focus がすでに popup の中へ移っていれば当てない (`FloatingFocusManager` の `shouldFocus`)。テストが click や `focus()` で中へ focus を移したあとは、待たずにキーを送れる。Escape は `useDismiss` が document の keydown で受けるので、focus の位置に依らない。
 
