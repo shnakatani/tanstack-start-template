@@ -99,8 +99,8 @@ export default defineConfig({
       }),
       nitro({
         builder: "rolldown",
-        // route rules が届く応答へ静的なセキュリティヘッダを付ける。足し方と CSP を置かない理由は
-        // docs/guides/security-headers.md「ヘッダを足す・変える」「CSP を置かない理由」
+        // route rules が届く応答へ静的なセキュリティヘッダを付ける。足し方は docs/guides/security-headers.md
+        // 「ヘッダを足す・変える」。CSP は nonce が応答ごとに変わるので、ここではなく root route の headers が返す (ADR-0046)
         routeRules: {
           "/**": {
             headers: {

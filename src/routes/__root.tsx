@@ -16,6 +16,20 @@ import { pageTitle } from "@/lib/page-title";
 import appCss from "@/styles.css?url";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // SSR の HTML の応答に、router が request ごとに作った nonce で strict CSP を付ける (ADR-0046)。
+  // style-src を入れない理由と、ポリシーを広げる手順は docs/guides/security-headers.md
+  headers: ({ ssr }) => {
+    const nonce = ssr?.nonce;
+    if (!nonce) return;
+    return {
+      "Content-Security-Policy": [
+        `script-src 'nonce-${nonce}' 'strict-dynamic'`,
+        "object-src 'none'",
+        "base-uri 'none'",
+        "frame-ancestors 'none'",
+      ].join("; "),
+    };
+  },
   head: (ctx) => ({
     meta: [
       { charSet: "utf-8" },
