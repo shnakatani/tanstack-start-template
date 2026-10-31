@@ -87,7 +87,7 @@ JSON・`text/plain`・CSS・JS の応答は、ブラウザが文書として scr
 - nonce は `<meta property="csp-nonce">` の `content` 属性として HTML に出る。クライアントの router はここから読む (TanStack の `headContentUtils.tsx` が描き、`load-client.ts` が `content` を読む)。HTML Standard の nonce hiding は `nonce` 属性の値を "only exposed to script (and not to side-channels like CSS attribute selectors)" にするが、`content` 属性は隠さない。ポリシーは `style-src` を置かないので、差し込まれた CSS が属性セレクタでこの値を読むことも止めない。Vite が出す同じ名前の meta は、値を `nonce` 属性に置く (Vite docs「Content Security Policy (CSP)」)
 - `<script>` を足すときは route の `head.scripts` か `scripts` に書く。`HeadContent` と SSR の body が nonce を付ける。JSX に直接書いた `<script>` には nonce が付かず止まる。nonce を持つ script が読み込む script は `'strict-dynamic'` が実行させるので、外部の script のローダーは 1 本を `head.scripts` に置けば足りる。手順は `docs/guides/security-headers.md`「CSP を変える・広げる」
 - Base UI の `Tabs.Indicator` は `renderBeforeHydration` を付けると、`Slider.Thumb` は加えて `inset` の末尾の thumb のときに、inline script を描く (`@base-ui/react` 1.9.0 の `tabs/indicator/TabsIndicator.js` と `slider/thumb/SliderThumb.js`)。Base UI が描く inline の `<script>` と `<style>` は、nonce を `CSPProvider` から受け取る ([Base UI docs「CSP Provider」][])。テンプレートはどちらも使っていない
-- 再評価の条件: TanStack/router#8790 が入り、SSR の utils が付いたあとに設定した nonce も hydration の script に届くようになったら、nonce を作る場所の制約が緩む。TanStack/router#8550 が直ったら、route の `head.scripts` に inline script を足すときの注意が要らなくなる
+- 再評価の条件: TanStack/router#8789 が直り、SSR の utils が付いたあとに設定した nonce も hydration の script に届くようになったら、nonce を作る場所の制約が緩む。TanStack/router#8550 が直ったら、route の `head.scripts` に inline script を足すときの注意が要らなくなる
 
 ## 出典
 
@@ -99,7 +99,6 @@ JSON・`text/plain`・CSS・JS の応答は、ブラウザが文書として scr
 
 - TanStack/router#6359「fix: make nonce accessible in headers」(route の `headers` に `ssr` を渡す口を足した PR。2026-01-17 に merge): https://github.com/TanStack/router/pull/6359
 - TanStack/router#8789 (router を作ったあとに設定した `ssr.nonce` が hydration の script に届かない。open): https://github.com/TanStack/router/issues/8789
-- TanStack/router#8790 (TanStack/router#8789 の修正の PR。open): https://github.com/TanStack/router/pull/8790
 - TanStack/router#8550 (ヘッダで送った nonce が DOM で隠されるため、inline script の照合が外れて script を重複させる。open): https://github.com/TanStack/router/issues/8550
 - TanStack Router docs「RouteOptions type」の `headers` method: https://github.com/TanStack/router/blob/6b9fe6d29552270836c511bc9b343d73541f4424/docs/router/api/router/RouteOptionsType.md
 - CSP Level 3「7.1. Nonce Reuse」(nonce を送るたびに作り直し、128 bit 以上にする) と `nonce-source` の文法: https://www.w3.org/TR/CSP3/
