@@ -14,6 +14,12 @@ import { type ExpectedHeader, findHeaderViolations } from "../../lib/response-he
  * エラーを出さないまま緑で通る。
  *
  * 整合検査 (`scripts/checks/integrity/`) に置かないのは、`vp build` の成果物が要るため。
+ *
+ * `/` に加えて、route の無い path の 404 も見る。h3 は 400 以上の応答に、用意した
+ * ヘッダのうち `event.res.errHeaders` だけを合わせる (h3 docs「Sending Response」、h3 2.0.2)。routeRules の
+ * `headers` がそこへ書かない版では、`/` に乗っても 404 と SSR の 500 には乗らない
+ * (nitro 3.0.260610-beta で、2026-10-31 に実測)。500 を見ないのは、必ず失敗する route を
+ * 検査のためだけにテンプレートへ置くことになるため。
  */
 
 /**
@@ -35,6 +41,11 @@ const SERVER_ENTRY = join(REPO_ROOT, ".output", "server", "index.mjs");
 const HOST = "127.0.0.1";
 const PORT = 39271;
 const ORIGIN = `http://${HOST}:${PORT.toString()}`;
+/** 検査する path と、その path が返すはずの status */
+const CHECKED_RESPONSES = [
+  { path: "/", status: 200 },
+  { path: "/__security-headers-check-not-found", status: 404 },
+] as const;
 const STARTUP_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 250;
 
@@ -64,13 +75,14 @@ async function assertOriginIsFree(): Promise<void> {
   );
 }
 
-async function waitForServer(): Promise<Response> {
+async function waitForServer(): Promise<void> {
   const deadline = Date.now() + STARTUP_TIMEOUT_MS;
   let lastError = "";
   while (Date.now() < deadline) {
     try {
       // oxlint-disable-next-line eslint/no-await-in-loop -- 起動を待つ逐次ポーリング。並列化すると「起動したか」を観測する意味が消える
-      return await fetch(ORIGIN);
+      await fetch(ORIGIN);
+      return;
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error);
       // oxlint-disable-next-line eslint/no-await-in-loop -- 同上。次の試行まで待つのが目的
@@ -95,11 +107,25 @@ async function run(): Promise<void> {
   });
 
   try {
-    const response = await waitForServer();
-    const violations = findHeaderViolations(
-      Object.fromEntries(response.headers.entries()),
-      EXPECTED_HEADERS,
-    );
+    await waitForServer();
+    const violations: string[] = [];
+    for (const { path, status } of CHECKED_RESPONSES) {
+      // redirect を追うと、移り先の応答を検査してしまう
+      // oxlint-disable-next-line eslint/no-await-in-loop -- 1 つのサーバへ数件を順に聞くだけで、並列にしても得るものが無い
+      const response = await fetch(`${ORIGIN}${path}`, { redirect: "manual" });
+      if (response.status !== status) {
+        // 期待と違う status の応答を検査しても、その path の経路を確かめたことにならない
+        throw new CheckFailure(
+          `${path} の status が ${response.status.toString()} で、${status.toString()} ではない。検査する path を見直す`,
+        );
+      }
+      violations.push(
+        ...findHeaderViolations(
+          Object.fromEntries(response.headers.entries()),
+          EXPECTED_HEADERS,
+        ).map((violation) => `${path} (${status.toString()}) ${violation}`),
+      );
+    }
     if (violations.length > 0) {
       throw new CheckFailure(
         [
@@ -114,7 +140,7 @@ async function run(): Promise<void> {
   }
 
   console.log(
-    `[security-headers] ${EXPECTED_HEADERS.length.toString()} 件すべてが ${ORIGIN} の応答に乗っている`,
+    `[security-headers] ${EXPECTED_HEADERS.length.toString()} 件すべてが ${CHECKED_RESPONSES.map(({ path, status }) => `${path} (${status.toString()})`).join("、")} の応答に乗っている`,
   );
 }
 
