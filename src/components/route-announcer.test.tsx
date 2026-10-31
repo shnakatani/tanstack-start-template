@@ -221,7 +221,7 @@ it("遷移中に focus が別の要素を経て遷移前の要素へ戻ったら
 });
 
 it("遷移中に focus している要素へ focusin が来ても、位置が変わらなければ見出しへ移す", async () => {
-  // window が focus を取り戻したときのように、focus の位置を変えずに focusin が来る場面
+  // focus の位置を変えずに focusin だけが来る場面
   const router = createAnnouncedRouter();
   const screen = await render(<RouterProvider router={router} />);
   const toB = screen.getByRole("button", { name: "B へ" });
