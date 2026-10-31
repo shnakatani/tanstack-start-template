@@ -9,7 +9,7 @@ export const statusHeadingProps = { [STATUS_HEADING_ATTRIBUTE]: "" } as const;
  * キーボードの次の Tab は新しいページの先頭から始まる。
  * 移し先は `findFocusTarget` が選ぶ。レイアウトに h1 を置くと、遷移のたびにそちらへ移る。
  *
- * 遷移中にアプリか利用者が focus を移していたら奪わない (Navigation API の focusReset の既定と同じ条件)。
+ * 遷移中にアプリか利用者が focus を移していたら奪わない (Navigation API の explainer の「Focus management」の条件。ADR-0035)。
  * 移した先が遷移前と同じ要素でも、移したとみなす。移すのは、focus が body にある (focus していた要素が
  * 消えた) ときと、遷移中に focus が一度も移らなかったときだけ。
  * 移し先が支援技術から隠れているときと、`role` と `aria-modal="true"` を持つダイアログが開いているときも移さない。
@@ -18,8 +18,7 @@ export const statusHeadingProps = { [STATUS_HEADING_ATTRIBUTE]: "" } as const;
  */
 export function focusPageHeading(focusChangedDuringNavigation: boolean): void {
   const active = document.activeElement;
-  // null (focus を持つ要素が無い) と body は、focus していた要素が消えた状態なので移してよい。
-  // 遷移中に blur() で外した場合も body になって移す。HTML Standard はこの場合 reset しない (ADR-0035)
+  // null (focus を持つ要素が無い) と body は、focus していた要素が消えた状態なので移してよい
   const focusLost = active === null || active === document.body;
   if (!focusLost && focusChangedDuringNavigation) {
     return;

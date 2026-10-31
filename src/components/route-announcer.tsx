@@ -16,11 +16,9 @@ import { shouldAnnounceNavigation } from "@/lib/route-announcement";
 export function RouteAnnouncer() {
   const router = useRouter();
   useEffect(() => {
-    // 遷移中に focus がどこかの要素へ移ったか。直前に focusin を受けた要素 (記録の始めは遷移の直前に focus していた要素) と
-    // 違う要素が focusin を受けたら移ったとみなし、移った先が遷移の前と同じ要素へ戻っても移ったとみなす。
-    // HTML Standard の navigation API の "focus changed during ongoing navigation" に合わせた条件だが、focusin を出さない
-    // 移動は見えない。blur() で viewport へ外してから同じ要素へ戻すと、HTML Standard では立つが、ここでは数えない。
-    // shadow tree の中の移動も、focusin の target が shadow host に揃うので数えない。
+    // 遷移中に利用者かアプリが focus を動かしたか (ADR-0035)。直前に focusin を受けた要素 (記録の始めは遷移の直前に
+    // focus していた要素) と違う要素が focusin を受けたら動いたとみなし、遷移の前と同じ要素へ戻っても動いたとみなす。
+    // focusin に出ない動き (blur() で viewport へ外すなど) は見えない。
     // capture で受けるのは、下の要素の listener が stopPropagation しても記録を漏らさないため
     let focusChanged = false;
     let focused: EventTarget | null = null;
