@@ -10,15 +10,16 @@ export const statusHeadingProps = { [STATUS_HEADING_ATTRIBUTE]: "" } as const;
  * 移し先は `findFocusTarget` が選ぶ。レイアウトに h1 を置くと、遷移のたびにそちらへ移る。
  *
  * 遷移中にアプリか利用者が focus を移していたら奪わない (Navigation API の explainer の「Focus management」の条件。ADR-0035)。
- * 移した先が遷移前と同じ要素でも、移したとみなす。移すのは、focus が body にある (focus していた要素が
- * 消えた) ときと、遷移中に focus が一度も移らなかったときだけ。
+ * 移した先が遷移前と同じ要素でも、移したとみなす。移すのは、focus している要素が無い (body か null) ときと、
+ * 遷移中に focus が一度も移らなかったときだけ。
  * 移し先が支援技術から隠れているときと、`role` と `aria-modal="true"` を持つダイアログが開いているときも移さない。
  * モーダルのダイアログは開くと focus を自分の中へ移すので、その背後の見出しを経由させない (ADR-0035)。
  * スクロール位置は router の scrollRestoration が決めるので、focus ではスクロールさせない。
  */
 export function focusPageHeading(focusChangedDuringNavigation: boolean): void {
   const active = document.activeElement;
-  // null (focus を持つ要素が無い) と body は、focus していた要素が消えた状態なので移してよい
+  // null と body は focus している要素が無い状態なので移してよい。遷移中に動いた focus の先が消えた場合も含む
+  // (explainer の条件の "still visible and focusable" に当たらない)
   const focusLost = active === null || active === document.body;
   if (!focusLost && focusChangedDuringNavigation) {
     return;

@@ -98,7 +98,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - 奪わない条件は Navigation API の explainer の「Focus management」に合わせる: "this focus reset will not take place if the user or developer has manually changed focus while the promise was settling, and that element is still visible and focusable"
 - 遷移中に動いた focus が遷移の前と同じ要素へ戻っても、動いたとみなす。戻るまでの間に利用者かアプリが focus を動かしている。HTML Standard の focus update steps も、focus を受ける要素がその時点で focus している要素と違えば navigation API の "focus changed during ongoing navigation" を立て、potentially reset the focus はこれが立っていれば reset しない (whatwg/html の 404b3eb1)
 - 動いたかは `focusin` と `document.activeElement` で見るので、イベントに出ない動き (`blur()` で viewport へ外すなど) は見えない
-- 遷移中に動いた focus の先が消えて `<body>` に落ちたら、見出しへ移す。HTML Standard も、focus している要素が取り除かれるか focus できなくなると、この flag を false に戻すので reset する (node の removing steps と、update the rendering の focus fixup。同じ版)
+- 遷移中に動いた focus の先が消えて `<body>` に落ちたら、見出しへ移す。explainer の条件の "and that element is still visible and focusable" に当たらない
 - 戻る・進むを通常の遷移と区別しない。Reach Router 1.3.1 (`src/lib/history.js`) は popstate を `action: "POP"` で同じ listener に流す。SvelteKit (`packages/kit/src/runtime/client/client.js` の `finish_navigation`、version-3 ブランチの 30d06f5) は popstate の遷移も同じ関数で focus を扱う。Navigation API の既定も traverse を区別しない
 
 ### ダイアログで見せる route
