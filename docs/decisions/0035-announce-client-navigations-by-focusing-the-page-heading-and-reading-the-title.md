@@ -97,7 +97,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - 最初のページはブラウザが読むので伝えない。Next.js の announcer も "not for the first load because screen readers do that automatically" とする (`app-router-announcer.tsx`、canary ブランチ、2026-09-28 に確認)
 - 奪わない条件は Navigation API の explainer の「Focus management」に合わせる: "this focus reset will not take place if the user or developer has manually changed focus while the promise was settling, and that element is still visible and focusable"
 - 遷移中に動いた focus が遷移の前と同じ要素へ戻っても、動いたとみなす。HTML Standard の focus update steps は、focus を受ける要素がその時点で focus している要素と違えば、navigation API の "focus changed during ongoing navigation" を立てる。potentially reset the focus は、これが立っていれば reset しない (whatwg/html の 404b3eb1)
-- 記録は `focusin` で見るので、`focusin` を出さない移動は見えない。遷移中に `blur()` で外してから同じ要素へ戻すと、HTML Standard では viewport へ外した時点で flag が立つが、移っていないとみなして見出しへ移す。shadow tree の中の移動も、`focusin` の target が shadow host に揃うので数えない
+- 記録は `focusin` で見るので、`focusin` を出さない移動は見えない。遷移中に `blur()` で外してから同じ要素へ戻すと、HTML Standard では viewport へ外した時点で flag が立つが、移っていないとみなして見出しへ移す。shadow tree の中の移動も、`focusin` の target が shadow host に揃うので数えない。遷移中に `blur()` で外したまま描画を迎えると、HTML Standard は flag が立って reset しないが、ここでは focus が `<body>` にあるので見出しへ移す (次の項目の `<body>` の扱い)
 - 遷移中に動いた focus の先が消えて `<body>` に落ちたら、見出しへ移す。HTML Standard も、focus している要素が取り除かれるか focus できなくなると、この flag を false に戻すので reset する (node の removing steps と、update the rendering の focus fixup。同じ版)
 - 戻る・進むを通常の遷移と区別しない。Reach Router 1.3.1 (`src/lib/history.js`) は popstate を `action: "POP"` で同じ listener に流す。SvelteKit (`packages/kit/src/runtime/client/client.js` の `finish_navigation`、version-3 ブランチの 30d06f5) は popstate の遷移も同じ関数で focus を扱う。Navigation API の既定も traverse を区別しない
 

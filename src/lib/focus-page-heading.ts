@@ -18,7 +18,8 @@ export const statusHeadingProps = { [STATUS_HEADING_ATTRIBUTE]: "" } as const;
  */
 export function focusPageHeading(focusChangedDuringNavigation: boolean): void {
   const active = document.activeElement;
-  // null (focus を持つ要素が無い) と body は、focus していた要素が消えた状態なので移してよい
+  // null (focus を持つ要素が無い) と body は、focus していた要素が消えた状態なので移してよい。
+  // 遷移中に blur() で外した場合も body になって移す。HTML Standard はこの場合 reset しない (ADR-0035)
   const focusLost = active === null || active === document.body;
   if (!focusLost && focusChangedDuringNavigation) {
     return;
