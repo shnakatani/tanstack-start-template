@@ -1,7 +1,7 @@
 # ADR-0035: クライアント遷移は、新しいページの見出しへの focus と title の読み上げで伝える
 
 - Status: Accepted
-- Date: 2026-10-28
+- Date: 2026-10-31
 - 関連: ADR-0026 (読み上げは `announce()` の polite の region に流す)、ADR-0027 (検索条件の変化は件数の通知で伝える)、ADR-0029 (route の pending 表示は `announce()` で通知しない)、ADR-0041 (ページの上に重ねるダイアログの route)、ADR-0033 (読み込んだデータで決まる名前は route の head() が組む)、ADR-0044 (失敗を受ける部品の位置)
 
 ## Context
@@ -28,7 +28,7 @@
 | focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移と、ページとその上に重ねたダイアログの route の行き来も同じに扱う                                                                                                                                                                                                                                                                               |
 | 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                                                                                                                                                                                                                                              |
-| focus を奪わない   | `onBeforeNavigate` の時点の `document.activeElement` を覚え、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、覚えた要素のままのときだけ移す                                                                                                                                                                                                                                                                                |
+| focus を奪わない   | `onBeforeNavigate` から `onRendered` までに利用者かアプリが focus を動かしていたら移さない。`onRendered` の時点で focus が失われていれば (`null` か `<body>`) 移す。動いたかは、直前に `focusin` を受けた要素 (始めは遷移の前に focus していた要素) と違う要素が `focusin` を受けたかで見る。同じ要素へ戻っても、動いたとみなす                                                                                                                |
 | モーダルの下       | 遷移の後に、移し先の見出しの祖先か自身が `aria-hidden="true"` か `inert` のとき、または `aria-modal="true"` の `role="dialog"` か `role="alertdialog"` が表示されているときは、focus を移さない。title の読み上げは行う                                                                                                                                                                                                                        |
 | 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                                                                                                                                                                                                                                          |
 | title              | ページとダイアログの route は `pageRouteOptions` か `dialogRouteOptions` (`src/lib/page-title.ts`) を spread し、`staticData.pageName` のページ名と、そこから title を組む `head` を 1 組で持つ。root の `head` も `pageTitle` を通す。形は `<ページ名> — <APP_NAME>`、ページ名が無いか `APP_NAME` と同じなら `<APP_NAME>`。読み込んだデータで決まる名前の route は、自分の `head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする |
@@ -96,16 +96,19 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 - 検索条件だけの変化は伝えない。focus を動かすと入力欄から外れ (上の vercel/next.js#96050)、件数は ADR-0027 の通知が伝える
 - 最初のページはブラウザが読むので伝えない。Next.js の announcer も "not for the first load because screen readers do that automatically" とする (`app-router-announcer.tsx`、canary ブランチ、2026-09-28 に確認)
 - 奪わない条件は Navigation API の explainer の「Focus management」に合わせる: "this focus reset will not take place if the user or developer has manually changed focus while the promise was settling, and that element is still visible and focusable"
+- 遷移中に動いた focus が遷移の前と同じ要素へ戻っても、動いたとみなす。戻るまでの間に利用者かアプリが focus を動かしている。HTML Standard の focus update steps も、focus を受ける要素がその時点で focus している要素と違えば navigation API の "focus changed during ongoing navigation" を立て、potentially reset the focus はこれが立っていれば reset しない (whatwg/html の 404b3eb1)
+- 動いたかは `focusin` と `document.activeElement` で見るので、イベントに出ない動き (`blur()` で viewport へ外すなど) は見えない
+- 遷移中に動いた focus の先が消えて `<body>` に落ちたら、見出しへ移す。explainer の条件の "and that element is still visible and focusable" に当たらない
 - 戻る・進むを通常の遷移と区別しない。Reach Router 1.3.1 (`src/lib/history.js`) は popstate を `action: "POP"` で同じ listener に流す。SvelteKit (`packages/kit/src/runtime/client/client.js` の `finish_navigation`、version-3 ブランチの 30d06f5) は popstate の遷移も同じ関数で focus を扱う。Navigation API の既定も traverse を区別しない
 
 ### ダイアログで見せる route
 
 ページとその上に重ねたダイアログの route (ADR-0041) の行き来も、ほかの遷移と同じく伝える。伝えるかは、行き先をページで見せるかダイアログで見せるかに依らない。ダイアログの route はその画面をダイアログで見せたもので、同じ画面を単独のページにしても同じ規則が成り立つべきだからである。ダイアログの route も `dialogRouteOptions` でダイアログの名前を `staticData.pageName` に書いて title を持ち、開いたときはその title を読み上げる。背後のページの見出しの行は変えない。
 
-| 候補                                                                       | 評価                                                                                                                                                                                                                                                         | 採否     |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| ほかの遷移と同じく伝える                                                   | 開くとダイアログの title、閉じると元のページの title を読み上げる。Next.js の announcer (`app-router-announcer.tsx`) と Nuxt の `<NuxtRouteAnnouncer>` も、title が変わった遷移を読み上げ、行き先がダイアログかを区別しない                                  | **採用** |
-| ページとその上のダイアログの行き来を除く (ダイアログの route に印を付ける) | 見せ方の違いで規則が分かれ、ダイアログを単独のページに替えると読み上げも変わる。除く理由になりうる、閉じたあと戻した focus を見出しへ奪うことは起きない (下の表)。TanStack/router#8561 (draft、2026-10-10 に確認) の `RouteAnnouncer` も除く仕組みを持たない | 却下     |
+| 候補                                                                       | 評価                                                                                                                                                                                                                                                                                            | 採否     |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| ほかの遷移と同じく伝える                                                   | 開くとダイアログの title、閉じると元のページの title を読み上げる。Next.js の announcer (`app-router-announcer.tsx`) と Nuxt の `<NuxtRouteAnnouncer>` も、title が変わった遷移を読み上げ、行き先がダイアログかを区別しない                                                                     | **採用** |
+| ページとその上のダイアログの行き来を除く (ダイアログの route に印を付ける) | 見せ方の違いで規則が分かれ、ダイアログを単独のページに替えると読み上げも変わる。除く理由になりうる、閉じたあと戻した focus を見出しへ奪うことは、開いたときの focus が届いたあとは起きない (下の表)。TanStack/router#8561 (draft、2026-10-10 に確認) の `RouteAnnouncer` も除く仕組みを持たない | 却下     |
 
 - Next.js の `app-router-announcer.tsx` は、前回と title が違うときだけ読み上げる (`previousTitle.current !== currentTitle`、0541251 で確認)
 - Nuxt のガイドは "The announcer reads the title that Unhead rendered" とし、同じ title の route の間では何も読まないとする (nuxt/nuxt の 2b103c9 の `docs/3.guide/2.best-practices/accessibility.md`)
@@ -119,8 +122,16 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 | 閉じる (Escape、キャンセル、保存)、戻る         | ダイアログの中 → 開いたリンク。見出しへは移らない       | 元のページの title |
 | 別のページからダイアログの URL へ移る           | ダイアログの中の最初の要素。見出しへは移らない          | ダイアログの title |
 
-- 開いた直後の `onRendered` の時点では、Base UI の初期 focus (`requestAnimationFrame` で積まれる) がまだ走っておらず、focus は遷移前のリンクに残る。「覚えた要素のまま」に当たるが、同じ時点で Base UI がダイアログの外側を `aria-hidden="true"` で隠し終えているので、見出しへは移さない
-- 閉じるとき見出しへ移らないのは、Base UI が `onRendered` より前に `finalFocus` の要素へ focus を戻し終えるからである。`onRendered` の時点の focus は、覚えたダイアログの中の要素と違う
+- 開いた直後の `onRendered` の時点では、Base UI の初期 focus (`requestAnimationFrame` で積まれる) がまだ走っておらず、focus は遷移前のリンクに残る。遷移中に focus が移っていないので移す場面に当たるが、同じ時点で Base UI がダイアログの外側を `aria-hidden="true"` で隠し終えているので、見出しへは移さない
+- 閉じるとき見出しへ移らないのは、Base UI が `onRendered` より前に `finalFocus` の要素へ focus を戻し終え、その移動が遷移中の `focusin` として記録されるからである
+- 開いた直後に戻ると、Base UI の初期 focus (`requestAnimationFrame` で積まれる) と、戻る遷移でダイアログが閉じることのどちらが先かで結果が分かれる。ダイアログは閉じると unmount されるので、閉じたあとに走った初期 focus は取り除かれた要素の `focus()` を呼び、focus は動かない (HTML Standard の focusing steps は、focusable area を持たない要素では何もしない)
+
+| 先に起きること     | focus の動き                            | 見出しへ                                                       |
+| ------------------ | --------------------------------------- | -------------------------------------------------------------- |
+| 初期 focus         | リンク → 入力欄 → リンク (`finalFocus`) | 移さない。遷移中に動いたので、同じ要素へ戻っても動いたとみなす |
+| ダイアログが閉じる | リンクのまま動かない                    | 移す。遷移中に focus が動いていない                            |
+
+- 上の表は 2026-10-31 に、`@base-ui/react` 1.9.0、`@tanstack/react-router` 1.170.46、`@tanstack/router-core` 1.171.39 で確かめた。1 行目は、dev server を Chromium 系のブラウザ (版は記録していない) で開き、スクリプトで開いてすぐ戻して 5 回とも起きた。2 行目は、Vitest の browser mode (Chromium) で初期 focus の `requestAnimationFrame` を止めて起こしたもので、実際のブラウザで起きるかは確かめていない
 
 ### モーダルのダイアログが開いている遷移
 
@@ -276,6 +287,7 @@ root で受ける失敗の画面の見出しは `<h1>` で、印を持たない�
 - TanStack/router#7950 (changelog): https://github.com/TanStack/router/pull/7950
 - Navigation API の explainer「Focus management」: https://github.com/WICG/navigation-api#focus-management
 - whatwg/html#6696: https://github.com/whatwg/html/pull/6696
+- HTML Standard の source (focus update steps、potentially reset the focus、focusing steps): https://github.com/whatwg/html/blob/404b3eb14a7a936dddefb2d78e224dbeb01d2358/source
 - Angular の accessibility best practices: https://angular.dev/best-practices/a11y
 - sveltejs/kit#307: https://github.com/sveltejs/kit/issues/307
 - sveltejs/kit#1305: https://github.com/sveltejs/kit/pull/1305

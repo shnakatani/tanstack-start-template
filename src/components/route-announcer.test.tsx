@@ -194,6 +194,46 @@ it("戻る (history の traverse) でも h1 へ移す", async () => {
   await expect.element(screen.getByRole("heading", { name: "A" })).toHaveFocus();
 });
 
+it("遷移中に focus が別の要素を経て遷移前の要素へ戻ったら、見出しへ移さない", async () => {
+  // ダイアログの route を開いた直後に戻ると、ダイアログの入力欄が focus を受けてから、閉じたダイアログが
+  // 開いたリンクへ戻す。focus は遷移前と同じ要素にあるが、遷移中に移っている
+  const router = createAnnouncedRouter();
+  const screen = await render(<RouterProvider router={router} />);
+  const toB = screen.getByRole("button", { name: "B へ" });
+  const search = screen.getByRole("button", { name: "検索" });
+  await userEvent.click(toB);
+  await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
+  toB.element().focus();
+  // announcer が記録を始める onBeforeNavigate の後 (読み込みを始める前の onBeforeLoad) で動かす
+  const unsubscribe = router.subscribe("onBeforeLoad", () => {
+    search.element().focus();
+    toB.element().focus();
+  });
+  router.history.back();
+  await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+  await expectAnnouncements([`B — ${APP_NAME}`, APP_NAME]);
+  unsubscribe();
+  await expect.element(toB).toHaveFocus();
+
+  // 次の遷移では記録が空から始まり、focus が動かなければ見出しへ移す
+  await userEvent.click(toB);
+  await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
+});
+
+it("遷移中に focus している要素へ focusin が来ても、位置が変わらなければ見出しへ移す", async () => {
+  // focus の位置を変えずに focusin だけが来る場面
+  const router = createAnnouncedRouter();
+  const screen = await render(<RouterProvider router={router} />);
+  const toB = screen.getByRole("button", { name: "B へ" });
+  await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+  const unsubscribe = router.subscribe("onBeforeLoad", () => {
+    toB.element().dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+  });
+  await userEvent.click(toB);
+  await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
+  unsubscribe();
+});
+
 it.each([
   ["外側を aria-hidden で隠す", "/hidden-behind-dialog", "外を隠すダイアログ"],
   ["aria-modal を持つ", "/aria-modal-dialog", "aria-modal のダイアログ"],

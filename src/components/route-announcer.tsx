@@ -16,21 +16,34 @@ import { shouldAnnounceNavigation } from "@/lib/route-announcement";
 export function RouteAnnouncer() {
   const router = useRouter();
   useEffect(() => {
-    let focusedBeforeNavigation: Element | null = null;
+    // 遷移中に利用者かアプリが focus を動かしたか (ADR-0035)。直前に focusin を受けた要素 (記録の始めは遷移の直前に
+    // focus していた要素) と違う要素が focusin を受けたら動いたとみなし、遷移の前と同じ要素へ戻っても動いたとみなす。
+    // focusin に出ない動き (blur() で viewport へ外すなど) は見えない。
+    // capture で受けるのは、下の要素の listener が stopPropagation しても記録を漏らさないため
+    let focusChanged = false;
+    let focused: EventTarget | null = null;
+    const recordFocusChange = (event: FocusEvent) => {
+      if (event.target !== focused) {
+        focusChanged = true;
+      }
+      focused = event.target;
+    };
     const unsubscribeBefore = router.subscribe("onBeforeNavigate", () => {
-      focusedBeforeNavigation = document.activeElement;
+      focusChanged = false;
+      focused = document.activeElement;
+      document.addEventListener("focusin", recordFocusChange, { capture: true });
     });
     const unsubscribeRendered = router.subscribe("onRendered", (event) => {
-      // 外れた要素を次の遷移まで持たない。伝えない遷移 (検索条件だけの変化) でも手放す
-      const focusedBefore = focusedBeforeNavigation;
-      focusedBeforeNavigation = null;
+      // 伝えない遷移 (検索条件だけの変化) でも記録を止める
+      document.removeEventListener("focusin", recordFocusChange, { capture: true });
       if (!shouldAnnounceNavigation(event)) {
         return;
       }
-      focusPageHeading(focusedBefore);
+      focusPageHeading(focusChanged);
       announce(document.title);
     });
     return () => {
+      document.removeEventListener("focusin", recordFocusChange, { capture: true });
       unsubscribeBefore();
       unsubscribeRendered();
     };
