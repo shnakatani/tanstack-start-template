@@ -220,6 +220,20 @@ it("遷移中に focus が別の要素を経て遷移前の要素へ戻ったら
   await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
 });
 
+it("遷移中に focus している要素へ focusin が来ても、位置が変わらなければ見出しへ移す", async () => {
+  // window が focus を取り戻したときのように、focus の位置を変えずに focusin が来る場面
+  const router = createAnnouncedRouter();
+  const screen = await render(<RouterProvider router={router} />);
+  const toB = screen.getByRole("button", { name: "B へ" });
+  await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+  const unsubscribe = router.subscribe("onBeforeLoad", () => {
+    toB.element().dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+  });
+  await userEvent.click(toB);
+  await expect.element(screen.getByRole("heading", { name: "B" })).toHaveFocus();
+  unsubscribe();
+});
+
 it.each([
   ["外側を aria-hidden で隠す", "/hidden-behind-dialog", "外を隠すダイアログ"],
   ["aria-modal を持つ", "/aria-modal-dialog", "aria-modal のダイアログ"],

@@ -28,7 +28,7 @@
 | focus の枠         | 見出しには出さない (`focusVisible: false`)                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 伝える遷移         | path が変わる遷移 (`pathChanged`)。戻る・進むも同じに扱う。ルートの `errorComponent` へ移る遷移と、ページとその上に重ねたダイアログの route の行き来も同じに扱う                                                                                                                                                                                                                                                                               |
 | 伝えない遷移       | 検索条件だけの変化 (`pathChanged` が false)、最初のページ (`fromLocation` が無い)                                                                                                                                                                                                                                                                                                                                                              |
-| focus を奪わない   | `onBeforeNavigate` から `onRendered` までの `focusin` を記録し、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、その間に focus が一度も移らなかったときだけ移す。移った先が遷移の前と同じ要素でも、移ったとみなす                                                                                                                                                                                                          |
+| focus を奪わない   | `onBeforeNavigate` から `onRendered` までに、focus している要素と違う要素が受けた `focusin` を記録し、`onRendered` の時点で focus が失われている (`null` か `<body>`) か、その間に focus が一度も移らなかったときだけ移す。移った先が遷移の前と同じ要素でも、移ったとみなす                                                                                                                                                                    |
 | モーダルの下       | 遷移の後に、移し先の見出しの祖先か自身が `aria-hidden="true"` か `inert` のとき、または `aria-modal="true"` の `role="dialog"` か `role="alertdialog"` が表示されているときは、focus を移さない。title の読み上げは行う                                                                                                                                                                                                                        |
 | 読み上げ           | `document.title` をそのまま、`announce()` (ADR-0026) の polite で流す。文言は足さない                                                                                                                                                                                                                                                                                                                                                          |
 | title              | ページとダイアログの route は `pageRouteOptions` か `dialogRouteOptions` (`src/lib/page-title.ts`) を spread し、`staticData.pageName` のページ名と、そこから title を組む `head` を 1 組で持つ。root の `head` も `pageTitle` を通す。形は `<ページ名> — <APP_NAME>`、ページ名が無いか `APP_NAME` と同じなら `<APP_NAME>`。読み込んだデータで決まる名前の route は、自分の `head()` が返す `meta` の title を `pageTitle(ctx, <名前>)` にする |
@@ -123,7 +123,7 @@ WebAIM Screen Reader User Survey #9 (2021 年 5〜6 月、有効回答 1568 件)
 
 - 開いた直後の `onRendered` の時点では、Base UI の初期 focus (`requestAnimationFrame` で積まれる) がまだ走っておらず、focus は遷移前のリンクに残る。遷移中に focus が移っていないので移す場面に当たるが、同じ時点で Base UI がダイアログの外側を `aria-hidden="true"` で隠し終えているので、見出しへは移さない
 - 閉じるとき見出しへ移らないのは、Base UI が `onRendered` より前に `finalFocus` の要素へ focus を戻し終え、その移動が遷移中の `focusin` として記録されるからである
-- 開いた直後に戻ると、Base UI の初期 focus (`requestAnimationFrame` で積まれる) と、戻る遷移でダイアログが閉じることのどちらが先かで結果が分かれる。初期 focus は、走る時点でダイアログが閉じていれば当てない (`FloatingFocusManager` の `shouldFocus`)
+- 開いた直後に戻ると、Base UI の初期 focus (`requestAnimationFrame` で積まれる) と、戻る遷移でダイアログが閉じることのどちらが先かで結果が分かれる。ダイアログは閉じると unmount されるので、閉じたあとに走った初期 focus は取り除かれた要素の `focus()` を呼び、focus は動かない (HTML Standard の focusing steps は、focusable area を持たない要素では何もしない)
 
 | 先に起きること     | focus の動き                            | 見出しへ                                                       |
 | ------------------ | --------------------------------------- | -------------------------------------------------------------- |
@@ -286,7 +286,7 @@ root で受ける失敗の画面の見出しは `<h1>` で、印を持たない�
 - TanStack/router#7950 (changelog): https://github.com/TanStack/router/pull/7950
 - Navigation API の explainer「Focus management」: https://github.com/WICG/navigation-api#focus-management
 - whatwg/html#6696: https://github.com/whatwg/html/pull/6696
-- HTML Standard の source (focus update steps、potentially reset the focus): https://github.com/whatwg/html/blob/404b3eb14a7a936dddefb2d78e224dbeb01d2358/source
+- HTML Standard の source (focus update steps、potentially reset the focus、focusing steps): https://github.com/whatwg/html/blob/404b3eb14a7a936dddefb2d78e224dbeb01d2358/source
 - Angular の accessibility best practices: https://angular.dev/best-practices/a11y
 - sveltejs/kit#307: https://github.com/sveltejs/kit/issues/307
 - sveltejs/kit#1305: https://github.com/sveltejs/kit/pull/1305

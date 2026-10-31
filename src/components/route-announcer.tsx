@@ -16,15 +16,21 @@ import { shouldAnnounceNavigation } from "@/lib/route-announcement";
 export function RouteAnnouncer() {
   const router = useRouter();
   useEffect(() => {
-    // 遷移中に focus がどこかの要素へ移ったか。移った先が遷移の前と同じ要素でも移ったとみなす
+    // 遷移中に focus がどこかの要素へ移ったか。focus している要素と違う要素が focus を受けたら移ったとみなし、
+    // 移った先が遷移の前と同じ要素へ戻っても移ったとみなす。focus の位置が変わらないまま来る focusin は数えない
     // (HTML Standard の navigation API の "focus changed during ongoing navigation" と同じ)。
     // capture で受けるのは、下の要素の listener が stopPropagation しても記録を漏らさないため
     let focusChanged = false;
-    const recordFocusChange = () => {
-      focusChanged = true;
+    let focused: EventTarget | null = null;
+    const recordFocusChange = (event: FocusEvent) => {
+      if (event.target !== focused) {
+        focusChanged = true;
+      }
+      focused = event.target;
     };
     const unsubscribeBefore = router.subscribe("onBeforeNavigate", () => {
       focusChanged = false;
+      focused = document.activeElement;
       document.addEventListener("focusin", recordFocusChange, { capture: true });
     });
     const unsubscribeRendered = router.subscribe("onRendered", (event) => {
