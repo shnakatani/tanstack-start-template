@@ -221,6 +221,7 @@ describe("/notes/new route", () => {
     const { screen, router } = await renderRoute("/notes?q=abc");
     await openNoteCreateDialog(screen);
     expect(router.state.location.href).toBe("/notes/new?q=abc");
+    await expect.element(titleTextbox(screen)).toHaveFocus();
 
     await userEvent.keyboard("{Escape}");
 
