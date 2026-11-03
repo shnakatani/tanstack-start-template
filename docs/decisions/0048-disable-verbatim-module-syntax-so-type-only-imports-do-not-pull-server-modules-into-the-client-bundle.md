@@ -15,12 +15,12 @@ TypeScript の docs は、この option のもとでは "any imports or exports 
 
 vite-plus 1.4.0 の `transformWithOxc` で、同じ入力を option の値ごとに変換した (2026-11-04)。
 
-| import の書き方                                          | `true` の出力                                                                               | `false` の出力 |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------- |
-| `import type { T } from "m"`                             | 消える                                                                                      | 消える         |
-| `import { type T } from "m"`                             | `import "m"` が残る                                                                         | 消える         |
-| `import { v } from "m"` で、`v` を `typeof v` にだけ使う | `import { v } from "m"` が残る                                                              | 消える         |
-| `import { T } from "m"` で、`T` が interface             | `import { T } from "m"` が残る。型検査は TS1484 で、`vp build` は `MISSING_EXPORT` で止める | 消える         |
+| import の書き方                                          | `true` の出力                                            | `false` の出力 |
+| -------------------------------------------------------- | -------------------------------------------------------- | -------------- |
+| `import type { T } from "m"`                             | 消える                                                   | 消える         |
+| `import { type T } from "m"`                             | `import "m"` が残る                                      | 消える         |
+| `import { v } from "m"` で、`v` を `typeof v` にだけ使う | `import { v } from "m"` が残る                           | 消える         |
+| `import { T } from "m"` で、`T` が interface             | `import { T } from "m"` が残る。型検査は TS1484 で止める | 消える         |
 
 server function の宣言のファイルでも同じことが起きる。Start のコンパイラは client の build で handler を RPC の stub に置き換え、`type` の付いた specifier を外してから、使われなくなった import を消す (`@tanstack/router-utils` の `stripTypeExports`、TanStack/router#6582)。
 handler の外で `typeof v` を書くと、コンパイラはこの import を消さず、`true` のときは Oxc もそれを残す (「テンプレートでの実測」の表)。
@@ -44,6 +44,7 @@ probe のモジュールはトップレベルで目印の文字列を `console.i
 | server function のファイルの `import { v }` (`v` を handler と `typeof v` で使う) | 入らない              | 入らない               | **入る**                                            | 入らない               |
 | `*.server.ts` からの `import { type T }`                                          | 入らない              | 未測                   | `importProtection` が止める (`**/*.server.*`)       | 入らない               |
 | `src/server/db/` からの `import { type T }`                                       | 未測                  | 未測                   | `importProtection` が止める (`**/src/server/db/**`) | 未測                   |
+| `import { T }` (`T` は interface)                                                 | 入らない              | 未測                   | `vp build` が `MISSING_EXPORT` で落ちる             | 未測                   |
 
 - 「Compiler なし」は `vite.config.ts` の `reactPlugin` を `compiler: false` にした build である
 - React Compiler を当てると、`true` でも漏れない。`@vitejs/plugin-react` の `vite:react-compiler` は `enforce: "pre"` で、`include` (既定は `node_modules` の外の `/\.[tj]sx?$/`) に当たるすべてのファイルを、client と server の両方で `oxc-transform-react` に通す。`oxc-transform-react` は tsconfig を読まずに TypeScript の構文を外すので (`index.d.ts` の `TransformOptions` に TypeScript の option が無い)、`vite:oxc` が tsconfig を読む前に、型にだけ使う import が消える
