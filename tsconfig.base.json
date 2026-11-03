@@ -11,7 +11,10 @@
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
+    /* true にすると、型にだけ使う import が残り、server のモジュールが client の bundle に入る。
+       false にすると外れる isolatedModules を書き足す (ADR-0048) */
+    "verbatimModuleSyntax": false,
+    "isolatedModules": true,
     "noEmit": true,
 
     /* Linting */
