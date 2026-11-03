@@ -18,14 +18,14 @@ tsconfig を実行環境ごとに分けて project references でつなぐ案は
 TanStack Start の docs「Execution Model」は、この前提を `src/` について採らない。
 
 - "**All code in TanStack Start is isomorphic by default** - it runs and is included in both server and client bundles unless explicitly constrained."
-- 同じページの「Common Anti-Patterns」の「Module-Level `process.env` Reads」は、`createServerFn().handler()` の中で `process.env` を読む形を正しい形 (✅) として示す。「Environment-Specific Implementations」は `createIsomorphicFn().server(() => ({ platform: process.platform }))` を示す
+- 同じページの「Common Anti-Patterns」の「Module-Level `process.env` Reads」は、`createServerFn().handler()` の中で `process.env` を読む形を正しい形として示す。「Environment-Specific Implementations」は `createIsomorphicFn().server(() => ({ platform: process.platform }))` を示す
 - このテンプレートも、`src/features/<domain>/functions.ts` の `createServerFn` の宣言をクライアントのコードから import する (ADR-0010)
 
 公式の案内は 2 つの向きがある。
 
 | 出典                                                                                        | tsconfig の形                                                                                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TanStack Start の docs「Build from Scratch」「Path Aliases」                                | ルートの `tsconfig.json` 1 つに設定を書く形だけを示す。`references` の記述は無い                                                                                                                                                                                     |
+| TanStack Start の docs「Build from Scratch」「Path Aliases」                                | ルートの `tsconfig.json` に設定を書く形を示す。`references` の記述は無い                                                                                                                                                                                             |
 | TanStack/router の `examples/react/start-*`                                                 | `tsconfig.json` を持つ 22 本はどれも `tsconfig.json` 1 本だけで、`tsconfig.*.json` は 0 本 (main `f723f3b8be` の git tree を `^examples/react/start-[^/]+/tsconfig\.[^/]+\.json$` で数えた。2026-11-03)                                                              |
 | TanStack CLI の雛形 (`packages/create/src/frameworks/react/project/base/tsconfig.json.ejs`) | `include: ["**/*.ts", "**/*.tsx"]`、`lib` に `DOM`、`types: ["vite/client"]` の 1 つ (TanStack/cli main `270f9b06fd`、2026-11-03)。このテンプレートの `tsconfig.json` と同じ並びである                                                                               |
 | create-vite の react-ts (vitejs/vite main `b3cb0575af`)                                     | ルートは `references` だけで、`tsconfig.app.json` (`src`) と `tsconfig.node.json` (`vite.config.ts`) に分ける。分けた動機は vitejs/vite#15913 の "`tsc` doesn't fail when there are type errors in `vite.config.ts`" で、`tsc -b` で設定ファイルも検査するためである |
@@ -53,11 +53,11 @@ Vite と tsgolint の案内は、tsconfig が既に複数ある構成でのつ�
 
 ### 検討した選択肢
 
-| 案                                                                                     | 評価                                                                                                                                                                                                                                                                                | 採否     |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `tsconfig.json` 1 つのまま                                                             | TanStack Start の docs・examples・CLI の雛形と同じ形。設定ファイルも `vp check` が検査する。どのファイルでもブラウザと Node の global が通る                                                                                                                                        | **採用** |
-| create-vite の 2 つ (app = `src/` の全部、node = `scripts/`・`tooling/`・設定ファイル) | app に `better-sqlite3` の型が Node を入れ、node に `colorjs.io` の型が DOM を入れる (Decision の 2)。分ける動機の設定ファイルの型検査は、今の形で満たされている                                                                                                                    | 却下     |
-| 4 つ (app・test・node・server)                                                         | server の program だけは `document` を止めた (`lib` から `DOM` を外し、TS2584 `Cannot find name 'document'`。2026-11-03、tsc 6.0.3)。server のファイルは app にも import で入るので、app の Node の型は消えない。test の program では include に頼る型の宣言が欠ける (Consequences) | 却下     |
+| 案                                                                                     | 評価                                                                                                                                                                                                            | 採否     |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `tsconfig.json` 1 つのまま                                                             | TanStack Start の docs・examples・CLI の雛形と同じ形。設定ファイルも `vp check` が検査する。どのファイルでもブラウザと Node の global が通る                                                                    | **採用** |
+| create-vite の 2 つ (app = `src/` の全部、node = `scripts/`・`tooling/`・設定ファイル) | app に `better-sqlite3` の型が Node を入れ、node に `colorjs.io` の型が DOM を入れる (Decision の 2)。分ける動機の設定ファイルの型検査は、今の形で満たされている                                                | 却下     |
+| 4 つ (app・test・node・server)                                                         | server の program だけは `document` を止めた (`lib` から `DOM` を外し、TS2584 `Cannot find name 'document'`。2026-11-03、tsc 6.0.3)。server のファイルは app にも import で入るので、app の Node の型は消えない | 却下     |
 
 ## Consequences
 
