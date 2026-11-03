@@ -8,6 +8,7 @@
 | 依存更新は待機 3 日で統一し、pin には出口条件を書く                                         | ADR-0005 |
 | GitHub Actions の定義は zizmor で検査し、action は commit SHA で固定する                    | ADR-0006 |
 | テストの import を重くする依存のバレルは使わず、個別エントリポイントから引き、lint で止める | ADR-0032 |
+| 型検査の tsconfig を app・server・Node の 3 つに分け、どのファイルも 1 つにだけ入れる       | ADR-0047 |
 
 ## how-to
 
@@ -181,7 +182,36 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 ### 走査対象を持つ config を足す
 
-tsconfig / `tooling/test/config.ts` (test。project はここから継承する) / `tooling/lint/config.ts` (lint) / `vite.config.ts` (fmt) は、それぞれ `.claude/worktrees/**` を除外している。走査対象を持つ config を新しく足したら、同じ除外をその場で書く。除外の経路は config ごとに別で共通化できず、1 つ落とすと worktree のコードがその走査へ黙って混ざる。
+`tooling/test/config.ts` (test。project はここから継承する) / `tooling/lint/config.ts` (lint) / `vite.config.ts` (fmt) は、それぞれ `.claude/worktrees/**` を除外している。走査対象を持つ config を新しく足したら、同じ除外をその場で書く。除外の経路は config ごとに別で共通化できず、1 つ落とすと worktree のコードがその走査へ黙って混ざる。
+tsconfig は除外を持たず、`include` をリポジトリの直下のディレクトリ (`src/`・`scripts/`・`tooling/`) と設定ファイルの名前から始めて、worktree を拾わない (「tsconfig にファイルを割り当てる」)。
+
+### tsconfig にファイルを割り当てる
+
+型検査の tsconfig は 3 つあり、どのファイルも 1 つの `include` にだけ入れる (ADR-0047)。
+
+| ファイル                                                                                        | 入れる tsconfig        |
+| ----------------------------------------------------------------------------------------------- | ---------------------- |
+| `src/` のファイル (テスト・story・`src/test/` を含む)、`.storybook/preview.tsx`                 | `tsconfig.app.json`    |
+| `src/server/` の下 (テストを含む)、`src/server.ts`、`src/**/*.server.ts`、`src/**/*.server.tsx` | `tsconfig.server.json` |
+| `scripts/`、`tooling/`、`vite.config.ts`、`drizzle.config.ts`、`.storybook/main.ts`             | `tsconfig.node.json`   |
+
+| 変えるもの                                                        | 直す場所                                                                                                                                                                                           |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/` の中のディレクトリ、付随ファイルの種別                     | 直さない。app の `include` が `src/` を丸ごと持ち、server の 4 つの glob に当たるものだけを `exclude` で外す                                                                                       |
+| サーバーだけのファイルの区分 (`.server.` の接尾辞、`src/server/`) | `tsconfig.server.json` の `include` と `tsconfig.app.json` の `exclude` を、同じ glob で直す                                                                                                       |
+| リポジトリの直下のコードのディレクトリ、設定ファイル              | 動く環境の tsconfig の `include` に足す。どの `include` にも入らないファイルも `vp check` は既定の設定で検査し、DOM の global を通した (2026-11-03、vite-plus 1.4.0)                               |
+| tsconfig そのもの                                                 | `tsconfig.base.json` を `extends` し、ルートの `tsconfig.json` の `references` に足す。`include` はディレクトリ名から始め、`**/*` にしない (`.claude/worktrees/**` を拾う)。`paths` は base が持つ |
+
+- `include` と `exclude` は継承の元と合わさらず、`extends` した側の値で上書きされる ([TSConfig Reference「extends」][])。`compilerOptions.lib` も、書けば base の値を置き換えるので、`ESNext.Error` (ADR-0038) を書き落とさない
+- 直したら、次の 2 つが何も出さないことを確かめる。`vp check` は、ファイルが 2 つの tsconfig に入っていても、どれにも入っていなくても、それを知らせない
+
+```bash
+for p in app server node; do
+  vp dlx -p typescript tsc -p "tsconfig.$p.json" --showConfig | jq -r '.files[]'
+done | sed 's|^\./||' | sort > /tmp/tsconfig-files.txt
+uniq -d /tmp/tsconfig-files.txt  # 2 つの tsconfig に入るファイル
+git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**' | sort | comm -13 /tmp/tsconfig-files.txt -  # どの tsconfig にも入らないファイル
+```
 
 ### `git status` に出ないファイルを調べる
 
@@ -237,3 +267,4 @@ tsconfig / `tooling/test/config.ts` (test。project はここから継承する)
 [Vite+ docs「Package Management」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/install.md
 [Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/env.md
 [Vite+ docs「Commit Hooks」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/commit-hooks.md
+[TSConfig Reference「extends」]: https://github.com/microsoft/TypeScript-Website/blob/205122bb73dcbf6f3b373de5bdb0d9fa5434d015/packages/tsconfig-reference/copy/en/options/extends.md
