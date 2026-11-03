@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- 関連: ADR-0012 (server function のデータ境界)
+- 関連: ADR-0012 (server function のデータ境界)、ADR-0047 (サーバーだけのファイルを型検査でも別の tsconfig に入れる)
 
 ## Context
 

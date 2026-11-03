@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "scripts/**/*.ts",
+    "tooling/**/*.ts",
+    "vite.config.ts",
+    "drizzle.config.ts",
+    ".storybook/main.ts"
+  ],
+  "compilerOptions": {
+    "types": ["node"]
+  }
+}

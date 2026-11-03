@@ -7,6 +7,7 @@ paths:
   - "tooling/**"
   - "pnpm-workspace.yaml"
   - "patches/**"
+  - "tsconfig*.json"
 ---
 
 # Vite+ ツールチェーン設定
@@ -35,6 +36,7 @@ paths:
 
 ## 型検査
 
+- tsconfig の `include` と `exclude` を変えたら、どのファイルも app・server・node のどれか 1 つにだけ入ることを `--showConfig` で確かめる。`references` の並び順で重なりを割り当てさせない。`vp check` は重なりも割り当て漏れも知らせない (`docs/guides/dependencies-and-toolchain.md`「tsconfig にファイルを割り当てる」)
 - `typescript` を直接の依存に置かない。型検査は `vp check` の type-aware lint (tsgolint) が担い、`typescript` は推移依存として入る。直接の依存へ戻すのは、リポジトリのコードが `typescript` を import するときだけ (`docs/guides/dependencies-and-toolchain.md`「`typescript` を直接の依存に置かない理由」)
 
 ## Vitest の設定 (`vite.config.ts` の `test`)
