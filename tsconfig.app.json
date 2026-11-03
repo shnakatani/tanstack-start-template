@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", ".storybook/preview.tsx"],
+  "exclude": ["src/server/**", "src/server.ts", "src/**/*.server.ts", "src/**/*.server.tsx"],
+  "compilerOptions": {
+    "lib": ["ES2024", "ESNext.Error", "DOM", "DOM.Iterable"],
+    "types": ["vite-plus/client", "vite-plus/test/browser-playwright", "node"]
+  }
+}
