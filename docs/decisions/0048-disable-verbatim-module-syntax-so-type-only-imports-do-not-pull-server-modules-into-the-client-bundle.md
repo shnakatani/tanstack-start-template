@@ -54,7 +54,7 @@ probe のモジュールはトップレベルで目印の文字列を `console.i
 
 - `false` を省かずに書く。TypeScript 6.0.3 の `tsc --init` は `"verbatimModuleSyntax": true` を書くので (2026-11-04 に実行して確かめた)、既定値に任せると、tsconfig を作り直したときに戻る
 - `isolatedModules` は、`verbatimModuleSyntax` を外すと一緒に外れる。`vp check` の型検査 (oxlint-tsgolint 7.0.2004) は、`verbatimModuleSyntax` だけを `false` にすると、型の再 export を `export type` 無しで書いても止めない (TS1205。2026-11-04 に probe で確かめた)。Vite docs は `isolatedModules` を "Should be set to `true`." と書き、`tsc --init` (TypeScript 6.0.3) も `verbatimModuleSyntax: true` と並べて `isolatedModules: true` を書く
-- lint を足さない理由は 2 つある。`false` のもとでは、型にだけ使う import は書き方によらず出力から消える (上の 2 つの表の `false` の列)。Vite docs「Transpile Only」は "Use the Type-Only Imports and Export syntax to avoid potential problems like type-only imports being incorrectly bundled" と書く。`false` と `isolatedModules: true` のもとで誤って bundle に入りうるのは型の再 export だけで、TS1205 が止める。`typescript/consistent-type-imports` と `typescript/no-import-type-side-effects` は、typescript-eslint のどの推奨の設定にも入っていない (ADR-0007)
+- lint を足さない理由は 2 つある。(1) `false` と `isolatedModules: true` のもとで、測った書き方 (上の 2 つの表の `false` の列と、型の再 export の probe) のうち bundle に入りうるのは型の再 export だけで、TS1205 が止める。(2) `typescript/consistent-type-imports` と `typescript/no-import-type-side-effects` は、typescript-eslint のどの推奨の設定にも入っていない (ADR-0007)。Vite docs「Transpile Only」は "Use the Type-Only Imports and Export syntax to avoid potential problems like type-only imports being incorrectly bundled" と書くが、上の表の `false` の列では、測った書き方のどれも入らない
 
 ### 検討した選択肢
 
