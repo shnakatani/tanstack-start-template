@@ -6,7 +6,7 @@
 
 ## Context
 
-TanStack Start の docs「Build from Scratch」は "Enabling `verbatimModuleSyntax` can result in server bundles leaking into client bundles. It is recommended to keep this option disabled." と書く。TanStack CLI の雛形も、Start を選んだときは `"verbatimModuleSyntax": false` を書く。
+TanStack Start の docs「Build from Scratch」は "Enabling `verbatimModuleSyntax` can result in server bundles leaking into client bundles. It is recommended to keep this option disabled." と書く。
 
 ### 漏れる仕組み
 
@@ -23,7 +23,7 @@ vite-plus 1.4.0 の `transformWithOxc` で、同じ入力を option の値ごと
 | `import { T } from "m"` で、`T` が interface             | `import { T } from "m"` が残る。型検査は TS1484 で止める | 消える         |
 
 server function の宣言のファイルでも同じことが起きる。Start のコンパイラは client の build で handler を RPC の stub に置き換え、`type` の付いた specifier を外してから、使われなくなった import を消す (`@tanstack/router-utils` の `stripTypeExports`、TanStack/router#6582)。
-handler の外で `typeof v` を書くと、コンパイラはこの import を消さず、`true` のときは Oxc もそれを残す (「テンプレートでの実測」の表)。
+handler の外で、export しない型の中に `typeof v` を書くと、コンパイラはこの import を消さず、`true` のときは Oxc もそれを残す (「テンプレートでの実測」の表)。`export type S = typeof v` は、`stripTypeExports` が export した型ごと消すので漏れない (2026-11-04 の実測)。
 TanStack/router#3401 のコメントが説明する経路 (`import { v, type T }` の `v` を handler だけが使う) は、この `stripTypeExports` で塞がった。
 
 TanStack/router#7806 で、メンテナは "it's not that we dont "support" it. it can be used but could cause those leaks if types are imported from modules that have server only code" と書いた。
@@ -34,17 +34,14 @@ docs「Import Protection」の「Type-Only Imports」は `import { type RequestH
 `vp build` の `.output/public` に、server でだけ使うはずのモジュールが入るかを数えた (2026-11-04、vite-plus 1.4.0、`@tanstack/start-plugin-core` 1.171.55、`@vitejs/plugin-react` 6.1.2、`oxc-transform-react` 0.152.0)。
 probe のモジュールはトップレベルで目印の文字列を `console.info` に渡し、`process.env` を読む。`src/routes/__root.tsx` から probe を import した。
 
-| probe                                                                             | Compiler あり、`true` | Compiler あり、`false` | Compiler なし、`true`                               | Compiler なし、`false` |
-| --------------------------------------------------------------------------------- | --------------------- | ---------------------- | --------------------------------------------------- | ---------------------- |
-| probe なし                                                                        | 23 本の JS            | 23 本。hash も同じ     | 未測                                                | 未測                   |
-| `import type { T }`                                                               | 入らない              | 入らない               | 入らない                                            | 入らない               |
-| `import { type T }`                                                               | 入らない              | 入らない               | **入る**                                            | 入らない               |
-| 値の import を `typeof v` にだけ使う                                              | 入らない              | 入らない               | **入る**                                            | 入らない               |
-| server function のファイルの `import { v, type T }` (`v` は handler だけが使う)   | 入らない              | 入らない               | 入らない                                            | 入らない               |
-| server function のファイルの `import { v }` (`v` を handler と `typeof v` で使う) | 入らない              | 入らない               | **入る**                                            | 入らない               |
-| `*.server.ts` からの `import { type T }`                                          | 入らない              | 未測                   | `importProtection` が止める (`**/*.server.*`)       | 入らない               |
-| `src/server/db/` からの `import { type T }`                                       | 未測                  | 未測                   | `importProtection` が止める (`**/src/server/db/**`) | 未測                   |
-| `import { T }` (`T` は interface)                                                 | 入らない              | 未測                   | `vp build` が `MISSING_EXPORT` で落ちる             | 未測                   |
+| probe                                                                                                | Compiler あり、`true` | Compiler あり、`false` | Compiler なし、`true` | Compiler なし、`false` |
+| ---------------------------------------------------------------------------------------------------- | --------------------- | ---------------------- | --------------------- | ---------------------- |
+| probe なし                                                                                           | 23 本の JS            | 23 本。hash も同じ     | 未測                  | 未測                   |
+| `import type { T }`                                                                                  | 入らない              | 入らない               | 入らない              | 入らない               |
+| `import { type T }`                                                                                  | 入らない              | 入らない               | **入る**              | 入らない               |
+| 値の import を `typeof v` にだけ使う                                                                 | 入らない              | 入らない               | **入る**              | 入らない               |
+| server function のファイルの `import { v, type T }` (`v` は handler だけが使う)                      | 入らない              | 入らない               | 入らない              | 入らない               |
+| server function のファイルの `import { v }` (`v` を handler と、export しない型の `typeof v` で使う) | 入らない              | 入らない               | **入る**              | 入らない               |
 
 - 「Compiler なし」は `vite.config.ts` の `reactPlugin` を `compiler: false` にした build である
 - React Compiler を当てると、`true` でも漏れない。`@vitejs/plugin-react` の `vite:react-compiler` は `enforce: "pre"` で、`include` (既定は `node_modules` の外の `/\.[tj]sx?$/`) に当たるすべてのファイルを、client と server の両方で `oxc-transform-react` に通す。`oxc-transform-react` は tsconfig を読まずに TypeScript の構文を外すので (`index.d.ts` の `TransformOptions` に TypeScript の option が無い)、`vite:oxc` が tsconfig を読む前に、型にだけ使う import が消える
@@ -56,17 +53,18 @@ probe のモジュールはトップレベルで目印の文字列を `console.i
 **`tsconfig.base.json` に `"verbatimModuleSyntax": false` と `"isolatedModules": true` を書く。型だけの import に `type` を書かせる lint のルールは足さない。**
 
 - `false` を省かずに書く。TypeScript 6.0.3 の `tsc --init` は `"verbatimModuleSyntax": true` を書くので (2026-11-04 に実行して確かめた)、既定値に任せると、tsconfig を作り直したときに戻る
-- `isolatedModules` は、`verbatimModuleSyntax` を外すと一緒に外れる。TypeScript 6.0.3 の `isolatedModules` は `compilerOptions.isolatedModules || compilerOptions.verbatimModuleSyntax` で決まる。Vite docs は `isolatedModules` を "Should be set to `true`." と書く。外すと、型の再 export を `export type` 無しで書いても `vp check` が止めない (TS1205。2026-11-04 に probe で確かめた)
-- lint を足さない理由は 2 つある。`false` のもとでは、型にだけ使う import は書き方によらず出力から消える (上の 2 つの表の `false` の列)。`typescript/consistent-type-imports` と `typescript/no-import-type-side-effects` は、typescript-eslint のどの推奨の設定にも入っていない (ADR-0007)
+- `isolatedModules` は、`verbatimModuleSyntax` を外すと一緒に外れる。`vp check` の型検査 (oxlint-tsgolint 7.0.2004) は、`verbatimModuleSyntax` だけを `false` にすると、型の再 export を `export type` 無しで書いても止めない (TS1205。2026-11-04 に probe で確かめた)。Vite docs は `isolatedModules` を "Should be set to `true`." と書き、`tsc --init` (TypeScript 6.0.3) も `verbatimModuleSyntax: true` と並べて `isolatedModules: true` を書く
+- lint を足さない理由は 2 つある。`false` のもとでは、型にだけ使う import は書き方によらず出力から消える (上の 2 つの表の `false` の列)。Vite docs「Transpile Only」は "Use the Type-Only Imports and Export syntax to avoid potential problems like type-only imports being incorrectly bundled" と書く。`false` と `isolatedModules: true` のもとで誤って bundle に入りうるのは型の再 export だけで、TS1205 が止める。`typescript/consistent-type-imports` と `typescript/no-import-type-side-effects` は、typescript-eslint のどの推奨の設定にも入っていない (ADR-0007)
 
 ### 検討した選択肢
 
-| 案                                                                                                     | 評価                                                                                                                                                                                                   | 採否     |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| `false` と `isolatedModules: true`                                                                     | TanStack Start の docs と CLI の雛形に従う。client の出力は `true` と hash まで同じで、`vp check` の結果も変わらない (2026-11-04)。型にだけ使う import が漏れる経路が、plugin の実装によらず無くなる   | **採用** |
-| `false` だけ                                                                                           | `isolatedModules` が外れ、TS1205 などの単一ファイルの変換で壊れる書き方を `vp check` が止めなくなる                                                                                                    | 却下     |
-| `true` のまま                                                                                          | 今の client の出力は `false` と同じだが、それは React Compiler の plugin が先に TypeScript を外すからである。Compiler を外すと、`*.server.*` と `src/server/db/` の外のモジュールが黙って漏れる (実測) | 却下     |
-| `true` のまま、`typescript/consistent-type-imports` と `typescript/no-import-type-side-effects` を足す | `import { type T }` は `import type { T }` に直る。TanStack Start の docs の推奨から外れ、ADR-0007 の基準に無いルールを 2 つ足す。`typeof v` の経路をこの 2 つが止めるかは確かめていない               | 却下     |
+| 案                                                                                                     | 評価                                                                                                                                                                                                                                                                                  | 採否     |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `false` と `isolatedModules: true`                                                                     | `false` は TanStack Start の docs に従い、`isolatedModules` は Vite docs に従う。client の出力は `true` と hash まで同じで、`vp check` の結果も変わらない (2026-11-04)。型にだけ使う import が漏れる経路が、plugin の実装によらず無くなる                                             | **採用** |
+| `false` だけ                                                                                           | `isolatedModules` が外れ、TS1205 などの単一ファイルの変換で壊れる書き方を `vp check` が止めなくなる                                                                                                                                                                                   | 却下     |
+| `true` のまま                                                                                          | 今の client の出力は `false` と同じだが、それは React Compiler の plugin が先に TypeScript を外すからである。Compiler を外すと、`*.server.*` と `src/server/db/` の外のモジュールが黙って漏れる (実測)                                                                                | 却下     |
+| TanStack CLI の雛形が書く `true` に従う                                                                | 雛形の条件 `addOnEnabled['start'] ? 'false' : 'true'` は残っているが、`start` の add-on は TanStack/cli@337eebaa (2026-02-03) で消えた。そのため今の CLI は Start のアプリにも `true` を書く (main `58dc7ae45e` のソース。CLI の実行は確かめていない)。Start の docs の注記と逆である | 却下     |
+| `true` のまま、`typescript/consistent-type-imports` と `typescript/no-import-type-side-effects` を足す | `import { type T }` は `import type { T }` に直る。TanStack Start の docs の推奨から外れ、ADR-0007 の基準に無いルールを 2 つ足す。`typeof v` の経路をこの 2 つが止めるかは確かめていない                                                                                              | 却下     |
 
 ## Consequences
 
@@ -75,7 +73,7 @@ probe のモジュールはトップレベルで目印の文字列を `console.i
 - 型を再 export するときは `export type` と書く。`isolatedModules` が TS1205 で止める
 - `*.server.*` と `src/server/db/` の外にある server のモジュールは、型にだけ使う import では client に入らない。値を import すれば入るので、遮断は引き続き `importProtection` が持つ (ADR-0010)
 - dev server での挙動は測っていない
-- 再評価条件: TanStack Start の docs から「Build from Scratch」の注記が外れたとき。Start のコンパイラか `importProtection` が `import {}` の残りを消すか止めるようになったとき
+- 再評価条件: TanStack Start の docs から「Build from Scratch」の注記が外れたとき。`true` のもとで、Compiler を外した build の表の太字の経路が閉じたとき (表を測り直す)
 
 ## 出典
 
@@ -88,3 +86,4 @@ probe のモジュールはトップレベルで目印の文字列を `console.i
 - TypeScript の tsconfig reference「Verbatim Module Syntax」(TypeScript-Website v2 `205122bb73`): https://github.com/microsoft/TypeScript-Website/blob/205122bb73dcbf6f3b373de5bdb0d9fa5434d015/packages/tsconfig-reference/copy/en/options/verbatimModuleSyntax.md
 - Vite docs「Features」の TypeScript Compiler Options (vitejs/vite main `b3cb0575af`、2026-11-04 に確認): https://github.com/vitejs/vite/blob/b3cb0575aff63004a71301a1ec798aeea2aa05d7/docs/guide/features.md
 - typescript-eslint の `consistent-type-imports` と `no-import-type-side-effects` の定義 (`docs` に `recommended` が無い。main `72ad812d3c`): https://github.com/typescript-eslint/typescript-eslint/tree/72ad812d3c63808b53e813d9a5c506f21aa88ea1/packages/eslint-plugin/src/rules
+- `start` の add-on を消した TanStack/cli@337eebaa (2026-02-03): https://github.com/TanStack/cli/commit/337eebaafa190de96194910b6c8c9e550ca142fc
