@@ -11,11 +11,11 @@ tsgolint は、ファイルを `include` に持つ tsconfig の program でそ�
 
 このテンプレートのファイルは、動く環境で 3 つに分かれる。
 
-| 動く環境          | ファイル                                                                            | 区分の出典                                                                                                                                                                                    |
-| ----------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ブラウザと SSR    | `src/` のうち、次の行に当たらないもの。テストと story を含む                        | TanStack Start docs「Execution Model」の "**All code in TanStack Start is isomorphic by default** - it runs and is included in both server and client bundles unless explicitly constrained." |
-| サーバーだけ      | `src/server.ts`、`src/**/*.server.ts`、`src/**/*.server.tsx`、`src/server/`         | ADR-0010。環境は接尾辞で宣言する。`src/server/` はドメインに属さない server の基盤 (DB の接続とテーブルの定義など) を置き、横断的な server function の宣言も置ける                            |
-| Node (開発の道具) | `scripts/`、`tooling/`、`vite.config.ts`、`drizzle.config.ts`、`.storybook/main.ts` |                                                                                                                                                                                               |
+| 動く環境          | ファイル                                                                                                                    | 区分の出典                                                                                                                                                                                    |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ブラウザと SSR    | `src/` のうち、次の行に当たらないもの。そのテストと story も同じ行に数える (テストは Node かブラウザのテストランナーで動く) | TanStack Start docs「Execution Model」の "**All code in TanStack Start is isomorphic by default** - it runs and is included in both server and client bundles unless explicitly constrained." |
+| サーバーだけ      | `src/server.ts`、`src/**/*.server.ts`、`src/**/*.server.tsx`、`src/server/`                                                 | ADR-0010。環境は接尾辞で宣言する。`src/server/` はドメインに属さない server の基盤 (DB の接続とテーブルの定義など) を置き、横断的な server function の宣言も置ける                            |
+| Node (開発の道具) | `scripts/`、`tooling/`、`vite.config.ts`、`drizzle.config.ts`、`.storybook/main.ts`                                         |                                                                                                                                                                                               |
 
 型の境界と bundle の境界は、別の import の連なりで引かれる。
 
