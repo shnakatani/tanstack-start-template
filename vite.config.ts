@@ -78,8 +78,9 @@ export default defineConfig({
     // docs/guides/testing/configuration.md「テストの分岐で plugin を外す理由」「判定を `process.env.VITEST` で書く理由」
     if (process.env.VITEST === "true") return [];
     return [
-      // devtools のサーバ (既定の port は 4206) を起こさない。認証の無いメッセージで、dev server の上で
-      // パッケージの install をシェル越しに走らせる (TanStack/devtools#464)。画面はこのサーバにつながない
+      // devtools のサーバ (既定の port は 4206) を起こさない。認証の無い要求で、有効な npm パッケージなら何でも、
+      // その install scripts も含めて dev server の上で install させられる (TanStack/devtools#464、
+      // TanStack/devtools#545)。画面はこのサーバにつながない
       // (<TanStackDevtools> の eventBusConfig.connectToServerBus は既定で false) ので、止めても失う機能は無い
       devtools({ eventBusConfig: { enabled: false } }),
       tailwindcss(),
