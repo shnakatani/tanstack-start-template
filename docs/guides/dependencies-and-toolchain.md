@@ -84,7 +84,7 @@ pnpm peers check
 - 値の range は、確かめた版の major にする (`"1"`)。0.x の依存だけは minor までにする (`"^0.153.0"`)。0.x は minor で破壊的変更を入れることが多く ([node-semver README「Caret Ranges」][])、`"0"` は 1.0.0 未満のすべてを満たして食い違いを黙らせる (2026-10-11、pnpm 11.28.0 で実測)。値の書き方は [pnpm docs「peerDependencyRules.allowedVersions」][]
 - 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005「pin には出口条件を書く」)
 - Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。`storybook>vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
-- storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (2026-10-07 に `storybook@10.6.1` の dist で確認)
+- storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (2026-11-05 に `storybook@10.6.5` の dist で確認)
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側を値の range の外へ上げると (1.0.0 以上は major、0.x は minor)、`pnpm peers check` に再び食い違いとして出る。新しい版で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
