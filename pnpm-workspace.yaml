@@ -31,6 +31,9 @@ minimumReleaseAgeExclude:
   - "@oxfmt/*"
   - vitest
   - "@vitest/*"
+  # 公開 3 日未満の版を、provenance を確かめて前倒しする (docs/guides/dependencies-and-toolchain.md「待機を前倒しする」)
+  # 撤去条件: 2026-11-05 09:18 UTC 以降 (@vitejs/plugin-react@6.2.1 が 3 日を過ぎる)。行を消して vp install が通り、lockfile が変わらないことを見る
+  - "@vitejs/plugin-react@6.2.1"
 
 # vite / vitest の行は vp migrate が書き、消しても書き戻す (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
 peerDependencyRules:
