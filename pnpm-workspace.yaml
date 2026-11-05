@@ -31,8 +31,6 @@ minimumReleaseAgeExclude:
   - "@oxfmt/*"
   - vitest
   - "@vitest/*"
-  - seroval@1.7.7
-  - seroval-plugins@1.7.7
 
 # vite / vitest の行は vp migrate が書き、消しても書き戻す (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
 peerDependencyRules:
