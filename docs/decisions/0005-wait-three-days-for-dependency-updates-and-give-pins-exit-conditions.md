@@ -39,8 +39,9 @@ alerts / security updates / version updates の 3 機能は private リポジト
 `minimumReleaseAge` は明示設定すると pnpm が strict 挙動を既定 true にする。
 範囲内に成熟版がないとき未成熟版を黙って解決する fallback が閉じ、非 TTY (CI やエージェントのシェル実行) では即エラーになる。
 
-セキュリティ修正は待機をバイパスする。
+セキュリティ修正は Dependabot の cooldown を外す。
 Dependabot security updates は cooldown の対象外で、手元では `vp pm audit --fix` が `minimumReleaseAgeExclude` に修正版を自動追記する。
+ただし pnpm の `minimumReleaseAge` は、Dependabot が推移依存の security update の版を選ぶときにも効く (dependabot-core `eda07d97`、2026-11-04 に確認)。推移依存の最新版が待機の中にある間は、その security update の job が失敗し、PR は作られない。見分け方と直し方は `docs/guides/dependencies-and-toolchain.md`「security update の PR が来ないときに job を読む」にある。
 
 ### 3. 前倒しは provenance を確認してから
 
@@ -178,5 +179,6 @@ version update の PR の上限 (`open-pull-requests-limit`) の既定は 5 で�
 - GitHub Docs「Dependabot options reference」(グループの割り当てと `open-pull-requests-limit` の既定): https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference
 - dependabot-core: npm の update checker が最新の版を 1 つ決める処理: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker.rb 、`update-types` を持つグループが最新の版の semver の段で依存を受け取る処理: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/updater/semver_grouping_rules.rb 、`update-types` の重ならないグループの割り当て: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/dependency_group_engine.rb 、PR の開いているグループの依存を処理済みにする処理: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/updater/operations/group_update_all_versions.rb
 - dependabot-core: `ignore` の `update-types` が security update で使われないこと: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/common/lib/dependabot/config/ignore_condition.rb
+- dependabot-core: pnpm の推移依存の版を選ぶときに待機を外さず、npm の経路だけが `--min-release-age=0` を渡す処理: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/subdependency_version_resolver.rb#L247-L335
 - GitHub Docs: 設定ファイルで ignore を定義する推奨: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/managing-pull-requests-for-dependency-updates
 - TanStack Start の hosting ガイド (nitro/vite の plugin): https://tanstack.com/start/latest/docs/framework/react/guide/hosting
