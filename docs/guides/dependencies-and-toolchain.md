@@ -92,6 +92,9 @@ pnpm peers check
 - 組の major を見送るときは、組の依存ごとに `dependency-name` と `update-types: ["version-update:semver-major"]` の `ignore` を足し、撤去条件をコメントに書く (ADR-0005「pin には出口条件を書く」)。グループの PR を閉じても、Dependabot は今の major の中の更新を別に出さない (ADR-0005)
 - security update の PR は、脆弱な依存だけを上げる (ADR-0005)。`verify:peers` で落ちたら、その PR のブランチで組の相手を peer が求める版へ上げてから取り込む。ブランチに commit を足すと Dependabot は rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。組の version update の PR がその版以上へ上げたなら、そちらを取り込む。依存が修正版に届くと、Dependabot が security update の PR を閉じる (2026-10-30、"Looks like @storybook/addon-vitest is up-to-date now, so this is no longer needed.")
 - `@vitejs/plugin-react` と `oxc-transform-react` は、`.github/dependabot.yml` の `react-compiler` グループで 1 本の PR にする。plugin-react は optional peer の oxc-transform-react を呼び出す。別々の PR に割れると、上流が試していない組み合わせが片方ずつ入る
+- グループの PR でも、組の片方だけが上がり、`verify:peers` で落ちることがある。Dependabot は、上げる依存が関わる peer の食い違いを、版を選ぶ判定から外す。上げる依存自身もグループに属するので、食い違いの相手がグループの内か外かを問わない ([dependabot-core「version_resolver.rb」][])。落ちた PR は、CI の `verify:peers` の出力 (`Installed` の版、`Wanted` の範囲、範囲を宣言する依存) を読み、範囲を満たす組み合わせが公開されているかを探す。PR が peer の相手を上げたなら `npm view '<宣言する依存>@><今の版>' peerDependencies.<相手>` で、宣言する依存を上げたなら `npm view '<相手>@<Wanted の範囲>' version` で探す
+  - 見つかった版が cooldown の中 (公開日時は `npm view <pkg> time --json`、cooldown は `.github/dependabot.yml`): グループの PR を更新する実行は、PR に載っていない組の相手も cooldown の外の版から選び直す (2026-11-04 のログに `Checking if @vitejs/plugin-react 6.1.2 needs updating` と `Filtered out 2 versions due to cooldown`)。cooldown が明けたあとの実行の CI で、揃ったかを見る。待たずに揃えるなら、「待機を前倒しする」の手順で組の両方を上げた PR を自分で作り、それを merge してから Dependabot の PR を閉じる
+  - 見つからない: PR を開いたまま置き、上流が peer を広げるのを待つ。閉じても次の実行で作り直される (ADR-0005)
 - `vite` と `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-09-28、vite-plus 1.0.0 で実測)
 - `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
 - `vite` の行は効いている。`vite@*` の catalog の値は `npm:` の alias で、このとき peer の宣言は置き換わらず、行を消すと `pnpm peers check` が食い違いを出す (2026-09-28、pnpm 11.28.0 で実測。pnpm の docs はこの場合を書いていない)
@@ -261,6 +264,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 [node-semver README「Caret Ranges」]: https://github.com/npm/node-semver/blob/v7.8.5/README.md#caret-ranges-123-025-004
 [dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
 [dependabot-core「pnpm_lockfile_updater.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L285-L295
+[dependabot-core「version_resolver.rb」]: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/version_resolver.rb#L670-L686
 [gitignore(5)]: https://git-scm.com/docs/gitignore
 [git-add(1)]: https://git-scm.com/docs/git-add
 [dotenvx README]: https://github.com/dotenvx/dotenvx/blob/v2.32.3/README.md
