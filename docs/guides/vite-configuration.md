@@ -1,6 +1,6 @@
 # vite.config.ts の組み立て
 
-`vite.config.ts` に集める設定の置き方と、長くなった block を別のファイルへ切り出す手順、重い依存を遅らせて読み込む手順、タスクを足す手順、その形にした理由を持つ。block ごとの中身の書き方は、テストの設定を `docs/guides/testing/configuration.md`、lint の設定を `docs/guides/lint/configuration.md` が持つ。
+`vite.config.ts` に集める設定の置き方と、長くなった block を別のファイルへ切り出す手順、重い依存を遅らせて読み込む手順、タスクを足す手順、Web Worker で動く JSX を React の plugin から外す手順、その形にした理由を持つ。block ごとの中身の書き方は、テストの設定を `docs/guides/testing/configuration.md`、lint の設定を `docs/guides/lint/configuration.md` が持つ。
 
 | 決定                                                                                              | ADR      |
 | ------------------------------------------------------------------------------------------------- | -------- |
@@ -47,6 +47,24 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 5. 引数は `vp run <task> <引数>` で渡し、`--` を挟まない。`--` もそのままコマンドに渡る ([Vite+ docs「Run」][] の Additional Arguments: "Arguments after the task name are passed through to the task command")。2026-10-14 に vite-plus 1.1.0 で `vp run contrast -- --theme dark …` を打つと、`scripts/contrast/report.ts` が `知らない引数: --` で落ちた
 6. マージ前の検証の手順なら、`verifySteps` に `verify:<名前>` で足し、`.github/workflows/ci.yml` にも同じ位置に `vp run verify:<名前>` の step を足す。足し忘れても CI は落ちない (ADR-0004)
 7. README のコマンド一覧に行を足す。`verify:<名前>` は `vp run verify` から走るので足さない
+
+### Web Worker で JSX を書く
+
+`tooling/plugins/react.ts` の `reactPlugin` は、`@vitejs/plugin-react` の `exclude` で、名前が `.worker.tsx` で終わるファイルを外している。外したファイルには、dev の Fast Refresh の登録も React Compiler も当たらない ([plugin-react 6.2.1 の `createReactCompilerPlugin`][] の `transform.filter`)。worker で動く JSX/TSX は次のとおりに書く。
+
+1. worker の入口のファイルを `<名前>.worker.tsx` にし、`new Worker(new URL("./<名前>.worker.tsx", import.meta.url), { type: "module" })` で起こす。[Vite docs「Web Workers」][] はこの形を推奨する。`?worker` の import で起こしても、同じ設定で動く
+2. worker の入口が import する JSX/TSX のファイルも、`.worker.tsx` で終わる名前にする。部品を定義するファイルが名前から外れると Fast Refresh の登録を受け、worker が下の表のエラーで落ちる。JSX を含まない `.ts` は登録を受けない
+3. main thread と worker の両方が import する JSX/TSX のファイルは、名前を変えずに `exclude` に足す。足したファイルは main thread でも Fast Refresh の登録を受けなくなる
+4. `exclude` に足すときは `/\/node_modules\//` を残す。`exclude` は既定の値 `/\/node_modules\//` を置き換える ([plugin-react 6.2.1 の README][] の「exclude」: "Except if explicitly desired, you should keep `node_modules` in the exclude list")
+5. worker の入口に `import` も `export` も無ければ、`export {};` を足す。無いと JSX の変換が `require("react/jsx-dev-runtime")` を出し、worker が `Uncaught ReferenceError: require is not defined` で落ちる (2026-11-07 に dev で観測。どの変換が `require` を出すかは確かめていない)
+6. `refreshInclude` と `refreshExclude` では外さない。`refreshExclude` だけを渡すと worker と共有する `.ts` が登録を受けて落ち、`$` で終わる正規表現を `refreshInclude` に渡すと route の部品の Fast Refresh が黙って止まる (「worker を `exclude` で外す理由」)
+
+外していないファイルを dev の worker が読むと、worker の `error` イベントに次のエラーが出る。dev server の端末にも `[vite+] (client) [Unhandled error] Error: Uncaught ReferenceError: …` で出る。
+
+| エラー                                                                             | 原因                                                                                                                         |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `Uncaught ReferenceError: window is not defined` (`filename` は `/@react-refresh`) | 部品を定義する JSX/TSX が Fast Refresh の登録を受け、`window` を読む `/@react-refresh` の runtime を worker の中で読み込んだ |
+| `Uncaught ReferenceError: $RefreshReg$ is not defined`                             | 登録の呼び出しだけが入り、runtime が入らなかった。`refreshExclude` だけを渡した形で、worker と共有する `.ts` に出た          |
 
 ## explanation
 
@@ -106,9 +124,27 @@ async の関数でも `vp exec storybook build` が通るようになったら (
 - タスクの中の `vpx` も project-local の `vite-plus` の bin に解決され、global の CLI の版に頼らない。[Vite+ docs「Running Binaries」][] の In `package.json` Scripts は "It runs them on the Node.js that started it, which inside `vp run` and package manager scripts is the project's version." と書く
 - `vpx` が足す起動の時間は小さい。2026-10-30 に vite-plus 1.4.0 と Node.js 24.20.0 で、`scripts/contrast/report.ts` を `node` と project-local の `vpx` で 5 回ずつ交互に走らせ、2 回目以降の差は 0.05 秒以下だった (初回の `vpx` だけが 0.2 秒ほど長い)
 
+### worker を `exclude` で外す理由
+
+- [plugin-react 6.2.1 の README][] と [plugin-react 6.2.1 の `Options`][] は、worker で動く JSX/TSX を外す option に `exclude` を挙げる ("You may use it to exclude JSX/TSX files that runs in a worker or are not React files.")。6.2.0 で足された `refreshInclude` と `refreshExclude` ([vitejs/vite-plugin-react#1516][]) は README に無く、`Options` の説明は "Can be used to skip fast refresh for certain files that won't run in the browser." である
+- `compiler: true` の経路では、`refreshInclude` か `refreshExclude` を 1 つでも渡すと、Fast Refresh を入れるかがその 2 つの filter だけで決まる ([plugin-react 6.2.1 の `createReactCompilerPlugin`][]、[vitejs/vite-plugin-react#1543][])。渡さないときに効く条件 (JSX のファイルか、JSX の runtime を import するファイル) が外れるので、`refreshExclude` だけを渡すと JSX を含まない `.ts` も登録を受ける。worker と共有する `.ts` に `$RefreshReg$` が入る [vitejs/vite-plugin-react#1478][] の形が戻る
+- その filter は Vite の `createFilter` で作られ、query の付いた id のまま照合する。`$` で終わる正規表現は、route の部品の module (`?tsr-split=component`) と worker の入口 (`?worker_file`) の id に当たらない。`exclude` は query の付いた id にも当たるよう変換してから照合する (6.2.1 の dist の `makeIdFiltersToMatchWithQuery`)
+- `exclude` は React Compiler も外す。query を許す正規表現にした `refreshInclude` と `refreshExclude` (下の表の最後の行) なら Compiler を残せるが、README が案内しない形で、正規表現の終わり方を誤ると Fast Refresh がエラーを出さずに止まる。README の案内する `exclude` を選ぶ
+- `reactPlugin` に先に入れておくのは、worker を足すときに設定を触らず名前だけで済ませるためである。外し忘れたときのエラーは `/@react-refresh` を指すだけで、`exclude` に辿り着けない。`.worker.tsx` のファイルが無い間は何にも当たらず、下の表のとおり、ほかの部品の Fast Refresh は変わらない
+
+2026-11-07 に、`@vitejs/plugin-react` 6.2.1 (`compiler: true`)、vite-plus 1.4.0 (Vite 8.3.5) の dev で、部品を 1 つ定義する worker の入口と、その入口が import する [vitejs/vite-plugin-react#1478][] の形の `.ts` を置き、`reactPlugin` に渡す形ごとに測った。worker は `new Worker(new URL(…))` と `?worker` の import の両方で起こし、どの形でも 2 つは同じ結果だった。登録の件数は、dev server が返した `.ts` の変換結果の `$RefreshReg$(` の行を数えた。route の部品の Fast Refresh は、`?tsr-split=component` の変換結果に登録が出るかと、route の見出しを編集したとき画面が読み直しなしに替わるかで見た。
+
+| `reactPlugin` に渡す形                                                               | worker                                                                      | 共有の `.ts` の登録 | route の部品の Fast Refresh                                                                   |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------- |
+| 渡さない (既定)                                                                      | `window is not defined` で落ちる                                            | 0 件                | 効く (編集で確かめた)                                                                         |
+| `exclude: [/\/node_modules\//, /\.worker\.tsx$/]`                                    | 動く                                                                        | 0 件                | 効く (編集で確かめた)                                                                         |
+| `refreshExclude: [/\.worker\.tsx$/]`                                                 | `$RefreshReg$ is not defined` で落ちる                                      | 2 件                | 登録は出る (編集では確かめていない)                                                           |
+| `refreshInclude: [/\.tsx$/]` と `refreshExclude: [/\.worker\.tsx$/]`                 | 動く。`refreshInclude` が worker の入口の id に当たらず、登録を受けなかった | 0 件                | 効かない。編集すると console に `[vite] hot updated` が出るが、画面は替わらず、エラーも出ない |
+| `refreshInclude: [/\.tsx(?:$\|\?)/]` と `refreshExclude: [/\.worker\.tsx(?:$\|\?)/]` | 動く                                                                        | 0 件                | 効く (編集で確かめた)                                                                         |
+
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0 (「タスクを足す」の出典は 1.1.0、「タスクの中で `vpx` を打つ理由」の出典は 1.4.0)、Vitest は 5.0.1 に固定した版を指す。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0 (「タスクを足す」の出典は 1.1.0、「タスクの中で `vpx` を打つ理由」の出典は 1.4.0)、Vitest は 5.0.1、`@vitejs/plugin-react` は 6.2.1 のタグの commit、Vite は 8.3.5 に固定した版を指す。
 
 [Vite+ docs「Configuring Vite+」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/config/index.md
 [Vite+ docs「Test」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/test.md
@@ -125,3 +161,10 @@ async の関数でも `vp exec storybook build` が通るようになったら (
 [Vite+ docs「Run」]: https://github.com/voidzero-dev/vite-plus/blob/v1.1.0/docs/guide/run.md
 [Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/docs/guide/env.md
 [Vite+ docs「Running Binaries」]: https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/docs/guide/vpx.md
+[Vite docs「Web Workers」]: https://github.com/vitejs/vite/blob/v8.3.5/docs/guide/features.md#web-workers
+[plugin-react 6.2.1 の README]: https://github.com/vitejs/vite-plugin-react/blob/29efd1cc6d875185f91a3325beb981bb45af876f/packages/plugin-react/README.md#exclude
+[plugin-react 6.2.1 の `Options`]: https://github.com/vitejs/vite-plugin-react/blob/29efd1cc6d875185f91a3325beb981bb45af876f/packages/plugin-react/src/index.ts#L33-L56
+[plugin-react 6.2.1 の `createReactCompilerPlugin`]: https://github.com/vitejs/vite-plugin-react/blob/29efd1cc6d875185f91a3325beb981bb45af876f/packages/plugin-react/src/index.ts#L335-L388
+[vitejs/vite-plugin-react#1478]: https://github.com/vitejs/vite-plugin-react/issues/1478
+[vitejs/vite-plugin-react#1516]: https://github.com/vitejs/vite-plugin-react/pull/1516
+[vitejs/vite-plugin-react#1543]: https://github.com/vitejs/vite-plugin-react/pull/1543

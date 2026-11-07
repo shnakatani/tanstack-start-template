@@ -170,3 +170,9 @@ lint では見ないのでレビューで見る。
 
 - 行単位の抑制 (`oxlint-disable-next-line`) は違反が報告される行の直前に置く。`.map()` の行に置いても `key` の行には効かない (`docs/guides/lint/configuration.md`「行単位で抑制する」)
 - `no-await-in-loop` は順序依存のループにも鳴る。逐次でないと壊れるループは `Promise.all` へ倒さず、抑制して順序が要る理由を書く (`docs/guides/lint/configuration.md`「行単位で抑制する」)
+
+## Web Worker の JSX/TSX は `.worker.tsx` に書く
+
+- worker の入口と、worker が import する JSX/TSX のファイルは、名前を `.worker.tsx` で終える。外れたファイルが部品を定義すると Fast Refresh の登録を受け、dev の worker が `window is not defined` (`/@react-refresh`) で落ちる (`docs/guides/vite-configuration.md`「Web Worker で JSX を書く」)
+- main thread と worker の両方が import する JSX/TSX のファイルは、名前を変えずに `reactPlugin` (`tooling/plugins/react.ts`) の `exclude` に足す (`docs/guides/vite-configuration.md`「Web Worker で JSX を書く」)
+- worker の入口に `import` も `export` も無ければ `export {};` を足す。無いと dev の worker が `require is not defined` で落ちる (`docs/guides/vite-configuration.md`「Web Worker で JSX を書く」)
