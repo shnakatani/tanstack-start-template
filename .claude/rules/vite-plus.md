@@ -67,6 +67,8 @@ paths:
 - `browser-no-compiler` の project を外さない。Compiler は上流の部品が描画中に部品を定義する欠陥を隠すので、`calendar.test.tsx` の再描画のガードは Compiler を通さない project でしか落ちない (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)
 - bail out のログは `vp build` では `[plugin vite:react-compiler]` だけで `error` / `warn` を含まない。ビルドログは `react-compiler` で grep する (`docs/guides/react/memoization.md`「React Compiler の診断を読む」)
 - babel を経路に置かない。壊れたときも版を下げて凌ぐ (ADR-0014)
+- `reactPlugin` の `exclude` から `/\.worker\.tsx$/` と `/\/node_modules\//` を外さない (`docs/guides/vite-configuration.md`「Web Worker で JSX を書く」)
+- worker の JSX/TSX は `exclude` で外し、`refreshInclude` / `refreshExclude` で外さない。`$` で終わる正規表現の `refreshInclude` は、route の部品の Fast Refresh をエラーを出さずに止める (`docs/guides/vite-configuration.md`「Web Worker で JSX を書く」)
 
 ## 依存の patch (`pnpm-workspace.yaml` の `patchedDependencies`)
 
