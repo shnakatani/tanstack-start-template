@@ -2,10 +2,11 @@
 
 `vite.config.ts` に集める設定の置き方と、長くなった block を別のファイルへ切り出す手順、重い依存を遅らせて読み込む手順、タスクを足す手順、その形にした理由を持つ。block ごとの中身の書き方は、テストの設定を `docs/guides/testing/configuration.md`、lint の設定を `docs/guides/lint/configuration.md` が持つ。
 
-| 決定                                                                                              | ADR      |
-| ------------------------------------------------------------------------------------------------- | -------- |
-| 開発環境のツールチェーンは mise と Vite+ に寄せる                                                 | ADR-0004 |
-| Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる | ADR-0037 |
+| 決定                                                                                                                                                        | ADR      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                                                                                                           | ADR-0004 |
+| Vitest の設定は vite.config.ts の test に置き、project は inline に並べて root の設定を継承させる                                                           | ADR-0037 |
+| ブラウザの console は Vite の `server.forwardConsole` で `error`・`warn`・`log` と未処理の error を端末へ送り、TanStack Devtools の Console Piping を止める | ADR-0049 |
 
 ## how-to
 
@@ -20,6 +21,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 | `fmt`、`staged`、`resolve`、`envDir`、`plugins`       | `vite.config.ts`                                                                                                                                                                                                                   |
 | `run`                                                 | `vite.config.ts`。タスクの足し方は「タスクを足す」、置き場所の決定は ADR-0004                                                                                                                                                      |
 | `plugins` の React の plugin (`@vitejs/plugin-react`) | `tooling/plugins/react.ts` の `reactPlugin`。アプリの `plugins` と、ブラウザで走る project の `chromiumProjectBase` が同じ factory から作る。分岐の書き方は `docs/guides/testing/configuration.md`「テストでだけ plugin を変える」 |
+| `server` の `forwardConsole`                          | `tooling/dev/forward-console.ts` の `forwardConsole`。`vite.config.ts` の `server` と、`.storybook/main.ts` の `viteFinal` が同じ値を渡す。Storybook の dev の Vite は `vite.config.ts` の `server` を読まない (ADR-0049)          |
 
 ### block を別のファイルへ切り出す
 

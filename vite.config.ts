@@ -5,6 +5,7 @@ import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
 import { companionFilePattern } from "./scripts/lib/companion-files";
+import { forwardConsole } from "./tooling/dev/forward-console";
 import { lintConfig } from "./tooling/lint/config";
 import { reactPlugin } from "./tooling/plugins/react";
 import { testConfig } from "./tooling/test/config";
@@ -68,6 +69,11 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  server: {
+    // ブラウザの console.error・console.warn・console.log と未処理の error を端末へ送る。範囲と、
+    // Storybook の dev へ渡し直す理由は tooling/dev/forward-console.ts (ADR-0049)
+    forwardConsole,
+  },
   test: testConfig,
   // config をメタデータとしてだけ読む経路で plugin の factory を呼ばない (先頭の import は遅れない)。
   // 関数は同期のままにする (docs/guides/vite-configuration.md「plugin を先頭で import する理由」)
@@ -81,8 +87,10 @@ export default defineConfig({
       // devtools のサーバ (既定の port は 4206) を起こさない。認証の無い要求で、有効な npm パッケージなら何でも、
       // その install scripts も含めて dev server の上で install させられる (TanStack/devtools#464、
       // TanStack/devtools#545)。画面はこのサーバにつながない
-      // (<TanStackDevtools> の eventBusConfig.connectToServerBus は既定で false) ので、止めても失う機能は無い
-      devtools({ eventBusConfig: { enabled: false } }),
+      // (<TanStackDevtools> の eventBusConfig.connectToServerBus は既定で false) ので、止めても失う機能は無い。
+      // Console Piping も切り、ブラウザ → 端末は上の server.forwardConsole に任せる。server → ブラウザの
+      // ログ ([Server]) は失う (ADR-0049)
+      devtools({ eventBusConfig: { enabled: false }, consolePiping: { enabled: false } }),
       tailwindcss(),
       tanstackStart({
         // テストとテスト専用ヘルパーを route から外す。外さないと generator が毎ビルド警告する
