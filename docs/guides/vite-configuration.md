@@ -21,7 +21,7 @@ Vite+ が読む設定は、ツールごとの設定ファイルに分けず `vit
 | `fmt`、`staged`、`resolve`、`envDir`、`plugins`       | `vite.config.ts`                                                                                                                                                                                                                   |
 | `run`                                                 | `vite.config.ts`。タスクの足し方は「タスクを足す」、置き場所の決定は ADR-0004                                                                                                                                                      |
 | `plugins` の React の plugin (`@vitejs/plugin-react`) | `tooling/plugins/react.ts` の `reactPlugin`。アプリの `plugins` と、ブラウザで走る project の `chromiumProjectBase` が同じ factory から作る。分岐の書き方は `docs/guides/testing/configuration.md`「テストでだけ plugin を変える」 |
-| `server` の `forwardConsole`                          | `tooling/dev/forward-console.ts` の `forwardConsole`。`vite.config.ts` の `server` と、`.storybook/main.ts` の `viteFinal` が同じ値を渡す。Storybook の dev の Vite は `vite.config.ts` の `server` を読まない (ADR-0049)          |
+| `server` の `forwardConsole`                          | `tooling/server/forward-console.ts` の `forwardConsole`。`vite.config.ts` の `server` と、`.storybook/main.ts` の `viteFinal` が同じ値を渡す。Storybook の dev の Vite は `vite.config.ts` の `server` を読まない (ADR-0049)       |
 
 ### block を別のファイルへ切り出す
 

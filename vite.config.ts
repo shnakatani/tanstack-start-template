@@ -5,9 +5,9 @@ import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
 import { companionFilePattern } from "./scripts/lib/companion-files";
-import { forwardConsole } from "./tooling/dev/forward-console";
 import { lintConfig } from "./tooling/lint/config";
 import { reactPlugin } from "./tooling/plugins/react";
+import { forwardConsole } from "./tooling/server/forward-console";
 import { testConfig } from "./tooling/test/config";
 
 // CI はこの手順を 1 つずつ別の step で打つ。足したら .github/workflows/ci.yml にも step を足す。
@@ -71,7 +71,7 @@ export default defineConfig({
   },
   server: {
     // ブラウザの console.error・console.warn・console.log と未処理の error を端末へ送る。範囲と、
-    // Storybook の dev へ渡し直す理由は tooling/dev/forward-console.ts (ADR-0049)
+    // Storybook の dev へ渡し直す理由は tooling/server/forward-console.ts (ADR-0049)
     forwardConsole,
   },
   test: testConfig,

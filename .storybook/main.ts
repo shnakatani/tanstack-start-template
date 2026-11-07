@@ -1,7 +1,7 @@
 import type { StorybookConfig } from "@storybook/tanstack-react";
 import { mergeConfig } from "vite-plus";
 
-import { forwardConsole } from "../tooling/dev/forward-console";
+import { forwardConsole } from "../tooling/server/forward-console";
 
 const config: StorybookConfig = {
   // src/components/ の外は対象にしない (docs/guides/storybook.md「story を置く」)

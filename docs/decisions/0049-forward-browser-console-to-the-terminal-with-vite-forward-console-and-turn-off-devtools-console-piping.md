@@ -31,7 +31,7 @@
 - agent の端末で warn と error が 2 回出るのは、Console Piping の `[Client] <message>` と、Vite の `[console.warn] <message>` が両方出るからである。server の warn の 2 行目は、Console Piping がブラウザへ送った `[Server] <message>` を Vite が端末へ送り返した行である
 - 採用した形では、ブラウザの `console.log` は `[vite+] (client) [console.log] <message>` で出る。アプリのコードの `console.log` と `console.error` には、Enhanced Logs がブラウザ向けに足した前置き (`LOG Go to Source: http://localhost:<dev の port>/__tsd/open-source?source=<path>:<line>:<column>`) が付き、本文は次の行に `→ <message>` で出る。Console Piping は前置きを外し、`[Client] <path>:<line>:<column> <message>` の 1 行で送る
 - 採用した形で、ページを開いたまま部品のファイルを 2 回書き換えた。端末には `hmr update` と `page reload` の行だけが出て、ブラウザの console に出た `[vite] hot updated: <path>` (`console.debug`) は端末に来なかった
-- `server.forwardConsole: true` と Console Piping 無効の形は、2026-11-05 の同じ測り方で、人の端末でも agent の端末でも warn・error・未処理の error と rejection が 1 回ずつ、log が 0 回だった (ea95e9d5 で測った)
+- `server.forwardConsole: true` と Console Piping 無効の形は、2026-11-05 の同じ測り方で、人の端末でも agent の端末でも warn・error・未処理の error と rejection が 1 回ずつ、log が 0 回だった (上と同じ版の Vite+ 1.4.0、`@tanstack/devtools-vite` 0.8.6、`@tanstack/react-start` 1.169.4、nitro 3.0.260903-beta で測った)
 
 ### Storybook の dev と story のテスト
 
@@ -53,7 +53,7 @@
 
 **ブラウザの console は Vite の `server.forwardConsole` に `{ unhandledErrors: true, logLevels: ["error", "warn", "log"] }` を渡して端末へ送り、`@tanstack/devtools-vite` に `consolePiping: { enabled: false }` を渡して Console Piping を止める。Storybook の dev には `.storybook/main.ts` の `viteFinal` で同じ値を渡し、story のテストには渡さない。**
 
-- 値は `tooling/dev/forward-console.ts` に 1 つだけ置き、`vite.config.ts` と `.storybook/main.ts` が import する。2 か所に書くと、片方だけを変えても気付けない
+- 値は `tooling/server/forward-console.ts` に 1 つだけ置き、`vite.config.ts` と `.storybook/main.ts` が import する。2 か所に書くと、片方だけを変えても気付けない
 - `server.forwardConsole` を明示するのは、既定のままだと人の端末で働かないからである。Console Piping は未処理の error を送らないので、既定のままでは人の端末に未処理の error が 1 行も出ない (「端末に出た行数」の表)
 - `logLevels` に `info` と `debug` を入れないのは、ブラウザの console に出る Vite の client の接続と HMR の行 (`[vite] connecting...`、`[vite] connected.`、`[vite] hot updated: <path>`) が `console.debug`、React DevTools の案内が `console.info` だからである (2026-11-07 にブラウザの console で確かめた)
 - 失うのは、SSR の server の console をブラウザの console に出す経路 (`[Server]`) である。server の console は端末に出ているので、端末を読む開発者とエージェントが読めるものは減らない
@@ -72,7 +72,7 @@
 ## Consequences
 
 - SSR の server の console は端末にだけ出て、ブラウザの console には出ない
-- ブラウザの `console.info`・`console.debug` は端末に出ない。端末で読みたくなったら、`tooling/dev/forward-console.ts` の `logLevels` に足す
+- ブラウザの `console.info`・`console.debug` は端末に出ない。端末で読みたくなったら、`tooling/server/forward-console.ts` の `logLevels` に足す
 - 端末へ送ったアプリのコードの `console.log` と `console.error` は、`LOG Go to Source: <URL>` の行と `→ <message>` の行の 2 行になる。`console.warn` には前置きが付かない (`@tanstack/devtools-bundler-core` の `enhance-logs.ts` は `console.log` と `console.error` だけを書き換える)。リンクは dev の port を指すが、開いたときにエディタが開くかは確かめていない
 - Storybook の dev でもブラウザの console が端末に出る。story のテストでは Vitest の出力だけになる
 - `@storybook/builder-vite` が `server` を差し替えなくなったら、`viteFinal` の `forwardConsole` は要らなくなる。Storybook を上げたら、`viteFinal` を外して人の端末で「Storybook の dev と story のテスト」の表の測り方を繰り返す
