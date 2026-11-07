@@ -65,6 +65,17 @@ export function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           {children}
           <Toaster />
           <TanStackDevtools
+            // navigator.webdriver が真のブラウザ (chrome-devtools の MCP、Vitest のブラウザモード) では devtools を描かない。
+            // 右下の trigger が自動操作のクリックを横取りし、chrome-devtools の MCP は押せたと報告する
+            // (2026-11-05、@tanstack/devtools 0.16.0)。
+            // localStorage に保存した settings に hideInAutomation: false が残っていても、config の値が勝つ
+            // (0.16.0 の src/context/devtools-context.tsx)。
+            // playwright-cli は Chromium に --disable-blink-features=AutomationControlled を足すので webdriver が false になり、
+            // この option は効かない (2026-11-05、playwright-cli 0.1.19)。webdriver を true に戻す口は文書化された設定ではなく
+            // microsoft/playwright の packages/playwright-core/src/tools/mcp/config.ts の分岐なので、.playwright/cli.config.json は配らない。
+            // 自動操作のブラウザで devtools を開くときは、ページの script より先に navigator.webdriver を false にする
+            // (chrome-devtools の MCP なら、開くたびに navigate_page の initScript に Object.defineProperty を渡す)
+            config={{ hideInAutomation: true }}
             plugins={[
               {
                 name: "TanStack Query",
