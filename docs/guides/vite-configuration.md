@@ -126,10 +126,11 @@ async の関数でも `vp exec storybook build` が通るようになったら (
 
 ### worker を `exclude` で外す理由
 
-- [plugin-react 6.2.1 の README][] と [plugin-react 6.2.1 の `Options`][] は、worker で動く JSX/TSX を外す option に `exclude` を挙げる ("You may use it to exclude JSX/TSX files that runs in a worker or are not React files.")。6.2.0 で足された `refreshInclude` と `refreshExclude` ([vitejs/vite-plugin-react#1516][]) は README に無く、`Options` の説明は "Can be used to skip fast refresh for certain files that won't run in the browser." である
-- `compiler: true` の経路では、`refreshInclude` か `refreshExclude` を 1 つでも渡すと、Fast Refresh を入れるかがその 2 つの filter だけで決まる ([plugin-react 6.2.1 の `createReactCompilerPlugin`][]、[vitejs/vite-plugin-react#1543][])。渡さないときに効く条件 (JSX のファイルか、JSX の runtime を import するファイル) が外れるので、`refreshExclude` だけを渡すと JSX を含まない `.ts` も登録を受ける。worker と共有する `.ts` に `$RefreshReg$` が入る [vitejs/vite-plugin-react#1478][] の形が戻る
-- その filter は Vite の `createFilter` で作られ、query の付いた id のまま照合する。`$` で終わる正規表現は、route の部品の module (`?tsr-split=component`) と worker の入口 (`?worker_file`) の id に当たらない。`exclude` は query の付いた id にも当たるよう変換してから照合する (6.2.1 の dist の `makeIdFiltersToMatchWithQuery`)
-- `exclude` は React Compiler も外す。query を許す正規表現にした `refreshInclude` と `refreshExclude` (下の表の最後の行) なら Compiler を残せるが、README が案内しない形で、正規表現の終わり方を誤ると Fast Refresh がエラーを出さずに止まる。README の案内する `exclude` を選ぶ
+- `exclude` は、[plugin-react 6.2.1 の README][] と [plugin-react 6.2.1 の `Options`][] が、worker で動く JSX/TSX を外す option として案内する ("You may use it to exclude JSX/TSX files that runs in a worker or are not React files.")。外したファイルは React Compiler も通らない
+- `refreshInclude` と `refreshExclude` は、worker の JSX を React Compiler に通したまま Fast Refresh からだけ外すために、6.2.0 で足された ([vitejs/vite-plugin-react#1485 のコメント][] の "they want it to compile but not fast refresh"、[vitejs/vite-plugin-react#1516][]、[vitejs/vite-plugin-react#1543][])。6.2.1 で使うと次の 2 つの落とし穴があるので、採らない
+- `compiler: true` の経路では、どちらかを 1 つでも渡すと、Fast Refresh を入れるかがその 2 つの filter だけで決まる ([plugin-react 6.2.1 の `createReactCompilerPlugin`][])。渡さないときに効く条件 (JSX のファイルか、JSX の runtime を import するファイル) が外れるので、`refreshExclude` だけを渡すと JSX を含まない `.ts` も登録を受ける。worker と共有する `.ts` に `$RefreshReg$` が入る [vitejs/vite-plugin-react#1478][] の形が戻る
+- その filter は Vite の `createFilter` (`@rollup/pluginutils` の re-export。[Vite 8.3.5 の `createFilter`][]) で作られ、query の付いた id のまま照合する。`$` で終わる正規表現は、route の部品の module (`?tsr-split=component`) と worker の入口 (`?worker_file`) の id に当たらない。同じ経路の `exclude` と、Fast Refresh の runtime を足す wrapper の filter は、`@rolldown/pluginutils` の `makeIdFiltersToMatchWithQuery` で query の付いた id にも当たるよう変換してから照合する ([plugin-react 6.2.1 の `createReactCompilerPlugin`][]、[plugin-react 6.2.1 の `viteReact`][])。`$` で終わる `refreshExclude` を渡した worker の入口は、登録だけを受けて runtime を受けなかった
+- query を許す正規表現にした `refreshInclude` と `refreshExclude` (下の表の最後の行) なら、Compiler を残して Fast Refresh から外せる。ただし正規表現の終わり方を誤ると、Fast Refresh がエラーを出さずに止まる。README の案内する `exclude` を選ぶ
 - `reactPlugin` に先に入れておくのは、worker を足すときに設定を触らず名前だけで済ませるためである。外し忘れたときのエラーは `/@react-refresh` を指すだけで、`exclude` に辿り着けない。`.worker.tsx` のファイルが無い間は何にも当たらず、下の表のとおり、ほかの部品の Fast Refresh は変わらない
 
 2026-11-07 に、`@vitejs/plugin-react` 6.2.1 (`compiler: true`)、vite-plus 1.4.0 (Vite 8.3.5) の dev で、部品を 1 つ定義する worker の入口と、その入口が import する [vitejs/vite-plugin-react#1478][] の形の `.ts` を置き、`reactPlugin` に渡す形ごとに測った。worker は `new Worker(new URL(…))` と `?worker` の import の両方で起こし、どの形でも 2 つは同じ結果だった。登録の件数は、dev server が返した `.ts` の変換結果の `$RefreshReg$(` の行を数えた。route の部品の Fast Refresh は、`?tsr-split=component` の変換結果に登録が出るかと、route の見出しを編集したとき画面が読み直しなしに替わるかで見た。
@@ -168,3 +169,6 @@ async の関数でも `vp exec storybook build` が通るようになったら (
 [vitejs/vite-plugin-react#1478]: https://github.com/vitejs/vite-plugin-react/issues/1478
 [vitejs/vite-plugin-react#1516]: https://github.com/vitejs/vite-plugin-react/pull/1516
 [vitejs/vite-plugin-react#1543]: https://github.com/vitejs/vite-plugin-react/pull/1543
+[vitejs/vite-plugin-react#1485 のコメント]: https://github.com/vitejs/vite-plugin-react/pull/1485#issuecomment-5992344162
+[plugin-react 6.2.1 の `viteReact`]: https://github.com/vitejs/vite-plugin-react/blob/29efd1cc6d875185f91a3325beb981bb45af876f/packages/plugin-react/src/index.ts#L88-L96
+[Vite 8.3.5 の `createFilter`]: https://github.com/vitejs/vite/blob/981f07fa4580fb88b333c4450431e4715d2a0b82/packages/vite/src/node/utils.ts#L61-L65
