@@ -62,7 +62,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint-plugin-testing-library": "^7.16.2",
     "oxc-transform-react": "^0.156.0",
-    "playwright": "^1.65.1",
+    "playwright": "^1.65.0",
     "shadcn": "^4.23.0",
     "storybook": "10.6.5",
     "vite": "catalog:",
