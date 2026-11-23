@@ -25,7 +25,7 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 - テストのファイル (`*.test.ts(x)`、`*.test-helpers.ts(x)`、`src/test/**`) で `@tanstack/react-router` の `createRouter` と `Router` を import すると、lint (`no-restricted-imports`) が止める。別名の import と、テストのファイルからの再 export も止まる。型だけの import (`import type { Router }` と `import { type Router }`) は止めない
 - 名前空間の import (`import * as Router from "@tanstack/react-router"`) は、`createRouter` を使わなくても丸ごと止まる。テストでは必要な名前を個別に import する
-- 2026-10-12 に oxlint 1.87.0 で確かめると、止まらない形が 2 つあった。`await import("@tanstack/react-router")` から取り出した `createRouter` と、テストのファイルでないファイルが再 export した `createRouter` である。[Oxlint docs「eslint/no-restricted-imports」][] は文字列の specifier の dynamic `import()` もルールの対象と書くが、2026-11-23 に oxlint 1.94.0 で確かめても、dynamic import から分割代入で取り出した `createRouter` は止まらなかった (同じファイルの静的な import は止まった)。テストでは dynamic import から router を組まない。アプリのコード (テストでないファイル) から `createRouter` を再 export しない
+- 止まらない形が 2 つある。1 つは `await import("@tanstack/react-router")` から取り出した `createRouter` である。[Oxlint docs「eslint/no-restricted-imports」][] はルールの対象に文字列の specifier の dynamic `import()` を含めるが、この制限は `importNames` で名前を絞っていて (`tooling/lint/config.ts`)、名前で絞った制限は dynamic import に効かない ([oxlint 1.94.0 の `no_restricted_imports.rs`][] の、dynamic import では `importNames` と `allowImportNames` の制限を飛ばす判定。[oxlint 1.87.0 の `no_restricted_imports.rs`][] にも同じ判定がある)。2026-10-12 に oxlint 1.87.0 で、2026-11-23 に 1.94.0 で、止まらないことを確かめた。もう 1 つは、テストのファイルでないファイルが再 export した `createRouter` で、2026-10-12 に oxlint 1.87.0 で止まらなかった。テストでは dynamic import から router を組まない。アプリのコード (テストでないファイル) から `createRouter` を再 export しない
 - `createTestRouter` (`src/test/app/create-test-router.tsx`) は内部で `createRouterWithTestDefaults` を呼ぶので、呼ぶ側は何もしなくてよい
 - テストで既定にしたい router の options は、各テストに書かずに `createRouterWithTestDefaults` の既定に足す。各テストに書くと、足し漏れたテストだけが別の既定で走る
 - 本番の設定 (`src/router.tsx`) の値を既定に写さない。片方だけ変えたときに、テストだけが古い既定で緑になる。本番と同じ設定を通したいテストは、その option を自分で渡す (`notFoundMode` など)
@@ -98,7 +98,7 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Oxlint docs「eslint/no-restricted-imports」は 2026-11-23 に oxlint 1.94.0 の原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Oxlint docs「eslint/no-restricted-imports」は 2026-11-23 に、生成元の oxlint 1.94.0 のルールのソース ([oxlint 1.94.0 の `no_restricted_imports.rs` の DOCUMENTATION][]) と照らした。
 
 [TanStack Router docs「File Naming Conventions」]: https://tanstack.com/router/latest/docs/routing/file-naming-conventions
 [TanStack Router docs「How to Set Up Testing with Code-Based Routing」]: https://tanstack.com/router/latest/docs/how-to/setup-testing
@@ -108,3 +108,6 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 [`@tanstack/router-core` 1.171.34 の `isModuleNotFoundError`]: https://github.com/TanStack/router/blob/57e126e99dbd86f735ead2ba98ba5e98ef0cc668/packages/router-core/src/utils.ts#L507-L517
 [`@tanstack/react-router` 1.170.41 の `lazyRouteComponent`]: https://github.com/TanStack/router/blob/57e126e99dbd86f735ead2ba98ba5e98ef0cc668/packages/react-router/src/lazyRouteComponent.tsx#L53-L70
 [Oxlint docs「eslint/no-restricted-imports」]: https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html
+[oxlint 1.94.0 の `no_restricted_imports.rs`]: https://github.com/oxc-project/oxc/blob/229b69bf10a9c876f84287123fdf9d5e0747c96b/crates/oxc_linter/src/rules/eslint/no_restricted_imports.rs#L1339-L1345
+[oxlint 1.87.0 の `no_restricted_imports.rs`]: https://github.com/oxc-project/oxc/blob/2bd08ebe8f36fcf1954a675ffdeb4c6d0129f609/crates/oxc_linter/src/rules/eslint/no_restricted_imports.rs#L1298-L1304
+[oxlint 1.94.0 の `no_restricted_imports.rs` の DOCUMENTATION]: https://github.com/oxc-project/oxc/blob/229b69bf10a9c876f84287123fdf9d5e0747c96b/crates/oxc_linter/src/rules/eslint/no_restricted_imports.rs#L273-L277
