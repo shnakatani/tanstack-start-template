@@ -21,14 +21,14 @@
 | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせて、ライブラリ内部のガードまで見に行かない                                                                        |
 | 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                                                                                          |
 
-`.click()` が弾く条件は [Playwright docs「Auto-waiting」][] が定める。このリポジトリで弾かれる典型は次のとおり。
+`.click()` が弾く条件は [Playwright docs「Auto-waiting」][] が定める。どの検査で落ちたかは、エラーの Call log の文で見る。このリポジトリで弾かれる典型は次のとおり。
 
-| 条件               | 落ちる例                                                                                                               |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Enabled            | native `disabled`、`aria-disabled="true"` の祖先を持つ要素                                                             |
-| Stable             | 開閉アニメーションの途中。既定では animation の無効化で即座に終わる。animation を戻したテストでは settled を待って押す |
-| Visible / viewport | `sr-only` の 1px + clip。`getByRole(..., { name })` で本体を掴む                                                       |
-| Receives Events    | base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none`                                                |
+| 落ちる例                                                                                                                   | 扱い                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| native `disabled` の要素、`aria-disabled="true"` の祖先を持つ要素                                                          | 反応しないことを確かめるなら、上の表の「無効化された要素が反応しないことの検証」の行                                                                                      |
+| 開閉アニメーションの途中の要素                                                                                             | 既定では animation の無効化で即座に終わる。animation を戻したテストでは settled を待って押す                                                                              |
+| button と link の外に置いた `sr-only` の文字 (1px + clip)。落ちる検査は置き場所で変わる (「`sr-only` の文字が落ちる検査」) | `getByRole(..., { name })` で本体を掴む                                                                                                                                   |
+| base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none` の要素                                             | `force: true` はブラウザのヒットテストを越えない (「force が飛ばす検査と残る検査」)。反応しないことを確かめるなら、上の表の「無効化された要素が反応しないことの検証」の行 |
 
 - `force: true` は actionability の検査の一部を飛ばす ([Playwright docs「Auto-waiting」][] の Forcing actions)。飛ぶ検査と残る検査は「force が飛ばす検査と残る検査」にある
 - force でも座標は要る。animation を戻したテストでは、スライドインの途中の要素が "Element is outside of the viewport" で落ちるので、settled を待って押す (「force が飛ばす検査と残る検査」)
@@ -144,6 +144,22 @@ route の announcer (ADR-0035) を置いた router で、開く操作をした�
 - viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の条件の定義に無く、同じ `_performPointerAction` が `force` でも行っていた (2026-09-30 に playwright-core 1.63.0 のソースを読み取った。公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
 - ブラウザのヒットテストも残る。`pointer-events: none` の対象へ `force` で送ったイベントが下の要素へ落ちる実測は「合成イベントが実物からずれる理由」にある
 
+### `sr-only` の文字が落ちる検査
+
+`sr-only` の文字は 1px の箱を持つので、[Playwright docs「Auto-waiting」][] の Visible の定義 (non-empty bounding box) を満たす。Tailwind の `sr-only` の span へ `.click()` を送ると、落ちたのは Visible ではなく、置き場所で決まる次の検査だった (2026-11-24、Playwright 1.65.0 の Chromium 158.0.8127.18 と `@vitest/browser` 5.1.0 で実測)。
+
+| 置き場所                                                       | 結果                                         | Call log の文                            |
+| -------------------------------------------------------------- | -------------------------------------------- | ---------------------------------------- |
+| padding を持つ div の中 (矩形が viewport の内側)               | hit target の確認 (Receives Events) で落ちる | `<div>…</div> intercepts pointer events` |
+| `<label>` の中 (checkbox と並べる)                             | 同上                                         | `<div>…</div> intercepts pointer events` |
+| viewport の左上に接する div の中 (矩形が (-1, -1) から (0, 0)) | viewport 内の座標の確認で落ちる              | `element is outside of the viewport`     |
+| `<button>` の中                                                | 通る                                         | なし                                     |
+
+- clip で切られた文字の span は、クリックの座標の hit target にならず、下の div が hit target になった
+- button の中で通るのは、Playwright が hit target を確かめる前に、対象を最も近い `button, [role=button], a, [role=link]` へ寄せるためである ([Playwright の `injected/src/injectedScript.ts`][] の `setupHitTargetInterceptor` が `retarget(node, 'button-link')` を呼んでいた。2026-11-24 に 1.65.0 のソースを読み取った。公式 docs では未確認)。link の中は測っていない
+- viewport の端で落ちる確認は、公式 docs の条件の定義に無い viewport 内の座標の確認である (「force が飛ばす検査と残る検査」)
+- `.click({ force: true })` は、div の中ではエラー無く返り、click は文字の span ではなく下の div に届いた。viewport の端では `force` でも `Element is outside of the viewport` で落ちた (同日)
+
 ### popup の初期 focus が遅れて当たる理由
 
 Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、Combobox の popup が使う) は、開いたときの focus を `enqueueFocus` で `requestAnimationFrame` の次のフレームに当てていた (`floating-ui-react/utils/enqueueFocus.js`。1.8.0 は 2026-10-10、1.9.0 は 2026-10-31 に確認)。`open` を渡して `render()` した直後は、focus はまだ popup に無く body にある (2026-10-10 に実測)。その間に送ったキーは popup の外 (開く操作をした要素か body) に当たる。描画を待つ assert (`expect.element(...).toBeInViewport()` など) を挟んだテストでは、15 回とも、その assert が通った時点で focus は届いていた (2026-10-10、alert-dialog と dialog で実測)。CPU を絞ると届かないことがある。テストの process を `taskpolicy -b` で走らせると、ルートのダイアログの入力欄の `toHaveValue` が通った時点で focus がまだ開く操作をした要素にあり、20 回中 2 回、描画から 110〜150ms 経っても届いていなかった (2026-10-31、`@base-ui/react` 1.9.0 で実測)。focus の位置で結果が変わる操作の前には、前提を `toHaveFocus` の assert として書く。
@@ -200,7 +216,7 @@ Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。Vitest docs「Timers」だけは 5.1.0 に固定した。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1 に固定した版を指す。Vitest docs「Timers」だけは 5.1.0 に固定した。Playwright のソースは、`server/dom.ts` を 1.63.0、`injectedScript.ts` を 1.65.0 に固定した版で指す。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -225,6 +241,7 @@ Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、
 [HTML Standard「clean up after running script」]: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
 [React docs「useFormStatus」]: https://react.dev/reference/react-dom/hooks/useFormStatus
 [`playwright-core` の `server/dom.ts`]: https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/src/server/dom.ts
+[Playwright の `injected/src/injectedScript.ts`]: https://github.com/microsoft/playwright/blob/v1.65.0/packages/injected/src/injectedScript.ts
 [Base UI docs「Animation」]: https://base-ui.com/react/handbook/animation
 [Web Animations「update animations and send events」]: https://www.w3.org/TR/web-animations-1/#update-animations-and-send-events
 [Web Animations「The Animatable interface mixin」]: https://www.w3.org/TR/web-animations-1/#the-animatable-interface-mixin

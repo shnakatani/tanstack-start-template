@@ -153,7 +153,7 @@ paths:
 - Base UI の popup を開いた直後に、開いたときの focus が当たる要素へキーを送るときは、`expect.element(x).toHaveFocus()` で focus を待ってから送る。route の announcer (ADR-0035) を置いた router で、開く操作をした要素から route として開いたダイアログを離れ、そのあとの focus を確かめるときも、同じく待ってから離れる。Base UI は開いたときの focus を 1 フレーム後に当て、届く前に離れると announcer が見出しへ移す (`docs/guides/testing/user-interactions.md`「popup を開いた直後にキーを送る」)
 - `force: true` はブラウザのヒットテストを越えない。`pointer-events: none` の対象ではイベントが下の要素へ落ち、ハンドラは呼ばれない (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
 - 合成イベント (`element.dispatchEvent(new MouseEvent(...))`) は使わない。実物では起きない経路を固定する (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
-- `sr-only` のテキストは 1px + clip で viewport 判定に落ちる。`getByRole(..., { name })` で本体を掴む (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
+- button と link の外に置いた `sr-only` のテキストは、`.click()` が hit target の確認か viewport 内の座標の確認で弾く。`getByRole(..., { name })` で本体を掴む (`docs/guides/testing/user-interactions.md`「クリックを発火する」)
 - `userEvent.wheel` をスクロールの手段にしない。要素を表示させるのは locator の操作の自動スクロールに任せ、位置が要るなら `scrollTop` か `scrollIntoView()` で作る (`docs/guides/testing/user-interactions.md`「スクロールさせる」)
 
 ## locator の扱い
