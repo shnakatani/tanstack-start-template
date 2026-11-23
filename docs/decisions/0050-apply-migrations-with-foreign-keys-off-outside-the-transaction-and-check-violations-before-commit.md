@@ -20,7 +20,7 @@ drizzle-orm 0.45.4 の migrator (`drizzle-kit migrate` もこれを呼ぶ) は�
 | 親         | 無し、子の行が 0 件 | 落ちずに当たる                                                                                                                                                   |
 | 子         | 無し、`cascade`     | 子の行は残る                                                                                                                                                     |
 
-既定値だけを変えた作り直しでも、`cascade` で子の行が消えた。列の追加と削除は `ALTER TABLE` で済み、作り直しにならなかった。同じ SQL をトランザクションの外で流すと、`PRAGMA foreign_keys=OFF` が効き、子の行は残った。
+既定値だけを変えた作り直しでも、`cascade` で子の行が消えた。列の追加と削除は `ALTER TABLE` で済み、作り直しにならなかった。同じ SQL を、外部キーの検査を有効にした接続からトランザクションの外で 1 文ずつ流すと、`PRAGMA foreign_keys=OFF` が効き、`onDelete` が無し・`cascade`・`set null` のどれでも子の 3 行と参照が残った (better-sqlite3 13.2.0 の SQLite 3.54.1)。
 
 テストは空の DB に migration を当てるので、子の行が 0 件の場合に当たり、この問題を見つけられない。
 
@@ -57,9 +57,9 @@ migration は、テンプレートの `migrateDb()` (`src/server/db/index.ts`) �
 
 drizzle-orm の migrator と違うのは、記録の表の作成と最後の記録の読み出しを `BEGIN IMMEDIATE` の中で行う点である。drizzle-orm の migrator は読み出しをトランザクションの外で行い、`BEGIN` も書き込みのロックを取らない。2 つの接続が同時に当てると、後の側が、先の側が確定する前の記録を読み、同じ migration を当てうる。`BEGIN IMMEDIATE` なら後の側は先の側の確定を待ち (better-sqlite3 の既定の `timeout` は 5000 ms。better-sqlite3 docs「API」の `new Database()`)、その記録を読んでから未適用を決める。記録の形と判定は変えないので、互換は保たれる。
 
-確定の前の検査は DB 全体の違反を見る。SQLite の手順の 10 は "run PRAGMA foreign_key_check to verify that the schema change did not break any foreign key constraints" と書き、引数の無い `PRAGMA foreign_key_check` は DB 全体を検査する。下の先行例のうち Django と knex も、DB 全体の違反で止める。DB 全体を見ると、当てる前からある違反も migration の違反として数えてしまうので、当てる前にも検査し、違反があれば migration の違反とは別の文言で止める。代わりに、違反のある DB では、違反と関係の無い migration も、違反を直すまで当てられない。
+確定の前の検査は DB 全体の違反を見る。SQLite の手順の 10 は "run PRAGMA foreign_key_check to verify that the schema change did not break any foreign key constraints" と書き、引数の無い `PRAGMA foreign_key_check` は DB 全体を検査する (SQLite「Pragma statements supported by SQLite」の `foreign_key_check`: "checks the database, or the table called \"table-name\", for foreign key constraints that are violated")。下の先行例のうち Django と knex も、DB 全体の違反で止める。DB 全体を見ると、当てる前からある違反も migration の違反として数えてしまうので、当てる前にも検査し、違反があれば migration の違反とは別の文言で止める。代わりに、違反のある DB では、違反と関係の無い migration も、違反を直すまで当てられない。
 
-当てる前と確定の前の違反を突き合わせ、増えた違反だけで止める形 (Atlas の形) は採らない。`foreign_key_check` の行は表の名前と rowid で違反を指すので、行の同一性が rowid に頼る。2026-11-23 に、その形で書いた `migrateDb()` (better-sqlite3 13.2.0 の SQLite 3.54.1) へ次の migration を当てた。
+当てる前と確定の前の違反を突き合わせ、増えた違反だけで止める形 (Atlas の形) は採らない。`foreign_key_check` の行は表の名前と rowid で違反を指し、rowid は "NULL if the child table is a WITHOUT ROWID table" である (同じ節)。行の同一性が表の名前と rowid に頼る。2026-11-23 に、その形で書いた `migrateDb()` (better-sqlite3 13.2.0 の SQLite 3.54.1) へ次の migration を当てた。
 
 | 当てる前の DB                                                       | migration                                                         | 突き合わせの結果                                                          |
 | ------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |

@@ -96,19 +96,27 @@ const CREATE_REVIEWS = `CREATE TABLE \`reviews\` (
 /** 親 2 を消す custom migration。検査を切った接続では ON DELETE の動作が走らず、親 2 を指す子が残る */
 const DELETE_AUTHOR_2 = "DELETE FROM `authors` WHERE `id` = 2;";
 
-/** 子の title を NOT NULL にする migration。drizzle-kit 0.31.11 の generate は子の表を作り直す SQL を出力する */
-function rebuildBooks(): string {
-  return `PRAGMA foreign_keys=OFF;--> statement-breakpoint
-CREATE TABLE \`__new_books\` (
-	\`id\` integer PRIMARY KEY NOT NULL,
-	\`title\` text DEFAULT '' NOT NULL,
+/** 親を参照し、主キーが整数でない子 (tags) を足す migration。rowid は主キーと別に持つ */
+const CREATE_TAGS = `CREATE TABLE \`tags\` (
+	\`key\` text PRIMARY KEY NOT NULL,
 	\`author_id\` integer,
 	FOREIGN KEY (\`author_id\`) REFERENCES \`authors\`(\`id\`) ON UPDATE no action ON DELETE no action
 );
+`;
+
+/** tags に NOT NULL の列を足す migration。drizzle-kit 0.31.11 の generate が出力する作り直しの形 */
+function rebuildTags(): string {
+  return `PRAGMA foreign_keys=OFF;--> statement-breakpoint
+CREATE TABLE \`__new_tags\` (
+	\`key\` text PRIMARY KEY NOT NULL,
+	\`author_id\` integer,
+	\`label\` text DEFAULT '' NOT NULL,
+	FOREIGN KEY (\`author_id\`) REFERENCES \`authors\`(\`id\`) ON UPDATE no action ON DELETE no action
+);
 --> statement-breakpoint
-INSERT INTO \`__new_books\`("id", "title", "author_id") SELECT "id", "title", "author_id" FROM \`books\`;--> statement-breakpoint
-DROP TABLE \`books\`;--> statement-breakpoint
-ALTER TABLE \`__new_books\` RENAME TO \`books\`;--> statement-breakpoint
+INSERT INTO \`__new_tags\`("key", "author_id") SELECT "key", "author_id" FROM \`tags\`;--> statement-breakpoint
+DROP TABLE \`tags\`;--> statement-breakpoint
+ALTER TABLE \`__new_tags\` RENAME TO \`tags\`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;`;
 }
 
@@ -231,26 +239,67 @@ describe("migrateDb", () => {
     ]);
   });
 
-  // 子の表を作り直すと、行の rowid が詰まって変わる。違反を当てる前と後で rowid で突き合わせると、前からある違反を
-  // 新しい違反と取り違える
-  it("違反の無い子の表を、行を消して rowid に隙間がある状態で作り直しても落ちない", () => {
+  it("WITHOUT ROWID の子の表に当てる前から違反があれば、違反を足す migration も当てずに止める", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
-    db.$client.exec("delete from books where id = 1");
-    writeMigrations(dir.path, [createTables("no action"), rebuildBooks()]);
+    writeMigrations(dir.path, [createTables("no action"), CREATE_REVIEWS]);
+    migrateDb(db, dir.path);
+    db.$client.exec("insert into reviews (key, author_id) values ('r2', 2)");
+    db.$client.pragma("foreign_keys = OFF");
+    db.$client.exec("insert into reviews (key, author_id) values ('r9', 9)");
+    db.$client.pragma("foreign_keys = ON");
+    writeMigrations(dir.path, [createTables("no action"), CREATE_REVIEWS, DELETE_AUTHOR_2]);
+
+    expect(() => migrateDb(db, dir.path)).toThrow(
+      /DB に当てる前から外部キーの違反がある.*: \[\{"table":"reviews","rowid":null,"parent":"authors","fkid":0\}\]$/,
+    );
+    expect(db.$client.prepare("select id from authors order by id").all()).toEqual([
+      { id: 1 },
+      { id: 2 },
+    ]);
+  });
+
+  // 主キーが整数でない表は rowid を別に持ち、作り直すと rowid が詰まって変わる。違反を rowid で突き合わせないので、
+  // 作り直しで rowid が変わっても取り違えない
+  it("主キーが整数でない子の表を、rowid に隙間がある状態で作り直しても落ちない", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS]);
+    migrateDb(db, dir.path);
+    db.$client.exec(`
+      insert into tags (key, author_id) values ('a', 1), ('b', 1), ('c', 2);
+      delete from tags where key = 'a';
+    `);
+    writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS, rebuildTags()]);
 
     migrateDb(db, dir.path);
 
-    expect(readBooks(db)).toEqual(BOOKS.slice(1));
+    // 作り直しで rowid が 2、3 から 1、2 に詰まった
+    expect(db.$client.prepare("select rowid, key, author_id from tags order by key").all()).toEqual(
+      [
+        { rowid: 1, key: "b", author_id: 1 },
+        { rowid: 2, key: "c", author_id: 2 },
+      ],
+    );
   });
 
   it("違反のある子の表を作り直す migration は、当てる前の違反として止める", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
-    insertOrphanBook(db);
-    writeMigrations(dir.path, [createTables("no action"), rebuildBooks()]);
+    writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS]);
+    migrateDb(db, dir.path);
+    db.$client.exec(`
+      insert into tags (key, author_id) values ('a', 1), ('b', 1);
+      delete from tags where key = 'a';
+    `);
+    db.$client.pragma("foreign_keys = OFF");
+    db.$client.exec("insert into tags (key, author_id) values ('z', 9)");
+    db.$client.pragma("foreign_keys = ON");
+    writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS, rebuildTags()]);
 
-    expect(() => migrateDb(db, dir.path)).toThrow(/DB に当てる前から外部キーの違反がある/);
+    expect(() => migrateDb(db, dir.path)).toThrow(
+      /DB に当てる前から外部キーの違反がある.*: \[\{"table":"tags","rowid":3,"parent":"authors","fkid":0\}\]$/,
+    );
   });
 
   it("外部キーの検査を戻せなかったら、migration の失敗を cause に残して落とす", () => {
@@ -387,10 +436,11 @@ describe("migrateDb", () => {
 
       migrateDb(db, folder);
 
-      await exited;
       expect(db.$client.prepare("select n from counter").get()).toEqual({ n: 1 });
       expect(readMigrationRecords(db)).toHaveLength(2);
     } finally {
+      // 落ちたときも worker の終わりを待ってから、一時ディレクトリを消す
+      await exited;
       db.$client.close();
     }
   });
