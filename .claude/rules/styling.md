@@ -116,6 +116,7 @@ Why: token 経由なら dark mode 対応とデザイン変更が `styles.css` �
 - ボタンの children に `Spinner` を並べない。`PendingLabel` で label に重ねる (Action 層の部品と `ButtonLink` の `isPending` が使う)。並べると pending の間だけボタンが広がる (ADR-0042)
 - データなしは `Empty` で組み、何が無いか (`EmptyTitle`) と次に取れる操作 (`EmptyContent` のボタンか、`EmptyDescription` で操作の場所を案内) をそろえる (`docs/guides/lists-and-search.md`「空状態を出す」)
 - 状態による見た目の分岐は、1 箇所なら `cn()` + 三項で書く。同型の分岐が 2 箇所以上に重なったら、ui 部品自身の見た目なら手段を「部品の見た目を変える」の表で選び、`ui/` の外の見た目なら部品に切り出す。`ui/` の外で `cva` の variant にしない (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
+- `ui/` の variant 関数 (`buttonVariants` など) に class を書き足すときは `cn(buttonVariants(...), "...")` の引数に書き、`className` キーに書かない。キーの値は lint に読まれない (`docs/guides/lint/tailwind-and-shadcn.md`「`ui/` の variant 関数を外で呼ぶ」)
 
 ## 操作できる要素の組み方
 
