@@ -59,7 +59,7 @@ const MIGRATIONS_TABLE = "__drizzle_migrations";
  * `drizzle/` の migration のうち未適用のものを当てる。SQLite「ALTER TABLE」の 12 の手順の外枠の形で当てる
  * (ADR-0050): トランザクションの外で外部キーの検査を切り、1 つのトランザクションで未適用の migration を
  * 順に流して記録し、`PRAGMA foreign_key_check` に違反があれば戻して落とし、無ければ確定して検査を戻す。
- * 当てる前に違反があれば、何も当てずに落とす。テーブルの作り直しの中身 (作る・写す・消す・改名する) は drizzle-kit が書き出す SQL が持つ。
+ * テーブルの作り直しの中身 (作る・写す・消す・改名する) は drizzle-kit が書き出す SQL が持つ。
  * drizzle-orm の migrator はトランザクションの中で `PRAGMA foreign_keys=OFF` を流すので効かず、
  * 子から参照される親を作り直すと、`DROP TABLE` が外部キーの検査で落ちるか、`ON DELETE` の動作で子の行を消す
  */
@@ -147,15 +147,10 @@ function applyPendingMigrations(db: Db, migrations: MigrationMeta[]): void {
         return;
       }
 
-      // 確定の前の検査は DB 全体の違反を見る (Django と knex と同じ)。当てる前からある違反を migration の違反と
-      // 取り違えないよう、当てる前に違反があれば何も当てずに止める。違反の行を当てる前と後で突き合わせる形は、
-      // 行を rowid で見分けるので、WITHOUT ROWID の表と、表の作り直しで崩れる (ADR-0050)
-      const existing = readForeignKeyViolations(db);
-      if (existing.length > 0) {
-        throw new Error(
-          `[db] DB に当てる前から外部キーの違反があるので、何も当てずに止めた。違反を直してから当てる: [${existing.join(",")}]`,
-        );
-      }
+      // 止めるのは確定の前の DB 全体の検査だけにする (Django と knex と同じ)。当てる前の違反は数えるだけで、
+      // 落ちたときの文言を分けるのに使う。当てる前の違反で止めると、違反を直す migration も当たらない。
+      // 違反の行は当てる前と後で突き合わせない。rowid で見分けるので、WITHOUT ROWID の表と、表の作り直しで崩れる (ADR-0050)
+      const existingCount = readForeignKeyViolations(db).length;
       for (const migration of pending) {
         for (const statement of migration.sql) {
           db.run(sql.raw(statement));
@@ -167,8 +162,11 @@ function applyPendingMigrations(db: Db, migrations: MigrationMeta[]): void {
       // 行の値は文言に入れず、表と rowid だけを出す
       const violations = readForeignKeyViolations(db);
       if (violations.length > 0) {
+        const list = `[${violations.join(",")}]`;
         throw new Error(
-          `[db] migration が外部キーの違反を残すので、適用せずに戻した: [${violations.join(",")}]`,
+          existingCount > 0
+            ? `[db] 当てる前から外部キーの違反が ${existingCount} 件あり、当てたあとも違反が残るので、適用せずに戻した。違反を直す custom migration を先に足すと当たる: ${list}`
+            : `[db] migration が外部キーの違反を残すので、適用せずに戻した: ${list}`,
         );
       }
     })

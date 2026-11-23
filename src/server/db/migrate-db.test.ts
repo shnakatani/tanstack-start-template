@@ -120,6 +120,25 @@ ALTER TABLE \`__new_tags\` RENAME TO \`tags\`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;`;
 }
 
+/** 外部キーの検査を切って、どの親も指さない reviews の行を入れる。当てる前からある違反を作る */
+function insertOrphanReview(db: ReturnType<typeof createDb>): void {
+  db.$client.pragma("foreign_keys = OFF");
+  db.$client.exec("insert into reviews (key, author_id) values ('r9', 9)");
+  db.$client.pragma("foreign_keys = ON");
+}
+
+/** books の違反の行を消す custom migration。rowid のある表は foreign_key_check の rowid でも引ける */
+const DELETE_ORPHAN_BOOKS =
+  "DELETE FROM `books` WHERE `author_id` IS NOT NULL AND NOT EXISTS (SELECT 1 FROM `authors` p WHERE p.`id` = `books`.`author_id`);";
+
+/** reviews (WITHOUT ROWID) の違反の行を、foreign_key_list の from / table / to から組んだ NOT EXISTS で消す custom migration */
+const DELETE_ORPHAN_REVIEWS =
+  "DELETE FROM `reviews` WHERE `author_id` IS NOT NULL AND NOT EXISTS (SELECT 1 FROM `authors` p WHERE p.`id` = `reviews`.`author_id`);";
+
+/** tags の違反の行を消す custom migration */
+const DELETE_ORPHAN_TAGS =
+  "DELETE FROM `tags` WHERE `author_id` IS NOT NULL AND NOT EXISTS (SELECT 1 FROM `authors` p WHERE p.`id` = `tags`.`author_id`);";
+
 function readBooks(db: ReturnType<typeof createDb>): unknown[] {
   return db.$client.prepare("select id, author_id from books order by id").all();
 }
@@ -191,23 +210,42 @@ describe("migrateDb", () => {
     expect(readMigrationRecords(db)).toEqual(recordsBefore);
   });
 
-  it("当てる前に外部キーの違反があれば、何も当てずに止め、記録も変えない", () => {
+  // 本番の DB を変える経路は vp run db:migrate だけなので、当てる前からある違反も migration で直せる
+  it("当てる前からある違反を直す custom migration は、当たって記録される", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
     insertOrphanBook(db);
-    const recordsBefore = readMigrationRecords(db);
-    writeMigrations(dir.path, [createTables("no action"), CREATE_PUBLISHERS]);
+    writeMigrations(dir.path, [createTables("no action"), DELETE_ORPHAN_BOOKS]);
 
-    expect(() => migrateDb(db, dir.path)).toThrow(
-      /^\[db\] DB に当てる前から外部キーの違反があるので、何も当てずに止めた。.*: \[\{"table":"books","rowid":4,"parent":"authors","fkid":0\}\]$/,
-    );
+    migrateDb(db, dir.path);
 
-    expect(
-      db.$client.prepare("select name from sqlite_schema where name = 'publishers'").all(),
-    ).toEqual([]);
-    expect(readMigrationRecords(db)).toEqual(recordsBefore);
-    expect(db.$client.inTransaction).toBe(false);
+    expect(readBooks(db)).toEqual(BOOKS);
+    expect(readMigrationRecords(db)).toHaveLength(2);
   });
+
+  it.each([
+    ["違反に関わる表を変える migration", rebuildAuthors()],
+    ["違反に関係の無い migration", CREATE_PUBLISHERS],
+  ])(
+    "当てる前からある違反を直さない %s は、当てる前の違反の件数を文言に入れて落ち、何も残さない",
+    (_label, migration) => {
+      using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+      const db = createDbWithRows(dir.path, "no action");
+      insertOrphanBook(db);
+      const recordsBefore = readMigrationRecords(db);
+      writeMigrations(dir.path, [createTables("no action"), migration]);
+
+      expect(() => migrateDb(db, dir.path)).toThrow(
+        /^\[db\] 当てる前から外部キーの違反が 1 件あり、当てたあとも違反が残るので、適用せずに戻した。違反を直す custom migration を先に足すと当たる: \[\{"table":"books","rowid":4,"parent":"authors","fkid":0\}\]$/,
+      );
+
+      expect(
+        db.$client.prepare("select name from sqlite_schema where name = 'publishers'").all(),
+      ).toEqual([]);
+      expect(readMigrationRecords(db)).toEqual(recordsBefore);
+      expect(db.$client.inTransaction).toBe(false);
+    },
+  );
 
   it("未適用の migration が無ければ、外部キーの違反があっても止めない", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
@@ -239,19 +277,21 @@ describe("migrateDb", () => {
     ]);
   });
 
-  it("WITHOUT ROWID の子の表に当てる前から違反があれば、違反を足す migration も当てずに止める", () => {
+  it("WITHOUT ROWID の子の表に当てる前から違反があっても、違反を足す migration は落とす", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
     writeMigrations(dir.path, [createTables("no action"), CREATE_REVIEWS]);
     migrateDb(db, dir.path);
-    db.$client.exec("insert into reviews (key, author_id) values ('r2', 2)");
-    db.$client.pragma("foreign_keys = OFF");
-    db.$client.exec("insert into reviews (key, author_id) values ('r9', 9)");
-    db.$client.pragma("foreign_keys = ON");
+    insertOrphanReview(db);
+    db.$client.exec(`
+      delete from books where author_id = 2;
+      insert into reviews (key, author_id) values ('r2', 2);
+    `);
     writeMigrations(dir.path, [createTables("no action"), CREATE_REVIEWS, DELETE_AUTHOR_2]);
 
+    // 違反は 2 件とも rowid が NULL で、当てる前の 1 件と見分けられないが、確定の前に違反があるので落とす
     expect(() => migrateDb(db, dir.path)).toThrow(
-      /DB に当てる前から外部キーの違反がある.*: \[\{"table":"reviews","rowid":null,"parent":"authors","fkid":0\}\]$/,
+      /当てる前から外部キーの違反が 1 件あり、.*: \[(\{"table":"reviews","rowid":null,"parent":"authors","fkid":0\},?){2}\]$/,
     );
     expect(db.$client.prepare("select id from authors order by id").all()).toEqual([
       { id: 1 },
@@ -259,9 +299,22 @@ describe("migrateDb", () => {
     ]);
   });
 
+  it("WITHOUT ROWID の子の表の違反の行を NOT EXISTS で引いて消す custom migration は当たる", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    writeMigrations(dir.path, [createTables("no action"), CREATE_REVIEWS]);
+    migrateDb(db, dir.path);
+    insertOrphanReview(db);
+    writeMigrations(dir.path, [createTables("no action"), CREATE_REVIEWS, DELETE_ORPHAN_REVIEWS]);
+
+    migrateDb(db, dir.path);
+
+    expect(db.$client.prepare("select key from reviews").all()).toEqual([]);
+  });
+
   // 主キーが整数でない表は rowid を別に持ち、作り直すと rowid が詰まって変わる。違反を rowid で突き合わせないので、
-  // 作り直しで rowid が変わっても取り違えない
-  it("主キーが整数でない子の表を、rowid に隙間がある状態で作り直しても落ちない", () => {
+  // 作り直しで rowid が変わっても、当てる前の違反を直したかだけで決まる
+  it("違反のある子の表を作り直す migration は、違反を直さなければ落とし、直せば当てる", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
     writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS]);
@@ -270,11 +323,23 @@ describe("migrateDb", () => {
       insert into tags (key, author_id) values ('a', 1), ('b', 1), ('c', 2);
       delete from tags where key = 'a';
     `);
+    db.$client.pragma("foreign_keys = OFF");
+    db.$client.exec("insert into tags (key, author_id) values ('z', 9)");
+    db.$client.pragma("foreign_keys = ON");
+
     writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS, rebuildTags()]);
+    expect(() => migrateDb(db, dir.path)).toThrow(
+      /当てる前から外部キーの違反が 1 件あり、.*: \[\{"table":"tags","rowid":3,"parent":"authors","fkid":0\}\]$/,
+    );
 
+    writeMigrations(dir.path, [
+      createTables("no action"),
+      CREATE_TAGS,
+      rebuildTags(),
+      DELETE_ORPHAN_TAGS,
+    ]);
     migrateDb(db, dir.path);
-
-    // 作り直しで rowid が 2、3 から 1、2 に詰まった
+    // 作り直しで rowid が 2、3、4 から 1、2、3 に詰まり、違反の行 (rowid 4 → 3) を消した
     expect(db.$client.prepare("select rowid, key, author_id from tags order by key").all()).toEqual(
       [
         { rowid: 1, key: "b", author_id: 1 },
@@ -283,22 +348,17 @@ describe("migrateDb", () => {
     );
   });
 
-  it("違反のある子の表を作り直す migration は、当てる前の違反として止める", () => {
+  it("違反のある子の表を改名するだけの migration は、違反が残るので落とす", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
-    writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS]);
-    migrateDb(db, dir.path);
-    db.$client.exec(`
-      insert into tags (key, author_id) values ('a', 1), ('b', 1);
-      delete from tags where key = 'a';
-    `);
-    db.$client.pragma("foreign_keys = OFF");
-    db.$client.exec("insert into tags (key, author_id) values ('z', 9)");
-    db.$client.pragma("foreign_keys = ON");
-    writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS, rebuildTags()]);
+    insertOrphanBook(db);
+    writeMigrations(dir.path, [
+      createTables("no action"),
+      "ALTER TABLE `books` RENAME TO `volumes`;",
+    ]);
 
     expect(() => migrateDb(db, dir.path)).toThrow(
-      /DB に当てる前から外部キーの違反がある.*: \[\{"table":"tags","rowid":3,"parent":"authors","fkid":0\}\]$/,
+      /当てる前から外部キーの違反が 1 件あり、.*: \[\{"table":"volumes","rowid":4,"parent":"authors","fkid":0\}\]$/,
     );
   });
 
