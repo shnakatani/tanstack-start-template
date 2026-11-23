@@ -36,17 +36,16 @@
 
 部品ディレクトリ (`ui/`) から外へ class 文字列を配らない (ADR-0022)。外見を共有したいときは、次のどれかにする。
 
-| 配り方                                                                              | 使う場面                       |
-| ----------------------------------------------------------------------------------- | ------------------------------ |
-| 部品として配る                                                                      | 外見と構造がひとまとまりのとき |
-| prop として受ける                                                                   | 消費側が値を選ぶとき           |
-| `ui/` の `cva` の variant として配り、`settings.shadcn.variantFunctions` へ宣言する | 同じ部品の見た目を分けるとき   |
+| 配り方                               | 使う場面                       |
+| ------------------------------------ | ------------------------------ |
+| 部品として配る                       | 外見と構造がひとまとまりのとき |
+| prop として受ける                    | 消費側が値を選ぶとき           |
+| `ui/` の `cva` の variant として配る | 同じ部品の見た目を分けるとき   |
 
 - `ui/` の内側での共有は対象外で、class 定数の export 自体は禁じない。`ui/` の外のファイルが import して部品へ渡せば規則が落とす
 - 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0011) と、汎用の層が負う責務の範囲 (ADR-0016) で決める
-- variant 関数を消費側から呼ぶ形を採るたびに、`tooling/lint/config.ts` の `settings.shadcn.variantFunctions` へ足す。忘れると呼び出しが lint で落ちるので、気付けない失敗にはならない
-- 宣言するのは `ui/` の variant 関数だけにする。`ui/` の外の `cva` を宣言すると、定義の中の class が `no-restyle` に検査されずに部品へ通る (ADR-0023)
-- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら、手段を「部品の見た目を変える」の表で選ぶ。`ui/` の外の見た目なら部品として切り出す。`ui/` の外で `cva` の variant にしない。`ui/` の外の `cva` は `variantFunctions` へ宣言しないので、その戻り値を部品へ渡すと `require-static-classes` が落とす (`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」)
+- `ui/` の variant 関数 (`buttonVariants` など) を `ui/` の外で呼んで class を書き足すときは、`cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書き、`className` キーに書かない。キーの値は lint に読まれない (`docs/guides/lint/tailwind-and-shadcn.md`「`ui/` の variant 関数を外で呼ぶ」)
+- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら、手段を「部品の見た目を変える」の表で選ぶ。`ui/` の外の見た目なら部品として切り出す。`ui/` の外で `cva` の variant にしない。`ui/` の外の `cva` は `variantFunctions` へ宣言しないので、その戻り値を部品へ渡すと `require-static-classes` が落とす (`docs/guides/lint/tailwind-and-shadcn.md`「`ui/` の variant 関数を外で呼ぶ」)
 
 ### 部品の見た目を変える
 

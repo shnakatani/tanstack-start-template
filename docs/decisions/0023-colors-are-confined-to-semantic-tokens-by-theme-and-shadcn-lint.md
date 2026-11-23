@@ -1,7 +1,7 @@
 # ADR-0023: 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める
 
 - Status: Accepted
-- Date: 2026-10-02
+- Date: 2026-11-23
 - 関連: ADR-0007 (lint ルールの選定基準)、ADR-0020 (行単位の抑制の許容リスト)、ADR-0011 (`no-restyle` の適用範囲)、ADR-0022 (層の外へ class 文字列を配らない)
 
 ## Context
@@ -38,9 +38,9 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `no-arbitrary-values` は `ui/` でも off にしない。公式の adoption.md「Add more rules」と rules.md「Rules」は部品のディレクトリで off にする override を示すが、その動機は "structural values such as `ring-[3px]`" で、`deny: ["color"]` が非色の任意値を既に通している (rules.md「The policy」: "Without `allow`, permits everything else.")。
 `ui/` で検査に残るのは任意値の色だけで、off にすると registry の取り直しで入った `bg-[#333]` のような色を拾う経路が無くなる。`no-raw-colors` は任意値の色を見ない (no-raw-colors.md: "Arbitrary colors such as `bg-[#333]` belong to no-arbitrary-values.")。
 `no-restyle` は 2026-09-19 に ADR-0011 の層の決定と対で、`require-static-classes` は同日に ADR-0022 の配り方の決定と対で採用した。
-`require-static-classes` は `no-restyle` と同じ `overrides` に相乗りし、`settings.shadcn.variantFunctions` で `cva` 由来の variant 関数を宣言する。
-宣言するのは `ui/` が定義した variant 関数だけにする。宣言した関数の呼び出しは、cva の定義の中の class が `no-restyle` に検査されずに通る (2026-09-25 実測、`@shadcn/lint` 0.1.0)。`ui/` の外の cva を宣言すると、見た目の上書きの抜け道になる。
-宣言が要る理由と `mergeFunctions` を使わない理由は `docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」にある。
+`require-static-classes` は `no-restyle` と同じ `overrides` に相乗りする。
+`settings.shadcn.variantFunctions` と `mergeFunctions` には、`cva` が返した variant 関数 (`buttonVariants` など) を登録しない。上流の README の Settings は `variantFunctions` を "Adds functions whose object values contain classes." と書き、組み込みの variant 関数に `cva` と `tv` を挙げる。`cva` のように定義の object に class を書く関数を足す設定で、`cva` が返した関数を宣言する用法は docs に無い。
+登録しない案の比較と、`ui/` の variant 関数を `ui/` の外で呼ぶときの書き方は `docs/guides/lint/tailwind-and-shadcn.md`「`variantFunctions` へ宣言しない理由」と「`ui/` の variant 関数を外で呼ぶ」にある。
 `no-inline-styles` は対になる設計判断がまだ無いため有効化しない。
 
 `@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
@@ -85,6 +85,7 @@ token だけを混ぜる `color-mix()` の通し方:
 - `@shadcn/lint` 0.2.0 の rules.md (「Rules」の off にする範囲、「The policy」の `allow` と `deny`): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules.md
 - `@shadcn/lint` 0.2.0 の no-raw-colors.md (任意値の色を見ない): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules/no-raw-colors.md
 - `@shadcn/lint` 0.2.0 の no-arbitrary-values.md (「Allow an exception」): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules/no-arbitrary-values.md
+- `@shadcn/lint` 0.2.5 の README (「Settings」の `variantFunctions` と組み込みの variant 関数): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/README.md#settings
 - 使われない `@typescript-eslint/parser` が ESLint と typescript を連れてくる件: https://github.com/shadcn-ui/lint/issues/1
 - pnpm の `packageExtensions` (依存の manifest へ `peerDependenciesMeta` を後付けする): https://pnpm.io/settings/dependency-resolution
 - Tailwind CSS の既定 palette を差し替える手順 (`--color-*: initial`): https://tailwindcss.com/docs/colors

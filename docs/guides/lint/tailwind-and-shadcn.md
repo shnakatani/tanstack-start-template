@@ -1,6 +1,6 @@
 # Tailwind と shadcn の lint
 
-`@shadcn/lint` のルールを層の境界に当てるとき、variant 関数を宣言するとき、時間と警告を読むときの手順と、その理由を持つ。
+`@shadcn/lint` のルールを層の境界に当てるとき、`ui/` の variant 関数を `ui/` の外で呼ぶとき、時間と警告を読むときの手順と、その理由を持つ。
 
 | 決定                                                                                      | ADR      |
 | ----------------------------------------------------------------------------------------- | -------- |
@@ -15,21 +15,13 @@
 
 - 規則を `overrides` から消しても `off` にしても `vp lint` と `vp check` は通る。この override のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定する
 
-### variant 関数を宣言する
+### `ui/` の variant 関数を外で呼ぶ
 
-`cva` で作った variant 関数を消費側から呼ぶ形を採ったら、`tooling/lint/config.ts` の `settings.shadcn.variantFunctions` へ宣言する。宣言しないと、[shadcn docs「Button」][] が「As Link」で推奨する `className={buttonVariants(...)}` の形が `require-static-classes` で落ちる。テンプレートの利用者が公式どおり書いて lint が止まるのは不備になる。
+`ui/` が export した variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときは、次に従う。規則がどの書き方を読むかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と Limits、`settings.shadcn` の各設定の意味は [shadcn-ui/lint docs「Settings」][] が持つ。
 
-- 宣言は違反を黙らせる例外ではなく、variant 関数が何かを linter へ伝える設定である。`componentImports` と同じ恒久設定として扱う
-- 宣言するのは `ui/` が定義し、消費側から呼ぶ variant 関数に限る。`ui/` の内側でしか呼ばない関数は規則に当たらない
-- `mergeFunctions` へは登録しない。`ui/` の外の `cva` も宣言しない。登録先による違いは次のとおり
-
-| 登録先                                     | variant 関数の呼び出しの扱い                                                                                                                                                                                 | 採否     |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| `variantFunctions` (`ui/` の variant 関数) | 解決され、pass-through の `className` が `no-raw-colors` / `no-unknown-classes` に読まれる (2026-09-19 実測)                                                                                                 | **採用** |
-| `mergeFunctions`                           | 解決されるが、渡したオブジェクトのキー名 (`variant` / `className`) を class と誤読し、`no-restyle` と `no-unknown-classes` が誤報する (2026-09-19 実測)                                                      | 却下     |
-| `variantFunctions` (`ui/` の外の `cva`)    | 呼び出しは `require-static-classes` を通るが、定義の中の class は `no-restyle` に検査されない。宣言前は `require-static-classes` が落とし、宣言後は指摘 0 件になった (2026-09-25 実測、`@shadcn/lint` 0.1.0) | 却下     |
-
-- `variantFunctions` を消すと variant 関数の呼び出しが落ちる。`vp lint --print-config` に `settings.shadcn` が出ないため (2026-09-19 実測)、宣言が消えたことを機械で見張るものは無い (`docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」)
+- 書き足す class は `cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書く。`buttonVariants({ variant, className: "mt-4" })` のキーには書かない。linter が class を読む呼び出しは `cn` などの組み込みと登録した関数に限られ ([shadcn-ui/lint docs「How it works」][] の Where it looks)、キーの値は読まれない。色と未知 class の検査から外れても診断は出ない
+- 戻り値を design system component (`ui/` `action/` `parts/` の部品と、その `render` に渡す要素) の `className` へ渡すと、import した関数の呼び出しは読めないので `require-static-classes` が落とす ([shadcn-ui/lint docs「require-static-classes」][] の Variant functions、[shadcn-ui/lint#178][])
+- `settings.shadcn.variantFunctions` と `mergeFunctions` へ variant 関数を登録しない。理由は「`variantFunctions` へ宣言しない理由」にある
 
 ### `@shadcn/lint` の時間と警告を読む
 
@@ -40,27 +32,26 @@
 
 ### `require-static-classes` を層の境界に限る理由
 
-design system 自身の内部では、消費側の上書きを見る規則も、消費側の `className` を読める形に保つ規則も意味を持たない。落ちた `className` は `no-raw-colors` と `no-unknown-classes` も中身を読めないので、層の外では規則が他の shadcn ルールの門番になる。読める渡し方は「`require-static-classes` が読む className」にある。
+design system 自身の内部では、消費側の上書きを見る規則も、消費側の `className` を読める形に保つ規則も意味を持たない。落ちた `className` は `no-raw-colors` と `no-unknown-classes` も中身を読めないので、層の外では規則が他の shadcn ルールの門番になる。読める渡し方は [shadcn-ui/lint docs「require-static-classes」][] の Examples と Limits、読めない範囲は [shadcn-ui/lint docs「How it works」][] の What it cannot see にある。
 
-### `require-static-classes` が読む className
+### `variantFunctions` へ宣言しない理由
 
-規則を有効にした状態で `src/routes/` へ probe を置き、`vp lint <probe>` で測った (2026-09-19、`@shadcn/lint` 0.1.0)。
+| 案                                                              | 評価                                                                                                                                                                                                                                                                                | 採否     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 書き足す class を `cn()` の引数に書き、variant 関数は登録しない | `cn` は組み込みの class 関数で、引数の class が検査される ([shadcn-ui/lint docs「How it works」][] の Where it looks)。shadcn/ui の例にも同じ形がある ([shadcn の `calendar-hijri.tsx`][])                                                                                          | **採用** |
+| `buttonVariants` などを `variantFunctions` へ宣言する           | 上流はこの設定を "Adds functions whose object values contain classes." と書き、組み込みの variant 関数に `cva` と `tv` を挙げる ([shadcn-ui/lint docs「Settings」][])。定義の object に class を書く `cva` のような関数を足す設定で、`cva` が返した関数を宣言する用法は docs に無い | 却下     |
+| variant 関数を `mergeFunctions` へ登録する                      | 上流は "Only register helpers whose arguments accurately describe their output." と求める ([shadcn-ui/lint docs「require-static-classes」][] の Custom class helpers)。variant 関数の引数の object は variant の名前を持ち、出力の class を表さない                                 | 却下     |
 
-| 消費側の書き方                              | `require-static-classes` | 中身が他の規則に読まれるか                                                                                         |
-| ------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 静的な文字列                                | 通る                     | 読まれる                                                                                                           |
-| 同一ファイル内の `const` (再代入なし)       | 通る                     | 読まれる                                                                                                           |
-| `cn()` の引数                               | 通る                     | 読まれる                                                                                                           |
-| 他ファイルから import した `const`          | 落ちる                   | 読まれない                                                                                                         |
-| 関数呼び出しの戻り値                        | 落ちる                   | 読まれない                                                                                                         |
-| `variantFunctions` へ宣言した関数の呼び出し | 通る                     | 呼び出しに渡した `className` は読まれる。`cva` の定義の中の class は `no-restyle` に検査されない (2026-09-25 実測) |
-
-- 同じ文字列 (`flex min-h-0 flex-col gap-6`) を 2 通りで渡すと差が出る。同一ファイルの `const` として渡すと含まれる `gap-6` に `no-restyle` が出るが、import した `const` として渡すと `require-static-classes` だけが出て中身の診断は消える
-- ファイルを跨いだ定数が解決されないのは実装上の制約である。`node_modules/@shadcn/lint/dist/index.js` の `resolveIdentifier` は、変数の定義が `Variable` 型でなければ解決を打ち切る (`def.type !== "Variable"`)。import 束縛はこの型を持たない
-- 規則を採用しない案の比較は ADR-0022 にある。`variantFunctions` を宣言しない案は、shadcn/ui が推奨する形が書けず、テンプレートの利用者が公式どおり書くと lint が止まるので却下した ([shadcn docs「Button」][])
+- shadcn/ui の例には、書き足す class を `className` キーに書くものもある ([shadcn の `collapsible-example.tsx`][])。このテンプレートではキーの値が検査されないので、写すときは `cn()` の引数へ移す
+- 規則を採用しない案の比較は ADR-0022 にある
 
 ## 出典
 
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
-[shadcn docs「Button」]: https://ui.shadcn.com/docs/components/base/button
+[shadcn-ui/lint docs「require-static-classes」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/require-static-classes.md
+[shadcn-ui/lint docs「Settings」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/README.md#settings
+[shadcn-ui/lint docs「How it works」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/how-it-works.md
+[shadcn-ui/lint#178]: https://github.com/shadcn-ui/lint/issues/178
+[shadcn の `calendar-hijri.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/calendar-hijri.tsx
+[shadcn の `collapsible-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/aria/examples/collapsible-example.tsx

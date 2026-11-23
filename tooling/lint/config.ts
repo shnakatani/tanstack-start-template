@@ -78,9 +78,6 @@ export const lintConfig = {
       componentImports: DESIGN_SYSTEM_COMPONENT_LAYERS.map(
         (layer) => `^@/components/${layer}(/|$)`,
       ),
-      // ui/ が定義した variant 関数だけを宣言する。mergeFunctions は使わない
-      // (docs/guides/lint/tailwind-and-shadcn.md「variant 関数を宣言する」、ADR-0023)
-      variantFunctions: ["buttonVariants", "cardTitleVariants"],
     },
   },
   // カテゴリで有効にするのは correctness と perf だけ (ADR-0007)。
