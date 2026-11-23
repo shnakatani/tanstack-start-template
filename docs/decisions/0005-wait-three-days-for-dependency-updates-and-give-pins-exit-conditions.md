@@ -71,7 +71,7 @@ bot 側の待機は外さない。`cooldown: default-days: 3` は全パッケー
 core (`vite` の alias 先)・`vitest`・`@vitest/*` の版は、`vite-plus` のリリースが同梱する版で決まる。
 Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃える手順を推奨する (Vite+ docs「Update Vite+」)。
 
-`.github/dependabot.yml` の `vite-plus` グループは、`vite-plus`・`vite`・`@voidzero-dev/vite-plus-*`・`vitest`・`@vitest/*` を束ねる。Vite+ の docs は npm の依存を束ねる Dependabot の設定例を示さず、Renovate に `group:vitePlus` の preset を勧めたうえで "Renovate can still propose a Vitest release before Vite+ bundles it." と書く。bot の更新を merge する前に alias を `npm view vite-plus@<version> dependencies.vite` と照合し、ずれていれば bot のブランチで `vp migrate` を打つよう案内する (Vite+ docs「Update Vite+」の Dependency Bots。照合の案内は vite-plus 1.7.0 の同梱の docs にあり、Renovate の段落は voidzero-dev/vite-plus#2463 で 1.7.0 のあとに main へ入った。2026-11-23 に確認)。照合せずに merge すると、Vite+ は Vite のコマンドの前に止まり `vp migrate` を求める (vite-plus 1.7.0)。グループへ束ねても版は揃わない。
+`.github/dependabot.yml` の `vite-plus` グループは、`vite-plus`・`vite`・`@voidzero-dev/vite-plus-*`・`vitest`・`@vitest/*` を束ねる。Vite+ の docs は npm の依存を束ねる Dependabot の設定例を示さず、Renovate に `group:vitePlus` の preset を勧めたうえで "Renovate can still propose a Vitest release before Vite+ bundles it." と書く。bot の更新を merge する前に alias を `npm view vite-plus@<version> dependencies.vite` と照合し、ずれていれば bot のブランチで `vp migrate` を打つよう案内する。bot が片方だけを上げて版がずれると、Vite+ は Vite のコマンドの前に止まり `vp migrate` を求める (Vite+ docs「Update Vite+」の Dependency Bots。照合の案内と止まる挙動は vite-plus 1.7.0 の同梱の docs にあり、Renovate の段落は voidzero-dev/vite-plus#2463 で 1.7.0 のあとに main へ入った。2026-11-23 に確認)。グループへ束ねても版は揃わない。
 
 - `vitest` が `vite-plus` と別の日に出ると、`vitest` を同梱の版より先へ上げる PR ができる (voidzero-dev/vite-plus#2356)。2026-09-09 から 09-28 に 6 本来た
 - `vite-plus` を上げた PR に `vite` の alias 先は含まれなかった (2026-09-16、09-21 の 2 本)
