@@ -78,7 +78,7 @@ Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃
 
 グループの PR は閉じても版を ignore しないので、`vitest` だけの PR は次の実行で作り直される (2026-09-29 に Dependabot が PR に書いた案内)。止めるには `@dependabot ignore <依存>` のコメントか設定ファイルの `ignore` が要る (GitHub Docs「Dependabot pull request comment commands」)。そのため `vitest` と `@vitest/*` は、`dependency-name` だけで `ignore` に入れ、グループの `patterns` には残す (実測した構成を保ち、`minor-and-patch` の `exclude-patterns` と対にするため)。`vite-plus` の PR は、そのブランチで `vp migrate` を打って core・`vitest`・`@vitest/*` を同梱の版へ揃えてから取り込む。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
 
-2026-09-29 に pnpm 11.28.0 で実測すると、`vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告した。Dependabot の docs は peer の扱いを書いていなかった (2026-09-29 時点) ので、ignore した peer と食い違う `vite-plus` の版に PR が作られるかを実測した。`vite-plus` 0.2.9・`@vitest/browser-playwright` 4.1.10 の構成に上のグループを置き、`ignore` を `update-types` の 3 つを並べる形と `dependency-name` だけの形で 1 回ずつ試した。どちらも Dependabot の `pnpm --filter . peers check` は exit 1 だったが、`vite-plus` を 0.3.3 へ上げる PR が作られた (2026-09-29、pnpm 11.28.0、実験用の private リポジトリで観測)。この食い違いは exact な peer の patch の差 (4.1.10 と 4.1.11) で、major の差では確かめていない。
+2026-09-29 に pnpm 11.28.0 で実測すると、`vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告した。2026-11-23 に pnpm 12.21.0 でも、storybook の optional peer の `vite-plus` の食い違いを unmet として報告した。Dependabot の docs は peer の扱いを書いていなかった (2026-09-29 時点) ので、ignore した peer と食い違う `vite-plus` の版に PR が作られるかを実測した。`vite-plus` 0.2.9・`@vitest/browser-playwright` 4.1.10 の構成に上のグループを置き、`ignore` を `update-types` の 3 つを並べる形と `dependency-name` だけの形で 1 回ずつ試した。どちらも Dependabot の `pnpm --filter . peers check` は exit 1 だったが、`vite-plus` を 0.3.3 へ上げる PR が作られた (2026-09-29、pnpm 11.28.0、実験用の private リポジトリで観測)。この食い違いは exact な peer の patch の差 (4.1.10 と 4.1.11) で、major の差では確かめていない。
 
 `vitest` の脆弱性は security updates の PR ではなく alert で知り、下の「pin には出口条件を書く」のトリガ A で扱う。
 
@@ -106,6 +106,7 @@ core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert �
 
 `pnpm update` は解決した版を宣言レンジへ書き戻す。pnpm 公式は「the range is moved onto the resolved version while the operator the dependency already declared is kept」と説明しており、仕様である。
 例外は `catalog:` で、「A dependency declared through the `catalog:` protocol is not rewritten in `package.json`. The catalog entry it points at is updated instead」となる。書き換えを止めるなら `--no-save` を渡す。
+依存の名前を付けない `pnpm update` は、pnpm 12.6.0 から `devEngines.runtime` も書き換える。この扱いは ADR-0004 が持つ。
 
 この性質があるため、`package.json` に書いた宣言レンジは「更新のたびに解決版へ寄る」ことを前提に選ぶ。
 operator を持たない `*` は operator ごと書き換えられるので、意図として維持できない。

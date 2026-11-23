@@ -21,7 +21,9 @@ paths:
 ## Node.js の版
 
 - `devEngines.runtime` の Node.js の版は `package.json` を直接書き換えて変え、`vp env pin` で書かない。`vp env pin` は範囲を渡しても exact の版に解決して書く (ADR-0004)
-- `devEngines.runtime` は `name` と `version` だけにし、`onFail` はどの値も書かず、`pnpm-workspace.yaml` に `runtimeOnFail` を置かない。`onFail` は `download` で pnpm に Node.js を入れさせ、`error` / `warn` で版を検査させ、`ignore` は Vite+ が宣言を飛ばす予定の値である。`runtimeOnFail` は pnpm 11 が `package.json` に書き戻す (ADR-0004)
+- `devEngines.runtime` は `name` と `version` だけにし、`onFail` を書かず、`pnpm-workspace.yaml` に `runtimeOnFail` を置かない。`onFail` が無ければ pnpm は Node.js を扱わない。`runtimeOnFail` は `vp add`・`vp remove`・引数なしの `vp update` が `package.json` に書き足す (ADR-0004)
+- `devEngines.runtime` に `onFail` が入ったら消す。`vp env pin` は宣言を新しく作るとき `onFail: "download"` を入れ、pnpm が Node.js を取りに行く (ADR-0004)
+- 依存をまとめて上げるときは `vp update '!node'` を打つ。引数なしの `vp update` は `devEngines.runtime` の版を exact に書き換える (ADR-0004)
 
 ## script とタスク
 
