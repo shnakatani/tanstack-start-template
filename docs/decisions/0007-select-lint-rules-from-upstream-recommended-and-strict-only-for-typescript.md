@@ -151,8 +151,8 @@ recommended に無くても、規約や他の決定を機械で守るために�
 ## 出典
 
 - typescript-eslint の共有設定: https://typescript-eslint.io/users/configs/
-- テストディレクトリでの off と `strict-type-checked` 上でのオプション上書きを含む上流本体の設定: https://github.com/typescript-eslint/typescript-eslint/blob/main/eslint.config.mjs
-- oxc 自身の lint 設定 (`categories` は correctness と perf だけ、個別ルールは `rules` に列挙): https://github.com/oxc-project/oxc/blob/main/oxlintrc.json
+- テストディレクトリでの off と `strict-type-checked` 上でのオプション上書きを含む上流本体の設定: https://github.com/typescript-eslint/typescript-eslint/blob/4586535ab24d7d5e9b3ba87e4adb8636f9314aca/eslint.config.mjs
+- oxc 自身の lint 設定 (`categories` は correctness と perf だけ、個別ルールは `rules` に列挙): https://github.com/oxc-project/oxc/blob/b41bb35bcab466c3b799ff86b0735a1c9a4c7805/oxlintrc.json
 - oxlint の recommended preset 追跡 issue: https://github.com/oxc-project/oxc/issues/20758
 - React Compiler 診断の per-category ルール分割 (22 ルールとカテゴリの一覧): https://oxc.rs/blog/2026-08-18-react-compiler-support
 - eslint-plugin-react-hooks のルール一覧と preset: https://react.dev/reference/eslint-plugin-react-hooks

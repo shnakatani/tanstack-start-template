@@ -77,7 +77,7 @@ pending 中の状態をスクリーンリーダーへ伝えるために、条件
 - react.dev「Manipulating the DOM with Refs」(Best practices): https://react.dev/learn/manipulating-the-dom-with-refs#best-practices-for-dom-manipulation-with-refs
 - Base UI Combobox (Status): https://base-ui.com/react/components/combobox
 - Base UI Toast: https://base-ui.com/react/components/toast
-- React Aria `LiveAnnouncer`: https://github.com/adobe/react-spectrum/blob/main/packages/react-aria/src/live-announcer/LiveAnnouncer.tsx
-- React Aria Components `Button` (pending の announce と `aria-disabled`・`data-pending`): https://github.com/adobe/react-spectrum/blob/main/packages/react-aria-components/src/Button.tsx
-- Primer `ButtonBase` (`loading` の `aria-disabled` と `data-loading`): https://github.com/primer/react/blob/main/packages/react/src/Button/ButtonBase.tsx
+- React Aria `LiveAnnouncer`: https://github.com/adobe/react-spectrum/blob/4693fcc844a341107e7dd26fe456edb1e269e44c/packages/react-aria/src/live-announcer/LiveAnnouncer.tsx
+- React Aria Components `Button` (pending の announce と `aria-disabled`・`data-pending`): https://github.com/adobe/react-spectrum/blob/4693fcc844a341107e7dd26fe456edb1e269e44c/packages/react-aria-components/src/Button.tsx
+- Primer `ButtonBase` (`loading` の `aria-disabled` と `data-loading`): https://github.com/primer/react/blob/7f5303d803986887187d86dcebaeda22a4dc6823/packages/react/src/Button/ButtonBase.tsx
 - `@react-aria/live-announcer` (npm): https://www.npmjs.com/package/@react-aria/live-announcer

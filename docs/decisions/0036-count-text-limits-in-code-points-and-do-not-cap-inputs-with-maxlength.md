@@ -76,8 +76,8 @@
 - SQLite の core functions (`length()` と `substr` は code point): <https://sqlite.org/lang_corefunc.html>
 - デジタル庁デザインシステム input-text のアクセシビリティ (maxlength を使わない): <https://design.digital.go.jp/dads/components/input-text/accessibility/>
 - GOV.UK Design System の Character count: <https://design-system.service.gov.uk/components/character-count/>
-- govuk-frontend の Character count のソース (`removeAttribute('maxlength')` と `text.length`) と alphagov/govuk-frontend#1104: <https://github.com/alphagov/govuk-frontend/blob/main/packages/govuk-frontend/src/govuk/components/character-count/character-count.mjs> / <https://github.com/alphagov/govuk-frontend/issues/1104>
-- Joi の `string.truncate()` (API docs と、`value.slice(0, limit)` で切る実装): <https://github.com/hapijs/joi/blob/master/API.md#stringtruncateenabled> / <https://github.com/hapijs/joi/blob/master/lib/types/string.js>
+- govuk-frontend の Character count のソース (`removeAttribute('maxlength')` と `text.length`) と alphagov/govuk-frontend#1104: <https://github.com/alphagov/govuk-frontend/blob/697553b31a65c7ae335a7124281ceb6031826647/packages/govuk-frontend/src/govuk/components/character-count/character-count.mjs> / <https://github.com/alphagov/govuk-frontend/issues/1104>
+- Joi の `string.truncate()` (API docs と、`value.slice(0, limit)` で切る実装): <https://github.com/hapijs/joi/blob/fc3f3bcb58ce7c3d2e7645bc7b17f012a2e7649b/API.md#stringtruncateenabled> / <https://github.com/hapijs/joi/blob/fc3f3bcb58ce7c3d2e7645bc7b17f012a2e7649b/lib/types/string.js>
 - Zod の string の API: <https://zod.dev/api#strings>
 - Effect Schema の string のフィルタ: <https://effect.website/docs/schema/filters/#string-filters>
 - ArkType の string: <https://arktype.io/docs/primitives#string>

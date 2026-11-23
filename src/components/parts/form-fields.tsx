@@ -238,9 +238,9 @@ interface FormSelectFieldProps<T extends string>
  * docs/guides/forms-and-inputs.md「Select の値を解決する」。
  *
  * 出典: Base UI Select (https://base-ui.com/react/components/select)、CHANGELOG
- * (https://github.com/mui/base-ui/blob/master/CHANGELOG.md)、mui/base-ui#5469
+ * (https://github.com/mui/base-ui/blob/9d150e4cf23809455870d5bc467271aafc5679f5/CHANGELOG.md)、mui/base-ui#5469
  * (https://github.com/mui/base-ui/pull/5469)、`SelectPositioner` の実装
- * (https://github.com/mui/base-ui/blob/master/packages/react/src/select/positioner/SelectPositioner.tsx)
+ * (https://github.com/mui/base-ui/blob/9d150e4cf23809455870d5bc467271aafc5679f5/packages/react/src/select/positioner/SelectPositioner.tsx)
  */
 export function FormSelectField<T extends string>({
   label,

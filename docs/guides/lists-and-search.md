@@ -150,7 +150,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 [`@tanstack/table-core` の `skills/core/references/typescript.md`]: https://github.com/TanStack/table/blob/@tanstack/table-core@9.2.6/packages/table-core/skills/core/references/typescript.md
 [TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/guide/data-loading
 [React docs「Adjusting some state when a prop changes」]: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-[TanStack Query の `transition.test.tsx`]: https://github.com/TanStack/query/blob/main/packages/react-query/src/__tests__/transition.test.tsx
+[TanStack Query の `transition.test.tsx`]: https://github.com/TanStack/query/blob/8884f1a4d9ee53cb3cdba26ca28f870500ede3f7/packages/react-query/src/__tests__/transition.test.tsx
 [React docs「useDeferredValue」]: https://react.dev/reference/react/useDeferredValue
 [TanStack Table docs「React Compiler」]: https://tanstack.com/table/latest/docs/framework/react/guide/react-compiler
 [`@tanstack/react-table` の `skills/getting-started/references/with-tanstack-query.md`]: https://github.com/TanStack/table/blob/@tanstack/react-table@9.2.6/packages/react-table/skills/getting-started/references/with-tanstack-query.md

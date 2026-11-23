@@ -216,10 +216,10 @@ Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、
 [HTML Standard「fire a synthetic pointer event」]: https://html.spec.whatwg.org/multipage/webappapis.html#fire-a-synthetic-pointer-event
 [Playwright docs「locator.dispatchEvent」]: https://playwright.dev/docs/api/class-locator#locator-dispatch-event
 [Playwright docs「Actions」]: https://playwright.dev/docs/input#programmatic-click
-[testing-library の `event-map.js`]: https://github.com/testing-library/dom-testing-library/blob/main/src/event-map.js
+[testing-library の `event-map.js`]: https://github.com/testing-library/dom-testing-library/blob/e395d5b8ecd4ec95cc02540ddcf16571ecd33e0f/src/event-map.js
 [reactwg/react-18#21]: https://github.com/reactwg/react-18/discussions/21
-[Base UI の `Button.test.tsx`]: https://github.com/mui/base-ui/blob/master/packages/react/src/button/Button.test.tsx
-[React Aria の `Button.test.js`]: https://github.com/adobe/react-spectrum/blob/main/packages/react-aria-components/test/Button.test.js
+[Base UI の `Button.test.tsx`]: https://github.com/mui/base-ui/blob/a4f5e0ed25575f4abe94bec08bac50903085b034/packages/react/src/button/Button.test.tsx
+[React Aria の `Button.test.js`]: https://github.com/adobe/react-spectrum/blob/4693fcc844a341107e7dd26fe456edb1e269e44c/packages/react-aria-components/test/Button.test.js
 [Vitest docs「Locators」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/locators.md
 [Vitest docs「Commands」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/commands.md
 [HTML Standard「clean up after running script」]: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
@@ -233,7 +233,7 @@ Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、
 [dequelabs/axe-core#4832]: https://github.com/dequelabs/axe-core/issues/4832
 [Base UI の `global.d.ts`]: https://github.com/mui/base-ui/blob/v1.8.0/packages/react/src/global.d.ts
 [Base UI の `internals/useAnimationsFinished.ts`]: https://github.com/mui/base-ui/blob/v1.8.0/packages/react/src/internals/useAnimationsFinished.ts
-[Base UI の `test/setupVitest.ts`]: https://github.com/mui/base-ui/blob/master/test/setupVitest.ts
+[Base UI の `test/setupVitest.ts`]: https://github.com/mui/base-ui/blob/a4f5e0ed25575f4abe94bec08bac50903085b034/test/setupVitest.ts
 [Base UI の `ComboboxRoot.test.tsx`]: https://github.com/mui/base-ui/blob/v1.8.0/packages/react/src/combobox/root/ComboboxRoot.test.tsx
 [Vitest docs「Configuring Playwright」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/browser/playwright.md
 [`@vitest/browser-playwright` の `playwright.ts`]: https://github.com/vitest-dev/vitest/blob/v5.0.1/packages/browser-playwright/src/playwright.ts
@@ -245,5 +245,5 @@ Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、
 [Vitest docs「Visual Regression Testing」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/browser/visual-regression-testing.md#disable-animations
 [MDN「Animation: finished property」]: https://developer.mozilla.org/en-US/docs/Web/API/Animation/finished
 [Playwright docs「page.screenshot」]: https://playwright.dev/docs/api/class-page#page-screenshot
-[scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」]: https://github.com/scirexs/svseeds-ui/blob/main/.ws/knowledge/vitest-browser-userevent-skips-aria-disabled.md
+[scirexs/svseeds-ui「userEvent.click is a no-op on aria-disabled elements」]: https://github.com/scirexs/svseeds-ui/blob/e90a449a29ca8eaf0cababd0bdbd9ace444b741e/.ws/knowledge/vitest-browser-userevent-skips-aria-disabled.md
 [Vitest docs「Timers」]: https://github.com/vitest-dev/vitest/blob/v5.1.0/docs/guide/mocking/timers.md#automatic-advancing-automatic-advancing
