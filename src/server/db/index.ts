@@ -36,6 +36,15 @@ export function createDb(fileName: string = requireDbFileName()) {
     );
   }
   const sqlite = new Database(fileName, { fileMustExist: true });
+  // SQLite は外部キーの検査の既定を約束しないので、接続ごとに有効にする (docs/guides/database.md「外部キーの検査を接続で有効にする理由」)
+  sqlite.pragma("foreign_keys = ON");
+  // SQLITE_OMIT_TRIGGER でビルドした SQLite ではこの PRAGMA が何もせず、エラーも返さないので、効いたかを確かめる
+  if (sqlite.pragma("foreign_keys", { simple: true }) !== 1) {
+    sqlite.close();
+    throw new Error(
+      `[db] 外部キーの検査を有効にできない (${fileName})。外部キーを検査できる構成でビルドした SQLite を使う`,
+    );
+  }
   return drizzle(sqlite, { schema });
 }
 

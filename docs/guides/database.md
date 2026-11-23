@@ -14,6 +14,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - 接続先は環境変数 `DB_FILE_NAME` で決まる。既定は `.mise.toml` の `[env]` が `config_root` から組む絶対パスで、どのディレクトリから起動しても同じ DB を指す (ADR-0004)
 - アプリは `src/server/db/index.ts` の `createDb()` で開く。`DB_FILE_NAME` が未設定なら throw する
 - `createDb()` は DB のファイルを作らない。無ければ開こうとした絶対パスを示して throw する。作るのは `vp run db:migrate` (「DB のファイルをアプリで作らない理由」)
+- `createDb()` は開いた接続に `PRAGMA foreign_keys = ON` を打ち、外部キーを検査させる。SQLite の既定の値に頼らない (「外部キーの検査を接続で有効にする理由」)
 - 開発のシェルで `DB_FILE_NAME` が届かないときは、値を手で渡さず mise の環境を読む (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)。手で渡すと worktree ごとに分けた DB を取り違える
 - mise を使わない環境 (本番の起動など) では、`DB_FILE_NAME` を絶対パスで渡す。相対パスは起動した cwd を基準に解決される (「パスを cwd 基準にする理由」)
 - 相対パスをコードでルートを探して補わない。drizzle-kit は cwd 基準のままなので、アプリだけが別の場所を指す
@@ -36,7 +37,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - `scripts/db/` から `src/` のテーブル定義・接続・ドメインの型は `@/` で import してよい。アプリのコード (`src/`) から `scripts/db/` は import しない。import すると、見本が出荷する bundle に入る
 - 見本の配列には、テーブルの insert の型 (`$inferInsert`) ではなく、ドメインの読み出しの型 (`src/features/<domain>/schema.ts`) を付け、見本が読み出しの形と合うことを `vp check` で確かめる。insert の型は既定値を持つ列を省けるので、`createdAt` を書き忘れても型エラーにならず、打つたびに実行時刻が入る
 - ドメインの入れ方は `seedAll()` が渡すトランザクションを受け、その中でテーブルの行の削除、`sqlite_sequence` のそのテーブルの行の削除、insert を打ち、入れたテーブルと行の数を返す。自分でトランザクションを開かない。開くと、ドメインごとに別のトランザクションになり、後のドメインが落ちたときに前のドメインだけが入れ直された状態で残る
-- 外部キーで別のテーブルを指すテーブルに見本を足すときは、`seedAll()` の初めに `PRAGMA defer_foreign_keys = ON` を打つか、削除を子のテーブルから、insert を親のテーブルから打つ順に分ける ([SQLite「Pragma statements supported by SQLite」][] の `defer_foreign_keys`)。`createDb()` の接続は better-sqlite3 の同梱の SQLite の既定で外部キーを検査し (`db.$client.pragma("foreign_keys")` が 1、better-sqlite3 13.0.3、2026-10-14 に実測)、トランザクションの中で `PRAGMA foreign_keys = OFF` を打っても効かない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
+- 外部キーで別のテーブルを指すテーブルに見本を足すときは、`seedAll()` のトランザクションの初めに `PRAGMA defer_foreign_keys = ON` を打つか、削除を子のテーブルから、insert を親のテーブルから打つ順に分ける ([SQLite「Pragma statements supported by SQLite」][] の `defer_foreign_keys`)。`createDb()` の接続は外部キーを検査する (「接続先を決める」)。トランザクションの中で `PRAGMA foreign_keys = OFF` を打っても効かないので、`seedAll()` の中で検査を切ることはできない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
 - 見本の id と作成日時・更新日時は固定の値で書く。日時を既定値に任せると、打つたびに実行時刻が入る
 - 見本の各行がそのドメインの読み出しのスキーマを通ることを、同じディレクトリの `<domain>-seed.test.ts` で確かめる。`scripts-tools` project が集める。スキーマを変えたときに、見本が古くなったことにテストで気付ける
 - ドメインを消すときは、`scripts/db/lib/<domain>-seed.ts` とそのテストを消し、`seedAll()` から import と呼び出しを外す。見本を持つドメインが無くなったら、`scripts/db/seed.ts`、`scripts/db/lib/seed-all.ts`、`vite.config.ts` の `db:seed`、`README.md` のコマンド一覧の行も消す。タスクとその行は検査に掛からないので、消し忘れても気付けない
@@ -70,6 +71,19 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 | 無ければ作る (better-sqlite3 の既定)                   | テーブルの無い空の DB ができ、最初のクエリが `no such table` で落ちる。ログには出るが、どの DB を開いたかも作り方も出ない                                                                                                                                                                               | 却下     |
 
 `fileMustExist` の失敗の文言は `unable to open database file` で、開こうとしたパスを含まない (better-sqlite3 13.0.3、2026-09-29 に実測)。ディレクトリを指していても `existsSync` は真を返す。そのため `createDb()` は開く前にファイルかを確かめ、絶対パスを例外の文言に入れる。
+
+### 外部キーの検査を接続で有効にする理由
+
+SQLite は、外部キーの検査を接続ごとに有効にする形をとり、既定の値に頼らないよう勧める。
+
+- [SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」: "Foreign key constraints are disabled by default (for backwards compatibility), so must be enabled separately for each database connection."
+- [SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」: "Careful developers will not make any assumptions about whether or not foreign keys are enabled by default but will instead enable or disable them as necessary."
+- [SQLite「Pragma statements supported by SQLite」][] の `foreign_keys`: "To minimize future problems, applications should set the foreign key enforcement flag as required by the application and not depend on the default setting."
+
+| 案                                                          | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                           | 採否     |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `createDb()` で `sqlite.pragma("foreign_keys = ON")` を打つ | SQLite の勧める形で、SQLite の既定の値が何であっても接続が検査する。`SQLITE_OMIT_TRIGGER` でビルドした SQLite ではこの PRAGMA が何もしない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」) ので、打ったあとに値を確かめ、1 でなければ throw する。PRAGMA は、[better-sqlite3 docs「API」][] の `.pragma()` が prepared statement より勧める `pragma()` で打つ                                                                    | **採用** |
+| better-sqlite3 の同梱の SQLite の既定に任せる               | better-sqlite3 13.2.0 の同梱の SQLite は `SQLITE_DEFAULT_FOREIGN_KEYS=1` でビルドされ、何も打たなくても検査する (2026-11-23 に、何も打たずに開いた接続で `foreign_keys` が 1 だった。[better-sqlite3 docs「Custom configuration」][] の「Bundled configuration」)。自前の amalgamation でビルドすると同梱の構成は当たらない ([better-sqlite3 docs「Custom configuration」][] の「Compile time options」)。既定が外れると、検査が黙って止まり、親の無い行が入る | 却下     |
 
 ### パスを cwd 基準にする理由
 
@@ -167,6 +181,7 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 
 [drizzle docs「Migrations」]: https://orm.drizzle.team/docs/migrations
 [better-sqlite3 docs「API」]: https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
+[better-sqlite3 docs「Custom configuration」]: https://github.com/WiseLibs/better-sqlite3/blob/v13.2.0/docs/compilation.md
 [drizzle docs「Node.js + Railway」]: https://orm.drizzle.team/docs/tutorials/node-railway-pg
 [drizzle-orm の `migrator.ts`]: https://github.com/drizzle-team/drizzle-orm/blob/0.45.2/drizzle-orm/src/migrator.ts
 [mise docs「Templates」]: https://mise.jdx.dev/templates.html

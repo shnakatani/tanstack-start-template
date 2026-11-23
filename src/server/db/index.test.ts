@@ -86,6 +86,32 @@ describe("createDb", () => {
     expect(updatedAt).toBe(createdAt);
   });
 
+  // 検査の有無を pragma の値でなく insert の結果で見る。テーブルはこのテストの中で作り、ドメインのテーブルに頼らない
+  it("外部キーを検査し、親の無い行の insert を落とす", () => {
+    const db = createDb(":memory:");
+    db.$client.exec(`
+      create table parent (id integer primary key);
+      create table child (parent_id integer not null references parent (id));
+    `);
+    const insertChild = db.$client.prepare("insert into child (parent_id) values (?)");
+
+    db.$client.prepare("insert into parent (id) values (1)").run();
+    expect(() => insertChild.run(1)).not.toThrow();
+    expect(() => insertChild.run(2)).toThrow(/FOREIGN KEY constraint failed/);
+  });
+
+  // SQLITE_OMIT_TRIGGER でビルドした SQLite では PRAGMA foreign_keys が何もしない。その構成は作れないので、
+  // pragma を「打っても何もせず、読むと 0」にして、検査が効かない接続を返さずに落とすことを見る
+  it("外部キーの検査が効かない SQLite なら、接続を返さずに throw する", () => {
+    using _pragma = vi
+      .spyOn(Database.prototype, "pragma")
+      .mockImplementation((source, options) =>
+        source === "foreign_keys" && options?.simple ? 0 : [],
+      );
+
+    expect(() => createDb(":memory:")).toThrow(/外部キーの検査を有効にできない/);
+  });
+
   // アプリは migration を当てないので、作った空の DB は最初のクエリで落ちるだけになる。作らずに落とす。
   // 例外は server のログに残す口 (ADR-0038) が残すので、ここで別に出すと 2 行になる
   it("DB のファイルが無ければ作らずに、開こうとしたパスを文言に入れて throw する", () => {
