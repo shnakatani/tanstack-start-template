@@ -40,7 +40,7 @@
 - 1 回走らせるときは `vp test run <path>`、watch するときは `vp test watch` を打つ。Vitest 単体と違い、`vp test` は watch に入らない ([Vite+ docs「Test」][]: "Unlike Vitest on its own, `vp test` does not stay in watch mode by default.")
 - `vp test` を複数並行で走らせない。kill した実行の runner が残ると、後続の実行が collection のエラーで巻き添えになる。kill したら `ps` で残っていないことを確かめる
 - スクリプトが子として起動し、全部の終わりを待つ並列 (`scripts/time-zones/run-tests.ts`) は、上の並行に当たらない。親だけを kill すると子の vitest が残るので、子も `ps` で確かめる
-- worktree では、中へ cd してから `vp install` と `vp test run` を打つ。別の clone から `--root <worktree>` で指すと、story の project が cd した側の clone の story を集め、`Failed to fetch dynamically imported module` で落ちる (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。unit と browser の project は通った)
+- worktree では、中へ cd してから `vp install` と `vp test run` を打つ。別の clone から `--root <worktree>` で指すと、2026-10-05 に vite-plus 1.0.0 / vitest 5.0.1 で、story の project が cd した側の clone の story を集め、`Failed to fetch dynamically imported module` で落ちた (unit と browser の project は通った)
 - worktree のパスに `+` を含めない。パスに `+` を含む clone で、事前バンドルのキャッシュが無い状態から story の project を走らせると、`@storybook/addon-themes` が実行中に事前バンドルされて page が reload し、`Vitest failed to find the current suite` で落ちる。同じ clone を `+` の無いパスへ移すと reload は起きず通った (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。browser project は `+` を含むパスでも通った)
 
 ### 実行環境の制約でテストを止める
@@ -51,7 +51,7 @@
 2. 実行環境を条件に書けるなら、`it.skipIf(<条件>)` でその環境でだけ飛ばす。[Vitest docs「Test」][] の test.skipIf は "Instead of wrapping the test code with `if`, you can use `test.skipIf` to skip the test whenever the condition is truthy." と書く
 3. 恒久的に止めるなら `it.skip` にし、直前に `// oxlint-disable-next-line vitest/no-disabled-tests -- <理由>` を置く。`it.todo` で残すなら、抑制するルールは `vitest/warn-todo` にする。抑制が無いと、`it.skip` は [Oxlint docs「vitest/no-disabled-tests」][]、`it.todo` は [Oxlint docs「vitest/warn-todo」][] が止める
 
-- `it.skipIf` は `vitest/no-disabled-tests` に止められない。2026-10-06 に oxlint 1.85.0 で、`it.skipIf(...)` と抑制を置いた `it.skip` は通り、抑制の無い `it.skip` と `it.todo` はそれぞれのルールで落ちた
+- 2026-10-06 に oxlint 1.85.0 で、`it.skipIf` は `vitest/no-disabled-tests` に止められなかった。`it.skipIf(...)` と抑制を置いた `it.skip` は通り、抑制の無い `it.skip` と `it.todo` はそれぞれのルールで落ちた
 
 ### 設定の置き場所
 
@@ -140,7 +140,7 @@ StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
 | 対象                                            | 起きること                                                                                                                                                          | 対処                                                                                                                                  |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `vitest.config.ts` を足す                       | Vitest がそちらを優先し、`vite.config.ts` の設定を丸ごと黙って無視する (`test`、`envDir`、テストの分岐の plugin を含む)                                             | 足さない。中身は `tooling/test/` に書く                                                                                               |
-| Vitest の `createVitest()` を直接呼んで起動する | config を読む時点で `process.env.VITEST` が立たず、テストに `tanstackStart()` などが入る (2026-09-30、vitest 5.0.1 で確認)                                          | `VITEST=true` を渡して起動する                                                                                                        |
+| Vitest の `createVitest()` を直接呼んで起動する | 2026-09-30 に vitest 5.0.1 で、config を読む時点で `process.env.VITEST` が立たず、テストに `tanstackStart()` などが入った                                           | `VITEST=true` を渡して起動する                                                                                                        |
 | story の project に `browser.viewport` を書く   | `@storybook/addon-vitest` が story ごとに viewport を決め直すので効かない。viewport を選ばない story は、ブラウザテストの `DEFAULT_VIEWPORT` とは別の寸法で描かれる | 寸法を前提にする story は story の側で viewport を選ぶ (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」) |
 | `vp test run --coverage` のカバレッジ           | ブラウザモードの project が読んだ部品では、Compiler が足したコードも数えられ、カバレッジが下がる                                                                    | カバレッジに閾値を置くときは、Compiler を通した数値で決める (「テストでも React Compiler を通す理由」)                                |
 
@@ -179,7 +179,7 @@ Vitest は、`vite.config.ts` の中でテストだけ設定を変える形と�
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `vp test`                                             | Vitest の CLI が立てる                                                                                                                                                                  |
 | Storybook の test panel と `storybook tools test run` | `@storybook/addon-vitest` が起動する子プロセスの env に渡す (10.6.0 の preset)。`storybook tools test run` で全 story が通り、`tanstackStart()` が外れていることを確かめた (2026-09-30) |
-| `createVitest()` を直接呼ぶ                           | config を読む時点では立たない (2026-09-30、vitest 5.0.1 で確認)。「設定の落とし穴」を参照                                                                                               |
+| `createVitest()` を直接呼ぶ                           | 2026-09-30 に vitest 5.0.1 で、config を読む時点では立たなかった。「設定の落とし穴」を参照                                                                                              |
 
 ### テストの分岐で plugin を外す理由
 
@@ -227,7 +227,7 @@ Compiler を通さない story の project は light だけにする。テーマ
 
 Compiler がかかる範囲と、診断の扱いは次のとおり。
 
-- `@vitejs/plugin-react` 6.1.1 は、Vite の environment の consumer が `server` でないときだけ Compiler をかけ、`node_modules` を変換しない (`dist/index.js` の `createReactCompilerPlugin` の `isClient` と、`defaultExcludeRE`)。2026-10-05 に、変換後の `src/components/ui/separator.tsx` に `_c(` が、Compiler を通す project (`browser`、`storybook-light`、`storybook-dark`) では現れ、通さない project (`browser-no-compiler`、`storybook-light-no-compiler`) では現れないことを確かめた
+- 2026-10-05 に読んだ `@vitejs/plugin-react` 6.1.1 の `dist/index.js` (`createReactCompilerPlugin` の `isClient` と、`defaultExcludeRE`) は、Vite の environment の consumer が `server` でないときだけ Compiler をかけ、`node_modules` を変換していなかった。同じ日に、変換後の `src/components/ui/separator.tsx` に `_c(` が、Compiler を通す project (`browser`、`storybook-light`、`storybook-dark`) では現れ、通さない project (`browser-no-compiler`、`storybook-light-no-compiler`) では現れないことを確かめた
 - Node の project は React の plugin を持たず、Compiler を通らない
 - テストでは `reportDiagnostics` を立てない。テストで出すと、そのファイルを読むブラウザモードの project ごとに同じ bail out を出し直す。bail out はビルドログと `vp lint -D react/todo` で読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」、ADR-0014)
 
@@ -255,7 +255,7 @@ issue の状態ではなく症状で判定するのは、この 2 つのよう�
 
 `browser` の `optimizeDeps.exclude` に Start のパッケージ (`@tanstack/react-start`、`@tanstack/react-start-server`、`@tanstack/start-server-core`) を置くのは、`tanstackStart()` の無いテストでは、それらが import する `#tanstack-*-entry` の仮想モジュールを解決できないためである。
 
-story の project の `optimizeDeps` は、次の 2 点で `browser` と違う。どちらも各パッケージの 10.6.0 の `dist` で 2026-09-30 に確かめた。
+story の project の `optimizeDeps` は、次の 2 点で `browser` と違う。理由の欄は、各パッケージの 10.6.0 の `dist` を 2026-09-30 に読んだ結果である。
 
 | 設定      | 中身                                                 | 理由                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | --------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

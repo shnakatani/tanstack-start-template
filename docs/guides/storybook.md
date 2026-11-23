@@ -84,11 +84,11 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 ### Storybook の CLI を使う
 
 - UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。`stories` skill が読ませる `write-story` skill との違いは「上流の `write-story` skill との違い」にある
-- `skills` と `tools` は `vp exec storybook --help` のコマンドの一覧に出ない (2026-10-06 に storybook@10.6.0 で確認)
+- 2026-10-06 に storybook@10.6.0 で、`skills` と `tools` は `vp exec storybook --help` のコマンドの一覧に出なかった
 - `@storybook/addon-mcp` を入れず、CLI を使う。MCP の登録は URL を 1 つしか持てず、worktree ごとに変わる Storybook の port へ配れない (「CLI を使い、MCP を入れない理由」)
 - `stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない
 
-ツールごとに、Storybook の起動が要るかが違う (2026-09-20 に storybook@10.6.0 で、port 6006 の Storybook を止め `--no-attach` を付けて 1 つずつ実行した)。
+2026-09-20 に storybook@10.6.0 で、port 6006 の Storybook を止め `--no-attach` を付けて 1 つずつ実行すると、ツールごとに Storybook の起動が要るかが違った。
 
 | ツール                                                     | 起動     | 備考                               |
 | ---------------------------------------------------------- | -------- | ---------------------------------- |
@@ -175,7 +175,7 @@ Storybook は `argTypes` を部品の型から推論し、手で書いた `argTy
 - 公式は型が出ないときの直し方として `react-docgen-typescript` への切り替えを案内し ([Storybook docs「TypeScript」][] の "The types are not being generated for my component")、[Storybook docs「Manifests」][] も manifest の props を抜き出す解析器として多くのプロジェクトに `react-docgen-typescript` を勧める (同じ段落は、生成が遅ければ速いが粗い `react-docgen` へ切り替えてよいとも書く)。このリポジトリはこの案内から外れ、既定の `react-docgen` のまま `options` を手で書く
 - `null` は class-variance-authority 0.7.1 の `VariantProps` が variant の型に持つ値で、渡すと variant を外す ([cva docs「What's new」][] の "Passing `null` used to disable a variant")。`react-docgen-typescript` の経路ではこの `null` が選択肢に残り (上の表の実測)、`react-docgen-typescript` の設定にも `null` を外すものは無い
 - cva の作者は "`null` will be removed in `cva@1.0`, and this is likely a Storybook issue not a `cva` issue" と答えて issue を閉じた ([joe-bell/cva#270][]。外す内容は [cva docs「What's new」][] の "Goodbye `null`")。型から `null` を外すのは cva@1 で、cva 0.7.1 のまま `react-docgen-typescript` の control から `null` を外すことは、cva も Storybook も約束していない
-- cva@1 はパッケージ名が `cva` に変わり、安定版は無い (2026-10-04、`npm view cva dist-tags` が `latest: 0.0.0`、`beta: 1.0.0-beta.12`)。上げると、import 元を `"cva"` に、base の class を `cva({ base })` の 1 引数に書き換える ([cva docs「What's new」][] の Breaking changes の "cva now accepts a single parameter")。registry 由来の `ui/` の `cva(...)` がすべて変わる
+- cva@1 はパッケージ名が `cva` に変わり、2026-10-04 には安定版が無かった (`npm view cva dist-tags` が `latest: 0.0.0`、`beta: 1.0.0-beta.12`)。上げると、import 元を `"cva"` に、base の class を `cva({ base })` の 1 引数に書き換える ([cva docs「What's new」][] の Breaking changes の "cva now accepts a single parameter")。registry 由来の `ui/` の `cva(...)` がすべて変わる
 
 | 案                                                                                                 | 評価                                                                                                                         | 採否     |
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------- |

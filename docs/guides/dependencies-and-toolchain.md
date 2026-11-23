@@ -24,7 +24,7 @@
 
 - 前面で起動した `mise run serve` と `mise run storybook` は、端末の Ctrl-C で止める。Ctrl-C は前面のプロセスグループ全体に SIGINT を送る
 - background で動かすときは `&` ではなく `mise daemons start serve` (Storybook は `storybook`) で起動し、`mise daemons stop <同じ名前>` で止める。`mise daemons stop` は port を持つ子孫まで止める (ADR-0004)
-- 起動したプロセスの pid にだけ SIGTERM を送らない。port を持つのは起動したプロセスではなく子孫の node なので、サーバーが残って worktree の port を持ち続け、次の `mise run serve` は別の port へずれずに終わる (使用中の port で終わらせる理由は ADR-0004)。2026-10-14 に mise 2026.10.3、vite-plus 1.1.0 で、`mise run serve` の pid にだけ SIGTERM を送ると、mise は終わったが、vite の node が port を持ったまま残った
+- 起動したプロセスの pid にだけ SIGTERM を送らない。2026-10-14 に mise 2026.10.3、vite-plus 1.1.0 で、`mise run serve` の pid にだけ SIGTERM を送ると、mise は終わったが、port を持つ子孫の vite の node が残った。残ったサーバーが worktree の port を持ち続けると、次の `mise run serve` は別の port へずれずに終わる (使用中の port で終わらせる理由は ADR-0004)
 
 ### commit hook を扱う
 
@@ -91,9 +91,9 @@ pnpm peers check
 ```
 
 - lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile は書き換えない
-- 素の `pnpm` で打つ。`vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
+- 素の `pnpm` で打つ。2026-09-28 に vite-plus 1.0.0 で、`vp pm` は `peers` を中継しなかった (`vp pm peers check` は `Command 'peers' not found`)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm/pnpm#14114][])
-- 許可を外すだけでは lockfile が変わらないので、`--force` を付けても `strictPeerDependencies: true` にしても install は通る (2026-09-29、pnpm 11.28.0)。`pnpm peers check` だけが食い違いを出す
+- 許可を外すだけでは lockfile が変わらないので、2026-09-29 に pnpm 11.28.0 で、`--force` を付けても `strictPeerDependencies: true` にしても install は通り、食い違いを出したのは `pnpm peers check` だけだった
 - 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<range>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
 - 値の range は、確かめた版の major にする (`"1"`)。0.x の依存だけは minor までにする (`"^0.153.0"`)。0.x は minor で破壊的変更を入れることが多く ([node-semver README「Caret Ranges」][])、`"0"` は 1.0.0 未満のすべてを満たして ([node-semver README「X-Ranges」][])、食い違いを黙らせる。値の書き方は [pnpm docs「peerDependencyRules.allowedVersions」][]
 - 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005「pin には出口条件を書く」)
@@ -109,7 +109,7 @@ pnpm peers check
 - グループの PR でも、組の片方だけが上がり、`verify:peers` で落ちることがある。Dependabot は、上げる依存が関わる peer の食い違いを、版を選ぶ判定から外す。上げる依存自身もグループに属するので、食い違いの相手がグループの内か外かを問わない ([dependabot-core「version_resolver.rb」][])。落ちた PR は、CI の `verify:peers` の出力 (`Installed` の版、`Wanted` の範囲、範囲を宣言する依存) を読み、範囲を満たす組み合わせが公開されているかを探す。PR が peer の相手を上げたなら `npm view '<宣言する依存>@><今の版>' peerDependencies.<相手>` で、宣言する依存を上げたなら `npm view '<相手>@<Wanted の範囲>' version` で探す
   - 見つかった版が cooldown の中 (公開日時は `npm view <pkg> time --json`、cooldown は `.github/dependabot.yml`): 2026-11-04 のログでは、グループの PR を更新する実行が、PR に載っていない組の相手も cooldown の外の版から選び直していた (`Checking if @vitejs/plugin-react 6.1.2 needs updating` と `Filtered out 2 versions due to cooldown`)。cooldown が明けたあとの実行の CI で、揃ったかを見る。待たずに揃えるなら、「待機を前倒しする」の手順で組の両方を上げた PR を自分で作り、それを merge してから Dependabot の PR を閉じる
   - 見つからない: PR を開いたまま置き、上流が peer を広げるのを待つ。閉じても次の実行で作り直される (ADR-0005)。PR の版に、このリポジトリのコードの変換や実行に効く不具合の修正 (React Compiler の誤変換など) が入っているなら、待たずに親つきのキーで許して取り込む。値は確かめた版の major (0.x は minor) までにし、撤去条件は上流のリリースで書く (この節の上の項目)。取り込む前に `vp run verify` を通す
-- `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-11-23、vite-plus 1.7.0 で実測)
+- `vitest` の `allowAny` と `allowedVersions` の行は例外で、2026-11-23 に vite-plus 1.7.0 で、`vp migrate` が書き、消しても書き戻した
 - `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
 - `vite` の行は置かない。core の版が同梱の Vite の版を表す (`8.3.8000` は Vite 8.3.8) ので、`vite` を peer に持つ依存の範囲を満たす。`vp migrate` は `vite` の行を消す ([Vite+ docs「Migration Rules」][])。行の無いまま `pnpm peers check` は食い違いを出さなかった (2026-11-23、vite-plus 1.7.0、pnpm 11.28.0)
 - `vite` の peer の範囲が同梱の Vite を含まない依存は、`pnpm peers check` に食い違いとして出る。その依存を上げるか、親つきのキー (`"<依存>>vite"`) で許す ([Vite+ docs「Migration Rules」][])
@@ -156,7 +156,7 @@ git push
 ```
 
 - `vp migrate` は、打った CLI が同梱する版へ core と `vitest` を揃える ([Vite+ docs「Update Vite+」][])。直接の依存にある `@vitest/*` も `vitest` の版へ揃える ([Vite+ docs「Migration Rules」][])。先に `vp install` で PR の版の `vite-plus` を `node_modules` へ入れ、`vp exec` でその CLI を打つ
-- `vp migrate` は変えたファイルを `vp fmt` で整える。migrate の前から変更のあったファイルは整えない ([Vite+ docs「Migration Rules」][])。キーの順序とコメント、テンプレートが足したキーと行は残る (2026-09-29、vite-plus 1.0.0 で確認)
+- `vp migrate` は変えたファイルを `vp fmt` で整える。migrate の前から変更のあったファイルは整えない ([Vite+ docs「Migration Rules」][])。2026-09-29 に vite-plus 1.0.0 で、キーの順序とコメント、テンプレートが足したキーと行は残った
 - `pnpm peers check` の食い違いと、`storybook>vite-plus` の許可が頼る `vite-plus/versions` の export は「peer の食い違いを数える」で確かめる
 - push したあとは、Dependabot がその PR を rebase しなくなる ([GitHub Docs「Managing pull requests for dependency updates」][])。`main` が進んだら手で取り込む
 - Dependabot の PR を処理するときは、`vite-plus` の PR が止まっていないかを確かめる (ADR-0005)。`npm view vite-plus time --json` で latest の公開日時を見て、cooldown (`.github/dependabot.yml`) を過ぎたあとの Dependabot の実行 (`gh run list --workflow 'Dependabot Updates'`) で `vite-plus` の PR ができていなければ、その実行のログで判定を見る。`gh run view <run の ID> --log | grep -E "Updating vite-plus from|No update needed for vite-plus"`
@@ -172,7 +172,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 依存の配布物に patch を当てるときは、`vp pm patch <pkg>` を版を付けずに打つ。`pnpm-workspace.yaml` の `patchedDependencies` にパッケージ名だけのキー (`"<pkg>"`) で足され、どの版にも当たる (「patch のキーをパッケージ名だけにする理由」)。そのキーの直前のコメントに、理由と撤去条件 (ADR-0005「pin には出口条件を書く」) と、効いていることの確かめ方を書く。`vp run verify` が捕まえない patch もあるので、確かめ方が無いと壊れても気づけない。
 
-- 作り直すときも版を付けずに打つ。既にある patch を当てた編集用のディレクトリができ、`vp pm patch-commit` は同じキーと同じファイルへ書き戻す。版を付けると既にある patch が当たらず、`patch-commit` は版を固定したキーを足して `ERR_PNPM_UNUSED_PATCH` で落ちる。その案内どおりにパッケージ名だけのキーを消すと、元の変更が黙って消える (2026-10-01 に pnpm 11.28.0 で観測)
+- 作り直すときも版を付けずに打つ。2026-10-01 に pnpm 11.28.0 で、版を付けずに打つと既にある patch を当てた編集用のディレクトリができ、`vp pm patch-commit` は同じキーと同じファイルへ書き戻した。版を付けると既にある patch が当たらず、`patch-commit` は版を固定したキーを足して `ERR_PNPM_UNUSED_PATCH` で落ちた。その案内どおりにパッケージ名だけのキーを消すと、元の変更が黙って消えた
 - `vp pm patch-commit` したあとは、初めて作ったときも作り直したときも、`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-10-01 に pnpm 11.28.0 で観測)
 
 ### workflow に action を足す
@@ -192,7 +192,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 | vitest                                            | assert の予算 (`docs/guides/testing/waiting-and-assertions.md`「assert の予算を分ける理由」) の根拠に使った docs の数字 (browser の `testTimeout` の既定など) を写さず、測り直す。数字は版で動き、上流のメンテナも docs の数字が意図せず変わった可能性に触れている ([vitest-dev/vitest#9157][])。story に viewport が当たるかも確かめる (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」) |
 | Node.js の major                                  | `package.json` の `devEngines.runtime` の `version` を新しい major に直接書き換え、`engines.node` も ADR-0004 の下限の決め方でその major の範囲に書き換え、`@types/node` の major もそろえる。`vp env pin` は exact の版を書くので使わない (ADR-0004)                                                                                                                                                                  |
 | `@types/node` の minor                            | `package.json` の `engines.node` の下限を、その minor まで上げる (ADR-0004)                                                                                                                                                                                                                                                                                                                                            |
-| drizzle-kit                                       | `pnpm-workspace.yaml` の `overrides` の `drizzle-kit>@esbuild-kit/esm-loader` の撤去条件。キーに版が無いので、条件が成り立っても何も言わずに効かない行として残る。beta の `1.0.0-beta.22` と rc の `1.0.0-rc.4` は `@esbuild-kit/esm-loader` を依存から外している (2026-09-30 に npm registry で確認)                                                                                                                  |
+| drizzle-kit                                       | `pnpm-workspace.yaml` の `overrides` の `drizzle-kit>@esbuild-kit/esm-loader` の撤去条件。キーに版が無いので、条件が成り立っても何も言わずに効かない行として残る。beta の `1.0.0-beta.22` と rc の `1.0.0-rc.4` は、2026-09-30 に npm registry で確かめたとき `@esbuild-kit/esm-loader` を依存から外していた                                                                                                           |
 | storybook                                         | `pnpm-workspace.yaml` の `peerDependencyRules` の撤去条件。dist が `vite-plus` から import しているものも読み直す (「peer の食い違いを数える」)                                                                                                                                                                                                                                                                        |
 | @storybook/addon-vitest                           | story に viewport が当たるかを確かめる (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」)                                                                                                                                                                                                                                                                                                  |
 | @storybook/tanstack-react / @tanstack/react-start | `vp exec storybook build` が通るかを確かめる。tanstack-react は TanStack Start の plugin を名前で見分けて外すので、どちらを上げても外せなくなりうる。`vp run verify` と CI は Storybook を build しない (`docs/guides/storybook.md`「framework を TanStack 専用にし、telemetry を切る理由」)                                                                                                                           |

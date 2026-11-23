@@ -51,7 +51,7 @@ animation は `src/test/browser/browser-setup.tsx` が毎テスト止める (「
 - 本文の先頭で `enableAnimations()` を呼ぶ。テストが終わった時点で、`enableAnimations()` が登録した `onTestFinished` が既定へ戻すので、戻す処理は書かない (「animation を戻す経路」)
 - animation を戻すテストは `.concurrent` を付けずに書き、並行の `describe` の外に置く。フラグと停止用の CSS は page 全体に効き、並行して走る別のテストでも animation が戻る
 - 停止用の CSS は `*`、`*::before`、`*::after` に当たり、View Transition の擬似要素 (`::view-transition-old(…)` など) には当たらない。View Transition は既定でも本番の時間で流れる (停止用の CSS を入れたまま、root の擬似要素の animation が 250ms だった。2026-10-12、Chromium 153)。擬似要素の animation は、`ready` の後に `document.getAnimations()` を `effect.pseudoElement` で選んで読む。registry の部品の animation と比べるときは、比べる側のテストで `enableAnimations()` を呼ぶ
-- popup の閉じるアニメーションの形は、`data-closed` が付いた時点に `MutationObserver` の中で `getAnimations()` から読む。`getAnimations()` は呼んだ時点で style の変更を反映するので、属性が付いた直後でも閉じるアニメーションを返す ([Web Animations「The Animatable interface mixin」][])。`animationstart` では読まない。event は次のフレームで、`finished` を解決して microtask を流したあとに送られる ([Web Animations「update animations and send events」][])。Base UI 1.8.0 の `useAnimationsFinished` は閉じるアニメーションの `finished` を待って popup を外す ([Base UI の `internals/useAnimationsFinished.ts`][]) ので、そのフレームが閉じるアニメーションの時間以上遅れると、event が届く前に popup が外れている (2026-10-12、Chromium 153。閉じるアニメーションが 100ms の popup で、操作の直後のフレームを 150ms 塞ぐと、`animationstart` が届く前に popup が外れた。50ms では外れなかった)
+- popup の閉じるアニメーションの形は、`data-closed` が付いた時点に `MutationObserver` の中で `getAnimations()` から読む。`getAnimations()` は呼んだ時点で style の変更を反映するので、属性が付いた直後でも閉じるアニメーションを返す ([Web Animations「The Animatable interface mixin」][])。`animationstart` では読まない。event は次のフレームで、`finished` を解決して microtask を流したあとに送られる ([Web Animations「update animations and send events」][])。Base UI 1.8.0 の `useAnimationsFinished` は閉じるアニメーションの `finished` を待って popup を外していた ([Base UI の `internals/useAnimationsFinished.ts`][])。そのフレームが閉じるアニメーションの時間以上遅れると、event が届く前に popup が外れた (2026-10-12、Chromium 153。閉じるアニメーションが 100ms の popup で、操作の直後のフレームを 150ms 塞ぐと、`animationstart` が届く前に popup が外れた。50ms では外れなかった)
 - 無限アニメーション (Spinner) も既定では時間が 0 秒になり、描画の時点で終わっている (`getAnimations()` が空、2026-09-27 に実測)
 - 既定では閉じた popup が次の描画で unmount するので、`data-ending-style` は観測できない
 - popup を閉じた後に `expectNoA11yViolations()` を呼ぶときは、先に popup の要素を `expectRemoved()` で待つ。既定では窓が無いが、animation を戻したテストでも同じ形で書く
@@ -87,7 +87,7 @@ route の announcer (ADR-0035) を置いた router で、開く操作をした�
 
 - debounce のテストは、1 文字ずつ別の `userEvent.keyboard` で打つ。`fill` は 1 回の input、`type("abc")` は 3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)
 - fake timers は使わない。browser mode では、locator の操作が実行中に fake timer を 50ms ずつ進め、`expect.element` が要素を探す再試行の間隔と、assert が落ちたあとの poll の `interval` ごとに進める ([vitest-dev/vitest#11242][]、vitest 5.1.0)。時計の進みがこれらの内部の間隔で決まり、テストが決められない。`userEvent.keyboard` は進めない。待ちを広げたいときは、定数を `vi.mock(import(...))` の partial mock で広げる
-- 広げる定数は `number` の型注釈で宣言し、literal 型に固めない。literal 型のままだと、partial mock の factory が返す広げた値が `vi.mock` の型に合わず、`No overload matches this call` (TS2769) で落ちる (2026-10-05、vitest 5.0.1 で確認)
+- 広げる定数は `number` の型注釈で宣言し、literal 型に固めない。2026-10-05 に vitest 5.0.1 で、literal 型のままだと、partial mock の factory が返す広げた値が `vi.mock` の型に合わず、`No overload matches this call` (TS2769) で落ちた
 
 ## explanation
 
@@ -139,14 +139,14 @@ route の announcer (ADR-0035) を置いた router で、開く操作をした�
 `force: true` で飛ぶのは Playwright の actionability の検査の一部で、viewport 内の座標の確認とブラウザのヒットテストは残る。
 
 - [Playwright docs「Auto-waiting」][] の Forcing actions は "non-essential actionability checks" を飛ばすと書く。中身は列挙せず、例に挙げるのは Receives Events だけである
-- Enabled も飛ぶ。`src/components/parts/segmented-radio-group.tsx` の disabled の項目 (`aria-disabled="true"`) へ送ると、`.click()` は enabled の待ちで timeout まで返らず、`.click({ force: true })` は 30ms で返った (2026-10-02、`@vitest/browser` 5.0.1 と Playwright 1.63.0)
-- Visible と Stable は docs では未確認である。[`playwright-core` の `server/dom.ts`][] の `_performPointerAction` は、`force` のとき visible / enabled / stable の待ちと、Playwright 側の hit target の確認 (Receives Events の検査) を飛ばす (ソースの読み取り)
-- viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の条件の定義に無く、同じ `_performPointerAction` が `force` でも行う (ソースの読み取りで、公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
+- Enabled も飛んだ。`src/components/parts/segmented-radio-group.tsx` の disabled の項目 (`aria-disabled="true"`) へ送ると、`.click()` は enabled の待ちで timeout まで返らず、`.click({ force: true })` は 30ms で返った (2026-10-02、`@vitest/browser` 5.0.1 と Playwright 1.63.0)
+- Visible と Stable は docs では未確認である。[`playwright-core` の `server/dom.ts`][] の `_performPointerAction` は、`force` のとき visible / enabled / stable の待ちと、Playwright 側の hit target の確認 (Receives Events の検査) を飛ばしていた (2026-09-30 に playwright-core 1.63.0 のソースを読み取った)
+- viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の条件の定義に無く、同じ `_performPointerAction` が `force` でも行っていた (2026-09-30 に playwright-core 1.63.0 のソースを読み取った。公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
 - ブラウザのヒットテストも残る。`pointer-events: none` の対象へ `force` で送ったイベントが下の要素へ落ちる実測は「合成イベントが実物からずれる理由」にある
 
 ### popup の初期 focus が遅れて当たる理由
 
-Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、Combobox の popup が使う) は、開いたときの focus を `enqueueFocus` で `requestAnimationFrame` の次のフレームに当てる (`floating-ui-react/utils/enqueueFocus.js`。1.8.0 は 2026-10-10、1.9.0 は 2026-10-31 に確認)。`open` を渡して `render()` した直後は、focus はまだ popup に無く body にある (2026-10-10 に実測)。その間に送ったキーは popup の外 (開く操作をした要素か body) に当たる。描画を待つ assert (`expect.element(...).toBeInViewport()` など) を挟んだテストでは、15 回とも、その assert が通った時点で focus は届いていた (2026-10-10、alert-dialog と dialog で実測)。CPU を絞ると届かないことがある。テストの process を `taskpolicy -b` で走らせると、ルートのダイアログの入力欄の `toHaveValue` が通った時点で focus がまだ開く操作をした要素にあり、20 回中 2 回、描画から 110〜150ms 経っても届いていなかった (2026-10-31、`@base-ui/react` 1.9.0 で実測)。focus の位置で結果が変わる操作の前には、前提を `toHaveFocus` の assert として書く。
+Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、Combobox の popup が使う) は、開いたときの focus を `enqueueFocus` で `requestAnimationFrame` の次のフレームに当てていた (`floating-ui-react/utils/enqueueFocus.js`。1.8.0 は 2026-10-10、1.9.0 は 2026-10-31 に確認)。`open` を渡して `render()` した直後は、focus はまだ popup に無く body にある (2026-10-10 に実測)。その間に送ったキーは popup の外 (開く操作をした要素か body) に当たる。描画を待つ assert (`expect.element(...).toBeInViewport()` など) を挟んだテストでは、15 回とも、その assert が通った時点で focus は届いていた (2026-10-10、alert-dialog と dialog で実測)。CPU を絞ると届かないことがある。テストの process を `taskpolicy -b` で走らせると、ルートのダイアログの入力欄の `toHaveValue` が通った時点で focus がまだ開く操作をした要素にあり、20 回中 2 回、描画から 110〜150ms 経っても届いていなかった (2026-10-31、`@base-ui/react` 1.9.0 で実測)。focus の位置で結果が変わる操作の前には、前提を `toHaveFocus` の assert として書く。
 
 当てる直前に、focus がすでに popup の中へ移っていれば当てない (`FloatingFocusManager` の `shouldFocus`)。テストが click や `focus()` で中へ focus を移したあとは、待たずにキーを送れる。Escape は `useDismiss` が document の keydown で受けるので、focus の位置に依らない。
 

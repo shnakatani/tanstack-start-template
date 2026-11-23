@@ -30,8 +30,8 @@
 - `onUnmatched: "throw"` は登録していない引数での呼び出しを、`toHaveBeenExhausted` は登録した引数で呼ばれなかったことを捕まえる。呼ばれなかった `calledWith` と応答が失敗の文言に並ぶ
 - 期限の無い応答 (`thenResolve` / `thenReturn`) は 1 回使えば消費済みに数えられ、2 回目以降も応答し続ける ([Vitest docs のレシピ「Conditional Mocking with vi.when」][] の Asserting that all behaviors were called の Caveat)。同じ引数での回数まで確かめるなら `toHaveBeenCalledTimes` を並べる
 - 同じ spy で、`vi.when` と、あとからの差し替え (`mockImplementation` / `mockResolvedValue` / `deferMock`) や `mock*Once` を混ぜない
-- `vi.when` は spy の実装を差し替える。あとから差し替えると `vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなる (2026-09-28、vitest 5.0.1 で実測)
-- 未消費の `mock*Once` は、引数を問わず `vi.when` より先に使われる (2026-09-28、vitest 5.0.1 で実測)
+- `vi.when` は spy の実装を差し替える。2026-09-28 に vitest 5.0.1 で、あとから差し替えると `vi.when` の振る舞いがすべて外れ、`onUnmatched: "throw"` も効かなくなった
+- 2026-09-28 に vitest 5.0.1 で、未消費の `mock*Once` は引数を問わず `vi.when` より先に使われた
 - `onUnmatched: "throw"` の例外は、呼んだアプリのコードがエラー処理で受け止めると、テストの失敗の文言に出ない。後段の assert で落ちて理由が読めないときは、`vi.mocked(fn).mock.results` を見る
 - `mock.results` には `vi.when: no behavior defined when called with [...]` の例外と、渡った引数が入る (文言の形は [Vitest docs のレシピ「Conditional Mocking with vi.when」][] の `onUnmatched` の例)
 - 楽観表示は `deferMock` で応答の決着を握って確かめる。`mockRejectedValue` は呼ばれた時点で reject するので、決着前の楽観表示が見えない
@@ -45,15 +45,15 @@
 
 `vi.fn`・`vi.spyOn`・`vi.mock` が作った mock に張った実装と戻り値 (`mock*Once` を含む) は、`tooling/test/config.ts` の `mockReset: true` が各テストの前に `vi.resetAllMocks()` で戻す ([Vitest docs「mockReset」][])。テストファイルのどこでも、`vi.resetAllMocks()` と `mockReset()` を呼ばない。理由は「差し替えた実装を設定で戻す理由」。
 
-| mock の作り方                                             | 戻る先                            | 出典                                                            |
-| --------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------- |
-| `vi.fn()` (`__mocks__` の export)                         | `undefined` を返す空の実装        | [Vitest docs「Mock の mockReset」][]                            |
-| `vi.fn(impl)` (`vi.mock` の factory の中など)             | `impl`                            | [Vitest docs「Mock の mockReset」][]                            |
-| `vi.spyOn(obj, "method")`                                 | 元の `obj.method`。spy のまま残る | [Vitest docs「Mock の mockReset」][]                            |
-| factory も `__mocks__` も無い `vi.mock` (automock)        | `undefined` を返す空の実装        | [Vitest の `automocker.ts`][]、[Vitest の `spy/src/index.ts`][] |
-| `vi.mock(import(...), { spy: true })` (autospy) の export | 元の実装                          | [Vitest の `automocker.ts`][]、[Vitest の `spy/src/index.ts`][] |
+| mock の作り方                                             | 戻る先                            | 出典                                                                                           |
+| --------------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `vi.fn()` (`__mocks__` の export)                         | `undefined` を返す空の実装        | [Vitest docs「Mock の mockReset」][]                                                           |
+| `vi.fn(impl)` (`vi.mock` の factory の中など)             | `impl`                            | [Vitest docs「Mock の mockReset」][]                                                           |
+| `vi.spyOn(obj, "method")`                                 | 元の `obj.method`。spy のまま残る | [Vitest docs「Mock の mockReset」][]                                                           |
+| factory も `__mocks__` も無い `vi.mock` (automock)        | `undefined` を返す空の実装        | [Vitest の `automocker.ts`][]、[Vitest の `spy/src/index.ts`][] (5.0.1 を 2026-10-09 に読んだ) |
+| `vi.mock(import(...), { spy: true })` (autospy) の export | 元の実装                          | [Vitest の `automocker.ts`][]、[Vitest の `spy/src/index.ts`][] (5.0.1 を 2026-10-09 に読んだ) |
 
-- 既定の戻り値は `beforeEach` で張る。設定の戻しは `beforeEach` より前に走るので、`beforeEach` で張った値は残る。テストファイルの最上位と `beforeAll` で張った値は、最初のテストの前に消える (2026-10-09、vitest 5.0.1 で実測)
+- 既定の戻り値は `beforeEach` で張る。2026-10-09 に vitest 5.0.1 で実測すると、設定の戻しは `beforeEach` より前に走り、`beforeEach` で張った値は残った。テストファイルの最上位と `beforeAll` で張った値は、最初のテストの前に消えた
 - `.concurrent` を付けたテストでは、共有の mock に実装や戻り値を張らない。並行して走っている別のテストが始まるたびに、すべての mock が戻る ([Vitest の `runners/test.ts`][] の `onBeforeTryTask`)
 
 ### 環境変数とグローバルを差し替える
@@ -146,7 +146,7 @@ Vitest の既定で有効なのは `clearMocks` だけで、消すのは呼び�
 - 並行するテストで mock が戻る注意は、`mockReset` だけのものではない。既定で有効な `clearMocks` と、このリポジトリが有効にしている `unstubEnvs` / `unstubGlobals` にも同じ warning がある ([Vitest docs「clearMocks」][]、[Vitest docs「unstubEnvs」][]、[Vitest docs「unstubGlobals」][])
 - 戻す時点は、docs と実装で食い違う。[Vitest docs「mockReset」][] の warning は "the completion of one test will clear the mock history and implementation for all mocks" と終了の時点で書く。5.0.1 の実装では [Vitest の `runners/test.ts`][] の `onBeforeTryTask` が戻すので、戻るのはテストの開始の時点である
 - 設定の戻しが `beforeEach` より前に走るのは、[Vitest の `run.ts`][] が、戻しを呼ぶ `onBeforeTryTask` を `beforeEach` より先に呼ぶからである
-- automock と autospy の戻る先は、docs に書かれていない。[Vitest の `automocker.ts`][] は autospy にだけ元の実装を `originalImplementation` として渡す。[Vitest の `spy/src/index.ts`][] の `mockReset` は張った実装を外すだけで、呼ばれたときに張った実装が無ければ `originalImplementation` を使い、それも無ければ空の実装を使う。なので autospy は元の実装に、automock は空の実装になる (5.0.1 の実装を読んで確かめた。走らせてはいない)
+- automock と autospy の戻る先は、docs に書かれていない。[Vitest の `automocker.ts`][] は autospy にだけ元の実装を `originalImplementation` として渡す。[Vitest の `spy/src/index.ts`][] の `mockReset` は張った実装を外すだけで、呼ばれたときに張った実装が無ければ `originalImplementation` を使い、それも無ければ空の実装を使う。なので autospy は元の実装に、automock は空の実装になる (2026-10-09 に 5.0.1 の実装を読んで確かめた。走らせてはいない)
 - 使う戻り値を毎テストの `beforeEach` か本文で張り直すテストは、設定を外しても通る。設定を外して緑のままでも、設定が要らないことにはならない。設定が防ぐのは、張り直さずに書いたテストと、戻し忘れた `vi.spyOn` である
 
 ## 出典
