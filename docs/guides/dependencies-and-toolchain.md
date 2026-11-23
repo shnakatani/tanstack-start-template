@@ -211,7 +211,8 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 - composite action の定義 (`action.yml`) の中の `uses:` は `@<SHA> # vX.Y.Z` で書く。ほかのリポジトリがこの action を使うと、こちらの lockfile が効かない。zizmor の `unpinned-uses` も、composite の step を lockfile と関係なく指摘する (ADR-0006)
 - container image (`docker://`、job の `container:` と `services:`) は lockfile が記録しないので、`@sha256:<digest>` で書く (ADR-0006)
 - `actions.lock` を手で書き換えず、消さない。壊したら default branch の版を `git checkout origin/main -- .github/workflows/actions.lock` で戻してから `gh actions-lock` を打つ。消して作り直すと、すべての ref をそのときの commit で解き直し、付け替えられた tag も警告なしに受け入れる ([gh-actions-lock「troubleshooting」][] の「Why you shouldn't delete the lockfile」)
-- `gh actions-lock --verify` が、記録した tag が別の commit へ動いたことで落ちたら、上流の履歴を確かめてから `gh actions-lock --relock` を打つ。`--accept-moved` は CI と bot の中で打たない ([GitHub Docs「Locking action dependencies in a repository's workflows」][] の「Keep the lockfile current」)
+- `gh actions-lock --verify` が `tag-commit-mismatch` で落ちたら (記録した exact tag が、記録した commit より後の commit へ動いた)、lockfile が手で書き換えられていないかと、上流の 2 つの commit の間の変更を確かめてから `gh actions-lock --relock` を打つ ([gh-actions-lock「troubleshooting」][] の `tag-commit-mismatch`)
+- `unreachable-pin` で落ちたら (記録した commit が ref の履歴から外れた。force push、無関係な commit への tag の付け替え、lockfile の手の書き換えのどれか)、上流の履歴と release notes を記録した commit と比べ、正しいと確かめてから手元で `gh actions-lock --accept-moved` を打つ。CI と bot の中では打たない ([gh-actions-lock「troubleshooting」][] の `unreachable-pin`)
 - zizmor に新しい audit が入ると、action の更新 PR で既存の workflow が落ちうる。その PR の中で直すか、`.github/zizmor.yml` で理由を書いて無効にする
 
 ### 依存を上げたときに見直すもの

@@ -18,7 +18,8 @@ paths:
 - このリポジトリの composite action は workflow から `uses: $/<path>` で呼び、`./<path>` で呼ばない。`./` のままだと `gh actions-lock` が `local-action` で止まる (`docs/guides/dependencies-and-toolchain.md`「workflow に action を足す」)
 - `action.yml` の中の `uses:` は `@<SHA> # vX.Y.Z` で書く。ほかのリポジトリがこの action を使うと、こちらの lockfile が効かない (ADR-0006)
 - `actions.lock` を手で書き換えず、消さない。壊したら `git checkout origin/main -- .github/workflows/actions.lock` で戻してから `gh actions-lock` を打つ。消して作り直すと、付け替えられた tag も警告なしに受け入れる (`docs/guides/dependencies-and-toolchain.md`「workflow に action を足す」)
-- `--accept-moved` を CI と bot の中で打たない。動いた tag は上流の履歴を確かめてから `gh actions-lock --relock` で進める (`docs/guides/dependencies-and-toolchain.md`「workflow に action を足す」)
+- `--verify` の `tag-commit-mismatch` は、上流の 2 つの commit の間の変更を確かめてから `gh actions-lock --relock` で直す (`docs/guides/dependencies-and-toolchain.md`「workflow に action を足す」)
+- `unreachable-pin` は、上流の履歴と release notes を確かめてから手元で `gh actions-lock --accept-moved` で直す。`--accept-moved` を CI と bot の中で打たない (`docs/guides/dependencies-and-toolchain.md`「workflow に action を足す」)
 
 ## zizmor
 
