@@ -71,7 +71,7 @@ bot 側の待機は外さない。`cooldown: default-days: 3` は全パッケー
 core (`vite` の alias 先)・`vitest`・`@vitest/*` の版は、`vite-plus` のリリースが同梱する版で決まる。
 Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃える手順を推奨する (Vite+ docs「Update Vite+」)。
 
-`.github/dependabot.yml` の `vite-plus` グループは、`vite-plus`・`vite`・`@voidzero-dev/vite-plus-*`・`vitest`・`@vitest/*` を束ねる。Vite+ が docs に載せる予定の Dependabot の設定例 (voidzero-dev/vite-plus#2463、2026-09-29 に draft) に、alias の `vite` を足した形である。グループへ束ねても版は揃わない。
+`.github/dependabot.yml` の `vite-plus` グループは、`vite-plus`・`vite`・`@voidzero-dev/vite-plus-*`・`vitest`・`@vitest/*` を束ねる。Vite+ の docs は Dependabot の設定例を示さず、Renovate に `group:vitePlus` の preset を勧めたうえで "Renovate can still propose a Vitest release before Vite+ bundles it." と書く。bot の更新を merge する前に alias を `npm view vite-plus@<version> dependencies.vite` と照合し、ずれていれば bot のブランチで `vp migrate` を打つよう案内する (Vite+ docs「Update Vite+」の Dependency Bots。照合の案内は vite-plus 1.7.0 の同梱の docs にあり、Renovate の段落は voidzero-dev/vite-plus#2463 で 1.7.0 のあとに main へ入った。2026-11-23 に確認)。グループへ束ねても版は揃わない。
 
 - `vitest` が `vite-plus` と別の日に出ると、`vitest` を同梱の版より先へ上げる PR ができる (voidzero-dev/vite-plus#2356)。2026-09-09 から 09-28 に 6 本来た
 - `vite-plus` を上げた PR に `vite` の alias 先は含まれなかった (2026-09-16、09-21 の 2 本)
@@ -147,7 +147,7 @@ version update の PR の上限 (`open-pull-requests-limit`) の既定は 5 で�
 | 定期的に pin を見直す                                                                                                               | advisory が無い間は確認コストを払うだけで利得が無い                                                                          | 却下     |
 | `vite-plus`・core・`vitest`・`@vitest/*` を 1 つのグループへ束ね、`vitest` と `@vitest/*` を `dependency-name` だけで `ignore` する | `vitest` だけが先へ進む PR も security updates の PR も来ない。`vite-plus` の PR は peer の食い違いがあっても作られた (実測) | **採用** |
 | `vite-plus` も含めてすべて `ignore` する                                                                                            | Vite+ の新版に気付く経路が無くなる                                                                                           | 却下     |
-| 採用案から `ignore` を外す (Vite+ の設定例 voidzero-dev/vite-plus#2463 の形)                                                        | `vitest` だけが先へ進む PR が毎週作り直され、そのたびに `vp migrate` で揃えて閉じることになる                                | 却下     |
+| 採用案から `ignore` を外す (Renovate の `group:vitePlus` と同じく、束ねるだけで版を揃えない形)                                      | `vitest` だけが先へ進む PR が毎週作り直され、そのたびに `vp migrate` で揃えて閉じることになる                                | 却下     |
 | グループの PR に `@dependabot ignore vitest` とコメントする                                                                         | 条件が設定ファイルに現れない。GitHub Docs は複数人のリポジトリでは設定ファイルに書くよう勧める                               | 却下     |
 | `peerDependencyRules` で `vite-plus>@vitest/browser-playwright` を許す                                                              | `ignore` だけで `vite-plus` の PR が作られたので要らない。手元の peer の食い違いも黙らせる                                   | 却下     |
 
@@ -158,7 +158,7 @@ version update の PR の上限 (`open-pull-requests-limit`) の既定は 5 で�
 - Dependabot の version updates PR は weekly スケジュールと 3 日 cooldown の合成で、リリースから最長 1 週間強遅れて届く
 - pin のリスクは「advisory が出てから対応するまでの遅延」に限定される。検知は自動のまま残るので、無検知の放置は起きない
 - Dependabot PR の処理が「依存更新の取り込み」と「pin の出口確認」を兼ねる。手順が 1 段増えるが、独立した定期タスクを管理するより忘れにくい
-- 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき、Vite+ が bot 向けの設定例を docs に載せたとき (voidzero-dev/vite-plus#2463、2026-09-29 に draft)、vite の alias と CLI の版のずれを検知して `vp` を止めるようになったとき (voidzero-dev/vite-plus#2462、2026-09-29 に draft)。`vitest` 系の `ignore` は、`vite-plus` の新しい版が npm の latest に載り、cooldown を過ぎたあとの Dependabot の実行でも `vite-plus` の PR ができないときにも見直す。Dependabot の PR を処理するとき (トリガ B) に、`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」の手順で確かめる
+- 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき、Vite+ の docs が単独で先へ進む `vitest` の PR を作らせない Dependabot の設定例を示したとき (voidzero-dev/vite-plus#2356)。alias と CLI の版がずれると Vite のコマンドの前に止まる仕組みは、vite-plus 1.7.0 の docs に書かれている (Vite+ docs「Update Vite+」の Dependency Bots) が、揃えるのは `vp migrate` を打つ人なので、この決定は変わらない。`vitest` 系の `ignore` は、`vite-plus` の新しい版が npm の latest に載り、cooldown を過ぎたあとの Dependabot の実行でも `vite-plus` の PR ができないときにも見直す。Dependabot の PR を処理するとき (トリガ B) に、`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」の手順で確かめる
 - `package.json` の `playwright` は caret で持つ。`*` にして版追随を `@vitest/browser-playwright` へ委任する形は成り立たない。その peer 自身が `playwright: "*"` (`optional: false`) で何も制約しておらず、委任先が存在しない (2026-09-02 実測)。実際に版を決めているのは lockfile と待機ゲートで、そこは caret でも変わらない。caret にすると major が Dependabot の別 PR になり判断が挟まる。exact pin ではないため出口条件は無い
 - `package.json` の `nitro` は nitro 3 の beta 版に exact pin する。TanStack Start の hosting ガイドが使う `nitro/vite` の plugin は nitro 3 にしかなく、nitro 3 は使える stable 版が出ていない (2026-09-27 に `npm view nitro dist-tags` の `latest` は `3.0.260903-beta`。`3.0.0` は公開されているが非推奨)。出口条件は nitro 3 の stable 版が `latest` に載ること。そのとき範囲指定か `catalog:` へ移せるかを見直す
 
@@ -170,10 +170,9 @@ version update の PR の上限 (`open-pull-requests-limit`) の既定は 5 で�
 - GitHub Blog: The case for a cooldown: https://github.blog/security/supply-chain-security/the-case-for-a-cooldown-why-dependabot-now-waits-before-issuing-version-updates/
 - GitHub Docs: Configuring Dependabot alerts: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/configure-dependabot-alerts
 - vite-plus と core を別々に上げると未リリースの組み合わせになり、vitest は同梱の版より先へ上がる件: https://github.com/voidzero-dev/vite-plus/issues/2356
-- Vite+ docs「Update Vite+」(`vite-plus` を上げたあと `vp migrate` で揃える): https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/upgrade-project.md
+- Vite+ docs「Update Vite+」(`vite-plus` を上げたあと `vp migrate` で揃える。Dependency Bots の節): https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/upgrade-project.md
 - GitHub Docs: `ignore` が version updates と security updates の両方に効く: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/controlling-dependencies-updated
-- Vite+ が docs に載せる予定の Dependabot の設定例: https://github.com/voidzero-dev/vite-plus/pull/2463
-- Vite+ の CLI が vite の alias との版のずれで止まる変更: https://github.com/voidzero-dev/vite-plus/pull/2462
+- Vite+ docs の Renovate の `group:vitePlus` の段落 (1.7.0 のあとに main へ入った): https://github.com/voidzero-dev/vite-plus/pull/2463
 - GitHub Docs: Dependabot pull request comment commands: https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-pull-request-comment-commands
 - GitHub Docs「Dependabot security updates」の「About grouped security updates」(グループの PR が脆弱な依存だけを上げること): https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-security-updates
 - GitHub Docs「Dependabot options reference」(グループの割り当てと `open-pull-requests-limit` の既定): https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference
