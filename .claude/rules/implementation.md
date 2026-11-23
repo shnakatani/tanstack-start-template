@@ -23,7 +23,7 @@ lint では見ないのでレビューで見る。
 - effect を 1 回しか走らせないための ref を書かない。1 回に抑えても、離れて戻ったときの後始末の欠けは残る。直前に反映した値を ref に持ち、同じなら何もしない形は、何度走っても同じ結果になるのでよい (`docs/guides/react/effects.md`「開発時の二重実行が示すもの」)
 - router の外の変化 (認証など) の購読は router の `InnerWrap` の effect に置き、変化時に `router.invalidate()` を呼ぶ。ルートとページの effect は `errorComponent` の表示中に外れる (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 - 遷移を契機にする副作用 (analytics、外部キャッシュの消去、描画後の DOM 操作) は `InnerWrap` のコンポーネントで `router.subscribe` に置く。ページの effect は他のページの間の遷移を見ない (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
-- `router.subscribe` を張る effect の中で、今のページにも 1 回その処理を行う。SSR で描いた最初のページでは `onResolved` が出ず、`onRendered` は購読より先に出る (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
+- `router.subscribe` を張る effect の中で、今のページにも 1 回その処理を行う。SSR で描いた最初のページでは、`onResolved` が出ず、`onRendered` も購読より先に出ることがある (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 - 購読の callback では、`fromLocation` が `undefined` のイベント (最初の読み込み) を数えない。最初のページは effect で数えるので、数えると同じページを 2 回数える (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 - そのページが出ている間だけ要る router との連携は、ページの effect で購読し、後始末で解除する。router の外の変化の購読と遷移を契機にする副作用を `InnerWrap` に置くのは、ページを離れても途切れてはいけないものに限る (`docs/guides/react/effects.md`「router との間の副作用の置き場所」)
 
