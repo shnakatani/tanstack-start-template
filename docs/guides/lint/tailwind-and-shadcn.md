@@ -20,9 +20,9 @@
 
 `ui/` が export した variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときは、次に従う。規則がどの書き方を読むかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と Limits、`settings.shadcn` の各設定の意味は [shadcn-ui/lint docs「Settings」][] が持つ。
 
-- 書き足す class は `cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書く。`buttonVariants({ variant, className: "mt-4" })` のキーには書かない。キーの値は検査されず、色と未知 class の検査から外れても診断は出ない。理由は「`cn()` の引数に書く理由」にある
-- 戻り値を design system component (`ui/` `action/` `parts/` の部品) の `className` か、部品の `render` に渡して部品として判定される要素 (`<Button render={<Link />}>` の `Link` など) の `className` へ渡すと、import した関数の呼び出しは読めないので `require-static-classes` が落とす ([shadcn-ui/lint docs「require-static-classes」][] の Variant functions、[shadcn-ui/lint#178][])。class を足さない部品 (`PopoverTrigger` など) の `render` に渡した素の要素は判定されない ([@shadcn/lint の CHANGELOG][] の 0.2.5)
-- 落ちたときは、アプリの route へのリンクなら `ButtonLink` (`src/components/parts/button-link.tsx`) を使う。受けた `ref` と props を描く `<a>` へ渡すので、部品の `render` にも渡せる。外部へのリンクなら素の `<a>` に `buttonVariants` を当てる ([shadcn docs「Button」][] の As Link の "Use `buttonVariants` with a plain `<a>` tag instead.")
+- 書き足す class は `cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書く。`buttonVariants({ variant, className: "mt-4" })` のキーには書かない (「`cn()` の引数に書く理由」)
+- 戻り値を部品へ渡すと、`require-static-classes` が落とすことがある。どの書き方が読まれるかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と [shadcn-ui/lint docs「How it works」][] の Wrappers が決める
+- リンクを button の見た目にするときは、アプリの route へのリンクなら `ButtonLink` (`src/components/parts/button-link.tsx`) を使い、外部へのリンクなら素の `<a>` に `buttonVariants` を当てる。`Button` の `render` でリンクを描かない ([shadcn docs「Button」][] の As Link)
 - `settings.shadcn.variantFunctions` と `mergeFunctions` へ variant 関数を登録しない (ADR-0023)
 
 ### `@shadcn/lint` の時間と警告を読む
@@ -38,7 +38,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 
 ### `cn()` の引数に書く理由
 
-- linter が class を読む呼び出しは、`cn` などの組み込みの関数と `settings.shadcn` に登録した関数に限られる ([shadcn-ui/lint docs「How it works」][] の Where it looks)。variant 関数は登録しないので (ADR-0023)、その引数の object に書いた class は読まれない
+- variant 関数は `settings.shadcn` に登録しないので (ADR-0023)、import した variant 関数の呼び出しの引数に書いた class は linter に読まれない。`cn()` の引数に書いた class は読まれる ([shadcn-ui/lint docs「How it works」][] の Where it looks)
 - shadcn/ui の例は両方の形を使う。[shadcn の `calendar-hijri.tsx`][] は `cn()` の引数に書き、[shadcn の `collapsible-example.tsx`][] は `className` キーに書く。キーの形を写すときは `cn()` の引数へ移す
 
 ## 出典
@@ -48,8 +48,6 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 [shadcn-ui/lint docs「require-static-classes」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/require-static-classes.md
 [shadcn-ui/lint docs「Settings」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/README.md#settings
 [shadcn-ui/lint docs「How it works」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/how-it-works.md
-[shadcn-ui/lint#178]: https://github.com/shadcn-ui/lint/issues/178
-[@shadcn/lint の CHANGELOG]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/packages/lint/CHANGELOG.md
 [shadcn docs「Button」]: https://ui.shadcn.com/docs/components/base/button
 [shadcn の `calendar-hijri.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/calendar-hijri.tsx
 [shadcn の `collapsible-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/aria/examples/collapsible-example.tsx
