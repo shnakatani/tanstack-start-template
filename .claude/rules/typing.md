@@ -37,7 +37,7 @@ lint (`typescript/consistent-type-assertions`) が止める。`as const` は可�
 
 - 自前の props 型に `children: ReactNode` (必須) / `children?: ReactNode` (任意) を書く。どちらかはコンポーネントの意図で選ぶ (`docs/guides/react/props.md`「children を宣言する」)
 - 型は `ReactNode` にする。`ReactElement` へ狭めるのは子を JSX 要素ちょうど 1 つに限る部品だけにし、理由をコメントに書く。`ReactElement` は文字列・複数の子・`cond && <x />` を拒み、要素の種類は絞れない (`docs/guides/react/props.md`「children を `ReactNode` で受ける理由」)
-- `PropsWithChildren` で children を足さない。children を必須にするなら結局 props 型に `children` を書くので、任意のときも props 型に書く (`docs/guides/react/props.md`「children を宣言する」)
+- `PropsWithChildren` で children を足さない。children を任意で足すだけで、必須にするなら結局 props 型に `children` を書く (`docs/guides/react/props.md`「children を宣言する」)
 - JSX の子要素として描かないもの (行のデータ、行を描く関数など) は、`children` ではなく役割を表す名前の prop (例: `rows` / `renderRow`) で受ける (`docs/guides/react/props.md`「children 以外の名前で受ける」)
 - 対象外: shadcn 生成コード (`src/components/ui/`) と、外部のライブラリが求める型に props を合わせる場合 (`docs/guides/react/props.md`「children を宣言する」)
 
