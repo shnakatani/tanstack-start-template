@@ -124,7 +124,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 - `mutationKey` は既定で前方一致に当たる ([TanStack Query docs「Filters」][] の Mutation Filters の `exact`)。`useMutationState` と `isMutating` の `filters` には `exact: true` を付ける
 - `variables` の型は `unknown` のままなので、行へ渡す前にスキーマで `safeParse` して型へ絞り、失敗は `console.warn` に raw input ごと残して除外する。絞り込みは `src/lib/parse-each.ts` の `parseEach` が持つ
-- `useMutationState` の `select` の中で throw しない。2026-11-23 に読んだ `@tanstack/react-query` 5.108.1 の `useMutationState.ts` では、`select` は描画中に呼ばれる `getSnapshot` の中で走っていた。描画中に throw すると一覧ごと Error Boundary へ落ちる
+- `useMutationState` の `select` の中で throw しない。2026-11-23 に読んだ [`@tanstack/react-query` 5.108.1 の `useMutationState.ts`][] では、`select` は描画中に呼ばれる `getSnapshot` の中で走っていた。描画中に throw すると一覧ごと Error Boundary へ落ちる
 
 ### 楽観表示を出す
 
@@ -169,3 +169,4 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 [`@tanstack/router-core` の `link.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/src/link.ts
 [TanStack Query docs「UseMutateFunction」]: https://github.com/TanStack/query/blob/%40tanstack/react-query%405.108.1/docs/framework/react/reference/type-aliases/UseMutateFunction.md
 [TanStack Query docs「Filters」]: https://github.com/TanStack/query/blob/%40tanstack/react-query%405.108.1/docs/framework/react/guides/filters.md
+[`@tanstack/react-query` 5.108.1 の `useMutationState.ts`]: https://github.com/TanStack/query/blob/f6689e04be493e2e83f9c93d7e478f92c3e5d328/packages/react-query/src/useMutationState.ts#L83-L108
