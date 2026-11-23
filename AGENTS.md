@@ -22,7 +22,7 @@ vp run verify    # マージ前に通す。手順は vite.config.ts の verifySt
 - `vp pm patch-commit` したあとは、初めて作ったときも作り直したときも、`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-10-01、pnpm 11.28.0。`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
 - `vp migrate` が `pnpm-workspace.yaml` の catalog に、`.github/dependabot.yml` の `vite-plus` グループの `patterns` に当たらない依存を足したら、その `patterns` と `minor-and-patch` の `exclude-patterns` の両方に足す。`patterns` にだけ足すと `minor-and-patch` の PR に入り、どちらにも足さないと `vite-plus` と別の PR で上がる (`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」)
 - `vp migrate` が catalog に足した依存が、`vitest` のように `vite-plus` と別の日に公開され、既存の `ignore` に当たらないなら、`.github/dependabot.yml` の `ignore` にも `dependency-name` だけで足し、撤去条件を書く。足さないと、同梱の版より先へ上げる PR ができる (ADR-0005)
-- `vp dlx @tanstack/intent@latest list` の notice に、許していない skill の package が出たら、`package.json` の `intent.skills` と `intent.exclude` のどちらに足すかをユーザーに尋ねる。エージェントの判断で足さない (`docs/guides/dependencies-and-toolchain.md`「依存の agent skill を Intent に許す」)
+- Intent の `list` の notice に、許していない skill の package が出たら、`package.json` の `intent.skills` と `intent.exclude` のどちらに足すかをユーザーに尋ねる。エージェントの判断で足さない (`docs/guides/dependencies-and-toolchain.md`「依存の agent skill を Intent に許す」)
 
 ## テストの実行
 
@@ -50,10 +50,12 @@ UI と story を触る前に `vp exec storybook skills` を実行し、`stories`
 
 ## Skill Loading
 
-Before substantial work:
+Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
+Before editing files for a substantial task:
 
-- Skill check: run `vp dlx @tanstack/intent@latest list`, or use skills already listed in context.
-- Skill guidance: if one local skill clearly matches the task, run `vp dlx @tanstack/intent@latest load <package>#<skill>` and follow the returned `SKILL.md`.
+- Run `pnpm exec intent list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `pnpm exec intent load <package>#<skill>` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
 - Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
 - Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
 
