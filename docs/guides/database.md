@@ -28,18 +28,23 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - migration を `drizzle-kit migrate` で当てない。外部キーの検査が効いたまま当たり、子から参照される親を作り直す migration が落ちるか、`ON DELETE` の動作で子の行を消すか参照を NULL にする (ADR-0050)
 - `migrateDb()` は、未適用の migration をまとめて 1 つのトランザクションで当て、確定の前に DB 全体で外部キーの違反が 1 件でもあれば全部戻して落ちる (ADR-0050)
   - 当てる前に違反が無かった DB では、文言は「migration が外部キーの違反を残す」になる。違反を残した migration の SQL (行を写す `INSERT … SELECT` の条件など) を直す
-  - 当てる前から違反があった DB では、文言が当てる前の件数を示す。違反と関係の無い migration も、違反が残るかぎり当たらない。次の手順で、違反を直す custom migration を足す
+  - 当てる前から違反があった DB では、文言が当てる前と当てたあとの件数を示す。違反と関係の無い migration も、違反が残るかぎり当たらない。次の手順で、違反を直す custom migration を足す。当てたあとの件数が当てる前より多ければ、未適用の migration も違反を作っているので、その SQL も直す
 - 当てる前からある違反は、[drizzle docs「Custom migrations」][] の custom migration で直し、ほかの migration と同じ `vp run db:migrate` で当てる。本番の DB を変える経路は `vp run db:migrate` だけなので、手で SQL を打って直さない
   1. `vp run db:generate --custom --name=<名前>` で空の migration を作る (mise の hook が走らないシェルでは `mise x -- vp run …`)
-  2. 違反の行を引く。表は文言か `PRAGMA foreign_key_check` の出力の表で分かる。出力の列と `foreign_key_list` の列は [SQLite「Pragma statements supported by SQLite」][] の `foreign_key_check` と `foreign_key_list` にある
+  2. 違反の行を確かめる。表は文言か `PRAGMA foreign_key_check` の出力の表で分かる。出力の列と `foreign_key_list` の列は [SQLite「Pragma statements supported by SQLite」][] の `foreign_key_check` と `foreign_key_list` にある。rowid は、違反の行を確かめる読み出しにだけ使う
 
-     | 違反の表           | 引き方                                                                                                                                                                                                                                                                                          |
-     | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-     | rowid のある表     | `PRAGMA foreign_key_check` の行の rowid で `SELECT * FROM <子> WHERE rowid = <rowid>`                                                                                                                                                                                                           |
-     | WITHOUT ROWID の表 | rowid が NULL で出る。`PRAGMA foreign_key_list(<子>)` の `from` / `table` / `to` から `SELECT * FROM <子> c WHERE c.<from> IS NOT NULL AND NOT EXISTS (SELECT 1 FROM <親> p WHERE p.<to> = c.<from>)` を組む。複数列の外部キーは同じ `id` の行が列ごとに並ぶので、列ごとの条件を `AND` で並べる |
+     | 違反の表           | 確かめ方                                                                              |
+     | ------------------ | ------------------------------------------------------------------------------------- |
+     | rowid のある表     | `PRAGMA foreign_key_check` の行の rowid で `SELECT * FROM <子> WHERE rowid = <rowid>` |
+     | WITHOUT ROWID の表 | rowid が NULL で出るので、次の手順の条件で `SELECT` する                              |
 
-  3. 作った migration に、引いた行を消す `DELETE` か、参照を直す `UPDATE` を書き、`vp run db:migrate` で当てる。未適用の migration はまとめて当たり、確定の前の検査は全部を当てたあとに 1 回だけなので、違反を直す migration は後から足してよい。文と文の間に `--> statement-breakpoint` を書く。区切りの無い 2 つの文は `The supplied SQL string contains more than one statement` で落ちる (2026-11-23、better-sqlite3 13.2.0)
-- dev の DB は直さずに、`.data/` の DB のファイルを消して `vp run db:migrate` と `vp run db:seed` で作り直してもよい
+  3. 作った migration に、違反の行を消す `DELETE` か、参照を直す `UPDATE` を書き、`vp run db:migrate` で当てる
+     - 表を問わず、`PRAGMA foreign_key_list(<子>)` の `from` / `table` / `to` から組んだ `NOT EXISTS` の条件で書く: `DELETE FROM <子> WHERE <from> IS NOT NULL AND NOT EXISTS (SELECT 1 FROM <親> p WHERE p.<to> = <子>.<from>)`。複数列の外部キーは同じ `id` の行が列ごとに並ぶので、列ごとの条件を `AND` で並べる
+     - rowid や特定の id を migration に書かない。custom migration は `drizzle/` に commit され、すべての環境の DB で走る。rowid で書くと、違反の無い DB では正しい行を消す
+     - `UPDATE` で参照を直すときも、付け替える先の値を固定で書くと、環境ごとに別の行を指す
+     - 未適用の migration はまとめて当たり、確定の前の検査は全部を当てたあとに 1 回だけなので、違反を直す migration は後から足してよい
+     - 文と文の間に `--> statement-breakpoint` を書く。[drizzle docs「Custom migrations」][] の SQLite の例は区切りを書いていないが、better-sqlite3 では区切りの無い 2 つの文が `The supplied SQL string contains more than one statement` で落ちる (2026-11-23、better-sqlite3 13.2.0)
+- dev の DB は直さずに作り直してもよい。dev server を止め、`.data/` の DB のファイルを消して `vp run db:migrate` と `vp run db:seed` で作り直してから、dev server を起動し直す。動いている dev server は消したファイルを読み続ける (「見本のデータを消して入れ直す理由」)
 - migration は外部キーの検査を切った接続で当たるので、migration の中の `DELETE` と `UPDATE` では `ON DELETE` と `ON UPDATE` の動作が走らない。custom migration で親の行を消すとき (更新するとき) は、子の行も SQL で明示的に消す (更新する)。消し忘れは確定の前の検査で落ちる (ADR-0050)
 - 生成した SQL を手で直すときも、`drizzle-kit generate --custom` で書くときも、`BEGIN` / `COMMIT` を書かず、`PRAGMA foreign_keys` で外部キーの検査を切り替えようとしない。トランザクションと検査は `migrateDb()` が外側で持つ。drizzle-kit が出力する `PRAGMA foreign_keys` の行は、トランザクションの中なので何もしない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
 - `migrateDb()` を開いたトランザクションの中で呼ばない。外部キーの検査を切れないので、何も当てずに落ちる
