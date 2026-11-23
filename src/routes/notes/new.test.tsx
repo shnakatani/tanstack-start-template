@@ -179,6 +179,21 @@ describe("/notes/new route", () => {
     await expect.element(titleTextbox(screen)).toHaveFocus();
   });
 
+  // lazyRouteComponent は chunk の読み込みの失敗を記録して描画の時に throw し、preload を reject しない。
+  // match の status は success のままなので、title に「エラー: 」は付かない。上流が preload の失敗で status を
+  // error にするように変わると、title に「エラー: 」が付いてこのテストが落ちる
+  it("chunk の読み込みに失敗しても、title は「エラー: 」を付けずにダイアログの名前とアプリ名で組む", async () => {
+    mockCreateRouteChunk().mockRejectedValue(new Error("chunk の読み込みの失敗"));
+    // 前のテストが反映した title で通らないよう、描く前に空へ戻す
+    document.title = "";
+    const { screen } = await renderRoute("/notes/new");
+
+    await expect
+      .element(screen.getByRole("dialog", { name: "フォームを読み込めませんでした" }))
+      .toBeInTheDocument();
+    await expect.poll(() => document.title).toBe(`${NOTE_CREATE_DIALOG_TITLE} — ${APP_NAME}`);
+  });
+
   it("chunk の読み込みの失敗のダイアログを閉じると、一覧へ戻り追加のリンクへ focus を移す", async () => {
     mockCreateRouteChunk().mockRejectedValue(new Error("chunk の読み込みの失敗"));
     const { screen, router } = await renderRoute("/notes/new");

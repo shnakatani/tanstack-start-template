@@ -22,9 +22,8 @@ export interface PageTitleContext {
  * title は境界までの route の `head()` が組んだままになる。router は `notFoundMode: "root"` で root を境界にするので、
  * ページの下の URL もアプリ名になる (ADR-0035「not found の title」)。
  *
- * 自分の match の `status` が `"error"` (route の読み込みの失敗。loader・beforeLoad・component の chunk) なら
- * 前に `エラー: ` を足す (ADR-0035)。
- * 描画中の throw は `head()` の後に起き、`status` を変えないので付かない
+ * 自分の match の `status` が `"error"` (router が match を失敗にする読み込みの失敗。loader・beforeLoad の throw など) なら前に `エラー: ` を足す (ADR-0035)。
+ * 描画中の throw と component の chunk の読み込みの失敗は `status` を変えないので付かない (ADR-0035)
  */
 export function pageTitle(
   ctx: PageTitleContext,
