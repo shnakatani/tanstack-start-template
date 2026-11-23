@@ -182,6 +182,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 依存の配布物に patch を当てるときは、`vp pm patch <pkg>` を版を付けずに打つ。`pnpm-workspace.yaml` の `patchedDependencies` にパッケージ名だけのキー (`"<pkg>"`) で足され、どの版にも当たる (「patch のキーをパッケージ名だけにする理由」)。そのキーの直前のコメントに、理由と撤去条件 (ADR-0005「pin には出口条件を書く」) と、効いていることの確かめ方を書く。`vp run verify` が捕まえない patch もあるので、確かめ方が無いと壊れても気づけない。
 
 - 作り直すときも版を付けずに打つ。既にある patch を当てた編集用のディレクトリができ、`vp pm patch-commit` は同じキーと同じファイルへ書き戻す。版を付けると既にある patch が当たらず、`patch-commit` は版を固定したキーを足して `ERR_PNPM_UNUSED_PATCH` で落ちる。その案内どおりにパッケージ名だけのキーを消すと、元の変更が黙って消える (2026-10-01 に pnpm 11.28.0 で観測)
+- 作り直す前に、前の `vp pm patch` が残した `node_modules/.pnpm_patches/<pkg>@<版>` を消す。残っていると `vp pm patch` が `ERR_PNPM_EDIT_DIR_NOT_EMPTY` で止まる (2026-11-23 に pnpm 12.21.0 で観測)
 
 ### workflow に action を足す
 
@@ -259,8 +260,6 @@ pnpm の link と Intent は、TanStack の同じ skill を別の経路で載せ
 | 届く依存 | 直接の依存だけ ("pnpm looks for skills in the direct dependencies of every project")                              | 推移の依存まで ("Discovery finds every installed package that has one, including transitive dependencies") |
 
 ADR が出典にする `@tanstack/start-client-core` などは推移の依存で、pnpm の link では届かない。Intent が届く範囲を持つので、pnpm の link を切る。
-
-設定が無いと、pnpm は install のたびに skill を同梱する直接の依存を承認待ちに挙げる。2026-11-23 に pnpm 12.21.0 を Claude Code の中で打って確かめた。pnpm docs の既定の link 先は「リポジトリに既にある `.<name>/skills` と、pnpm を打ったエージェントの分」なので、`.agents/skills` と `.claude/skills` を持つこのリポジトリでは、エージェントの外で打っても承認待ちになると読める。エージェントの外では測っていない。
 
 ### `typescript` を直接の依存に置かない理由
 
