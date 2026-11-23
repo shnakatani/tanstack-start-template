@@ -312,7 +312,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - Vite+ の shim は `pnpm` を含み、素の `pnpm` は `packageManager` の版に解決される (Vite+ の `docs/guide/env.md`「Package-Manager Selection」)。corepack などで別に入れなくてよい (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
 - Vite+ の更新は同梱ツールの一括更新になる。更新 PR で見るものは `docs/guides/dependencies-and-toolchain.md`「依存を上げたときに見直すもの」にある
 - `vp <name>` は組み込みコマンド、`vp run <name>` は `package.json` の script か `vite.config.ts` のタスクを指す。同名の script の中身が `vp <name>` でなければ、両者は別のものを走らせる (`docs/guide/run.md`「Built-in Commands vs Scripts」)。実行前に `package.json` と `vite.config.ts` を確認する
-- `build` の script があるので、2026-10-02 に vp 1.0.0 で `vp build` を打つと、stderr に ``note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.`` が出た。`build` を `start` と対で残す代償である。2026-10-04 に vp 1.0.0 で `check` と `test` の script を置くと、`vp check` と `vp test` にも同じ note が出た
+- `build` の script があるので、2026-10-02 に vp 1.0.0 で `vp build` を打つと、stderr に ``note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.`` が出た。`build` を `start` と対で残す代償である。同じ日に vp 1.0.0 で、`check` と `test` の script を一時的に置くと、`vp check` と `vp test` にも同じ note が出た
 
 ## 出典
 
