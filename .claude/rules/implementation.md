@@ -29,7 +29,7 @@ lint では見ないのでレビューで見る。
 
 ## Effect が読む最新値は useEffectEvent へ切り出す
 
-Effect Event を呼ぶ場所と依存配列への混入は lint (`react/rules-of-hooks`、`react/exhaustive-deps`) が止めることがある。次の 2 点はレビューで見る。
+Effect Event を呼ぶ場所と依存配列への混入は lint (`react/rules-of-hooks`、`react/exhaustive-deps`) が止める (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)。次の 2 点はレビューで見る。
 
 - 走ったときに最新の props / state を読めば足りる処理は `useEffectEvent` へ切り出し、依存から外す。依存に置くと、値が変わるたびに購読を外して張り直す (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)
 - 変わったら外の系に合わせ直す契機になる値は依存に置き、Effect Event に隠さない。隠すと、その値が変わっても effect が走らず、依存の漏れを lint も報告しないことがある (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)
