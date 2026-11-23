@@ -330,7 +330,7 @@ root で受ける失敗の画面の見出しは `<h1>` で、印を持たない�
 - Astro の `router.ts`: https://github.com/withastro/astro/blob/7661f48c84f048dafd26ac58d81acee2462fef4f/packages/astro/src/transitions/router.ts
 - Gatsby の `navigation.js`: https://github.com/gatsbyjs/gatsby/blob/1fd967bd2cc282cac4fcc699f66d681f16ee6987/packages/gatsby/cache-dir/navigation.js
 - MDN `HTMLElement.focus()`: https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus
-- MDN browser-compat-data (`api/HTMLElement.json` の `focus` の `options_focusVisible_parameter`): https://github.com/mdn/browser-compat-data/blob/0fe836f1c9b303b5684fc6fd1a55a565ae4e09d2/api/HTMLElement.json
+- MDN browser-compat-data (`api/HTMLElement.json` の `focus` の `options_focusVisible_parameter`): https://github.com/mdn/browser-compat-data/blob/f376872e9f5f937631243c2263cda5497d0c1296/api/HTMLElement.json
 - wpt.fyi の `back-forward-cache/focus.html`: https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/focus.html
 - GOV.UK Design System「Error summary」: https://design-system.service.gov.uk/components/error-summary/
 - GOV.UK Design System「There is a problem with the service pages」: https://design-system.service.gov.uk/patterns/problem-with-the-service-pages/
