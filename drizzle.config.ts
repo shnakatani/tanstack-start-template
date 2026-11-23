@@ -13,8 +13,9 @@ const dbFileName = requireEnv(
   "In development, load mise's env (a shell with the mise hook, or `mise x -- vp run <task>`). Elsewhere, set DB_FILE_NAME to an absolute path.",
 );
 
-// DB のファイルを作るのは drizzle-kit だけ (docs/guides/database.md「DB のファイルをアプリで作らない理由」)。
-// 置き場所の .data/ は新規クローンに無いので、ここでディレクトリを作る (:memory: はディレクトリを持たない)
+// migration を当てて DB のファイルを作るのは `vp run db:migrate` (scripts/db/migrate.ts) で、drizzle-kit migrate は
+// 使わない (ADR-0050)。drizzle-kit のうち DB を開くコマンド (studio など) も better-sqlite3 で開き、ディレクトリが
+// 無いと落ちる。置き場所の .data/ は新規クローンに無いので、ここでディレクトリを作る (:memory: はディレクトリを持たない)
 if (dbFileName !== ":memory:") {
   mkdirSync(dirname(dbFileName), { recursive: true });
 }

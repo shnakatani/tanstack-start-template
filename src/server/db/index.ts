@@ -2,8 +2,10 @@ import { statSync } from "node:fs";
 import { resolve } from "node:path";
 
 import Database from "better-sqlite3";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { readMigrationFiles } from "drizzle-orm/migrator";
+import type { MigrationMeta } from "drizzle-orm/migrator";
 
 import { requireEnv } from "@/lib/require-env";
 import * as schema from "@/server/db/schema";
@@ -48,7 +50,125 @@ export function createDb(fileName: string = requireDbFileName()) {
   return drizzle(sqlite, { schema });
 }
 
-/** migration を適用する (drizzle/ 配下の生成 SQL を対象に実行)。 */
-export function migrateDb(db: ReturnType<typeof createDb>): void {
-  migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+type Db = ReturnType<typeof createDb>;
+
+/** 適用済みの migration の記録の表。drizzle-orm の migrator の既定の名前と形にそろえる */
+const MIGRATIONS_TABLE = "__drizzle_migrations";
+
+/**
+ * `drizzle/` の migration のうち未適用のものを当てる。SQLite「ALTER TABLE」の 12 の手順の外枠の形で当てる
+ * (ADR-0050): トランザクションの外で外部キーの検査を切り、1 つのトランザクションで未適用の migration を
+ * 順に流して記録し、`PRAGMA foreign_key_check` に違反があれば戻して落とし、無ければ確定して検査を戻す。
+ * テーブルの作り直しの中身 (作る・写す・消す・改名する) は drizzle-kit が書き出す SQL が持つ。
+ * 2026-11-23 に読んだ drizzle-orm 0.45.4 の migrator はトランザクションの中で `PRAGMA foreign_keys=OFF` を流していて効かず、
+ * 子から参照される親を作り直すと、`DROP TABLE` が外部キーの検査で落ちるか、`ON DELETE` の動作で子の行を消した
+ */
+export function migrateDb(db: Db, migrationsFolder: string = MIGRATIONS_FOLDER): void {
+  const migrations = readMigrationFiles({ migrationsFolder });
+  withForeignKeysOff(db, () => {
+    applyPendingMigrations(db, migrations);
+  });
+}
+
+function withForeignKeysOff(db: Db, run: () => void): void {
+  const sqlite = db.$client;
+  // トランザクションの中ではこの PRAGMA が何もせず、エラーも返さないので、効いたかを確かめる
+  // (SQLite「SQLite Foreign Key Support」の「Enabling Foreign Key Support」)
+  sqlite.pragma("foreign_keys = OFF");
+  try {
+    if (sqlite.pragma("foreign_keys", { simple: true }) !== 0) {
+      throw new Error(
+        "[db] migration の前に外部キーの検査を切れない。開いているトランザクションの外で migrateDb() を呼ぶ",
+      );
+    }
+    run();
+  } catch (error) {
+    restoreForeignKeys(db, error);
+    throw error;
+  }
+  restoreForeignKeys(db);
+}
+
+/** 外部キーの検査を戻す。migration の失敗 (`failure`) の後に戻せなかったときも、その失敗を cause に残す */
+function restoreForeignKeys(db: Db, failure?: unknown): void {
+  const sqlite = db.$client;
+  let enabled: unknown;
+  let restoreError: unknown;
+  try {
+    sqlite.pragma("foreign_keys = ON");
+    enabled = sqlite.pragma("foreign_keys", { simple: true });
+  } catch (error) {
+    restoreError = error;
+  }
+  if (enabled !== 1) {
+    const detail =
+      restoreError instanceof Error ? restoreError.message : `値が ${JSON.stringify(enabled)}`;
+    throw new Error(
+      `[db] migration の後に外部キーの検査を戻せない (${sqlite.name}、${detail})。この接続を使わずに閉じる`,
+      { cause: failure ?? restoreError },
+    );
+  }
+}
+
+/** `PRAGMA foreign_key_check` の違反の行 (表、rowid、親の表、外部キーの番号) を文言に入れる文字列にして読む */
+function readForeignKeyViolations(db: Db): string[] {
+  const rows = db.$client.pragma("foreign_key_check");
+  if (!Array.isArray(rows)) {
+    throw new TypeError(`[db] PRAGMA foreign_key_check が配列を返さない: ${typeof rows}`);
+  }
+  return rows.map((row) => JSON.stringify(row));
+}
+
+/**
+ * 記録の表の形、最後に適用した migration の判定、記録の書き方は、drizzle-orm 0.45.4 の migrator
+ * (`SQLiteSyncDialect.migrate`) と同じにする。drizzle-kit migrate で当てた DB の記録をそのまま引き継ぎ、
+ * この関数が書いた記録も drizzle-orm の migrator が適用済みとみなす。
+ * drizzle-orm の migrator と違い、記録の表の作成と最後の記録の読み出しも書き込みのロックを取った
+ * トランザクション (`BEGIN IMMEDIATE`) の中で行う。2 つの接続が同時に当てても、後の側は先の側の確定を待ち、
+ * その記録を読んでから未適用を決める
+ */
+function applyPendingMigrations(db: Db, migrations: MigrationMeta[]): void {
+  db.$client
+    .transaction(() => {
+      db.run(sql`
+        CREATE TABLE IF NOT EXISTS ${sql.identifier(MIGRATIONS_TABLE)} (
+          id SERIAL PRIMARY KEY,
+          hash text NOT NULL,
+          created_at numeric
+        )
+      `);
+      const last = db.get<{ created_at: unknown } | undefined>(
+        sql`SELECT created_at FROM ${sql.identifier(MIGRATIONS_TABLE)} ORDER BY created_at DESC LIMIT 1`,
+      );
+      const pending = migrations.filter(
+        ({ folderMillis }) => last === undefined || Number(last.created_at) < folderMillis,
+      );
+      if (pending.length === 0) {
+        return;
+      }
+
+      // 止めるのは確定の前の DB 全体の検査だけにする (Django と knex と同じ)。当てる前の違反は数えるだけで、
+      // 落ちたときの文言を分けるのに使う。当てる前の違反で止めると、違反を直す migration も当たらない。
+      // 違反の行は当てる前と後で突き合わせない。rowid で見分けるので、WITHOUT ROWID の表と、表の作り直しで崩れる (ADR-0050)
+      const existingCount = readForeignKeyViolations(db).length;
+      for (const migration of pending) {
+        for (const statement of migration.sql) {
+          db.run(sql.raw(statement));
+        }
+        db.run(
+          sql`INSERT INTO ${sql.identifier(MIGRATIONS_TABLE)} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`,
+        );
+      }
+      // 行の値は文言に入れず、表と rowid だけを出す
+      const violations = readForeignKeyViolations(db);
+      if (violations.length > 0) {
+        const list = `[${violations.join(",")}]`;
+        throw new Error(
+          existingCount > 0
+            ? `[db] 外部キーの違反が、当てる前に ${existingCount} 件、当てたあとに ${violations.length} 件あるので、適用せずに戻した。当てる前からある違反は、直す custom migration を足すと当たる。当てたあとの件数が多ければ、migration も違反を作っている: ${list}`
+            : `[db] migration が外部キーの違反を残すので、適用せずに戻した: ${list}`,
+        );
+      }
+    })
+    .immediate();
 }
