@@ -21,14 +21,15 @@
 | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせて、ライブラリ内部のガードまで見に行かない                                                                        |
 | 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                                                                                          |
 
-`.click()` が弾く条件は [Playwright docs「Auto-waiting」][] が定める。どの検査で落ちたかは、エラーの Call log の文で見る。このリポジトリで弾かれる典型は次のとおり。
+条件の定義は [Playwright docs「Auto-waiting」][] が持つ。`.click()` は、定義に無い viewport 内の座標の確認でも落ちる。どの検査で落ちたかは、エラーの Call log の文で見る。このリポジトリで弾かれる典型は次のとおり。
 
-| 落ちる例                                                                                                                   | 扱い                                                                                                                                                                      |
-| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| native `disabled` の要素、`aria-disabled="true"` の祖先を持つ要素                                                          | 反応しないことを確かめるなら、上の表の「無効化された要素が反応しないことの検証」の行                                                                                      |
-| 開閉アニメーションの途中の要素                                                                                             | 既定では animation の無効化で即座に終わる。animation を戻したテストでは settled を待って押す                                                                              |
-| button と link の外に置いた `sr-only` の文字 (1px + clip)。落ちる検査は置き場所で変わる (「`sr-only` の文字が落ちる検査」) | `getByRole(..., { name })` で本体を掴む                                                                                                                                   |
-| base-ui のバックドロップ (`data-base-ui-inert`)、`pointer-events: none` の要素                                             | `force: true` はブラウザのヒットテストを越えない (「force が飛ばす検査と残る検査」)。反応しないことを確かめるなら、上の表の「無効化された要素が反応しないことの検証」の行 |
+| 落ちる例                                                                                                                                                                                                                   | 扱い                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| native `disabled` の要素、`aria-disabled="true"` の祖先を持つ要素                                                                                                                                                          | 対象に `pointer-events: none` が当たっていれば、上の表の「無効化された要素が反応しないことの検証」の行。当たっていなければ「Playwright に弾かれ、pointer 経由の click が要る」の行 |
+| 開閉アニメーションの途中の要素                                                                                                                                                                                             | 既定では animation の無効化で即座に終わる。animation を戻したテストでは settled を待って押す                                                                                       |
+| `sr-only` の文字 (1px + clip)。button と link (`role` の button と link を含む) の外では hit target の確認で落ち、矩形が viewport の外に出ると button の中でも落ちる (「`sr-only` の文字が落ちる検査」)                    | `getByRole(..., { name })` で本体を掴む                                                                                                                                            |
+| modal の popup (Dialog、AlertDialog) を開いている間の、popup の外の要素。画面全体を覆う Viewport (`data-slot` が `dialog-viewport` か `alert-dialog-viewport`) が hit target になる (「合成イベントが実物からずれる理由」) | 押す前に popup を閉じる。`force: true` の click は Viewport に届いて外の要素には届かず、Dialog は外を押した操作として閉じる                                                        |
+| `pointer-events: none` の要素                                                                                                                                                                                              | `force: true` はブラウザのヒットテストを越えない (「force が飛ばす検査と残る検査」)。反応しないことを確かめるなら、上の表の「無効化された要素が反応しないことの検証」の行          |
 
 - `force: true` は actionability の検査の一部を飛ばす ([Playwright docs「Auto-waiting」][] の Forcing actions)。飛ぶ検査と残る検査は「force が飛ばす検査と残る検査」にある
 - force でも座標は要る。animation を戻したテストでは、スライドインの途中の要素が "Element is outside of the viewport" で落ちるので、settled を待って押す (「force が飛ばす検査と残る検査」)
@@ -114,7 +115,8 @@ route の announcer (ADR-0035) を置いた router で、開く操作をした�
 
 合成イベントを要求する場面は無い (2026-09-22 実測)。理由に挙がる 2 つはどちらも合成イベントを要求しない。
 
-- inert バックドロップが pointer event を横取りする件は再現しない。ダイアログのフォームの保存とキャンセル、削除確認の確定とキャンセルを押す 4 箇所は、`locator.click()` で全件通った。registry の AlertDialog の最小構成でも、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通る
+- ダイアログの中の要素への click を、バックドロップが横取りする件は再現しない。ダイアログのフォームの保存とキャンセル、削除確認の確定とキャンセルを押す 4 箇所は、`locator.click()` で全件通った。registry の AlertDialog の最小構成でも、`enableAnimations()` の有無にかかわらず `.click()` が 130ms 台で通る
+- 一方、modal の popup を開いている間の、popup の外の要素への `.click()` は、`src/components/ui/dialog.tsx` と `alert-dialog.tsx` の Viewport (Base UI の `Dialog.Viewport` と `AlertDialog.Viewport`。`popupViewportLayout` で画面全体を覆う) が hit target になって落ちた。Dialog の Call log は `<div … data-slot="dialog-viewport" …>…</div> from <div … data-slot="dialog-portal">…</div> subtree intercepts pointer events` だった。外の要素の祖先は `aria-hidden` と `data-base-ui-inert` を持ち、`inert` 属性は持たなかった。`force: true` の click は Viewport に届き、どちらでも外の要素のハンドラは呼ばれなかった。Dialog では Base UI が `onOpenChange` を `reason` が `outside-press` で呼んで閉じ、閉じたあとの `.click()` は通った。AlertDialog が閉じたかは見ていない (2026-11-24、Playwright 1.65.0 で実測)
 - `aria-disabled="true"` の要素が Playwright の enabled 判定でタイムアウトする 2 箇所は、対象に `pointer-events: none` が当たっているかで解が分かれる。`src/components/parts/choice-card.test.tsx` の対象には当たっておらず、`Checkbox` への `disabled` の転送を落とす mutant で測ると `.click()` は false red、`.click({ force: true })` は 41ms で緑になり mutant で赤になる。`src/components/parts/segmented-radio-group.test.tsx` の対象には当たっており、クリックが届かないことを `pointer-events` の assert (`expected 'auto' to be 'none'` を 97ms で捕まえる) と `aria-disabled` の assert で見る
 - `pointer-events: none` の対象を click ハンドラを持つ器の上に重ねて、どちらにイベントが届くかを測った (2026-09-22)。`force` が飛ばすのは actionability の検査で、ブラウザのヒットテストは残るので、`force` のイベントは対象へ届かず下の要素へ落ちる
 
@@ -146,18 +148,19 @@ route の announcer (ADR-0035) を置いた router で、開く操作をした�
 
 ### `sr-only` の文字が落ちる検査
 
-`sr-only` の文字は 1px の箱を持つので、[Playwright docs「Auto-waiting」][] の Visible の定義 (non-empty bounding box) を満たす。Tailwind の `sr-only` の span へ `.click()` を送ると、落ちたのは Visible ではなく、置き場所で決まる次の検査だった (2026-11-24、Playwright 1.65.0 の Chromium 158.0.8127.18 と `@vitest/browser` 5.1.0 で実測)。
+`sr-only` の文字は 1px の箱を持つので、[Playwright docs「Auto-waiting」][] の Visible の定義 (non-empty bounding box) を満たす。Tailwind 4.3.5 の `sr-only` の span へ `.click()` を送ると、落ちたのは Visible ではなく、置き場所で決まる次の検査だった (2026-11-24、Playwright 1.65.0 の Chromium 158.0.8127.18 と `@vitest/browser` 5.1.0 で実測)。
 
-| 置き場所                                                       | 結果                                         | Call log の文                            |
-| -------------------------------------------------------------- | -------------------------------------------- | ---------------------------------------- |
-| padding を持つ div の中 (矩形が viewport の内側)               | hit target の確認 (Receives Events) で落ちる | `<div>…</div> intercepts pointer events` |
-| `<label>` の中 (checkbox と並べる)                             | 同上                                         | `<div>…</div> intercepts pointer events` |
-| viewport の左上に接する div の中 (矩形が (-1, -1) から (0, 0)) | viewport 内の座標の確認で落ちる              | `element is outside of the viewport`     |
-| `<button>` の中                                                | 通る                                         | なし                                     |
+| 置き場所                                                              | 結果                                         | Call log の文                            |
+| --------------------------------------------------------------------- | -------------------------------------------- | ---------------------------------------- |
+| padding を持つ div の中 (矩形が viewport の内側)                      | hit target の確認 (Receives Events) で落ちる | `<div>…</div> intercepts pointer events` |
+| `<label>` の中 (checkbox と並べる)                                    | 同上                                         | `<div>…</div> intercepts pointer events` |
+| viewport の左上に接する div の中 (矩形が (-1, -1) から (0, 0))        | viewport 内の座標の確認で落ちる              | `element is outside of the viewport`     |
+| `<button>` の中                                                       | 通る                                         | なし                                     |
+| viewport の左上に接する `<button>` の中 (矩形が (-1, -1) から (0, 0)) | viewport 内の座標の確認で落ちる              | `element is outside of the viewport`     |
 
 - clip で切られた文字の span は、クリックの座標の hit target にならず、下の div が hit target になった
-- button の中で通るのは、Playwright が hit target を確かめる前に、対象を最も近い `button, [role=button], a, [role=link]` へ寄せるためである ([Playwright の `injected/src/injectedScript.ts`][] の `setupHitTargetInterceptor` が `retarget(node, 'button-link')` を呼んでいた。2026-11-24 に 1.65.0 のソースを読み取った。公式 docs では未確認)。link の中は測っていない
-- viewport の端で落ちる確認は、公式 docs の条件の定義に無い viewport 内の座標の確認である (「force が飛ばす検査と残る検査」)
+- button の中で通るのは、Playwright が hit target を確かめる前に、対象を最も近い `button, [role=button], a, [role=link]` へ寄せるためである ([`injected` の `injectedScript.ts`][] の `setupHitTargetInterceptor` が `retarget(node, 'button-link')` を呼んでいた。2026-11-24 に 1.65.0 のソースを読み取った。[Playwright docs「Auto-waiting」][] では未確認)。寄せるのは hit target の確認だけで、viewport 内の座標の確認は文字の span 自身の矩形で行うので、viewport の端では button の中でも落ちた。同じ button を `getByRole("button", { name })` で掴むと通った (同日)。link の中は測っていない
+- viewport の端で落ちる確認は、[Playwright docs「Auto-waiting」][] の条件の定義に無い viewport 内の座標の確認である (「force が飛ばす検査と残る検査」)
 - `.click({ force: true })` は、div の中ではエラー無く返り、click は文字の span ではなく下の div に届いた。viewport の端では `force` でも `Element is outside of the viewport` で落ちた (同日)
 
 ### popup の初期 focus が遅れて当たる理由
@@ -241,7 +244,7 @@ Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、
 [HTML Standard「clean up after running script」]: https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script
 [React docs「useFormStatus」]: https://react.dev/reference/react-dom/hooks/useFormStatus
 [`playwright-core` の `server/dom.ts`]: https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/src/server/dom.ts
-[Playwright の `injected/src/injectedScript.ts`]: https://github.com/microsoft/playwright/blob/v1.65.0/packages/injected/src/injectedScript.ts
+[`injected` の `injectedScript.ts`]: https://github.com/microsoft/playwright/blob/v1.65.0/packages/injected/src/injectedScript.ts
 [Base UI docs「Animation」]: https://base-ui.com/react/handbook/animation
 [Web Animations「update animations and send events」]: https://www.w3.org/TR/web-animations-1/#update-animations-and-send-events
 [Web Animations「The Animatable interface mixin」]: https://www.w3.org/TR/web-animations-1/#the-animatable-interface-mixin
