@@ -142,7 +142,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 
 ### `vp check` の結果が割れたら
 
-- コードを変えずに `vp check` を 2 回続けて打ち、結果が割れたら、上流の非決定的な発火を疑う。`typescript/no-unnecessary-type-assertion` は、同じ入力でも報告したりしなかったりする ([oxc-project/oxc#21752][]) (2026-09-02 に vite-plus 0.3.0 / oxlint 1.79.0 で観測)。スレッドを 1 つに絞っても揃わない ([oxc-project/oxc#21752][] の本文: `--threads=1` で "still flaky (not internal worker race)")。2026-10-06 に vite-plus 1.0.0 の `vp check --help` と `vp lint --help` で確かめると、`vp check` は `--threads` を持たなかった。絞って確かめるなら `vp lint --threads=1` を打つ
+- コードを変えずに `vp check` を 2 回続けて打ち、結果が割れたら、上流の非決定的な発火を疑う。2026-09-02 時点 (vite-plus 0.3.0 / oxlint 1.79.0) の記録では、`typescript/no-unnecessary-type-assertion` は、同じ入力でも報告したりしなかったりした ([oxc-project/oxc#21752][])。スレッドを 1 つに絞っても揃わない ([oxc-project/oxc#21752][] の本文: `--threads=1` で "still flaky (not internal worker race)")。2026-10-06 に vite-plus 1.0.0 の `vp check --help` と `vp lint --help` で確かめると、`vp check` は `--threads` を持たなかった。絞って確かめるなら `vp lint --threads=1` を打つ
 
 ### 設定の落とし穴
 

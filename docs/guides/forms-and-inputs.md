@@ -14,7 +14,7 @@
 
 ### スキーマを書く
 
-- client に送らせないフィールドがあるときは、保存済みスキーマから `v.omit` で入力スキーマを派生させる (ADR-0013)。派生元が `v.object` なら、未知のキーは reject されず黙って strip される。これは `v.omit` ではなく `v.object` の性質で、`v.strictObject` から派生させると同じ入力が reject される (2026-09-02 実測)。どちらの挙動を意図したかをテストで固定する
+- client に送らせないフィールドがあるときは、保存済みスキーマから `v.omit` で入力スキーマを派生させる (ADR-0013)。派生元が `v.object` なら、未知のキーは reject されず黙って strip される。これは `v.omit` ではなく `v.object` の性質で、`v.strictObject` から派生させると同じ入力が reject された (2026-09-02 時点 (valibot 1.4.2) の記録)。どちらの挙動を意図したかをテストで固定する
 - 入力用と保存用で pipe が分かれる項目 (入力側だけが `v.trim()` を持つ項目など) の呼称は、`TInput` を型引数で与えた 1 つの `v.metadata` action を両方の pipe に渡す。型引数も注釈も無い action は `TInput` が `unknown` に推論され、`v.pipe` に入らない
 - `@valibot/to-json-schema` を使うときは、`title` / `description` の action も同じ pipe に足せる。呼称の出処はスキーマ 1 つのまま保てる
 - フォームの `onSubmit` では、値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator に渡したスキーマの変換 (`v.trim()` など) を値に反映しない。[TanStack Form docs「Submission Handling」][] の "Transforming data with Standard Schemas" は "The value passed to the `onSubmit` function will always be the input data." と書き、`onSubmit` の中でスキーマに通すよう案内する。変換を手で書き写すと、スキーマに変換を足したときに送信値だけが古くなる
