@@ -37,6 +37,7 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 ### 依存を足す・外す
 
 - 依存は `vp add` / `vp remove` で足し外す ([Vite+ docs「Package Management」][] の「Add and Remove」)。素の `pnpm` / `npm` / `yarn` で足し外さない。理由は「入口を `vp` にそろえる理由」にある
+- `vp add <依存>` は、型を同梱しない依存の `@types/*` を devDependencies に足す (`pnpm-workspace.yaml` の `saveTypes: true`。[pnpm docs「--save-types」][]: "Packages that declare bundled TypeScript types are skipped.")。2026-11-23 に pnpm 12.21.0 で、`vp add ms@2.1.3` は `@types/ms` を `^2.1.0` で devDependencies に足した。足したくないときは `--no-save-types` を付ける
 - `vp` が中継しないサブコマンドだけは素の `pnpm` で打つ。`pnpm peers check` がこれに当たる (「peer の食い違いを数える」)
 - 引数なしの `vp update` は、`package.json` の `devEngines.runtime` に `runtimeOnFail` の値を `onFail` として書き足す。足された `onFail` は commit の前に消す。`--no-save` を付ければ足さない (ADR-0004)
 
@@ -304,6 +305,7 @@ ADR が出典にする `@tanstack/start-client-core` などは推移の依存で
 [dependabot-core「Dockerfile」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/npm_and_yarn/Dockerfile#L4-L9
 [dependabot-core「helpers.rb」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/npm_and_yarn/lib/dependabot/npm_and_yarn/helpers.rb#L882-L884
 [Intent docs「Trust model」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/concepts/trust-model.md
+[pnpm docs「--save-types」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/cli/add.md#--save-types
 [pnpm docs「peerDependencyRules」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/peer-dependencies.md#peerdependencyrules
 [pnpm docs「Agent Skills」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/agent-skills.md
 [pnpm docs「skills.dirs」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/build.md#skillsdirs
