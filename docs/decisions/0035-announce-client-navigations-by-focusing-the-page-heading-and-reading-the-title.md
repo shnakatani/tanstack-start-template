@@ -196,23 +196,7 @@ loader・beforeLoad の失敗の title は、前に `エラー: ` を足す。`�
 
 - 付かない 2 つの場面の失敗は、失敗の見出しへの focus で伝える (下の「失敗の画面の見出しと focus」)。ダイアログの route では見出しへ移さず (Decision の「モーダルの下」)、失敗はダイアログの route の失敗のダイアログ (ADR-0041) が伝える
 - TanStack Router docs の「Code Splitting」「Automatic Code Splitting」「Document Head Management」と `lazyRouteComponent` の API の頁は、chunk の読み込みの失敗をどう扱うかを書いていない (2026-11-23 に、上流の `docs/` の 2026-11-19 の commit で確認)。component の chunk の行は上流の実装に頼る。見張りは `src/components/route-announcer.test.tsx` の chunk の読み込みの失敗のテストで、上流が preload の失敗で match の `status` を `"error"` にするように変わると、title に `エラー: ` が付いて落ちる。テストは router-plugin を通さないので、router-plugin が `component` を `lazyRouteComponent` で包むことは見張らない
-- 2026-11-23 に、`vp build` の成果物と dev server を Playwright の Chromium 158.0.8127.18 で開き、要求を失敗させて 4 秒後の title と境界の match の `status` を読んだ (`@tanstack/react-router` 1.170.46、`@tanstack/router-core` 1.171.39、`@tanstack/router-plugin` 1.169.0)。読み込み直しは、`lazyRouteComponent` が module の取得の失敗で 1 回だけ行うもので、「止めた」は読み込み直しの印を先に置いた。Chromium 以外のブラウザでは測っていない
-
-| 起動  | 失敗させた要求                                  | 開き方         | 読み込み直し | title                                     | `status`    |
-| ----- | ----------------------------------------------- | -------------- | ------------ | ----------------------------------------- | ----------- |
-| build | ダイアログの route の component の chunk        | リンク         | 走った       | `<ダイアログの名前> — <APP_NAME>`         | `"success"` |
-| build | ダイアログの route の component の chunk        | リンク         | 止めた       | `<ダイアログの名前> — <APP_NAME>`         | `"success"` |
-| build | ダイアログの route の component の chunk        | URL を直接開く | 走った       | `<ダイアログの名前> — <APP_NAME>`         | `"success"` |
-| dev   | ダイアログの route の component の chunk        | リンク         | 走った       | `<ダイアログの名前> — <APP_NAME>`         | `"success"` |
-| dev   | ダイアログの route の component の chunk        | リンク         | 止めた       | `<ダイアログの名前> — <APP_NAME>`         | `"success"` |
-| build | ダイアログの route の loader の server function | リンク         | —            | `エラー: <ダイアログの名前> — <APP_NAME>` | `"error"`   |
-| dev   | ダイアログの route の loader の server function | リンク         | —            | `エラー: <ダイアログの名前> — <APP_NAME>` | `"error"`   |
-| build | ページの route の loader の server function     | リンク         | —            | `エラー: <ページ名> — <APP_NAME>`         | `"error"`   |
-
-| 候補                                                                                   | 評価                                                                                                                                                                                                                                                                                                                                                              | 採否     |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| component の chunk の読み込みの失敗では `エラー: ` を付けず、失敗は focus で伝える     | 上流の `lazyRouteComponent` の形のまま扱う。描画中の throw と同じ伝え方になる                                                                                                                                                                                                                                                                                     | **採用** |
-| `lazyRouteComponent` を包み直して preload を reject させ、`status` を `"error"` にする | 上流は preload の失敗を記録して描画の時に扱う形を選んでいる (TanStack/router#1083 で module の取得の失敗について入り、のちにすべての失敗へ広がった)。module の取得の失敗の読み込み直しは描画の時の部品が行うので、router が先に `errorComponent` を描くと走らなくなる見込みがある (実測していない)。automatic code splitting が出す包みを差し替える独自の層も要る | 却下     |
+- 2026-11-23 に、`vp build` の成果物と dev server を Playwright の Chromium 158.0.8127.18 で開き、ダイアログの route の component の chunk の取得を失敗させると、リンクから開いても URL を直接開いても、`lazyRouteComponent` の読み込み直しの有無にかかわらず、title は `<ダイアログの名前> — <APP_NAME>` で、境界の match の `status` は `"success"` だった。loader の server function を失敗させると、ダイアログの route でもページの route でも `エラー: ` が付き、`status` は `"error"` だった (`@tanstack/react-router` 1.170.46、`@tanstack/router-core` 1.171.39、`@tanstack/router-plugin` 1.169.0。Chromium 以外のブラウザでは測っていない)
 
 ### 失敗の画面の見出しと focus
 
