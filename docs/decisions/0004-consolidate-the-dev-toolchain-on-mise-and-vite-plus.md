@@ -1,7 +1,7 @@
 # ADR-0004: 開発環境のツールチェーンは mise と Vite+ に寄せる
 
 - Status: Accepted
-- Date: 2026-10-30
+- Date: 2026-11-23
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -195,6 +195,7 @@ package manager の版は `packageManager` が決める。
 
 Node.js を major までにするのは、Vite+ が `vp create` に予定する形と同じ範囲で、patch の更新に宣言を書き換えずに移れるためである。
 major までの宣言は `package.json` を直接書き換えて変え、`vp env pin` は使わない。
+引数なしの `vp update` も宣言を書き換える。`pnpm update` は、pnpm 12.6.0 から `devEngines.runtime` の範囲を解決した版へ動かし (pnpm の release notes: "`pnpm update` now moves `devEngines.runtime` and `engines.runtime` version ranges to the resolved Node.js version")、12.17.0 から `packageManager` の版も更新して `package.json` へ書き戻す (pnpm docs「pnpm update」: "A runtime (`node`, `deno`, `bun` declared in `devEngines.runtime` ...) and a package manager ... are updated too, and their new versions or ranges are written back to `package.json`")。2026-11-23 に pnpm 12.21.0 で、引数なしの `vp update` は `"version": "24"` を `"24.22.3"` にした。`vp update <依存>` と名前を付けると書き換えなかった。依存は名前を付けて上げる。
 `vp env pin` は `devEngines.runtime` に書くが、範囲を渡しても exact の版に解決して書く (Vite+ の `rfcs/dev-engines.md`: "Teams that prefer a range in `devEngines.runtime` edit `package.json` directly; Vite+ reads and preserves ranges, it just does not author them through `vp env pin`.")。`engines.node` は書き換えない。
 2026-10-30 に global の Vite+ CLI 1.0.0 で、`24`・`^24`・`24.x`・`^24.0.0`・`>=24 <25`・`~24`・`node@24`・`node@^24` を渡すと、どれも `24.22.2` が書かれた。
 
@@ -216,14 +217,19 @@ pnpm を exact にするのは、minor で解決挙動そのものが変わり�
 
 pnpm には Node.js と pnpm の版を管理させない。Node.js は `devEngines.runtime` に `onFail` を書かずに pnpm に扱わせず、pnpm は `pnpm-workspace.yaml` に `pmOnFail: ignore` を置いて止める。
 Vite+ の `docs/guide/env.md` は、pnpm と Vite+ の両方が Node.js を管理すると "they can download the same version separately or select different versions, causing inconsistent behavior between commands" と書き、"If your project uses Vite+ to manage Node.js and pnpm versions, add these settings to the project's `pnpm-workspace.yaml` (pnpm 11+)" として `runtimeOnFail: ignore` と `pmOnFail: ignore` を勧める。
-Node.js の側は `runtimeOnFail` を置かない。pnpm docs「Settings」は `runtimeOnFail` を、manifest と違う手元の挙動を選ぶための設定と書く ("Overrides the `onFail` field of `devEngines.runtime` (and `engines.runtime`) in the root project's `package.json`. This is useful when you want a different local behavior than what is written in the manifest")。ところが pnpm 11 は、`node_modules` の無い状態からの install で、上書きした値を `package.json` の `devEngines.runtime.onFail` に書き戻す (下の実測)。clone して `vp install` しただけで `package.json` に差分が出る。
-書き戻された `ignore` は、Vite+ の `rfcs/dev-engines.md` が予定する意味では、Vite+ にもその宣言を飛ばさせる ("Entry skipped for resolution; chain continues"。2026-10-30 の v1.4.0 では "parsed and preserved but not yet acted on")。
-pnpm 11 が書き戻しを直すか、pnpm 12 に上げたら (12.16.1 は書き戻さない)、`runtimeOnFail: ignore` を置く。宣言に `onFail: "download"` が入っても、pnpm に runtime を扱わせない守りになる。
+Node.js の側は `runtimeOnFail` を置かない。pnpm docs「Settings」は `runtimeOnFail` を、manifest と違う手元の挙動を選ぶための設定と書く ("Overrides the `onFail` field of `devEngines.runtime` (and `engines.runtime`) in the root project's `package.json`. This is useful when you want a different local behavior than what is written in the manifest")。ところが pnpm は、上書きした値を `package.json` の `devEngines.runtime.onFail` に書き戻す。書き戻す経路は版で違う (下の実測)。
+
+| pnpm                                                                                                                                                                                                                                                           | 書き戻す経路                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 11.28.0 と 11.28.9                                                                                                                                                                                                                                             | `node_modules` の無い状態からの install。clone して `vp install` しただけで `package.json` に差分が出る |
+| 12.16.1 と 12.21.0                                                                                                                                                                                                                                             | install では書き戻さない。12.21.0 では、引数なしの `vp update` が書き戻す (12.16.1 では測っていない)    |
+| 書き戻された `ignore` は、Vite+ の `rfcs/dev-engines.md` が予定する意味では、Vite+ にもその宣言を飛ばさせる ("Entry skipped for resolution; chain continues"。2026-10-30 の v1.4.0 では "parsed and preserved but not yet acted on")。                         |
+| `runtime: false` (pnpm docs「Settings」の `runtime`) を置いても、引数なしの `vp update` は `devEngines.runtime` の版を書き換えた (2026-11-23、pnpm 12.21.0)。書き換えを止める設定は無いので、`runtimeOnFail` も `runtime` も置かず、依存は名前を付けて上げる。 |
 
 | 案 (runtime)                                            | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | 採否     |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `onFail` を書かず、`runtimeOnFail` も置かない           | pnpm は runtime を解決せず (pnpm v11.28.9 の `convertEnginesRuntimeToDependencies` は、`onFail` が `download` のときだけ runtime を依存に足す)、版の検査もしない (`checkRuntime` は `onFail` が無いと何もしない)。`package.json` も書き換えない (下の実測)。Vite+ docs の勧める `runtimeOnFail: ignore` と同じく、pnpm は runtime を扱わない。代わりに、宣言に `onFail: "download"` が入ると、pnpm が宣言の runtime を自前で解決して lockfile へ記録し、`node_modules/.bin/node` を展開する (下の実測)。`vp env pin` は `devEngines.runtime` の無い状態から作るとこの値を書くので、宣言は `package.json` を直接書き換えて変える (上の「major まで」の段落) | **採用** |
-| `runtimeOnFail: ignore` を置く                          | Vite+ docs の勧める形で、宣言に `onFail: "download"` が入っても pnpm は runtime を解決しない。ただし pnpm 11 は fresh install で上書きした値を `package.json` に書き戻す (下の実測)。pnpm docs の書く「manifest と違う手元の挙動」にならない                                                                                                                                                                                                                                                                                                                                                                                                               | 却下     |
+| `runtimeOnFail: ignore` を置く                          | Vite+ docs の勧める形で、宣言に `onFail: "download"` が入っても pnpm は runtime を解決しない。ただし pnpm は上書きした値を `package.json` に書き戻す (11.28 は fresh install、12.21.0 は引数なしの `vp update`。下の実測)。pnpm docs の書く「manifest と違う手元の挙動」にならず、書き戻された `ignore` は Vite+ にも宣言を飛ばさせる                                                                                                                                                                                                                                                                                                                      | 却下     |
 | `devEngines.runtime.onFail` を `error` か `warn` にする | pnpm は runtime を解決せず、`package.json` も書き換えない (下の実測)。代わりに pnpm は、宣言を満たさない Node.js で打たれると、コマンドの前に止まるか (`error`) 警告を出す (`warn`。`checkRuntime`)。Node.js は Vite+ が選ぶので、この検査が効くのは Vite+ を通さない経路 (Dependabot など) だけで、そこで宣言と違う Node.js を使うと pnpm が止まる                                                                                                                                                                                                                                                                                                        | 却下     |
 
 `pmOnFail: ignore` は、Vite+ が起動した pnpm が `packageManager` の版へ自分で切り替え直す処理を止める (Vite+ の `docs/guide/env.md`: "pnpm 11+'s `pmOnFail` defaults to `download` and may switch back to the version in `package.json`. To let Vite+ control the pnpm version, set `pmOnFail: ignore` in the project's `pnpm-workspace.yaml`")。
@@ -250,6 +256,17 @@ pnpm 11 が書き戻しを直すか、pnpm 12 に上げたら (12.16.1 は書き
 | 同じ形で宣言を `22` にし、Node.js 24.20.0 で `pnpm install --frozen-lockfile`                                                                                                          | 止まらずに終わった (終了コード 0)                                                                                         |
 
 lockfile を見た行は、2 つの設定を同時に置いて測った。`pmOnFail` の効き目 (版の切り替え) は測っていない。`package.json` の書き戻しを見た行は、pnpm を Vite+ を通さずに打ち、`--ignore-scripts` を付けた。
+
+2026-11-23 に、global の Vite+ CLI 1.7.0 と pnpm 12.21.0 で、`pmOnFail: ignore` を置いたまま、`node_modules` を消して `vp install` し、続けて引数なしの `vp update` を打った。
+
+| `pnpm-workspace.yaml` に足した設定          | `vp install` のあとの `package.json` | `vp update` のあとの `devEngines.runtime` |
+| ------------------------------------------- | ------------------------------------ | ----------------------------------------- |
+| なし                                        | 変わらない                           | `"version": "24.22.3"`                    |
+| `runtimeOnFail: ignore`                     | 変わらない                           | `"version": "24"` に `"onFail": "ignore"` |
+| `runtime: false`                            | 変わらない                           | `"version": "24.22.3"`                    |
+| `runtime: false` と `runtimeOnFail: ignore` | 変わらない                           | `"version": "24"` に `"onFail": "ignore"` |
+
+どの行も、lockfile に runtime の項目は入らず、`node_modules/.bin/node` もできなかった。`runtimeOnFail: ignore` を置いた状態で打った `vp update vitest` は、`package.json` を変えなかった。
 
 同じ版を `.mise.toml` の `[tools]` にも宣言すると、2 つの宣言は別々に解決される。
 2026-09-02 の実測では mise が 24.12.0、Vite+ が 24.20.0 を選び、`vp env doctor` が PATH 上の `node` を「vp shim ではない」と警告した。
@@ -327,6 +344,7 @@ Vite+ の `docs/guide/local-cli.md`「Best Practices」は、`vp` を呼ぶ scri
 - pnpm 11 が runtime を依存に足す条件と、版の検査: `convertEnginesRuntimeToDependencies` (https://github.com/pnpm/pnpm/blob/6b5b8ac53a6120a644c3693ecac8aaed8af88174/pnpm11/pkg-manifest/utils/src/convertEnginesRuntimeToDependencies.ts)、`checkRuntime` (https://github.com/pnpm/pnpm/blob/6b5b8ac53a6120a644c3693ecac8aaed8af88174/pnpm11/pnpm/src/packageManagerCheck.ts)
 - Vite+ が `vp create` に予定する `devEngines.runtime` の形: Vite+ の `rfcs/dev-engines.md`「5.1 `vp create` (new projects)」(https://github.com/voidzero-dev/vite-plus/blob/102fe8edad2c45690f24830feee30bfe242817ee/rfcs/dev-engines.md)
 - Vite+ が `devEngines.runtime` の範囲から版を選ぶ処理: `resolve_version_for_project` (https://github.com/voidzero-dev/vite-plus/blob/102fe8edad2c45690f24830feee30bfe242817ee/crates/vp_js_runtime/src/runtime.rs)
+- `pnpm update` が runtime と package manager の版を `package.json` へ書き戻す仕様: pnpm docs「pnpm update」(https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/cli/update.md)、`runtime` の設定: pnpm docs「Settings」(https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/cli.md)
 - pnpm 11 が `runtimeOnFail` の値を manifest に書き込む箇所: `applyRuntimeOnFailOverride` (https://github.com/pnpm/pnpm/blob/6b5b8ac53a6120a644c3693ecac8aaed8af88174/pnpm11/pkg-manifest/utils/src/convertEnginesRuntimeToDependencies.ts)、その manifest を書き戻す `installWithSharedLockfile` (https://github.com/pnpm/pnpm/blob/6b5b8ac53a6120a644c3693ecac8aaed8af88174/pnpm11/installing/commands/src/recursive/installWithSharedLockfile.ts)
 - Vite+ が `devEngines.runtime.onFail` に予定する意味: Vite+ の `rfcs/dev-engines.md`「2.3 `onFail` semantics」(https://github.com/voidzero-dev/vite-plus/blob/102fe8edad2c45690f24830feee30bfe242817ee/rfcs/dev-engines.md)
 - `runtimeOnFail` と `pmOnFail` の意味と、manifest の `onFail` との優先: pnpm docs「Settings」の 11.x 版 (https://github.com/pnpm/pnpm.io/blob/7aded9fe30ceb31d4302b4189fcac84c958582b0/versioned_docs/version-11.x/settings/cli.md)
