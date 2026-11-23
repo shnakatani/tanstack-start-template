@@ -94,12 +94,13 @@ pnpm peers check
 - 素の `pnpm` で打つ。`vp pm` は `peers` を中継しない (`vp pm peers check` は `Command 'peers' not found`。2026-09-28 に vite-plus 1.0.0 で確認)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm/pnpm#14114][])
 - 許可を外すだけでは lockfile が変わらないので、`--force` を付けても `strictPeerDependencies: true` にしても install は通る (2026-09-29、pnpm 11.28.0)。`pnpm peers check` だけが食い違いを出す
-- 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<range>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
+- 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親とその major つきのキー (`"<親>@<major>><peer>": "<range>"`。親が 0.x なら minor まで) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
 - 値の range は、確かめた版の major にする (`"1"`)。0.x の依存だけは minor までにする (`"^0.153.0"`)。0.x は minor で破壊的変更を入れることが多く ([node-semver README「Caret Ranges」][])、`"0"` は 1.0.0 未満のすべてを満たして食い違いを黙らせる (2026-10-11、pnpm 11.28.0 で実測)。値の書き方は [pnpm docs「peerDependencyRules.allowedVersions」][]
 - 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005「pin には出口条件を書く」)
-- Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。`storybook>vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
-- storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (2026-11-23 に `storybook@10.6.7` の dist で確認)
-- キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
+- Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。storybook の `vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
+- storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。storybook の `vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (2026-11-23 に `storybook@10.6.7` の dist で確認)
+- キーの親の版は、親を上げたときに撤去条件を見直す契機になる。親が major を越えるとキーが当たらなくなり、`pnpm peers check` が食い違いを出す。2026-11-23 に pnpm 12.21.0 で、`"storybook@10>vite-plus"` は storybook 10.6.7 の食い違いを許し、`"storybook@9>vite-plus"` は許さなかった。pnpm 11 の `pnpm peers check` は親の版を捨てて名前だけで照合していた (2026-09-29 に 11.28.0 で実測)
+- 許可を `overrides` の `:peer` (`"<親>><peer>:peer": "<range>"`) で書かない。pnpm docs は `peerDependencyRules` を非推奨とするが、`allowedVersions` には "no behavior-preserving `overrides` replacement" と書く ([pnpm docs「peerDependencyRules」][])。`:peer` は pnpm 12.17.0 からの書き方で、2026-11-23 に Dependabot が同梱していた pnpm 12.10.1 は `ERR_PNPM_INVALID_SELECTOR` で止まった
 - 許可した側を値の range の外へ上げると (1.0.0 以上は major、0.x は minor)、`pnpm peers check` に再び食い違いとして出る。新しい版で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
 - 一緒に上げる依存の組は、`.github/dependabot.yml` の組のグループで 1 本の PR にする (ADR-0005)。組を足すときは、patterns を `minor-and-patch` の `exclude-patterns` にも写す (「Vite+ を上げる」の `minor-and-patch` の項目)
@@ -277,6 +278,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 [pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
 [pnpm docs「peerDependencyRules.allowedVersions」]: https://pnpm.io/settings/peer-dependencies#peerdependencyrulesallowedversions
+[pnpm docs「peerDependencyRules」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/peer-dependencies.md#peerdependencyrules
 [node-semver README「Caret Ranges」]: https://github.com/npm/node-semver/blob/v7.8.5/README.md#caret-ranges-123-025-004
 [dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
 [dependabot-core「pnpm_lockfile_updater.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L285-L295
