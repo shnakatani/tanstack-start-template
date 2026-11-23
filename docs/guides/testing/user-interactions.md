@@ -21,7 +21,7 @@
 | 無効化された要素が反応しないことの検証                | `pointer-events` と状態属性で見る。イベントを対象へ届かせて、ライブラリ内部のガードまで見に行かない                                                                        |
 | 決着前の二重発火の検証                                | 上の実イベントを 2 回。`await Promise.resolve()` で間隔を作らない                                                                                                          |
 
-`.click()` が弾く条件は、[Playwright docs「Auto-waiting」][] が定める Visible / Stable / Receives Events / Enabled である。このリポジトリで弾かれる典型は次のとおり。
+`.click()` が弾く条件は [Playwright docs「Auto-waiting」][] が定める。このリポジトリで弾かれる典型は次のとおり。
 
 | 条件               | 落ちる例                                                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
@@ -141,7 +141,7 @@ route の announcer (ADR-0035) を置いた router で、開く操作をした�
 - [Playwright docs「Auto-waiting」][] の Forcing actions は "non-essential actionability checks" を飛ばすと書く。中身は列挙せず、例に挙げるのは Receives Events だけである
 - Enabled も飛ぶ。`src/components/parts/segmented-radio-group.tsx` の disabled の項目 (`aria-disabled="true"`) へ送ると、`.click()` は enabled の待ちで timeout まで返らず、`.click({ force: true })` は 30ms で返った (2026-10-02、`@vitest/browser` 5.0.1 と Playwright 1.63.0)
 - Visible と Stable は docs では未確認である。[`playwright-core` の `server/dom.ts`][] の `_performPointerAction` は、`force` のとき visible / enabled / stable の待ちと、Playwright 側の hit target の確認 (Receives Events の検査) を飛ばす (ソースの読み取り)
-- viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の 4 条件の定義に無く、同じ `_performPointerAction` が `force` でも行う (ソースの読み取りで、公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
+- viewport 内の座標の確認は [Playwright docs「Auto-waiting」][] の条件の定義に無く、同じ `_performPointerAction` が `force` でも行う (ソースの読み取りで、公式 docs では未確認)。animation を戻したテストで、スライドインの途中の要素が "Element is outside of the viewport" で落ちるのはこのためである
 - ブラウザのヒットテストも残る。`pointer-events: none` の対象へ `force` で送ったイベントが下の要素へ落ちる実測は「合成イベントが実物からずれる理由」にある
 
 ### popup の初期 focus が遅れて当たる理由
