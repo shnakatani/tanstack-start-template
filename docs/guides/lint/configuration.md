@@ -27,7 +27,7 @@ oxlint は「設定したつもりで効いていない」状態を診断なし�
 - jsx-a11y は `--print-config` の `rules` を `jsx_a11y/` で絞り、上流 recommended の一覧と `comm` で両方向の差を取る。`rules` は「カテゴリで有効になったもの」と「名指ししたもの」の和なので、値が `"allow"` でなければ有効と読んでよい
 - `overrides` で足したプラグインとそのルールは、`--print-config` ではなく、当たるファイルへの実際の診断で確かめる。`--print-config` は `overrides` を書いたとおりの形で出し、ファイルを渡しても出力は変わらなかった (2026-09-30 に oxlint 1.85.0 で実測)。override のプラグインでカテゴリから有効になるルールも展開しない ([oxc-project/oxc#24878][]。2026-09-30 時点で open で、1.85.0 でも再現した)
 
-`--print-config` の `rules` から有効と読めるのは、名前が出ていて値が `"allow"` でない場合である。`"off"` と書いた組み込みのルールは `"allow"` で出る (2026-11-23 に oxlint 1.94.0 で観測)。JS plugin 由来のルールも同じ `rules` に出て、出なくなれば `scripts/checks/integrity/lint-config.test.ts` が落ちる。
+`--print-config` の `rules` から有効と読めるのは、名前が出ていて値が `"allow"` でない場合である。`"off"` と書いた組み込みのルールは `"allow"` で出る (2026-11-23 に oxlint 1.94.0 で観測)。
 
 ### ルールを足すか迷ったら
 
