@@ -152,8 +152,6 @@ const ALLOWED_INVISIBLE = ["src/routeTree.gen.ts"];
 
 interface PrintedConfig {
   plugins: string[];
-  /** jsPlugin を 1 つも宣言していない設定では key ごと現れない */
-  jsPlugins?: { name: string; specifier: string }[];
   categories: Record<string, string>;
   options: Record<string, boolean>;
   rules: Record<string, unknown>;
@@ -205,11 +203,10 @@ describe("書いた設定が解決後も残っている", () => {
   it("rules に書いたルールが解決後設定に残っている", () => {
     // 無効なプラグインのルールは、ルール名が検証されるにもかかわらず解決後設定から消える。
     // 消えること自体が信号になるので、書いた側との差で名指し単位の取りこぼしを検出する。
-    // jsPlugin のルールは有効でも出力に現れないため対象から外す (`docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」)
-    const jsPluginNames = (printedConfig.jsPlugins ?? []).map((plugin) => plugin.name);
-    const written = Object.keys(viteConfig.lint?.rules ?? {}).filter(
-      (rule) => !jsPluginNames.some((name) => rule.startsWith(`${name}/`)),
-    );
+    // jsPlugins のルールも同じ rules に出るので、同じ差で見る。見るのはキーの有無だけで、書いた側から
+    // 消したルールと、"off" にした組み込みのルール (出力では "allow") は差に出ない。2026-11-23 に
+    // oxlint 1.94.0 で、top-level の JS plugin のルールは "off" にすると出力から消え、ここで落ちた
+    const written = Object.keys(viteConfig.lint?.rules ?? {});
     if (written.length === 0) {
       throw new Error("vite.config.ts の lint.rules を読めていない");
     }
@@ -221,7 +218,8 @@ describe("書いた設定が解決後も残っている", () => {
     });
     expect(
       missing,
-      "書いたルールが解決後設定から消えた。plugins から該当プラグインが落ちていないか (`docs/guides/lint/configuration.md`「plugins は既定集合を置換する」)",
+      "書いたルールが解決後設定から消えた。plugins から該当プラグインが落ちていないか。JS plugin のルールなら " +
+        '"off" にしていないか (`docs/guides/lint/configuration.md`「plugins は既定集合を置換する」)',
     ).toEqual([]);
   });
 
