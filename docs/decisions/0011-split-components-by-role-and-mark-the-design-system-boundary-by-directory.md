@@ -39,7 +39,7 @@
 
 `src/components/` の外では `.storybook/` も適用する側に置く。decorator は design system component を包んで `className` を渡す置き場になるため、`src/components/screens/` と同じ扱いにする。`tooling/lint/config.ts` の override は `files` に `src/**` と `.storybook/**` の 2 つを持つ。
 
-`parts/` と `screens/` と直下は、どれもファイルの中が `no-restyle` に検査される。違うのは、`componentImports` が持つのは `parts/` だけで、消費側が渡す `className` が部品として検査されるのは `parts/` の部品に限ることである (`screens/` と直下は持たない)。`screens/` の部品が受けた `className` を `<Button>` へそのまま転送すると、消費側が渡した `bg-muted` と `rounded-full` は包みとして追跡され、Button の `no-restyle` で落ちた (2026-09-25 実測、`@shadcn/lint` 0.1.0)。`screens/` や直下の部品が転送せず素の要素に当てる `className` は、`no-restyle.md` の Limits のとおり対象外になる (`parts/` の部品が受けた `className` は、転送するかどうかによらず検査される)。部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/` に置く。直下を残すのは、役割を決めきれないものの置き場所を無くさないためである。
+`parts/` と `screens/` と直下は、どれもファイルの中が `no-restyle` に検査される。違うのは、`componentImports` が持つのは `parts/` だけで、消費側が渡す `className` が部品として検査されるのは `parts/` の部品に限ることである (`screens/` と直下は持たない)。`screens/` と直下の部品が受けた `className` が検査されるかは、ui 部品へ転送するかで決まる (shadcn-ui/lint「no-restyle」の Wrappers and variables と Limits)。2026-09-25 に `@shadcn/lint` 0.1.0 で、`screens/` の部品が `<Button>` へ転送した `bg-muted` と `rounded-full` は Button の `no-restyle` で落ちた。`parts/` の部品が受けた `className` は、転送するかどうかによらず検査される。部品として配るなら `parts/`、既存の部品を並べて画面を組むなら `screens/` に置く。直下を残すのは、役割を決めきれないものの置き場所を無くさないためである。
 
 `action/` を `parts/` の下へ移さないのは、分ける軸が違うためである。`parts/` は ui 部品を組み合わせる層で、`action/` は振る舞い (Transition と pending) を与える層である。どちらも規則を適用するが、組み合わせの変更と振る舞いの変更は別の理由で起きる。
 
@@ -72,12 +72,12 @@ ui 部品の見た目の差をどこで持つか (既定と公式のノブ、`ui
 - `parts/` で ui 部品の見た目を変えたくなったら、`docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順で直し方を選ぶ。`ui/` の variant を足す段に当たると registry からの乖離になるので、台帳 `docs/registry-deviations.md` に行が増える (ADR-0020)
 - **機械で止まらない誤りが 2 つ残る。** どちらもレビューで見る
   - ui 部品にあるものを素の要素で作り直すと、規則は効かない。`no-restyle` は認識した design system component だけを見る (`no-restyle.md` の Limits)
-  - 配る部品を `screens/` や直下へ置くと `componentImports` に入らない。ui 部品へ転送する `className` は包みとして検査されるが (2026-09-25 実測、`@shadcn/lint` 0.1.0)、素の要素に当てる見た目の上書きは検査されない
+  - 配る部品を `screens/` や直下へ置くと `componentImports` に入らない。ui 部品へ転送せず素の要素に当てる見た目の上書きは検査されない (shadcn-ui/lint「no-restyle」の Wrappers and variables)
 - ドメイン固有の見た目を持つ共有部品の置き場所は未定義。現時点で該当は無く、出てきた時点で `parts/` に置くか `src/features/<domain>/` 側の扱いとするかを決める (ADR-0010)
 
 ## 出典
 
-- shadcn-ui/lint「no-restyle」(部品ディレクトリで規則を off にする案内と、Limits): https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md
+- shadcn-ui/lint「no-restyle」(部品ディレクトリで規則を off にする案内、転送した `className` を追う Wrappers and variables、Limits): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/no-restyle.md (2026-11-23 に 0.2.5 の原文を確認)
 - shadcn-ui/lint「Adoption」(`components/ui/**` だけを外す設定例): https://github.com/shadcn-ui/lint/blob/main/docs/adoption.md
 - shadcn-ui/lint「Rules」(`componentImports` の設定、「Contracts」「Categories」): https://github.com/shadcn-ui/lint/blob/main/docs/rules.md
 - shadcn-ui/lint の class グループとカテゴリの対応 (`rounded` と片側の角丸、outline / ring の太さ): https://github.com/shadcn-ui/lint/blob/a89d04792f340bcea26af2d539a9eec7285fcc77/packages/lint/src/grammar/categories.ts#L170-L184 、https://github.com/shadcn-ui/lint/blob/a89d04792f340bcea26af2d539a9eec7285fcc77/packages/lint/src/grammar/categories.ts#L214-L223 (2026-09-25 時点の commit)

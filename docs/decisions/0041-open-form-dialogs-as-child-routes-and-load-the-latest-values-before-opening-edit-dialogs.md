@@ -210,7 +210,7 @@ URL を直接開いたときは Base UI の既定の戻し先 (開く前に focu
 | `refetchOnWindowFocus: "always"` を QueryClient の `defaultOptions` に置く | 上の案の短所に加え、1 件の query も `staleTime: Infinity` を越えてタブへ戻るたびに取り直し、開いている間にフォームの値が替わる                                                                                                                                        | 却下     |
 | 一覧の `staleTime` を下げる                                                | 食い違いの窓が縮むだけで閉じない。`staleTime` が抑えている重複の取得が増える                                                                                                                                                                                          | 却下     |
 
-`cancelRefetch` は `false` にする。既定の `true` は進行中の取得を捨てて始め直す ("If set to `true`, a currently running request will be cancelled before a new request is made"。TanStack Query「InvalidateOptions」)。進行中の一覧の取得が保存のあとの再取得なら、それは保存を含む一覧を取っているので、捨てると同じ一覧をもう 1 回取ることになる。`false` はその取得を使う。捨てた取得を待っていた側 (保存のあとの再取得を待つ処理) は、新しい取得の Promise に乗り換えるので、先に終わることはない ([`@tanstack/query-core` 5.104.1 の `Query.fetch` の catch](https://github.com/TanStack/query/blob/29859ae60c8dca0a5cdbf8abccc775b655cf43e2/packages/query-core/src/query.ts#L777-L782))。
+`cancelRefetch` は `false` にする。既定の `true` は進行中の取得を捨てて始め直す (TanStack Query「InvalidateOptions」の `cancelRefetch`)。進行中の一覧の取得が保存のあとの再取得なら、それは保存を含む一覧を取っているので、捨てると同じ一覧をもう 1 回取ることになる。`false` はその取得を使う。捨てた取得を待っていた側 (保存のあとの再取得を待つ処理) は、新しい取得の Promise に乗り換えるので、先に終わることはない ([`@tanstack/query-core` 5.104.1 の `Query.fetch` の catch](https://github.com/TanStack/query/blob/29859ae60c8dca0a5cdbf8abccc775b655cf43e2/packages/query-core/src/query.ts#L777-L782))。
 
 ### 検討した選択肢
 
@@ -348,7 +348,7 @@ chunk の応答を遅らせた行は、`vp build` の成果物を `node .output/
 - React Aria の `FocusScope` (`restoreFocus`、"Whether to restore focus back to the element that was focused when the focus scope mounted, after the focus scope unmounts."): https://github.com/adobe/react-spectrum/blob/821c011ce99032415278d88fba0f51f3fb5e5efe/packages/react-aria/src/focus/FocusScope.tsx
 - HTML Standard「Focus」(focused area of the document): https://html.spec.whatwg.org/multipage/interaction.html#focused-area-of-the-document
 - TanStack Query「Query Invalidation」: https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation
-- TanStack Query「InvalidateOptions」: https://tanstack.com/query/latest/docs/framework/react/reference/interfaces/InvalidateOptions
+- TanStack Query「InvalidateOptions」(2026-11-23 に `@tanstack/react-query@5.108.1` のタグの原文を確認): https://github.com/TanStack/query/blob/%40tanstack/react-query%405.108.1/docs/framework/react/reference/interfaces/InvalidateOptions.md
 - TanStack Query「QueryClient」(`getQueriesData`、`setQueriesData`): https://tanstack.com/query/latest/docs/framework/react/reference/classes/QueryClient
 - TanStack Query「Migrating to TanStack Query v5」: https://tanstack.com/query/latest/docs/framework/react/guides/migrating-to-v5
 - TanStack/query#7670 (discussion): https://github.com/TanStack/query/discussions/7670

@@ -55,7 +55,7 @@
 - [shadcn docs「Calendar」][] の「Selected Date (With TimeZone)」の例 (`timeZone` を `useEffect` で渡す) は、サーバーで描いた今日の食い違いを直さない (ADR-0031 の Context の実測)
 - 暦の日付を `Calendar` で入力するときは、選ばれた `Date` から、ローカル TZ のまま年・月・日だけを取り出して `YYYY-MM-DD` にする。`toISOString()` を使わない。UTC に直すので、UTC より進んだ TZ (JST など) では 1 日前になる (ADR-0031 の Context)
 - 保存した `YYYY-MM-DD` を `new Date("YYYY-MM-DD")` で読まない。日付だけの文字列は UTC の 0 時として解釈され、UTC より遅れた TZ では 1 日前になる (ADR-0031 の Context)
-- `YYYY-MM-DD` の形式を valibot の `isoDate()` で検証しても、存在しない日付は通る。型定義の Hint は "The regex used cannot validate the maximum number of days based on year and month. For example, "2023-06-31" is valid although June has only 30 days." と書く (valibot 1.4.2、[valibot の `isoDate.ts`][])。`isoDate()` の後ろに `v.check` を足し、年・月・日が暦に存在するかを見る。[valibot docs「isoDate」][] は、存在を検証する組み込みの手段を挙げていない
+- `YYYY-MM-DD` の形式を valibot の `isoDate()` で検証しても、存在しない日付は通る ([valibot docs「isoDate」][])。`isoDate()` の後ろに `v.check` を足し、年・月・日が暦に存在するかを見る。[valibot docs「isoDate」][] は、存在を検証する組み込みの手段を挙げていない
 - DB の列にも `CHECK (<列> IS date(<列>) AND length(<列>) = 10)` を付ける。drizzle では `check()` で書く ([drizzle docs「Indexes & Constraints」][] の Check)。SQLite の `date()` は暦に無い日を翌月へ繰り越し、`YYYY-MM-DD` 以外の形の多くを別の文字列か NULL にするので、一致しない値を DB が弾く。`date()` の結果は 0000〜9999 年の外で未定義で ([SQLite docs「Date And Time Functions」][])、負の年 (`-0001-01-01`) も一致して通るので、長さで範囲内に絞る。入力スキーマを通らない書き込み (手書きの SQL、server function を経ない drizzle の insert) でも暦に無い日付が入らない。実例は `src/server/db/schema.ts`
 
 ## explanation
@@ -90,7 +90,7 @@ SSR する画面では、同じ値をサーバーとブラウザの両方で整�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。valibot docs「isoDate」は 2026-11-23 に原文と照らした。
 
 [MDN「Intl.DateTimeFormat.prototype.formatToParts()」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatToParts
 [MDN「Intl.DateTimeFormat() constructor」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat
@@ -99,7 +99,6 @@ SSR する画面では、同じ値をサーバーとブラウザの両方で整�
 [MDN「Intl.DateTimeFormat.prototype.format()」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/format
 [react-day-picker docs「Setting the Time Zone」]: https://daypicker.dev/localization/setting-time-zone
 [shadcn docs「Calendar」]: https://ui.shadcn.com/docs/components/base/calendar
-[valibot の `isoDate.ts`]: https://github.com/open-circle/valibot/blob/v1.4.2/library/src/actions/isoDate/isoDate.ts
 [valibot docs「isoDate」]: https://valibot.dev/api/isoDate/
 [drizzle docs「Indexes & Constraints」]: https://orm.drizzle.team/docs/indexes-constraints
 [SQLite docs「Date And Time Functions」]: https://www.sqlite.org/lang_datefunc.html

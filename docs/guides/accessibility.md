@@ -319,7 +319,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### ナビゲーションを組む
 
-- サイトやページの中を移動するリンクのまとまりは `<nav>` で包む ([APG「Landmark Regions」][] の Navigation)。`role="navigation"` は `jsx-a11y/prefer-tag-over-role` が止める (2026-10-05、oxlint 1.85.0)
+- サイトやページの中を移動するリンクのまとまりは `<nav>` で包む ([APG「Landmark Regions」][] の Navigation)。`role="navigation"` で代えると、`role` の属性より意味を持つタグを求める `jsx-a11y/prefer-tag-over-role` ([Oxlint docs「jsx-a11y/prefer-tag-over-role」][]) に止められる (2026-10-05 に oxlint 1.85.0 で観測)
 - 1 ページに `<nav>` が複数あるときは、それぞれに区別できる名前を与える。見出しがあれば `aria-labelledby` で指し、無ければ `aria-label` を渡す。名前に「ナビゲーション」を含めない。ロールと重ねて読まれる。同じリンクの組を 2 か所に置くときは同じ名前にする ([APG「Landmark Regions」][] の Step 3: Label areas と Navigation)
 - 現在のページを指す項目に `aria-current="page"` を付ける。1 つのまとまりの中で current にするのは 1 つだけにする ([WAI-ARIA 1.2][] の `aria-current`)
 - TanStack Router の `Link` は、active のときに `aria-current="page"` を自分で付ける ([TanStack Router の `link.tsx`][])。手で書くのは、`Link` を使わずに現在地を示すときだけにする
@@ -332,7 +332,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に、Storybook docs「Accessibility testing」の引用は 2026-10-08 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に、Storybook docs「Accessibility testing」の引用は 2026-10-08 に、Oxlint docs「jsx-a11y/prefer-tag-over-role」は 2026-11-23 に oxlint 1.94.0 の原文と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -374,3 +374,4 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 [APG「Introduction」]: https://www.w3.org/WAI/ARIA/apg/about/introduction/
 [APG「Select-Only Combobox Example」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/
 [APG「Editable Combobox With List Autocomplete Example」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/
+[Oxlint docs「jsx-a11y/prefer-tag-over-role」]: https://oxc.rs/docs/guide/usage/linter/rules/jsx_a11y/prefer-tag-over-role.html

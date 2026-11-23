@@ -239,7 +239,7 @@ form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 まとまりの中の行の `FieldLabel` は、公式の例に合わせて `weight="normal"` で通常の太さにする。
 
 - [shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend の例、[shadcn docs「Field」][] の Checkbox の例 ([shadcn の `field-checkbox.tsx`][])、[shadcn の `dialog-example.tsx`][] は、まとまりの中の行の `FieldLabel` に `className="font-normal"` を付ける。`field-checkbox.tsx` の末尾の単独の行と、Choice Card の例 ([shadcn の `field-choice-card.tsx`][]) の `FieldLabel` には付けない
-- `ui/` の外では `no-restyle` がこの class を止める。`@shadcn/lint` 0.2.0 は font-weight を typography に分類し、`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許す (2026-10-02 に `vp lint` で確認)。メッセージは `"font-normal" is not allowed on <FieldLabel>: <FieldLabel> owns its typography. Add a variant in src/components/ui/field.tsx only if the design explicitly calls for this treatment.` である (2026-10-04、`@shadcn/lint` 0.2.0 の `vp lint` で確認)
+- `ui/` の外では `no-restyle` がこの class を止める。`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許し、font-weight の class は typography に入る ([shadcn-ui/lint docs「Rules」][] の Categories の表。例は `font-bold`)。2026-10-04 に `@shadcn/lint` 0.2.0 の `vp lint` で出たメッセージは `"font-normal" is not allowed on <FieldLabel>: <FieldLabel> owns its typography. Add a variant in src/components/ui/field.tsx only if the design explicitly calls for this treatment.` だった
 - `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順に照らすと、0 の段には当たらない。registry の `FieldLabel` には太さを切り替えるノブ (data 属性・CSS 変数・prop) が無い
 - まとまりの中の行の通常の太さは、複数選択のまとまりのたびに繰り返す見た目で、公式の例も明示的に付けるので、1 の段に当たる。`src/components/ui/field.tsx` の `FieldLabel` の `weight` の variant と、台帳 `docs/registry-deviations.md` の行で持つ
 - variant の名前は、変える性質 (`weight`) と、公式の例の class と同じ語 (`normal`) にする。公式の例を写すときに `className="font-normal"` が `weight="normal"` へ 1 対 1 で置き換わる
@@ -289,7 +289,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn-ui/lint docs「Rules」は `@shadcn/lint` 0.2.5 に固定した版を指し、2026-11-23 に原文と照らした。
 
 [TanStack Form docs「Submission Handling」]: https://tanstack.com/form/latest/docs/framework/react/guides/submission-handling
 [valibot docs「Parse data」]: https://valibot.dev/guides/parse-data/
@@ -327,3 +327,4 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240
 [TanStack Router docs「Type Utilities」]: https://tanstack.com/router/latest/docs/guide/type-utilities
 [TanStack Router docs「Link Options」]: https://tanstack.com/router/latest/docs/guide/link-options
+[shadcn-ui/lint docs「Rules」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules.md#categories

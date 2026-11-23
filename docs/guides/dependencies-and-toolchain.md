@@ -32,7 +32,7 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 
 - `vp staged` と hook の間に、自前の skip のスクリプトを挟まない。止める手段は、Vite+ が入れた hook 自身が実行のたびに確かめる ([Vite+ docs「Commit Hooks」][]: "The installed hooks check the environment on every run, so you can disable them per machine or per process without uninstalling anything.")
 - hook を止めるときは、止める範囲で [Vite+ docs「Commit Hooks」][] の手段を選ぶ。CI のビルドコンテナのように環境ごと止めるなら `VP_GIT_HOOKS=0` を設定する。`prepare` の `vp config` が hook を入れず、入っている hook も何もせずに終わる (Environment variable の節)。コミットするプロセスがシェルの環境を受け継がない (デーモンなど) なら、マシンごとの init script (`$XDG_CONFIG_HOME/vite-plus/hooks-init.sh`。既定は `~/.config/vite-plus/hooks-init.sh`) で `VP_GIT_HOOKS=0` を export する (Init script の節)。1 つの clone で止めるなら `vp hooks disable` を打つ (Removing commit hooks の節)
-- `staged` のコマンドに付けた `--no-error-on-unmatched-pattern` を外さない。staged のファイルが `ignorePatterns` に当たるもの (`src/routeTree.gen.ts` など) だけのコミットでは対象が 0 件になり、`vp fmt` と `vp lint` が error で終わって commit が止まる。`vp lint --help` はこのフラグを "Do not exit with an error when no files are selected for linting (for example, after applying ignore patterns)" と説明する。2026-10-06 に vite-plus 1.0.0 で `src/routeTree.gen.ts` だけを渡すと、`vp fmt --write` は exit 2 (`Expected at least one target file`)、`vp lint` は exit 1 で終わり、このフラグを付けるとどちらも 0 で終わった
+- `staged` のコマンドに付けた `--no-error-on-unmatched-pattern` を外さない。staged のファイルが `ignorePatterns` に当たるもの (`src/routeTree.gen.ts` など) だけのコミットでは対象が 0 件になり、このフラグが無いと `vp fmt` と `vp lint` が error で終わって commit が止まる (`vp fmt --help` と `vp lint --help` のこのフラグの説明)。2026-10-06 に vite-plus 1.0.0 で、`src/routeTree.gen.ts` だけを渡すと、フラグの無い `vp fmt --write` と `vp lint` は error で終わった
 
 ### 依存を足す・外す
 
@@ -95,7 +95,7 @@ pnpm peers check
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm/pnpm#14114][])
 - 許可を外すだけでは lockfile が変わらないので、`--force` を付けても `strictPeerDependencies: true` にしても install は通る (2026-09-29、pnpm 11.28.0)。`pnpm peers check` だけが食い違いを出す
 - 食い違いを許すなら、`pnpm-workspace.yaml` の `peerDependencyRules.allowedVersions` に親つきのキー (`"<親>><peer>": "<range>"`) で書き、理由と撤去条件をコメントに残す。`*` や親なしのキーにすると、版が上がって新しく食い違っても見えなくなる
-- 値の range は、確かめた版の major にする (`"1"`)。0.x の依存だけは minor までにする (`"^0.153.0"`)。0.x は minor で破壊的変更を入れることが多く ([node-semver README「Caret Ranges」][])、`"0"` は 1.0.0 未満のすべてを満たして食い違いを黙らせる (2026-10-11、pnpm 11.28.0 で実測)。値の書き方は [pnpm docs「peerDependencyRules.allowedVersions」][]
+- 値の range は、確かめた版の major にする (`"1"`)。0.x の依存だけは minor までにする (`"^0.153.0"`)。0.x は minor で破壊的変更を入れることが多く ([node-semver README「Caret Ranges」][])、`"0"` は 1.0.0 未満のすべてを満たして ([node-semver README「X-Ranges」][])、食い違いを黙らせる。値の書き方は [pnpm docs「peerDependencyRules.allowedVersions」][]
 - 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005「pin には出口条件を書く」)
 - Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。`storybook>vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
 - storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (2026-11-23 に `storybook@10.6.7` の dist で確認)
@@ -278,6 +278,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
 [pnpm docs「peerDependencyRules.allowedVersions」]: https://pnpm.io/settings/peer-dependencies#peerdependencyrulesallowedversions
 [node-semver README「Caret Ranges」]: https://github.com/npm/node-semver/blob/v7.8.5/README.md#caret-ranges-123-025-004
+[node-semver README「X-Ranges」]: https://github.com/npm/node-semver/blob/v7.8.5/README.md#x-ranges-12x-1x-12-
 [dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
 [dependabot-core「pnpm_lockfile_updater.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L285-L295
 [dependabot-core「version_resolver.rb」]: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/version_resolver.rb#L670-L686

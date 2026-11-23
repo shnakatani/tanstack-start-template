@@ -44,9 +44,9 @@ console.log(context.probeUser.uid);
 
 配線は `@tanstack/start-client-core` 1.170.27 の `dist/esm/createMiddleware.d.ts` で、`AssignAllServerFnContext` が `Register` の `config` から `functionMiddleware` を取り出す `GlobalServerFnContext` を合成する。`src/routeTree.gen.ts` が `config` を登録済みである。
 
-実行順も同じ経路で決まる。同パッケージの `dist/esm/createServerFn.js` が middleware を平坦化するとき、global の `functionMiddleware` を per-function の指定より前に並べる。
+実行順は、global の middleware が先で、per-function の middleware が後になる (TanStack Start docs「Middleware」の Middleware Execution Order)。
 
-`createServerFn` を包む base builder も公式の機構に載る。同ファイルの `.middleware()` は、渡されたものが server function factory なら、その middleware 構成を展開して取り込む。
+`createServerFn` を包む base builder も公式の機構に載る。`@tanstack/start-client-core` 1.170.27 の `dist/esm/createServerFn.js` の `.middleware()` は、渡されたものが server function factory なら、その middleware 構成を展開して取り込む。
 
 ## Decision
 
@@ -91,5 +91,6 @@ console.log(context.probeUser.uid);
 - global middleware の設定形と認可の middleware factory: intent skill `@tanstack/start-client-core#start-core/middleware` の Global Middleware / Middleware Factories
 - `start-core/server-functions` と `start-core/middleware` のスキルはどちらも `library_version: 1.170.14` を名乗り、`@tanstack/start-client-core` 1.170.27 に同梱されている (2026-09-06 に確認)
 - context 型の合成: `@tanstack/start-client-core` 1.170.27 の `dist/esm/createMiddleware.d.ts` (`AssignAllServerFnContext` / `GlobalServerFnContext`)
-- middleware の平坦化順と base builder の展開: 同 1.170.27 の `dist/esm/createServerFn.js`
+- middleware の実行順: TanStack Start docs「Middleware」の Middleware Execution Order (2026-11-23 に `@tanstack/react-start@1.169.7` のタグの原文を確認): https://github.com/TanStack/router/blob/%40tanstack/react-start%401.169.7/docs/start/framework/react/guide/middleware.md
+- base builder の展開: `@tanstack/start-client-core` 1.170.27 の `dist/esm/createServerFn.js`
 - `createServerFn` の直接 import を `no-restricted-imports` で禁じられること、`overrides` の `files` と `excludeFiles` で適用範囲を絞れること: oxlint 1.79.0 へ一時 config を `--config` で渡して確認 (2026-09-06)。`vite.config.ts` の `lint` 経由は未検証
