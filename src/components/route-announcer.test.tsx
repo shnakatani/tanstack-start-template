@@ -3,6 +3,7 @@ import {
   createRootRoute,
   createRoute,
   HeadContent,
+  lazyRouteComponent,
   notFound,
   Outlet,
   RouterProvider,
@@ -95,6 +96,18 @@ function createAnnouncedRouter(
     },
     errorComponent: PageRouteError,
   });
+  // component の chunk の読み込みに失敗する。automatic code splitting と同じく lazyRouteComponent で包む。
+  // lazyRouteComponent は失敗を記録して描画の時に throw し、router の読み込みを失敗させないので、
+  // title に「エラー: 」は付かない。reject の文言は module の取得の失敗の形 (Failed to fetch dynamically
+  // imported module など) で始めない。始めると lazyRouteComponent がテストのページを読み込み直す
+  const chunkFailsOptions = pageRouteOptions("ChunkFails");
+  const chunkFails = createRoute({
+    ...chunkFailsOptions,
+    getParentRoute: () => rootRoute,
+    path: "/chunk-fails",
+    component: lazyRouteComponent(() => Promise.reject(new Error("chunk"))),
+    errorComponent: PageRouteError,
+  });
   // notFound({ routeId: rootRouteId }) で root を境界に指定する。/missing は head を持たないので、
   // title は root の pageTitle(ctx) からしか来ない。not found の判定を通らなければ APP_NAME になる
   const missing = createRoute({
@@ -157,6 +170,7 @@ function createAnnouncedRouter(
       b,
       err,
       throws,
+      chunkFails,
       missing,
       gone,
       hiddenBehindDialog,
@@ -294,6 +308,22 @@ it("描画中の throw でエラー画面へ移ると、失敗の見出しへ移
     .element(screen.getByRole("heading", { name: "Throws", level: 1 }))
     .toBeInTheDocument();
   expect(readAnnouncements()).toEqual([`Throws — ${APP_NAME}`]);
+});
+
+// 描画中の throw と同じく、title から失敗が伝わらない場面。上流が chunk の読み込みの失敗で router の読み込みを
+// 失敗させるように変わると、title に「エラー: 」が付いてこのテストが落ちる
+it("component の chunk の読み込みに失敗してエラー画面へ移ると、失敗の見出しへ移し、title は「エラー: 」を付けずに読み上げる", async () => {
+  const router = createAnnouncedRouter();
+  const screen = await render(<RouterProvider router={router} />);
+  await expect.element(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+  router.history.push("/chunk-fails");
+  await expect
+    .element(screen.getByRole("heading", { name: "エラーが発生しました", level: 2 }))
+    .toHaveFocus();
+  await expect
+    .element(screen.getByRole("heading", { name: "ChunkFails", level: 1 }))
+    .toBeInTheDocument();
+  expect(readAnnouncements()).toEqual([`ChunkFails — ${APP_NAME}`]);
 });
 
 it("root のエラー画面に置き換わっても購読は外れず、root のエラー画面の h1 へ移す", async () => {
