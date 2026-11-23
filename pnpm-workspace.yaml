@@ -46,7 +46,7 @@ peerDependencyRules:
     "storybook>vite-plus": "1"
     # @vitejs/plugin-react@6.3.0 の optional peer (oxc-transform-react >=0.152.0 <0.157.0) が 0.157.0 以降を受けない。
     # 0.157.0 から React Compiler の誤変換の修正 (oxc-project/oxc#28195) が入る。nullable な state のメンバーを閉包で読むと
-    # cache guard が初回の描画で throw するものを含む。Compiler を有効にして配るので (ADR-0014)、peer が広がるのを待たずに入れる
+    # cache guard が初回の描画で throw するものを含む。このリポジトリは React Compiler を有効にしているので (ADR-0014)、peer が広がるのを待たずに入れる
     # 撤去条件: plugin-react の peer が oxc-transform-react 0.158 を含んだとき
     "@vitejs/plugin-react>oxc-transform-react": "^0.158.0"
 
