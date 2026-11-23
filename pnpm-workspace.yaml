@@ -44,6 +44,11 @@ peerDependencyRules:
     # export する vite-plus/versions だけ (2026-11-23 に storybook@10.6.7 の dist と vite-plus 1.7.0 の exports で確認)。撤去条件: storybook の peer が vite-plus 1.x を含んだとき
     # 値が major なので export が消えても鳴らない。上げたときの確認は docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」
     "storybook>vite-plus": "1"
+    # @vitejs/plugin-react@6.3.0 の optional peer (oxc-transform-react >=0.152.0 <0.157.0) が 0.157.0 以降を受けない。
+    # 0.157.0 から React Compiler の誤変換の修正 (oxc-project/oxc#28195) が入る。nullable な state のメンバーを閉包で読むと
+    # cache guard が初回の描画で throw するものを含む。Compiler を有効にして配るので (ADR-0014)、peer が広がるのを待たずに入れる
+    # 撤去条件: plugin-react の peer が oxc-transform-react 0.158 を含んだとき
+    "@vitejs/plugin-react>oxc-transform-react": "^0.158.0"
 
 # ===== このテンプレートが追加 (vp migrate が書かない) =====
 
