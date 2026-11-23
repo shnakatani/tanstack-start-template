@@ -25,7 +25,7 @@ browser test は DEV で走るので、search の検証に失敗すると `Route
 
 - テストのファイル (`*.test.ts(x)`、`*.test-helpers.ts(x)`、`src/test/**`) で `@tanstack/react-router` の `createRouter` と `Router` を import すると、lint (`no-restricted-imports`) が止める。別名の import と、テストのファイルからの再 export も止まる。型だけの import (`import type { Router }` と `import { type Router }`) は止めない
 - 名前空間の import (`import * as Router from "@tanstack/react-router"`) は、`createRouter` を使わなくても丸ごと止まる。テストでは必要な名前を個別に import する
-- 止まらない形が 2 つある。`await import("@tanstack/react-router")` から取り出した `createRouter` と、テストのファイルでないファイルが再 export した `createRouter` である (oxlint 1.87.0、2026-10-12 に確認)。テストでは dynamic import から router を組まない。アプリのコード (テストでないファイル) から `createRouter` を再 export しない
+- 止まらない形が 2 つある。1 つは `await import("@tanstack/react-router")` から取り出した `createRouter` である。[Oxlint docs「eslint/no-restricted-imports」][] はルールの対象に文字列の specifier の dynamic `import()` を含めるが、この制限は `importNames` で名前を絞っている (`tooling/lint/config.ts`)。2026-11-23 に読んだ oxlint 1.94.0 のソース (229b69bf) では、`importNames` / `allowImportNames` で名前を絞った制限を、dynamic import では飛ばしていた ([oxlint 1.94.0 の `no_restricted_imports.rs`][])。もう 1 つは、テストのファイルでないファイルが再 export した `createRouter` である。`tooling/lint/config.ts` の override はこの制限をテストのファイルにだけ当てるので、再 export するファイルは止まらず、そこから import するテストのファイルも `@tanstack/react-router` を import しないので止まらない。テストでは dynamic import から router を組まない。アプリのコード (テストでないファイル) から `createRouter` を再 export しない
 - `createTestRouter` (`src/test/app/create-test-router.tsx`) は内部で `createRouterWithTestDefaults` を呼ぶので、呼ぶ側は何もしなくてよい
 - テストで既定にしたい router の options は、各テストに書かずに `createRouterWithTestDefaults` の既定に足す。各テストに書くと、足し漏れたテストだけが別の既定で走る
 - 本番の設定 (`src/router.tsx`) の値を既定に写さない。片方だけ変えたときに、テストだけが古い既定で緑になる。本番と同じ設定を通したいテストは、その option を自分で渡す (`notFoundMode` など)
@@ -51,7 +51,7 @@ loader を持たない route の読み込み中と読み込みの失敗を検証
 | `Route.update({ component: lazyRouteComponent(async () => { await loadChunk(); return { default: component }; }) })` で包み直す。`loadChunk` は `vi.fn` にし、`deferMock` で決着を握るか、`mockRejectedValueOnce` で失敗させる | `pendingComponent` と `errorComponent` を、route の読み込みを通して観測できない          |
 | `onTestFinished` で元の `component` へ戻す                                                                                                                                                                                     | テストが同じ `Route` インスタンスを使い回すので、後続のテストまで chunk の読み込みを踏む |
 
-失敗させる importer は、`Failed to fetch dynamically imported module`、`error loading dynamically imported module`、`Importing a module script failed` のどれでも始まらない文言で reject する。これらで始まる文言は `lazyRouteComponent` がブラウザの module の取得の失敗とみなし ([`@tanstack/router-core` 1.171.34 の `isModuleNotFoundError`][])、テストを動かしているページを読み込み直そうとする ([`@tanstack/react-router` 1.170.41 の `lazyRouteComponent`][])。
+失敗させる importer は、`Failed to fetch dynamically imported module`、`error loading dynamically imported module`、`Importing a module script failed` のどれでも始まらない文言で reject する。2026-10-11 に読んだソースでは、これらで始まる文言を `lazyRouteComponent` がブラウザの module の取得の失敗とみなし ([`@tanstack/router-core` 1.171.34 の `isModuleNotFoundError`][])、テストを動かしているページを読み込み直そうとしていた ([`@tanstack/react-router` 1.170.41 の `lazyRouteComponent`][])。
 
 失敗させた importer は、再試行で呼び直せば読み直せる。テストが確かめられるのは、再試行が chunk の読み込みをもう 1 回呼ぶところまでである。本物の dynamic import を呼び直したときに、ブラウザが chunk を取り直すかは確かめられない。
 
@@ -98,7 +98,7 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Oxlint docs「eslint/no-restricted-imports」は 2026-11-23 に、生成元の oxlint 1.94.0 のルールのソース ([oxlint 1.94.0 の `no_restricted_imports.rs` の DOCUMENTATION][]) と照らした。
 
 [TanStack Router docs「File Naming Conventions」]: https://tanstack.com/router/latest/docs/routing/file-naming-conventions
 [TanStack Router docs「How to Set Up Testing with Code-Based Routing」]: https://tanstack.com/router/latest/docs/how-to/setup-testing
@@ -107,3 +107,6 @@ Route hooks を使う wrapper (`Route.useSearch` / `Route.useNavigate`) は、�
 [TanStack Router docs「Automatic Code Splitting」]: https://tanstack.com/router/latest/docs/guide/automatic-code-splitting
 [`@tanstack/router-core` 1.171.34 の `isModuleNotFoundError`]: https://github.com/TanStack/router/blob/57e126e99dbd86f735ead2ba98ba5e98ef0cc668/packages/router-core/src/utils.ts#L507-L517
 [`@tanstack/react-router` 1.170.41 の `lazyRouteComponent`]: https://github.com/TanStack/router/blob/57e126e99dbd86f735ead2ba98ba5e98ef0cc668/packages/react-router/src/lazyRouteComponent.tsx#L53-L70
+[Oxlint docs「eslint/no-restricted-imports」]: https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html
+[oxlint 1.94.0 の `no_restricted_imports.rs`]: https://github.com/oxc-project/oxc/blob/229b69bf10a9c876f84287123fdf9d5e0747c96b/crates/oxc_linter/src/rules/eslint/no_restricted_imports.rs#L1339-L1345
+[oxlint 1.94.0 の `no_restricted_imports.rs` の DOCUMENTATION]: https://github.com/oxc-project/oxc/blob/229b69bf10a9c876f84287123fdf9d5e0747c96b/crates/oxc_linter/src/rules/eslint/no_restricted_imports.rs#L273-L277

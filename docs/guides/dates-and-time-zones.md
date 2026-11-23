@@ -44,18 +44,18 @@
 - `Intl.DateTimeFormat` の `format()` の出力を固定の文字列と比べない。[MDN「Intl.DateTimeFormat.prototype.format()」][] の Note は "the output may vary between implementations, even within the same locale" "You should not compare the results of `format()` to hardcoded constants." と書く
 - 壁時計の値は、出力から数字の並び (年・月・日・時・分) を取り出して比べる。実例は `src/lib/format-date-time.tz.test.ts`
 - 画面に描いた文字列を探すテストは、期待値を `formatDateTime` で作る。fixture の日時から作った期待値を fixture の隣の test helper に置き、各テストはそれを読む
-- date-fns の `format` は Intl を使わず、同梱のロケールのデータで文字列を作る (date-fns 4.4.0 の `format.js` と `locale/ja` に `Intl` の参照が無い、2026-09-27)。その出力は固定の文字列と比べてよい。実例は `src/lib/format-calendar-date-label.tz.test.ts`
+- 2026-09-27 に読んだ date-fns 4.4.0 の `format.js` と `locale/ja` には `Intl` の参照が無く、`format` は Intl を使わずに同梱のロケールのデータで文字列を作っていた。その出力は固定の文字列と比べてよい。実例は `src/lib/format-calendar-date-label.tz.test.ts`
 
 ### 日付の入力を扱う
 
 - `Calendar` (`src/components/ui/calendar.tsx`、中身は react-day-picker) は、既定でブラウザのローカル TZ で日付を組む。[react-day-picker docs「Setting the Time Zone」][] は "By default, DayPicker uses the browser’s local time zone." と書く
-- `timeZone` prop を渡すと、指定した TZ で日付を読み書きする。その場合、値は素の `Date` ではなく `TZDate` で扱う ([react-day-picker docs「Setting the Time Zone」][] の Working with time-zoned dates)。react-day-picker 10.0.2 は `TZDate` を `@date-fns/tz` から再 export している。テンプレートは `timeZone` prop を今は使っていない
+- `timeZone` prop を渡すと、指定した TZ で日付を読み書きする。その場合、値は素の `Date` ではなく `TZDate` で扱う ([react-day-picker docs「Setting the Time Zone」][] の Working with time-zoned dates)。2026-10-07 に読んだ react-day-picker 10.0.2 は `TZDate` を `@date-fns/tz` から再 export していた。テンプレートは `timeZone` prop を今は使っていない
 - Calendar が強調する今日と、選択が無いときに開く月とフォーカス先 (`autoFocus` を付けたとき) は、ブラウザの TZ で決まる。ADR-0031 はこれを「今日」や期限の判定に入れず、ブラウザに任せる
 - Calendar はブラウザでだけ描く。初めに閉じていて `keepMounted` を付けない Popover の中に置くなら、そのままでよい。Base UI の `Popover.Portal` は `keepMounted` の既定が `false` で、閉じている間は popup を描かない。実例は `FormDateField` (`src/components/parts/form-fields.tsx`)。画面にじかに置くときは `<ClientOnly>` (`@tanstack/react-router`) で囲む ([TanStack Start docs「Hydration Errors」][] の Strategy 3)
 - [shadcn docs「Calendar」][] の「Selected Date (With TimeZone)」の例 (`timeZone` を `useEffect` で渡す) は、サーバーで描いた今日の食い違いを直さない (ADR-0031 の Context の実測)
 - 暦の日付を `Calendar` で入力するときは、選ばれた `Date` から、ローカル TZ のまま年・月・日だけを取り出して `YYYY-MM-DD` にする。`toISOString()` を使わない。UTC に直すので、UTC より進んだ TZ (JST など) では 1 日前になる (ADR-0031 の Context)
 - 保存した `YYYY-MM-DD` を `new Date("YYYY-MM-DD")` で読まない。日付だけの文字列は UTC の 0 時として解釈され、UTC より遅れた TZ では 1 日前になる (ADR-0031 の Context)
-- `YYYY-MM-DD` の形式を valibot の `isoDate()` で検証しても、存在しない日付は通る。型定義の Hint は "The regex used cannot validate the maximum number of days based on year and month. For example, "2023-06-31" is valid although June has only 30 days." と書く (valibot 1.4.2、[valibot の `isoDate.ts`][])。`isoDate()` の後ろに `v.check` を足し、年・月・日が暦に存在するかを見る。[valibot docs「isoDate」][] は、存在を検証する組み込みの手段を挙げていない
+- `YYYY-MM-DD` の形式を valibot の `isoDate()` で検証しても、存在しない日付は通る ([valibot docs「isoDate」][])。`isoDate()` の後ろに `v.check` を足し、年・月・日が暦に存在するかを見る。[valibot docs「isoDate」][] は、存在を検証する組み込みの手段を挙げていない
 - DB の列にも `CHECK (<列> IS date(<列>) AND length(<列>) = 10)` を付ける。drizzle では `check()` で書く ([drizzle docs「Indexes & Constraints」][] の Check)。SQLite の `date()` は暦に無い日を翌月へ繰り越し、`YYYY-MM-DD` 以外の形の多くを別の文字列か NULL にするので、一致しない値を DB が弾く。`date()` の結果は 0000〜9999 年の外で未定義で ([SQLite docs「Date And Time Functions」][])、負の年 (`-0001-01-01`) も一致して通るので、長さで範囲内に絞る。入力スキーマを通らない書き込み (手書きの SQL、server function を経ない drizzle の insert) でも暦に無い日付が入らない。実例は `src/server/db/schema.ts`
 
 ## explanation
@@ -90,7 +90,7 @@ SSR する画面では、同じ値をサーバーとブラウザの両方で整�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。valibot docs「isoDate」は valibot 1.5.0 に固定した版を指し、2026-11-23 に原文と照らした。
 
 [MDN「Intl.DateTimeFormat.prototype.formatToParts()」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatToParts
 [MDN「Intl.DateTimeFormat() constructor」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat
@@ -99,8 +99,7 @@ SSR する画面では、同じ値をサーバーとブラウザの両方で整�
 [MDN「Intl.DateTimeFormat.prototype.format()」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/format
 [react-day-picker docs「Setting the Time Zone」]: https://daypicker.dev/localization/setting-time-zone
 [shadcn docs「Calendar」]: https://ui.shadcn.com/docs/components/base/calendar
-[valibot の `isoDate.ts`]: https://github.com/open-circle/valibot/blob/v1.4.2/library/src/actions/isoDate/isoDate.ts
-[valibot docs「isoDate」]: https://valibot.dev/api/isoDate/
+[valibot docs「isoDate」]: https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/%28actions%29/isoDate/index.mdx
 [drizzle docs「Indexes & Constraints」]: https://orm.drizzle.team/docs/indexes-constraints
 [SQLite docs「Date And Time Functions」]: https://www.sqlite.org/lang_datefunc.html
 [React docs「hydrateRoot」]: https://react.dev/reference/react-dom/client/hydrateRoot

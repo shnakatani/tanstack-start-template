@@ -32,7 +32,7 @@ story を書くとき、play を書くとき、Storybook の agent 向けツー�
 - story から部品へ渡す `className` は layout に限る (`no-restyle` の `allow: ["layout"]` に収まる class)。外見を上書きする class は部品側の variant にする (ADR-0022)。カタログは実際の使われ方を見せるものなので、消費側で書ける形を story で書けなくしない
 - `ui/` の story は `no-restyle` / `require-static-classes` の適用外で、lint は鳴らない (ADR-0011)。鳴らないぶんはレビューで見る。`parts/` や `action/` など `ui/` の外の story は、消費側と同じく lint が止める
 - pending の見た目をカタログに残す目的で、いつまでも解決しない Promise を返す action を書かない。pending を検証する story は決着する Promise を返す action で書く (`src/test/app/settling-action.ts`)。決着しない Transition が残ると、後続 story が pending のまま止まる
-- Storybook の vitest 実行は story ごとに描き先の要素と root を作り直し、前の story を unmount する。それでも、React が進行中の Transition を root をまたいでまとめるので ([React docs「useTransition」][] の Caveats の "If there are multiple ongoing Transitions, React currently batches them together.")、後続 story の Transition が残った Transition と一緒に待たされる。2026-09-28 に React 19.3.0・Storybook 10.6.0 で、決着しない action を押した story の後ろでは 50ms で決着する action の story が 1.5 秒たっても pending のままで、単独では 78ms で解けた
+- 2026-09-28 に Storybook 10.6.0 で、vitest 実行は story ごとに描き先の要素と root を作り直し、前の story を unmount していた。それでも、後続 story の Transition は残った Transition と一緒に待たされる。React は進行中の Transition をまとめる。React docs は、これを今の版の制限で、将来の版で外れうると書く ([React docs「useTransition」][] の Caveats)。2026-09-28 に React 19.3.0・Storybook 10.6.0 で、root をまたいでもまとめられ、決着しない action を押した story の後ろでは 50ms で決着する action の story が 1.5 秒たっても pending のままで、単独では 78ms で解けた
 - story の decorator は器の形 (flex / gap) だけを持ち、余白を足さない (「story の余白を decorator で足さない理由」)
 - 狭い幅での見え方は、story に `globals: { viewport: { value: "narrow" } }` を付けて目で見る。その story に寸法を測る play は書かない (「狭幅を story で見る理由」)。実例は `src/components/parts/centered-card.stories.tsx` の `Narrow`
 - viewport を選ばない story は、vitest から走らせるとブラウザテストの既定と別の寸法で描かれる。story とブラウザテストで幅に依る見え方が食い違ったら、まずこの差を疑う (「vitest 経由の story の viewport が決まる仕組み」)
@@ -84,11 +84,11 @@ TanStack 専用の framework は、router を memory-backed で自動ラップ�
 ### Storybook の CLI を使う
 
 - UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う。`stories` skill が読ませる `write-story` skill との違いは「上流の `write-story` skill との違い」にある
-- `skills` と `tools` は `vp exec storybook --help` のコマンドの一覧に出ない (2026-10-06 に storybook@10.6.0 で確認)
+- 2026-10-06 に storybook@10.6.0 で、`skills` と `tools` は `vp exec storybook --help` のコマンドの一覧に出なかった
 - `@storybook/addon-mcp` を入れず、CLI を使う。MCP の登録は URL を 1 つしか持てず、worktree ごとに変わる Storybook の port へ配れない (「CLI を使い、MCP を入れない理由」)
 - `stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない
 
-ツールごとに、Storybook の起動が要るかが違う (2026-09-20 に storybook@10.6.0 で、port 6006 の Storybook を止め `--no-attach` を付けて 1 つずつ実行した)。
+2026-09-20 に storybook@10.6.0 で、port 6006 の Storybook を止め `--no-attach` を付けて 1 つずつ実行すると、ツールごとに Storybook の起動が要るかが違った。
 
 | ツール                                                     | 起動     | 備考                               |
 | ---------------------------------------------------------- | -------- | ---------------------------------- |
@@ -114,7 +114,7 @@ telemetry は `.storybook/main.ts` の `core.disableTelemetry` で切る。既�
 | TanStack 専用 framework を使う   | router を memory-backed で自動ラップし、server function を自動 stub する                            | **採用** |
 | telemetry を既定のまま有効にする | このテンプレートから作られる全プロジェクトへ配られる設定なので、明示で潰す                          | 却下     |
 
-- Storybook の静的ビルド (`vp exec storybook build`) は、`vp run verify` と CI では走らせていない。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は 2026-10-07 時点で未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外すので build は通る (2026-10-07、`@storybook/tanstack-react` 10.6.1)。`lazyPlugins` に async の関数を渡すと外せなくなる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
+- Storybook の静的ビルド (`vp exec storybook build`) は、`vp run verify` と CI では走らせていない。`tanstackStart()` plugin と標準の Vite builder の衝突 ([storybookjs/storybook#33747][]) は 2026-10-07 時点で未解決だが、TanStack 専用 framework が `tanstackStart()` の plugin を外し、build は通った (2026-10-07、`@storybook/tanstack-react` 10.6.1)。`lazyPlugins` に async の関数を渡すと外せなくなる (`docs/guides/vite-configuration.md`「plugin を先頭で import する理由」)
 
 ### story を状態のカタログにする理由
 
@@ -175,7 +175,7 @@ Storybook は `argTypes` を部品の型から推論し、手で書いた `argTy
 - 公式は型が出ないときの直し方として `react-docgen-typescript` への切り替えを案内し ([Storybook docs「TypeScript」][] の "The types are not being generated for my component")、[Storybook docs「Manifests」][] も manifest の props を抜き出す解析器として多くのプロジェクトに `react-docgen-typescript` を勧める (同じ段落は、生成が遅ければ速いが粗い `react-docgen` へ切り替えてよいとも書く)。このリポジトリはこの案内から外れ、既定の `react-docgen` のまま `options` を手で書く
 - `null` は class-variance-authority 0.7.1 の `VariantProps` が variant の型に持つ値で、渡すと variant を外す ([cva docs「What's new」][] の "Passing `null` used to disable a variant")。`react-docgen-typescript` の経路ではこの `null` が選択肢に残り (上の表の実測)、`react-docgen-typescript` の設定にも `null` を外すものは無い
 - cva の作者は "`null` will be removed in `cva@1.0`, and this is likely a Storybook issue not a `cva` issue" と答えて issue を閉じた ([joe-bell/cva#270][]。外す内容は [cva docs「What's new」][] の "Goodbye `null`")。型から `null` を外すのは cva@1 で、cva 0.7.1 のまま `react-docgen-typescript` の control から `null` を外すことは、cva も Storybook も約束していない
-- cva@1 はパッケージ名が `cva` に変わり、安定版は無い (2026-10-04、`npm view cva dist-tags` が `latest: 0.0.0`、`beta: 1.0.0-beta.12`)。上げると、import 元を `"cva"` に、base の class を `cva({ base })` の 1 引数に書き換える ([cva docs「What's new」][] の Breaking changes の "cva now accepts a single parameter")。registry 由来の `ui/` の `cva(...)` がすべて変わる
+- cva@1 はパッケージ名が `cva` に変わり、2026-10-04 には安定版が無かった (`npm view cva dist-tags` が `latest: 0.0.0`、`beta: 1.0.0-beta.12`)。上げると、import 元を `"cva"` に、base の class を `cva({ base })` の 1 引数に書き換える ([cva docs「What's new」][] の Breaking changes の "cva now accepts a single parameter")。registry 由来の `ui/` の `cva(...)` がすべて変わる
 
 | 案                                                                                                 | 評価                                                                                                                         | 採否     |
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------- |
@@ -197,7 +197,7 @@ shadcn の registry が cva@1 へ移ったら、手書きの `options` を外す
 
 [Storybook docs「Decorators」][] は部品が端まで描かれるときの直し方として decorator で余白を足す例を示すが、Storybook の UI では既定の `layout: "padded"` ([Storybook docs「Story layout」][]) がすでに余白を付ける。decorator で足すと、その story だけが二重の余白で描かれる。
 
-- `layout` パラメータを当てるのは `WebView.prepareForStory` で ([Storybook の `WebView.ts`][] の `applyLayout`)、この経路は Storybook の preview iframe にしかない。vitest から走らせた story には `layout: "padded"` が効かず、canvas の原点へ密着して描かれる
+- 2026-09-30 に読んだ Storybook 10.6.0 では、`layout` パラメータを当てるのは `WebView.prepareForStory` で ([Storybook の `WebView.ts`][] の `applyLayout`)、この経路は Storybook の preview iframe にしか無かった。vitest から走らせた story には `layout: "padded"` が効かず、canvas の原点へ密着して描かれていた
 - 密着して描くと、グリフが行ボックスからはみ出す部品 (registry の `leading-none` など) で、はみ出しが背景を持つ唯一の箱 (body) の外へ出て、axe の `color-contrast` が背景を決められず `incomplete` を返す。その箇所は CI では測られない (ADR-0028 の「受け入れる穴」)。Storybook の UI では余白の上で描くので測られる (`docs/guides/accessibility.md`「story の `incomplete` を確かめる」)
 - vitest 経由の story にだけ余白を当てる口は公式に無い。当てるには、Storybook の UI と見分けるために内部の class 名 (`sb-show-main`) を使い、余白の値を写す独自の仕組みが要るので、当てない (ADR-0028)
 
@@ -210,7 +210,7 @@ shadcn の registry が cva@1 へ移ったら、手書きの `options` を外す
 
 ### vitest 経由の story の viewport が決まる仕組み
 
-vitest から走らせた story の viewport は、`@storybook/addon-vitest` の `setViewport` が story ごとに `page.viewport()` を呼んで決める ([Storybook の `viewports.ts`][])。story ごとに上書きされるので、`tooling/test/storybook-project.ts` の `browser.viewport` に書いても story には効かない。
+2026-10-07 に読んだ `@storybook/addon-vitest` 10.6.1 では、vitest から走らせた story の viewport は `setViewport` が story ごとに `page.viewport()` を呼んで決めていた ([Storybook の `viewports.ts`][])。story ごとに上書きされるので、`tooling/test/storybook-project.ts` の `browser.viewport` に書いても story には効かなかった。
 
 | story の状態                                                                              | 描く寸法                                                                         |
 | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -218,13 +218,13 @@ vitest から走らせた story の viewport は、`@storybook/addon-vitest` の
 | viewport を選んでいない                                                                   | addon の既定の 1200x900                                                          |
 | addon の `@vitest/browser/context` の import が失敗する                                   | どの story も project の `browser.viewport` (未設定なら Vitest の既定の 414x896) |
 
-- 1200x900 は `@storybook/addon-vitest` 10.6.1 の `DEFAULT_VIEWPORT_DIMENSIONS` である (2026-10-07 に確認)。ブラウザテストの既定 (`src/test/browser/viewport-sizes.ts` の `DEFAULT_VIEWPORT`) とは別の値で、同じ部品でも story とブラウザテストで描く寸法が違う
-- addon-vitest は `page` を `@vitest/browser/context` から読む。Vitest 5 の Browser Mode が仮想 module にするのは `vitest/browser` だけで、`@vitest/browser/context` の実体は読み込むと throw する。addon-vitest 10.6.1 の vitest plugin (`storybook:vitest-browser-context`、[Storybook の vitest plugin の `index.ts`][]) が、Vitest 4 以上でこの import を `vitest/browser` へ向け替えるので読める (2026-10-10 に addon-vitest 10.6.1 と `@vitest/browser` 5.0.3 の dist で確認)。向け替えが効かないと addon は失敗を握りつぶして何もせずに戻るので、viewport の指定が効かないまま story が走り、何も言わない。project が `browser.viewport` を書いていなければ、描く寸法は Vitest の既定の 414x896 になる ([Vitest docs「browser.viewport」][]、Vitest 5.0.1)
+- 1200x900 は `@storybook/addon-vitest` 10.6.1 の `DEFAULT_VIEWPORT_DIMENSIONS` だった (2026-10-07 に確認)。ブラウザテストの既定 (`src/test/browser/viewport-sizes.ts` の `DEFAULT_VIEWPORT`) とは別の値で、同じ部品でも story とブラウザテストで描く寸法が違う
+- 2026-10-10 に addon-vitest 10.6.1 と `@vitest/browser` 5.0.3 の dist で確かめると、addon-vitest は `page` を `@vitest/browser/context` から読んでいた。Vitest 5 の Browser Mode が仮想 module にするのは `vitest/browser` だけで、`@vitest/browser/context` の実体は読み込むと throw した。addon-vitest 10.6.1 の vitest plugin (`storybook:vitest-browser-context`、[Storybook の vitest plugin の `index.ts`][]) が、Vitest 4 以上でこの import を `vitest/browser` へ向け替えるので読めた。向け替えが効かないと addon は失敗を握りつぶして何もせずに戻っていたので、viewport の指定が効かないまま story が走り、何も言わない。project が `browser.viewport` を書いていなければ、描く寸法は Vitest の既定の 414x896 になる ([Vitest docs「browser.viewport」][]、Vitest 5.0.1)
 - `vp run verify` はこの失敗を捕まえない。addon-vitest か Vitest を上げたら、viewport を選ばない story に一時的な play を足し、`window.innerWidth` が 1200 になることを確かめてから消す (2026-10-10 に addon-vitest 10.6.1 と Vitest 5.0.3 で、viewport を選ばない story が 1200、`narrow` を選ぶ story が 375 になることを確かめた)
 
 ### CLI を使い、MCP を入れない理由
 
-`storybook@10.6.0` は agent 向けの機構を 2 経路で配っている。本体同梱の CLI (`storybook skills` / `storybook tools`) と、別パッケージの `@storybook/addon-mcp` である。どちらも同じツール群を公開する。公式 docs に載っているのは MCP だけで、CLI は記載が無く、`storybook --help` のコマンド一覧にも出ない。
+2026-09-20 に見た `storybook@10.6.0` は、agent 向けの機構を 2 経路で配っていた。本体同梱の CLI (`storybook skills` / `storybook tools`) と、別パッケージの `@storybook/addon-mcp` である。どちらも同じツール群を公開していた。公式 docs に載っていたのは MCP だけで、CLI は記載が無く、`storybook --help` のコマンド一覧にも出なかった。
 
 | 観点             | CLI                                  | MCP                                                                                                                     |
 | ---------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |

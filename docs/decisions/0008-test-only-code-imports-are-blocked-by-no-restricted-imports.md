@@ -31,7 +31,7 @@ eslint コアの `no-restricted-imports` を、範囲を絞って当てる。
 
 当てる範囲は `overrides` の `files` (`src/**` `scripts/**`) と `excludeFiles` (テスト、`*.test-helpers`、`*.story-helpers`、story、`src/test/`) で絞る。
 `excludeFiles` の付随ファイルの種別は `scripts/lib/companion-files.ts` の `companionGlobs` から引く。
-oxc-project/oxc#20881 が示す `files` の否定 glob (`!**/*.test.ts`) は oxlint 1.79.0 では除外として効かず (2026-09-14 に最小構成で実測)、`excludeFiles` が効く。
+oxc-project/oxc#20881 が示す `files` の否定 glob (`!**/*.test.ts`) は、2026-09-14 に oxlint 1.79.0 の最小構成で実測すると除外として効かなかった。`excludeFiles` は効く。
 全体で error にしてテスト側で off にする形は取らない。off はテストの緩和経路に載り、`*.test-helpers` を緩和へ足すことになる (`docs/guides/lint/configuration.md`「テストファイルの緩和」の 5 ルールは helper に要らない)。
 
 story と story 専用の helper の扱いは次のとおり。

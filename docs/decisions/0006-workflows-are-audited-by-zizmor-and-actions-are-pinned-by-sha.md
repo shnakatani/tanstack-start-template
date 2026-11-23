@@ -21,7 +21,7 @@ tag と branch は後から付け替えられる。GitHub の security hardening
 | 1   | `advanced-security: false` で動かし、権限は job の `contents: read` だけにする | 既定のモードは SARIF を Security タブへ上げるだけで job を落とさず、merge を止めるには ruleset が要る。private かつ GHAS 無しのリポジトリではアップロードもできない。`contents: read` は private リポジトリの checkout に要る |
 | 2   | `uses:` は `@<SHA> # vX.Y.Z` の形で書く                                        | zizmor の `unpinned-uses` の既定方針 (全 action に SHA 固定を求める) に従う。Dependabot は SHA とバージョンコメントの組を更新する                                                                                             |
 | 3   | `actions/checkout` には `persist-credentials: false` を渡す                    | 後続の step は push しない。v6 以降の checkout は credential を `$RUNNER_TEMP` のファイルへ書き、同じ job の後続 step から読める                                                                                              |
-| 4   | zizmor 本体の版は指定しない (`version: latest`)                                | action は `latest` を、同梱の `support/versions` にある digest 付きの image へ解決する (v0.6.4 の `action.sh`)。action の SHA を固定すれば本体の版も固定され、Dependabot の追随と cooldown に乗る                             |
+| 4   | zizmor 本体の版は指定しない (`version: latest`)                                | 2026-09-23 に読んだ v0.6.4 の `action.sh` では、action は `latest` を、同梱の `support/versions` にある digest 付きの image へ解決していた。action の SHA を固定すれば本体の版も固定され、Dependabot の追随と cooldown に乗る |
 | 5   | 設定は `.github/zizmor.yml` に置き、`dependabot-cooldown` の下限を 3 日にする  | 待機の日数は ADR-0005 が決める。zizmor 1.30.1 の既定 7 日 (2026-09-23 確認) に合わせると、却下した案を検査が強制する                                                                                                          |
 
 ### 検討した選択肢
@@ -45,4 +45,4 @@ tag と branch は後から付け替えられる。GitHub の security hardening
 - zizmor の audit 一覧 (`unpinned-uses`、`artipacked`、`dependabot-cooldown`): https://docs.zizmor.sh/audits/
 - GitHub Docs: Secure use reference (Using third-party actions): https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions
 - GitHub Docs: Dependabot がコメントのバージョンを更新する条件、`uses:` 以外を更新しないこと: https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories
-- actions/checkout v7.0.1 の README (`persist-credentials` の保存先): https://github.com/actions/checkout
+- actions/checkout v7.0.1 の README (「Checkout v6」の What's new。`persist-credentials` の保存先): https://github.com/actions/checkout/blob/v7.0.1/README.md

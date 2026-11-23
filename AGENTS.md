@@ -12,7 +12,7 @@ vp run verify    # マージ前に通す。手順は vite.config.ts の verifySt
 ## 開発上の注意
 
 - mise の hook が走らないシェル (エージェントの Bash など) では、`DB_FILE_NAME` を読むタスク (`db:*`) を `mise x -- vp run <タスク>` で打つ。`vp run` だけだと `DB_FILE_NAME` が届かず止まる (`docs/guides/dependencies-and-toolchain.md`「手元の環境を用意する」)
-- dev server と Storybook を background で動かすときは `mise daemons start serve` (`storybook`) で起動し、`mise daemons stop <同じ名前>` で止める。起動した pid にだけ SIGTERM を送ると、port を持つ子孫の node が残り、次の `mise run serve` が port を取れずに終わる (`docs/guides/dependencies-and-toolchain.md`「dev server と Storybook を止める」)
+- dev server と Storybook を background で動かすときは `mise daemons start serve` (`storybook`) で起動し、`mise daemons stop <同じ名前>` で止める。起動した pid にだけ SIGTERM を送ると、port を持つ子孫の node が残ることがあり、残ると次の `mise run serve` が port を取れずに終わる (`docs/guides/dependencies-and-toolchain.md`「dev server と Storybook を止める」)
 - 依存は `vp add` / `vp remove` で足し外し、pnpm / npm / yarn で足し外さない。入口を `vp` にそろえる (`npm` はこのリポジトリの `catalog:` を読めず `EUNSUPPORTEDPROTOCOL` で止まる)。`vp` が中継しないサブコマンドは素の `pnpm` で打つ (`pnpm peers check`)。出典は `docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」。一回限りの実行は `vp dlx`、devDependency 済みなら `vp exec`。Vitest / Oxlint / Oxfmt は Vite+ が内包するので install しない
 - Node.js の版は `package.json` の `devEngines.runtime` を直接書き換えて変え、`vp env pin` で書かない。`vp env pin` は範囲を渡しても exact の版に解決して書く (ADR-0004)
 - `devEngines.runtime` に `onFail` が入ったら消す。`vp env pin` は宣言を新しく作るとき `onFail: "download"` を入れ、pnpm が Node.js を取りに行く (ADR-0004)
@@ -20,7 +20,7 @@ vp run verify    # マージ前に通す。手順は vite.config.ts の verifySt
 - **worktree のパスに `+` を含めない**。story の project が、事前バンドルのキャッシュが無い初回の実行で落ちる (`docs/guides/testing/configuration.md`「テストを走らせる」)
 - `EnterWorktree` は名前の `/` を `+` へ変換するので、`/` を含まない名前を渡す
 - 依存の追加と更新には公開後 3 日の待機が効く（`pnpm-workspace.yaml` の `minimumReleaseAge`）。前倒しの条件は ADR-0005
-- patch は `vp pm patch <pkg>` を版を付けずに打って作り、作り直すときも同じにする。版を付けると既にある patch が編集用のディレクトリに当たらず、`vp pm patch-commit` の `ERR_PNPM_UNUSED_PATCH` の案内どおりにキーを消すと、元の変更が黙って消える (2026-10-01、pnpm 11.28.0。`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
+- patch は `vp pm patch <pkg>` を版を付けずに打って作り、作り直すときも同じにする。版を付けると既にある patch が編集用のディレクトリに当たらず、`vp pm patch-commit` の `ERR_PNPM_UNUSED_PATCH` の案内どおりにキーを消すと、元の変更が黙って消えた (2026-10-01、pnpm 11.28.0。`docs/guides/dependencies-and-toolchain.md`「patch を当てる」)
 - `vp migrate` が `pnpm-workspace.yaml` の catalog に、`.github/dependabot.yml` の `vite-plus` グループの `patterns` に当たらない依存を足したら、その `patterns` と `minor-and-patch` の `exclude-patterns` の両方に足す。`patterns` にだけ足すと `minor-and-patch` の PR に入り、どちらにも足さないと `vite-plus` と別の PR で上がる (`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」)
 - `vp migrate` が catalog に足した依存が、`vitest` のように `vite-plus` と別の日に公開され、既存の `ignore` に当たらないなら、`.github/dependabot.yml` の `ignore` にも `dependency-name` だけで足し、撤去条件を書く。足さないと、同梱の版より先へ上げる PR ができる (ADR-0005)
 
@@ -35,7 +35,7 @@ vp run verify    # マージ前に通す。手順は vite.config.ts の verifySt
 
 ## Storybook の skill と tools
 
-UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う (`docs/guides/storybook.md`「Storybook の CLI を使う」)。ただし play を書く範囲は skill の「Simulate key user flows」ではなく `docs/guides/storybook.md`「カタログと play の範囲」に従い、操作で状態が変わる部品にだけ書く。この節は、CLI が `--help` に出ないので、AGENTS.md を削るときも消さない。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ない**ので、見落としやすい (`docs/guides/storybook.md`「Storybook の CLI を使う」)。
+UI と story を触る前に `vp exec storybook skills` を実行し、`stories` skill の手順に従う (`docs/guides/storybook.md`「Storybook の CLI を使う」)。ただし play を書く範囲は skill の「Simulate key user flows」ではなく `docs/guides/storybook.md`「カタログと play の範囲」に従い、操作で状態が変わる部品にだけ書く。この節は、CLI が `--help` に出ないことがあるので、AGENTS.md を削るときも消さない。**`vp exec storybook --help` の一覧に `skills` と `tools` は出ないことがある**ので、見落としやすい (`docs/guides/storybook.md`「Storybook の CLI を使う」)。
 
 - 部品の props・API・使い方は `vp exec storybook tools docs list` / `docs show` で答える。ソースや型定義から答えない
 - `vp exec storybook tools stories find-by-component` は Storybook を起動してから `--port` で指す。未起動でも走るが結果が空で返り、story が無いのと区別が付かない (`docs/guides/storybook.md`「Storybook の CLI を使う」)

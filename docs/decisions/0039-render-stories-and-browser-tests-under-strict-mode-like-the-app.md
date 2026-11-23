@@ -8,7 +8,7 @@
 
 この ADR は、story とブラウザテストで部品を StrictMode の下で描くかを決める。StrictMode なしで描くと、描画中の副作用 (描画のたびに出る `console.warn` など) がテストを通り抜ける。
 
-アプリは StrictMode の下で動く。`src/` は client entry を持たないので、TanStack Start の既定の entry が使われ、それが `<StartClient />` を `<StrictMode>` で包む (`@tanstack/react-start` 1.168.58 の `default-entry/client.tsx`)。StrictMode は開発時に部品の描画を 2 回走らせ、mount 直後の effect を 1 度外して付け直す。描画が純粋でない部品や、cleanup の無い effect をここで見つける仕組みである (React docs「StrictMode」)。ただし effect の付け直しは、StrictMode が root にあるときだけ起きる。React docs「StrictMode」の「Enabling Strict Mode for a part of the app」は "if `<StrictMode>` is not enabled at the root of the app, it will not re-run Effects an extra time on initial mount" と書く。アプリの StrictMode は `hydrateRoot` に渡す要素そのものなので root にある。
+アプリは StrictMode の下で動く。`src/` は client entry を持たないので、TanStack Start の既定の entry が使われる。2026-10-01 に読んだ `@tanstack/react-start` 1.168.58 の `default-entry/client.tsx` では、その entry が `<StartClient />` を `<StrictMode>` で包んでいた。StrictMode は開発時に部品の描画を 2 回走らせ、mount 直後の effect を 1 度外して付け直す。描画が純粋でない部品や、cleanup の無い effect をここで見つける仕組みである (React docs「StrictMode」)。ただし effect の付け直しは、StrictMode が root にあるときだけ起きる (React docs「StrictMode」の Enabling Strict Mode for a part of the app)。同じ 1.168.58 の `default-entry/client.tsx` では、アプリの StrictMode は `hydrateRoot` に渡す要素そのものなので root にあった。
 
 StrictMode なしで描くと、アプリの開発時には 2 回になる描画中の副作用が、story とブラウザテストでは 1 回に見える。2026-10-04 に、preview の decorator を外したうえで `src/components/parts/form-fields.tsx` の部品の `console.warn` を描画中に出す実装に変えると、warn の回数を 1 回と確かめる story は通った。
 
@@ -21,7 +21,7 @@ StrictMode で描くかを決める口は、経路ごとに次のとおり (2026
 | 両方                                                               | `.storybook/preview.tsx` の decorator                                | 届く。preview の annotation は両方の経路で読まれる。Storybook のメンテナが storybookjs/storybook#22472 で "As a workaround for now, you can add a global decorator that adds `StrictMode`" と案内した形である                                                                                                                                                                                                                      |
 | ブラウザテスト (`vitest-browser-react` の `render` / `renderHook`) | `configure({ reactStrictMode: true })` (`vitest-browser-react/pure`) | 既定は無効。有効にすると `render` と `rerender` が描くものを StrictMode で包み、`renderHook` も `render` を通る (`src/pure.tsx`)                                                                                                                                                                                                                                                                                                   |
 
-StrictMode が root に来るかは、口ごとに違う。
+2026-10-04 に読んだ Storybook 10.6.0 と vitest-browser-react 2.3.0 では、StrictMode が root に来るかは、口ごとに違っていた。
 
 | 口                                                     | StrictMode の位置                                                                                                                                    | 2026-10-04 に描画と mount の `useEffect` を数えた結果             |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -37,7 +37,7 @@ Testing Library も同じ理由で、`wrapper` の中の StrictMode では React
 
 **story とブラウザテストは、アプリと同じく StrictMode の下で描く。story は `.storybook/preview.tsx` の decorator で包み、ブラウザテストは `src/test/browser/browser-setup.tsx` で `vitest-browser-react` の `configure({ reactStrictMode: true })` を呼ぶ。**
 
-- story の decorator は preview の decorators の最後に置き、preview の他の decorator を内側に入れる。Storybook は story・component・project の順に並べた decorator を前から重ねるので、後ろほど外側に来る (`prepareStory.ts`、`decorators.ts`)。addon と framework が足す decorator は、preview の decorator のさらに外側に来るので、StrictMode の外になる (Storybook の `MIGRATION.md`「Changed decorator order between preview.js and addons/frameworks」)。例外は router の decorator で、`@storybook/tanstack-react` の `applyDecorators` が decorator の列の先頭 (story の側) に足すので StrictMode に入る (`preview.tsx`)。StrictMode は root ではないので、story では mount 直後の effect を付け直さない (Context の 2 つ目の表)
+- story の decorator は preview の decorators の最後に置き、preview の他の decorator を内側に入れる。2026-10-01 に読んだ Storybook 10.6.0 の `prepareStory.ts` と `decorators.ts` では、story・component・project の順に並べた decorator を前から重ねるので、後ろほど外側に来ていた。addon と framework が足す decorator は、preview の decorator のさらに外側に来るので、StrictMode の外になる (Storybook の `MIGRATION.md`「Changed decorator order between preview.js and addons/frameworks」)。例外は router の decorator で、2026-10-04 に読んだ Storybook 10.6.0 の `@storybook/tanstack-react` の `preview.tsx` では、`applyDecorators` が decorator の列の先頭 (story の側) に足すので StrictMode に入っていた。StrictMode は root ではないので、story では mount 直後の effect を付け直さない (Context の 2 つ目の表)
 - 置き場所は `docs/guides/testing/configuration.md`「StrictMode の下で描く」にある
 
 | 案                                                                               | 評価                                                                                                                                                                                                                                                                                     | 採否     |

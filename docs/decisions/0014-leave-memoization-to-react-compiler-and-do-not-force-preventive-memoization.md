@@ -38,15 +38,15 @@ registry コード (`src/components/ui/`) は ADR-0020 の統制対象なので�
 
 `viteReact` の `compiler.reportDiagnostics` を `true` にして、Compiler が諦めた箇所をビルドログへ出す。テストの分岐での扱いは `docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」にある。
 既定は `false` で、最適化が外れたことがどこにも現れない。
-`result.fatal` が立つ診断は `reportDiagnostics` によらず transform を失敗させ、ビルドが落ちる (`@vitejs/plugin-react` の `dist/index.js` が `this.error` を呼ぶ)。ただし fatal になるのはパース・意味解析・オプション検証の失敗で、Compiler 自身の診断は `panicThreshold` の既定 `none` により recoverable に留まる。
+2026-09-02 時点 (`@vitejs/plugin-react` 6.1.1 の `dist/index.js`) の記録では、`result.fatal` が立つ診断は `reportDiagnostics` によらず `this.error` で transform を失敗させ、ビルドが落ちた。ただし fatal になるのはパース・意味解析・オプション検証の失敗で、Compiler 自身の診断は `panicThreshold` の既定 `none` により recoverable に留まっていた。
 
 bail out の一覧を期待値として固定する検査は置かない。理由は 3 つある。
 
-| 理由                     | 内容                                                                                                                                                                                                                                                 |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 直さない検査になる       | 落ちてもコードは直さず期待値を書き換えるだけになる (Compiler がカバーしない箇所を欠陥として扱わない決定)。修正義務のない赤信号は、上流更新のたびに文言と件数で鳴る。適用経路を babel と oxc で替えるだけで bail out の件数が変わる (2026-09-02 実測) |
-| 守ると謳う経路を守れない | Compiler を直接呼ぶ検査は `vite.config.ts` を読まない。`compiler` オプションを外しても検査は緑のままになる                                                                                                                                           |
-| 残りは他が見ている       | パース・意味解析の失敗はビルドが落ちる。パッケージの欠落も `config` フックが `this.error` を投げる                                                                                                                                                   |
+| 理由                     | 内容                                                                                                                                                                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 直さない検査になる       | 落ちてもコードは直さず期待値を書き換えるだけになる (Compiler がカバーしない箇所を欠陥として扱わない決定)。修正義務のない赤信号は、上流更新のたびに文言と件数で鳴る。適用経路を babel と oxc で替えるだけで bail out の件数が変わった (2026-09-02 時点 (`@vitejs/plugin-react` 6.1.1) の記録) |
+| 守ると謳う経路を守れない | Compiler を直接呼ぶ検査は `vite.config.ts` を読まない。`compiler` オプションを外しても検査は緑のままになる                                                                                                                                                                                   |
+| 残りは他が見ている       | パース・意味解析の失敗はビルドが落ちる。パッケージの欠落も `config` フックが `this.error` を投げる                                                                                                                                                                                           |
 
 この検査を置く動機になりうるのは、`@babel/core` 8 系が最適化を silent に落とすことである。Compiler を `compiler` オプションで適用して babel を経路から外しているので、その動機は無い。
 
@@ -99,4 +99,4 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 - `@babel/core` 8 系のバグ (babel 経路を却下する根拠): https://github.com/react/react/issues/36868
 - 診断が 1 ルールに束ねられていた件と、その解消 (per-category ルールへの分割): https://github.com/oxc-project/oxc/issues/23538 / https://oxc.rs/blog/2026-08-18-react-compiler-support
 - oxc ネイティブ統合の追加 (`compiler` オプションと `oxc-transform-react`): https://github.com/vitejs/vite-plugin-react/pull/1419
-- `@vitejs/plugin-react` の React Compiler ドキュメント (native 版が experimental であること): https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#react-compiler
+- `@vitejs/plugin-react` の README の「React Compiler」(native 版が experimental であること。2026-11-23 に `plugin-react@6.3.0` のタグの原文を確認): https://github.com/vitejs/vite-plugin-react/blob/plugin-react%406.3.0/packages/plugin-react/README.md#react-compiler
