@@ -10,7 +10,7 @@ paths:
 
 ## パスとファイル
 
-- `DB_FILE_NAME` の相対パスを、コードでルートを探して補わない。drizzle-kit は cwd 基準のままなので、アプリだけが別の場所を指す。cwd に依らせたいなら絶対パスで渡す (`docs/guides/database.md`「パスを cwd 基準にする理由」)
+- `DB_FILE_NAME` の相対パスを、コードでルートを探して補わない。drizzle-kit が cwd 基準で扱うと、アプリだけが別の場所を指す。cwd に依らせたいなら絶対パスで渡す (`docs/guides/database.md`「パスを cwd 基準にする理由」)
 - `createDb()` で無い DB のファイルを作らず、開こうとした絶対パスと作り方を例外の文言に入れて throw する。アプリは migration を当てないので、作った空の DB はテーブルを持たない (`docs/guides/database.md`「DB のファイルをアプリで作らない理由」)
 - `createDb()` の `sqlite.pragma("foreign_keys = ON")` と、その値を確かめる throw を外さない。同梱の SQLite は既定でも検査するのでテストは落ちず、外しても気付けない (`docs/guides/database.md`「外部キーの検査を接続で有効にする理由」)
 - migration のフォルダは `src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` から読み、`./drizzle` を書き写さない。片方だけ変わると、テストが古い migration を当てたまま通る (`docs/guides/database.md`「スキーマを変える」)

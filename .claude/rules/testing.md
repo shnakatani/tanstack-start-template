@@ -49,7 +49,7 @@ paths:
 - 成果物の検査の判定ロジックは `scripts/lib/` へ切り出して単体テストを持つ (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - 固定 port を使う検査は、起動前にその origin が応答しないことを確かめる。前回の残骸が答えると古い成果物の検査が緑になる (`docs/guides/testing/check-scripts.md`「検査スクリプトを足す」)
 - テスト全体の TZ は root の globalSetup (`tooling/test/global-setup.ts`) で決め、`APP_TIME_ZONE` と違う値にする。一致すると、ローカル TZ に依存する実装を壁時計の値のテストが見逃す (`docs/guides/testing/time-zones.md`「基準のタイムゾーンを決める理由」)
-- `Intl.DateTimeFormat` で整形した日時を固定の文字列と比べない。`format()` の出力は実装ごとに違ってよい。壁時計は数字の並びで比べ、画面の期待値は `formatDateTime` で作る。date-fns の `format` は Intl を使わないので、固定の文字列と比べてよい (`docs/guides/dates-and-time-zones.md`「整形した日時をテストで確かめる」)
+- `Intl.DateTimeFormat` で整形した日時を固定の文字列と比べない。`format()` の出力は実装ごとに違ってよい。壁時計は数字の並びで比べ、画面の期待値は `formatDateTime` で作る。date-fns の `format` の出力は、固定の文字列と比べてよい (`docs/guides/dates-and-time-zones.md`「整形した日時をテストで確かめる」)
 - Node で動くテスト (unit project) のうち、`Date` のローカルの getter や TZ を指定しない date-fns を直接呼ぶモジュールと、ローカルの TZ に依存しないことを保証するモジュールのテストは、ファイルごと `src/**/*.tz.test.ts` にする。1 件ずつ分けると、分け損ねたテストが基準の TZ でしか走らない (`docs/guides/testing/time-zones.md`「Node で動くテストを TZ ごとに走らせる」)
 - テストの中で `vi.stubEnv("TZ", …)` で TZ を切り替えず、TZ ごとの実行はスクリプト (`scripts/time-zones/run-tests.ts`) に任せる。threads / vmThreads の pool ではテストの中の切り替えが `Date` に効かず、無言で通る (`docs/guides/testing/time-zones.md`「TZ ごとにプロセスを分ける理由」)
 - ブラウザテストの TZ の切り替えは CDP の `Emulation.setTimezoneOverride` で行い、`afterEach` で `timezoneId: ""` を送って戻す。`vi.stubEnv` はブラウザの TZ を変えない (`docs/guides/testing/time-zones.md`「ブラウザテストで切り替える」)
@@ -170,7 +170,7 @@ paths:
 - `expectAbsent` に文字列で引く locator を渡すなら `exact: false` を付ける。既定の完全一致では、その文字列を含む長い文が出ていても不在として通る (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - 在る要素が消えるのを待つのは `expectRemoved(locator)` (`src/test/assert/absent.ts`)。`expectAbsent` と取り違えない (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
 - `toHaveLength` も一致ゼロで通るので、描画を待つ肯定 assert を先に置く (`docs/guides/testing/waiting-and-assertions.md`「否定を肯定で書く」)
-- `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えない。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
+- `toHaveTextContent` は受け取った側の NBSP を空白に置き換え、期待値側は置き換えないことがある。NBSP を確かめるなら `element().textContent` を読む (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 - locator の `element()` と `query()` は複数一致で throw する。「1 件だけ」を assert の前提に使うなら、依拠を実装近傍に書く。書かないと前提ごと消される (`docs/guides/testing/waiting-and-assertions.md`「待つ口を選ぶ」)
 
 ## ブラウザテストの CSS とレイアウト実測

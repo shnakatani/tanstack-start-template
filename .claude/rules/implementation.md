@@ -29,10 +29,10 @@ lint では見ないのでレビューで見る。
 
 ## Effect が読む最新値は useEffectEvent へ切り出す
 
-Effect Event を呼ぶ場所と依存配列への混入は lint (`react/rules-of-hooks`、`react/exhaustive-deps`) が止める。次の 2 点はレビューで見る。
+Effect Event を呼ぶ場所と依存配列への混入は lint (`react/rules-of-hooks`、`react/exhaustive-deps`) が止めることがある。次の 2 点はレビューで見る。
 
 - 走ったときに最新の props / state を読めば足りる処理は `useEffectEvent` へ切り出し、依存から外す。依存に置くと、値が変わるたびに購読を外して張り直す (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)
-- 変わったら外の系に合わせ直す契機になる値は依存に置き、Effect Event に隠さない。隠すと、その値が変わっても effect が走らず、依存の漏れを lint も報告しない (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)
+- 変わったら外の系に合わせ直す契機になる値は依存に置き、Effect Event に隠さない。隠すと、その値が変わっても effect が走らず、依存の漏れを lint も報告しないことがある (`docs/guides/react/effects.md`「依存に置く値と Effect Event で読む値」)
 
 ## イベントハンドラは同期に保つ
 
@@ -65,7 +65,7 @@ lint では見ないのでレビューで見る (ADR-0015、Action 層と `useAc
 - `useOptimistic` に query の `data` と派生値を渡さない。query 由来の楽観表示と項目の busy は mutation の pending から取る (`docs/guides/react/updates.md`「楽観表示を出す」)
 - mutation の pending は、1 件ずつなら `isPending && variables === id`、並行か別コンポーネントなら `mutationKey` + `useMutationState` で読む (`docs/guides/react/updates.md`「mutation の pending を読む」)
 - `useMutationState` と `isMutating` の `filters` に `exact: true` を付ける。`variables` は `parseEach` (`src/lib/parse-each.ts`) で絞る (`docs/guides/react/updates.md`「mutation の pending を読む」)
-- `useMutationState` の `select` の中で throw しない。描画中に走るので一覧ごと Error Boundary へ落ちる (`docs/guides/react/updates.md`「mutation の pending を読む」)
+- `useMutationState` の `select` の中で throw しない。描画中に走ることがあり、そのときは一覧ごと Error Boundary へ落ちる (`docs/guides/react/updates.md`「mutation の pending を読む」)
 - 操作の開始の announce は `onMutate`、完了は `onSuccess` に書く (`src/lib/live-announcer.ts` の `announce()`、ADR-0026)
 - 決着前の二重発火は Action 層の `isPending` (`aria-disabled`) が塞ぐ。閉包や ref のフラグを足さない (ADR-0016)
 
