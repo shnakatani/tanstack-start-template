@@ -26,7 +26,8 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - アプリは起動時に migration を適用せず、`migrateDb()` もアプリの経路から呼ばない。デプロイの手順に `vp run db:migrate` を入れる (「migration を起動時に適用しない理由」)
 - `vp run db:migrate` は `scripts/db/migrate.ts` を `vpx` で走らせ、`migrateDb()` (`src/server/db/index.ts`) で `drizzle/` の未適用の migration を当てる。DB のファイルが無ければ作る。ビルド成果物の `.output/` は `scripts/` も `drizzle/` も持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
 - migration を `drizzle-kit migrate` で当てない。外部キーの検査が効いたまま当たり、子から参照される親を作り直す migration が落ちるか、`ON DELETE` の動作で子の行を消すか参照を NULL にする (ADR-0050)
-- `migrateDb()` は、未適用の migration をまとめて 1 つのトランザクションで当て、外部キーの違反が残れば全部戻して落ちる。文言に出る表と rowid を見て、違反を残した migration の SQL (行を写す `INSERT … SELECT` の条件など) を直す
+- `migrateDb()` は、未適用の migration をまとめて 1 つのトランザクションで当て、外部キーの違反が当てる前より増えれば全部戻して落ちる。文言に出る表と rowid を見て、違反を増やした migration の SQL (行を写す `INSERT … SELECT` の条件など) を直す。当てる前からある違反だけでは落ちない
+- migration は外部キーの検査を切った接続で当たるので、migration の中の `DELETE` と `UPDATE` では `ON DELETE` と `ON UPDATE` の動作が走らない。custom migration で親の行を消すとき (更新するとき) は、子の行も SQL で明示的に消す (更新する)。消し忘れは確定の前の検査で落ちる (ADR-0050)
 - 生成した SQL を手で直すときも、`drizzle-kit generate --custom` で書くときも、`BEGIN` / `COMMIT` を書かず、`PRAGMA foreign_keys` で外部キーの検査を切り替えようとしない。トランザクションと検査は `migrateDb()` が外側で持つ。drizzle-kit が出力する `PRAGMA foreign_keys` の行は、トランザクションの中なので何もしない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
 - `migrateDb()` を開いたトランザクションの中で呼ばない。外部キーの検査を切れないので、何も当てずに落ちる
 - 子から参照される親を作り直す migration は、行のある DB (dev server で使っている DB など) に `vp run db:migrate` で当てて確かめる。テストは `drizzle/` の migration を空の DB に当てるので、違反を残す migration でも通る
@@ -54,7 +55,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 
 | 変えるもの                                                                                                    | 理由                                                                                                                                                          |
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 起動の経路で `migrateDb()` を呼ぶ                                                                             | 今はテストだけが呼ぶ                                                                                                                                          |
+| 起動の経路で `migrateDb()` を呼ぶ                                                                             | 今は `vp run db:migrate` (`scripts/db/migrate.ts`) とテストが呼ぶ                                                                                             |
 | `createDb()` の `fileMustExist` と、無いときの throw を外す                                                   | 初回の起動では DB のファイルがまだ無い。作らないと起動の時点で落ちる                                                                                          |
 | `drizzle/` をサーバーに置き、`src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` をその絶対パスにする | `.output/` は `drizzle/` を持たない。相対パスのままだと起動した cwd を基準に探す                                                                              |
 | 開く前に DB のディレクトリを作る (`mkdirSync(dirname(<DB のパス>), { recursive: true })`)                     | better-sqlite3 はディレクトリを作らず、無いと `Cannot open database because the directory does not exist` で落ちる (better-sqlite3 13.0.3、2026-09-29 に実測) |
