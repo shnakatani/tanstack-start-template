@@ -203,7 +203,8 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 ### workflow に action を足す
 
 - step の `uses:` は `@vX.Y.Z` で書き、commit は `.github/workflows/actions.lock` に記録する (ADR-0006)。`@v4` のような部分の版と `@<SHA>` は、初めて固定するときに `gh actions-lock` が `@vX.Y.Z` に書き換える
-- workflow を足したとき、`uses:` を足す・変える・消したときは、リポジトリのルートで `gh actions-lock` を打ち、workflow と `actions.lock` を同じ commit に入れる。打ち忘れると PR の `actions-lock` の job が落ちる。lockfile に載った workflow では、lockfile に無い action へ step が来た job も落ちる ([GitHub Docs「Locking action dependencies in a repository's workflows」][])
+- workflow を足したとき、`uses:` を足す・変える・消したときは、リポジトリのルートで `gh actions-lock` を打ち、workflow と `actions.lock` を同じ commit に入れる。打ち忘れると、lockfile に entry の無い action を使う workflow は、job を 1 つも始めずに `startup_failure` で止まる。原因の action は `actions-lock` の job のログに `Not pinned` で出る (ADR-0006)
+- どの workflow も job を始めずに `startup_failure` で止まったら、手元で `gh actions-lock --verify` を打ち、`Not pinned` と出た action を確かめる。`actions-lock.yml` が使う action の entry が欠けると、`actions-lock` の job 自身も始まらず、ログに何も出ない (ADR-0006)
 - 拡張は `gh extension install github/gh-actions-lock --pin <版>` で入れ、`<版>` は `.github/workflows/actions-lock.yml` の `--pin` と同じにする。新しい拡張が書いた lockfile の `version` を CI の拡張が読めないと、verify の job が exit 2 で落ちる ([gh-actions-lock「troubleshooting」][] の「Lockfile version is newer than the extension」)
 - 別のリポジトリの reusable workflow の呼び出し (`jobs.<job_id>.uses`) と、このリポジトリに置く composite action の定義 (`action.yml`) の `uses:` は、lockfile が記録しないので `@<SHA> # vX.Y.Z` で書く (ADR-0006)。手元で `zizmor --fix=all` を使うと SHA へ書き換わる。SHA 固定は unsafe fix に分類され、既定の `--fix=safe` では書き換わらない
 - container image (`docker://`、job の `container:` と `services:`) は lockfile が記録しないので、`@sha256:<digest>` で書く (ADR-0006)
