@@ -81,8 +81,8 @@ token だけを混ぜる `color-mix()` の通し方:
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。抑制した行の扱いは `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」にある
 - `@shadcn/lint` 0.2.5 は `eslint` と `@typescript-eslint/parser` を optional peer に持つ。component のファイルを読む parser には optionalDependencies の `oxc-parser` を先に使い、`@typescript-eslint/parser` は読めなかったときの代わりなので、直接の依存に足さない (2026-11-23 に 0.2.5 の `package.json` と `dist/index.js` で確認)
 - `oxc-parser` と `@typescript-eslint/parser` のどちらも読めないと、`@shadcn/lint` は component のファイルを読めず、variant と wrapper が分からなくなる。ルールは動き続け、`Neither oxc-parser nor @typescript-eslint/parser is installed` の警告を 1 度出す (0.2.5 の `dist/index.js` で確認。oxlint の出力では未確認)
-- ESLint は `eslint-plugin-testing-library` と TanStack の 2 plugin が `@typescript-eslint/utils` 経由で必須の peer にしているので入り、`@shadcn/lint` の optional peer もその版に解決される (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
-- pnpm は optional peer を、範囲に合う版がすでに入っているときだけ入れ、変えていない依存は lock にある peer の版を保つ (pnpm docs「Optional peer dependencies」)。2026-11-23 に pnpm 12.21.0 で、lock の写しから上の 3 plugin を外すと ESLint は lock に残った。外したら `vp why eslint` で確かめ、残っていれば `@shadcn/lint` を `vp remove` して `vp add` し直す
+- ESLint は `eslint-plugin-testing-library` と TanStack の 2 plugin が自身の peer で必須にしているので入る (`@typescript-eslint/utils` も同じ)。`@shadcn/lint` の optional peer もその版に解決される (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
+- pnpm は optional peer を、範囲に合う版がすでに入っているときだけ入れ、変えていない依存は lock にある peer の版を保つことがある (pnpm docs「Optional peer dependencies」)。2026-11-23 に pnpm 12.21.0 で、lock の写しから上の 3 plugin を外すと ESLint は lock に残った。外したときの確かめ方は `docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」にある
 - 依存グラフの `typescript` は 6 系である。`@typescript-eslint/utils` とその推移依存の `typescript` peer (`>=4.8.4 <6.1.0`) が上限を押さえる (2026-11-23 に lock で確認。utils の最新の 8.73.0 も同じ範囲で、`typescript` の latest は 7.0.2)。型検査は tsrs が担い `typescript` を直接の依存に持たないため、`vp check` の結果は変わらない。6 系の固定は、typescript-eslint が `typescript` 7 を peer に含めるまで解けない
 - `no-restyle` は認識した design system component だけを見る (ADR-0011)。ui 部品にあるものを素の要素で作り直すと規則が効かない。機械では止まらない
 
