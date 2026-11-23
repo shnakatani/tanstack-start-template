@@ -19,7 +19,7 @@
 
 1 層目だけだと違反は「無言で効かない class」になり、2 層目だけだと既定 palette の CSS 生成を止められない。
 
-oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持たないため、`jsPlugins` で `@shadcn/lint` を読み込む。
+oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持っていなかったため (2026-09-19、oxlint 1.82.0)、`jsPlugins` で `@shadcn/lint` を読み込む。
 `components.json` の UI alias と theme CSS を自動探索できるため、同じ値を `settings.shadcn` へ複製しない。
 `settings.shadcn.componentImports` はこの探索結果の書き直しではなく、`ui` alias の外側にある自作部品 (`parts/` 等) まで design system component として認識させる追加である (ADR-0011)。
 
@@ -45,7 +45,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
 
 `jsPlugins` のエントリは `{ name, specifier }` の形で書き、`@shadcn/lint` には `{ name: "shadcn", specifier: "@shadcn/lint" }` を使う。
-抑制 directive の名前は `docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」に、lint 時間の測り方と探索に失敗したときの警告は `docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の時間と警告を読む」にある。3 ルールは探索に失敗しても警告を出したうえで発火し続ける。診断の token の提案が減り、`no-raw-colors` が宣言済みの token を確かめられず、design system component を認識しなくなることもあるが、警告が出るので silent failure ではない。そのため、この解決を見張る検査は置かない。
+抑制 directive の名前は `docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」に、lint 時間の測り方と探索に失敗したときの警告は `docs/guides/lint/tailwind-and-shadcn.md`「`@shadcn/lint` の時間と警告を読む」にある。2026-09-19 に `@shadcn/lint` 0.1.0 で確かめると、3 ルールは探索に失敗しても警告を出したうえで発火し続けた。同じ版で 2026-09-24 に確かめると、診断の token の提案が減り、`no-raw-colors` が宣言済みの token を確かめられず、design system component を認識しなくなることもあったが、警告は出ていたので silent failure ではなかった。そのため、この解決を見張る検査は置かない。
 
 ### 検討した選択肢
 
@@ -79,7 +79,7 @@ token だけを混ぜる `color-mix()` の通し方:
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。抑制した行の扱いは `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」にある
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。parser の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にする。いま ESLint は `eslint-plugin-testing-library` と TanStack の 2 plugin が `@typescript-eslint/utils` 経由で必須にしているので入るが、それらが外れれば ESLint も外れる (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
 - `packageExtensions` のキーは package 名と版の範囲で選び、親で絞れない (pnpm docs の `packageExtensions`: "The keys in `packageExtensions` are package names or package names and semver ranges")。`@shadcn/lint` 以外の依存が引く `@typescript-eslint/parser` 8 系でも eslint の peer は optional になる。ESLint を実際に使う依存を足すときは、eslint が入るかを `vp why eslint` で確かめる
-- `@typescript-eslint/parser` と `@typescript-eslint/utils` の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえるため、依存グラフの `typescript` は 6 系になる。`packageExtensions` は既存の peer 範囲を上書きしない (2026-09-19 に pnpm 11.25.0 で実測)。型検査は tsrs が担い `typescript` を直接の依存に持たないため、`vp check` の結果は変わらない
+- 2026-09-19 に pnpm 11.25.0 で、`@typescript-eslint/parser` と `@typescript-eslint/utils` の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえ、依存グラフの `typescript` は 6 系になっていた。`packageExtensions` は既存の peer 範囲を上書きしなかった。型検査は tsrs が担い `typescript` を直接の依存に持たないため、`vp check` の結果は変わらない
 - `packageExtensions` の撤去条件は、上流が parser の eslint を optional peer へ移すこと (shadcn-ui/lint#1)。`typescript` の 6 系固定は、typescript-eslint が `typescript` 7 を peer に含めるまで解けない
 - parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
 - `no-restyle` は認識した design system component だけを見る (ADR-0011)。ui 部品にあるものを素の要素で作り直すと規則が効かない。機械では止まらない
@@ -87,7 +87,7 @@ token だけを混ぜる `color-mix()` の通し方:
 ## 出典
 
 - oxlint の JS plugins (alpha 扱いと `{ name, specifier }` の指定形): https://oxc.rs/docs/guide/usage/linter/js-plugins.html
-- `@shadcn/lint` の setup と rule 一覧: https://github.com/shadcn-ui/lint/blob/main/SETUP.md
+- `@shadcn/lint` 0.2.5 の SETUP.md (「Install and register the plugin」の Oxlint の `jsPlugins` での登録と、rule の preset を足さないこと。2026-11-23 に原文を確認): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/SETUP.md
 - `@shadcn/lint` 0.2.0 の adoption.md (「Add more rules」の部品のディレクトリの override、「Exceptions」の行単位の抑制): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/adoption.md
 - `@shadcn/lint` 0.2.0 の rules.md (「Rules」の off にする範囲、「The policy」の `allow` と `deny`): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules.md
 - `@shadcn/lint` 0.2.0 の no-raw-colors.md (任意値の色を見ない): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules/no-raw-colors.md

@@ -16,7 +16,7 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 
 **ナビゲーションは `defaultViewTransition` でクロスフェードにし、拾われない `ready` の reject は受け入れる。**
 
-`src/router.tsx` に置く。リンク、`navigate` (search だけを変える `replace` を含む)、redirect、戻る・進むのナビゲーションに効く。`router.invalidate()` (Error Boundary の再試行)、preload、SSR では使わない (router-core 1.171.34 の `src/load-client.ts` と `src/router.ts`)。
+`src/router.tsx` に置く。2026-10-09 に読んだ router-core 1.171.34 の `src/load-client.ts` と `src/router.ts` では、リンク、`navigate` (search だけを変える `replace` を含む)、redirect、戻る・進むのナビゲーションに効き、`router.invalidate()` (Error Boundary の再試行)、preload、SSR では使われていなかった。
 
 ブラウザが自分で遷移のアニメーションを出した戻る・進む (Safari のスワイプなど) では、View Transition を飛ばす。飛ばさないと、ブラウザの遷移と View Transition が二重に動く (TanStack/router#6754)。router が戻る・進むで聞く `popstate` の `hasUAVisualTransition` で記録し、`defaultViewTransition.types` の関数が 1 回読んだら値を戻して `false` を返す (`src/lib/skip-view-transition-after-ua-transition.ts`。MDN「PopStateEvent: hasUAVisualTransition」と、TanStack Router docs の `ViewTransitionOptionsType` の "`false` to skip the view transition")。
 
@@ -40,8 +40,8 @@ TanStack Router は `defaultViewTransition` で、ナビゲーションを `docu
 - 前の遷移の `ready` が resolve する前に次の遷移が始まると、`AbortError: Transition was skipped. New ViewTransition started` が unhandled rejection になる。遷移は完了し、`src/` には `unhandledrejection` を受ける処理が無いので、本番では console に出るだけである
 - Vitest は既定で unhandled error で run を失敗させる (Vitest docs の `dangerouslyIgnoreUnhandledErrors`)。テストは遷移を待ってすぐ次の遷移を起こすので、この `AbortError` が出る (2026-10-09 に CI の `route-announcer.test.tsx` で 3 件)。`tooling/test/config.ts` の `onUnhandledError` で、名前が `AbortError` で文言が `Transition was skipped` を含むものを、run の失敗と出力の両方から外す (Vitest docs の `onUnhandledError` が、決まった unhandled error を除く手段として案内する形)。Chromium は飛ばした View Transition の AbortError の文言をどれもこの句で始めるので、テストのコードが自分で呼んだ `startViewTransition` の skip も外れる。router が `ready` の reject を拾うようになったら (TanStack/router#7907)、このフィルタを外す。利用者のテストでも、この error は落ちなくなる。文言は Chromium のもので、ほかのブラウザでテストを走らせるなら合わせて見直す
 - タブが隠れた状態のナビゲーションでも、`ready` が `InvalidStateError` で reject する (TanStack/router#7906 の再現。手元では未実測)
-- `types` の関数は、ブラウザが `:active-view-transition-type()` に対応しているときだけ呼ばれる (router-core 1.171.34 の `src/router.ts` の `startViewTransition`)。対応していないブラウザ (Safari 18.2、Chrome 125 より前) では判定を使わず、スワイプで戻る・進むと二重に動く。ダイアログを閉じる遷移の type も渡らず、ダイアログは退場を見せずにクロスフェードで消える (ADR-0041)。2026-10-09 に Safari 27.0.1 で、スワイプでは Safari の遷移だけになり、リンクと、スワイプで戻った直後のリンクではクロスフェードになることを目で確かめた
-- 戻る・進むの読み込みが View Transition を始める前に打ち切られると (読み込み中にリンクを押した、`router.invalidate()` が来たなど)、記録した値が残り、次のナビゲーションのクロスフェードを飛ばす。飛ばす側にしか転ばず、二重には動かない (router-core 1.171.34 の `src/load-client.ts` の `runClientTransaction`)
+- 2026-10-09 に読んだ router-core 1.171.34 の `src/router.ts` の `startViewTransition` では、`types` の関数は、ブラウザが `:active-view-transition-type()` に対応しているときだけ呼ばれていた。対応していないブラウザ (Safari 18.2、Chrome 125 より前) では判定を使わず、スワイプで戻る・進むと二重に動く。ダイアログを閉じる遷移の type も渡らず、ダイアログは退場を見せずにクロスフェードで消える (ADR-0041)。2026-10-09 に Safari 27.0.1 で、スワイプでは Safari の遷移だけになり、リンクと、スワイプで戻った直後のリンクではクロスフェードになることを目で確かめた
+- 2026-10-09 に読んだ router-core 1.171.34 の `src/load-client.ts` の `runClientTransaction` では、戻る・進むの読み込みが View Transition を始める前に打ち切られると (読み込み中にリンクを押した、`router.invalidate()` が来たなど)、記録した値が残っていた。残った値は次のナビゲーションのクロスフェードを飛ばす。飛ばす側にしか転ばず、二重には動かない
 - route として開くダイアログを閉じる遷移の退場は、registry の部品の閉じ方と同じアニメーションを当てるので (ADR-0041「閉じる遷移の見せ方」)、reduced motion の扱いも registry の部品に従う
 
 ## 調査結果

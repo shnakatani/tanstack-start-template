@@ -32,7 +32,7 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 
 ### 注釈の位置を読む
 
-注釈の位置 (PR の注釈の `file` / `line`) は、`annotate` を呼んだときの stack のうち、テストファイルの中で最初に現れる行になる ([Vitest の `collect.ts`][] の `findTestFileStackTrace`)。
+2026-09-29 に読んだ vitest 5.0.1 の [Vitest の `collect.ts`][] の `findTestFileStackTrace` では、注釈の位置 (PR の注釈の `file` / `line`) は、`annotate` を呼んだときの stack のうち、テストファイルの中で最初に現れる行になっていた。
 
 | `annotate` を呼ぶ場所                                   | 位置                                |
 | ------------------------------------------------------- | ----------------------------------- |
@@ -44,8 +44,8 @@ reporter が注釈を出すかは、テストの成否で決まる。type では
 - 4 行とも Vitest 5.0.3 で 2026-10-10 に実測した。docs は位置の決まり方を書いていない。[Vitest docs「Vi」][] の vi.defineHelper も assertion の失敗の stack trace にしか触れない
 - `vi.defineHelper` で包んだ helper の行が stack から外れるのは、[vitest-dev/vitest#11047][] (Vitest 5.0.1 に含まれる) からである
 - テストファイルの行が stack に 1 つも無いと、注釈は位置を持たず、`github-actions` reporter は PR に出さない ([Vitest の `github-actions.ts`][] の `onTestCaseAnnotate`)
-- UI と HTML reporter では、位置を持たない注釈はソースの表示に出ず、Report にだけ出る ([Vitest の `ViewEditor.vue`][] の `createAnnotationElement`、[Vitest の `ViewTestReport.vue`][])
-- [Vitest docs「Test Annotations」][] の html は、テストファイルの外で呼んだ注釈は UI で見えないと書く。5.0.1 の実装は Report に全部並べるので、docs が実装より古い
+- 2026-09-29 に読んだ vitest 5.0.1 の UI と HTML reporter では、位置を持たない注釈はソースの表示に出ず、Report にだけ出ていた ([Vitest の `ViewEditor.vue`][] の `createAnnotationElement`、[Vitest の `ViewTestReport.vue`][])
+- [Vitest docs「Test Annotations」][] の html は、テストファイルの外で呼んだ注釈は UI で見えないと書く。同じ日に読んだ 5.0.1 の実装は Report に全部並べていたので、docs が実装より古かった
 - Vitest を上げたら位置を確かめ直す。「注釈の位置を読む」の表の場所ごとに `annotate` を呼ぶ使い捨てのテストを置き、`GITHUB_ACTIONS=true vp test run <path>` の `::warning` 行の `line` を見る
 
 ## explanation

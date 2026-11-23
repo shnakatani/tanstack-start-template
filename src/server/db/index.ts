@@ -60,8 +60,8 @@ const MIGRATIONS_TABLE = "__drizzle_migrations";
  * (ADR-0050): トランザクションの外で外部キーの検査を切り、1 つのトランザクションで未適用の migration を
  * 順に流して記録し、`PRAGMA foreign_key_check` に違反があれば戻して落とし、無ければ確定して検査を戻す。
  * テーブルの作り直しの中身 (作る・写す・消す・改名する) は drizzle-kit が書き出す SQL が持つ。
- * drizzle-orm の migrator はトランザクションの中で `PRAGMA foreign_keys=OFF` を流すので効かず、
- * 子から参照される親を作り直すと、`DROP TABLE` が外部キーの検査で落ちるか、`ON DELETE` の動作で子の行を消す
+ * 2026-11-23 に読んだ drizzle-orm 0.45.4 の migrator はトランザクションの中で `PRAGMA foreign_keys=OFF` を流していて効かず、
+ * 子から参照される親を作り直すと、`DROP TABLE` が外部キーの検査で落ちるか、`ON DELETE` の動作で子の行を消した
  */
 export function migrateDb(db: Db, migrationsFolder: string = MIGRATIONS_FOLDER): void {
   const migrations = readMigrationFiles({ migrationsFolder });

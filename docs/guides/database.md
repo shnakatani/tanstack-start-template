@@ -25,7 +25,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 - `src/server/db/schema.ts` を変えたら、`vp run db:generate` の後に `vp run db:migrate` を打つ。各タスクのコマンドは `vite.config.ts` の `run.tasks` にある
 - アプリは起動時に migration を適用せず、`migrateDb()` もアプリの経路から呼ばない。デプロイの手順に `vp run db:migrate` を入れる (「migration を起動時に適用しない理由」)
 - `vp run db:migrate` は `scripts/db/migrate.ts` を `vpx` で走らせ、`migrateDb()` (`src/server/db/index.ts`) で `drizzle/` の未適用の migration を当てる。DB のファイルが無ければ作る。ビルド成果物の `.output/` は `scripts/` も `drizzle/` も持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
-- migration を `drizzle-kit migrate` で当てない。外部キーの検査が効いたまま当たり、子から参照される親を作り直す migration が落ちるか、`ON DELETE` の動作で子の行を消すか参照を NULL にする (ADR-0050)
+- migration を `drizzle-kit migrate` で当てない。2026-11-23 に drizzle-kit 0.31.11 と drizzle-orm 0.45.4 で測ると、外部キーの検査が効いたまま当たり、子から参照される親を作り直す migration が落ちるか、`ON DELETE` の動作で子の行を消すか参照を NULL にした (ADR-0050)
 - `migrateDb()` は、未適用の migration をまとめて 1 つのトランザクションで当て、確定の前に DB 全体で外部キーの違反が 1 件でもあれば全部戻して落ちる (ADR-0050)
   - 当てる前に違反が無かった DB では、文言は「migration が外部キーの違反を残す」になる。違反を残した migration の SQL (行を写す `INSERT … SELECT` の条件など) を直す
   - 当てる前から違反があった DB では、文言が当てる前と当てたあとの件数を示す。違反と関係の無い migration も、違反が残るかぎり当たらない。次の手順で、違反を直す custom migration を足す。当てたあとの件数が当てる前より多ければ、未適用の migration も違反を作っているので、その SQL も直す
@@ -43,10 +43,10 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
      - rowid や特定の id を migration に書かない。custom migration は `drizzle/` に commit され、すべての環境の DB で走る。rowid で書くと、違反の無い DB では正しい行を消す
      - `UPDATE` で参照を直すときも、付け替える先の値を固定で書くと、環境ごとに別の行を指す
      - 未適用の migration はまとめて当たり、確定の前の検査は全部を当てたあとに 1 回だけなので、違反を直す migration は後から足してよい
-     - 文と文の間に `--> statement-breakpoint` を書く。[drizzle docs「Custom migrations」][] の SQLite の例は区切りを書いていないが、better-sqlite3 では区切りの無い 2 つの文が `The supplied SQL string contains more than one statement` で落ちる (2026-11-23、better-sqlite3 13.2.0)
-- dev の DB は直さずに作り直してもよい。dev server を止め、`.data/` の DB のファイルを消して `vp run db:migrate` と `vp run db:seed` で作り直してから、dev server を起動し直す。動いている dev server は消したファイルを読み続ける (「見本のデータを消して入れ直す理由」)
-- migration は外部キーの検査を切った接続で当たるので、migration の中の `DELETE` と `UPDATE` では `ON DELETE` と `ON UPDATE` の動作が走らない。custom migration で親の行を消すとき (更新するとき) は、子の行も SQL で明示的に消す (更新する)。消し忘れは確定の前の検査で落ちる (ADR-0050)
-- 生成した SQL を手で直すときも、`drizzle-kit generate --custom` で書くときも、`BEGIN` / `COMMIT` を書かず、`PRAGMA foreign_keys` で外部キーの検査を切り替えようとしない。トランザクションと検査は `migrateDb()` が外側で持つ。drizzle-kit が出力する `PRAGMA foreign_keys` の行は、トランザクションの中なので何もしない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
+     - 文と文の間に `--> statement-breakpoint` を書く。2026-11-23 に読んだ [drizzle docs「Custom migrations」][] の SQLite の例は区切りを書いていなかったが、同じ日に better-sqlite3 13.2.0 で確かめると、区切りの無い 2 つの文は `The supplied SQL string contains more than one statement` で落ちた
+- dev の DB は直さずに作り直してもよい。dev server を止め、`.data/` の DB のファイルを消して `vp run db:migrate` と `vp run db:seed` で作り直してから、dev server を起動し直す。2026-10-14 の実測では、動いている dev server は消したファイルを読み続けた (「見本のデータを消して入れ直す理由」)
+- custom migration で親の行を消すとき (更新するとき) は、子の行も SQL で明示的に消す (更新する)。migration は外部キーの検査を切った接続で当たり、2026-11-23 に better-sqlite3 13.2.0 の SQLite 3.54.1 で確かめると、検査を切った接続の `DELETE` では `ON DELETE CASCADE` の動作が走らず、子の行が残った。消し忘れは確定の前の検査で落ちる (ADR-0050)
+- 生成した SQL を手で直すときも、`drizzle-kit generate --custom` で書くときも、`BEGIN` / `COMMIT` を書かず、`PRAGMA foreign_keys` で外部キーの検査を切り替えようとしない。トランザクションと検査は `migrateDb()` が外側で持つ。migration の中の `PRAGMA foreign_keys` の行は、トランザクションの中なので何もしない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
 - `migrateDb()` を開いたトランザクションの中で呼ばない。外部キーの検査を切れないので、何も当てずに落ちる
 - 子から参照される親を作り直す migration は、行のある DB (dev server で使っている DB など) に `vp run db:migrate` で当てて確かめる。テストは `drizzle/` の migration を空の DB に当てるので、違反を残す migration でも通る
 - migration のフォルダは `src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` を `drizzle.config.ts` の `out` と `migrateDb()` の両方が読む。片方だけ変えると、テストが古い migration を当てたまま通る
@@ -71,13 +71,13 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 
 [drizzle docs「Migrations」][] の Option 4 に当たる (「migration を起動時に適用しない理由」)。次の表のものを揃える。
 
-| 変えるもの                                                                                                    | 理由                                                                                                                                                          |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 起動の経路で `migrateDb()` を呼ぶ                                                                             | 今は `vp run db:migrate` (`scripts/db/migrate.ts`) とテストが呼ぶ                                                                                             |
-| `createDb()` の `fileMustExist` と、無いときの throw を外す                                                   | 初回の起動では DB のファイルがまだ無い。作らないと起動の時点で落ちる                                                                                          |
-| `drizzle/` をサーバーに置き、`src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` をその絶対パスにする | `.output/` は `drizzle/` を持たない。相対パスのままだと起動した cwd を基準に探す                                                                              |
-| 開く前に DB のディレクトリを作る (`mkdirSync(dirname(<DB のパス>), { recursive: true })`)                     | better-sqlite3 はディレクトリを作らず、無いと `Cannot open database because the directory does not exist` で落ちる (better-sqlite3 13.0.3、2026-09-29 に実測) |
-| デプロイの手順から `vp run db:migrate` を外す                                                                 | 適用の経路が 2 か所に分かれる                                                                                                                                 |
+| 変えるもの                                                                                                    | 理由                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 起動の経路で `migrateDb()` を呼ぶ                                                                             | 今は `vp run db:migrate` (`scripts/db/migrate.ts`) とテストが呼ぶ                                                                                   |
+| `createDb()` の `fileMustExist` と、無いときの throw を外す                                                   | 初回の起動では DB のファイルがまだ無い。作らないと起動の時点で落ちる                                                                                |
+| `drizzle/` をサーバーに置き、`src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` をその絶対パスにする | `.output/` は `drizzle/` を持たない。相対パスのままだと起動した cwd を基準に探す                                                                    |
+| 開く前に DB のディレクトリを作る (`mkdirSync(dirname(<DB のパス>), { recursive: true })`)                     | 2026-09-29 に better-sqlite3 13.0.3 で実測すると、ディレクトリを作らず、無いと `Cannot open database because the directory does not exist` で落ちた |
+| デプロイの手順から `vp run db:migrate` を外す                                                                 | 適用の経路が 2 か所に分かれる                                                                                                                       |
 
 ### テストで使う
 
@@ -95,7 +95,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 | 無ければ作らずに、開こうとしたパスを文言に入れて落とす | 開こうとした絶対パスと作り方を `createDb()` が例外の文言に出し、例外は server function の middleware が server のログに残す (2026-10-01 に `.output/server/index.mjs` を起動して実測)。作らないことは better-sqlite3 の `fileMustExist` が保証する ([better-sqlite3 docs「API」][] の `new Database()`) | **採用** |
 | 無ければ作る (better-sqlite3 の既定)                   | テーブルの無い空の DB ができ、最初のクエリが `no such table` で落ちる。ログには出るが、どの DB を開いたかも作り方も出ない                                                                                                                                                                               | 却下     |
 
-`fileMustExist` の失敗の文言は `unable to open database file` で、開こうとしたパスを含まない (better-sqlite3 13.0.3、2026-09-29 に実測)。ディレクトリを指していても `existsSync` は真を返す。そのため `createDb()` は開く前にファイルかを確かめ、絶対パスを例外の文言に入れる。
+`fileMustExist` の失敗の文言は `unable to open database file` で、開こうとしたパスを含まなかった (better-sqlite3 13.0.3、2026-09-29 に実測)。ディレクトリを指していても `existsSync` は真を返す。そのため `createDb()` は開く前にファイルかを確かめ、絶対パスを例外の文言に入れる。
 
 ### 外部キーの検査を接続で有効にする理由
 
@@ -112,13 +112,13 @@ SQLite は、外部キーの検査を接続ごとに有効にする形をとり�
 
 ### パスを cwd 基準にする理由
 
-drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に確認)。
+2026-09-29 に確かめると、drizzle まわりはどれも相対パスを cwd 基準で扱っていた。
 
 | 対象                    | 相対パスの扱い                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | drizzle の docs         | migration のフォルダを相対パスのまま渡す (`migrate(db, { migrationsFolder: "./migrations" })`、[drizzle docs「Node.js + Railway」][]) |
-| drizzle-orm の migrator | 受け取ったパスを解決せずに `fs` へ渡す (0.45.2 の [drizzle-orm の `migrator.ts`][])                                                   |
-| drizzle-kit             | `drizzle.config.ts` を cwd から探し、`out` と `dbCredentials.url` を cwd 基準で使う (0.31.10)                                         |
+| drizzle-orm の migrator | 受け取ったパスを解決せずに `fs` へ渡していた (0.45.2 の [drizzle-orm の `migrator.ts`][])                                             |
+| drizzle-kit             | `drizzle.config.ts` を cwd から探し、`out` と `dbCredentials.url` を cwd 基準で使っていた (0.31.10)                                   |
 
 | 案                                                   | 評価                                                                                                                                                                                 | 採否     |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -129,13 +129,13 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 
 相対パスが残るのは `MIGRATIONS_FOLDER` と、drizzle-kit の設定の探索と設定の中の `schema` である。これらを使う入口がルートで走ることの根拠は次のとおり。
 
-| 入口                            | 根拠                                                                                                                                                                                                                                                           |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vp run <タスク>`               | タスクの `cwd` の既定はパッケージのルート ([Vite+ docs「Run Config」][] の `cwd`)                                                                                                                                                                              |
-| `vp run <script>`               | サブディレクトリから打ってもパッケージのルートで走る (2026-09-29 に vp 1.0.0 で実測)                                                                                                                                                                           |
-| `vp test run`                   | Vitest 5 は親のディレクトリの設定を探さない ([Vite+ docs「Upgrade to Vitest 5」][])。サブディレクトリで打つと設定が読まれず、`@/` の import が解決できない。`--config` で渡しても project の設定のパスが解決できず、起動しない (2026-09-29 に vp 1.0.0 で実測) |
-| `node .output/server/index.mjs` | 起動した cwd がそのまま基準になる。[TanStack Start docs「Hosting」][] は `start` script から起動する形を示す                                                                                                                                                   |
-| (参考) Nitro の SQLite の既定   | 本番は cwd を基準に `.data/db.sqlite` を組む。[Nitro の `database.ts`][] は開発時だけ `cwd: rootDir` を渡し、[db0 の `node-sqlite.ts`][] は `resolve(opts.cwd \|\| ".", ...)` で組む ([Nitro docs「Database」][])                                              |
+| 入口                            | 根拠                                                                                                                                                                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `vp run <タスク>`               | タスクの `cwd` の既定はパッケージのルート ([Vite+ docs「Run Config」][] の `cwd`)                                                                                                                                                                                                          |
+| `vp run <script>`               | 2026-09-29 に vp 1.0.0 で、サブディレクトリから打ってもパッケージのルートで走った                                                                                                                                                                                                          |
+| `vp test run`                   | Vitest 5 は親のディレクトリの設定を探さない ([Vite+ docs「Upgrade to Vitest 5」][])。サブディレクトリで打つと設定が読まれず、`@/` の import が解決できない。2026-09-29 に vp 1.0.0 で、`--config` で渡しても project の設定のパスが解決できず、起動しなかった                              |
+| `node .output/server/index.mjs` | 起動した cwd がそのまま基準になる。[TanStack Start docs「Hosting」][] は `start` script から起動する形を示す                                                                                                                                                                               |
+| (参考) Nitro の SQLite の既定   | 2026-09-29 に読んだ nitro 3.0.260610-beta と db0 0.3.4 では、本番は cwd を基準に `.data/db.sqlite` を組んでいた。[Nitro の `database.ts`][] は開発時だけ `cwd: rootDir` を渡し、[db0 の `node-sqlite.ts`][] は `resolve(opts.cwd \|\| ".", ...)` で組んでいた ([Nitro docs「Database」][]) |
 
 ### migration を起動時に適用しない理由
 

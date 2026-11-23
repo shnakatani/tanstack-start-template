@@ -88,7 +88,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 入力                      | `useMutation` の options。`onError` は型で必須。省略すると、reject の吸収が通知の無い失敗になる                                                                                                                                                                                                            |
 | 出力                      | `mutate` / `mutateAsync` は型で外してあり、`runAction(variables): Promise<void>` を使う。`runAction` は `mutateAsync` を await して reject を吸収し、通知は `onError` (`toastMutationError`) が出す                                                                                                        |
-| 呼び出し                  | `action` から `runAction` を呼ぶ。`mutate` は Promise を返さず、reject も `.catch(noop)` で握るので ([`@tanstack/react-query` の `useMutation.ts`][])、Transition が完了も失敗も観測できない                                                                                                               |
+| 呼び出し                  | `action` から `runAction` を呼ぶ。`mutate` は戻り値が `void` で、失敗も投げずに mutation の結果へ出すので ([TanStack Query docs「UseMutateFunction」][])、Transition が完了も失敗も観測できない                                                                                                            |
 | 再取得と close            | `onSuccess` は完了点によらず再取得の Promise を返す。TanStack Query は `onSuccess` の Promise を待つので、その間 `isPending` が続く。閉じる時点は「完了点ごとに Transition を終える」                                                                                                                      |
 | `await` の後の state 更新 | 上から順に当てる。サーバーの値は set せず、query の再取得に任せる。Action の結果を state に持つなら `useActionState` を使う。どちらでもなく `await` の後に set するなら、その set を `startTransition` で包む ([React docs「useTransition」][] の Caveats)。理由は「`await` の後の更新の扱いを選んだ理由」 |
 
@@ -122,9 +122,9 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 | 1 件ずつ                           | `mutation.isPending && mutation.variables === id`。`variables` は決着後も残るので `isPending` でゲートする |
 | 並行、または別のコンポーネントから | `mutationKey` を付け、`useMutationState` (`status: "pending"`) で読む                                      |
 
-- `mutationKey` は既定で前方一致に当たる。`useMutationState` と `isMutating` の `filters` には `exact: true` を付ける ([`@tanstack/query-core` の `utils.ts`][] の `matchMutation`)
+- `mutationKey` は既定で前方一致に当たる ([TanStack Query docs「Filters」][] の Mutation Filters の `exact`)。`useMutationState` と `isMutating` の `filters` には `exact: true` を付ける
 - `variables` の型は `unknown` のままなので、行へ渡す前にスキーマで `safeParse` して型へ絞り、失敗は `console.warn` に raw input ごと残して除外する。絞り込みは `src/lib/parse-each.ts` の `parseEach` が持つ
-- `useMutationState` の `select` の中で throw しない。`select` は描画中に走るので、throw すると一覧ごと Error Boundary へ落ちる
+- `useMutationState` の `select` の中で throw しない。2026-11-23 に読んだ [`@tanstack/react-query` 5.108.1 の `useMutationState.ts`][] では、`select` は描画中に呼ばれる `getSnapshot` の中で走っていた。描画中に throw すると一覧ごと Error Boundary へ落ちる
 
 ### 楽観表示を出す
 
@@ -134,7 +134,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ### ナビゲーションを Router に任せる
 
-- `Link`・`navigate`・`router.invalidate()` による遷移と読み込みを、自分で `startTransition` に包まない。Router は、読み込んだ結果を画面へ反映する更新を React の `startTransition` で包む ([`@tanstack/react-router` の `Transitioner.tsx`][] と [`@tanstack/router-core` の `load-client.ts`][])。`Link` と `navigate` の `startTransition` option も "All navigations now use startTransition under the hood" として deprecated になっている ([`@tanstack/router-core` の `link.ts`][])。どれも 2026-10-06 に、このリポジトリの版 (`@tanstack/react-router` 1.170.39、`@tanstack/router-core` 1.171.32) で確かめた
+- `Link`・`navigate`・`router.invalidate()` による遷移と読み込みを、自分で `startTransition` に包まない。2026-10-06 に `@tanstack/react-router` 1.170.39 と `@tanstack/router-core` 1.171.32 で確かめると、Router は、読み込んだ結果を画面へ反映する更新を React の `startTransition` で包んでいた ([`@tanstack/react-router` の `Transitioner.tsx`][] と [`@tanstack/router-core` の `load-client.ts`][])。`Link` と `navigate` の `startTransition` option も "All navigations now use startTransition under the hood" として deprecated になっていた ([`@tanstack/router-core` の `link.ts`][])
 - ナビゲーションを Router に任せることは ADR-0015 の「ナビゲーション、GET」の行が決める。Error Boundary からの再試行の組み方は `docs/guides/data-loading.md`「読み込みに失敗した画面から再試行する」にある
 
 ### 操作の型ごとの当て方
@@ -153,7 +153,7 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。TanStack Query docs の「Filters」と「UseMutateFunction」は `@tanstack/react-query` 5.108.1 に固定した版を指し、2026-11-23 にその版の原文と照らした。
 
 [React docs「useTransition」]: https://react.dev/reference/react/useTransition
 [React docs「useActionState」]: https://react.dev/reference/react/useActionState
@@ -161,11 +161,12 @@ mutation は `src/hooks/use-action-mutation.ts` の `useActionMutation` を通�
 [WAI-ARIA 1.2「Presentational Children」]: https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational
 [mui/base-ui#5133]: https://github.com/mui/base-ui/issues/5133
 [adobe/react-spectrum#9894]: https://github.com/adobe/react-spectrum/pull/9894
-[`@tanstack/react-query` の `useMutation.ts`]: https://github.com/TanStack/query/blob/@tanstack/react-query@5.104.0/packages/react-query/src/useMutation.ts
 [TkDodo「Concurrent Optimistic Updates in React Query」]: https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query
-[`@tanstack/query-core` の `utils.ts`]: https://github.com/TanStack/query/blob/@tanstack/query-core@5.104.0/packages/query-core/src/utils.ts
 [TanStack/query#9742]: https://github.com/TanStack/query/issues/9742
 [TanStack Query docs「Mutations」]: https://tanstack.com/query/latest/docs/framework/react/guides/mutations
 [`@tanstack/react-router` の `Transitioner.tsx`]: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.39/packages/react-router/src/Transitioner.tsx
 [`@tanstack/router-core` の `load-client.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/src/load-client.ts
 [`@tanstack/router-core` の `link.ts`]: https://github.com/TanStack/router/blob/@tanstack/router-core@1.171.32/packages/router-core/src/link.ts
+[TanStack Query docs「UseMutateFunction」]: https://github.com/TanStack/query/blob/%40tanstack/react-query%405.108.1/docs/framework/react/reference/type-aliases/UseMutateFunction.md
+[TanStack Query docs「Filters」]: https://github.com/TanStack/query/blob/%40tanstack/react-query%405.108.1/docs/framework/react/guides/filters.md
+[`@tanstack/react-query` 5.108.1 の `useMutationState.ts`]: https://github.com/TanStack/query/blob/f6689e04be493e2e83f9c93d7e478f92c3e5d328/packages/react-query/src/useMutationState.ts#L83-L108

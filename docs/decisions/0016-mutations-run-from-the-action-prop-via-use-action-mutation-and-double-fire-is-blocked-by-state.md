@@ -22,14 +22,13 @@ mutation を持つのは、ダイアログのフォームから項目を追加�
 
 mutation 以外のユーザー操作由来の更新は、`src/hooks/use-route-retry.ts` の `useRouteRetry` が返す再試行 (Error Boundary の `reset()` と `router.invalidate()`) と、ダイアログの開閉 (Base UI の handle) があった。
 
-ルート遷移は既に Transition である。
-`@tanstack/router-core` は match の commit を `router.startTransition` へ渡し (`load-client.js`)、`@tanstack/react-router` の `Transitioner` がそれを `React.startTransition` で包む。
-2026-09-13 に router-core 1.171.27 と react-router 1.170.32 の dist で確認した。
+ルート遷移は既に Transition で包まれていた。
+2026-09-13 に router-core 1.171.27 と react-router 1.170.32 の dist で確かめると、`@tanstack/router-core` は match の commit を `router.startTransition` へ渡し (`load-client.js`)、`@tanstack/react-router` の `Transitioner` がそれを `React.startTransition` で包んでいた。
 
 ### 制約: registry の Button に action prop は無い
 
 `src/components/ui/button.tsx` は shadcn registry の出力で、改変は ADR-0020 の許容リストに限る。
-包んでいる `@base-ui/react` 1.8.0 の Button の props は `NativeButtonProps` と `focusableWhenDisabled` だけで、`action` / pending 相当の prop は無い (`node_modules/@base-ui/react/button/Button.d.ts`)。
+包んでいる `@base-ui/react` の Button の props は、2026-09-13 に読んだ 1.8.0 の `node_modules/@base-ui/react/button/Button.d.ts` では `NativeButtonProps` と `focusableWhenDisabled` だけで、`action` / pending 相当の prop は無かった。
 
 | ライブラリ | 状況 (2026-09-13)                                                                                                                                                       |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -64,7 +63,7 @@ React はユーザー起点のイベントごとに次のイベントより前�
 
 | 論点                       | 根拠                                                                                                                                                                                                                                                                         |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流す (react-dom 19.3.0 `scheduleImmediateRootScheduleTask`)                                  |
+| 実イベントの間に描画が済む | HTML 仕様「clean up after running script」は、スクリプトの実行コンテキストのスタックが空になるたびに microtask checkpoint を行う。React は SyncLane の描画を `queueMicrotask` で流していた (2026-09-13 に読んだ react-dom 19.3.0 の `scheduleImmediateRootScheduleTask`)     |
 | React の保証               | reactwg/react-18#21 は、ユーザー起点のイベントごとに次のイベントより前へ DOM 更新を終えると明言している                                                                                                                                                                      |
 | 同期 2 連射                | `dispatchEvent` を同期に 2 回呼ぶとスタックが空にならず checkpoint が挟まらない。同一要素へ同期に 2 回 click が届くことは実イベントでは起きない (label の activation behavior のように別要素へ転送される click とは別の話)。これを固定したテストは実装に無用の防御を要求する |
 | 実測 (2026-09-13)          | CDP 経由の実クリックと Enter の 2 連射で action は 1 回。`disabled={isPending}` を外した mutant では 2 回呼ばれて落ちる (Action 層の button / form と削除確認ダイアログの 2 連射テストで実測)                                                                                |
