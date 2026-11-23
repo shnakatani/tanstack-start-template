@@ -21,7 +21,8 @@
 `ui/` が export した variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときは、次に従う。規則がどの書き方を読むかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と Limits、`settings.shadcn` の各設定の意味は [shadcn-ui/lint docs「Settings」][] が持つ。
 
 - 書き足す class は `cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書く。`buttonVariants({ variant, className: "mt-4" })` のキーには書かない。キーの値は検査されず、色と未知 class の検査から外れても診断は出ない。理由は「`cn()` の引数に書く理由」にある
-- 戻り値を design system component (`ui/` `action/` `parts/` の部品と、その `render` に渡す要素) の `className` へ渡すと、import した関数の呼び出しは読めないので `require-static-classes` が落とす ([shadcn-ui/lint docs「require-static-classes」][] の Variant functions、[shadcn-ui/lint#178][])
+- 戻り値を design system component (`ui/` `action/` `parts/` の部品) の `className` か、部品の `render` に渡して部品として判定される要素 (`<Button render={<Link />}>` の `Link` など) の `className` へ渡すと、import した関数の呼び出しは読めないので `require-static-classes` が落とす ([shadcn-ui/lint docs「require-static-classes」][] の Variant functions、[shadcn-ui/lint#178][])。class を足さない部品 (`PopoverTrigger` など) の `render` に渡した素の要素は判定されない ([@shadcn/lint の CHANGELOG][] の 0.2.5)
+- 落ちたときは、アプリの route へのリンクなら `ButtonLink` (`src/components/parts/button-link.tsx`) を使う。受けた `ref` と props を描く `<a>` へ渡すので、部品の `render` にも渡せる。外部へのリンクなら素の `<a>` に `buttonVariants` を当てる ([shadcn docs「Button」][] の As Link の "Use `buttonVariants` with a plain `<a>` tag instead.")
 - `settings.shadcn.variantFunctions` と `mergeFunctions` へ variant 関数を登録しない (ADR-0023)
 
 ### `@shadcn/lint` の時間と警告を読む
@@ -48,5 +49,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 [shadcn-ui/lint docs「Settings」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/README.md#settings
 [shadcn-ui/lint docs「How it works」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/how-it-works.md
 [shadcn-ui/lint#178]: https://github.com/shadcn-ui/lint/issues/178
+[@shadcn/lint の CHANGELOG]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/packages/lint/CHANGELOG.md
+[shadcn docs「Button」]: https://ui.shadcn.com/docs/components/base/button
 [shadcn の `calendar-hijri.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/examples/base/calendar-hijri.tsx
 [shadcn の `collapsible-example.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/aria/examples/collapsible-example.tsx
