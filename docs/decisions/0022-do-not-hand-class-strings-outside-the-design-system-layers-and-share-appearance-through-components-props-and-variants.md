@@ -8,7 +8,7 @@
 
 消費側が design system component へ渡す `className` は、`@shadcn/lint` の `no-raw-colors` と `no-unknown-classes` が中身を読めて初めて色と未知 class の統制 (ADR-0023) に掛かる。
 中身が読めるかは渡し方で決まり、他ファイルから import した `const` は読まれない (2026-09-19、`@shadcn/lint` 0.1.0 の実測)。上流の require-static-classes.md の Variables and functions も、import した値と未知の関数の呼び出しを読めない値として報告すると書く。
-`@shadcn/lint` の `resolveIdentifier` が `Variable` 型でない定義で解決を打ち切り、import 束縛はこの型を持たないためである。
+`@shadcn/lint` の `resolveIdentifier` が `Variable` 型でない定義で解決を打ち切り、import 束縛はこの型を持たないためである (2026-09-19 に 0.1.0 の dist で読み、2026-11-23 に 0.2.5 の dist にも同じ判定があることを確かめた。docs では require-static-classes.md の Variables and functions が "Imported values and unknown function calls are reported" と書く)。
 
 `require-static-classes` を一時的に足して測った違反は、`src/routes/` の 2 件だけだった (2026-09-19)。
 `src/components/screens/` と直下、`src/features/` は 0 件である。測定時の `excludeFiles` (`ui/` `action/` `parts/`) の内側は測っていない。

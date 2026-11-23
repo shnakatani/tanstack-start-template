@@ -18,7 +18,7 @@
 
 ### `ui/` の variant 関数を外で呼ぶ
 
-`ui/` が export した variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときは、次に従う。どこへ渡すと規則が落とすかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と [shadcn-ui/lint docs「How it works」][] の Wrappers、`settings.shadcn` の各設定の意味は [shadcn-ui/lint docs「Settings」][] が持つ。
+`ui/` が export した variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときは、次に従う。どこへ渡すと規則が落とすかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と Limits、[shadcn-ui/lint docs「How it works」][] の Wrappers、`settings.shadcn` の各設定の意味は [shadcn-ui/lint docs「Settings」][] が持つ。
 
 - 書き足す class は `cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書く。`buttonVariants({ variant, className: "mt-4" })` のキーには書かない (「`cn()` の引数に書く理由」)
 - 戻り値を部品へ渡すと、`require-static-classes` が落とすことがある (どこへ渡すと落ちるかは上の 2 つの節にある)。落ちたら、渡した要素から variant 関数の戻り値を外して見た目は部品自身に任せ、足りない見た目は `ui/` の variant で配る (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)。アプリの route への button の見た目のリンクを部品の `render` に渡すなら、素の要素ではなく `ButtonLink` を渡す (部品の props を受けて描く)
@@ -38,7 +38,7 @@ design system 自身の内部では、消費側の上書きを見る規則も、
 
 ### `cn()` の引数に書く理由
 
-- variant 関数は `settings.shadcn` に登録しないので (ADR-0023)、import した variant 関数の呼び出しの引数に書いた class は linter に読まれない。`cn()` の引数に書いた class は読まれる ([shadcn-ui/lint docs「How it works」][] の Where it looks)
+- variant 関数は `settings.shadcn` に登録しないので (ADR-0023)、import した variant 関数の呼び出しの引数に書いた class は linter に読まれない ([shadcn-ui/lint docs「require-static-classes」][] の Variant functions、[shadcn-ui/lint docs「How it works」][] の What it cannot see)。`className` キーに色の class を書いても指摘が出ないことを、2026-11-23 に `@shadcn/lint` 0.2.5 で確かめた。`cn()` の引数に書いた class は読まれる ([shadcn-ui/lint docs「How it works」][] の Where it looks)
 - shadcn/ui の例は両方の形を使う。[shadcn の `calendar-hijri.tsx`][] は `cn()` の引数に書き、[shadcn の `collapsible-example.tsx`][] は `className` キーに書く。キーの形を写すときは `cn()` の引数へ移す
 
 ## 出典

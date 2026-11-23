@@ -66,11 +66,11 @@ token だけを混ぜる `color-mix()` の通し方:
 
 `cva` が返した variant 関数 (`buttonVariants` など) の扱い:
 
-| 案                                              | 評価                                                                                                                                                                                                                                                                                                            | 採否     |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 登録せず、書き足す class を `cn()` の引数に書く | `cn` は組み込みの class 関数で、引数の class が検査される (how-it-works.md「Where it looks」)                                                                                                                                                                                                                   | **採用** |
-| `variantFunctions` へ宣言する                   | README の Settings はこの設定を "Adds functions whose object values contain classes." と定義する。`buttonVariants` の引数の object の値 (`variant: "outline"`、`size: "sm"`) は variant の名前で、class ではない。組み込みの variant 関数に挙がる `cva` と `tv` は、引数の object の値に class を書く関数である | 却下     |
-| `mergeFunctions` へ登録する                     | require-static-classes.md の Custom class helpers は "Only register helpers whose arguments accurately describe their output." と求める。variant 関数の引数は variant の名前で、出力の class を表さない                                                                                                         | 却下     |
+| 案                                              | 評価                                                                                                                                                                                                                                                                                                                                                                                                                        | 採否     |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 登録せず、書き足す class を `cn()` の引数に書く | `cn` は組み込みの class 関数で、引数の class が検査される (how-it-works.md「Where it looks」)                                                                                                                                                                                                                                                                                                                               | **採用** |
+| `variantFunctions` へ宣言する                   | README の Settings はこの設定を "Adds functions whose object values contain classes." と定義する。`buttonVariants` の引数のうち `variant` と `size` の値 (`"outline"`、`"sm"`) は variant の名前で class ではなく、class を受けるのは `class` と `className` のキーだけである (cva docs「Variants」「Extending Components」)。組み込みの variant 関数に挙がる `cva` と `tv` は、引数の object の値に class を書く関数である | 却下     |
+| `mergeFunctions` へ登録する                     | require-static-classes.md の Custom class helpers は "Only register helpers whose arguments accurately describe their output." と求める。variant 関数の引数の `variant` と `size` は variant の名前で、出力の class を表さない                                                                                                                                                                                              | 却下     |
 
 ## Consequences
 
@@ -95,6 +95,8 @@ token だけを混ぜる `color-mix()` の通し方:
 - `@shadcn/lint` 0.2.5 の README (「Settings」の `variantFunctions` と組み込みの variant 関数): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/README.md#settings
 - `@shadcn/lint` 0.2.5 の how-it-works.md (「Where it looks」の class を読む呼び出し): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/how-it-works.md
 - `@shadcn/lint` 0.2.5 の require-static-classes.md (「Custom class helpers」の登録の条件): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/require-static-classes.md
+- cva docs「Variants」(variant の名前と class の対応): https://cva.style/docs/getting-started/variants
+- cva docs「Extending Components」(`class` と `className` のキーで class を足す): https://cva.style/docs/getting-started/extending-components
 - 使われない `@typescript-eslint/parser` が ESLint と typescript を連れてくる件: https://github.com/shadcn-ui/lint/issues/1
 - pnpm の `packageExtensions` (依存の manifest へ `peerDependenciesMeta` を後付けする): https://pnpm.io/settings/dependency-resolution
 - Tailwind CSS の既定 palette を差し替える手順 (`--color-*: initial`): https://tailwindcss.com/docs/colors
