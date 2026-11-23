@@ -1,7 +1,7 @@
 # ADR-0022: design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る
 
 - Status: Accepted
-- Date: 2026-09-25
+- Date: 2026-11-23
 - 関連: ADR-0011 (コンポーネントの層と適用範囲の表し方)、ADR-0023 (`@shadcn/lint` のルールの選定)、ADR-0016 (Action 層の責務)
 
 ## Context
@@ -35,7 +35,7 @@
 
 - 消費側の `className` はすべて linter が読める形になり、`no-raw-colors` と `no-unknown-classes` の検査が届く範囲が確定する
 - 恒久的な例外はゼロで、違反が増えても抑制行は増えない
-- `ui/` から外へ class 文字列を配る形が閉じる。`parts/` や `action/` が export した class 定数も、他のファイルが import して部品へ渡せば規則が落とす。`ui/` の内側での共有は残る
+- `ui/` から外へ class 文字列を配る形が閉じる。`parts/` や `action/` が export した class 定数と `cva` の戻り値も、他のファイルが import して部品へ渡せば規則が落とす。`ui/` の外の `cva` は、定義したファイルの中でだけ呼ぶ。`ui/` の内側での共有は残る
 
 ## 出典
 
