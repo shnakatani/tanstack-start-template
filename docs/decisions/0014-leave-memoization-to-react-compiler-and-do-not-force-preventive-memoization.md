@@ -38,7 +38,7 @@ registry コード (`src/components/ui/`) は ADR-0020 の統制対象なので�
 
 `viteReact` の `compiler.reportDiagnostics` を `true` にして、Compiler が諦めた箇所をビルドログへ出す。テストの分岐での扱いは `docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」にある。
 既定は `false` で、最適化が外れたことがどこにも現れない。
-`result.fatal` が立つ診断は `reportDiagnostics` によらず transform を失敗させ、ビルドが落ちる (`@vitejs/plugin-react` の `dist/index.js` が `this.error` を呼ぶ)。ただし fatal になるのはパース・意味解析・オプション検証の失敗で、Compiler 自身の診断は `panicThreshold` の既定 `none` により recoverable に留まる。
+2026-09-02 に読んだ `@vitejs/plugin-react` 6.1.1 の `dist/index.js` では、`result.fatal` が立つ診断は `reportDiagnostics` によらず `this.error` で transform を失敗させ、ビルドが落ちた。ただし fatal になるのはパース・意味解析・オプション検証の失敗で、Compiler 自身の診断は `panicThreshold` の既定 `none` により recoverable に留まっていた。
 
 bail out の一覧を期待値として固定する検査は置かない。理由は 3 つある。
 

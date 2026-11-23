@@ -145,7 +145,7 @@ recommended に無くても、規約や他の決定を機械で守るために�
 - 名指ししたルールが oxlint 側で改名・廃止されると `vp lint` が設定のパースで落ちる (`Rule 'react-compiler' not found in plugin 'react'`)。取りこぼしは起きないが、更新の PR は lint が動かない状態から始まる
 - 有効カテゴリは `scripts/checks/integrity/lint-config.test.ts` が解決後設定の値で押さえる。カテゴリで有効になったルールは `rules` に名指ししないので、書いたルールとの突き合わせでは脱落を拾えない
 - TanStack の 2 plugin は JS plugin で載せる。oxlint にネイティブの実装は無く、ネイティブ化を求めた oxc-project/oxc#11648 は discussion へ移され、実装は入っていない (2026-09-26 に oxc の issue と PR を検索)。JS plugin は型情報を受け取れないので、型情報を使う `no-void-query-fn` は入れず、`no-rest-destructuring` は型情報を使うケースを見逃す
-- `prefer-query-options` は `QueryClient` のメソッド呼び出しを、client の出どころを同じファイルの `useQueryClient()` か `new QueryClient()` まで辿れたときだけ検査する。引数や router の context で受け取った client の呼び出しと、定数で渡した `queryKey` は検査されない (`@tanstack/eslint-plugin-query` 5.103.2 のルールの実装と、2026-09-26 の probe で確認)
+- 2026-09-26 に `@tanstack/eslint-plugin-query` 5.103.2 のルールの実装と probe で確かめた範囲では、`prefer-query-options` は `QueryClient` のメソッド呼び出しを、client の出どころを同じファイルの `useQueryClient()` か `new QueryClient()` まで辿れたときだけ検査した。引数や router の context で受け取った client の呼び出しと、定数で渡した `queryKey` は検査されなかった
 - 上流が warn にしているルールは error で入れる。`vp check` は警告では落ちない
 
 ## 出典
