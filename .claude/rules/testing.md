@@ -114,7 +114,7 @@ paths:
 - `vi.stubEnv` と `vi.stubGlobal` は `beforeEach` かテストの中で呼び、テストファイルと setup ファイルの最上位と `beforeAll` で呼ばない (`vi.mock` は最上位のまま)。最初のテストの前に戻り、差し替える前の値のまま気付かずに通ることがある (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - テストの中でグローバルを差し替えるときは `vi.stubGlobal` を使い、`globalThis` へ代入しない。代入した値は戻らず後のテストへ残る。差し替える関数が `onTestFinished` で戻しを登録する値 (`src/test/browser/animations.ts`) は除く (`docs/guides/testing/mocking.md`「環境変数とグローバルを差し替える」)
 - 同じモジュールを複数のテストで丸ごと差し替えるなら、隣の `__mocks__/<同名>` に置き、factory なしの `vi.mock(import(...))` で読む。無いと元を読んで automock し、ブラウザで読めないものは落ちる (`docs/guides/testing/mocking.md`「`__mocks__` に寄せる理由」)
-- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。fake timers は使わない。browser mode の `userEvent.keyboard` は fake timer を進めず、時計の進みをテストが決められない (`docs/guides/testing/user-interactions.md`「debounce のある入力をテストする」)
+- 実時間の待ち (debounce の `wait`) に依存するテストは、定数を `vi.mock(import(...))` の partial mock で広げる。literal 型に固めない。fake timers は使わない。browser mode では locator の操作と `expect.element` が待つ間に fake timer を進め、時計の進みをテストが決められない (`docs/guides/testing/user-interactions.md`「debounce のある入力をテストする」)
 - 引数ごとに応答を変える mock は `vi.when(vi.mocked(fn), { onUnmatched: "throw" })` で書き、`mockImplementation` に引数の分岐を手書きしない。想定外の引数で呼ばれたことを見逃さない (`docs/guides/testing/mocking.md`「戻り値を決める」)
 - `vi.when` で登録した引数が全部呼ばれたことを、戻り値の `toHaveBeenExhausted()` で閉じる。`onUnmatched: "throw"` は、登録した呼び出しが来なかったことを捕まえない (`docs/guides/testing/mocking.md`「戻り値を決める」)
 

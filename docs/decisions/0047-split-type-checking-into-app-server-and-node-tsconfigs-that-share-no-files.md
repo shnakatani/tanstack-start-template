@@ -52,7 +52,7 @@ tsrs は、ファイルを `include` に持つ tsconfig の program でそのフ
 4. ルートの `tsconfig.json` は base を `extends` して `paths` を持つ。shadcn の CLI はルートの `tsconfig.json` の `paths` だけを読む (shadcn-ui/ui#11466 "tsconfig.app.json tsconfig.node.json are ignored"、fallback を足す shadcn-ui/ui#11469 は 2026-11-03 時点で open)。`vp exec shadcn info` の `importAlias` は、この形で `@`、`extends` を外すと `-` だった (2026-11-03、shadcn 4.22.2)
 5. `composite` は書かない。この形で `vp dlx -p typescript@6.0.3 tsc -b` は exit 0 だった (2026-11-03)。create-vite の react-ts も、空のルートから参照する形では `composite` が要らないとして外している (vitejs/vite#17774)
 
-`vp check` での境界は次のとおりである (probe を置いて `vp check --no-fmt` を打ち、probe は消した。2026-11-03、vite-plus 1.4.0)。
+`vp check` での境界は次のとおりである (probe を置いて `vp check --no-fmt` を打ち、probe は消した。2026-11-23、vite-plus 1.7.0)。
 
 | probe を置いた場所 (program)                                     | 書いた式                                                                    | 結果                                                                                    |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -103,4 +103,5 @@ app と node に境界ができない理由は、どちらも依存の型の連�
 - TypeScript 3.9 の release notes「Support for "Solution Style" `tsconfig.json` Files」(TypeScript-Website v2 `205122bb73`): https://github.com/microsoft/TypeScript-Website/blob/205122bb73dcbf6f3b373de5bdb0d9fa5434d015/packages/documentation/copy/en/release-notes/TypeScript%203.9.md
 - Vite docs「Shared Options > tsconfig」(vitejs/vite main `b3cb0575af`、2026-11-03 に確認): https://github.com/vitejs/vite/blob/b3cb0575aff63004a71301a1ec798aeea2aa05d7/docs/config/shared-options.md
 - Vite+ docs「Check」(型検査が tsrs の `tsrs-lint` で動くこと、v1.7.0): https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/check.md
+- Vite+ docs「Lint」(type-aware lint の仕組み。tsconfig の割り当ての順は書かない、v1.7.0): https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/lint.md
 - shadcn の CLI が `tsconfig.app.json` を読まない報告と、その fallback の PR (2026-11-03 時点で open): https://github.com/shadcn-ui/ui/issues/11466 / https://github.com/shadcn-ui/ui/pull/11469

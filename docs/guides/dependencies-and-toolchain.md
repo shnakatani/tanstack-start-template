@@ -217,7 +217,7 @@ tsconfig は worktree の除外を持たず、`include` をリポジトリの直
 | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/` の中のディレクトリ、付随ファイルの種別                                        | 直さない。app の `include` が `src/` を丸ごと持ち、server の `include` に当たるものだけを `exclude` で外す                                                                                                                                               |
 | サーバーだけのファイルの区分 (`.server.` の接尾辞、`src/server/`)                    | `tsconfig.server.json` の `include` と `tsconfig.app.json` の `exclude` を、同じ glob で直す                                                                                                                                                             |
-| リポジトリの直下のコードのディレクトリ、設定ファイル、`.storybook/` に足したファイル | 動く環境の tsconfig の `include` に足す。どの `include` にも入らないファイルも `vp check` は既定の設定で検査し、DOM の global を通すが、既定の設定には `paths` が無いので `@/` の import は TS2307 で落ち、Node の型も無い (2026-11-04、vite-plus 1.4.0) |
+| リポジトリの直下のコードのディレクトリ、設定ファイル、`.storybook/` に足したファイル | 動く環境の tsconfig の `include` に足す。どの `include` にも入らないファイルも `vp check` は既定の設定で検査し、DOM の global を通すが、既定の設定には `paths` が無いので `@/` の import は TS2307 で落ち、Node の型も無い (2026-11-23、vite-plus 1.7.0) |
 | tsconfig そのもの                                                                    | `tsconfig.base.json` を `extends` し、ルートの `tsconfig.json` の `references` に足す。`include` はディレクトリ名から始め、`**/*` にしない (`.claude/worktrees/**` を拾う)。`paths` は base が持つ                                                       |
 
 - `include` と `exclude` は継承の元と合わさらず、`extends` した側の値で上書きされる ([TSConfig Reference「extends」][])。`compilerOptions.lib` も、書けば base の値を置き換えるので、`ESNext.Error` (ADR-0038) を書き落とさない
@@ -242,7 +242,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 
 ### `typescript` を直接の依存に置かない理由
 
-`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsrs (TypeScript 7 のコンパイラを Rust へ移したもの) の `tsrs-lint` である ([Vite+ docs「Check」][])。tsrs は `vite-plus` が依存として入れ、`typescript` パッケージに依存しない (`tsrs@7.1.0-beta.tsrs2` の依存はプラットフォームごとのバイナリだけ)。
+`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsrs (TypeScript 7 のコンパイラを Rust へ移したもの) の `tsrs-lint` である ([Vite+ docs「Check」][]、[Vite+ docs「Lint」][])。tsrs は `vite-plus` が依存として入れ、`typescript` パッケージに依存しない (`tsrs@7.1.0-beta.tsrs2` の依存はプラットフォームごとのバイナリだけ)。
 `typescript` パッケージは `@voidzero-dev/vite-plus-core` や Storybook、typescript-eslint の推移依存として入るので、直接の依存から外しても install からは消えない (2026-11-23 に vite-plus 1.7.0 で `pnpm why typescript`)。同じ日に、直接の依存に置かないまま型の誤りを置いて `vp check` を走らせると、`TS2322` を報告した。
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
@@ -273,6 +273,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 [dependabot/dependabot-core#14576]: https://github.com/dependabot/dependabot-core/issues/14576
 [vitest-dev/vitest#9157]: https://github.com/vitest-dev/vitest/issues/9157
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/check.md
+[Vite+ docs「Lint」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/lint.md
 [pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
 [pnpm docs「peerDependencyRules.allowedVersions」]: https://pnpm.io/settings/peer-dependencies#peerdependencyrulesallowedversions
