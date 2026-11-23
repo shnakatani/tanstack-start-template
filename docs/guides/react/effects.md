@@ -89,7 +89,7 @@ router との間の副作用は、契機が router の外の変化か、router �
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。「effect に書くかを判定する」の 4 の行が引く [React docs「You Might Not Need an Effect」][] の文は、2026-10-06 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。「effect に書くかを判定する」の 4 の行が引く [React docs「You Might Not Need an Effect」][] の文は、2026-10-06 に原文と照らした。TanStack Router docs「Router Events」は `@tanstack/react-router` 1.170.46 に固定した版を指し、引いた文は 2026-11-23 にその版の原文と照らした。
 
 [React docs「Separating Events from Effects」]: https://react.dev/learn/separating-events-from-effects
 [React docs「You Might Not Need an Effect」]: https://react.dev/learn/you-might-not-need-an-effect
@@ -98,7 +98,7 @@ router との間の副作用は、契機が router の外の変化か、router �
 [TanStack Router docs「Router Context」]: https://tanstack.com/router/latest/docs/guide/router-context
 [TanStack Router docs「RouterOptions」]: https://tanstack.com/router/latest/docs/api/router/RouterOptionsType
 [TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/guide/data-loading
-[TanStack Router docs「Router Events」]: https://tanstack.com/router/latest/docs/guide/router-events
+[TanStack Router docs「Router Events」]: https://github.com/TanStack/router/blob/%40tanstack/react-router%401.170.46/docs/router/guide/router-events.md
 [TanStack Start docs「Client Entry Point」]: https://tanstack.com/start/latest/docs/framework/react/guide/client-entry-point
 [React docs「Component」]: https://react.dev/reference/react/Component
 [TanStack/router#3810]: https://github.com/TanStack/router/issues/3810

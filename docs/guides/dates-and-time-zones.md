@@ -90,7 +90,7 @@ SSR する画面では、同じ値をサーバーとブラウザの両方で整�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。valibot docs「isoDate」は 2026-11-23 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。valibot docs「isoDate」は valibot 1.5.0 に固定した版を指し、2026-11-23 に原文と照らした。
 
 [MDN「Intl.DateTimeFormat.prototype.formatToParts()」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatToParts
 [MDN「Intl.DateTimeFormat() constructor」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat
@@ -99,7 +99,7 @@ SSR する画面では、同じ値をサーバーとブラウザの両方で整�
 [MDN「Intl.DateTimeFormat.prototype.format()」]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/format
 [react-day-picker docs「Setting the Time Zone」]: https://daypicker.dev/localization/setting-time-zone
 [shadcn docs「Calendar」]: https://ui.shadcn.com/docs/components/base/calendar
-[valibot docs「isoDate」]: https://valibot.dev/api/isoDate/
+[valibot docs「isoDate」]: https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/%28actions%29/isoDate/index.mdx
 [drizzle docs「Indexes & Constraints」]: https://orm.drizzle.team/docs/indexes-constraints
 [SQLite docs「Date And Time Functions」]: https://www.sqlite.org/lang_datefunc.html
 [React docs「hydrateRoot」]: https://react.dev/reference/react-dom/client/hydrateRoot

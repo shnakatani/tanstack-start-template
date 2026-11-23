@@ -332,7 +332,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に、Storybook docs「Accessibility testing」の引用は 2026-10-08 に、Oxlint docs「jsx-a11y/prefer-tag-over-role」は 2026-11-23 に oxlint 1.94.0 の原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に、Storybook docs「Accessibility testing」の引用は 2026-10-08 に、Oxlint docs「jsx-a11y/prefer-tag-over-role」は 2026-11-23 に、生成元の oxlint 1.94.0 のルールのソース ([oxlint 1.94.0 の `prefer_tag_over_role.rs`][] の DOCUMENTATION) と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -375,3 +375,4 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 [APG「Select-Only Combobox Example」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/
 [APG「Editable Combobox With List Autocomplete Example」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/
 [Oxlint docs「jsx-a11y/prefer-tag-over-role」]: https://oxc.rs/docs/guide/usage/linter/rules/jsx_a11y/prefer-tag-over-role.html
+[oxlint 1.94.0 の `prefer_tag_over_role.rs`]: https://github.com/oxc-project/oxc/blob/229b69bf10a9c876f84287123fdf9d5e0747c96b/crates/oxc_linter/src/rules/jsx_a11y/prefer_tag_over_role.rs#L25-L50
