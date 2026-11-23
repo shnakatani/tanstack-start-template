@@ -6,8 +6,8 @@
 
 ## Context
 
-`vp check` は、oxlint の type-aware の経路 (tsgolint) で型検査を行う (`docs/guides/dependencies-and-toolchain.md`「`typescript` を直接の依存に置かない理由」、`tooling/lint/config.ts` の `typeCheck: true`)。
-tsgolint は、ファイルを `include` に持つ tsconfig の program でそのファイルを検査する。import で別の program に入っただけのファイルは、その program では検査しない (oxc-project/tsgolint#817 のメンテナの回答 "To fix this you should use project references, this allows us (and tsc) to automatically work out what tsconfig to use for each file")。
+`vp check` は、oxlint の type-aware の経路 (tsrs) で型検査を行う (`docs/guides/dependencies-and-toolchain.md`「`typescript` を直接の依存に置かない理由」、`tooling/lint/config.ts` の `typeCheck: true`)。
+tsrs は、ファイルを `include` に持つ tsconfig の program でそのファイルを検査する。import で別の program に入っただけのファイルは、その program では検査しない (2026-11-23、vite-plus 1.7.0 の tsrs 7.1.0-beta.tsrs2 で probe。`src/server/` のファイルの `document` は TS2584 になり、`document` を使う `src/lib/` のファイルを `src/server/` から import しても TS2584 は出なかった)。
 
 このテンプレートのファイルは、動く環境で 3 つに分かれる。
 
@@ -52,7 +52,7 @@ tsgolint は、ファイルを `include` に持つ tsconfig の program でそ�
 4. ルートの `tsconfig.json` は base を `extends` して `paths` を持つ。shadcn の CLI はルートの `tsconfig.json` の `paths` だけを読む (shadcn-ui/ui#11466 "tsconfig.app.json tsconfig.node.json are ignored"、fallback を足す shadcn-ui/ui#11469 は 2026-11-03 時点で open)。`vp exec shadcn info` の `importAlias` は、この形で `@`、`extends` を外すと `-` だった (2026-11-03、shadcn 4.22.2)
 5. `composite` は書かない。この形で `vp dlx -p typescript@6.0.3 tsc -b` は exit 0 だった (2026-11-03)。create-vite の react-ts も、空のルートから参照する形では `composite` が要らないとして外している (vitejs/vite#17774)
 
-`vp check` での境界は次のとおりである (probe を置いて `vp check --no-fmt` を打ち、probe は消した。2026-11-03、vite-plus 1.4.0)。
+`vp check` での境界は次のとおりである (probe を置いて `vp check --no-fmt` を打ち、probe は消した。2026-11-23、vite-plus 1.7.0)。
 
 | probe を置いた場所 (program)                                     | 書いた式                                                                    | 結果                                                                                    |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -77,16 +77,16 @@ app と node に境界ができない理由は、どちらも依存の型の連�
 | `tsconfig.json` 1 つのまま                                                             | TanStack Start の docs・examples・CLI の雛形と同じ形。`src/server/` と `scripts/` に置いた `document.title` も、`src/lib/` に置いた `Buffer`・`process.env` も通る (2026-11-03 の probe)。サーバーだけのファイルの DOM の誤りを止める手段が無い                                                                                                                                                                                                                                                                                                                                                                                                                | 却下     |
 | create-vite の 2 つ (app = `src/` の全部、node = `scripts/`・`tooling/`・設定ファイル) | app が `src/server/` を `include` に持つので、サーバーだけのファイルで DOM の global が通る。`src/server/db/index.ts` が DB の driver を直に import するので、サンプル実装の有無に関わらず app に Node の型が入る (2026-11-03、`tsc --explainFiles`)                                                                                                                                                                                                                                                                                                                                                                                                           | 却下     |
 | 4 つ (app・test・server・node)                                                         | test の program で 26 件のエラー (`StaticDataRouteOption` に `pageName` が無い TS2353 が 16 件、`staticData.pageName` を持つ route の options の TS2345 が 6 件、`CDPSession` に `send` が無い TS2339 が 4 件。2026-11-03)。テストが `declare module` を持つファイルと、`tooling/` だけが import する `vite-plus/test/browser-playwright` の型に届かない。直すには test の program に型を補う宣言のファイルを置き、付随ファイルの種別を app の `exclude` と test の `include` の 2 か所に書き続ける。テストと story を外した app は、DB を引く server function が無い間だけ Node の型を持たない (サンプル実装を消した状態で `@types/node` は 0 件。2026-11-03) | 却下     |
-| `references` の並び順で割り当てる 3 つ (node・server・app の順、`exclude` なし)        | `vp check` と `vp test run` は採用した形と同じに通った (2026-11-03)。tsgolint が重なったファイルを先に並ぶ tsconfig に割り当てるのは、`internal/utils/find_tsconfig.go` が `references` を幅優先で辿る実装による (oxlint-tsgolint 7.0.2004)。tsgolint の回答も TypeScript 3.9 のリリースノートの "the current `.ts` file probably belongs to one of the mentioned projects" も、順を定めない。`tsc -p tsconfig.app.json` と `tsc -b` は app の `include` にある server のファイルを app の program の根としても検査する。エディタの割り当ては確かめていない                                                                                                    | 却下     |
+| `references` の並び順で割り当てる 3 つ (node・server・app の順、`exclude` なし)        | `vp check` と `vp test run` は採用した形と同じに通った (2026-11-03)。`vp check` は重なったファイルを先に並ぶ tsconfig に割り当てる (2026-11-23、vite-plus 1.7.0 の tsrs。app の `exclude` を外すと server のファイルの `document` は鳴らず、`references` を server から並べると TS2584 が鳴った)。Vite+ docs「Check」と「Lint」(v1.7.0) も TypeScript 3.9 のリリースノートの "the current `.ts` file probably belongs to one of the mentioned projects" も、順を定めない。`tsc -p tsconfig.app.json` と `tsc -b` は app の `include` にある server のファイルを app の program の根としても検査する。エディタの割り当ては確かめていない                        | 却下     |
 
 ## Consequences
 
 - サーバーでだけ動くファイルで DOM の global を書くと、`vp check` が TS2584 で止める
 - `src/server/` に置いた横断的な server function の宣言のファイルは、クライアントからも import されるが、server の program で DOM なしに検査される。宣言のファイルはサーバーの bundle にも入るので (Context)、そこで DOM の global を書けばサーバーで壊れる
 - ブラウザで動くコードで Node の global を書いても、Node で動くコードで DOM の global を書いても、型検査は止めない。実行時に壊れる import は `importProtection` が `vp build` で止める (ADR-0010)
-- server の `include` と app の `exclude` は同じ範囲を指し続ける。片方だけ変えると、ファイルが 2 つの tsconfig に入るか、どちらにも入らない。どの `include` にも入らないファイルも `vp check` は検査し、DOM の global を通すが、既定の設定には `paths` が無いので `@/` の import は TS2307 で落ち、Node の型も無い (2026-11-04、vite-plus 1.4.0)。割り当ての確かめ方は `docs/guides/dependencies-and-toolchain.md`「tsconfig にファイルを割り当てる」にある
+- server の `include` と app の `exclude` は同じ範囲を指し続ける。片方だけ変えると、ファイルが 2 つの tsconfig に入るか、どちらにも入らない。どの `include` にも入らないファイルも `vp check` は検査し、DOM の global を通すが、既定の設定には `paths` が無いので `@/` の import は TS2307 で落ち、Node の型も無い (2026-11-23、vite-plus 1.7.0)。割り当ての確かめ方は `docs/guides/dependencies-and-toolchain.md`「tsconfig にファイルを割り当てる」にある
 - リポジトリの直下にコードのディレクトリを足したら、3 つのどれかの `include` に足す
-- 再評価条件: TanStack Start の docs か CLI の雛形が tsconfig を分ける形を示したとき。tsgolint か TypeScript の docs が `references` の順でファイルを割り当てると定めたとき (`exclude` を外せる)。shadcn の CLI が `references` の先の `paths` を読むようになったとき (ルートの `extends` を外せる)
+- 再評価条件: TanStack Start の docs か CLI の雛形が tsconfig を分ける形を示したとき。tsrs か TypeScript の docs が `references` の順でファイルを割り当てると定めたとき (`exclude` を外せる)。shadcn の CLI が `references` の先の `paths` を読むようになったとき (ルートの `extends` を外せる)
 
 ## 出典
 
@@ -102,6 +102,6 @@ app と node に境界ができない理由は、どちらも依存の型の連�
 - TypeScript の handbook「Project References」(TypeScript-Website v2 `205122bb73`、2026-11-03 に確認): https://github.com/microsoft/TypeScript-Website/blob/205122bb73dcbf6f3b373de5bdb0d9fa5434d015/packages/documentation/copy/en/project-config/Project%20References.md
 - TypeScript 3.9 の release notes「Support for "Solution Style" `tsconfig.json` Files」(TypeScript-Website v2 `205122bb73`): https://github.com/microsoft/TypeScript-Website/blob/205122bb73dcbf6f3b373de5bdb0d9fa5434d015/packages/documentation/copy/en/release-notes/TypeScript%203.9.md
 - Vite docs「Shared Options > tsconfig」(vitejs/vite main `b3cb0575af`、2026-11-03 に確認): https://github.com/vitejs/vite/blob/b3cb0575aff63004a71301a1ec798aeea2aa05d7/docs/config/shared-options.md
-- tsgolint のメンテナの回答 (2026-03-23): https://github.com/oxc-project/tsgolint/issues/817
-- tsgolint がファイルを tsconfig に割り当てる実装 (oxlint-tsgolint 7.0.2004 の版): https://github.com/oxc-project/tsgolint/blob/a61289117febcb1a60cf3bc75ef2b6bbccc4b665/internal/utils/find_tsconfig.go
+- Vite+ docs「Check」(型検査が tsrs の `tsrs-lint` で動くこと、v1.7.0): https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/check.md
+- Vite+ docs「Lint」(type-aware lint の仕組み。tsconfig の割り当ての順は書かない、v1.7.0): https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/lint.md
 - shadcn の CLI が `tsconfig.app.json` を読まない報告と、その fallback の PR (2026-11-03 時点で open): https://github.com/shadcn-ui/ui/issues/11466 / https://github.com/shadcn-ui/ui/pull/11469

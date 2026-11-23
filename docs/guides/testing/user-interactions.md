@@ -86,7 +86,7 @@ route の announcer (ADR-0035) を置いた router で、開く操作をした�
 ### debounce のある入力をテストする
 
 - debounce のテストは、1 文字ずつ別の `userEvent.keyboard` で打つ。`fill` は 1 回の input、`type("abc")` は 3 文字を間を置かず送るので、どちらも debounce の欠落を検出しない (2026-09-23 に mutant で実測)
-- fake timers は使わない。browser mode では locator の操作が fake timer を進めない ([vitest-dev/vitest#10058][])。待ちを広げたいときは、定数を `vi.mock(import(...))` の partial mock で広げる
+- fake timers は使わない。browser mode では、locator の操作が実行中に fake timer を 50ms ずつ進め、`expect.element` が要素を探す再試行の間隔と、assert が落ちたあとの poll の `interval` ごとに進める ([vitest-dev/vitest#11242][]、vitest 5.1.0)。時計の進みがこれらの内部の間隔で決まり、テストが決められない。`userEvent.keyboard` は進めない。待ちを広げたいときは、定数を `vi.mock(import(...))` の partial mock で広げる
 - 広げる定数は `number` の型注釈で宣言し、literal 型に固めない。literal 型のままだと、partial mock の factory が返す広げた値が `vi.mock` の型に合わず、`No overload matches this call` (TS2769) で落ちる (2026-10-05、vitest 5.0.1 で確認)
 
 ## explanation
@@ -209,7 +209,7 @@ Base UI の `FloatingFocusManager` (Dialog、Drawer、Popover、Menu、Select、
 [Playwright docs「Auto-waiting」]: https://playwright.dev/docs/actionability
 [Vitest docs「userEvent.wheel」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/interactivity.md#usereventwheel-410-userevent-wheel
 [Playwright docs「mouse.wheel」]: https://playwright.dev/docs/api/class-mouse#mouse-wheel
-[vitest-dev/vitest#10058]: https://github.com/vitest-dev/vitest/issues/10058
+[vitest-dev/vitest#11242]: https://github.com/vitest-dev/vitest/pull/11242
 [Vitest docs「Interactivity API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/api/browser/interactivity.md
 [vitest-dev/vitest#5770]: https://github.com/vitest-dev/vitest/issues/5770
 [MDN「Event: cancelable property」]: https://developer.mozilla.org/en-US/docs/Web/API/Event/cancelable
