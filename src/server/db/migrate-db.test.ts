@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { readMigrationFiles } from "drizzle-orm/migrator";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import { createDb, migrateDb } from "./index";
 
@@ -69,6 +69,19 @@ function createDbWithRows(folder: string, onDelete: OnDelete) {
   return db;
 }
 
+/** 外部キーの検査を切って、どの親も指さない子の行 (rowid 4) を入れる。当てる前からある違反を作る */
+function insertOrphanBook(db: ReturnType<typeof createDb>): void {
+  db.$client.pragma("foreign_keys = OFF");
+  db.$client.exec("insert into books (id, title, author_id) values (4, 'orphan', 9)");
+  db.$client.pragma("foreign_keys = ON");
+}
+
+/** 別のテーブルを足すだけの migration。外部キーの違反を作らない */
+const CREATE_PUBLISHERS = `CREATE TABLE \`publishers\` (
+	\`id\` integer PRIMARY KEY NOT NULL
+);
+`;
+
 function readBooks(db: ReturnType<typeof createDb>): unknown[] {
   return db.$client.prepare("select id, author_id from books order by id").all();
 }
@@ -120,6 +133,74 @@ describe("migrateDb", () => {
     expect(readBooks(db)).toEqual(BOOKS);
     expect(readMigrationRecords(db)).toEqual(recordsBefore);
     expect(db.$client.inTransaction).toBe(false);
+  });
+
+  it("未適用の migration のどれかが違反を増やせば、ほかの migration の変更と記録も残さない", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    const recordsBefore = readMigrationRecords(db);
+    writeMigrations(dir.path, [
+      createTables("no action"),
+      CREATE_PUBLISHERS,
+      rebuildAuthors(' WHERE "id" <> 2'),
+    ]);
+
+    expect(() => migrateDb(db, dir.path)).toThrow(/外部キーの違反/);
+
+    expect(
+      db.$client.prepare("select name from sqlite_schema where name = 'publishers'").all(),
+    ).toEqual([]);
+    expect(readMigrationRecords(db)).toEqual(recordsBefore);
+  });
+
+  // SQLite の手順の検査は、スキーマの変更が外部キーを壊していないことを確かめる。当てる前からある違反で止めると、
+  // 違反のある DB では違反と関係の無い migration も当てられない
+  it("当てる前からある違反だけなら、増えていないので当てる", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    insertOrphanBook(db);
+    writeMigrations(dir.path, [createTables("no action"), rebuildAuthors()]);
+
+    migrateDb(db, dir.path);
+
+    expect(readMigrationRecords(db)).toHaveLength(2);
+    expect(readBooks(db)).toEqual([...BOOKS, { id: 4, author_id: 9 }]);
+  });
+
+  it("当てる前からある違反があっても、増えた違反で落とし、文言には増えた違反だけを出す", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    insertOrphanBook(db);
+    writeMigrations(dir.path, [createTables("no action"), rebuildAuthors(' WHERE "id" <> 2')]);
+
+    expect(() => migrateDb(db, dir.path)).toThrow(
+      /外部キーの違反を増やすので、適用せずに戻した: \[\{"table":"books","rowid":3,"parent":"authors","fkid":0\}\]$/,
+    );
+  });
+
+  it("外部キーの検査を戻せなかったら、migration の失敗を cause に残して落とす", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    writeMigrations(dir.path, [createTables("no action"), rebuildAuthors(' WHERE "id" <> 2')]);
+    // ON に戻す PRAGMA だけを落とし、ほかの PRAGMA は元の実装へ通す。既定の passthrough は spyOn の元の実装を
+    // 呼ばずに undefined を返したので (2026-11-23、vitest 5.1.0 で実測)、元の実装を onUnmatched に渡す
+    const pragma = db.$client.pragma.bind(db.$client);
+    using _pragma = vi
+      .when(vi.spyOn(db.$client, "pragma"), { onUnmatched: pragma })
+      .calledWith("foreign_keys = ON")
+      .thenThrow(new Error("disk I/O error"));
+
+    let thrown: unknown;
+    try {
+      migrateDb(db, dir.path);
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect.assert(thrown instanceof Error);
+    expect(thrown.message).toMatch(/外部キーの検査を戻せない.*disk I\/O error/);
+    expect.assert(thrown.cause instanceof Error);
+    expect(thrown.cause.message).toMatch(/外部キーの違反を増やす/);
   });
 
   it("適用し終えたら、成功しても失敗しても、接続の外部キーの検査を有効に戻す", () => {
@@ -183,10 +264,10 @@ describe("migrateDb", () => {
     db.$client.exec("BEGIN");
 
     expect(() => migrateDb(db, dir.path)).toThrow(/外部キーの検査を切れない/);
-
-    db.$client.exec("ROLLBACK");
+    // ROLLBACK の前に見る。後に見ると、開いたトランザクションの中で当たっていても ROLLBACK が消す
     expect(
       db.$client.prepare("select name from sqlite_schema where name = 'authors'").all(),
     ).toEqual([]);
+    db.$client.exec("ROLLBACK");
   });
 });
