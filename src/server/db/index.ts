@@ -63,8 +63,8 @@ const MIGRATIONS_TABLE = "__drizzle_migrations";
  * drizzle-orm の migrator はトランザクションの中で `PRAGMA foreign_keys=OFF` を流すので効かず、
  * 子から参照される親を作り直すと、`DROP TABLE` が外部キーの検査で落ちるか、`ON DELETE` の動作で子の行を消す
  */
-export function migrateDb(db: Db): void {
-  const migrations = readMigrationFiles({ migrationsFolder: MIGRATIONS_FOLDER });
+export function migrateDb(db: Db, migrationsFolder: string = MIGRATIONS_FOLDER): void {
+  const migrations = readMigrationFiles({ migrationsFolder });
   withForeignKeysOff(db, () => {
     applyPendingMigrations(db, migrations);
   });
