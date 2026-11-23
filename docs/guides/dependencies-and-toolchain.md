@@ -38,6 +38,7 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 
 - 依存は `vp add` / `vp remove` で足し外す ([Vite+ docs「Package Management」][] の「Add and Remove」)。素の `pnpm` / `npm` / `yarn` で足し外さない。理由は「入口を `vp` にそろえる理由」にある
 - `vp` が中継しないサブコマンドだけは素の `pnpm` で打つ。`pnpm peers check` がこれに当たる (「peer の食い違いを数える」)
+- 依存を外したら、その依存が必須の peer として入れていたパッケージが残っていないかを `vp why <パッケージ>` で確かめる。pnpm は変えていない依存の optional peer を、lock にある版のまま保つことがある ([pnpm docs「Optional peer dependencies」][])。残っていたら、それを optional peer に持つ依存を `vp remove` して `vp add` し直す。2026-11-23 に pnpm 12.21.0 で、lock の写しから ESLint を必須の peer に持つ 3 plugin を外すと、ESLint は `@shadcn/lint` の optional peer として lock に残り、`@shadcn/lint` を外して入れ直すと消えた
 - 依存をまとめて上げるときは `vp update '!node'` を打つ。2026-11-23 に pnpm 12.21.0 で、引数なしの `vp update` と同じ依存の範囲と lockfile を作り、`package.json` の `devEngines.runtime` は書き換えなかった。引数なしの `vp update` は、その版を exact (`24` を `24.<minor>.<patch>`) に書き換えた (ADR-0004)
 - `devEngines.runtime` に `onFail` が入ったら消す。`vp env pin` は宣言を新しく作るとき `onFail: "download"` を入れ、pnpm が Node.js を取りに行く (ADR-0004)
 
@@ -358,6 +359,7 @@ Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて
 [dependabot-core「Dockerfile」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/npm_and_yarn/Dockerfile#L4-L9
 [dependabot-core「helpers.rb」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/npm_and_yarn/lib/dependabot/npm_and_yarn/helpers.rb#L882-L884
 [Intent docs「Trust model」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/concepts/trust-model.md
+[pnpm docs「Optional peer dependencies」]: https://github.com/pnpm/pnpm.io/blob/6f91a0c24f9ffc8946b5b4294f46b9a49e18a7e9/docs/settings/peer-dependencies.md#optional-peer-dependencies
 [pnpm docs「peerDependencyRules」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/peer-dependencies.md#peerdependencyrules
 [pnpm docs「Agent Skills」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/agent-skills.md
 [pnpm docs「skills.dirs」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/build.md#skillsdirs

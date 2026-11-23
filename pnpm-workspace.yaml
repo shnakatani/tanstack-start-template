@@ -72,12 +72,3 @@ minimumReleaseAge: 4320
 
 # lockfile が解決しなくなった除外を vp add / update / remove が消す (docs/guides/dependencies-and-toolchain.md「待機を前倒しする」)
 minimumReleaseAgeExcludePrune: true
-
-# @shadcn/lint が引く @typescript-eslint/parser は、oxlint 経由では読まれないのに eslint を必須 peer に持つ。optional にする (ADR-0023)
-# utils には当てない。実行時に eslint を読む (docs/guides/lint/configuration.md「testing-library を story に限る理由」)
-# 撤去条件: 上流が parser の eslint を optional peer にしたとき (shadcn-ui/lint#1)
-packageExtensions:
-  "@typescript-eslint/parser@^8":
-    peerDependenciesMeta:
-      eslint:
-        optional: true

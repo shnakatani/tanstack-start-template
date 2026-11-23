@@ -74,14 +74,16 @@ token だけを混ぜる `color-mix()` の通し方:
 
 ## Consequences
 
-- 3 ルールが発火していることを常時見張る仕組みは置かない。`--print-config` の top-level `rules` に JS plugin 由来のルールは出ず、`rules` から消しても `"off"` にしても整合性テストと `vp check` は通る。`jsPlugins` は oxlint 側が alpha 扱いで semver の対象外と明記しているが、依存の更新の内容を確かめるときに jsPlugins に変化があれば、そのとき動作を確かめる
-- `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (`docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」)
+- 3 ルールが発火していることを常時見張る仕組みは置かない。発火は組み込みのルールと同じく oxlint の責務として扱い、整合性テストは解決後設定までを見る。`jsPlugins` は oxlint 側が alpha 扱いで semver の対象外と明記しているが、依存の更新の内容を確かめるときに jsPlugins に変化があれば、そのとき動作を確かめる
+- top-level の 3 ルールは `--print-config` の `rules` に出る。`scripts/checks/integrity/lint-config.test.ts` は書いたルールが解決後設定に残るかを組み込みのルールと同じ差で見るので、出なくなればこのテストが落ちる。見るのはキーの有無だけで、`tooling/lint/config.ts` から消してもこのテストと `vp lint` は通る (2026-11-23 に oxlint 1.94.0 で実測)
+- 2026-11-23 に oxlint 1.94.0 で、top-level の 3 ルールの 1 つを `"off"` にすると出力から消え、上のテストが落ちた。組み込みのルールは `"off"` にしても `"allow"` で出て、落ちない。上流の出力の形による差で、テストは severity を見ないので、`"off"` を止める検査として数えない
+- `overrides` に置いた JS plugin 由来のルールは、同じテストが規則名と severity を固定している。top-level の 3 ルールとはこの点が違う (`docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。抑制した行の扱いは `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」にある
-- `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。parser の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にする。いま ESLint は `eslint-plugin-testing-library` と TanStack の 2 plugin が `@typescript-eslint/utils` 経由で必須にしているので入るが、それらが外れれば ESLint も外れる (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
-- `packageExtensions` のキーは package 名と版の範囲で選び、親で絞れない (pnpm docs の `packageExtensions`: "The keys in `packageExtensions` are package names or package names and semver ranges")。`@shadcn/lint` 以外の依存が引く `@typescript-eslint/parser` 8 系でも eslint の peer は optional になる。ESLint を実際に使う依存を足すときは、eslint が入るかを `vp why eslint` で確かめる
-- 2026-09-19 に pnpm 11.25.0 で、`@typescript-eslint/parser` と `@typescript-eslint/utils` の `typescript` peer (`>=4.8.4 <6.1.0`) が Vite+ の `^5.0.0 || ^6.0.0 || ^7.0.0` の上限を押さえ、依存グラフの `typescript` は 6 系になっていた。`packageExtensions` は既存の peer 範囲を上書きしなかった。型検査は tsrs が担い `typescript` を直接の依存に持たないため、`vp check` の結果は変わらない
-- `packageExtensions` の撤去条件は、上流が parser の eslint を optional peer へ移すこと (shadcn-ui/lint#1)。`typescript` の 6 系固定は、typescript-eslint が `typescript` 7 を peer に含めるまで解けない
-- parser と `oxc-parser` のどちらも解決できないと、`@shadcn/lint` は cross-file 解析だけを無警告で失う。呼び出し元が parser のエラーを握りつぶすためで、ルールは動き続ける。診断の提案文言が縮むことでしか気付けない (shadcn-ui/lint#1)
+- `@shadcn/lint` 0.2.5 は `eslint` と `@typescript-eslint/parser` を optional peer に持つ。component のファイルを読む parser には optionalDependencies の `oxc-parser` を先に使い、`@typescript-eslint/parser` は読めなかったときの代わりなので、直接の依存に足さない (2026-11-23 に 0.2.5 の `package.json` と `dist/index.js` で確認)
+- `oxc-parser` と `@typescript-eslint/parser` のどちらも読めないと、`@shadcn/lint` は component のファイルを読めず、variant と wrapper が分からなくなる。ルールは動き続け、`Neither oxc-parser nor @typescript-eslint/parser is installed` の警告を 1 度出す (0.2.5 の `dist/index.js` で確認。oxlint の出力では未確認)
+- ESLint は `eslint-plugin-testing-library` と TanStack の 2 plugin が自身の peer で必須にしているので入る (`@typescript-eslint/utils` も同じ)。`@shadcn/lint` の optional peer もその版に解決される (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
+- pnpm は optional peer を、範囲に合う版がすでに入っているときだけ入れ、変えていない依存は lock にある peer の版を保つことがある (pnpm docs「Optional peer dependencies」)。2026-11-23 に pnpm 12.21.0 で、lock の写しから上の 3 plugin を外すと ESLint は lock に残った。外したときの確かめ方は `docs/guides/dependencies-and-toolchain.md`「依存を足す・外す」にある
+- 依存グラフの `typescript` は 6 系である。`@typescript-eslint/utils` とその推移依存の `typescript` peer (`>=4.8.4 <6.1.0`) が上限を押さえる (2026-11-23 に lock で確認。utils の最新の 8.73.0 も同じ範囲で、`typescript` の latest は 7.0.2)。型検査は tsrs が担い `typescript` を直接の依存に持たないため、`vp check` の結果は変わらない。6 系の固定は、typescript-eslint が `typescript` 7 を peer に含めるまで解けない
 - `no-restyle` は認識した design system component だけを見る (ADR-0011)。ui 部品にあるものを素の要素で作り直すと規則が効かない。機械では止まらない
 
 ## 出典
@@ -97,7 +99,6 @@ token だけを混ぜる `color-mix()` の通し方:
 - `@shadcn/lint` 0.2.5 の require-static-classes.md (「Custom class helpers」の登録の条件): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/require-static-classes.md
 - cva docs「Variants」(variant の名前と class の対応): https://cva.style/docs/getting-started/variants
 - cva docs「Extending Components」(`class` と `className` のキーで class を足す): https://cva.style/docs/getting-started/extending-components
-- 使われない `@typescript-eslint/parser` が ESLint と typescript を連れてくる件: https://github.com/shadcn-ui/lint/issues/1
-- pnpm の `packageExtensions` (依存の manifest へ `peerDependenciesMeta` を後付けする): https://pnpm.io/settings/dependency-resolution
+- pnpm の optional peer の解決 (「Optional peer dependencies」。2026-11-23 に原文を確認): https://github.com/pnpm/pnpm.io/blob/6f91a0c24f9ffc8946b5b4294f46b9a49e18a7e9/docs/settings/peer-dependencies.md#optional-peer-dependencies
 - Tailwind CSS の既定 palette を差し替える手順 (`--color-*: initial`): https://tailwindcss.com/docs/colors
 - eslint-plugin-better-tailwindcss: https://github.com/schoero/eslint-plugin-better-tailwindcss
