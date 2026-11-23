@@ -80,7 +80,6 @@ ui 部品の見た目の差をどこで持つか (既定と公式のノブ、`ui
 - shadcn-ui/lint「no-restyle」(部品ディレクトリで規則を off にする案内、転送した `className` を追う Wrappers and variables、Limits): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/no-restyle.md (2026-11-23 に 0.2.5 の原文を確認)
 - shadcn-ui/lint「Adoption」(`components/ui/**` だけを外す設定例): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/adoption.md (2026-11-23 に 0.2.5 の原文を確認)
 - shadcn-ui/lint「Rules」(`componentImports` の設定、「Contracts」「Categories」): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules.md (2026-11-23 に 0.2.5 の原文を確認)
-- shadcn-ui/lint の class グループとカテゴリの対応 (`rounded` と片側の角丸、outline / ring の太さ): https://github.com/shadcn-ui/lint/blob/a89d04792f340bcea26af2d539a9eec7285fcc77/packages/lint/src/grammar/categories.ts#L170-L184 、https://github.com/shadcn-ui/lint/blob/a89d04792f340bcea26af2d539a9eec7285fcc77/packages/lint/src/grammar/categories.ts#L214-L223 (2026-09-25 時点の commit)
 - shadcn の ScrollArea の例 (呼び出し側で `rounded-md border` / `p-4` を当てる): https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/bases/base/examples/scroll-area-example.tsx#L42 、https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/bases/base/examples/scroll-area-example.tsx#L60
 - Base UI の ScrollArea のデモ (地は Root、余白は `ScrollArea.Content`): https://github.com/mui/base-ui/blob/master/docs/src/app/(docs)/react/components/scroll-area/demos/hero/tailwind/index.tsx#L5-L7
 - 採用例の設定 (2026-09-25 時点の commit)
