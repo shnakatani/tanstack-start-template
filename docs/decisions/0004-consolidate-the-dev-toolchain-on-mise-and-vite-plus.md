@@ -20,7 +20,7 @@
 | mise        | Node.js と pnpm 以外のツール、環境変数、dev server と Storybook の port                                                 | `.mise.toml` の `[tools]` と `[env]` と `[daemons.*]` と `[tasks.*]`                   |
 | Vite+       | Node.js と pnpm の解決、dev server / build / lint / format / test / パッケージ操作の統一 CLI (`vp`)、タスク (Vite Task) | `package.json` と `pnpm-workspace.yaml` の `catalog:`、`vite.config.ts` の `run.tasks` |
 | pnpm        | パッケージマネージャ                                                                                                    | `package.json` の `packageManager`                                                     |
-| drizzle-kit | スキーマからの migration 生成と適用                                                                                     | `package.json` と `vp run db:generate` / `db:migrate`                                  |
+| drizzle-kit | スキーマからの migration 生成 (適用は ADR-0050)                                                                         | `package.json` と `vp run db:generate`                                                 |
 
 クローン後の手順は `mise trust && mise install` と `vp install` の 2 段で閉じる。
 起動は `mise run serve`、検証は `vp run verify` を入口にする。

@@ -50,7 +50,8 @@ export default defineConfig({
       verify: Object.keys(verifySteps).map((task) => `vp run ${task}`),
       contrast: "vpx scripts/contrast/report.ts",
       "db:generate": "vp exec drizzle-kit generate",
-      "db:migrate": "vp exec drizzle-kit migrate",
+      // drizzle-kit migrate は外部キーの検査を切らずに当てるので使わない (ADR-0050)
+      "db:migrate": "vpx scripts/db/migrate.ts",
       "db:seed": { command: "vpx scripts/db/seed.ts", dependsOn: ["db:migrate"] },
       "a11y:incomplete":
         "vp test run --project browser --tags-filter axe --reporter=verbose --hide-skipped-tests",

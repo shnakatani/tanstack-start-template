@@ -2,10 +2,11 @@
 
 SQLite のファイルへ drizzle で接続し、migration を適用し、dev 用の見本のデータを入れる手順と、パスと migration と見本のデータの扱いをその形にしている理由を持つ。
 
-| 決定                                                                                     | ADR      |
-| ---------------------------------------------------------------------------------------- | -------- |
-| 開発環境のツールチェーンは mise と Vite+ に寄せる                                        | ADR-0004 |
-| フロントで使うスキーマはテーブル定義から作らず、テーブル定義の型と型テストで突き合わせる | ADR-0034 |
+| 決定                                                                                       | ADR      |
+| ------------------------------------------------------------------------------------------ | -------- |
+| 開発環境のツールチェーンは mise と Vite+ に寄せる                                          | ADR-0004 |
+| フロントで使うスキーマはテーブル定義から作らず、テーブル定義の型と型テストで突き合わせる   | ADR-0034 |
+| migration は外部キーの検査をトランザクションの外で切ってから当て、確定の前に違反を検査する | ADR-0050 |
 
 ## how-to
 
@@ -23,7 +24,12 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 
 - `src/server/db/schema.ts` を変えたら、`vp run db:generate` の後に `vp run db:migrate` を打つ。各タスクのコマンドは `vite.config.ts` の `run.tasks` にある
 - アプリは起動時に migration を適用せず、`migrateDb()` もアプリの経路から呼ばない。デプロイの手順に `vp run db:migrate` を入れる (「migration を起動時に適用しない理由」)
-- `vp run db:migrate` は drizzle-kit (devDependencies)、`drizzle.config.ts`、`drizzle/` を使う。ビルド成果物の `.output/` はどれも持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
+- `vp run db:migrate` は `scripts/db/migrate.ts` を `vpx` で走らせ、`migrateDb()` (`src/server/db/index.ts`) で `drizzle/` の未適用の migration を当てる。DB のファイルが無ければ作る。ビルド成果物の `.output/` は `scripts/` も `drizzle/` も持たないので、DB のファイルがあるホストにリポジトリと依存を置いて打つ
+- migration を `drizzle-kit migrate` で当てない。外部キーの検査が効いたまま当たり、子から参照される親を作り直す migration が落ちるか、`ON DELETE` の動作で子の行を消すか参照を NULL にする (ADR-0050)
+- `migrateDb()` は、未適用の migration をまとめて 1 つのトランザクションで当て、外部キーの違反が残れば全部戻して落ちる。文言に出る表と rowid を見て、違反を残した migration の SQL (行を写す `INSERT … SELECT` の条件など) を直す
+- 生成した SQL を手で直すときも、`drizzle-kit generate --custom` で書くときも、`BEGIN` / `COMMIT` を書かず、`PRAGMA foreign_keys` で外部キーの検査を切り替えようとしない。トランザクションと検査は `migrateDb()` が外側で持つ。drizzle-kit が出力する `PRAGMA foreign_keys` の行は、トランザクションの中なので何もしない ([SQLite「SQLite Foreign Key Support」][] の「Enabling Foreign Key Support」)
+- `migrateDb()` を開いたトランザクションの中で呼ばない。外部キーの検査を切れないので、何も当てずに落ちる
+- 子から参照される親を作り直す migration は、行のある DB (dev server で使っている DB など) に `vp run db:migrate` で当てて確かめる。テストは `drizzle/` の migration を空の DB に当てるので、違反を残す migration でも通る
 - migration のフォルダは `src/server/db/migrations-folder.ts` の `MIGRATIONS_FOLDER` を `drizzle.config.ts` の `out` と `migrateDb()` の両方が読む。片方だけ変えると、テストが古い migration を当てたまま通る
 - テーブルを足したら、テーブル定義とフロントのスキーマの型を突き合わせる型テストを書く (ADR-0034)
 
@@ -114,12 +120,12 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 
 ### migration を起動時に適用しない理由
 
-[drizzle docs「Migrations」][] は migration の扱いを 6 つの選択肢に分ける (2026-09-29 に確認)。このテンプレートは Option 3 (`drizzle-kit generate` で SQL を作り、`drizzle-kit migrate` で適用する) を採る。
+[drizzle docs「Migrations」][] は migration の扱いを 6 つの選択肢に分ける (2026-09-29 に確認)。このテンプレートは `drizzle-kit generate` で SQL を作り、デプロイの手順の `vp run db:migrate` で当てる。当てる道具を `drizzle-kit migrate` にしない理由は ADR-0050 にあり、docs の Option 5 (生成した SQL を自分か外部の道具で当てる) に当たる。
 
-| 案                                                | 評価                                                                                                      | 採否     |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------- |
-| Option 3: `drizzle-kit migrate` で適用する        | 適用する経路が drizzle-kit の 1 か所になる。スキーマを変える手順も `db:generate` と `db:migrate` で閉じる | **採用** |
-| Option 4: アプリの起動時に `migrate()` で適用する | 適用する経路が drizzle-kit とアプリの 2 か所になる                                                        | 却下     |
+| 案                                                  | 評価                                                                                                            | 採否     |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------- |
+| デプロイの手順で `vp run db:migrate` を打って当てる | 当てる経路が `vp run db:migrate` の 1 か所になる。スキーマを変える手順も `db:generate` と `db:migrate` で閉じる | **採用** |
+| Option 4: アプリの起動時に `migrateDb()` で当てる   | 当てる経路が `vp run db:migrate` とアプリの 2 か所になる                                                        | 却下     |
 
 ### seed を vpx で走らせる理由
 

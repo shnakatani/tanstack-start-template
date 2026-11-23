@@ -1,0 +1,109 @@
+# ADR-0050: migration は外部キーの検査をトランザクションの外で切ってから当て、確定の前に違反を検査する
+
+- Status: Accepted
+- Date: 2026-11-23
+- 関連: ADR-0004 (`db:*` のタスクは `vite.config.ts` に置き、`DB_FILE_NAME` は mise が渡す)
+
+## Context
+
+SQLite の `ALTER TABLE` が直接扱えるのは、テーブルの改名、列の改名、列の追加、列の削除だけである。drizzle-kit 0.31.11 の `generate` は、列の制約や既定値を変えると、テーブルを作り直す SQL を出力する (新しいテーブルを作る、行を写す、元を `DROP TABLE` する、新しいテーブルを改名する)。この SQL は `PRAGMA foreign_keys=OFF;` で始まり、`PRAGMA foreign_keys=ON;` で終わる。
+
+drizzle-orm 0.45.4 の migrator (`drizzle-kit migrate` もこれを呼ぶ) は、未適用の migration をすべて 1 つの `BEGIN` の中で流す。SQLite はトランザクションの中の `PRAGMA foreign_keys` を無視し、エラーも返さない (SQLite「SQLite Foreign Key Support」の「Enabling Foreign Key Support」: "It is not possible to enable or disable foreign key constraints in the middle of a multi-statement transaction ... Attempting to do so does not return an error; it simply has no effect.")。外部キーの検査が効いたままの `DROP TABLE` は、行を消す暗黙の `DELETE` として外部キーの検査と `ON DELETE` の動作を受ける (同じ文書の「CREATE, ALTER and DROP TABLE commands」: "the DROP TABLE command performs an implicit DELETE ... may invoke foreign key actions or constraint violations")。
+
+2026-11-23 に、親 (`authors`) と親を参照する子 (`books`) を drizzle のスキーマに足し、`vp run db:generate` と `drizzle-kit migrate` で当てて行を入れた。そのあと親の列を NOT NULL に変える作り直しを生成し、`drizzle-kit migrate` で当てた (drizzle-kit 0.31.11、drizzle-orm 0.45.4、better-sqlite3 13.2.0 の SQLite 3.54.1)。
+
+| 作り直す表 | 子の `onDelete`     | 結果                                                                                                                                                             |
+| ---------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 親         | 無し (`no action`)  | `DROP TABLE` が `FOREIGN KEY constraint failed` で落ち、ロールバックされる。`drizzle-kit migrate` は exit 1 を返すが、端末に繋がずに打つとエラーの中身を出さない |
+| 親         | `cascade`           | 成功として記録され、子の 3 行がすべて消える                                                                                                                      |
+| 親         | `set null`          | 成功として記録され、子の 3 行の参照がすべて NULL になる                                                                                                          |
+| 親         | 無し、子の行が 0 件 | 落ちずに当たる                                                                                                                                                   |
+| 子         | 無し、`cascade`     | 子の行は残る                                                                                                                                                     |
+
+既定値だけを変えた作り直しでも、`cascade` で子の行が消えた。列の追加と削除は `ALTER TABLE` で済み、作り直しにならなかった。同じ SQL をトランザクションの外で流すと、`PRAGMA foreign_keys=OFF` が効き、子の行は残った。
+
+テストは空の DB に migration を当てるので、子の行が 0 件の場合に当たり、この問題を見つけられない。
+
+上流では次が open である (2026-11-23 時点)。
+
+- drizzle-team/drizzle-orm#4640、drizzle-team/drizzle-orm#5782: 作り直しの `ON DELETE CASCADE` で子の行が黙って消える
+- drizzle-team/drizzle-orm#3065: migration で `PRAGMA defer_foreign_keys` を使いたい要望
+- drizzle-team/drizzle-orm#5784 (PR): migrator が `PRAGMA foreign_keys=OFF` を `BEGIN` の前に移す。`PRAGMA foreign_key_check` は足さない
+- drizzle-orm の docs (「Migrations」「drizzle-kit migrate」「Custom migrations」) に、外部キーと作り直しの扱いの記述は無い。GitHub Discussions を `foreign_keys`、`defer_foreign_keys`、`table recreation` などで検索した範囲でも、メンテナの回答は無い
+
+## Decision
+
+migration は、テンプレートの `migrateDb()` (`src/server/db/index.ts`) で当てる。`vp run db:migrate` (`scripts/db/migrate.ts`) とテストの両方がこの関数を通し、`drizzle-kit migrate` は使わない。テーブルを作る SQL は引き続き `drizzle-kit generate` が出力する。drizzle docs「Migrations」の Option 5 (生成した SQL を自分で当てる) に当たる。
+
+`migrateDb()` は、SQLite「ALTER TABLE」の「Making Other Kinds Of Table Schema Changes」の手順のうち、トランザクションと外部キーの扱いを受け持つ。
+
+| SQLite の手順                                                                       | `migrateDb()` の動き                                                                            |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 1. 外部キーの検査が有効なら `PRAGMA foreign_keys=OFF` で切る                        | トランザクションの外で切り、読み出して 0 になったことを確かめる。0 でなければ何も当てずに落ちる |
+| 2. トランザクションを始める                                                         | 未適用の migration をまとめて 1 つのトランザクションで流す                                      |
+| 3-9. 新しいテーブルを作り、写し、元を消し、改名し、索引・トリガー・ビューを作り直す | drizzle-kit が出力した SQL をそのまま流し、migration ごとに記録を書く                           |
+| 10. `PRAGMA foreign_key_check` で違反が無いことを確かめる                           | 違反があれば、違反の表と rowid を文言に入れてロールバックし、落ちる。記録も残らない             |
+| 11. 確定する                                                                        | 確定する                                                                                        |
+| 12. 検査を有効に戻す                                                                | 成功しても失敗しても `foreign_keys = ON` に戻し、1 になったことを確かめる                       |
+
+適用済みの記録は、drizzle-orm の migrator と同じ形で書き、同じ条件で判定する。
+
+- 記録の表は `__drizzle_migrations` (`id SERIAL PRIMARY KEY, hash text NOT NULL, created_at numeric`)
+- 最後の記録の `created_at` より `folderMillis` が大きい migration を未適用とみなす
+- migration ごとに `hash` と `folderMillis` を記録する
+- migration は drizzle-orm が export する `readMigrationFiles` (`drizzle-orm/migrator`) で読む。drizzle-orm の migrator 自身が使う関数で、`hash` と `folderMillis` もこの関数が組む
+
+`drizzle-kit migrate` で当てた既存の DB はそのまま引き継げ、`migrateDb()` が書いた記録も drizzle-orm の migrator が適用済みとみなす (`src/server/db/migrate-db.test.ts`)。
+
+### 検討した選択肢
+
+| 案                                                                                                                 | 子の行             | 違反を確定の前に止めるか                             | 守る経路          | 評価                                                                                                                                                                                                                                                                                                                                       | 採否     |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------ | ---------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| A. 12 の手順の外枠を `migrateDb()` で持ち、`db:migrate` とテストを通す                                             | 残る               | 止める                                               | 両方              | SQLite の手順どおりで、下の先行例のうち検査まで行うものと同じ形。migration の読み込みと記録の形を drizzle-orm に合わせて持つことになる                                                                                                                                                                                                     | **採用** |
+| L. `@libsql/client` を足し、drizzle-kit に libsql の driver を選ばせる                                             | 残る               | 止めない (違反を残す migration が exit 0 で確定した) | `db:migrate` だけ | drizzle-kit の driver の自動選択と、libsql の `client.migrate()` (トランザクションの外で `foreign_keys=off` を打つ) に乗る。選ぶ順は docs に無く (drizzle docs「drizzle.config.ts」の `driver` は "automatically picks an available SQLite driver" とだけ書く)、0.31.11 は選んだ driver を表示しないので、依存が外れると保護が黙って消える | 却下     |
+| B. 接続で `foreign_keys = OFF` にしてから drizzle-orm の `migrate()` を呼び、確定の後に `foreign_key_check` を打つ | 残る               | 止めない。確定の後に見つかっても戻せない             | 差し替えた経路    | drizzle-team/drizzle-orm#5782 が挙げる回避策で、drizzle-team/drizzle-orm#5784 も同じ性質になる                                                                                                                                                                                                                                             | 却下     |
+| C. 作り直しの SQL を、列の改名・追加・`UPDATE`・削除に手で書き換える                                               | 残る               | 検査は効いたまま                                     | すべて            | migration のたびに手で書く。主キー、UNIQUE、索引、CHECK、外部キーに使われる列は `DROP COLUMN` できず (SQLite「ALTER TABLE」の「ALTER TABLE DROP COLUMN」)、使えない変更が残る                                                                                                                                                              | 却下     |
+| D. 作り直しの SQL の先頭に `PRAGMA defer_foreign_keys = ON` を足す                                                 | `cascade` で消える | 違反の無い migration も `COMMIT` で落ちる            | —                 | `DROP TABLE` の暗黙の削除が数えた違反は、改名した新しいテーブルでは解消されない。遅延するのは検査だけで、`ON DELETE` の動作は即時に走る                                                                                                                                                                                                    | 却下     |
+| E. `drizzle-kit migrate` のまま上流を待つ                                                                          | 消えるか落ちる     | —                                                    | —                 | 上流の issue と PR に、メンテナの回答が無い (2026-11-23)                                                                                                                                                                                                                                                                                   | 却下     |
+
+案ごとの結果は、Context と同じ親子のテーブルと版で 2026-11-23 に測った。違反を止めるかは、親のコピーから 1 行を落として子の参照を切る migration で測った。
+
+### 先行例
+
+`foreign_key_check` まで行う先行例は、どれも A と同じく、トランザクションの外で検査を切り、確定の前に違反を検査して、違反があれば戻す。
+
+| ツール | 形                                                                                                                                                                    | 出典                                                               |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Django | schema editor が開く前に検査を切り、切れなければ `NotSupportedError` で止める。抜けるときに `check_constraints()` (`PRAGMA foreign_key_check`) を打ってから検査を戻す | [Django の `sqlite3/schema.py`][]、[Django の `sqlite3/base.py`][] |
+| Atlas  | `OpenTx` がトランザクションの外で検査を切り、確定の前に `foreign_key_check` の増えた違反を見て、あればロールバックする                                                | [Atlas の `sqlite/driver.go`][]                                    |
+| knex   | テーブルの作り直しを、検査を切る文、トランザクションの中の作り直しと `foreign_key_check`、検査を戻す文に分けて流す                                                    | [knex の `sqlite3/schema/ddl.js`][]、[knex の `runner.js`][]       |
+
+トランザクションの外で検査を切るだけで、`foreign_key_check` を打たないものもある (TypeORM の migration、Prisma Migrate、libsql の `client.migrate()`)。
+
+## Consequences
+
+- 子から参照される親を作り直しても、`onDelete` の指定によらず子の行と参照が残る
+- migration が外部キーの違反を残すと、`vp run db:migrate` は何も当てずに落ち、違反の表と rowid を出す
+- `migrateDb()` はトランザクションの中で呼ぶと落ちる。検査を切れないので、当てずに止める
+- `drizzle-kit migrate` を直接打つと、この保護を通らずに当たる。経路は `vp run db:migrate` と `migrateDb()` に限る
+- migration の読み込みと記録の形を、drizzle-orm 0.45 の migrator に合わせてテンプレートが持つ
+- テストの DB は空なので、作り直しで違反を残す migration は、行のある DB に当てたときにしか落ちない
+
+## 出典
+
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。外部の文書とソースは 2026-11-23 に読んだ。
+
+- SQLite「ALTER TABLE」の「Making Other Kinds Of Table Schema Changes」と「ALTER TABLE DROP COLUMN」: https://www.sqlite.org/lang_altertable.html
+- SQLite「SQLite Foreign Key Support」: https://www.sqlite.org/foreignkeys.html
+- SQLite「Pragma statements supported by SQLite」の `foreign_keys`、`foreign_key_check`、`defer_foreign_keys`: https://www.sqlite.org/pragma.html
+- drizzle docs「Migrations」: https://orm.drizzle.team/docs/migrations
+- drizzle docs「drizzle.config.ts」の `driver`: https://orm.drizzle.team/docs/drizzle-config-file
+- drizzle-orm 0.45.4 の migrator (`SQLiteSyncDialect.migrate`): https://github.com/drizzle-team/drizzle-orm/blob/eab8bedbb65d5429c54e612ddbd88aa23091d398/drizzle-orm/src/sqlite-core/dialect.ts
+- drizzle-orm 0.45.4 の `readMigrationFiles`: https://github.com/drizzle-team/drizzle-orm/blob/eab8bedbb65d5429c54e612ddbd88aa23091d398/drizzle-orm/src/migrator.ts
+- libsql の `client.migrate()`: https://github.com/tursodatabase/libsql-client-ts/blob/9496c782af413f6380235c7f5d0c97b5371f49b7/packages/libsql-client/src/sqlite3.ts
+
+[Django の `sqlite3/schema.py`]: https://github.com/django/django/blob/0eae0b2584ed1e13d696ae1a5d8016a5c2dc7149/django/db/backends/sqlite3/schema.py
+[Django の `sqlite3/base.py`]: https://github.com/django/django/blob/0eae0b2584ed1e13d696ae1a5d8016a5c2dc7149/django/db/backends/sqlite3/base.py
+[Atlas の `sqlite/driver.go`]: https://github.com/ariga/atlas/blob/e933d0b70620e67e8e0972e47f2c03a1dc38d333/sql/sqlite/driver.go
+[knex の `sqlite3/schema/ddl.js`]: https://github.com/knex/knex/blob/e25d54bcb707714a17f5a5744eba5c4246bb4d1d/lib/dialects/sqlite3/schema/ddl.js
+[knex の `runner.js`]: https://github.com/knex/knex/blob/e25d54bcb707714a17f5a5744eba5c4246bb4d1d/lib/execution/runner.js
