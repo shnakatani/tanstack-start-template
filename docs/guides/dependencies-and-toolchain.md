@@ -47,12 +47,26 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 - `.agents/skills/` の shadcn と valibot は GitHub から入れた skill で、`skills-lock.json` が出所を記録する。pnpm の link とは別の仕組みで、`skills.dirs` の影響を受けない
 - pnpm に link させるなら、`skills` の設定を消して `pnpm approve` を打つ。承認は `pnpm-workspace.yaml` の `permissions` に記録される ([pnpm docs「Agent Skills」][])
 
+### 依存の agent skill を Intent に許す
+
+`package.json` の `intent.skills` が許す package の skill だけを、Intent は `list` に出し `load` で読ませる。`intent.exclude` に当たる package と skill は、許した後に外す ([Intent docs「Configuration」][])。このリポジトリは `@tanstack/*` を許し、TanStack 以外で skill を同梱する推移の依存を `intent.exclude` で外している。理由は「Intent の許可を `@tanstack/*` の scope にする理由」にある。
+
+- 依存を足したら `vp exec intent list` を打ち、stderr の notice を見る。`intent.skills` に無い package が skill を同梱していると notice が出る。エージェントのセッションでは数だけが出るので、名前はエージェントの外で `list --show-hidden` を打って見る ([Intent docs「intent list」][])
+- notice に出た package は、`intent.skills` に package 名で足すか、`vp exec intent exclude add <package>` で `intent.exclude` に足す。どちらにも入れないと、notice が `list` のたびに出続ける ([Intent docs「Configuration」][] の Discovery notices)
+- どちらに入れるかは人が決める。どの package にエージェントへの指示を出させるかを決めることになる ([Intent docs「Trust model」][])
+- `intent.exclude` は `intent.skills` より優先する。外した package を使うときは、`vp exec intent exclude remove <package>` で外してから `intent.skills` に足す ([Intent docs「Configuration」][])
+- `@tanstack/` の scope の依存を足したときは、どちらにも足さない。scope の規則は、後から入る package と skill も許す ([Intent docs「Configuration」][])
+- Intent は devDependency の `@tanstack/intent` を `vp exec intent` で打つ。`vp dlx @tanstack/intent@latest` で打たない。理由は「Intent を devDependency に置く理由」にある
+- `AGENTS.md` の `<!-- intent-skills:start -->` 〜 `end` は Intent が書くブロックなので、手で書き換えず、`vp exec intent install` で書き直させる。`intent.skills` があれば、install は許可を変えず、対話なしでブロックだけを書く ([Intent docs「intent install」][] の Default install)。続けて `vp fmt AGENTS.md` を打ち、整えた後に残る差分を Intent が変えた中身として読む。2026-11-23 に Intent 0.5.6 で、install はブロックを空行の無い形で書き、そのままでは `vp fmt --check` が落ちた
+- ブロックが書く `pnpm exec intent` は書き換えない。次の install で戻る。2026-11-23 に、`pnpm exec intent --version` と `vp exec intent --version` はどちらも devDependency の 0.5.6 を返した。`vp exec` の形にしない理由は「Intent を devDependency に置く理由」にある
+
 ### 秘密を足す
 
 秘密が要るようになったら、暗号化した env ファイルと、`dotenvx run --` のような復号の経路を、Vite の env 機構と分けて足す。Vite は既に在る環境変数を `.env` で上書きしないので、復号を先に済ませて `process.env` へ入れる形が噛み合う。Vite の `.env` 読み込みは `envDir: false` で切ってある (ADR-0004)。
 
 - 暗号化した env ファイルは `.gitignore` の `.env` か `.env.*` に当たる。commit するファイルは `!.env.production` のような行で外し、その行を、同じファイルに当たるどの行よりも後ろに置く。同じ `.gitignore` の中では最後に当たった行が効くので、ツールの init が後から末尾に足した行が当たると、`!` の行は打ち消される ([gitignore(5)][])
 - 秘密鍵の `.env.keys` は `.env.*` が覆う。dotenvx が ignore を求めるのはこのファイルである ([dotenvx README][])
+- dotenvx の agent skill (`dotenv#dotenvx`) を使うなら、`vp exec intent exclude remove dotenv` を打ってから `intent.skills` に `dotenv` を足す。skill は `dotenv` の package が同梱し、`intent.exclude` で外してある (「依存の agent skill を Intent に許す」)
 
 ### Dependabot の alerts を有効にする
 
@@ -208,6 +222,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 | @storybook/addon-vitest                           | story に viewport が当たるかを確かめる (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | @storybook/tanstack-react / @tanstack/react-start | `vp exec storybook build` が通るかを確かめる。tanstack-react は TanStack Start の plugin を名前で見分けて外すので、どちらを上げても外せなくなりうる。`vp run verify` と CI は Storybook を build しない (`docs/guides/storybook.md`「framework を TanStack 専用にし、telemetry を切る理由」)                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `RESTRICTED_BARREL_IMPORTS` に載せた依存          | `exports` に個別エントリポイントが残っているか。消えていれば lint の `message` が案内する import が解決しなくなる                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `@tanstack/intent`                                | `vp exec intent install` を打ち、続けて `vp fmt AGENTS.md` を打ってから、`AGENTS.md` の intent-skills のブロックに残る差分を読む。`vp exec intent list` の stderr に notice が出ないかも見る (「依存の agent skill を Intent に許す」)。2026-11-23 に読んだ dependabot-core の `semver_grouping_rules.rb` は、0.x の minor (0.5 → 0.6) も minor として扱い、`minor-and-patch` のグループに入れていた ([dependabot-core「semver_grouping_rules.rb」][])                                                                                                                                                                                                                                        |
 
 ### 走査対象を持つ config を足す
 
@@ -257,10 +272,49 @@ pnpm の link と Intent は、TanStack の同じ skill を別の経路で載せ
 
 | 観点     | pnpm の link ([pnpm docs「Agent Skills」][])                                                                      | Intent ([Intent docs「Trust model」][])                                                                    |
 | -------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 載せ方   | 承認した skill を `.<name>/skills` へ link する。"A skill is instructions that an agent follows in every session" | `AGENTS.md` の手順で、作業に合う skill を `vp dlx @tanstack/intent@latest load` で読む                     |
+| 載せ方   | 承認した skill を `.<name>/skills` へ link する。"A skill is instructions that an agent follows in every session" | `AGENTS.md` の intent-skills のブロックの手順で、作業に合う skill を Intent の `load` で読む               |
 | 届く依存 | 直接の依存だけ ("pnpm looks for skills in the direct dependencies of every project")                              | 推移の依存まで ("Discovery finds every installed package that has one, including transitive dependencies") |
 
 ADR が出典にする `@tanstack/start-client-core` などは推移の依存で、pnpm の link では届かない。Intent が届く範囲を持つので、pnpm の link を切る。
+
+### Intent の許可を `@tanstack/*` の scope にする理由
+
+`intent.skills` を置かないと、Intent は見つけた skill をすべて出し、stderr に deprecation の notice を出す。Intent docs は、将来の版で許可の一覧を必須にするとしている ([Intent docs「Trust model」][]: "The gate is opt-in today. ... A future version will require an explicit allowlist.")。
+
+Intent は skill を同梱する package を推移の依存まで見つけるが、許可は依存へ伝わらない ([Intent docs「Trust model」][]: "Trust does not propagate to dependencies. A dependency that ships skills needs its own matching entry.")。ADR とガイドが出典にする skill には、推移の依存 (`@tanstack/start-client-core`、`@tanstack/router-core`、`@tanstack/table-core`) のものがある。許可の単位は、[Intent docs「Configuration」][] の Source entries と Special forms が挙げる npm の書き方から選んだ。
+
+| 単位             | 書き方                                                     | 採否 | 理由                                                                                                                                                                                      |
+| ---------------- | ---------------------------------------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| すべて           | `"*"`                                                      | 却下 | TanStack 以外の推移の依存の skill も、選ばないまま届く。Intent も、検められていない skill が届きうるという notice を出し続ける ([Intent docs「Configuration」][] の Special forms)        |
+| scope            | `"@tanstack/*"`                                            | 採用 | 下に書く                                                                                                                                                                                  |
+| package を並べる | `"@tanstack/react-start"`、`"@tanstack/start-client-core"` | 却下 | 推移の依存の package まで並べることになる。TanStack が package を分けたり足したりすると、新しい package の skill は notice を残して届かなくなり、依存を上げるたびに一覧を見直すことになる |
+| 個別の skill     | `"@tanstack/start-client-core#start-core/middleware"`      | 却下 | package を並べるときの手間に加え、TanStack が skill を足したり改名したりするたびに一覧を直すことになる。改名した skill は notice を残して届かなくなる                                     |
+
+scope を採るのは、許す単位が信頼する相手と一致するからである。npm の scope は 1 つの user か organization に属し、その scope に package を足せるのはその持ち主だけである ([npm docs「scope」][]: "Each npm user/organization has their own scope, and only you can add packages in your scope.")。`@tanstack/*` を許すことは、npm の registry から入る限り、TanStack の organization が publish した package を許すことになる。2026-11-23 に読んだ Intent 0.5.6 の `tryRegister` は、入った package 自身の `package.json` の `name` で照合し、どこから入ったかを見ていなかった ([Intent「register.ts」][])。この前提は、npm の registry の外から入る package で崩れる。
+
+- `.npmrc` や `pnpm-workspace.yaml` の `registries` で、`@tanstack` の scope に別の registry を当てたとき
+- git や tarball の URL から入る package が、`package.json` の `name` に `@tanstack/` を名乗るとき。推移の依存がこの形で入ることは、pnpm の `blockExoticSubdeps` が止める ([pnpm docs「blockExoticSubdeps」][])。このリポジトリは値を書かず、[pnpm docs「blockExoticSubdeps」][] の既定のまま使う
+
+Intent の first-run の設定も、scope を明示して選ぶとこの形 (`"@tanstack/*"`) で保存する ([Intent docs「Configuration」][] の Existing projects)。
+
+許可は skill の中身の承認ではない。依存を上げると skill の中身も変わり、Intent は変わったことを知らせない ([Intent docs「Trust model」][]: "Enabling a source does not record approval of its specific instructions.")。
+
+`intent.exclude` で外した package は、TanStack 以外で skill を同梱する推移の依存である。2026-11-23 に Intent 0.5.6 の `list --json` と `vp exec pnpm why <package>` で確かめた。
+
+| package                    | 入る経路                                                               | 外す理由                                                                                                          |
+| -------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `solid-js`、`@solidjs/web` | TanStack の devtools (`@tanstack/devtools-a11y` など) の依存として入る | skill は Solid のアプリを書くためのもので、React のアプリでは使わない                                             |
+| `dotenv`                   | `shadcn` の CLI が `@dotenvx/dotenvx` を経て入れる                     | アプリのコードは dotenv を使わない。秘密を足すときに使うなら、「依存の agent skill を Intent に許す」の手順で許す |
+
+外さずに残すと notice が `list` のたびに出る。エージェントのセッションでは notice が数だけを示す ([Intent docs「intent list」][] の Hidden sources) ので、新しく足した依存の notice と区別できない。2026-11-23 に Intent 0.5.6 で、`intent.skills` だけを置いたエージェントのセッションの notice は、ユーザーに `list --show-hidden` を打ってもらうよう促していた。外しておくと、notice が出るのは新しく判断の要る package があるときだけになる ([Intent docs「Configuration」][] の Discovery notices: "Package was explicitly excluded | No unlisted-source notice.")。
+
+### Intent を devDependency に置く理由
+
+Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて lockfile を commit するよう勧める ([Intent docs「Quick Start for Consumers」][]: "Add `@tanstack/intent` as a development dependency and commit your lockfile before generating guidance"、[Intent docs「intent install」][]: "Keep `@tanstack/intent` in devDependencies and commit the lockfile for CI.")。
+
+- `vp dlx` は package を依存に足さずに走らせる ([Vite+ docs「Running Binaries」][] の `vp dlx`: "Use `vp dlx` for one-off package execution without adding the package to your project dependencies")。依存に足さないので、lockfile は走らせた版を持たない。2026-11-23 に vite-plus 1.7.0 で、pnpm 11.28.0 と 12.21.0 のどちらでも、このリポジトリの `vp dlx knip@latest --version` は 6.46.1 (2026-11-18 公開) を返し、`minimumReleaseAge` の待機の中の 6.47.0 (2026-11-20 公開) と 6.48.0 (2026-11-22 公開) を選ばなかった
+- 2026-11-23 に Intent 0.5.6 の install が書いたブロックは、入っている Intent を使わせ、無ければダウンロードせずに報告させる文だった ("Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.")
+- 2026-11-23 に読んだ Intent 0.5.6 の `command-runner.ts` と `package-manager.ts` では、生成するコマンドの runner を `package.json` の `packageManager` から選び、pnpm なら `pnpm exec intent` に固定していた。`vp` の形にする option は無かった ([Intent「command-runner.ts」][] の `runnerByPackageManager`、[Intent「package-manager.ts」][])。[Intent docs「intent install」][] の Default output は、生成するコマンドを "the detected package manager's runner with `@tanstack/intent@latest`" と書くが、同じ日に、docs は 0.5.6 の tag と 2026-11-22 の main で同じ文のままで、0.5.6 の install はソースのとおり `pnpm exec intent` を書いた
 
 ### `typescript` を直接の依存に置かない理由
 
@@ -324,5 +378,16 @@ ADR が出典にする `@tanstack/start-client-core` などは推移の依存で
 [dependabot-core「pnpm_lockfile_updater.rb」の verify_unpinned_updates!]: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L316-L336
 [dependabot-core「dependency_set.rb」]: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/common/lib/dependabot/file_parsers/base/dependency_set.rb#L170-L183
 [GitHub Docs「Viewing and updating Dependabot alerts」]: https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-dependabot-alerts/viewing-and-updating-dependabot-alerts
+[Intent docs「Configuration」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/concepts/configuration.md
+[Intent docs「intent list」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/cli/intent-list.md
+[Intent docs「intent install」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/cli/intent-install.md
+[Intent docs「Quick Start for Consumers」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/getting-started/quick-start-consumers.md
+[Vite+ docs「Running Binaries」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/vpx.md#vp-dlx
+[Intent「command-runner.ts」]: https://github.com/TanStack/intent/blob/b9f205d69ba2bec93954508ff76281ae2178062c/packages/intent/src/shared/command-runner.ts
+[Intent「package-manager.ts」]: https://github.com/TanStack/intent/blob/b9f205d69ba2bec93954508ff76281ae2178062c/packages/intent/src/discovery/package-manager.ts
+[Intent「register.ts」]: https://github.com/TanStack/intent/blob/b9f205d69ba2bec93954508ff76281ae2178062c/packages/intent/src/discovery/register.ts#L80-L131
+[dependabot-core「semver_grouping_rules.rb」]: https://github.com/dependabot/dependabot-core/blob/3c3831767e12ff236e00bacdc5c5f69556824468/updater/lib/dependabot/updater/semver_grouping_rules.rb#L59-L67
+[pnpm docs「blockExoticSubdeps」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/dependency-resolution.md#blockexoticsubdeps
+[npm docs「scope」]: https://github.com/npm/documentation/blob/61b8784f8eaeedc7d9c2f176d219df0308034f0d/content/cli/v11/using-npm/scope.mdx
 [pnpm docs「minimumReleaseAgeExcludePrune」]: https://github.com/pnpm/pnpm.io/blob/2a4094811db9e5cd25e7dd275a168dfaf6452c7b/versioned_docs/version-11.x/settings/dependency-resolution.md#minimumreleaseageexcludeprune
 [pnpm docs「pnpm peers」]: https://github.com/pnpm/pnpm.io/blob/6f3a366d8fc5964ae39584f6205ed605bee92ae9/versioned_docs/version-11.x/cli/peers.md#check
