@@ -1,7 +1,10 @@
 import { mkdirSync, mkdtempDisposableSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Worker } from "node:worker_threads";
 
+import Database from "better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import { describe, expect, it, vi } from "vite-plus/test";
@@ -82,6 +85,33 @@ const CREATE_PUBLISHERS = `CREATE TABLE \`publishers\` (
 );
 `;
 
+/** 親を参照する WITHOUT ROWID の子 (reviews) を足す migration */
+const CREATE_REVIEWS = `CREATE TABLE \`reviews\` (
+	\`key\` text PRIMARY KEY NOT NULL,
+	\`author_id\` integer,
+	FOREIGN KEY (\`author_id\`) REFERENCES \`authors\`(\`id\`) ON UPDATE no action ON DELETE no action
+) WITHOUT ROWID;
+`;
+
+/** 親 2 を消す custom migration。検査を切った接続では ON DELETE の動作が走らず、親 2 を指す子が残る */
+const DELETE_AUTHOR_2 = "DELETE FROM `authors` WHERE `id` = 2;";
+
+/** 子の title を NOT NULL にする migration。drizzle-kit 0.31.11 の generate は子の表を作り直す SQL を出力する */
+function rebuildBooks(): string {
+  return `PRAGMA foreign_keys=OFF;--> statement-breakpoint
+CREATE TABLE \`__new_books\` (
+	\`id\` integer PRIMARY KEY NOT NULL,
+	\`title\` text DEFAULT '' NOT NULL,
+	\`author_id\` integer,
+	FOREIGN KEY (\`author_id\`) REFERENCES \`authors\`(\`id\`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+INSERT INTO \`__new_books\`("id", "title", "author_id") SELECT "id", "title", "author_id" FROM \`books\`;--> statement-breakpoint
+DROP TABLE \`books\`;--> statement-breakpoint
+ALTER TABLE \`__new_books\` RENAME TO \`books\`;--> statement-breakpoint
+PRAGMA foreign_keys=ON;`;
+}
+
 function readBooks(db: ReturnType<typeof createDb>): unknown[] {
   return db.$client.prepare("select id, author_id from books order by id").all();
 }
@@ -135,7 +165,7 @@ describe("migrateDb", () => {
     expect(db.$client.inTransaction).toBe(false);
   });
 
-  it("未適用の migration のどれかが違反を増やせば、ほかの migration の変更と記録も残さない", () => {
+  it("未適用の migration のどれかが違反を残せば、ほかの migration の変更と記録も残さない", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
     const recordsBefore = readMigrationRecords(db);
@@ -153,29 +183,74 @@ describe("migrateDb", () => {
     expect(readMigrationRecords(db)).toEqual(recordsBefore);
   });
 
-  // SQLite の手順の検査は、スキーマの変更が外部キーを壊していないことを確かめる。当てる前からある違反で止めると、
-  // 違反のある DB では違反と関係の無い migration も当てられない
-  it("当てる前からある違反だけなら、増えていないので当てる", () => {
+  it("当てる前に外部キーの違反があれば、何も当てずに止め、記録も変えない", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
     insertOrphanBook(db);
-    writeMigrations(dir.path, [createTables("no action"), rebuildAuthors()]);
+    const recordsBefore = readMigrationRecords(db);
+    writeMigrations(dir.path, [createTables("no action"), CREATE_PUBLISHERS]);
+
+    expect(() => migrateDb(db, dir.path)).toThrow(
+      /^\[db\] DB に当てる前から外部キーの違反があるので、何も当てずに止めた。.*: \[\{"table":"books","rowid":4,"parent":"authors","fkid":0\}\]$/,
+    );
+
+    expect(
+      db.$client.prepare("select name from sqlite_schema where name = 'publishers'").all(),
+    ).toEqual([]);
+    expect(readMigrationRecords(db)).toEqual(recordsBefore);
+    expect(db.$client.inTransaction).toBe(false);
+  });
+
+  it("未適用の migration が無ければ、外部キーの違反があっても止めない", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    insertOrphanBook(db);
+
+    expect(() => migrateDb(db, dir.path)).not.toThrow();
+  });
+
+  // foreign_key_check は WITHOUT ROWID の表の違反の rowid を NULL で返す。違反を rowid で見分けないので、取り違えない
+  it("WITHOUT ROWID の子の表に違反を残す migration も、戻して落とす", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    writeMigrations(dir.path, [createTables("no action"), CREATE_REVIEWS]);
+    migrateDb(db, dir.path);
+    // 親 2 を指すのを WITHOUT ROWID の子だけにする
+    db.$client.exec(`
+      delete from books where author_id = 2;
+      insert into reviews (key, author_id) values ('r1', 1), ('r2', 2);
+    `);
+    writeMigrations(dir.path, [createTables("no action"), CREATE_REVIEWS, DELETE_AUTHOR_2]);
+
+    expect(() => migrateDb(db, dir.path)).toThrow(
+      /違反を残すので、適用せずに戻した: \[\{"table":"reviews","rowid":null,"parent":"authors","fkid":0\}\]$/,
+    );
+    expect(db.$client.prepare("select id from authors order by id").all()).toEqual([
+      { id: 1 },
+      { id: 2 },
+    ]);
+  });
+
+  // 子の表を作り直すと、行の rowid が詰まって変わる。違反を当てる前と後で rowid で突き合わせると、前からある違反を
+  // 新しい違反と取り違える
+  it("違反の無い子の表を、行を消して rowid に隙間がある状態で作り直しても落ちない", () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const db = createDbWithRows(dir.path, "no action");
+    db.$client.exec("delete from books where id = 1");
+    writeMigrations(dir.path, [createTables("no action"), rebuildBooks()]);
 
     migrateDb(db, dir.path);
 
-    expect(readMigrationRecords(db)).toHaveLength(2);
-    expect(readBooks(db)).toEqual([...BOOKS, { id: 4, author_id: 9 }]);
+    expect(readBooks(db)).toEqual(BOOKS.slice(1));
   });
 
-  it("当てる前からある違反があっても、増えた違反で落とし、文言には増えた違反だけを出す", () => {
+  it("違反のある子の表を作り直す migration は、当てる前の違反として止める", () => {
     using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
     const db = createDbWithRows(dir.path, "no action");
     insertOrphanBook(db);
-    writeMigrations(dir.path, [createTables("no action"), rebuildAuthors(' WHERE "id" <> 2')]);
+    writeMigrations(dir.path, [createTables("no action"), rebuildBooks()]);
 
-    expect(() => migrateDb(db, dir.path)).toThrow(
-      /外部キーの違反を増やすので、適用せずに戻した: \[\{"table":"books","rowid":3,"parent":"authors","fkid":0\}\]$/,
-    );
+    expect(() => migrateDb(db, dir.path)).toThrow(/DB に当てる前から外部キーの違反がある/);
   });
 
   it("外部キーの検査を戻せなかったら、migration の失敗を cause に残して落とす", () => {
@@ -185,7 +260,7 @@ describe("migrateDb", () => {
     // ON に戻す PRAGMA だけを落とし、ほかの PRAGMA は元の実装へ通す。既定の passthrough は spyOn の元の実装を
     // 呼ばずに undefined を返したので (2026-11-23、vitest 5.1.0 で実測)、元の実装を onUnmatched に渡す
     const pragma = db.$client.pragma.bind(db.$client);
-    using _pragma = vi
+    using restoring = vi
       .when(vi.spyOn(db.$client, "pragma"), { onUnmatched: pragma })
       .calledWith("foreign_keys = ON")
       .thenThrow(new Error("disk I/O error"));
@@ -200,7 +275,8 @@ describe("migrateDb", () => {
     expect.assert(thrown instanceof Error);
     expect(thrown.message).toMatch(/外部キーの検査を戻せない.*disk I\/O error/);
     expect.assert(thrown.cause instanceof Error);
-    expect(thrown.cause.message).toMatch(/外部キーの違反を増やす/);
+    expect(thrown.cause.message).toMatch(/外部キーの違反を残す/);
+    expect(restoring).toHaveBeenExhausted();
   });
 
   it("適用し終えたら、成功しても失敗しても、接続の外部キーの検査を有効に戻す", () => {
@@ -254,6 +330,69 @@ describe("migrateDb", () => {
     // 流し直すと 1 本目の CREATE TABLE が `table already exists` で落ちる
     expect(() => migrate(db, { migrationsFolder: dir.path })).not.toThrow();
     expect(readMigrationRecords(db)).toEqual(records);
+  });
+
+  // 別の接続が 2 本目を当てている最中 (書き込みのロックを持ち、まだ確定していない) に migrateDb を呼ぶ。
+  // migrateDb は記録の読み出しから書き込みのロックの中で行うので、相手の確定を待ち、その記録を読んで 2 本目を流さない。
+  // 相手は 300ms ロックを持つ。migrateDb を呼ぶまでに 300ms 過ぎると、相手が確定してから読むことになり、競合は
+  // 起きないまま通る。時間の当て推量が外れても、落ちるべき実装を通す向きにしか外れず、正しい実装を落とさない
+  it("別の接続が当てている最中に呼んでも、相手の確定を待ち、同じ migration を二度当てない", async () => {
+    using dir = mkdtempDisposableSync(join(tmpdir(), "migrate-db-test-"));
+    const fileName = join(dir.path, "test.sqlite");
+    new Database(fileName).close();
+    const folder = join(dir.path, "migrations");
+    const createCounter =
+      "CREATE TABLE `counter` (`n` integer NOT NULL);\n--> statement-breakpoint\nINSERT INTO `counter` VALUES (0);";
+    const incrementCounter = "UPDATE `counter` SET `n` = `n` + 1;";
+    writeMigrations(folder, [createCounter]);
+    const db = createDb(fileName);
+    migrateDb(db, folder);
+    writeMigrations(folder, [createCounter, incrementCounter]);
+    const [, second] = readMigrationFiles({ migrationsFolder: folder });
+    expect.assert(second !== undefined);
+
+    const locked = new Int32Array(new SharedArrayBuffer(4));
+    const worker = new Worker(
+      `
+      const { workerData } = require("node:worker_threads");
+      const Database = require(workerData.betterSqlite3);
+      const db = new Database(workerData.fileName);
+      db.exec("BEGIN IMMEDIATE");
+      db.exec(workerData.incrementCounter);
+      db.prepare('INSERT INTO "__drizzle_migrations" ("hash", "created_at") VALUES (?, ?)').run(workerData.hash, workerData.createdAt);
+      Atomics.store(workerData.locked, 0, 1);
+      Atomics.notify(workerData.locked, 0);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
+      db.exec("COMMIT");
+      db.close();
+      `,
+      {
+        eval: true,
+        workerData: {
+          betterSqlite3: createRequire(import.meta.url).resolve("better-sqlite3"),
+          fileName,
+          incrementCounter,
+          hash: second.hash,
+          createdAt: second.folderMillis,
+          locked,
+        },
+      },
+    );
+    const exited = new Promise((resolve, reject) => {
+      worker.on("exit", resolve);
+      worker.on("error", reject);
+    });
+    try {
+      expect(Atomics.wait(locked, 0, 0, 5000)).not.toBe("timed-out");
+
+      migrateDb(db, folder);
+
+      await exited;
+      expect(db.$client.prepare("select n from counter").get()).toEqual({ n: 1 });
+      expect(readMigrationRecords(db)).toHaveLength(2);
+    } finally {
+      db.$client.close();
+    }
   });
 
   // SQLite はトランザクションの中の PRAGMA foreign_keys を無視し、エラーも返さない

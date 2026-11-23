@@ -58,8 +58,8 @@ const MIGRATIONS_TABLE = "__drizzle_migrations";
 /**
  * `drizzle/` の migration のうち未適用のものを当てる。SQLite「ALTER TABLE」の 12 の手順の外枠の形で当てる
  * (ADR-0050): トランザクションの外で外部キーの検査を切り、1 つのトランザクションで未適用の migration を
- * 順に流して記録し、`PRAGMA foreign_key_check` の違反が当てる前より増えていれば戻して落とし、増えていなければ
- * 確定して検査を戻す。テーブルの作り直しの中身 (作る・写す・消す・改名する) は drizzle-kit が書き出す SQL が持つ。
+ * 順に流して記録し、`PRAGMA foreign_key_check` に違反があれば戻して落とし、無ければ確定して検査を戻す。
+ * 当てる前に違反があれば、何も当てずに落とす。テーブルの作り直しの中身 (作る・写す・消す・改名する) は drizzle-kit が書き出す SQL が持つ。
  * drizzle-orm の migrator はトランザクションの中で `PRAGMA foreign_keys=OFF` を流すので効かず、
  * 子から参照される親を作り直すと、`DROP TABLE` が外部キーの検査で落ちるか、`ON DELETE` の動作で子の行を消す
  */
@@ -110,7 +110,7 @@ function restoreForeignKeys(db: Db, failure?: unknown): void {
   }
 }
 
-/** `PRAGMA foreign_key_check` の違反の行 (表、rowid、親の表、外部キーの番号) を比べられる文字列にして読む */
+/** `PRAGMA foreign_key_check` の違反の行 (表、rowid、親の表、外部キーの番号) を文言に入れる文字列にして読む */
 function readForeignKeyViolations(db: Db): string[] {
   const rows = db.$client.pragma("foreign_key_check");
   if (!Array.isArray(rows)) {
@@ -147,9 +147,15 @@ function applyPendingMigrations(db: Db, migrations: MigrationMeta[]): void {
         return;
       }
 
-      // SQLite の手順は、スキーマの変更が外部キーを壊していないことを確かめる。当てる前からある違反では止めず、
-      // migration が増やした違反だけで戻す (Atlas の `OpenTx` と同じ)
-      const before = new Set(readForeignKeyViolations(db));
+      // 確定の前の検査は DB 全体の違反を見る (Django と knex と同じ)。当てる前からある違反を migration の違反と
+      // 取り違えないよう、当てる前に違反があれば何も当てずに止める。違反の行を当てる前と後で突き合わせる形は、
+      // 行を rowid で見分けるので、WITHOUT ROWID の表と、表の作り直しで崩れる (ADR-0050)
+      const existing = readForeignKeyViolations(db);
+      if (existing.length > 0) {
+        throw new Error(
+          `[db] DB に当てる前から外部キーの違反があるので、何も当てずに止めた。違反を直してから当てる: [${existing.join(",")}]`,
+        );
+      }
       for (const migration of pending) {
         for (const statement of migration.sql) {
           db.run(sql.raw(statement));
@@ -159,10 +165,10 @@ function applyPendingMigrations(db: Db, migrations: MigrationMeta[]): void {
         );
       }
       // 行の値は文言に入れず、表と rowid だけを出す
-      const added = readForeignKeyViolations(db).filter((violation) => !before.has(violation));
-      if (added.length > 0) {
+      const violations = readForeignKeyViolations(db);
+      if (violations.length > 0) {
         throw new Error(
-          `[db] migration が外部キーの違反を増やすので、適用せずに戻した: [${added.join(",")}]`,
+          `[db] migration が外部キーの違反を残すので、適用せずに戻した: [${violations.join(",")}]`,
         );
       }
     })
