@@ -58,7 +58,7 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 - `@tanstack/` の scope の依存を足したときは、どちらにも足さない。scope の規則は、後から入る package と skill も許す ([Intent docs「Configuration」][])
 - Intent は devDependency の `@tanstack/intent` を `vp exec intent` で打つ。`vp dlx @tanstack/intent@latest` で打たない。理由は「Intent を devDependency に置く理由」にある
 - `AGENTS.md` の `<!-- intent-skills:start -->` 〜 `end` は Intent が書くブロックなので、手で書き換えず、`vp exec intent install` で書き直させる。`intent.skills` があれば、install は許可を変えず、対話なしでブロックだけを書く ([Intent docs「intent install」][] の Default install)。続けて `vp fmt AGENTS.md` を打ち、整えた後に残る差分を Intent が変えた中身として読む。2026-11-23 に Intent 0.5.6 で、install はブロックを空行の無い形で書き、そのままでは `vp fmt --check` が落ちた
-- ブロックが書く `pnpm exec intent` は書き換えない。次の install で戻る。2026-11-23 に、`pnpm exec intent --version` と `vp exec intent --version` はどちらも devDependency の 0.5.6 を返した。同じ日に読んだ Intent 0.5.6 のソースでは、runner を `package.json` の `packageManager` から選び ([Intent「package-manager.ts」][])、`vp` の形を選ぶ option は無かった ([Intent「command-runner.ts」][])
+- ブロックが書く `pnpm exec intent` は書き換えない。次の install で戻る。2026-11-23 に、`pnpm exec intent --version` と `vp exec intent --version` はどちらも devDependency の 0.5.6 を返した。`vp exec` の形にしない理由は「Intent を devDependency に置く理由」にある
 
 ### 秘密を足す
 
@@ -312,9 +312,9 @@ Intent の first-run の設定も、scope を明示して選ぶとこの形 (`"@
 
 Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて lockfile を commit するよう勧める ([Intent docs「Quick Start for Consumers」][]: "Add `@tanstack/intent` as a development dependency and commit your lockfile before generating guidance"、[Intent docs「intent install」][]: "Keep `@tanstack/intent` in devDependencies and commit the lockfile for CI.")。
 
-- `vp dlx @tanstack/intent@latest` は lockfile に載らず、打つたびに版を解決し直す。2026-11-23 に、このリポジトリで `vp dlx knip@latest --version` は 6.46.1 を返した。その日の最新は 6.48.0 (2026-11-22 公開) で、6.46.1 は `minimumReleaseAge` の待機の外で一番新しい版である。待機は守られるが、版は打つ日によって変わり、lockfile の版とも揃わない
+- `vp dlx` は package を依存に足さずに走らせる ([Vite+ docs「Running Binaries」][] の `vp dlx`: "Use `vp dlx` for one-off package execution without adding the package to your project dependencies")。依存に足さないので、lockfile は走らせた版を持たない。2026-11-23 に vite-plus 1.7.0 で、pnpm 11.28.0 と 12.21.0 のどちらでも、このリポジトリの `vp dlx knip@latest --version` は 6.46.1 (2026-11-18 公開) を返し、`minimumReleaseAge` の待機の中の 6.47.0 (2026-11-20 公開) と 6.48.0 (2026-11-22 公開) を選ばなかった
 - 2026-11-23 に Intent 0.5.6 の install が書いたブロックは、入っている Intent を使わせ、無ければダウンロードせずに報告させる文だった ("Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.")
-- [Intent docs「intent install」][] の Default output は、生成するコマンドを "the detected package manager's runner with `@tanstack/intent@latest`" と書くが、0.5.6 は `pnpm exec intent` を書く ([Intent「command-runner.ts」][] の `runnerByPackageManager`)。2026-11-23 に確かめた時点で、docs は 0.5.6 の tag と 2026-11-22 の main で同じ文のままで、0.5.6 の install はソースのとおりに書いた
+- 2026-11-23 に読んだ Intent 0.5.6 の `command-runner.ts` と `package-manager.ts` では、生成するコマンドの runner を `package.json` の `packageManager` から選び、pnpm なら `pnpm exec intent` に固定していた。`vp` の形にする option は無かった ([Intent「command-runner.ts」][] の `runnerByPackageManager`、[Intent「package-manager.ts」][])。[Intent docs「intent install」][] の Default output は、生成するコマンドを "the detected package manager's runner with `@tanstack/intent@latest`" と書くが、同じ日に、docs は 0.5.6 の tag と 2026-11-22 の main で同じ文のままで、0.5.6 の install はソースのとおり `pnpm exec intent` を書いた
 
 ### `typescript` を直接の依存に置かない理由
 
@@ -382,6 +382,7 @@ Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて
 [Intent docs「intent list」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/cli/intent-list.md
 [Intent docs「intent install」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/cli/intent-install.md
 [Intent docs「Quick Start for Consumers」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/getting-started/quick-start-consumers.md
+[Vite+ docs「Running Binaries」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/vpx.md#vp-dlx
 [Intent「command-runner.ts」]: https://github.com/TanStack/intent/blob/b9f205d69ba2bec93954508ff76281ae2178062c/packages/intent/src/shared/command-runner.ts
 [Intent「package-manager.ts」]: https://github.com/TanStack/intent/blob/b9f205d69ba2bec93954508ff76281ae2178062c/packages/intent/src/discovery/package-manager.ts
 [Intent「register.ts」]: https://github.com/TanStack/intent/blob/b9f205d69ba2bec93954508ff76281ae2178062c/packages/intent/src/discovery/register.ts#L80-L131
