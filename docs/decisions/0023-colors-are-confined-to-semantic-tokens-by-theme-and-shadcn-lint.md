@@ -87,7 +87,7 @@ token だけを混ぜる `color-mix()` の通し方:
 ## 出典
 
 - oxlint の JS plugins (alpha 扱いと `{ name, specifier }` の指定形): https://oxc.rs/docs/guide/usage/linter/js-plugins.html
-- `@shadcn/lint` の setup と rule 一覧: https://github.com/shadcn-ui/lint/blob/main/SETUP.md
+- `@shadcn/lint` の setup と rule 一覧: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/SETUP.md
 - `@shadcn/lint` 0.2.0 の adoption.md (「Add more rules」の部品のディレクトリの override、「Exceptions」の行単位の抑制): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/adoption.md
 - `@shadcn/lint` 0.2.0 の rules.md (「Rules」の off にする範囲、「The policy」の `allow` と `deny`): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules.md
 - `@shadcn/lint` 0.2.0 の no-raw-colors.md (任意値の色を見ない): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules/no-raw-colors.md
