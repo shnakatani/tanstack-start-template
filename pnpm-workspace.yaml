@@ -56,6 +56,10 @@ peerDependencyRules:
 # Node.js は devEngines.runtime に onFail を書かずに pnpm に扱わせない。runtimeOnFail を置くと、引数なしの vp update が package.json に書き戻す (ADR-0004)
 pmOnFail: ignore
 
+# 依存が同梱する agent skill を pnpm に link させない。TanStack の skill は AGENTS.md の Intent で読む (docs/guides/dependencies-and-toolchain.md「依存が同梱する agent skill」)
+skills:
+  dirs: []
+
 allowBuilds:
   esbuild: true
   lightningcss: true

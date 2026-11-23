@@ -40,6 +40,15 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 - `vp` が中継しないサブコマンドだけは素の `pnpm` で打つ。`pnpm peers check` がこれに当たる (「peer の食い違いを数える」)
 - 依存は `vp update <依存>` と名前を付けて上げる。引数なしの `vp update` は、`package.json` の `devEngines.runtime` の版を exact に書き換える (ADR-0004)
 
+### 依存が同梱する agent skill
+
+`pnpm-workspace.yaml` の `skills.dirs` を空のリストにして、依存が同梱する agent skill を pnpm に link させない ([pnpm docs「skills.dirs」][]: "An empty list turns agent skills off. pnpm stops offering them for approval and removes the ones it linked.")。
+
+- TanStack の skill は `AGENTS.md` の Intent (`vp dlx @tanstack/intent@latest list` と `load`) で、作業に合うものだけを読む。pnpm が link するのは直接の依存の skill だけで ([pnpm docs「Agent Skills」][]: "pnpm looks for skills in the direct dependencies of every project")、ADR が出典にする `@tanstack/start-client-core` などの推移の依存の skill は入らない
+- 設定を消すと、install のたびに承認を待つ依存の一覧が出る。pnpm の既定の link 先はリポジトリに既にある `.<name>/skills` なので (同 docs)、`.agents/skills` と `.claude/skills` を持つこのリポジトリでは、エージェントの外で打っても承認待ちになる。2026-11-23 に pnpm 12.21.0 を Claude Code の中で打つと、設定の無い install は TanStack の 6 パッケージを承認待ちに挙げ、設定を置くと 0 件だった
+- `.agents/skills/` の shadcn と valibot は GitHub から入れた skill で、`skills-lock.json` が出所を記録する。pnpm の link とは別の仕組みで、`skills.dirs` の影響を受けない
+- pnpm に link させるなら、`skills` の設定を消して `pnpm approve` を打つ。承認は `pnpm-workspace.yaml` の `permissions` に記録される (同 docs)。pnpm 12.11.0 より古い pnpm は `skills` を読まず、警告して先へ進む (2026-11-23 に 12.10.1 で "are not recognized by this version of pnpm and were ignored: "skills"")
+
 ### 秘密を足す
 
 秘密が要るようになったら、暗号化した env ファイルと、`dotenvx run --` のような復号の経路を、Vite の env 機構と分けて足す。Vite は既に在る環境変数を `.env` で上書きしないので、復号を先に済ませて `process.env` へ入れる形が噛み合う。Vite の `.env` 読み込みは `envDir: false` で切ってある (ADR-0004)。
@@ -280,6 +289,8 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
 [pnpm docs「peerDependencyRules.allowedVersions」]: https://pnpm.io/settings/peer-dependencies#peerdependencyrulesallowedversions
 [pnpm docs「peerDependencyRules」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/peer-dependencies.md#peerdependencyrules
+[pnpm docs「Agent Skills」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/agent-skills.md
+[pnpm docs「skills.dirs」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/build.md#skillsdirs
 [node-semver README「Caret Ranges」]: https://github.com/npm/node-semver/blob/v7.8.5/README.md#caret-ranges-123-025-004
 [dependabot-core「group_update_creation.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/updater/lib/dependabot/updater/group_update_creation.rb#L129-L153
 [dependabot-core「pnpm_lockfile_updater.rb」]: https://github.com/dependabot/dependabot-core/blob/d4120cab39d50362a51b1c4fb307e818fed15868/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L285-L295
