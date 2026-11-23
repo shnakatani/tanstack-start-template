@@ -241,11 +241,11 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 
 ### `typescript` を直接の依存に置かない理由
 
-`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsgolint と TypeScript Go のツールチェーンである ([Vite+ docs「Check」][])。
-`typescript` パッケージは `@voidzero-dev/vite-plus-core` と `oxlint` の推移依存として入るので、直接の依存から外しても install からは消えない。2026-09-02 に `devDependencies` から外した状態で `vp check` を走らせると、型エラー (`TS2322`) を報告した。
+`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsrs (TypeScript 7 のコンパイラを Rust へ移したもの) の `tsrs-lint` である ([Vite+ docs「Check」][])。tsrs は `vite-plus` が依存として入れ、`typescript` パッケージに依存しない (`tsrs@7.1.0-beta.tsrs2` の依存はプラットフォームごとのバイナリだけ)。
+`typescript` パッケージは `@voidzero-dev/vite-plus-core` や Storybook、typescript-eslint の推移依存として入るので、直接の依存から外しても install からは消えない (2026-11-23 に vite-plus 1.7.0 で `pnpm why typescript`)。同じ日に、直接の依存に置かないまま型の誤りを置いて `vp check` を走らせると、`TS2322` を報告した。
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
-型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsgolint が黙って動かない場合は捕まえられない。
+型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsrs が黙って動かない場合は捕まえられない。
 
 ### patch のキーをパッケージ名だけにする理由
 
@@ -271,7 +271,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 [GitHub Docs「Managing pull requests for dependency updates」]: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/manage-dependabot-prs
 [dependabot/dependabot-core#14576]: https://github.com/dependabot/dependabot-core/issues/14576
 [vitest-dev/vitest#9157]: https://github.com/vitest-dev/vitest/issues/9157
-[Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/check.md
+[Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/check.md
 [pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
 [pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
 [pnpm docs「peerDependencyRules.allowedVersions」]: https://pnpm.io/settings/peer-dependencies#peerdependencyrulesallowedversions
