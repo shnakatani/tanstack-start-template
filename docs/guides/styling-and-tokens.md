@@ -182,7 +182,7 @@ getContrast(parse(toHex(measured.backdrop)), parse(toHex(measured.foreground)));
 ### placeholder の色を当てる
 
 - `--placeholder` は `@theme inline` へ通さず、`:root` に置いて `@utility example-placeholder` で当てる。通すと `text-placeholder` や `data-placeholder:text-placeholder` まで生成され、`select` の実テキストへ当てられる。utility を生やさない値は `@theme` でなく `:root` へ置くのが公式の基準である ([Tailwind CSS docs「Theme variables」][] の Why `@theme` instead of `:root`?)
-- 消費側からの上書きは決定的でない。`cn` は生成済み utility の表で衝突を判定するので、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方の class を載せたまま出荷され、詳細度が同じ (0,1,1) なので、どちらが勝つかは CSS のソース順で決まる
+- 消費側からの上書きは決定的でない。`cn` は tailwind-merge の既定の設定から作った表で衝突を判定するので ([cn の README][] の Credits)、`@utility` で作った `example-placeholder` を知らない。`<Input className="placeholder:text-foreground" />` は両方の class を載せたまま出荷され、詳細度が同じ (0,1,1) なので、どちらが勝つかは CSS のソース順で決まる
 
 ### 列幅の決まる部品を測る
 
@@ -259,12 +259,12 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 色の解決は `colorjs.io` を devDependency に宣言して使う。`axe-core` が同梱する同じライブラリ ([axe-core の `LICENSE-3RD-PARTY.txt`][]) を `axe.commons.color` 経由で呼ぶ形は、次の 2 点で採らない。
 
-| 採らない理由                                                                                                                                                                                         | 出典                                                       |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `axe.commons` は `axe.run` の外で呼ぶ前提の名前空間ではない。外で安全なものは `axe.utils` 側だとメンテナが定義している                                                                               | [dequelabs/axe-core#2731][]                                |
-| colorjs は `axe.js` へインライン展開され、axe が自前の patch (`CSS.supports` の呼び出しの guard、Prototype.js との衝突の回避) を当てた形で入っている。パッケージマネージャで版を差し替える手段が無い | [dequelabs/axe-core#5422][] と [dequelabs/axe-core#5313][] |
+| 採らない理由                                                                                                                                                                                                                           | 出典                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `axe.commons` は `axe.run` の外で呼ぶ前提の名前空間ではない。外で安全なものは `axe.utils` 側だとメンテナが定義している                                                                                                                 | [dequelabs/axe-core#2731][]                                |
+| colorjs は `axe.js` へインライン展開され、axe が自前の patch (`CSS.supports` の呼び出しの guard、Prototype.js との衝突の回避) を当てた形で入っていた (2026-10-10、axe-core 4.14.0)。パッケージマネージャで版を差し替える手段が無かった | [dequelabs/axe-core#5422][] と [dequelabs/axe-core#5313][] |
 
-- `axe-core@4.14.0` は `colorjs.io` 0.7.1 を同梱し、`none` を 0 として解決する ([CSS Color 4「“Missing” Color Components and the none Keyword」][] の「a missing component behaves as a zero value」)。この変換器 (`resolveSrgb`) は、sRGB のまま渡された `rgb(none 0 0)` と alpha の `/ none` では 0 とせずに throw する。理由は `scripts/contrast/lib/contrast.ts` の `resolveSrgb` のコメントにある (2026-10-10 に確認)
+- 2026-10-10 に確かめた `axe-core@4.14.0` は `colorjs.io` 0.7.1 を同梱し、`none` を 0 として解決していた ([CSS Color 4「“Missing” Color Components and the none Keyword」][] の「a missing component behaves as a zero value」)。この変換器 (`resolveSrgb`) は、sRGB のまま渡された `rgb(none 0 0)` と alpha の `/ none` では 0 とせずに throw する。理由は `scripts/contrast/lib/contrast.ts` の `resolveSrgb` のコメントにある (2026-10-10 に確認)
 - `@asamuzakjp/css-color` も候補に挙がった。不透明色では Chrome と完全に一致するが、`color-mix` を含む値では canvas の読み取りと一致しない。合成を自前で持つ点は `colorjs.io` と変わらず、`axe-core` が採用している側を選んだ
 
 ### 8bit へ丸める位置
@@ -303,7 +303,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 - トークンを動かしたときに鳴るものは無い。残した数値の陳腐化は機械では検出しない。代わりに再測が 1 コマンドになる
 - 測る対は人が渡す。「この対を測り忘れた」は検出できない。先行例も解いていない
-- 同じ色を渡せば axe の `getContrast` と比が一致する。2026-10-10 に axe-core 4.14.0 と実トークン 6,156 対 (不透明なトークンどうしの対を、前景の alpha 1・0.6・0.3 で重ねたもの) で突き合わせ、差はゼロだった。手順は「axe の比と突き合わせる」
+- 同じ色を渡すと axe の `getContrast` と比が一致した。2026-10-10 に axe-core 4.14.0 と実トークン 6,156 対 (不透明なトークンどうしの対を、前景の alpha 1・0.6・0.3 で重ねたもの) で突き合わせ、差はゼロだった。手順は「axe の比と突き合わせる」
 - `colorjs.io` の版が上がると値が変わりうる。`toGamut` の `method: "clip"` は axe-core の `Color.parseString` に合わせたものである ([dequelabs/axe-core#4908][] がガマット外の oklch をブラウザに合わせた)。2026-10-10 に axe-core 4.14.0 と、ガマットの外を含む oklch 1,755 色で比を突き合わせ、差は 3e-14 以下だった
 - 残る違いは丸める位置である。axe は層ごとに丸め、この変換器は重ね終わった後の 1 回だけ丸める。半透明を重ねた対では SC の判定が割れうる
 - 画面の比と一致するとは限らない。axe はブラウザで `mix-blend-mode`・`text-shadow`・祖先の `opacity`・要素の重なりまで畳むが、この変換器は `--bg` で渡された面だけを重ねる
@@ -332,7 +332,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn-ui/lint docs の「no-restyle」と「Rules」は `@shadcn/lint` 0.2.5 に固定した版を指し、引いた Limits と Contracts は 2026-11-23 にその版の原文と照らした。WCAG 2.2 の SC の文言は 2026-10-05 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn-ui/lint docs の「no-restyle」と「Rules」は `@shadcn/lint` 0.2.5 に固定した版を指し、引いた Limits と Contracts は 2026-11-23 にその版の原文と照らした。cn の README は cn 0.5.2 に固定した版を指し、2026-11-23 に原文と照らした。WCAG 2.2 の SC の文言は 2026-10-05 に原文と照らした。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -370,3 +370,4 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 [tailwindlabs/tailwindcss#16514]: https://github.com/tailwindlabs/tailwindcss/pull/16514
 [Tailwind CSS の `index.ts`]: https://github.com/tailwindlabs/tailwindcss/blob/v4.3.3/packages/tailwindcss/src/index.ts
 [CSS Color 4「Resolving `<color>` Values」]: https://www.w3.org/TR/css-color-4/#resolving-color-values
+[cn の README]: https://github.com/shadcn-ui/cn/blob/cn%400.5.2/README.md#credits

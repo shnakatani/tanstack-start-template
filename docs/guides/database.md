@@ -70,7 +70,7 @@ SQLite のファイルへ drizzle で接続し、migration を適用し、dev �
 | 無ければ作らずに、開こうとしたパスを文言に入れて落とす | 開こうとした絶対パスと作り方を `createDb()` が例外の文言に出し、例外は server function の middleware が server のログに残す (2026-10-01 に `.output/server/index.mjs` を起動して実測)。作らないことは better-sqlite3 の `fileMustExist` が保証する ([better-sqlite3 docs「API」][] の `new Database()`) | **採用** |
 | 無ければ作る (better-sqlite3 の既定)                   | テーブルの無い空の DB ができ、最初のクエリが `no such table` で落ちる。ログには出るが、どの DB を開いたかも作り方も出ない                                                                                                                                                                               | 却下     |
 
-`fileMustExist` の失敗の文言は `unable to open database file` で、開こうとしたパスを含まない (better-sqlite3 13.0.3、2026-09-29 に実測)。ディレクトリを指していても `existsSync` は真を返す。そのため `createDb()` は開く前にファイルかを確かめ、絶対パスを例外の文言に入れる。
+`fileMustExist` の失敗の文言は `unable to open database file` で、開こうとしたパスを含まなかった (better-sqlite3 13.0.3、2026-09-29 に実測)。ディレクトリを指していても `existsSync` は真を返す。そのため `createDb()` は開く前にファイルかを確かめ、絶対パスを例外の文言に入れる。
 
 ### 外部キーの検査を接続で有効にする理由
 
@@ -87,13 +87,13 @@ SQLite は、外部キーの検査を接続ごとに有効にする形をとり�
 
 ### パスを cwd 基準にする理由
 
-drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に確認)。
+2026-09-29 に確かめると、drizzle まわりはどれも相対パスを cwd 基準で扱っていた。
 
 | 対象                    | 相対パスの扱い                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | drizzle の docs         | migration のフォルダを相対パスのまま渡す (`migrate(db, { migrationsFolder: "./migrations" })`、[drizzle docs「Node.js + Railway」][]) |
-| drizzle-orm の migrator | 受け取ったパスを解決せずに `fs` へ渡す (0.45.2 の [drizzle-orm の `migrator.ts`][])                                                   |
-| drizzle-kit             | `drizzle.config.ts` を cwd から探し、`out` と `dbCredentials.url` を cwd 基準で使う (0.31.10)                                         |
+| drizzle-orm の migrator | 受け取ったパスを解決せずに `fs` へ渡していた (0.45.2 の [drizzle-orm の `migrator.ts`][])                                             |
+| drizzle-kit             | `drizzle.config.ts` を cwd から探し、`out` と `dbCredentials.url` を cwd 基準で使っていた (0.31.10)                                   |
 
 | 案                                                   | 評価                                                                                                                                                                                 | 採否     |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -104,13 +104,13 @@ drizzle まわりはどれも相対パスを cwd 基準で扱う (2026-09-29 に
 
 相対パスが残るのは `MIGRATIONS_FOLDER` と、drizzle-kit の設定の探索と設定の中の `schema` である。これらを使う入口がルートで走ることの根拠は次のとおり。
 
-| 入口                            | 根拠                                                                                                                                                                                                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vp run <タスク>`               | タスクの `cwd` の既定はパッケージのルート ([Vite+ docs「Run Config」][] の `cwd`)                                                                                                                                                                             |
-| `vp run <script>`               | 2026-09-29 に vp 1.0.0 で、サブディレクトリから打ってもパッケージのルートで走った                                                                                                                                                                             |
-| `vp test run`                   | Vitest 5 は親のディレクトリの設定を探さない ([Vite+ docs「Upgrade to Vitest 5」][])。サブディレクトリで打つと設定が読まれず、`@/` の import が解決できない。2026-09-29 に vp 1.0.0 で、`--config` で渡しても project の設定のパスが解決できず、起動しなかった |
-| `node .output/server/index.mjs` | 起動した cwd がそのまま基準になる。[TanStack Start docs「Hosting」][] は `start` script から起動する形を示す                                                                                                                                                  |
-| (参考) Nitro の SQLite の既定   | 本番は cwd を基準に `.data/db.sqlite` を組む。[Nitro の `database.ts`][] は開発時だけ `cwd: rootDir` を渡し、[db0 の `node-sqlite.ts`][] は `resolve(opts.cwd \|\| ".", ...)` で組む ([Nitro docs「Database」][])                                             |
+| 入口                            | 根拠                                                                                                                                                                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `vp run <タスク>`               | タスクの `cwd` の既定はパッケージのルート ([Vite+ docs「Run Config」][] の `cwd`)                                                                                                                                                                                                          |
+| `vp run <script>`               | 2026-09-29 に vp 1.0.0 で、サブディレクトリから打ってもパッケージのルートで走った                                                                                                                                                                                                          |
+| `vp test run`                   | Vitest 5 は親のディレクトリの設定を探さない ([Vite+ docs「Upgrade to Vitest 5」][])。サブディレクトリで打つと設定が読まれず、`@/` の import が解決できない。2026-09-29 に vp 1.0.0 で、`--config` で渡しても project の設定のパスが解決できず、起動しなかった                              |
+| `node .output/server/index.mjs` | 起動した cwd がそのまま基準になる。[TanStack Start docs「Hosting」][] は `start` script から起動する形を示す                                                                                                                                                                               |
+| (参考) Nitro の SQLite の既定   | 2026-09-29 に読んだ nitro 3.0.260610-beta と db0 0.3.4 では、本番は cwd を基準に `.data/db.sqlite` を組んでいた。[Nitro の `database.ts`][] は開発時だけ `cwd: rootDir` を渡し、[db0 の `node-sqlite.ts`][] は `resolve(opts.cwd \|\| ".", ...)` で組んでいた ([Nitro docs「Database」][]) |
 
 ### migration を起動時に適用しない理由
 

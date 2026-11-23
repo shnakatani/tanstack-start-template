@@ -39,7 +39,7 @@
 
 ### 呼び出しの履歴を読む
 
-- `mock.calls` を受ける helper の引数は `unknown[][]` で型注釈する。型引数なしの `vi.fn()` の `mock.calls` は `any[][]` に、型付きの mock では引数の型の配列になる (`@vitest/spy` の `Mock` の `calls: MockParameters<T>[]`)。`unknown[][]` はどちらも受け、要素を読む側で型を絞ることになる。`any[][]` にすると、呼び出しの形を読み違えても型検査が止めない
+- `mock.calls` を受ける helper の引数は `unknown[][]` で型注釈する。2026-10-05 に読んだ `@vitest/spy` 5.0.1 の型 (`Mock` の `calls: MockParameters<T>[]`) では、型引数なしの `vi.fn()` の `mock.calls` は `any[][]` に、型付きの mock では引数の型の配列になっていた。`unknown[][]` はどちらも受け、要素を読む側で型を絞ることになる。`any[][]` にすると、呼び出しの形を読み違えても型検査が止めない
 
 ### 差し替えた実装を戻す
 
@@ -144,8 +144,8 @@ Vitest の既定で有効なのは `clearMocks` だけで、消すのは呼び�
 | 設定の `restoreMocks: true`                                          | 戻すのは `vi.spyOn` で作った spy だけで ([Vitest docs「restoreMocks」][]: "This restores all original implementations on spies created manually with `vi.spyOn`.")、`__mocks__` の `vi.fn()` に張った戻り値は戻さない | 却下     |
 
 - 並行するテストで mock が戻る注意は、`mockReset` だけのものではない。既定で有効な `clearMocks` と、このリポジトリが有効にしている `unstubEnvs` / `unstubGlobals` にも同じ warning がある ([Vitest docs「clearMocks」][]、[Vitest docs「unstubEnvs」][]、[Vitest docs「unstubGlobals」][])
-- 戻す時点は、docs と実装で食い違う。[Vitest docs「mockReset」][] の warning は "the completion of one test will clear the mock history and implementation for all mocks" と終了の時点で書く。5.0.1 の実装では [Vitest の `runners/test.ts`][] の `onBeforeTryTask` が戻すので、戻るのはテストの開始の時点である
-- 設定の戻しが `beforeEach` より前に走るのは、[Vitest の `run.ts`][] が、戻しを呼ぶ `onBeforeTryTask` を `beforeEach` より先に呼ぶからである
+- 戻す時点は、docs と実装で食い違う。[Vitest docs「mockReset」][] の warning は "the completion of one test will clear the mock history and implementation for all mocks" と終了の時点で書く。2026-10-09 に読んだ 5.0.1 の実装では [Vitest の `runners/test.ts`][] の `onBeforeTryTask` が戻していたので、戻るのはテストの開始の時点だった
+- 設定の戻しが `beforeEach` より前に走ったのは、2026-10-09 に読んだ 5.0.1 の [Vitest の `run.ts`][] が、戻しを呼ぶ `onBeforeTryTask` を `beforeEach` より先に呼んでいたからである
 - automock と autospy の戻る先は、docs に書かれていない。[Vitest の `automocker.ts`][] は autospy にだけ元の実装を `originalImplementation` として渡す。[Vitest の `spy/src/index.ts`][] の `mockReset` は張った実装を外すだけで、呼ばれたときに張った実装が無ければ `originalImplementation` を使い、それも無ければ空の実装を使う。なので autospy は元の実装に、automock は空の実装になる (2026-10-09 に 5.0.1 の実装を読んで確かめた。走らせてはいない)
 - 使う戻り値を毎テストの `beforeEach` か本文で張り直すテストは、設定を外しても通る。設定を外して緑のままでも、設定が要らないことにはならない。設定が防ぐのは、張り直さずに書いたテストと、戻し忘れた `vi.spyOn` である
 

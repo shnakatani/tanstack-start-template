@@ -25,7 +25,7 @@ oxlint は「設定したつもりで効いていない」状態を診断なし�
 - 2026-09-30 に oxlint 1.85.0 の `--print-config` で確かめると、`rules` に接頭辞なしで書いたキーは eslint コアへ解決された。`prefer-spread` と書いても、同名の `unicorn/prefer-spread` は有効にならなかった。CLI の `-D` は逆に、同名のルールをすべて有効にした (「設定の落とし穴」)
 - React Compiler 由来のルールは `--print-config` の `rules` を `react/` で絞り、eslint-plugin-react-hooks のルール一覧と比べる
 - jsx-a11y は `--print-config` の `rules` を `jsx_a11y/` で絞り、上流 recommended の一覧と `comm` で両方向の差を取る。`rules` は「カテゴリで有効になったもの」と「名指ししたもの」の和なので、名前が出れば有効と読んでよい
-- `overrides` で足したプラグインとそのルールは、`--print-config` ではなく、当たるファイルへの実際の診断で確かめる。`--print-config` は `overrides` を書いたとおりの形で出し、ファイルを渡しても出力は変わらない (2026-09-30 に oxlint 1.85.0 で実測)。override のプラグインでカテゴリから有効になるルールも展開しない ([oxc-project/oxc#24878][]。2026-09-30 時点で open で、1.85.0 でも再現した)
+- `overrides` で足したプラグインとそのルールは、`--print-config` ではなく、当たるファイルへの実際の診断で確かめる。`--print-config` は `overrides` を書いたとおりの形で出し、ファイルを渡しても出力は変わらなかった (2026-09-30 に oxlint 1.85.0 で実測)。override のプラグインでカテゴリから有効になるルールも展開しない ([oxc-project/oxc#24878][]。2026-09-30 時点で open で、1.85.0 でも再現した)
 
 `--print-config` から有効と読めるのは、名前が出ている場合だけである。JS plugin 由来のルールは出力に出ないので、無いことは無効の証拠にならない (`docs/guides/lint/custom-rules.md`「JS plugin の落とし穴」)。
 
@@ -142,7 +142,7 @@ eslint コアと `import` の TypeScript 向け variant が off にする側は�
 
 ### `vp check` の結果が割れたら
 
-- コードを変えずに `vp check` を 2 回続けて打ち、結果が割れたら、上流の非決定的な発火を疑う。`typescript/no-unnecessary-type-assertion` は、同じ入力でも報告したりしなかったりする ([oxc-project/oxc#21752][]) (2026-09-02 に vite-plus 0.3.0 / oxlint 1.79.0 で観測)。スレッドを 1 つに絞っても揃わない ([oxc-project/oxc#21752][] の本文: `--threads=1` で "still flaky (not internal worker race)")。`vp check` は `--threads` を持たないので、絞って確かめるなら `vp lint --threads=1` を打つ (2026-10-06 に vite-plus 1.0.0 の `vp check --help` と `vp lint --help` で確認)
+- コードを変えずに `vp check` を 2 回続けて打ち、結果が割れたら、上流の非決定的な発火を疑う。`typescript/no-unnecessary-type-assertion` は、同じ入力でも報告したりしなかったりする ([oxc-project/oxc#21752][]) (2026-09-02 に vite-plus 0.3.0 / oxlint 1.79.0 で観測)。スレッドを 1 つに絞っても揃わない ([oxc-project/oxc#21752][] の本文: `--threads=1` で "still flaky (not internal worker race)")。2026-10-06 に vite-plus 1.0.0 の `vp check --help` と `vp lint --help` で確かめると、`vp check` は `--threads` を持たなかった。絞って確かめるなら `vp lint --threads=1` を打つ
 
 ### 設定の落とし穴
 
@@ -242,7 +242,7 @@ oxlint のカテゴリは実装者がルールを分類した軸で、上流の 
 - 基準が off にするルールでも、`correctness` に入っていればカテゴリ側が勝つ。`rules` で明示的に off にしないと有効のまま残る
 - 基準がオプションを指定していても、名指ししないルールは oxlint の既定のオプションで動く。既定と基準の関係ごとの扱いは ADR-0007「カテゴリ経由のルールのオプション」にある
 
-2026-10-10 に、jsx-a11y の recommended がオプションを指定する 6 ルールを、eslint-plugin-jsx-a11y 6.10.2 の recommended と比べた。3 ルールで oxlint の既定のほうが厳しかった。次の書き方の報告は oxlint 1.85.0 の `vp lint` で確かめた。1.87.0 でも 6 ルールのソースは同じである。表の最後の行は jsx-a11y の比べ合わせとは別に、oxlint 1.85.0 と 1.87.0 の実装と @vitest/eslint-plugin 1.6.27 で確かめた。
+2026-10-10 に、jsx-a11y の recommended がオプションを指定する 6 ルールを、eslint-plugin-jsx-a11y 6.10.2 の recommended と比べた。3 ルールで oxlint の既定のほうが厳しかった。次の書き方の報告は oxlint 1.85.0 の `vp lint` で確かめた。1.87.0 でも 6 ルールのソースは同じだった。表の最後の行は jsx-a11y の比べ合わせとは別に、oxlint 1.85.0 と 1.87.0 の実装と @vitest/eslint-plugin 1.6.27 で確かめた。
 
 | ルール                                                   | oxlint の既定で報告され、基準では通る書き方                                                                                                         |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |

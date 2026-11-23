@@ -82,7 +82,7 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 2. attestation の `subject` が対象の package と version に一致し、`workflow.repository` が公式のリポジトリで、`workflow.ref` が既定のブランチかリリースタグであることまで見る
 3. `pnpm-workspace.yaml` の `minimumReleaseAgeExclude` へ、バージョンまで固定して (`@scope/pkg@x.y.z`) 追記する
 
-追記したエントリの後始末は `minimumReleaseAgeExcludePrune` (pnpm 11.22.0) が持つ。`vp add` / `update` / `remove` が、lockfile の解決から消えたエントリを自動で消す。`@scope/*` のパターンは常に残る。`vite-plus` のような名前だけの行は、lockfile が解決しなくなれば消える。
+追記したエントリの後始末は、`pnpm-workspace.yaml` で有効にした `minimumReleaseAgeExcludePrune` が持つ。`vp add` / `update` / `remove` のたびに、lockfile が解決しなくなったエントリが消え、`@scope/*` の形のパターンは残る ([pnpm docs「minimumReleaseAgeExcludePrune」][])。
 
 ### peer の食い違いを数える
 
@@ -90,7 +90,7 @@ curl -s "https://registry.npmjs.org/-/npm/v1/attestations/<pkg>@<version>"
 pnpm peers check
 ```
 
-- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える (pnpm 11.0.0 から)。lockfile は書き換えない
+- lockfile を読んで、宣言された peer の範囲と入っている版の食い違いを数える ([pnpm docs「pnpm peers」][] の check)。lockfile は書き換えない
 - 素の `pnpm` で打つ。2026-09-28 に vite-plus 1.0.0 で、`vp pm` は `peers` を中継しなかった (`vp pm peers check` は `Command 'peers' not found`)
 - `vp install` の出力が静かでも、食い違いが無いとは限らない。lockfile が最新なら install は解決を走らせず、peer の食い違いを報告しない ([pnpm/pnpm#14114][])
 - 許可を外すだけでは lockfile が変わらないので、2026-09-29 に pnpm 11.28.0 で、`--force` を付けても `strictPeerDependencies: true` にしても install は通り、食い違いを出したのは `pnpm peers check` だけだった
@@ -99,7 +99,7 @@ pnpm peers check
 - 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005「pin には出口条件を書く」)
 - Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。`storybook>vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
 - storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (2026-11-23 に `storybook@10.6.7` の dist で確認)
-- キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
+- キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。同じ日に見た 12.6.0 の `pnpm peers check` は親の版を見ていた)
 - 許可した側を値の range の外へ上げると (1.0.0 以上は major、0.x は minor)、`pnpm peers check` に再び食い違いとして出る。新しい版で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
 - 一緒に上げる依存の組は、`.github/dependabot.yml` の組のグループで 1 本の PR にする (ADR-0005)。組を足すときは、patterns を `minor-and-patch` の `exclude-patterns` にも写す (「Vite+ を上げる」の `minor-and-patch` の項目)
@@ -170,7 +170,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 
 ### patch を当てる
 
-依存の配布物に patch を当てるときは、`vp pm patch <pkg>` を版を付けずに打つ。`pnpm-workspace.yaml` の `patchedDependencies` にパッケージ名だけのキー (`"<pkg>"`) で足され、どの版にも当たる (「patch のキーをパッケージ名だけにする理由」)。そのキーの直前のコメントに、理由と撤去条件 (ADR-0005「pin には出口条件を書く」) と、効いていることの確かめ方を書く。`vp run verify` が捕まえない patch もあるので、確かめ方が無いと壊れても気づけない。
+依存の配布物に patch を当てるときは、`vp pm patch <pkg>` を版を付けずに打つ。`pnpm-workspace.yaml` の `patchedDependencies` のキーはパッケージ名だけ (`"<pkg>"`) にする。このキーはどの版にも当たる ([pnpm docs「pnpm patch」][] の patchedDependencies、「patch のキーをパッケージ名だけにする理由」)。そのキーの直前のコメントに、理由と撤去条件 (ADR-0005「pin には出口条件を書く」) と、効いていることの確かめ方を書く。`vp run verify` が捕まえない patch もあるので、確かめ方が無いと壊れても気づけない。
 
 - 作り直すときも版を付けずに打つ。2026-10-01 に pnpm 11.28.0 で、版を付けずに打つと既にある patch を当てた編集用のディレクトリができ、`vp pm patch-commit` は同じキーと同じファイルへ書き戻した。版を付けると既にある patch が当たらず、`patch-commit` は版を固定したキーを足して `ERR_PNPM_UNUSED_PATCH` で落ちた。その案内どおりにパッケージ名だけのキーを消すと、元の変更が黙って消えた
 - `vp pm patch-commit` したあとは、初めて作ったときも作り直したときも、`pnpm-lock.yaml` を HEAD の内容へ戻してから `vp install` する。`patch-commit` を通った lockfile では、patch を当てた依存の `optionalDependencies` が落ちていた (2026-10-01 に pnpm 11.28.0 で観測)
@@ -242,7 +242,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 
 ### `typescript` を直接の依存に置かない理由
 
-`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsrs (TypeScript 7 のコンパイラを Rust へ移したもの) の `tsrs-lint` である ([Vite+ docs「Check」][]、[Vite+ docs「Lint」][])。tsrs は `vite-plus` が依存として入れ、`typescript` パッケージに依存しない (`tsrs@7.1.0-beta.tsrs2` の依存はプラットフォームごとのバイナリだけ)。
+`vp check` の型検査は oxlint の type-aware パスが担い、その実体は tsrs (TypeScript 7 のコンパイラを Rust へ移したもの) の `tsrs-lint` である ([Vite+ docs「Check」][]、[Vite+ docs「Lint」][])。tsrs は `vite-plus` が依存として入れ、`typescript` パッケージに依存していなかった (2026-11-23 に読んだ `tsrs@7.1.0-beta.tsrs2` の依存は、プラットフォームごとのバイナリだけだった)。
 `typescript` パッケージは `@voidzero-dev/vite-plus-core` や Storybook、typescript-eslint の推移依存として入るので、直接の依存から外しても install からは消えない (2026-11-23 に vite-plus 1.7.0 で `pnpm why typescript`)。同じ日に、直接の依存に置かないまま型の誤りを置いて `vp check` を走らせると、`TS2322` を報告した。
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
@@ -250,7 +250,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 
 ### patch のキーをパッケージ名だけにする理由
 
-版まで固定したキーは、上げた版には使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。この失敗は、lockfile だけを更新するとき (`install --lockfile-only`) にも起きる (2026-10-01 に pnpm 11.28.0 で観測)。Dependabot は pnpm を `--lockfile-only` で走らせ ([dependabot-core「pnpm_lockfile_updater.rb」][])、失敗した依存を飛ばして残りで PR を作る ([dependabot-core「group_update_creation.rb」][]) ので、その依存だけが黙って PR から抜け、揃えて上がる依存の版が割れる。範囲のキー (`"<pkg>@^<版>"`) も、範囲の外へ上げた版には使われないので同じことになる。
+版まで固定したキーは、上げた版には使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。この失敗は、lockfile だけを更新するとき (`install --lockfile-only`) にも起きる (2026-10-01 に pnpm 11.28.0 で観測)。2026-09-30 と 2026-10-01 に読んだ dependabot-core の d4120cab のソースでは、Dependabot は pnpm を `--lockfile-only` で走らせ ([dependabot-core「pnpm_lockfile_updater.rb」][])、失敗した依存を飛ばして残りで PR を作っていた ([dependabot-core「group_update_creation.rb」][])。その依存だけが黙って PR から抜け、揃えて上がる依存の版が割れる。範囲のキー (`"<pkg>@^<版>"`) も、範囲の外へ上げた版には使われないので同じことになる。
 
 パッケージ名だけのキーは、どの版にも当てる ([pnpm docs「pnpm patch」][])。当たらなければ通常の install が `ERR_PNPM_PATCH_FAILED` で落ち、`--lockfile-only` では落ちない (2026-10-01 に pnpm 11.28.0 で観測) ので、Dependabot の PR は作られ、その PR の CI で気づける。Dependabot の振る舞いはコードで確かめ、実行では観測していない。同じ docs には、名前だけのキーは当たらない失敗を無視すると読める記述もあるが、v11 では当たらない失敗は常にエラーになる (同じ docs の `allowUnusedPatches` の注記)。
 
@@ -275,7 +275,7 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 [Vite+ docs「Check」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/check.md
 [Vite+ docs「Lint」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/lint.md
 [pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
-[pnpm docs「pnpm patch」]: https://pnpm.io/cli/patch
+[pnpm docs「pnpm patch」]: https://github.com/pnpm/pnpm.io/blob/c777ca5aabd6d19ac7915b1b694840fdf968268c/versioned_docs/version-11.x/cli/patch.md
 [pnpm docs「peerDependencyRules.allowedVersions」]: https://pnpm.io/settings/peer-dependencies#peerdependencyrulesallowedversions
 [node-semver README「Caret Ranges」]: https://github.com/npm/node-semver/blob/v7.8.5/README.md#caret-ranges-123-025-004
 [node-semver README「X-Ranges」]: https://github.com/npm/node-semver/blob/v7.8.5/README.md#x-ranges-12x-1x-12-
@@ -294,3 +294,5 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 [dependabot-core「pnpm_lockfile_updater.rb」の verify_unpinned_updates!]: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L316-L336
 [dependabot-core「dependency_set.rb」]: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/common/lib/dependabot/file_parsers/base/dependency_set.rb#L170-L183
 [GitHub Docs「Viewing and updating Dependabot alerts」]: https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-dependabot-alerts/viewing-and-updating-dependabot-alerts
+[pnpm docs「minimumReleaseAgeExcludePrune」]: https://github.com/pnpm/pnpm.io/blob/2a4094811db9e5cd25e7dd275a168dfaf6452c7b/versioned_docs/version-11.x/settings/dependency-resolution.md#minimumreleaseageexcludeprune
+[pnpm docs「pnpm peers」]: https://github.com/pnpm/pnpm.io/blob/6f3a366d8fc5964ae39584f6205ed605bee92ae9/versioned_docs/version-11.x/cli/peers.md#check
