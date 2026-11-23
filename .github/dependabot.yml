@@ -25,6 +25,12 @@ updates:
       # 撤去条件: Vite+ の docs が、単独で先へ進む vitest の PR を作らせない bot の設定例を示したとき (voidzero-dev/vite-plus#2356)
       - dependency-name: "vitest"
       - dependency-name: "@vitest/*"
+      # Playwright 1.65.1 が同梱する Chromium 159 は、iframe の中のボタンで view transition を始めると renderer が落ちる。
+      # 手元の macOS の並列の vp test run が "The chromium page crashed" で止まった (2026-11-23。1.65.0 の Chromium 158 では通った。microsoft/playwright#44133)
+      # 撤去条件: Chromium の修正 (https://issues.chromium.org/issues/588305519) を含む Playwright へ上げたとき。
+      # 1.65.1 より後の版の PR は、同梱の Chromium に修正が入ったかを確かめてから取り込む (ADR-0005)
+      - dependency-name: "playwright"
+        versions: ["1.65.1"]
     groups:
       # vite-plus と core を 1 本の PR に束ねる。PR の扱いは docs/guides/dependencies-and-toolchain.md「Vite+ を上げる」 (ADR-0005)
       vite-plus:
