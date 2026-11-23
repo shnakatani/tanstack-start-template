@@ -76,7 +76,7 @@ token だけを混ぜる `color-mix()` の通し方:
 
 - 3 ルールが発火していることを常時見張る仕組みは置かない。発火は組み込みのルールと同じく oxlint の責務として扱い、整合性テストは解決後設定までを見る。`jsPlugins` は oxlint 側が alpha 扱いで semver の対象外と明記しているが、依存の更新の内容を確かめるときに jsPlugins に変化があれば、そのとき動作を確かめる
 - top-level の 3 ルールは `--print-config` の `rules` に出る。`scripts/checks/integrity/lint-config.test.ts` は書いたルールが解決後設定に残るかを組み込みのルールと同じ差で見るので、出なくなればこのテストが落ちる。見るのはキーの有無だけで、`tooling/lint/config.ts` から消してもこのテストと `vp lint` は通る (2026-11-23 に oxlint 1.94.0 で実測)
-- 同じ日に、top-level の 3 ルールの 1 つを `"off"` にすると出力から消え、上のテストが落ちた。組み込みのルールは `"off"` にしても `"allow"` で出て、落ちない。上流の出力の形による差で、テストは severity を見ないので、`"off"` を止める検査として数えない
+- 2026-11-23 に oxlint 1.94.0 で、top-level の 3 ルールの 1 つを `"off"` にすると出力から消え、上のテストが落ちた。組み込みのルールは `"off"` にしても `"allow"` で出て、落ちない。上流の出力の形による差で、テストは severity を見ないので、`"off"` を止める検査として数えない
 - `overrides` に置いた JS plugin 由来のルールは、同じテストが規則名と severity を固定している。top-level の 3 ルールとはこの点が違う (`docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。抑制した行の扱いは `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」にある
 - `@shadcn/lint` 0.2.5 は `eslint` と `@typescript-eslint/parser` を optional peer に持つ。component のファイルを読む parser には optionalDependencies の `oxc-parser` を先に使い、`@typescript-eslint/parser` は読めなかったときの代わりなので、直接の依存に足さない (2026-11-23 に 0.2.5 の `package.json` と `dist/index.js` で確認)
