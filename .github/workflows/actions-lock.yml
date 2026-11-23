@@ -1,0 +1,37 @@
+name: actions-lock
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  # .github/workflows/actions.lock が workflow と合っていて、固定した commit が上流で確かめられることを検査する。
+  # zizmor は lockfile に workflow があるかしか見ず、uses: を足したのに lockfile を作り直していない PR を通す (ADR-0006)
+  verify:
+    runs-on: ubuntu-latest
+    # private リポジトリの checkout に要る (ADR-0006)
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      # 拡張の版は Dependabot が上げないので手で上げる。手元で lockfile を作る拡張の版にそろえる。
+      # 見直す条件: github/gh-actions-lock#293 の検査用の action が出たとき (ADR-0006)
+      - run: gh extension install github/gh-actions-lock --pin v0.5.1
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # lockfile の version が拡張の読める版より新しいと、この step は exit 2 で落ちる
+      - run: gh actions-lock --verify
+        env:
+          GH_TOKEN: ${{ github.token }}
