@@ -370,7 +370,7 @@ describe("migrateDb", () => {
     const db = createDbWithRows(dir.path, "no action");
     writeMigrations(dir.path, [createTables("no action"), rebuildAuthors(' WHERE "id" <> 2')]);
     // ON に戻す PRAGMA だけを落とし、ほかの PRAGMA は元の実装へ通す。既定の passthrough は spyOn の元の実装を
-    // 呼ばずに undefined を返したので (2026-11-23、vitest 5.1.0 で実測)、元の実装を onUnmatched に渡す
+    // 呼ばずに undefined を返したので (2026-11-23、vitest 5.1.0 で実測。vitest-dev/vitest#12053)、元の実装を onUnmatched に渡す
     const pragma = db.$client.pragma.bind(db.$client);
     using restoring = vi
       .when(vi.spyOn(db.$client, "pragma"), { onUnmatched: pragma })
