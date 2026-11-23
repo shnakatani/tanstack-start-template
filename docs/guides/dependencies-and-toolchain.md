@@ -98,7 +98,7 @@ pnpm peers check
 - 値の range は、確かめた版の major にする (`"1"`)。0.x の依存だけは minor までにする (`"^0.153.0"`)。0.x は minor で破壊的変更を入れることが多く ([node-semver README「Caret Ranges」][])、`"0"` は 1.0.0 未満のすべてを満たして食い違いを黙らせる (2026-10-11、pnpm 11.28.0 で実測)。値の書き方は [pnpm docs「peerDependencyRules.allowedVersions」][]
 - 撤去条件は、pin の出口条件と同じく上流の修正かリリースで書き、Dependabot の PR を処理するときに確かめる (ADR-0005「pin には出口条件を書く」)
 - Vite+ を上げたら、`vite-plus/versions` の export が残っているかを確かめる。`storybook>vite-plus` の許可は値を major にしたので、export が消えても `pnpm peers check` は鳴らない
-- storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (2026-11-05 に `storybook@10.6.5` の dist で確認)
+- storybook を上げたら、dist が `vite-plus` から import しているものを読み直す。`storybook>vite-plus` の許可は、storybook が `vite-plus/versions` だけを読むことを前提にしている (2026-11-23 に `storybook@10.6.7` の dist で確認)
 - キーの親に版を付けない (`"<親>@<版>><peer>"` にしない)。pnpm 11 の `pnpm peers check` は親の版を捨て、名前だけで照合する。install は親の版を見るので、2 つの判定が割れる (2026-09-29 に 11.28.0 で実測。12.6.0 の `pnpm peers check` は親の版を見る)
 - 許可した側を値の range の外へ上げると (1.0.0 以上は major、0.x は minor)、`pnpm peers check` に再び食い違いとして出る。新しい版で動くことを確かめ直してから、値を書き換える
 - 親を上げたら、そのエントリの撤去条件を見る。どのエントリが何を待っているかは `pnpm-workspace.yaml` のコメントが持つ
@@ -109,9 +109,10 @@ pnpm peers check
 - グループの PR でも、組の片方だけが上がり、`verify:peers` で落ちることがある。Dependabot は、上げる依存が関わる peer の食い違いを、版を選ぶ判定から外す。上げる依存自身もグループに属するので、食い違いの相手がグループの内か外かを問わない ([dependabot-core「version_resolver.rb」][])。落ちた PR は、CI の `verify:peers` の出力 (`Installed` の版、`Wanted` の範囲、範囲を宣言する依存) を読み、範囲を満たす組み合わせが公開されているかを探す。PR が peer の相手を上げたなら `npm view '<宣言する依存>@><今の版>' peerDependencies.<相手>` で、宣言する依存を上げたなら `npm view '<相手>@<Wanted の範囲>' version` で探す
   - 見つかった版が cooldown の中 (公開日時は `npm view <pkg> time --json`、cooldown は `.github/dependabot.yml`): グループの PR を更新する実行は、PR に載っていない組の相手も cooldown の外の版から選び直す (2026-11-04 のログに `Checking if @vitejs/plugin-react 6.1.2 needs updating` と `Filtered out 2 versions due to cooldown`)。cooldown が明けたあとの実行の CI で、揃ったかを見る。待たずに揃えるなら、「待機を前倒しする」の手順で組の両方を上げた PR を自分で作り、それを merge してから Dependabot の PR を閉じる
   - 見つからない: PR を開いたまま置き、上流が peer を広げるのを待つ。閉じても次の実行で作り直される (ADR-0005)
-- `vite` と `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-09-28、vite-plus 1.0.0 で実測)
+- `vitest` の `allowAny` と `allowedVersions` の行は例外で、`vp migrate` が書き、消しても書き戻す (2026-11-23、vite-plus 1.7.0 で実測)
 - `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
-- `vite` の行は効いている。`vite@*` の catalog の値は `npm:` の alias で、このとき peer の宣言は置き換わらず、行を消すと `pnpm peers check` が食い違いを出す (2026-09-28、pnpm 11.28.0 で実測。pnpm の docs はこの場合を書いていない)
+- `vite` の行は置かない。core の版が同梱の Vite の版を表す (`8.3.8000` は Vite 8.3.8) ので、`vite` を peer に持つ依存の範囲を満たす。`vp migrate` は `vite` の行を消す ([Vite+ docs「Migration Rules」][])。行の無いまま `pnpm peers check` は食い違いを出さなかった (2026-11-23、vite-plus 1.7.0、pnpm 11.28.0)
+- `vite` の peer の範囲が同梱の Vite を含まない依存は、`pnpm peers check` に食い違いとして出る。その依存を上げるか、親つきのキー (`"<依存>>vite"`) で許す ([Vite+ docs「Migration Rules」][])
 
 ### 依存をバレルの禁止の対象に足す
 
@@ -266,8 +267,8 @@ git ls-files -co --exclude-standard '*.ts' '*.tsx' ':!docs/registry-baseline/**'
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
 [pnpm/pnpm#14114]: https://github.com/pnpm/pnpm/pull/14114
-[Vite+ docs「Update Vite+」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/upgrade-project.md
-[Vite+ docs「Migration Rules」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/migrate-rules.md
+[Vite+ docs「Update Vite+」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/upgrade-project.md
+[Vite+ docs「Migration Rules」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/migrate-rules.md
 [GitHub Docs「Managing pull requests for dependency updates」]: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/manage-dependabot-prs
 [dependabot/dependabot-core#14576]: https://github.com/dependabot/dependabot-core/issues/14576
 [vitest-dev/vitest#9157]: https://github.com/vitest-dev/vitest/issues/9157
