@@ -18,10 +18,10 @@
 
 ### `ui/` の variant 関数を外で呼ぶ
 
-`ui/` が export した variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときは、次に従う。規則がどの書き方を読むかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と Limits、`settings.shadcn` の各設定の意味は [shadcn-ui/lint docs「Settings」][] が持つ。
+`ui/` が export した variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときは、次に従う。どこへ渡すと規則が落とすかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と [shadcn-ui/lint docs「How it works」][] の Wrappers、`settings.shadcn` の各設定の意味は [shadcn-ui/lint docs「Settings」][] が持つ。
 
 - 書き足す class は `cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書く。`buttonVariants({ variant, className: "mt-4" })` のキーには書かない (「`cn()` の引数に書く理由」)
-- 戻り値を部品へ渡すと、`require-static-classes` が落とすことがある。どの書き方が読まれるかは [shadcn-ui/lint docs「require-static-classes」][] の Variant functions と [shadcn-ui/lint docs「How it works」][] の Wrappers が決める
+- 戻り値を部品へ渡すと、`require-static-classes` が落とすことがある (どこへ渡すと落ちるかは上の 2 つの節にある)。落ちたら、`Button` 自身か `ui/` の variant で見た目を配る (`docs/guides/styling-and-tokens.md`「外見を層の外へ配る」)
 - リンクを button の見た目にするときは、アプリの route へのリンクなら `ButtonLink` (`src/components/parts/button-link.tsx`) を使い、外部へのリンクなら素の `<a>` に `buttonVariants` を当てる。`Button` の `render` でリンクを描かない ([shadcn docs「Button」][] の As Link)
 - `settings.shadcn.variantFunctions` と `mergeFunctions` へ variant 関数を登録しない (ADR-0023)
 
