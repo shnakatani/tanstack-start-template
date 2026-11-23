@@ -50,11 +50,14 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 
 `package.json` の `intent.skills` が許す package の skill だけを、Intent は `list` に出し `load` で読ませる。`intent.exclude` に当たる package と skill は、許した後に外す ([Intent docs「Configuration」][])。このリポジトリは `@tanstack/*` を許し、TanStack 以外で skill を同梱する推移の依存を `intent.exclude` で外している。理由は「Intent の許可を `@tanstack/*` の scope にする理由」にある。
 
-- 依存を足したら `vp dlx @tanstack/intent@latest list` を打ち、stderr の notice を見る。許していない package が skill を同梱していると notice が出る。エージェントのセッションでは数だけが出るので、名前はエージェントの外で `list --show-hidden` を打って見る ([Intent docs「intent list」][])
-- notice に出た package は、`intent.skills` に package 名で足すか、`vp dlx @tanstack/intent@latest exclude add <package>` で `intent.exclude` に足す。どちらにも入れないと notice が `list` のたびに出続け、エージェントはそのたびにユーザーへ確認を求める
+- 依存を足したら `vp exec intent list` を打ち、stderr の notice を見る。許していない package が skill を同梱していると notice が出る。エージェントのセッションでは数だけが出るので、名前はエージェントの外で `list --show-hidden` を打って見る ([Intent docs「intent list」][])
+- notice に出た package は、`intent.skills` に package 名で足すか、`vp exec intent exclude add <package>` で `intent.exclude` に足す。どちらにも入れないと notice が `list` のたびに出続け、エージェントはそのたびにユーザーへ確認を求める
 - どちらに入れるかは人が決める。どの package にエージェントへの指示を出させるかを決めることになる ([Intent docs「Trust model」][])
-- `intent.exclude` は `intent.skills` より優先する。外した package を使うときは、`vp dlx @tanstack/intent@latest exclude remove <package>` で外してから `intent.skills` に足す ([Intent docs「Configuration」][])
+- `intent.exclude` は `intent.skills` より優先する。外した package を使うときは、`vp exec intent exclude remove <package>` で外してから `intent.skills` に足す ([Intent docs「Configuration」][])
 - `@tanstack/` の scope の依存を足したときは、どちらにも足さない。scope の規則は、後から入る package と skill も許す ([Intent docs「Configuration」][])
+- Intent は devDependency の `@tanstack/intent` を `vp exec intent` で打つ。`vp dlx @tanstack/intent@latest` で打たない。理由は「Intent を devDependency に置く理由」にある
+- `AGENTS.md` の `<!-- intent-skills:start -->` 〜 `end` は Intent が書くブロックなので、手で書き換えない。Intent を上げたら `vp exec intent install` を打ち、ブロックを書き直させる。`intent.skills` があれば、install は許可を変えず、対話なしでブロックだけを書く ([Intent docs「intent install」][] の Default install)
+- ブロックが書く `pnpm exec intent` は、`vp exec intent` と同じ devDependency の CLI を走らせる (2026-11-23 に両方の `--version` が 0.5.6)。Intent は runner を `package.json` の `packageManager` から選び、`vp` の形を選ぶ option は無い ([Intent「command-runner.ts」][])。ブロックの中を `vp exec` に書き換えても、次の install で戻る
 
 ### Dependabot の alerts を有効にする
 
@@ -284,6 +287,14 @@ scope を採るのは、許す単位が信頼する相手と一致するから�
 
 外さずに残すと notice が `list` のたびに出る。エージェントのセッションでは notice が数だけを示してユーザーへの確認を促すので、新しく足した依存の notice と区別できない。外しておくと、notice が出るのは新しく判断の要る package があるときだけになる ([Intent docs「Configuration」][] の Discovery notices: "Package was explicitly excluded | No unlisted-source notice.")。
 
+### Intent を devDependency に置く理由
+
+Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて lockfile を commit するよう勧める ([Intent docs「Quick Start for Consumers」][]: "Add `@tanstack/intent` as a development dependency and commit your lockfile before generating guidance"、[Intent docs「intent install」][]: "Keep `@tanstack/intent` in devDependencies and commit the lockfile for CI.")。
+
+- `vp dlx @tanstack/intent@latest` は lockfile に載らず、打つたびに版を解決し直す。2026-11-23 に、このリポジトリで `vp dlx knip@latest --version` は 6.46.1 を返した。その日の最新は 6.48.0 (2026-11-22 公開) で、6.46.1 は `minimumReleaseAge` の待機の外で一番新しい版である。待機は守られるが、版は打つ日によって変わり、lockfile の版とも揃わない
+- `vp exec intent install` が書くブロックは、エージェントに入っている Intent を使わせ、無ければダウンロードせずに報告させる (Intent 0.5.6 の出力: "Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.")
+- [Intent docs「intent install」][] の Default output は、生成するコマンドを "the detected package manager's runner with `@tanstack/intent@latest`" と書くが、0.5.6 は `pnpm exec intent` を書く ([Intent「command-runner.ts」][] の `runnerByPackageManager`)。docs は 0.5.6 の tag と 2026-11-22 の main で同じ文のままで、コードの側が今の挙動である
+
 ### patch のキーをパッケージ名だけにする理由
 
 版まで固定したキーは、上げた版には使われず、install が `ERR_PNPM_UNUSED_PATCH` で落ちる (`allowUnusedPatches` の既定は `false`。[pnpm docs「pnpm patch」][])。この失敗は、lockfile だけを更新するとき (`install --lockfile-only`) にも起きる (2026-10-01 に pnpm 11.28.0 で観測)。Dependabot は pnpm を `--lockfile-only` で走らせ ([dependabot-core「pnpm_lockfile_updater.rb」][])、失敗した依存を飛ばして残りで PR を作る ([dependabot-core「group_update_creation.rb」][]) ので、その依存だけが黙って PR から抜け、揃えて上がる依存の版が割れる。範囲のキー (`"<pkg>@^<版>"`) も、範囲の外へ上げた版には使われないので同じことになる。
@@ -332,4 +343,7 @@ scope を採るのは、許す単位が信頼する相手と一致するから�
 [Intent docs「Trust model」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/concepts/trust-model.md
 [Intent docs「Configuration」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/concepts/configuration.md
 [Intent docs「intent list」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/cli/intent-list.md
+[Intent docs「intent install」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/cli/intent-install.md
+[Intent docs「Quick Start for Consumers」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/getting-started/quick-start-consumers.md
+[Intent「command-runner.ts」]: https://github.com/TanStack/intent/blob/b9f205d69ba2bec93954508ff76281ae2178062c/packages/intent/src/shared/command-runner.ts
 [npm docs「scope」]: https://github.com/npm/documentation/blob/61b8784f8eaeedc7d9c2f176d219df0308034f0d/content/cli/v11/using-npm/scope.mdx
