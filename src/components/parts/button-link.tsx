@@ -37,7 +37,7 @@ function ButtonLinkBase({
       // この属性で対象を選ぶため、欠けるとリンクだけが選択から漏れる
       data-slot="button"
       data-disabled={disabled ? "" : undefined}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     >
       {isPending === undefined ? (
