@@ -74,8 +74,10 @@ token だけを混ぜる `color-mix()` の通し方:
 
 ## Consequences
 
-- 3 ルールが発火していることを常時見張る仕組みは置かない。`--print-config` の top-level `rules` に JS plugin 由来のルールは出ず、`rules` から消しても `"off"` にしても整合性テストと `vp check` は通る。`jsPlugins` は oxlint 側が alpha 扱いで semver の対象外と明記しているが、依存の更新の内容を確かめるときに jsPlugins に変化があれば、そのとき動作を確かめる
-- `overrides` に置いた JS plugin 由来のルールは解決後設定に出るため、`scripts/checks/integrity/lint-config.test.ts` が規則名と severity を固定している。top-level の 3 ルールとは扱いが違う (`docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」)
+- 3 ルールが発火していることを常時見張る仕組みは置かない。発火は組み込みのルールと同じく oxlint の責務として扱い、整合性テストは解決後設定までを見る。`jsPlugins` は oxlint 側が alpha 扱いで semver の対象外と明記しているが、依存の更新の内容を確かめるときに jsPlugins に変化があれば、そのとき動作を確かめる
+- top-level の 3 ルールは `--print-config` の `rules` に出る。`scripts/checks/integrity/lint-config.test.ts` は書いたルールが解決後設定に残るかを組み込みのルールと同じ差で見るので、出なくなればこのテストが落ちる。見るのはキーの有無だけで、`tooling/lint/config.ts` から消してもこのテストと `vp lint` は通る (2026-11-23 に oxlint 1.94.0 で実測)
+- 同じ日に、top-level の 3 ルールの 1 つを `"off"` にすると出力から消え、上のテストが落ちた。組み込みのルールは `"off"` にしても `"allow"` で出て、落ちない。上流の出力の形による差で、テストは severity を見ないので、`"off"` を止める検査として数えない
+- `overrides` に置いた JS plugin 由来のルールは、同じテストが規則名と severity を固定している。top-level の 3 ルールとはこの点が違う (`docs/guides/lint/tailwind-and-shadcn.md`「`require-static-classes` を層の境界で有効にする」)
 - `no-arbitrary-values` は `color-mix()` の材料を区別しない。抑制した行の扱いは `docs/guides/styling-and-tokens.md`「`color-mix()` を書く」にある
 - `@shadcn/lint` は `@typescript-eslint/parser` を実依存に持つが、oxlint 経由では読まない。parser の eslint peer は `pnpm-workspace.yaml` の `packageExtensions` で optional にする。いま ESLint は `eslint-plugin-testing-library` と TanStack の 2 plugin が `@typescript-eslint/utils` 経由で必須にしているので入るが、それらが外れれば ESLint も外れる (`docs/guides/lint/configuration.md`「testing-library を story に限る理由」)
 - `packageExtensions` のキーは package 名と版の範囲で選び、親で絞れない (pnpm docs の `packageExtensions`: "The keys in `packageExtensions` are package names or package names and semver ranges")。`@shadcn/lint` 以外の依存が引く `@typescript-eslint/parser` 8 系でも eslint の peer は optional になる。ESLint を実際に使う依存を足すときは、eslint が入るかを `vp why eslint` で確かめる
