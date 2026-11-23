@@ -57,9 +57,6 @@ peerDependencyRules:
 pmOnFail: ignore
 runtimeOnFail: ignore
 
-# vp add が、型を同梱しない依存の @types/* を devDependencies に足す (docs/guides/dependencies-and-toolchain.md「依存を足す・外す」)
-saveTypes: true
-
 # 依存が同梱する agent skill を pnpm に link させない。TanStack の skill は AGENTS.md の Intent で読む (docs/guides/dependencies-and-toolchain.md「依存が同梱する agent skill」)
 skills:
   dirs: []
