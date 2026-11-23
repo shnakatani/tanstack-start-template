@@ -22,7 +22,7 @@ paths:
 
 - `devEngines.runtime` の Node.js の版は `package.json` を直接書き換えて変え、`vp env pin` で書かない。`vp env pin` は範囲を渡しても exact の版に解決して書く (ADR-0004)
 - `devEngines.runtime` は `name` と `version` だけにし、`onFail` はどの値も書かない。pnpm に Node.js を扱わせないのは `pnpm-workspace.yaml` の `runtimeOnFail: ignore` が持つ。`onFail` の `ignore` は Vite+ が宣言を飛ばす予定の値である (ADR-0004)
-- 引数なしの `vp update` が `devEngines.runtime` に足した `onFail` は commit の前に消す。`--no-save` を付ければ足さない (ADR-0004)
+- `vp add`・`vp remove`・引数なしの `vp update` が `devEngines.runtime` に足した `onFail` は、commit の前に消す (ADR-0004)
 
 ## script とタスク
 

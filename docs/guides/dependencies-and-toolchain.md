@@ -39,7 +39,7 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 - 依存は `vp add` / `vp remove` で足し外す ([Vite+ docs「Package Management」][] の「Add and Remove」)。素の `pnpm` / `npm` / `yarn` で足し外さない。理由は「入口を `vp` にそろえる理由」にある
 - `vp add <依存>` は、型を同梱しない依存の `@types/*` を devDependencies に足す (`pnpm-workspace.yaml` の `saveTypes: true`。[pnpm docs「--save-types」][]: "Packages that declare bundled TypeScript types are skipped.")。2026-11-23 に pnpm 12.21.0 で、`vp add ms@2.1.3` は `@types/ms` を `^2.1.0` で devDependencies に足した。足したくないときは `--no-save-types` を付ける
 - `vp` が中継しないサブコマンドだけは素の `pnpm` で打つ。`pnpm peers check` がこれに当たる (「peer の食い違いを数える」)
-- 引数なしの `vp update` は、`package.json` の `devEngines.runtime` に `runtimeOnFail` の値を `onFail` として書き足す。足された `onFail` は commit の前に消す。`--no-save` を付ければ足さない (ADR-0004)
+- `vp add`・`vp remove`・引数なしの `vp update` は、`package.json` の `devEngines.runtime` に `runtimeOnFail` の値を `onFail` として書き足す。足された `onFail` は、commit の前に消す (ADR-0004)
 
 ### 依存が同梱する agent skill
 
