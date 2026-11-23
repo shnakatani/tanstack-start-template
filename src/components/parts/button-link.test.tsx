@@ -1,8 +1,10 @@
 import { RouterProvider } from "@tanstack/react-router";
 import { createRef } from "react";
 import { describe, expect, it } from "vite-plus/test";
+import { userEvent } from "vite-plus/test/browser";
 import { render } from "vitest-browser-react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { createTestRouter } from "@/test/app/create-test-router";
 import { expectText } from "@/test/assert/screen-assertions";
 
@@ -11,7 +13,7 @@ import { ButtonLink } from "./button-link";
 // to は routeTree の実在パスしか受け付けないため /notes を渡す
 /**
  * 状態のカタログは `button-link.stories.tsx` が持つ。ここに残すのは、要素が `a` であること・
- * `data-slot`・`button-group` の子孫セレクタが当たる経路で、args だけで状態が決まる部品なので
+ * `data-slot`・`button-group` の子孫セレクタが当たる経路と、部品の `render` に渡したときに部品の props を受けることで、args だけで状態が決まる部品なので
  * story に play が無い以上、ここでしか固定できない
  * (docs/guides/storybook.md「カタログと play の範囲」「story とブラウザテストの分担」)。
  *
@@ -110,5 +112,30 @@ describe("ButtonLink", () => {
 
     await expect.element(screen.getByRole("link")).toHaveAttribute("href", "/notes");
     await expect.element(screen.getByRole("link")).not.toHaveAttribute("data-disabled");
+  });
+
+  // 部品の render に渡すと、部品の props (イベントと ref) を受けた a として描かれる。
+  // docs/guides/lint/tailwind-and-shadcn.md「`ui/` の variant 関数を外で呼ぶ」が、render に渡すリンクに ButtonLink を勧める根拠
+  it("部品の render に渡すと、部品の props を受けた a として描かれ、押すと遷移する", async () => {
+    const router = createTestRouter("/", () => (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <ButtonLink to="/notes" variant="ghost">
+              メモ一覧へ
+            </ButtonLink>
+          }
+        />
+        <TooltipContent>一覧を開く</TooltipContent>
+      </Tooltip>
+    ));
+    const screen = await render(<RouterProvider router={router} />);
+    const link = screen.getByRole("link", { name: "メモ一覧へ" });
+
+    await expect.element(link).toHaveAttribute("href", "/notes");
+    await userEvent.hover(link);
+    await expect.element(screen.getByText("一覧を開く")).toBeVisible();
+    await link.click();
+    await expect.poll(() => router.state.location.pathname).toBe("/notes");
   });
 });
