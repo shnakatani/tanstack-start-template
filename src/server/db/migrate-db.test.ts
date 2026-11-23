@@ -127,7 +127,10 @@ function insertOrphanReview(db: ReturnType<typeof createDb>): void {
   db.$client.pragma("foreign_keys = ON");
 }
 
-/** books の違反の行を消す custom migration。rowid のある表は foreign_key_check の rowid でも引ける */
+/**
+ * books の違反の行を消す custom migration。どの環境の DB でも同じ行を指すよう、foreign_key_list から組んだ NOT EXISTS で
+ * 書く。foreign_key_check の rowid は、違反の行を確かめる読み出しにだけ使い、migration には書かない
+ */
 const DELETE_ORPHAN_BOOKS =
   "DELETE FROM `books` WHERE `author_id` IS NOT NULL AND NOT EXISTS (SELECT 1 FROM `authors` p WHERE p.`id` = `books`.`author_id`);";
 
@@ -236,7 +239,7 @@ describe("migrateDb", () => {
       writeMigrations(dir.path, [createTables("no action"), migration]);
 
       expect(() => migrateDb(db, dir.path)).toThrow(
-        /^\[db\] 当てる前から外部キーの違反が 1 件あり、当てたあとも違反が残るので、適用せずに戻した。違反を直す custom migration を先に足すと当たる: \[\{"table":"books","rowid":4,"parent":"authors","fkid":0\}\]$/,
+        /^\[db\] 外部キーの違反が、当てる前に 1 件、当てたあとに 1 件あるので、適用せずに戻した。当てる前からある違反は、直す custom migration を足すと当たる。当てたあとの件数が多ければ、migration も違反を作っている: \[\{"table":"books","rowid":4,"parent":"authors","fkid":0\}\]$/,
       );
 
       expect(
@@ -291,7 +294,7 @@ describe("migrateDb", () => {
 
     // 違反は 2 件とも rowid が NULL で、当てる前の 1 件と見分けられないが、確定の前に違反があるので落とす
     expect(() => migrateDb(db, dir.path)).toThrow(
-      /当てる前から外部キーの違反が 1 件あり、.*: \[(\{"table":"reviews","rowid":null,"parent":"authors","fkid":0\},?){2}\]$/,
+      /外部キーの違反が、当てる前に 1 件、当てたあとに 2 件ある.*: \[(\{"table":"reviews","rowid":null,"parent":"authors","fkid":0\},?){2}\]$/,
     );
     expect(db.$client.prepare("select id from authors order by id").all()).toEqual([
       { id: 1 },
@@ -329,7 +332,7 @@ describe("migrateDb", () => {
 
     writeMigrations(dir.path, [createTables("no action"), CREATE_TAGS, rebuildTags()]);
     expect(() => migrateDb(db, dir.path)).toThrow(
-      /当てる前から外部キーの違反が 1 件あり、.*: \[\{"table":"tags","rowid":3,"parent":"authors","fkid":0\}\]$/,
+      /外部キーの違反が、当てる前に 1 件、当てたあとに 1 件ある.*: \[\{"table":"tags","rowid":3,"parent":"authors","fkid":0\}\]$/,
     );
 
     writeMigrations(dir.path, [
@@ -358,7 +361,7 @@ describe("migrateDb", () => {
     ]);
 
     expect(() => migrateDb(db, dir.path)).toThrow(
-      /当てる前から外部キーの違反が 1 件あり、.*: \[\{"table":"volumes","rowid":4,"parent":"authors","fkid":0\}\]$/,
+      /外部キーの違反が、当てる前に 1 件、当てたあとに 1 件ある.*: \[\{"table":"volumes","rowid":4,"parent":"authors","fkid":0\}\]$/,
     );
   });
 

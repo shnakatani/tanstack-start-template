@@ -165,7 +165,7 @@ function applyPendingMigrations(db: Db, migrations: MigrationMeta[]): void {
         const list = `[${violations.join(",")}]`;
         throw new Error(
           existingCount > 0
-            ? `[db] 当てる前から外部キーの違反が ${existingCount} 件あり、当てたあとも違反が残るので、適用せずに戻した。違反を直す custom migration を先に足すと当たる: ${list}`
+            ? `[db] 外部キーの違反が、当てる前に ${existingCount} 件、当てたあとに ${violations.length} 件あるので、適用せずに戻した。当てる前からある違反は、直す custom migration を足すと当たる。当てたあとの件数が多ければ、migration も違反を作っている: ${list}`
             : `[db] migration が外部キーの違反を残すので、適用せずに戻した: ${list}`,
         );
       }
