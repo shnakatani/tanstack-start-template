@@ -2,6 +2,21 @@
 
 プロジェクト概要・技術スタック・セットアップ・ドキュメント一覧は `README.md` を参照。
 
+<!-- intent-skills:start -->
+
+## Skill Loading
+
+Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
+Before editing files for a substantial task:
+
+- Run `pnpm exec intent list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `pnpm exec intent load <package>#<skill>` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+
+<!-- intent-skills:end -->
+
 ## コマンド（クイックリファレンス）
 
 ```bash
@@ -45,21 +60,6 @@ UI と story を触る前に `vp exec storybook skills` を実行し、`stories`
 
 - `docs/decisions/` - ADR。ツールチェーン・lint 方針・型の作り方・UI 基盤を変える前に、`docs/decisions/README.md` の一覧で該当する ADR を探す
 - `docs/guides/` - 設計ガイド。部品をまたぐ作法の規範と説明と手順。rules の項目が出典として節を指す
-
-<!-- intent-skills:start -->
-
-## Skill Loading
-
-Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
-Before editing files for a substantial task:
-
-- Run `pnpm exec intent list` from the workspace root to see available local skills.
-- If a listed skill matches the task, run `pnpm exec intent load <package>#<skill>` before changing files.
-- Use the loaded `SKILL.md` guidance while making the change.
-- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
-- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
-
-<!-- intent-skills:end -->
 
 <!--VITE PLUS START-->
 
