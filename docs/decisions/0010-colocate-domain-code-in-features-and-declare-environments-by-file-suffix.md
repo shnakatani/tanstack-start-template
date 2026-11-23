@@ -89,5 +89,5 @@ user が書いた設定のうち、既定に足されるのは `client.specifier
 - File Organization: intent skill `@tanstack/start-client-core#start-core/server-functions` (`library_version` 1.170.14、2026-09-06 に確認)
 - 横断的な server コードの配置: intent skill `@tanstack/start-client-core#start-core/auth-server-primitives` (同 1.170.14、2026-09-06 に確認)
 - 既定の split groupings: TanStack Router docs「Automatic Code Splitting」の What gets code split? と、`@tanstack/router-plugin` 1.168.35 の `dist/esm/core/constants.js` の `defaultCodeSplitGroupings` (`component` / `errorComponent` / `notFoundComponent`)。`pendingComponent` を既定から外したのは TanStack/router#4047 (2026-09-28 に確認)
-- intent skill `@tanstack/router-core#router-core/code-splitting` (router-core 1.171.27) は `pendingComponent` を「What Gets Split」に挙げるが、上の docs と実装では分割されない。skill の記述に従うと、pending 表示が import する module も分割されると誤る (2026-09-28 に確認)
+- 2026-09-28 に確認した intent skill `@tanstack/router-core#router-core/code-splitting` (router-core 1.171.27) は `pendingComponent` を「What Gets Split」に挙げていたが、上の docs と実装では分割されなかった。skill の記述に従うと、pending 表示が import する module も分割されると誤る
 - エコシステムの実例: https://github.com/BearStudio/start-ui-web / https://github.com/mugnavo/tanstarter / https://github.com/Kiranism/tanstack-start-dashboard (いずれも 2026-09-06 に確認)

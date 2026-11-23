@@ -13,8 +13,8 @@
 | `@tanstack/devtools-vite` の Console Piping (`consolePiping`) | ブラウザ → 端末 (`[Client]` を付ける) と、SSR の server → ブラウザ (`[Server]` を付ける) の両方向。`levels` は両方向で共有する                | 既定で有効。`<html`・`StartClient`・`hydrateRoot`・`createRoot` のどれかを含むファイルに送るコードを入れる |
 
 - Vite docs「Server Options」は `server.forwardConsole` の型を `boolean | { unhandledErrors?: boolean, logLevels?: ('error' | 'warn' | 'info' | 'log' | 'debug')[] }` とし、`logLevels` は "controls which `console.*` calls are forwarded" と書く。`logLevels` は送る level の列挙で、閾値ではない
-- Vite+ 1.4.0 が同梱する Vite 8.3.5 の `resolveForwardConsoleOptions` は、object を渡すと `unhandledErrors` を省いたときに `true`、`logLevels` を省いたときに `[]` にする。agent の検出は同梱の `std-env` で、`AI_AGENT`・`CLAUDECODE`・`CLAUDE_CODE` などの環境変数を見る
-- Console Piping の `consolePiping` が持つ option は `enabled` と `levels` だけで、片方の向きだけを止める option は無い (`@tanstack/devtools-vite` 0.8.6 の `src/plugin.ts`)
+- 2026-11-07 に読んだ Vite+ 1.4.0 が同梱する Vite 8.3.5 の `resolveForwardConsoleOptions` は、object を渡すと `unhandledErrors` を省いたときに `true`、`logLevels` を省いたときに `[]` にしていた。agent の検出は同梱の `std-env` で、`AI_AGENT`・`CLAUDECODE`・`CLAUDE_CODE` などの環境変数を見ていた
+- 2026-11-07 に読んだ `@tanstack/devtools-vite` 0.8.6 の `src/plugin.ts` では、Console Piping の `consolePiping` が持つ option は `enabled` と `levels` だけで、片方の向きだけを止める option は無かった
 - `@tanstack/devtools-vite` 0.8.6 は、Vite が端末へ送ったブラウザのログを Console Piping がブラウザへ送り返すループを直している (TanStack/devtools#540)
 
 ### 端末に出た行数

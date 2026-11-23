@@ -34,7 +34,7 @@
 認識の軸 (`componentImports`) は `ui/` `action/` `parts/` の 3 つを持つ。
 
 - `parts/` を持つのは、`routes/` などから `parts/` の部品へ渡す `className` を検査するためである
-- `action/` を持つのは、`action/` が ui 部品を async React (Transition) にした層で、ui と同じく design system の部品だからである。外すと、`<ActionForm className="bg-muted p-8 text-lg">` や動的な `className` が無診断で通る。持たせると `no-restyle` と `require-static-classes` が指摘する (2026-09-25 実測、`@shadcn/lint` 0.1.0)
+- `action/` を持つのは、`action/` が ui 部品を async React (Transition) にした層で、ui と同じく design system の部品だからである。2026-09-25 に `@shadcn/lint` 0.1.0 で測ると、外せば `<ActionForm className="bg-muted p-8 text-lg">` や動的な `className` が無診断で通り、持たせると `no-restyle` と `require-static-classes` が指摘した
 - 適用外は `ui/` のままにする。`action/` の中も検査されるので、`action/` の部品が ui 部品に見た目を足すと指摘される
 
 `src/components/` の外では `.storybook/` も適用する側に置く。decorator は design system component を包んで `className` を渡す置き場になるため、`src/components/screens/` と同じ扱いにする。`tooling/lint/config.ts` の override は `files` に `src/**` と `.storybook/**` の 2 つを持つ。
@@ -45,7 +45,7 @@
 
 ui 部品の見た目の差をどこで持つか (既定と公式のノブ、`ui/` の variant、素の要素での包み、contract) は `docs/guides/styling-and-tokens.md`「部品の見た目を変える」にある。
 
-`ScrollArea` には contract `{ pattern: "^ScrollArea$", allow: ["layout", "rounded"] }` を置き、呼び出し側に layout に加えて角丸 (class グループ `rounded`) だけを許す。Viewport は `rounded-[inherit]` で Root の角丸を受け継ぎ、その角丸で中身と focus ring を切り抜く。切り抜く角丸は置かれた器に合わせて決まるので、`ui/` で 1 つに固定できない。`ui/` の外では、地の色と枠線は器が、余白は中身の要素が持つ。余白を許さないのは、Root が既定で持つ `data-has-overflow-y:pr-2.5` が属性つきセレクタで呼び出し側の `p-*` に詳細度で勝ち、Root に余白を当てると溢れたときだけ右の余白が変わるためである。contract は `className` と `viewportClassName` を区別しないので、許す範囲は両方に効く。2026-09-25 に `@shadcn/lint` 0.1.0 で測ると、`rounded` と `rounded-md` は通り、`rounded-t-md`・`outline-none`・`ring-2`・`gap-2`・`p-4`・`border`・`bg-muted` は指摘された。
+`ScrollArea` には contract `{ pattern: "^ScrollArea$", allow: ["layout", "rounded"] }` を置き、呼び出し側に layout に加えて角丸 (class グループ `rounded`) だけを許す。Viewport は `rounded-[inherit]` で Root の角丸を受け継ぎ、その角丸で中身と focus ring を切り抜く。切り抜く角丸は置かれた器に合わせて決まるので、`ui/` で 1 つに固定できない。`ui/` の外では、地の色と枠線は器が、余白は中身の要素が持つ。余白を許さないのは、Root が既定で持つ `data-has-overflow-y:pr-2.5` が属性つきセレクタで呼び出し側の `p-*` に詳細度で勝ち、Root に余白を当てると溢れたときだけ右の余白が変わるためである。2026-09-25 の `@shadcn/lint` 0.1.0 では、contract は `className` と `viewportClassName` を区別せず、許す範囲は両方に効いた。同じ日に 0.1.0 で測ると、`rounded` と `rounded-md` は通り、`rounded-t-md`・`outline-none`・`ring-2`・`gap-2`・`p-4`・`border`・`bg-muted` は指摘された。
 
 ### 検討した選択肢
 
@@ -59,7 +59,7 @@ ui 部品の見た目の差をどこで持つか (既定と公式のノブ、`ui
 | 適用外を `ui/` だけにする                                                                                                                           | 上流 `docs/adoption.md` の設定例の範囲で、Hephaestus、nocturne、Jovie、t3code も部品ディレクトリだけを外す (2026-09-25 確認)。範囲だけを採り、書き方は上の決定 (`excludeFiles`) に従う。`parts/` の中の見た目の上書きも診断され、見た目の差が `ui/` の variant に集まる   | **採用** |
 | `action/` を認識から外す (`componentImports` を `ui/` と `parts/` にする)                                                                           | `ActionForm` への見た目の上書き (`bg-muted p-8 text-lg`) と動的な `className` が無診断で通る。`ActionButton` のように ui 部品へ転送する部品は包みとして検査されるが、素の `<form>` を描く `ActionForm` は素の要素と同じ扱いになる (2026-09-25 実測、`@shadcn/lint` 0.1.0) | 却下     |
 | 適用外を `ui/` `action/` `parts/` にする                                                                                                            | `parts/` の中で ui 部品への見た目の上書きが無診断で通り、見た目が `ui/` の variant に集まらない。合成部品も部品ディレクトリへ同居させて丸ごと外す stella がこの形に近い (2026-09-25 確認)                                                                                 | 却下     |
-| `ScrollArea` の contract で layout に加えて `rounded` だけ許す                                                                                      | 切り抜く角丸を器に合わせられる。グループ `rounded` は片側の角丸 (`rounded-t-*`) と outline / ring を含まない (shadcn-ui/lint `categories.ts`)。地の色・枠線・余白は許さず、置き場所が器と中身に決まる                                                                     | **採用** |
+| `ScrollArea` の contract で layout に加えて `rounded` だけ許す                                                                                      | 切り抜く角丸を器に合わせられる。グループ `rounded` は片側の角丸 (`rounded-t-*`) と outline / ring を含まない (shadcn-ui/lint「Rules」の Contracts と Categories)。地の色・枠線・余白は許さず、置き場所が器と中身に決まる                                                  | **採用** |
 | `ui/scroll-area.tsx` に variant を足す                                                                                                              | 見た目の選択肢が 1 つの使い手のためのものになり、shadcn の例が呼び出し側で当てる角丸 (`rounded-md border`) を `ui/` に固定する                                                                                                                                            | 却下     |
 | contract でカテゴリ `layout` / `spacing` / `shape` を許す (Hephaestus の形)                                                                         | `spacing` が gap と space を、`shape` が outline と ring の太さを含むので、それらまで許す。Root に当てた余白は既定の `data-has-overflow-y:pr-2.5` とぶつかる                                                                                                              | 却下     |
 | contract で `color` も許す                                                                                                                          | 地の色は器が持つ。Hephaestus の contract も color を許さず、t3code と nocturne は ScrollArea に layout 以外を渡さない                                                                                                                                                     | 却下     |

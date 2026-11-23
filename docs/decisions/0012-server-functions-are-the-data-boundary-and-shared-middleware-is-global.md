@@ -40,13 +40,13 @@ console.log(context.probeUser.uid);
 | `context.thisPropertyDoesNotExist` を読む | 設定あり             | `Found 1 error` (`TS2339: Property 'thisPropertyDoesNotExist' does not exist on type '{ probeUser: { uid: string; }; }'`) |
 
 件数は読み方で変わる (中間変数へ代入すると `no-unsafe-assignment` が加わる)。上の表は `console.log` で読んだときの値である。
-`context.thisPropertyDoesNotExist` を読む行が示すとおり、`context` は `any` へ落ちず global middleware が足した context 型そのものへ解決する。
+`context.thisPropertyDoesNotExist` を読む行が示すとおり、`context` は `any` へ落ちず global middleware が足した context 型そのものへ解決していた。
 
 2026-09-06 に読んだ `@tanstack/start-client-core` 1.170.27 の `dist/esm/createMiddleware.d.ts` では、`AssignAllServerFnContext` が `Register` の `config` から `functionMiddleware` を取り出す `GlobalServerFnContext` を合成していた。`src/routeTree.gen.ts` が `config` を登録済みである。
 
 実行順は、global の middleware が先で、per-function の middleware が後になる (TanStack Start docs「Middleware」の Middleware Execution Order)。
 
-`createServerFn` を包む base builder も公式の機構に載る。`@tanstack/start-client-core` 1.170.27 の `dist/esm/createServerFn.js` の `.middleware()` は、渡されたものが server function factory なら、その middleware 構成を展開して取り込む。
+`createServerFn` を包む base builder も公式の機構に載る。2026-09-06 に読んだ `@tanstack/start-client-core` 1.170.27 の `dist/esm/createServerFn.js` では、`.middleware()` は、渡されたものが server function factory なら、その middleware 構成を展開して取り込んでいた。
 
 ## Decision
 
@@ -89,7 +89,7 @@ console.log(context.probeUser.uid);
 
 - server function がデータ境界であること: intent skill `@tanstack/start-client-core#start-core/server-functions` の Common Mistakes 1 件目
 - global middleware の設定形と認可の middleware factory: intent skill `@tanstack/start-client-core#start-core/middleware` の Global Middleware / Middleware Factories
-- `start-core/server-functions` と `start-core/middleware` のスキルはどちらも `library_version: 1.170.14` を名乗り、`@tanstack/start-client-core` 1.170.27 に同梱されている (2026-09-06 に確認)
+- `start-core/server-functions` と `start-core/middleware` のスキルはどちらも `library_version: 1.170.14` を名乗り、`@tanstack/start-client-core` 1.170.27 に同梱されていた (2026-09-06 に確認)
 - context 型の合成: `@tanstack/start-client-core` 1.170.27 の `dist/esm/createMiddleware.d.ts` (`AssignAllServerFnContext` / `GlobalServerFnContext`)
 - middleware の実行順: TanStack Start docs「Middleware」の Middleware Execution Order (2026-11-23 に `@tanstack/react-start@1.169.7` のタグの原文を確認): https://github.com/TanStack/router/blob/%40tanstack/react-start%401.169.7/docs/start/framework/react/guide/middleware.md
 - base builder の展開: `@tanstack/start-client-core` 1.170.27 の `dist/esm/createServerFn.js`

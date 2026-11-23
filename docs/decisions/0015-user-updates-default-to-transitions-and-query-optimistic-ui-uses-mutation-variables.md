@@ -24,7 +24,7 @@ React チームは React 18 の設計時点から、大半の更新を Transitio
 
 ### 制約: TanStack Query と Router のストアは Transition に参加しない
 
-`@tanstack/react-query` の `useBaseQuery.js` / `useMutation.js` は `React.useSyncExternalStore` を使う。
+2026-09-13 に読んだ `@tanstack/react-query` 5.102.8 の `useBaseQuery.js` / `useMutation.js` は、`React.useSyncExternalStore` を使っていた。
 2026-09-13 に node_modules を grep すると、`@tanstack/react-store` 0.9.3 の `useStore.js` は `use-sync-external-store/shim/with-selector` を使い、shim は React 18 以降で `React.useSyncExternalStore` へ委譲していた。
 React の `useSyncExternalStore` リファレンスは次を明記する。
 

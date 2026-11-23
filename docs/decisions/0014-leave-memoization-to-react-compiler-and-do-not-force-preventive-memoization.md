@@ -99,4 +99,4 @@ oxlint 1.79 で `react/react-compiler` と `reportAllBailouts` は廃止され�
 - `@babel/core` 8 系のバグ (babel 経路を却下する根拠): https://github.com/react/react/issues/36868
 - 診断が 1 ルールに束ねられていた件と、その解消 (per-category ルールへの分割): https://github.com/oxc-project/oxc/issues/23538 / https://oxc.rs/blog/2026-08-18-react-compiler-support
 - oxc ネイティブ統合の追加 (`compiler` オプションと `oxc-transform-react`): https://github.com/vitejs/vite-plugin-react/pull/1419
-- `@vitejs/plugin-react` の React Compiler ドキュメント (native 版が experimental であること): https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#react-compiler
+- `@vitejs/plugin-react` の README の「React Compiler」(native 版が experimental であること。2026-11-23 に `plugin-react@6.3.0` のタグの原文を確認): https://github.com/vitejs/vite-plugin-react/blob/plugin-react%406.3.0/packages/plugin-react/README.md#react-compiler

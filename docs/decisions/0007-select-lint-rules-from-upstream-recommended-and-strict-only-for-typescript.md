@@ -58,7 +58,7 @@ silent failure の源として扱っている書き方を検出するルール�
 `restrict-template-expressions` は基準のオプションから `allowNumber` だけを true に戻して名指しする。
 oxlint の既定はルール自身の既定 (`allow*` の 5 つが true) で、名指ししないと基準から外れる。
 基準の `allowNumber: false` は浮動小数の表示 (`${0.1 + 0.2}`) を狙ったもので、整数の埋め込みにも鳴る (typescript-eslint/typescript-eslint#9311)。利用者に見せる浮動小数の表示は、このルールに頼らず `toFixed()` などで書く。テストの診断文のように値そのものを見せたいものは丸めない。
-`allowBoolean` は基準どおり false にする。`` `btn ${active && "active"}` `` は `active` が false のとき `"false"` を埋め込み、型が `false | "active"` なので `allowBoolean: true` では通る (2026-09-27 に oxlint 1.82.0 で実測)。typescript-eslint 本体の `eslint.config.mjs` はこのルールの `allow*` を 5 つとも true に戻しているが (2026-09-27 に確認)、`allowBoolean` の誤りを止めるため採らない。
+`allowBoolean` は基準どおり false にする。`` `btn ${active && "active"}` `` は `active` が false のとき `"false"` を埋め込み、型が `false | "active"` なので `allowBoolean: true` では通った (2026-09-27 に oxlint 1.82.0 で実測)。2026-09-27 に確認した typescript-eslint 本体の `eslint.config.mjs` は、このルールの `allow*` を 5 つとも true に戻していたが、`allowBoolean` の誤りを止めるため採らない。
 なお `correctness` に入るルールも `rules` へ名指しすればオプションを上書きできる。名指ししないルールだけがカテゴリ既定で動く。
 
 `correctness` にある type-aware ルールと `strict-type-checked` は包含関係ではなく、部分的に重なる別の集合である。基準を strict に置いても oxlint 独自の `correctness` 選択は失わない。
@@ -115,12 +115,12 @@ oxc 自身の設定と同じく、`correctness` と `perf` に入る分だけを
 
 recommended に無くても、規約や他の決定を機械で守るために足すルールがある。
 
-| ルール                                  | 名指しの理由                                                                                                                                                                                                                                                                                                        |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                                                                                                                                                                                                              |
-| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)。テストの import を重くする依存のバレルを止める (ADR-0032)。テストに router を `createRouter` で直接組ませない (`docs/guides/testing/real-router.md`「テスト用の router の既定をそろえる」)                                      |
-| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる                                                                                                                                                                                          |
-| `react/no-unstable-nested-components`   | 描画中の部品の定義 (props に直接渡す形を含む) を止める。React Compiler を通すと症状が消え、Compiler を通す project のテストでは見つからない (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)。`react/static-components` は props に直接渡す形を止めない (oxlint 1.85.0、2026-10-08) |
+| ルール                                  | 名指しの理由                                                                                                                                                                                                                                                                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `typescript/consistent-type-assertions` | `assertionStyle: "never"` の指定が要る                                                                                                                                                                                                                                                                                  |
+| `no-restricted-imports`                 | `*.test-helpers.ts` と `src/test/` をアプリのコードから import させない (ADR-0008)。テストの import を重くする依存のバレルを止める (ADR-0032)。テストに router を `createRouter` で直接組ませない (`docs/guides/testing/real-router.md`「テスト用の router の既定をそろえる」)                                          |
+| `tanstack-query/prefer-query-options`   | recommended-strict だけにある。useQuery 系にインラインの queryKey / queryFn を書かせず、queryOptions の 1 か所で定義させる                                                                                                                                                                                              |
+| `react/no-unstable-nested-components`   | 描画中の部品の定義 (props に直接渡す形を含む) を止める。React Compiler を通すと症状が消え、Compiler を通す project のテストでは見つからない (`docs/guides/testing/configuration.md`「テストでも React Compiler を通す理由」)。`react/static-components` は props に直接渡す形を止めなかった (oxlint 1.85.0、2026-10-08) |
 
 テスト専用コードの import を止める範囲と手段の比較は ADR-0008 が持つ。
 
