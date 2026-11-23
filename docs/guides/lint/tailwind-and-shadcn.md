@@ -6,6 +6,7 @@
 | ----------------------------------------------------------------------------------------- | -------- |
 | `src/components/` を役割で分け、design system の著作と消費の境界をディレクトリで表す      | ADR-0011 |
 | design system の層から外へ class 文字列を配らず、共有する外見は部品・prop・variant で配る | ADR-0022 |
+| 色は `@theme` と `@shadcn/lint` の 2 層で semantic token に閉じ込める                     | ADR-0023 |
 
 ## how-to
 
@@ -21,7 +22,7 @@
 
 - 書き足す class は `cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書く。`buttonVariants({ variant, className: "mt-4" })` のキーには書かない。linter が class を読む呼び出しは `cn` などの組み込みと登録した関数に限られ ([shadcn-ui/lint docs「How it works」][] の Where it looks)、キーの値は読まれない。色と未知 class の検査から外れても診断は出ない
 - 戻り値を design system component (`ui/` `action/` `parts/` の部品と、その `render` に渡す要素) の `className` へ渡すと、import した関数の呼び出しは読めないので `require-static-classes` が落とす ([shadcn-ui/lint docs「require-static-classes」][] の Variant functions、[shadcn-ui/lint#178][])
-- `settings.shadcn.variantFunctions` と `mergeFunctions` へ variant 関数を登録しない。理由は「`variantFunctions` へ宣言しない理由」にある
+- `settings.shadcn.variantFunctions` と `mergeFunctions` へ variant 関数を登録しない (ADR-0023)。案の比較は「`variantFunctions` へ宣言しない理由」にある
 
 ### `@shadcn/lint` の時間と警告を読む
 
