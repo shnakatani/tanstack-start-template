@@ -36,17 +36,17 @@
 
 部品ディレクトリ (`ui/`) から外へ class 文字列を配らない (ADR-0022)。外見を共有したいときは、次のどれかにする。
 
-| 配り方                                                                              | 使う場面                       |
-| ----------------------------------------------------------------------------------- | ------------------------------ |
-| 部品として配る                                                                      | 外見と構造がひとまとまりのとき |
-| prop として受ける                                                                   | 消費側が値を選ぶとき           |
-| `ui/` の `cva` の variant として配り、`settings.shadcn.variantFunctions` へ宣言する | 同じ部品の見た目を分けるとき   |
+| 配り方                               | 使う場面                       |
+| ------------------------------------ | ------------------------------ |
+| 部品として配る                       | 外見と構造がひとまとまりのとき |
+| prop として受ける                    | 消費側が値を選ぶとき           |
+| `ui/` の `cva` の variant として配る | 同じ部品の見た目を分けるとき   |
 
 - `ui/` の内側での共有は対象外で、class 定数の export 自体は禁じない。`ui/` の外のファイルが import して部品へ渡せば規則が落とす
 - 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0011) と、汎用の層が負う責務の範囲 (ADR-0016) で決める
-- variant 関数を消費側から呼ぶ形を採るたびに、`tooling/lint/config.ts` の `settings.shadcn.variantFunctions` へ足す。忘れると呼び出しが lint で落ちるので、気付けない失敗にはならない
-- 宣言するのは `ui/` の variant 関数だけにする。`ui/` の外の `cva` を宣言すると、定義の中の class が `no-restyle` に検査されずに部品へ通る (ADR-0023)
-- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら、手段を「部品の見た目を変える」の表で選ぶ。`ui/` の外の見た目なら部品として切り出す。`ui/` の外で `cva` の variant にしない。`ui/` の外の `cva` は `variantFunctions` へ宣言しないので、その戻り値を部品へ渡すと `require-static-classes` が落とす (`docs/guides/lint/tailwind-and-shadcn.md`「variant 関数を宣言する」)
+- `ui/` の variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときの書き方は、`docs/guides/lint/tailwind-and-shadcn.md`「`ui/` の variant 関数を外で呼ぶ」にある
+- 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら、手段を「部品の見た目を変える」の表で選ぶ。`ui/` の外の見た目なら部品として切り出す ([Tailwind CSS docs「Styling with utility classes」][] の Using components)。切り出した部品の中では、自分の prop による見た目の分岐を `cva` で書いてよい (shadcn/ui の部品も同じ形で、[shadcn の `button.tsx`][] は部品のファイルの中で定義した `buttonVariants` を部品が呼ぶ)
+- `ui/` の外で定義した `cva` の戻り値は export して他のファイルから呼ばない。見た目を他のファイルと共有するなら部品として切り出す ([Tailwind CSS docs「Styling with utility classes」][] の Using components: "If you need to reuse some styles across multiple files, the best strategy is to create a _component_ if you're using a front-end framework like React, Svelte, or Vue, or a _template partial_ if you're using a templating language like Blade, ERB, Twig, or Nunjucks.")。import した `cva` の戻り値を部品へ渡すと、`require-static-classes` が落とす ([shadcn-ui/lint docs「require-static-classes」][] の Variant functions)
 
 ### 部品の見た目を変える
 
@@ -343,6 +343,9 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 [shadcn skill「Customization & Theming」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/customization.md
 [shadcn skill「Styling & Customization」]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/skills/shadcn/rules/styling.md
 [shadcn docs「Data Table」]: https://ui.shadcn.com/docs/components/base/data-table
+[Tailwind CSS docs「Styling with utility classes」]: https://tailwindcss.com/docs/styling-with-utility-classes#using-components
+[shadcn の `button.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/ui/button.tsx
+[shadcn-ui/lint docs「require-static-classes」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/require-static-classes.md
 [shadcn-ui/lint docs「no-restyle」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md
 [shadcn-ui/lint docs「Configuring your design system」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/design-systems.md
 [shadcn-ui/lint#4]: https://github.com/shadcn-ui/lint/issues/4
