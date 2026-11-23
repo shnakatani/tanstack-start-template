@@ -39,8 +39,7 @@ oxlint は Tailwind と shadcn/ui 領域のルールをネイティブに持た�
 `ui/` で検査に残るのは任意値の色だけで、off にすると registry の取り直しで入った `bg-[#333]` のような色を拾う経路が無くなる。`no-raw-colors` は任意値の色を見ない (no-raw-colors.md: "Arbitrary colors such as `bg-[#333]` belong to no-arbitrary-values.")。
 `no-restyle` は 2026-09-19 に ADR-0011 の層の決定と対で、`require-static-classes` は同日に ADR-0022 の配り方の決定と対で採用した。
 `require-static-classes` は `no-restyle` と同じ `overrides` に相乗りする。
-`settings.shadcn.variantFunctions` と `mergeFunctions` には、`cva` が返した variant 関数 (`buttonVariants` など) を登録しない。上流の README の Settings は `variantFunctions` を "Adds functions whose object values contain classes." と書き、組み込みの variant 関数に `cva` と `tv` を挙げる。`cva` のように定義の object に class を書く関数を足す設定で、`cva` が返した関数を宣言する用法は docs に無い。
-登録しない案の比較と、`ui/` の variant 関数を `ui/` の外で呼ぶときの書き方は `docs/guides/lint/tailwind-and-shadcn.md`「`variantFunctions` へ宣言しない理由」と「`ui/` の variant 関数を外で呼ぶ」にある。
+`settings.shadcn.variantFunctions` と `mergeFunctions` には、`cva` が返した variant 関数 (`buttonVariants` など) を登録しない。`ui/` の外でその関数に class を書き足すときは `cn()` の引数に書く (案の比較は「検討した選択肢」、書き方は `docs/guides/lint/tailwind-and-shadcn.md`「`ui/` の variant 関数を外で呼ぶ」)。
 `no-inline-styles` は対になる設計判断がまだ無いため有効化しない。
 
 `@shadcn/lint` は上流の `recommended` を持たない。ルールは設計判断と対にして 1 つずつ名指しし、まとめて有効にしない。
@@ -65,6 +64,14 @@ token だけを混ぜる `color-mix()` の通し方:
 | `ui/**` の override で `no-arbitrary-values` を off にする (adoption.md「Add more rules」) | 抑制コメントは要らなくなるが、`ui/` に入る任意値の色を lint が拾わなくなる                                                                                                                                                                                                                                                                      | 却下     |
 | `allow` に class を名指しする (no-arbitrary-values.md「Allow an exception」)               | `deny: ["color"]` と併せると、`allow` に挙げた class だけを通す形に変わって非色の任意値 (`rounded-[...]`、`min-h-[50vh]`) まで報告し、名指しした `color-mix()` の class も `deny` に外されて報告されたまま残る。`deny` を外して `allow` に非色の category を全部並べ直す設定になる (2026-10-02 に oxlint 1.85.0 と `@shadcn/lint` 0.2.0 で実測) | 却下     |
 
+`cva` が返した variant 関数 (`buttonVariants` など) の扱い:
+
+| 案                                              | 評価                                                                                                                                                                                                                                                                                                            | 採否     |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 登録せず、書き足す class を `cn()` の引数に書く | `cn` は組み込みの class 関数で、引数の class が検査される (how-it-works.md「Where it looks」)                                                                                                                                                                                                                   | **採用** |
+| `variantFunctions` へ宣言する                   | README の Settings はこの設定を "Adds functions whose object values contain classes." と定義する。`buttonVariants` の引数の object の値 (`variant: "outline"`、`size: "sm"`) は variant の名前で、class ではない。組み込みの variant 関数に挙がる `cva` と `tv` は、引数の object の値に class を書く関数である | 却下     |
+| `mergeFunctions` へ登録する                     | require-static-classes.md の Custom class helpers は "Only register helpers whose arguments accurately describe their output." と求める。variant 関数の引数は variant の名前で、出力の class を表さない                                                                                                         | 却下     |
+
 ## Consequences
 
 - 3 ルールが発火していることを常時見張る仕組みは置かない。`--print-config` の top-level `rules` に JS plugin 由来のルールは出ず、`rules` から消しても `"off"` にしても整合性テストと `vp check` は通る。`jsPlugins` は oxlint 側が alpha 扱いで semver の対象外と明記しているが、依存の更新の内容を確かめるときに jsPlugins に変化があれば、そのとき動作を確かめる
@@ -86,6 +93,8 @@ token だけを混ぜる `color-mix()` の通し方:
 - `@shadcn/lint` 0.2.0 の no-raw-colors.md (任意値の色を見ない): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules/no-raw-colors.md
 - `@shadcn/lint` 0.2.0 の no-arbitrary-values.md (「Allow an exception」): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/rules/no-arbitrary-values.md
 - `@shadcn/lint` 0.2.5 の README (「Settings」の `variantFunctions` と組み込みの variant 関数): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/README.md#settings
+- `@shadcn/lint` 0.2.5 の how-it-works.md (「Where it looks」の class を読む呼び出し): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/how-it-works.md
+- `@shadcn/lint` 0.2.5 の require-static-classes.md (「Custom class helpers」の登録の条件): https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/require-static-classes.md
 - 使われない `@typescript-eslint/parser` が ESLint と typescript を連れてくる件: https://github.com/shadcn-ui/lint/issues/1
 - pnpm の `packageExtensions` (依存の manifest へ `peerDependenciesMeta` を後付けする): https://pnpm.io/settings/dependency-resolution
 - Tailwind CSS の既定 palette を差し替える手順 (`--color-*: initial`): https://tailwindcss.com/docs/colors
