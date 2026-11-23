@@ -356,7 +356,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 [WCAG 2.2 SC 1.4.3]: https://www.w3.org/TR/WCAG22/#contrast-minimum
 [WCAG 2.2 SC 1.4.11]: https://www.w3.org/TR/WCAG22/#non-text-contrast
 [Tailwind CSS docs「Theme variables」]: https://tailwindcss.com/docs/theme
-[Primer Primitives の `colorContrast.config.ts`]: https://github.com/primer/primitives/blob/main/scripts/colorContrast.config.ts
+[Primer Primitives の `colorContrast.config.ts`]: https://github.com/primer/primitives/blob/f48bc063f7bc0fb3e447386a8c259650ce46dea8/scripts/colorContrast.config.ts
 [brave/brave-browser#10000]: https://github.com/brave/brave-browser/issues/10000
 [WCAG 2.2「relative luminance」]: https://www.w3.org/TR/WCAG22/#dfn-relative-luminance
 [axe-core の `LICENSE-3RD-PARTY.txt`]: https://github.com/dequelabs/axe-core/blob/v4.14.0/LICENSE-3RD-PARTY.txt

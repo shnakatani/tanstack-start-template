@@ -70,7 +70,7 @@ ADR-0026 は通知を `announce()` (常時 mount の live region) に集約し�
 
 - WCAG 2.2 Understanding 4.1.3 Status Messages: <https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html>
 - WCAG 技術 ARIA22 (`role="status"`): <https://www.w3.org/WAI/WCAG22/Techniques/aria/ARIA22>
-- GOV.UK accessible-autocomplete `src/status.js`: <https://github.com/alphagov/accessible-autocomplete/blob/main/src/status.js>
+- GOV.UK accessible-autocomplete `src/status.js`: <https://github.com/alphagov/accessible-autocomplete/blob/00979884732ce00f9dfa0b2fb5f37d9d837048dd/src/status.js>
 - Base UI Combobox (`Combobox.Status` の JSDoc は同梱の `node_modules/@base-ui/react/combobox/status/ComboboxStatus.d.ts`): <https://base-ui.com/react/components/combobox>
 - React docs `useEffectEvent`: <https://react.dev/reference/react/useEffectEvent>
 - TanStack Query `useSuspenseQuery` (Suspend の条件は `isPending`): <https://tanstack.com/query/latest/docs/framework/react/reference/useSuspenseQuery>

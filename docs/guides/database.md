@@ -205,7 +205,7 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
 
 [drizzle docs「Migrations」]: https://orm.drizzle.team/docs/migrations
-[better-sqlite3 docs「API」]: https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
+[better-sqlite3 docs「API」]: https://github.com/WiseLibs/better-sqlite3/blob/f8e2d541208281368129929a96f70f937c0735ef/docs/api.md
 [better-sqlite3 docs「Custom configuration」]: https://github.com/WiseLibs/better-sqlite3/blob/v13.2.0/docs/compilation.md
 [drizzle docs「Node.js + Railway」]: https://orm.drizzle.team/docs/tutorials/node-railway-pg
 [drizzle-orm の `migrator.ts`]: https://github.com/drizzle-team/drizzle-orm/blob/0.45.2/drizzle-orm/src/migrator.ts
@@ -214,8 +214,8 @@ drizzle-seed の制約は次のとおり (2026-10-14、drizzle-seed 0.3.1、driz
 [Vite+ docs「Upgrade to Vitest 5」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/vitest-v5.md
 [TanStack Start docs「Hosting」]: https://tanstack.com/start/latest/docs/framework/react/guide/hosting
 [Nitro docs「Database」]: https://nitro.build/docs/database
-[Nitro の `database.ts`]: https://github.com/nitrojs/nitro/blob/main/src/config/resolvers/database.ts
-[db0 の `node-sqlite.ts`]: https://github.com/unjs/db0/blob/main/src/connectors/node-sqlite.ts
+[Nitro の `database.ts`]: https://github.com/nitrojs/nitro/blob/9cf83c8f8af19a3da398b6d28285c1d845daa2d1/src/config/resolvers/database.ts
+[db0 の `node-sqlite.ts`]: https://github.com/unjs/db0/blob/be03a5173df0eef15df286f0f296195ed7a0fc56/src/connectors/node-sqlite.ts
 [TanStack Query docs「Important Defaults」]: https://tanstack.com/query/v5/docs/framework/react/guides/important-defaults
 [tsx docs]: https://tsx.is/
 [Vite+ docs「Running Binaries」]: https://github.com/voidzero-dev/vite-plus/blob/v1.4.0/docs/guide/vpx.md

@@ -355,9 +355,9 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 [w3c/aria#1317]: https://github.com/w3c/aria/issues/1317
 [ARIA in HTML]: https://www.w3.org/TR/html-aria/
 [WAI-ARIA 1.2]: https://www.w3.org/TR/wai-aria-1.2/
-[a11ysupport.io の `aria-busy.json`]: https://github.com/accessibilitysupported/a11ysupport.io/blob/master/data/tests/tech/aria/aria-busy.json
+[a11ysupport.io の `aria-busy.json`]: https://github.com/accessibilitysupported/a11ysupport.io/blob/6730ad42e83dd780f63555ab3f14f1c26ea0fae5/data/tests/tech/aria/aria-busy.json
 [w3c/aria#2737]: https://github.com/w3c/aria/issues/2737
-[Cloudscape の `src/table/skeleton-rows.tsx`]: https://github.com/cloudscape-design/components/blob/main/src/table/skeleton-rows.tsx
+[Cloudscape の `src/table/skeleton-rows.tsx`]: https://github.com/cloudscape-design/components/blob/1730cc9f3599854c6e9f1a694f4a63b2599b210d/src/table/skeleton-rows.tsx
 [Primer docs「Loading」]: https://primer.style/product/ui-patterns/loading/
 [Adrian Roselli「More Accessible Skeletons」]: https://adrianroselli.com/2020/11/more-accessible-skeletons.html
 [WAI-ARIA 1.3 Editor's Draft]: https://w3c.github.io/aria/
