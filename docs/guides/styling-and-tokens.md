@@ -44,7 +44,7 @@
 
 - `ui/` の内側での共有は対象外で、class 定数の export 自体は禁じない。`ui/` の外のファイルが import して部品へ渡せば規則が落とす
 - 部品として配るとき、その部品をどの層が持つかは、層の役割 (ADR-0011) と、汎用の層が負う責務の範囲 (ADR-0016) で決める
-- `ui/` の variant 関数 (`buttonVariants` など) を `ui/` の外で呼んで class を書き足すときは、`cn(buttonVariants({ variant }), "mt-4")` のように `cn()` の引数に書き、`className` キーに書かない。キーの値は lint に読まれない (`docs/guides/lint/tailwind-and-shadcn.md`「`ui/` の variant 関数を外で呼ぶ」)
+- `ui/` の variant 関数 (`buttonVariants` など) を `ui/` の外で呼ぶときの書き方は、`docs/guides/lint/tailwind-and-shadcn.md`「`ui/` の variant 関数を外で呼ぶ」にある
 - 状態による見た目の分岐は、1 か所だけなら `cn()` の中の三項で書く ([shadcn skill「Styling & Customization」][] の Use cn() for conditional classes)。同じ形の分岐が 2 か所以上に重なったら、ui 部品自身の見た目なら、手段を「部品の見た目を変える」の表で選ぶ。`ui/` の外の見た目なら部品として切り出す ([Tailwind CSS docs「Styling with utility classes」][] の Using components)。切り出した部品の中では、自分の prop による見た目の分岐を `cva` で書いてよい ([cva docs「React with Tailwind CSS」][])
 - `ui/` の外で定義した `cva` の戻り値は export せず、定義したファイルの中でだけ呼ぶ。他のファイルから呼ぶと、`ui/` の外のファイルの間で class 文字列を配ることになる (ADR-0022)。lint は同じファイルの `cva` なら定義の class まで読むが、import した関数の呼び出しは読めない ([shadcn-ui/lint docs「require-static-classes」][] の Variant functions)
 
