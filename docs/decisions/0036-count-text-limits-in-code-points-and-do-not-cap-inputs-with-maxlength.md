@@ -8,12 +8,12 @@
 
 入力の文字数に上限を設けるとき、何を 1 文字と数えるかが単位によって違う。日本語の UI では、サロゲートペアの漢字 (𠮷) と単体の絵文字 (😀) の数え方が「N 文字以内」の文言と利用者の感覚に直に効く。
 
-| 前提                       | 中身                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 上限の判定はスキーマが持つ | server function の validator とフォームのフィールド検証が同じスキーマを使う (ADR-0013)                                                                                                                                                                                                                                                                                                                               |
-| DB は SQLite               | `length()` と `substr` は code point で数える (sqlite.org の lang_corefunc)                                                                                                                                                                                                                                                                                                                                          |
-| HTML の `maxlength`        | Infra の length (「the number of code units」) で数える。超えないように止めるかはブラウザの任意 (「User agents may prevent」)                                                                                                                                                                                                                                                                                        |
-| valibot の長さの action    | `maxLength` は `.length` と同じ UTF-16 の code unit、`maxCodePoints` は code point、`maxGraphemes` は `Intl.Segmenter` の grapheme で数える。切り詰めの action は無く、Zod 4.6.5・Effect 3.22.2 の Schema・ArkType 2.2.5・TypeBox 1.3.34 の string の API にも無い。組み込みで持つ Joi 18.2.9 の `string.truncate()` は code unit で切る (valibot は 1.5.0。2026-09-29 に各 docs と同梱の型定義、Joi のソースで確認) |
+| 前提                       | 中身                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 上限の判定はスキーマが持つ | server function の validator とフォームのフィールド検証が同じスキーマを使う (ADR-0013)                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| DB は SQLite               | `length()` と `substr` は code point で数える (sqlite.org の lang_corefunc)                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| HTML の `maxlength`        | Infra の length (「the number of code units」) で数える。超えないように止めるかはブラウザの任意 (「User agents may prevent」)                                                                                                                                                                                                                                                                                                                                                                                              |
+| valibot の長さの action    | `maxLength` は UTF-16 の code unit、`maxCodePoints` は code point、`maxGraphemes` は grapheme で数える (valibot docs の 3 つの action の頁、1.5.0)。2026-09-29 に各 docs と同梱の型定義、Joi のソースで確かめたところ、valibot 1.5.0 に切り詰めの action は無く、Zod 4.6.5・Effect 3.22.2 の Schema・ArkType 2.2.5・TypeBox 1.3.34 の string の API にも無かった。組み込みで持つ Joi 18.2.9 の `string.truncate()` は code unit で切っていた。valibot 1.5.0 の `maxGraphemes` は `Intl.Segmenter` で grapheme を数えていた |
 
 ## Decision
 
@@ -37,7 +37,7 @@
 
 ## Consequences
 
-- ZWJ で結んだ絵文字 (👨‍👩‍👧 は 5 code point) や結合文字 (か + 結合濁点は 2) は、見た目の 1 文字より多く数える。「N 文字以内」の文言とずれるのはこの場合だけである。GOV.UK の Character count は `text.length` (code unit) で数え、単体の絵文字も 2 と数えることを既知の問題として残している (alphagov/govuk-frontend#1104、2026-09-29 に open)
+- ZWJ で結んだ絵文字 (👨‍👩‍👧 は 5 code point) や結合文字 (か + 結合濁点は 2) は、見た目の 1 文字より多く数える。「N 文字以内」の文言とずれるのはこの場合だけである。2026-09-29 時点の記録では、GOV.UK の Character count は `text.length` (code unit) で数え、単体の絵文字も 2 と数えることを既知の問題として残していた (alphagov/govuk-frontend#1104。2026-11-19 に completed で閉じた)
 - 切り詰めは code point の境界で切るので、サロゲートペアの片割れは残らない。ZWJ で結んだ絵文字は途中で切れうる
 - 上限を目で見て分かるようにするなら、入力欄の近くに説明を置く (デジタル庁デザインシステムの案内)。検索語のように稀にしか超えない長さなら置かなくてよい
 
@@ -68,8 +68,9 @@
 
 ## 出典
 
-- valibot `maxLength` (「measured like JavaScript's value.length, i.e. by UTF-16 code units」): <https://valibot.dev/api/maxLength/>
-- valibot `maxGraphemes` (`maxCodePoints` を DB の `LENGTH()` に合わせる用途に挙げ、併用を勧める): <https://valibot.dev/api/maxGraphemes/>
+- valibot docs の `maxLength` (UTF-16 の code unit で数える。1.5.0): <https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/(actions)/maxLength/index.mdx>
+- valibot docs の `maxCodePoints` (code point で数える。1.5.0): <https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/(actions)/maxCodePoints/index.mdx>
+- valibot docs の `maxGraphemes` (grapheme で数える。`maxCodePoints` を DB の `LENGTH()` に合わせる用途に挙げ、併用を勧める。1.5.0): <https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/(actions)/maxGraphemes/index.mdx>
 - valibot 1.5.0 のリリースノート (code point の action の追加): <https://github.com/open-circle/valibot/releases/tag/v1.5.0>
 - HTML Standard の maxlength と Infra の length: <https://html.spec.whatwg.org/multipage/input.html#attr-input-maxlength> / <https://infra.spec.whatwg.org/#string-length>
 - SQLite の core functions (`length()` と `substr` は code point): <https://sqlite.org/lang_corefunc.html>

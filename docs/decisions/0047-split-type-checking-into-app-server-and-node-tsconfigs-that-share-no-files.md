@@ -7,7 +7,7 @@
 ## Context
 
 `vp check` は、oxlint の type-aware の経路 (tsrs) で型検査を行う (`docs/guides/dependencies-and-toolchain.md`「`typescript` を直接の依存に置かない理由」、`tooling/lint/config.ts` の `typeCheck: true`)。
-tsrs は、ファイルを `include` に持つ tsconfig の program でそのファイルを検査する。import で別の program に入っただけのファイルは、その program では検査しない (2026-11-23、vite-plus 1.7.0 の tsrs 7.1.0-beta.tsrs2 で probe。`src/server/` のファイルの `document` は TS2584 になり、`document` を使う `src/lib/` のファイルを `src/server/` から import しても TS2584 は出なかった)。
+2026-11-23 に vite-plus 1.7.0 の tsrs 7.1.0-beta.tsrs2 で probe すると、tsrs は、ファイルを `include` に持つ tsconfig の program でそのファイルを検査し、import で別の program に入っただけのファイルは、その program では検査しなかった (`src/server/` のファイルの `document` は TS2584 になり、`document` を使う `src/lib/` のファイルを `src/server/` から import しても TS2584 は出なかった)。
 
 このテンプレートのファイルは、動く環境で 3 つに分かれる。
 
@@ -20,7 +20,7 @@ tsrs は、ファイルを `include` に持つ tsconfig の program でそのフ
 型の境界と bundle の境界は、別の import の連なりで引かれる。
 
 - bundle では、TanStack Start のコンパイラが client の build で `createServerFn()` の handler を RPC の stub に置き換え、handler だけが使っていた server の import を外す (docs「Import Protection」の "when the compiler replaces a `createServerFn()` handler with a client RPC stub, it can also remove server-only imports that were only used by the removed implementation.")。import protection は build では tree-shaking の後に判定する ("In **build mode**, import protection defers violation checks until after tree-shaking.")
-- 型検査は、置き換える前の import を辿る。DB を引く server function が 1 つでもあれば、server function を宣言するファイル (`src/features/<domain>/functions.ts`) から `handlers.server.ts`、`src/server/db/index.ts` を経て DB の driver の型 (`@types/better-sqlite3` 9.6.0 の `/// <reference types="node" />`) が入り、ブラウザの program に Node の型が入る (2026-11-03、`tsc --explainFiles`)。サンプル実装を消した直後のテンプレートには DB を引く server function が無く、この連なりも無い
+- 型検査は、置き換える前の import を辿る。2026-11-03 に TypeScript 6.0.3 の `tsc --explainFiles` で見ると、DB を引く server function が 1 つでもあれば、server function を宣言するファイル (`src/features/<domain>/functions.ts`) から `handlers.server.ts`、`src/server/db/index.ts` を経て DB の driver の型 (`@types/better-sqlite3` 9.6.0 の `/// <reference types="node" />`) が入り、ブラウザの program に Node の型が入っていた。サンプル実装を消した直後のテンプレートには DB を引く server function が無く、この連なりも無い
 - docs「Execution Model」の「Module-Level `process.env` Reads」は、`createServerFn().handler()` の中で `process.env` を読む形を正しい形 (✅) として示す。この形のファイルはブラウザの program に入る
 
 公式の案内は 2 つの向きがある。
@@ -84,7 +84,7 @@ app と node に境界ができない理由は、どちらも依存の型の連�
 - サーバーでだけ動くファイルで DOM の global を書くと、`vp check` が TS2584 で止める
 - `src/server/` に置いた横断的な server function の宣言のファイルは、クライアントからも import されるが、server の program で DOM なしに検査される。宣言のファイルはサーバーの bundle にも入るので (Context)、そこで DOM の global を書けばサーバーで壊れる
 - ブラウザで動くコードで Node の global を書いても、Node で動くコードで DOM の global を書いても、型検査は止めない。実行時に壊れる import は `importProtection` が `vp build` で止める (ADR-0010)
-- server の `include` と app の `exclude` は同じ範囲を指し続ける。片方だけ変えると、ファイルが 2 つの tsconfig に入るか、どちらにも入らない。どの `include` にも入らないファイルも `vp check` は検査し、DOM の global を通すが、既定の設定には `paths` が無いので `@/` の import は TS2307 で落ち、Node の型も無い (2026-11-23、vite-plus 1.7.0)。割り当ての確かめ方は `docs/guides/dependencies-and-toolchain.md`「tsconfig にファイルを割り当てる」にある
+- server の `include` と app の `exclude` は同じ範囲を指し続ける。片方だけ変えると、ファイルが 2 つの tsconfig に入るか、どちらにも入らない。2026-11-23 に vite-plus 1.7.0 で確かめると、どの `include` にも入らないファイルも `vp check` は検査し、DOM の global を通したが、既定の設定には `paths` が無いので `@/` の import は TS2307 で落ち、Node の型も無かった。割り当ての確かめ方は `docs/guides/dependencies-and-toolchain.md`「tsconfig にファイルを割り当てる」にある
 - リポジトリの直下にコードのディレクトリを足したら、3 つのどれかの `include` に足す
 - 再評価条件: TanStack Start の docs か CLI の雛形が tsconfig を分ける形を示したとき。tsrs か TypeScript の docs が `references` の順でファイルを割り当てると定めたとき (`exclude` を外せる)。shadcn の CLI が `references` の先の `paths` を読むようになったとき (ルートの `extends` を外せる)
 

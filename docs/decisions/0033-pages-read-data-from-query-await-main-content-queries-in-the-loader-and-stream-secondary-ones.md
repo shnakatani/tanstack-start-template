@@ -73,7 +73,7 @@
 
 - TanStack Router「Query integration」の SSR behavior and streaming、Using useSuspenseQuery vs useQuery、Preload with a loader and read with a hook、Prefetching and streaming: https://tanstack.com/router/latest/docs/integrations/query
 - TanStack Router「Deferred Data Loading」: https://tanstack.com/router/latest/docs/framework/react/guide/deferred-data-loading
-- TanStack Router「External Data Loading」: https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading
+- TanStack Router「External Data Loading」(「Using Loaders to ensure data is loaded」と TanStack Query の例。2026-11-23 に `@tanstack/react-router@1.170.46` のタグの原文を確認): https://github.com/TanStack/router/blob/%40tanstack/react-router%401.170.46/docs/router/guide/external-data-loading.md
 - TanStack Start「TanStack Query」: https://tanstack.com/start/latest/docs/framework/react/guide/tanstack-query
 - TanStack Router「Data Loading」: https://tanstack.com/router/latest/docs/framework/react/guide/data-loading
 - TanStack Router「CatchBoundary component」: https://tanstack.com/router/latest/docs/framework/react/api/router/catchBoundaryComponent

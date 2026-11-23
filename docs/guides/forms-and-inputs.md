@@ -14,7 +14,7 @@
 
 ### スキーマを書く
 
-- client に送らせないフィールドがあるときは、保存済みスキーマから `v.omit` で入力スキーマを派生させる (ADR-0013)。派生元が `v.object` なら、未知のキーは reject されず黙って strip される。これは `v.omit` ではなく `v.object` の性質で、`v.strictObject` から派生させると同じ入力が reject される (2026-09-02 実測)。どちらの挙動を意図したかをテストで固定する
+- client に送らせないフィールドがあるときは、保存済みスキーマから `v.omit` で入力スキーマを派生させる (ADR-0013)。派生元が `v.object` なら、未知のキーは reject されず黙って strip される。これは `v.omit` ではなく `v.object` の性質で、`v.strictObject` から派生させると同じ入力が reject される ([valibot docs「object」][] と [valibot docs「strictObject」][] の Explanation)。どちらの挙動を意図したかをテストで固定する
 - 入力用と保存用で pipe が分かれる項目 (入力側だけが `v.trim()` を持つ項目など) の呼称は、`TInput` を型引数で与えた 1 つの `v.metadata` action を両方の pipe に渡す。型引数も注釈も無い action は `TInput` が `unknown` に推論され、`v.pipe` に入らない
 - `@valibot/to-json-schema` を使うときは、`title` / `description` の action も同じ pipe に足せる。呼称の出処はスキーマ 1 つのまま保てる
 - フォームの `onSubmit` では、値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator に渡したスキーマの変換 (`v.trim()` など) を値に反映しない。[TanStack Form docs「Submission Handling」][] の "Transforming data with Standard Schemas" は "The value passed to the `onSubmit` function will always be the input data." と書き、`onSubmit` の中でスキーマに通すよう案内する。変換を手で書き写すと、スキーマに変換を足したときに送信値だけが古くなる
@@ -115,12 +115,12 @@ ADR-0041 に沿ってダイアログを組む手順。使う部品は次の表�
 
 どの部品にも、ダイアログの route ごとに次の 2 つを渡す。開く元のページへ離れたか別のダイアログに替わったかは、`useRouteDialog` が戻り先から判定する (ADR-0041)。この判定のために、開く元のページの route tree の形 (index route の有無、親の path params) で書き分けるものは無い。
 
-| 渡すもの           | 書き方                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `returnTo`         | 閉じたときに離れる先 (開く元のページ) を `navigate` の options の形で書く。`useRouteDialog` はそのまま `navigate` に渡すので、開く元のページの search を保つなら `search: (prev) => prev` を書く。型は `ValidateNavigateOptions` が route tree と突き合わせる ([TanStack Router docs「Type Utilities」][])。相対の `to` (`..`) は、`from` が無ければダイアログの route から解く。開く元のページが path params を持つときは `params` が要り、今の値を引き継ぐなら `from` にダイアログの route を書いて `params: (prev) => prev` にする。`from` が無いと `prev` が params を持つと分からず、型検査を通らない (2026-10-12、`@tanstack/react-router` 1.170.41) |
-| `findReturnTarget` | 開いた元の要素 (開くリンク) を探す関数。リンクに data 属性を付けて `document.querySelector` で探す。URL を直接開いたときは Base UI の既定の戻し先 (開く前に focus していた要素) が無いので、この関数で戻す                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 渡すもの           | 書き方                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `returnTo`         | 閉じたときに離れる先 (開く元のページ) を `navigate` の options の形で書く。`useRouteDialog` はそのまま `navigate` に渡すので、開く元のページの search を保つなら `search: (prev) => prev` を書く。型は `ValidateNavigateOptions` が route tree と突き合わせる ([TanStack Router docs「Type Utilities」][])。相対の `to` (`..`) は、`from` が無ければダイアログの route から解く。開く元のページが path params を持つときは `params` が要り、今の値を引き継ぐなら `from` にダイアログの route を書いて `params: (prev) => prev` にする。2026-10-12 に `@tanstack/react-router` 1.170.41 で、`from` が無いと `prev` が params を持つと分からず、型検査を通らなかった |
+| `findReturnTarget` | 開いた元の要素 (開くリンク) を探す関数。リンクに data 属性を付けて `document.querySelector` で探す。URL を直接開いたときは Base UI の既定の戻し先 (開く前に focus していた要素) が無いので、この関数で戻す                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
-同じ戻り先は、ダイアログと読み込み中・失敗・見つからないのダイアログの全部が使うので、`linkOptions` で検査した定数を開く元のページの `-lib/` に 1 つ置く ([TanStack Router docs「Link Options」][])。`{ to: "/items", search: (prev) => prev }` を型の無い定数にすると、`prev` の型が決まらず型検査を通らない (2026-10-12、`@tanstack/react-router` 1.170.41)。
+同じ戻り先は、ダイアログと読み込み中・失敗・見つからないのダイアログの全部が使うので、`linkOptions` で検査した定数を開く元のページの `-lib/` に 1 つ置く ([TanStack Router docs「Link Options」][])。`{ to: "/items", search: (prev) => prev }` を型の無い定数にすると、2026-10-12 に `@tanstack/react-router` 1.170.41 で `prev` の型が決まらず、型検査を通らなかった。
 
 ```ts
 // routes/items/-lib/item-dialog-route.ts
@@ -239,7 +239,7 @@ form の置き場所は 3 通り考えられる。2026-09-25 に確認した。
 まとまりの中の行の `FieldLabel` は、公式の例に合わせて `weight="normal"` で通常の太さにする。
 
 - [shadcn skill「Forms & Inputs」][] の FieldSet + FieldLegend の例、[shadcn docs「Field」][] の Checkbox の例 ([shadcn の `field-checkbox.tsx`][])、[shadcn の `dialog-example.tsx`][] は、まとまりの中の行の `FieldLabel` に `className="font-normal"` を付ける。`field-checkbox.tsx` の末尾の単独の行と、Choice Card の例 ([shadcn の `field-choice-card.tsx`][]) の `FieldLabel` には付けない
-- `ui/` の外では `no-restyle` がこの class を止める。`@shadcn/lint` 0.2.0 は font-weight を typography に分類し、`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許す (2026-10-02 に `vp lint` で確認)。メッセージは `"font-normal" is not allowed on <FieldLabel>: <FieldLabel> owns its typography. Add a variant in src/components/ui/field.tsx only if the design explicitly calls for this treatment.` である (2026-10-04、`@shadcn/lint` 0.2.0 の `vp lint` で確認)
+- `ui/` の外では `no-restyle` がこの class を止める。`tooling/lint/config.ts` は `ui/` の外に `allow: ["layout"]` だけを許し、font-weight の class は typography に入る ([shadcn-ui/lint docs「Rules」][] の Categories の表。例は `font-bold`)。2026-10-04 に `@shadcn/lint` 0.2.0 の `vp lint` で出たメッセージは `"font-normal" is not allowed on <FieldLabel>: <FieldLabel> owns its typography. Add a variant in src/components/ui/field.tsx only if the design explicitly calls for this treatment.` だった
 - `docs/guides/styling-and-tokens.md`「部品の見た目を変える」の順に照らすと、0 の段には当たらない。registry の `FieldLabel` には太さを切り替えるノブ (data 属性・CSS 変数・prop) が無い
 - まとまりの中の行の通常の太さは、複数選択のまとまりのたびに繰り返す見た目で、公式の例も明示的に付けるので、1 の段に当たる。`src/components/ui/field.tsx` の `FieldLabel` の `weight` の variant と、台帳 `docs/registry-deviations.md` の行で持つ
 - variant の名前は、変える性質 (`weight`) と、公式の例の class と同じ語 (`normal`) にする。公式の例を写すときに `className="font-normal"` が `weight="normal"` へ 1 対 1 で置き換わる
@@ -289,7 +289,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn-ui/lint docs「Rules」は `@shadcn/lint` 0.2.5 に固定した版を指し、2026-11-23 に原文と照らした。valibot docs の「object」と「strictObject」は valibot 1.5.0 に固定した版を指し、2026-11-23 に原文と照らした。
 
 [TanStack Form docs「Submission Handling」]: https://tanstack.com/form/latest/docs/framework/react/guides/submission-handling
 [valibot docs「Parse data」]: https://valibot.dev/guides/parse-data/
@@ -327,3 +327,6 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [TanStack/form#1240]: https://github.com/TanStack/form/discussions/1240
 [TanStack Router docs「Type Utilities」]: https://tanstack.com/router/latest/docs/guide/type-utilities
 [TanStack Router docs「Link Options」]: https://tanstack.com/router/latest/docs/guide/link-options
+[shadcn-ui/lint docs「Rules」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules.md#categories
+[valibot docs「object」]: https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/%28schemas%29/object/index.mdx
+[valibot docs「strictObject」]: https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/%28schemas%29/strictObject/index.mdx

@@ -34,14 +34,14 @@ alerts / security updates / version updates の 3 機能は private リポジト
 
 **2 つの値は対で持つ。片方だけ変えない。** 単位が違う (分と日) ので、変更時は両ファイルの相互参照コメントを辿って揃える。
 
-`.github/zizmor.yml` の `rules.dependabot-cooldown.config.days: 3` は、`cooldown` がこの待機を下回ったら CI を落とす下限である (ADR-0006)。zizmor 1.30.1 の既定は 7 日 (2026-09-23 確認) だが、7 日案は下の「検討した選択肢」で却下しているので、下限を待機に合わせる。待機を変えるときはこの値も揃える。
+`.github/zizmor.yml` の `rules.dependabot-cooldown.config.days: 3` は、`cooldown` がこの待機を下回ったら CI を落とす下限である (ADR-0006)。2026-09-23 に確認した zizmor 1.30.1 の既定は 7 日だったが、7 日案は下の「検討した選択肢」で却下しているので、下限を待機に合わせる。待機を変えるときはこの値も揃える。
 
 `minimumReleaseAge` は明示設定すると pnpm が strict 挙動を既定 true にする。
 範囲内に成熟版がないとき未成熟版を黙って解決する fallback が閉じ、非 TTY (CI やエージェントのシェル実行) では即エラーになる。
 
 セキュリティ修正は Dependabot の cooldown を外す。
 Dependabot security updates は cooldown の対象外で、手元では `vp pm audit --fix` が `minimumReleaseAgeExclude` に修正版を自動追記する。
-ただし pnpm の `minimumReleaseAge` は、Dependabot が推移依存の security update の版を選ぶときにも効く (dependabot-core `eda07d97`、2026-11-04 に確認)。推移依存の最新版が待機の中にある間は、その security update の job が失敗し、PR は作られない。見分け方と直し方は `docs/guides/dependencies-and-toolchain.md`「security update の PR が来ないときに job を読む」にある。
+ただし 2026-11-04 に読んだ dependabot-core の `eda07d97` のソースでは、pnpm の `minimumReleaseAge` は、Dependabot が推移依存の security update の版を選ぶときにも効いていた。推移依存の最新版が待機の中にある間は、その security update の job が失敗し、PR は作られなかった。見分け方と直し方は `docs/guides/dependencies-and-toolchain.md`「security update の PR が来ないときに job を読む」にある。
 
 ### 3. 前倒しは provenance を確認してから
 
@@ -71,14 +71,14 @@ bot 側の待機は外さない。`cooldown: default-days: 3` は全パッケー
 core (`vite` の alias 先)・`vitest`・`@vitest/*` の版は、`vite-plus` のリリースが同梱する版で決まる。
 Vite+ の docs は、`vite-plus` を上げたあと `vp migrate` で残りを揃える手順を推奨する (Vite+ docs「Update Vite+」)。
 
-`.github/dependabot.yml` の `vite-plus` グループは、`vite-plus`・`vite`・`@voidzero-dev/vite-plus-*`・`vitest`・`@vitest/*` を束ねる。Vite+ の docs は npm の依存を束ねる Dependabot の設定例を示さず、Renovate に `group:vitePlus` の preset を勧めたうえで "Renovate can still propose a Vitest release before Vite+ bundles it." と書く。bot の更新を merge する前に alias を `npm view vite-plus@<version> dependencies.vite` と照合し、ずれていれば bot のブランチで `vp migrate` を打つよう案内する。bot が片方だけを上げて版がずれると、Vite+ は Vite のコマンドの前に止まり `vp migrate` を求める (Vite+ docs「Update Vite+」の Dependency Bots。照合の案内と止まる挙動は vite-plus 1.7.0 の同梱の docs にあり、Renovate の段落は voidzero-dev/vite-plus#2463 で 1.7.0 のあとに main へ入った。2026-11-23 に確認)。グループへ束ねても版は揃わない。
+`.github/dependabot.yml` の `vite-plus` グループは、`vite-plus`・`vite`・`@voidzero-dev/vite-plus-*`・`vitest`・`@vitest/*` を束ねる。Vite+ の docs は npm の依存を束ねる Dependabot の設定例を示さず、Renovate には `group:vitePlus` の preset を勧める (1.7.0 の同梱の docs には無い。出典の voidzero-dev/vite-plus#2463 の段落)。bot が `vite-plus` と `vite` の alias の片方だけを上げたときの止まり方と、merge の前に alias を照合して `vp migrate` を打つ手順は、Vite+ docs「Update Vite+」の Dependency Bots が書く (vite-plus 1.7.0 の同梱の docs で 2026-11-23 に確認)。グループへ束ねても版は揃わない。
 
 - `vitest` が `vite-plus` と別の日に出ると、`vitest` を同梱の版より先へ上げる PR ができる (voidzero-dev/vite-plus#2356)。2026-09-09 から 09-28 に 6 本来た
 - `vite-plus` を上げた PR に `vite` の alias 先は含まれなかった (2026-09-16、09-21 の 2 本)
 
 グループの PR は閉じても版を ignore しないので、`vitest` だけの PR は次の実行で作り直される (2026-09-29 に Dependabot が PR に書いた案内)。止めるには `@dependabot ignore <依存>` のコメントか設定ファイルの `ignore` が要る (GitHub Docs「Dependabot pull request comment commands」)。そのため `vitest` と `@vitest/*` は、`dependency-name` だけで `ignore` に入れ、グループの `patterns` には残す (実測した構成を保ち、`minor-and-patch` の `exclude-patterns` と対にするため)。`vite-plus` の PR は、そのブランチで `vp migrate` を打って core・`vitest`・`@vitest/*` を同梱の版へ揃えてから取り込む。手順は `docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」にある。
 
-`vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告する (2026-09-29、pnpm 11.28.0 で実測)。Dependabot の docs は peer の扱いを書いていない (2026-09-29 時点) ので、ignore した peer と食い違う `vite-plus` の版に PR が作られるかを実測した。`vite-plus` 0.2.9・`@vitest/browser-playwright` 4.1.10 の構成に上のグループを置き、`ignore` を `update-types` の 3 つを並べる形と `dependency-name` だけの形で 1 回ずつ試した。どちらも Dependabot の `pnpm --filter . peers check` は exit 1 だったが、`vite-plus` を 0.3.3 へ上げる PR が作られた (2026-09-29、pnpm 11.28.0、実験用の private リポジトリで観測)。この食い違いは exact な peer の patch の差 (4.1.10 と 4.1.11) で、major の差では確かめていない。
+2026-09-29 に pnpm 11.28.0 で実測すると、`vite-plus` は `@vitest/browser-playwright` を exact な optional peer に持ち、pnpm 11 は optional な peer の食い違いも unmet として報告した。Dependabot の docs は peer の扱いを書いていなかった (2026-09-29 時点) ので、ignore した peer と食い違う `vite-plus` の版に PR が作られるかを実測した。`vite-plus` 0.2.9・`@vitest/browser-playwright` 4.1.10 の構成に上のグループを置き、`ignore` を `update-types` の 3 つを並べる形と `dependency-name` だけの形で 1 回ずつ試した。どちらも Dependabot の `pnpm --filter . peers check` は exit 1 だったが、`vite-plus` を 0.3.3 へ上げる PR が作られた (2026-09-29、pnpm 11.28.0、実験用の private リポジトリで観測)。この食い違いは exact な peer の patch の差 (4.1.10 と 4.1.11) で、major の差では確かめていない。
 
 `vitest` の脆弱性は security updates の PR ではなく alert で知り、下の「pin には出口条件を書く」のトリガ A で扱う。
 
@@ -160,7 +160,7 @@ version update の PR の上限 (`open-pull-requests-limit`) の既定は 5 で�
 - Dependabot PR の処理が「依存更新の取り込み」と「pin の出口確認」を兼ねる。手順が 1 段増えるが、独立した定期タスクを管理するより忘れにくい
 - 再評価の条件は、GitHub が cooldown の既定値を変えたとき、pnpm のメジャー更新で strict 挙動の既定が変わったとき、Vite+ が自身の抱えるパッケージの exact pin をやめたとき、Vite+ の docs が単独で先へ進む `vitest` の PR を作らせない Dependabot の設定例を示したとき (voidzero-dev/vite-plus#2356)。`vitest` 系の `ignore` は、`vite-plus` の新しい版が npm の latest に載り、cooldown を過ぎたあとの Dependabot の実行でも `vite-plus` の PR ができないときにも見直す。Dependabot の PR を処理するとき (トリガ B) に、`docs/guides/dependencies-and-toolchain.md`「Vite+ を上げる」の手順で確かめる
 - `package.json` の `playwright` は caret で持つ。`*` にして版追随を `@vitest/browser-playwright` へ委任する形は成り立たない。その peer 自身が `playwright: "*"` (`optional: false`) で何も制約しておらず、委任先が存在しない (2026-09-02 実測)。実際に版を決めているのは lockfile と待機ゲートで、そこは caret でも変わらない。caret にすると major が Dependabot の別 PR になり判断が挟まる。exact pin ではないため出口条件は無い
-- `package.json` の `nitro` は nitro 3 の beta 版に exact pin する。TanStack Start の hosting ガイドが使う `nitro/vite` の plugin は nitro 3 にしかなく、nitro 3 は使える stable 版が出ていない (2026-09-27 に `npm view nitro dist-tags` の `latest` は `3.0.260903-beta`。`3.0.0` は公開されているが非推奨)。出口条件は nitro 3 の stable 版が `latest` に載ること。そのとき範囲指定か `catalog:` へ移せるかを見直す
+- `package.json` の `nitro` は nitro 3 の beta 版に exact pin する。TanStack Start の hosting ガイドが使う `nitro/vite` の plugin は nitro 3 にしかなく、nitro 3 は 2026-09-27 の時点で使える stable 版が出ていなかった (`npm view nitro dist-tags` の `latest` は `3.0.260903-beta` で、`3.0.0` は公開されていたが非推奨だった)。出口条件は nitro 3 の stable 版が `latest` に載ること。そのとき範囲指定か `catalog:` へ移せるかを見直す
 
 ## 出典
 

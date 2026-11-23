@@ -10,8 +10,7 @@
 定義と実態が食い違い、`vite.config.ts` の `importProtection` が除外をコメントで説明する形になっていた。
 
 環境の境界を決めているのはディレクトリではない。
-`@tanstack/start-plugin-core` 1.171.39 の import protection は specifier・ファイル名パターン・marker の 3 経路で判定する (`dist/esm/vite/import-protection-plugin/plugin.js` が `type: "specifier"` / `"file"` / `"marker"` を立てる)。
-既定のファイル名パターンは `dist/esm/import-protection/defaults.js` が返す `client: { files: ["**/*.server.*"] }` / `server: { files: ["**/*.client.*"] }` で、**既定にディレクトリは入らない**。
+import protection は specifier・ファイル名パターン・marker の 3 経路で判定し、**既定のファイル名パターンにディレクトリは入らない** (TanStack Start docs「Import Protection」の How It Works、Default Rules、File Markers)。
 ディレクトリ単位で止まるのは `files` へ glob を書いたときだけで、機構がディレクトリを特別扱いすることはない。
 
 同居させても遮断が保たれることを 2 パターンで確認した (2026-09-06)。
@@ -24,7 +23,7 @@
 つまり client-safe なファイルと server 専用のファイルを同じディレクトリに置いても遮断は保たれる。遮断の観点では、ディレクトリを分けても得られるものは無い。
 
 接尾辞を落としたときに何が残るかは、`vite.config.ts` の `importProtection` 次第である。
-user が `files` を指定すると既定を置換する (同 `plugin.js` の `pick`)。マージされるのは `client.specifiers` だけで、`server.specifiers` と `excludeFiles` は置換になる。
+user が書いた設定のうち、既定に足されるのは `client.specifiers` だけで、`files`・`server.specifiers`・`excludeFiles` は既定を置き換える (TanStack Start docs「Import Protection」の Full Configuration Reference)。
 このリポジトリは `files: ["**/src/server/db/**", "**/*.server.*"]` を指定しているので、`src/server/db/` を引く実処理は接尾辞を外しても前者が止める (2026-09-06 に改名して実測、`Denied by file pattern: **/src/server/db/**`)。
 `src/server/db/` をパスで止めるのは、テーブルの定義のように native binding を引かないファイルは `specifiers` の `better-sqlite3` では止まらず、client の部品が直接 import してもビルドが壊れないまま永続化層が client へ漏れるためである。
 接尾辞が唯一の防壁になるのは、外部 API や secret だけを扱って `src/server/db/` を引かない実処理を足したときである。
@@ -86,10 +85,9 @@ user が `files` を指定すると既定を置換する (同 `plugin.js` の `p
 
 ## 出典
 
-- 遮断の 3 経路の判定と user 設定の合成: `@tanstack/start-plugin-core` 1.171.39 の `dist/esm/vite/import-protection-plugin/plugin.js` (2026-09-06 に確認)
-- 既定の遮断規則: 同 1.171.39 の `dist/esm/import-protection/defaults.js` (2026-09-06 に確認)
+- 遮断の 3 経路、既定の遮断規則、user 設定の合成: TanStack Start docs「Import Protection」(How It Works、Default Rules、File Markers、Full Configuration Reference。2026-11-23 に `@tanstack/react-start@1.169.7` のタグの原文を確認): https://github.com/TanStack/router/blob/%40tanstack/react-start%401.169.7/docs/start/framework/react/guide/import-protection.md
 - File Organization: intent skill `@tanstack/start-client-core#start-core/server-functions` (`library_version` 1.170.14、2026-09-06 に確認)
 - 横断的な server コードの配置: intent skill `@tanstack/start-client-core#start-core/auth-server-primitives` (同 1.170.14、2026-09-06 に確認)
 - 既定の split groupings: TanStack Router docs「Automatic Code Splitting」の What gets code split? と、`@tanstack/router-plugin` 1.168.35 の `dist/esm/core/constants.js` の `defaultCodeSplitGroupings` (`component` / `errorComponent` / `notFoundComponent`)。`pendingComponent` を既定から外したのは TanStack/router#4047 (2026-09-28 に確認)
-- intent skill `@tanstack/router-core#router-core/code-splitting` (router-core 1.171.27) は `pendingComponent` を「What Gets Split」に挙げるが、上の docs と実装では分割されない。skill の記述に従うと、pending 表示が import する module も分割されると誤る (2026-09-28 に確認)
+- 2026-09-28 に確認した intent skill `@tanstack/router-core#router-core/code-splitting` (router-core 1.171.27) は `pendingComponent` を「What Gets Split」に挙げていたが、上の docs と実装では分割されなかった。skill の記述に従うと、pending 表示が import する module も分割されると誤る
 - エコシステムの実例: https://github.com/BearStudio/start-ui-web / https://github.com/mugnavo/tanstarter / https://github.com/Kiranism/tanstack-start-dashboard (いずれも 2026-09-06 に確認)

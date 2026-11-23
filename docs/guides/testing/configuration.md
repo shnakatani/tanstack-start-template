@@ -40,7 +40,7 @@
 - 1 回走らせるときは `vp test run <path>`、watch するときは `vp test watch` を打つ。Vitest 単体と違い、`vp test` は watch に入らない ([Vite+ docs「Test」][]: "Unlike Vitest on its own, `vp test` does not stay in watch mode by default.")
 - `vp test` を複数並行で走らせない。kill した実行の runner が残ると、後続の実行が collection のエラーで巻き添えになる。kill したら `ps` で残っていないことを確かめる
 - スクリプトが子として起動し、全部の終わりを待つ並列 (`scripts/time-zones/run-tests.ts`) は、上の並行に当たらない。親だけを kill すると子の vitest が残るので、子も `ps` で確かめる
-- worktree では、中へ cd してから `vp install` と `vp test run` を打つ。別の clone から `--root <worktree>` で指すと、story の project が cd した側の clone の story を集め、`Failed to fetch dynamically imported module` で落ちる (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。unit と browser の project は通った)
+- worktree では、中へ cd してから `vp install` と `vp test run` を打つ。別の clone から `--root <worktree>` で指すと、2026-10-05 に vite-plus 1.0.0 / vitest 5.0.1 で、story の project が cd した側の clone の story を集め、`Failed to fetch dynamically imported module` で落ちた (unit と browser の project は通った)
 - worktree のパスに `+` を含めない。パスに `+` を含む clone で、事前バンドルのキャッシュが無い状態から story の project を走らせると、`@storybook/addon-themes` が実行中に事前バンドルされて page が reload し、`Vitest failed to find the current suite` で落ちる。同じ clone を `+` の無いパスへ移すと reload は起きず通った (2026-10-05、vite-plus 1.0.0 / vitest 5.0.1。browser project は `+` を含むパスでも通った)
 
 ### 実行環境の制約でテストを止める
@@ -51,7 +51,7 @@
 2. 実行環境を条件に書けるなら、`it.skipIf(<条件>)` でその環境でだけ飛ばす。[Vitest docs「Test」][] の test.skipIf は "Instead of wrapping the test code with `if`, you can use `test.skipIf` to skip the test whenever the condition is truthy." と書く
 3. 恒久的に止めるなら `it.skip` にし、直前に `// oxlint-disable-next-line vitest/no-disabled-tests -- <理由>` を置く。`it.todo` で残すなら、抑制するルールは `vitest/warn-todo` にする。抑制が無いと、`it.skip` は [Oxlint docs「vitest/no-disabled-tests」][]、`it.todo` は [Oxlint docs「vitest/warn-todo」][] が止める
 
-- `it.skipIf` は `vitest/no-disabled-tests` に止められない。2026-10-06 に oxlint 1.85.0 で、`it.skipIf(...)` と抑制を置いた `it.skip` は通り、抑制の無い `it.skip` と `it.todo` はそれぞれのルールで落ちた
+- 2026-10-06 に oxlint 1.85.0 で、`it.skipIf` は `vitest/no-disabled-tests` に止められなかった。`it.skipIf(...)` と抑制を置いた `it.skip` は通り、抑制の無い `it.skip` と `it.todo` はそれぞれのルールで落ちた
 
 ### 設定の置き場所
 
@@ -132,15 +132,15 @@ StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
 ### テストの並列数を既定に任せる
 
 - `maxWorkers` を書かず、Vitest の既定に任せる。ブラウザで走る project を足しても、値を合わせ直す必要は無い (「並列数を既定に任せる理由」)
-- 書くときは `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない。ある project に root と違う値を書くと、root の値を継承する project と同じ `sequence.groupOrder` で一緒に走る実行で、Vitest がエラーで止まる。例外は `isolate` が `true` で `sequence.groupOrder` が 0 の project に `maxWorkers: 1` を書いたときで、その project のファイルは別の group で 1 つずつ順に走り、エラーにならない ([Vitest の `pool.ts`][] の `groupSpecs`)
-- `vp test` を 1 回だけ違う並列数で走らせるときは、CLI の `--maxWorkers` を付ける。CLI の値は project の値より優先される ([Vitest の `resolveProjects.ts`][] の `PROJECT_CLI_OVERRIDES`)
+- 書くときは `tooling/test/config.ts` の `testConfig` にだけ書き、project には書かない。2026-10-30 に読んだ vitest 5.0.5 の [Vitest の `pool.ts`][] の `groupSpecs` では、ある project に root と違う値を書くと、root の値を継承する project と同じ `sequence.groupOrder` で一緒に走る実行で、Vitest がエラーで止まっていた。例外は `isolate` が `true` で `sequence.groupOrder` が 0 の project に `maxWorkers: 1` を書いたときで、その project のファイルは別の group で 1 つずつ順に走り、エラーにならなかった
+- `vp test` を 1 回だけ違う並列数で走らせるときは、CLI の `--maxWorkers` を付ける。2026-10-30 に読んだ vitest 5.0.5 の [Vitest の `resolveProjects.ts`][] の `PROJECT_CLI_OVERRIDES` では、CLI の値が project の値より優先されていた
 
 ### 設定の落とし穴
 
 | 対象                                            | 起きること                                                                                                                                                          | 対処                                                                                                                                  |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `vitest.config.ts` を足す                       | Vitest がそちらを優先し、`vite.config.ts` の設定を丸ごと黙って無視する (`test`、`envDir`、テストの分岐の plugin を含む)                                             | 足さない。中身は `tooling/test/` に書く                                                                                               |
-| Vitest の `createVitest()` を直接呼んで起動する | config を読む時点で `process.env.VITEST` が立たず、テストに `tanstackStart()` などが入る (2026-09-30、vitest 5.0.1 で確認)                                          | `VITEST=true` を渡して起動する                                                                                                        |
+| Vitest の `createVitest()` を直接呼んで起動する | 2026-09-30 に vitest 5.0.1 で、config を読む時点で `process.env.VITEST` が立たず、テストに `tanstackStart()` などが入った                                           | `VITEST=true` を渡して起動する                                                                                                        |
 | story の project に `browser.viewport` を書く   | `@storybook/addon-vitest` が story ごとに viewport を決め直すので効かない。viewport を選ばない story は、ブラウザテストの `DEFAULT_VIEWPORT` とは別の寸法で描かれる | 寸法を前提にする story は story の側で viewport を選ぶ (`docs/guides/storybook.md`「vitest 経由の story の viewport が決まる仕組み」) |
 | `vp test run --coverage` のカバレッジ           | ブラウザモードの project が読んだ部品では、Compiler が足したコードも数えられ、カバレッジが下がる                                                                    | カバレッジに閾値を置くときは、Compiler を通した数値で決める (「テストでも React Compiler を通す理由」)                                |
 
@@ -168,18 +168,18 @@ StrictMode で包む口と効く範囲は次のとおり (ADR-0039)。
 
 Vitest は、`vite.config.ts` の中でテストだけ設定を変える形として `process.env.VITEST` と `mode` の 2 つを示している ([Vitest docs「Configuring Vitest」][]: "Use `process.env.VITEST` or `mode` property on `defineConfig` (will be set to `test` if not overridden with `--mode`) to conditionally apply different configuration in `vite.config.ts`.")。
 
-| 判定                 | 評価                                                                                                                                                        | 採否     |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `process.env.VITEST` | `--mode` の指定で判定が変わらない (vitest 5.0.3 の CLI の `prepareVitest` は、mode と関係なく `"true"` にする)。`vite.config.ts` をオブジェクトのまま書ける | **採用** |
-| `mode`               | `vp test --mode <name>` で `test` 以外に変わると、テストに `tanstackStart()` が戻る。`defineConfig` を関数の形にする必要がある                              | 却下     |
+| 判定                 | 評価                                                                                                                                                                                | 採否     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `process.env.VITEST` | `--mode` の指定で判定が変わらない (2026-10-30 に読んだ vitest 5.0.3 の CLI の `prepareVitest` は、mode と関係なく `"true"` にしていた)。`vite.config.ts` をオブジェクトのまま書ける | **採用** |
+| `mode`               | `vp test --mode <name>` で `test` 以外に変わると、テストに `tanstackStart()` が戻る。`defineConfig` を関数の形にする必要がある                                                      | 却下     |
 
 `process.env.VITEST` を `"true"` にする経路は次のとおり。
 
-| 起動の経路                                            | `process.env.VITEST`                                                                                                                                                                    |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vp test`                                             | Vitest の CLI が立てる                                                                                                                                                                  |
-| Storybook の test panel と `storybook tools test run` | `@storybook/addon-vitest` が起動する子プロセスの env に渡す (10.6.0 の preset)。`storybook tools test run` で全 story が通り、`tanstackStart()` が外れていることを確かめた (2026-09-30) |
-| `createVitest()` を直接呼ぶ                           | config を読む時点では立たない (2026-09-30、vitest 5.0.1 で確認)。「設定の落とし穴」を参照                                                                                               |
+| 起動の経路                                            | `process.env.VITEST`                                                                                                                                                                                              |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vp test`                                             | Vitest の CLI が立てる                                                                                                                                                                                            |
+| Storybook の test panel と `storybook tools test run` | 2026-09-30 に読んだ `@storybook/addon-vitest` 10.6.0 の preset は、起動する子プロセスの env に渡していた。`storybook tools test run` で全 story が通り、`tanstackStart()` が外れていることを確かめた (2026-09-30) |
+| `createVitest()` を直接呼ぶ                           | 2026-09-30 に vitest 5.0.1 で、config を読む時点では立たなかった。「設定の落とし穴」を参照                                                                                                                        |
 
 ### テストの分岐で plugin を外す理由
 
@@ -212,11 +212,11 @@ Compiler が上流の欠陥を隠す例は、`calendar.tsx` の上流の版 (`do
 
 Compiler の有無は、project ごとに React の plugin を持たせて切り替える。
 
-| 切り替え方                                                                          | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | 採否     |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| ブラウザで走る project が、Compiler の有無ごとに React の plugin を持つ             | Vitest は、project ごとに plugin の振る舞いを変えるなら server を共有しない形を示す ([Vitest docs「sharedViteServer」][]: "If a plugin needs to behave differently per project, disable this option or don't share the server for that project")。ブラウザで走る project は `browser` を持つので、もともと自分の server を持つ (同じページ)。`vp test run` の 1 回で両方が走り、`vp run verify` と CI に手順を足さない。ブラウザテストの project の `cacheDir` は Vitest が project 名のハッシュで分ける (vitest 5.0.1 の `VitestCache.resolveCacheDir`)。ライブラリにも同じ形の先行例がある ([sanity-io/react-rx の vitest.config.ts][]、[starbeamjs/starbeam の vitest.config.mts][]) | **採用** |
-| root の `plugins` に React の plugin を置き、Compiler を通さない project でだけ外す | 継承した配列は連結されるので ([Vitest docs「Test Projects」][]: "Note that arrays like `setupFiles` are concatenated, not overridden.")、継承した plugin を project で外せない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | 却下     |
-| 環境変数で Compiler を外し、`src/components/ui/` を別の実行として走らせる           | 実行の手順を `vp run verify` と CI に足すことになる。同じ project 名のまま Compiler の有無が変わるので、事前バンドルの `cacheDir` を分ける手当てが要り、シェルに残った環境変数で Compiler が黙って外れる                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | 却下     |
+| 切り替え方                                                                          | 評価                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | 採否     |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| ブラウザで走る project が、Compiler の有無ごとに React の plugin を持つ             | Vitest は、project ごとに plugin の振る舞いを変えるなら server を共有しない形を示す ([Vitest docs「sharedViteServer」][]: "If a plugin needs to behave differently per project, disable this option or don't share the server for that project")。ブラウザで走る project は `browser` を持つので、もともと自分の server を持つ (同じページ)。`vp test run` の 1 回で両方が走り、`vp run verify` と CI に手順を足さない。ブラウザテストの project の `cacheDir` は、2026-10-05 に読んだ vitest 5.0.1 の `VitestCache.resolveCacheDir` では、Vitest が project 名のハッシュで分けていた。ライブラリにも同じ形の先行例がある ([sanity-io/react-rx の vitest.config.ts][]、[starbeamjs/starbeam の vitest.config.mts][]) | **採用** |
+| root の `plugins` に React の plugin を置き、Compiler を通さない project でだけ外す | 継承した配列は連結されるので ([Vitest docs「Test Projects」][]: "Note that arrays like `setupFiles` are concatenated, not overridden.")、継承した plugin を project で外せない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | 却下     |
+| 環境変数で Compiler を外し、`src/components/ui/` を別の実行として走らせる           | 実行の手順を `vp run verify` と CI に足すことになる。同じ project 名のまま Compiler の有無が変わるので、事前バンドルの `cacheDir` を分ける手当てが要り、シェルに残った環境変数で Compiler が黙って外れる                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | 却下     |
 
 Compiler を通さない story の project は light だけにする。テーマを 2 つ持つのは a11y の色の検査のためで (ADR-0028)、Compiler が変えるのはメモ化であり、描く色はテーマで決まる。色の検査は Compiler を通す 2 つの project が持つ。
 
@@ -227,7 +227,7 @@ Compiler を通さない story の project は light だけにする。テーマ
 
 Compiler がかかる範囲と、診断の扱いは次のとおり。
 
-- `@vitejs/plugin-react` 6.1.1 は、Vite の environment の consumer が `server` でないときだけ Compiler をかけ、`node_modules` を変換しない (`dist/index.js` の `createReactCompilerPlugin` の `isClient` と、`defaultExcludeRE`)。2026-10-05 に、変換後の `src/components/ui/separator.tsx` に `_c(` が、Compiler を通す project (`browser`、`storybook-light`、`storybook-dark`) では現れ、通さない project (`browser-no-compiler`、`storybook-light-no-compiler`) では現れないことを確かめた
+- 2026-10-05 に読んだ `@vitejs/plugin-react` 6.1.1 の `dist/index.js` (`createReactCompilerPlugin` の `isClient` と、`defaultExcludeRE`) は、Vite の environment の consumer が `server` でないときだけ Compiler をかけ、`node_modules` を変換していなかった。同じ日に、変換後の `src/components/ui/separator.tsx` に `_c(` が、Compiler を通す project (`browser`、`storybook-light`、`storybook-dark`) では現れ、通さない project (`browser-no-compiler`、`storybook-light-no-compiler`) では現れないことを確かめた
 - Node の project は React の plugin を持たず、Compiler を通らない
 - テストでは `reportDiagnostics` を立てない。テストで出すと、そのファイルを読むブラウザモードの project ごとに同じ bail out を出し直す。bail out はビルドログと `vp lint -D react/todo` で読む (`docs/guides/react/memoization.md`「React Compiler の診断を読む」、ADR-0014)
 
@@ -244,7 +244,7 @@ Compiler がかかる範囲と、診断の扱いは次のとおり。
 
 `include` に `@base-ui/react/popover` と `react-day-picker` があるのは、2026-09-27 の観測のとおり、`FormDateField` のテストが実行中に初めて到達する依存だからである。
 
-`browser` の `include` は対症療法である。アプリの分岐では `tanstackStart()` が client の environment に事前バンドルの設定を渡すが ([@tanstack/react-start 1.169.4 の plugin][] の `tanstack-react-start:config` plugin の `configEnvironment` の `needsOptimizeDeps`)、テストの分岐では外している (「テストの分岐で plugin を外す理由」)。テストに `tanstackStart()` を戻すかを決め直すときに、合わせて `include` を外せるかを見る。次の 2 つの issue は、close を出口にしない。状態は 2026-10-30 に確かめた。
+`browser` の `include` は対症療法である。アプリの分岐では、2026-10-30 に読んだ `@tanstack/react-start` 1.169.4 の `tanstackStart()` が client の environment に事前バンドルの設定を渡していたが ([@tanstack/react-start 1.169.4 の plugin][] の `tanstack-react-start:config` plugin の `configEnvironment` の `needsOptimizeDeps`)、テストの分岐では外している (「テストの分岐で plugin を外す理由」)。テストに `tanstackStart()` を戻すかを決め直すときに、合わせて `include` を外せるかを見る。次の 2 つの issue は、close を出口にしない。状態は 2026-10-30 に確かめた。
 
 | issue                       | 中身                                                                                         | 状態                | 出口にするか                                                                                                                                                                                              |
 | --------------------------- | -------------------------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -255,7 +255,7 @@ issue の状態ではなく症状で判定するのは、この 2 つのよう�
 
 `browser` の `optimizeDeps.exclude` に Start のパッケージ (`@tanstack/react-start`、`@tanstack/react-start-server`、`@tanstack/start-server-core`) を置くのは、`tanstackStart()` の無いテストでは、それらが import する `#tanstack-*-entry` の仮想モジュールを解決できないためである。
 
-story の project の `optimizeDeps` は、次の 2 点で `browser` と違う。どちらも各パッケージの 10.6.0 の `dist` で 2026-09-30 に確かめた。
+story の project の `optimizeDeps` は、次の 2 点で `browser` と違う。理由の欄は、各パッケージの 10.6.0 の `dist` を 2026-09-30 に読んだ結果である。
 
 | 設定      | 中身                                                 | 理由                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | --------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -264,16 +264,16 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 
 ### story の project の `cacheDir` を分ける理由
 
-`storybookTest()` は `configDir` のハッシュから `cacheDir` を導く (`@storybook/addon-vitest` の vitest-plugin が `oneWayHash(configDir)` を projectId にする。10.6.0 の `dist` で 2026-09-30 に確かめた)。story の project はどれも同じ `configDir` を渡すので、分けないと事前バンドルのキャッシュを 1 つ共有し、実行中に別々の依存を見つけて互いのキャッシュを無効化し合う (2026-09-20 に `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測。story 53 件、`include` を `axe-core` だけにした状態で、共有のままでは 106 ファイル中 62 が失敗して reload が 8 回、分けると全て通り reload は 0 回)。分けておけば、走査の結果が project ごとに違っても互いのキャッシュを壊さない。Compiler を通さない project は、同じテーマの project とも分ける。事前バンドルする依存が違い、Compiler を通す project だけが `react/compiler-runtime` を足す (`@vitejs/plugin-react` 6.1.1 の `createReactCompilerPlugin` の `config` フック)。
+`storybookTest()` は `configDir` のハッシュから `cacheDir` を導く (`@storybook/addon-vitest` の vitest-plugin が `oneWayHash(configDir)` を projectId にする。10.6.0 の `dist` で 2026-09-30 に確かめた)。story の project はどれも同じ `configDir` を渡すので、分けないと事前バンドルのキャッシュを 1 つ共有し、実行中に別々の依存を見つけて互いのキャッシュを無効化し合う (2026-09-20 に `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測。story 53 件、`include` を `axe-core` だけにした状態で、共有のままでは 106 ファイル中 62 が失敗して reload が 8 回、分けると全て通り reload は 0 回)。分けておけば、走査の結果が project ごとに違っても互いのキャッシュを壊さない。Compiler を通さない project は、同じテーマの project とも分ける。事前バンドルする依存が違う。2026-10-05 に読んだ `@vitejs/plugin-react` 6.1.1 では、Compiler を通す project だけが `react/compiler-runtime` を足していた (`createReactCompilerPlugin` の `config` フック)。
 
-| 組み方                                                                                                                         | 理由                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `order: "post"` の config フックを持つ plugin で `cacheDir` を上書きする                                                       | addon は `cacheDir` を順序指定の無い config フックで入れるので、post 順のフックが後から上書きできる。同じ手で project 名は戻せない (ADR-0028)                                           |
-| 固定のパス (`node_modules/.cache/storybook-vitest/<theme>`、Compiler を通さない project は `<theme>-no-compiler`) で組み立てる | browser mode は config を読み直すので、既存の `cacheDir` から相対で作ると `light/light` のように入れ子になる (2026-09-21 までに `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測) |
+| 組み方                                                                                                                         | 理由                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `order: "post"` の config フックを持つ plugin で `cacheDir` を上書きする                                                       | 2026-09-30 に読んだ `@storybook/addon-vitest` 10.6.0 は `cacheDir` を順序指定の無い config フックで入れていたので、post 順のフックが後から上書きできる。同じ手で project 名は戻せない (ADR-0028) |
+| 固定のパス (`node_modules/.cache/storybook-vitest/<theme>`、Compiler を通さない project は `<theme>-no-compiler`) で組み立てる | browser mode は config を読み直すので、既存の `cacheDir` から相対で作ると `light/light` のように入れ子になる (2026-09-21 までに `@storybook/addon-vitest` 10.6.0、vitest 4.1.11 で観測)          |
 
 ### 並列数を既定に任せる理由
 
-`tooling/test/config.ts` に `maxWorkers` を書かない。Vitest のブラウザの pool は、ブラウザで走る project を 1 つの worker として数え、同時に走る project の数と、それらが開くページの合計を `maxWorkers` に収める ([Vitest docs「maxWorkers」][] の Browser Mode: "every browser instance … is a worker, so at most `maxWorkers` instances run at the same time" と "The same number is the budget of pages shared by the open instances")。この形は [vitest-dev/vitest#11525][] で入り、vitest 5.0.4 から効く。既定は、watch を切った実行で "uses all available parallelism" である ([Vitest docs「maxWorkers」][])。値を書くと、Node で動く project の worker の数と、ブラウザで走る全 project のページの合計が、どちらもその値に縮む。`sequence.groupOrder` を書かない限り、Node で動く project とブラウザで走る project は同じ group で同時に走る ([Vitest の `pool.ts`][] の `executeTests`)。
+`tooling/test/config.ts` に `maxWorkers` を書かない。Vitest のブラウザの pool は、ブラウザで走る project を 1 つの worker として数え、同時に走る project の数と、それらが開くページの合計を `maxWorkers` に収める ([Vitest docs「maxWorkers」][] の Browser Mode: "every browser instance … is a worker, so at most `maxWorkers` instances run at the same time" と "The same number is the budget of pages shared by the open instances")。この形は [vitest-dev/vitest#11525][] で入り、vitest 5.0.4 から効く。既定は、watch を切った実行で "uses all available parallelism" である ([Vitest docs「maxWorkers」][])。値を書くと、Node で動く project の worker の数と、ブラウザで走る全 project のページの合計が、どちらもその値に縮む。`sequence.groupOrder` を書かない限り、Node で動く project とブラウザで走る project は同時に走る ([Vitest docs「sequence.groupOrder」][])。
 
 2026-10-30 に vitest 5.0.5 (Vite+ 1.4.0) で、8 コアの macOS で `vp test run` を `maxWorkers: "20%"` (8 コアで 2) と既定で交互に 5 回ずつ走らせた。所要は `vp test run` の起動から終了までの秒である。load average は走らせる直前の 1 分の値である。
 
@@ -290,7 +290,7 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。並列数の出典 (`maxWorkers` の docs、`pool.ts`、`resolveProjects.ts`) は Vitest 5.0.5 に固定した。Oxlint docs の「vitest/no-disabled-tests」と「vitest/warn-todo」は、2026-10-06 に原文と照らした。sanity-io/react-rx と starbeamjs/starbeam の設定は、2026-10-05 に読んだ commit に固定した。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vite+ は 1.0.0、Vitest は 5.0.1 に固定した版を指す。並列数の出典 (`maxWorkers` の docs、`pool.ts`、`resolveProjects.ts`) は Vitest 5.0.5 に、`sequence.groupOrder` の docs は 5.1.0 に固定した。Oxlint docs の「vitest/no-disabled-tests」と「vitest/warn-todo」は、2026-10-06 に原文と照らした。sanity-io/react-rx と starbeamjs/starbeam の設定は、2026-10-05 に読んだ commit に固定した。
 
 [Vite+ docs「Test」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/test.md
 [Vite+ docs「Migrate」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/migrate.md
@@ -318,3 +318,4 @@ story の project の `optimizeDeps` は、次の 2 点で `browser` と違う�
 [sanity-io/react-rx の vitest.config.ts]: https://github.com/sanity-io/react-rx/blob/c346d3fd008bea09b63e18bb3ebe4c286a0e4002/packages/react-rx/vitest.config.ts
 [starbeamjs/starbeam の vitest.config.mts]: https://github.com/starbeamjs/starbeam/blob/c2781eb9a4357d01e51b504e618adf5c69adf32d/vitest.config.mts
 [oxc-project/oxc#26810]: https://github.com/oxc-project/oxc/issues/26810
+[Vitest docs「sequence.groupOrder」]: https://github.com/vitest-dev/vitest/blob/v5.1.0/docs/config/sequence.md#sequencegrouporder
