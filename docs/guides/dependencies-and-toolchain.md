@@ -38,7 +38,8 @@ commit のたびに、`vp staged` が `vite.config.ts` の `staged` のコマン
 
 - 依存は `vp add` / `vp remove` で足し外す ([Vite+ docs「Package Management」][] の「Add and Remove」)。素の `pnpm` / `npm` / `yarn` で足し外さない。理由は「入口を `vp` にそろえる理由」にある
 - `vp` が中継しないサブコマンドだけは素の `pnpm` で打つ。`pnpm peers check` がこれに当たる (「peer の食い違いを数える」)
-- `vp add`・`vp remove`・引数なしの `vp update` は、`package.json` の `devEngines.runtime` に `runtimeOnFail` の値を `onFail` として書き足す。足された `onFail` は、commit の前に消す (ADR-0004)
+- 引数なしの `vp update` は、`package.json` の `devEngines.runtime` の版を exact (`24` を `24.<minor>.<patch>`) に書き換える。commit の前に major へ戻す (ADR-0004)
+- `devEngines.runtime` に `onFail` が入ったら消す。`vp env pin` は宣言を新しく作るとき `onFail: "download"` を入れ、pnpm が Node.js を取りに行く (ADR-0004)
 
 ### 依存が同梱する agent skill
 
