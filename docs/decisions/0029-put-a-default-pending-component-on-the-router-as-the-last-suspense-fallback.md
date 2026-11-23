@@ -8,11 +8,11 @@
 
 route の pending 表示 (`pendingComponent`) は、表示のためだけでなく Suspense の境界として働く。
 
-| 状況                                                            | 起きること                                                                                                           | 出典                                                                                    |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| route に `pendingComponent` も `defaultPendingComponent` も無い | その route には Suspense 境界が張られない。配下の suspend は上位へ巻き上がる                                         | `@tanstack/react-router` 1.170.32 の `Match.tsx` (`ResolvedSuspenseBoundary`)           |
-| 巻き上がった先が root の `Outlet`                               | root の `Outlet` は子を `<Suspense fallback={renderPending(router)}>` で包み、既定が無いと fallback は `null` になる | 同 `Match.tsx`、TanStack/router#2026                                                    |
-| `ssr: false` / `data-only` の route                             | サーバーは pending 表示を fallback として描く。どちらも無いと何も描かない                                            | Start の Selective SSR ガイド "If neither is configured, no fallback will be rendered." |
+| 状況                                                            | 起きること                                                                                                           | 出典                                                                                              |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| route に `pendingComponent` も `defaultPendingComponent` も無い | その route には Suspense 境界が張られない。配下の suspend は上位へ巻き上がる                                         | 2026-09-26 に読んだ `@tanstack/react-router` 1.170.32 の `Match.tsx` (`ResolvedSuspenseBoundary`) |
+| 巻き上がった先が root の `Outlet`                               | root の `Outlet` は子を `<Suspense fallback={renderPending(router)}>` で包み、既定が無いと fallback は `null` になる | 同じ日に読んだ同じ版の `Match.tsx`、TanStack/router#2026                                          |
+| `ssr: false` / `data-only` の route                             | サーバーは pending 表示を fallback として描く。どちらも無いと何も描かない                                            | Start の Selective SSR ガイド "If neither is configured, no fallback will be rendered."           |
 
 `defaultPendingComponent` には既定値が無い (`RouterOptionsType`)。失敗は root の `errorComponent` を最後の受け手にできるが (ADR-0044)、root の `Outlet` の Suspense の fallback は route の options から決められず、`defaultPendingComponent` だけが埋める (上の表の「巻き上がった先が root の `Outlet`」の行)。
 

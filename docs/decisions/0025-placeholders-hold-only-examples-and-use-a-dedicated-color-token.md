@@ -25,7 +25,7 @@ w3c/wcag#4343 が問うているのは「情報を足さない placeholder」を
 
 **免除の筋そのものへの反対もある。** mbgower は「冗長かどうかは関係がなく、SC 1.4.3 の incidental の例外は placeholder に及ばない」と述べている。philljenkins の「ラベルを 4.5:1 に保ったうえで placeholder は 3:1 + イタリック」案も含め、決着していない。
 
-**この色を検査は測っていない。** `axe-core@4.14.0` の `color-contrast` は空の入力欄にもマッチし (`lib/rules/color-contrast-matches.js` の `// Match all form fields, regardless of if they have text`)、`::placeholder` ではなく要素自身の `color` で比を出す。基準に届けば合格、届かなければ incomplete (`emptyValue`) にする。この扱いを入れた dequelabs/axe-core#5359 は「Placeholder contrast using `::placeholder` color is not implemented here」と書く (2026-10-10 に確認)。**緑であることは placeholder が測られたことを意味しない。**
+**この色を検査は測っていない。** 2026-10-10 に読んだ `axe-core@4.14.0` の `color-contrast` は、空の入力欄にもマッチし (`lib/rules/color-contrast-matches.js` の `// Match all form fields, regardless of if they have text`)、`::placeholder` ではなく要素自身の `color` で比を出していた。基準に届けば合格、届かなければ incomplete (`emptyValue`) にしていた。この扱いを入れた dequelabs/axe-core#5359 は「Placeholder contrast using `::placeholder` color is not implemented here」と書く (2026-10-10 に確認)。**緑であることは placeholder が測られたことを意味しない。**
 
 ## Decision
 
@@ -91,7 +91,7 @@ light と dark で同じ `mist-500` になる。
 - dark は SC 1.4.3 の 4.5:1 を満たさない。入力欄の面 (`bg-input/30` 込み) で、ページ直下なら 3.93、ダイアログの中なら 3.35。placeholder へ書式や指示を書くと、そのまま不適合になる
 - 消費者は `src/components/ui/input.tsx` と `src/components/ui/textarea.tsx` の `example-placeholder`。registry からの乖離として ADR-0020 の許容リストが行を持つ
 - `--placeholder` は `@theme inline` へ通していない。当て方は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある
-- **消費側からの上書きが決定的でない。** `cn` が `@utility` で作った class を知らないためで、詳細は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある。registry の `placeholder:text-muted-foreground` なら `cn` が確実に落とす。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない
+- **消費側からの上書きが決定的でない。** `cn` が `@utility` で作った class を知らなかったためで (2026-09-21、`cn` 0.2.6)、詳細は `docs/guides/styling-and-tokens.md`「placeholder の色を当てる」にある。registry の `placeholder:text-muted-foreground` なら、同じ版の `cn` は確実に落としていた。2026-09-21 時点で上書きしている消費側は無い。`grep -rn 'placeholder:text-' src/ --include='*.tsx'` が返すのは `select.tsx` の `data-placeholder:text-muted-foreground` 1 件だけで、これは `Input` / `Textarea` の口ではない
 - placeholder を足すときは 2 つを確かめる。(1) 例示か (ラベルの代わりでも、書式や条件の説明でもないか)。(2) ラベルが名指していない情報を足していないか。確かめ方は `docs/guides/forms-and-inputs.md`「placeholder を足す」にある
 - 2026-09-21 時点で、ラベルが名指していない情報を足しているのは `input-group.stories.tsx` の `placeholder="name@example.com"` (差出人ラベルが形式を名指していない) と `placeholder="0"` (数値のみという構成を伝える) の 2 件。どちらも story のカタログで、dark の比は表の dark 行と同じ 3.93 になる。残る 11 種はラベルの言い換えか値の例示で、情報を足さない
 - 再評価の条件は、w3c/wcag#4343 が閉じるか、axe が `::placeholder` を読むようになったとき
@@ -103,7 +103,7 @@ light と dark で同じ `mist-500` になる。
 - 入力済みと誤認してフィールドを飛ばす: https://www.nngroup.com/articles/form-design-placeholders/
 - 例示にも placeholder を使わないとする立場 (1.4.3 を理由に挙げる): https://design-system.service.gov.uk/components/text-input/
 - placeholder ごと deprecate した例 (比を上げると入力済みに見えるため): https://github.com/adobe/react-spectrum/issues/2935
-- 面ごとに対を列挙して CI で落とす例: https://github.com/primer/primitives/blob/main/scripts/colorContrast.config.ts
+- 面ごとに対を列挙して CI で落とす例: https://github.com/primer/primitives/blob/f48bc063f7bc0fb3e447386a8c259650ce46dea8/scripts/colorContrast.config.ts
 - 冗長な placeholder に 1.4.3 が掛かるかの議論 (2026-09-21 時点で open): https://github.com/w3c/wcag/issues/4343
 - WCAG 2.2 1.4.1 Use of Color: https://www.w3.org/TR/WCAG22/#use-of-color
 - WCAG 2.2 1.4.3 Contrast (Minimum): https://www.w3.org/TR/WCAG22/#contrast-minimum

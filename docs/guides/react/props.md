@@ -53,7 +53,7 @@
 
 ### children を明示して宣言する理由
 
-`@types/react` 19.3.0 の `PropsWithChildren<P>` は `P & { children?: ReactNode | undefined }` で、children を任意で足す。`PropsWithChildren<{ children: ReactNode }>` と書けば必須になるが (2026-10-06、typescript 6.0.3 で確かめた)、そのときは `PropsWithChildren` が足すものが無い。children を必須にするか任意にするかを props 型の中の 1 行で読めるように、どちらの場合も明示して宣言する。
+2026-10-06 に読んだ `@types/react` 19.3.0 の `PropsWithChildren<P>` は `P & { children?: ReactNode | undefined }` で、children を任意で足していた。`PropsWithChildren<{ children: ReactNode }>` と書けば必須になるが (2026-10-06、typescript 6.0.3 で確かめた)、そのときは `PropsWithChildren` が足すものが無い。children を必須にするか任意にするかを props 型の中の 1 行で読めるように、どちらの場合も明示して宣言する。
 
 [React docs「Using TypeScript」][] の Children も、[React TypeScript Cheatsheet「Typing Component Props」][] の Useful React Prop Type Examples も、`children` を props 型に明示して書く形だけを示す。`PropsWithChildren` を避けるよう書いた公式の記述は見つからなかった (2026-10-06)。
 

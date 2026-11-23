@@ -122,7 +122,7 @@ CDP の上書きがファイルをまたがないのは、Vitest がテストフ
 [Vitest docs「Common Errors」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/common-errors.md
 [vitest-dev/vitest#1575]: https://github.com/vitest-dev/vitest/issues/1575
 [Vitest docs「env」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/env.md
-[date-fns の `tz.ts`]: https://github.com/date-fns/date-fns/blob/main/pkgs/dev/src/test/tz.ts
+[date-fns の `tz.ts`]: https://github.com/date-fns/date-fns/blob/f34149bb1ba10046453e688207507e0d2c727e00/pkgs/dev/src/test/tz.ts
 [Vitest docs「Advanced API」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/advanced/index.md#project-configuration-resolution
 [Vitest docs「maxWorkers」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/config/maxworkers.md
 [Vitest docs「Improving Performance」]: https://github.com/vitest-dev/vitest/blob/v5.0.1/docs/guide/improving-performance.md

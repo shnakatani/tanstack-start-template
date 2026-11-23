@@ -109,7 +109,7 @@ hook を持たない cell だけを関数で書くと、hook を足すときに�
 
 debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fallback を防ぐ。役割が違うので、片方では足りない。[React docs「useDeferredValue」][] も debounce と `useDeferredValue` を「You can also use these techniques together」と併用可とし、debounce の役割を「fire fewer network requests」に置く。
 
-- `@tanstack/react-pacer` 0.23.0 の `useDebouncedValue` は `useState` の setter をそのまま、依存する `@tanstack/pacer` 0.22.0 の `Debouncer` (`setTimeout`) に渡し、`startTransition` を通さない (`react-pacer` の `dist/debouncer/useDebouncedState.js`、`pacer` の `dist/debouncer.js`。どちらにも `startTransition` の参照は無い)
+- 2026-09-23 に読んだ `@tanstack/react-pacer` 0.23.0 の `useDebouncedValue` は `useState` の setter をそのまま、依存する `@tanstack/pacer` 0.22.0 の `Debouncer` (`setTimeout`) に渡し、`startTransition` を通していなかった (`react-pacer` の `dist/debouncer/useDebouncedState.js`、`pacer` の `dist/debouncer.js`。どちらにも `startTransition` の参照は無かった)
 - そのため debounce 後の値でそのまま `useSuspenseQuery` を呼ぶと、緊急更新の中で Suspend し、Suspense が古い一覧を `display: none` で隠す。Suspense モードで queryKey を変えるなら更新を Transition に包む ([TanStack Query docs「Suspense」][] の「wrap your updates that change the QueryKey into startTransition」)
 - 打鍵が止まってから 1 回だけ取得し、その間は古い一覧を半透明で残すことを見るテストは、古い行を `toBeVisible` で見る。`toBeInTheDocument` では隠れた木も通り、この欠落を落とせない
 - `@tanstack/react-pacer` は beta で API が変わりうる ([TanStack Pacer docs「Overview」][] の「TanStack Pacer is currently in beta and its API is still subject to change」)。使う API は `useDebouncedValue` だけに絞り、呼び出しは検索欄を組むページ本体の 1 箇所に閉じる
@@ -150,7 +150,7 @@ debounce は取得の回数を減らし、`useDeferredValue` は Suspense の fa
 [`@tanstack/table-core` の `skills/core/references/typescript.md`]: https://github.com/TanStack/table/blob/@tanstack/table-core@9.2.6/packages/table-core/skills/core/references/typescript.md
 [TanStack Router docs「Data Loading」]: https://tanstack.com/router/latest/docs/guide/data-loading
 [React docs「Adjusting some state when a prop changes」]: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-[TanStack Query の `transition.test.tsx`]: https://github.com/TanStack/query/blob/main/packages/react-query/src/__tests__/transition.test.tsx
+[TanStack Query の `transition.test.tsx`]: https://github.com/TanStack/query/blob/8884f1a4d9ee53cb3cdba26ca28f870500ede3f7/packages/react-query/src/__tests__/transition.test.tsx
 [React docs「useDeferredValue」]: https://react.dev/reference/react/useDeferredValue
 [TanStack Table docs「React Compiler」]: https://tanstack.com/table/latest/docs/framework/react/guide/react-compiler
 [`@tanstack/react-table` の `skills/getting-started/references/with-tanstack-query.md`]: https://github.com/TanStack/table/blob/@tanstack/react-table@9.2.6/packages/react-table/skills/getting-started/references/with-tanstack-query.md

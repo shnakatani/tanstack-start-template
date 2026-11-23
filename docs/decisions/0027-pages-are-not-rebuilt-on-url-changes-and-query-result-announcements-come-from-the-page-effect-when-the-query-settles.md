@@ -12,11 +12,11 @@ ADR-0026 は通知を `announce()` (常時 mount の live region) に集約し�
 
 決めるうえでの制約は次のとおり。
 
-| 制約                                                                                                          | 出どころ                                                                                    |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 条件の確定 (debounce → `useDeferredValue`) と取得の決着 (`isFetching`) はページの中で起きる                   | ADR-0019 のデータの流れ                                                                     |
-| 同じ条件に対する通知は 1 回にする。debounce 後に通知した直後の Enter (URL が同じ条件になる) で 2 回読ませない | 重複は通知を埋める                                                                          |
-| 取得中に通知すると古い件数を読む。無効化済みキャッシュは表示しながら再取得する                                | TanStack Query の `useSuspenseQuery` はデータがあれば Suspend せず、`isFetching` だけが立つ |
+| 制約                                                                                                          | 出どころ                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 条件の確定 (debounce → `useDeferredValue`) と取得の決着 (`isFetching`) はページの中で起きる                   | ADR-0019 のデータの流れ                                                                                                   |
+| 同じ条件に対する通知は 1 回にする。debounce 後に通知した直後の Enter (URL が同じ条件になる) で 2 回読ませない | 重複は通知を埋める                                                                                                        |
+| 取得中に通知すると古い件数を読む。無効化済みキャッシュは表示しながら再取得する                                | 2026-09-23 の TanStack Query 5.102.8 の `useSuspenseQuery` は、データがあれば Suspend せず、`isFetching` だけを立てていた |
 
 先行例は次のとおり (2026-09-23 に確認)。
 
@@ -46,7 +46,7 @@ ADR-0026 は通知を `announce()` (常時 mount の live region) に集約し�
 
 - ADR-0026 の「呼び出し層」を広げる: mutation の通知は feature 側の `onMutate` / `onSuccess`、取得結果の通知はページの effect。どちらも部品は announce しない
 - オフラインで `fetchStatus` が `paused` のときは `isFetching` が false なので古いキャッシュの件数を通知し、再接続後の再取得で件数が変わっても同じ条件なので通知し直さない。表示中の一覧と件数は一致しているので誤通知ではなく、`fetchStatus === "idle"` で見ると通知ゼロになるほうが悪い
-- 無効化済みのキャッシュを表示しながら再取得している間に、直前に通知した条件へ戻ると、途中で見えた一覧は通知しない (一覧は 2 回入れ替わるが通知は 0 件)。最後に伝えた条件と最終的な画面が一致するので誤通知ではなく、途中の一覧を読むと取得中の古い件数を読ませる。GOV.UK accessible-autocomplete (`src/status.js`、2026-09-29 に確認) も 1400ms の debounce で途中の状態を読まないが、区切りは時間で、debounce が明けると同じ条件に戻っても最終状態を読み直す。途中を読まない点だけが同じである
+- 無効化済みのキャッシュを表示しながら再取得している間に、直前に通知した条件へ戻ると、途中で見えた一覧は通知しない (一覧は 2 回入れ替わるが通知は 0 件)。最後に伝えた条件と最終的な画面が一致するので誤通知ではなく、途中の一覧を読むと取得中の古い件数を読ませる。GOV.UK accessible-autocomplete (`src/status.js`、2026-09-29 に確認) も 1400ms の debounce で途中の状態を読んでいなかったが、区切りは時間で、debounce が明けると同じ条件に戻っても最終状態を読み直していた。途中を読まない点だけが同じである
 - 通知が消える経路は ref の更新を消す mutant (「abc」→「」で 2 件目が出ない) で、取得中の通知は決着の条件を外す mutant で、それぞれ検索欄を持つページのテストが落ちることを 2026-09-23 に確認した。決着の条件を外す mutant は、直前に通知した条件へ戻る経路のテストでも落ちることを 2026-09-29 に確かめた
 
 ### 再評価の条件
@@ -70,7 +70,7 @@ ADR-0026 は通知を `announce()` (常時 mount の live region) に集約し�
 
 - WCAG 2.2 Understanding 4.1.3 Status Messages: <https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html>
 - WCAG 技術 ARIA22 (`role="status"`): <https://www.w3.org/WAI/WCAG22/Techniques/aria/ARIA22>
-- GOV.UK accessible-autocomplete `src/status.js`: <https://github.com/alphagov/accessible-autocomplete/blob/main/src/status.js>
+- GOV.UK accessible-autocomplete `src/status.js`: <https://github.com/alphagov/accessible-autocomplete/blob/00979884732ce00f9dfa0b2fb5f37d9d837048dd/src/status.js>
 - Base UI Combobox (`Combobox.Status` の JSDoc は同梱の `node_modules/@base-ui/react/combobox/status/ComboboxStatus.d.ts`): <https://base-ui.com/react/components/combobox>
 - React docs `useEffectEvent`: <https://react.dev/reference/react/useEffectEvent>
 - TanStack Query `useSuspenseQuery` (Suspend の条件は `isPending`): <https://tanstack.com/query/latest/docs/framework/react/reference/useSuspenseQuery>

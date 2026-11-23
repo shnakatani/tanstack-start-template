@@ -35,7 +35,7 @@ axe の検査の置き場所と読み方、抑制の書き方、読み上げの�
 
 axe の結果が緑でも、「測った」ことも「WCAG を満たした」ことも意味しない。緑を測った証明とせず、測った件数を別に要求する。
 
-- `passes` に入ったことは「測った」の証明にならない。`color-contrast` は、画面に出ていない要素を合格にする (`axe.js` の `_isVisibleOnScreen` 分岐、`messageKey: 'hidden'`)。この空振りは `passes` にも数えられるので、`passes` の件数を見ても捕まえられない
+- `passes` に入ったことは「測った」の証明にならない。2026-09-21 に読んだ axe-core 4.13.0 の `axe.js` では、`color-contrast` は画面に出ていない要素を合格にしていた (`_isVisibleOnScreen` の分岐、`messageKey: 'hidden'`)。この空振りは `passes` にも数えられるので、`passes` の件数を見ても捕まえられない
 - この形は axe に固有ではない。前件が成立しないまま成立する assertion は vacuous pass と呼ばれ、定石は「失敗を厳しくする」ではなく「実際に測った件数が 0 でないことを別に要求する」である
 - `expectNoA11yViolations` (`src/test/a11y/a11y.ts`) の `passes.length > 0` はその粗い版で、ルール単位では見ていない。捕まえるのはルールが 1 つも走らなかった場合 (対象が空、設定で全ルールが外れた) だけで、`hidden` の空振りは捕まえない
 - `passes` の件数を要求するのはブラウザテストの層だけで、story の層 (`addon-a11y`) は `passes` を見ない。story の層で空振りの緑を落とすものは無い
@@ -47,19 +47,19 @@ axe の結果が緑でも、「測った」ことも「WCAG を満たした」�
 
 - 緑を静かに壊す設定が 2 つある。どちらも既定では無効なので、触らない
 
-| 設定                                                 | 起きること                                                                                 |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `resultTypes`                                        | 含まれない group の `nodes` を先頭 1 件へ切り詰める。`incomplete` の件数が黙って過少になる |
-| `contrastRatio.normal.minThreshold` / `maxThreshold` | 比が範囲外のとき合格になる (`axe.js` の evaluate の冒頭)                                   |
+| 設定                                                 | 起きること                                                                                                                                              |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resultTypes`                                        | 含まれない group の `nodes` を 1 件までに減らす ([axe-core docs「API」][] の Options Parameter の `resultTypes`)。`incomplete` の件数が黙って過少になる |
+| `contrastRatio.normal.minThreshold` / `maxThreshold` | 比が範囲外のとき合格になっていた (2026-09-21 に読んだ axe-core 4.13.0 の `axe.js` の evaluate の冒頭)                                                   |
 
 - axe が担当するのは WCAG の一部だけである。2026-10-10 に `axe-core@4.14.0` で数えると、全 105 ルールのうち既定で走るのは 90 ルールで、それが受け持つ SC は 21 である。既定で走るルールは、`enabled: false` のルールと `experimental` のタグを持つルールを除いたもので、SC はそのルールに付いた `wcag111` の形のタグの種類で数える。[axe-core の `README.md`][] は「平均 57% を自動検出」と書く。色に関わる範囲は特に狭い
 
-| SC                      | axe のルール                                                                                                                                                       | 代わりに押さえるもの              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
-| 1.4.3 (文字 4.5:1)      | `color-contrast` 1 つ                                                                                                                                              | —                                 |
-| 1.4.11 (非テキスト 3:1) | 0 ルール                                                                                                                                                           | トークンの値を人が測る (ADR-0024) |
-| 1.4.1 (色の使用)        | `link-in-text-block` だけ                                                                                                                                          | 本文中のリンク以外は見ない        |
-| `::placeholder`         | 評価しない。値が空の入力欄は要素の `color` で測り、基準に届かなければ incomplete (`emptyValue`)、届けば合格にする ([dequelabs/axe-core#5359][]、`axe-core@4.14.0`) | 人が見比べる (ADR-0025)           |
+| SC                      | axe のルール                                                                                                                                                                                            | 代わりに押さえるもの              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| 1.4.3 (文字 4.5:1)      | `color-contrast` 1 つ                                                                                                                                                                                   | —                                 |
+| 1.4.11 (非テキスト 3:1) | 0 ルール                                                                                                                                                                                                | トークンの値を人が測る (ADR-0024) |
+| 1.4.1 (色の使用)        | `link-in-text-block` だけ                                                                                                                                                                               | 本文中のリンク以外は見ない        |
+| `::placeholder`         | 2026-10-10 時点 (`axe-core@4.14.0`) の記録では、評価しなかった。値が空の入力欄は要素の `color` で測り、基準に届かなければ incomplete (`emptyValue`)、届けば合格にしていた ([dequelabs/axe-core#5359][]) | 人が見比べる (ADR-0025)           |
 
 ### `incomplete` は混成のバケツ
 
@@ -276,10 +276,10 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 名前が要るかと与え方は、[WCAG 2.2 SC 4.1.2][] と、[APG「Providing Accessible Names and Descriptions」][] の Accessible Name Guidance by Role に従う。APG は規格を満たす作り方を示す informative な資料で、要件ではない ([APG「Introduction」][] の APG is Not a Normative Standard)。迷ったら与える側に倒し、与えない判断をしたら理由を実装の近くに残す。この節には、このリポジトリの部品で踏みやすい落とし穴だけを書く。
 
-- Base UI 1.8.0 の Select と Combobox の trigger は、Base UI の Field.Label があればそれを、無ければ Select.Label か Combobox.Label を `aria-labelledby` で指す (`@base-ui/react` の `utils/resolveAriaLabelledBy.js`)。このリポジトリの `FieldLabel` は素の `<label>`、`SelectLabel` と `ComboboxLabel` は GroupLabel なので、どれも指されない。trigger を見える label で名付けるときは、label に id を付けて trigger の `aria-labelledby` で指す (`src/components/parts/form-fields.tsx` の `FormSelectField`)
-- Base UI 1.8.0 の Checkbox と Radio は、既定 (`nativeButton` が false) では根が `span` で、隠れた input に `<label htmlFor>` を結ぶか、`<label>` で包むと、その label の id を根の `aria-labelledby` に写す。写すのはクライアントの layout effect の中なので (`internals/labelable-provider/useAriaLabelledBy.js`)、サーバーが返す HTML の時点では根に名前が無い。サーバーの HTML から名前を持たせるときは、label に id を付けて根の `aria-labelledby` で指す (`FormCheckboxField`)
+- 2026-10-06 に読んだ `@base-ui/react` 1.8.0 の `utils/resolveAriaLabelledBy.js` では、Select と Combobox の trigger は、Base UI の Field.Label があればそれを、無ければ Select.Label か Combobox.Label を `aria-labelledby` で指していた。このリポジトリの `FieldLabel` は素の `<label>`、`SelectLabel` と `ComboboxLabel` は GroupLabel なので、どれも指されない。trigger を見える label で名付けるときは、label に id を付けて trigger の `aria-labelledby` で指す (`src/components/parts/form-fields.tsx` の `FormSelectField`)
+- 2026-10-06 に読んだ `@base-ui/react` 1.8.0 では、Checkbox と Radio は、既定 (`nativeButton` が false) では根が `span` で、隠れた input に `<label htmlFor>` を結ぶか、`<label>` で包むと、その label の id を根の `aria-labelledby` に写していた。写すのはクライアントの layout effect の中だったので (`internals/labelable-provider/useAriaLabelledBy.js`)、サーバーが返す HTML の時点では根に名前が無かった。サーバーの HTML から名前を持たせるときは、label に id を付けて根の `aria-labelledby` で指す (`FormCheckboxField`)
 - 入力欄を popup の中に置くと、Combobox の trigger は combobox になる (`combobox/trigger/ComboboxTrigger.js` の `inputInsidePopup`)。このリポジトリの `ComboboxTrigger` は既定で `aria-label="候補を開く"` を持つので、この形では欄の名前を `aria-label` か `aria-labelledby` で渡す。popup の中の `ComboboxInput` は既定 (`showTrigger`) で名前を渡せない trigger を内に持ち、それも combobox になるので、`showTrigger={false}` にする。`aria-labelledby` は `aria-label` より先に名前に使われる ([accname 1.2][] の 2B LabelledBy と 2D AriaLabel)
-- Base UI 1.8.0 の Select と Combobox の listbox (Combobox の `grid` では grid) は、Select.Label や Combobox.Label を置いても名前を持たない (`select/list/SelectList.js`、`combobox/list/ComboboxList.js`)。listbox には欄の名前を付ける。[APG「Providing Accessible Names and Descriptions」][] の表の listbox と grid の行は名前を Required とし、APG の [Select-Only Combobox の例][APG「Select-Only Combobox Example」] は listbox に欄のラベルを `aria-labelledby` で指し、[Editable Combobox With List Autocomplete の例][APG「Editable Combobox With List Autocomplete Example」] は listbox に `aria-label` で名前 ("States") を付ける。このリポジトリの `SelectContent` と `ComboboxList` は名前の属性を型で必須にする (空文字までは止めない。`SelectContent` は受けた名前を listbox へ渡し、`FormSelectField` は見える label を `aria-labelledby` で指す)。axe-core 4.14.0 は combobox の popup の listbox を名前の検査から外し (`no-naming-method-matches`)、grid は名前を必須のロールとして扱わない (`accessibleNameRequired: false`) ので、story の axe では名前の欠けを検出できない
+- 2026-10-06 に読んだ `@base-ui/react` 1.8.0 では、Select と Combobox の listbox (Combobox の `grid` では grid) は、Select.Label や Combobox.Label を置いても名前を持たなかった (`select/list/SelectList.js`、`combobox/list/ComboboxList.js`)。listbox には欄の名前を付ける。[APG「Providing Accessible Names and Descriptions」][] の表の listbox と grid の行は名前を Required とし、APG の [Select-Only Combobox の例][APG「Select-Only Combobox Example」] は listbox に欄のラベルを `aria-labelledby` で指し、[Editable Combobox With List Autocomplete の例][APG「Editable Combobox With List Autocomplete Example」] は listbox に `aria-label` で名前 ("States") を付ける。このリポジトリの `SelectContent` と `ComboboxList` は名前の属性を型で必須にする (空文字までは止めない。`SelectContent` は受けた名前を listbox へ渡し、`FormSelectField` は見える label を `aria-labelledby` で指す)。2026-10-10 時点 (axe-core 4.14.0) の記録では、axe は combobox の popup の listbox を名前の検査から外し (`no-naming-method-matches`)、grid を名前が必須のロールとして扱っていなかった (`accessibleNameRequired: false`) ので、story の axe では名前の欠けを検出できなかった
 - registry の `Spinner` は `role="status"` と `aria-label="Loading"` だけを持ち、中身の文字を持たない。`aria-hidden` にして見た目だけに使い、読み込み中であることは「読み込み中の表示を組む」の形で伝える
 - `status` に、中身と同じ文言の名前を付けない。[APG「Providing Accessible Names and Descriptions」][] の表の status の行は "Some screen readers announce the name of a status element before announcing the content of the status element." と書く
 - 名前の文字を、inline でない子要素 (flex や grid の item、block、inline-block) へ分けない。2026-10-06 に Playwright 1.63.0 の Chromium 153.0.8010.12 で、button に `<span>Ab</span><span>cd</span>` を置くと、子が inline なら名前は `Abcd`、親が flex か grid、または子が block か inline-block なら `Ab cd` だった。子の境界で空白を入れるかは仕様で決まっていない ([accname 1.2][] の 2F の注記、[w3c/accname#225][])
@@ -319,10 +319,10 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ### ナビゲーションを組む
 
-- サイトやページの中を移動するリンクのまとまりは `<nav>` で包む ([APG「Landmark Regions」][] の Navigation)。`role="navigation"` は `jsx-a11y/prefer-tag-over-role` が止める (2026-10-05、oxlint 1.85.0)
+- サイトやページの中を移動するリンクのまとまりは `<nav>` で包む ([APG「Landmark Regions」][] の Navigation)。`role="navigation"` で代えると、`role` の属性より意味を持つタグを求める `jsx-a11y/prefer-tag-over-role` ([Oxlint docs「jsx-a11y/prefer-tag-over-role」][]) に止められる (2026-10-05 に oxlint 1.85.0 で観測)
 - 1 ページに `<nav>` が複数あるときは、それぞれに区別できる名前を与える。見出しがあれば `aria-labelledby` で指し、無ければ `aria-label` を渡す。名前に「ナビゲーション」を含めない。ロールと重ねて読まれる。同じリンクの組を 2 か所に置くときは同じ名前にする ([APG「Landmark Regions」][] の Step 3: Label areas と Navigation)
 - 現在のページを指す項目に `aria-current="page"` を付ける。1 つのまとまりの中で current にするのは 1 つだけにする ([WAI-ARIA 1.2][] の `aria-current`)
-- TanStack Router の `Link` は、active のときに `aria-current="page"` を自分で付ける ([TanStack Router の `link.tsx`][])。手で書くのは、`Link` を使わずに現在地を示すときだけにする
+- 2026-10-05 に読んだ `@tanstack/react-router` 1.170.39 の `Link` は、active のときに `aria-current="page"` を自分で付けていた ([TanStack Router の `link.tsx`][])。手で書くのは、`Link` を使わずに現在地を示すときだけにする
 - `Link` の active の判定は、既定では path の前方一致である ([TanStack Router docs「Navigation」][] の Active Options)。同じ `<nav>` に親と子の path へのリンクが並ぶと、子のページで両方が current になるので、親へのリンクに `activeOptions={{ exact: true }}` を渡す
 
 ### ダイアログの閉じる手段を残す
@@ -332,7 +332,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に、Storybook docs「Accessibility testing」の引用は 2026-10-08 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。Vitest は 5.0.1、TanStack Router は `@tanstack/react-router` 1.170.39 に固定した版を指す。WAI-ARIA 1.2、WCAG 2.2、APG の引用は 2026-10-05 に、APG「Providing Accessible Names and Descriptions」と「Introduction」と combobox の 2 つの例、accname 1.2 の引用は 2026-10-06 に、Storybook docs「Accessibility testing」の引用は 2026-10-08 に、Oxlint docs「jsx-a11y/prefer-tag-over-role」は 2026-11-23 に、生成元の oxlint 1.94.0 のルールのソース ([oxlint 1.94.0 の `prefer_tag_over_role.rs`][] の DOCUMENTATION) と照らした。
 
 [shadcn docs「Item」]: https://ui.shadcn.com/docs/components/base/item
 [shadcn-ui/ui#11532]: https://github.com/shadcn-ui/ui/issues/11532
@@ -355,9 +355,9 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 [w3c/aria#1317]: https://github.com/w3c/aria/issues/1317
 [ARIA in HTML]: https://www.w3.org/TR/html-aria/
 [WAI-ARIA 1.2]: https://www.w3.org/TR/wai-aria-1.2/
-[a11ysupport.io の `aria-busy.json`]: https://github.com/accessibilitysupported/a11ysupport.io/blob/master/data/tests/tech/aria/aria-busy.json
+[a11ysupport.io の `aria-busy.json`]: https://github.com/accessibilitysupported/a11ysupport.io/blob/6730ad42e83dd780f63555ab3f14f1c26ea0fae5/data/tests/tech/aria/aria-busy.json
 [w3c/aria#2737]: https://github.com/w3c/aria/issues/2737
-[Cloudscape の `src/table/skeleton-rows.tsx`]: https://github.com/cloudscape-design/components/blob/main/src/table/skeleton-rows.tsx
+[Cloudscape の `src/table/skeleton-rows.tsx`]: https://github.com/cloudscape-design/components/blob/1730cc9f3599854c6e9f1a694f4a63b2599b210d/src/table/skeleton-rows.tsx
 [Primer docs「Loading」]: https://primer.style/product/ui-patterns/loading/
 [Adrian Roselli「More Accessible Skeletons」]: https://adrianroselli.com/2020/11/more-accessible-skeletons.html
 [WAI-ARIA 1.3 Editor's Draft]: https://w3c.github.io/aria/
@@ -365,7 +365,7 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 [APG「Landmark Regions」]: https://www.w3.org/WAI/ARIA/apg/practices/landmark-regions/
 [WCAG 2.2 SC 1.1.1]: https://www.w3.org/TR/WCAG22/#non-text-content
 [WCAG 2.2 SC 1.4.1]: https://www.w3.org/TR/WCAG22/#use-of-color
-[TanStack Router の `link.tsx`]: https://github.com/TanStack/router/blob/b1e54dee82e8ed5850daa7f6efd04a56c1aeeae6/packages/react-router/src/link.tsx#L569
+[TanStack Router の `link.tsx`]: https://github.com/TanStack/router/blob/ddad69a4a4b18c19e3fcc510ac1e21f9dab883a7/packages/react-router/src/link.tsx#L569
 [TanStack Router docs「Navigation」]: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.39/docs/router/guide/navigation.md
 [APG「Providing Accessible Names and Descriptions」]: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
 [accname 1.2]: https://www.w3.org/TR/accname-1.2/
@@ -374,3 +374,6 @@ route の pending 表示 (ページ全体を置き換える skeleton と `Pendin
 [APG「Introduction」]: https://www.w3.org/WAI/ARIA/apg/about/introduction/
 [APG「Select-Only Combobox Example」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/
 [APG「Editable Combobox With List Autocomplete Example」]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/
+[Oxlint docs「jsx-a11y/prefer-tag-over-role」]: https://oxc.rs/docs/guide/usage/linter/rules/jsx_a11y/prefer-tag-over-role.html
+[oxlint 1.94.0 の `prefer_tag_over_role.rs`]: https://github.com/oxc-project/oxc/blob/229b69bf10a9c876f84287123fdf9d5e0747c96b/crates/oxc_linter/src/rules/jsx_a11y/prefer_tag_over_role.rs#L25-L50
+[axe-core docs「API」]: https://github.com/dequelabs/axe-core/blob/v4.14.1/doc/API.md#options-parameter

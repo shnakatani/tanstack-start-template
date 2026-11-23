@@ -107,7 +107,7 @@ story の層は `addon-a11y` の判定をそのまま使い、読み直す層を
 
 ### 受け入れる穴
 
-`color-contrast` の `incomplete` は 7 通りで、どれも「比が通っていることを確認できていない」側である (`axe.js` の `color-contrast` evaluate、2026-10-10 に `axe-core@4.14.0` で確認)。
+2026-10-10 に `axe-core@4.14.0` の `axe.js` の `color-contrast` evaluate を読むと、`color-contrast` の `incomplete` は 7 通りで、どれも「比が通っていることを確認できていない」側だった。
 
 | 分岐                             | 意味                                                                         |
 | -------------------------------- | ---------------------------------------------------------------------------- |
@@ -146,9 +146,9 @@ story でこれらに当たる箇所は、CI では緑のまま測られてい�
 
 ## 出典
 
-- Storybook の a11y テスト (`test` の 3 値、Recommended workflow、Incomplete の位置づけ、CI での `todo`): https://storybook.js.org/docs/writing-tests/accessibility-testing
+- Storybook の a11y テスト (`test` の 3 値、Recommended workflow、Incomplete の位置づけ、CI での `todo`。2026-11-23 に `v10.6.7` のタグの原文を確認): https://github.com/storybookjs/storybook/blob/v10.6.7/docs/writing-tests/accessibility-testing.mdx
 - Storybook: Vitest addon: https://storybook.js.org/docs/writing-tests/integrations/vitest-addon
-- `incomplete` は人が見る対象という位置づけ: https://github.com/dequelabs/axe-core/blob/develop/doc/API.md
+- `incomplete` は人が見る対象という位置づけ: https://github.com/dequelabs/axe-core/blob/c54d1aa2decef1657e0430aec7768a3c7c103801/doc/API.md
 - Deque の用語集 (Needs Review / Incomplete): https://docs.deque.com/devtools-for-web/4/en/glossary/
 - 失敗にするのが怖いものを review へ回す設計: https://github.com/dequelabs/axe-core/issues/3486
 - pa11y が incomplete の格下げレバーを足した PR: https://github.com/pa11y/pa11y/pull/685
