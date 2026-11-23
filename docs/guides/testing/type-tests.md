@@ -22,12 +22,12 @@
 
 Vitest は `--typecheck` (`typecheck.enabled`) で `.test-d.ts` を型検査し、テスト結果として数える。このリポジトリは有効にしない。
 
-| 理由                                                                                    | 出典                                                                                                                                                                                            |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| experimental の機能で、SemVer に沿わない変更がありうる                                  | [Vitest docs「typecheck」][] の見出し `typecheck <Experimental />`、実行時の警告 "please pin Vitest's version" (2026-09-28 に v4.1.11 と v5.0.2 で観測)                                         |
-| checker の既定は `tsc` で、`typescript` パッケージを直接の依存に置くことになる          | [Vitest docs「typecheck」][] の typecheck.checker: "`tsc` requires `typescript` package"。置かない理由は `docs/guides/dependencies-and-toolchain.md`「`typescript` を直接の依存に置かない理由」 |
-| Vitest の `projects` の中で有効にすると、checker が残ってプロセスが終わらないことがある | [vitest-dev/vitest#9494][] (2026-09-28 時点で open)                                                                                                                                             |
-| 同じ型の食い違いは `vp check` が落とすので、検出できる範囲は変わらない                  | [oxc-project/oxc#19571][] (`--type-check` を使うなら tsc の実行は不要)。2026-09-28 に `.test-d.ts` へ置いた型の不一致で `vp check` が exit 1 になることを実測                                   |
+| 理由                                                                                                             | 出典                                                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| experimental の機能で、SemVer に沿わない変更がありうる                                                           | [Vitest docs「typecheck」][] の見出し `typecheck <Experimental />`、実行時の警告 "please pin Vitest's version" (2026-09-28 に v4.1.11 と v5.0.2 で観測)                                         |
+| checker の既定は `tsc` で、`typescript` パッケージを直接の依存に置くことになる                                   | [Vitest docs「typecheck」][] の typecheck.checker: "`tsc` requires `typescript` package"。置かない理由は `docs/guides/dependencies-and-toolchain.md`「`typescript` を直接の依存に置かない理由」 |
+| 2026-09-28 時点の記録: Vitest の `projects` の中で有効にすると、checker が残ってプロセスが終わらないことがあった | [vitest-dev/vitest#9494][] (2026-11-04 に completed で閉じた)                                                                                                                                   |
+| 同じ型の食い違いは `vp check` が落とすので、検出できる範囲は変わらない                                           | [oxc-project/oxc#19571][] (`--type-check` を使うなら tsc の実行は不要)。2026-09-28 に `.test-d.ts` へ置いた型の不一致で `vp check` が exit 1 になることを実測                                   |
 
 型テストが `vp check` の検査から外れる経路は、lint の設定の検査が押さえる。`lint.options.typeCheck` の値と、追跡しているソースが lint の対象に入っていることを、`scripts/checks/integrity/lint-config.test.ts` が確かめる。
 
