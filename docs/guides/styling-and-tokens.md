@@ -332,7 +332,7 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。WCAG 2.2 の SC の文言は 2026-10-05 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn-ui/lint docs の「no-restyle」と「Rules」は `@shadcn/lint` 0.2.5 に固定した版を指し、引いた Limits と Contracts は 2026-11-23 にその版の原文と照らした。WCAG 2.2 の SC の文言は 2026-10-05 に原文と照らした。
 
 本文は引かないが、調べたときに読んだもの:
 
@@ -346,11 +346,11 @@ ADR-0024 の Context は、上流生成物の値を oklch から sRGB へ変換�
 [Tailwind CSS docs「Styling with utility classes」]: https://tailwindcss.com/docs/styling-with-utility-classes#using-components
 [shadcn の `button.tsx`]: https://github.com/shadcn-ui/ui/blob/shadcn@4.21.0/apps/v4/registry/bases/base/ui/button.tsx
 [shadcn-ui/lint docs「require-static-classes」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/require-static-classes.md
-[shadcn-ui/lint docs「no-restyle」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules/no-restyle.md
+[shadcn-ui/lint docs「no-restyle」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules/no-restyle.md
 [shadcn-ui/lint docs「Configuring your design system」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.0/docs/design-systems.md
 [shadcn-ui/lint#4]: https://github.com/shadcn-ui/lint/issues/4
 [shadcn-ui/lint#18]: https://github.com/shadcn-ui/lint/issues/18
-[shadcn-ui/lint docs「Rules」]: https://github.com/shadcn-ui/lint/blob/main/docs/rules.md
+[shadcn-ui/lint docs「Rules」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules.md
 [Understanding SC 1.4.3]: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
 [Understanding SC 1.4.11]: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
 [WCAG 2.2 SC 1.4.3]: https://www.w3.org/TR/WCAG22/#contrast-minimum
