@@ -36,6 +36,8 @@ export function createDb(fileName: string = requireDbFileName()) {
     );
   }
   const sqlite = new Database(fileName, { fileMustExist: true });
+  // SQLite は外部キーの検査の既定を約束しないので、接続ごとに有効にする (docs/guides/database.md「外部キーの検査を接続で有効にする理由」)
+  sqlite.pragma("foreign_keys = ON");
   return drizzle(sqlite, { schema });
 }
 
