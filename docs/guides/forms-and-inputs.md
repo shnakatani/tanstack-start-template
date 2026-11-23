@@ -14,7 +14,7 @@
 
 ### スキーマを書く
 
-- client に送らせないフィールドがあるときは、保存済みスキーマから `v.omit` で入力スキーマを派生させる (ADR-0013)。派生元が `v.object` なら、未知のキーは reject されず黙って strip される。これは `v.omit` ではなく `v.object` の性質で、`v.strictObject` から派生させると同じ入力が reject された (2026-09-02 時点 (valibot 1.4.2) の記録)。どちらの挙動を意図したかをテストで固定する
+- client に送らせないフィールドがあるときは、保存済みスキーマから `v.omit` で入力スキーマを派生させる (ADR-0013)。派生元が `v.object` なら、未知のキーは reject されず黙って strip される。これは `v.omit` ではなく `v.object` の性質で、`v.strictObject` から派生させると同じ入力が reject される ([valibot docs「object」][] と [valibot docs「strictObject」][] の Explanation)。どちらの挙動を意図したかをテストで固定する
 - 入力用と保存用で pipe が分かれる項目 (入力側だけが `v.trim()` を持つ項目など) の呼称は、`TInput` を型引数で与えた 1 つの `v.metadata` action を両方の pipe に渡す。型引数も注釈も無い action は `TInput` が `unknown` に推論され、`v.pipe` に入らない
 - `@valibot/to-json-schema` を使うときは、`title` / `description` の action も同じ pipe に足せる。呼称の出処はスキーマ 1 つのまま保てる
 - フォームの `onSubmit` では、値を `v.parse(<入力スキーマ>, value)` に通してから送る。TanStack Form は validator に渡したスキーマの変換 (`v.trim()` など) を値に反映しない。[TanStack Form docs「Submission Handling」][] の "Transforming data with Standard Schemas" は "The value passed to the `onSubmit` function will always be the input data." と書き、`onSubmit` の中でスキーマに通すよう案内する。変換を手で書き写すと、スキーマに変換を足したときに送信値だけが古くなる
@@ -289,7 +289,7 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 
 ## 出典
 
-本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn-ui/lint docs「Rules」は `@shadcn/lint` 0.2.5 に固定した版を指し、2026-11-23 に原文と照らした。
+本文の出典の名前がリンクになっている。名前と URL の対応は、この節のソースにあるリンクの定義が持つ。shadcn-ui/lint docs「Rules」は `@shadcn/lint` 0.2.5 に固定した版を指し、2026-11-23 に原文と照らした。valibot docs の「object」と「strictObject」は valibot 1.5.0 に固定した版を指し、2026-11-23 に原文と照らした。
 
 [TanStack Form docs「Submission Handling」]: https://tanstack.com/form/latest/docs/framework/react/guides/submission-handling
 [valibot docs「Parse data」]: https://valibot.dev/guides/parse-data/
@@ -328,3 +328,5 @@ Base UI の `Select` は、候補が変わって現在値が候補から消え�
 [TanStack Router docs「Type Utilities」]: https://tanstack.com/router/latest/docs/guide/type-utilities
 [TanStack Router docs「Link Options」]: https://tanstack.com/router/latest/docs/guide/link-options
 [shadcn-ui/lint docs「Rules」]: https://github.com/shadcn-ui/lint/blob/%40shadcn/lint%400.2.5/docs/rules.md#categories
+[valibot docs「object」]: https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/%28schemas%29/object/index.mdx
+[valibot docs「strictObject」]: https://github.com/open-circle/valibot/blob/v1.5.0/website/src/routes/api/%28schemas%29/strictObject/index.mdx
