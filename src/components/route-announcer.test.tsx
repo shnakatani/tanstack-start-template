@@ -97,9 +97,10 @@ function createAnnouncedRouter(
     errorComponent: PageRouteError,
   });
   // component の chunk の読み込みに失敗する。automatic code splitting と同じく lazyRouteComponent で包む。
-  // lazyRouteComponent は失敗を記録して描画の時に throw し、router の読み込みを失敗させないので、
-  // title に「エラー: 」は付かない。reject の文言は module の取得の失敗の形 (Failed to fetch dynamically
-  // imported module など) で始めない。始めると lazyRouteComponent がテストのページを読み込み直す
+  // lazyRouteComponent は失敗を記録して描画の時に throw し、preload を reject しないので、match の status は
+  // success のままで title に「エラー: 」は付かない。reject の文言は module の取得の失敗の形
+  // (Failed to fetch dynamically imported module など) で始めない。始めると lazyRouteComponent が
+  // テストのページを読み込み直す
   const chunkFailsOptions = pageRouteOptions("ChunkFails");
   const chunkFails = createRoute({
     ...chunkFailsOptions,
@@ -310,8 +311,8 @@ it("描画中の throw でエラー画面へ移ると、失敗の見出しへ移
   expect(readAnnouncements()).toEqual([`Throws — ${APP_NAME}`]);
 });
 
-// 描画中の throw と同じく、title から失敗が伝わらない場面。上流が chunk の読み込みの失敗で router の読み込みを
-// 失敗させるように変わると、title に「エラー: 」が付いてこのテストが落ちる
+// 描画中の throw と同じく、title から失敗が伝わらない場面。上流が chunk の読み込みの失敗で match の status を
+// error にするように変わると、title に「エラー: 」が付いてこのテストが落ちる
 it("component の chunk の読み込みに失敗してエラー画面へ移ると、失敗の見出しへ移し、title は「エラー: 」を付けずに読み上げる", async () => {
   const router = createAnnouncedRouter();
   const screen = await render(<RouterProvider router={router} />);

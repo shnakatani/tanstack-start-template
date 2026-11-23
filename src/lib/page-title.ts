@@ -24,7 +24,7 @@ export interface PageTitleContext {
  *
  * 自分の match の `status` が `"error"` (loader・beforeLoad の失敗) なら前に `エラー: ` を足す (ADR-0035)。
  * 描画中の throw は `head()` の後に起き、`status` を変えないので付かない。component の chunk の読み込みの失敗も
- * 付かない。`lazyRouteComponent` が失敗を記録して描画の時に throw し、router の読み込みを失敗させない
+ * 付かない。`lazyRouteComponent` が失敗を記録して描画の時に throw し、preload を reject しないので `status` は変わらない
  */
 export function pageTitle(
   ctx: PageTitleContext,

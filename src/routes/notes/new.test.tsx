@@ -179,9 +179,9 @@ describe("/notes/new route", () => {
     await expect.element(titleTextbox(screen)).toHaveFocus();
   });
 
-  // lazyRouteComponent は chunk の読み込みの失敗を記録して描画の時に throw し、router の読み込みを失敗させない。
-  // match の status は success のままなので、title に「エラー: 」は付かない。上流が読み込みを失敗させるように
-  // 変わると、title に「エラー: 」が付いてこのテストが落ちる
+  // lazyRouteComponent は chunk の読み込みの失敗を記録して描画の時に throw し、preload を reject しない。
+  // match の status は success のままなので、title に「エラー: 」は付かない。上流が preload の失敗で status を
+  // error にするように変わると、title に「エラー: 」が付いてこのテストが落ちる
   it("chunk の読み込みに失敗しても、title は「エラー: 」を付けずにダイアログの名前とアプリ名で組む", async () => {
     mockCreateRouteChunk().mockRejectedValue(new Error("chunk の読み込みの失敗"));
     // 前のテストが反映した title で通らないよう、描く前に空へ戻す
