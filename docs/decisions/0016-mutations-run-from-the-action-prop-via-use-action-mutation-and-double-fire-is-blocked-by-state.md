@@ -22,9 +22,8 @@ mutation を持つのは、ダイアログのフォームから項目を追加�
 
 mutation 以外のユーザー操作由来の更新は、`src/hooks/use-route-retry.ts` の `useRouteRetry` が返す再試行 (Error Boundary の `reset()` と `router.invalidate()`) と、ダイアログの開閉 (Base UI の handle) があった。
 
-ルート遷移は既に Transition である。
-`@tanstack/router-core` は match の commit を `router.startTransition` へ渡し (`load-client.js`)、`@tanstack/react-router` の `Transitioner` がそれを `React.startTransition` で包む。
-2026-09-13 に router-core 1.171.27 と react-router 1.170.32 の dist で確認した。
+ルート遷移は既に Transition で包まれていた。
+2026-09-13 に router-core 1.171.27 と react-router 1.170.32 の dist で確かめると、`@tanstack/router-core` は match の commit を `router.startTransition` へ渡し (`load-client.js`)、`@tanstack/react-router` の `Transitioner` がそれを `React.startTransition` で包んでいた。
 
 ### 制約: registry の Button に action prop は無い
 

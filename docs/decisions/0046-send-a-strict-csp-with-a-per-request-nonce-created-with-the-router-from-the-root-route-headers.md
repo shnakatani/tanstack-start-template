@@ -49,14 +49,14 @@ TanStack Start docs「Middleware」は CSP を middleware の用途に挙げ、r
 
 root の `headers` が CSP を付ける応答は次のとおりである。本番ビルドを起動し、表の「確かめ方」の URL を取得して確かめた (2026-10-31、`@tanstack/react-start` 1.169.4、nitro 3.0.260903-beta)。
 
-| 応答                                                               | CSP      | 確かめ方                                                                                                                     |
-| ------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| SSR の 200                                                         | 付く     | `/` を取得                                                                                                                   |
-| どの route にも当たらない URL の 404 (root の `notFoundComponent`) | 付く     | 存在しない path を取得                                                                                                       |
-| SSR の loader が throw した 500                                    | 付く     | DB のファイルが無い状態で、loader で DB を読む route を取得                                                                  |
-| request middleware が返す応答                                      | 付かない | 別 origin の `Origin` を付けて `/_serverFn/<id>` に POST し、CSRF の middleware が返す 403 (`text/plain`) を見た             |
-| server route と server function の応答                             | 付かない | 観測していない。root の `headers` は SSR で match を描くときだけ呼ばれる (router-core 1.171.39 の `dist/esm/load-server.js`) |
-| 静的な asset                                                       | 付かない | ビルド出力の CSS を取得                                                                                                      |
+| 応答                                                               | CSP      | 確かめ方                                                                                                                                                 |
+| ------------------------------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SSR の 200                                                         | 付く     | `/` を取得                                                                                                                                               |
+| どの route にも当たらない URL の 404 (root の `notFoundComponent`) | 付く     | 存在しない path を取得                                                                                                                                   |
+| SSR の loader が throw した 500                                    | 付く     | DB のファイルが無い状態で、loader で DB を読む route を取得                                                                                              |
+| request middleware が返す応答                                      | 付かない | 別 origin の `Origin` を付けて `/_serverFn/<id>` に POST し、CSRF の middleware が返す 403 (`text/plain`) を見た                                         |
+| server route と server function の応答                             | 付かない | 観測していない。2026-10-31 に読んだ router-core 1.171.39 の `dist/esm/load-server.js` では、root の `headers` は SSR で match を描くときだけ呼ばれていた |
+| 静的な asset                                                       | 付かない | ビルド出力の CSS を取得                                                                                                                                  |
 
 ### 静的な 6 つを `routeRules` に残す理由
 

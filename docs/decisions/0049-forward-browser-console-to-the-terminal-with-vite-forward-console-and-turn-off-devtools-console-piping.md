@@ -35,7 +35,7 @@
 
 ### Storybook の dev と story のテスト
 
-`@storybook/builder-vite` 10.6.5 (`@storybook/tanstack-react` 10.6.5 が使う) は `vite.config.ts` の設定を読むが、dev server を作るときに `server` を自分の値で丸ごと差し替える (`dist/index.js` の `createViteServer`)。Storybook docs「Vite」は、builder の設定を変える口に `viteFinal` と `mergeConfig` を案内する。
+2026-11-07 に読んだ `@storybook/builder-vite` 10.6.5 (`@storybook/tanstack-react` 10.6.5 が使う) の `dist/index.js` の `createViteServer` は、`vite.config.ts` の設定を読むが、dev server を作るときに `server` を自分の値で丸ごと差し替えていた。Storybook docs「Vite」は、builder の設定を変える口に `viteFinal` と `mergeConfig` を案内する。
 
 2026-11-07 に Storybook の dev で story を開き、上と同じ 5 つを出した。
 
