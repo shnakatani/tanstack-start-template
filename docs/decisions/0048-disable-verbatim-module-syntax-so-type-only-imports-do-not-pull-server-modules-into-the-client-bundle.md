@@ -44,7 +44,7 @@ probe のモジュールはトップレベルで目印の文字列を `console.i
 | server function のファイルの `import { v }` (`v` を handler と、export しない型の `typeof v` で使う) | 入らない              | 入らない               | **入る**              | 入らない               |
 
 - 「Compiler なし」は `vite.config.ts` の `reactPlugin` を `compiler: false` にした build である
-- React Compiler を当てると、`true` でも漏れない。2026-11-04 に読んだ `@vitejs/plugin-react` 6.1.2 の `vite:react-compiler` は `enforce: "pre"` で、`include` (既定は `node_modules` の外の `/\.[tj]sx?$/`) に当たるすべてのファイルを、client と server の両方で `oxc-transform-react` に通していた。`oxc-transform-react` 0.152.0 は tsconfig を読まずに TypeScript の構文を外すので (`index.d.ts` の `TransformOptions` に TypeScript の option が無かった)、`vite:oxc` が tsconfig を読む前に、型にだけ使う import が消える
+- React Compiler を当てると、`true` でも漏れない。2026-11-04 に読んだ `@vitejs/plugin-react` 6.1.2 の `vite:react-compiler` は `enforce: "pre"` で、`include` (既定は `node_modules` の外の `/\.[tj]sx?$/`) に当たるすべてのファイルを、client と server の両方で `oxc-transform-react` に通していた。同じ日に読んだ `oxc-transform-react` 0.152.0 は tsconfig を読まずに TypeScript の構文を外していたので (`index.d.ts` の `TransformOptions` に TypeScript の option が無かった)、`vite:oxc` が tsconfig を読む前に、型にだけ使う import が消えていた
 - この働きは plugin の実装による。Compiler を外したとき、または plugin が TypeScript を外さなくなったときに、表の太字の経路が開く
 - `importProtection` が止めるのは、`files` と `specifiers` に当たるモジュールと、marker を import したモジュールだけである (TanStack Start docs「Import Protection」の How It Works と File Markers)。接尾辞も marker も無い server のモジュール (`process.env` から秘密を読むモジュールなど) は、太字の経路で黙って入る
 
