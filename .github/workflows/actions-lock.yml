@@ -26,12 +26,12 @@ jobs:
           persist-credentials: false
 
       # 拡張の版は Dependabot が上げないので手で上げる。手元で lockfile を作る拡張の版にそろえる。
-      # lockfile の version が拡張より新しいと、この step は exit 2 で落ちる。
       # 見直す条件: github/gh-actions-lock#293 の検査用の action が出たとき (ADR-0006)
       - run: gh extension install github/gh-actions-lock --pin v0.5.1
         env:
           GH_TOKEN: ${{ github.token }}
 
+      # lockfile の version が拡張の読める版より新しいと、この step は exit 2 で落ちる
       - run: gh actions-lock --verify
         env:
           GH_TOKEN: ${{ github.token }}
