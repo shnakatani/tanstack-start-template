@@ -106,7 +106,7 @@ core と、core が同梱する vite・rolldown・tsdown の脆弱性の alert �
 
 `pnpm update` は解決した版を宣言レンジへ書き戻す。pnpm 公式は「the range is moved onto the resolved version while the operator the dependency already declared is kept」と説明しており、仕様である。
 例外は `catalog:` で、「A dependency declared through the `catalog:` protocol is not rewritten in `package.json`. The catalog entry it points at is updated instead」となる。書き換えを止めるなら `--no-save` を渡す。
-依存の名前を付けない `pnpm update` は、pnpm 12.6.0 から `devEngines.runtime` の範囲を、12.17.0 から `packageManager` の版も書き換える。この扱いは ADR-0004 が持つ。
+依存の名前を付けない `pnpm update` は、pnpm 12.6.0 から `devEngines.runtime` も書き換える。この扱いは ADR-0004 が持つ。
 
 この性質があるため、`package.json` に書いた宣言レンジは「更新のたびに解決版へ寄る」ことを前提に選ぶ。
 operator を持たない `*` は operator ごと書き換えられるので、意図として維持できない。
