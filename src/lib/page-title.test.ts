@@ -56,7 +56,7 @@ it("error が notFound() 以外 (Error) なら not found 扱いしない", () =>
   expect(pageTitle(ctx)).toBe(`項目一覧 — ${APP_NAME}`);
 });
 
-it("自分の match の status が error (loader・beforeLoad の失敗) なら、前に「エラー: 」を足す", () => {
+it("自分の match の status が error (loader・beforeLoad などの読み込みの失敗) なら、前に「エラー: 」を足す", () => {
   const ctx = headContext({
     staticData: { pageName: "項目一覧" },
     status: "error",
