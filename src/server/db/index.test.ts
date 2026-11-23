@@ -100,6 +100,18 @@ describe("createDb", () => {
     expect(() => insertChild.run(2)).toThrow(/FOREIGN KEY constraint failed/);
   });
 
+  // SQLITE_OMIT_TRIGGER でビルドした SQLite では PRAGMA foreign_keys が何もしない。その構成は作れないので、
+  // pragma を「打っても何もせず、読むと 0」にして、検査が効かない接続を返さずに落とすことを見る
+  it("外部キーの検査が効かない SQLite なら、接続を返さずに throw する", () => {
+    using _pragma = vi
+      .spyOn(Database.prototype, "pragma")
+      .mockImplementation((source, options) =>
+        source === "foreign_keys" && options?.simple ? 0 : [],
+      );
+
+    expect(() => createDb(":memory:")).toThrow(/外部キーの検査を有効にできない/);
+  });
+
   // アプリは migration を当てないので、作った空の DB は最初のクエリで落ちるだけになる。作らずに落とす。
   // 例外は server のログに残す口 (ADR-0038) が残すので、ここで別に出すと 2 行になる
   it("DB のファイルが無ければ作らずに、開こうとしたパスを文言に入れて throw する", () => {
