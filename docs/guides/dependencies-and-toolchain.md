@@ -207,7 +207,7 @@ pin を足すときは、ADR-0005「pin には出口条件を書く」に従っ�
 - どの workflow も job を始めずに `startup_failure` で止まったら、手元で `gh actions-lock --verify` を打ち、`Not pinned` と出た action を確かめる。`actions-lock.yml` が使う action の entry が欠けると、`actions-lock` の job 自身も始まらず、ログに何も出ない (ADR-0006)
 - 拡張は `gh extension install github/gh-actions-lock --pin <版>` で入れ、`<版>` は `.github/workflows/actions-lock.yml` の `--pin` と同じにする。新しい拡張が書いた lockfile の `version` を CI の拡張が読めないと、verify の job が exit 2 で落ちる ([gh-actions-lock「troubleshooting」][] の「Lockfile version is newer than the extension」)
 - 別のリポジトリの reusable workflow の呼び出し (`jobs.<job_id>.uses`) は、lockfile が記録しないので `@<SHA> # vX.Y.Z` で書く (ADR-0006)。手元で `zizmor --fix=all` を使うと SHA へ書き換わる。SHA 固定は unsafe fix に分類され、既定の `--fix=safe` では書き換わらない
-- このリポジトリに置く composite action は、workflow から `uses: $/<path>` で呼ぶ。`./<path>` のままだと `gh actions-lock` が `local-action` で止まる。workflow の `./<path>` は `gh actions-lock --migrate-local-actions` が `$/<path>` へ書き換えるが、`action.yml` の中の `./<path>` は書き換えないので手で直す。GitHub Docs は `action.yml` も書き換えると書くが、gh-actions-lock 0.5.1 の README は action のファイルを書き換えないと書く ([GitHub Docs「Locking action dependencies in a repository's workflows」][]、[gh-actions-lock「README」][] の Limitations、ADR-0006)
+- このリポジトリに置く composite action は、workflow から `uses: $/<path>` で呼ぶ。ほかの action を使う composite action を `./<path>` で呼ぶと、`gh actions-lock` が `local-action` で止まる。workflow の `./<path>` は `gh actions-lock --migrate-local-actions` が `$/<path>` へ書き換えるが、`action.yml` の中の `./<path>` は書き換えないので手で直す ([gh-actions-lock「troubleshooting」][] の `local-action`、ADR-0006)
 - composite action の定義 (`action.yml`) の中の `uses:` は `@<SHA> # vX.Y.Z` で書く。ほかのリポジトリがこの action を使うと、こちらの lockfile が効かない。zizmor の `unpinned-uses` も、composite の step を lockfile と関係なく指摘する (ADR-0006)
 - container image (`docker://`、job の `container:` と `services:`) は lockfile が記録しないので、`@sha256:<digest>` で書く (ADR-0006)
 - `actions.lock` を手で書き換えず、消さない。壊したら default branch の版を `git checkout origin/main -- .github/workflows/actions.lock` で戻してから `gh actions-lock` を打つ。消して作り直すと、すべての ref をそのときの commit で解き直し、付け替えられた tag も警告なしに受け入れる ([gh-actions-lock「troubleshooting」][] の「Why you shouldn't delete the lockfile」)
@@ -369,7 +369,6 @@ Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて
 [dependabot/dependabot-core#4830]: https://github.com/dependabot/dependabot-core/issues/4830
 [dependabot-core「Dockerfile」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/npm_and_yarn/Dockerfile#L4-L9
 [dependabot-core「github_actions の Dockerfile」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/github_actions/Dockerfile
-[GitHub Docs「Locking action dependencies in a repository's workflows」]: https://docs.github.com/en/actions/how-tos/secure-your-work/lock-workflow-dependencies
 [GitHub Docs「Immutable releases」]: https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases
 [gh-actions-lock「README」]: https://github.com/github/gh-actions-lock/blob/d68b1a345a0aa02cf870cd0e0d78418d492d280d/README.md
 [gh-actions-lock「troubleshooting」]: https://github.com/github/gh-actions-lock/blob/d68b1a345a0aa02cf870cd0e0d78418d492d280d/docs/troubleshooting.md
