@@ -103,7 +103,7 @@ light と dark で同じ `mist-500` になる。
 - 入力済みと誤認してフィールドを飛ばす: https://www.nngroup.com/articles/form-design-placeholders/
 - 例示にも placeholder を使わないとする立場 (1.4.3 を理由に挙げる): https://design-system.service.gov.uk/components/text-input/
 - placeholder ごと deprecate した例 (比を上げると入力済みに見えるため): https://github.com/adobe/react-spectrum/issues/2935
-- 面ごとに対を列挙して CI で落とす例: https://github.com/primer/primitives/blob/main/scripts/colorContrast.config.ts
+- 面ごとに対を列挙して CI で落とす例: https://github.com/primer/primitives/blob/f48bc063f7bc0fb3e447386a8c259650ce46dea8/scripts/colorContrast.config.ts
 - 冗長な placeholder に 1.4.3 が掛かるかの議論 (2026-09-21 時点で open): https://github.com/w3c/wcag/issues/4343
 - WCAG 2.2 1.4.1 Use of Color: https://www.w3.org/TR/WCAG22/#use-of-color
 - WCAG 2.2 1.4.3 Contrast (Minimum): https://www.w3.org/TR/WCAG22/#contrast-minimum

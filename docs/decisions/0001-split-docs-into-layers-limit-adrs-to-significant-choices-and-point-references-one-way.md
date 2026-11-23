@@ -150,4 +150,4 @@ rules から import する案、rules を道案内にする案、skill と Story
 - arc42 §9 Architecture Decisions: https://docs.arc42.org/section-9/
 - arc42 Tip 8-9「Document decisions instead of concepts!」: https://docs.arc42.org/tips/8-9/
 - Claude Code: How Claude remembers your project ("Rules can also be scoped to specific file paths, so they only load into context when Claude works with matching files"): https://code.claude.com/docs/en/memory
-- fallow-rs/fallow「Knowledge architecture」: https://github.com/fallow-rs/fallow/blob/main/docs/development/knowledge-architecture.md
+- fallow-rs/fallow「Knowledge architecture」: https://github.com/fallow-rs/fallow/blob/5862f7ef099a155809269f394d5c1433197f9448/docs/development/knowledge-architecture.md

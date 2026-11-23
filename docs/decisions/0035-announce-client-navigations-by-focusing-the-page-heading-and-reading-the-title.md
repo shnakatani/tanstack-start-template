@@ -295,7 +295,7 @@ root で受ける失敗の画面の見出しは `<h1>` で、印を持たない�
 - Gatsby と Fable Tech Labs のユーザーテスト (2019-07-11): https://www.gatsbyjs.com/blog/2019-07-11-user-testing-accessible-client-routing/
 - Kitty Giraudel「A11y Advent Day 7: Page Title in SPA」(2020-12-07): https://kittygiraudel.com/2020/12/07/a11y-advent-page-title-in-spa/
 - TanStack/router#918: https://github.com/TanStack/router/issues/918
-- TanStack/router#918 のコメントが示す PoC の部品: https://github.com/TheBinaryGuy/tsr-live-announcer/blob/main/src/components/route-announcer.tsx
+- TanStack/router#918 のコメントが示す PoC の部品: https://github.com/TheBinaryGuy/tsr-live-announcer/blob/8a48d92fc118006ae08d6ba1552bfbe331151599/src/components/route-announcer.tsx
 - TanStack Router docs「Router Events」: https://tanstack.com/router/latest/docs/guide/router-events
 - TanStack Router docs `RouterOptions`: https://tanstack.com/router/latest/docs/api/router/RouterOptionsType
 - TanStack/router#7279: https://github.com/TanStack/router/discussions/7279
@@ -308,7 +308,7 @@ root で受ける失敗の画面の見出しは `<h1>` で、印を持たない�
 - sveltejs/kit#1305: https://github.com/sveltejs/kit/pull/1305
 - SvelteKit の `focus.js`: https://github.com/sveltejs/kit/blob/version-3/packages/kit/src/runtime/client/focus.js
 - SvelteKit の `client.js`: https://github.com/sveltejs/kit/blob/version-3/packages/kit/src/runtime/client/client.js
-- Reach Router の `history.js`: https://github.com/reach/router/blob/master/src/lib/history.js
+- Reach Router の `history.js`: https://github.com/reach/router/blob/307b9a85c779c0617bb98d3a6edb49180ed7e886/src/lib/history.js
 - vercel/next.js#96050: https://github.com/vercel/next.js/issues/96050
 - Next.js 16.3.0-preview.7 の `layout-router.tsx`: https://github.com/vercel/next.js/blob/v16.3.0-preview.7/packages/next/src/client/components/layout-router.tsx
 - Next.js 16.3.0 の `layout-router.tsx`: https://github.com/vercel/next.js/blob/v16.3.0/packages/next/src/client/components/layout-router.tsx
@@ -327,10 +327,10 @@ root で受ける失敗の画面の見出しは `<h1>` で、印を持たない�
 - a11ysupport.io の APG モーダルダイアログのテスト結果 (6730ad4): https://github.com/accessibilitysupported/a11ysupport.io/blob/6730ad42e83dd780f63555ab3f14f1c26ea0fae5/data/tests/apg/modal-dialog-example.json
 - TalkBack の `EventTypeWindowContentChangedFeedbackRule` (229212f): https://github.com/google/talkback/blob/229212fdf5842191d0a93fc95d9ca1423b346866/talkback/src/main/java/com/google/android/accessibility/talkback/compositor/rule/EventTypeWindowContentChangedFeedbackRule.java#L401-L408
 - TalkBack の `FeatureFlagReader` (229212f): https://github.com/google/talkback/blob/229212fdf5842191d0a93fc95d9ca1423b346866/talkback/src/main/java/com/google/android/accessibility/talkback/flags/FeatureFlagReader.java#L116-L118
-- Astro の `router.ts`: https://github.com/withastro/astro/blob/main/packages/astro/src/transitions/router.ts
-- Gatsby の `navigation.js`: https://github.com/gatsbyjs/gatsby/blob/master/packages/gatsby/cache-dir/navigation.js
+- Astro の `router.ts`: https://github.com/withastro/astro/blob/7661f48c84f048dafd26ac58d81acee2462fef4f/packages/astro/src/transitions/router.ts
+- Gatsby の `navigation.js`: https://github.com/gatsbyjs/gatsby/blob/1fd967bd2cc282cac4fcc699f66d681f16ee6987/packages/gatsby/cache-dir/navigation.js
 - MDN `HTMLElement.focus()`: https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus
-- MDN browser-compat-data (`api/HTMLElement.json` の `focus` の `options_focusVisible_parameter`): https://github.com/mdn/browser-compat-data/blob/main/api/HTMLElement.json
+- MDN browser-compat-data (`api/HTMLElement.json` の `focus` の `options_focusVisible_parameter`): https://github.com/mdn/browser-compat-data/blob/0fe836f1c9b303b5684fc6fd1a55a565ae4e09d2/api/HTMLElement.json
 - wpt.fyi の `back-forward-cache/focus.html`: https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/focus.html
 - GOV.UK Design System「Error summary」: https://design-system.service.gov.uk/components/error-summary/
 - GOV.UK Design System「There is a problem with the service pages」: https://design-system.service.gov.uk/patterns/problem-with-the-service-pages/

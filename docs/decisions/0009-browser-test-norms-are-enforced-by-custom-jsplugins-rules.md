@@ -103,5 +103,5 @@
 - vitest browser の locator (同期読みの DANGER 表記): <https://vitest.dev/guide/browser/locators>
 - 同梱の `node_modules/vite-plus/docs/guide/lint.md`「JS Plugins」
 - oxlint の JS plugin 作成ガイド: <https://oxc.rs/docs/guide/usage/linter/writing-js-plugins.html>
-- `eslint-plugin-playwright` の `prefer-web-first-assertions`: <https://github.com/playwright-community/eslint-plugin-playwright/blob/main/docs/rules/prefer-web-first-assertions.md>
-- `eslint-plugin-testing-library` の `prefer-presence-queries` と `prefer-query-by-disappearance` (不在 assert の書き分けを lint で持つ概念上の先行例。対象が Testing Library の query 名なので流用元にはならない): <https://github.com/testing-library/eslint-plugin-testing-library/tree/main/docs/rules>
+- `eslint-plugin-playwright` の `prefer-web-first-assertions`: <https://github.com/mskelton/eslint-plugin-playwright/blob/8db14437ea9f22897d7b604c6a6e4d6e246d25c0/docs/rules/prefer-web-first-assertions.md>
+- `eslint-plugin-testing-library` の `prefer-presence-queries` と `prefer-query-by-disappearance` (不在 assert の書き分けを lint で持つ概念上の先行例。対象が Testing Library の query 名なので流用元にはならない): <https://github.com/testing-library/eslint-plugin-testing-library/tree/5c111a86f5ada27041ca53d5c1428ac89fd5e483/docs/rules>
