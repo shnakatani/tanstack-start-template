@@ -264,8 +264,8 @@ docs に保証は無く、実装の並びと上流の e2e に依る。
 - TanStack/router#7796 (Start の `serializationAdapters` の文書化。"Start now supports `serializationAdapters` through `createStart`, and applies them to SSR hydration and server-function serialization."): <https://github.com/TanStack/router/issues/7796>
 - TanStack/router#8495 (`defaultOnError` の要望): <https://github.com/TanStack/router/discussions/8495>
 - 上流の e2e `custom error` と `CustomError`: <https://github.com/TanStack/router/blob/57e126e99dbd86f735ead2ba98ba5e98ef0cc668/e2e/react-start/serialization-adapters/tests/app.spec.ts> / <https://github.com/TanStack/router/blob/57e126e99dbd86f735ead2ba98ba5e98ef0cc668/e2e/react-start/serialization-adapters/src/CustomError.ts>
-- Sentry の TanStack Start SDK の global middleware: <https://github.com/getsentry/sentry-javascript/blob/develop/packages/tanstackstart-react/src/server/globalMiddleware.ts>
-- Sentry SDK の `checkOrSetAlreadyCaught`: <https://github.com/getsentry/sentry-javascript/blob/develop/packages/core/src/utils/misc.ts>
+- Sentry の TanStack Start SDK の global middleware: <https://github.com/getsentry/sentry-javascript/blob/0a39acfbecab9bf6bca2e367f7713b87acbbc1dc/packages/tanstackstart-react/src/server/globalMiddleware.ts>
+- Sentry SDK の `checkOrSetAlreadyCaught`: <https://github.com/getsentry/sentry-javascript/blob/0a39acfbecab9bf6bca2e367f7713b87acbbc1dc/packages/core/src/utils/misc.ts>
 - sentry-docs の TanStack Start の Manual Setup ("SSR rendering exceptions are not captured by the middleware."): <https://docs.sentry.io/platforms/javascript/guides/tanstackstart-react/manual-setup/>
 - React Router docs「Error Boundaries」の Error Sanitization: <https://reactrouter.com/how-to/error-boundary>
 - React Router docs「Error Reporting」の `handleError`: <https://reactrouter.com/how-to/error-reporting>

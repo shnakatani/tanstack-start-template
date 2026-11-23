@@ -306,13 +306,13 @@ root で受ける失敗の画面の見出しは `<h1>` で、印を持たない�
 - Angular の accessibility best practices: https://angular.dev/best-practices/a11y
 - sveltejs/kit#307: https://github.com/sveltejs/kit/issues/307
 - sveltejs/kit#1305: https://github.com/sveltejs/kit/pull/1305
-- SvelteKit の `focus.js`: https://github.com/sveltejs/kit/blob/version-3/packages/kit/src/runtime/client/focus.js
-- SvelteKit の `client.js`: https://github.com/sveltejs/kit/blob/version-3/packages/kit/src/runtime/client/client.js
+- SvelteKit の `focus.js`: https://github.com/sveltejs/kit/blob/30d06f5698528cf540899900366fc0cfeb3dc7f6/packages/kit/src/runtime/client/focus.js
+- SvelteKit の `client.js`: https://github.com/sveltejs/kit/blob/30d06f5698528cf540899900366fc0cfeb3dc7f6/packages/kit/src/runtime/client/client.js
 - Reach Router の `history.js`: https://github.com/reach/router/blob/307b9a85c779c0617bb98d3a6edb49180ed7e886/src/lib/history.js
 - vercel/next.js#96050: https://github.com/vercel/next.js/issues/96050
 - Next.js 16.3.0-preview.7 の `layout-router.tsx`: https://github.com/vercel/next.js/blob/v16.3.0-preview.7/packages/next/src/client/components/layout-router.tsx
 - Next.js 16.3.0 の `layout-router.tsx`: https://github.com/vercel/next.js/blob/v16.3.0/packages/next/src/client/components/layout-router.tsx
-- Next.js の `app-router-announcer.tsx` (canary): https://github.com/vercel/next.js/blob/canary/packages/next/src/client/components/app-router-announcer.tsx
+- Next.js の `app-router-announcer.tsx` (canary): https://github.com/vercel/next.js/blob/e32cb8e424ad0b0d0557a9cb17fbeb261bd13fa8/packages/next/src/client/components/app-router-announcer.tsx
 - Next.js の `app-router-announcer.tsx` (0541251): https://github.com/vercel/next.js/blob/0541251f775d4a3a5a7b52ea34d18da6aa6a2a2b/packages/next/src/client/components/app-router-announcer.tsx
 - Nuxt の `<NuxtRouteAnnouncer>`: https://nuxt.com/docs/api/components/nuxt-route-announcer
 - Nuxt のガイド「Accessibility」(2b103c9): https://github.com/nuxt/nuxt/blob/2b103c91ca86474a94a99e6f57cda5897619e959/docs/3.guide/2.best-practices/accessibility.md

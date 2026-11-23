@@ -148,7 +148,7 @@ story でこれらに当たる箇所は、CI では緑のまま測られてい�
 
 - Storybook の a11y テスト (`test` の 3 値、Recommended workflow、Incomplete の位置づけ、CI での `todo`。2026-11-23 に `v10.6.7` のタグの原文を確認): https://github.com/storybookjs/storybook/blob/v10.6.7/docs/writing-tests/accessibility-testing.mdx
 - Storybook: Vitest addon: https://storybook.js.org/docs/writing-tests/integrations/vitest-addon
-- `incomplete` は人が見る対象という位置づけ: https://github.com/dequelabs/axe-core/blob/develop/doc/API.md
+- `incomplete` は人が見る対象という位置づけ: https://github.com/dequelabs/axe-core/blob/c54d1aa2decef1657e0430aec7768a3c7c103801/doc/API.md
 - Deque の用語集 (Needs Review / Incomplete): https://docs.deque.com/devtools-for-web/4/en/glossary/
 - 失敗にするのが怖いものを review へ回す設計: https://github.com/dequelabs/axe-core/issues/3486
 - pa11y が incomplete の格下げレバーを足した PR: https://github.com/pa11y/pa11y/pull/685
