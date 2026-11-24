@@ -20,6 +20,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          # credential を残さない (ADR-0006)
+          persist-credentials: false
 
       # Node.js・pnpm・依存キャッシュを用意し、vp install まで走らせる (run-install の既定が true)
       - uses: voidzero-dev/setup-vp@v1.22.0
