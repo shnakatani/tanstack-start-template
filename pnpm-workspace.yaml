@@ -53,7 +53,7 @@ peerDependencyRules:
 # ===== このテンプレートが追加 (vp migrate が書かない) =====
 
 # pnpm と Node.js の版は Vite+ が packageManager と devEngines.runtime から選ぶ。pnpm に切り替えさせない (ADR-0004)
-# runtimeOnFail は置かない。pnpm が vp add・vp remove・引数なしの vp update で package.json に書き足す。
+# runtimeOnFail は置かない。pnpm が vp add・vp remove・vp update (引数なしと '!node') で package.json に書き足す。
 # devEngines.runtime に onFail が無ければ、pnpm は Node.js を扱わない (ADR-0004)
 pmOnFail: ignore
 
