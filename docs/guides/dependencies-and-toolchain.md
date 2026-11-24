@@ -334,7 +334,7 @@ Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて
 `typescript` パッケージは `@voidzero-dev/vite-plus-core` や Storybook、typescript-eslint の推移依存として入るので、直接の依存から外しても install からは消えない (2026-11-23 に vite-plus 1.7.0 で `pnpm why typescript`)。同じ日に、直接の依存に置かないまま型の誤りを置いて `vp check` を走らせると、`TS2322` を報告した。
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
-型検査の診断が出るのは lint の対象のファイルだけで、tsconfig の `include` に入る TS のファイルを lint の対象から外すと、そのファイルは型検査されない ([tsrs の README「Type-aware lint」][])。宣言ファイルも型検査されない。[tsrs の `tools/tsgolint/README.md`「Type checking in the lint run」][] は、宣言ファイルを `tsrs --noEmit` か `tsrs --build` でだけ型検査されるファイルに挙げるが、`tsconfig.base.json` の `skipLibCheck: true` のもとでは、`tsrs -b` と `tsc` も `src/` の `.d.ts` の型の誤りを通した (2026-11-25、ADR-0047)。README は宣言ファイルを oxlint が lint しないファイルとも書くが、同じ日に vite-plus 1.7.0 の `vp lint` は `src/` の `.d.ts` に文法の誤り (TS1039) と `typescript(no-explicit-any)` を出した。範囲の実測と、別に型検査を走らせる条件と打ち方は ADR-0047「型検査の実行」にある。
+型検査の診断が出るのは lint の対象のファイルだけで、tsconfig の `include` に入る TS のファイルを lint の対象から外すと、そのファイルは型検査されない ([tsrs の README「Type-aware lint」][])。宣言ファイルは、`tsconfig.base.json` の `skipLibCheck: true` で型検査されない ([TSConfig Reference「skipLibCheck」][])。2026-11-25 に、vite-plus 1.7.0 (tsrs 7.1.0-beta.tsrs2) の `vp check` と、typescript 6.0.3 の `tsc` は、`src/` の `.d.ts` の型の誤りを通した。`skipLibCheck` を `false` にすると、`vp check --no-fmt` と `tsc` は報告した (ADR-0047)。[tsrs の `tools/tsgolint/README.md`「Type checking in the lint run」][] は宣言ファイルを oxlint が lint しないファイルに挙げるが、同じ日に `vp lint` は `src/` の `.d.ts` に文法の誤り (TS1039) と `typescript(no-explicit-any)` を出した。範囲の実測と、別に型検査を走らせる条件と打ち方は ADR-0047「型検査の実行」にある。
 型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsrs が黙って動かない場合は捕まえられない。
 
 ### patch のキーをパッケージ名だけにする理由
@@ -391,6 +391,7 @@ Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて
 [Vite+ docs「Package Management」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/install.md
 [Vite+ docs「Environment」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/env.md
 [Vite+ docs「Commit Hooks」]: https://github.com/voidzero-dev/vite-plus/blob/v1.0.0/docs/guide/commit-hooks.md
+[TSConfig Reference「skipLibCheck」]: https://github.com/microsoft/TypeScript-Website/blob/a616e68472383636761819e235e3671fc2efb2cc/packages/tsconfig-reference/copy/en/options/skipLibCheck.md
 [TSConfig Reference「extends」]: https://github.com/microsoft/TypeScript-Website/blob/205122bb73dcbf6f3b373de5bdb0d9fa5434d015/packages/tsconfig-reference/copy/en/options/extends.md
 [dependabot-core「subdependency_version_resolver.rb」]: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/subdependency_version_resolver.rb#L247-L335
 [dependabot-core「pnpm_lockfile_updater.rb」の待機]: https://github.com/dependabot/dependabot-core/blob/eda07d97d87762779406f5a5beec86fec139e78f/npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb#L550-L551
