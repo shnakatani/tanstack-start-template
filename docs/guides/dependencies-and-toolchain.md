@@ -135,8 +135,8 @@ pnpm peers check
   - 見つからない: PR を開いたまま置き、上流が peer を広げるのを待つ。閉じても次の実行で作り直される (ADR-0005)。PR の版に、このリポジトリのコードの変換や実行に効く不具合の修正 (React Compiler の誤変換など) が入っているなら、待たずに親つきのキーで許して取り込む。値は確かめた版の major (0.x は minor) までにし、撤去条件は上流のリリースで書く (この節の上の項目)。取り込む前に `vp run verify` を通す
 - `vitest` の `allowAny` と `allowedVersions` の行は例外で、2026-11-23 に vite-plus 1.7.0 で、`vp migrate` が書き、消しても書き戻した
 - `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
-- `vite` の行は置かない。core の版が同梱の Vite の版を表す (`8.3.8000` は Vite 8.3.8) ので、`vite` を peer に持つ依存の範囲を満たす。`vp migrate` は `vite` の行を消す ([Vite+ docs「Migration Rules」][])。行の無いまま `pnpm peers check` は食い違いを出さなかった (2026-11-24、vite-plus 1.7.0、pnpm 12.21.0)
-- `vite` の peer の範囲が同梱の Vite を含まない依存は、`pnpm peers check` に食い違いとして出る。その依存を上げるか、ほかの許可と同じく、親とその major つきのキー (`"<依存>@<major>>vite"`) の `allowedVersions` で許す。[Vite+ docs「Migration Rules」][] は、pnpm 12.17.0 以降では `overrides` の `'<依存>>vite:peer': '*'` を勧め、`allowedVersions` の形をそれより前の pnpm に限る ("pnpm deprecated `peerDependencyRules` in this version.")。この形を選ばない理由は、上の `:peer` の項目にある
+- `vite` の行は置かない。core の版が同梱の Vite の版を表す (`8.3.8000` は Vite 8.3.8) ので、`vite` を peer に持つ依存の範囲を満たす。`vp migrate` は、`allowAny` の `vite` と、値が `'*'` の `allowedVersions.vite` を消し、ほかの範囲 (`'7 || 8'` など) の `allowedVersions.vite` は残す ([Vite+ docs「Migration Rules」][]: "Another `allowedVersions.vite` range, such as `'7 || 8'`, stays.")。行の無いまま `pnpm peers check` は食い違いを出さなかった (2026-11-24、vite-plus 1.7.0、pnpm 12.21.0)
+- `vite` の peer の範囲が同梱の Vite を含まない依存は、`pnpm peers check` に食い違いとして出る。その依存を上げるか、ほかの許可と同じく、親とその major つきのキー (`"<依存>@<major>>vite"`) の `allowedVersions` で許す。[Vite+ docs「Migration Rules」][] は、pnpm 12.17.0 以降では `overrides` の `'<依存>>vite:peer': '*'` を勧め、`allowedVersions` の形をそれより前の pnpm に限る ("pnpm deprecated `peerDependencyRules` in this version.")。`:peer` の override を選ばない理由は、上の `:peer` の項目にある
 
 ### 依存をバレルの禁止の対象に足す
 
@@ -334,7 +334,7 @@ Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて
 `typescript` パッケージは `@voidzero-dev/vite-plus-core` や Storybook、typescript-eslint の推移依存として入るので、直接の依存から外しても install からは消えない (2026-11-23 に vite-plus 1.7.0 で `pnpm why typescript`)。同じ日に、直接の依存に置かないまま型の誤りを置いて `vp check` を走らせると、`TS2322` を報告した。
 直接の依存へ戻すのは、リポジトリのコードが `typescript` を `import` するようになったときだけでよい。リポジトリのコードが使わないパッケージを、直接の依存として宣言しない。
 
-型検査の診断が出るのは lint の対象のファイルだけで、tsconfig の `include` に入る TS のファイルを lint の対象から外すと、そのファイルは型検査されない ([tsrs の README「Type-aware lint」][])。宣言ファイルも型検査されない。[tsrs の `tools/tsgolint/README.md`「Type checking in the lint run」][] は、宣言ファイルを "files oxlint does not lint" に数え、その型検査を `tsrs --noEmit` か `tsrs --build` に任せる。oxlint の rule の診断は宣言ファイルにも出る。範囲の実測と、別に型検査を走らせる条件と打ち方は ADR-0047「型検査の実行」にある。
+型検査の診断が出るのは lint の対象のファイルだけで、tsconfig の `include` に入る TS のファイルを lint の対象から外すと、そのファイルは型検査されない ([tsrs の README「Type-aware lint」][])。宣言ファイルも型検査されない。[tsrs の `tools/tsgolint/README.md`「Type checking in the lint run」][] は、宣言ファイルを、`tsrs --noEmit` か `tsrs --build` でだけ型検査されるファイルに挙げる。lint の rule の診断はこれと別で、2026-11-24 に vite-plus 1.7.0 の `vp lint` は `src/` の `.d.ts` に `typescript(no-explicit-any)` を出した (ADR-0047)。範囲の実測と、別に型検査を走らせる条件と打ち方は ADR-0047「型検査の実行」にある。
 型検査を lint へ合流させる設定 (`options.typeCheck`) は `scripts/checks/integrity/lint-config.test.ts` が解決後の設定の値で押さえるが、設定が真のまま tsrs が黙って動かない場合は捕まえられない。
 
 ### patch のキーをパッケージ名だけにする理由
@@ -365,15 +365,14 @@ Intent docs は、consumer に `@tanstack/intent` を devDependency に置いて
 [Vite+ docs「Lint」]: https://github.com/voidzero-dev/vite-plus/blob/v1.7.0/docs/guide/lint.md
 [tsrs の README「Type-aware lint」]: https://github.com/oxc-project/tsrs/blob/v7.1.0-beta.tsrs2/README.md#type-aware-lint
 [tsrs の `tools/tsgolint/README.md`「Type checking in the lint run」]: https://github.com/oxc-project/tsrs/blob/v7.1.0-beta.tsrs2/tools/tsgolint/README.md#type-checking-in-the-lint-run
-[pnpm docs「Overriding peer dependencies」]: https://pnpm.io/settings/dependency-resolution#overriding-peer-dependencies
+[pnpm docs「Overriding peer dependencies」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/dependency-resolution.md#overriding-peer-dependencies
 [pnpm docs「pnpm patch」]: https://github.com/pnpm/pnpm.io/blob/c777ca5aabd6d19ac7915b1b694840fdf968268c/versioned_docs/version-11.x/cli/patch.md
-[pnpm docs「peerDependencyRules.allowedVersions」]: https://pnpm.io/settings/peer-dependencies#peerdependencyrulesallowedversions
+[pnpm docs「peerDependencyRules.allowedVersions」]: https://github.com/pnpm/pnpm.io/blob/29f86c5f4170e6fc0477c5ef90b4d8160f8902aa/docs/settings/peer-dependencies.md#peerdependencyrulesallowedversions
 [pnpm/pnpm#17922]: https://github.com/pnpm/pnpm/issues/17922
 [dependabot/dependabot-core#4830]: https://github.com/dependabot/dependabot-core/issues/4830
 [dependabot-core「Dockerfile」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/npm_and_yarn/Dockerfile#L4-L9
 [dependabot-core「github_actions の Dockerfile」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/github_actions/Dockerfile
 [GitHub Docs「Immutable releases」]: https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases
-[gh-actions-lock「README」]: https://github.com/github/gh-actions-lock/blob/d68b1a345a0aa02cf870cd0e0d78418d492d280d/README.md
 [gh-actions-lock「troubleshooting」]: https://github.com/github/gh-actions-lock/blob/d68b1a345a0aa02cf870cd0e0d78418d492d280d/docs/troubleshooting.md
 [dependabot-core「helpers.rb」]: https://github.com/dependabot/dependabot-core/blob/cbabeb7b1671021a093ac3990c9e0ac17dc20fdd/npm_and_yarn/lib/dependabot/npm_and_yarn/helpers.rb#L882-L884
 [Intent docs「Trust model」]: https://github.com/TanStack/intent/blob/3d01b9f157f5c6918b5c6ec7e573b6a78f5e087d/docs/concepts/trust-model.md

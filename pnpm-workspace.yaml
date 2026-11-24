@@ -33,7 +33,7 @@ minimumReleaseAgeExclude:
   - tsrs
   - "@tsrs/*"
 
-# vitest の行は vp migrate が書き、消しても書き戻す。vite の行は vp migrate が消す (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
+# vitest の行は vp migrate が書き、消しても書き戻す。allowAny の vite と値が '*' の allowedVersions.vite は vp migrate が消す (docs/guides/dependencies-and-toolchain.md「peer の食い違いを数える」)
 peerDependencyRules:
   allowAny:
     - vitest
