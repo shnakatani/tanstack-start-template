@@ -135,8 +135,8 @@ pnpm peers check
   - 見つからない: PR を開いたまま置き、上流が peer を広げるのを待つ。閉じても次の実行で作り直される (ADR-0005)。PR の版に、このリポジトリのコードの変換や実行に効く不具合の修正 (React Compiler の誤変換など) が入っているなら、待たずに親つきのキーで許して取り込む。値は確かめた版の major (0.x は minor) までにし、撤去条件は上流のリリースで書く (この節の上の項目)。取り込む前に `vp run verify` を通す
 - `vitest` の `allowAny` と `allowedVersions` の行は例外で、2026-11-23 に vite-plus 1.7.0 で、`vp migrate` が書き、消しても書き戻した
 - `vitest` の行は効いていない。`overrides` の `vitest@*` は `catalog:` を指し、catalog を指す override は peer の宣言も置き換える ([pnpm docs「Overriding peer dependencies」][])。`vitest` の peer の食い違いは `pnpm peers check` に出ない
-- `vite` の行は置かない。core の版が同梱の Vite の版を表す (`8.3.8000` は Vite 8.3.8) ので、`vite` を peer に持つ依存の範囲を満たす。`vp migrate` は `vite` の行を消す ([Vite+ docs「Migration Rules」][])。行の無いまま `pnpm peers check` は食い違いを出さなかった (2026-11-23、vite-plus 1.7.0、pnpm 11.28.0)
-- `vite` の peer の範囲が同梱の Vite を含まない依存は、`pnpm peers check` に食い違いとして出る。その依存を上げるか、親とその major つきのキー (`"<依存>@<major>>vite"`) で許す ([Vite+ docs「Migration Rules」][])
+- `vite` の行は置かない。core の版が同梱の Vite の版を表す (`8.3.8000` は Vite 8.3.8) ので、`vite` を peer に持つ依存の範囲を満たす。`vp migrate` は `vite` の行を消す ([Vite+ docs「Migration Rules」][])。行の無いまま `pnpm peers check` は食い違いを出さなかった (2026-11-24、vite-plus 1.7.0、pnpm 12.21.0)
+- `vite` の peer の範囲が同梱の Vite を含まない依存は、`pnpm peers check` に食い違いとして出る。その依存を上げるか、ほかの許可と同じく、親とその major つきのキー (`"<依存>@<major>>vite"`) の `allowedVersions` で許す。[Vite+ docs「Migration Rules」][] は、pnpm 12.17.0 以降では `overrides` の `'<依存>>vite:peer': '*'` を勧め、`allowedVersions` の形をそれより前の pnpm に限る ("pnpm deprecated `peerDependencyRules` in this version.")。この形を選ばない理由は、上の `:peer` の項目にある
 
 ### 依存をバレルの禁止の対象に足す
 
