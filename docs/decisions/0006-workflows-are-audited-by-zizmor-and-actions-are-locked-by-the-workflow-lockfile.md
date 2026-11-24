@@ -1,7 +1,7 @@
 # ADR-0006: GitHub Actions の定義は zizmor で検査し、action は workflow の lockfile で固定する
 
 - Status: Accepted
-- Date: 2026-11-23
+- Date: 2026-11-24
 - 関連: ADR-0005 (依存更新の待機)
 
 ## Context
@@ -26,8 +26,9 @@ GitHub Docs「Workflow dependency lockfiles」は、`.github/workflows/actions.l
 | 4   | `.github/workflows/actions-lock.yml` で `gh actions-lock --verify` を走らせ、lockfile が古ければ job を落とす                      | zizmor の `unpinned-uses` は、workflow が lockfile にあればその workflow の指摘をすべて止め、各 `uses:` が lockfile にあるかを見ない (下の「写しと GitHub の Actions での実測」)。zizmor の lockfile の扱いは experimental である。zizmor は lockfile に載った workflow の step について、`unpinned-uses` と `ref-version-mismatch` を 1.32.0 から、`impostor-commit` と `ref-confusion` を 1.33.0 から飛ばす (v1.32.0 と v1.33.0 の tag の `is_locked` で確かめた)。飛ばした分は、記録した commit が記録した ref から辿れることを確かめる実行時の検査と verify が埋める |
 | 5   | verify の job は拡張を `gh extension install github/gh-actions-lock --pin vX.Y.Z` で入れ、版を固定する                             | v0.5.1 の release は immutable release で、tag と asset が変わらない (2026-11-23 に `gh release view` の `isImmutable` で確かめた)。Dependabot は拡張の版を上げないので、手元で lockfile を作る拡張の版に手で合わせる                                                                                                                                                                                                                                                                                                                                                    |
 | 6   | `actions/checkout` には `persist-credentials: false` を渡す                                                                        | 後続の step は push しない。v6 以降の checkout は credential を `$RUNNER_TEMP` のファイルへ書き、同じ job の後続 step から読める                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 7   | zizmor 本体の版は指定しない (`version: latest`)                                                                                    | 2026-09-23 に読んだ v0.6.4 の `action.sh` では、action は `latest` を、同梱の `support/versions` にある digest 付きの image へ解決していた。lockfile が action の commit を固定すれば本体の版も固定され、Dependabot の追随と cooldown に乗る                                                                                                                                                                                                                                                                                                                             |
+| 7   | zizmor 本体の版は指定しない (`version: latest`)                                                                                    | v0.8.1 の `action.sh` は、`latest` を、action の中の `support/locks/zizmor-latest.txt` が hash 付きで固定する版へ解決し、`pip download --require-hashes` で wheel を取る (2026-11-24 に v0.8.1 の tag で確かめた)。lockfile が action の commit を固定すれば本体の版も固定され、Dependabot の追随と cooldown に乗る                                                                                                                                                                                                                                                      |
 | 8   | zizmor の設定は `.github/zizmor.yml` に置き、`dependabot-cooldown` の下限を 3 日にする                                             | 待機の日数は ADR-0005 が決める。zizmor 1.30.1 の既定 7 日 (2026-09-23 確認) に合わせると、却下した案を検査が強制する                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 9   | zizmor と actions-lock の job は `runs-on: ubuntu-slim` で、CI の job は `ubuntu-latest` で走らせる                                | 分は job ごとに 1 分へ切り上げて数えられるので、private のリポジトリでは、`ubuntu-latest` で 10 秒ほど (2026-11 の run) のこの 2 つの job も、push のたびに 1 分ずつ数えられる。`ubuntu-slim` は 1 分あたりの単価が `ubuntu-latest` (Linux 2-core) の 1/3 である (GitHub Docs「Actions runner pricing」)。GitHub Docs は single-CPU の runner を short-running な job 向けとし、重い CI の build には向かないとする。zizmor-action は v0.7.0 から `ubuntu-slim` で動き、README の例も `ubuntu-slim` で書く                                                               |
 
 lockfile のほかに固定のしかたを決める参照。
 
@@ -71,6 +72,16 @@ zizmor の動かし方。
 | Advanced Security (SARIF)                  | 指摘の triage と状態管理はできるが、merge を止めるには利用者ごとに ruleset の設定が要る | 却下     |
 | `version` に zizmor の版を書く             | Dependabot は `with:` の値を更新しないので、手で上げない限り古い版に留まる              | 却下     |
 
+zizmor と verify の job の runner と分け方。
+
+| 案                                                 | 評価                                                                                                                                                                                                                                                                                                                                                                                                                              | 採否     |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 2 つを別の workflow にし、`ubuntu-slim` で走らせる | private のリポジトリでは、push 1 回あたり slim の 1 分が 2 つ数えられる。public のリポジトリでは標準の runner が無料なので、費用は変わらない (GitHub Docs「GitHub Actions billing」。`ubuntu-slim` が標準の runner に入ることは GitHub Docs「GitHub-hosted runners」の表)。測った回では、slim の 2 つの job はどれも CI の job より先に終わった (下の「写しと GitHub の Actions での実測」)。zizmor-action の README の例と同じ形 | **採用** |
+| 2 つとも `ubuntu-latest` で走らせる                | gh-actions-lock の `verify-lockfile.yml` の例の runner。private のリポジトリでは、同じ 2 分が 3 倍の単価で数えられる                                                                                                                                                                                                                                                                                                              | 却下     |
+| zizmor を CI の job の step にする                 | zizmor の指摘と、テストや build の失敗が同じ check に混ざる。lockfile の欠けで CI の workflow が `startup_failure` になると、zizmor も走らない                                                                                                                                                                                                                                                                                    | 却下     |
+| zizmor と verify を 1 つの job にする              | その workflow の `uses:` に `zizmor-action` が加わる。下の「写しと GitHub の Actions での実測」では、workflow が直に書く `uses:` の entry が欠けると、その workflow は job を始めずに `startup_failure` で止まった。`zizmor-action` の entry が欠けたときも同じに止まるなら、verify は欠けた action を報告できない (`zizmor-action` の entry は外して測っていない)                                                                | 却下     |
+| `paths` で `.github/` の変更だけに絞る             | merge の前に必須の check にすると、skip された workflow の check が Pending のまま残り、merge を止める (GitHub Docs「Troubleshooting required status checks」)                                                                                                                                                                                                                                                                    | 却下     |
+
 ### 写しと GitHub の Actions での実測
 
 2026-11-23 に、このリポジトリの写しで、gh-actions-lock 0.5.1、zizmor 1.32.0 (zizmor-action 0.8.1 の既定)、ローカルの Dependabot (dependabot-cli 1.97.0、updater の commit cbabeb7b) で測った。GitHub の Actions の行は、同じ日に lockfile を書き換えた一時の commit を push して測った。
@@ -90,6 +101,13 @@ zizmor の動かし方。
 - Dependabot は同梱の gh-actions-lock を `--no-onboard --no-narrow` で呼ぶ。lockfile に載っていない workflow は載せず、Dependabot が書いた `uses:` の ref をそのまま記録する (dependabot-core の `cli_engine.rb`)
 - lockfile の形式の版は `version` が持つ。gh-actions-lock 0.5.1 が書く版は `v0.0.3` だった。Dependabot が受け付けるのは `v0.0.2` と `v0.0.3` で (dependabot-core の `constants.rb`)、Dependabot が同梱する 0.4.1 と、verify の job の 0.5.1 は、どちらも `v0.0.3` まで読む `github.com/github/actions-lockfile/go` v0.0.6 で読む。lockfile の `version` が拡張の読める版より新しいと、拡張は exit 2 で止まる (gh-actions-lock の troubleshooting)
 
+2026-11-24 に、このリポジトリで zizmor と verify の job を `ubuntu-slim` にして測った (zizmor-action 0.8.1、gh-actions-lock 0.5.1)。
+
+| 状態                                                                                                                               | 結果                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| lockfile がそろった状態 (3 回)                                                                                                     | zizmor の job は 9〜33 秒、verify の job は 7〜10 秒で成功した。同じ回の CI の job は 158〜162 秒で、slim の 2 つの job はどの回もそれより先に終わった                     |
+| `ci.yml` の checkout から `persist-credentials: false` を外し、lockfile から `ci.yml` の `voidzero-dev/setup-vp` の entry を外した | verify の job は `Not pinned voidzero-dev/setup-vp@v1.22.0` で exit 1 になり、zizmor の job は `artipacked` の指摘で落ちた。CI の workflow は `startup_failure` で止まった |
+
 ## Consequences
 
 - `uses:` を足す・変えるときは、workflow を書き換えたあと `gh actions-lock` を打ち、workflow と `actions.lock` を同じ commit に入れる。手順は `docs/guides/dependencies-and-toolchain.md`「workflow に action を足す」にある
@@ -98,6 +116,7 @@ zizmor の動かし方。
 - Dependabot の action の PR は、workflow と `actions.lock` を一緒に上げる。lockfile に載っていない workflow は、Dependabot が上げても lockfile に載らない
 - verify の job の拡張の版は、手元で lockfile を作った拡張の版へ手で上げる
 - zizmor の指摘は GitHub の annotation ではなく job のログに出る
+- zizmor と verify の job は `ubuntu-slim` で走る。slim の job の上限は 15 分で、Docker-in-Docker のような特権の要る操作はできない (GitHub Docs「GitHub-hosted runners」の「Single-CPU runners」)。重い step か特権の要る step を足すときは、その job を `ubuntu-latest` で走らせる
 - 再評価の条件は、zizmor が lockfile の扱いを experimental から外したとき (zizmorcore/zizmor#2477)、gh-actions-lock が verify 用の action を出したとき (github/gh-actions-lock#293)、lockfile か拡張が、上の「lockfile のほかに固定のしかたを決める参照」の表の参照を扱えるようになったとき (表の行ごとの issue)、zizmor-action が stable 版を出したとき (README は後方互換の無い変更がありうると書いている)
 
 ## 出典
@@ -122,3 +141,13 @@ zizmor の動かし方。
 - zizmor-action の README (モード、権限、`version`): https://github.com/zizmorcore/zizmor-action
 - zizmor の audit 一覧 (`unpinned-uses`、`unpinned-images`、`artipacked`、`dependabot-cooldown`): https://docs.zizmor.sh/audits/
 - actions/checkout v7.0.1 の README (「Checkout v6」の What's new。`persist-credentials` の保存先): https://github.com/actions/checkout/blob/v7.0.1/README.md
+
+2026-11-24 に読んだ。
+
+- GitHub Docs: GitHub-hosted runners (「Single-CPU runners」): https://docs.github.com/en/actions/reference/runners/github-hosted-runners 。"They are not suitable for typical heavyweight CI/CD builds." と、15 分の job の上限、unprivileged の container を書く
+- GitHub Docs: Actions runner pricing (job ごとの切り上げ、`actions_linux_slim` と `actions_linux` の単価): https://docs.github.com/en/billing/reference/actions-runner-pricing
+- GitHub Docs: GitHub Actions billing (public のリポジトリの標準の runner は無料): https://docs.github.com/en/billing/concepts/product-billing/github-actions
+- GitHub Docs: Troubleshooting required status checks (skip された workflow の check): https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks
+- zizmor-action v0.8.1 の `action.sh` (`latest` の解決と `pip download --require-hashes`): https://github.com/zizmorcore/zizmor-action/blob/45d7276c9ca790aabd705e31ca99c6185c3e76dd/action.sh
+- zizmor-action v0.8.1 の README (`ubuntu-slim` で動く版と、例の `runs-on`): https://github.com/zizmorcore/zizmor-action/blob/45d7276c9ca790aabd705e31ca99c6185c3e76dd/README.md
+- zizmorcore/zizmor-action#74 (Docker をやめて `ubuntu-slim` で動かす)

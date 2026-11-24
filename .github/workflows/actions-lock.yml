@@ -15,7 +15,8 @@ jobs:
   # .github/workflows/actions.lock が workflow と合っていて、固定した commit が上流で確かめられることを検査する。
   # zizmor は lockfile に workflow があるかしか見ず、uses: を足したのに lockfile を作り直していない PR を通す (ADR-0006)
   verify:
-    runs-on: ubuntu-latest
+    # 1 分かからない軽い job なので、1 vCPU の runner で走らせる。slim の job の上限は 15 分で、Docker-in-Docker のような特権の要る操作はできない (ADR-0006)
+    runs-on: ubuntu-slim
     # private リポジトリの checkout に要る (ADR-0006)
     permissions:
       contents: read
