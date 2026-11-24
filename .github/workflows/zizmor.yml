@@ -14,7 +14,8 @@ permissions: {}
 
 jobs:
   zizmor:
-    runs-on: ubuntu-latest
+    # 数十秒で終わる軽い job なので、1 vCPU の安い runner で走らせる。job は 15 分で切られ、Docker は使えない (ADR-0006)
+    runs-on: ubuntu-slim
     # private リポジトリの checkout に要る (ADR-0006)
     permissions:
       contents: read
